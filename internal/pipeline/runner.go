@@ -18,13 +18,15 @@ const (
 )
 
 type MemberAction struct {
-	Id   string
-	Type string
+	Id     string
+	Type   string
+	Params map[string]interface{}
 }
 type Member struct {
-	Login      string
-	IsFinished bool
-	Actions    []MemberAction
+	Login                string
+	Actions              []MemberAction
+	IsActed              bool
+	ExecutionGroupMember bool
 }
 
 type Deadline struct {
@@ -33,20 +35,24 @@ type Deadline struct {
 }
 
 var (
+	//nolint:gochecknoglobals //block statuses
 	StatusIdle      Status = "idle"
 	StatusReady     Status = "ready"
 	StatusRunning   Status = "running"
 	StatusFinished  Status = "finished"
 	StatusNoSuccess Status = "no_success"
+	StatusError     Status = "error"
+	StatusCanceled  Status = "cancel"
 )
 
 type Runner interface {
 	GetState() interface{}
 	Next(runCtx *store.VariableStore) ([]string, bool)
 	Update(ctx context.Context) (interface{}, error)
-	GetTaskHumanStatus() TaskHumanStatus
+	GetTaskHumanStatus() (taskHumanStatus TaskHumanStatus, comment string)
 	GetStatus() Status
 	UpdateManual() bool
 	Members() []Member
 	Deadlines(ctx context.Context) ([]Deadline, error)
+	GetNewEvents() []entity.NodeEvent
 }

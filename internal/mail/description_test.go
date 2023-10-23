@@ -7,6 +7,8 @@ import (
 	"github.com/iancoleman/orderedmap"
 
 	"github.com/stretchr/testify/assert"
+
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 )
 
 func TestToUser(t *testing.T) {
@@ -125,11 +127,22 @@ func TestWriteValue(t *testing.T) {
 
 func TestGetAttachmentsFromBody(t *testing.T) {
 	tests := []struct {
-		name   string
-		data   string
-		fields []string
-		want   map[string][]string
+		name string
+		data string
+		want map[string][]entity.Attachment
 	}{
+		{
+			name: "all types",
+			data: `{"recipient": {"email": "snkosya1@mts.ru", "phone": "15857", "mobile": "+79111157031", 
+"tabnum": "415336", "fullname": "Косяк Сергей Николаевич", "position": "ведущий разработчик", 
+"username": "snkosya1"}, "chislo_moe": 12, "stroka_moya": "строка", 
+"vlozhenie_odno": {"file_id": "34bc6b5b-2391-11ed-b54b-04505600ad66"}, 
+"vlozhenie_mnogo": [{"file_id": "34b9dd4a-2391-11ed-b54b-04505600ad66"}, {"file_id": "366bc146-2391-11ed-b54b-04505600ad66"}]}`,
+			want: map[string][]entity.Attachment{
+				"vlozhenie_odno":  {entity.Attachment{FileID: "34bc6b5b-2391-11ed-b54b-04505600ad66"}},
+				"vlozhenie_mnogo": {entity.Attachment{FileID: "34b9dd4a-2391-11ed-b54b-04505600ad66"}, entity.Attachment{FileID: "366bc146-2391-11ed-b54b-04505600ad66"}},
+			},
+		},
 		{
 			name: "all types",
 			data: `{"recipient": {"email": "snkosya1@mts.ru", "phone": "15857", "mobile": "+79111157031", 
@@ -137,10 +150,9 @@ func TestGetAttachmentsFromBody(t *testing.T) {
 "username": "snkosya1"}, "chislo_moe": 12, "stroka_moya": "строка", 
 "vlozhenie_odno": "attachment:34bc6b5b-2391-11ed-b54b-04505600ad66", 
 "vlozhenie_mnogo": ["attachment:34b9dd4a-2391-11ed-b54b-04505600ad66", "attachment:366bc146-2391-11ed-b54b-04505600ad66"]}`,
-			fields: []string{".vlozhenie_odno", ".vlozhenie_mnogo"},
-			want: map[string][]string{
-				"vlozhenie_odno":  []string{"34bc6b5b-2391-11ed-b54b-04505600ad66"},
-				"vlozhenie_mnogo": []string{"34b9dd4a-2391-11ed-b54b-04505600ad66", "366bc146-2391-11ed-b54b-04505600ad66"},
+			want: map[string][]entity.Attachment{
+				"vlozhenie_odno":  {entity.Attachment{FileID: "34bc6b5b-2391-11ed-b54b-04505600ad66"}},
+				"vlozhenie_mnogo": {entity.Attachment{FileID: "34b9dd4a-2391-11ed-b54b-04505600ad66"}, entity.Attachment{FileID: "366bc146-2391-11ed-b54b-04505600ad66"}},
 			},
 		},
 	}
@@ -151,7 +163,7 @@ func TestGetAttachmentsFromBody(t *testing.T) {
 			if err := data.UnmarshalJSON([]byte(test.data)); err != nil {
 				t.Fatal(err)
 			}
-			aa := GetAttachmentsFromBody(*data, test.fields)
+			aa := GetAttachmentsFromBody(*data)
 			assert.Equal(t, test.want, aa)
 		})
 	}

@@ -7,20 +7,23 @@ const (
 	StatusApprovement         TaskHumanStatus = "approvement"
 	StatusApproveView         TaskHumanStatus = "approve-view"
 	StatusApproveInform       TaskHumanStatus = "approve-inform"
-	StatusApproveSign         TaskHumanStatus = "approve-sign"
+	StatusApproveSignUkep     TaskHumanStatus = "approve-sign-ukep"
 	StatusApproveConfirm      TaskHumanStatus = "approve-confirm"
 	StatusExecution           TaskHumanStatus = "processing"
 	StatusExecutionRejected   TaskHumanStatus = "executor-reject"
 	StatusApproved            TaskHumanStatus = "approved"
 	StatusApproveViewed       TaskHumanStatus = "approve-viewed"
 	StatusApproveInformed     TaskHumanStatus = "approve-informed"
-	StatusApproveSigned       TaskHumanStatus = "approve-signed"
 	StatusApproveConfirmed    TaskHumanStatus = "approve-confirmed"
 	StatusApprovementRejected TaskHumanStatus = "approvement-reject"
 	StatusDone                TaskHumanStatus = "done"
 	StatusWait                TaskHumanStatus = "wait"
 	StatusRevoke              TaskHumanStatus = "revoke"
 	StatusCancel              TaskHumanStatus = "cancel"
+	StatusSigning             TaskHumanStatus = "signing"
+	StatusSigned              TaskHumanStatus = "signed"
+	StatusRejected            TaskHumanStatus = "rejected"
+	StatusProcessingError     TaskHumanStatus = "error"
 )
 
 var statusToTaskState = map[TaskHumanStatus]string{
@@ -28,7 +31,6 @@ var statusToTaskState = map[TaskHumanStatus]string{
 	StatusApproved:            "согласована",
 	StatusApproveViewed:       "ознакомлено",
 	StatusApproveInformed:     "проинформировано",
-	StatusApproveSigned:       "подписана",
 	StatusApproveConfirmed:    "утверждена",
 	StatusApprovementRejected: "отклонена",
 	StatusExecution:           "взята в работу",
@@ -36,6 +38,10 @@ var statusToTaskState = map[TaskHumanStatus]string{
 	StatusDone:                "выполнена исполнителем",
 	StatusRevoke:              "отозвана инициатором",
 	StatusCancel:              "отозвана администратором",
+	StatusSigning:             "на подписании",
+	StatusSigned:              "подписана",
+	StatusRejected:            "отклонена",
+	StatusProcessingError:     "обработана с ошибкой",
 }
 
 var statusToTaskAction = map[TaskHumanStatus]string{

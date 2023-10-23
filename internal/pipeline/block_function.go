@@ -7,8 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"golang.org/x/net/context"
-
 	"github.com/google/uuid"
 
 	"github.com/pkg/errors"
@@ -18,6 +16,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/kafka"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/scheduler"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
@@ -43,11 +42,13 @@ type ExecutableFunction struct {
 	Contracts      string                      `json:"contracts"`
 	WaitCorrectRes int                         `json:"waitCorrectRes"`
 	Constants      map[string]interface{}      `json:"constants"`
+	CheckSLA       bool                        `json:"check_sla"`
+	SLA            int                         `json:"sla"`
+	TimeExpired    bool                        `json:"time_expired"`
 }
 
-type FunctionStatus string
-
 type FunctionUpdateParams struct {
+	Action  string                 `json:"action"`
 	Mapping map[string]interface{} `json:"mapping"`
 }
 
@@ -60,18 +61,29 @@ type ExecutableFunctionBlock struct {
 	State   *ExecutableFunction
 	RunURL  string
 
+	expectedEvents map[string]struct{}
+	happenedEvents []entity.NodeEvent
+
 	RunContext *BlockRunContext
+}
+
+func (gb *ExecutableFunctionBlock) GetNewEvents() []entity.NodeEvent {
+	return gb.happenedEvents
 }
 
 func (gb *ExecutableFunctionBlock) Members() []Member {
 	return nil
 }
 
-func (gb *ExecutableFunctionBlock) Deadlines(_ context.Context) ([]Deadline, error) {
+func (gb *ExecutableFunctionBlock) Deadlines(_ c.Context) ([]Deadline, error) {
 	return []Deadline{}, nil
 }
 
 func (gb *ExecutableFunctionBlock) GetStatus() Status {
+	if gb.State.TimeExpired {
+		return StatusFinished
+	}
+
 	if gb.State.Async && gb.State.HasAck && !gb.State.HasResponse {
 		return StatusIdle
 	}
@@ -83,20 +95,29 @@ func (gb *ExecutableFunctionBlock) GetStatus() Status {
 	return StatusRunning
 }
 
-func (gb *ExecutableFunctionBlock) GetTaskHumanStatus() TaskHumanStatus {
+func (gb *ExecutableFunctionBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment string) {
+	if gb.State.TimeExpired {
+		return StatusDone, ""
+	}
+
 	if gb.State.Async && gb.State.HasAck && !gb.State.HasResponse {
-		return StatusWait
+		return StatusWait, ""
 	}
 
 	if gb.State.HasResponse {
-		return StatusDone
+		return StatusDone, ""
 	}
 
-	return StatusExecution
+	return StatusExecution, ""
 }
 
 func (gb *ExecutableFunctionBlock) Next(_ *store.VariableStore) ([]string, bool) {
-	nexts, ok := script.GetNexts(gb.Sockets, DefaultSocketID)
+	key := DefaultSocketID
+	if gb.State.TimeExpired {
+		key = funcTimeExpired
+	}
+
+	nexts, ok := script.GetNexts(gb.Sockets, key)
 	if !ok {
 		return nil, false
 	}
@@ -112,49 +133,27 @@ func (gb *ExecutableFunctionBlock) Update(ctx c.Context) (interface{}, error) {
 	log := logger.GetLogger(ctx)
 
 	if gb.RunContext.UpdateData != nil {
-		var updateDataParams FunctionUpdateParams
-		updateDataUnmarshalErr := json.Unmarshal(gb.RunContext.UpdateData.Parameters, &updateDataParams)
+		var updateData FunctionUpdateParams
+		updateDataUnmarshalErr := json.Unmarshal(gb.RunContext.UpdateData.Parameters, &updateData)
 		if updateDataUnmarshalErr != nil {
 			return nil, updateDataUnmarshalErr
 		}
 
-		gb.changeCurrentState()
+		log.Info("update function action: " + gb.RunContext.UpdateData.Action)
 
-		if gb.State.HasResponse {
-			var expectedOutput map[string]script.ParamMetadata
-			outputUnmarshalErr := json.Unmarshal([]byte(gb.State.Function.Output), &expectedOutput)
-			if outputUnmarshalErr != nil {
-				return nil, outputUnmarshalErr
-			}
-
-			var resultOutput = make(map[string]interface{})
-
-			for k := range expectedOutput {
-				param, ok := updateDataParams.Mapping[k]
-				if !ok {
-					return nil, errors.New("function returned not all of expected results")
-				}
-
-				if err := utils.CheckVariableType(param, expectedOutput[k]); err != nil {
-					return nil, err
-				}
-
-				resultOutput[k] = param
-			}
-
-			if len(resultOutput) != len(expectedOutput) {
-				return nil, errors.New("function returned not all of expected results")
-			}
-
-			for k, v := range resultOutput {
-				gb.RunContext.VarStore.SetValue(gb.Output[k], v)
+		switch gb.RunContext.UpdateData.Action {
+		case string(entity.TaskUpdateActionFuncSLAExpired):
+			gb.State.TimeExpired = true
+		default:
+			if err := gb.setStateByResponse(&updateData); err != nil {
+				return nil, err
 			}
 		}
 	} else {
 		if gb.State.HasResponse {
 			return nil, nil
 		}
-		taskStep, errTask := gb.RunContext.Storage.GetTaskStepByName(ctx, gb.RunContext.TaskID, gb.Name)
+		taskStep, errTask := gb.RunContext.Services.Storage.GetTaskStepByName(ctx, gb.RunContext.TaskID, gb.Name)
 		if errTask != nil {
 			return nil, errTask
 		}
@@ -166,41 +165,41 @@ func (gb *ExecutableFunctionBlock) Update(ctx c.Context) (interface{}, error) {
 			}
 
 			// эта функция уже запускалась и время ожидания корректного ответа закончилось
-			if !isFirstStart && firstStart != nil && !isTimeToRetry(firstStart.Time, gb.State.WaitCorrectRes) {
-				em, errEmail := gb.RunContext.People.GetUserEmail(ctx, gb.RunContext.Initiator)
+			if !isFirstStart && firstStart != nil && !isTimeToWaitAnswer(firstStart.Time, gb.State.WaitCorrectRes) {
+				em, errEmail := gb.RunContext.Services.People.GetUserEmail(ctx, gb.RunContext.Initiator)
 				if errEmail != nil {
 					log.WithField("login", gb.RunContext.Initiator).Error(errEmail)
 				}
 
 				emails := []string{em}
 
-				tpl := mail.NewInvalidFunctionResp(gb.RunContext.WorkNumber, gb.RunContext.NotifName, gb.RunContext.Sender.SdAddress)
-				errSend := gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl)
+				tpl := mail.NewInvalidFunctionResp(
+					gb.RunContext.WorkNumber, gb.RunContext.NotifName, gb.RunContext.Services.Sender.SdAddress)
+				errSend := gb.RunContext.Services.Sender.SendNotification(ctx, emails, nil, tpl)
 				if errSend != nil {
 					log.WithField("emails", emails).Error(errSend)
 				}
 			}
 		}
 
-		variablesWithFullNames, err := getVariables(gb.RunContext.VarStore)
+		variables, err := getVariables(gb.RunContext.VarStore)
 		if err != nil {
 			return nil, err
 		}
 
-		variables := gb.deleteNodeNamesFromVariables(variablesWithFullNames)
+		variables = script.RestoreMapStructure(variables)
 
-		functionMapping, err := script.MapData(gb.State.Mapping, variables, nil, 1)
+		functionMapping, err := script.MapData(gb.State.Mapping, variables, nil)
 		if err != nil {
 			return nil, err
 		}
 
-		err = gb.fillMapWithConstants(functionMapping)
-		if err != nil {
+		if err = gb.fillMapWithConstants(functionMapping); err != nil {
 			return nil, err
 		}
 
 		if !gb.RunContext.skipProduce {
-			err = gb.RunContext.Kafka.Produce(ctx, kafka.RunnerOutMessage{
+			err = gb.RunContext.Services.Kafka.Produce(ctx, kafka.RunnerOutMessage{
 				TaskID:          taskStep.ID,
 				FunctionMapping: functionMapping,
 				Contracts:       gb.State.Contracts,
@@ -222,6 +221,17 @@ func (gb *ExecutableFunctionBlock) Update(ctx c.Context) (interface{}, error) {
 	}
 
 	gb.RunContext.VarStore.ReplaceState(gb.Name, stateBytes)
+
+	if gb.State.HasResponse || gb.State.TimeExpired {
+		if _, ok := gb.expectedEvents[eventEnd]; ok {
+			status, _ := gb.GetTaskHumanStatus()
+			event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, gb.Name, status, gb.GetStatus())
+			if eventErr != nil {
+				return nil, eventErr
+			}
+			gb.happenedEvents = append(gb.happenedEvents, event)
+		}
+	}
 
 	return nil, nil
 }
@@ -270,7 +280,9 @@ func (gb *ExecutableFunctionBlock) Model() script.FunctionModel {
 				Mapping: script.JSONSchemaProperties{},
 			},
 		},
-		Sockets: []script.Socket{script.DefaultSocket},
+		Sockets: []script.Socket{
+			script.FuncExecutedSocket,
+		},
 	}
 }
 
@@ -279,7 +291,8 @@ func (gb *ExecutableFunctionBlock) UpdateManual() bool {
 }
 
 // nolint:dupl // another block
-func createExecutableFunctionBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContext) (*ExecutableFunctionBlock, bool, error) {
+func createExecutableFunctionBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext,
+	expectedEvents map[string]struct{}) (*ExecutableFunctionBlock, bool, error) {
 	b := &ExecutableFunctionBlock{
 		Name:       name,
 		Title:      ef.Title,
@@ -287,19 +300,24 @@ func createExecutableFunctionBlock(name string, ef *entity.EriusFunc, runCtx *Bl
 		Output:     map[string]string{},
 		Sockets:    entity.ConvertSocket(ef.Sockets),
 		RunContext: runCtx,
+
+		expectedEvents: expectedEvents,
+		happenedEvents: make([]entity.NodeEvent, 0),
 	}
 
 	for _, v := range ef.Input {
 		b.Input[v.Name] = v.Global
 	}
 
-	for _, v := range ef.Output {
-		b.Output[v.Name] = v.Global
+	if ef.Output != nil {
+		for propertyName, v := range ef.Output.Properties {
+			b.Output[propertyName] = v.Global
+		}
 	}
 
 	rawState, blockExists := runCtx.VarStore.State[name]
 	reEntry := blockExists && runCtx.UpdateData == nil
-	if blockExists {
+	if blockExists && !reEntry {
 		if err := b.loadState(rawState); err != nil {
 			return nil, false, err
 		}
@@ -308,6 +326,15 @@ func createExecutableFunctionBlock(name string, ef *entity.EriusFunc, runCtx *Bl
 			return nil, false, err
 		}
 		b.RunContext.VarStore.AddStep(b.Name)
+
+		if _, ok := b.expectedEvents[eventStart]; ok {
+			status, _ := b.GetTaskHumanStatus()
+			event, err := runCtx.MakeNodeStartEvent(ctx, name, status, b.GetStatus())
+			if err != nil {
+				return nil, false, err
+			}
+			b.happenedEvents = append(b.happenedEvents, event)
+		}
 	}
 
 	return b, reEntry, nil
@@ -329,7 +356,7 @@ func (gb *ExecutableFunctionBlock) createState(ef *entity.EriusFunc) error {
 		return errors.Wrap(err, "invalid executable function parameters")
 	}
 
-	function, err := gb.RunContext.FunctionStore.GetFunction(c.Background(), params.Function.FunctionId)
+	function, err := gb.RunContext.Services.FunctionStore.GetFunction(c.Background(), params.Function.FunctionId)
 	if err != nil {
 		return err
 	}
@@ -350,27 +377,72 @@ func (gb *ExecutableFunctionBlock) createState(ef *entity.EriusFunc) error {
 		Contracts:      function.Contracts,
 		WaitCorrectRes: params.WaitCorrectRes,
 		Constants:      params.Constants,
+		CheckSLA:       params.CheckSLA,
+		SLA:            params.SLA,
+	}
+
+	if gb.State.CheckSLA {
+		_, err = gb.RunContext.Services.Scheduler.CreateTask(c.Background(), &scheduler.CreateTask{
+			WorkNumber:  gb.RunContext.WorkNumber,
+			WorkID:      gb.RunContext.TaskID.String(),
+			ActionName:  string(entity.TaskUpdateActionFuncSLAExpired),
+			StepName:    gb.Name,
+			WaitSeconds: gb.State.SLA,
+		})
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
 }
 
-func (gb *ExecutableFunctionBlock) changeCurrentState() {
+func (gb *ExecutableFunctionBlock) setStateByResponse(updateData *FunctionUpdateParams) error {
 	if gb.State.Async && !gb.State.HasAck {
 		gb.State.HasAck = true
-		return
+	} else {
+		gb.State.HasResponse = true
 	}
-	gb.State.HasResponse = true
+
+	if gb.State.HasResponse {
+		var expectedOutput map[string]script.ParamMetadata
+		outputUnmarshalErr := json.Unmarshal([]byte(gb.State.Function.Output), &expectedOutput)
+		if outputUnmarshalErr != nil {
+			return outputUnmarshalErr
+		}
+
+		var resultOutput = make(map[string]interface{})
+
+		for k := range expectedOutput {
+			param, ok := updateData.Mapping[k]
+			if !ok {
+				continue
+			}
+			// We're using pointer because we sometimes need to change type inside interface
+			// from float to integer (func simpleTypeHandler)
+			if err := utils.CheckVariableType(&param, expectedOutput[k]); err != nil {
+				return err
+			}
+
+			resultOutput[k] = param
+		}
+
+		for k, v := range resultOutput {
+			gb.RunContext.VarStore.SetValue(gb.Output[k], v)
+		}
+	}
+
+	return nil
 }
 
-func isTimeToRetry(createdAt time.Time, waitInDays int) bool {
-	return time.Now().After(createdAt.AddDate(0, 0, waitInDays))
+func isTimeToWaitAnswer(createdAt time.Time, waitInDays int) bool {
+	return time.Now().Before(createdAt.AddDate(0, 0, waitInDays))
 }
 
 func (gb *ExecutableFunctionBlock) isFirstStart(ctx c.Context, workId uuid.UUID, sName string) (bool, *entity.Step, error) {
 	countRunFunc := 0
 
-	steps, err := gb.RunContext.Storage.GetTaskSteps(ctx, workId)
+	steps, err := gb.RunContext.Services.Storage.GetTaskSteps(ctx, workId)
 	if err != nil {
 		return false, nil, err
 	}
@@ -391,15 +463,4 @@ func (gb *ExecutableFunctionBlock) isFirstStart(ctx c.Context, workId uuid.UUID,
 	}
 
 	return countRunFunc > 1, firstRun, nil
-}
-
-func (gb *ExecutableFunctionBlock) deleteNodeNamesFromVariables(variablesWithFullNames map[string]interface{}) map[string]interface{} {
-	variables := make(map[string]interface{}, len(variablesWithFullNames))
-	for name, variable := range variablesWithFullNames {
-		keyParts := strings.Split(name, ".")
-		nameWithoutNode := strings.Join(keyParts[1:], ".")
-		variables[nameWithoutNode] = variable
-	}
-
-	return variables
 }

@@ -24,6 +24,13 @@ type GoWaitForAllInputsBlock struct {
 	State *SyncData
 
 	RunContext *BlockRunContext
+
+	expectedEvents map[string]struct{}
+	happenedEvents []entity.NodeEvent
+}
+
+func (gb *GoWaitForAllInputsBlock) GetNewEvents() []entity.NodeEvent {
+	return gb.happenedEvents
 }
 
 func (gb *GoWaitForAllInputsBlock) Members() []Member {
@@ -45,8 +52,8 @@ func (gb *GoWaitForAllInputsBlock) GetStatus() Status {
 	return StatusRunning
 }
 
-func (gb *GoWaitForAllInputsBlock) GetTaskHumanStatus() TaskHumanStatus {
-	return StatusDone
+func (gb *GoWaitForAllInputsBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment string) {
+	return StatusDone, ""
 }
 
 func (gb *GoWaitForAllInputsBlock) Next(_ *store.VariableStore) ([]string, bool) {
@@ -62,8 +69,7 @@ func (gb *GoWaitForAllInputsBlock) GetState() interface{} {
 }
 
 func (gb *GoWaitForAllInputsBlock) Update(ctx context.Context) (interface{}, error) {
-	// TODO ???
-	executed, err := gb.RunContext.Storage.CheckTaskStepsExecuted(ctx, gb.RunContext.WorkNumber, gb.State.IncomingBlockIds)
+	executed, err := gb.RunContext.Services.Storage.ParallelIsFinished(ctx, gb.RunContext.WorkNumber, gb.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +78,8 @@ func (gb *GoWaitForAllInputsBlock) Update(ctx context.Context) (interface{}, err
 		return nil, nil
 	}
 
-	variableStorage, err := gb.RunContext.Storage.GetMergedVariableStorage(ctx, gb.RunContext.TaskID, gb.State.IncomingBlockIds)
+	variableStorage, err := gb.RunContext.Services.Storage.GetMergedVariableStorage(ctx, gb.RunContext.TaskID,
+		gb.State.IncomingBlockIds)
 	if err != nil {
 		return nil, err
 	}
@@ -85,6 +92,15 @@ func (gb *GoWaitForAllInputsBlock) Update(ctx context.Context) (interface{}, err
 		return nil, stateErr
 	}
 	gb.RunContext.VarStore.ReplaceState(gb.Name, state)
+
+	if _, ok := gb.expectedEvents[eventEnd]; ok {
+		status, _ := gb.GetTaskHumanStatus()
+		event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, gb.Name, status, gb.GetStatus())
+		if eventErr != nil {
+			return nil, eventErr
+		}
+		gb.happenedEvents = append(gb.happenedEvents, event)
+	}
 
 	return nil, nil
 }
@@ -102,7 +118,7 @@ func (gb *GoWaitForAllInputsBlock) Model() script.FunctionModel {
 
 //nolint:unparam // its ok
 func createGoWaitForAllInputsBlock(ctx context.Context, name string, ef *entity.EriusFunc,
-	runCtx *BlockRunContext) (*GoWaitForAllInputsBlock, bool, error) {
+	runCtx *BlockRunContext, expectedEvents map[string]struct{}) (*GoWaitForAllInputsBlock, bool, error) {
 	const reEntry = false
 
 	b := &GoWaitForAllInputsBlock{
@@ -112,14 +128,19 @@ func createGoWaitForAllInputsBlock(ctx context.Context, name string, ef *entity.
 		Output:     map[string]string{},
 		Sockets:    entity.ConvertSocket(ef.Sockets),
 		RunContext: runCtx,
+
+		expectedEvents: expectedEvents,
+		happenedEvents: make([]entity.NodeEvent, 0),
 	}
 
 	for _, v := range ef.Input {
 		b.Input[v.Name] = v.Global
 	}
 
-	for _, v := range ef.Output {
-		b.Output[v.Name] = v.Global
+	if ef.Output != nil {
+		for propertyName, v := range ef.Output.Properties {
+			b.Output[propertyName] = v.Global
+		}
 	}
 
 	rawState, ok := runCtx.VarStore.State[name]
@@ -132,6 +153,15 @@ func createGoWaitForAllInputsBlock(ctx context.Context, name string, ef *entity.
 			return nil, reEntry, err
 		}
 		b.RunContext.VarStore.AddStep(b.Name)
+
+		if _, ok := b.expectedEvents[eventStart]; ok {
+			status, _ := b.GetTaskHumanStatus()
+			event, err := runCtx.MakeNodeStartEvent(ctx, name, status, b.GetStatus())
+			if err != nil {
+				return nil, false, err
+			}
+			b.happenedEvents = append(b.happenedEvents, event)
+		}
 	}
 
 	return b, reEntry, nil
@@ -142,7 +172,7 @@ func (gb *GoWaitForAllInputsBlock) loadState(raw json.RawMessage) error {
 }
 
 func (gb *GoWaitForAllInputsBlock) createState(ctx context.Context) error {
-	steps, err := gb.RunContext.Storage.GetTaskStepsToWait(ctx, gb.RunContext.WorkNumber, gb.Name)
+	steps, err := gb.RunContext.Services.Storage.GetTaskStepsToWait(ctx, gb.RunContext.WorkNumber, gb.Name)
 	if err != nil {
 		return err
 	}

@@ -53,6 +53,35 @@ func (db *PGCon) Ping(ctx context.Context) error {
 	return errors.New("can't ping dn")
 }
 
+func (db *PGCon) Acquire(ctx context.Context) (Database, error) {
+	_, span := trace.StartSpan(ctx, "acquire_conn")
+	defer span.End()
+
+	if acConn, ok := db.Connection.(interface {
+		Acquire(ctx context.Context) (*pgxpool.Conn, error)
+	}); ok {
+		ac, err := acConn.Acquire(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return &PGCon{Connection: ac}, nil
+	}
+	return nil, errors.New("can't acquire connection")
+}
+
+func (db *PGCon) Release(ctx context.Context) error {
+	_, span := trace.StartSpan(ctx, "release_conn")
+	defer span.End()
+
+	if releaseConn, ok := db.Connection.(interface {
+		Release()
+	}); ok {
+		releaseConn.Release()
+		return nil
+	}
+	return errors.New("can't release connection")
+}
+
 func (db *PGCon) StartTransaction(ctx context.Context) (Database, error) {
 	_, span := trace.StartSpan(ctx, "start_transaction")
 	defer span.End()
@@ -493,6 +522,8 @@ func (db *PGCon) GetWorkedVersions(ctx context.Context) ([]entity.EriusScenario,
 		return nil, err
 	}
 
+	defer rows.Close()
+
 	pipes := make([]entity.EriusScenario, 0)
 
 	for rows.Next() {
@@ -741,7 +772,7 @@ func (db *PGCon) PipelineRemovable(c context.Context, id uuid.UUID) (bool, error
 }
 
 func (db *PGCon) CreatePipeline(c context.Context,
-	p *entity.EriusScenario, author string, pipelineData []byte) error {
+	p *entity.EriusScenario, author string, pipelineData []byte, oldVersionID uuid.UUID) error {
 	c, span := trace.StartSpan(c, "pg_create_pipeline")
 	defer span.End()
 
@@ -768,7 +799,7 @@ func (db *PGCon) CreatePipeline(c context.Context,
 		return err
 	}
 
-	return db.CreateVersion(c, p, author, pipelineData, uuid.Nil)
+	return db.CreateVersion(c, p, author, pipelineData, oldVersionID)
 }
 
 func (db *PGCon) CreateVersion(c context.Context,
@@ -845,7 +876,7 @@ func (db *PGCon) copyProcessSettingsFromOldVersion(c context.Context, newVersion
 
 	qCopyExternalSystems := `
 	INSERT INTO external_systems (id, version_id, system_id, input_schema, output_schema, input_mapping, output_mapping,
-                              microservice_id, ending_url, sending_method)
+                              microservice_id, ending_url, sending_method, allow_run_as_others)
 SELECT uuid_generate_v4(),
        $1,
        system_id,
@@ -855,7 +886,8 @@ SELECT uuid_generate_v4(),
        output_mapping,
        microservice_id,
        ending_url,
-       sending_method
+       sending_method,
+       allow_run_as_others
 FROM external_systems
 WHERE version_id = $2;
 	`
@@ -876,6 +908,20 @@ WHERE version_id = $2;
 	`
 
 	_, err = db.Connection.Exec(c, qCopyPrevSlaSettings, newVersionID, oldVersionID)
+	if err != nil {
+		return err
+	}
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	qCopyPrevTaskSubSettings := `
+INSERT INTO external_system_task_subscriptions (id, version_id, system_id, microservice_id, path, 
+                                                method, notification_schema, mapping, nodes)
+SELECT uuid_generate_v4(), $1, system_id, microservice_id, path, method, notification_schema, mapping, nodes 
+FROM external_system_task_subscriptions
+WHERE version_id = $2`
+
+	_, err = db.Connection.Exec(c, qCopyPrevTaskSubSettings, newVersionID, oldVersionID)
 	if err != nil {
 		return err
 	}
@@ -1544,7 +1590,7 @@ func (db *PGCon) RemovePipelineTags(c context.Context, id uuid.UUID) error {
 }
 
 func (db *PGCon) UpdateDraft(c context.Context,
-	p *entity.EriusScenario, pipelineData []byte) error {
+	p *entity.EriusScenario, pipelineData []byte, groups []*entity.NodeGroup) error {
 	c, span := trace.StartSpan(c, "pg_update_draft")
 	defer span.End()
 
@@ -1563,10 +1609,11 @@ func (db *PGCon) UpdateDraft(c context.Context,
 		content = $2, 
 		comment = $3,
 		is_actual = $4,
-		updated_at = $5
-	WHERE id = $6`
+		updated_at = $5,
+		node_groups = $6
+	WHERE id = $7`
 
-	_, err = tx.Exec(c, q, p.Status, pipelineData, p.Comment, p.Status == StatusApproved, time.Now(), p.VersionID)
+	_, err = tx.Exec(c, q, p.Status, pipelineData, p.Comment, p.Status == StatusApproved, time.Now(), groups, p.VersionID)
 	if err != nil {
 		return err
 	}
@@ -1584,6 +1631,27 @@ func (db *PGCon) UpdateDraft(c context.Context,
 	}
 
 	return tx.Commit(c)
+}
+
+func (db *PGCon) UpdateGroupsForEmptyVersions(c context.Context,
+	versionID string, groups []*entity.NodeGroup) error {
+	c, span := trace.StartSpan(c, "pg_update_groups_for_empty_versions")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	q := `
+	UPDATE versions 
+	SET 
+		node_groups = $1
+	WHERE id = $2`
+
+	_, err := db.Connection.Exec(c, q, groups, versionID)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uuid.UUID, time.Time, error) {
@@ -1621,7 +1689,7 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 	timestamp := time.Now()
 	// nolint:gocritic
 	// language=PostgreSQL
-	const query = `
+	query := `
 		INSERT INTO variable_storage (
 			id, 
 			work_id, 
@@ -1632,6 +1700,7 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 			break_points, 
 			has_error,
 			status
+			--update_col--
 		)
 		VALUES (
 			$1, 
@@ -1643,12 +1712,10 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 			$7,
 			$8,
 			$9
+			--update_val--
 		)
 `
-
-	_, err := db.Connection.Exec(
-		ctx,
-		query,
+	args := []interface{}{
 		id,
 		dto.WorkID,
 		dto.StepType,
@@ -1658,6 +1725,20 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 		dto.BreakPoints,
 		dto.HasError,
 		dto.Status,
+	}
+
+	if _, ok := map[string]struct{}{
+		"finished": {}, "no_success": {}, "error": {},
+	}[dto.Status]; ok {
+		args = append(args, timestamp)
+		query = strings.Replace(query, "--update_col--", ",updated_at", 1)
+		query = strings.Replace(query, "--update_val--", fmt.Sprintf(",$%d", len(args)), 1)
+	}
+
+	_, err := db.Connection.Exec(
+		ctx,
+		query,
+		args...,
 	)
 	if err != nil {
 		return NullUuid, time.Time{}, err
@@ -1706,12 +1787,14 @@ func (db *PGCon) UpdateStepContext(ctx context.Context, dto *UpdateStepRequest) 
 		return err
 	}
 
+	_, delSpan := trace.StartSpan(ctx, "pg_delete_block_members")
+	defer delSpan.End()
+
 	// nolint:gocritic
 	// language=PostgreSQL
 	const qMembersDelete = `
 		DELETE FROM members 
-		WHERE block_id = $1
-`
+		WHERE block_id = $1`
 	_, err = db.Connection.Exec(
 		ctx,
 		qMembersDelete,
@@ -1735,6 +1818,9 @@ func (db *PGCon) UpdateStepContext(ctx context.Context, dto *UpdateStepRequest) 
 }
 
 func (db *PGCon) insertIntoMembers(ctx context.Context, members []DbMember, id uuid.UUID) error {
+	_, span := trace.StartSpan(ctx, "pg_insert_into_members")
+	defer span.End()
+
 	// nolint:gocritic
 	// language=PostgreSQL
 	const queryMembers = `
@@ -1742,22 +1828,34 @@ func (db *PGCon) insertIntoMembers(ctx context.Context, members []DbMember, id u
 			id,
 			block_id,
 			login,
-			finished,
-			actions
+			actions,
+		    params,
+		    is_acted,
+		    execution_group_member
 		)
 		VALUES (
 			$1, 
 			$2, 
 			$3, 
 			$4, 
-			$5
+			$5,
+		    $6,
+		    $7
 		)
 `
 	for _, val := range members {
 		membersId := uuid.New()
 		actions := make(pq.StringArray, 0, len(val.Actions))
+		params := make(map[string]map[string]interface{})
 		for _, act := range val.Actions {
 			actions = append(actions, act.Id+":"+act.Type)
+			if len(act.Params) != 0 {
+				params[act.Id] = act.Params
+			}
+		}
+		paramsData, mErr := json.Marshal(params)
+		if mErr != nil {
+			return mErr
 		}
 		_, err := db.Connection.Exec(
 			ctx,
@@ -1765,8 +1863,10 @@ func (db *PGCon) insertIntoMembers(ctx context.Context, members []DbMember, id u
 			membersId,
 			id,
 			val.Login,
-			val.Finished,
 			actions,
+			paramsData,
+			val.IsActed,
+			val.ExecutionGroupMember,
 		)
 		if err != nil {
 			return err
@@ -1776,6 +1876,9 @@ func (db *PGCon) insertIntoMembers(ctx context.Context, members []DbMember, id u
 }
 
 func (db *PGCon) insertIntoDeadlines(ctx context.Context, deadlines []DbDeadline, id uuid.UUID) error {
+	_, span := trace.StartSpan(ctx, "pg_create_block_deadlines")
+	defer span.End()
+
 	// nolint:gocritic
 	// language=PostgreSQL
 	const queryDeadlines = `
@@ -1810,6 +1913,9 @@ func (db *PGCon) insertIntoDeadlines(ctx context.Context, deadlines []DbDeadline
 }
 
 func (db *PGCon) deleteDeadlines(ctx context.Context, id uuid.UUID) error {
+	_, span := trace.StartSpan(ctx, "pg_delete_block_deadlines")
+	defer span.End()
+
 	// nolint:gocritic
 	// language=PostgreSQL
 	const queryDeadlines = `
@@ -1867,6 +1973,8 @@ func (db *PGCon) GetExecutableScenarios(c context.Context) ([]entity.EriusScenar
 	if err != nil {
 		return nil, err
 	}
+
+	defer rows.Close()
 
 	pipes := make([]entity.EriusScenario, 0)
 
@@ -1986,7 +2094,7 @@ func (db *PGCon) GetExecutableByName(c context.Context, name string) (*entity.Er
 }
 
 func (db *PGCon) GetUnfinishedTaskStepsByWorkIdAndStepType(ctx context.Context, id uuid.UUID, stepType string,
-	action entity.TaskUpdateAction) (entity.TaskSteps, error) {
+	in *entity.TaskUpdate) (entity.TaskSteps, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_unfinished_task_steps_by_work_id_and_step_type")
 	defer span.End()
 
@@ -1997,7 +2105,7 @@ func (db *PGCon) GetUnfinishedTaskStepsByWorkIdAndStepType(ctx context.Context, 
 	isAddInfoReq := slices.Contains([]entity.TaskUpdateAction{
 		entity.TaskUpdateActionRequestApproveInfo,
 		entity.TaskUpdateActionSLABreachRequestAddInfo,
-		entity.TaskUpdateActionDayBeforeSLARequestAddInfo}, action)
+		entity.TaskUpdateActionDayBeforeSLARequestAddInfo}, in.Action)
 
 	// nolint:gocritic,goconst
 	if stepType == "form" {
@@ -2008,9 +2116,21 @@ func (db *PGCon) GetUnfinishedTaskStepsByWorkIdAndStepType(ctx context.Context, 
 		notInStatuses = []string{"skipped", "finished"}
 	}
 
+	args := []interface{}{
+		id,
+		stepType,
+		notInStatuses,
+	}
+
+	var stepNamesQ string
+	if len(in.StepNames) > 0 {
+		stepNamesQ = "vs.step_name = ANY($4) AND"
+		args = append(args, in.StepNames)
+	}
+
 	// nolint:gocritic
 	// language=PostgreSQL
-	q := `
+	q := fmt.Sprintf(`
 	SELECT 
 	    vs.id,
 	    vs.step_type,
@@ -2025,10 +2145,11 @@ func (db *PGCon) GetUnfinishedTaskStepsByWorkIdAndStepType(ctx context.Context, 
 	    work_id = $1 AND 
 	    step_type = $2 AND 
 	    NOT status = ANY($3) AND 
+		%s
 	    vs.time = (SELECT max(time) FROM variable_storage WHERE work_id = $1 AND step_name = vs.step_name)
-	    ORDER BY vs.time ASC`
+	    ORDER BY vs.time ASC`, stepNamesQ)
 
-	rows, err := db.Connection.Query(ctx, q, id, stepType, notInStatuses)
+	rows, err := db.Connection.Query(ctx, q, args...)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil
@@ -2093,6 +2214,9 @@ WHERE value ? $2`
 	if err != nil {
 		return nil, err
 	}
+
+	defer rows.Close()
+
 	for rows.Next() {
 		var b string
 		if scanErr := rows.Scan(&b); scanErr != nil {
@@ -2106,25 +2230,66 @@ WHERE value ? $2`
 	return blocks, nil
 }
 
-func (db *PGCon) CheckTaskStepsExecuted(ctx context.Context, workNumber string, blocks []string) (bool, error) {
-	ctx, span := trace.StartSpan(ctx, "pg_check_task_steps_executed")
+func (db *PGCon) ParallelIsFinished(ctx context.Context, workNumber, blockName string) (bool, error) {
+	ctx, span := trace.StartSpan(ctx, "pg_parallel_is_finished")
 	defer span.End()
 
 	// nolint:gocritic
 	// language=PostgreSQL
-	q := `
-	SELECT count(*)
-	FROM variable_storage vs 
-	WHERE vs.work_id = (
-	    SELECT id FROM works WHERE work_number = $1 AND child_id IS NULL
-	) AND vs.step_name = ANY($2) AND vs.status IN ('finished', 'no_success') `
-	// TODO: rewrite to handle edits ?
+	const q = `with recursive all_nodes as(
+		select distinct key(jsonb_each(v.content #> '{pipeline,blocks}'))::text out_node,
+			jsonb_array_elements_text(value(jsonb_each(value(jsonb_each(v.content #> '{pipeline,blocks}'))->'next'))) as in_node
+		from works w
+		inner join versions v on w.version_id=v.id
+		where w.work_number=$1
+	),
+	inside_gates_nodes as(
+	   select in_node,
+			  out_node,
+			  1 as level,
+			  Array[in_node] as circle_check
+	   from all_nodes
+	   where in_node=$2
+	   union all
+	   select a.in_node,
+			  a.out_node,
+			  case when a.out_node like 'wait_for_all_inputs%' then ign.level+1
+				   when a.out_node like 'begin_parallel_task%' then ign.level-1
+				   else ign.level end as level,
+			  array_append(ign.circle_check, a.in_node)
+	   from all_nodes a
+				inner join inside_gates_nodes ign on a.in_node=ign.out_node
+	   where array_position(circle_check,a.out_node) is null and
+			   a.in_node not like 'begin_parallel_task%' and ign.level!=0)
+	select
+    (
+        select case when count(*)=0 then true else false end
+        from variable_storage vs
+                 inner join works w on vs.work_id = w.id
+                 inner join inside_gates_nodes ign on vs.step_name=ign.out_node
+        where w.work_number=$1 and w.child_id is null and vs.status in('running', 'idle', 'ready')
+    ) as is_finished,
+    (
+        select case when count(distinct vs.step_name) = 
+			(select count(distinct inside_gates_nodes.in_node) 
+				from inside_gates_nodes 
+			where out_node like 'begin_parallel_task_%')
+        then true else false end
+    	from variable_storage vs
+                 inner join works w on vs.work_id = w.id
+                 inner join inside_gates_nodes ign on vs.step_name=ign.in_node
+        where w.work_number=$1 and w.child_id is null and ign.out_node like 'begin_parallel_task_%'
+	) as created_all_branches`
 
-	var c int
-	if scanErr := db.Connection.QueryRow(ctx, q, workNumber, blocks).Scan(&c); scanErr != nil {
-		return false, scanErr
+	var parallelIsFinished bool
+	var createdAllBranches bool
+	row := db.Connection.QueryRow(ctx, q, workNumber, blockName)
+
+	if err := row.Scan(&parallelIsFinished, &createdAllBranches); err != nil {
+		return false, err
 	}
-	return c == len(blocks), nil
+
+	return parallelIsFinished && createdAllBranches, nil
 }
 
 func (db *PGCon) GetTaskStepById(ctx context.Context, id uuid.UUID) (*entity.Step, error) {
@@ -2242,6 +2407,40 @@ func (db *PGCon) GetParentTaskStepByName(ctx context.Context,
 	s.Storage = storage.Values
 
 	return &s, nil
+}
+
+func (db *PGCon) GetCanceledTaskSteps(ctx context.Context, taskID uuid.UUID) ([]entity.Step, error) {
+	ctx, span := trace.StartSpan(ctx, "pg_get_cancelled_task_steps")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	const query = `
+		SELECT
+			vs.step_name, 
+			vs.time
+		FROM variable_storage vs  
+			WHERE vs.work_id = $1 AND vs.status = 'cancel'`
+
+	rows, err := db.Connection.Query(ctx, query, taskID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	res := make([]entity.Step, 0)
+	for rows.Next() {
+		s := entity.Step{}
+		if scanErr := rows.Scan(&s.Name, &s.Time); scanErr != nil {
+			return nil, scanErr
+		}
+		res = append(res, s)
+	}
+
+	if rows.Err() != nil {
+		return nil, rows.Err()
+	}
+	return res, nil
 }
 
 //nolint:dupl //its not duplicate
@@ -2528,7 +2727,8 @@ func (db *PGCon) CheckUserCanEditForm(ctx context.Context, workNumber, stepName,
     from variable_storage
     where ((step_type = 'approver' and content -> 'State' -> step_name -> 'approvers' ? $3)
         or (step_type = 'execution' and content -> 'State' -> step_name -> 'executors' ? $3)
-        or (step_type = 'form' and content -> 'State' -> step_name -> 'executors' ? $3))
+        or (step_type = 'form' and content -> 'State' -> step_name -> 'executors' ? $3)
+		or (step_type = 'sign' and content -> 'State' -> step_name -> 'signers' ? $3))
       and work_id = (SELECT id
                      FROM works
                      WHERE work_number = $1
@@ -2580,6 +2780,10 @@ func (db *PGCon) GetBlockDataFromVersion(ctx context.Context, workNumber, blockN
 
 	if scanErr := db.Connection.QueryRow(ctx, q, blockName, workNumber).Scan(&f); scanErr != nil {
 		return nil, scanErr
+	}
+
+	if f == nil {
+		return nil, errors.New("couldn't find block data")
 	}
 	return f, nil
 }
@@ -2883,6 +3087,84 @@ func (db *PGCon) GetExternalSystemsIDs(ctx context.Context, versionID string) ([
 	return systemIDs, nil
 }
 
+func (db *PGCon) GetTaskEventsParamsByWorkNumber(ctx context.Context, workNumber,
+	systemID string) (entity.ExternalSystemSubscriptionParams, error) {
+	ctx, span := trace.StartSpan(ctx, "pg_get_task_events_params_by_work_number")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	query := `
+	SELECT system_id, microservice_id, path,
+	method, notification_schema, mapping, nodes
+	FROM external_system_task_subscriptions
+	WHERE version_id = (SELECT version_id FROM works WHERE work_number = $1 limit 1) AND system_id = $2`
+
+	row := db.Connection.QueryRow(ctx, query, workNumber, systemID)
+
+	params := entity.ExternalSystemSubscriptionParams{
+		NotificationSchema: script.JSONSchema{},
+		Mapping:            script.JSONSchemaProperties{},
+		Nodes:              make([]entity.NodeSubscriptionEvents, 0),
+	}
+	err := row.Scan(
+		&params.SystemID,
+		&params.MicroserviceID,
+		&params.Path,
+		&params.Method,
+		&params.NotificationSchema,
+		&params.Mapping,
+		&params.Nodes,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return entity.ExternalSystemSubscriptionParams{}, nil
+		}
+		return params, err
+	}
+
+	return params, nil
+}
+
+func (db *PGCon) GetExternalSystemTaskSubscriptions(ctx context.Context, versionID,
+	systemID string) (entity.ExternalSystemSubscriptionParams, error) {
+	ctx, span := trace.StartSpan(ctx, "pg_get_external_system_task_subscriptions")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	query := `
+	SELECT system_id, microservice_id, path,
+	method, notification_schema, mapping, nodes
+	FROM external_system_task_subscriptions
+	WHERE version_id = $1 AND system_id = $2`
+
+	row := db.Connection.QueryRow(ctx, query, versionID, systemID)
+
+	params := entity.ExternalSystemSubscriptionParams{
+		NotificationSchema: script.JSONSchema{},
+		Mapping:            script.JSONSchemaProperties{},
+		Nodes:              make([]entity.NodeSubscriptionEvents, 0),
+	}
+	err := row.Scan(
+		&params.SystemID,
+		&params.MicroserviceID,
+		&params.Path,
+		&params.Method,
+		&params.NotificationSchema,
+		&params.Mapping,
+		&params.Nodes,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return entity.ExternalSystemSubscriptionParams{}, nil
+		}
+		return params, err
+	}
+
+	return params, nil
+}
+
 func (db *PGCon) GetExternalSystemSettings(ctx context.Context, versionID, systemID string) (entity.ExternalSystem, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_external_system_settings")
 	defer span.End()
@@ -2891,7 +3173,7 @@ func (db *PGCon) GetExternalSystemSettings(ctx context.Context, versionID, syste
 	// language=PostgreSQL
 	query := `
 	SELECT input_schema, output_schema, input_mapping, output_mapping,
-	microservice_id, ending_url, sending_method
+	microservice_id, ending_url, sending_method, allow_run_as_others
 	FROM external_systems
 	WHERE version_id = $1 AND system_id = $2`
 
@@ -2906,12 +3188,33 @@ func (db *PGCon) GetExternalSystemSettings(ctx context.Context, versionID, syste
 		&externalSystemSettings.OutputSettings.MicroserviceId,
 		&externalSystemSettings.OutputSettings.URL,
 		&externalSystemSettings.OutputSettings.Method,
+		&externalSystemSettings.AllowRunAsOthers,
 	)
 	if err != nil {
 		return externalSystemSettings, err
 	}
 
 	return externalSystemSettings, nil
+}
+
+func (db *PGCon) SaveExternalSystemSubscriptionParams(ctx context.Context, versionID string,
+	params *entity.ExternalSystemSubscriptionParams) error {
+	ctx, span := trace.StartSpan(ctx, "pg_save_external_system_subscription_params")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	q := `INSERT INTO external_system_task_subscriptions 
+    (id, version_id, system_id, microservice_id, path, method, notification_schema, mapping, nodes) 
+    values 
+    ($1, $2, $3, $4, $5, $6, $7, $8, $9)`
+
+	_, err := db.Connection.Exec(ctx, q, uuid.New().String(), versionID, params.SystemID, params.MicroserviceID,
+		params.Path, params.Method, params.NotificationSchema, params.Mapping, params.Nodes)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (db *PGCon) SaveExternalSystemSettings(
@@ -2956,6 +3259,27 @@ func (db *PGCon) SaveExternalSystemSettings(
 
 	if commandTag.RowsAffected() == 0 {
 		return errCantFindExternalSystem
+	}
+
+	return nil
+}
+
+func (db *PGCon) RemoveExternalSystemTaskSubscriptions(ctx context.Context, versionID, systemID string) error {
+	ctx, span := trace.StartSpan(ctx, "pg_remove_external_system_task_subscriptions")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	query := `DELETE FROM external_system_task_subscriptions WHERE version_id = $1`
+	args := []interface{}{versionID}
+	if systemID != "" {
+		query += " AND system_id = $2"
+		args = append(args, systemID)
+	}
+
+	_, err := db.Connection.Exec(ctx, query, args...)
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -3094,6 +3418,29 @@ func (db *PGCon) UpdateEndingSystemSettings(ctx context.Context, versionID, syst
 	_, err = db.Connection.Exec(ctx, query, s.MicroserviceId, s.URL, s.Method, versionID, systemID)
 	if err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func (db *PGCon) AllowRunAsOthers(ctx context.Context, versionID, systemID string, allowRunAsOthers bool) (err error) {
+	ctx, span := trace.StartSpan(ctx, "pg_allow_run_as_others")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	query := `
+	UPDATE external_systems
+	SET allow_run_as_others = $1
+	WHERE version_id = $2 AND system_id = $3`
+
+	commandTag, err := db.Connection.Exec(ctx, query, allowRunAsOthers, versionID, systemID)
+	if err != nil {
+		return err
+	}
+
+	if commandTag.RowsAffected() == 0 {
+		return errCantFindExternalSystem
 	}
 
 	return nil

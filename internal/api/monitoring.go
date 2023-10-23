@@ -215,7 +215,7 @@ func (ae *APIEnv) GetMonitoringTask(w http.ResponseWriter, req *http.Request, wo
 
 func getMonitoringStatus(status string) MonitoringHistoryStatus {
 	switch status {
-	case "cancel", "finished", "no_success", "revoke":
+	case "cancel", "finished", "no_success", "revoke", "error":
 		return MonitoringHistoryStatusFinished
 	default:
 		return MonitoringHistoryStatusRunning
@@ -292,6 +292,47 @@ func (ae *APIEnv) GetMonitoringTasksBlockBlockIdParams(w http.ResponseWriter, re
 		FinishedAt: &finishedAt,
 		Inputs:     &MonitoringParamsResponse_Inputs{AdditionalProperties: inputs},
 		Outputs:    &MonitoringParamsResponse_Outputs{AdditionalProperties: outputs},
+	}); err != nil {
+		e := UnknownError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+		return
+	}
+}
+
+func (ae *APIEnv) GetBlockState(w http.ResponseWriter, r *http.Request, blockId string) {
+	ctx, span := trace.StartSpan(r.Context(), "start get block state")
+	defer span.End()
+
+	log := logger.GetLogger(ctx)
+
+	id, err := uuid.Parse(blockId)
+	if err != nil {
+		e := UnknownError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+		return
+	}
+
+	state, err := ae.DB.GetBlockState(ctx, id.String())
+	if err != nil {
+		e := GetBlockStateError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+		return
+	}
+
+	params := make(map[string]MonitoringBlockState, len(state))
+	for _, bo := range state {
+		params[bo.Name] = MonitoringBlockState{
+			Name:  bo.Name,
+			Value: bo.Value,
+			Type:  utils.GetJsonType(bo.Value),
+		}
+	}
+
+	if err = sendResponse(w, http.StatusOK, BlockStateResponse{
+		State: &BlockStateResponse_State{params},
 	}); err != nil {
 		e := UnknownError
 		log.Error(e.errorMessage(err))

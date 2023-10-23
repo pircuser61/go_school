@@ -925,6 +925,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
+
   /pipelines/version/{versionID}/settings:
     get:
       tags:
@@ -1006,6 +1007,61 @@ paths:
           content:
             application/json:
               schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ExternalSystem'
+                  status_code:
+                    type: integer
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+
+  /pipelines/version/{versionID}/settings/task-subscriptions:
+    post:
+      tags:
+        - pipeline
+        - process_settings
+      summary: Save process task subscription settings
+      description: Сохранить основные настройки процесса
+      operationId: save-version-task-subscription-settings
+      parameters:
+        - name: versionID
+          in: path
+          description: Version ID
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: Modified Task Subscription Settings
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/ExternalSystemSubscriptionParams'
+        required: true
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
                 $ref: '#/components/schemas/httpResponse'
         400:
           description: Bad Request
@@ -1025,6 +1081,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
+
   /pipeline/version/{versionID}/settings/main:
     post:
       tags:
@@ -1072,6 +1129,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
+
   /pipelines/version/{versionID}/system:
     post:
       tags:
@@ -1253,6 +1311,61 @@ paths:
           required: true
           schema:
             type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpResponse'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+  /pipelines/version/{versionID}/system/{systemID}/runAsOthers:
+    post:
+      tags:
+        - pipeline
+        - process_settings
+      summary: Allow the system to launch requests from a 3rd party
+      description: Разрешить системе запуск заявок от третьего лица
+      operationId: allow-run-as-others
+      parameters:
+        - name: versionID
+          in: path
+          description: Version ID
+          required: true
+          schema:
+            type: string
+            format: uuid
+            example: 916ad995-8d13-49fb-82ee-edd4f97649e2
+        - name: systemID
+          in: path
+          description: system ID
+          required: true
+          schema:
+            type: string
+            format: uuid
+            example: 916ad995-8d13-49fb-82ee-edd4f97649e2
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AllowRunAsOthers'
       responses:
         200:
           description: OK
@@ -1854,6 +1967,20 @@ paths:
           in: query
           schema:
             type: string
+            enum:
+              - approver
+              - finished_approver
+              - executor
+              - finished_executor
+              - form_executor
+              - finished_form_executor
+              - signer_phys
+              - finished_signer_phys
+              - signer_jur
+              - finished_signer_jur
+              - initiators
+              - group_executor
+              - finished_group_executor
         - name: forCarousel
           in: query
           schema:
@@ -1896,7 +2023,25 @@ paths:
             type: array
             items:
               type: string
-          description: filter in process by groups ids
+          description: filter in process by group ids
+        - name: processedLogins
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+          description: filter by processed logins
+        - name: processedGroupIds
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+          description: filter by processed group ids
+        - name: selectFor
+          in: query
+          schema:
+            type: string
         - name: executorTypeAssigned
           in: query
           schema:
@@ -1905,6 +2050,15 @@ paths:
               - assigned_to_me
               - assigned_by_me
           description: filter type assigned
+        - name: signatureCarrier
+          in: query
+          schema:
+            type: string
+            enum:
+              - cloud
+              - token
+              - all
+          description: signature carrier (used for selectAs = signer_jur)
       responses:
         200:
           description: OK
@@ -2387,6 +2541,40 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
+
+  /dictionaries/schema/task-event:
+    get:
+      tags:
+        - dictionaries
+      summary: Get task event json schema
+      description: Получить типовую json schem'у для ивентов нод
+      operationId: get-task-event-schema
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/JSONSchema'
+                  status_code:
+                    type: integer
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+
+
   /dictionaries/approve-action-names:
     get:
       tags:
@@ -2462,6 +2650,46 @@ paths:
               schema:
                 $ref: '#/components/schemas/httpError'
 
+  /dictionaries/get-node-decisions:
+    get:
+      tags:
+        - dictionaries
+      summary: Get list of node decisions
+      description: Получить список всех решений нод
+      operationId: get-node-decisions
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/NodeDecision'
+                  status_code:
+                    type: integer
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+
   /monitoring/tasks/block/{blockId}/context:
     get:
       operationId: GetBlockContext
@@ -2486,6 +2714,52 @@ paths:
                 properties:
                   data:
                     $ref: '#/components/schemas/BlockContextResponse'
+                  status_code:
+                    type: integer
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+      x-codegen-request-body-name: variables
+
+  /monitoring/tasks/block/{blockId}/state:
+    get:
+      operationId: GetBlockState
+      tags:
+        - monitoring
+      summary: Получение стейта блока
+      description: Получение стейта блока
+      parameters:
+        - name: blockId
+          in: path
+          description: block ID
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/BlockStateResponse'
                   status_code:
                     type: integer
         400:
@@ -2623,6 +2897,7 @@ paths:
                 - "В работе"
                 - "Завершен"
                 - "Остановлен"
+                - "Отменен"
               description: Статус заявки
       responses:
         200:
@@ -2749,11 +3024,14 @@ components:
           type: integer
         form_execute:
           type: integer
+        sign:
+          type: integer
       required:
         - active
         - approve
         - execute
         - form_execute
+        - sign
 
     DebugResult:
       type: object
@@ -2796,9 +3074,7 @@ components:
           items:
             $ref: '#/components/schemas/Socket'
         output:
-          type: array
-          items:
-            $ref: '#/components/schemas/EriusFunctionValue'
+          $ref: '#/components/schemas/JSONSchema'
         param_type:
           type: string
         params:
@@ -2953,20 +3229,85 @@ components:
       items:
         $ref: '#/components/schemas/EriusVersionInfo'
 
+    NodeEvent:
+      type: string
+      description: Возможный ивент ноды
+      enum: [ "start", "end" ]
+
+    NodeSubscriptionEvents:
+      type: object
+      properties:
+        node_id:
+          type: string
+          description: ID ноды в процессе
+        notify:
+          type: boolean
+          description: Нужно ли уведомлять о событиях по ноде
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/NodeEvent'
+      required:
+        - node_id
+        - notify
+
+    ExternalSystemSubscriptionParams:
+      type: object
+      description: Настройки подписки системы на изменения в заявках
+      properties:
+        system_id:
+          type: string
+          format: uuid
+          description: ID системы
+        microservice_id:
+          type: string
+          format: uuid
+          description: ID микросервиса
+        path:
+          type: string
+          description: Путь, по которому надо присылать ивенты
+        method:
+          type: string
+          description: Какой http метод использовать
+          enum: [ "POST" ]
+        notification_schema:
+          $ref: '#/components/schemas/JSONSchema'
+        mapping:
+          $ref: '#/components/schemas/JSONSchemaProperties'
+        nodes:
+          type: array
+          description: Ноды и ивенты, на которые нужна подписка
+          items:
+            $ref: '#/components/schemas/NodeSubscriptionEvents'
+      required:
+        - system_id
+        - microservice_id
+        - path
+        - method
+        - notification_schema
+        - mapping
+        - nodes
+
     ProcessSettingsWithExternalSystems:
       type: object
       description: Настройки старта версии пайплайна(процесса)
       properties:
+        process_settings:
+          $ref: '#/components/schemas/ProcessSettings'
         external_systems:
           type: array
           items:
             $ref: '#/components/schemas/ExternalSystem'
           description: Внешние системы, которые используют данный пайплайн
-        process_settings:
-          $ref: '#/components/schemas/ProcessSettings'
+        tasks_subscriptions:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExternalSystemSubscriptionParams'
+          description: Подписки систем на изменения в заявках, заведенных по процессу
       required:
-        - external_systems
         - process_settings
+        - external_systems
+        - tasks_subscriptions
 
     ProcessSettings:
       type: object
@@ -3021,6 +3362,8 @@ components:
           $ref: '#/components/schemas/JSONSchema'
         output_settings:
           $ref: '#/components/schemas/EndSystemSettings'
+        allow_run_as_others:
+          $ref: '#/components/schemas/AllowRunAsOthers'
       required:
         - system_id
         - name
@@ -3117,6 +3460,7 @@ components:
         - approve-view
         - approve-inform
         - approve-sign
+        - approve-sign_ukep
         - approve-confirm
         - processing
         - executor-reject
@@ -3144,6 +3488,8 @@ components:
           type: string
         human_status:
           $ref: '#/components/schemas/taskHumanStatus'
+        human_status_comment:
+          type: string
         id:
           type: string
         last_changed_at:
@@ -3171,6 +3517,10 @@ components:
           type: integer
         attachments_count:
           type: integer
+        node_group:
+          type: array
+          items:
+              $ref: '#/components/schemas/NodeGroup'
       required:
         - id
         - version_id
@@ -3186,6 +3536,23 @@ components:
         - steps
         - work_number
         - blueprint_id
+
+    NodeGroup:
+      type: object
+      properties:
+        nodes:
+          type: array
+          items:
+            $ref: '#/components/schemas/NodeGroup'
+        start_node:
+          type: string
+        end_node:
+          type: string
+        prev:
+          type: string
+      required:
+        - start_node
+        - end_node
 
     EriusTasks:
       type: object
@@ -3320,7 +3687,7 @@ components:
         attachments:
           type: array
           items:
-            type: string
+            $ref: '#/components/schemas/Attachment'
       required:
         - comment
         - attachments
@@ -3417,6 +3784,13 @@ components:
             - executor_send_edit_app
             - add_approvers
             - form_executor_start_work
+            - sign
+            - sign_change_work_status
+        step_names:
+          type: array
+          description: Array of step names
+          items:
+            type: string
         parameters:
           type: object
           description: Task update params
@@ -3430,9 +3804,12 @@ components:
             - $ref: '#/components/schemas/FillFormUpdateParams'
             - $ref: '#/components/schemas/AddApproversParams'
             - $ref: '#/components/schemas/CancelAppParams'
+            - $ref: '#/components/schemas/SignUpdateParams'
+            - $ref: '#/components/schemas/ChangeWorkStatusParams'
       required:
         - action
         - parameters
+        - step_names
 
     TaskMeanSolveTime:
       type: object
@@ -3511,11 +3888,27 @@ components:
         attachments:
           type: array
           items:
-            type: string
+            $ref: '#/components/schemas/Attachment'
       required:
         - decision
         - comment
         - attachments
+
+    SignUpdateParams:
+      type: object
+      description: Sign update params
+      properties:
+        decision:
+          $ref: '#/components/schemas/signDecision'
+        comment:
+          type: string
+          description: Comment from signer
+        attachments:
+          type: array
+          items:
+            $ref: '#/components/schemas/Attachment'
+      required:
+        - decision
 
     AdditionalApproverUpdateParams:
       type: object
@@ -3529,7 +3922,7 @@ components:
         attachments:
           type: array
           items:
-            type: string
+            $ref: '#/components/schemas/Attachment'
       required:
         - decision
         - comment
@@ -3547,7 +3940,7 @@ components:
         attachments:
           type: array
           items:
-            type: string
+            $ref: '#/components/schemas/Attachment'
       required:
         - decision
         - comment
@@ -3568,7 +3961,7 @@ components:
         attachments:
           type: array
           items:
-            type: string
+            $ref: '#/components/schemas/Attachment'
       required:
         - additionalApprovers
         - question
@@ -3582,6 +3975,30 @@ components:
       required:
         - comment
 
+    ChangeWorkStatusParams:
+      type: object
+      description: Sign update params
+      properties:
+        status:
+            type: string
+            enum:
+              - start
+              - end
+      required:
+        - status
+
+    signDecision:
+      type: string
+      enum:
+        - signed
+        - rejected
+        - error
+      description: >
+        Approver decision:
+         * signed - Согласовано
+         * rejected - Отклонено
+         * error - Произошла ошибка
+
     approverDecision:
       type: string
       enum:
@@ -3591,6 +4008,7 @@ components:
         - informed
         - sign
         - confirm
+        - sign_ukep
       description: >
         Approver decision:
          * approve - Согласовать
@@ -3599,6 +4017,7 @@ components:
          * informed - Проинформирован
          * sign - Подписать
          * confirm - Утвердить
+         * sign_ukep - Подписать УКЭП
 
     additionalApproverDecision:
       type: string
@@ -3634,7 +4053,7 @@ components:
         attachments:
           type: array
           items:
-            type: string
+            $ref: '#/components/schemas/Attachment'
       required:
         - newExecutorLogin
         - comment
@@ -3655,7 +4074,7 @@ components:
         attachments:
           type: array
           items:
-            type: string
+            $ref: '#/components/schemas/Attachment'
       required:
         - reqType
         - comment
@@ -3680,12 +4099,21 @@ components:
         constants:
           type: object
           description: Constant values for function parameters (key of object is variable name)
+        check_sla:
+          type: boolean
+          description: Is active SLA
+        sla:
+          type: integer
+          description: in seconds
+          minimum: 1
       required:
         - name
         - version
         - mapping
         - waitCorrectRes
         - constants
+        - check_sla
+        - sla
 
     JSONSchema:
       type: object
@@ -3735,6 +4163,9 @@ components:
           type:
             type: string
             description: Type of param
+          global:
+            type: string
+            description: Format of param
           format:
             type: string
             description: Format of param
@@ -3771,6 +4202,8 @@ components:
         type:
           type: string
           description: Тип элементов массива
+        format:
+          type: string
         properties:
           $ref: '#/components/schemas/JSONSchemaProperties'
         items:
@@ -3794,6 +4227,10 @@ components:
         - microservice_id
         - URL
         - method
+
+    AllowRunAsOthers:
+      type: boolean
+      description: Разрешить системе запуск заявки от третьего лица
 
     RequestExecutionInfoType:
       type: string
@@ -3913,7 +4350,7 @@ components:
         attachment_fields:
           type: array
           items:
-            type: string
+            $ref: '#/components/schemas/Attachment'
     RunNewVersionByPrevVersionRequest:
       required: [ work_number,description,application_body,keys,attachment_fields ]
       type: object
@@ -3932,7 +4369,7 @@ components:
         attachment_fields:
           type: array
           items:
-            type: string
+            $ref: '#/components/schemas/Attachment'
     eriusTaskResponse:
       type: object
       properties:
@@ -4002,6 +4439,9 @@ components:
         status_comment:
           type: string
           description: Комментарий статуса
+        process_deadline:
+          type: string
+          description: Плановая дата завершения процесса
       required:
         - id
         - version_id
@@ -4020,6 +4460,7 @@ components:
         - rate
         - rate_comment
         - status_comment
+        - process_deadline
 
     httpError:
       type: object
@@ -4048,6 +4489,9 @@ components:
         name:
           type: string
           description: Наименование шага
+        short_title:
+          type: string
+          description: Короткое название ноды
         state:
           type: object
           description: Объект состояния
@@ -4063,6 +4507,8 @@ components:
           type: object
           properties: { }
         time:
+          type: string
+        updateTime:
           type: string
         type:
           type: string
@@ -4085,11 +4531,25 @@ components:
         attachments_enabled:
           type: boolean
           description: Возможность прикреплять вложение к действию
+        params:
+          type: object
+          description: Дополнительные параметры действия
+          additionalProperties: true
       required:
         - id
         - button_type
         - comment_enabled
         - attachments_enabled
+
+    Attachment:
+      type: object
+      properties:
+        file_id:
+          type: string
+          description: "Id файла в file registry"
+        external_link:
+          type: string
+          description: "Ссылка на файл в сторонней системе"
 
     blockType:
       type: string
@@ -4111,9 +4571,7 @@ components:
           items:
             $ref: '#/components/schemas/FunctionValueModel'
         outputs:
-          type: array
-          items:
-            $ref: '#/components/schemas/FunctionValueModel'
+          $ref: '#/components/schemas/JSONSchema'
         params:
           $ref: '#/components/schemas/FunctionParams'
         shape_type:
@@ -4165,7 +4623,9 @@ components:
         - $ref: '#/components/schemas/NotificationParams'
         - $ref: "#/components/schemas/ConditionParams"
         - $ref: "#/components/schemas/FormParams"
+        - $ref: "#/components/schemas/TimerParams"
         - $ref: "#/components/schemas/PlaceholderParams"
+        - $ref: "#/components/schemas/SignParams"
 
     ConditionGroup:
       type: object
@@ -4323,32 +4783,32 @@ components:
     compareStringOperator:
       type: string
       description: Used operator to compare string operands
-      enum: [ "Равно", "Не равно", "Содержит", "Не Содержит" ]
-      x-enum-varnames: [ "Equal", "NotEqual", "Contain", "NotContain" ]
+      enum: [ "Равно", "Не равно", "Содержит", "Не Содержит", "Не Пустое", "Пустое" ]
+      x-enum-varnames: [ "Equal", "NotEqual", "Contain", "NotContain", "Exists", "NotExists" ]
 
     compareIntegerOperator:
       type: string
       description: Used operator to compare integer operands
-      enum: [ "Равно", "Не равно", "Больше", "Больше или равно", "Меньше", "Меньше или равно" ]
-      x-enum-varnames: [ "Equal", "NotEqual", "More", "MoreOrEqual", "Less", "LessOrEqual" ]
+      enum: [ "Равно", "Не равно", "Больше", "Больше или равно", "Меньше", "Меньше или равно", "Не Пустое", "Пустое" ]
+      x-enum-varnames: [ "Equal", "NotEqual", "More", "MoreOrEqual", "Less", "LessOrEqual", "Exists", "NotExists" ]
 
     compareNumberOperator:
       type: string
       description: Used operator to compare number operands
-      enum: [ "Равно", "Не равно", "Больше", "Больше или равно", "Меньше", "Меньше или равно" ]
-      x-enum-varnames: [ "Equal", "NotEqual", "More", "MoreOrEqual", "Less", "LessOrEqual" ]
+      enum: [ "Равно", "Не равно", "Больше", "Больше или равно", "Меньше", "Меньше или равно", "Не Пустое", "Пустое" ]
+      x-enum-varnames: [ "Equal", "NotEqual", "More", "MoreOrEqual", "Less", "LessOrEqual", "Exists", "NotExists" ]
 
     compareBooleanOperator:
       type: string
       description: Used operator to compare bool operands
-      enum: [ "Равно", "Не равно" ]
-      x-enum-varnames: [ "Equal", "NotEqual" ]
+      enum: [ "Равно", "Не равно", "Не Пустое", "Пустое" ]
+      x-enum-varnames: [ "Equal", "NotEqual", "Exists", "NotExists" ]
 
     compareDateOperator:
       type: string
       description: Used operator to compare date operands
-      enum: [ "Равно", "Не равно", "Больше", "Больше или равно", "Меньше", "Меньше или равно" ]
-      x-enum-varnames: [ "Equal", "NotEqual", "More", "MoreOrEqual", "Less", "LessOrEqual" ]
+      enum: [ "Равно", "Не равно", "Больше", "Больше или равно", "Меньше", "Меньше или равно", "Не Пустое", "Пустое" ]
+      x-enum-varnames: [ "Equal", "NotEqual", "More", "MoreOrEqual", "Less", "LessOrEqual", "Exists", "NotExists" ]
 
     ConditionParams:
       type: object
@@ -4456,6 +4916,9 @@ components:
           description: flag to use actual executor
         work_type:
           $ref: "#/components/schemas/WorkType"
+        show_executor:
+          type: boolean
+          description: flag to show executor
       required:
         - type
         - executors
@@ -4502,9 +4965,6 @@ components:
         check_sla:
           type: boolean
           description: Is active SLA
-        schema_name:
-          type: string
-          description: form template id name
         forms_accessibility:
           type: array
           description: List of accessibility properties for forms
@@ -4567,6 +5027,94 @@ components:
           * group - Approver group ID
           * head - Receiver's head
           * FromSchema - Selected by initiator
+
+    SignerType:
+      type: string
+      enum:
+        - user
+        - group
+        - fromSchema
+      description: >
+        Signer type:
+          * user - Single user
+          * group - Group ID
+          * FromSchema - Selected by initiator
+
+    SignatureType:
+      type: string
+      enum:
+        - pep
+        - unep
+        - ukep
+
+    TimerParams:
+      type: object
+      description: Timer params
+      properties:
+        duration:
+          type: string
+          description: duration for timer
+      required:
+        - duration
+
+    SignatureCarrier:
+      type: string
+      enum:
+        - all
+        - cloud
+        - token
+
+    SignatureCarrierTranslated:
+      type: string
+      enum: [ "Все", "Облачный", "Токен" ]
+      x-enum-varnames: [ "all", "cloud", "token" ]
+
+    SignParams:
+      type: object
+      description: Singature params
+      properties:
+        signerType:
+          $ref: '#/components/schemas/SignerType'
+        signer:
+          type: string
+          description: Signer value (depends on type)
+          example: form_0.user.username;form_1.user.username (format for many signers from schema)
+        signerGroupId:
+          type: string
+          description: Singer group id in SD
+        signerGroupName:
+          type: string
+          description: Signer group name in SD
+        signerGroupIdPath:
+          type: string
+          description: Path to singer group id
+        signatureCarrier:
+          $ref: '#/components/schemas/SignatureCarrier'
+        signingRule:
+          $ref: '#/components/schemas/SigningRule'
+        signatureType:
+          $ref: '#/components/schemas/SignatureType'
+        formsAccessibility:
+          type: array
+          description: List of accessibility properties for forms
+          items:
+            $ref: '#/components/schemas/FormsAccessibility'
+        sla:
+          type: integer
+          description: Sign SLA (in working hours)
+          minimum: 1
+        checkSLA:
+          type: boolean
+          description: Is active SLA
+        autoReject:
+          type: boolean
+          description: reject after expire sla
+        workType:
+          $ref: "#/components/schemas/WorkType"
+      required:
+        - signerType
+        - signatureType
+        - formsAccessibility
 
     ApproverParams:
       type: object
@@ -4700,6 +5248,19 @@ components:
         - AllOf
       description: Count of approvers which will participate in approvement will depends of approvement type. 'Any of' will check only first approvement action, when 'all of' will be waiting for all approvers or auto actions.
 
+    SigningRule:
+      type: string
+      enum:
+        - AnyOf
+        - AllOf
+      description: Count of singers which will participate in signing will depends of signing type. 'Any of' will check only first sign action, when 'all of' will be waiting for all signers.
+
+    SigningRuleTranslated:
+      type: string
+      enum: [ "Один из подписантов", "Все подписанты" ]
+      x-enum-varnames: [ 'AnyOf', 'AllOf' ]
+      description: Count of signers which will participate in signing will depends of signing type. 'Any of' will check only first signing action, when 'all of' will be waiting for all signers.
+
     ApprovementRuleTranslated:
       type: string
       enum: [ "Один из согласующих", "Все согласующие" ]
@@ -4721,6 +5282,8 @@ components:
             - form
             - if
             - placeholder
+            - timer
+            - sign
         params:
           $ref: '#/components/schemas/Params'
       required:
@@ -4846,7 +5409,43 @@ components:
           additionalProperties:
             $ref: '#/components/schemas/MonitoringBlockOutput'
 
+    BlockStateResponse:
+      type: object
+      properties:
+        state:
+          type: object
+          description: Стейт блока
+          additionalProperties:
+            $ref: '#/components/schemas/MonitoringBlockState'
+
     MonitoringBlockOutput:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Имя поля
+        type:
+          type: string
+          description: Тип поля
+        description:
+          type: string
+          description: Описание поля
+        value:
+          oneOf:
+            - type: string
+            - type: number
+            - type: integer
+            - type: array
+            - type: object
+            - type: boolean
+          description: Значение поля
+      required:
+        - name
+        - type
+        - description
+        - value
+
+    MonitoringBlockState:
       type: object
       properties:
         name:
@@ -4934,3 +5533,26 @@ components:
         - 24/7
         - 8/5
         - 12/5
+
+    NodeDecision:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "5547e7a4-338d-4b1a-b7c2-d0a7ef7fe063"
+          description: "Айди решения нод"
+        node_type:
+          type: string
+          description: "Тип ноды"
+        decision:
+          type: string
+          description: "Название решения"
+        title:
+          type: string
+          description: "Название решения на русском"
+      required:
+        - id
+        - node_type
+        - decision
+        - title

@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"reflect"
+	"strings"
 	"time"
 
 	"github.com/araddon/dateparse"
@@ -30,6 +32,7 @@ type JSONSchemaPropertiesValue struct {
 	Title       string `json:"title,omitempty"`
 	Description string `json:"description,omitempty"`
 	Type        string `json:"type"`
+	Global      string `json:"global,omitempty"`
 
 	Format     string               `json:"format,omitempty"`
 	Default    interface{}          `json:"default,omitempty"`
@@ -38,6 +41,21 @@ type JSONSchemaPropertiesValue struct {
 	Properties JSONSchemaProperties `json:"properties,omitempty"`
 
 	Value string `json:"value,omitempty"`
+}
+
+func (jspv JSONSchemaPropertiesValue) MarshalJSON() ([]byte, error) {
+	dataToMarshal := make(map[string]interface{})
+	for i := 0; i < reflect.ValueOf(jspv).NumField(); i++ {
+		field := reflect.TypeOf(jspv).Field(i)
+		value := reflect.ValueOf(jspv).Field(i)
+		// handle Properties being not null but an empty struct (omitempty omits both cases)
+		if strings.HasSuffix(field.Tag.Get("json"), "omitempty") && value.IsZero() {
+			continue
+		}
+		dataToMarshal[strings.Replace(field.Tag.Get("json"), ",omitempty", "", 1)] =
+			value.Interface()
+	}
+	return json.Marshal(dataToMarshal)
 }
 
 type ArrayItems struct {
@@ -67,6 +85,8 @@ type ExecutableFunctionParams struct {
 	Function       FunctionParam          `json:"function"`
 	WaitCorrectRes int                    `json:"waitCorrectRes"`
 	Constants      map[string]interface{} `json:"constants"`
+	CheckSLA       bool                   `json:"check_sla"`
+	SLA            int                    `json:"sla"` //seconds
 }
 
 type FunctionParam struct {
@@ -88,7 +108,7 @@ type functionTime time.Time
 type ParamMetadata struct {
 	Type        string
 	Description string
-	Items       []ParamMetadata
+	Items       *ParamMetadata
 	Properties  map[string]ParamMetadata
 }
 
@@ -102,14 +122,6 @@ func (p ParamMetadata) GetProperties() map[string]interface{} {
 		properties[k] = v
 	}
 	return properties
-}
-
-func (p ParamMetadata) GetItems() []interface{} {
-	items := make([]interface{}, 0)
-	for _, v := range p.Items {
-		items = append(items, v)
-	}
-	return items
 }
 
 func (a *ExecutableFunctionParams) Validate() error {

@@ -1,7 +1,5 @@
 package main
 
-//go:generate swag init -g ./cmd/pipeliner/main.go -o ./docs -d ../../.
-
 import (
 	"context"
 	"flag"
@@ -22,6 +20,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db/mocks"
 	file_registry "gitlab.services.mts.ru/jocasta/pipeliner/internal/file-registry"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/forms"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/functions"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/hrgate"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/httpclient"
@@ -32,10 +31,11 @@ import (
 	mail_fetcher "gitlab.services.mts.ru/jocasta/pipeliner/internal/mail/fetcher"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/scheduler"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/server"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/test"
 	"gitlab.services.mts.ru/jocasta/pipeliner/statistic"
 )
 
@@ -49,7 +49,7 @@ const serviceName = "jocasta.pipeliner"
 //
 //nolint:gocyclo //its ok here
 func main() {
-	configPath := flag.String("c", "./config.yaml", "path to config")
+	configPath := flag.String("c", "cmd/pipeliner/config.yaml", "path to config")
 	flag.Parse()
 
 	log := logger.CreateLogger(nil)
@@ -112,15 +112,19 @@ func main() {
 	}
 
 	// don't forget to update mock
-	// TODO: remove MockDB and use MockedDatabase in tests
 	var _ db.Database = (*mocks.MockedDatabase)(nil)
-	var _ db.Database = (*test.MockDB)(nil)
 
 	kafkaService, err := kafka.NewService(log, cfg.Kafka)
 	if err != nil {
 		log.WithError(err).Error("can't create kafka service")
 
 		//return
+	}
+
+	schedulerService, err := scheduler.NewService(cfg.SchedulerTasks)
+	if err != nil {
+		log.WithError(err).Error("can't create scheduler service")
+		return
 	}
 
 	functionsService, err := functions.NewService(cfg.FunctionStore)
@@ -164,6 +168,14 @@ func main() {
 		return
 	}
 
+	formsService, err := forms.NewService(cfg.Forms)
+	if err != nil {
+		log.WithError(err).Error("can't create forms service")
+		return
+	}
+
+	slaService := sla.NewSlaService(hrgateService)
+
 	includePlaceholderBlock := cfg.IncludePlaceholderBlock
 
 	APIEnv := &api.APIEnv{
@@ -183,7 +195,10 @@ func main() {
 		FileRegistry:            fileRegistryService,
 		Integrations:            integrationsService,
 		HrGate:                  hrgateService,
+		Scheduler:               schedulerService,
 		IncludePlaceholderBlock: includePlaceholderBlock,
+		SLAService:              slaService,
+		Forms:                   formsService,
 	}
 
 	serverParam := api.ServerParam{

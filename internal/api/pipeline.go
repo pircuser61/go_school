@@ -11,8 +11,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/labstack/gommon/log"
 
-	"github.com/pkg/errors"
-
 	"go.opencensus.io/trace"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
@@ -21,12 +19,19 @@ import (
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 )
 
 const statusRunned = "runned"
 const copyPostfix = "копия"
+
+const (
+	ValidateParallelNodeReturnCycle       = "ParallelNodeReturnCycle"
+	ValidateParallelNodeExitsNotConnected = "ParallelNodeExitsNotConnected"
+	ValidateOutOfParallelNodesConnection  = "OutOfParallelNodesConnection"
+	ValidateParallelOutOfStartInsert      = "ParallelOutOfStartInsert"
+	ValidateParallelPathIntersected       = "ParallelPathIntersected"
+)
 
 func (ae *APIEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "create_pipeline")
@@ -70,15 +75,30 @@ func (ae *APIEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
 		p.Pipeline.FillEmptyPipeline()
 		b, _ = json.Marshal(&p) // nolint // already unmarshalling that struct
 	}
+	ok, valErr := p.Pipeline.Blocks.Validate(ctx, ae.ServiceDesc)
+	if p.Status == db.StatusApproved && !ok {
+		var e Err
 
-	if p.Status == db.StatusApproved && !p.Pipeline.Blocks.Validate(ctx, ae.ServiceDesc) {
-		e := PipelineValidateError
+		switch valErr {
+		case ValidateParallelNodeReturnCycle:
+			e = ParallelNodeReturnCycle
+		case ValidateParallelNodeExitsNotConnected:
+			e = ParallelNodeExitsNotConnected
+		case ValidateOutOfParallelNodesConnection:
+			e = OutOfParallelNodesConnection
+		case ValidateParallelOutOfStartInsert:
+			e = ParallelOutOfStartInsert
+		case ValidateParallelPathIntersected:
+			e = ParallelPathIntersected
+		default:
+			e = PipelineValidateError
+		}
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 		return
 	}
 
-	err = ae.DB.CreatePipeline(ctx, &p, userFromContext.Username, b)
+	err = ae.DB.CreatePipeline(ctx, &p, userFromContext.Username, b, uuid.Nil)
 	if err != nil {
 		e := PipelineCreateError
 		if db.IsUniqueConstraintError(err) {
@@ -145,11 +165,13 @@ func (ae *APIEnv) CopyPipeline(w http.ResponseWriter, req *http.Request) {
 		log.Error("user failed: ", err.Error())
 	}
 
+	oldVersionID := p.VersionID
+
 	p.ID = uuid.New()
 	p.VersionID = uuid.New()
 	p.Name = fmt.Sprintf("%s - %s", p.Name, copyPostfix)
 
-	err = ae.DB.CreatePipeline(ctx, &p, userFromContext.Username, b)
+	err = ae.DB.CreatePipeline(ctx, &p, userFromContext.Username, b, oldVersionID)
 	if err != nil {
 		e := PipelineCreateError
 		if db.IsUniqueConstraintError(err) {
@@ -279,22 +301,6 @@ func (ae *APIEnv) DeletePipeline(w http.ResponseWriter, req *http.Request, pipel
 		return
 	}
 
-	childPipelines, err := scenarioUsage(ctx, ae.DB, id)
-	if err != nil {
-		e := SearchingForPipelinesUsageError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-	if len(childPipelines) > 0 {
-		e := ScenarioIsUsedInOtherError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
 	err = ae.DB.RemovePipelineTags(ctx, id)
 	if err != nil {
 		e := TagDetachError
@@ -361,6 +367,7 @@ func (ae *APIEnv) RunPipeline(w http.ResponseWriter, req *http.Request, pipeline
 	}
 
 	runResponse, err := ae.execVersion(ctx, &execVersionDTO{
+		storage:  ae.DB,
 		version:  p,
 		withStop: withStop,
 		w:        w,
@@ -481,37 +488,6 @@ func (ae *APIEnv) listPipelines(ctx context.Context,
 	}
 
 	return drafts, nil
-}
-
-func scenarioUsage(ctx context.Context, pipelineStorager db.PipelineStorager, id uuid.UUID) ([]entity.EriusScenario, error) {
-	ctx, span := trace.StartSpan(ctx, "scenario usage")
-	defer span.End()
-
-	p, err := pipelineStorager.GetPipeline(ctx, id)
-	if err != nil {
-		return nil, errors.WithMessage(err, "unable to get pipeline")
-	}
-
-	workedVersions, err := pipelineStorager.GetWorkedVersions(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	res := make([]entity.EriusScenario, 0)
-
-	for i := range workedVersions {
-		for j := range workedVersions[i].Pipeline.Blocks {
-			block := workedVersions[i].Pipeline.Blocks[j]
-			if block.BlockType == script.TypeScenario &&
-				block.Title == p.Name {
-				res = append(res, workedVersions[i])
-
-				break
-			}
-		}
-	}
-
-	return res, nil
 }
 
 func (ae *APIEnv) PipelineNameExists(w http.ResponseWriter, r *http.Request, params PipelineNameExistsParams) {

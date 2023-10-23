@@ -23,7 +23,6 @@ type FormParams struct {
 	SchemaId                  string               `json:"schema_id"`
 	SLA                       int                  `json:"sla"`
 	CheckSLA                  bool                 `json:"check_sla"`
-	SchemaName                string               `json:"schema_name"`
 	Executor                  string               `json:"executor"`
 	FormExecutorType          FormExecutorType     `json:"form_executor_type"`
 	FormGroupId               string               `json:"form_group_id"`
@@ -33,7 +32,7 @@ type FormParams struct {
 	Mapping                   JSONSchemaProperties `json:"mapping"`
 	WorkType                  *string              `json:"work_type"`
 	IsEditable                *bool                `json:"is_editable"`
-	ReEnterSettings           *FormReEnterSettings `json:"form_re_enter_settings"`
+	ReEnterSettings           *FormReEnterSettings `json:"form_re_enter_settings,omitempty"`
 }
 
 func (a *FormParams) Validate() error {

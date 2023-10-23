@@ -1,0 +1,443 @@
+{
+  "id": "f8d583cc-9a69-40e6-8e37-d22259a225c1",
+  "name": "JAP-2635",
+  "tags": [],
+  "input": [],
+  "author": "",
+  "output": [],
+  "status": 2,
+  "comment": "",
+  "pipeline": {
+    "blocks": {
+      "end_0": {
+        "x": 2602,
+        "y": 44,
+        "next": {},
+        "input": [],
+        "title": "Конец",
+        "output": {
+          "type": "object",
+          "properties": {}
+        },
+        "sockets": [],
+        "type_id": "end",
+        "block_type": "go",
+        "short_title": ""
+      },
+      "start_0": {
+        "x": 0,
+        "y": 0,
+        "next": {
+          "default": [
+            "approver_0"
+          ]
+        },
+        "input": [],
+        "title": "Начало",
+        "output": {
+          "type": "object",
+          "properties": {
+            "initiator": {
+              "type": "object",
+              "format": "ssoperson",
+              "global": "start_0.initiator",
+              "properties": {
+                "email": {
+                  "type": "string"
+                },
+                "phone": {
+                  "type": "string"
+                },
+                "mobile": {
+                  "type": "string"
+                },
+                "tabnum": {
+                  "type": "string"
+                },
+                "fullname": {
+                  "type": "string"
+                },
+                "position": {
+                  "type": "string"
+                },
+                "username": {
+                  "type": "string"
+                },
+                "fullOrgUnit": {
+                  "type": "string"
+                }
+              }
+            },
+            "workNumber": {
+              "type": "string",
+              "global": "start_0.workNumber"
+            }
+          }
+        },
+        "sockets": [
+          {
+            "id": "default",
+            "title": "Выход по умолчанию",
+            "actionType": "",
+            "nextBlockIds": [
+              "approver_0"
+            ]
+          }
+        ],
+        "type_id": "start",
+        "block_type": "go",
+        "short_title": ""
+      },
+      "approver_0": {
+        "x": 352,
+        "y": -33,
+        "next": {
+          "reject": [
+            "begin_parallel_task_0"
+          ],
+          "approve": [
+            "begin_parallel_task_0"
+          ]
+        },
+        "input": [],
+        "title": "Согласование",
+        "output": {
+          "type": "object",
+          "properties": {
+            "comment": {
+              "type": "string",
+              "global": "approver_0.comment"
+            },
+            "approver": {
+              "type": "string",
+              "global": "approver_0.approver"
+            },
+            "decision": {
+              "type": "string",
+              "global": "approver_0.decision"
+            }
+          }
+        },
+        "params": {
+          "sla": 0,
+          "type": "user",
+          "approver": "sobugreye1",
+          "check_sla": false,
+          "work_type": null,
+          "rework_sla": 16,
+          "is_editable": false,
+          "approvementRule": "",
+          "check_rework_sla": false,
+          "approvers_group_id": "",
+          "approve_status_name": "На согласовании",
+          "forms_accessibility": [],
+          "approvers_group_name": "",
+          "repeat_prev_decision": false,
+          "approvers_group_id_path": ""
+        },
+        "sockets": [
+          {
+            "id": "approve",
+            "title": "Согласовать",
+            "actionType": "primary",
+            "nextBlockIds": [
+              "begin_parallel_task_0"
+            ]
+          },
+          {
+            "id": "reject",
+            "title": "Отклонить",
+            "actionType": "secondary",
+            "nextBlockIds": [
+              "begin_parallel_task_0"
+            ]
+          }
+        ],
+        "type_id": "approver",
+        "block_type": "go",
+        "param_type": "approver",
+        "short_title": "овыдровдыаол"
+      },
+      "approver_1": {
+        "x": 1288,
+        "y": 130,
+        "next": {
+          "reject": [
+            "execution_1"
+          ],
+          "approve": [
+            "execution_1"
+          ],
+          "approver_send_edit_app": [
+            "approver_0"
+          ]
+        },
+        "input": [],
+        "title": "Согласование",
+        "output": {
+          "type": "object",
+          "properties": {
+            "comment": {
+              "type": "string",
+              "global": "approver_1.comment"
+            },
+            "approver": {
+              "type": "string",
+              "global": "approver_1.approver"
+            },
+            "decision": {
+              "type": "string",
+              "global": "approver_1.decision"
+            }
+          }
+        },
+        "params": {
+          "sla": 0,
+          "type": "user",
+          "approver": "sobugreye1",
+          "check_sla": false,
+          "work_type": null,
+          "rework_sla": 16,
+          "is_editable": true,
+          "approvementRule": "",
+          "check_rework_sla": false,
+          "approvers_group_id": "",
+          "approve_status_name": "На согласовании",
+          "forms_accessibility": [],
+          "approvers_group_name": "",
+          "repeat_prev_decision": false,
+          "approvers_group_id_path": ""
+        },
+        "sockets": [
+          {
+            "id": "approve",
+            "title": "Согласовать",
+            "actionType": "primary",
+            "nextBlockIds": [
+              "execution_1"
+            ]
+          },
+          {
+            "id": "reject",
+            "title": "Отклонить",
+            "actionType": "secondary",
+            "nextBlockIds": [
+              "execution_1"
+            ]
+          },
+          {
+            "id": "approver_send_edit_app",
+            "title": "На доработку",
+            "actionType": "other",
+            "nextBlockIds": [
+              "approver_0"
+            ]
+          }
+        ],
+        "type_id": "approver",
+        "block_type": "go",
+        "param_type": "approver",
+        "short_title": "afdsasdfasdf"
+      },
+      "execution_0": {
+        "x": 1274,
+        "y": -295,
+        "next": {
+          "executed": [
+            "wait_for_all_inputs_0"
+          ],
+          "not_executed": [
+            "wait_for_all_inputs_0"
+          ]
+        },
+        "input": [],
+        "title": "Исполнение",
+        "output": {
+          "type": "object",
+          "properties": {
+            "login": {
+              "type": "string",
+              "global": "execution_0.login"
+            },
+            "comment": {
+              "type": "string",
+              "global": "execution_0.comment"
+            },
+            "decision": {
+              "type": "string",
+              "global": "execution_0.decision"
+            }
+          }
+        },
+        "params": {
+          "sla": 0,
+          "type": "user",
+          "check_sla": false,
+          "executors": "sobugreye1",
+          "work_type": null,
+          "rework_sla": 16,
+          "is_editable": false,
+          "check_rework_sla": false,
+          "executors_group_id": "",
+          "forms_accessibility": [],
+          "use_actual_executor": false,
+          "executors_group_name": "",
+          "repeat_prev_decision": false,
+          "executors_group_id_path": ""
+        },
+        "sockets": [
+          {
+            "id": "executed",
+            "title": "Исполнено",
+            "actionType": "",
+            "nextBlockIds": [
+              "wait_for_all_inputs_0"
+            ]
+          },
+          {
+            "id": "not_executed",
+            "title": "Не исполнено",
+            "actionType": "",
+            "nextBlockIds": [
+              "wait_for_all_inputs_0"
+            ]
+          }
+        ],
+        "type_id": "execution",
+        "block_type": "go",
+        "param_type": "execution",
+        "short_title": "asfsafl"
+      },
+      "execution_1": {
+        "x": 1715,
+        "y": 213,
+        "next": {
+          "executed": [
+            "wait_for_all_inputs_0"
+          ],
+          "not_executed": [
+            "wait_for_all_inputs_0"
+          ]
+        },
+        "input": [],
+        "title": "Исполнение",
+        "output": {
+          "type": "object",
+          "properties": {
+            "login": {
+              "type": "string",
+              "global": "execution_1.login"
+            },
+            "comment": {
+              "type": "string",
+              "global": "execution_1.comment"
+            },
+            "decision": {
+              "type": "string",
+              "global": "execution_1.decision"
+            }
+          }
+        },
+        "params": {
+          "sla": 0,
+          "type": "user",
+          "check_sla": false,
+          "executors": "sobugreye1",
+          "work_type": null,
+          "rework_sla": 16,
+          "is_editable": false,
+          "check_rework_sla": false,
+          "executors_group_id": "",
+          "forms_accessibility": [],
+          "use_actual_executor": false,
+          "executors_group_name": "",
+          "repeat_prev_decision": false,
+          "executors_group_id_path": ""
+        },
+        "sockets": [
+          {
+            "id": "executed",
+            "title": "Исполнено",
+            "actionType": "",
+            "nextBlockIds": [
+              "wait_for_all_inputs_0"
+            ]
+          },
+          {
+            "id": "not_executed",
+            "title": "Не исполнено",
+            "actionType": "",
+            "nextBlockIds": [
+              "wait_for_all_inputs_0"
+            ]
+          }
+        ],
+        "type_id": "execution",
+        "block_type": "go",
+        "param_type": "execution",
+        "short_title": "asfasfasfd"
+      },
+      "begin_parallel_task_0": {
+        "x": 814,
+        "y": 2,
+        "next": {
+          "default": [
+            "execution_0",
+            "approver_1"
+          ]
+        },
+        "input": [],
+        "title": "begin_parallel_task",
+        "output": {
+          "type": "object",
+          "properties": {}
+        },
+        "sockets": [
+          {
+            "id": "default",
+            "title": "Выход по умолчанию",
+            "actionType": "",
+            "nextBlockIds": [
+              "execution_0",
+              "approver_1"
+            ]
+          }
+        ],
+        "type_id": "begin_parallel_task",
+        "block_type": "go",
+        "short_title": ""
+      },
+      "wait_for_all_inputs_0": {
+        "x": 2344,
+        "y": 39,
+        "next": {
+          "default": [
+            "end_0"
+          ]
+        },
+        "input": [],
+        "title": "wait_for_all_inputs",
+        "output": {
+          "type": "object",
+          "properties": {}
+        },
+        "sockets": [
+          {
+            "id": "default",
+            "title": "Выход по умолчанию",
+            "actionType": "",
+            "nextBlockIds": [
+              "end_0"
+            ]
+          }
+        ],
+        "type_id": "wait_for_all_inputs",
+        "block_type": "go",
+        "short_title": ""
+      }
+    },
+    "entrypoint": "start_0"
+  },
+  "version_id": "b3c8ab52-1627-4d76-90f6-0efb7ef43ce5",
+  "comment_rejected": ""
+}

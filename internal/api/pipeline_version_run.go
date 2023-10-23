@@ -68,6 +68,7 @@ func (ae *APIEnv) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Requ
 	}
 
 	started, execErr := ae.execVersion(ctx, &execVersionDTO{
+		storage:     ae.DB,
 		version:     version,
 		withStop:    false,
 		w:           w,
@@ -131,6 +132,7 @@ func (ae *APIEnv) RunVersion(w http.ResponseWriter, req *http.Request, versionID
 	}
 
 	runResponse, err := ae.execVersion(ctx, &execVersionDTO{
+		storage:  ae.DB,
 		version:  p,
 		withStop: false,
 		w:        w,
@@ -196,7 +198,17 @@ func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	version, err := ae.DB.GetVersionByPipelineID(ctx, req.PipelineId)
+	storage, acquireErr := ae.DB.Acquire(ctx)
+	if acquireErr != nil {
+		e := PipelineExecutionError
+		log.Error(e.errorMessage(acquireErr))
+		_ = e.sendError(w)
+		return
+	}
+
+	defer storage.Release(ctx)
+
+	version, err := storage.GetVersionByPipelineID(ctx, req.PipelineId)
 	if err != nil {
 		e := GetVersionsByBlueprintIdError
 		log.Error(e.errorMessage(err))
@@ -215,8 +227,23 @@ func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	var externalSystem *entity.ExternalSystem
+	externalSystem, err = ae.getExternalSystem(ctx, storage, clientID, version.VersionID.String())
+	if err != nil {
+		e := GetExternalSystemsError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	var allowRunAsOthers bool
+	if externalSystem != nil {
+		allowRunAsOthers = externalSystem.AllowRunAsOthers
+	}
+
 	var mappedApplicationBody orderedmap.OrderedMap
-	mappedApplicationBody, err = ae.processMappings(ctx, clientID, *version, req.ApplicationBody)
+	mappedApplicationBody, err = ae.processMappings(externalSystem, version, req.ApplicationBody)
 	if err != nil {
 		e := MappingError
 		log.Error(e.errorMessage(err))
@@ -234,10 +261,12 @@ func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request
 	}
 
 	v, execErr := ae.execVersion(ctx, &execVersionDTO{
-		version:  version,
-		withStop: false,
-		w:        w,
-		req:      r,
+		storage:          storage,
+		version:          version,
+		withStop:         false,
+		w:                w,
+		req:              r,
+		allowRunAsOthers: allowRunAsOthers,
 		runCtx: entity.TaskRunContext{
 			ClientID: clientID,
 			InitialApplication: entity.InitialApplication{

@@ -3,7 +3,6 @@ package api
 import (
 	c "context"
 	"encoding/json"
-
 	"github.com/pkg/errors"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
@@ -81,24 +80,31 @@ func (ae *APIEnv) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMes
 		WorkNumber: step.WorkNumber,
 		Initiator:  step.Initiator,
 		VarStore:   storage,
-
-		Storage:       ae.DB,
-		Sender:        ae.Mail,
-		Kafka:         ae.Kafka,
-		People:        ae.People,
-		ServiceDesc:   ae.ServiceDesc,
-		FunctionStore: ae.FunctionStore,
-		HumanTasks:    ae.HumanTasks,
-		Integrations:  ae.Integrations,
-		FileRegistry:  ae.FileRegistry,
-		FaaS:          ae.FaaS,
-		HrGate:        ae.HrGate,
+		Services: pipeline.RunContextServices{
+			HTTPClient:    ae.HTTPClient,
+			Storage:       txStorage,
+			Sender:        ae.Mail,
+			Kafka:         ae.Kafka,
+			People:        ae.People,
+			ServiceDesc:   ae.ServiceDesc,
+			FunctionStore: ae.FunctionStore,
+			HumanTasks:    ae.HumanTasks,
+			Integrations:  ae.Integrations,
+			FileRegistry:  ae.FileRegistry,
+			FaaS:          ae.FaaS,
+			HrGate:        ae.HrGate,
+			Scheduler:     ae.Scheduler,
+			SLAService:    ae.SLAService,
+		},
+		BlockRunResults: &pipeline.BlockRunResults{},
 
 		UpdateData: &script.BlockUpdateData{
 			Parameters: mapping,
 		},
 		IsTest: step.IsTest,
 	}
+
+	runCtx.SetTaskEvents(ctx)
 
 	blockFunc, err := ae.DB.GetBlockDataFromVersion(ctx, step.WorkNumber, step.Name)
 	if err != nil {
@@ -126,6 +132,8 @@ func (ae *APIEnv) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMes
 		log.WithError(commitErr).Error("couldn't commit transaction")
 		return commitErr
 	}
+
+	runCtx.NotifyEvents(ctx)
 
 	return nil
 }

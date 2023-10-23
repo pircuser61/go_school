@@ -163,11 +163,13 @@ var (
 							Global: "LinearPipeline.Output",
 						},
 					},
-					Output: []entity.EriusFunctionValue{
-						{
-							Name:   "Output",
-							Type:   "string",
-							Global: "Block1.Output",
+					Output: &script.JSONSchema{
+						Type: "object",
+						Properties: map[string]script.JSONSchemaPropertiesValue{
+							"Output": {
+								Type:   "string",
+								Global: "Block1.Output",
+							},
 						},
 					},
 					Next: map[string][]string{
@@ -184,11 +186,13 @@ var (
 							Global: "Block1.Output",
 						},
 					},
-					Output: []entity.EriusFunctionValue{
-						{
-							Name:   "Output",
-							Type:   "string",
-							Global: "Block2.Output",
+					Output: &script.JSONSchema{
+						Type: "object",
+						Properties: map[string]script.JSONSchemaPropertiesValue{
+							"Output": {
+								Type:   "string",
+								Global: "Block2.Output",
+							},
 						},
 					},
 					Next: map[string][]string{
@@ -205,11 +209,13 @@ var (
 							Global: "Block2.Output",
 						},
 					},
-					Output: []entity.EriusFunctionValue{
-						{
-							Name:   "Output",
-							Type:   "string",
-							Global: "Block3.Output",
+					Output: &script.JSONSchema{
+						Type: "object",
+						Properties: map[string]script.JSONSchemaPropertiesValue{
+							"Output": {
+								Type:   "string",
+								Global: "Block3.Output",
+							},
 						},
 					},
 					Next: map[string][]string{},
@@ -259,11 +265,13 @@ var (
 							Global: "IfPipeline.Output",
 						},
 					},
-					Output: []entity.EriusFunctionValue{
-						{
-							Name:   "Output",
-							Type:   script.TypeBool,
-							Global: "Block1.Output",
+					Output: &script.JSONSchema{
+						Type: "object",
+						Properties: map[string]script.JSONSchemaPropertiesValue{
+							"Output": {
+								Type:   script.TypeBool,
+								Global: "Block1.Output",
+							},
 						},
 					},
 					Next: map[string][]string{
@@ -288,11 +296,13 @@ var (
 				"BlockTrue": {
 					BlockType: script.TypePython3,
 					Title:     "BlockTrue",
-					Output: []entity.EriusFunctionValue{
-						{
-							Name:   "Output",
-							Type:   script.TypeString,
-							Global: "BlockTrue.Output",
+					Output: &script.JSONSchema{
+						Type: "object",
+						Properties: map[string]script.JSONSchemaPropertiesValue{
+							"Output": {
+								Type:   script.TypeString,
+								Global: "BlockTrue.Output",
+							},
 						},
 					},
 					Next: map[string][]string{},
@@ -300,11 +310,13 @@ var (
 				"BlockFalse": {
 					BlockType: script.TypePython3,
 					Title:     "BlockFalse",
-					Output: []entity.EriusFunctionValue{
-						{
-							Name:   "Output",
-							Type:   script.TypeString,
-							Global: "BlockTrue.Output",
+					Output: &script.JSONSchema{
+						Type: "object",
+						Properties: map[string]script.JSONSchemaPropertiesValue{
+							"Output": {
+								Type:   script.TypeString,
+								Global: "BlockTrue.Output",
+							},
 						},
 					},
 					Next: map[string][]string{},
@@ -355,11 +367,13 @@ var (
 							Global: "Block1.Output",
 						},
 					},
-					Output: []entity.EriusFunctionValue{
-						{
-							Name:   "Output",
-							Type:   script.TypeArray,
-							Global: "Block1.Output",
+					Output: &script.JSONSchema{
+						Type: "object",
+						Properties: map[string]script.JSONSchemaPropertiesValue{
+							"Output": {
+								Type:   script.TypeArray,
+								Global: "Block1.Output",
+							},
 						},
 					},
 					Next: map[string][]string{
@@ -376,16 +390,17 @@ var (
 							Global: "Block1.Output",
 						},
 					},
-					Output: []entity.EriusFunctionValue{
-						{
-							Name:   "index",
-							Type:   script.TypeNumber,
-							Global: "For.index",
-						},
-						{
-							Name:   "now_on",
-							Type:   script.TypeString,
-							Global: "For.now_on",
+					Output: &script.JSONSchema{
+						Type: "object",
+						Properties: map[string]script.JSONSchemaPropertiesValue{
+							"index": {
+								Type:   script.TypeNumber,
+								Global: "For.index",
+							},
+							"now_on": {
+								Type:   script.TypeString,
+								Global: "For.now_on",
+							},
 						},
 					},
 					Next: map[string][]string{
@@ -406,7 +421,7 @@ var (
 					BlockType: script.TypePython3,
 					Title:     "Block3",
 					Input:     []entity.EriusFunctionValue{},
-					Output:    []entity.EriusFunctionValue{},
+					Output:    nil,
 					Next:      map[string][]string{},
 				},
 			},
@@ -462,11 +477,13 @@ var (
 							Global: "PipelineWithPipeline.Output",
 						},
 					},
-					Output: []entity.EriusFunctionValue{
-						{
-							Name:   "Output",
-							Type:   "string",
-							Global: "Block1.Output",
+					Output: &script.JSONSchema{
+						Type: "object",
+						Properties: map[string]script.JSONSchemaPropertiesValue{
+							"Output": {
+								Type:   "string",
+								Global: "Block1.Output",
+							},
 						},
 					},
 					Next: map[string][]string{
@@ -483,11 +500,13 @@ var (
 							Global: "Block1.Output",
 						},
 					},
-					Output: []entity.EriusFunctionValue{
-						{
-							Name:   "Output",
-							Type:   script.TypeString,
-							Global: "Scenario.Output",
+					Output: &script.JSONSchema{
+						Type: "object",
+						Properties: map[string]script.JSONSchemaPropertiesValue{
+							"Output": {
+								Type:   script.TypeString,
+								Global: "Scenario.Output",
+							},
 						},
 					},
 					Next: map[string][]string{
@@ -504,11 +523,13 @@ var (
 							Global: "Scenario.Output",
 						},
 					},
-					Output: []entity.EriusFunctionValue{
-						{
-							Name:   "Output",
-							Type:   "string",
-							Global: "Block2.Output",
+					Output: &script.JSONSchema{
+						Type: "object",
+						Properties: map[string]script.JSONSchemaPropertiesValue{
+							"Output": {
+								Type:   "string",
+								Global: "Block2.Output",
+							},
 						},
 					},
 				},
@@ -542,11 +563,13 @@ var (
 				"MasGen1": {
 					BlockType: script.TypePython3,
 					Title:     "MasGen",
-					Output: []entity.EriusFunctionValue{
-						{
-							Name:   "Output",
-							Type:   script.TypeArray,
-							Global: "MasGen1.Output",
+					Output: &script.JSONSchema{
+						Type: "object",
+						Properties: map[string]script.JSONSchemaPropertiesValue{
+							"Output": {
+								Type:   script.TypeArray,
+								Global: "MasGen1.Output",
+							},
 						},
 					},
 					Next: map[string][]string{
@@ -563,16 +586,17 @@ var (
 							Global: "MasGen1.Output",
 						},
 					},
-					Output: []entity.EriusFunctionValue{
-						{
-							Name:   "index",
-							Type:   script.TypeNumber,
-							Global: "For1.index",
-						},
-						{
-							Name:   "now_on",
-							Type:   script.TypeString,
-							Global: "For1.now_on",
+					Output: &script.JSONSchema{
+						Type: "object",
+						Properties: map[string]script.JSONSchemaPropertiesValue{
+							"index": {
+								Type:   script.TypeNumber,
+								Global: "For1.index",
+							},
+							"now_on": {
+								Type:   script.TypeString,
+								Global: "For1.now_on",
+							},
 						},
 					},
 					Next: map[string][]string{
@@ -583,11 +607,13 @@ var (
 				"MasGen2": {
 					BlockType: script.TypePython3,
 					Title:     "MasGen",
-					Output: []entity.EriusFunctionValue{
-						{
-							Name:   "Output",
-							Type:   script.TypeArray,
-							Global: "MasGen2.Output",
+					Output: &script.JSONSchema{
+						Type: "object",
+						Properties: map[string]script.JSONSchemaPropertiesValue{
+							"Output": {
+								Type:   script.TypeArray,
+								Global: "MasGen2.Output",
+							},
 						},
 					},
 					Next: map[string][]string{
@@ -604,16 +630,17 @@ var (
 							Global: "MasGen2.Output",
 						},
 					},
-					Output: []entity.EriusFunctionValue{
-						{
-							Name:   "index",
-							Type:   script.TypeNumber,
-							Global: "For2.index",
-						},
-						{
-							Name:   "now_on",
-							Type:   script.TypeString,
-							Global: "For2.now_on",
+					Output: &script.JSONSchema{
+						Type: "object",
+						Properties: map[string]script.JSONSchemaPropertiesValue{
+							"index": {
+								Type:   script.TypeNumber,
+								Global: "For2.index",
+							},
+							"now_on": {
+								Type:   script.TypeString,
+								Global: "For2.now_on",
+							},
 						},
 					},
 					Next: map[string][]string{
@@ -660,11 +687,13 @@ var (
 					BlockType: script.TypePython3,
 					Title:     "Block1",
 					Input:     nil,
-					Output: []entity.EriusFunctionValue{
-						{
-							Name:   "Output",
-							Type:   script.TypeString,
-							Global: "Block1.Output",
+					Output: &script.JSONSchema{
+						Type: "object",
+						Properties: map[string]script.JSONSchemaPropertiesValue{
+							"Output": {
+								Type:   script.TypeString,
+								Global: "Block1.Output",
+							},
 						},
 					},
 					Next: map[string][]string{
@@ -675,11 +704,13 @@ var (
 					BlockType: script.TypePython3,
 					Title:     "Block2",
 					Input:     nil,
-					Output: []entity.EriusFunctionValue{
-						{
-							Name:   "Output",
-							Type:   script.TypeBool,
-							Global: "Block2.Output",
+					Output: &script.JSONSchema{
+						Type: "object",
+						Properties: map[string]script.JSONSchemaPropertiesValue{
+							"Output": {
+								Type:   script.TypeBool,
+								Global: "Block2.Output",
+							},
 						},
 					},
 					Next: map[string][]string{
@@ -710,11 +741,13 @@ var (
 					BlockType: script.TypePython3,
 					Title:     "BlockTrue",
 					Input:     nil,
-					Output: []entity.EriusFunctionValue{
-						{
-							Name:   "Output",
-							Type:   script.TypeString,
-							Global: "BlockTrue.Output",
+					Output: &script.JSONSchema{
+						Type: "object",
+						Properties: map[string]script.JSONSchemaPropertiesValue{
+							"Output": {
+								Type:   script.TypeString,
+								Global: "BlockTrue.Output",
+							},
 						},
 					},
 					Next: map[string][]string{},
@@ -723,11 +756,13 @@ var (
 					BlockType: script.TypePython3,
 					Title:     "BlockFalse",
 					Input:     nil,
-					Output: []entity.EriusFunctionValue{
-						{
-							Name:   "Output",
-							Type:   script.TypeString,
-							Global: "BlockTrue.Output",
+					Output: &script.JSONSchema{
+						Type: "object",
+						Properties: map[string]script.JSONSchemaPropertiesValue{
+							"Output": {
+								Type:   script.TypeString,
+								Global: "BlockTrue.Output",
+							},
 						},
 					},
 					Next: map[string][]string{},
@@ -779,11 +814,13 @@ var (
 					BlockType: script.TypePython3,
 					Title:     "Block1",
 					Input:     nil,
-					Output: []entity.EriusFunctionValue{
-						{
-							Name:   "Output",
-							Type:   script.TypeArray,
-							Global: "Block1.Output",
+					Output: &script.JSONSchema{
+						Type: "object",
+						Properties: map[string]script.JSONSchemaPropertiesValue{
+							"Output": {
+								Type:   script.TypeArray,
+								Global: "Block1.Output",
+							},
 						},
 					},
 					Next: map[string][]string{
@@ -794,11 +831,13 @@ var (
 					BlockType: script.TypePython3,
 					Title:     "Block2",
 					Input:     nil,
-					Output: []entity.EriusFunctionValue{
-						{
-							Name:   "Output",
-							Type:   script.TypeArray,
-							Global: "Block2.Output",
+					Output: &script.JSONSchema{
+						Type: "object",
+						Properties: map[string]script.JSONSchemaPropertiesValue{
+							"Output": {
+								Type:   script.TypeArray,
+								Global: "Block2.Output",
+							},
 						},
 					},
 					Next: map[string][]string{
@@ -820,11 +859,13 @@ var (
 							Global: "Block2.Output",
 						},
 					},
-					Output: []entity.EriusFunctionValue{
-						{
-							Name:   "Output",
-							Type:   script.TypeArray,
-							Global: "Connector.Output",
+					Output: &script.JSONSchema{
+						Type: "object",
+						Properties: map[string]script.JSONSchemaPropertiesValue{
+							"Output": {
+								Type:   script.TypeArray,
+								Global: "Connector.Output",
+							},
 						},
 					},
 					Next: map[string][]string{
@@ -902,6 +943,15 @@ type MockDB struct {
 	pipelines []entity.EriusScenario
 }
 
+func (_m *MockDB) GetBlockState(ctx context.Context, blockId string) (entity.BlockState, error) {
+	r0 := make(entity.BlockState, 0)
+	return r0, nil
+}
+
+func (_m *MockDB) AllowRunAsOthers(ctx context.Context, versionID, systemID string, allowRunAsOthers bool) error {
+	return nil
+}
+
 func (_m *MockDB) GetTaskMembers(ctx context.Context, workNumber string) ([]db.DbMember, error) {
 	return nil, nil
 }
@@ -940,8 +990,22 @@ func (_m *MockDB) RemoveExternalSystem(ctx context.Context, versionID, systemID 
 	return nil
 }
 
+func (_m *MockDB) RemoveExternalSystemTaskSubscriptions(ctx context.Context, versionID, systemID string) error {
+	return nil
+}
+
 func (_m *MockDB) GetExternalSystemSettings(ctx context.Context, versionID, systemID string) (entity.ExternalSystem, error) {
 	return entity.ExternalSystem{}, nil
+}
+
+func (_m *MockDB) GetTaskEventsParamsByWorkNumber(ctx context.Context, workNumber, systemID string) (
+	entity.ExternalSystemSubscriptionParams, error) {
+	return entity.ExternalSystemSubscriptionParams{}, nil
+}
+
+func (_m *MockDB) GetExternalSystemTaskSubscriptions(ctx context.Context, versionID, systemID string) (
+	entity.ExternalSystemSubscriptionParams, error) {
+	return entity.ExternalSystemSubscriptionParams{}, nil
 }
 
 func (_m *MockDB) GetExternalSystemsIDs(ctx context.Context, versionID string) ([]uuid.UUID, error) {
@@ -1011,6 +1075,10 @@ func (_m *MockDB) GetParentTaskStepByName(_ context.Context, _ uuid.UUID, _ stri
 	return &entity.Step{}, nil
 }
 
+func (_m *MockDB) GetCanceledTaskSteps(ctx context.Context, taskID uuid.UUID) ([]entity.Step, error) {
+	return nil, nil
+}
+
 func (_m *MockDB) GetTaskStepByName(ctx context.Context, workID uuid.UUID, stepName string) (*entity.Step, error) {
 	return &entity.Step{}, nil
 }
@@ -1023,7 +1091,7 @@ func (m *MockDB) GetLastDebugTask(c context.Context, versionID uuid.UUID, author
 	return nil, errNotImplemented
 }
 
-func (m *MockDB) UpdateTaskHumanStatus(_ context.Context, _ uuid.UUID, _ string) (*entity.EriusTask, error) {
+func (m *MockDB) UpdateTaskHumanStatus(_ context.Context, _ uuid.UUID, _, _ string) (*entity.EriusTask, error) {
 	return &entity.EriusTask{}, nil
 }
 
@@ -1037,7 +1105,7 @@ func (m *MockDB) GetTasks(c context.Context, filters entity.TaskFilter,
 	return nil, errNotImplemented
 }
 
-func (m *MockDB) CheckTaskStepsExecuted(_ context.Context, _ string, _ []string) (bool, error) {
+func (m *MockDB) ParallelIsFinished(_ context.Context, _ string, _ string) (bool, error) {
 	return false, nil
 }
 
@@ -1283,6 +1351,14 @@ func (m *MockDB) GetTaskRunContext(_ context.Context, _ string) (entity.TaskRunC
 	return entity.TaskRunContext{}, errNotImplemented
 }
 
+func (_m *MockDB) UpdateBlockStateInOthers(_ context.Context, _, _ string, _ []byte) error {
+	return nil
+}
+
+func (_m *MockDB) UpdateBlockVariablesInOthers(_ context.Context, _ string, _ map[string]interface{}) error {
+	return nil
+}
+
 func (m *MockDB) GetUsersWithReadWriteFormAccess(
 	_ context.Context,
 	_ string,
@@ -1292,6 +1368,10 @@ func (m *MockDB) GetUsersWithReadWriteFormAccess(
 
 func (m *MockDB) StopTaskBlocks(_ context.Context, _ uuid.UUID) error {
 	return errNotImplemented
+}
+
+func (m *MockDB) GetTaskHumanStatus(_ context.Context, _ uuid.UUID) (string, error) {
+	return "", errNotImplemented
 }
 
 func (m *MockDB) GetTaskStatus(_ context.Context, _ uuid.UUID) (int, error) {
@@ -1345,6 +1425,11 @@ func (m *MockDB) GetWorksForUserWithGivenTimeRange(
 
 func (m *MockDB) SaveVersionMainSettings(ctx context.Context, params entity.ProcessSettings) error {
 	return errNotImplemented
+}
+
+func (m *MockDB) SaveExternalSystemSubscriptionParams(ctx context.Context, versionID string,
+	params *entity.ExternalSystemSubscriptionParams) error {
+	return nil
 }
 
 func (m *MockDB) CheckPipelineNameExists(ctx context.Context, name string, checkNotDeleted bool) (*bool, error) {

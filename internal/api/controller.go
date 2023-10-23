@@ -13,6 +13,7 @@ import (
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	file_registry "gitlab.services.mts.ru/jocasta/pipeliner/internal/file-registry"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/forms"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/functions"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/hrgate"
 	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
@@ -21,7 +22,9 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	mail_fetcher "gitlab.services.mts.ru/jocasta/pipeliner/internal/mail/fetcher"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/scheduler"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 	"gitlab.services.mts.ru/jocasta/pipeliner/statistic"
 )
@@ -43,6 +46,9 @@ type APIEnv struct {
 	FileRegistry            *file_registry.Service
 	Integrations            *integrations.Service
 	HrGate                  *hrgate.Service
+	Scheduler               *scheduler.Service
+	SLAService              sla.Service
+	Forms                   *forms.Service
 	IncludePlaceholderBlock bool
 }
 

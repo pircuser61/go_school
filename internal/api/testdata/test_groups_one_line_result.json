@@ -1,0 +1,1 @@
+[{"end_node":"start_0","nodes":null,"prev":"","start_node":"start_0"},{"end_node":"servicedesk_application_0","nodes":null,"prev":"start_0","start_node":"servicedesk_application_0"},{"end_node":"notification_0","nodes":null,"prev":"servicedesk_application_0","start_node":"notification_0"},{"end_node":"end_0","nodes":null,"prev":"notification_0","start_node":"end_0"}]

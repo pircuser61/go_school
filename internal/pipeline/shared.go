@@ -6,13 +6,30 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
+
 	"github.com/iancoleman/orderedmap"
+
 	"github.com/pkg/errors"
+
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
+)
+
+const (
+	ServiceAccountDev   = "service-account-jocasta-dev"
+	ServiceAccountStage = "service-account-jocasta-stage"
+	ServiceAccount      = "service-account-jocasta"
 )
 
 type UpdateData struct {
 	Id   uuid.UUID
 	Data interface{}
+}
+
+type castUser struct {
+	varValue  interface{}
+	result    map[string]struct{}
+	toResolve map[string]struct{}
+	varName   string
 }
 
 const dotSeparator = "."
@@ -73,15 +90,21 @@ func getUsersFromVars(varStore map[string]interface{}, toResolve map[string]stru
 			res[login] = toResolve[varName]
 		}
 
+		CastUserForLogin(castUser{
+			varValue:  varValue,
+			result:    res,
+			toResolve: toResolve,
+			varName:   varName,
+		})
+
 		if people, castOk := varValue.([]interface{}); castOk {
 			for _, castedPerson := range people {
-				if person, ok := castedPerson.(map[string]interface{}); ok {
-					if login, exists := person["username"]; exists {
-						if loginString, castOK := login.(string); castOK {
-							res[loginString] = toResolve[varName]
-						}
-					}
-				}
+				CastUserForLogin(castUser{
+					varValue:  castedPerson,
+					result:    res,
+					toResolve: toResolve,
+					varName:   varName,
+				})
 			}
 		}
 
@@ -89,6 +112,17 @@ func getUsersFromVars(varStore map[string]interface{}, toResolve map[string]stru
 	}
 
 	return nil, errors.New("unexpected behavior")
+}
+
+func CastUserForLogin(castData castUser) {
+	if person, castOk := castData.varValue.(map[string]interface{}); castOk {
+		if login, exists := person["username"]; exists {
+			if loginString, castOK := login.(string); castOK {
+				castData.result[loginString] = castData.toResolve[castData.varName]
+			}
+		}
+	}
+	return
 }
 
 func getSliceFromMapOfStrings(source map[string]struct{}) []string {
@@ -140,6 +174,24 @@ func structToMap(variable interface{}) map[string]interface{} {
 	res := make(map[string]interface{})
 	if unmErr := json.Unmarshal(bytes, &res); unmErr != nil {
 		return nil
+	}
+
+	return res
+}
+
+func getBlockOutput(varStore *store.VariableStore, node string) map[string]interface{} {
+	res := make(map[string]interface{})
+
+	if varStore == nil {
+		return res
+	}
+
+	storage, _ := varStore.GrabStorage()
+	for k, v := range storage {
+		if strings.HasPrefix(k, node) {
+			newK := strings.Replace(k, node+".", "", 1)
+			res[newK] = v
+		}
 	}
 
 	return res

@@ -38,6 +38,9 @@ func upMoveOldDeadlines(tx *sql.Tx) error {
 	if queryErr != nil {
 		return queryErr
 	}
+
+	defer rows.Close()
+
 	for rows.Next() {
 		var resultRow ResultRowStruct
 		scanErr := rows.Scan(
@@ -71,7 +74,6 @@ func upMoveOldDeadlines(tx *sql.Tx) error {
 		rows.Close()
 		return rowsErr
 	}
-	rows.Close()
 
 	query = "insert into deadlines(id, block_id, deadline, action) values ($1, $2, $3, $4)"
 	for _, row := range resultRows {

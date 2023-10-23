@@ -6,6 +6,7 @@ import (
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
@@ -31,36 +32,104 @@ type GoApproverBlock struct {
 	Sockets []script.Socket
 	State   *ApproverData
 
+	expectedEvents map[string]struct{}
+	happenedEvents []entity.NodeEvent
+
 	RunContext *BlockRunContext
+}
+
+func (gb *GoApproverBlock) GetNewEvents() []entity.NodeEvent {
+	return gb.happenedEvents
 }
 
 func (gb *GoApproverBlock) Members() []Member {
 	members := make([]Member, 0)
+	addedMembers := make(map[string]struct{}, 0)
 	for login := range gb.State.Approvers {
 		members = append(members, Member{
-			Login:      login,
-			IsFinished: gb.isApprovementBaseFinished(login),
-			Actions:    gb.approvementBaseActions(login),
+			Login:                login,
+			Actions:              gb.approvementBaseActions(login),
+			IsActed:              gb.isApprovementActed(login),
+			ExecutionGroupMember: false,
 		})
+		addedMembers[login] = struct{}{}
 	}
+
 	for i := 0; i < len(gb.State.AdditionalApprovers); i++ {
 		addApprover := gb.State.AdditionalApprovers[i]
 		members = append(members, Member{
-			Login:      addApprover.ApproverLogin,
-			IsFinished: gb.isApprovementAddFinished(&addApprover),
-			Actions:    gb.approvementAddActions(&addApprover),
+			Login:                addApprover.ApproverLogin,
+			Actions:              gb.approvementAddActions(&addApprover),
+			IsActed:              gb.isApprovementActed(addApprover.ApproverLogin),
+			ExecutionGroupMember: false,
 		})
+		addedMembers[addApprover.ApproverLogin] = struct{}{}
+	}
+
+	for i := 0; i < len(gb.State.ApproverLog); i++ {
+		log := gb.State.ApproverLog[i]
+		if _, ok := addedMembers[log.Login]; ok {
+			continue
+		}
+		members = append(members, Member{
+			Login:                log.Login,
+			Actions:              []MemberAction{},
+			IsActed:              true,
+			ExecutionGroupMember: false,
+		})
+		addedMembers[log.Login] = struct{}{}
+	}
+
+	for i := 0; i < len(gb.State.EditingAppLog); i++ {
+		log := gb.State.EditingAppLog[i]
+		if _, ok := addedMembers[log.Approver]; ok {
+			continue
+		}
+		members = append(members, Member{
+			Login:                log.Approver,
+			Actions:              []MemberAction{},
+			IsActed:              true,
+			ExecutionGroupMember: false,
+		})
+		addedMembers[log.Approver] = struct{}{}
+	}
+
+	for i := 0; i < len(gb.State.AddInfo); i++ {
+		log := gb.State.AddInfo[i]
+		if _, ok := addedMembers[log.Login]; ok {
+			continue
+		}
+		if log.Type == RequestAddInfoType {
+			members = append(members, Member{
+				Login:                log.Login,
+				Actions:              []MemberAction{},
+				IsActed:              true,
+				ExecutionGroupMember: false,
+			})
+			addedMembers[log.Login] = struct{}{}
+		}
 	}
 	return members
 }
 
-func (gb *GoApproverBlock) isApprovementBaseFinished(login string) bool {
-	if gb.State.Decision != nil {
-		return true
-	}
+func (gb *GoApproverBlock) isApprovementActed(login string) bool {
 	for i := 0; i < len(gb.State.ApproverLog); i++ {
 		log := gb.State.ApproverLog[i]
-		if (log.Login == login || log.DelegateFor == login) && log.LogType == ApproverLogDecision {
+		if log.Login == login || log.DelegateFor == login {
+			return true
+		}
+	}
+
+	for i := 0; i < len(gb.State.EditingAppLog); i++ {
+		log := gb.State.EditingAppLog[i]
+		if log.Approver == login || log.DelegateFor == login {
+			return true
+		}
+	}
+
+	for i := 0; i < len(gb.State.AddInfo); i++ {
+		log := gb.State.AddInfo[i]
+		if (log.Login == login || log.DelegateFor == login) && log.Type == RequestAddInfoType {
 			return true
 		}
 	}
@@ -93,13 +162,6 @@ func (gb *GoApproverBlock) approvementBaseActions(login string) []MemberAction {
 	})
 }
 
-func (gb *GoApproverBlock) isApprovementAddFinished(a *AdditionalApprover) bool {
-	if gb.State.Decision != nil || a.Decision != nil {
-		return true
-	}
-	return false
-}
-
 func (gb *GoApproverBlock) approvementAddActions(a *AdditionalApprover) []MemberAction {
 	if gb.State.Decision != nil || a.Decision != nil || gb.State.EditingApp != nil {
 		return []MemberAction{}
@@ -122,75 +184,120 @@ func (gb *GoApproverBlock) approvementAddActions(a *AdditionalApprover) []Member
 		}}
 }
 
+type qna struct {
+	qCrAt time.Time
+	aCrAt *time.Time
+}
+
+func (gb *GoApproverBlock) getNewSLADeadline(slaInfoPtr *sla.SLAInfo, half bool) time.Time {
+	qq := make(map[string]qna)
+	for i := range gb.State.AddInfo {
+		item := gb.State.AddInfo[i]
+		if item.Type == RequestAddInfoType {
+			qq[item.Id] = qna{qCrAt: item.CreatedAt}
+		}
+	}
+	for i := range gb.State.AddInfo {
+		item := gb.State.AddInfo[i]
+		if item.Type == ReplyAddInfoType && item.LinkId != nil {
+			data, ok := qq[*item.LinkId]
+			if !ok {
+				continue
+			}
+			data.aCrAt = &item.CreatedAt
+			qq[*item.LinkId] = data
+		}
+	}
+
+	newSLA := gb.State.SLA
+	if half {
+		newSLA /= 2
+	}
+
+	deadline := gb.RunContext.Services.SLAService.ComputeMaxDate(gb.RunContext.CurrBlockStartTime, float32(newSLA), slaInfoPtr)
+	for _, q := range qq {
+		if q.aCrAt == nil {
+			continue
+		}
+		additionalHours := gb.RunContext.Services.SLAService.GetWorkHoursBetweenDates(q.qCrAt, *q.aCrAt, nil)
+		deadline = gb.RunContext.Services.SLAService.ComputeMaxDate(deadline, float32(additionalHours), nil)
+	}
+	return deadline
+}
+
 //nolint:dupl,gocyclo //Need here
 func (gb *GoApproverBlock) Deadlines(ctx context.Context) ([]Deadline, error) {
 	deadlines := make([]Deadline, 0, 2)
 
-	if gb.State.Decision != nil && len(gb.State.AddInfo) > 0 &&
-		gb.State.AddInfo[len(gb.State.AddInfo)-1].Type == RequestAddInfoType {
+	latestUnansweredRequest := gb.State.latestUnansweredAddInfoLogEntry()
+
+	if gb.State.Decision != nil && latestUnansweredRequest != nil {
 		if gb.State.CheckDayBeforeSLARequestInfo {
 			deadlines = append(deadlines, Deadline{
-				Deadline: ComputeMaxDate(gb.State.AddInfo[len(gb.State.AddInfo)-1].CreatedAt, 2*8, nil),
-				Action:   entity.TaskUpdateActionDayBeforeSLARequestAddInfo,
+				Deadline: gb.RunContext.Services.SLAService.ComputeMaxDate(
+					latestUnansweredRequest.CreatedAt, 2*workingHours, nil),
+				Action: entity.TaskUpdateActionDayBeforeSLARequestAddInfo,
 			})
 		}
 
 		deadlines = append(deadlines, Deadline{
-			Deadline: ComputeMaxDate(gb.State.AddInfo[len(gb.State.AddInfo)-1].CreatedAt, 3*8, nil),
-			Action:   entity.TaskUpdateActionSLABreachRequestAddInfo,
+			Deadline: gb.RunContext.Services.SLAService.ComputeMaxDate(
+				latestUnansweredRequest.CreatedAt, 3*workingHours, nil),
+			Action: entity.TaskUpdateActionSLABreachRequestAddInfo,
 		})
 
 		return deadlines, nil
 	}
 
-	if gb.State.CheckSLA {
-		slaInfoPtr, getSlaInfoErr := GetSLAInfoPtr(ctx, GetSLAInfoDTOStruct{
-			Service: gb.RunContext.HrGate,
-			TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime,
-				FinishedAt: gb.RunContext.currBlockStartTime.Add(time.Hour * 24 * 100)}},
-			WorkType: WorkHourType(gb.State.WorkType),
+	if gb.State.CheckSLA && latestUnansweredRequest == nil {
+		slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
+			TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.CurrBlockStartTime,
+				FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100)}},
+			WorkType: sla.WorkHourType(gb.State.WorkType),
 		})
 
 		if getSlaInfoErr != nil {
 			return nil, getSlaInfoErr
 		}
 		if !gb.State.SLAChecked {
-			deadlines = append(deadlines,
-				Deadline{Deadline: ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(gb.State.SLA), slaInfoPtr),
-					Action: entity.TaskUpdateActionSLABreach,
-				},
+			deadlines = append(deadlines, Deadline{
+				Deadline: gb.getNewSLADeadline(slaInfoPtr, false),
+				Action:   entity.TaskUpdateActionSLABreach,
+			},
 			)
 		}
 
 		if !gb.State.HalfSLAChecked {
-			deadlines = append(deadlines,
-				Deadline{Deadline: ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(gb.State.SLA)/2, slaInfoPtr),
-					Action: entity.TaskUpdateActionHalfSLABreach,
-				},
+			deadlines = append(deadlines, Deadline{
+				Deadline: gb.getNewSLADeadline(slaInfoPtr, true),
+				Action:   entity.TaskUpdateActionHalfSLABreach,
+			},
 			)
 		}
 	}
 
 	if gb.State.IsEditable && gb.State.CheckReworkSLA && gb.State.EditingApp != nil {
 		deadlines = append(deadlines,
-			Deadline{Deadline: ComputeMaxDate(gb.State.EditingApp.CreatedAt, float32(gb.State.ReworkSLA), nil),
+			Deadline{Deadline: gb.RunContext.Services.SLAService.ComputeMaxDate(
+				gb.State.EditingApp.CreatedAt, float32(gb.State.ReworkSLA), nil),
 				Action: entity.TaskUpdateActionReworkSLABreach,
 			},
 		)
 	}
 
-	if len(gb.State.AddInfo) > 0 &&
-		gb.State.AddInfo[len(gb.State.AddInfo)-1].Type == RequestAddInfoType {
+	if latestUnansweredRequest != nil {
 		if gb.State.CheckDayBeforeSLARequestInfo {
 			deadlines = append(deadlines, Deadline{
-				Deadline: ComputeMaxDate(gb.State.AddInfo[len(gb.State.AddInfo)-1].CreatedAt, 2*8, nil),
-				Action:   entity.TaskUpdateActionDayBeforeSLARequestAddInfo,
+				Deadline: gb.RunContext.Services.SLAService.ComputeMaxDate(
+					latestUnansweredRequest.CreatedAt, 2*workingHours, nil),
+				Action: entity.TaskUpdateActionDayBeforeSLARequestAddInfo,
 			})
 		}
 
 		deadlines = append(deadlines, Deadline{
-			Deadline: ComputeMaxDate(gb.State.AddInfo[len(gb.State.AddInfo)-1].CreatedAt, 3*8, nil),
-			Action:   entity.TaskUpdateActionSLABreachRequestAddInfo,
+			Deadline: gb.RunContext.Services.SLAService.ComputeMaxDate(
+				latestUnansweredRequest.CreatedAt, 3*workingHours, nil),
+			Action: entity.TaskUpdateActionSLABreachRequestAddInfo,
 		})
 	}
 
@@ -227,36 +334,36 @@ func (gb *GoApproverBlock) GetStatus() Status {
 	return StatusRunning
 }
 
-func (gb *GoApproverBlock) GetTaskHumanStatus() TaskHumanStatus {
+func (gb *GoApproverBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment string) {
 	if gb.State != nil && gb.State.EditingApp != nil {
-		return StatusWait
+		return StatusWait, ""
 	}
 
 	if gb.State != nil && gb.State.Decision != nil {
 		if *gb.State.Decision == ApproverDecisionRejected {
-			return StatusApprovementRejected
+			return StatusApprovementRejected, ""
 		}
 
 		if *gb.State.Decision == ApproverDecisionSentToEdit {
-			return StatusApprovementRejected
+			return StatusApprovementRejected, ""
 		}
 
-		return getPositiveFinishStatus(*gb.State.Decision)
+		return getPositiveFinishStatus(*gb.State.Decision), ""
 	}
 
 	if gb.State != nil && len(gb.State.AddInfo) != 0 {
 		if gb.State.checkEmptyLinkIdAddInfo() {
-			return StatusWait
+			return StatusWait, ""
 		}
-		return getPositiveProcessingStatus(gb.State.ApproveStatusName)
+		return getPositiveProcessingStatus(gb.State.ApproveStatusName), ""
 	}
 
 	var lastIdx = len(gb.State.AddInfo) - 1
 	if len(gb.State.AddInfo) > 0 && gb.State.AddInfo[lastIdx].Type == RequestAddInfoType {
-		return StatusWait
+		return StatusWait, ""
 	}
 
-	return getPositiveProcessingStatus(gb.State.ApproveStatusName)
+	return getPositiveProcessingStatus(gb.State.ApproveStatusName), ""
 }
 
 func (gb *GoApproverBlock) Next(_ *store.VariableStore) ([]string, bool) {
@@ -291,21 +398,21 @@ func (gb *GoApproverBlock) Model() script.FunctionModel {
 		BlockType: script.TypeGo,
 		Title:     gb.Title,
 		Inputs:    nil,
-		Outputs: []script.FunctionValueModel{
-			{
-				Name:    keyOutputApprover,
-				Type:    "string",
-				Comment: "approver login which made a decision",
-			},
-			{
-				Name:    keyOutputDecision,
-				Type:    "string",
-				Comment: "block decision",
-			},
-			{
-				Name:    keyOutputComment,
-				Type:    "string",
-				Comment: "approver comment",
+		Outputs: &script.JSONSchema{
+			Type: "object",
+			Properties: script.JSONSchemaProperties{
+				keyOutputApprover: {
+					Type:        "string",
+					Description: "approver login which made a decision",
+				},
+				keyOutputDecision: {
+					Type:        "string",
+					Description: "block decision",
+				},
+				keyOutputComment: {
+					Type:        "string",
+					Description: "approver comment",
+				},
 			},
 		},
 		Params: &script.FunctionParams{
@@ -340,7 +447,9 @@ func getPositiveProcessingStatus(decision string) (status TaskHumanStatus) {
 	case script.SettingStatusApproveInform:
 		return StatusApproveInform
 	case script.SettingStatusApproveSign:
-		return StatusApproveSign
+		return StatusSigning
+	case script.SettingStatusApproveSignUkep:
+		return StatusApproveSignUkep
 	default:
 		return StatusApprovement
 	}
@@ -355,8 +464,8 @@ func getPositiveFinishStatus(decision ApproverDecision) (status TaskHumanStatus)
 		return StatusApproveViewed
 	case ApproverDecisionInformed:
 		return StatusApproveInformed
-	case ApproverDecisionSigned:
-		return StatusApproveSigned
+	case ApproverDecisionSigned, ApproverDecisionSignedUkep:
+		return StatusSigned
 	case ApproverDecisionConfirmed:
 		return StatusApproveConfirmed
 	default:

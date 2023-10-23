@@ -47,6 +47,13 @@ const (
 	BooleanOperandOperandTypeVariableOperand BooleanOperandOperandType = "variableOperand"
 )
 
+// Defines values for ChangeWorkStatusParamsStatus.
+const (
+	ChangeWorkStatusParamsStatusEnd ChangeWorkStatusParamsStatus = "end"
+
+	ChangeWorkStatusParamsStatusStart ChangeWorkStatusParamsStatus = "start"
+)
+
 // Defines values for ConditionGroupLogicalOperator.
 const (
 	ConditionGroupLogicalOperatorAnd ConditionGroupLogicalOperator = "and"
@@ -80,6 +87,11 @@ const (
 	ExecutionParamsTypeGroup ExecutionParamsType = "group"
 
 	ExecutionParamsTypeUser ExecutionParamsType = "user"
+)
+
+// Defines values for ExternalSystemSubscriptionParamsMethod.
+const (
+	ExternalSystemSubscriptionParamsMethodPOST ExternalSystemSubscriptionParamsMethod = "POST"
 )
 
 // Defines values for FormAccessType.
@@ -121,6 +133,10 @@ const (
 	FunctionParamsTypePlaceholder FunctionParamsType = "placeholder"
 
 	FunctionParamsTypeServicedeskApplication FunctionParamsType = "servicedesk_application"
+
+	FunctionParamsTypeSign FunctionParamsType = "sign"
+
+	FunctionParamsTypeTimer FunctionParamsType = "timer"
 )
 
 // Defines values for IntegerOperandDataType.
@@ -162,6 +178,13 @@ const (
 	MonitoringTableTaskStatusОстановлен MonitoringTableTaskStatus = "Остановлен"
 )
 
+// Defines values for NodeEvent.
+const (
+	NodeEventEnd NodeEvent = "end"
+
+	NodeEventStart NodeEvent = "start"
+)
+
 // Defines values for NumberOperandDataType.
 const (
 	NumberOperandDataTypeInteger NumberOperandDataType = "integer"
@@ -183,6 +206,40 @@ const (
 	RequestExecutionInfoTypeAnswer RequestExecutionInfoType = "answer"
 
 	RequestExecutionInfoTypeQuestion RequestExecutionInfoType = "question"
+)
+
+// Defines values for SignatureCarrier.
+const (
+	SignatureCarrierAll SignatureCarrier = "all"
+
+	SignatureCarrierCloud SignatureCarrier = "cloud"
+
+	SignatureCarrierToken SignatureCarrier = "token"
+)
+
+// Defines values for SignatureType.
+const (
+	SignatureTypePep SignatureType = "pep"
+
+	SignatureTypeUkep SignatureType = "ukep"
+
+	SignatureTypeUnep SignatureType = "unep"
+)
+
+// Defines values for SignerType.
+const (
+	SignerTypeFromSchema SignerType = "fromSchema"
+
+	SignerTypeGroup SignerType = "group"
+
+	SignerTypeUser SignerType = "user"
+)
+
+// Defines values for SigningRule.
+const (
+	SigningRuleAllOf SigningRule = "AllOf"
+
+	SigningRuleAnyOf SigningRule = "AnyOf"
 )
 
 // Defines values for SocketActionType.
@@ -252,6 +309,10 @@ const (
 	TaskUpdateActionRequestAddInfo TaskUpdateAction = "request_add_info"
 
 	TaskUpdateActionRequestExecutionInfo TaskUpdateAction = "request_execution_info"
+
+	TaskUpdateActionSign TaskUpdateAction = "sign"
+
+	TaskUpdateActionSignChangeWorkStatus TaskUpdateAction = "sign_change_work_status"
 )
 
 // Defines values for WorkType.
@@ -282,6 +343,8 @@ const (
 
 	ApproverDecisionSign ApproverDecision = "sign"
 
+	ApproverDecisionSignUkep ApproverDecision = "sign_ukep"
+
 	ApproverDecisionViewed ApproverDecision = "viewed"
 )
 
@@ -296,7 +359,11 @@ const (
 
 // Defines values for CompareBooleanOperator.
 const (
+	CompareBooleanOperatorНеПустое CompareBooleanOperator = "Не Пустое"
+
 	CompareBooleanOperatorНеРавно CompareBooleanOperator = "Не равно"
+
+	CompareBooleanOperatorПустое CompareBooleanOperator = "Пустое"
 
 	CompareBooleanOperatorРавно CompareBooleanOperator = "Равно"
 )
@@ -311,7 +378,11 @@ const (
 
 	CompareDateOperatorМеньшеИлиРавно CompareDateOperator = "Меньше или равно"
 
+	CompareDateOperatorНеПустое CompareDateOperator = "Не Пустое"
+
 	CompareDateOperatorНеРавно CompareDateOperator = "Не равно"
+
+	CompareDateOperatorПустое CompareDateOperator = "Пустое"
 
 	CompareDateOperatorРавно CompareDateOperator = "Равно"
 )
@@ -326,7 +397,11 @@ const (
 
 	CompareIntegerOperatorМеньшеИлиРавно CompareIntegerOperator = "Меньше или равно"
 
+	CompareIntegerOperatorНеПустое CompareIntegerOperator = "Не Пустое"
+
 	CompareIntegerOperatorНеРавно CompareIntegerOperator = "Не равно"
+
+	CompareIntegerOperatorПустое CompareIntegerOperator = "Пустое"
 
 	CompareIntegerOperatorРавно CompareIntegerOperator = "Равно"
 )
@@ -341,16 +416,24 @@ const (
 
 	CompareNumberOperatorМеньшеИлиРавно CompareNumberOperator = "Меньше или равно"
 
+	CompareNumberOperatorНеПустое CompareNumberOperator = "Не Пустое"
+
 	CompareNumberOperatorНеРавно CompareNumberOperator = "Не равно"
+
+	CompareNumberOperatorПустое CompareNumberOperator = "Пустое"
 
 	CompareNumberOperatorРавно CompareNumberOperator = "Равно"
 )
 
 // Defines values for CompareStringOperator.
 const (
+	CompareStringOperatorНеПустое CompareStringOperator = "Не Пустое"
+
 	CompareStringOperatorНеРавно CompareStringOperator = "Не равно"
 
 	CompareStringOperatorНеСодержит CompareStringOperator = "Не Содержит"
+
+	CompareStringOperatorПустое CompareStringOperator = "Пустое"
 
 	CompareStringOperatorРавно CompareStringOperator = "Равно"
 
@@ -390,6 +473,15 @@ const (
 	ScenarioStatusN5 ScenarioStatus = 5
 )
 
+// Defines values for SignDecision.
+const (
+	SignDecisionError SignDecision = "error"
+
+	SignDecisionRejected SignDecision = "rejected"
+
+	SignDecisionSigned SignDecision = "signed"
+)
+
 // Defines values for TaskHumanStatus.
 const (
 	TaskHumanStatusApproveConfirm TaskHumanStatus = "approve-confirm"
@@ -401,6 +493,8 @@ const (
 	TaskHumanStatusApproveInformed TaskHumanStatus = "approve-informed"
 
 	TaskHumanStatusApproveSign TaskHumanStatus = "approve-sign"
+
+	TaskHumanStatusApproveSignUkep TaskHumanStatus = "approve-sign_ukep"
 
 	TaskHumanStatusApproveSigned TaskHumanStatus = "approve-signed"
 
@@ -432,8 +526,8 @@ const (
 // Add Approver params
 type AddApproversParams struct {
 	// logins of additional approvers
-	AdditionalApprovers []string `json:"additionalApprovers"`
-	Attachments         []string `json:"attachments"`
+	AdditionalApprovers []string     `json:"additionalApprovers"`
+	Attachments         []Attachment `json:"attachments"`
 
 	// Question from approver
 	Question string `json:"question"`
@@ -441,7 +535,7 @@ type AddApproversParams struct {
 
 // Approver update params
 type AdditionalApproverUpdateParams struct {
-	Attachments []string `json:"attachments"`
+	Attachments []Attachment `json:"attachments"`
 
 	// Comment from approver
 	Comment string `json:"comment"`
@@ -461,6 +555,9 @@ type AllUsageResponse struct {
 type AllUsageResponse_Pipelines struct {
 	AdditionalProperties map[string][]string `json:"-"`
 }
+
+// Разрешить системе запуск заявки от третьего лица
+type AllowRunAsOthers bool
 
 // ApproveActionNamesResponse defines model for ApproveActionNamesResponse.
 type ApproveActionNamesResponse struct {
@@ -545,7 +642,7 @@ type ApproverType string
 
 // Approver update params
 type ApproverUpdateParams struct {
-	Attachments []string `json:"attachments"`
+	Attachments []Attachment `json:"attachments"`
 
 	// Comment from approver
 	Comment string `json:"comment"`
@@ -557,11 +654,14 @@ type ApproverUpdateParams struct {
 	//  * informed - Проинформирован
 	//  * sign - Подписать
 	//  * confirm - Утвердить
+	//  * sign_ukep - Подписать УКЭП
 	Decision ApproverDecision `json:"decision"`
 }
 
 // Описание типа, который хранится в массиве. Если type = object, тогда поле properties обязательное. Оно нужно для описание конкретного типа объектов, которые хранятся в массиве. Если type = array(многомерный массив у нас то есть), тогда поле items обязательное. Оно описывает тип массивов.
 type ArrayItems struct {
+	Format *string `json:"format,omitempty"`
+
 	// Описание типа, который хранится в массиве. Если type = object, тогда поле properties обязательное. Оно нужно для описание конкретного типа объектов, которые хранятся в массиве. Если type = array(многомерный массив у нас то есть), тогда поле items обязательное. Оно описывает тип массивов.
 	Items *ArrayItems `json:"items,omitempty"`
 
@@ -570,6 +670,15 @@ type ArrayItems struct {
 
 	// Тип элементов массива
 	Type string `json:"type"`
+}
+
+// Attachment defines model for Attachment.
+type Attachment struct {
+	// Ссылка на файл в сторонней системе
+	ExternalLink *string `json:"external_link,omitempty"`
+
+	// Id файла в file registry
+	FileId *string `json:"file_id,omitempty"`
 }
 
 // BlockContextResponse defines model for BlockContextResponse.
@@ -581,6 +690,17 @@ type BlockContextResponse struct {
 // Ноды
 type BlockContextResponse_Blocks struct {
 	AdditionalProperties map[string]MonitoringBlockOutput `json:"-"`
+}
+
+// BlockStateResponse defines model for BlockStateResponse.
+type BlockStateResponse struct {
+	// Стейт блока
+	State *BlockStateResponse_State `json:"state,omitempty"`
+}
+
+// Стейт блока
+type BlockStateResponse_State struct {
+	AdditionalProperties map[string]MonitoringBlockState `json:"-"`
 }
 
 // Basic boolean operand, can provide working compare types for this type
@@ -599,6 +719,14 @@ type BooleanOperandOperandType string
 type CancelAppParams struct {
 	Comment string `json:"comment"`
 }
+
+// Sign update params
+type ChangeWorkStatusParams struct {
+	Status ChangeWorkStatusParamsStatus `json:"status"`
+}
+
+// ChangeWorkStatusParamsStatus defines model for ChangeWorkStatusParams.Status.
+type ChangeWorkStatusParamsStatus string
 
 // Compare operands using operator
 type Condition struct {
@@ -633,6 +761,7 @@ type CountTasks struct {
 	Approve     int `json:"approve"`
 	Execute     int `json:"execute"`
 	FormExecute int `json:"form_execute"`
+	Sign        int `json:"sign"`
 }
 
 // Created defines model for Created.
@@ -686,7 +815,7 @@ type EriusFunc struct {
 	BlockType  BlockType               `json:"block_type"`
 	Input      *[]EriusFunctionValue   `json:"input,omitempty"`
 	Next       EriusFunc_Next          `json:"next"`
-	Output     *[]EriusFunctionValue   `json:"output,omitempty"`
+	Output     *JSONSchema             `json:"output,omitempty"`
 	ParamType  *string                 `json:"param_type,omitempty"`
 	Params     *map[string]interface{} `json:"params,omitempty"`
 	ShortTitle *string                 `json:"short_title,omitempty"`
@@ -787,17 +916,19 @@ type EriusTask struct {
 	Description      string  `json:"description"`
 
 	// Task human readable status
-	HumanStatus   TaskHumanStatus        `json:"human_status"`
-	Id            string                 `json:"id"`
-	LastChangedAt string                 `json:"last_changed_at"`
-	Name          string                 `json:"name"`
-	Parameters    map[string]interface{} `json:"parameters"`
-	Rate          *int                   `json:"rate,omitempty"`
-	StartedAt     string                 `json:"started_at"`
-	Status        string                 `json:"status"`
-	Steps         []Step                 `json:"steps"`
-	VersionId     string                 `json:"version_id"`
-	WorkNumber    string                 `json:"work_number"`
+	HumanStatus        TaskHumanStatus        `json:"human_status"`
+	HumanStatusComment *string                `json:"human_status_comment,omitempty"`
+	Id                 string                 `json:"id"`
+	LastChangedAt      string                 `json:"last_changed_at"`
+	Name               string                 `json:"name"`
+	NodeGroup          *[]NodeGroup           `json:"node_group,omitempty"`
+	Parameters         map[string]interface{} `json:"parameters"`
+	Rate               *int                   `json:"rate,omitempty"`
+	StartedAt          string                 `json:"started_at"`
+	Status             string                 `json:"status"`
+	Steps              []Step                 `json:"steps"`
+	VersionId          string                 `json:"version_id"`
+	WorkNumber         string                 `json:"work_number"`
 }
 
 // EriusTasks defines model for EriusTasks.
@@ -837,6 +968,9 @@ type EriusVersionInfo struct {
 
 // Chosen function to be executed
 type ExecutableFunctionParams struct {
+	// Is active SLA
+	CheckSla bool `json:"check_sla"`
+
 	// Constant values for function parameters (key of object is variable name)
 	Constants map[string]interface{} `json:"constants"`
 
@@ -845,6 +979,9 @@ type ExecutableFunctionParams struct {
 
 	// Function name
 	Name string `json:"name"`
+
+	// in seconds
+	Sla int `json:"sla"`
 
 	// Used function version
 	Version string `json:"version"`
@@ -885,6 +1022,9 @@ type ExecutionParams struct {
 	// Execution rework SLA (in working hours)
 	ReworkSla int `json:"rework_sla"`
 
+	// flag to show executor
+	ShowExecutor *bool `json:"show_executor,omitempty"`
+
 	// Execution SLA (in working hours)
 	Sla int `json:"sla"`
 
@@ -909,7 +1049,7 @@ type ExecutionParamsType string
 
 // Executor update params
 type ExecutionUpdateParams struct {
-	Attachments []string `json:"attachments"`
+	Attachments []Attachment `json:"attachments"`
 
 	// Comment from executor
 	Comment string `json:"comment"`
@@ -922,7 +1062,7 @@ type ExecutionUpdateParams struct {
 
 // Executor change params
 type ExecutorChangeParams struct {
-	Attachments []string `json:"attachments"`
+	Attachments []Attachment `json:"attachments"`
 
 	// Comment from executor
 	Comment string `json:"comment"`
@@ -933,8 +1073,10 @@ type ExecutorChangeParams struct {
 
 // ExternalSystem defines model for ExternalSystem.
 type ExternalSystem struct {
-	InputMapping *JSONSchema `json:"input_mapping,omitempty"`
-	InputSchema  *JSONSchema `json:"input_schema,omitempty"`
+	// Разрешить системе запуск заявки от третьего лица
+	AllowRunAsOthers *AllowRunAsOthers `json:"allow_run_as_others,omitempty"`
+	InputMapping     *JSONSchema       `json:"input_mapping,omitempty"`
+	InputSchema      *JSONSchema       `json:"input_schema,omitempty"`
 
 	// Название системы
 	Name           string             `json:"name"`
@@ -948,6 +1090,31 @@ type ExternalSystem struct {
 
 // Id внешней системы
 type ExternalSystemId string
+
+// Настройки подписки системы на изменения в заявках
+type ExternalSystemSubscriptionParams struct {
+	// Представляет из себя набор ключ-значение, где ключ - это название переменной/поля объекта, а значение - это структура, которая описывает переменную(или поле объекта). Причём, если переменная - это объект, тогда должно быть заполнено поле propeties(описание полей). Если переменная - массив, тогда должно быть заполнено поле items(описание типа, который хранится в массиве).
+	Mapping JSONSchemaProperties `json:"mapping"`
+
+	// Какой http метод использовать
+	Method ExternalSystemSubscriptionParamsMethod `json:"method"`
+
+	// ID микросервиса
+	MicroserviceId string `json:"microservice_id"`
+
+	// Ноды и ивенты, на которые нужна подписка
+	Nodes              []NodeSubscriptionEvents `json:"nodes"`
+	NotificationSchema JSONSchema               `json:"notification_schema"`
+
+	// Путь, по которому надо присылать ивенты
+	Path string `json:"path"`
+
+	// ID системы
+	SystemId string `json:"system_id"`
+}
+
+// Какой http метод использовать
+type ExternalSystemSubscriptionParamsMethod string
 
 // Fill form
 type FillFormUpdateParams struct {
@@ -1032,9 +1199,6 @@ type FormParams struct {
 	// form template id
 	SchemaId *string `json:"schema_id,omitempty"`
 
-	// form template id name
-	SchemaName *string `json:"schema_name,omitempty"`
-
 	// form sla
 	Sla int `json:"sla"`
 
@@ -1083,7 +1247,7 @@ type FunctionModel struct {
 	BlockType BlockType             `json:"block_type"`
 	Id        string                `json:"id"`
 	Inputs    *[]FunctionValueModel `json:"inputs,omitempty"`
-	Outputs   *[]FunctionValueModel `json:"outputs,omitempty"`
+	Outputs   *JSONSchema           `json:"outputs,omitempty"`
 	Params    *FunctionParams       `json:"params,omitempty"`
 	ShapeType int                   `json:"shape_type"`
 	Sockets   []Socket              `json:"sockets"`
@@ -1144,6 +1308,9 @@ type JSONSchemaProperties struct {
 		// Format of param
 		Format *string `json:"format,omitempty"`
 
+		// Format of param
+		Global *string `json:"global,omitempty"`
+
 		// Описание типа, который хранится в массиве. Если type = object, тогда поле properties обязательное. Оно нужно для описание конкретного типа объектов, которые хранятся в массиве. Если type = array(многомерный массив у нас то есть), тогда поле items обязательное. Оно описывает тип массивов.
 		Items *ArrayItems `json:"items,omitempty"`
 
@@ -1181,6 +1348,21 @@ type MonitoringBlockOutput struct {
 
 // MonitoringBlockParam defines model for MonitoringBlockParam.
 type MonitoringBlockParam struct {
+	// Описание поля
+	Description string `json:"description"`
+
+	// Имя поля
+	Name string `json:"name"`
+
+	// Тип поля
+	Type string `json:"type"`
+
+	// Значение поля
+	Value interface{} `json:"value"`
+}
+
+// MonitoringBlockState defines model for MonitoringBlockState.
+type MonitoringBlockState struct {
 	// Описание поля
 	Description string `json:"description"`
 
@@ -1297,6 +1479,43 @@ type NameExists struct {
 	Exists bool `json:"exists"`
 }
 
+// NodeDecision defines model for NodeDecision.
+type NodeDecision struct {
+	// Название решения
+	Decision string `json:"decision"`
+
+	// Айди решения нод
+	Id string `json:"id"`
+
+	// Тип ноды
+	NodeType string `json:"node_type"`
+
+	// Название решения на русском
+	Title string `json:"title"`
+}
+
+// Возможный ивент ноды
+type NodeEvent string
+
+// NodeGroup defines model for NodeGroup.
+type NodeGroup struct {
+	EndNode   string       `json:"end_node"`
+	Nodes     *[]NodeGroup `json:"nodes,omitempty"`
+	Prev      *string      `json:"prev,omitempty"`
+	StartNode string       `json:"start_node"`
+}
+
+// NodeSubscriptionEvents defines model for NodeSubscriptionEvents.
+type NodeSubscriptionEvents struct {
+	Events *[]NodeEvent `json:"events,omitempty"`
+
+	// ID ноды в процессе
+	NodeId string `json:"node_id"`
+
+	// Нужно ли уведомлять о событиях по ноде
+	Notify bool `json:"notify"`
+}
+
 // Notification params
 type NotificationParams struct {
 	// Emails to get notifications
@@ -1364,6 +1583,9 @@ type ProcessSettingsWithExternalSystems struct {
 
 	// Настройки старта версии пайплайна(процесса)
 	ProcessSettings ProcessSettings `json:"process_settings"`
+
+	// Подписки систем на изменения в заявках, заведенных по процессу
+	TasksSubscriptions []ExternalSystemSubscriptionParams `json:"tasks_subscriptions"`
 }
 
 // RateApplicationRequest defines model for RateApplicationRequest.
@@ -1377,7 +1599,7 @@ type RequestExecutionInfoType string
 
 // Executor request info params
 type RequestInfoUpdateParams struct {
-	Attachments []string `json:"attachments"`
+	Attachments []Attachment `json:"attachments"`
 
 	// Comment from executor
 	Comment string `json:"comment"`
@@ -1399,7 +1621,7 @@ type ResponsePipelineSearch struct {
 // RunNewVersionByPrevVersionRequest defines model for RunNewVersionByPrevVersionRequest.
 type RunNewVersionByPrevVersionRequest struct {
 	ApplicationBody  map[string]interface{}                 `json:"application_body"`
-	AttachmentFields []string                               `json:"attachment_fields"`
+	AttachmentFields []Attachment                           `json:"attachment_fields"`
 	Description      string                                 `json:"description"`
 	Keys             RunNewVersionByPrevVersionRequest_Keys `json:"keys"`
 	WorkNumber       string                                 `json:"work_number"`
@@ -1428,7 +1650,7 @@ type RunVersionBody map[string]interface{}
 // RunVersionsByPipelineIdRequest defines model for RunVersionsByPipelineIdRequest.
 type RunVersionsByPipelineIdRequest struct {
 	ApplicationBody   map[string]interface{}              `json:"application_body"`
-	AttachmentFields  []string                            `json:"attachment_fields"`
+	AttachmentFields  []Attachment                        `json:"attachment_fields"`
 	Description       string                              `json:"description"`
 	IsTestApplication *bool                               `json:"is_test_application,omitempty"`
 	Keys              RunVersionsByPipelineIdRequest_Keys `json:"keys"`
@@ -1464,6 +1686,76 @@ type ShapeEntity struct {
 	Id    int    `json:"id"`
 	Title string `json:"title"`
 }
+
+// Singature params
+type SignParams struct {
+	// reject after expire sla
+	AutoReject *bool `json:"autoReject,omitempty"`
+
+	// Is active SLA
+	CheckSLA *bool `json:"checkSLA,omitempty"`
+
+	// List of accessibility properties for forms
+	FormsAccessibility []FormsAccessibility `json:"formsAccessibility"`
+	SignatureCarrier   *SignatureCarrier    `json:"signatureCarrier,omitempty"`
+	SignatureType      SignatureType        `json:"signatureType"`
+
+	// Signer value (depends on type)
+	Signer *string `json:"signer,omitempty"`
+
+	// Singer group id in SD
+	SignerGroupId *string `json:"signerGroupId,omitempty"`
+
+	// Path to singer group id
+	SignerGroupIdPath *string `json:"signerGroupIdPath,omitempty"`
+
+	// Signer group name in SD
+	SignerGroupName *string `json:"signerGroupName,omitempty"`
+
+	// Signer type:
+	//   * user - Single user
+	//   * group - Group ID
+	//   * FromSchema - Selected by initiator
+	SignerType SignerType `json:"signerType"`
+
+	// Count of singers which will participate in signing will depends of signing type. 'Any of' will check only first sign action, when 'all of' will be waiting for all signers.
+	SigningRule *SigningRule `json:"signingRule,omitempty"`
+
+	// Sign SLA (in working hours)
+	Sla *int `json:"sla,omitempty"`
+
+	// Рабочий режим
+	WorkType *WorkType `json:"workType,omitempty"`
+}
+
+// Sign update params
+type SignUpdateParams struct {
+	Attachments *[]Attachment `json:"attachments,omitempty"`
+
+	// Comment from signer
+	Comment *string `json:"comment,omitempty"`
+
+	// Approver decision:
+	//  * signed - Согласовано
+	//  * rejected - Отклонено
+	//  * error - Произошла ошибка
+	Decision SignDecision `json:"decision"`
+}
+
+// SignatureCarrier defines model for SignatureCarrier.
+type SignatureCarrier string
+
+// SignatureType defines model for SignatureType.
+type SignatureType string
+
+// Signer type:
+//   - user - Single user
+//   - group - Group ID
+//   - FromSchema - Selected by initiator
+type SignerType string
+
+// Count of singers which will participate in signing will depends of signing type. 'Any of' will check only first sign action, when 'all of' will be waiting for all signers.
+type SigningRule string
 
 // Socket object
 type Socket struct {
@@ -1535,6 +1827,9 @@ type TaskUpdate struct {
 
 	// Task update params
 	Parameters interface{} `json:"parameters"`
+
+	// Array of step names
+	StepNames []string `json:"step_names"`
 }
 
 // TaskUpdateAction defines model for TaskUpdate.Action.
@@ -1549,6 +1844,12 @@ type TasksStop struct {
 // TasksStopped defines model for TasksStopped.
 type TasksStopped struct {
 	Tasks []TaskStatus `json:"tasks"`
+}
+
+// Timer params
+type TimerParams struct {
+	// duration for timer
+	Duration string `json:"duration"`
 }
 
 // UsageResponse defines model for UsageResponse.
@@ -1585,8 +1886,16 @@ type Action struct {
 	// UUID действия
 	Id string `json:"id"`
 
+	// Дополнительные параметры действия
+	Params *Action_Params `json:"params,omitempty"`
+
 	// Человекочитаемое наименование действия
 	Title *string `json:"title,omitempty"`
+}
+
+// Дополнительные параметры действия
+type Action_Params struct {
+	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
 // Approver decision:
@@ -1601,6 +1910,7 @@ type AdditionalApproverDecision string
 //   - informed - Проинформирован
 //   - sign - Подписать
 //   - confirm - Утвердить
+//   - sign_ukep - Подписать УКЭП
 type ApproverDecision string
 
 // Block type (language)
@@ -1655,6 +1965,9 @@ type EriusTaskResponse struct {
 
 	// Параметры заявки
 	Parameters map[string]interface{} `json:"parameters"`
+
+	// Плановая дата завершения процесса
+	ProcessDeadline string `json:"process_deadline"`
 
 	// Оценка для выполненной заявки
 	Rate int `json:"rate"`
@@ -1722,6 +2035,12 @@ type Pipeline_Blocks struct {
 //   - 5 - On approve
 type ScenarioStatus int
 
+// Approver decision:
+//   - signed - Согласовано
+//   - rejected - Отклонено
+//   - error - Произошла ошибка
+type SignDecision string
+
 // Task human readable status
 type TaskHumanStatus string
 
@@ -1739,15 +2058,19 @@ type TaskResponseStep struct {
 	// Наименование шага
 	Name *string `json:"name,omitempty"`
 
+	// Короткое название ноды
+	ShortTitle *string `json:"short_title,omitempty"`
+
 	// Объект состояния
 	State *map[string]interface{} `json:"state,omitempty"`
 
 	// Статус шага
-	Status  *string                 `json:"status,omitempty"`
-	Steps   *[]string               `json:"steps,omitempty"`
-	Storage *map[string]interface{} `json:"storage,omitempty"`
-	Time    *string                 `json:"time,omitempty"`
-	Type    *string                 `json:"type,omitempty"`
+	Status     *string                 `json:"status,omitempty"`
+	Steps      *[]string               `json:"steps,omitempty"`
+	Storage    *map[string]interface{} `json:"storage,omitempty"`
+	Time       *string                 `json:"time,omitempty"`
+	Type       *string                 `json:"type,omitempty"`
+	UpdateTime *string                 `json:"updateTime,omitempty"`
 }
 
 // ValueOperand defines model for valueOperand.
@@ -1873,6 +2196,9 @@ type SaveVersionSettingsParams struct {
 // SaveVersionSettingsParamsSchemaFlag defines parameters for SaveVersionSettings.
 type SaveVersionSettingsParamsSchemaFlag string
 
+// SaveVersionTaskSubscriptionSettingsJSONBody defines parameters for SaveVersionTaskSubscriptionSettings.
+type SaveVersionTaskSubscriptionSettingsJSONBody []ExternalSystemSubscriptionParams
+
 // AddExternalSystemToVersionJSONBody defines parameters for AddExternalSystemToVersion.
 type AddExternalSystemToVersionJSONBody ExternalSystemId
 
@@ -1890,6 +2216,9 @@ type SaveExternalSystemSettingsParamsSchemaFlag string
 
 // SaveExternalSystemEndSettingsJSONBody defines parameters for SaveExternalSystemEndSettings.
 type SaveExternalSystemEndSettingsJSONBody EndSystemSettings
+
+// AllowRunAsOthersJSONBody defines parameters for AllowRunAsOthers.
+type AllowRunAsOthersJSONBody AllowRunAsOthers
 
 // RunNewVersionByPrevVersionJSONBody defines parameters for RunNewVersionByPrevVersion.
 type RunNewVersionByPrevVersionJSONBody RunNewVersionByPrevVersionRequest
@@ -1924,10 +2253,10 @@ type GetTasksParams struct {
 	Limit *int `json:"limit,omitempty"`
 
 	// Offset
-	Offset   *int     `json:"offset,omitempty"`
-	Created  *Created `json:"created,omitempty"`
-	Archived *bool    `json:"archived,omitempty"`
-	SelectAs *string  `json:"selectAs,omitempty"`
+	Offset   *int                    `json:"offset,omitempty"`
+	Created  *Created                `json:"created,omitempty"`
+	Archived *bool                   `json:"archived,omitempty"`
+	SelectAs *GetTasksParamsSelectAs `json:"selectAs,omitempty"`
 
 	// get tasks with status wait or done
 	ForCarousel *bool `json:"forCarousel,omitempty"`
@@ -1947,15 +2276,31 @@ type GetTasksParams struct {
 	// filter in process by logins
 	ProcessingLogins *[]string `json:"processingLogins,omitempty"`
 
-	// filter in process by groups ids
+	// filter in process by group ids
 	ProcessingGroupIds *[]string `json:"processingGroupIds,omitempty"`
+
+	// filter by processed logins
+	ProcessedLogins *[]string `json:"processedLogins,omitempty"`
+
+	// filter by processed group ids
+	ProcessedGroupIds *[]string `json:"processedGroupIds,omitempty"`
+	SelectFor         *string   `json:"selectFor,omitempty"`
 
 	// filter type assigned
 	ExecutorTypeAssigned *GetTasksParamsExecutorTypeAssigned `json:"executorTypeAssigned,omitempty"`
+
+	// signature carrier (used for selectAs = signer_jur)
+	SignatureCarrier *GetTasksParamsSignatureCarrier `json:"signatureCarrier,omitempty"`
 }
+
+// GetTasksParamsSelectAs defines parameters for GetTasks.
+type GetTasksParamsSelectAs string
 
 // GetTasksParamsExecutorTypeAssigned defines parameters for GetTasks.
 type GetTasksParamsExecutorTypeAssigned string
+
+// GetTasksParamsSignatureCarrier defines parameters for GetTasks.
+type GetTasksParamsSignatureCarrier string
 
 // StopTasksJSONBody defines parameters for StopTasks.
 type StopTasksJSONBody TasksStop
@@ -1987,6 +2332,9 @@ type CreatePipelineVersionJSONRequestBody CreatePipelineVersionJSONBody
 // SaveVersionSettingsJSONRequestBody defines body for SaveVersionSettings for application/json ContentType.
 type SaveVersionSettingsJSONRequestBody SaveVersionSettingsJSONBody
 
+// SaveVersionTaskSubscriptionSettingsJSONRequestBody defines body for SaveVersionTaskSubscriptionSettings for application/json ContentType.
+type SaveVersionTaskSubscriptionSettingsJSONRequestBody SaveVersionTaskSubscriptionSettingsJSONBody
+
 // AddExternalSystemToVersionJSONRequestBody defines body for AddExternalSystemToVersion for application/json ContentType.
 type AddExternalSystemToVersionJSONRequestBody AddExternalSystemToVersionJSONBody
 
@@ -1995,6 +2343,9 @@ type SaveExternalSystemSettingsJSONRequestBody SaveExternalSystemSettingsJSONBod
 
 // SaveExternalSystemEndSettingsJSONRequestBody defines body for SaveExternalSystemEndSettings for application/json ContentType.
 type SaveExternalSystemEndSettingsJSONRequestBody SaveExternalSystemEndSettingsJSONBody
+
+// AllowRunAsOthersJSONRequestBody defines body for AllowRunAsOthers for application/json ContentType.
+type AllowRunAsOthersJSONRequestBody AllowRunAsOthersJSONBody
 
 // RunNewVersionByPrevVersionJSONRequestBody defines body for RunNewVersionByPrevVersion for application/json ContentType.
 type RunNewVersionByPrevVersionJSONRequestBody RunNewVersionByPrevVersionJSONBody
@@ -2126,6 +2477,59 @@ func (a BlockContextResponse_Blocks) MarshalJSON() ([]byte, error) {
 	return json.Marshal(object)
 }
 
+// Getter for additional properties for BlockStateResponse_State. Returns the specified
+// element and whether it was found
+func (a BlockStateResponse_State) Get(fieldName string) (value MonitoringBlockState, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for BlockStateResponse_State
+func (a *BlockStateResponse_State) Set(fieldName string, value MonitoringBlockState) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]MonitoringBlockState)
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for BlockStateResponse_State to handle AdditionalProperties
+func (a *BlockStateResponse_State) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]MonitoringBlockState)
+		for fieldName, fieldBuf := range object {
+			var fieldVal MonitoringBlockState
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for BlockStateResponse_State to handle AdditionalProperties
+func (a BlockStateResponse_State) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
 // Getter for additional properties for EriusFunc_Next. Returns the specified
 // element and whether it was found
 func (a EriusFunc_Next) Get(fieldName string) (value []string, found bool) {
@@ -2191,6 +2595,9 @@ func (a JSONSchemaProperties) Get(fieldName string) (value struct {
 	// Format of param
 	Format *string `json:"format,omitempty"`
 
+	// Format of param
+	Global *string `json:"global,omitempty"`
+
 	// Описание типа, который хранится в массиве. Если type = object, тогда поле properties обязательное. Оно нужно для описание конкретного типа объектов, которые хранятся в массиве. Если type = array(многомерный массив у нас то есть), тогда поле items обязательное. Оно описывает тип массивов.
 	Items *ArrayItems `json:"items,omitempty"`
 
@@ -2226,6 +2633,9 @@ func (a *JSONSchemaProperties) Set(fieldName string, value struct {
 	// Format of param
 	Format *string `json:"format,omitempty"`
 
+	// Format of param
+	Global *string `json:"global,omitempty"`
+
 	// Описание типа, который хранится в массиве. Если type = object, тогда поле properties обязательное. Оно нужно для описание конкретного типа объектов, которые хранятся в массиве. Если type = array(многомерный массив у нас то есть), тогда поле items обязательное. Оно описывает тип массивов.
 	Items *ArrayItems `json:"items,omitempty"`
 
@@ -2254,6 +2664,9 @@ func (a *JSONSchemaProperties) Set(fieldName string, value struct {
 
 			// Format of param
 			Format *string `json:"format,omitempty"`
+
+			// Format of param
+			Global *string `json:"global,omitempty"`
 
 			// Описание типа, который хранится в массиве. Если type = object, тогда поле properties обязательное. Оно нужно для описание конкретного типа объектов, которые хранятся в массиве. Если type = array(многомерный массив у нас то есть), тогда поле items обязательное. Оно описывает тип массивов.
 			Items *ArrayItems `json:"items,omitempty"`
@@ -2296,6 +2709,9 @@ func (a *JSONSchemaProperties) UnmarshalJSON(b []byte) error {
 			// Format of param
 			Format *string `json:"format,omitempty"`
 
+			// Format of param
+			Global *string `json:"global,omitempty"`
+
 			// Описание типа, который хранится в массиве. Если type = object, тогда поле properties обязательное. Оно нужно для описание конкретного типа объектов, которые хранятся в массиве. Если type = array(многомерный массив у нас то есть), тогда поле items обязательное. Оно описывает тип массивов.
 			Items *ArrayItems `json:"items,omitempty"`
 
@@ -2324,6 +2740,9 @@ func (a *JSONSchemaProperties) UnmarshalJSON(b []byte) error {
 
 				// Format of param
 				Format *string `json:"format,omitempty"`
+
+				// Format of param
+				Global *string `json:"global,omitempty"`
 
 				// Описание типа, который хранится в массиве. Если type = object, тогда поле properties обязательное. Оно нужно для описание конкретного типа объектов, которые хранятся в массиве. Если type = array(многомерный массив у нас то есть), тогда поле items обязательное. Оно описывает тип массивов.
 				Items *ArrayItems `json:"items,omitempty"`
@@ -2579,6 +2998,59 @@ func (a RunVersionsByPipelineIdRequest_Keys) MarshalJSON() ([]byte, error) {
 	return json.Marshal(object)
 }
 
+// Getter for additional properties for Action_Params. Returns the specified
+// element and whether it was found
+func (a Action_Params) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for Action_Params
+func (a *Action_Params) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for Action_Params to handle AdditionalProperties
+func (a *Action_Params) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for Action_Params to handle AdditionalProperties
+func (a Action_Params) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
 // Getter for additional properties for Pipeline_Blocks. Returns the specified
 // element and whether it was found
 func (a Pipeline_Blocks) Get(fieldName string) (value EriusFunc, found bool) {
@@ -2652,6 +3124,12 @@ type ServerInterface interface {
 	// Get approve statuses dictionary
 	// (GET /dictionaries/approve-statuses)
 	GetApproveStatuses(w http.ResponseWriter, r *http.Request)
+	// Get list of node decisions
+	// (GET /dictionaries/get-node-decisions)
+	GetNodeDecisions(w http.ResponseWriter, r *http.Request)
+	// Get task event json schema
+	// (GET /dictionaries/schema/task-event)
+	GetTaskEventSchema(w http.ResponseWriter, r *http.Request)
 	// Get forms changelog
 	// (GET /forms/changelog)
 	GetFormsChangelog(w http.ResponseWriter, r *http.Request, params GetFormsChangelogParams)
@@ -2673,6 +3151,9 @@ type ServerInterface interface {
 	// Get inputs and outputs of block
 	// (GET /monitoring/tasks/block/{blockId}/params)
 	GetMonitoringTasksBlockBlockIdParams(w http.ResponseWriter, r *http.Request, blockId string)
+	// Получение стейта блока
+	// (GET /monitoring/tasks/block/{blockId}/state)
+	GetBlockState(w http.ResponseWriter, r *http.Request, blockId string)
 	// Get task for monitoring
 	// (GET /monitoring/tasks/{workNumber})
 	GetMonitoringTask(w http.ResponseWriter, r *http.Request, workNumber string)
@@ -2712,6 +3193,9 @@ type ServerInterface interface {
 	// Save process settings(start and end schemas)
 	// (POST /pipelines/version/{versionID}/settings)
 	SaveVersionSettings(w http.ResponseWriter, r *http.Request, versionID string, params SaveVersionSettingsParams)
+	// Save process task subscription settings
+	// (POST /pipelines/version/{versionID}/settings/task-subscriptions)
+	SaveVersionTaskSubscriptionSettings(w http.ResponseWriter, r *http.Request, versionID string)
 	// Add external system to version
 	// (POST /pipelines/version/{versionID}/system)
 	AddExternalSystemToVersion(w http.ResponseWriter, r *http.Request, versionID string)
@@ -2730,6 +3214,9 @@ type ServerInterface interface {
 	// Save external systems settings for end of process
 	// (PUT /pipelines/version/{versionID}/system/{systemID}/endRoutes)
 	SaveExternalSystemEndSettings(w http.ResponseWriter, r *http.Request, versionID string, systemID string)
+	// Allow the system to launch requests from a 3rd party
+	// (POST /pipelines/version/{versionID}/system/{systemID}/runAsOthers)
+	AllowRunAsOthers(w http.ResponseWriter, r *http.Request, versionID string, systemID string)
 	// Delete Pipeline
 	// (DELETE /pipelines/{pipelineID})
 	DeletePipeline(w http.ResponseWriter, r *http.Request, pipelineID string)
@@ -2919,6 +3406,36 @@ func (siw *ServerInterfaceWrapper) GetApproveStatuses(w http.ResponseWriter, r *
 
 	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetApproveStatuses(w, r)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
+// GetNodeDecisions operation middleware
+func (siw *ServerInterfaceWrapper) GetNodeDecisions(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetNodeDecisions(w, r)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
+// GetTaskEventSchema operation middleware
+func (siw *ServerInterfaceWrapper) GetTaskEventSchema(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetTaskEventSchema(w, r)
 	}
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -3183,6 +3700,32 @@ func (siw *ServerInterfaceWrapper) GetMonitoringTasksBlockBlockIdParams(w http.R
 
 	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetMonitoringTasksBlockBlockIdParams(w, r, blockId)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
+// GetBlockState operation middleware
+func (siw *ServerInterfaceWrapper) GetBlockState(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "blockId" -------------
+	var blockId string
+
+	err = runtime.BindStyledParameter("simple", false, "blockId", chi.URLParam(r, "blockId"), &blockId)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "blockId", Err: err})
+		return
+	}
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetBlockState(w, r, blockId)
 	}
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -3620,6 +4163,32 @@ func (siw *ServerInterfaceWrapper) SaveVersionSettings(w http.ResponseWriter, r 
 	handler(w, r.WithContext(ctx))
 }
 
+// SaveVersionTaskSubscriptionSettings operation middleware
+func (siw *ServerInterfaceWrapper) SaveVersionTaskSubscriptionSettings(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "versionID" -------------
+	var versionID string
+
+	err = runtime.BindStyledParameter("simple", false, "versionID", chi.URLParam(r, "versionID"), &versionID)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "versionID", Err: err})
+		return
+	}
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SaveVersionTaskSubscriptionSettings(w, r, versionID)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
 // AddExternalSystemToVersion operation middleware
 func (siw *ServerInterfaceWrapper) AddExternalSystemToVersion(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -3826,6 +4395,41 @@ func (siw *ServerInterfaceWrapper) SaveExternalSystemEndSettings(w http.Response
 
 	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.SaveExternalSystemEndSettings(w, r, versionID, systemID)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
+// AllowRunAsOthers operation middleware
+func (siw *ServerInterfaceWrapper) AllowRunAsOthers(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "versionID" -------------
+	var versionID string
+
+	err = runtime.BindStyledParameter("simple", false, "versionID", chi.URLParam(r, "versionID"), &versionID)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "versionID", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "systemID" -------------
+	var systemID string
+
+	err = runtime.BindStyledParameter("simple", false, "systemID", chi.URLParam(r, "systemID"), &systemID)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "systemID", Err: err})
+		return
+	}
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AllowRunAsOthers(w, r, versionID, systemID)
 	}
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -4339,6 +4943,39 @@ func (siw *ServerInterfaceWrapper) GetTasks(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	// ------------- Optional query parameter "processedLogins" -------------
+	if paramValue := r.URL.Query().Get("processedLogins"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "processedLogins", r.URL.Query(), &params.ProcessedLogins)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "processedLogins", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "processedGroupIds" -------------
+	if paramValue := r.URL.Query().Get("processedGroupIds"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "processedGroupIds", r.URL.Query(), &params.ProcessedGroupIds)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "processedGroupIds", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "selectFor" -------------
+	if paramValue := r.URL.Query().Get("selectFor"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "selectFor", r.URL.Query(), &params.SelectFor)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "selectFor", Err: err})
+		return
+	}
+
 	// ------------- Optional query parameter "executorTypeAssigned" -------------
 	if paramValue := r.URL.Query().Get("executorTypeAssigned"); paramValue != "" {
 
@@ -4347,6 +4984,17 @@ func (siw *ServerInterfaceWrapper) GetTasks(w http.ResponseWriter, r *http.Reque
 	err = runtime.BindQueryParameter("form", true, false, "executorTypeAssigned", r.URL.Query(), &params.ExecutorTypeAssigned)
 	if err != nil {
 		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "executorTypeAssigned", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "signatureCarrier" -------------
+	if paramValue := r.URL.Query().Get("signatureCarrier"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "signatureCarrier", r.URL.Query(), &params.SignatureCarrier)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "signatureCarrier", Err: err})
 		return
 	}
 
@@ -4729,6 +5377,12 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/dictionaries/approve-statuses", wrapper.GetApproveStatuses)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/dictionaries/get-node-decisions", wrapper.GetNodeDecisions)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/dictionaries/schema/task-event", wrapper.GetTaskEventSchema)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/forms/changelog", wrapper.GetFormsChangelog)
 	})
 	r.Group(func(r chi.Router) {
@@ -4748,6 +5402,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/monitoring/tasks/block/{blockId}/params", wrapper.GetMonitoringTasksBlockBlockIdParams)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/monitoring/tasks/block/{blockId}/state", wrapper.GetBlockState)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/monitoring/tasks/{workNumber}", wrapper.GetMonitoringTask)
@@ -4789,6 +5446,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Post(options.BaseURL+"/pipelines/version/{versionID}/settings", wrapper.SaveVersionSettings)
 	})
 	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/pipelines/version/{versionID}/settings/task-subscriptions", wrapper.SaveVersionTaskSubscriptionSettings)
+	})
+	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/pipelines/version/{versionID}/system", wrapper.AddExternalSystemToVersion)
 	})
 	r.Group(func(r chi.Router) {
@@ -4805,6 +5465,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Put(options.BaseURL+"/pipelines/version/{versionID}/system/{systemID}/endRoutes", wrapper.SaveExternalSystemEndSettings)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/pipelines/version/{versionID}/system/{systemID}/runAsOthers", wrapper.AllowRunAsOthers)
 	})
 	r.Group(func(r chi.Router) {
 		r.Delete(options.BaseURL+"/pipelines/{pipelineID}", wrapper.DeletePipeline)

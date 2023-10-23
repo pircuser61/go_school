@@ -24,6 +24,13 @@ type IF struct {
 	State         *ConditionsData
 
 	RunContext *BlockRunContext
+
+	expectedEvents map[string]struct{}
+	happenedEvents []entity.NodeEvent
+}
+
+func (gb *IF) GetNewEvents() []entity.NodeEvent {
+	return gb.happenedEvents
 }
 
 func (gb *IF) Members() []Member {
@@ -52,8 +59,8 @@ func (gb *IF) GetStatus() Status {
 	return StatusFinished
 }
 
-func (gb *IF) GetTaskHumanStatus() TaskHumanStatus {
-	return ""
+func (gb *IF) GetTaskHumanStatus() (status TaskHumanStatus, comment string) {
+	return "", ""
 }
 
 func (gb *IF) Next(_ *store.VariableStore) ([]string, bool) {
@@ -76,7 +83,7 @@ func (gb *IF) GetState() interface{} {
 	return nil
 }
 
-func (gb *IF) Update(_ context.Context) (interface{}, error) {
+func (gb *IF) Update(ctx context.Context) (interface{}, error) {
 	var chosenGroup *conditions_kit.ConditionGroup
 
 	if gb.State != nil {
@@ -99,6 +106,15 @@ func (gb *IF) Update(_ context.Context) (interface{}, error) {
 	}
 
 	gb.State.ChosenGroupID = chosenGroupID
+
+	if _, ok := gb.expectedEvents[eventEnd]; ok {
+		status, _ := gb.GetTaskHumanStatus()
+		event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, gb.Name, status, gb.GetStatus())
+		if eventErr != nil {
+			return nil, eventErr
+		}
+		gb.happenedEvents = append(gb.happenedEvents, event)
+	}
 	return nil, nil
 }
 
@@ -120,7 +136,8 @@ func (gb *IF) Model() script.FunctionModel {
 }
 
 //nolint:unparam // its ok
-func createGoIfBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContext) (block *IF, reEntry bool, err error) {
+func createGoIfBlock(ctx context.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext,
+	expectedEvents map[string]struct{}) (block *IF, reEntry bool, err error) {
 	b := &IF{
 		Name:       name,
 		Title:      ef.Title,
@@ -128,14 +145,19 @@ func createGoIfBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContext)
 		Output:     map[string]string{},
 		Sockets:    entity.ConvertSocket(ef.Sockets),
 		RunContext: runCtx,
+
+		expectedEvents: expectedEvents,
+		happenedEvents: make([]entity.NodeEvent, 0),
 	}
 
 	for _, v := range ef.Input {
 		b.Input[v.Name] = v.Global
 	}
 
-	for _, v := range ef.Output {
-		b.Output[v.Name] = v.Global
+	if ef.Output != nil {
+		for propertyName, v := range ef.Output.Properties {
+			b.Output[propertyName] = v.Global
+		}
 	}
 
 	b.State = &ConditionsData{
@@ -157,6 +179,15 @@ func createGoIfBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContext)
 		b.State.ConditionGroups = params.ConditionGroups
 	}
 	b.RunContext.VarStore.AddStep(b.Name)
+
+	if _, ok := b.expectedEvents[eventStart]; ok {
+		status, _ := b.GetTaskHumanStatus()
+		event, err := runCtx.MakeNodeStartEvent(ctx, name, status, b.GetStatus())
+		if err != nil {
+			return nil, false, err
+		}
+		b.happenedEvents = append(b.happenedEvents, event)
+	}
 
 	return b, reEntry, nil
 }

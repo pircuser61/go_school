@@ -17,6 +17,13 @@ type GoBeginParallelTaskBlock struct {
 	Output     map[string]string
 	Sockets    []script.Socket
 	RunContext *BlockRunContext
+
+	expectedEvents map[string]struct{}
+	happenedEvents []entity.NodeEvent
+}
+
+func (gb *GoBeginParallelTaskBlock) GetNewEvents() []entity.NodeEvent {
+	return gb.happenedEvents
 }
 
 func (gb *GoBeginParallelTaskBlock) Members() []Member {
@@ -35,8 +42,8 @@ func (gb *GoBeginParallelTaskBlock) GetStatus() Status {
 	return StatusFinished
 }
 
-func (gb *GoBeginParallelTaskBlock) GetTaskHumanStatus() TaskHumanStatus {
-	return StatusExecution
+func (gb *GoBeginParallelTaskBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment string) {
+	return StatusExecution, ""
 }
 
 func (gb *GoBeginParallelTaskBlock) Next(_ *store.VariableStore) ([]string, bool) {
@@ -51,7 +58,16 @@ func (gb *GoBeginParallelTaskBlock) GetState() interface{} {
 	return nil
 }
 
-func (gb *GoBeginParallelTaskBlock) Update(_ context.Context) (interface{}, error) {
+func (gb *GoBeginParallelTaskBlock) Update(ctx context.Context) (interface{}, error) {
+	if _, ok := gb.expectedEvents[eventEnd]; ok {
+		status, _ := gb.GetTaskHumanStatus()
+		event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, gb.Name, status, gb.GetStatus())
+		if eventErr != nil {
+			return nil, eventErr
+		}
+		gb.happenedEvents = append(gb.happenedEvents, event)
+	}
+
 	return nil, nil
 }
 
@@ -69,7 +85,8 @@ func (gb *GoBeginParallelTaskBlock) Model() script.FunctionModel {
 }
 
 //nolint:dupl,unparam //its not duplicate
-func createGoStartParallelBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContext) (*GoBeginParallelTaskBlock, bool, error) {
+func createGoStartParallelBlock(ctx context.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext,
+	expectedEvents map[string]struct{}) (*GoBeginParallelTaskBlock, bool, error) {
 	const reEntry = false
 
 	b := &GoBeginParallelTaskBlock{
@@ -79,16 +96,30 @@ func createGoStartParallelBlock(name string, ef *entity.EriusFunc, runCtx *Block
 		Output:     map[string]string{},
 		Sockets:    entity.ConvertSocket(ef.Sockets),
 		RunContext: runCtx,
+
+		expectedEvents: expectedEvents,
+		happenedEvents: make([]entity.NodeEvent, 0),
 	}
 
 	for _, v := range ef.Input {
 		b.Input[v.Name] = v.Global
 	}
 
-	for _, v := range ef.Output {
-		b.Output[v.Name] = v.Global
+	if ef.Output != nil {
+		for propertyName, v := range ef.Output.Properties {
+			b.Output[propertyName] = v.Global
+		}
 	}
 
 	b.RunContext.VarStore.AddStep(b.Name)
+
+	if _, ok := b.expectedEvents[eventStart]; ok {
+		status, _ := b.GetTaskHumanStatus()
+		event, err := runCtx.MakeNodeStartEvent(ctx, name, status, b.GetStatus())
+		if err != nil {
+			return nil, false, err
+		}
+		b.happenedEvents = append(b.happenedEvents, event)
+	}
 	return b, reEntry, nil
 }

@@ -41,7 +41,7 @@ type FunctionModel struct {
 	BlockType string               `json:"block_type"`
 	Title     string               `json:"title"`
 	Inputs    []FunctionValueModel `json:"inputs,omitempty"`
-	Outputs   []FunctionValueModel `json:"outputs,omitempty"`
+	Outputs   *JSONSchema          `json:"outputs,omitempty"`
 	ShapeType int                  `json:"shape_type"`
 	ID        string               `json:"id"`
 	Params    *FunctionParams      `json:"params,omitempty"`
@@ -87,8 +87,22 @@ const (
 	notExecutedSocketID    = "not_executed"
 	notExecutedSocketTitle = "Не исполнено"
 
+	signSocketID    = "signed"
+	signSocketTitle = "Подписано"
+
+	rejectedSocketID    = "rejected"
+	rejectedSocketTitle = "Отклонено"
+
+	errorSocketID    = "error"
+	errorSocketTitle = "Ошибка"
+
 	DefaultSocketID    = "default"
 	DefaultSocketTitle = "Выход по умолчанию"
+
+	funcSLAExpiredSocketID    = "func_sla_expired"
+	funcSLAExpiredSocketTitle = "Закончилось время"
+
+	funcExecutedSocketTitle = "Выполнено"
 )
 
 var (
@@ -110,6 +124,16 @@ var (
 
 	NotExecutedSocket = Socket{Id: notExecutedSocketID, Title: notExecutedSocketTitle}
 	ExecutedSocket    = Socket{Id: executedSocketID, Title: executedSocketTitle}
+
+	//nolint:gochecknoglobals //sign node sockets
+	SignedSocket   = Socket{Id: signSocketID, Title: signSocketTitle}
+	RejectedSocket = Socket{Id: rejectedSocketID, Title: rejectedSocketTitle}
+
+	//nolint:gochecknoglobals //new common socket
+	ErrorSocket = Socket{Id: errorSocketID, Title: errorSocketTitle}
+
+	FuncExecutedSocket    = Socket{Id: DefaultSocketID, Title: funcExecutedSocketTitle}
+	FuncTimeExpiredSocket = Socket{Id: funcSLAExpiredSocketID, Title: funcSLAExpiredSocketTitle}
 
 	DelegationsCollection = "delegations_collection"
 )

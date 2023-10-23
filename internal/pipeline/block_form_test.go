@@ -32,11 +32,11 @@ func Test_createGoFormBlock(t *testing.T) {
 	const (
 		name       = "form_0"
 		title      = "Форма"
+		shortTitle = "Нода Форма"
 		global1    = "form_0.executor"
 		global2    = "form_0.application_body"
 		schemaId   = "c77be97a-f978-46d3-aa03-ab72663f2b74"
 		versionId  = "d77be97a-f978-46d3-aa03-ab72663f2b74"
-		schemaName = "название формы"
 		executor   = "executor"
 		workNumber = "J0000001"
 		workType   = "8/5"
@@ -76,12 +76,13 @@ func Test_createGoFormBlock(t *testing.T) {
 			args: args{
 				name: name,
 				ef: &entity.EriusFunc{
-					BlockType: BlockGoFormID,
-					Title:     title,
-					Input:     nil,
-					Output:    nil,
-					Params:    nil,
-					Sockets:   next,
+					BlockType:  BlockGoFormID,
+					ShortTitle: shortTitle,
+					Title:      title,
+					Input:      nil,
+					Output:     nil,
+					Params:     nil,
+					Sockets:    next,
 				},
 				runCtx: &BlockRunContext{
 					skipNotifications: true,
@@ -96,12 +97,13 @@ func Test_createGoFormBlock(t *testing.T) {
 			args: args{
 				name: name,
 				ef: &entity.EriusFunc{
-					BlockType: BlockGoFormID,
-					Title:     title,
-					Input:     nil,
-					Output:    nil,
-					Params:    []byte("{}"),
-					Sockets:   next,
+					BlockType:  BlockGoFormID,
+					Title:      title,
+					ShortTitle: shortTitle,
+					Input:      nil,
+					Output:     nil,
+					Params:     []byte("{}"),
+					Sockets:    next,
 				},
 				runCtx: &BlockRunContext{
 					skipNotifications: true,
@@ -116,8 +118,9 @@ func Test_createGoFormBlock(t *testing.T) {
 			args: args{
 				name: name,
 				ef: &entity.EriusFunc{
-					BlockType: BlockGoFormID,
-					Title:     title,
+					BlockType:  BlockGoFormID,
+					Title:      title,
+					ShortTitle: shortTitle,
 					Input: []entity.EriusFunctionValue{
 						{
 							Name:   "foo",
@@ -125,22 +128,22 @@ func Test_createGoFormBlock(t *testing.T) {
 							Global: "bar",
 						},
 					},
-					Output: []entity.EriusFunctionValue{
-						{
-							Name:   keyOutputFormExecutor,
-							Type:   "string",
-							Global: global1,
-						},
-						{
-							Name:   keyOutputFormBody,
-							Type:   "string",
-							Global: global2,
+					Output: &script.JSONSchema{
+						Type: "object",
+						Properties: map[string]script.JSONSchemaPropertiesValue{
+							keyOutputFormExecutor: {
+								Type:   "string",
+								Global: global1,
+							},
+							keyOutputFormBody: {
+								Type:   "string",
+								Global: global2,
+							},
 						},
 					},
 					Params: func() []byte {
 						r, _ := json.Marshal(&script.FormParams{
 							SchemaId:         schemaId,
-							SchemaName:       schemaName,
 							Executor:         executor,
 							FormExecutorType: script.FormExecutorTypeFromSchema,
 						})
@@ -166,8 +169,9 @@ func Test_createGoFormBlock(t *testing.T) {
 			args: args{
 				name: name,
 				ef: &entity.EriusFunc{
-					BlockType: BlockGoFormID,
-					Title:     title,
+					BlockType:  BlockGoFormID,
+					Title:      title,
+					ShortTitle: shortTitle,
 					Input: []entity.EriusFunctionValue{
 						{
 							Name:   "foo",
@@ -175,22 +179,22 @@ func Test_createGoFormBlock(t *testing.T) {
 							Global: "bar",
 						},
 					},
-					Output: []entity.EriusFunctionValue{
-						{
-							Name:   keyOutputFormExecutor,
-							Type:   "string",
-							Global: global1,
-						},
-						{
-							Name:   keyOutputFormBody,
-							Type:   "string",
-							Global: global2,
+					Output: &script.JSONSchema{
+						Type: "object",
+						Properties: map[string]script.JSONSchemaPropertiesValue{
+							keyOutputFormExecutor: {
+								Type:   "string",
+								Global: global1,
+							},
+							keyOutputFormBody: {
+								Type:   "string",
+								Global: global2,
+							},
 						},
 					},
 					Params: func() []byte {
 						r, _ := json.Marshal(&script.FormParams{
 							SchemaId:         schemaId,
-							SchemaName:       schemaName,
 							Executor:         "form.executor",
 							FormExecutorType: script.FormExecutorTypeFromSchema,
 						})
@@ -200,8 +204,10 @@ func Test_createGoFormBlock(t *testing.T) {
 					Sockets: next,
 				},
 				runCtx: &BlockRunContext{
-					WorkNumber:        workNumber,
-					Storage:           databaseMock,
+					WorkNumber: workNumber,
+					Services: RunContextServices{
+						Storage: databaseMock,
+					},
 					skipNotifications: true,
 					VarStore: func() *store.VariableStore {
 						s := store.NewStore()
@@ -220,10 +226,10 @@ func Test_createGoFormBlock(t *testing.T) {
 					keyOutputFormExecutor: global1,
 					keyOutputFormBody:     global2,
 				},
+				happenedEvents: make([]entity.NodeEvent, 0),
 				State: &FormData{
 					FormExecutorType:   script.FormExecutorTypeFromSchema,
 					SchemaId:           schemaId,
-					SchemaName:         schemaName,
 					Executors:          map[string]struct{}{executor: {}},
 					ApplicationBody:    map[string]interface{}{},
 					IsFilled:           false,
@@ -243,8 +249,9 @@ func Test_createGoFormBlock(t *testing.T) {
 			args: args{
 				name: name,
 				ef: &entity.EriusFunc{
-					BlockType: BlockGoFormID,
-					Title:     title,
+					BlockType:  BlockGoFormID,
+					Title:      title,
+					ShortTitle: shortTitle,
 					Input: []entity.EriusFunctionValue{
 						{
 							Name:   "foo",
@@ -252,22 +259,22 @@ func Test_createGoFormBlock(t *testing.T) {
 							Global: "bar",
 						},
 					},
-					Output: []entity.EriusFunctionValue{
-						{
-							Name:   keyOutputFormExecutor,
-							Type:   "string",
-							Global: global1,
-						},
-						{
-							Name:   keyOutputFormBody,
-							Type:   "string",
-							Global: global2,
+					Output: &script.JSONSchema{
+						Type: "object",
+						Properties: map[string]script.JSONSchemaPropertiesValue{
+							keyOutputFormExecutor: {
+								Type:   "string",
+								Global: global1,
+							},
+							keyOutputFormBody: {
+								Type:   "string",
+								Global: global2,
+							},
 						},
 					},
 					Params: func() []byte {
 						r, _ := json.Marshal(&script.FormParams{
 							SchemaId:         schemaId,
-							SchemaName:       schemaName,
 							Executor:         executor,
 							FormExecutorType: script.FormExecutorTypeAutoFillUser,
 							Mapping: script.JSONSchemaProperties{
@@ -292,8 +299,8 @@ func Test_createGoFormBlock(t *testing.T) {
 					VarStore: func() *store.VariableStore {
 						s := store.NewStore()
 						s.SetValue("sd.form_0", map[string]interface{}{
-							"a": 100,
-							"b": 200,
+							"a": float64(100),
+							"b": float64(200),
 						})
 						return s
 					}(),
@@ -309,14 +316,14 @@ func Test_createGoFormBlock(t *testing.T) {
 					keyOutputFormExecutor: global1,
 					keyOutputFormBody:     global2,
 				},
+				happenedEvents: make([]entity.NodeEvent, 0),
 				State: &FormData{
 					FormExecutorType: script.FormExecutorTypeAutoFillUser,
 					SchemaId:         schemaId,
-					SchemaName:       schemaName,
 					Executors:        map[string]struct{}{"auto_fill": {}},
 					ApplicationBody: map[string]interface{}{
-						"a": 100,
-						"b": 200,
+						"a": float64(100),
+						"b": float64(200),
 					},
 					WorkType:      "8/5",
 					IsFilled:      true,
@@ -337,8 +344,8 @@ func Test_createGoFormBlock(t *testing.T) {
 					ChangesLog: []ChangesLogItem{
 						{
 							ApplicationBody: map[string]interface{}{
-								"a": 100,
-								"b": 200,
+								"a": float64(100),
+								"b": float64(200),
 							},
 							CreatedAt:   timeNow,
 							Executor:    "auto_fill",
@@ -361,12 +368,12 @@ func Test_createGoFormBlock(t *testing.T) {
 			cli.On("GetDelegations", mock.Anything, mock.Anything).Return(&delegationht.GetDelegationsResponse{
 				Delegations: []*delegationht.Delegation{},
 			}, nil)
-			tt.args.runCtx.HumanTasks = &humanTasks.Service{
+			tt.args.runCtx.Services.HumanTasks = &humanTasks.Service{
 				C:   nil,
 				Cli: &cli,
 			}
 
-			got, _, err := createGoFormBlock(ctx, tt.args.name, tt.args.ef, tt.args.runCtx)
+			got, _, err := createGoFormBlock(ctx, tt.args.name, tt.args.ef, tt.args.runCtx, nil)
 			if got != nil {
 				got.RunContext = nil
 				if got.State != nil && len(got.State.ChangesLog) > 0 {
@@ -390,12 +397,10 @@ func TestGoFormBlock_Update(t *testing.T) {
 		global1     = "form_0.executor"
 		global2     = "form_0.application_body"
 		schemaId    = "c77be97a-f978-46d3-aa03-ab72663f2b74"
-		schemaName  = "название формы"
 		login       = "login"
 		login2      = "login2"
 		login3      = "login3"
 		blockId     = "form_0"
-		blockId2    = "servicedesk_application_0"
 		description = "description"
 		fieldName   = "field1"
 		fieldValue  = "some text"
@@ -422,6 +427,7 @@ func TestGoFormBlock_Update(t *testing.T) {
 		mock.MatchedBy(func(string) bool { return true }),
 		mock.MatchedBy(func(string) bool { return true }),
 	).Return(false, nil)
+
 	currCall := mockedDb.ExpectedCalls[len(mockedDb.ExpectedCalls)-1]
 	currCall = currCall.Run(func(args mock.Arguments) {
 		switch args.Get(3).(string) {
@@ -435,8 +441,20 @@ func TestGoFormBlock_Update(t *testing.T) {
 			currCall.ReturnArguments[0] = false
 			currCall.ReturnArguments[1] = errors.New("mock error")
 		}
-
 	})
+
+	mockedDb.On("UpdateBlockStateInOthers",
+		mock.MatchedBy(func(ctx context.Context) bool { return true }),
+		mock.MatchedBy(func(string) bool { return true }),
+		mock.MatchedBy(func(string) bool { return true }),
+		mock.MatchedBy(func([]byte) bool { return true }),
+	).Return(nil)
+
+	mockedDb.On("UpdateBlockVariablesInOthers",
+		mock.MatchedBy(func(ctx context.Context) bool { return true }),
+		mock.MatchedBy(func(string) bool { return true }),
+		mock.MatchedBy(func(map[string]interface{}) bool { return true }),
+	).Return(nil)
 
 	type args struct {
 		Name       string
@@ -521,7 +539,6 @@ func TestGoFormBlock_Update(t *testing.T) {
 				State: &FormData{
 					FormExecutorType: script.FormExecutorTypeFromSchema,
 					SchemaId:         schemaId,
-					SchemaName:       schemaName,
 					Executors:        map[string]struct{}{login: {}},
 					ApplicationBody:  map[string]interface{}{},
 					IsFilled:         false,
@@ -548,32 +565,34 @@ func TestGoFormBlock_Update(t *testing.T) {
 						),
 					},
 					VarStore: store.NewStore(),
-					ServiceDesc: func() *servicedesc.Service {
-						sdMock := servicedesc.Service{
-							SdURL: "",
-						}
-						httpClient := http.DefaultClient
-						mockTransport := serviceDeskMocks.RoundTripper{}
-						fResponse := func(*http.Request) *http.Response {
-							b, _ := json.Marshal(servicedesc.SsoPerson{})
-							body := io.NopCloser(bytes.NewReader(b))
-							defer body.Close()
-							return &http.Response{
-								Status:     http.StatusText(http.StatusOK),
-								StatusCode: http.StatusOK,
-								Body:       body,
-								Close:      true,
+					Services: RunContextServices{
+						ServiceDesc: func() *servicedesc.Service {
+							sdMock := servicedesc.Service{
+								SdURL: "",
 							}
-						}
-						f_error := func(*http.Request) error {
-							return nil
-						}
-						mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
-						httpClient.Transport = &mockTransport
-						sdMock.Cli = httpClient
+							httpClient := http.DefaultClient
+							mockTransport := serviceDeskMocks.RoundTripper{}
+							fResponse := func(*http.Request) *http.Response {
+								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								body := io.NopCloser(bytes.NewReader(b))
+								defer body.Close()
+								return &http.Response{
+									Status:     http.StatusText(http.StatusOK),
+									StatusCode: http.StatusOK,
+									Body:       body,
+									Close:      true,
+								}
+							}
+							f_error := func(*http.Request) error {
+								return nil
+							}
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							httpClient.Transport = &mockTransport
+							sdMock.Cli = httpClient
 
-						return &sdMock
-					}(),
+							return &sdMock
+						}(),
+					},
 				},
 			},
 			want:    nil,
@@ -581,7 +600,6 @@ func TestGoFormBlock_Update(t *testing.T) {
 			wantState: &FormData{
 				FormExecutorType: script.FormExecutorTypeFromSchema,
 				SchemaId:         schemaId,
-				SchemaName:       schemaName,
 				Executors:        map[string]struct{}{login: {}},
 				Description:      description,
 				IsTakenInWork:    true,
@@ -619,7 +637,6 @@ func TestGoFormBlock_Update(t *testing.T) {
 				State: &FormData{
 					FormExecutorType: script.FormExecutorTypeFromSchema,
 					SchemaId:         schemaId,
-					SchemaName:       schemaName,
 					Executors:        map[string]struct{}{login: {}},
 					ApplicationBody: map[string]interface{}{
 						fieldName: fieldValue,
@@ -648,31 +665,33 @@ func TestGoFormBlock_Update(t *testing.T) {
 						),
 					},
 					VarStore: store.NewStore(),
-					ServiceDesc: func() *servicedesc.Service {
-						sdMock := servicedesc.Service{
-							SdURL: "",
-						}
-						httpClient := http.DefaultClient
-						mockTransport := serviceDeskMocks.RoundTripper{}
-						fResponse := func(*http.Request) *http.Response {
-							b, _ := json.Marshal(servicedesc.SsoPerson{})
-							body := io.NopCloser(bytes.NewReader(b))
-							return &http.Response{
-								Status:     http.StatusText(http.StatusOK),
-								StatusCode: http.StatusOK,
-								Body:       body,
-								Close:      true,
+					Services: RunContextServices{
+						ServiceDesc: func() *servicedesc.Service {
+							sdMock := servicedesc.Service{
+								SdURL: "",
 							}
-						}
-						f_error := func(*http.Request) error {
-							return nil
-						}
-						mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
-						httpClient.Transport = &mockTransport
-						sdMock.Cli = httpClient
+							httpClient := http.DefaultClient
+							mockTransport := serviceDeskMocks.RoundTripper{}
+							fResponse := func(*http.Request) *http.Response {
+								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								body := io.NopCloser(bytes.NewReader(b))
+								return &http.Response{
+									Status:     http.StatusText(http.StatusOK),
+									StatusCode: http.StatusOK,
+									Body:       body,
+									Close:      true,
+								}
+							}
+							f_error := func(*http.Request) error {
+								return nil
+							}
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							httpClient.Transport = &mockTransport
+							sdMock.Cli = httpClient
 
-						return &sdMock
-					}(),
+							return &sdMock
+						}(),
+					},
 				},
 			},
 			want:    nil,
@@ -681,7 +700,6 @@ func TestGoFormBlock_Update(t *testing.T) {
 				FormExecutorType: script.FormExecutorTypeFromSchema,
 				SchemaId:         schemaId,
 				IsTakenInWork:    true,
-				SchemaName:       schemaName,
 				Executors:        map[string]struct{}{login: {}},
 				Description:      description,
 				ApplicationBody: map[string]interface{}{
@@ -804,7 +822,6 @@ func TestGoFormBlock_Update(t *testing.T) {
 				State: &FormData{
 					FormExecutorType: script.FormExecutorTypeFromSchema,
 					SchemaId:         schemaId,
-					SchemaName:       schemaName,
 					Executors:        map[string]struct{}{login: {}},
 					ApplicationBody:  map[string]interface{}{},
 					IsFilled:         false,
@@ -825,7 +842,6 @@ func TestGoFormBlock_Update(t *testing.T) {
 			wantState: &FormData{
 				FormExecutorType: script.FormExecutorTypeFromSchema,
 				SchemaId:         schemaId,
-				SchemaName:       schemaName,
 				Executors:        map[string]struct{}{login: {}},
 				ApplicationBody:  map[string]interface{}{},
 				ChangesLog:       []ChangesLogItem{},
@@ -845,7 +861,7 @@ func TestGoFormBlock_Update(t *testing.T) {
 			}
 
 			gb.RunContext.skipNotifications = true
-			gb.RunContext.Storage = mockedDb
+			gb.RunContext.Services.Storage = mockedDb
 
 			got, err := gb.Update(ctx)
 

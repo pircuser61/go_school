@@ -78,10 +78,9 @@ func TestMapData(t *testing.T) {
 	assert.Nil(t, err)
 
 	type args struct {
-		mapping     JSONSchemaProperties
-		input       map[string]interface{}
-		required    []string
-		levelToRoot int
+		mapping  JSONSchemaProperties
+		input    map[string]interface{}
+		required []string
 	}
 	tests := []struct {
 		name    string
@@ -96,12 +95,12 @@ func TestMapData(t *testing.T) {
 					"param1": {
 						Title: "param1",
 						Type:  "string",
-						Value: "start_0.A",
+						Value: "A",
 					},
 					"param2": {
 						Title: "param2",
 						Type:  "boolean",
-						Value: "start_0.B",
+						Value: "B",
 					},
 					"param3": {
 						Title: "param3",
@@ -109,14 +108,14 @@ func TestMapData(t *testing.T) {
 						Properties: JSONSchemaProperties{
 							"param3-1": {
 								Type:  "string",
-								Value: "start_0.C.C-1",
+								Value: "C.C-1",
 							},
 							"param3-2": {
 								Type: "array",
 								Items: &ArrayItems{
 									Type: "number",
 								},
-								Value: "start_0.C.C-2",
+								Value: "C.C-2",
 							},
 							"param3-3": {
 								Type: "object",
@@ -125,14 +124,14 @@ func TestMapData(t *testing.T) {
 										Type: "string",
 									},
 								},
-								Value: "start_0.C.C-3",
+								Value: "C.C-3",
 							},
 							"param3-4": {
 								Type: "object",
 								Properties: JSONSchemaProperties{
 									"param3-4-1": {
 										Type:  "number",
-										Value: "start_0.C.C-4.C-4-1",
+										Value: "C.C-4.C-4-1",
 									},
 								},
 							},
@@ -163,9 +162,8 @@ func TestMapData(t *testing.T) {
 						Default: "some string",
 					},
 				},
-				input:       input,
-				required:    []string{"param1"},
-				levelToRoot: 1,
+				input:    input,
+				required: []string{"param1"},
 			},
 			want:    output,
 			wantErr: assert.NoError,
@@ -178,49 +176,8 @@ func TestMapData(t *testing.T) {
 						Type: "string",
 					},
 				},
-				input:       nil,
-				required:    []string{"param1"},
-				levelToRoot: 1,
-			},
-			wantErr: assert.Error,
-		},
-		{
-			name: "invalid path to variable, error case",
-			args: args{
-				mapping: JSONSchemaProperties{
-					"param1": {
-						Type: object,
-						Properties: JSONSchemaProperties{
-							"param1-1": {
-								Type:  "string",
-								Value: "start_0.param1.param1-1.param1-1-1",
-							},
-						},
-					},
-				},
-				input:       input2,
-				required:    nil,
-				levelToRoot: 1,
-			},
-			wantErr: assert.Error,
-		},
-		{
-			name: "invalid path to root/variable, error case",
-			args: args{
-				mapping: JSONSchemaProperties{
-					"param1": {
-						Type: object,
-						Properties: JSONSchemaProperties{
-							"param1-1": {
-								Type: "string",
-							},
-						},
-						Value: "param1",
-					},
-				},
-				input:       input2,
-				required:    nil,
-				levelToRoot: 1,
+				input:    nil,
+				required: []string{"param1"},
 			},
 			wantErr: assert.Error,
 		},
@@ -235,23 +192,22 @@ func TestMapData(t *testing.T) {
 								Type: "number",
 							},
 						},
-						Value: "servicedesk_application_0.application_body.param1",
+						Value: "param1",
 					},
 				},
-				input:       input2,
-				required:    nil,
-				levelToRoot: 2,
+				input:    input2,
+				required: nil,
 			},
 			wantErr: assert.Error,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := MapData(tt.args.mapping, tt.args.input, tt.args.required, tt.args.levelToRoot)
-			if !tt.wantErr(t, err, fmt.Sprintf("MapData(%v, %v, %v, %v)", tt.args.mapping, tt.args.input, tt.args.required, tt.args.levelToRoot)) {
+			got, err := MapData(tt.args.mapping, tt.args.input, tt.args.required)
+			if !tt.wantErr(t, err, fmt.Sprintf("MapData(%v, %v, %v)", tt.args.mapping, tt.args.input, tt.args.required)) {
 				return
 			}
-			assert.Equalf(t, tt.want, got, "MapData(%v, %v, %v, %v)", tt.args.mapping, tt.args.input, tt.args.required, tt.args.levelToRoot)
+			assert.Equalf(t, tt.want, got, "MapData(%v, %v, %v)", tt.args.mapping, tt.args.input, tt.args.required)
 		})
 	}
 }

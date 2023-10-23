@@ -36,7 +36,7 @@ type Version struct {
 type ParamMetadata struct {
 	Type        string
 	Description string
-	Items       []ParamMetadata
+	Items       *ParamMetadata
 	Properties  map[string]ParamMetadata
 }
 

@@ -6,6 +6,9 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"time"
+
+	"github.com/google/uuid"
 
 	"go.opencensus.io/trace"
 
@@ -76,7 +79,7 @@ func (ae *APIEnv) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 				continue
 			}
 
-			emails[i].Action.AttachmentsIds = append(emails[i].Action.AttachmentsIds, id)
+			emails[i].Action.AttachmentsIds = append(emails[i].Action.AttachmentsIds, entity.Attachment{FileID: id})
 		}
 
 		jsonBody, errParse := json.Marshal(emails[i].Action)
@@ -90,7 +93,7 @@ func (ae *APIEnv) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 			Parameters: jsonBody,
 		}
 
-		errUpdate := ae.updateTaskInternal(ctx, emails[i].Action.WorkNumber, emails[i].Action.Login, &updateData)
+		errUpdate := ae.updateTaskBlockInternal(ctx, emails[i].Action.WorkNumber, emails[i].Action.Login, &updateData)
 		if errUpdate != nil {
 			log.WithField("action", *emails[i].Action).
 				WithField("workNumber", emails[i].Action.WorkNumber).
@@ -137,7 +140,7 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 	var updateData entity.TaskUpdate
 	if err = json.Unmarshal(b, &updateData); err != nil {
 		e := UpdateTaskParsingError
-		log.Error(e.errorMessage(err))
+		log.WithField("updateData", string(b)).Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -152,13 +155,13 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 	}
 
 	if updateData.IsApplicationAction() {
-		err = ae.updateApplicationInternal(ctx, workNumber, ui.Username, &updateData)
-	} else {
 		err = ae.updateTaskInternal(ctx, workNumber, ui.Username, &updateData)
+	} else {
+		err = ae.updateTaskBlockInternal(ctx, workNumber, ui.Username, &updateData)
 	}
 
 	if err != nil {
-		e := UpdateTaskParsingError
+		e := UnknownError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
@@ -216,32 +219,39 @@ func (ae *APIEnv) updateStepInternal(ctx c.Context, data updateStepData) bool {
 		return false
 	}
 	runCtx := &pipeline.BlockRunContext{
-		TaskID:     data.task.ID,
-		WorkNumber: data.workNumber,
-		WorkTitle:  data.task.Name,
-		Initiator:  data.task.Author,
-		Storage:    txStorage,
-		VarStore:   storage,
+		TaskID:      data.task.ID,
+		WorkNumber:  data.workNumber,
+		WorkTitle:   data.task.Name,
+		Initiator:   data.task.Author,
+		VarStore:    storage,
+		Delegations: data.delegations,
 
-		Sender:        ae.Mail,
-		Kafka:         ae.Kafka,
-		People:        ae.People,
-		ServiceDesc:   ae.ServiceDesc,
-		FunctionStore: ae.FunctionStore,
-		HumanTasks:    ae.HumanTasks,
-		Integrations:  ae.Integrations,
-		FileRegistry:  ae.FileRegistry,
-		FaaS:          ae.FaaS,
-		HrGate:        ae.HrGate,
+		Services: pipeline.RunContextServices{
+			HTTPClient:    ae.HTTPClient,
+			Sender:        ae.Mail,
+			Kafka:         ae.Kafka,
+			People:        ae.People,
+			ServiceDesc:   ae.ServiceDesc,
+			FunctionStore: ae.FunctionStore,
+			HumanTasks:    ae.HumanTasks,
+			Integrations:  ae.Integrations,
+			FileRegistry:  ae.FileRegistry,
+			FaaS:          ae.FaaS,
+			HrGate:        ae.HrGate,
+			Scheduler:     ae.Scheduler,
+			SLAService:    ae.SLAService,
+			Storage:       txStorage,
+		},
+		BlockRunResults: &pipeline.BlockRunResults{},
 
 		UpdateData: &script.BlockUpdateData{
 			ByLogin:    data.login,
 			Action:     string(data.updData.Action),
 			Parameters: data.updData.Parameters,
 		},
-		Delegations: data.delegations,
-		IsTest:      data.task.IsTest,
-		NotifName:   data.task.Name,
+
+		IsTest:    data.task.IsTest,
+		NotifName: data.task.Name,
 	}
 
 	blockFunc, ok := data.scenario.Pipeline.Blocks[data.step.Name]
@@ -256,6 +266,8 @@ func (ae *APIEnv) updateStepInternal(ctx c.Context, data updateStepData) bool {
 		return false
 	}
 
+	runCtx.SetTaskEvents(ctx)
+
 	blockErr := pipeline.ProcessBlockWithEndMapping(ctx, data.step.Name, &blockFunc, runCtx, true)
 	if blockErr != nil {
 		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
@@ -268,18 +280,18 @@ func (ae *APIEnv) updateStepInternal(ctx c.Context, data updateStepData) bool {
 	}
 
 	if err := txStorage.CommitTransaction(ctx); err != nil {
-		log.WithError(err).Error("couldn't update block")
+		log.WithError(err).Error("couldn't update block, CommitTransaction")
 		return false
 	}
+
+	runCtx.NotifyEvents(ctx)
 	return true
 }
 
 //nolint:gocyclo // ok here
-func (ae *APIEnv) updateTaskInternal(ctx c.Context, workNumber, userLogin string, in *entity.TaskUpdate) (err error) {
+func (ae *APIEnv) updateTaskBlockInternal(ctx c.Context, workNumber, userLogin string, in *entity.TaskUpdate) (err error) {
 	ctxLocal, span := trace.StartSpan(ctx, "update_task_internal")
 	defer span.End()
-
-	log := logger.GetLogger(ctx)
 
 	delegations, getDelegationsErr := ae.HumanTasks.GetDelegationsToLogin(ctxLocal, userLogin)
 	if getDelegationsErr != nil {
@@ -317,20 +329,18 @@ func (ae *APIEnv) updateTaskInternal(ctx c.Context, workNumber, userLogin string
 	scenario, err := ae.DB.GetPipelineVersion(ctxLocal, dbTask.VersionID, false)
 	if err != nil {
 		e := GetVersionError
-		return errors.New(e.errorMessage(nil))
+		return errors.New(e.errorMessage(err))
 	}
 
 	var steps entity.TaskSteps
 	for _, blockType := range blockTypes {
-		stepsByBlock, stepErr := ae.DB.GetUnfinishedTaskStepsByWorkIdAndStepType(ctxLocal, dbTask.ID, blockType, in.Action)
+		stepsByBlock, stepErr := ae.DB.GetUnfinishedTaskStepsByWorkIdAndStepType(ctxLocal, dbTask.ID, blockType, in)
 		if stepErr != nil {
 			e := GetTaskError
 			return errors.New(e.errorMessage(nil))
 		}
 		steps = append(steps, stepsByBlock...)
 	}
-
-	log.Info("update_task_internal steps: ", steps)
 
 	if len(steps) == 0 {
 		e := GetTaskError
@@ -412,11 +422,11 @@ func (ae *APIEnv) getAuthorAndMembersToNotify(ctx c.Context, workNumber, userLog
 	return res, nil
 }
 
-func (ae *APIEnv) updateApplicationInternal(ctx c.Context, workNumber, userLogin string, in *entity.TaskUpdate) (err error) {
+func (ae *APIEnv) updateTaskInternal(ctx c.Context, workNumber, userLogin string, in *entity.TaskUpdate) (err error) {
 	ctxLocal, span := trace.StartSpan(ctx, "update_application_internal")
 	defer span.End()
 
-	log := ae.Log.WithField("mainFuncName", "updateApplicationInternal")
+	log := ae.Log.WithField("mainFuncName", "updateTaskInternal")
 
 	dbTask, err := ae.DB.GetTask(ctxLocal, []string{userLogin}, []string{userLogin}, userLogin, workNumber)
 	if err != nil {
@@ -456,7 +466,7 @@ func (ae *APIEnv) updateApplicationInternal(ctx c.Context, workNumber, userLogin
 	}
 	defer func() {
 		if r := recover(); r != nil {
-			log = log.WithField("funcName", "updateApplicationInternal").
+			log = log.WithField("funcName", "updateTaskInternal").
 				WithField("panic handle", true)
 			log.Error(r)
 			if txErr := txStorage.RollbackTransaction(ctxLocal); txErr != nil {
@@ -486,7 +496,7 @@ func (ae *APIEnv) updateApplicationInternal(ctx c.Context, workNumber, userLogin
 		return err
 	}
 
-	_, err = ae.DB.UpdateTaskHumanStatus(ctxLocal, dbTask.ID, string(pipeline.StatusRevoke))
+	_, err = ae.DB.UpdateTaskHumanStatus(ctxLocal, dbTask.ID, string(pipeline.StatusRevoke), "")
 	if err != nil {
 		if txErr := txStorage.RollbackTransaction(ctxLocal); txErr != nil {
 			log.WithField("funcName", "UpdateTaskHumanStatus").
@@ -495,10 +505,32 @@ func (ae *APIEnv) updateApplicationInternal(ctx c.Context, workNumber, userLogin
 		}
 		return err
 	}
+
 	if commitErr := txStorage.CommitTransaction(ctxLocal); commitErr != nil {
 		log.WithError(commitErr).Error("couldn't commit transaction")
 		return commitErr
 	}
+
+	runCtx := pipeline.BlockRunContext{
+		WorkNumber: workNumber,
+		TaskID:     dbTask.ID,
+		Services: pipeline.RunContextServices{
+			HTTPClient:   ae.HTTPClient,
+			Integrations: ae.Integrations,
+			Storage:      ae.DB,
+		},
+		BlockRunResults: &pipeline.BlockRunResults{},
+	}
+
+	runCtx.SetTaskEvents(ctx)
+
+	nodeEvents, err := runCtx.GetCancelledStepsEvents(ctxLocal)
+	if err != nil {
+		return err
+	}
+
+	runCtx.BlockRunResults.NodeEvents = nodeEvents
+	runCtx.NotifyEvents(ctxLocal)
 
 	em := mail.NewRejectPipelineGroupTemplate(dbTask.WorkNumber, dbTask.Name, ae.Mail.SdAddress)
 	err = ae.Mail.SendNotification(ctxLocal, emails, nil, em)
@@ -567,6 +599,13 @@ func (ae *APIEnv) RateApplication(w http.ResponseWriter, r *http.Request, workNu
 	}
 }
 
+type stoppedTask struct {
+	FinishedAt time.Time `json:"finished_at"`
+	Status     string    `json:"status"`
+	WorkNumber string    `json:"work_number"`
+	ID         uuid.UUID `json:"-"`
+}
+
 func (ae *APIEnv) StopTasks(w http.ResponseWriter, r *http.Request) {
 	ctx, s := trace.StartSpan(r.Context(), "stop_tasks")
 	defer s.End()
@@ -599,13 +638,15 @@ func (ae *APIEnv) StopTasks(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := TasksStopped{
-		Tasks: make([]TaskStatus, 0, len(req.Tasks)),
+	resp := struct {
+		Tasks []stoppedTask `json:"tasks"`
+	}{
+		Tasks: make([]stoppedTask, 0, len(req.Tasks)),
 	}
 
 	txStorage, transactionErr := ae.DB.StartTransaction(ctx)
 	if transactionErr != nil {
-		log.WithError(err).Error("couldn't start transaction")
+		log.WithError(transactionErr).Error("couldn't start transaction")
 		e := UnknownError
 		_ = e.sendError(w)
 		return
@@ -635,10 +676,11 @@ func (ae *APIEnv) StopTasks(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if dbTask.FinishedAt != nil {
-			resp.Tasks = append(resp.Tasks, TaskStatus{
+			resp.Tasks = append(resp.Tasks, stoppedTask{
 				FinishedAt: *dbTask.FinishedAt,
 				Status:     dbTask.HumanStatus,
 				WorkNumber: dbTask.WorkNumber,
+				ID:         dbTask.ID,
 			})
 			continue
 		}
@@ -665,7 +707,7 @@ func (ae *APIEnv) StopTasks(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
-		updatedTask, updateTaskErr := txStorage.UpdateTaskHumanStatus(ctx, dbTask.ID, string(pipeline.StatusCancel))
+		updatedTask, updateTaskErr := txStorage.UpdateTaskHumanStatus(ctx, dbTask.ID, string(pipeline.StatusCancel), "")
 		if updateTaskErr != nil {
 			if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
 				log.WithField("funcName", "UpdateTaskHumanStatus").
@@ -696,10 +738,11 @@ func (ae *APIEnv) StopTasks(w http.ResponseWriter, r *http.Request) {
 			log.WithError(sendNotifErr).Error("couldn't send notification")
 		}
 
-		resp.Tasks = append(resp.Tasks, TaskStatus{
+		resp.Tasks = append(resp.Tasks, stoppedTask{
 			FinishedAt: *updatedTask.FinishedAt,
 			Status:     updatedTask.HumanStatus,
 			WorkNumber: updatedTask.WorkNumber,
+			ID:         dbTask.ID,
 		})
 	}
 
@@ -708,6 +751,33 @@ func (ae *APIEnv) StopTasks(w http.ResponseWriter, r *http.Request) {
 		e := UnknownError
 		_ = e.sendError(w)
 		return
+	}
+
+	for i := range resp.Tasks {
+		task := resp.Tasks[i]
+		runCtx := pipeline.BlockRunContext{
+			WorkNumber: task.WorkNumber,
+			TaskID:     task.ID,
+			Services: pipeline.RunContextServices{
+				HTTPClient:   ae.HTTPClient,
+				Integrations: ae.Integrations,
+				Storage:      ae.DB,
+			},
+			BlockRunResults: &pipeline.BlockRunResults{},
+		}
+
+		runCtx.SetTaskEvents(ctx)
+
+		nodeEvents, eventErr := runCtx.GetCancelledStepsEvents(ctx)
+		if eventErr != nil {
+			log.WithError(eventErr).Error("couldn't get cancelled steps events")
+			e := UnknownError
+			_ = e.sendError(w)
+			return
+		}
+
+		runCtx.BlockRunResults.NodeEvents = nodeEvents
+		runCtx.NotifyEvents(ctx)
 	}
 
 	if err = sendResponse(w, http.StatusOK, resp); err != nil {

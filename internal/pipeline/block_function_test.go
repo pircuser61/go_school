@@ -80,21 +80,23 @@ func TestBlockFunction_Update(t *testing.T) {
 						})
 						return s
 					}(),
-					Storage: func() db.Database {
-						res := &mocks.MockedDatabase{}
+					Services: RunContextServices{
+						Storage: func() db.Database {
+							res := &mocks.MockedDatabase{}
 
-						res.On("GetTaskStepByName",
-							mock.MatchedBy(func(ctx context.Context) bool { return true }),
-							workId,
-							stepName,
-						).Return(
-							&entity.Step{
-								ID: uuid.New(),
-							}, nil,
-						)
+							res.On("GetTaskStepByName",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								workId,
+								stepName,
+							).Return(
+								&entity.Step{
+									ID: uuid.New(),
+								}, nil,
+							)
 
-						return res
-					}(),
+							return res
+						}(),
+					},
 				},
 			},
 			args: args{
@@ -138,21 +140,23 @@ func TestBlockFunction_Update(t *testing.T) {
 						})
 						return s
 					}(),
-					Storage: func() db.Database {
-						res := &mocks.MockedDatabase{}
+					Services: RunContextServices{
+						Storage: func() db.Database {
+							res := &mocks.MockedDatabase{}
 
-						res.On("GetTaskStepByName",
-							mock.MatchedBy(func(ctx context.Context) bool { return true }),
-							workId,
-							stepName,
-						).Return(
-							&entity.Step{
-								ID: uuid.New(),
-							}, nil,
-						)
+							res.On("GetTaskStepByName",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								workId,
+								stepName,
+							).Return(
+								&entity.Step{
+									ID: uuid.New(),
+								}, nil,
+							)
 
-						return res
-					}(),
+							return res
+						}(),
+					},
 				},
 			},
 			args: args{
@@ -173,7 +177,7 @@ func TestBlockFunction_Update(t *testing.T) {
 				State: &ExecutableFunction{
 					HasResponse: true,
 					Function: script.FunctionParam{
-						Output: `{"mktu": {"type": "array", "items": [{"type": "number"}]}, "name": {"type": "string"}, "obj": {"type": "object", "properties": {"k1": {"type": "string"}}}}`,
+						Output: `{"mktu": {"type": "array", "items": {"type": "number"}}, "name": {"type": "string"}, "obj": {"type": "object", "properties": {"k1": {"type": "string"}}}}`,
 					},
 				},
 			},
@@ -288,21 +292,23 @@ func TestBlockFunction_Update(t *testing.T) {
 						})
 						return s
 					}(),
-					Storage: func() db.Database {
-						res := &mocks.MockedDatabase{}
+					Services: RunContextServices{
+						Storage: func() db.Database {
+							res := &mocks.MockedDatabase{}
 
-						res.On("GetTaskStepByName",
-							mock.MatchedBy(func(ctx context.Context) bool { return true }),
-							workId,
-							stepName,
-						).Return(
-							&entity.Step{
-								ID: uuid.New(),
-							}, nil,
-						)
+							res.On("GetTaskStepByName",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								workId,
+								stepName,
+							).Return(
+								&entity.Step{
+									ID: uuid.New(),
+								}, nil,
+							)
 
-						return res
-					}(),
+							return res
+						}(),
+					},
 				},
 			},
 			args: args{
@@ -329,6 +335,53 @@ func TestBlockFunction_Update(t *testing.T) {
 			_, err := efb.Update(test.args.ctx)
 
 			assert.Equalf(t, test.wantErr, err != nil, fmt.Sprintf("Update(%+v)", test.args.ctx))
+		})
+	}
+}
+
+func TestExecutableFunctionBlock_restoreMapStructure(t *testing.T) {
+	tests := []struct {
+		name      string
+		variables map[string]interface{}
+		want      map[string]interface{}
+	}{
+		{
+			name: "success case",
+			variables: map[string]interface{}{
+				"start_0.application_body.param1": "some_string",
+				"start_0.application_body.param2": map[string]interface{}{
+					"field1": 4,
+					"field2": "string_value",
+				},
+				"form_0": map[string]interface{}{
+					"application_body": map[string]interface{}{
+						"A": 111,
+					},
+				},
+				"param3": 123,
+			},
+			want: map[string]interface{}{
+				"start_0": map[string]interface{}{
+					"application_body": map[string]interface{}{
+						"param1": "some_string",
+						"param2": map[string]interface{}{
+							"field1": 4,
+							"field2": "string_value",
+						},
+					},
+				},
+				"form_0": map[string]interface{}{
+					"application_body": map[string]interface{}{
+						"A": 111,
+					},
+				},
+				"param3": 123,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equalf(t, tt.want, script.RestoreMapStructure(tt.variables), "restoreMapStructure(%v)", tt.variables)
 		})
 	}
 }

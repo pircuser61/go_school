@@ -6,8 +6,6 @@ import (
 
 	"go.opencensus.io/trace"
 
-	"golang.org/x/net/context"
-
 	"github.com/google/uuid"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
@@ -19,6 +17,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/kafka"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/scheduler"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
@@ -54,17 +53,24 @@ type ExecutablePipeline struct {
 	HumanTasks    *human_tasks.Service
 	Integrations  *integrations.Service
 	FileRegistry  *file_registry.Service
+	Scheduler     *scheduler.Service
 
 	FaaS string
 
 	RunContext *BlockRunContext
+
+	happenedEvents []entity.NodeEvent
+}
+
+func (gb *ExecutablePipeline) GetNewEvents() []entity.NodeEvent {
+	return gb.happenedEvents
 }
 
 func (gb *ExecutablePipeline) Members() []Member {
 	return nil
 }
 
-func (gb *ExecutablePipeline) Deadlines(_ context.Context) ([]Deadline, error) {
+func (gb *ExecutablePipeline) Deadlines(_ c.Context) ([]Deadline, error) {
 	return []Deadline{}, nil
 }
 
@@ -93,16 +99,17 @@ func (gb *ExecutablePipeline) ReadyToStart() bool {
 	return len(gb.ActiveBlocks) == 0 && gb.EntryPoint == BlockGoFirstStart
 }
 
-func (gb *ExecutablePipeline) GetTaskHumanStatus() TaskHumanStatus {
+func (gb *ExecutablePipeline) GetTaskHumanStatus() (status TaskHumanStatus, comment string) {
 	// TODO: проверять, что нет ошибок (потому что только тогда мы Done)
 	if len(gb.ActiveBlocks) == 0 {
-		return StatusDone
+		return StatusDone, ""
 	}
-	return StatusNew
+	return StatusNew, ""
 }
 
 type CreateTaskDTO struct {
 	Author     string
+	RealAuthor string
 	IsDebug    bool
 	Params     []byte
 	WorkNumber string
@@ -116,6 +123,7 @@ func (gb *ExecutablePipeline) CreateTask(ctx c.Context, dto *CreateTaskDTO) erro
 		TaskID:     gb.TaskID,
 		VersionID:  gb.VersionID,
 		Author:     dto.Author,
+		RealAuthor: dto.RealAuthor,
 		WorkNumber: dto.WorkNumber,
 		IsDebug:    dto.IsDebug,
 		Params:     dto.Params,
@@ -166,22 +174,29 @@ func (gb *ExecutablePipeline) CreateBlocks(ctx c.Context, source map[string]enti
 			WorkNumber: gb.WorkNumber,
 			WorkTitle:  gb.Name,
 			Initiator:  gb.RunContext.Initiator,
-			Storage:    gb.Storage,
-			VarStore:   gb.VarStore,
+			Services: RunContextServices{
+				HTTPClient:    gb.RunContext.Services.HTTPClient,
+				Storage:       gb.Storage,
+				Sender:        gb.Sender,
+				Kafka:         gb.Kafka,
+				People:        gb.People,
+				ServiceDesc:   gb.ServiceDesc,
+				FunctionStore: gb.FunctionStore,
+				HumanTasks:    gb.HumanTasks,
+				Integrations:  gb.Integrations,
+				FileRegistry:  gb.FileRegistry,
+				FaaS:          gb.FaaS,
+				HrGate:        gb.RunContext.Services.HrGate,
+				Scheduler:     gb.RunContext.Services.Scheduler,
+				SLAService:    gb.RunContext.Services.SLAService,
+			},
+			BlockRunResults: &BlockRunResults{},
 
-			Sender:        gb.Sender,
-			Kafka:         gb.Kafka,
-			People:        gb.People,
-			ServiceDesc:   gb.ServiceDesc,
-			FunctionStore: gb.FunctionStore,
-			HumanTasks:    gb.HumanTasks,
-			Integrations:  gb.Integrations,
-			FileRegistry:  gb.FileRegistry,
-			FaaS:          gb.FaaS,
-			HrGate:        gb.RunContext.HrGate,
-			UpdateData:    nil,
-			IsTest:        isTest,
-			NotifName:     notifName,
+			VarStore: gb.VarStore,
+
+			UpdateData: nil,
+			IsTest:     isTest,
+			NotifName:  notifName,
 		})
 		if err != nil {
 			return err

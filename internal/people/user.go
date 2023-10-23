@@ -3,6 +3,7 @@ package people
 import (
 	"encoding/json"
 
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 )
 
@@ -145,4 +146,17 @@ type SearchUsersResp struct {
 
 func (user *SSOUserTyped) GetFullName() string {
 	return user.LastName + " " + user.FirstName
+}
+
+func GetSsoPersonSchemaProperties() map[string]script.JSONSchemaPropertiesValue {
+	return map[string]script.JSONSchemaPropertiesValue{
+		"fullname":    {Type: "string", Title: "Полное имя"},
+		"username":    {Type: "string", Title: "Логин"},
+		"email":       {Type: "string", Title: "email"},
+		"mobile":      {Type: "string", Title: "Номер мобильного телефона"},
+		"fullOrgUnit": {Type: "string", Title: "Подразделение"},
+		"position":    {Type: "string", Title: "Должность"},
+		"phone":       {Type: "string", Title: "Телефон"},
+		"tabnum":      {Type: "string", Title: "Табельный номер"},
+	}
 }

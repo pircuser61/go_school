@@ -92,6 +92,9 @@ servicedesc:
 function_store:
   url: 'functions:90'
 
+scheduler_tasks:
+  url: 'scheduler:90'
+
 human_tasks:
   url: 'human-tasks:90'
 
@@ -103,6 +106,9 @@ imap:
 
 integrations:
   url: 'integrations:90'
+
+forms:
+  url: 'forms:90'
 
 hrgate:
   hr_gate_url: "https://hr-gate.stage.autobp.mts.ru"

@@ -15,10 +15,26 @@ type CreateTaskDTO struct {
 	TaskID     uuid.UUID
 	VersionID  uuid.UUID
 	Author     string
+	RealAuthor string
 	WorkNumber string
 	IsDebug    bool
 	Params     []byte
 	RunCtx     entity.TaskRunContext
+}
+
+func (db *PGCon) SetLastRunID(c context.Context, taskID, versionID uuid.UUID) error {
+	// nolint:gocritic
+	// language=PostgreSQL
+	const q = `UPDATE versions 
+		SET last_run_id = $1 
+		WHERE id = $2`
+
+	_, err := db.Connection.Exec(c, q, taskID, versionID)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (db *PGCon) CreateTask(c context.Context, dto *CreateTaskDTO) (*entity.EriusTask, error) {
@@ -43,17 +59,6 @@ func (db *PGCon) CreateTask(c context.Context, dto *CreateTaskDTO) (*entity.Eriu
 		if err != nil {
 			return nil, err
 		}
-	}
-
-	// nolint:gocritic
-	// language=PostgreSQL
-	const q = `UPDATE versions 
-		SET last_run_id = $1 
-		WHERE id = $2`
-
-	_, err = db.Connection.Exec(c, q, dto.TaskID, dto.VersionID)
-	if err != nil {
-		return nil, err
 	}
 
 	return db.GetTask(c, []string{dto.Author}, []string{dto.Author}, dto.Author, workNumber)
@@ -123,7 +128,8 @@ func (db *PGCon) insertTask(c context.Context, dto *CreateTaskDTO) (workNumber s
 			author, 
 			debug, 
 			parameters,
-			run_context		                  
+			run_context,
+			real_author
 		)
 		VALUES (
 			$1, 
@@ -133,7 +139,8 @@ func (db *PGCon) insertTask(c context.Context, dto *CreateTaskDTO) (workNumber s
 			$5, 
 			$6, 
 			$7,
-			$8
+			$8,
+		    $9
 		)
 	RETURNING work_number
 `
@@ -149,6 +156,7 @@ func (db *PGCon) insertTask(c context.Context, dto *CreateTaskDTO) (workNumber s
 		dto.IsDebug,
 		dto.Params,
 		dto.RunCtx,
+		dto.RealAuthor,
 	)
 
 	var worksNumber string

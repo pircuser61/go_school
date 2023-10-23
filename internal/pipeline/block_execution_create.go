@@ -15,8 +15,11 @@ import (
 )
 
 // nolint:dupl // another block
-func createGoExecutionBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext) (*GoExecutionBlock, bool, error) {
-	log := logger.GetLogger(ctx)
+func createGoExecutionBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext,
+	expectedEvents map[string]struct{}) (*GoExecutionBlock, bool, error) {
+	if ef.ShortTitle == "" {
+		return nil, false, errors.New(ef.Title + " block short title is empty")
+	}
 
 	b := &GoExecutionBlock{
 		Name:    name,
@@ -26,14 +29,19 @@ func createGoExecutionBlock(ctx c.Context, name string, ef *entity.EriusFunc, ru
 		Sockets: entity.ConvertSocket(ef.Sockets),
 
 		RunContext: runCtx,
+
+		expectedEvents: expectedEvents,
+		happenedEvents: make([]entity.NodeEvent, 0),
 	}
 
 	for _, v := range ef.Input {
 		b.Input[v.Name] = v.Global
 	}
 
-	for _, v := range ef.Output {
-		b.Output[v.Name] = v.Global
+	if ef.Output != nil {
+		for propertyName, v := range ef.Output.Properties {
+			b.Output[propertyName] = v.Global
+		}
 	}
 
 	rawState, blockExists := runCtx.VarStore.State[name]
@@ -44,8 +52,6 @@ func createGoExecutionBlock(ctx c.Context, name string, ef *entity.EriusFunc, ru
 		}
 
 		reEntry = runCtx.UpdateData == nil
-		log.WithField("createGoExecutionBlock", runCtx.UpdateData).
-			Info("create new execution block: "+b.Name, reEntry)
 
 		// это для возврата в рамках одного процесса
 		if reEntry {
@@ -53,6 +59,15 @@ func createGoExecutionBlock(ctx c.Context, name string, ef *entity.EriusFunc, ru
 				return nil, false, err
 			}
 			b.RunContext.VarStore.AddStep(b.Name)
+
+			if _, ok := b.expectedEvents[eventStart]; ok {
+				status, _ := b.GetTaskHumanStatus()
+				event, err := runCtx.MakeNodeStartEvent(ctx, name, status, b.GetStatus())
+				if err != nil {
+					return nil, false, err
+				}
+				b.happenedEvents = append(b.happenedEvents, event)
+			}
 		}
 	} else {
 		if err := b.createState(ctx, ef); err != nil {
@@ -60,7 +75,15 @@ func createGoExecutionBlock(ctx c.Context, name string, ef *entity.EriusFunc, ru
 		}
 		b.RunContext.VarStore.AddStep(b.Name)
 
-		// TODO: выпилить когда сделаем циклы
+		if _, ok := b.expectedEvents[eventStart]; ok {
+			status, _ := b.GetTaskHumanStatus()
+			event, err := runCtx.MakeNodeStartEvent(ctx, name, status, b.GetStatus())
+			if err != nil {
+				return nil, false, err
+			}
+			b.happenedEvents = append(b.happenedEvents, event)
+		}
+
 		// это для возврата на доработку при которой мы создаем новый процесс
 		// и пытаемся взять решение из прошлого процесса
 		if err := b.setPrevDecision(ctx); err != nil {
@@ -78,9 +101,21 @@ func (gb *GoExecutionBlock) reEntry(ctx c.Context, ef *entity.EriusFunc) error {
 
 	gb.State.Decision = nil
 	gb.State.DecisionComment = nil
-	gb.State.DecisionAttachments = make([]string, 0)
+	gb.State.DecisionAttachments = make([]entity.Attachment, 0)
 	gb.State.ActualExecutor = nil
 	gb.State.IsTakenInWork = false
+
+	if gb.State.UseActualExecutor {
+		execs, prevErr := gb.RunContext.Services.Storage.GetExecutorsFromPrevExecutionBlockRun(ctx, gb.RunContext.TaskID, gb.Name)
+		if prevErr != nil {
+			return prevErr
+		}
+		if len(execs) == 1 {
+			gb.State.Executors = execs
+		}
+
+		return gb.handleNotifications(ctx)
+	}
 
 	var params script.ExecutionParams
 	err := json.Unmarshal(ef.Params, &params)
@@ -88,7 +123,7 @@ func (gb *GoExecutionBlock) reEntry(ctx c.Context, ef *entity.EriusFunc) error {
 		return errors.Wrap(err, "can not get execution parameters for block: "+gb.Name)
 	}
 
-	if params.ExecutorsGroupIDPath != nil {
+	if params.ExecutorsGroupIDPath != nil && *params.ExecutorsGroupIDPath != "" {
 		variableStorage, grabStorageErr := gb.RunContext.VarStore.GrabStorage()
 		if grabStorageErr != nil {
 			return grabStorageErr
@@ -100,31 +135,15 @@ func (gb *GoExecutionBlock) reEntry(ctx c.Context, ef *entity.EriusFunc) error {
 		}
 		params.ExecutorsGroupID = fmt.Sprintf("%v", groupId)
 	}
-	executorChosenFlag := false
-	if gb.State.UseActualExecutor {
-		execs, prevErr := gb.RunContext.Storage.GetExecutorsFromPrevExecutionBlockRun(ctx, gb.RunContext.TaskID, gb.Name)
-		if prevErr != nil {
-			return prevErr
-		}
-		if len(execs) == 1 {
-			gb.State.Executors = execs
-			executorChosenFlag = true
-		}
-	}
-	if !executorChosenFlag {
-		err = gb.setExecutorsByParams(ctx, &setExecutorsByParamsDTO{
-			Type:     params.Type,
-			GroupID:  params.ExecutorsGroupID,
-			Executor: params.Executors,
-			WorkType: params.WorkType,
-		})
-		if err != nil {
-			return err
-		}
-	}
 
-	if notifyErr := gb.RunContext.handleInitiatorNotify(ctx, gb.Name, ef.TypeID, gb.GetTaskHumanStatus()); notifyErr != nil {
-		return notifyErr
+	err = gb.setExecutorsByParams(ctx, &setExecutorsByParamsDTO{
+		Type:     params.Type,
+		GroupID:  params.ExecutorsGroupID,
+		Executor: params.Executors,
+		WorkType: params.WorkType,
+	})
+	if err != nil {
+		return err
 	}
 
 	return gb.handleNotifications(ctx)
@@ -156,8 +175,8 @@ func (gb *GoExecutionBlock) createState(ctx c.Context, ef *entity.EriusFunc) err
 		IsEditable:         params.IsEditable,
 		RepeatPrevDecision: params.RepeatPrevDecision,
 		UseActualExecutor:  params.UseActualExecutor,
+		ShowExecutor:       params.ShowExecutor,
 	}
-	executorChosenFlag := false
 
 	if params.ExecutorsGroupIDPath != nil && *params.ExecutorsGroupIDPath != "" {
 		variableStorage, grabStorageErr := gb.RunContext.VarStore.GrabStorage()
@@ -173,43 +192,40 @@ func (gb *GoExecutionBlock) createState(ctx c.Context, ef *entity.EriusFunc) err
 	}
 
 	if gb.State.UseActualExecutor {
-		execs, execErr := gb.RunContext.Storage.GetExecutorsFromPrevWorkVersionExecutionBlockRun(ctx, gb.RunContext.WorkNumber, gb.Name)
+		execs, execErr := gb.RunContext.Services.Storage.GetExecutorsFromPrevWorkVersionExecutionBlockRun(
+			ctx, gb.RunContext.WorkNumber, gb.Name)
 		if execErr != nil {
 			return execErr
 		}
 		if len(execs) == 1 {
 			gb.State.Executors = execs
-			executorChosenFlag = true
 		}
 	}
-	if !executorChosenFlag {
-		err = gb.setExecutorsByParams(ctx, &setExecutorsByParamsDTO{
-			Type:     params.Type,
-			GroupID:  params.ExecutorsGroupID,
-			Executor: params.Executors,
-			WorkType: params.WorkType,
-		})
-		if err != nil {
-			return err
-		}
+
+	err = gb.setExecutorsByParams(ctx, &setExecutorsByParamsDTO{
+		Type:     params.Type,
+		GroupID:  params.ExecutorsGroupID,
+		Executor: params.Executors,
+		WorkType: params.WorkType,
+	})
+	if err != nil {
+		return err
 	}
+
 	if params.WorkType != nil {
 		gb.State.WorkType = *params.WorkType
 	} else {
-		task, getVersionErr := gb.RunContext.Storage.GetVersionByWorkNumber(ctx, gb.RunContext.WorkNumber)
+		task, getVersionErr := gb.RunContext.Services.Storage.GetVersionByWorkNumber(ctx, gb.RunContext.WorkNumber)
 		if getVersionErr != nil {
 			return getVersionErr
 		}
 
-		processSLASettings, getVersionErr := gb.RunContext.Storage.GetSlaVersionSettings(ctx, task.VersionID.String())
+		processSLASettings, getVersionErr := gb.RunContext.Services.Storage.GetSlaVersionSettings(
+			ctx, task.VersionID.String())
 		if getVersionErr != nil {
 			return getVersionErr
 		}
 		gb.State.WorkType = processSLASettings.WorkType
-	}
-
-	if notifуErr := gb.RunContext.handleInitiatorNotify(ctx, gb.Name, ef.TypeID, gb.GetTaskHumanStatus()); notifуErr != nil {
-		return notifуErr
 	}
 
 	return gb.handleNotifications(ctx)
@@ -230,7 +246,6 @@ func (gb *GoExecutionBlock) setExecutorsByParams(ctx c.Context, dto *setExecutor
 		gb.State.Executors = map[string]struct{}{
 			dto.Executor: {},
 		}
-		gb.State.IsTakenInWork = true
 	case script.ExecutionTypeFromSchema:
 		variableStorage, grabStorageErr := gb.RunContext.VarStore.GrabStorage()
 		if grabStorageErr != nil {
@@ -254,12 +269,9 @@ func (gb *GoExecutionBlock) setExecutorsByParams(ctx c.Context, dto *setExecutor
 			}
 		}
 		gb.State.Executors = executorsFromSchema
-		if len(gb.State.Executors) == 1 {
-			gb.State.IsTakenInWork = true
-		}
 
 	case script.ExecutionTypeGroup:
-		workGroup, errGroup := gb.RunContext.ServiceDesc.GetWorkGroup(ctx, dto.GroupID)
+		workGroup, errGroup := gb.RunContext.Services.ServiceDesc.GetWorkGroup(ctx, dto.GroupID)
 		if errGroup != nil {
 			return errors.Wrap(errGroup, "can`t get executors group with id: "+dto.GroupID)
 		}
@@ -276,6 +288,7 @@ func (gb *GoExecutionBlock) setExecutorsByParams(ctx c.Context, dto *setExecutor
 		gb.State.ExecutorsGroupID = dto.GroupID
 		gb.State.ExecutorsGroupName = workGroup.GroupName
 	}
+	gb.State.InitialExecutors = gb.State.Executors
 	return nil
 }
 
@@ -286,6 +299,8 @@ func (gb *GoExecutionBlock) setPrevDecision(ctx c.Context) error {
 	if decision == nil && len(gb.State.EditingAppLog) == 0 && gb.State.GetIsEditable() {
 		gb.setEditingAppLogFromPreviousBlock(ctx)
 	}
+
+	gb.setPreviousExecutors(ctx)
 
 	if decision == nil && gb.State.GetRepeatPrevDecision() {
 		if gb.trySetPreviousDecision(ctx) {
@@ -303,7 +318,7 @@ func (gb *GoExecutionBlock) setEditingAppLogFromPreviousBlock(ctx c.Context) {
 	var parentStep *entity.Step
 	var err error
 
-	parentStep, err = gb.RunContext.Storage.GetParentTaskStepByName(ctx, gb.RunContext.TaskID, gb.Name)
+	parentStep, err = gb.RunContext.Services.Storage.GetParentTaskStepByName(ctx, gb.RunContext.TaskID, gb.Name)
 	if err != nil || parentStep == nil {
 		return
 	}
@@ -334,7 +349,7 @@ func (gb *GoExecutionBlock) trySetPreviousDecision(ctx c.Context) (isPrevDecisio
 	var parentStep *entity.Step
 	var err error
 
-	parentStep, err = gb.RunContext.Storage.GetParentTaskStepByName(ctx, gb.RunContext.TaskID, gb.Name)
+	parentStep, err = gb.RunContext.Services.Storage.GetParentTaskStepByName(ctx, gb.RunContext.TaskID, gb.Name)
 	if err != nil || parentStep == nil {
 		l.Error(err)
 		return false
@@ -370,7 +385,50 @@ func (gb *GoExecutionBlock) trySetPreviousDecision(ctx c.Context) (isPrevDecisio
 		gb.State.ActualExecutor = &actualExecutor
 		gb.State.DecisionComment = &comment
 		gb.State.Decision = parentState.Decision
+
+		if _, ok = gb.expectedEvents[eventEnd]; ok {
+			status, _ := gb.GetTaskHumanStatus()
+			event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, gb.Name, status, gb.GetStatus())
+			if eventErr != nil {
+				return false
+			}
+			gb.happenedEvents = append(gb.happenedEvents, event)
+		}
+
 	}
 
 	return true
+}
+
+// nolint:dupl // not dupl
+func (gb *GoExecutionBlock) setPreviousExecutors(ctx c.Context) {
+	const funcName = "pipeline.execution.setPreviousExecutors"
+	l := logger.GetLogger(ctx)
+
+	var parentStep *entity.Step
+	var err error
+
+	parentStep, err = gb.RunContext.Services.Storage.GetParentTaskStepByName(ctx, gb.RunContext.TaskID, gb.Name)
+	if err != nil || parentStep == nil {
+		l.Error(err)
+		return
+	}
+
+	data, ok := parentStep.State[gb.Name]
+	if !ok {
+		l.Error(funcName, "parent step state is not found: "+gb.Name)
+		return
+	}
+
+	var parentState ExecutionData
+	if err = json.Unmarshal(data, &parentState); err != nil {
+		l.Error(funcName, "invalid format of go-execution-block state")
+		return
+	}
+
+	if parentState.Executors != nil {
+		for login := range parentState.Executors {
+			gb.State.Executors[login] = struct{}{}
+		}
+	}
 }

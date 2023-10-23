@@ -1,11 +1,6 @@
 {
   "id": "1305535d-6d0e-4cf2-a9c1-81d5789a7c3d",
-  "version_id": "1c041c7c-09c8-4e55-b3ea-66da9ff3e6cb",
-  "status": 1,
-  "hasDraft": true,
   "name": "debugger-steps",
-  "comment": "",
-  "comment_rejected": "",
   "input": [
     {
       "name": "str_bts",
@@ -19,99 +14,108 @@
     }
   ],
   "output": [],
+  "status": 1,
+  "comment": "",
+  "hasDraft": true,
   "pipeline": {
     "blocks": {
+      "end-1": {
+        "x": 587,
+        "y": 288,
+        "input": [],
+        "title": "end",
+        "output": {
+          "type": "object",
+          "properties": {
+            "action": {
+              "type": "string",
+              "global": "const-lock-3g_0.action"
+            },
+            "pause_1": {
+              "type": "number",
+              "global": "const-lock-3g_0.pause_1"
+            },
+            "pause_2": {
+              "type": "number",
+              "global": "const-lock-3g_0.pause_2"
+            }
+          }
+        },
+        "sockets": [],
+        "type_id": "end",
+        "block_type": "go"
+      },
       "start_0": {
         "x": 587,
         "y": 288,
         "input": [],
-        "output": [
+        "title": "start",
+        "output": {
+          "type": "object",
+          "properties": {
+            "action": {
+              "type": "string",
+              "global": "const-lock-3g_0.action"
+            },
+            "pause_1": {
+              "type": "number",
+              "global": "const-lock-3g_0.pause_1"
+            },
+            "pause_2": {
+              "type": "number",
+              "global": "const-lock-3g_0.pause_2"
+            }
+          }
+        },
+        "sockets": [
           {
-            "name": "action",
-            "type": "string",
-            "global": "const-lock-3g_0.action"
-          },
-          {
-            "name": "pause_1",
-            "type": "number",
-            "global": "const-lock-3g_0.pause_1"
-          },
-          {
-            "name": "pause_2",
-            "type": "number",
-            "global": "const-lock-3g_0.pause_2"
+            "id": "default",
+            "title": "",
+            "nextBlockIds": [
+              "action-1"
+            ]
           }
         ],
-        "block_type": "go",
-        "title": "start",
         "type_id": "start",
-        "sockets" : [
-          {
-            "id" :  "default",
-            "title" : "",
-            "nextBlockIds": ["action-1"]
-          }
-        ]
+        "block_type": "go"
       },
       "action-1": {
         "x": 587,
         "y": 288,
         "input": [],
-        "output": [
-          {
-            "name": "action",
-            "type": "string",
-            "global": "const-lock-3g_0.action"
-          },
-          {
-            "name": "pause_1",
-            "type": "number",
-            "global": "const-lock-3g_0.pause_1"
-          },
-          {
-            "name": "pause_2",
-            "type": "number",
-            "global": "const-lock-3g_0.pause_2"
-          }
-        ],
-        "block_type": "go",
         "title": "go_test_block",
-        "type_id": "go_test_block",
-        "sockets" : [
-          {
-            "id" :  "default",
-            "title" : "",
-            "nextBlockIds": ["end-1"]
+        "output": {
+          "type": "object",
+          "properties": {
+            "action": {
+              "type": "string",
+              "global": "const-lock-3g_0.action"
+            },
+            "pause_1": {
+              "type": "number",
+              "global": "const-lock-3g_0.pause_1"
+            },
+            "pause_2": {
+              "type": "number",
+              "global": "const-lock-3g_0.pause_2"
+            }
           }
-        ]
-      },
-      "end-1": {
-        "x": 587,
-        "y": 288,
-        "input": [],
-        "output": [
+        },
+        "sockets": [
           {
-            "name": "action",
-            "type": "string",
-            "global": "const-lock-3g_0.action"
-          },
-          {
-            "name": "pause_1",
-            "type": "number",
-            "global": "const-lock-3g_0.pause_1"
-          },
-          {
-            "name": "pause_2",
-            "type": "number",
-            "global": "const-lock-3g_0.pause_2"
+            "id": "default",
+            "title": "",
+            "nextBlockIds": [
+              "end-1"
+            ]
           }
         ],
-        "block_type": "go",
-        "title": "end",
-        "type_id": "end",
-        "sockets": []
+        "type_id": "go_test_block",
+        "block_type": "go"
       }
     },
     "entrypoint": "start_0"
-  }
+  },
+  "version_id": "1c041c7c-09c8-4e55-b3ea-66da9ff3e6cb",
+  "comment_rejected": ""
 }

@@ -4,12 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"sort"
-	"strings"
 	"time"
 
 	"github.com/google/uuid"
+	"golang.org/x/exp/maps"
 
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 )
@@ -52,33 +52,50 @@ type EriusTagInfo struct {
 type BlocksType map[string]EriusFunc
 
 const (
-	BlockGoStartName = "start"
-	BlockGoEndName   = "end"
-	BlockSDName      = "servicedesk_application"
+	BlockGoStartName       = "start"
+	StartBlock0            = "start_0"
+	BlockGoEndName         = "end"
+	BlockSDName            = "servicedesk_application"
+	BlockParallelStartName = "begin_parallel_task"
+	BlockParallelEndName   = "wait_for_all_inputs"
 )
 
 const (
 	checkSdBlueprint = "/api/herald/v1/schema/blueprint/"
 )
 
-func (bt *BlocksType) Validate(ctx context.Context, sd *servicedesc.Service) bool {
+const (
+	PipelineValidateError         = "PipelineValidateError"
+	ParallelNodeReturnCycle       = "ParallelNodeReturnCycle"
+	ParallelNodeExitsNotConnected = "ParallelNodeExitsNotConnected"
+	OutOfParallelNodesConnection  = "OutOfParallelNodesConnection"
+	ParallelOutOfStartInsert      = "ParallelOutOfStartInsert"
+	ParallelPathIntersected       = "ParallelPathIntersected"
+)
+
+func (bt *BlocksType) Validate(ctx context.Context, sd *servicedesc.Service) (valid bool, textErr string) {
 	if !bt.EndExists() {
-		return false
+		return false, PipelineValidateError
 	}
 
 	if !bt.IsPipelineComplete() {
-		return false
+		return false, PipelineValidateError
 	}
 
-	if !bt.IsSocketsFilled() {
-		return false
+	ok, filledErr := bt.IsSocketsFilled()
+	if !ok {
+		return false, filledErr
 	}
 
 	if !bt.IsSdBlueprintFilled(ctx, sd) {
-		return false
+		return false, PipelineValidateError
+	}
+	ok, parallErr := bt.IsParallelNodesCorrect()
+	if !ok {
+		return false, parallErr
 	}
 
-	return true
+	return true, ""
 }
 
 func (bt *BlocksType) EndExists() bool {
@@ -86,22 +103,23 @@ func (bt *BlocksType) EndExists() bool {
 }
 
 func (bt *BlocksType) IsPipelineComplete() bool {
-	startNode := bt.getNodeByType(BlockGoStartName)
+	startNodes := bt.getNodesByType(BlockGoStartName)
 
-	if startNode == nil {
+	if len(startNodes) == 0 {
 		return false
 	}
+	startNode := startNodes[maps.Keys(startNodes)[0]]
 
 	nodesIds := bt.getNodesIds()
-	relatedNodesNum := bt.countRelatedNodesIds(startNode)
+	relatedNodesNum := bt.countRelatedNodesIds(&startNode)
 
 	return len(nodesIds) == relatedNodesNum
 }
 
-func (bt *BlocksType) IsSocketsFilled() bool {
+func (bt *BlocksType) IsSocketsFilled() (valid bool, textErr string) {
 	for _, b := range *bt {
 		if len(b.Next) != len(b.Sockets) {
-			return false
+			return false, ParallelNodeExitsNotConnected
 		}
 
 		nextNames := make(map[string]bool)
@@ -114,18 +132,19 @@ func (bt *BlocksType) IsSocketsFilled() bool {
 
 		for _, s := range b.Sockets {
 			if !nextNames[s.Id] {
-				return false
+				return false, ""
 			}
 		}
 	}
-	return true
+	return true, ""
 }
 
 func (bt *BlocksType) IsSdBlueprintFilled(ctx context.Context, sd *servicedesc.Service) bool {
-	sdNode := bt.getNodeByType(BlockSDName)
-	if sdNode == nil {
+	sdNodes := bt.getNodesByType(BlockSDName)
+	if len(sdNodes) == 0 {
 		return true
 	}
+	sdNode := sdNodes[maps.Keys(sdNodes)[0]]
 
 	var params script.SdApplicationParams
 	err := json.Unmarshal(sdNode.Params, &params)
@@ -145,23 +164,284 @@ func (bt *BlocksType) IsSdBlueprintFilled(ctx context.Context, sd *servicedesc.S
 	return resp.StatusCode == http.StatusOK
 }
 
+// nolint:gocognit //its ok here
+func (bt *BlocksType) IsParallelNodesCorrect() (valid bool, textErr string) {
+	return true, ""
+	// TODO return Validation
+	parallelStartNodes := bt.getNodesByType(BlockParallelStartName)
+	if len(parallelStartNodes) == 0 {
+		return true, ""
+	}
+	var parallelExitsAsBlock = make(map[string]string, 0)
+	for idx := range parallelStartNodes {
+		parallelNode := parallelStartNodes[idx]
+		var foundNode *string
+
+		nodes := make(map[string]*EriusFunc, 0)
+		visitedParallelNodes := make(map[string]EriusFunc, 0)
+		visitedParallelNodes[idx] = parallelNode
+
+		for _, socketOutNodes := range parallelNode.Next {
+			for _, socketOutNode := range socketOutNodes {
+				socketNode, ok := (*bt)[socketOutNode]
+				if !ok {
+					continue
+				}
+				nodes[socketOutNode] = &socketNode
+			}
+		}
+
+		for {
+			nodeKeys := maps.Keys(nodes)
+			if len(nodeKeys) == 0 {
+				break
+			}
+
+			nodeKey, node := nodeKeys[0], nodes[nodeKeys[0]]
+			delete(nodes, nodeKey)
+			if _, ok := visitedParallelNodes[nodeKey]; ok {
+				continue
+			}
+
+			visitedParallelNodes[nodeKey] = *node
+			if node.TypeID == BlockParallelEndName {
+				if foundNode != nil && nodeKey != *foundNode {
+					return false, PipelineValidateError
+				}
+				foundNode = &nodeKey
+			} else if node.TypeID == BlockParallelStartName {
+				continue
+			} else {
+				for _, socketOutNodes := range node.Next {
+					for _, socketOutNode := range socketOutNodes {
+						socketNode, ok := (*bt)[socketOutNode]
+						if !ok {
+							continue
+						}
+						if socketOutNode == idx {
+							return false, ParallelNodeReturnCycle
+						}
+						nodes[socketOutNode] = &socketNode
+					}
+				}
+			}
+		}
+		if foundNode == nil {
+			return false, ""
+		}
+		afterEndOk, visitedEndNodes := bt.validateAfterEndParallelNodes(foundNode, &idx, visitedParallelNodes)
+		if !afterEndOk {
+			return false, OutOfParallelNodesConnection
+		}
+		if beforeStartOk, textStartErr := bt.validateBeforeStartParallelNodes(StartBlock0, idx, *foundNode, visitedParallelNodes, visitedEndNodes); !beforeStartOk {
+			return false, textStartErr
+		}
+		parallelExitsAsBlock[idx] = *foundNode
+	}
+	intersectOk := bt.validateIntersectingPathParallelNodes(parallelStartNodes, parallelExitsAsBlock)
+	if !intersectOk {
+		return false, ParallelPathIntersected
+	}
+	return true, ""
+}
+
+// nolint
+func (bt *BlocksType) validateIntersectingPathParallelNodes(parallelStartNodes map[string]EriusFunc, parallelMap map[string]string) (valid bool) {
+	for idx := range parallelStartNodes {
+		parallelNode := parallelStartNodes[idx]
+
+		nodes := make(map[string]*EriusFunc, 0)
+		visitedParallelNodes := make(map[string]EriusFunc, 0)
+		visitedParallelNodes[idx] = parallelNode
+
+		for _, socketOutNodes := range parallelNode.Next {
+			for _, socketOutNode := range socketOutNodes {
+				_, ok := visitedParallelNodes[socketOutNode]
+				if ok {
+					return false
+				}
+				socketNode, ok := (*bt)[socketOutNode]
+				if !ok {
+					continue
+				}
+				nodes[socketOutNode] = &socketNode
+
+				var visitedBranchNodes = make(map[string]EriusFunc, 0)
+
+				for {
+					nodeKeys := maps.Keys(nodes)
+					if len(nodeKeys) == 0 {
+						break
+					}
+
+					nodeKey, node := nodeKeys[0], nodes[nodeKeys[0]]
+					delete(nodes, nodeKey)
+					if _, ok := visitedParallelNodes[nodeKey]; ok {
+						continue
+					}
+
+					visitedParallelNodes[nodeKey] = *node
+					visitedBranchNodes[nodeKey] = *node
+					switch node.TypeID {
+					case BlockParallelEndName:
+						continue
+					case BlockParallelStartName:
+						{
+							nodeParallEndKey := parallelMap[nodeKey]
+							nodeParallEnd := (*bt)[nodeParallEndKey]
+							for _, socketOutBranchNodes := range nodeParallEnd.Next {
+								for _, socketOutBranchNode := range socketOutBranchNodes {
+									if socketOutBranchNode == parallelMap[idx] {
+										continue
+									}
+									_, okParallel := visitedParallelNodes[socketOutBranchNode]
+									_, okBranch := visitedBranchNodes[socketOutBranchNode]
+									if okParallel && !okBranch {
+										return false
+									}
+									socketBranchNode, ok := (*bt)[socketOutBranchNode]
+									if !ok {
+										continue
+									}
+									nodes[socketOutBranchNode] = &socketBranchNode
+								}
+							}
+						}
+					default:
+						{
+							for _, socketOutBranchNodes := range node.Next {
+								for _, socketOutBranchNode := range socketOutBranchNodes {
+									if socketOutBranchNode == parallelMap[idx] {
+										continue
+									}
+									_, okParallel := visitedParallelNodes[socketOutBranchNode]
+									_, okBranch := visitedBranchNodes[socketOutBranchNode]
+									if okParallel && !okBranch {
+										return false
+									}
+									socketBranchNode, ok := (*bt)[socketOutBranchNode]
+									if !ok {
+										continue
+									}
+									nodes[socketOutBranchNode] = &socketBranchNode
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	return true
+}
+
+func (bt *BlocksType) validateAfterEndParallelNodes(endNode, idx *string,
+	visitedParallelNodes map[string]EriusFunc) (valid bool, visitedNodes map[string]EriusFunc) {
+	parallelEndNode := (*bt)[*endNode]
+	afterEndNodes := map[string]*EriusFunc{
+		*endNode: &parallelEndNode,
+	}
+	visitedEndParallelNodes := make(map[string]EriusFunc, 0)
+
+	for {
+		endNodeKeys := maps.Keys(afterEndNodes)
+		if len(endNodeKeys) == 0 {
+			break
+		}
+		nodeKey, node := endNodeKeys[0], afterEndNodes[endNodeKeys[0]]
+		delete(afterEndNodes, nodeKey)
+		if _, ok := visitedEndParallelNodes[nodeKey]; ok {
+			continue
+		}
+		visitedEndParallelNodes[nodeKey] = *node
+
+		for _, socketOutNodes := range node.Next {
+			for _, socketOutNode := range socketOutNodes {
+				if socketOutNode == *idx {
+					continue
+				}
+				_, ok := visitedParallelNodes[socketOutNode]
+				if ok {
+					return false, nil
+				}
+				socketNode, ok := (*bt)[socketOutNode]
+				if !ok {
+					continue
+				}
+				afterEndNodes[socketOutNode] = &socketNode
+			}
+		}
+	}
+	return true, visitedEndParallelNodes
+}
+
+func (bt *BlocksType) validateBeforeStartParallelNodes(startKey, idx, endNode string,
+	visitedParallelNodes, visitedAfterEndNodes map[string]EriusFunc) (valid bool, textErr string) {
+	parallelStartNode := (*bt)[startKey]
+	BeforeStartNodes := map[string]*EriusFunc{
+		startKey: &parallelStartNode,
+	}
+	visitedBeforStartParallelNodes := make(map[string]EriusFunc, 0)
+
+	for {
+		startNodeKeys := maps.Keys(BeforeStartNodes)
+		if len(startNodeKeys) == 0 {
+			break
+		}
+		nodeKey, node := startNodeKeys[0], BeforeStartNodes[startNodeKeys[0]]
+		delete(BeforeStartNodes, nodeKey)
+		if _, ok := visitedBeforStartParallelNodes[nodeKey]; ok {
+			continue
+		}
+		visitedBeforStartParallelNodes[nodeKey] = *node
+
+		for _, socketOutNodes := range node.Next {
+			for _, socketOutNode := range socketOutNodes {
+				if socketOutNode == idx {
+					continue
+				}
+				if socketOutNode == endNode {
+					return false, ParallelOutOfStartInsert
+				}
+				_, ok := visitedParallelNodes[socketOutNode]
+				if ok {
+					return false, OutOfParallelNodesConnection
+				}
+				_, alreadyVisited := visitedAfterEndNodes[socketOutNode]
+				if alreadyVisited {
+					continue
+				}
+				socketNode, ok := (*bt)[socketOutNode]
+				if !ok {
+					continue
+				}
+				BeforeStartNodes[socketOutNode] = &socketNode
+			}
+		}
+	}
+	return true, ""
+}
+
 func (bt *BlocksType) addDefaultStartNode() {
-	(*bt)["start_0"] = EriusFunc{
+	(*bt)[StartBlock0] = EriusFunc{
 		X:         0,
 		Y:         0,
 		TypeID:    BlockGoStartName,
 		BlockType: script.TypeGo,
 		Title:     "Начало",
-		Output: []EriusFunctionValue{
-			{
-				Name:   "workNumber",
-				Type:   "string",
-				Global: "start_0.workNumber",
-			},
-			{
-				Name:   "initiator",
-				Type:   "SsoPerson",
-				Global: "start_0.initiator",
+		Output: &script.JSONSchema{
+			Type: "object",
+			Properties: script.JSONSchemaProperties{
+				KeyOutputWorkNumber: {
+					Type:   "string",
+					Global: "start_0.workNumber",
+				},
+				KeyOutputApplicationInitiator: {
+					Global:     "start_0.initiator",
+					Type:       "object",
+					Format:     "SsoPerson",
+					Properties: people.GetSsoPersonSchemaProperties(),
+				},
 			},
 		},
 		Sockets: []Socket{
@@ -175,13 +455,26 @@ func (bt *BlocksType) addDefaultStartNode() {
 }
 
 func (bt *BlocksType) blockTypeExists(blockType string) bool {
-	return bt.getNodeByType(blockType) != nil
+	return len(bt.getNodesByType(blockType)) != 0
 }
 
-func (bt *BlocksType) getNodeByType(blockType string) *EriusFunc {
-	for _, b := range *bt {
+func (bt *BlocksType) getNodesByType(blockType string) map[string]EriusFunc {
+	blocks := make(map[string]EriusFunc, 0)
+	for id := range *bt {
+		b := (*bt)[id]
 		if b.TypeID == blockType {
-			return &b
+			blocks[id] = b
+		}
+	}
+	return blocks
+}
+
+func (bt *BlocksType) getNodeByID(blockId string) *EriusFunc {
+	for blockKey, _ := range *bt {
+		if blockKey == blockId {
+			block := (*bt)[blockKey]
+
+			return &block
 		}
 	}
 	return nil
@@ -232,7 +525,7 @@ type PipelineType struct {
 
 func (p *PipelineType) FillEmptyPipeline() {
 	p.Blocks.addDefaultStartNode()
-	p.Entrypoint = "start_0"
+	p.Entrypoint = StartBlock0
 }
 
 // nolint
@@ -267,7 +560,7 @@ type EriusFunc struct {
 	Title      string               `json:"title" example:"lock-bts"`
 	ShortTitle string               `json:"short_title,omitempty" example:"lock-bts"`
 	Input      []EriusFunctionValue `json:"input,omitempty"`
-	Output     []EriusFunctionValue `json:"output,omitempty"`
+	Output     *script.JSONSchema   `json:"output,omitempty"`
 	ParamType  string               `json:"param_type,omitempty"`
 	Params     json.RawMessage      `json:"params,omitempty" swaggertype:"object"`
 	Next       map[string][]string  `json:"next,omitempty"`
@@ -288,9 +581,26 @@ type EriusFunctionValue struct {
 	Format string `json:"format" example:"string"`
 }
 
+type NodeSubscriptionEvents struct {
+	NodeID string   `json:"node_id"`
+	Notify bool     `json:"notify"`
+	Events []string `json:"events"`
+}
+
+type ExternalSystemSubscriptionParams struct {
+	SystemID           string                      `json:"system_id"`
+	MicroserviceID     string                      `json:"microservice_id"`
+	Path               string                      `json:"path"`
+	Method             string                      `json:"method"`
+	NotificationSchema script.JSONSchema           `json:"notification_schema"`
+	Mapping            script.JSONSchemaProperties `json:"mapping"`
+	Nodes              []NodeSubscriptionEvents    `json:"nodes"`
+}
+
 type ProcessSettingsWithExternalSystems struct {
-	ExternalSystems []ExternalSystem `json:"external_systems"`
-	ProcessSettings ProcessSettings  `json:"process_settings"`
+	ExternalSystems    []ExternalSystem                   `json:"external_systems"`
+	ProcessSettings    ProcessSettings                    `json:"process_settings"`
+	TasksSubscriptions []ExternalSystemSubscriptionParams `json:"tasks_subscriptions"`
 }
 
 type ProcessSettings struct {
@@ -301,6 +611,39 @@ type ProcessSettings struct {
 	Name               string             `json:"name"`
 	SLA                int                `json:"sla"`
 	WorkType           string             `json:"work_type"`
+
+	StartSchemaRaw []byte `json:"-"`
+	EndSchemaRaw   []byte `json:"-"`
+}
+
+func (ps *ProcessSettings) UnmarshalJSON(bytes []byte) error {
+	temp := struct {
+		Id                 string           `json:"version_id"`
+		StartSchema        *json.RawMessage `json:"start_schema"`
+		EndSchema          *json.RawMessage `json:"end_schema"`
+		ResubmissionPeriod int              `json:"resubmission_period"`
+		Name               string           `json:"name"`
+		SLA                int              `json:"sla"`
+		WorkType           string           `json:"work_type"`
+	}{}
+
+	if err := json.Unmarshal(bytes, &temp); err != nil {
+		return err
+	}
+
+	ps.Id = temp.Id
+	ps.ResubmissionPeriod = temp.ResubmissionPeriod
+	ps.Name = temp.Name
+	ps.SLA = temp.SLA
+	ps.WorkType = temp.WorkType
+
+	if temp.StartSchema != nil {
+		ps.StartSchemaRaw = *temp.StartSchema
+	}
+	if temp.EndSchema != nil {
+		ps.EndSchemaRaw = *temp.EndSchema
+	}
+	return nil
 }
 
 func (ps *ProcessSettings) ValidateSLA() bool {
@@ -311,13 +654,17 @@ func (ps *ProcessSettings) ValidateSLA() bool {
 }
 
 type ExternalSystem struct {
-	Id             string             `json:"system_id"`
-	Name           string             `json:"name,omitempty"`
-	InputSchema    *script.JSONSchema `json:"input_schema,omitempty"`
-	OutputSchema   *script.JSONSchema `json:"output_schema,omitempty"`
-	InputMapping   *script.JSONSchema `json:"input_mapping,omitempty"`
-	OutputMapping  *script.JSONSchema `json:"output_mapping,omitempty"`
+	Id   string `json:"system_id"`
+	Name string `json:"name,omitempty"`
+
+	InputSchema   *script.JSONSchema `json:"input_schema,omitempty"`
+	OutputSchema  *script.JSONSchema `json:"output_schema,omitempty"`
+	InputMapping  *script.JSONSchema `json:"input_mapping,omitempty"`
+	OutputMapping *script.JSONSchema `json:"output_mapping,omitempty"`
+
 	OutputSettings *EndSystemSettings `json:"output_settings,omitempty"`
+
+	AllowRunAsOthers bool `json:"allow_run_as_others"`
 }
 
 type EndSystemSettings struct {
@@ -442,54 +789,223 @@ const (
 )
 
 func (es EriusScenario) FillEntryPointOutput() (err error) {
-	if es.Settings.StartSchema == nil {
+	entryPoint := es.Pipeline.Blocks[es.Pipeline.Entrypoint]
+
+	if entryPoint.Output == nil || entryPoint.Output.Properties == nil {
 		return nil
 	}
 
-	entryPoint := es.Pipeline.Blocks[es.Pipeline.Entrypoint]
-	entryPoint.Output = nil
-
-	entryPoint.Output = append(
-		entryPoint.Output,
-		EriusFunctionValue{
-			Global: es.Pipeline.Entrypoint + "." + KeyOutputWorkNumber,
-			Name:   KeyOutputWorkNumber,
-			Type:   "string",
-		}, EriusFunctionValue{
-			Global: es.Pipeline.Entrypoint + "." + KeyOutputApplicationInitiator,
-			Name:   KeyOutputApplicationInitiator,
-			Type:   "object",
-			Format: "SsoPerson",
-		})
-
-	for propertyName, property := range es.Settings.StartSchema.Properties {
-		name := strings.ToLower(propertyName)
-		format := strings.ToLower(property.Format)
-
-		fieldType := property.Type
-
-		if name == "recipient" {
-			fieldType = "object"
-			format = "SsoPerson"
+	if es.Settings.StartSchema != nil {
+		for k := range entryPoint.Output.Properties {
+			val, ok := es.Settings.StartSchema.Properties[k]
+			if !ok {
+				continue
+			}
+			val.Global = es.Pipeline.Entrypoint + "." + k
+			es.Settings.StartSchema.Properties[k] = val
 		}
-
-		if fieldType == "array" && property.Items != nil {
-			format = property.Items.Format
+		entryPoint.Output = es.Settings.StartSchema
+	}
+	if entryPoint.Output == nil {
+		entryPoint.Output = &script.JSONSchema{
+			Type:       "object",
+			Properties: make(map[string]script.JSONSchemaPropertiesValue),
 		}
-
-		entryPoint.Output = append(entryPoint.Output, EriusFunctionValue{
-			Global: es.Pipeline.Entrypoint + "." + name,
-			Name:   propertyName,
-			Type:   fieldType,
-			Format: format,
-		})
 	}
 
-	sort.Slice(entryPoint.Output, func(i, j int) bool {
-		return entryPoint.Output[i].Name < entryPoint.Output[j].Name
-	})
+	entryPoint.Output.Properties[KeyOutputWorkNumber] = script.JSONSchemaPropertiesValue{
+		Type:   "string",
+		Global: es.Pipeline.Entrypoint + "." + KeyOutputWorkNumber,
+	}
+
+	entryPoint.Output.Properties[KeyOutputApplicationInitiator] = script.JSONSchemaPropertiesValue{
+		Global:     es.Pipeline.Entrypoint + "." + KeyOutputApplicationInitiator,
+		Type:       "object",
+		Format:     "SsoPerson",
+		Properties: people.GetSsoPersonSchemaProperties(),
+	}
 
 	es.Pipeline.Blocks[es.Pipeline.Entrypoint] = entryPoint
 
 	return nil
+}
+
+type NodeGroup struct {
+	EndNode   string       `json:"end_node"`
+	Nodes     []*NodeGroup `json:"nodes"`
+	Prev      string       `json:"prev"`
+	StartNode string       `json:"start_node"`
+}
+
+// nolint
+func (bt *BlocksType) GetGroups() (NodeGroups []*NodeGroup) {
+	blocks := map[string]EriusFunc{
+		StartBlock0: (*bt)[StartBlock0],
+	}
+	visitedNodes := make(map[string]*EriusFunc, 0)
+	prevNodeMap := make(map[string]string, 0)
+
+	NodeGroups = make([]*NodeGroup, 0)
+
+	for {
+		nodeKeys := maps.Keys(blocks)
+		if len(nodeKeys) == 0 {
+			break
+		}
+		nodeKey, node := nodeKeys[0], blocks[nodeKeys[0]]
+		delete(blocks, nodeKey)
+		visitedNodes[nodeKey] = &node
+		if node.TypeID == BlockParallelStartName {
+			NodeGroupParallel, exitParallelIdx := bt.fillParallGroups(nodeKey, prevNodeMap[nodeKey], &node)
+			NodeGroups = append(NodeGroups, NodeGroupParallel)
+			endNode := (*bt)[exitParallelIdx]
+
+			for _, socketOutNodes := range endNode.Next {
+				for _, socketOutNode := range socketOutNodes {
+					_, ok := visitedNodes[socketOutNode]
+					if ok {
+						continue
+					}
+					socketNode, ok := (*bt)[socketOutNode]
+					if !ok {
+						continue
+					}
+					blocks[socketOutNode] = socketNode
+					prevNodeMap[socketOutNode] = exitParallelIdx
+				}
+			}
+		} else {
+			NodeGroups = append(NodeGroups, &NodeGroup{
+				EndNode:   nodeKey,
+				Nodes:     nil,
+				Prev:      prevNodeMap[nodeKey],
+				StartNode: nodeKey,
+			})
+			for _, socketOutNodes := range node.Next {
+				for _, socketOutNode := range socketOutNodes {
+					_, ok := visitedNodes[socketOutNode]
+					if ok {
+						continue
+					}
+					socketNode, ok := (*bt)[socketOutNode]
+					if !ok {
+						continue
+					}
+					blocks[socketOutNode] = socketNode
+					prevNodeMap[socketOutNode] = nodeKey
+				}
+			}
+		}
+	}
+	return NodeGroups
+}
+
+// nolint
+func (bt *BlocksType) fillParallGroups(nodeKey, prevNode string, block *EriusFunc) (NodeGroupParallel *NodeGroup, exitParallelIdx string) {
+	blocks := map[string]*EriusFunc{
+		nodeKey: block,
+	}
+	visitedNodes := map[string]*EriusFunc{
+		nodeKey: block,
+	}
+	prevNodeMap := map[string]string{
+		nodeKey: prevNode,
+	}
+
+	NodeGroupParallel = &NodeGroup{
+		EndNode:   "",
+		Nodes:     []*NodeGroup{},
+		Prev:      prevNode,
+		StartNode: nodeKey,
+	}
+
+	for {
+		startNodeKeys := maps.Keys(blocks)
+		if len(startNodeKeys) == 0 {
+			break
+		}
+		parallNodeKey, parallNode := startNodeKeys[0], blocks[startNodeKeys[0]]
+		if parallNode.TypeID == BlockParallelEndName && len(startNodeKeys) != 1 {
+			parallNodeKey, parallNode = startNodeKeys[1], blocks[startNodeKeys[1]]
+		}
+		delete(blocks, parallNodeKey)
+		visitedNodes[parallNodeKey] = parallNode
+
+		switch parallNode.TypeID {
+		case BlockParallelEndName:
+			NodeGroupParallel.Nodes = append(NodeGroupParallel.Nodes, &NodeGroup{
+				EndNode:   parallNodeKey,
+				Nodes:     nil,
+				Prev:      "",
+				StartNode: parallNodeKey,
+			})
+			NodeGroupParallel.EndNode = parallNodeKey
+			exitParallelIdx = parallNodeKey
+
+			return
+		case BlockParallelStartName:
+			if parallNodeKey != nodeKey {
+				newNodeGroupParallel, newExitParallelIdx := bt.fillParallGroups(parallNodeKey, prevNodeMap[parallNodeKey], parallNode)
+				NodeGroupParallel.Nodes = append(NodeGroupParallel.Nodes, newNodeGroupParallel)
+				endNode := (*bt)[newExitParallelIdx]
+				for _, socketOutNodes := range endNode.Next {
+					for _, socketOutNode := range socketOutNodes {
+						_, ok := visitedNodes[socketOutNode]
+						if ok {
+							continue
+						}
+						socketNode, ok := (*bt)[socketOutNode]
+						if !ok {
+							continue
+						}
+						blocks[socketOutNode] = &socketNode
+						prevNodeMap[socketOutNode] = newExitParallelIdx
+					}
+				}
+			} else {
+				NodeGroupParallel.Nodes = append(NodeGroupParallel.Nodes, &NodeGroup{
+					EndNode:   parallNodeKey,
+					Nodes:     nil,
+					Prev:      prevNodeMap[parallNodeKey],
+					StartNode: parallNodeKey,
+				})
+				for _, socketOutNodes := range parallNode.Next {
+					for _, socketOutNode := range socketOutNodes {
+						_, ok := visitedNodes[socketOutNode]
+						if ok {
+							continue
+						}
+						socketNode, ok := (*bt)[socketOutNode]
+						if !ok {
+							continue
+						}
+						blocks[socketOutNode] = &socketNode
+						prevNodeMap[socketOutNode] = parallNodeKey
+					}
+				}
+			}
+		default:
+			NodeGroupParallel.Nodes = append(NodeGroupParallel.Nodes, &NodeGroup{
+				EndNode:   parallNodeKey,
+				Nodes:     nil,
+				Prev:      prevNodeMap[parallNodeKey],
+				StartNode: parallNodeKey,
+			})
+			for _, socketOutNodes := range parallNode.Next {
+				for _, socketOutNode := range socketOutNodes {
+					_, ok := visitedNodes[socketOutNode]
+					if ok {
+						continue
+					}
+					socketNode, ok := (*bt)[socketOutNode]
+					if !ok {
+						continue
+					}
+					blocks[socketOutNode] = &socketNode
+					prevNodeMap[socketOutNode] = parallNodeKey
+				}
+			}
+		}
+	}
+	return NodeGroupParallel, exitParallelIdx
 }

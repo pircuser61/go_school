@@ -18,6 +18,13 @@ type GoTestBlock struct {
 	Sockets []script.Socket
 
 	RunContext *BlockRunContext
+
+	expectedEvents map[string]struct{}
+	happenedEvents []entity.NodeEvent
+}
+
+func (gb *GoTestBlock) GetNewEvents() []entity.NodeEvent {
+	return gb.happenedEvents
 }
 
 func (gb *GoTestBlock) Members() []Member {
@@ -36,8 +43,8 @@ func (gb *GoTestBlock) GetStatus() Status {
 	return StatusFinished
 }
 
-func (gb *GoTestBlock) GetTaskHumanStatus() TaskHumanStatus {
-	return ""
+func (gb *GoTestBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment string) {
+	return "", ""
 }
 
 func (gb *GoTestBlock) GetType() string {
@@ -101,12 +108,21 @@ func (gb *GoTestBlock) GetState() interface{} {
 	return nil
 }
 
-func (gb *GoTestBlock) Update(_ context.Context) (interface{}, error) {
+func (gb *GoTestBlock) Update(ctx context.Context) (interface{}, error) {
+	if _, ok := gb.expectedEvents[eventEnd]; ok {
+		status, _ := gb.GetTaskHumanStatus()
+		event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, gb.Name, status, gb.GetStatus())
+		if eventErr != nil {
+			return nil, eventErr
+		}
+		gb.happenedEvents = append(gb.happenedEvents, event)
+	}
 	return nil, nil
 }
 
 //nolint:unparam // its ok
-func createGoTestBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContext) (b *GoTestBlock, reEntry bool, err error) {
+func createGoTestBlock(ctx context.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext,
+	expectedEvents map[string]struct{}) (b *GoTestBlock, reEntry bool, err error) {
 	b = &GoTestBlock{
 		Name:       name,
 		Title:      ef.Title,
@@ -114,14 +130,29 @@ func createGoTestBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContex
 		Output:     map[string]string{},
 		Sockets:    entity.ConvertSocket(ef.Sockets),
 		RunContext: runCtx,
+
+		expectedEvents: expectedEvents,
+		happenedEvents: make([]entity.NodeEvent, 0),
 	}
 
 	for _, v := range ef.Input {
 		b.Input[v.Name] = v.Global
 	}
 
-	for _, v := range ef.Output {
-		b.Output[v.Name] = v.Global
+	if ef.Output != nil {
+		for propertyName, v := range ef.Output.Properties {
+			b.Output[propertyName] = v.Global
+		}
 	}
+
+	if _, ok := b.expectedEvents[eventStart]; ok {
+		status, _ := b.GetTaskHumanStatus()
+		event, err := runCtx.MakeNodeStartEvent(ctx, name, status, b.GetStatus())
+		if err != nil {
+			return nil, false, err
+		}
+		b.happenedEvents = append(b.happenedEvents, event)
+	}
+
 	return b, reEntry, nil
 }

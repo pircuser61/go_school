@@ -4,10 +4,10 @@ import (
 	"database/sql"
 	"time"
 
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
+
 	"github.com/google/uuid"
 	"github.com/pressly/goose/v3"
-
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 )
 
 func init() {
@@ -15,6 +15,7 @@ func init() {
 }
 
 func upGo(tx *sql.Tx) error {
+	slaSrv := sla.NewSlaService(nil)
 	type ResultRowStruct struct {
 		Id        uuid.UUID
 		TimeStart time.Time
@@ -34,6 +35,9 @@ func upGo(tx *sql.Tx) error {
 	if queryErr != nil {
 		return queryErr
 	}
+
+	defer rows.Close()
+
 	var resultRows []UpdateStruct
 	for rows.Next() {
 		var resultRow ResultRowStruct
@@ -43,7 +47,7 @@ func upGo(tx *sql.Tx) error {
 			rows.Close()
 			return scanErr
 		}
-		halfSLADeadline = pipeline.ComputeMaxDate(resultRow.TimeStart, float32(resultRow.SLA)/2, nil)
+		halfSLADeadline = slaSrv.ComputeMaxDate(resultRow.TimeStart, float32(resultRow.SLA)/2, nil)
 		resultRows = append(resultRows, UpdateStruct{
 			Id:              resultRow.Id,
 			HalfSLADeadline: halfSLADeadline,
@@ -53,7 +57,6 @@ func upGo(tx *sql.Tx) error {
 		rows.Close()
 		return rowsErr
 	}
-	rows.Close()
 
 	for _, row := range resultRows {
 		_, execErr := tx.Exec("update variable_storage set half_sla_deadline = $1 where id = $2", row.HalfSLADeadline, row.Id)

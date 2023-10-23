@@ -4,13 +4,16 @@ import (
 	c "context"
 	"time"
 
-	e "gitlab.services.mts.ru/abp/mail/pkg/email"
 	"gitlab.services.mts.ru/abp/myosotis/logger"
+
+	e "gitlab.services.mts.ru/abp/mail/pkg/email"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
@@ -40,7 +43,6 @@ type FormData struct {
 	FormExecutorsGroupName string                  `json:"form_executors_group_name"`
 	FormGroupIdPath        *string                 `json:"form_group_id_path,omitempty"`
 	SchemaId               string                  `json:"schema_id"`
-	SchemaName             string                  `json:"schema_name"`
 	Executors              map[string]struct{}     `json:"executors"`
 	Description            string                  `json:"description"`
 	ApplicationBody        map[string]interface{}  `json:"application_body"`
@@ -64,7 +66,7 @@ type FormData struct {
 	Mapping script.JSONSchemaProperties `json:"mapping"`
 
 	IsEditable      *bool                       `json:"is_editable"`
-	ReEnterSettings *script.FormReEnterSettings `json:"form_re_enter_settings"`
+	ReEnterSettings *script.FormReEnterSettings `json:"form_re_enter_settings,omitempty"`
 }
 
 type GoFormBlock struct {
@@ -76,23 +78,36 @@ type GoFormBlock struct {
 	State   *FormData
 
 	RunContext *BlockRunContext
+
+	expectedEvents map[string]struct{}
+	happenedEvents []entity.NodeEvent
+}
+
+func (gb *GoFormBlock) GetNewEvents() []entity.NodeEvent {
+	return gb.happenedEvents
 }
 
 func (gb *GoFormBlock) Members() []Member {
 	members := []Member{}
 	for login := range gb.State.Executors {
 		members = append(members, Member{
-			Login:      login,
-			IsFinished: gb.isFormFinished(),
-			Actions:    gb.formActions(),
+			Login:                login,
+			Actions:              gb.formActions(),
+			IsActed:              gb.isFormUserActed(login),
+			ExecutionGroupMember: false,
 		})
 	}
 
 	return members
 }
 
-func (gb *GoFormBlock) isFormFinished() bool {
-	return gb.State.IsFilled
+func (gb *GoFormBlock) isFormUserActed(login string) bool {
+	for i := range gb.State.ChangesLog {
+		if gb.State.ChangesLog[i].Executor == login {
+			return true
+		}
+	}
+	return false
 }
 
 func (gb *GoFormBlock) formActions() []MemberAction {
@@ -123,11 +138,10 @@ func (gb *GoFormBlock) Deadlines(ctx c.Context) ([]Deadline, error) {
 	deadlines := make([]Deadline, 0, 2)
 
 	if gb.State.CheckSLA {
-		slaInfoPtr, getSlaInfoErr := GetSLAInfoPtr(ctx, GetSLAInfoDTOStruct{
-			Service: gb.RunContext.HrGate,
-			TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime,
-				FinishedAt: gb.RunContext.currBlockStartTime.Add(time.Hour * 24 * 100)}},
-			WorkType: WorkHourType(gb.State.WorkType),
+		slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
+			TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.CurrBlockStartTime,
+				FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100)}},
+			WorkType: sla.WorkHourType(gb.State.WorkType),
 		})
 
 		if getSlaInfoErr != nil {
@@ -136,7 +150,8 @@ func (gb *GoFormBlock) Deadlines(ctx c.Context) ([]Deadline, error) {
 
 		if !gb.State.SLAChecked {
 			deadlines = append(deadlines,
-				Deadline{Deadline: ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(gb.State.SLA),
+				Deadline{Deadline: gb.RunContext.Services.SLAService.ComputeMaxDate(gb.RunContext.CurrBlockStartTime,
+					float32(gb.State.SLA),
 					slaInfoPtr),
 					Action: entity.TaskUpdateActionSLABreach,
 				},
@@ -145,7 +160,8 @@ func (gb *GoFormBlock) Deadlines(ctx c.Context) ([]Deadline, error) {
 
 		if !gb.State.HalfSLAChecked && gb.State.SLA >= 8 {
 			deadlines = append(deadlines,
-				Deadline{Deadline: ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(gb.State.SLA)/2,
+				Deadline{Deadline: gb.RunContext.Services.SLAService.ComputeMaxDate(gb.RunContext.CurrBlockStartTime,
+					float32(gb.State.SLA)/2,
 					slaInfoPtr),
 					Action: entity.TaskUpdateActionHalfSLABreach,
 				},
@@ -168,12 +184,12 @@ func (gb *GoFormBlock) GetStatus() Status {
 	return StatusRunning
 }
 
-func (gb *GoFormBlock) GetTaskHumanStatus() TaskHumanStatus {
+func (gb *GoFormBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment string) {
 	if gb.State != nil && gb.State.IsFilled {
-		return StatusDone
+		return StatusDone, ""
 	}
 
-	return StatusExecution
+	return StatusExecution, ""
 }
 
 func (gb *GoFormBlock) GetState() interface{} {
@@ -194,17 +210,19 @@ func (gb *GoFormBlock) Model() script.FunctionModel {
 		BlockType: script.TypeGo,
 		Title:     gb.Title,
 		Inputs:    nil,
-		Outputs: []script.FunctionValueModel{
-			{
-				Name:    keyOutputFormExecutor,
-				Type:    "object",
-				Comment: "person object from sso",
-				Format:  "SsoPerson",
-			},
-			{
-				Name:    keyOutputFormBody,
-				Type:    "object",
-				Comment: "form body",
+		Outputs: &script.JSONSchema{
+			Type: "object",
+			Properties: script.JSONSchemaProperties{
+				keyOutputFormExecutor: {
+					Type:        "object",
+					Description: "person object from sso",
+					Format:      "SsoPerson",
+					Properties:  people.GetSsoPersonSchemaProperties(),
+				},
+				keyOutputFormBody: {
+					Type:        "object",
+					Description: "form body",
+				},
 			},
 		},
 		Params: &script.FunctionParams{
@@ -224,14 +242,9 @@ func (gb *GoFormBlock) handleAutoFillForm() error {
 		return err
 	}
 
-	formMapping := make(map[string]interface{})
-
-	for k := range gb.State.Mapping {
-		varPath := gb.State.Mapping[k]
-
-		variableValue := getVariable(variables, varPath.Value)
-
-		formMapping[k] = variableValue
+	formMapping, err := script.MapData(gb.State.Mapping, script.RestoreMapStructure(variables), []string{})
+	if err != nil {
+		return err
 	}
 
 	gb.State.ApplicationBody = formMapping
@@ -274,18 +287,17 @@ func (gb *GoFormBlock) handleNotifications(ctx c.Context) error {
 
 	var emails = make(map[string]mail.Template, 0)
 	for _, login := range executors {
-		em, getUserEmailErr := gb.RunContext.People.GetUserEmail(ctx, login)
+		em, getUserEmailErr := gb.RunContext.Services.People.GetUserEmail(ctx, login)
 		if getUserEmailErr != nil {
 			l.WithField("login", login).WithError(getUserEmailErr).Warning("couldn't get email")
 			continue
 		}
 
 		if isGroupExecutors {
-			slaInfoPtr, getSlaInfoErr := GetSLAInfoPtr(ctx, GetSLAInfoDTOStruct{
-				Service: gb.RunContext.HrGate,
-				TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime,
-					FinishedAt: gb.RunContext.currBlockStartTime.Add(time.Hour * 24 * 100)}},
-				WorkType: WorkHourType(gb.State.WorkType),
+			slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
+				TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.CurrBlockStartTime,
+					FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100)}},
+				WorkType: sla.WorkHourType(gb.State.WorkType),
 			})
 
 			if getSlaInfoErr != nil {
@@ -294,17 +306,17 @@ func (gb *GoFormBlock) handleNotifications(ctx c.Context) error {
 			emails[em] = mail.NewFormExecutionNeedTakeInWorkTpl(&mail.NewFormExecutionNeedTakeInWorkDto{
 				WorkNumber: gb.RunContext.WorkNumber,
 				WorkTitle:  gb.RunContext.NotifName,
-				SdUrl:      gb.RunContext.Sender.SdAddress,
-				Mailto:     gb.RunContext.Sender.FetchEmail,
+				SdUrl:      gb.RunContext.Services.Sender.SdAddress,
+				Mailto:     gb.RunContext.Services.Sender.FetchEmail,
 				BlockName:  BlockGoFormID,
 				Login:      login,
-				Deadline:   ComputeDeadline(time.Now(), gb.State.SLA, slaInfoPtr),
+				Deadline:   gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(time.Now(), gb.State.SLA, slaInfoPtr),
 			})
 		} else {
 			emails[em] = mail.NewRequestFormExecutionInfoTpl(
 				gb.RunContext.WorkNumber,
 				gb.RunContext.NotifName,
-				gb.RunContext.Sender.SdAddress)
+				gb.RunContext.Services.Sender.SdAddress)
 		}
 	}
 
@@ -313,7 +325,8 @@ func (gb *GoFormBlock) handleNotifications(ctx c.Context) error {
 	}
 
 	for i := range emails {
-		if sendErr := gb.RunContext.Sender.SendNotification(ctx, []string{i}, emailAttachment, emails[i]); sendErr != nil {
+		if sendErr := gb.RunContext.Services.Sender.SendNotification(ctx, []string{i}, emailAttachment,
+			emails[i]); sendErr != nil {
 			return sendErr
 		}
 	}

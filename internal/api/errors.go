@@ -63,8 +63,10 @@ const (
 	GetClientIDError
 	ProcessSettingsSaveError
 	ProcessSettingsParseError
+	ProcessSettingsConvertError
 	ExternalSystemSettingsSaveError
 	ExternalSystemSettingsParseError
+	ExternalSystemSettingsConvertError
 	ExternalSystemAddingError
 	ExternalSystemRemoveError
 	JSONSchemaValidationError
@@ -110,12 +112,20 @@ const (
 	NoProcessNodesForMonitoringError
 	GetEntryPointOutputError
 	UpdateEndingSystemSettingsError
+	UpdateRunAsOthersSettingsError
 	ValidationEndingSystemSettingsError
 	SearchingForPipelinesUsageError
 	ValidationSlaProcessSettingsError
 	GetProcessSlaSettingsError
 	PipelineValidateError
 	StopTaskParsingError
+	ParallelNodeReturnCycle
+	ParallelNodeExitsNotConnected
+	OutOfParallelNodesConnection
+	ParallelOutOfStartInsert
+	GetDecisionsError
+	GetBlockStateError
+	ParallelPathIntersected
 )
 
 //nolint:dupl //its not duplicate
@@ -164,8 +174,10 @@ var errorText = map[Err]string{
 	GetClientIDError:                    "can't get ClientID",
 	ProcessSettingsSaveError:            "can't save process settings",
 	ProcessSettingsParseError:           "can't parse process settings data",
+	ProcessSettingsConvertError:         "can't convert process settings data",
 	ExternalSystemSettingsSaveError:     "can't save external system settings",
 	ExternalSystemSettingsParseError:    "can't parse external systems settings data",
+	ExternalSystemSettingsConvertError:  "can't convert external systems settings data",
 	ExternalSystemAddingError:           "can't add external system to version",
 	ExternalSystemRemoveError:           "can't remove external system from the list",
 	JSONSchemaValidationError:           "json schema validation error",
@@ -208,12 +220,20 @@ var errorText = map[Err]string{
 	NoProcessNodesForMonitoringError:    "can't find nodes for monitoring",
 	GetEntryPointOutputError:            "can't fill entry point output",
 	UpdateEndingSystemSettingsError:     "can't update ending system settings",
+	UpdateRunAsOthersSettingsError:      "failed to update settings for requests from a 3rd party",
 	ValidationEndingSystemSettingsError: "not enough data to update ending settings",
 	SearchingForPipelinesUsageError:     "can't find usages of pipeline",
 	ValidationSlaProcessSettingsError:   "wrong data for version SLA settings",
 	GetProcessSlaSettingsError:          "can't get sla settings for process",
 	PipelineValidateError:               "invalid pipeline schema",
 	StopTaskParsingError:                "can't parse stop task request",
+	ParallelNodeReturnCycle:             "invalid pipeline schema: returning back from parallel",
+	ParallelNodeExitsNotConnected:       "invalid pipeline schema: node exits are not connected",
+	OutOfParallelNodesConnection:        "invalid pipeline schema: nodes outside of parallel connects with inside nodes",
+	ParallelOutOfStartInsert:            "invalid pipeline schema: nodes outside of parallel connects with parallel end",
+	GetDecisionsError:                   "can't get node decisions",
+	GetBlockStateError:                  "can't get block state",
+	ParallelPathIntersected:             "invalid pipeline schema: parallel path's are intersected",
 }
 
 // JOKE.
@@ -264,8 +284,10 @@ var errorDescription = map[Err]string{
 	GetClientIDError:                    "Не удалось получить CliendID",
 	ProcessSettingsSaveError:            "Не удалось сохранить настройки процесса",
 	ProcessSettingsParseError:           "Не удалось получить данные из тела запроса",
+	ProcessSettingsConvertError:         "Не удалось преобразовать данные из тела запроса",
 	ExternalSystemSettingsSaveError:     "Не удалось сохранить настройки внешней системы",
 	ExternalSystemSettingsParseError:    "Не удалось получить данные из тела запроса",
+	ExternalSystemSettingsConvertError:  "Не удалось преобразовать данные из тела запроса",
 	ExternalSystemAddingError:           "Не удалось подключить внешнюю систему к версии процесса",
 	ExternalSystemRemoveError:           "Не удалось удалить внешнюю систему из списка подключенных",
 	JSONSchemaValidationError:           "Ошибка валидации JSON-схемы",
@@ -308,29 +330,41 @@ var errorDescription = map[Err]string{
 	NoProcessNodesForMonitoringError:    "Не удалось найти ноды для мониторинга даного процесса",
 	GetEntryPointOutputError:            "Не удалось заполнить output стартовой ноды",
 	UpdateEndingSystemSettingsError:     "Не удалось обновить настройки завершения процесса в системе",
+	UpdateRunAsOthersSettingsError:      "Не удалось обновить настройки запуска заявки от третьего лица",
 	ValidationEndingSystemSettingsError: "Ошибка при валидации параметров для обновления настроек системы",
 	SearchingForPipelinesUsageError:     "Ошибка при поиске использования пайплайна",
 	ValidationSlaProcessSettingsError:   "Ошибка при валидации параметров SLA процесса",
 	GetProcessSlaSettingsError:          "Ошибка при получении параметров SLA процесса",
 	PipelineValidateError:               "Невалидная схема пайплайна",
 	StopTaskParsingError:                "Не удалось распарсить запрос",
+	ParallelNodeReturnCycle:             "Линии блоков внутри параллельности должны быть изолированы",
+	ParallelNodeExitsNotConnected:       "Процесс не опубликован. Соедините все ноды в процессе",
+	// nolint
+	OutOfParallelNodesConnection: "Процесс не опубликован. Есть ноды, которые не располагаются внутри параллельности или не проходят через начало/конец шлюза, но связаны с блоками внутри параллельности.",
+	ParallelOutOfStartInsert:     "Процесс не опубликован. Есть ноды, которые соеденены с нодой конец параллельности, но не проходят через ноду начало параллельности",
+	GetDecisionsError:            "Не удалось получить список решений нод",
+	GetBlockStateError:           "can't get block state",
+	ParallelPathIntersected:      "Процесс не опубликован. Внутри параллельности один из сокетов ведет на другую ветвь внутри параллельности",
 }
 
 var errorStatus = map[Err]int{
-	Teapot:                    http.StatusTeapot,
-	UnauthError:               http.StatusUnauthorized,
-	UUIDParsingError:          http.StatusBadRequest,
-	BadFiltersError:           http.StatusBadRequest,
-	GetUserinfoErr:            http.StatusUnauthorized,
-	WorkNumberParsingError:    http.StatusBadRequest,
-	UpdateTaskParsingError:    http.StatusBadRequest,
-	UpdateTaskValidationError: http.StatusBadRequest,
-	UpdateNotRunningTaskError: http.StatusBadRequest,
-	BlockNotFoundError:        http.StatusBadRequest,
-	BodyParseError:            http.StatusBadRequest,
-	ValidationError:           http.StatusBadRequest,
-	PipelineValidateError:     http.StatusBadRequest,
-	StopTaskParsingError:      http.StatusBadRequest,
+	Teapot:                        http.StatusTeapot,
+	UnauthError:                   http.StatusUnauthorized,
+	UUIDParsingError:              http.StatusBadRequest,
+	BadFiltersError:               http.StatusBadRequest,
+	GetUserinfoErr:                http.StatusUnauthorized,
+	WorkNumberParsingError:        http.StatusBadRequest,
+	UpdateTaskParsingError:        http.StatusBadRequest,
+	UpdateTaskValidationError:     http.StatusBadRequest,
+	UpdateNotRunningTaskError:     http.StatusBadRequest,
+	BlockNotFoundError:            http.StatusBadRequest,
+	BodyParseError:                http.StatusBadRequest,
+	ValidationError:               http.StatusBadRequest,
+	PipelineValidateError:         http.StatusBadRequest,
+	StopTaskParsingError:          http.StatusBadRequest,
+	ParallelNodeReturnCycle:       http.StatusBadRequest,
+	ParallelNodeExitsNotConnected: http.StatusBadRequest,
+	OutOfParallelNodesConnection:  http.StatusBadRequest,
 }
 
 type httpError struct {

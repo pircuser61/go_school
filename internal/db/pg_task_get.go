@@ -12,8 +12,6 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/lib/pq"
-
 	"github.com/pkg/errors"
 
 	"golang.org/x/exp/slices"
@@ -26,28 +24,46 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
-func uniqueActionsByRole(loginsIn, stepType string, finished bool) string {
+func uniqueActionsByRole(loginsIn, stepType string, finished, acted bool) string {
 	statuses := "('running', 'idle', 'ready')"
 	if finished {
-		statuses = "('finished', 'no_success')"
+		statuses = "('finished', 'cancel', 'no_success', 'error')"
 	}
+	memberActed := ""
+	if acted {
+		memberActed = "AND m.is_acted = true"
+	}
+	// nolint:gocritic
+	// language=PostgreSQL
 	return fmt.Sprintf(`WITH actions AS (
-    SELECT vs.work_id                                                                      AS work_id
-         , CASE WHEN vs.status IN ('running', 'idle') AND NOT m.finished THEN m.actions ELSE '{}' END AS action
+    SELECT vs.work_id                                                                                 AS work_id
+         , vs.step_name                                                                               AS block_id
+         , CASE WHEN vs.status IN ('running', 'idle','ready') THEN m.actions ELSE '{}' END AS action
+         , CASE WHEN vs.status IN ('running', 'idle','ready') THEN m.params ELSE '{}' END  AS params
     FROM members m
              JOIN variable_storage vs on vs.id = m.block_id
              JOIN works w on vs.work_id = w.id
+    JOIN lateral (SELECT vs2.step_name, max(vs2.time) mt
+                                        from variable_storage vs2
+                                        where vs2.work_id = w.id
+                                        group by vs2.step_name) ab 
+                               on ab.mt = vs.time AND ab.step_name = vs.step_name
     WHERE m.login IN %s
       AND vs.step_type = '%s'
       AND vs.status IN %s
       AND w.child_id IS NULL
-),
-     unique_actions AS (
-         SELECT actions.work_id AS work_id, ARRAY_AGG(DISTINCT _unnested.action) AS actions
-         FROM actions
-                  LEFT JOIN LATERAL (SELECT UNNEST(actions.action) as action) _unnested ON TRUE
-         GROUP BY actions.work_id
-     )`, loginsIn, stepType, statuses)
+		%s
+      --unique-actions-filter--
+)
+     , unique_actions AS (
+    SELECT actions.work_id AS work_id, JSONB_AGG(jsonb_actions.actions) AS actions
+    FROM actions
+             LEFT JOIN LATERAL (SELECT jsonb_build_object(
+                                               'block_id', actions.block_id,
+                                               'actions', actions.action,
+                                               'params', actions.params) as actions) jsonb_actions ON TRUE
+    GROUP BY actions.work_id
+)`, loginsIn, stepType, statuses, memberActed)
 }
 
 func uniqueActiveActions(approverLogins, executionLogins []string, currentUser, workNumber string) string {
@@ -55,24 +71,30 @@ func uniqueActiveActions(approverLogins, executionLogins []string, currentUser, 
 	var executionLoginsIn = buildInExpression(executionLogins)
 
 	return fmt.Sprintf(`WITH actions AS (
-    SELECT vs.work_id                                                                      AS work_id
+    SELECT vs.work_id                                                                                 AS work_id
+         , vs.step_name                                                                               AS block_id
          , CASE WHEN vs.status IN ('running', 'idle') AND NOT m.finished THEN m.actions ELSE '{}' END AS action
+         , CASE WHEN vs.status IN ('running', 'idle') AND NOT m.finished THEN m.params ELSE '{}' END  AS params
     FROM members m
              JOIN variable_storage vs on vs.id = m.block_id
              JOIN works w on vs.work_id = w.id
-    WHERE (m.login = '%s' AND vs.step_type = 'form')
-       OR (m.login IN %s AND vs.step_type = 'approver')
-       OR (m.login IN %s AND vs.step_type = 'execution')
+    WHERE ((m.login = '%s' AND vs.step_type = 'form')
+        OR (m.login = '%s' AND vs.step_type = 'sign')
+        OR (m.login IN %s AND vs.step_type = 'approver')
+        OR (m.login IN %s AND vs.step_type = 'execution'))
       AND w.work_number = '%s'
       AND vs.status IN ('running', 'idle', 'ready')
-	  AND w.child_id IS NULL
-	),
-     unique_actions AS (
-         SELECT actions.work_id AS work_id, ARRAY_AGG(DISTINCT _unnested.action) AS actions
-         FROM actions
-                  LEFT JOIN LATERAL (SELECT UNNEST(actions.action) as action) _unnested ON TRUE
-         GROUP BY actions.work_id
-     )`, currentUser, approverLoginsIn, executionLoginsIn, workNumber)
+      AND w.child_id IS NULL
+)
+   , unique_actions AS (
+    SELECT actions.work_id AS work_id, JSONB_AGG(jsonb_actions.actions) AS actions
+    FROM actions
+             LEFT JOIN LATERAL (SELECT jsonb_build_object(
+                                               'block_id', actions.block_id,
+                                               'actions', actions.action,
+                                               'params', actions.params) as actions) jsonb_actions ON TRUE
+    GROUP BY actions.work_id
+)`, currentUser, currentUser, approverLoginsIn, executionLoginsIn, workNumber)
 }
 
 func buildInExpression(items []string) string {
@@ -100,37 +122,56 @@ func buildInExpression(items []string) string {
 	return sb.String()
 }
 
-func getUniqueActions(as string, logins []string) string {
+func getUniqueActions(selectFilter string, logins []string) string {
 	var loginsIn = buildInExpression(logins)
 
-	switch as {
-	case "approver":
-		return uniqueActionsByRole(loginsIn, "approver", false)
-	case "finished_approver":
-		return uniqueActionsByRole(loginsIn, "approver", true)
-	case "executor":
-		return uniqueActionsByRole(loginsIn, "execution", false)
-	case "finished_executor":
-		return uniqueActionsByRole(loginsIn, "execution", true)
-	case "form_executor":
-		return uniqueActionsByRole(loginsIn, "form", false)
-	case "finished_form_executor":
-		return uniqueActionsByRole(loginsIn, "form", true)
-	case "initiators":
+	switch selectFilter {
+	case entity.SelectAsValApprover:
+		return uniqueActionsByRole(loginsIn, "approver", false, false)
+	case entity.SelectAsValFinishedApprover:
+		return uniqueActionsByRole(loginsIn, "approver", true, true)
+	case entity.SelectAsValExecutor:
+		return uniqueActionsByRole(loginsIn, "execution", false, false)
+	case entity.SelectAsValFinishedExecutor:
+		return uniqueActionsByRole(loginsIn, "execution", true, true)
+	case entity.SelectAsValFormExecutor:
+		return uniqueActionsByRole(loginsIn, "form", false, false)
+	case entity.SelectAsValFinishedFormExecutor:
+		return uniqueActionsByRole(loginsIn, "form", true, true)
+	case entity.SelectAsValSignerPhys:
+		q := uniqueActionsByRole(loginsIn, "sign", false, false)
+		q = strings.Replace(q, "--unique-actions-filter--", "AND vs.content -> 'State' -> vs.step_name ->> 'signature_type' in ('pep', 'unep') --unique-actions-filter--", 1)
+		return q
+	case entity.SelectAsValFinishedSignerPhys:
+		q := uniqueActionsByRole(loginsIn, "sign", true, true)
+		q = strings.Replace(q, "--unique-actions-filter--", "AND vs.content -> 'State' -> vs.step_name ->> 'signature_type' in ('pep', 'unep') --unique-actions-filter--", 1)
+		return q
+	case entity.SelectAsValSignerJur:
+		q := uniqueActionsByRole(loginsIn, "sign", false, false)
+		q = strings.Replace(q, "--unique-actions-filter--", "AND vs.content -> 'State' -> vs.step_name ->> 'signature_type' = 'ukep' --unique-actions-filter--", 1)
+		return q
+	case entity.SelectAsValFinishedSignerJur:
+		q := uniqueActionsByRole(loginsIn, "sign", true, true)
+		q = strings.Replace(q, "--unique-actions-filter--", "AND vs.content -> 'State' -> vs.step_name ->> 'signature_type' = 'ukep' --unique-actions-filter--", 1)
+		return q
+	case entity.SelectAsValInitiators:
 		return fmt.Sprintf(`WITH unique_actions AS (
-			SELECT id AS work_id, '{}' AS actions
+			SELECT id AS work_id, '[]' AS actions
 			FROM works
 			WHERE status = 1 AND author IN %s AND child_id IS NULL
 		)`, loginsIn)
-	case "none":
+	case entity.SelectAsValGroupExecutor:
 		return `WITH unique_actions AS (
-			SELECT id AS work_id, '{}' AS actions
+			SELECT id AS work_id, '[]' AS actions
 			FROM works
 			WHERE status = 1 AND child_id IS NULL
 		)`
+	case entity.SelectAsValFinishedGroupExecutor:
+		q := uniqueActionsByRole(loginsIn, "execution", true, false)
+		return strings.Replace(q, "--unique-actions-filter--", "AND m.execution_group_member = true", 1)
 	default:
 		return fmt.Sprintf(`WITH unique_actions AS (
-    SELECT id AS work_id, '{}' AS actions
+    SELECT id AS work_id, '[]' AS actions
     FROM works
     WHERE author IN %s AND child_id IS NULL
 )`, loginsIn)
@@ -187,20 +228,28 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 		order = *fl.Order
 	}
 
-	if fl.ProcessingLogins != nil || fl.ProcessingGroupIds != nil || fl.ExecutorTypeAssigned != nil {
-		q = fmt.Sprintf("%s %s", getUniqueActions("none", []string{}), q)
-	} else if fl.InitiatorLogins != nil && len(*fl.InitiatorLogins) > 0 {
+	if fl.InitiatorLogins != nil && len(*fl.InitiatorLogins) > 0 {
 		q = fmt.Sprintf("%s %s", getUniqueActions("initiators", *fl.InitiatorLogins), q)
 	} else if fl.SelectAs != nil {
 		q = fmt.Sprintf("%s %s", getUniqueActions(*fl.SelectAs, delegations), q)
+	} else if fl.SelectFor != nil {
+		q = fmt.Sprintf("%s %s", getUniqueActions(*fl.SelectFor, delegations), q)
 	} else {
 		q = fmt.Sprintf("%s %s", getUniqueActions("", delegations), q)
+	}
+
+	if fl.SignatureCarrier != nil && *fl.SelectAs == entity.SelectAsValSignerJur {
+		q = strings.Replace(q, "--unique-actions-filter--",
+			fmt.Sprintf("AND vs.content -> 'State' -> vs.step_name ->> 'signature_carrier' = '%s' --unique-actions-filter--",
+				*fl.SignatureCarrier),
+			1)
 	}
 
 	if fl.TaskIDs != nil {
 		args = append(args, fl.TaskIDs)
 		q = fmt.Sprintf("%s AND w.work_number = ANY($%d)", q, len(args))
 	}
+
 	if fl.Name != nil {
 		name := strings.Replace(*fl.Name, "_", "!_", -1)
 		name = strings.Replace(name, "%", "!%", -1)
@@ -211,6 +260,7 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 		args = append(args, time.Unix(int64(fl.Created.Start), 0).UTC(), time.Unix(int64(fl.Created.End), 0).UTC())
 		q = fmt.Sprintf("%s AND w.started_at BETWEEN $%d AND $%d", q, len(args)-1, len(args))
 	}
+
 	if fl.Archived != nil {
 		switch *fl.Archived {
 		case true:
@@ -235,11 +285,13 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 		q = fmt.Sprintf("%s AND w.author=$%d ", q, len(args))
 	}
 
-	varStorage := getProcessingSteps(&fl, delegations)
-	if varStorage != "" {
-		q = strings.Replace(q, "[with_variable_storage]", varStorage, 1)
-		q = fmt.Sprintf("%s AND w.status = 1", q)
-		q = strings.Replace(q, "[join_variable_storage]", "JOIN var_storage vs ON vs.work_id = w.id ", 1)
+	if (fl.SelectFor != nil && (fl.ProcessingLogins != nil || fl.ProcessingGroupIds != nil)) ||
+		fl.ExecutorTypeAssigned != nil {
+		q = getProcessingSteps(q, &fl, delegations)
+	}
+
+	if fl.SelectFor != nil && (fl.ProcessedLogins != nil || fl.ProcessedGroupIds != nil) {
+		q = getProcessedSteps(q, &fl)
 	}
 
 	if order != "" {
@@ -262,24 +314,20 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 	return q, args
 }
 
-func getProcessingSteps(fl *entity.TaskFilter, delegations []string) string {
-	if fl == nil {
-		return ""
-	}
+func getProcessingSteps(q string, fl *entity.TaskFilter, delegations []string) string {
+	varStorage := `, var_storage as (
+		SELECT DISTINCT work_id FROM variable_storage
+		WHERE work_id IS NOT NULL AND status IN ('running', 'idle', 'processing')`
 
-	if fl.ProcessingLogins == nil && fl.ProcessingGroupIds == nil && fl.ExecutorTypeAssigned == nil {
-		return ""
-	}
+	varStorage = addAssignType(varStorage, fl.CurrentUser, fl.ExecutorTypeAssigned)
+	varStorage = addProcessingLogins(varStorage, fl.SelectFor, fl.ProcessingLogins, delegations)
+	varStorage = addProcessingGroups(varStorage, fl.SelectFor, fl.ProcessingGroupIds)
 
-	q := `, var_storage as (
-		SELECT DISTINCT work_id FROM variable_storage 
-		WHERE work_id IS NOT NULL AND status IN ('running', 'wait', 'processing')`
+	varStorage += ")"
 
-	q = addAssignType(q, fl.CurrentUser, fl.ExecutorTypeAssigned)
-	q = addProcessingLogins(q, fl.ProcessingLogins, delegations)
-	q = addProcessingGroups(q, fl.ProcessingGroupIds)
-
-	q += ")"
+	q = strings.Replace(q, "[with_variable_storage]", varStorage, 1)
+	q = fmt.Sprintf("%s AND w.status = 1", q)
+	q = strings.Replace(q, "[join_variable_storage]", "JOIN var_storage vs ON vs.work_id = w.id ", 1)
 
 	return q
 }
@@ -308,30 +356,28 @@ func addAssignType(q, login string, typeAssign *string) string {
 	return q
 }
 
-func addProcessingLogins(q string, logins *[]string, delegations []string) string {
-	if logins == nil || len(*logins) == 0 {
+func addProcessingLogins(q string, selectFor *string, logins *[]string, delegations []string) string {
+	if selectFor == nil || logins == nil || len(*logins) == 0 {
 		return q
 	}
 
 	ls := *logins
 	ls = append(ls, delegations...)
-
 	ls = utils.UniqueStrings(ls)
 
-	return fmt.Sprintf(`%s AND step_type IN('execution', 'approver', 'form') AND 
-		(
-			(step_type = 'approver' AND content -> 'State' -> step_name -> 'approvers' ?| '%s') OR
-			(step_type = 'execution' AND content -> 'State' -> step_name -> 'executors' ?| '%s') OR
-			(step_type = 'form' AND content -> 'State' -> step_name -> 'executors' ?| '%s')
-		)`, q,
-		"{"+strings.Join(ls, ",")+"}",
-		"{"+strings.Join(ls, ",")+"}",
+	stepType := getStepTypeBySelectForFilter(*selectFor)
+
+	return fmt.Sprintf(`
+		%s AND step_type = '%s' AND content -> 'State' -> step_name -> '%s' ?| '%s'`,
+		q,
+		stepType,
+		getActorsNameByStepType(stepType),
 		"{"+strings.Join(ls, ",")+"}",
 	)
 }
 
-func addProcessingGroups(q string, groupIds *[]string) string {
-	if groupIds == nil || len(*groupIds) == 0 {
+func addProcessingGroups(q string, selectFor *string, groupIds *[]string) string {
+	if selectFor == nil || groupIds == nil || len(*groupIds) == 0 {
 		return q
 	}
 
@@ -340,13 +386,99 @@ func addProcessingGroups(q string, groupIds *[]string) string {
 		ids[i] = fmt.Sprintf("'%s'", ids[i])
 	}
 
-	return fmt.Sprintf(`%s AND step_type IN('execution', 'approver') 
-		AND (
-			(step_type = 'execution' AND content -> 'State' -> step_name ->> 'executors_group_id'::varchar IN(%s)) OR 
-			(step_type = 'approver' AND content -> 'State' -> step_name ->> 'approvers_group_id'::varchar IN(%s))
-		)`,
+	stepType := getStepTypeBySelectForFilter(*selectFor)
+
+	return fmt.Sprintf(`%s AND step_type = '%s' AND content -> 'State' -> step_name ->> '%s'::varchar IN(%s)`,
 		q,
+		stepType,
+		getGroupActorsNameByStepType(stepType),
 		strings.Join(ids, ","),
+	)
+}
+
+func getStepTypeBySelectForFilter(selectFor string) string {
+	switch selectFor {
+	case "group_executor":
+		return "execution"
+	case "finished_group_executor":
+		return "execution"
+	}
+	return ""
+}
+
+func getActorsNameByStepType(stepName string) string {
+	switch stepName {
+	case "execution":
+		return "executors"
+	case "approver":
+		return "approvers"
+	case "form":
+		return "executors"
+	}
+	return ""
+}
+
+func getGroupActorsNameByStepType(stepName string) string {
+	switch stepName {
+	case "execution":
+		return "executors_group_id"
+	case "approver":
+		return "approvers_group_id"
+	}
+	return ""
+}
+
+func getProcessedSteps(q string, fl *entity.TaskFilter) string {
+	varStorage := `, var_storage as (
+                SELECT DISTINCT work_id FROM variable_storage                                                                                                                                                                                              
+                WHERE work_id IS NOT NULL AND status IN ('finished', 'cancel', 'no_success', 'error')`
+
+	varStorage = addProcessedLogins(varStorage, fl.SelectFor, fl.ProcessedLogins)
+	varStorage = addProcessedGroups(varStorage, fl.SelectFor, fl.ProcessedGroupIds)
+
+	varStorage += ")"
+
+	q = strings.Replace(q, "[with_variable_storage]", varStorage, 1)
+	q = strings.Replace(q, "[join_variable_storage]", "JOIN var_storage vs ON vs.work_id = w.id ", 1)
+
+	return q
+}
+
+func addProcessedLogins(q string, selectFor *string, logins *[]string) string {
+	if selectFor == nil || logins == nil || len(*logins) == 0 {
+		return q
+	}
+
+	ls := *logins
+	ls = utils.UniqueStrings(ls)
+
+	stepType := getStepTypeBySelectForFilter(*selectFor)
+
+	return fmt.Sprintf(`
+		%s AND step_type = '%s' AND content -> 'State' -> step_name -> '%s' ?| '%s'`,
+		q,
+		stepType,
+		getActorsNameByStepType(stepType),
+		"{"+strings.Join(ls, ",")+"}",
+	)
+}
+
+func addProcessedGroups(q string, selectFor *string, groupIds *[]string) string {
+	if selectFor == nil || groupIds == nil || len(*groupIds) == 0 {
+		return q
+	}
+
+	ids := *groupIds
+	for i := range ids {
+		ids[i] = fmt.Sprintf("'%s'", ids[i])
+	}
+
+	stepType := getStepTypeBySelectForFilter(*selectFor)
+
+	return fmt.Sprintf(`%s AND step_type = '%s' AND content -> 'State' -> step_name ->> '%s'::varchar IN(%s)`,
+		q,
+		stepType,
+		getGroupActorsNameByStepType(stepType),
 		strings.Join(ids, ","),
 	)
 }
@@ -355,6 +487,12 @@ func (db *PGCon) GetAdditionalForms(workNumber, nodeName string) ([]string, erro
 	const q = `
 	WITH content as (
 		SELECT jsonb_array_elements(content -> 'pipeline' -> 'blocks' -> $2 -> 'params' -> 'forms_accessibility') as rules
+		FROM versions
+			WHERE id = (SELECT version_id FROM works WHERE work_number = $1 AND child_id IS NULL)
+
+		UNION
+
+		SELECT jsonb_array_elements(content -> 'pipeline' -> 'blocks' -> $2 -> 'params' -> 'formsAccessibility') as rules
 		FROM versions
 			WHERE id = (SELECT version_id FROM works WHERE work_number = $1 AND child_id IS NULL)
 	)
@@ -435,8 +573,14 @@ func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter, delegations 
 	}
 
 	taskIDs := make([]string, 0, len(tasks.Tasks))
-	for _, task := range tasks.Tasks {
+	for i, task := range tasks.Tasks {
 		taskIDs = append(taskIDs, task.ID.String())
+
+		steps, getTaskErr := db.GetTaskSteps(ctx, tasks.Tasks[i].ID)
+		if getTaskErr != nil {
+			return nil, getTaskErr
+		}
+		tasks.Tasks[i].Steps = steps
 	}
 
 	q = `
@@ -452,7 +596,7 @@ func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter, delegations 
 				  ORDER BY vs.time DESC
 				  LIMIT 1
 				  ) descr ON descr.work_id = w.id
-			  WHERE w.id = ANY($1)) blocks_with_work_id
+			  WHERE state IS NOT NULL AND w.id = ANY($1)) blocks_with_work_id
 		WHERE key(blocks) NOT LIKE 'form%%'
 		   OR (
 					key(blocks) LIKE 'form%%'
@@ -463,11 +607,12 @@ func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter, delegations 
 					   jsonb_array_elements(blocks -> 'additional_info') -> 'attachments' AS additional_info_attachments,
 					   jsonb_array_elements(blocks -> 'approver_log') -> 'attachments'    AS approver_log_attachments,
 					   jsonb_array_elements(blocks -> 'editing_app_log') -> 'attachments' AS editing_app_log_attachments
-				FROM blocks_with_filtered_forms),
+				FROM blocks_with_filtered_forms
+ 				WHERE jsonb_typeof(blocks -> 'application_body') = 'object'),
 		 counts AS (SELECT
 						work_id,
 						SUM(CASE
-                        		WHEN jsonb_typeof(form_and_sd_application_body) = 'string' 
+                        		WHEN jsonb_typeof(form_and_sd_application_body) = 'object' 
 									THEN 1
                         		WHEN jsonb_typeof(form_and_sd_application_body) = 'array'  
 									THEN jsonb_array_length(form_and_sd_application_body)
@@ -477,7 +622,11 @@ func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter, delegations 
 						SUM(coalesce(jsonb_array_length(NULLIF(approver_log_attachments, 'null')), 0)) AS additional_approvers_count,
 						SUM(coalesce(jsonb_array_length(NULLIF(editing_app_log_attachments, 'null')), 0)) AS rework_count
 					FROM data
-					WHERE form_and_sd_application_body::text LIKE '"attachment:%%'
+					WHERE form_and_sd_application_body::text LIKE '{"file_id":%%'
+					   OR form_and_sd_application_body::text LIKE '[{"file_id":%%'
+					   OR form_and_sd_application_body::text LIKE '{"external_link":%%'
+					   OR form_and_sd_application_body::text LIKE '[{"external_link":%%'
+					   OR form_and_sd_application_body::text LIKE '"attachment:%%'
 					   OR form_and_sd_application_body::text LIKE '["attachment:%%'
 					   OR additional_info_attachments IS NOT NULL
 					   OR approver_log_attachments IS NOT NULL
@@ -570,6 +719,13 @@ func (db *PGCon) GetTasksCount(
 				JOIN ids on vs.work_id = ids.id
 			WHERE vs.status IN ('running', 'idle', 'ready') AND
 				m.login = $1 AND vs.step_type = 'form'
+		),
+		(SELECT count(*)
+			FROM members m
+				JOIN variable_storage vs on vs.id = m.block_id
+				JOIN ids on vs.work_id = ids.id
+			WHERE vs.status IN ('running', 'idle', 'ready') AND
+				m.login = $1 AND vs.step_type = 'sign'
 		)`
 
 	counter, err := db.getTasksCount(
@@ -586,6 +742,7 @@ func (db *PGCon) GetTasksCount(
 		TotalExecutor:     counter.totalExecutor,
 		TotalApprover:     counter.totalApprover,
 		TotalFormExecutor: counter.totalFormExecutor,
+		TotalSign:         counter.totalSign,
 	}, nil
 }
 
@@ -722,7 +879,10 @@ func (db *PGCon) GetTask(
          	ua.actions,
  			run_context -> 'initial_application' -> 'is_test_application' as isTest,
  			w.status_comment,
-			w.status_author
+			w.status_author,
+ 			v.content,
+ 			v.node_groups,
+ 			w.human_status_comment
 		FROM works w 
 		JOIN versions v ON v.id = w.version_id
 		JOIN pipelines p ON p.id = v.pipeline_id
@@ -755,7 +915,8 @@ func (db *PGCon) getTask(ctx c.Context, delegators []string, q, workNumber strin
 	et := entity.EriusTask{}
 
 	var nullStringParameters sql.NullString
-	var nullStringActions []sql.NullString
+	var actionData []byte
+	var nodeGroups string
 
 	row := db.Connection.QueryRow(ctx, q, workNumber)
 
@@ -776,16 +937,24 @@ func (db *PGCon) getTask(ctx c.Context, delegators []string, q, workNumber strin
 		&et.BlueprintID,
 		&et.Rate,
 		&et.RateComment,
-		pq.Array(&nullStringActions),
+		&actionData,
 		&et.IsTest,
 		&et.StatusComment,
 		&et.StatusAuthor,
+		&et.VersionContent,
+		&nodeGroups,
+		&et.HumanStatusComment,
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	actions := db.actionsToStrings(nullStringActions)
+	var actions []DbTaskAction
+	if actionData != nil {
+		if unmErr := json.Unmarshal(actionData, &actions); unmErr != nil {
+			return nil, unmErr
+		}
+	}
 
 	computedActions, actionsErr := db.computeActions(ctx, delegators, actions, actionsMap, et.Author)
 	if actionsErr != nil {
@@ -800,7 +969,11 @@ func (db *PGCon) getTask(ctx c.Context, delegators []string, q, workNumber strin
 			return nil, err
 		}
 	}
-
+	et.NodeGroup = make([]*entity.NodeGroup, 0)
+	err = json.Unmarshal([]byte(nodeGroups), &et.NodeGroup)
+	if err != nil {
+		return nil, err
+	}
 	return &et, nil
 }
 
@@ -862,7 +1035,7 @@ func getActionsToIgnoreIfOtherExist() []IgnoreActionRule {
 	}
 }
 
-func (db *PGCon) computeActions(ctx c.Context, currentUserDelegators, actions []string,
+func (db *PGCon) computeActions(ctx c.Context, currentUserDelegators []string, actions []DbTaskAction,
 	allActions map[string]entity.TaskAction, author string) (result []entity.TaskAction, err error) {
 	const (
 		CancelAppId       = "cancel_app"
@@ -876,24 +1049,36 @@ func (db *PGCon) computeActions(ctx c.Context, currentUserDelegators, actions []
 
 	result = make([]entity.TaskAction, 0)
 
-	for _, actionId := range actions {
-		var compositeActionId = strings.Split(actionId, ":")
-		if len(compositeActionId) > 1 {
-			var id = compositeActionId[0]
-			var priority = compositeActionId[1]
-			var actionWithPreferences = allActions[id]
+	metActions := make(map[string]struct{})
 
-			var computedAction = entity.TaskAction{
-				Id:                 id,
-				ButtonType:         priority,
-				Title:              actionWithPreferences.Title,
-				CommentEnabled:     actionWithPreferences.CommentEnabled,
-				AttachmentsEnabled: actionWithPreferences.AttachmentsEnabled,
-				IsPublic:           actionWithPreferences.IsPublic,
+	for _, blockActions := range actions {
+		for _, action := range blockActions.Actions {
+			var compositeActionId = strings.Split(action, ":")
+			if len(compositeActionId) > 1 {
+				id := compositeActionId[0]
+
+				if _, ok := metActions[id]; ok {
+					continue
+				}
+				metActions[id] = struct{}{}
+
+				priority := compositeActionId[1]
+				actionWithPreferences := allActions[id]
+				actionParams, _ := blockActions.Params[id]
+
+				var computedAction = entity.TaskAction{
+					Id:                 id,
+					ButtonType:         priority,
+					Title:              actionWithPreferences.Title,
+					CommentEnabled:     actionWithPreferences.CommentEnabled,
+					AttachmentsEnabled: actionWithPreferences.AttachmentsEnabled,
+					IsPublic:           actionWithPreferences.IsPublic,
+					Params:             actionParams,
+				}
+
+				computedActions = append(computedActions, computedAction)
+				computedActionIds = append(computedActionIds, computedAction.Id)
 			}
-
-			computedActions = append(computedActions, computedAction)
-			computedActionIds = append(computedActionIds, computedAction.Id)
 		}
 	}
 
@@ -939,6 +1124,7 @@ type tasksCounter struct {
 	totalExecutor     int
 	totalApprover     int
 	totalFormExecutor int
+	totalSign         int
 }
 
 func (db *PGCon) getTasksCount(
@@ -956,6 +1142,7 @@ func (db *PGCon) getTasksCount(
 			&counter.totalApprover,
 			&counter.totalExecutor,
 			&counter.totalFormExecutor,
+			&counter.totalSign,
 		); scanErr != nil {
 		return counter, scanErr
 	}
@@ -986,9 +1173,8 @@ func (db *PGCon) getTasks(ctx c.Context, filters *entity.TaskFilter,
 
 	for rows.Next() {
 		et := entity.EriusTask{}
-
 		var nullStringParameters sql.NullString
-		var nullStringActions []sql.NullString
+		var actionData []byte
 
 		err = rows.Scan(
 			&et.ID,
@@ -1007,7 +1193,7 @@ func (db *PGCon) getTasks(ctx c.Context, filters *entity.TaskFilter,
 			&et.Total,
 			&et.Rate,
 			&et.RateComment,
-			pq.Array(&nullStringActions),
+			&actionData,
 		)
 
 		if err != nil {
@@ -1021,7 +1207,13 @@ func (db *PGCon) getTasks(ctx c.Context, filters *entity.TaskFilter,
 			}
 		}
 
-		actions := db.actionsToStrings(nullStringActions)
+		var actions []DbTaskAction
+		if actionData != nil {
+			if unmErr := json.Unmarshal(actionData, &actions); unmErr != nil {
+				return nil, unmErr
+			}
+		}
+
 		computedActions, actionsErr := db.computeActions(ctx, delegatorsWithUser, actions, actionsMap, et.Author)
 		if actionsErr != nil {
 			return nil, err
@@ -1104,6 +1296,23 @@ func (db *PGCon) GetTaskSteps(ctx c.Context, id uuid.UUID) (entity.TaskSteps, er
 	}
 
 	return el, nil
+}
+
+func (db *PGCon) GetTaskHumanStatus(ctx c.Context, taskID uuid.UUID) (string, error) {
+	ctx, span := trace.StartSpan(ctx, "get_task_status")
+	defer span.End()
+
+	q := `
+		SELECT human_status
+		FROM works
+		WHERE id = $1`
+
+	var status string
+
+	if err := db.Connection.QueryRow(ctx, q, taskID).Scan(&status); err != nil {
+		return "", err
+	}
+	return status, nil
 }
 
 func (db *PGCon) GetTaskStatus(ctx c.Context, taskID uuid.UUID) (int, error) {
@@ -1298,11 +1507,16 @@ func (db *PGCon) GetMergedVariableStorage(ctx c.Context, workId uuid.UUID, block
 	ctx, span := trace.StartSpan(ctx, "get_merged_variable_storage")
 	defer span.End()
 
-	q := fmt.Sprintf(`SELECT jsonb_merge_agg(vs.content) as content FROM variable_storage vs
-    	WHERE work_id = '%s' AND step_name IN %s`, workId, buildInExpression(blockIds))
+	const q = `
+		SELECT jsonb_merge_agg(vs.content) AS content 
+			FROM variable_storage vs
+    	WHERE work_id = '%s' AND step_name IN %s AND
+    	  vs.time = (SELECT max(time) FROM variable_storage WHERE work_id = vs.work_id AND step_name = vs.step_name)`
+
+	query := fmt.Sprintf(q, workId, buildInExpression(blockIds))
 
 	var content []byte
-	if err := db.Connection.QueryRow(ctx, q).Scan(&content); err != nil {
+	if err := db.Connection.QueryRow(ctx, query).Scan(&content); err != nil {
 		return nil, err
 	}
 
@@ -1511,6 +1725,36 @@ func (db *PGCon) GetBlockOutputs(ctx c.Context, blockId, blockName string) (enti
 	return blockOutputs, nil
 }
 
+func (db *PGCon) GetBlockState(ctx c.Context, blockId string) (entity.BlockState, error) {
+	ctx, span := trace.StartSpan(ctx, "pg_get_block_state")
+	defer span.End()
+
+	state := make(entity.BlockState, 0)
+	params := make(map[string]interface{}, 0)
+
+	const q = `
+		SELECT content -> 'State' -> step_name
+		FROM variable_storage
+		WHERE id = $1;
+	`
+
+	if err := db.Connection.QueryRow(ctx, q, blockId).Scan(&params); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return state, nil
+		}
+		return nil, err
+	}
+
+	for i := range params {
+		state = append(state, entity.BlockStateValue{
+			Name:  i,
+			Value: params[i],
+		})
+	}
+
+	return state, nil
+}
+
 func (db *PGCon) GetTaskMembers(ctx c.Context, workNumber string) ([]DbMember, error) {
 	q := `SELECT m.login, vs.step_type FROM works
     		JOIN variable_storage vs ON works.id = vs.work_id
@@ -1574,12 +1818,12 @@ func (db *PGCon) GetExecutorsFromPrevExecutionBlockRun(ctx c.Context, taskID uui
 	defer span.End()
 
 	q := `
-		SELECT  content-> 'State' -> $1 -> 'executors'
+		SELECT  content-> 'State' -> step_name -> 'executors'
 		FROM variable_storage
-		WHERE work_id = $2 and step_name = $3 order by time desc limit 1 offset 1`
+		WHERE work_id = $1 and step_name = $2 order by time desc limit 1`
 
 	var executors map[string]struct{}
-	if err = db.Connection.QueryRow(ctx, q, name, taskID, name).Scan(&executors); err != nil {
+	if err = db.Connection.QueryRow(ctx, q, taskID, name).Scan(&executors); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return map[string]struct{}{}, nil
 		}
@@ -1594,19 +1838,18 @@ func (db *PGCon) GetExecutorsFromPrevWorkVersionExecutionBlockRun(ctx c.Context,
 	ctx, span := trace.StartSpan(ctx, "get_executor_from_prev_block")
 	defer span.End()
 
-	q := `
-		SELECT  content-> 'State' -> $1 -> 'executors'
-		FROM variable_storage
-		WHERE work_id = (select id from works where work_number = $2 order by started_at desc limit 1 offset 1) 
-		  and step_name = $3 order by time desc limit 1 offset 1`
-
 	var executors map[string]struct{}
-	if err = db.Connection.QueryRow(ctx, q, name, workNumber, name).Scan(&executors); err != nil {
+	q := `
+		SELECT  content-> 'State' -> step_name -> 'executors'
+		FROM variable_storage
+		WHERE work_id = (select id from works where work_number = $1 order by started_at desc limit 1 offset 1)
+		and step_name = $2 order by time desc limit 1`
+
+	if err = db.Connection.QueryRow(ctx, q, workNumber, name).Scan(&executors); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return map[string]struct{}{}, nil
 		}
 		return map[string]struct{}{}, err
 	}
-
 	return executors, nil
 }

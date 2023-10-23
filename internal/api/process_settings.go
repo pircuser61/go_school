@@ -1,7 +1,7 @@
 package api
 
 import (
-	"context"
+	c "context"
 	"encoding/json"
 
 	"io"
@@ -19,6 +19,114 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 )
+
+func (ae *APIEnv) convertProcessSettingsToFlat(ctx c.Context, ps *entity.ProcessSettings) error {
+	if ps.StartSchemaRaw != nil {
+		start, err := ae.Forms.MakeFlatSchema(ctx, ps.StartSchemaRaw)
+		if err != nil {
+			return errors.Wrap(err, "couldn't convert start schema")
+		}
+		ps.StartSchema = start
+	}
+
+	if ps.EndSchemaRaw != nil {
+		end, err := ae.Forms.MakeFlatSchema(ctx, ps.EndSchemaRaw)
+		if err != nil {
+			return errors.Wrap(err, "couldn't convert end schema")
+		}
+		ps.EndSchema = end
+	}
+
+	return nil
+}
+
+func (ae *APIEnv) SaveVersionTaskSubscriptionSettings(w http.ResponseWriter, req *http.Request, versionID string) {
+	ctx, s := trace.StartSpan(req.Context(), "save_version_task_subscription_settings")
+	defer s.End()
+
+	log := logger.GetLogger(ctx)
+
+	b, err := io.ReadAll(req.Body)
+	if err != nil {
+		e := RequestReadError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	defer req.Body.Close()
+
+	var settings []*entity.ExternalSystemSubscriptionParams
+	err = json.Unmarshal(b, &settings)
+	if err != nil {
+		e := ExternalSystemSettingsParseError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	// TODO: validation?
+
+	txStorage, transactionErr := ae.DB.StartTransaction(ctx)
+	if transactionErr != nil {
+		log.WithError(transactionErr).Error("couldn't start transaction")
+		e := UnknownError
+		_ = e.sendError(w)
+		return
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			log = log.WithField("funcName", "SaveVersionTaskSubscriptionSettings").
+				WithField("panic handle", true)
+			log.Error(r)
+			if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
+				log.WithError(errors.New("couldn't rollback tx")).
+					Error(txErr)
+			}
+		}
+	}()
+
+	defer func(transaction db.Database, ctx c.Context) {
+		_ = transaction.RollbackTransaction(ctx)
+	}(txStorage, ctx)
+
+	if rmErr := ae.DB.RemoveExternalSystemTaskSubscriptions(ctx, versionID, ""); rmErr != nil {
+		e := ExternalSystemSettingsSaveError
+		log.Error(e.errorMessage(rmErr))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	for _, s := range settings {
+		err = ae.DB.SaveExternalSystemSubscriptionParams(ctx, versionID, s)
+		if err != nil {
+			e := ExternalSystemSettingsSaveError
+			log.Error(e.errorMessage(err))
+			_ = e.sendError(w)
+
+			return
+		}
+	}
+
+	if err = txStorage.CommitTransaction(ctx); err != nil {
+		log.WithError(err).Error("couldn't commit transaction")
+		e := UnknownError
+		_ = e.sendError(w)
+		return
+	}
+
+	err = sendResponse(w, http.StatusOK, nil)
+	if err != nil {
+		e := UnknownError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+}
 
 func (ae *APIEnv) GetVersionSettings(w http.ResponseWriter, req *http.Request, versionID string) {
 	ctx, s := trace.StartSpan(req.Context(), "get_version_settings")
@@ -65,6 +173,7 @@ func (ae *APIEnv) GetVersionSettings(w http.ResponseWriter, req *http.Request, v
 	}
 
 	externalSystems := make([]entity.ExternalSystem, 0, len(externalSystemsIds))
+	externalSystemsTaskSubs := make([]entity.ExternalSystemSubscriptionParams, 0, len(externalSystemsIds))
 	for _, id := range externalSystemsIds {
 		externalSystemSettings, err := ae.DB.GetExternalSystemSettings(ctx, versionID, id.String())
 		if err != nil {
@@ -76,15 +185,29 @@ func (ae *APIEnv) GetVersionSettings(w http.ResponseWriter, req *http.Request, v
 		}
 		validateEndingSettings(&externalSystemSettings)
 		externalSystems = append(externalSystems, entity.ExternalSystem{
-			Id:             id.String(),
-			Name:           systemsNames[id.String()],
-			OutputSettings: externalSystemSettings.OutputSettings,
+			Id:               id.String(),
+			Name:             systemsNames[id.String()],
+			AllowRunAsOthers: externalSystemSettings.AllowRunAsOthers,
+			OutputSettings:   externalSystemSettings.OutputSettings,
 		})
+
+		subscriptionSettings, err := ae.DB.GetExternalSystemTaskSubscriptions(ctx, versionID, id.String())
+		if err != nil {
+			e := GetExternalSystemSettingsError
+			log.Error(e.errorMessage(err))
+			_ = e.sendError(w)
+
+			return
+		}
+		if subscriptionSettings.SystemID != "" {
+			externalSystemsTaskSubs = append(externalSystemsTaskSubs, subscriptionSettings)
+		}
 	}
 
 	result := entity.ProcessSettingsWithExternalSystems{
-		ExternalSystems: externalSystems,
-		ProcessSettings: processSettings,
+		ExternalSystems:    externalSystems,
+		ProcessSettings:    processSettings,
+		TasksSubscriptions: externalSystemsTaskSubs,
 	}
 
 	if err := sendResponse(w, http.StatusOK, result); err != nil {
@@ -114,11 +237,19 @@ func (ae *APIEnv) SaveVersionSettings(w http.ResponseWriter, req *http.Request, 
 		return
 	}
 
-	var processSettings entity.ProcessSettings
+	var processSettings *entity.ProcessSettings
 	err = json.Unmarshal(b, &processSettings)
 	if err != nil {
 		e := ProcessSettingsParseError
 		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	if convErr := ae.convertProcessSettingsToFlat(ctx, processSettings); convErr != nil {
+		e := ProcessSettingsConvertError
+		log.Error(e.errorMessage(convErr))
 		_ = e.sendError(w)
 
 		return
@@ -135,7 +266,7 @@ func (ae *APIEnv) SaveVersionSettings(w http.ResponseWriter, req *http.Request, 
 		return
 	}
 
-	saveVersionErr := ae.DB.SaveVersionSettings(ctx, processSettings, (*string)(params.SchemaFlag))
+	saveVersionErr := ae.DB.SaveVersionSettings(ctx, *processSettings, (*string)(params.SchemaFlag))
 	if saveVersionErr != nil {
 		e := ProcessSettingsSaveError
 		log.Error(e.errorMessage(saveVersionErr))
@@ -144,8 +275,7 @@ func (ae *APIEnv) SaveVersionSettings(w http.ResponseWriter, req *http.Request, 
 		return
 	}
 
-	err = sendResponse(w, http.StatusOK, nil)
-	if err != nil {
+	if err := sendResponse(w, http.StatusOK, processSettings); err != nil {
 		e := UnknownError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
@@ -219,12 +349,51 @@ func (ae *APIEnv) RemoveExternalSystem(w http.ResponseWriter, req *http.Request,
 
 	log := logger.GetLogger(ctx)
 
-	err := ae.DB.RemoveExternalSystem(ctx, versionID, systemID)
+	txStorage, transactionErr := ae.DB.StartTransaction(ctx)
+	if transactionErr != nil {
+		log.WithError(transactionErr).Error("couldn't start transaction")
+		e := UnknownError
+		_ = e.sendError(w)
+		return
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			log = log.WithField("funcName", "RemoveExternalSystem").
+				WithField("panic handle", true)
+			log.Error(r)
+			if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
+				log.WithError(errors.New("couldn't rollback tx")).
+					Error(txErr)
+			}
+		}
+	}()
+
+	defer func(transaction db.Database, ctx c.Context) {
+		_ = transaction.RollbackTransaction(ctx)
+	}(txStorage, ctx)
+
+	err := txStorage.RemoveExternalSystemTaskSubscriptions(ctx, versionID, systemID)
 	if err != nil {
 		e := ExternalSystemRemoveError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
+		return
+	}
+
+	err = txStorage.RemoveExternalSystem(ctx, versionID, systemID)
+	if err != nil {
+		e := ExternalSystemRemoveError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	if err = txStorage.CommitTransaction(ctx); err != nil {
+		log.WithError(err).Error("couldn't commit transaction")
+		e := UnknownError
+		_ = e.sendError(w)
 		return
 	}
 
@@ -358,7 +527,7 @@ func (ae *APIEnv) SaveVersionMainSettings(w http.ResponseWriter, req *http.Reque
 		}
 	}()
 
-	defer func(transaction db.Database, ctx context.Context) {
+	defer func(transaction db.Database, ctx c.Context) {
 		_ = transaction.RollbackTransaction(ctx)
 	}(transaction, ctx)
 
@@ -519,5 +688,40 @@ func validateEndingSettings(s *entity.ExternalSystem) {
 		s.OutputSettings.URL == "" ||
 		s.OutputSettings.Method == "" {
 		s.OutputSettings = nil
+	}
+}
+
+func (ae *APIEnv) AllowRunAsOthers(w http.ResponseWriter, r *http.Request, versionID, systemID string) {
+	ctx, s := trace.StartSpan(r.Context(), "allow_run_as_others")
+	defer s.End()
+
+	log := logger.GetLogger(ctx)
+
+	b, err := io.ReadAll(r.Body)
+	if err != nil {
+		e := RequestReadError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+		return
+	}
+	defer r.Body.Close()
+
+	var allowRunAsOthers bool
+	err = json.Unmarshal(b, &allowRunAsOthers)
+	if err != nil {
+		e := ProcessSettingsParseError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	err = ae.DB.AllowRunAsOthers(ctx, versionID, systemID, allowRunAsOthers)
+	if err != nil {
+		e := UpdateRunAsOthersSettingsError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
 	}
 }

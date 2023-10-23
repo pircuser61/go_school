@@ -45,19 +45,25 @@ func (ae *APIEnv) handleBreachSlA(ctx c.Context, item db.StepBreachedSLA) {
 		WorkNumber: item.WorkNumber,
 		WorkTitle:  item.WorkTitle,
 		Initiator:  item.Initiator,
-		Storage:    txStorage,
 		VarStore:   item.VarStore,
 
-		Sender:        ae.Mail,
-		Kafka:         ae.Kafka,
-		People:        ae.People,
-		ServiceDesc:   ae.ServiceDesc,
-		FunctionStore: ae.FunctionStore,
-		HumanTasks:    ae.HumanTasks,
-		Integrations:  ae.Integrations,
-		FileRegistry:  ae.FileRegistry,
-		FaaS:          ae.FaaS,
-		HrGate:        ae.HrGate,
+		Services: pipeline.RunContextServices{
+			HTTPClient:    ae.HTTPClient,
+			Storage:       txStorage,
+			Sender:        ae.Mail,
+			Kafka:         ae.Kafka,
+			People:        ae.People,
+			ServiceDesc:   ae.ServiceDesc,
+			FunctionStore: ae.FunctionStore,
+			HumanTasks:    ae.HumanTasks,
+			Integrations:  ae.Integrations,
+			FileRegistry:  ae.FileRegistry,
+			FaaS:          ae.FaaS,
+			HrGate:        ae.HrGate,
+			Scheduler:     ae.Scheduler,
+			SLAService:    ae.SLAService,
+		},
+		BlockRunResults: &pipeline.BlockRunResults{},
 
 		UpdateData: &script.BlockUpdateData{
 			Action: string(item.Action),
@@ -65,6 +71,8 @@ func (ae *APIEnv) handleBreachSlA(ctx c.Context, item db.StepBreachedSLA) {
 		IsTest:    item.IsTest,
 		NotifName: notifName,
 	}
+
+	runCtx.SetTaskEvents(ctx)
 
 	blockErr := pipeline.ProcessBlockWithEndMapping(ctx, item.StepName, item.BlockData, runCtx, true)
 	if blockErr != nil {
@@ -82,6 +90,8 @@ func (ae *APIEnv) handleBreachSlA(ctx c.Context, item db.StepBreachedSLA) {
 			log.Error(txErr)
 		}
 	}
+
+	runCtx.NotifyEvents(ctx)
 }
 
 //nolint:gocyclo,staticcheck //its ok here

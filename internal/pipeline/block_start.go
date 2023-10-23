@@ -6,6 +6,7 @@ import (
 	"github.com/pkg/errors"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
@@ -17,6 +18,13 @@ type GoStartBlock struct {
 	Output     map[string]string
 	Sockets    []script.Socket
 	RunContext *BlockRunContext
+
+	expectedEvents map[string]struct{}
+	happenedEvents []entity.NodeEvent
+}
+
+func (gb *GoStartBlock) GetNewEvents() []entity.NodeEvent {
+	return gb.happenedEvents
 }
 
 func (gb *GoStartBlock) Members() []Member {
@@ -35,8 +43,8 @@ func (gb *GoStartBlock) GetStatus() Status {
 	return StatusFinished
 }
 
-func (gb *GoStartBlock) GetTaskHumanStatus() TaskHumanStatus {
-	return ""
+func (gb *GoStartBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment string) {
+	return "", ""
 }
 
 func (gb *GoStartBlock) Next(_ *store.VariableStore) ([]string, bool) {
@@ -52,12 +60,12 @@ func (gb *GoStartBlock) GetState() interface{} {
 }
 
 func (gb *GoStartBlock) Update(ctx context.Context) (interface{}, error) {
-	data, err := gb.RunContext.Storage.GetTaskRunContext(ctx, gb.RunContext.WorkNumber)
+	data, err := gb.RunContext.Services.Storage.GetTaskRunContext(ctx, gb.RunContext.WorkNumber)
 	if err != nil {
 		return nil, errors.Wrap(err, "can't get task run context")
 	}
 
-	personData, err := gb.RunContext.ServiceDesc.GetSsoPerson(ctx, gb.RunContext.Initiator)
+	personData, err := gb.RunContext.Services.ServiceDesc.GetSsoPerson(ctx, gb.RunContext.Initiator)
 	if err != nil {
 		return nil, err
 	}
@@ -73,6 +81,15 @@ func (gb *GoStartBlock) Update(ctx context.Context) (interface{}, error) {
 	gb.RunContext.VarStore.SetValue(gb.Output[entity.KeyOutputWorkNumber], gb.RunContext.WorkNumber)
 	gb.RunContext.VarStore.SetValue(gb.Output[entity.KeyOutputApplicationInitiator], personData)
 
+	if _, ok := gb.expectedEvents[eventEnd]; ok {
+		status, _ := gb.GetTaskHumanStatus()
+		event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, gb.Name, status, gb.GetStatus())
+		if eventErr != nil {
+			return nil, eventErr
+		}
+		gb.happenedEvents = append(gb.happenedEvents, event)
+	}
+
 	return nil, nil
 }
 
@@ -82,17 +99,19 @@ func (gb *GoStartBlock) Model() script.FunctionModel {
 		BlockType: script.TypeGo,
 		Title:     BlockGoStartTitle,
 		Inputs:    nil,
-		Outputs: []script.FunctionValueModel{
-			{
-				Name:    entity.KeyOutputWorkNumber,
-				Type:    "string",
-				Comment: "work number",
-			},
-			{
-				Name:    entity.KeyOutputApplicationInitiator,
-				Type:    "object",
-				Comment: "person object from sso",
-				Format:  "SsoPerson",
+		Outputs: &script.JSONSchema{
+			Type: "object",
+			Properties: script.JSONSchemaProperties{
+				entity.KeyOutputWorkNumber: {
+					Type:        "string",
+					Description: "work number",
+				},
+				entity.KeyOutputApplicationInitiator: {
+					Type:        "object",
+					Description: "person object from sso",
+					Format:      "SsoPerson",
+					Properties:  people.GetSsoPersonSchemaProperties(),
+				},
 			},
 		},
 		Sockets: []script.Socket{script.DefaultSocket},
@@ -100,7 +119,8 @@ func (gb *GoStartBlock) Model() script.FunctionModel {
 }
 
 //nolint:dupl,unparam //its not duplicate
-func createGoStartBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContext) (*GoStartBlock, bool, error) {
+func createGoStartBlock(ctx context.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext,
+	expectedEvents map[string]struct{}) (*GoStartBlock, bool, error) {
 	b := &GoStartBlock{
 		Name:       name,
 		Title:      ef.Title,
@@ -108,17 +128,31 @@ func createGoStartBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunConte
 		Output:     map[string]string{},
 		Sockets:    entity.ConvertSocket(ef.Sockets),
 		RunContext: runCtx,
+
+		expectedEvents: expectedEvents,
+		happenedEvents: make([]entity.NodeEvent, 0),
 	}
 
 	for _, v := range ef.Input {
 		b.Input[v.Name] = v.Global
 	}
 
-	for _, v := range ef.Output {
-		b.Output[v.Name] = v.Global
+	if ef.Output != nil {
+		for propertyName, v := range ef.Output.Properties {
+			b.Output[propertyName] = v.Global
+		}
 	}
 
 	b.RunContext.VarStore.AddStep(b.Name)
+
+	if _, ok := b.expectedEvents[eventStart]; ok {
+		status, _ := b.GetTaskHumanStatus()
+		event, err := runCtx.MakeNodeStartEvent(ctx, name, status, b.GetStatus())
+		if err != nil {
+			return nil, false, err
+		}
+		b.happenedEvents = append(b.happenedEvents, event)
+	}
 
 	return b, false, nil
 }

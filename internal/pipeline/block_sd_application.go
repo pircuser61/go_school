@@ -9,6 +9,7 @@ import (
 	"github.com/pkg/errors"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
@@ -40,6 +41,13 @@ type GoSdApplicationBlock struct {
 	State   *ApplicationData
 
 	RunContext *BlockRunContext
+
+	expectedEvents map[string]struct{}
+	happenedEvents []entity.NodeEvent
+}
+
+func (gb *GoSdApplicationBlock) GetNewEvents() []entity.NodeEvent {
+	return gb.happenedEvents
 }
 
 func (gb *GoSdApplicationBlock) Members() []Member {
@@ -61,8 +69,8 @@ func (gb *GoSdApplicationBlock) GetStatus() Status {
 	return StatusRunning
 }
 
-func (gb *GoSdApplicationBlock) GetTaskHumanStatus() TaskHumanStatus {
-	return StatusNew
+func (gb *GoSdApplicationBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment string) {
+	return StatusNew, ""
 }
 
 func (gb *GoSdApplicationBlock) Next(_ *store.VariableStore) ([]string, bool) {
@@ -78,7 +86,7 @@ func (gb *GoSdApplicationBlock) GetState() interface{} {
 }
 
 func (gb *GoSdApplicationBlock) Update(ctx context.Context) (interface{}, error) {
-	data, err := gb.RunContext.Storage.GetTaskRunContext(ctx, gb.RunContext.WorkNumber)
+	data, err := gb.RunContext.Services.Storage.GetTaskRunContext(ctx, gb.RunContext.WorkNumber)
 	if err != nil {
 		return nil, errors.Wrap(err, "can't get task run context")
 	}
@@ -92,7 +100,7 @@ func (gb *GoSdApplicationBlock) Update(ctx context.Context) (interface{}, error)
 		return nil, unmErr
 	}
 
-	personData, err := gb.RunContext.ServiceDesc.GetSsoPerson(ctx, gb.RunContext.Initiator)
+	personData, err := gb.RunContext.Services.ServiceDesc.GetSsoPerson(ctx, gb.RunContext.Initiator)
 	if err != nil {
 		return nil, err
 	}
@@ -112,6 +120,16 @@ func (gb *GoSdApplicationBlock) Update(ctx context.Context) (interface{}, error)
 	}
 
 	gb.RunContext.VarStore.ReplaceState(gb.Name, stateBytes)
+
+	if _, ok := gb.expectedEvents[eventEnd]; ok {
+		status, _ := gb.GetTaskHumanStatus()
+		event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, gb.Name, status, gb.GetStatus())
+		if eventErr != nil {
+			return nil, eventErr
+		}
+		gb.happenedEvents = append(gb.happenedEvents, event)
+	}
+
 	return nil, nil
 }
 
@@ -121,27 +139,27 @@ func (gb *GoSdApplicationBlock) Model() script.FunctionModel {
 		BlockType: script.TypeGo,
 		Title:     BlockGoSdApplicationTitle,
 		Inputs:    nil,
-		Outputs: []script.FunctionValueModel{
-			{
-				Name:    keyOutputBlueprintID,
-				Type:    "string",
-				Comment: "application pipeline id",
-			},
-			{
-				Name:    keyOutputSdApplicationDesc,
-				Type:    "string",
-				Comment: "application description",
-			},
-			{
-				Name:    keyOutputSdApplication,
-				Type:    "object",
-				Comment: "application body",
-			},
-			{
-				Name:    keyOutputSdApplicationExecutor,
-				Type:    "object",
-				Comment: "person object from sso",
-				Format:  "SsoPerson",
+		Outputs: &script.JSONSchema{
+			Type: "object",
+			Properties: script.JSONSchemaProperties{
+				keyOutputBlueprintID: {
+					Type:        "string",
+					Description: "application pipeline id",
+				},
+				keyOutputSdApplicationDesc: {
+					Type:        "string",
+					Description: "application description",
+				},
+				keyOutputSdApplication: {
+					Type:        "object",
+					Description: "application body",
+				},
+				keyOutputSdApplicationExecutor: {
+					Type:        "object",
+					Description: "person object from sso",
+					Format:      "SsoPerson",
+					Properties:  people.GetSsoPersonSchemaProperties(),
+				},
 			},
 		},
 		Params: &script.FunctionParams{
@@ -155,7 +173,8 @@ func (gb *GoSdApplicationBlock) Model() script.FunctionModel {
 }
 
 //nolint:unparam // its ok
-func createGoSdApplicationBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContext) (*GoSdApplicationBlock, bool, error) {
+func createGoSdApplicationBlock(ctx context.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext,
+	expectedEvents map[string]struct{}) (*GoSdApplicationBlock, bool, error) {
 	log := logger.CreateLogger(nil)
 	log.WithField("params", string(ef.Params)).Info("sd_application parameters")
 
@@ -168,14 +187,19 @@ func createGoSdApplicationBlock(name string, ef *entity.EriusFunc, runCtx *Block
 		Output:     map[string]string{},
 		Sockets:    entity.ConvertSocket(ef.Sockets),
 		RunContext: runCtx,
+
+		expectedEvents: expectedEvents,
+		happenedEvents: make([]entity.NodeEvent, 0),
 	}
 
 	for _, v := range ef.Input {
 		b.Input[v.Name] = v.Global
 	}
 
-	for _, v := range ef.Output {
-		b.Output[v.Name] = v.Global
+	if ef.Output != nil {
+		for propertyName, v := range ef.Output.Properties {
+			b.Output[propertyName] = v.Global
+		}
 	}
 
 	var params script.SdApplicationParams
@@ -193,6 +217,15 @@ func createGoSdApplicationBlock(name string, ef *entity.EriusFunc, runCtx *Block
 	}
 
 	b.RunContext.VarStore.AddStep(b.Name)
+
+	if _, ok := b.expectedEvents[eventStart]; ok {
+		status, _ := b.GetTaskHumanStatus()
+		event, err := runCtx.MakeNodeStartEvent(ctx, name, status, b.GetStatus())
+		if err != nil {
+			return nil, false, err
+		}
+		b.happenedEvents = append(b.happenedEvents, event)
+	}
 
 	return b, reEntry, nil
 }

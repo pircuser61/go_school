@@ -135,6 +135,11 @@ func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request
 		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
 			log.Error(txErr)
 		}
+		e := PipelineReadError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
 	}
 
 	created, err := ae.DB.GetPipelineVersion(ctx, p.VersionID, true)
@@ -155,26 +160,35 @@ func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request
 	}
 }
 
-func (ae *APIEnv) processMappings(ctx c.Context, clientID string,
-	version entity.EriusScenario, applicationBody orderedmap.OrderedMap) (orderedmap.OrderedMap, error) {
+func (ae *APIEnv) getExternalSystem(ctx c.Context, storage db.Database, clientID, versionID string) (
+	*entity.ExternalSystem, error) {
 	system, err := ae.Integrations.RpcIntCli.GetIntegrationByClientId(ctx, &integration_v1.GetIntegrationByClientIdRequest{
 		ClientId: clientID,
 	})
 	if err != nil {
 		if strings.Contains(err.Error(), "system not found") { // TODO: delete
-			return applicationBody, nil
+			return nil, nil
 		}
 
-		return orderedmap.OrderedMap{}, err
+		return nil, err
 	}
 
-	externalSystem, err := ae.DB.GetExternalSystemSettings(ctx, version.VersionID.String(), system.Integration.IntegrationId)
+	externalSystem, err := storage.GetExternalSystemSettings(ctx, versionID, system.Integration.IntegrationId)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) { // TODO: delete
-			return applicationBody, nil
+			return nil, nil
 		}
 
-		return orderedmap.OrderedMap{}, err
+		return nil, err
+	}
+
+	return &externalSystem, nil
+}
+
+func (ae *APIEnv) processMappings(externalSystem *entity.ExternalSystem,
+	version *entity.EriusScenario, applicationBody orderedmap.OrderedMap) (orderedmap.OrderedMap, error) {
+	if externalSystem == nil {
+		return applicationBody, nil
 	}
 
 	if externalSystem.InputSchema == nil && version.Settings.StartSchema == nil { // TODO: delete
@@ -218,7 +232,6 @@ func (ae *APIEnv) processMappings(ctx c.Context, clientID string,
 			externalSystem.InputMapping.Properties,
 			appBody,
 			externalSystem.InputMapping.Required,
-			0,
 		)
 		if err != nil {
 			return orderedmap.OrderedMap{}, err
@@ -388,14 +401,32 @@ func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 
 		return
 	}
+	ok, valErr := p.Pipeline.Blocks.Validate(ctx, ae.ServiceDesc)
+	if p.Status == db.StatusApproved && !ok {
+		var e Err
 
-	if p.Status == db.StatusApproved && !p.Pipeline.Blocks.Validate(ctx, ae.ServiceDesc) {
-		e := PipelineValidateError
+		switch valErr {
+		case ValidateParallelNodeReturnCycle:
+			e = ParallelNodeReturnCycle
+		case ValidateParallelNodeExitsNotConnected:
+			e = ParallelNodeExitsNotConnected
+		case ValidateOutOfParallelNodesConnection:
+			e = OutOfParallelNodesConnection
+		case ValidateParallelOutOfStartInsert:
+			e = ParallelOutOfStartInsert
+		case ValidateParallelPathIntersected:
+			e = ParallelPathIntersected
+		default:
+			e = PipelineValidateError
+		}
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 		return
 	}
-
+	groups := make([]*entity.NodeGroup, 0)
+	if p.Status == db.StatusApproved {
+		groups = p.Pipeline.Blocks.GetGroups()
+	}
 	canEdit, err := ae.DB.VersionEditable(ctx, p.VersionID)
 	if err != nil {
 		e := UnknownError
@@ -427,7 +458,7 @@ func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	err = ae.DB.UpdateDraft(ctx, &p, updated)
+	err = ae.DB.UpdateDraft(ctx, &p, updated, groups)
 	if err != nil {
 		e := PipelineWriteError
 		log.Error(e.errorMessage(err))
@@ -486,12 +517,15 @@ type execVersionDTO struct {
 	version  *entity.EriusScenario
 	withStop bool
 
+	storage db.Database
+
 	w   http.ResponseWriter
 	req *http.Request
 
-	makeNewWork bool
-	workNumber  string
-	runCtx      entity.TaskRunContext
+	makeNewWork      bool
+	allowRunAsOthers bool
+	workNumber       string
+	runCtx           entity.TaskRunContext
 }
 
 // nolint //need big cyclo,need equal string for all usages
@@ -516,21 +550,40 @@ func (ae *APIEnv) execVersion(ctx c.Context, dto *execVersionDTO) (*entity.RunRe
 		return nil, errors.Wrap(err, e.error())
 	}
 
+	// if X-As-Other was used, then we will store the name of the real user here
+	var realAuthor string
+	if dto.allowRunAsOthers {
+		realAuthor = usr.Username
+		usr, err = user.GetEffectiveUserInfoFromCtx(ctx)
+		if err != nil {
+			e := NoUserInContextError
+			log.Error(e.errorMessage(err))
+			return nil, errors.Wrap(err, e.error())
+		}
+	}
+
 	arg := &execVersionInternalDTO{
-		reqID:         reqID,
-		p:             dto.version,
-		vars:          pipelineVars,
-		syncExecution: dto.withStop,
-		userName:      usr.Username,
-		makeNewWork:   dto.makeNewWork,
-		workNumber:    dto.workNumber,
-		runCtx:        dto.runCtx,
+		storage:        dto.storage,
+		reqID:          reqID,
+		p:              dto.version,
+		vars:           pipelineVars,
+		syncExecution:  dto.withStop,
+		authorName:     usr.Username,
+		realAuthorName: realAuthor,
+		makeNewWork:    dto.makeNewWork,
+		workNumber:     dto.workNumber,
+		runCtx:         dto.runCtx,
 	}
 
 	executablePipeline, e, err := ae.execVersionInternal(ctxLocal, arg)
 	if err != nil {
 		log.Error(e.errorMessage(err))
 		return nil, errors.Wrap(err, e.error())
+	}
+
+	if executablePipeline == nil {
+		log.Error("got no pipeline")
+		return nil, errors.New("No pipeline started")
 	}
 
 	return &entity.RunResponse{
@@ -541,14 +594,16 @@ func (ae *APIEnv) execVersion(ctx c.Context, dto *execVersionDTO) (*entity.RunRe
 }
 
 type execVersionInternalDTO struct {
-	reqID         string
-	p             *entity.EriusScenario
-	vars          map[string]interface{}
-	syncExecution bool
-	userName      string
-	makeNewWork   bool
-	workNumber    string
-	runCtx        entity.TaskRunContext
+	storage        db.Database
+	reqID          string
+	p              *entity.EriusScenario
+	vars           map[string]interface{}
+	syncExecution  bool
+	authorName     string
+	realAuthorName string
+	makeNewWork    bool
+	workNumber     string
+	runCtx         entity.TaskRunContext
 }
 
 func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO) (*pipeline.ExecutablePipeline, Err, error) {
@@ -557,7 +612,7 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 
 	log := logger.GetLogger(ctx).WithField("mainFuncName", "execVersionInternal")
 
-	txStorage, transactionErr := ae.DB.StartTransaction(ctx)
+	txStorage, transactionErr := dto.storage.StartTransaction(ctx)
 	if transactionErr != nil {
 		e := PipelineRunError
 		return nil, e, transactionErr
@@ -596,6 +651,7 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 	ep.HumanTasks = ae.HumanTasks
 	ep.Integrations = ae.Integrations
 	ep.FileRegistry = ae.FileRegistry
+	ep.Scheduler = ae.Scheduler
 
 	if dto.makeNewWork {
 		ep.WorkNumber = dto.workNumber
@@ -617,7 +673,8 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 
 	// use ctx as we need userinfo
 	if err = ep.CreateTask(ctx, &pipeline.CreateTaskDTO{
-		Author:     dto.userName,
+		Author:     dto.authorName,
+		RealAuthor: dto.realAuthorName,
 		IsDebug:    false,
 		Params:     parameters,
 		WorkNumber: dto.workNumber,
@@ -639,26 +696,34 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 		TaskID:     ep.TaskID,
 		WorkNumber: ep.WorkNumber,
 		WorkTitle:  ep.Name,
-		Initiator:  dto.userName,
-		Storage:    txStorage,
+		Initiator:  dto.authorName,
 		VarStore:   variableStorage,
 
-		Sender:        ep.Sender,
-		Kafka:         ep.Kafka,
-		People:        ep.People,
-		ServiceDesc:   ep.ServiceDesc,
-		FunctionStore: ep.FunctionStore,
-		HumanTasks:    ep.HumanTasks,
-		Integrations:  ep.Integrations,
-		FileRegistry:  ep.FileRegistry,
-		FaaS:          ep.FaaS,
-		HrGate:        ae.HrGate,
+		Services: pipeline.RunContextServices{
+			HTTPClient:    ep.HTTPClient,
+			Sender:        ep.Sender,
+			Kafka:         ep.Kafka,
+			People:        ep.People,
+			ServiceDesc:   ep.ServiceDesc,
+			FunctionStore: ep.FunctionStore,
+			HumanTasks:    ep.HumanTasks,
+			Integrations:  ep.Integrations,
+			FileRegistry:  ep.FileRegistry,
+			FaaS:          ep.FaaS,
+			HrGate:        ae.HrGate,
+			Scheduler:     ae.Scheduler,
+			SLAService:    ae.SLAService,
+			Storage:       txStorage,
+		},
+		BlockRunResults: &pipeline.BlockRunResults{},
 
 		UpdateData: nil,
 		IsTest:     dto.runCtx.InitialApplication.IsTestApplication,
 		NotifName:  notifName,
 	}
 	blockData := dto.p.Pipeline.Blocks[ep.EntryPoint]
+
+	runCtx.SetTaskEvents(ctx)
 
 	err = pipeline.ProcessBlockWithEndMapping(ctx, ep.EntryPoint, &blockData, runCtx, false)
 	if err != nil {
@@ -671,10 +736,14 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 		e := PipelineRunError
 		return nil, e, err
 	}
+
 	if err = txStorage.CommitTransaction(ctx); err != nil {
 		e := PipelineRunError
 		return nil, e, err
 	}
+
+	runCtx.NotifyEvents(ctx)
+
 	return &ep, 0, nil
 }
 

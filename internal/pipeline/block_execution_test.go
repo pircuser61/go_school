@@ -93,6 +93,7 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 	const (
 		example             = "example"
 		title               = "title"
+		shortTitle          = "Нода Исполнение"
 		executorsFromSchema = "form_0.user.username;form_1.user.username"
 		executorFromSchema  = "form_0.user.username"
 	)
@@ -138,12 +139,13 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 			args: args{
 				name: example,
 				ef: &entity.EriusFunc{
-					BlockType: BlockGoExecutionID,
-					Sockets:   next,
-					Input:     nil,
-					Output:    nil,
-					Params:    nil,
-					Title:     title,
+					BlockType:  BlockGoExecutionID,
+					Sockets:    next,
+					Input:      nil,
+					Output:     nil,
+					Params:     nil,
+					Title:      title,
+					ShortTitle: shortTitle,
 				},
 				runCtx: &BlockRunContext{
 					skipNotifications: true,
@@ -157,12 +159,13 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 			args: args{
 				name: example,
 				ef: &entity.EriusFunc{
-					BlockType: BlockGoExecutionID,
-					Sockets:   next,
-					Input:     nil,
-					Output:    nil,
-					Params:    []byte("{}"),
-					Title:     title,
+					BlockType:  BlockGoExecutionID,
+					Sockets:    next,
+					Input:      nil,
+					Output:     nil,
+					Params:     []byte("{}"),
+					Title:      title,
+					ShortTitle: shortTitle,
 				},
 				runCtx: &BlockRunContext{
 					skipNotifications: true,
@@ -179,12 +182,15 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 					WorkNumber:        "J001",
 					skipNotifications: true,
 					VarStore:          varStore,
-					Storage:           myStorage,
+					Services: RunContextServices{
+						Storage: myStorage,
+					},
 				},
 				ef: &entity.EriusFunc{
-					BlockType: BlockGoExecutionID,
-					Title:     title,
-					Sockets:   next,
+					BlockType:  BlockGoExecutionID,
+					Title:      title,
+					ShortTitle: shortTitle,
+					Sockets:    next,
 					Input: []entity.EriusFunctionValue{
 						{
 							Name:   "foo",
@@ -192,11 +198,13 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 							Global: "bar",
 						},
 					},
-					Output: []entity.EriusFunctionValue{
-						{
-							Name:   "foo",
-							Type:   "string",
-							Global: "bar",
+					Output: &script.JSONSchema{
+						Type: "object",
+						Properties: map[string]script.JSONSchemaPropertiesValue{
+							"foo": {
+								Type:   "string",
+								Global: "bar",
+							},
 						},
 					},
 					Params: func() []byte {
@@ -219,9 +227,12 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 				Output: map[string]string{
 					"foo": "bar",
 				},
-				Sockets: entity.ConvertSocket(next),
+				happenedEvents: make([]entity.NodeEvent, 0),
+				Sockets:        entity.ConvertSocket(next),
 				RunContext: &BlockRunContext{
-					Storage:           myStorage,
+					Services: RunContextServices{
+						Storage: myStorage,
+					},
 					WorkNumber:        "J001",
 					skipNotifications: true,
 					VarStore:          varStore,
@@ -232,6 +243,7 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 					Executors:          map[string]struct{}{"test": {}, "test2": {}},
 					SLA:                8,
 					FormsAccessibility: make([]script.FormAccessibility, 1),
+					InitialExecutors:   map[string]struct{}{"test": {}, "test2": {}},
 				},
 			},
 		},
@@ -243,12 +255,15 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 					WorkNumber:        "J001",
 					skipNotifications: true,
 					VarStore:          varStore,
-					Storage:           myStorage,
+					Services: RunContextServices{
+						Storage: myStorage,
+					},
 				},
 				ef: &entity.EriusFunc{
-					BlockType: BlockGoExecutionID,
-					Title:     title,
-					Sockets:   next,
+					BlockType:  BlockGoExecutionID,
+					Title:      title,
+					ShortTitle: shortTitle,
+					Sockets:    next,
 					Input: []entity.EriusFunctionValue{
 						{
 							Name:   "foo",
@@ -256,11 +271,13 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 							Global: "bar",
 						},
 					},
-					Output: []entity.EriusFunctionValue{
-						{
-							Name:   "foo",
-							Type:   "string",
-							Global: "bar",
+					Output: &script.JSONSchema{
+						Type: "object",
+						Properties: map[string]script.JSONSchemaPropertiesValue{
+							"foo": {
+								Type:   "string",
+								Global: "bar",
+							},
 						},
 					},
 					Params: func() []byte {
@@ -283,9 +300,12 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 				Output: map[string]string{
 					"foo": "bar",
 				},
-				Sockets: entity.ConvertSocket(next),
+				happenedEvents: make([]entity.NodeEvent, 0),
+				Sockets:        entity.ConvertSocket(next),
 				RunContext: &BlockRunContext{
-					Storage:           myStorage,
+					Services: RunContextServices{
+						Storage: myStorage,
+					},
 					WorkNumber:        "J001",
 					skipNotifications: true,
 					VarStore:          varStore,
@@ -296,7 +316,8 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 					Executors:          map[string]struct{}{"test": {}},
 					SLA:                8,
 					FormsAccessibility: make([]script.FormAccessibility, 1),
-					IsTakenInWork:      true,
+					IsTakenInWork:      false,
+					InitialExecutors:   map[string]struct{}{"test": {}},
 				},
 			},
 		},
@@ -323,9 +344,10 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 					}(),
 				},
 				ef: &entity.EriusFunc{
-					BlockType: BlockGoExecutionID,
-					Title:     title,
-					Sockets:   next,
+					BlockType:  BlockGoExecutionID,
+					Title:      title,
+					ShortTitle: shortTitle,
+					Sockets:    next,
 					Input: []entity.EriusFunctionValue{
 						{
 							Name:   "foo",
@@ -333,11 +355,13 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 							Global: "bar",
 						},
 					},
-					Output: []entity.EriusFunctionValue{
-						{
-							Name:   "foo",
-							Type:   "string",
-							Global: "bar",
+					Output: &script.JSONSchema{
+						Type: "object",
+						Properties: map[string]script.JSONSchemaPropertiesValue{
+							"foo": {
+								Type:   "string",
+								Global: "bar",
+							},
 						},
 					},
 					Params: func() []byte {
@@ -360,7 +384,8 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 				Output: map[string]string{
 					"foo": "bar",
 				},
-				Sockets: entity.ConvertSocket(next),
+				happenedEvents: make([]entity.NodeEvent, 0),
+				Sockets:        entity.ConvertSocket(next),
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
 					VarStore: func() *store.VariableStore {
@@ -387,8 +412,11 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 					},
 					SLA:                 1,
 					FormsAccessibility:  make([]script.FormAccessibility, 1),
-					DecisionAttachments: make([]string, 0),
-					IsTakenInWork:       true,
+					DecisionAttachments: make([]entity.Attachment, 0),
+					IsTakenInWork:       false,
+					InitialExecutors: map[string]struct{}{
+						"tester": {},
+					},
 				},
 			},
 		},
@@ -397,7 +425,7 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			ctx := c.Background()
-			got, _, _ := createGoExecutionBlock(ctx, test.args.name, test.args.ef, test.args.runCtx)
+			got, _, _ := createGoExecutionBlock(ctx, test.args.name, test.args.ef, test.args.runCtx, nil)
 			assert.Equal(t, test.want, got)
 		})
 	}
