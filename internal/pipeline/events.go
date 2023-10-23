@@ -146,7 +146,7 @@ func (runCtx *BlockRunContext) SetTaskEvents(ctx c.Context) {
 	defer func() {
 		if err != nil {
 			log := logger.GetLogger(ctx).WithField("funcName", "setTaskEvents")
-			log.WithField("workNumber", runCtx.WorkNumber).Error(err)
+			log.WithField("workNumber", runCtx.WorkNumber).Warning(err)
 		}
 
 		if runCtx.TaskSubscriptionData.ExpectedEvents == nil {

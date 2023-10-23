@@ -19,10 +19,13 @@ func Test_createGoNotificationBlock(t *testing.T) {
 		shortTitle      = "Нода Email"
 		loginFromSlice0 = "pilzner1"
 		loginFromSlice1 = "users1"
+		loginFromSlice2 = "userss1"
+		loginFromSlice3 = "usersss1"
+		loginFromSlice4 = "userssss1"
 
-		emails          = "user@mts.ru"
+		emails          = "test@mts.ru"
 		people          = "user"
-		usersFromSchema = "a.var1;b.var2;var3"
+		usersFromSchema = "sd_app_0.application_body.usersFromSchema;form_0.usersFromSchema;form_1.usersFromSchema"
 		text            = "test"
 		subject         = "users"
 	)
@@ -38,16 +41,16 @@ func Test_createGoNotificationBlock(t *testing.T) {
 			"username": loginFromSlice1,
 		},
 		map[string]interface{}{
-			"userName": "noname",
+			"username": loginFromSlice2,
 		},
 	})
 
 	varStore.SetValue("form_0.usersFromSchema", map[string]interface{}{
-		"username": "test",
+		"username": loginFromSlice3,
 		"fullname": "test test test",
 	})
 	varStore.SetValue("form_1.usersFromSchema", map[string]interface{}{
-		"username": "test2",
+		"username": loginFromSlice4,
 		"fullname": "test2 test test",
 	})
 
@@ -90,12 +93,14 @@ func Test_createGoNotificationBlock(t *testing.T) {
 					BlockType:  BlockGoNotificationID,
 					Title:      title,
 					ShortTitle: shortTitle,
+					Input:      nil,
+					Output:     nil,
 					Params:     nil,
 					Sockets:    next,
 				},
 			},
-			wantErr: true,
 			want:    nil,
+			wantErr: true,
 		},
 		{
 			name: "invalid notification parameters",
@@ -112,12 +117,14 @@ func Test_createGoNotificationBlock(t *testing.T) {
 					BlockType:  BlockGoNotificationID,
 					Title:      title,
 					ShortTitle: shortTitle,
+					Input:      nil,
+					Output:     nil,
 					Params:     []byte("{}"),
 					Sockets:    next,
 				},
 			},
-			wantErr: true,
 			want:    nil,
+			wantErr: true,
 		},
 		{
 			name: "Empty fields in params",
@@ -134,6 +141,8 @@ func Test_createGoNotificationBlock(t *testing.T) {
 					BlockType:  BlockGoNotificationTitle,
 					Title:      title,
 					ShortTitle: shortTitle,
+					Input:      nil,
+					Output:     nil,
 					Params: func() []byte {
 						r, _ := json.Marshal(&script.NotificationParams{
 							Emails:          []string{},
@@ -147,8 +156,8 @@ func Test_createGoNotificationBlock(t *testing.T) {
 					Sockets: next,
 				},
 			},
-			wantErr: true,
 			want:    nil,
+			wantErr: true,
 		},
 		{
 			name: "Empty string fields in params",
@@ -165,6 +174,8 @@ func Test_createGoNotificationBlock(t *testing.T) {
 					BlockType:  BlockGoNotificationTitle,
 					Title:      title,
 					ShortTitle: shortTitle,
+					Input:      nil,
+					Output:     nil,
 					Params: func() []byte {
 						r, _ := json.Marshal(&script.NotificationParams{
 							Emails:          []string{emails},
@@ -178,8 +189,8 @@ func Test_createGoNotificationBlock(t *testing.T) {
 					Sockets: next,
 				},
 			},
-			wantErr: true,
 			want:    nil,
+			wantErr: true,
 		},
 		{
 			name: "Empty array fields in params",
@@ -196,6 +207,8 @@ func Test_createGoNotificationBlock(t *testing.T) {
 					BlockType:  BlockGoNotificationTitle,
 					Title:      title,
 					ShortTitle: shortTitle,
+					Input:      nil,
+					Output:     nil,
 					Params: func() []byte {
 						r, _ := json.Marshal(&script.NotificationParams{
 							Emails:          nil,
@@ -209,8 +222,8 @@ func Test_createGoNotificationBlock(t *testing.T) {
 					Sockets: next,
 				},
 			},
-			wantErr: true,
 			want:    nil,
+			wantErr: true,
 		},
 		{
 			name: "acceptance test",
@@ -218,15 +231,17 @@ func Test_createGoNotificationBlock(t *testing.T) {
 				name: example,
 				runCtx: &BlockRunContext{
 					skipNotifications: true,
-					VarStore:          store.NewStore(),
+					VarStore:          varStore,
 					Services: RunContextServices{
 						Storage: myStorage,
 					},
 				},
 				ef: &entity.EriusFunc{
-					BlockType:  BlockGoNotificationTitle,
+					BlockType:  BlockGoNotificationID,
 					Title:      title,
 					ShortTitle: shortTitle,
+					Input:      nil,
+					Output:     nil,
 					Params: func() []byte {
 						r, _ := json.Marshal(&script.NotificationParams{
 							Emails:          []string{emails},
@@ -240,7 +255,27 @@ func Test_createGoNotificationBlock(t *testing.T) {
 					Sockets: next,
 				},
 			},
-			want:    nil,
+			want: &GoNotificationBlock{
+				Name:           example,
+				Title:          title,
+				Input:          map[string]string{},
+				Output:         map[string]string{},
+				happenedEvents: make([]entity.NodeEvent, 0),
+				State: &NotificationData{
+					People:  []string{people},
+					Emails:  []string{emails},
+					Text:    text,
+					Subject: subject,
+					UsersFromSchema: map[string]struct{}{
+						loginFromSlice0: {},
+						loginFromSlice1: {},
+						loginFromSlice2: {},
+						loginFromSlice3: {},
+						loginFromSlice4: {},
+					},
+				},
+				Sockets: entity.ConvertSocket(next),
+			},
 			wantErr: false,
 		},
 	}

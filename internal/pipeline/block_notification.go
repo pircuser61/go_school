@@ -144,6 +144,16 @@ func (gb *GoNotificationBlock) Update(ctx context.Context) (interface{}, error) 
 	}
 	emails = append(emails, gb.State.Emails...)
 
+	for person, _ := range gb.State.UsersFromSchema {
+		emailAddr := ""
+		emailAddr, err := gb.RunContext.Services.People.GetUserEmail(ctx, person)
+		if err != nil {
+			log.Println("can't get email of user", person)
+			continue
+		}
+		emails = append(emails, emailAddr)
+	}
+
 	if len(emails) == 0 {
 		return nil, errors.New("can't find any working emails from logins")
 	}
@@ -245,7 +255,7 @@ func createGoNotificationBlock(ctx context.Context, name string, ef *entity.Eriu
 			},
 		)
 		if resolveErr != nil {
-			return nil, reEntry, errors.Wrap(err, "can not get users from vars")
+			return nil, reEntry, errors.Wrap(resolveErr, "can not get users from vars")
 		}
 
 		for userLogin := range resolvedEntities {

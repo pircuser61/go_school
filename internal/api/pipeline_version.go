@@ -826,7 +826,7 @@ func (mc azpClaims) Valid() error {
 	return &PipelinerError{GetClientIDError}
 }
 
-func (ae *APIEnv) getClietIDFromToken(token string) (string, error) {
+func (ae *APIEnv) getClientIDFromToken(token string) (string, error) {
 	claims := &azpClaims{}
 	parsed, _ := jwt.ParseWithClaims(strings.TrimPrefix(token, "Bearer "), claims, func(token *jwt.Token) (interface{}, error) {
 		return []byte(""), nil

@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-func TestAPIEnv_getClietIDFromToken(t *testing.T) {
+func TestAPIEnv_getClientIDFromToken(t *testing.T) {
 	tests := []struct {
 		name    string
 		token   string
@@ -34,13 +34,13 @@ func TestAPIEnv_getClietIDFromToken(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ae := &APIEnv{}
-			got, err := ae.getClietIDFromToken(tt.token)
+			got, err := ae.getClientIDFromToken(tt.token)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("getClietIDFromToken() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("getClientIDFromToken() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if got != tt.want {
-				t.Errorf("getClietIDFromToken() got = %v, want %v", got, tt.want)
+				t.Errorf("getClientIDFromToken() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
