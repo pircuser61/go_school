@@ -151,7 +151,7 @@ func TestNotificationParams_Validate(t *testing.T) {
 			fields: fields{
 				Subject:         "A",
 				Text:            "B",
-				UsersFromSchema: "C",
+				UsersFromSchema: "",
 			},
 			wantErr: true,
 		},
@@ -160,7 +160,7 @@ func TestNotificationParams_Validate(t *testing.T) {
 			fields: fields{
 				People:          nil,
 				Emails:          nil,
-				UsersFromSchema: "A",
+				UsersFromSchema: "",
 				Subject:         "B",
 				Text:            "C",
 			},
