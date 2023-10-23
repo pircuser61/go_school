@@ -4,6 +4,7 @@ import (
 	c "context"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -186,8 +187,7 @@ func (gb *GoFormBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 			return getVersionErr
 		}
 
-		processSLASettings, getVersionErr := gb.RunContext.Services.Storage.GetSlaVersionSettings(ctx,
-			task.VersionID.String())
+		processSLASettings, getVersionErr := gb.RunContext.Services.Storage.GetSlaVersionSettings(ctx, task.VersionID.String())
 		if getVersionErr != nil {
 			return getVersionErr
 		}
@@ -203,6 +203,8 @@ type setFormExecutorsByParamsDTO struct {
 }
 
 func (gb *GoFormBlock) setExecutorsByParams(ctx c.Context, dto *setFormExecutorsByParamsDTO) error {
+	const variablesSep = ";"
+
 	switch dto.FormExecutorType {
 	case script.FormExecutorTypeInitiator:
 		gb.State.Executors = map[string]struct{}{
@@ -215,18 +217,27 @@ func (gb *GoFormBlock) setExecutorsByParams(ctx c.Context, dto *setFormExecutors
 			return grabStorageErr
 		}
 
-		resolvedEntities, resolveErr := getUsersFromVars(
-			variableStorage,
-			map[string]struct{}{
-				dto.Value: {},
-			},
-		)
-		if resolveErr != nil {
-			return resolveErr
+		executorsFromSchema := make(map[string]struct{})
+		executorVars := strings.Split(dto.Value, variablesSep)
+		for i := range executorVars {
+			resolvedEntities, resolveErr := getUsersFromVars(
+				variableStorage,
+				map[string]struct{}{
+					executorVars[i]: {},
+				},
+			)
+			if resolveErr != nil {
+				return resolveErr
+			}
+			for executorLogin := range resolvedEntities {
+				executorsFromSchema[executorLogin] = struct{}{}
+			}
 		}
 
-		gb.State.Executors = resolvedEntities
-		gb.State.IsTakenInWork = true
+		gb.State.Executors = executorsFromSchema
+		if len(gb.State.Executors) == 1 {
+			gb.State.IsTakenInWork = true
+		}
 	case script.FormExecutorTypeAutoFillUser:
 		if err := gb.handleAutoFillForm(); err != nil {
 			return err

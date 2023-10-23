@@ -282,7 +282,6 @@ func (gb *GoFormBlock) handleNotifications(ctx c.Context) error {
 	}
 
 	executors := getSliceFromMapOfStrings(gb.State.Executors)
-	isGroupExecutors := gb.State.FormExecutorType == script.FormExecutorTypeGroup
 	var emailAttachment []e.Attachment
 
 	var emails = make(map[string]mail.Template, 0)
@@ -293,7 +292,7 @@ func (gb *GoFormBlock) handleNotifications(ctx c.Context) error {
 			continue
 		}
 
-		if isGroupExecutors {
+		if !gb.State.IsTakenInWork {
 			slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
 				TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.CurrBlockStartTime,
 					FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100)}},
