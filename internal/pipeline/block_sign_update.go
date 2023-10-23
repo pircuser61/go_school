@@ -37,11 +37,12 @@ func (gb *GoSignBlock) handleSignature(ctx c.Context, login string) error {
 	}
 
 	if gb.State.SignatureType == script.SignatureTypeUKEP {
-		if !gb.isValidLogin(login) {
-			return NewUserIsNotPartOfProcessErr()
-		}
 		if updateParams.Decision != SignDecisionRejected && !gb.State.IsTakenInWork {
 			return errors.New("is not taken in work")
+		}
+
+		if !gb.isValidLogin(login) {
+			return NewUserIsNotPartOfProcessErr()
 		}
 	}
 
@@ -190,22 +191,23 @@ func (gb *GoSignBlock) handleChangeWorkStatus(ctx c.Context, login string) error
 		return NewUserIsNotPartOfProcessErr()
 	}
 
+	// delete those that may exist
+	err = gb.RunContext.Services.Scheduler.DeleteTask(ctx,
+		&scheduler.DeleteTask{
+			WorkID:   gb.RunContext.TaskID.String(),
+			StepName: gb.Name,
+		})
+	if err != nil {
+		log.WithError(err).Error("cannot delete signChangeWorkStatus timer")
+		return err
+	}
+
 	if !gb.State.IsTakenInWork && status.Status == "start" {
 		gb.State.IsTakenInWork = true
 		gb.State.WorkerLogin = login
 	} else {
 		gb.State.IsTakenInWork = false
 		gb.State.WorkerLogin = ""
-
-		err = gb.RunContext.Services.Scheduler.DeleteTask(ctx,
-			&scheduler.DeleteTask{
-				WorkID:   gb.RunContext.TaskID.String(),
-				StepName: gb.Name,
-			})
-		if err != nil {
-			log.WithError(err).Error("cannot delete signChangeWorkStatus timer")
-			return err
-		}
 
 		return nil
 	}
