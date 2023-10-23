@@ -1521,14 +1521,14 @@ type NotificationParams struct {
 	// People to get notifications
 	People []string `json:"people"`
 
-	// UsersFromSchema to get users from schema
-	UsersFromSchema string `json:"usersFromSchema"`
-
 	// Notification subject
 	Subject string `json:"subject"`
 
 	// Notification body
 	Text string `json:"text"`
+
+	// UsersFromSchema to get notifications
+	UsersFromSchema []string `json:"usersFromSchema"`
 }
 
 // Basic number operand, can provide working compare types for this type
