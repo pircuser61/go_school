@@ -3,6 +3,7 @@ package pipeline
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -226,6 +227,53 @@ func Test_createGoNotificationBlock(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name: "Empty UsersFromSchema fields in params",
+			args: args{
+				name: example,
+				runCtx: &BlockRunContext{
+					skipNotifications: true,
+					VarStore:          store.NewStore(),
+					Services: RunContextServices{
+						Storage: myStorage,
+					},
+				},
+				ef: &entity.EriusFunc{
+					BlockType:  BlockGoNotificationTitle,
+					Title:      title,
+					ShortTitle: shortTitle,
+					Input:      nil,
+					Output:     nil,
+					Params: func() []byte {
+						r, _ := json.Marshal(&script.NotificationParams{
+							Emails:          []string{},
+							People:          []string{loginFromSlice0},
+							UsersFromSchema: "",
+							Text:            text,
+							Subject:         subject,
+						})
+						return r
+					}(),
+					Sockets: next,
+				},
+			},
+			want: &GoNotificationBlock{
+				Name:           example,
+				Title:          title,
+				Input:          map[string]string{},
+				Output:         map[string]string{},
+				happenedEvents: make([]entity.NodeEvent, 0),
+				State: &NotificationData{
+					People:          []string{loginFromSlice0},
+					Emails:          []string{},
+					Text:            text,
+					Subject:         subject,
+					UsersFromSchema: map[string]struct{}{},
+				},
+				Sockets: entity.ConvertSocket(next),
+			},
+			wantErr: false,
+		},
+		{
 			name: "acceptance test",
 			args: args{
 				name: example,
@@ -288,6 +336,7 @@ func Test_createGoNotificationBlock(t *testing.T) {
 				got.RunContext = nil
 			}
 
+			fmt.Println(err)
 			assert.Equalf(t, tt.wantErr, err != nil, "createGoNotificationBlock(%v, %v, %v)", tt.args.name, tt.args.ef, nil)
 			assert.Equalf(t, tt.want, got, "createGoNotificationBlock(%v, %v, %v)", tt.args.name, tt.args.ef, nil)
 		})
