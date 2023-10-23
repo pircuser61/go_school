@@ -191,13 +191,26 @@ func (gb *GoSignBlock) handleChangeWorkStatus(ctx c.Context, login string) error
 		return NewUserIsNotPartOfProcessErr()
 	}
 
-	if !gb.State.IsTakenInWork && status.Status == "start" {
+	switch {
+	case !gb.State.IsTakenInWork && status.Status == "start":
 		gb.State.IsTakenInWork = true
 		gb.State.WorkerLogin = login
-	} else {
+
+		// delete those that may exist
+		err = gb.RunContext.Services.Scheduler.DeleteTask(ctx,
+			&scheduler.DeleteTask{
+				WorkID:   gb.RunContext.TaskID.String(),
+				StepName: gb.Name,
+			})
+		if err != nil {
+			log.WithError(err).Error("cannot delete signChangeWorkStatus timer")
+			return err
+		}
+	case gb.State.IsTakenInWork && status.Status == "end":
 		gb.State.IsTakenInWork = false
 		gb.State.WorkerLogin = ""
 
+		// delete those that may exist
 		err = gb.RunContext.Services.Scheduler.DeleteTask(ctx,
 			&scheduler.DeleteTask{
 				WorkID:   gb.RunContext.TaskID.String(),
@@ -208,6 +221,8 @@ func (gb *GoSignBlock) handleChangeWorkStatus(ctx c.Context, login string) error
 			return err
 		}
 
+		return nil
+	default:
 		return nil
 	}
 
