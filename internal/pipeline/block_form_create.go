@@ -187,8 +187,7 @@ func (gb *GoFormBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 			return getVersionErr
 		}
 
-		processSLASettings, getVersionErr := gb.RunContext.Services.Storage.GetSlaVersionSettings(ctx,
-			task.VersionID.String())
+		processSLASettings, getVersionErr := gb.RunContext.Services.Storage.GetSlaVersionSettings(ctx, task.VersionID.String())
 		if getVersionErr != nil {
 			return getVersionErr
 		}
