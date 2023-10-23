@@ -37,11 +37,12 @@ func (gb *GoSignBlock) handleSignature(ctx c.Context, login string) error {
 	}
 
 	if gb.State.SignatureType == script.SignatureTypeUKEP {
-		if !gb.isValidLogin(login) {
-			return NewUserIsNotPartOfProcessErr()
-		}
 		if updateParams.Decision != SignDecisionRejected && !gb.State.IsTakenInWork {
 			return errors.New("is not taken in work")
+		}
+
+		if !gb.isValidLogin(login) {
+			return NewUserIsNotPartOfProcessErr()
 		}
 	}
 
