@@ -452,6 +452,11 @@ func (gb *GoApproverBlock) toEditApplication(ctx c.Context, updateParams approve
 		if err := gb.notifyNeedRework(ctx); err != nil {
 			return err
 		}
+
+		err := gb.RunContext.Services.Storage.FinishTaskBlocks(ctx, gb.RunContext.TaskID, []string{gb.Name}, false)
+		if err != nil {
+			return err
+		}
 	} else {
 		if editErr := gb.State.setEditToNextBlock(gb.RunContext.UpdateData.ByLogin, delegateFor,
 			updateParams); editErr != nil {

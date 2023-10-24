@@ -63,6 +63,7 @@ type TaskStorager interface {
 	CheckIsArchived(ctx c.Context, taskID uuid.UUID) (bool, error)
 	CheckIsTest(ctx c.Context, taskID uuid.UUID) (bool, error)
 	StopTaskBlocks(ctx c.Context, taskID uuid.UUID) error
+	FinishTaskBlocks(ctx c.Context, workID uuid.UUID, ignoreSteps []string, updateParent bool) error
 	ParallelIsFinished(ctx c.Context, workNumber, blockName string) (bool, error)
 
 	UpdateTaskRate(ctx c.Context, req *UpdateTaskRate) error
