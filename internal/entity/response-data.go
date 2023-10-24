@@ -857,7 +857,7 @@ func (bt *BlocksType) GetGroups() (NodeGroups []*NodeGroup, err error) {
 		delete(blocks, nodeKey)
 		visitedNodes[nodeKey] = &node
 		if node.TypeID == BlockParallelStartName {
-			NodeGroupParallel, exitParallelIdx, fillErr := bt.fillParallGroups(nodeKey, prevNodeMap[nodeKey], &node)
+			NodeGroupParallel, exitParallelIdx, fillErr := bt.fillParallGroups(nodeKey, prevNodeMap[nodeKey], 0, &node)
 			if fillErr != nil {
 				return nil, fillErr
 			}
@@ -905,8 +905,13 @@ func (bt *BlocksType) GetGroups() (NodeGroups []*NodeGroup, err error) {
 }
 
 // nolint
-func (bt *BlocksType) fillParallGroups(nodeKey, prevNode string, block *EriusFunc) (
+func (bt *BlocksType) fillParallGroups(nodeKey, prevNode string, currIteration int, block *EriusFunc) (
 	NodeGroupParallel *NodeGroup, exitParallelIdx string, err error) {
+	currIteration += 1
+	if currIteration > 5 {
+		return nil, "", errors.New("took too long")
+	}
+
 	blocks := map[string]*EriusFunc{
 		nodeKey: block,
 	}
@@ -924,12 +929,7 @@ func (bt *BlocksType) fillParallGroups(nodeKey, prevNode string, block *EriusFun
 		StartNode: nodeKey,
 	}
 
-	iteration := 0
 	for {
-		iteration += 1
-		if iteration > 10 {
-			return nil, "", errors.New("took too long")
-		}
 		startNodeKeys := maps.Keys(blocks)
 		if len(startNodeKeys) == 0 {
 			break
@@ -956,7 +956,7 @@ func (bt *BlocksType) fillParallGroups(nodeKey, prevNode string, block *EriusFun
 		case BlockParallelStartName:
 			if parallNodeKey != nodeKey {
 				newNodeGroupParallel, newExitParallelIdx, fillErr := bt.fillParallGroups(parallNodeKey,
-					prevNodeMap[parallNodeKey], parallNode)
+					prevNodeMap[parallNodeKey], currIteration, parallNode)
 				if fillErr != nil {
 					return nil, "", fillErr
 				}
