@@ -74,6 +74,7 @@ type step struct {
 type action struct {
 	Id                 string                 `json:"id"`
 	ButtonType         string                 `json:"button_type"`
+	NodeType           string                 `json:"node_type"`
 	Title              string                 `json:"title"`
 	CommentEnabled     bool                   `json:"comment_enabled"`
 	AttachmentsEnabled bool                   `json:"attachments_enabled"`
@@ -107,6 +108,7 @@ func (taskResp) toResponse(in *entity.EriusTask, usrDegSteps map[string]bool, sN
 		actions = append(actions, action{
 			Id:                 a.Id,
 			ButtonType:         a.ButtonType,
+			NodeType:           a.NodeType,
 			Title:              a.Title,
 			CommentEnabled:     a.CommentEnabled,
 			AttachmentsEnabled: a.AttachmentsEnabled,

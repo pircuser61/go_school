@@ -1041,6 +1041,7 @@ func (db *PGCon) computeActions(ctx c.Context, currentUserDelegators []string, a
 		CancelAppId       = "cancel_app"
 		CancelAppPriority = "other"
 		CancelAppTitle    = "Отозвать"
+		CancelAppNodeType = "common"
 	)
 
 	var computedActions = make([]entity.TaskAction, 0)
@@ -1069,6 +1070,7 @@ func (db *PGCon) computeActions(ctx c.Context, currentUserDelegators []string, a
 				var computedAction = entity.TaskAction{
 					Id:                 id,
 					ButtonType:         priority,
+					NodeType:           actionWithPreferences.NodeType,
 					Title:              actionWithPreferences.Title,
 					CommentEnabled:     actionWithPreferences.CommentEnabled,
 					AttachmentsEnabled: actionWithPreferences.AttachmentsEnabled,
@@ -1108,6 +1110,7 @@ func (db *PGCon) computeActions(ctx c.Context, currentUserDelegators []string, a
 		var cancelAppAction = entity.TaskAction{
 			Id:                 CancelAppId,
 			ButtonType:         CancelAppPriority,
+			NodeType:           CancelAppNodeType,
 			Title:              CancelAppTitle,
 			CommentEnabled:     true,
 			AttachmentsEnabled: false,
@@ -1357,7 +1360,8 @@ func (db *PGCon) getActionsMap(ctx c.Context) (actions map[string]entity.TaskAct
 			title,
 			is_public,
 			comment_enabled,
-			attachments_enabled
+			attachments_enabled,
+			node_type
 		FROM dict_actions`
 
 	result := make(map[string]entity.TaskAction, 0)
@@ -1379,6 +1383,7 @@ func (db *PGCon) getActionsMap(ctx c.Context) (actions map[string]entity.TaskAct
 			&ta.IsPublic,
 			&ta.CommentEnabled,
 			&ta.AttachmentsEnabled,
+			&ta.NodeType,
 		); err != nil {
 			return nil, err
 		}
