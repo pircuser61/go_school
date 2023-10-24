@@ -1531,7 +1531,7 @@ type NotificationParams struct {
 	Text string `json:"text"`
 
 	// UsersFromSchema to get notifications
-	UsersFromSchema []string `json:"usersFromSchema"`
+	UsersFromSchema string `json:"usersFromSchema"`
 }
 
 // Basic number operand, can provide working compare types for this type
