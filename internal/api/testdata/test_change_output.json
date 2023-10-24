@@ -1,0 +1,453 @@
+{
+  "id": "86836bf8-00fb-4325-8f08-63e758e489f4",
+  "name": "XYZ",
+  "tags": [],
+  "author": "",
+  "status": 1,
+  "comment": "",
+  "pipeline": {
+    "blocks": {
+      "end_0": {
+        "x": 1216,
+        "y": 308,
+        "title": "Конец",
+        "type_id": "end",
+        "block_type": "go"
+      },
+      "form_0": {
+        "x": 328,
+        "y": -51,
+        "next": {
+          "default": [
+            "approver_0"
+          ]
+        },
+        "title": "Форма",
+        "output": {
+          "type": "object",
+          "properties": {
+            "executor": {
+              "type": "object",
+              "format": "SsoPerson",
+              "global": "form_0.executor",
+              "properties": {
+                "email": {
+                  "type": "string",
+                  "title": "email"
+                },
+                "phone": {
+                  "type": "string",
+                  "title": "Телефон"
+                },
+                "mobile": {
+                  "type": "string",
+                  "title": "Номер мобильного телефона"
+                },
+                "tabnum": {
+                  "type": "string",
+                  "title": "Табельный номер"
+                },
+                "fullname": {
+                  "type": "string",
+                  "title": "Полное имя"
+                },
+                "position": {
+                  "type": "string",
+                  "title": "Должность"
+                },
+                "username": {
+                  "type": "string",
+                  "title": "Логин"
+                },
+                "fullOrgUnit": {
+                  "type": "string",
+                  "title": "Подразделение"
+                }
+              },
+              "description": "person object from sso"
+            },
+            "application_body": {
+              "type": "object",
+              "global": "form_0.application_body",
+              "properties": {
+                "field-uuid-1": {
+                  "type": "string",
+                  "title": "Название поля"
+                }
+              },
+              "description": "form body"
+            }
+          }
+        },
+        "params": {
+          "sla": 0,
+          "mapping": {},
+          "executor": "",
+          "check_sla": false,
+          "schema_id": "d4351e35-9295-4928-a699-46cdbbf0e325",
+          "work_type": null,
+          "is_editable": false,
+          "form_group_id": "",
+          "form_executor_type": "initiator",
+          "form_group_id_path": "",
+          "forms_accessibility": [],
+          "hide_executor_from_initiator": false
+        },
+        "sockets": [
+          {
+            "id": "default",
+            "title": "Выход по умолчанию",
+            "actionType": "",
+            "nextBlockIds": [
+              "approver_0"
+            ]
+          }
+        ],
+        "type_id": "form",
+        "block_type": "go",
+        "short_title": "f1"
+      },
+      "sign_0": {
+        "x": 718,
+        "y": 317,
+        "next": {
+          "error": [
+            "end_0"
+          ],
+          "signed": [
+            "end_0"
+          ],
+          "rejected": [
+            "end_0"
+          ]
+        },
+        "title": "Подписание",
+        "output": {
+          "type": "object",
+          "properties": {
+            "signer": {
+              "type": "string",
+              "global": "sign_0.signer",
+              "description": "signer login"
+            },
+            "comment": {
+              "type": "string",
+              "global": "sign_0.comment",
+              "description": "sign comment"
+            },
+            "decision": {
+              "type": "string",
+              "global": "sign_0.decision",
+              "description": "sign result"
+            },
+            "attachments": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "file_id": {
+                    "type": "string",
+                    "description": "file id in file Registry"
+                  },
+                  "external_link": {
+                    "type": "string",
+                    "description": "link to file in another system"
+                  }
+                }
+              },
+              "global": "sign_0.attachments",
+              "description": "signed files"
+            }
+          }
+        },
+        "params": {
+          "signer": "snkosya1",
+          "checkSLA": false,
+          "signerType": "user",
+          "signingRule": "AnyOf",
+          "signatureType": "pep",
+          "signerGroupId": "",
+          "signerGroupName": "",
+          "signerGroupIdPath": "",
+          "formsAccessibility": [
+            {
+              "name": "Форма",
+              "node_id": "form_0",
+              "accessType": "Read",
+              "description": "f1"
+            }
+          ]
+        },
+        "sockets": [
+          {
+            "id": "signed",
+            "title": "Подписано",
+            "actionType": "",
+            "nextBlockIds": [
+              "end_0"
+            ]
+          },
+          {
+            "id": "rejected",
+            "title": "Отклонено",
+            "actionType": "",
+            "nextBlockIds": [
+              "end_0"
+            ]
+          },
+          {
+            "id": "error",
+            "title": "Ошибка",
+            "actionType": "",
+            "nextBlockIds": [
+              "end_0"
+            ]
+          }
+        ],
+        "type_id": "sign",
+        "block_type": "go",
+        "short_title": "s1"
+      },
+      "start_0": {
+        "next": {
+          "default": [
+            "form_0"
+          ]
+        },
+        "title": "Начало",
+        "output": {
+          "type": "object",
+          "properties": {
+            "initiator": {
+              "type": "object",
+              "format": "SsoPerson",
+              "global": "start_0.initiator",
+              "properties": {
+                "email": {
+                  "type": "string",
+                  "title": "email"
+                },
+                "phone": {
+                  "type": "string",
+                  "title": "Телефон"
+                },
+                "mobile": {
+                  "type": "string",
+                  "title": "Номер мобильного телефона"
+                },
+                "tabnum": {
+                  "type": "string",
+                  "title": "Табельный номер"
+                },
+                "fullname": {
+                  "type": "string",
+                  "title": "Полное имя"
+                },
+                "position": {
+                  "type": "string",
+                  "title": "Должность"
+                },
+                "username": {
+                  "type": "string",
+                  "title": "Логин"
+                },
+                "fullOrgUnit": {
+                  "type": "string",
+                  "title": "Подразделение"
+                }
+              }
+            },
+            "workNumber": {
+              "type": "string",
+              "global": "start_0.workNumber"
+            }
+          }
+        },
+        "sockets": [
+          {
+            "id": "default",
+            "title": "Выход по умолчанию",
+            "actionType": "",
+            "nextBlockIds": [
+              "form_0"
+            ]
+          }
+        ],
+        "type_id": "start",
+        "block_type": "go"
+      },
+      "approver_0": {
+        "x": 379,
+        "y": 308,
+        "next": {
+          "reject": [
+            "execution_0"
+          ],
+          "approve": [
+            "execution_0"
+          ]
+        },
+        "title": "Согласование",
+        "output": {
+          "type": "object",
+          "properties": {
+            "comment": {
+              "type": "string",
+              "global": "approver_0.comment",
+              "description": "approver comment"
+            },
+            "approver": {
+              "type": "string",
+              "global": "approver_0.approver",
+              "description": "approver login which made a decision"
+            },
+            "decision": {
+              "type": "string",
+              "global": "approver_0.decision",
+              "description": "block decision"
+            }
+          }
+        },
+        "params": {
+          "sla": 0,
+          "type": "user",
+          "approver": "snkosya1",
+          "check_sla": false,
+          "work_type": null,
+          "rework_sla": 16,
+          "is_editable": false,
+          "approvementRule": "",
+          "check_rework_sla": false,
+          "approvers_group_id": "",
+          "approve_status_name": "На согласовании",
+          "forms_accessibility": [
+            {
+              "name": "Форма",
+              "node_id": "form_0",
+              "accessType": "Read",
+              "description": "f1"
+            }
+          ],
+          "approvers_group_name": "",
+          "repeat_prev_decision": false,
+          "approvers_group_id_path": ""
+        },
+        "sockets": [
+          {
+            "id": "approve",
+            "title": "Согласовать",
+            "actionType": "primary",
+            "nextBlockIds": [
+              "execution_0"
+            ]
+          },
+          {
+            "id": "reject",
+            "title": "Отклонить",
+            "actionType": "secondary",
+            "nextBlockIds": [
+              "execution_0"
+            ]
+          }
+        ],
+        "type_id": "approver",
+        "block_type": "go",
+        "param_type": "approver",
+        "short_title": "a1"
+      },
+      "execution_0": {
+        "x": 687,
+        "y": -118,
+        "next": {
+          "executed": [
+            "sign_0"
+          ],
+          "not_executed": [
+            "sign_0"
+          ]
+        },
+        "title": "Исполнение",
+        "output": {
+          "type": "object",
+          "properties": {
+            "login": {
+              "type": "string",
+              "global": "execution_0.login",
+              "description": "executor login"
+            },
+            "comment": {
+              "type": "string",
+              "global": "execution_0.comment",
+              "description": "execution status comment"
+            },
+            "decision": {
+              "type": "string",
+              "global": "execution_0.decision",
+              "description": "execution status"
+            }
+          }
+        },
+        "params": {
+          "sla": 0,
+          "type": "user",
+          "check_sla": false,
+          "executors": "snkosya1",
+          "work_type": null,
+          "rework_sla": 16,
+          "is_editable": false,
+          "show_executor": false,
+          "check_rework_sla": false,
+          "executors_group_id": "",
+          "forms_accessibility": [
+            {
+              "name": "Форма",
+              "node_id": "form_0",
+              "accessType": "Read",
+              "description": "f1"
+            }
+          ],
+          "use_actual_executor": false,
+          "executors_group_name": "",
+          "repeat_prev_decision": false,
+          "executors_group_id_path": ""
+        },
+        "sockets": [
+          {
+            "id": "executed",
+            "title": "Исполнено",
+            "actionType": "",
+            "nextBlockIds": [
+              "sign_0"
+            ]
+          },
+          {
+            "id": "not_executed",
+            "title": "Не исполнено",
+            "actionType": "",
+            "nextBlockIds": [
+              "sign_0"
+            ]
+          }
+        ],
+        "type_id": "execution",
+        "block_type": "go",
+        "param_type": "execution",
+        "short_title": "e1"
+      }
+    },
+    "entrypoint": "start_0"
+  },
+  "created_at": null,
+  "version_id": "efddb25d-99d0-42cb-a2c4-8219c6906813",
+  "approved_at": null,
+  "comment_rejected": "",
+  "process_settings": {
+    "sla": 0,
+    "name": "",
+    "work_type": "",
+    "end_schema": null,
+    "version_id": "",
+    "start_schema": null,
+    "resubmission_period": 0
+  }
+}

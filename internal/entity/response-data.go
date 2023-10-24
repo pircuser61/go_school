@@ -528,6 +528,19 @@ func (p *PipelineType) FillEmptyPipeline() {
 	p.Entrypoint = StartBlock0
 }
 
+func (p *PipelineType) ChangeOutput(keyOutputs map[string]string) {
+	for _, block := range p.Blocks {
+		if keyOutput, ok := keyOutputs[block.TypeID]; ok {
+			outputBlock := block.Output.Properties[keyOutput]
+			outputBlock.Type = "object"
+			outputBlock.Format = "SsoPerson"
+			outputBlock.Properties = people.GetSsoPersonSchemaProperties()
+
+			block.Output.Properties[keyOutput] = outputBlock
+		}
+	}
+}
+
 // nolint
 type EriusScenario struct {
 	ID              uuid.UUID            `json:"id" example:"916ad995-8d13-49fb-82ee-edd4f97649e2" format:"uuid"`
