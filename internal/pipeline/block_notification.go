@@ -171,7 +171,11 @@ func (gb *GoNotificationBlock) Update(ctx context.Context) (interface{}, error) 
 
 	if _, ok := gb.expectedEvents[eventEnd]; ok {
 		status, _ := gb.GetTaskHumanStatus()
-		event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, gb.Name, status, gb.GetStatus())
+		event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, MakeNodeEndEventArgs{
+			NodeName:    gb.Name,
+			HumanStatus: status,
+			NodeStatus:  gb.GetStatus(),
+		})
 		if eventErr != nil {
 			return nil, eventErr
 		}

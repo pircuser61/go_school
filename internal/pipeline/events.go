@@ -57,26 +57,26 @@ func (runCtx *BlockRunContext) MakeNodeStartEvent(ctx c.Context, args MakeNodeSt
 	}, nil
 }
 
-func (runCtx *BlockRunContext) MakeNodeEndEvent(ctx c.Context, node string, humanStatus TaskHumanStatus,
-	nodeStatus Status) (entity.NodeEvent, error) {
-	if humanStatus == "" {
+func (runCtx *BlockRunContext) MakeNodeEndEvent(ctx c.Context, args MakeNodeEndEventArgs) (entity.NodeEvent, error) {
+	if args.HumanStatus == "" {
 		hStatus, err := runCtx.Services.Storage.GetTaskHumanStatus(ctx, runCtx.TaskID)
 		if err != nil {
 			return entity.NodeEvent{}, nil
 		}
-		humanStatus = TaskHumanStatus(hStatus)
+		args.HumanStatus = TaskHumanStatus(hStatus)
 	}
 
-	outputs := getBlockOutput(runCtx.VarStore, node)
+	outputs := getBlockOutput(runCtx.VarStore, args.NodeName)
 
 	return entity.NodeEvent{
 		TaskID:     runCtx.TaskID.String(),
 		WorkNumber: runCtx.WorkNumber,
-		NodeName:   node,
+		NodeName:   args.NodeName,
+		NodeTitle:  args.NodeTitle,
 		NodeStart:  runCtx.CurrBlockStartTime.Format(time.RFC3339),
 		NodeEnd:    time.Now().Format(time.RFC3339),
-		TaskStatus: string(humanStatus),
-		NodeStatus: string(nodeStatus),
+		TaskStatus: string(args.HumanStatus),
+		NodeStatus: string(args.NodeStatus),
 		NodeOutput: outputs,
 	}, nil
 }
@@ -145,7 +145,12 @@ func (runCtx BlockRunContext) GetCancelledStepsEvents(ctx c.Context) ([]entity.N
 			continue
 		}
 		runCtx.CurrBlockStartTime = s.Time
-		event, eventErr := runCtx.MakeNodeEndEvent(ctx, s.Name, StatusRevoke, StatusCanceled)
+		event, eventErr := runCtx.MakeNodeEndEvent(ctx, MakeNodeEndEventArgs{
+			NodeName:    s.Name,
+			NodeTitle:   *s.ShortTitle,
+			HumanStatus: StatusRevoke,
+			NodeStatus:  StatusCanceled,
+		})
 		if eventErr != nil {
 			return nil, eventErr
 		}
