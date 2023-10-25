@@ -44,7 +44,7 @@ func (gb *GoSignBlock) handleSignature(ctx c.Context, login string) error {
 			if updateParams.Username == "" {
 				return errors.New("is not taken in work")
 			}
-			log.Info("setting signature with no 'taken no work'")
+			log.Info("setting signature with no 'taken in work'")
 		}
 
 		if !gb.isValidLogin(login) {
