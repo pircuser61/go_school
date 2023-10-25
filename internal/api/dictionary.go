@@ -26,6 +26,7 @@ func (ae *APIEnv) GetTaskEventSchema(w http.ResponseWriter, r *http.Request) {
 		TaskStatus script.JSONSchemaPropertiesValue `json:"task_status"`
 		WorkNumber script.JSONSchemaPropertiesValue `json:"work_number"`
 		NodeName   script.JSONSchemaPropertiesValue `json:"node_name"`
+		NodeTitle  script.JSONSchemaPropertiesValue `json:"node_title"`
 		NodeStart  script.JSONSchemaPropertiesValue `json:"node_start"`
 		NodeEnd    script.JSONSchemaPropertiesValue `json:"node_end"`
 		NodeStatus script.JSONSchemaPropertiesValue `json:"node_status"`
@@ -51,7 +52,11 @@ func (ae *APIEnv) GetTaskEventSchema(w http.ResponseWriter, r *http.Request) {
 			},
 			NodeName: script.JSONSchemaPropertiesValue{
 				Type:  "string",
-				Title: "Название ноды",
+				Title: "Техническое название ноды",
+			},
+			NodeTitle: script.JSONSchemaPropertiesValue{
+				Type:  "string",
+				Title: "Краткое название ноды",
 			},
 			NodeStart: script.JSONSchemaPropertiesValue{
 				Type:   "string",
