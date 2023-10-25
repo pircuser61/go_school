@@ -23,23 +23,37 @@ const (
 	eventEnd   = "end"
 )
 
-func (runCtx *BlockRunContext) MakeNodeStartEvent(ctx c.Context, node string, humanStatus TaskHumanStatus,
-	nodeStatus Status) (entity.NodeEvent, error) {
-	if humanStatus == "" {
+type MakeNodeStartEventArgs struct {
+	NodeName    string
+	NodeTitle   string
+	HumanStatus TaskHumanStatus
+	NodeStatus  Status
+}
+
+type MakeNodeEndEventArgs struct {
+	NodeName    string
+	NodeTitle   string
+	HumanStatus TaskHumanStatus
+	NodeStatus  Status
+}
+
+func (runCtx *BlockRunContext) MakeNodeStartEvent(ctx c.Context, args MakeNodeStartEventArgs) (entity.NodeEvent, error) {
+	if args.HumanStatus == "" {
 		hStatus, err := runCtx.Services.Storage.GetTaskHumanStatus(ctx, runCtx.TaskID)
 		if err != nil {
 			return entity.NodeEvent{}, nil
 		}
-		humanStatus = TaskHumanStatus(hStatus)
+		args.HumanStatus = TaskHumanStatus(hStatus)
 	}
 
 	return entity.NodeEvent{
 		TaskID:     runCtx.TaskID.String(),
 		WorkNumber: runCtx.WorkNumber,
-		NodeName:   node,
+		NodeName:   args.NodeName,
+		NodeTitle:  args.NodeTitle,
 		NodeStart:  time.Now().Format(time.RFC3339),
-		TaskStatus: string(humanStatus),
-		NodeStatus: string(nodeStatus),
+		TaskStatus: string(args.HumanStatus),
+		NodeStatus: string(args.NodeStatus),
 	}, nil
 }
 

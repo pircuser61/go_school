@@ -301,6 +301,7 @@ type NodeEvent struct {
 	TaskID     string                 `json:"task_id"`
 	WorkNumber string                 `json:"work_number"`
 	NodeName   string                 `json:"node_name"`
+	NodeTitle  string                 `json:"node_title"`
 	NodeStart  string                 `json:"node_start"`
 	NodeEnd    string                 `json:"node_end"`
 	TaskStatus string                 `json:"task_status"`

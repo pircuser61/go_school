@@ -62,7 +62,12 @@ func createGoExecutionBlock(ctx c.Context, name string, ef *entity.EriusFunc, ru
 
 			if _, ok := b.expectedEvents[eventStart]; ok {
 				status, _ := b.GetTaskHumanStatus()
-				event, err := runCtx.MakeNodeStartEvent(ctx, name, status, b.GetStatus())
+				event, err := runCtx.MakeNodeStartEvent(ctx, MakeNodeStartEventArgs{
+					NodeName:    name,
+					NodeTitle:   ef.ShortTitle,
+					HumanStatus: status,
+					NodeStatus:  b.GetStatus(),
+				})
 				if err != nil {
 					return nil, false, err
 				}
@@ -77,7 +82,12 @@ func createGoExecutionBlock(ctx c.Context, name string, ef *entity.EriusFunc, ru
 
 		if _, ok := b.expectedEvents[eventStart]; ok {
 			status, _ := b.GetTaskHumanStatus()
-			event, err := runCtx.MakeNodeStartEvent(ctx, name, status, b.GetStatus())
+			event, err := runCtx.MakeNodeStartEvent(ctx, MakeNodeStartEventArgs{
+				NodeName:    name,
+				NodeTitle:   ef.ShortTitle,
+				HumanStatus: status,
+				NodeStatus:  b.GetStatus(),
+			})
 			if err != nil {
 				return nil, false, err
 			}
