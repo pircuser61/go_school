@@ -154,6 +154,9 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 		return
 	}
 
+	log.WithField("workNumber", workNumber).WithField("login", ui.Username).
+		WithField("body", string(b)).Info("updating block")
+
 	if updateData.IsApplicationAction() {
 		err = ae.updateTaskInternal(ctx, workNumber, ui.Username, &updateData)
 	} else {

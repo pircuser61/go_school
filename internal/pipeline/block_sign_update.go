@@ -44,6 +44,10 @@ func (gb *GoSignBlock) handleSignature(ctx c.Context, login string) error {
 		if !gb.isValidLogin(login) {
 			return NewUserIsNotPartOfProcessErr()
 		}
+	} else {
+		if !gb.isValidSigner(login) {
+			return NewUserIsNotPartOfProcessErr()
+		}
 	}
 
 	if setErr := gb.setSignerDecision(updateParams); setErr != nil {
@@ -182,36 +186,24 @@ func (gb *GoSignBlock) handleChangeWorkStatus(ctx c.Context, login string) error
 		}
 	}
 
-	err := json.Unmarshal(gb.RunContext.UpdateData.Parameters, status)
-	if err != nil {
-		return errors.New("can't assert provided update data")
-	}
-
 	if gb.State.IsTakenInWork && !gb.isValidLogin(login) {
 		return NewUserIsNotPartOfProcessErr()
 	}
 
 	switch {
 	case !gb.State.IsTakenInWork && status.Status == "start":
+		if !gb.isValidSigner(login) {
+			return NewUserIsNotPartOfProcessErr()
+		}
 		gb.State.IsTakenInWork = true
 		gb.State.WorkerLogin = login
 
-		// delete those that may exist
-		err = gb.RunContext.Services.Scheduler.DeleteTask(ctx,
-			&scheduler.DeleteTask{
-				WorkID:   gb.RunContext.TaskID.String(),
-				StepName: gb.Name,
-			})
-		if err != nil {
-			log.WithError(err).Error("cannot delete signChangeWorkStatus timer")
-			return err
-		}
 	case gb.State.IsTakenInWork && status.Status == "end":
 		gb.State.IsTakenInWork = false
 		gb.State.WorkerLogin = ""
 
 		// delete those that may exist
-		err = gb.RunContext.Services.Scheduler.DeleteTask(ctx,
+		err := gb.RunContext.Services.Scheduler.DeleteTask(ctx,
 			&scheduler.DeleteTask{
 				WorkID:   gb.RunContext.TaskID.String(),
 				StepName: gb.Name,
@@ -226,7 +218,7 @@ func (gb *GoSignBlock) handleChangeWorkStatus(ctx c.Context, login string) error
 		return nil
 	}
 
-	_, err = gb.RunContext.Services.Scheduler.CreateTask(ctx, &scheduler.CreateTask{
+	_, err := gb.RunContext.Services.Scheduler.CreateTask(ctx, &scheduler.CreateTask{
 		WorkNumber:  gb.RunContext.WorkNumber,
 		WorkID:      gb.RunContext.TaskID.String(),
 		ActionName:  string(entity.TaskUpdateActionSignChangeWorkStatus),
@@ -258,6 +250,17 @@ func (gb *GoSignBlock) setSignerDecision(u *signSignatureParams) error {
 	}
 
 	return nil
+}
+
+func (gb *GoSignBlock) isValidSigner(login string) bool {
+	if _, ok := gb.State.Signers[login]; !ok &&
+		(login != ServiceAccount &&
+			login != ServiceAccountStage &&
+			login != ServiceAccountDev) {
+		return false
+	}
+
+	return true
 }
 
 func (gb *GoSignBlock) isValidLogin(login string) bool {
