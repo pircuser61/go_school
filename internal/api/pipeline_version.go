@@ -84,7 +84,6 @@ func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request
 			pipeline.BlockGoApproverID:  "approver",
 			pipeline.BlockGoSignID:      "signer",
 			pipeline.BlockGoExecutionID: "login",
-			pipeline.BlockGoFormID:      "executor",
 		}
 
 		p.Pipeline.ChangeOutput(keyOutputs)
@@ -404,7 +403,6 @@ func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 			pipeline.BlockGoApproverID:  "approver",
 			pipeline.BlockGoSignID:      "signer",
 			pipeline.BlockGoExecutionID: "login",
-			pipeline.BlockGoFormID:      "executor",
 		}
 
 		p.Pipeline.ChangeOutput(keyOutputs)

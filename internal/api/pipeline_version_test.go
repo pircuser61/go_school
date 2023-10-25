@@ -69,7 +69,6 @@ func TestChangeOutput(t *testing.T) {
 				pipeline.BlockGoApproverID:  "approver",
 				pipeline.BlockGoSignID:      "signer",
 				pipeline.BlockGoExecutionID: "login",
-				pipeline.BlockGoFormID:      "executor",
 			}
 
 			tt.Ef.Pipeline.ChangeOutput(keyOutputs)
