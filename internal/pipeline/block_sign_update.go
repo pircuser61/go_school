@@ -22,6 +22,7 @@ type signSignatureParams struct {
 	Decision    SignDecision        `json:"decision"`
 	Comment     string              `json:"comment,omitempty"`
 	Attachments []entity.Attachment `json:"attachments"`
+	Username    string              `json:"username"`
 }
 
 type changeStatusSignatureParams struct {
@@ -29,6 +30,8 @@ type changeStatusSignatureParams struct {
 }
 
 func (gb *GoSignBlock) handleSignature(ctx c.Context, login string) error {
+	log := logger.GetLogger(ctx)
+
 	updateParams := &signSignatureParams{}
 
 	err := json.Unmarshal(gb.RunContext.UpdateData.Parameters, updateParams)
@@ -38,7 +41,10 @@ func (gb *GoSignBlock) handleSignature(ctx c.Context, login string) error {
 
 	if gb.State.SignatureType == script.SignatureTypeUKEP {
 		if updateParams.Decision != SignDecisionRejected && !gb.State.IsTakenInWork {
-			return errors.New("is not taken in work")
+			if updateParams.Username == "" {
+				return errors.New("is not taken in work")
+			}
+			log.Info("setting signature with no 'taken no work'")
 		}
 
 		if !gb.isValidLogin(login) {
@@ -234,7 +240,11 @@ func (gb *GoSignBlock) handleChangeWorkStatus(ctx c.Context, login string) error
 }
 
 func (gb *GoSignBlock) setSignerDecision(u *signSignatureParams) error {
-	if errUpdate := gb.State.SetDecision(gb.RunContext.UpdateData.ByLogin, u); errUpdate != nil {
+	login := gb.RunContext.UpdateData.ByLogin
+	if u.Username != "" {
+		login = u.Username
+	}
+	if errUpdate := gb.State.SetDecision(login, u); errUpdate != nil {
 		return errUpdate
 	}
 
