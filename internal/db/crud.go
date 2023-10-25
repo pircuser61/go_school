@@ -2819,10 +2819,9 @@ func (db *PGCon) FinishTaskBlocks(ctx context.Context, taskID uuid.UUID, ignoreS
 
 	if len(ignoreSteps) > 0 {
 		q += " AND step_name NOT IN ('" + strings.Join(ignoreSteps, "','") + "')"
-		_, err = db.Connection.Exec(ctx, q, taskID, ignoreSteps)
-	} else {
-		_, err = db.Connection.Exec(ctx, q, taskID)
 	}
+
+	_, err = db.Connection.Exec(ctx, q, taskID)
 
 	return err
 }
