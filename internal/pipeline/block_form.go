@@ -70,12 +70,13 @@ type FormData struct {
 }
 
 type GoFormBlock struct {
-	Name    string
-	Title   string
-	Input   map[string]string
-	Output  map[string]string
-	Sockets []script.Socket
-	State   *FormData
+	Name      string
+	ShortName string
+	Title     string
+	Input     map[string]string
+	Output    map[string]string
+	Sockets   []script.Socket
+	State     *FormData
 
 	RunContext *BlockRunContext
 

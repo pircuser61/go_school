@@ -9,11 +9,12 @@ import (
 )
 
 type GoPlaceholderBlock struct {
-	Name    string
-	Title   string
-	Input   map[string]string
-	Output  map[string]string
-	Sockets []script.Socket
+	Name      string
+	ShortName string
+	Title     string
+	Input     map[string]string
+	Output    map[string]string
+	Sockets   []script.Socket
 
 	RunContext *BlockRunContext
 
@@ -99,9 +100,10 @@ func (gb *GoPlaceholderBlock) Update(ctx context.Context) (interface{}, error) {
 	if _, ok := gb.expectedEvents[eventEnd]; ok {
 		status, _ := gb.GetTaskHumanStatus()
 		event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, MakeNodeEndEventArgs{
-			NodeName:    gb.Name,
-			HumanStatus: status,
-			NodeStatus:  gb.GetStatus(),
+			NodeName:      gb.Name,
+			NodeShortName: gb.ShortName,
+			HumanStatus:   status,
+			NodeStatus:    gb.GetStatus(),
 		})
 		if eventErr != nil {
 			return nil, eventErr
@@ -118,6 +120,7 @@ func createGoPlaceholderBlock(ctx context.Context, name string, ef *entity.Erius
 
 	b := &GoPlaceholderBlock{
 		Name:       name,
+		ShortName:  ef.ShortTitle,
 		Title:      ef.Title,
 		Input:      map[string]string{},
 		Output:     map[string]string{},
@@ -143,10 +146,10 @@ func createGoPlaceholderBlock(ctx context.Context, name string, ef *entity.Erius
 	if _, ok := b.expectedEvents[eventStart]; ok {
 		status, _ := b.GetTaskHumanStatus()
 		event, err := runCtx.MakeNodeStartEvent(ctx, MakeNodeStartEventArgs{
-			NodeName:    name,
-			NodeTitle:   ef.ShortTitle,
-			HumanStatus: status,
-			NodeStatus:  b.GetStatus(),
+			NodeName:      name,
+			NodeShortName: ef.ShortTitle,
+			HumanStatus:   status,
+			NodeStatus:    b.GetStatus(),
 		})
 		if err != nil {
 			return nil, false, err

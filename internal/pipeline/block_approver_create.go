@@ -23,6 +23,7 @@ func createGoApproverBlock(ctx c.Context, name string, ef *entity.EriusFunc, run
 
 	b := &GoApproverBlock{
 		Name:       name,
+		ShortName:  ef.ShortTitle,
 		Title:      ef.Title,
 		Input:      map[string]string{},
 		Output:     map[string]string{},
@@ -62,10 +63,10 @@ func createGoApproverBlock(ctx c.Context, name string, ef *entity.EriusFunc, run
 			if _, ok := b.expectedEvents[eventStart]; ok {
 				status, _ := b.GetTaskHumanStatus()
 				event, err := runCtx.MakeNodeStartEvent(ctx, MakeNodeStartEventArgs{
-					NodeName:    name,
-					NodeTitle:   ef.ShortTitle,
-					HumanStatus: status,
-					NodeStatus:  b.GetStatus(),
+					NodeName:      name,
+					NodeShortName: ef.ShortTitle,
+					HumanStatus:   status,
+					NodeStatus:    b.GetStatus(),
 				})
 				if err != nil {
 					return nil, false, err
@@ -82,10 +83,10 @@ func createGoApproverBlock(ctx c.Context, name string, ef *entity.EriusFunc, run
 		if _, ok := b.expectedEvents[eventStart]; ok {
 			status, _ := b.GetTaskHumanStatus()
 			event, err := runCtx.MakeNodeStartEvent(ctx, MakeNodeStartEventArgs{
-				NodeName:    name,
-				NodeTitle:   ef.ShortTitle,
-				HumanStatus: status,
-				NodeStatus:  b.GetStatus(),
+				NodeName:      name,
+				NodeShortName: ef.ShortTitle,
+				HumanStatus:   status,
+				NodeStatus:    b.GetStatus(),
 			})
 			if err != nil {
 				return nil, false, err
@@ -404,10 +405,10 @@ func (gb *GoApproverBlock) trySetPreviousDecision(ctx c.Context) (isPrevDecision
 		if _, ok = gb.expectedEvents[eventEnd]; ok {
 			status, _ := gb.GetTaskHumanStatus()
 			event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, MakeNodeEndEventArgs{
-				NodeName:    gb.Name,
-				NodeTitle:   gb.ShortName,
-				HumanStatus: status,
-				NodeStatus:  gb.GetStatus(),
+				NodeName:      gb.Name,
+				NodeShortName: gb.ShortName,
+				HumanStatus:   status,
+				NodeStatus:    gb.GetStatus(),
 			})
 			if eventErr != nil {
 				return false

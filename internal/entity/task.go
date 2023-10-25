@@ -298,15 +298,15 @@ func (at *Attachment) UnmarshalJSON(b []byte) error {
 }
 
 type NodeEvent struct {
-	TaskID     string                 `json:"task_id"`
-	WorkNumber string                 `json:"work_number"`
-	NodeName   string                 `json:"node_name"`
-	NodeTitle  string                 `json:"node_title"`
-	NodeStart  string                 `json:"node_start"`
-	NodeEnd    string                 `json:"node_end"`
-	TaskStatus string                 `json:"task_status"`
-	NodeStatus string                 `json:"node_status"`
-	NodeOutput map[string]interface{} `json:"node_output"`
+	TaskID        string                 `json:"task_id"`
+	WorkNumber    string                 `json:"work_number"`
+	NodeName      string                 `json:"node_name"`
+	NodeShortName string                 `json:"node_short_name"`
+	NodeStart     string                 `json:"node_start"`
+	NodeEnd       string                 `json:"node_end"`
+	TaskStatus    string                 `json:"task_status"`
+	NodeStatus    string                 `json:"node_status"`
+	NodeOutput    map[string]interface{} `json:"node_output"`
 }
 
 func (ne NodeEvent) ToMap() map[string]interface{} {

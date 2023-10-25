@@ -22,15 +22,15 @@ func (ae *APIEnv) GetTaskEventSchema(w http.ResponseWriter, r *http.Request) {
 	log := logger.GetLogger(ctx)
 
 	type eventSchemaProperties struct {
-		TaskID     script.JSONSchemaPropertiesValue `json:"task_id"`
-		TaskStatus script.JSONSchemaPropertiesValue `json:"task_status"`
-		WorkNumber script.JSONSchemaPropertiesValue `json:"work_number"`
-		NodeName   script.JSONSchemaPropertiesValue `json:"node_name"`
-		NodeTitle  script.JSONSchemaPropertiesValue `json:"node_title"`
-		NodeStart  script.JSONSchemaPropertiesValue `json:"node_start"`
-		NodeEnd    script.JSONSchemaPropertiesValue `json:"node_end"`
-		NodeStatus script.JSONSchemaPropertiesValue `json:"node_status"`
-		NodeOutput script.JSONSchemaPropertiesValue `json:"node_output"`
+		TaskID        script.JSONSchemaPropertiesValue `json:"task_id"`
+		TaskStatus    script.JSONSchemaPropertiesValue `json:"task_status"`
+		WorkNumber    script.JSONSchemaPropertiesValue `json:"work_number"`
+		NodeName      script.JSONSchemaPropertiesValue `json:"node_name"`
+		NodeShortName script.JSONSchemaPropertiesValue `json:"node_title"`
+		NodeStart     script.JSONSchemaPropertiesValue `json:"node_start"`
+		NodeEnd       script.JSONSchemaPropertiesValue `json:"node_end"`
+		NodeStatus    script.JSONSchemaPropertiesValue `json:"node_status"`
+		NodeOutput    script.JSONSchemaPropertiesValue `json:"node_output"`
 	}
 
 	type eventSchema struct {
@@ -54,7 +54,7 @@ func (ae *APIEnv) GetTaskEventSchema(w http.ResponseWriter, r *http.Request) {
 				Type:  "string",
 				Title: "Техническое название ноды",
 			},
-			NodeTitle: script.JSONSchemaPropertiesValue{
+			NodeShortName: script.JSONSchemaPropertiesValue{
 				Type:  "string",
 				Title: "Краткое название ноды",
 			},
