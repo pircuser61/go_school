@@ -428,7 +428,6 @@ func (gb *GoExecutionBlock) Model() script.FunctionModel {
 				Type:               "",
 				SLA:                0,
 				FormsAccessibility: []script.FormAccessibility{},
-				ShowExecutor:       true,
 			},
 		},
 		Sockets: []script.Socket{

@@ -186,7 +186,7 @@ func (gb *GoExecutionBlock) createState(ctx c.Context, ef *entity.EriusFunc) err
 		IsEditable:         params.IsEditable,
 		RepeatPrevDecision: params.RepeatPrevDecision,
 		UseActualExecutor:  params.UseActualExecutor,
-		ShowExecutor:       params.ShowExecutor,
+		HideExecutor:       params.HideExecutor,
 	}
 
 	if params.ExecutorsGroupIDPath != nil && *params.ExecutorsGroupIDPath != "" {

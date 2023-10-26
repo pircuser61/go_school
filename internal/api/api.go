@@ -1016,6 +1016,9 @@ type ExecutionParams struct {
 	// List of accessibility properties for forms
 	FormsAccessibility *[]FormsAccessibility `json:"forms_accessibility,omitempty"`
 
+	// flag to show executor
+	HideExecutor *bool `json:"hide_executor,omitempty"`
+
 	// Show action edit application in SD
 	IsEditable bool `json:"is_editable"`
 
@@ -1024,9 +1027,6 @@ type ExecutionParams struct {
 
 	// Execution rework SLA (in working hours)
 	ReworkSla int `json:"rework_sla"`
-
-	// flag to show executor
-	ShowExecutor *bool `json:"show_executor,omitempty"`
 
 	// Execution SLA (in working hours)
 	Sla int `json:"sla"`

@@ -924,7 +924,7 @@ func (ae *APIEnv) hideExecutors(steps entity.TaskSteps, requesterLogin, taskAuth
 			if unmarshalErr != nil {
 				return unmarshalErr
 			}
-			if execBlock.ShowExecutor || slices.Contains(maps.Keys(execBlock.Executors), requesterLogin) {
+			if !execBlock.HideExecutor || slices.Contains(maps.Keys(execBlock.Executors), requesterLogin) {
 				continue
 			}
 			execBlock.Executors = map[string]struct{}{
