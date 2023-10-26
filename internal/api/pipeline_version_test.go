@@ -2,6 +2,11 @@ package api
 
 import (
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 )
 
 func TestAPIEnv_getClientIDFromToken(t *testing.T) {
@@ -42,6 +47,33 @@ func TestAPIEnv_getClientIDFromToken(t *testing.T) {
 			if got != tt.want {
 				t.Errorf("getClientIDFromToken() got = %v, want %v", got, tt.want)
 			}
+		})
+	}
+}
+
+func TestChangeOutput(t *testing.T) {
+	tests := []struct {
+		Name        string
+		Ef          entity.EriusScenario
+		WantedGroup entity.EriusScenario
+	}{
+		{
+			Name:        "accepts test",
+			Ef:          *unmarshalFromTestFile(t, "testdata/test_change_output.json"),
+			WantedGroup: *unmarshalFromTestFile(t, "testdata/test_change_output_result.json"),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.Name, func(t *testing.T) {
+			keyOutputs := map[string]string{
+				pipeline.BlockGoApproverID:  "approver",
+				pipeline.BlockGoSignID:      "signer",
+				pipeline.BlockGoExecutionID: "login",
+			}
+
+			tt.Ef.Pipeline.ChangeOutput(keyOutputs)
+
+			assert.Equal(t, tt.Ef.Pipeline, tt.WantedGroup.Pipeline, "ChangeOutput(%v)", keyOutputs)
 		})
 	}
 }

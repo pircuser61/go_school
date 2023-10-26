@@ -70,17 +70,24 @@ func (a *additionalApproverUpdateParams) Validate() error {
 	return nil
 }
 
-func (gb *GoApproverBlock) setApproverDecision(u approverUpdateParams) error {
-	if errUpdate := gb.State.SetDecision(gb.RunContext.UpdateData.ByLogin, u.internalDecision,
-		u.Comment, u.Attachments, gb.RunContext.Delegations); errUpdate != nil {
-		return errUpdate
+func (gb *GoApproverBlock) setApproverDecision(ctx c.Context, u *approverUpdateParams) error {
+	if err := gb.State.SetDecision(gb.RunContext.UpdateData.ByLogin, u.internalDecision,
+		u.Comment, u.Attachments, gb.RunContext.Delegations); err != nil {
+		return err
 	}
 
-	if gb.State.Decision != nil {
-		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputApprover], gb.State.ActualApprover)
-		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputDecision], gb.State.Decision.String())
-		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputComment], gb.State.Comment)
+	if gb.State.Decision == nil {
+		return nil
 	}
+
+	person, err := gb.RunContext.Services.ServiceDesc.GetSsoPerson(ctx, *gb.State.ActualApprover)
+	if err != nil {
+		return err
+	}
+
+	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputApprover], person)
+	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputDecision], gb.State.Decision.String())
+	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputComment], gb.State.Comment)
 
 	return nil
 }
@@ -145,8 +152,8 @@ func (gb *GoApproverBlock) handleBreachedSLA(ctx c.Context) error {
 	}
 	if gb.State.AutoAction != nil {
 		gb.RunContext.UpdateData.ByLogin = AutoApprover
-		if setErr := gb.setApproverDecision(
-			approverUpdateParams{
+		if setErr := gb.setApproverDecision(ctx,
+			&approverUpdateParams{
 				internalDecision: gb.State.AutoAction.ToDecision(),
 				Comment:          AutoActionComment,
 			}); setErr != nil {
@@ -463,7 +470,12 @@ func (gb *GoApproverBlock) toEditApplication(ctx c.Context, updateParams approve
 			return editErr
 		}
 
-		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputApprover], gb.RunContext.UpdateData.ByLogin)
+		person, personErr := gb.RunContext.Services.ServiceDesc.GetSsoPerson(ctx, gb.RunContext.UpdateData.ByLogin)
+		if personErr != nil {
+			return personErr
+		}
+
+		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputApprover], person)
 		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputDecision], ApproverDecisionSentToEdit)
 		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputComment], updateParams.Comment)
 	}
@@ -620,7 +632,7 @@ func (gb *GoApproverBlock) Update(ctx c.Context) (interface{}, error) {
 
 		updateParams.internalDecision = updateParams.Decision.ToDecision()
 
-		if errUpdate := gb.setApproverDecision(updateParams); errUpdate != nil {
+		if errUpdate := gb.setApproverDecision(ctx, &updateParams); errUpdate != nil {
 			return nil, errUpdate
 		}
 

@@ -79,7 +79,17 @@ func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request
 
 	if len(p.Pipeline.Blocks) == 0 {
 		p.Pipeline.FillEmptyPipeline()
+	} else {
+		keyOutputs := map[string]string{
+			pipeline.BlockGoApproverID:  "approver",
+			pipeline.BlockGoSignID:      "signer",
+			pipeline.BlockGoExecutionID: "login",
+		}
+
+		p.Pipeline.ChangeOutput(keyOutputs)
+
 	}
+
 	if p.Pipeline.Entrypoint == "" {
 		p.Pipeline.Entrypoint = startEntrypoint
 	}
@@ -388,7 +398,16 @@ func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 
 	if len(p.Pipeline.Blocks) == 0 {
 		p.Pipeline.FillEmptyPipeline()
+	} else {
+		keyOutputs := map[string]string{
+			pipeline.BlockGoApproverID:  "approver",
+			pipeline.BlockGoSignID:      "signer",
+			pipeline.BlockGoExecutionID: "login",
+		}
+
+		p.Pipeline.ChangeOutput(keyOutputs)
 	}
+
 	if p.Pipeline.Entrypoint == "" {
 		p.Pipeline.Entrypoint = startEntrypoint
 	}
