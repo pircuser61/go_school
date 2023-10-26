@@ -425,7 +425,14 @@ func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 	}
 	groups := make([]*entity.NodeGroup, 0)
 	if p.Status == db.StatusApproved {
-		groups = p.Pipeline.Blocks.GetGroups()
+		groups, err = p.Pipeline.Blocks.GetGroups()
+		if err != nil {
+			e := UnknownError
+			log.Error(e.errorMessage(err))
+			_ = e.sendError(w)
+
+			return
+		}
 	}
 	canEdit, err := ae.DB.VersionEditable(ctx, p.VersionID)
 	if err != nil {

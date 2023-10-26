@@ -871,7 +871,7 @@ func TestValidation_GroupNodes(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			groups := tt.Ef.Pipeline.Blocks.GetGroups()
+			groups, _ := tt.Ef.Pipeline.Blocks.GetGroups()
 			if !checkEqualityOfGroups(groups, tt.WantedGroup) {
 				t.Errorf("unexpected group %v, \n  %v", groups, tt.WantedGroup)
 			}

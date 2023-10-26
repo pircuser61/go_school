@@ -247,7 +247,14 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request, workNumber s
 
 			return
 		}
-		groups := scenario.Pipeline.Blocks.GetGroups()
+		groups, groupsErr := scenario.Pipeline.Blocks.GetGroups()
+		if err != nil {
+			e := UnknownError
+			log.Error(e.errorMessage(groupsErr))
+			_ = e.sendError(w)
+
+			return
+		}
 		updateGroupsErr := ae.DB.UpdateGroupsForEmptyVersions(ctx, scenario.VersionID.String(), groups)
 		if updateGroupsErr != nil {
 			e := UnknownError
