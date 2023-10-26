@@ -529,15 +529,18 @@ func (p *PipelineType) FillEmptyPipeline() {
 }
 
 func (p *PipelineType) ChangeOutput(keyOutputs map[string]string) {
-	for _, block := range p.Blocks {
-		if keyOutput, ok := keyOutputs[block.TypeID]; ok {
-			outputBlock := block.Output.Properties[keyOutput]
-			outputBlock.Type = "object"
-			outputBlock.Format = "SsoPerson"
-			outputBlock.Properties = people.GetSsoPersonSchemaProperties()
-
-			block.Output.Properties[keyOutput] = outputBlock
+	for block := range p.Blocks {
+		if _, ok := keyOutputs[p.Blocks[block].TypeID]; !ok {
+			continue
 		}
+
+		keyOutput := keyOutputs[p.Blocks[block].TypeID]
+		outputBlock := p.Blocks[block].Output.Properties[keyOutput]
+		outputBlock.Type = "object"
+		outputBlock.Format = "SsoPerson"
+		outputBlock.Properties = people.GetSsoPersonSchemaProperties()
+
+		p.Blocks[block].Output.Properties[keyOutput] = outputBlock
 	}
 }
 
