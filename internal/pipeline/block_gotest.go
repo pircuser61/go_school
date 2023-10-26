@@ -131,6 +131,7 @@ func createGoTestBlock(ctx context.Context, name string, ef *entity.EriusFunc, r
 	expectedEvents map[string]struct{}) (b *GoTestBlock, reEntry bool, err error) {
 	b = &GoTestBlock{
 		Name:       name,
+		ShortName:  ef.ShortTitle,
 		Title:      ef.Title,
 		Input:      map[string]string{},
 		Output:     map[string]string{},

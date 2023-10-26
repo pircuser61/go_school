@@ -301,6 +301,7 @@ func createExecutableFunctionBlock(ctx c.Context, name string, ef *entity.EriusF
 	expectedEvents map[string]struct{}) (*ExecutableFunctionBlock, bool, error) {
 	b := &ExecutableFunctionBlock{
 		Name:       name,
+		ShortName:  ef.ShortTitle,
 		Title:      ef.Title,
 		Input:      map[string]string{},
 		Output:     map[string]string{},
