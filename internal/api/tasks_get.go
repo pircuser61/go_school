@@ -940,6 +940,7 @@ func (ae *APIEnv) hideExecutors(steps entity.TaskSteps, requesterLogin, taskAuth
 			for i := range execBlock.ChangedExecutorsLogs {
 				execBlock.ChangedExecutorsLogs[i].OldLogin = hiddenUserLogin
 				execBlock.ChangedExecutorsLogs[i].NewLogin = hiddenUserLogin
+				execBlock.ChangedExecutorsLogs[i].Comment = ""
 			}
 
 			for i := range execBlock.RequestExecutionInfoLogs {
