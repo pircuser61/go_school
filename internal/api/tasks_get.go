@@ -906,7 +906,7 @@ func (ae *APIEnv) hideExecutors(steps entity.TaskSteps, requesterLogin, taskAuth
 
 				for historyIdx := range formBlock.ChangesLog {
 					formBlock.ChangesLog[historyIdx].Executor = hiddenUserLogin
-					formBlock.ChangesLog[historyIdx].DelegateFor = hiddenUserLogin
+					formBlock.ChangesLog[historyIdx].DelegateFor = hideDelegator(formBlock.ChangesLog[historyIdx].DelegateFor)
 				}
 				data, marshalErr := json.Marshal(formBlock)
 				if marshalErr != nil {
@@ -935,7 +935,9 @@ func (ae *APIEnv) hideExecutors(steps entity.TaskSteps, requesterLogin, taskAuth
 				hiddenUserLogin: {},
 			}
 
-			execBlock.ActualExecutor = utils.GetAddressOfValue(hiddenUserLogin)
+			if execBlock.ActualExecutor != nil {
+				execBlock.ActualExecutor = utils.GetAddressOfValue(hiddenUserLogin)
+			}
 
 			for i := range execBlock.ChangedExecutorsLogs {
 				execBlock.ChangedExecutorsLogs[i].OldLogin = hiddenUserLogin
@@ -944,15 +946,21 @@ func (ae *APIEnv) hideExecutors(steps entity.TaskSteps, requesterLogin, taskAuth
 			}
 
 			for i := range execBlock.RequestExecutionInfoLogs {
-				execBlock.RequestExecutionInfoLogs[i].Login = hiddenUserLogin
-				execBlock.RequestExecutionInfoLogs[i].DelegateFor = hiddenUserLogin
+				if execBlock.RequestExecutionInfoLogs[i].ReqType == pipeline.RequestInfoQuestion {
+					execBlock.RequestExecutionInfoLogs[i].Login = hiddenUserLogin
+					execBlock.RequestExecutionInfoLogs[i].DelegateFor = hideDelegator(execBlock.RequestExecutionInfoLogs[i].DelegateFor)
+				}
 			}
 
 			for i := range execBlock.EditingAppLog {
 				execBlock.EditingAppLog[i].Executor = hiddenUserLogin
-				execBlock.EditingAppLog[i].DelegateFor = hiddenUserLogin
+				execBlock.EditingAppLog[i].DelegateFor = hideDelegator(execBlock.EditingAppLog[i].DelegateFor)
 			}
 
+			if execBlock.EditingApp != nil {
+				execBlock.EditingApp.Executor = hiddenUserLogin
+				execBlock.EditingApp.DelegateFor = hideDelegator(execBlock.EditingApp.DelegateFor)
+			}
 			data, marshalErr := json.Marshal(execBlock)
 			if marshalErr != nil {
 				return marshalErr
@@ -961,4 +969,11 @@ func (ae *APIEnv) hideExecutors(steps entity.TaskSteps, requesterLogin, taskAuth
 		}
 	}
 	return nil
+}
+
+func hideDelegator(delegate string) string {
+	if delegate == "" {
+		return ""
+	}
+	return hiddenUserLogin
 }
