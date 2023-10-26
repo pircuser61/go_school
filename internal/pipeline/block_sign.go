@@ -15,6 +15,7 @@ import (
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
@@ -437,8 +438,10 @@ func (gb *GoSignBlock) Model() script.FunctionModel {
 			Type: "object",
 			Properties: script.JSONSchemaProperties{
 				keyOutputSigner: {
-					Type:        "string",
+					Type:        "object",
 					Description: "signer login",
+					Format:      "SsoPerson",
+					Properties:  people.GetSsoPersonSchemaProperties(),
 				},
 				keyOutputSignDecision: {
 					Type:        "string",
