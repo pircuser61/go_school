@@ -906,7 +906,7 @@ func (ae *APIEnv) hideExecutors(steps entity.TaskSteps, requesterLogin, taskAuth
 
 				for historyIdx := range formBlock.ChangesLog {
 					formBlock.ChangesLog[historyIdx].Executor = hiddenUserLogin
-					formBlock.ChangesLog[historyIdx].DelegateFor = hiddenUserLogin
+					formBlock.ChangesLog[historyIdx].DelegateFor = archiveDelegate(formBlock.ChangesLog[historyIdx].DelegateFor)
 				}
 				data, marshalErr := json.Marshal(formBlock)
 				if marshalErr != nil {
@@ -946,18 +946,20 @@ func (ae *APIEnv) hideExecutors(steps entity.TaskSteps, requesterLogin, taskAuth
 			}
 
 			for i := range execBlock.RequestExecutionInfoLogs {
-				execBlock.RequestExecutionInfoLogs[i].Login = hiddenUserLogin
-				execBlock.RequestExecutionInfoLogs[i].DelegateFor = hiddenUserLogin
+				if execBlock.RequestExecutionInfoLogs[i].ReqType == pipeline.RequestInfoQuestion {
+					execBlock.RequestExecutionInfoLogs[i].Login = hiddenUserLogin
+					execBlock.RequestExecutionInfoLogs[i].DelegateFor = archiveDelegate(execBlock.RequestExecutionInfoLogs[i].DelegateFor)
+				}
 			}
 
 			for i := range execBlock.EditingAppLog {
 				execBlock.EditingAppLog[i].Executor = hiddenUserLogin
-				execBlock.EditingAppLog[i].DelegateFor = hiddenUserLogin
+				execBlock.EditingAppLog[i].DelegateFor = archiveDelegate(execBlock.EditingAppLog[i].DelegateFor)
 			}
 
 			if execBlock.EditingApp != nil {
 				execBlock.EditingApp.Executor = hiddenUserLogin
-				execBlock.EditingApp.DelegateFor = hiddenUserLogin
+				execBlock.EditingApp.DelegateFor = archiveDelegate(execBlock.EditingApp.DelegateFor)
 			}
 			data, marshalErr := json.Marshal(execBlock)
 			if marshalErr != nil {
@@ -967,4 +969,11 @@ func (ae *APIEnv) hideExecutors(steps entity.TaskSteps, requesterLogin, taskAuth
 		}
 	}
 	return nil
+}
+
+func archiveDelegate(delegate string) string {
+	if delegate == "" {
+		return ""
+	}
+	return hiddenUserLogin
 }
