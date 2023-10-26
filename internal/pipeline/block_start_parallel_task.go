@@ -12,6 +12,7 @@ type BeginParallelData struct{}
 
 type GoBeginParallelTaskBlock struct {
 	Name       string
+	ShortName  string
 	Title      string
 	Input      map[string]string
 	Output     map[string]string
@@ -61,7 +62,12 @@ func (gb *GoBeginParallelTaskBlock) GetState() interface{} {
 func (gb *GoBeginParallelTaskBlock) Update(ctx context.Context) (interface{}, error) {
 	if _, ok := gb.expectedEvents[eventEnd]; ok {
 		status, _ := gb.GetTaskHumanStatus()
-		event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, gb.Name, status, gb.GetStatus())
+		event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, MakeNodeEndEventArgs{
+			NodeName:      gb.Name,
+			NodeShortName: gb.ShortName,
+			HumanStatus:   status,
+			NodeStatus:    gb.GetStatus(),
+		})
 		if eventErr != nil {
 			return nil, eventErr
 		}
@@ -91,6 +97,7 @@ func createGoStartParallelBlock(ctx context.Context, name string, ef *entity.Eri
 
 	b := &GoBeginParallelTaskBlock{
 		Name:       name,
+		ShortName:  ef.ShortTitle,
 		Title:      ef.Title,
 		Input:      map[string]string{},
 		Output:     map[string]string{},
@@ -115,7 +122,12 @@ func createGoStartParallelBlock(ctx context.Context, name string, ef *entity.Eri
 
 	if _, ok := b.expectedEvents[eventStart]; ok {
 		status, _ := b.GetTaskHumanStatus()
-		event, err := runCtx.MakeNodeStartEvent(ctx, name, status, b.GetStatus())
+		event, err := runCtx.MakeNodeStartEvent(ctx, MakeNodeStartEventArgs{
+			NodeName:      name,
+			NodeShortName: ef.ShortTitle,
+			HumanStatus:   status,
+			NodeStatus:    b.GetStatus(),
+		})
 		if err != nil {
 			return nil, false, err
 		}

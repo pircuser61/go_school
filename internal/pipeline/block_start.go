@@ -13,6 +13,7 @@ import (
 
 type GoStartBlock struct {
 	Name       string
+	ShortName  string
 	Title      string
 	Input      map[string]string
 	Output     map[string]string
@@ -83,7 +84,12 @@ func (gb *GoStartBlock) Update(ctx context.Context) (interface{}, error) {
 
 	if _, ok := gb.expectedEvents[eventEnd]; ok {
 		status, _ := gb.GetTaskHumanStatus()
-		event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, gb.Name, status, gb.GetStatus())
+		event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, MakeNodeEndEventArgs{
+			NodeName:      gb.Name,
+			NodeShortName: gb.ShortName,
+			HumanStatus:   status,
+			NodeStatus:    gb.GetStatus(),
+		})
 		if eventErr != nil {
 			return nil, eventErr
 		}
@@ -123,6 +129,7 @@ func createGoStartBlock(ctx context.Context, name string, ef *entity.EriusFunc, 
 	expectedEvents map[string]struct{}) (*GoStartBlock, bool, error) {
 	b := &GoStartBlock{
 		Name:       name,
+		ShortName:  ef.ShortTitle,
 		Title:      ef.Title,
 		Input:      map[string]string{},
 		Output:     map[string]string{},
@@ -147,7 +154,12 @@ func createGoStartBlock(ctx context.Context, name string, ef *entity.EriusFunc, 
 
 	if _, ok := b.expectedEvents[eventStart]; ok {
 		status, _ := b.GetTaskHumanStatus()
-		event, err := runCtx.MakeNodeStartEvent(ctx, name, status, b.GetStatus())
+		event, err := runCtx.MakeNodeStartEvent(ctx, MakeNodeStartEventArgs{
+			NodeName:      name,
+			NodeShortName: ef.ShortTitle,
+			HumanStatus:   status,
+			NodeStatus:    b.GetStatus(),
+		})
 		if err != nil {
 			return nil, false, err
 		}

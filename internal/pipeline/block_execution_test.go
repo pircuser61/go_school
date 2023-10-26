@@ -219,8 +219,9 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 				},
 			},
 			want: &GoExecutionBlock{
-				Name:  example,
-				Title: title,
+				Name:      example,
+				ShortName: shortTitle,
+				Title:     title,
 				Input: map[string]string{
 					"foo": "bar",
 				},
@@ -292,8 +293,9 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 				},
 			},
 			want: &GoExecutionBlock{
-				Name:  example,
-				Title: title,
+				Name:      example,
+				ShortName: shortTitle,
+				Title:     title,
 				Input: map[string]string{
 					"foo": "bar",
 				},
@@ -376,8 +378,9 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 				},
 			},
 			want: &GoExecutionBlock{
-				Name:  example,
-				Title: title,
+				Name:      example,
+				ShortName: shortTitle,
+				Title:     title,
 				Input: map[string]string{
 					"foo": "bar",
 				},

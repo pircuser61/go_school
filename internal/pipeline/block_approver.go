@@ -25,12 +25,13 @@ const (
 )
 
 type GoApproverBlock struct {
-	Name    string
-	Title   string
-	Input   map[string]string
-	Output  map[string]string
-	Sockets []script.Socket
-	State   *ApproverData
+	Name      string
+	ShortName string
+	Title     string
+	Input     map[string]string
+	Output    map[string]string
+	Sockets   []script.Socket
+	State     *ApproverData
 
 	expectedEvents map[string]struct{}
 	happenedEvents []entity.NodeEvent

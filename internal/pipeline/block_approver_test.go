@@ -511,8 +511,9 @@ func Test_createGoApproverBlock(t *testing.T) {
 				},
 			},
 			want: &GoApproverBlock{
-				Name:  example,
-				Title: title,
+				Name:      example,
+				ShortName: shortTitle,
+				Title:     title,
 				Input: map[string]string{
 					"foo": "bar",
 				},
@@ -593,8 +594,9 @@ func Test_createGoApproverBlock(t *testing.T) {
 				},
 			},
 			want: &GoApproverBlock{
-				Name:  example,
-				Title: title,
+				Name:      example,
+				ShortName: shortTitle,
+				Title:     title,
 				Input: map[string]string{
 					"foo": "bar",
 				},

@@ -257,6 +257,7 @@ func Test_createGoNotificationBlock(t *testing.T) {
 			},
 			want: &GoNotificationBlock{
 				Name:           example,
+				ShortName:      shortTitle,
 				Title:          title,
 				Input:          map[string]string{},
 				Output:         map[string]string{},
@@ -304,6 +305,7 @@ func Test_createGoNotificationBlock(t *testing.T) {
 			},
 			want: &GoNotificationBlock{
 				Name:           example,
+				ShortName:      shortTitle,
 				Title:          title,
 				Input:          map[string]string{},
 				Output:         map[string]string{},

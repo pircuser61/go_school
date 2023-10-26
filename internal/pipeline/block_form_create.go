@@ -21,6 +21,7 @@ func createGoFormBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx 
 
 	b := &GoFormBlock{
 		Name:       name,
+		ShortName:  ef.ShortTitle,
 		Title:      ef.Title,
 		Input:      map[string]string{},
 		Output:     map[string]string{},
@@ -58,7 +59,12 @@ func createGoFormBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx 
 
 			if _, ok := b.expectedEvents[eventStart]; ok {
 				status, _ := b.GetTaskHumanStatus()
-				event, err := runCtx.MakeNodeStartEvent(ctx, name, status, b.GetStatus())
+				event, err := runCtx.MakeNodeStartEvent(ctx, MakeNodeStartEventArgs{
+					NodeName:      name,
+					NodeShortName: ef.ShortTitle,
+					HumanStatus:   status,
+					NodeStatus:    b.GetStatus(),
+				})
 				if err != nil {
 					return nil, false, err
 				}
@@ -73,7 +79,12 @@ func createGoFormBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx 
 
 		if _, ok := b.expectedEvents[eventStart]; ok {
 			status, _ := b.GetTaskHumanStatus()
-			event, err := runCtx.MakeNodeStartEvent(ctx, name, status, b.GetStatus())
+			event, err := runCtx.MakeNodeStartEvent(ctx, MakeNodeStartEventArgs{
+				NodeName:      name,
+				NodeShortName: ef.ShortTitle,
+				HumanStatus:   status,
+				NodeStatus:    b.GetStatus(),
+			})
 			if err != nil {
 				return nil, false, err
 			}

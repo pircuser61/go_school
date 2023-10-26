@@ -22,11 +22,12 @@ func createGoExecutionBlock(ctx c.Context, name string, ef *entity.EriusFunc, ru
 	}
 
 	b := &GoExecutionBlock{
-		Name:    name,
-		Title:   ef.Title,
-		Input:   map[string]string{},
-		Output:  map[string]string{},
-		Sockets: entity.ConvertSocket(ef.Sockets),
+		Name:      name,
+		ShortName: ef.ShortTitle,
+		Title:     ef.Title,
+		Input:     map[string]string{},
+		Output:    map[string]string{},
+		Sockets:   entity.ConvertSocket(ef.Sockets),
 
 		RunContext: runCtx,
 
@@ -62,7 +63,12 @@ func createGoExecutionBlock(ctx c.Context, name string, ef *entity.EriusFunc, ru
 
 			if _, ok := b.expectedEvents[eventStart]; ok {
 				status, _ := b.GetTaskHumanStatus()
-				event, err := runCtx.MakeNodeStartEvent(ctx, name, status, b.GetStatus())
+				event, err := runCtx.MakeNodeStartEvent(ctx, MakeNodeStartEventArgs{
+					NodeName:      name,
+					NodeShortName: ef.ShortTitle,
+					HumanStatus:   status,
+					NodeStatus:    b.GetStatus(),
+				})
 				if err != nil {
 					return nil, false, err
 				}
@@ -77,7 +83,12 @@ func createGoExecutionBlock(ctx c.Context, name string, ef *entity.EriusFunc, ru
 
 		if _, ok := b.expectedEvents[eventStart]; ok {
 			status, _ := b.GetTaskHumanStatus()
-			event, err := runCtx.MakeNodeStartEvent(ctx, name, status, b.GetStatus())
+			event, err := runCtx.MakeNodeStartEvent(ctx, MakeNodeStartEventArgs{
+				NodeName:      name,
+				NodeShortName: ef.ShortTitle,
+				HumanStatus:   status,
+				NodeStatus:    b.GetStatus(),
+			})
 			if err != nil {
 				return nil, false, err
 			}
@@ -388,7 +399,12 @@ func (gb *GoExecutionBlock) trySetPreviousDecision(ctx c.Context) (isPrevDecisio
 
 		if _, ok = gb.expectedEvents[eventEnd]; ok {
 			status, _ := gb.GetTaskHumanStatus()
-			event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, gb.Name, status, gb.GetStatus())
+			event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, MakeNodeEndEventArgs{
+				NodeName:      gb.Name,
+				NodeShortName: gb.ShortName,
+				HumanStatus:   status,
+				NodeStatus:    gb.GetStatus(),
+			})
 			if eventErr != nil {
 				return false
 			}

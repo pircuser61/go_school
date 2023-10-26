@@ -693,7 +693,12 @@ func (gb *GoApproverBlock) Update(ctx c.Context) (interface{}, error) {
 	if gb.State.Decision != nil {
 		if _, ok := gb.expectedEvents[eventEnd]; ok {
 			status, _ := gb.GetTaskHumanStatus()
-			event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, gb.Name, status, gb.GetStatus())
+			event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, MakeNodeEndEventArgs{
+				NodeName:      gb.Name,
+				NodeShortName: gb.ShortName,
+				HumanStatus:   status,
+				NodeStatus:    gb.GetStatus(),
+			})
 			if eventErr != nil {
 				return nil, eventErr
 			}

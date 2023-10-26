@@ -43,12 +43,13 @@ const (
 )
 
 type GoSignBlock struct {
-	Name    string
-	Title   string
-	Input   map[string]string
-	Output  map[string]string
-	Sockets []script.Socket
-	State   *SignData
+	Name      string
+	ShortName string
+	Title     string
+	Input     map[string]string
+	Output    map[string]string
+	Sockets   []script.Socket
+	State     *SignData
 
 	RunContext *BlockRunContext
 
@@ -495,6 +496,7 @@ func createGoSignBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx 
 
 	b := &GoSignBlock{
 		Name:       name,
+		ShortName:  ef.ShortTitle,
 		Title:      ef.Title,
 		Input:      map[string]string{},
 		Output:     map[string]string{},
@@ -533,7 +535,12 @@ func createGoSignBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx 
 
 		if _, ok := b.expectedEvents[eventStart]; ok {
 			status, _ := b.GetTaskHumanStatus()
-			event, err := runCtx.MakeNodeStartEvent(ctx, name, status, b.GetStatus())
+			event, err := runCtx.MakeNodeStartEvent(ctx, MakeNodeStartEventArgs{
+				NodeName:      name,
+				NodeShortName: ef.ShortTitle,
+				HumanStatus:   status,
+				NodeStatus:    b.GetStatus(),
+			})
 			if err != nil {
 				return nil, false, err
 			}
