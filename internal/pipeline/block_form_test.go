@@ -217,8 +217,9 @@ func Test_createGoFormBlock(t *testing.T) {
 				},
 			},
 			want: &GoFormBlock{
-				Name:  name,
-				Title: title,
+				Name:      name,
+				ShortName: shortTitle,
+				Title:     title,
 				Input: map[string]string{
 					"foo": "bar",
 				},
@@ -307,8 +308,9 @@ func Test_createGoFormBlock(t *testing.T) {
 				},
 			},
 			want: &GoFormBlock{
-				Name:  name,
-				Title: title,
+				Name:      name,
+				ShortName: shortTitle,
+				Title:     title,
 				Input: map[string]string{
 					"foo": "bar",
 				},
