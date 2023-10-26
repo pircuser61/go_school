@@ -953,6 +953,9 @@ func (ae *APIEnv) hideExecutors(steps entity.TaskSteps, requesterLogin, taskAuth
 				execBlock.EditingAppLog[i].DelegateFor = hiddenUserLogin
 			}
 
+			execBlock.EditingApp.Executor = hiddenUserLogin
+			execBlock.EditingApp.DelegateFor = hiddenUserLogin
+
 			data, marshalErr := json.Marshal(execBlock)
 			if marshalErr != nil {
 				return marshalErr
