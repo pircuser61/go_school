@@ -935,7 +935,9 @@ func (ae *APIEnv) hideExecutors(steps entity.TaskSteps, requesterLogin, taskAuth
 				hiddenUserLogin: {},
 			}
 
-			execBlock.ActualExecutor = utils.GetAddressOfValue(hiddenUserLogin)
+			if execBlock.ActualExecutor != nil {
+				execBlock.ActualExecutor = utils.GetAddressOfValue(hiddenUserLogin)
+			}
 
 			for i := range execBlock.ChangedExecutorsLogs {
 				execBlock.ChangedExecutorsLogs[i].OldLogin = hiddenUserLogin
@@ -953,9 +955,10 @@ func (ae *APIEnv) hideExecutors(steps entity.TaskSteps, requesterLogin, taskAuth
 				execBlock.EditingAppLog[i].DelegateFor = hiddenUserLogin
 			}
 
-			execBlock.EditingApp.Executor = hiddenUserLogin
-			execBlock.EditingApp.DelegateFor = hiddenUserLogin
-
+			if execBlock.EditingApp != nil {
+				execBlock.EditingApp.Executor = hiddenUserLogin
+				execBlock.EditingApp.DelegateFor = hiddenUserLogin
+			}
 			data, marshalErr := json.Marshal(execBlock)
 			if marshalErr != nil {
 				return marshalErr
