@@ -5174,6 +5174,9 @@ components:
           description: Approvement status
         work_type:
           $ref: "#/components/schemas/WorkType"
+        approval_list:
+          type: boolean
+          description: Include this node to approval list
       required:
         - type
         - approver
@@ -5186,6 +5189,7 @@ components:
         - approvers_group_id
         - approvers_group_name
         - approve_status_name
+        - approval_list
 
     FormsChangelogResponse:
       type: array

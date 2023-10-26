@@ -57,6 +57,7 @@ type ApproverParams struct {
 	ApproversGroupIDPath *string `json:"approvers_group_id_path,omitempty"`
 	ApproveStatusName    string  `json:"approve_status_name"`
 	WorkType             *string `json:"work_type"`
+	ApprovalList         bool    `json:"approval_list"`
 }
 
 // nolint:gocyclo // its ok here

@@ -177,6 +177,7 @@ func (gb *GoApproverBlock) createState(ctx c.Context, ef *entity.EriusFunc) erro
 		ApprovementRule:    params.ApprovementRule,
 		ApproveStatusName:  params.ApproveStatusName,
 		ActionList:         actions,
+		ApprovalList:       params.ApprovalList,
 	}
 
 	if gb.State.AutoAction != nil {

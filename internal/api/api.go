@@ -582,6 +582,9 @@ type ApprovementRule string
 
 // Approver params
 type ApproverParams struct {
+	// Include this node to approval list
+	ApprovalList bool `json:"approval_list"`
+
 	// Approvement status
 	ApproveStatusName string `json:"approve_status_name"`
 

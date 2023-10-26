@@ -193,6 +193,8 @@ type ApproverData struct {
 	ActionList []Action `json:"action_list"`
 
 	AdditionalApprovers []AdditionalApprover `json:"additional_approvers"`
+
+	ApprovalList bool `json:"approval_list"`
 }
 
 type Action struct {
