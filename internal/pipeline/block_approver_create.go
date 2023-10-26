@@ -395,7 +395,13 @@ func (gb *GoApproverBlock) trySetPreviousDecision(ctx c.Context) (isPrevDecision
 			comment = *parentState.Comment
 		}
 
-		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputApprover], actualApprover)
+		person, personErr := gb.RunContext.Services.ServiceDesc.GetSsoPerson(ctx, actualApprover)
+		if personErr != nil {
+			l.Error(funcName, "service couldn't get person by login: "+actualApprover)
+			return false
+		}
+
+		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputApprover], person)
 		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputDecision], parentState.Decision.String())
 		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputComment], comment)
 

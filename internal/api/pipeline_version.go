@@ -79,7 +79,17 @@ func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request
 
 	if len(p.Pipeline.Blocks) == 0 {
 		p.Pipeline.FillEmptyPipeline()
+	} else {
+		keyOutputs := map[string]string{
+			pipeline.BlockGoApproverID:  "approver",
+			pipeline.BlockGoSignID:      "signer",
+			pipeline.BlockGoExecutionID: "login",
+		}
+
+		p.Pipeline.ChangeOutput(keyOutputs)
+
 	}
+
 	if p.Pipeline.Entrypoint == "" {
 		p.Pipeline.Entrypoint = startEntrypoint
 	}
@@ -388,7 +398,16 @@ func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 
 	if len(p.Pipeline.Blocks) == 0 {
 		p.Pipeline.FillEmptyPipeline()
+	} else {
+		keyOutputs := map[string]string{
+			pipeline.BlockGoApproverID:  "approver",
+			pipeline.BlockGoSignID:      "signer",
+			pipeline.BlockGoExecutionID: "login",
+		}
+
+		p.Pipeline.ChangeOutput(keyOutputs)
 	}
+
 	if p.Pipeline.Entrypoint == "" {
 		p.Pipeline.Entrypoint = startEntrypoint
 	}
@@ -425,7 +444,14 @@ func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 	}
 	groups := make([]*entity.NodeGroup, 0)
 	if p.Status == db.StatusApproved {
-		groups = p.Pipeline.Blocks.GetGroups()
+		groups, err = p.Pipeline.Blocks.GetGroups()
+		if err != nil {
+			e := UnknownError
+			log.Error(e.errorMessage(err))
+			_ = e.sendError(w)
+
+			return
+		}
 	}
 	canEdit, err := ae.DB.VersionEditable(ctx, p.VersionID)
 	if err != nil {

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/pkg/errors"
 	"golang.org/x/exp/maps"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
@@ -528,6 +529,22 @@ func (p *PipelineType) FillEmptyPipeline() {
 	p.Entrypoint = StartBlock0
 }
 
+func (p *PipelineType) ChangeOutput(keyOutputs map[string]string) {
+	for block := range p.Blocks {
+		if _, ok := keyOutputs[p.Blocks[block].TypeID]; !ok {
+			continue
+		}
+
+		keyOutput := keyOutputs[p.Blocks[block].TypeID]
+		outputBlock := p.Blocks[block].Output.Properties[keyOutput]
+		outputBlock.Type = "object"
+		outputBlock.Format = "SsoPerson"
+		outputBlock.Properties = people.GetSsoPersonSchemaProperties()
+
+		p.Blocks[block].Output.Properties[keyOutput] = outputBlock
+	}
+}
+
 // nolint
 type EriusScenario struct {
 	ID              uuid.UUID            `json:"id" example:"916ad995-8d13-49fb-82ee-edd4f97649e2" format:"uuid"`
@@ -838,14 +855,14 @@ type NodeGroup struct {
 }
 
 // nolint
-func (bt *BlocksType) GetGroups() (nodeGroups []*NodeGroup) {
+func (bt *BlocksType) GetGroups() (NodeGroups []*NodeGroup, err error) {
 	blocks := map[string]EriusFunc{
 		StartBlock0: (*bt)[StartBlock0],
 	}
 	visitedNodes := make(map[string]*EriusFunc, 0)
 	prevNodeMap := make(map[string]string, 0)
 
-	nodeGroups = make([]*NodeGroup, 0)
+	NodeGroups = make([]*NodeGroup, 0)
 
 	for {
 		nodeKeys := maps.Keys(blocks)
@@ -856,8 +873,11 @@ func (bt *BlocksType) GetGroups() (nodeGroups []*NodeGroup) {
 		delete(blocks, nodeKey)
 		visitedNodes[nodeKey] = &node
 		if node.TypeID == BlockParallelStartName {
-			groupParallel, exitParallelIdx := bt.fillParallGroups(nodeKey, prevNodeMap[nodeKey], &node)
-			nodeGroups = append(nodeGroups, groupParallel)
+			NodeGroupParallel, exitParallelIdx, fillErr := bt.fillParallGroups(nodeKey, prevNodeMap[nodeKey], 0, &node)
+			if fillErr != nil {
+				return nil, fillErr
+			}
+			NodeGroups = append(NodeGroups, NodeGroupParallel)
 			endNode := (*bt)[exitParallelIdx]
 
 			for _, socketOutNodes := range endNode.Next {
@@ -875,7 +895,7 @@ func (bt *BlocksType) GetGroups() (nodeGroups []*NodeGroup) {
 				}
 			}
 		} else {
-			nodeGroups = append(nodeGroups, &NodeGroup{
+			NodeGroups = append(NodeGroups, &NodeGroup{
 				EndNode:   nodeKey,
 				Nodes:     nil,
 				Prev:      prevNodeMap[nodeKey],
@@ -897,11 +917,17 @@ func (bt *BlocksType) GetGroups() (nodeGroups []*NodeGroup) {
 			}
 		}
 	}
-	return nodeGroups
+	return NodeGroups, nil
 }
 
 // nolint
-func (bt *BlocksType) fillParallGroups(nodeKey, prevNode string, block *EriusFunc) (group *NodeGroup, exitParallelIdx string) {
+func (bt *BlocksType) fillParallGroups(nodeKey, prevNode string, currIteration int, block *EriusFunc) (
+	NodeGroupParallel *NodeGroup, exitParallelIdx string, err error) {
+	currIteration += 1
+	if currIteration > 5 {
+		return nil, "", errors.New("took too long")
+	}
+
 	blocks := map[string]*EriusFunc{
 		nodeKey: block,
 	}
@@ -912,7 +938,7 @@ func (bt *BlocksType) fillParallGroups(nodeKey, prevNode string, block *EriusFun
 		nodeKey: prevNode,
 	}
 
-	group = &NodeGroup{
+	NodeGroupParallel = &NodeGroup{
 		EndNode:   "",
 		Nodes:     []*NodeGroup{},
 		Prev:      prevNode,
@@ -933,20 +959,24 @@ func (bt *BlocksType) fillParallGroups(nodeKey, prevNode string, block *EriusFun
 
 		switch parallNode.TypeID {
 		case BlockParallelEndName:
-			group.Nodes = append(group.Nodes, &NodeGroup{
+			NodeGroupParallel.Nodes = append(NodeGroupParallel.Nodes, &NodeGroup{
 				EndNode:   parallNodeKey,
 				Nodes:     nil,
 				Prev:      "",
 				StartNode: parallNodeKey,
 			})
-			group.EndNode = parallNodeKey
+			NodeGroupParallel.EndNode = parallNodeKey
 			exitParallelIdx = parallNodeKey
 
 			return
 		case BlockParallelStartName:
 			if parallNodeKey != nodeKey {
-				newNodeGroupParallel, newExitParallelIdx := bt.fillParallGroups(parallNodeKey, prevNodeMap[parallNodeKey], parallNode)
-				group.Nodes = append(group.Nodes, newNodeGroupParallel)
+				newNodeGroupParallel, newExitParallelIdx, fillErr := bt.fillParallGroups(parallNodeKey,
+					prevNodeMap[parallNodeKey], currIteration, parallNode)
+				if fillErr != nil {
+					return nil, "", fillErr
+				}
+				NodeGroupParallel.Nodes = append(NodeGroupParallel.Nodes, newNodeGroupParallel)
 				endNode := (*bt)[newExitParallelIdx]
 				for _, socketOutNodes := range endNode.Next {
 					for _, socketOutNode := range socketOutNodes {
@@ -963,7 +993,7 @@ func (bt *BlocksType) fillParallGroups(nodeKey, prevNode string, block *EriusFun
 					}
 				}
 			} else {
-				group.Nodes = append(group.Nodes, &NodeGroup{
+				NodeGroupParallel.Nodes = append(NodeGroupParallel.Nodes, &NodeGroup{
 					EndNode:   parallNodeKey,
 					Nodes:     nil,
 					Prev:      prevNodeMap[parallNodeKey],
@@ -985,7 +1015,7 @@ func (bt *BlocksType) fillParallGroups(nodeKey, prevNode string, block *EriusFun
 				}
 			}
 		default:
-			group.Nodes = append(group.Nodes, &NodeGroup{
+			NodeGroupParallel.Nodes = append(NodeGroupParallel.Nodes, &NodeGroup{
 				EndNode:   parallNodeKey,
 				Nodes:     nil,
 				Prev:      prevNodeMap[parallNodeKey],
@@ -1007,5 +1037,5 @@ func (bt *BlocksType) fillParallGroups(nodeKey, prevNode string, block *EriusFun
 			}
 		}
 	}
-	return group, exitParallelIdx
+	return NodeGroupParallel, exitParallelIdx, nil
 }

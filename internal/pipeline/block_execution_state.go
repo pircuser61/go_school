@@ -80,7 +80,7 @@ type ExecutionData struct {
 	CheckReworkSLA               bool   `json:"check_rework_sla"`
 	CheckDayBeforeSLARequestInfo bool   `json:"check_day_before_sla_request_info"`
 	WorkType                     string `json:"work_type"`
-	ShowExecutor                 bool   `json:"show_executor"`
+	HideExecutor                 bool   `json:"hide_executor"`
 }
 
 func (a *ExecutionData) GetDecision() *ExecutionDecision {

@@ -247,7 +247,14 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request, workNumber s
 
 			return
 		}
-		groups := scenario.Pipeline.Blocks.GetGroups()
+		groups, groupsErr := scenario.Pipeline.Blocks.GetGroups()
+		if err != nil {
+			e := UnknownError
+			log.Error(e.errorMessage(groupsErr))
+			_ = e.sendError(w)
+
+			return
+		}
 		updateGroupsErr := ae.DB.UpdateGroupsForEmptyVersions(ctx, scenario.VersionID.String(), groups)
 		if updateGroupsErr != nil {
 			e := UnknownError
@@ -924,7 +931,7 @@ func (ae *APIEnv) hideExecutors(steps entity.TaskSteps, requesterLogin, taskAuth
 			if unmarshalErr != nil {
 				return unmarshalErr
 			}
-			if execBlock.ShowExecutor || slices.Contains(maps.Keys(execBlock.Executors), requesterLogin) {
+			if !execBlock.HideExecutor || slices.Contains(maps.Keys(execBlock.Executors), requesterLogin) {
 				continue
 			}
 			execBlock.Executors = map[string]struct{}{

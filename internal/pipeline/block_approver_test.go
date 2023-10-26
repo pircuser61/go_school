@@ -1,9 +1,12 @@
 package pipeline
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"testing"
 	"time"
 
@@ -19,6 +22,8 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	humanTasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
+	serviceDeskMocks "gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
@@ -723,6 +728,31 @@ func TestGoApproverBlock_Update(t *testing.T) {
 					skipNotifications: true,
 					VarStore:          store.NewStore(),
 					Services: RunContextServices{
+						ServiceDesc: func() *servicedesc.Service {
+							sdMock := servicedesc.Service{
+								SdURL: "",
+							}
+							httpClient := http.DefaultClient
+							mockTransport := serviceDeskMocks.RoundTripper{}
+							fResponse := func(*http.Request) *http.Response {
+								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								body := io.NopCloser(bytes.NewReader(b))
+								defer body.Close()
+								return &http.Response{
+									Status:     http.StatusText(http.StatusOK),
+									StatusCode: http.StatusOK,
+									Body:       body,
+								}
+							}
+							f_error := func(*http.Request) error {
+								return nil
+							}
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							httpClient.Transport = &mockTransport
+							sdMock.Cli = httpClient
+
+							return &sdMock
+						}(),
 						Storage: func() db.Database {
 							res := &mocks.MockedDatabase{}
 
@@ -800,6 +830,31 @@ func TestGoApproverBlock_Update(t *testing.T) {
 					skipNotifications: true,
 					VarStore:          store.NewStore(),
 					Services: RunContextServices{
+						ServiceDesc: func() *servicedesc.Service {
+							sdMock := servicedesc.Service{
+								SdURL: "",
+							}
+							httpClient := http.DefaultClient
+							mockTransport := serviceDeskMocks.RoundTripper{}
+							fResponse := func(*http.Request) *http.Response {
+								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								body := io.NopCloser(bytes.NewReader(b))
+								defer body.Close()
+								return &http.Response{
+									Status:     http.StatusText(http.StatusOK),
+									StatusCode: http.StatusOK,
+									Body:       body,
+								}
+							}
+							f_error := func(*http.Request) error {
+								return nil
+							}
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							httpClient.Transport = &mockTransport
+							sdMock.Cli = httpClient
+
+							return &sdMock
+						}(),
 						Storage: func() db.Database {
 							res := &mocks.MockedDatabase{}
 
@@ -875,6 +930,31 @@ func TestGoApproverBlock_Update(t *testing.T) {
 					skipNotifications: true,
 					VarStore:          store.NewStore(),
 					Services: RunContextServices{
+						ServiceDesc: func() *servicedesc.Service {
+							sdMock := servicedesc.Service{
+								SdURL: "",
+							}
+							httpClient := http.DefaultClient
+							mockTransport := serviceDeskMocks.RoundTripper{}
+							fResponse := func(*http.Request) *http.Response {
+								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								body := io.NopCloser(bytes.NewReader(b))
+								defer body.Close()
+								return &http.Response{
+									Status:     http.StatusText(http.StatusOK),
+									StatusCode: http.StatusOK,
+									Body:       body,
+								}
+							}
+							f_error := func(*http.Request) error {
+								return nil
+							}
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							httpClient.Transport = &mockTransport
+							sdMock.Cli = httpClient
+
+							return &sdMock
+						}(),
 						Storage: func() db.Database {
 							res := &mocks.MockedDatabase{}
 

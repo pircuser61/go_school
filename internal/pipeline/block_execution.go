@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
@@ -408,8 +409,10 @@ func (gb *GoExecutionBlock) Model() script.FunctionModel {
 			Type: "object",
 			Properties: script.JSONSchemaProperties{
 				keyOutputExecutionLogin: {
-					Type:        "string",
+					Type:        "object",
 					Description: "executor login",
+					Format:      "SsoPerson",
+					Properties:  people.GetSsoPersonSchemaProperties(),
 				},
 				keyOutputExecutionDecision: {
 					Type:        "string",

@@ -40,7 +40,7 @@ func (gb *GoExecutionBlock) Update(ctx c.Context) (interface{}, error) {
 		if !gb.State.IsTakenInWork {
 			return nil, errors.New("is not taken in work")
 		}
-		if errUpdate := gb.updateDecision(); errUpdate != nil {
+		if errUpdate := gb.updateDecision(ctx); errUpdate != nil {
 			return nil, errUpdate
 		}
 	case string(entity.TaskUpdateActionChangeExecutor):
@@ -487,7 +487,7 @@ func (gb *GoExecutionBlock) HandleBreachedSLARequestAddInfo(ctx c.Context) error
 	return nil
 }
 
-func (gb *GoExecutionBlock) updateDecision() error {
+func (gb *GoExecutionBlock) updateDecision(ctx c.Context) error {
 	var updateParams ExecutionUpdateParams
 
 	err := json.Unmarshal(gb.RunContext.UpdateData.Parameters, &updateParams)
@@ -501,7 +501,12 @@ func (gb *GoExecutionBlock) updateDecision() error {
 	}
 
 	if gb.State.Decision != nil {
-		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputExecutionLogin], &gb.State.ActualExecutor)
+		person, personErr := gb.RunContext.Services.ServiceDesc.GetSsoPerson(ctx, *gb.State.ActualExecutor)
+		if personErr != nil {
+			return personErr
+		}
+
+		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputExecutionLogin], person)
 		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputDecision], &gb.State.Decision)
 		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputComment], &gb.State.DecisionComment)
 	}
@@ -710,7 +715,7 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 	}
 
 	executorName := typedAuthor.GetFullName()
-	if !gb.State.ShowExecutor {
+	if !gb.State.HideExecutor {
 		executorName = ""
 	}
 
@@ -816,7 +821,12 @@ func (gb *GoExecutionBlock) toEditApplication(ctx c.Context) (err error) {
 			return editErr
 		}
 
-		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputExecutionLogin], gb.RunContext.UpdateData.ByLogin)
+		person, personErr := gb.RunContext.Services.ServiceDesc.GetSsoPerson(ctx, gb.RunContext.UpdateData.ByLogin)
+		if personErr != nil {
+			return personErr
+		}
+
+		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputExecutionLogin], person)
 		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputDecision], ExecutionDecisionSentEdit)
 		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputComment], updateParams.Comment)
 	}

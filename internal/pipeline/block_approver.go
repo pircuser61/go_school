@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
@@ -403,8 +404,10 @@ func (gb *GoApproverBlock) Model() script.FunctionModel {
 			Type: "object",
 			Properties: script.JSONSchemaProperties{
 				keyOutputApprover: {
-					Type:        "string",
+					Type:        "object",
 					Description: "approver login which made a decision",
+					Format:      "SsoPerson",
+					Properties:  people.GetSsoPersonSchemaProperties(),
 				},
 				keyOutputDecision: {
 					Type:        "string",

@@ -112,11 +112,16 @@ func (s *Service) SendNotification(ctx context.Context, to []string, files []ema
 		msg.Attachments = append(msg.Attachments, f)
 	}
 
+	personMail := make(map[string]struct{})
 	for _, person := range to {
 		if !regexp.MustCompile(`.+@.+`).MatchString(person) {
 			continue
 		}
-		msg.To = append(msg.To, &mail.Address{Address: person})
+
+		if _, ok := personMail[person]; !ok {
+			msg.To = append(msg.To, &mail.Address{Address: person})
+			personMail[person] = struct{}{}
+		}
 	}
 
 	temp, err := template.New("").Parse(messageTplStart + tmpl.Text + msgTplEnd)

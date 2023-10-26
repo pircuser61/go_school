@@ -37,7 +37,7 @@ type ExecutionParams struct {
 	RepeatPrevDecision bool    `json:"repeat_prev_decision"`
 	WorkType           *string `json:"work_type"`
 	UseActualExecutor  bool    `json:"use_actual_executor"`
-	ShowExecutor       bool    `json:"show_executor"`
+	HideExecutor       bool    `json:"hide_executor"`
 }
 
 func (a *ExecutionParams) Validate() error {
