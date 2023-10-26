@@ -715,7 +715,7 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 	}
 
 	executorName := typedAuthor.GetFullName()
-	if !gb.State.ShowExecutor {
+	if !gb.State.HideExecutor {
 		executorName = ""
 	}
 
