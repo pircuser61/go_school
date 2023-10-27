@@ -54,7 +54,11 @@ func (gb *GoWaitForAllInputsBlock) GetStatus() Status {
 }
 
 func (gb *GoWaitForAllInputsBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment string) {
-	return StatusDone, ""
+	if gb.State.Done {
+		return StatusDone, ""
+	}
+
+	return StatusExecution, ""
 }
 
 func (gb *GoWaitForAllInputsBlock) Next(_ *store.VariableStore) ([]string, bool) {

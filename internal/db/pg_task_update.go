@@ -86,8 +86,29 @@ func (db *PGCon) UpdateTaskHumanStatus(ctx c.Context, taskID uuid.UUID, status, 
 	// nolint:gocritic
 	// language=PostgreSQL
 	q := `
+		WITH is_parallel AS
+		    (SELECT
+				(SELECT COUNT(*)
+					FROM variable_storage
+			 		WHERE work_id = $2
+			   			AND step_type = 'begin_parallel_task')
+				>
+				(SELECT COUNT(*)
+					FROM variable_storage
+					WHERE work_id = $2
+						AND step_type = 'wait_for_all_inputs' 
+						AND status = 'finished') AS result
+		     )
+		
 		UPDATE works
-		SET human_status = $1, human_status_comment = $3
+		SET human_status = CASE
+		    					WHEN $1 IN ('cancel', 'revoke', 'rejected', 'approvement-reject', 'executor-reject')
+		    						THEN $1
+		    					WHEN (SELECT result FROM is_parallel) 
+									THEN 'processing'
+								ELSE $1
+						   END,
+		    human_status_comment = $3
 		WHERE id = $2 RETURNING human_status, finished_at, work_number`
 
 	row := db.Connection.QueryRow(ctx, q, status, taskID, comment)
