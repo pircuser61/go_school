@@ -613,6 +613,8 @@ gitlab.services.mts.ru/jocasta/conditions-kit v1.0.6 h1:gdBQay9xwe4rpYeomuiwW4SI
 gitlab.services.mts.ru/jocasta/conditions-kit v1.0.6/go.mod h1:6Q7Q5QkybhdvGpYBOojsDENuKigwRxZCCX+b/F9Y5w0=
 gitlab.services.mts.ru/jocasta/conditions-kit v1.0.7 h1:lZ/l9Femz52Y3WXYhwlj4Z8ijAxpJ+OKqEmQONsC4w8=
 gitlab.services.mts.ru/jocasta/conditions-kit v1.0.7/go.mod h1:6Q7Q5QkybhdvGpYBOojsDENuKigwRxZCCX+b/F9Y5w0=
+gitlab.services.mts.ru/jocasta/conditions-kit v1.0.8 h1:KynjovY0U+g48HZK7AZD3R7goGcHa9Xt5uAs/XciMik=
+gitlab.services.mts.ru/jocasta/conditions-kit v1.0.8/go.mod h1:jXNMNsVS3a0g3RML5d2HEw9NRipvE/V+A44O5ffePr8=
 gitlab.services.mts.ru/jocasta/file-registry v1.1.2-rc.1 h1:KDG7ZfhKbqwB5we4i7mjfEp7P1LLOm3iU+zu4PYD0y0=
 gitlab.services.mts.ru/jocasta/file-registry v1.1.2-rc.1/go.mod h1:/otsOvcT23tOs3a7Mtay4MB+58VKIDkwlnS4gzOS5Kc=
 gitlab.services.mts.ru/jocasta/forms v1.0.0-alpha.1 h1:TnRdahGzSxmTysW065+Rd0ZKfd84CUCziCf2dPZZM7Y=
