@@ -24,11 +24,18 @@ import (
 
 type FunctionRetryPolicy string
 
+type FunctionDecision string
+
 const (
+	keyOutputFunctionDecision = "decision"
+
 	ErrorKey     = "error"
 	KeyDelimiter = "."
 
 	SimpleFunctionRetryPolicy FunctionRetryPolicy = "simple"
+
+	TimeoutDecision  FunctionDecision = "timeout"
+	ExecutedDecision FunctionDecision = "executed"
 )
 
 type ExecutableFunction struct {
@@ -167,6 +174,8 @@ func (gb *ExecutableFunctionBlock) Update(ctx c.Context) (interface{}, error) {
 
 			// эта функция уже запускалась и время ожидания корректного ответа закончилось
 			if !isFirstStart && firstStart != nil && !isTimeToWaitAnswer(firstStart.Time, gb.State.WaitCorrectRes) {
+				gb.RunContext.VarStore.SetValue(gb.Output[keyOutputApprover], TimeoutDecision)
+
 				em, errEmail := gb.RunContext.Services.People.GetUserEmail(ctx, gb.RunContext.Initiator)
 				if errEmail != nil {
 					log.WithField("login", gb.RunContext.Initiator).Error(errEmail)
@@ -277,7 +286,16 @@ func (gb *ExecutableFunctionBlock) Model() script.FunctionModel {
 		BlockType: script.TypeExternal,
 		Title:     BlockExecutableFunctionTitle,
 		Inputs:    nil,
-		Outputs:   nil,
+		Outputs: &script.JSONSchema{
+			Type: "object",
+			Properties: script.JSONSchemaProperties{
+				keyOutputFunctionDecision: {
+					Type:        "string",
+					Title:       "Решение",
+					Description: "function decision",
+				},
+			},
+		},
 		Params: &script.FunctionParams{
 			Type: BlockExecutableFunctionID,
 			Params: &script.ExecutableFunctionParams{
@@ -438,6 +456,8 @@ func (gb *ExecutableFunctionBlock) setStateByResponse(updateData *FunctionUpdate
 
 			resultOutput[k] = param
 		}
+
+		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputFunctionDecision], ExecutedDecision)
 
 		for k, v := range resultOutput {
 			gb.RunContext.VarStore.SetValue(gb.Output[k], v)
