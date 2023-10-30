@@ -27,7 +27,7 @@ BEGIN
                     array['pipeline', 'blocks', s_name, 'output', 'properties', 'decision']::varchar[],
                     jsonb_build_object(
                         'type', 'string',
-                        'title', 'Решение'
+                        'title', 'Решение',
                         'global', concat(s_name, '.decision')),
                     true)
                 WHERE v.id = input_v_ids;
