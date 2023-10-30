@@ -70,9 +70,10 @@ func (a *additionalApproverUpdateParams) Validate() error {
 	return nil
 }
 
-func (gb *GoApproverBlock) setApproverDecision(ctx c.Context, u *approverUpdateParams) error {
-	if err := gb.State.SetDecision(gb.RunContext.UpdateData.ByLogin, u.internalDecision,
-		u.Comment, u.Attachments, gb.RunContext.Delegations); err != nil {
+func (gb *GoApproverBlock) setApproveDecision(ctx c.Context, u *approverUpdateParams) error {
+	byLogin := gb.RunContext.UpdateData.ByLogin
+	err := gb.State.SetDecision(byLogin, u.Comment, u.internalDecision, u.Attachments, gb.RunContext.Delegations)
+	if err != nil {
 		return err
 	}
 
@@ -152,7 +153,7 @@ func (gb *GoApproverBlock) handleBreachedSLA(ctx c.Context) error {
 	}
 	if gb.State.AutoAction != nil {
 		gb.RunContext.UpdateData.ByLogin = AutoApprover
-		if setErr := gb.setApproverDecision(ctx,
+		if setErr := gb.setApproveDecision(ctx,
 			&approverUpdateParams{
 				internalDecision: gb.State.AutoAction.ToDecision(),
 				Comment:          AutoActionComment,
@@ -632,7 +633,7 @@ func (gb *GoApproverBlock) Update(ctx c.Context) (interface{}, error) {
 
 		updateParams.internalDecision = updateParams.Decision.ToDecision()
 
-		if errUpdate := gb.setApproverDecision(ctx, &updateParams); errUpdate != nil {
+		if errUpdate := gb.setApproveDecision(ctx, &updateParams); errUpdate != nil {
 			return nil, errUpdate
 		}
 
