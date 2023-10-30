@@ -151,6 +151,7 @@ func (gb *ExecutableFunctionBlock) Update(ctx c.Context) (interface{}, error) {
 
 		switch gb.RunContext.UpdateData.Action {
 		case string(entity.TaskUpdateActionFuncSLAExpired):
+			gb.RunContext.VarStore.SetValue(gb.Output[keyOutputApprover], TimeoutDecision)
 			gb.State.TimeExpired = true
 		default:
 			if err := gb.setStateByResponse(&updateData); err != nil {
