@@ -558,7 +558,7 @@ func upMembers(tx *sql.Tx) error {
 		from works w
 		left join variable_storage vs on vs.work_id = w.id
 		where w.status in (2, 4, 6) and 
-			vs.content is not null an 
+			vs.content is not null and 
 			vs.time = (select max(time) from variable_storage 
 						where work_id = w.id) 
 		`
