@@ -151,7 +151,7 @@ func (gb *ExecutableFunctionBlock) Update(ctx c.Context) (interface{}, error) {
 
 		switch gb.RunContext.UpdateData.Action {
 		case string(entity.TaskUpdateActionFuncSLAExpired):
-			gb.RunContext.VarStore.SetValue(gb.Output[keyOutputApprover], TimeoutDecision)
+			gb.RunContext.VarStore.SetValue(gb.Output[keyOutputFunctionDecision], TimeoutDecision)
 			gb.State.TimeExpired = true
 		default:
 			if err := gb.setStateByResponse(&updateData); err != nil {
@@ -175,7 +175,7 @@ func (gb *ExecutableFunctionBlock) Update(ctx c.Context) (interface{}, error) {
 
 			// эта функция уже запускалась и время ожидания корректного ответа закончилось
 			if !isFirstStart && firstStart != nil && !isTimeToWaitAnswer(firstStart.Time, gb.State.WaitCorrectRes) {
-				gb.RunContext.VarStore.SetValue(gb.Output[keyOutputApprover], TimeoutDecision)
+				gb.RunContext.VarStore.SetValue(gb.Output[keyOutputFunctionDecision], TimeoutDecision)
 
 				em, errEmail := gb.RunContext.Services.People.GetUserEmail(ctx, gb.RunContext.Initiator)
 				if errEmail != nil {
