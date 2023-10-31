@@ -1760,11 +1760,15 @@ func (db *PGCon) GetBlockState(ctx c.Context, blockId string) (entity.BlockState
 	return state, nil
 }
 
-func (db *PGCon) GetTaskMembers(ctx c.Context, workNumber string) ([]DbMember, error) {
+func (db *PGCon) GetTaskMembers(ctx c.Context, workNumber string, fromActiveNodes bool) ([]DbMember, error) {
 	q := `SELECT m.login, vs.step_type FROM works
     		JOIN variable_storage vs ON works.id = vs.work_id
     		JOIN members m ON vs.id = m.block_id
-		 WHERE work_number = $1 AND vs.status IN ('running', 'idle');`
+		 WHERE work_number = $1 `
+
+	if fromActiveNodes {
+		q += `AND vs.status IN ('running', 'idle');`
+	}
 
 	members := make([]DbMember, 0)
 

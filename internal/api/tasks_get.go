@@ -11,7 +11,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
 
 	"go.opencensus.io/trace"
@@ -891,14 +890,14 @@ func (ae *APIEnv) GetTaskMeanSolveTime(w http.ResponseWriter, req *http.Request,
 
 func (ae *APIEnv) hideExecutors(ctx context.Context, dbTask *entity.EriusTask, requesterLogin string, stepDelegates map[string]bool) error {
 
-	dbMembers, membErr := ae.DB.GetTaskMembers(ctx, dbTask.WorkNumber)
+	dbMembers, membErr := ae.DB.GetTaskMembers(ctx, dbTask.WorkNumber, false)
 	if membErr != nil {
 		return membErr
 	}
 
 	members := make([]string, 0)
 	for i := range dbMembers {
-		if dbMembers[i].IsActed == true {
+		if dbMembers[i].Login != dbTask.Author {
 			members = append(members, dbMembers[i].Login)
 		}
 	}
@@ -911,31 +910,29 @@ func (ae *APIEnv) hideExecutors(ctx context.Context, dbTask *entity.EriusTask, r
 
 		switch currentStep.Type {
 		case pipeline.BlockGoFormID:
-			if dbTask.Author == requesterLogin {
-				var formBlock pipeline.FormData
-				unmarshalErr := json.Unmarshal(currentStep.State[currentStep.Name], &formBlock)
-				if unmarshalErr != nil {
-					return unmarshalErr
-				}
-
-				if !formBlock.HideExecutorFromInitiator || slices.Contains(maps.Keys(formBlock.Executors), requesterLogin) || slices.Contains(members, requesterLogin) {
-					continue
-				}
-				formBlock.Executors = map[string]struct{}{
-					hiddenUserLogin: {},
-				}
-				formBlock.ActualExecutor = utils.GetAddressOfValue(hiddenUserLogin)
-
-				for historyIdx := range formBlock.ChangesLog {
-					formBlock.ChangesLog[historyIdx].Executor = hiddenUserLogin
-					formBlock.ChangesLog[historyIdx].DelegateFor = hideDelegator(formBlock.ChangesLog[historyIdx].DelegateFor)
-				}
-				data, marshalErr := json.Marshal(formBlock)
-				if marshalErr != nil {
-					return marshalErr
-				}
-				currentStep.State[currentStep.Name] = data
+			var formBlock pipeline.FormData
+			unmarshalErr := json.Unmarshal(currentStep.State[currentStep.Name], &formBlock)
+			if unmarshalErr != nil {
+				return unmarshalErr
 			}
+
+			if !formBlock.HideExecutorFromInitiator || slices.Contains(members, requesterLogin) {
+				continue
+			}
+			formBlock.Executors = map[string]struct{}{
+				hiddenUserLogin: {},
+			}
+			formBlock.ActualExecutor = utils.GetAddressOfValue(hiddenUserLogin)
+
+			for historyIdx := range formBlock.ChangesLog {
+				formBlock.ChangesLog[historyIdx].Executor = hiddenUserLogin
+				formBlock.ChangesLog[historyIdx].DelegateFor = hideDelegator(formBlock.ChangesLog[historyIdx].DelegateFor)
+			}
+			data, marshalErr := json.Marshal(formBlock)
+			if marshalErr != nil {
+				return marshalErr
+			}
+			currentStep.State[currentStep.Name] = data
 
 		case pipeline.BlockGoExecutionID:
 			if stepDelegates[currentStep.Name] {
@@ -946,7 +943,7 @@ func (ae *APIEnv) hideExecutors(ctx context.Context, dbTask *entity.EriusTask, r
 			if unmarshalErr != nil {
 				return unmarshalErr
 			}
-			if !execBlock.HideExecutor || slices.Contains(maps.Keys(execBlock.Executors), requesterLogin) || slices.Contains(members, requesterLogin) {
+			if !execBlock.HideExecutor || slices.Contains(members, requesterLogin) {
 				continue
 			}
 			execBlock.Executors = map[string]struct{}{

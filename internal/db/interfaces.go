@@ -240,6 +240,6 @@ type Database interface {
 	AllowRunAsOthers(ctx c.Context, versionID, systemID string, allowRunAsOthers bool) error
 	SaveSlaVersionSettings(ctx c.Context, versionID string, s e.SlaVersionSettings) (err error)
 	GetSlaVersionSettings(ctx c.Context, versionID string) (s e.SlaVersionSettings, err error)
-	GetTaskMembers(ctx c.Context, workNumber string) ([]DbMember, error)
+	GetTaskMembers(ctx c.Context, workNumber string, fromActiveNodes bool) ([]DbMember, error)
 	UpdateGroupsForEmptyVersions(ctx c.Context, versionID string, groups []*e.NodeGroup) error
 }
