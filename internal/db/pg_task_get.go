@@ -687,46 +687,80 @@ func (db *PGCon) GetTasksCount(
 	// nolint:gocritic
 	// language=PostgreSQL
 	q := `
-		WITH ids AS (
-		    SELECT w.id
-		    FROM works w
-         	JOIN versions v ON v.id = w.version_id
-         	JOIN pipelines p ON p.id = v.pipeline_id
-         	JOIN work_status ws ON w.status = ws.id
-			WHERE w.child_id IS NULL
-		)
-		SELECT
-		(SELECT count(*) FROM works w join ids on w.id = ids.id
-		WHERE author = $1 AND (w.finished_at IS NULL OR (w.archived = false AND
-		      (now()::TIMESTAMP - w.finished_at::TIMESTAMP) < '3 days'))),
-		(SELECT count(*)
-			FROM members m
-				JOIN variable_storage vs on vs.id = m.block_id
-				JOIN ids on vs.work_id = ids.id
-			WHERE vs.status IN ('running', 'idle', 'ready') AND
-				m.login = ANY($2) AND vs.step_type = 'approver'
-		),
-		(SELECT count(*)
-			 FROM members m
-				JOIN variable_storage vs on vs.id = m.block_id
-				JOIN ids on vs.work_id = ids.id
-			 WHERE vs.status IN ('running', 'idle', 'ready') AND
-				m.login = ANY($3) AND vs.step_type = 'execution'),
-		
-		(SELECT count(*)
-			FROM members m
-				JOIN variable_storage vs on vs.id = m.block_id
-				JOIN ids on vs.work_id = ids.id
-			WHERE vs.status IN ('running', 'idle', 'ready') AND
-				m.login = $1 AND vs.step_type = 'form'
-		),
-		(SELECT count(*)
-			FROM members m
-				JOIN variable_storage vs on vs.id = m.block_id
-				JOIN ids on vs.work_id = ids.id
-			WHERE vs.status IN ('running', 'idle', 'ready') AND
-				m.login = $1 AND vs.step_type = 'sign'
-		)`
+WITH ids AS (
+    SELECT w.id
+    FROM works w
+             JOIN versions v ON v.id = w.version_id
+             JOIN pipelines p ON p.id = v.pipeline_id
+             JOIN work_status ws ON w.status = ws.id
+    WHERE w.child_id IS NULL
+)
+   , active_counts as (
+    SELECT count(*) as active_count
+    FROM works w
+             join ids on w.id = ids.id
+    WHERE author = $1
+      AND (w.finished_at IS NULL OR (w.archived = false
+        AND (now()::TIMESTAMP - w.finished_at::TIMESTAMP) < '3 days'))
+)
+   , approve_counts AS (
+    SELECT count(*) OVER () as c
+    FROM members m
+             JOIN variable_storage vs ON vs.id = m.block_id
+             JOIN ids ON vs.work_id = ids.id
+    WHERE vs.status IN ('running', 'idle', 'ready')
+      AND m.login = ANY ($2)
+      AND vs.step_type = 'approver'
+    GROUP BY vs.work_id
+    limit 1
+)
+   , execution_counts as (
+    SELECT count(*) over () as c
+    FROM members m
+             JOIN variable_storage vs ON vs.id = m.block_id
+             JOIN ids ON vs.work_id = ids.id
+    WHERE vs.status IN ('running', 'idle', 'ready')
+      AND m.login = ANY ($3)
+      AND vs.step_type = 'execution'
+    GROUP BY vs.work_id
+    LIMIT 1
+)
+   , form_counts AS (
+    SELECT count(*) OVER () as c
+    FROM members m
+             JOIN variable_storage vs ON vs.id = m.block_id
+             JOIN ids ON vs.work_id = ids.id
+    WHERE vs.status IN ('running', 'idle', 'ready')
+      AND m.login = $1
+      AND vs.step_type = 'form'
+    GROUP BY vs.work_id
+    LIMIT 1
+)
+   , sign_counts AS (
+    SELECT count(*) OVER () as c
+    FROM members m
+             JOIN variable_storage vs ON vs.id = m.block_id
+             JOIN ids ON vs.work_id = ids.id
+    WHERE vs.status IN ('running', 'idle', 'ready')
+      AND m.login = $1
+      AND vs.step_type = 'sign'
+    GROUP BY vs.work_id
+    LIMIT 1
+)
+    (
+        SELECT active_count
+             , coalesce(approve_counts.c, 0)
+             , coalesce(execution_counts.c, 0)
+             , coalesce(form_counts.c, 0)
+             , coalesce(sign_counts.c, 0)
+        FROM active_counts
+                 LEFT JOIN approve_counts ON TRUE
+                 LEFT JOIN execution_counts ON TRUE
+                 LEFT JOIN form_counts ON TRUE
+                 LEFT JOIN sign_counts ON TRUE
+        limit 1
+    );
+`
 
 	counter, err := db.getTasksCount(
 		ctx, q,
