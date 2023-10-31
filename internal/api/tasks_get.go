@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"strings"
@@ -303,7 +304,7 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request, workNumber s
 		return
 	}
 	if ui.Username != scenario.Author {
-		hideErr := ae.hideExecutors(dbTask.Steps, ui.Username, dbTask.Author, currentUserDelegateSteps)
+		hideErr := ae.hideExecutors(ctx, dbTask, ui.Username, currentUserDelegateSteps)
 		if hideErr != nil {
 			e := UnknownError
 			log.Error(e.errorMessage(hideErr))
@@ -888,22 +889,36 @@ func (ae *APIEnv) GetTaskMeanSolveTime(w http.ResponseWriter, req *http.Request,
 	}
 }
 
-func (ae *APIEnv) hideExecutors(steps entity.TaskSteps, requesterLogin, taskAuthor string, stepDelegates map[string]bool) error {
-	for stepIndex := range steps {
-		currentStep := steps[stepIndex]
+func (ae *APIEnv) hideExecutors(ctx context.Context, dbTask *entity.EriusTask, requesterLogin string, stepDelegates map[string]bool) error {
+
+	dbMembers, membErr := ae.DB.GetTaskMembers(ctx, dbTask.WorkNumber)
+	if membErr != nil {
+		return membErr
+	}
+
+	members := make([]string, 0)
+	for i := range dbMembers {
+		if dbMembers[i].IsActed == true {
+			members = append(members, dbMembers[i].Login)
+		}
+	}
+
+	for stepIndex := range dbTask.Steps {
+		currentStep := dbTask.Steps[stepIndex]
 		if currentStep.State == nil {
 			continue
 		}
+
 		switch currentStep.Type {
 		case pipeline.BlockGoFormID:
-			if taskAuthor == requesterLogin {
+			if dbTask.Author == requesterLogin {
 				var formBlock pipeline.FormData
 				unmarshalErr := json.Unmarshal(currentStep.State[currentStep.Name], &formBlock)
 				if unmarshalErr != nil {
 					return unmarshalErr
 				}
 
-				if !formBlock.HideExecutorFromInitiator || slices.Contains(maps.Keys(formBlock.Executors), requesterLogin) {
+				if !formBlock.HideExecutorFromInitiator || slices.Contains(maps.Keys(formBlock.Executors), requesterLogin) || slices.Contains(members, requesterLogin) {
 					continue
 				}
 				formBlock.Executors = map[string]struct{}{
@@ -931,7 +946,7 @@ func (ae *APIEnv) hideExecutors(steps entity.TaskSteps, requesterLogin, taskAuth
 			if unmarshalErr != nil {
 				return unmarshalErr
 			}
-			if !execBlock.HideExecutor || slices.Contains(maps.Keys(execBlock.Executors), requesterLogin) {
+			if !execBlock.HideExecutor || slices.Contains(maps.Keys(execBlock.Executors), requesterLogin) || slices.Contains(members, requesterLogin) {
 				continue
 			}
 			execBlock.Executors = map[string]struct{}{
