@@ -375,7 +375,7 @@ func (ae *APIEnv) updateTaskBlockInternal(ctx c.Context, workNumber, userLogin s
 }
 
 func (ae *APIEnv) getAuthorAndMembersToNotify(ctx c.Context, workNumber, userLogin string) ([]string, error) {
-	taskMembers, err := ae.DB.GetTaskMembers(ctx, workNumber)
+	taskMembers, err := ae.DB.GetTaskMembers(ctx, workNumber, true)
 	if err != nil {
 		return nil, err
 	}
