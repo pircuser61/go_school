@@ -25,9 +25,15 @@ func (s *Service) registerScope(scopeName string) {
 	if scopeName == "" {
 		scopes = []string{}
 	}
+
+	s.scopesMutex.RLock()
 	if _, ok := s.scopes[scopeName]; ok {
+		s.scopesMutex.RUnlock()
 		return
 	}
+	s.scopesMutex.RUnlock()
+
+	s.scopesMutex.Lock()
 	s.scopes[scopeName] = &scope{
 		getTokensFormData: url.Values{
 			secretKey:    []string{s.clientSecret},
@@ -36,6 +42,7 @@ func (s *Service) registerScope(scopeName string) {
 			scopeKey:     scopes,
 		},
 	}
+	s.scopesMutex.Unlock()
 }
 
 func getTokenInCookie(req *http.Request, name string) (string, error) {
@@ -81,10 +88,17 @@ func (s *Service) updateTokens(ctx context.Context, scopeName string) error {
 
 	currTime := time.Now()
 
+	s.scopesMutex.RLock()
 	if _, ok := s.scopes[scopeName]; !ok {
+		s.scopesMutex.RUnlock()
 		s.registerScope(scopeName)
+		s.scopesMutex.RLock()
 	}
+	s.scopesMutex.RUnlock()
+
+	s.scopesMutex.RLock()
 	sc := s.scopes[scopeName]
+	s.scopesMutex.RUnlock()
 
 	if currTime.Before(sc.atExp) {
 		return nil
@@ -101,10 +115,17 @@ func (s *Service) getTokens(ctx context.Context, scopeName string) error {
 	ctxLocal, span := trace.StartSpan(ctx, "getTokens")
 	defer span.End()
 
+	s.scopesMutex.RLock()
 	if _, ok := s.scopes[scopeName]; !ok {
+		s.scopesMutex.RUnlock()
 		s.registerScope(scopeName)
+		s.scopesMutex.RLock()
 	}
+	s.scopesMutex.RUnlock()
+
+	s.scopesMutex.RLock()
 	sc := s.scopes[scopeName]
+	s.scopesMutex.RUnlock()
 
 	req, err := http.NewRequestWithContext(ctxLocal, http.MethodPost, s.tokensUrl, strings.NewReader(sc.getTokensFormData.Encode()))
 	if err != nil {
@@ -128,7 +149,11 @@ func (s *Service) getTokens(ctx context.Context, scopeName string) error {
 	sc.refreshToken = res.RefreshToken
 	sc.atExp = time.Now().Add(time.Duration(res.ExpiresIn-expirationThreshold) * time.Second)
 	sc.rtExp = time.Now().Add(time.Duration(res.RefreshExpiresIn-expirationThreshold) * time.Second)
+
+	s.scopesMutex.Lock()
 	s.scopes[scopeName] = sc
+	s.scopesMutex.Unlock()
+
 	return nil
 }
 
@@ -136,10 +161,17 @@ func (s *Service) refreshTokens(ctx context.Context, scopeName string) error {
 	ctxLocal, span := trace.StartSpan(ctx, "refreshTokens")
 	defer span.End()
 
+	s.scopesMutex.RLock()
 	if _, ok := s.scopes[scopeName]; !ok {
+		s.scopesMutex.RUnlock()
 		s.registerScope(scopeName)
+		s.scopesMutex.RLock()
 	}
+	s.scopesMutex.RUnlock()
+
+	s.scopesMutex.RLock()
 	sc := s.scopes[scopeName]
+	s.scopesMutex.RUnlock()
 
 	formData := s.refreshTokensFormData
 	formData.Add(refreshTokenKey, sc.refreshToken)
@@ -166,6 +198,9 @@ func (s *Service) refreshTokens(ctx context.Context, scopeName string) error {
 	sc.refreshToken = res.RefreshToken
 	sc.atExp = time.Now().Add(time.Duration(res.ExpiresIn-expirationThreshold) * time.Second)
 	sc.rtExp = time.Now().Add(time.Duration(res.RefreshExpiresIn-expirationThreshold) * time.Second)
+
+	s.scopesMutex.Lock()
 	s.scopes[scopeName] = sc
+	s.scopesMutex.Unlock()
 	return nil
 }

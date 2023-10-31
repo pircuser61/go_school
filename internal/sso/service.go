@@ -76,6 +76,7 @@ type Service struct {
 
 	realm                 string
 	scopes                map[string]*scope
+	scopesMutex           *sync.RWMutex
 	refreshTokensFormData url.Values
 	userInfoCache         map[string]*cachedUserInfo
 	userInfoMutex         *sync.RWMutex
@@ -101,6 +102,7 @@ func NewService(c Config, cli *http.Client) (*Service, error) {
 		refreshTokensFormData: refreshFD,
 		userInfoCache:         map[string]*cachedUserInfo{},
 		userInfoMutex:         &sync.RWMutex{},
+		scopesMutex:           &sync.RWMutex{},
 	}
 
 	if err := s.buildAllPaths(); err != nil {
@@ -171,6 +173,9 @@ func (s *Service) BindAuthHeader(ctx context.Context, req *http.Request, scopeNa
 	}
 
 	req.Header.Del(authHeader)
+
+	s.scopesMutex.RLock()
 	req.Header.Add(authHeader, fmt.Sprintf(authBearerValue, s.scopes[scopeName].accessToken))
+	s.scopesMutex.RUnlock()
 	return nil
 }
