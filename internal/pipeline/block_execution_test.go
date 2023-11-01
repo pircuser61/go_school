@@ -466,7 +466,6 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 		RunContext    *BlockRunContext
 	}
 	type args struct {
-		ef   *entity.EriusFunc
 		ctx  context.Context
 		data *script.BlockUpdateData
 	}
