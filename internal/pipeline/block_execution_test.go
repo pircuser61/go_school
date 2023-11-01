@@ -1,14 +1,28 @@
 package pipeline
 
 import (
+	"bytes"
 	c "context"
 	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
 	"testing"
+	"time"
+
+	"golang.org/x/net/context"
+
+	"github.com/google/uuid"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
+	serviceDeskMocks "gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
@@ -435,5 +449,782 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 }
 
 func TestGoExecutionBlock_Update(t *testing.T) {
+	stepId := uuid.New()
+	const (
+		exampleExecutor       = "example"
+		secondExampleExecutor = "example1"
+		stepName              = "exec"
+	)
 
+	type fields struct {
+		Name          string
+		Title         string
+		Input         map[string]string
+		Output        map[string]string
+		NextStep      []script.Socket
+		ExecutionData *ExecutionData
+		RunContext    *BlockRunContext
+	}
+	type args struct {
+		ef   *entity.EriusFunc
+		ctx  context.Context
+		data *script.BlockUpdateData
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "empty data",
+			fields: fields{
+				Name: stepName,
+				RunContext: &BlockRunContext{
+					skipNotifications: true,
+					VarStore:          store.NewStore(),
+					Services: RunContextServices{
+						Storage: func() db.Database {
+							res := &mocks.MockedDatabase{}
+							res.On("GetTaskStepById",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								stepId,
+							).Return(
+								&entity.Step{
+									Time: time.Time{},
+									Type: BlockGoExecutionID,
+									Name: stepName,
+									State: map[string]json.RawMessage{
+										stepName: func() []byte {
+											r, _ := json.Marshal(&ExecutionData{
+												ExecutionType: script.ExecutionTypeUser,
+												Executors: map[string]struct{}{
+													exampleExecutor: {},
+												},
+											})
+
+											return r
+										}(),
+									},
+									Errors:      nil,
+									Steps:       nil,
+									BreakPoints: nil,
+									HasError:    false,
+									Status:      "",
+								}, nil,
+							)
+							res.On("UpdateStepContext",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.AnythingOfType("*db.UpdateStepRequest"),
+							).Return(
+								nil,
+							)
+
+							return res
+						}(),
+					},
+				},
+			},
+			args: args{
+				ctx:  context.Background(),
+				data: nil,
+			},
+			wantErr: true,
+		},
+		{
+			name: "one executor with not taken in work",
+			fields: fields{
+				Name: stepName,
+				ExecutionData: &ExecutionData{
+					IsTakenInWork: false,
+					ExecutionType: script.ExecutionTypeUser,
+					Executors: map[string]struct{}{
+						exampleExecutor: {},
+					},
+				},
+				RunContext: &BlockRunContext{
+					skipNotifications: false,
+					VarStore:          store.NewStore(),
+					Services: RunContextServices{
+						Storage: func() db.Database {
+							res := &mocks.MockedDatabase{}
+
+							res.On("GetTaskStepById",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								stepId,
+							).Return(
+								&entity.Step{
+									Time: time.Time{},
+									Type: BlockGoExecutionID,
+									Name: stepName,
+									State: map[string]json.RawMessage{
+										stepName: func() []byte {
+											r, _ := json.Marshal(&ExecutionData{
+												ExecutionType: script.ExecutionTypeUser,
+												Executors: map[string]struct{}{
+													exampleExecutor: {},
+												},
+											})
+
+											return r
+										}(),
+									},
+									Errors:      nil,
+									Steps:       nil,
+									BreakPoints: nil,
+									HasError:    false,
+									Status:      "",
+								}, nil,
+							)
+
+							res.On("UpdateStepContext",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.AnythingOfType("*db.UpdateStepRequest"),
+							).Return(
+								nil,
+							)
+
+							return res
+						}(),
+					},
+				},
+			},
+
+			args: args{
+				ctx: context.Background(),
+				data: &script.BlockUpdateData{
+					ByLogin:    exampleExecutor,
+					Action:     string(entity.TaskUpdateActionExecution),
+					Parameters: []byte(`{"decision":"` + ExecutionDecisionExecuted + `"}`),
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "Nil executors",
+			fields: fields{
+				Name: stepName,
+				ExecutionData: &ExecutionData{
+					IsTakenInWork: true,
+					ExecutionType: script.ExecutionTypeUser,
+					Executors:     map[string]struct{}{},
+				},
+				RunContext: &BlockRunContext{
+					skipNotifications: false,
+					VarStore:          store.NewStore(),
+					Services: RunContextServices{
+						Storage: func() db.Database {
+							res := &mocks.MockedDatabase{}
+
+							res.On("GetTaskStepById",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								stepId,
+							).Return(
+								&entity.Step{
+									Time: time.Time{},
+									Type: BlockGoExecutionID,
+									Name: stepName,
+									State: map[string]json.RawMessage{
+										stepName: func() []byte {
+											r, _ := json.Marshal(&ExecutionData{
+												ExecutionType: script.ExecutionTypeUser,
+												Executors:     map[string]struct{}{},
+											})
+
+											return r
+										}(),
+									},
+									Errors:      nil,
+									Steps:       nil,
+									BreakPoints: nil,
+									HasError:    false,
+									Status:      "",
+								}, nil,
+							)
+
+							res.On("UpdateStepContext",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.AnythingOfType("*db.UpdateStepRequest"),
+							).Return(
+								nil,
+							)
+
+							return res
+						}(),
+					},
+				},
+			},
+
+			args: args{
+				ctx: context.Background(),
+				data: &script.BlockUpdateData{
+					ByLogin:    exampleExecutor,
+					Action:     string(entity.TaskUpdateActionExecution),
+					Parameters: []byte(`{"decision":"` + ExecutionDecisionExecuted + `"}`),
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "one executor send edit",
+			fields: fields{
+				Name: stepName,
+				ExecutionData: &ExecutionData{
+					IsTakenInWork: true,
+					ExecutionType: script.ExecutionTypeUser,
+					Executors: map[string]struct{}{
+						exampleExecutor: {},
+					},
+				},
+				RunContext: &BlockRunContext{
+					skipNotifications: false,
+					VarStore:          store.NewStore(),
+					Services: RunContextServices{
+						Storage: func() db.Database {
+							res := &mocks.MockedDatabase{}
+
+							res.On("GetTaskStepById",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								stepId,
+							).Return(
+								&entity.Step{
+									Time: time.Time{},
+									Type: BlockGoExecutionID,
+									Name: stepName,
+									State: map[string]json.RawMessage{
+										stepName: func() []byte {
+											r, _ := json.Marshal(&ExecutionData{
+												ExecutionType: script.ExecutionTypeUser,
+												Executors: map[string]struct{}{
+													exampleExecutor: {},
+												},
+											})
+
+											return r
+										}(),
+									},
+									Errors:      nil,
+									Steps:       nil,
+									BreakPoints: nil,
+									HasError:    false,
+									Status:      "",
+								}, nil,
+							)
+
+							res.On("UpdateStepContext",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.AnythingOfType("*db.UpdateStepRequest"),
+							).Return(
+								nil,
+							)
+
+							return res
+						}(),
+					},
+				},
+			},
+
+			args: args{
+				ctx: context.Background(),
+				data: &script.BlockUpdateData{
+					ByLogin:    exampleExecutor,
+					Action:     string(entity.TaskUpdateActionExecution),
+					Parameters: []byte(`{"decision":"` + ExecutionDecisionSentEdit + `"}`),
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "one executor rejected",
+			fields: fields{
+				Name: stepName,
+				ExecutionData: &ExecutionData{
+					IsTakenInWork: true,
+					ExecutionType: script.ExecutionTypeUser,
+					Executors: map[string]struct{}{
+						exampleExecutor:       {},
+						secondExampleExecutor: {},
+					},
+				},
+				RunContext: &BlockRunContext{
+					skipNotifications: true,
+					VarStore:          store.NewStore(),
+					Services: RunContextServices{
+						ServiceDesc: func() *servicedesc.Service {
+							sdMock := servicedesc.Service{
+								SdURL: "",
+							}
+							httpClient := http.DefaultClient
+							mockTransport := serviceDeskMocks.RoundTripper{}
+							fResponse := func(*http.Request) *http.Response {
+								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								body := io.NopCloser(bytes.NewReader(b))
+								defer body.Close()
+								return &http.Response{
+									Status:     http.StatusText(http.StatusOK),
+									StatusCode: http.StatusOK,
+									Body:       body,
+								}
+							}
+							f_error := func(*http.Request) error {
+								return nil
+							}
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							httpClient.Transport = &mockTransport
+							sdMock.Cli = httpClient
+
+							return &sdMock
+						}(),
+						Storage: func() db.Database {
+							res := &mocks.MockedDatabase{}
+
+							res.On("GetTaskStepById",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								stepId,
+							).Return(
+								&entity.Step{
+									Time: time.Time{},
+									Type: BlockGoExecutionID,
+									Name: stepName,
+									State: map[string]json.RawMessage{
+										stepName: func() []byte {
+											r, _ := json.Marshal(&ExecutionData{
+												ExecutionType: script.ExecutionTypeUser,
+												Executors: map[string]struct{}{
+													exampleExecutor:       {},
+													secondExampleExecutor: {},
+												},
+											})
+
+											return r
+										}(),
+									},
+									Errors:      nil,
+									Steps:       nil,
+									BreakPoints: nil,
+									HasError:    false,
+									Status:      "",
+								}, nil,
+							)
+
+							res.On("UpdateStepContext",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.AnythingOfType("*db.UpdateStepRequest"),
+							).Return(
+								nil,
+							)
+
+							return res
+						}(),
+					},
+				},
+			},
+
+			args: args{
+				ctx: context.Background(),
+				data: &script.BlockUpdateData{
+					ByLogin:    exampleExecutor,
+					Action:     string(entity.TaskUpdateActionExecution),
+					Parameters: []byte(`{"decision":"` + ExecutionDecisionExecuted + `"}`),
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "one executor executed",
+			fields: fields{
+				Name: stepName,
+				ExecutionData: &ExecutionData{
+					IsTakenInWork: true,
+					ExecutionType: script.ExecutionTypeUser,
+					Executors: map[string]struct{}{
+						exampleExecutor:       {},
+						secondExampleExecutor: {},
+					},
+				},
+				RunContext: &BlockRunContext{
+					skipNotifications: true,
+					VarStore:          store.NewStore(),
+					Services: RunContextServices{
+						ServiceDesc: func() *servicedesc.Service {
+							sdMock := servicedesc.Service{
+								SdURL: "",
+							}
+							httpClient := http.DefaultClient
+							mockTransport := serviceDeskMocks.RoundTripper{}
+							fResponse := func(*http.Request) *http.Response {
+								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								body := io.NopCloser(bytes.NewReader(b))
+								defer body.Close()
+								return &http.Response{
+									Status:     http.StatusText(http.StatusOK),
+									StatusCode: http.StatusOK,
+									Body:       body,
+								}
+							}
+							f_error := func(*http.Request) error {
+								return nil
+							}
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							httpClient.Transport = &mockTransport
+							sdMock.Cli = httpClient
+
+							return &sdMock
+						}(),
+						Storage: func() db.Database {
+							res := &mocks.MockedDatabase{}
+
+							res.On("GetTaskStepById",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								stepId,
+							).Return(
+								&entity.Step{
+									Time: time.Time{},
+									Type: BlockGoExecutionID,
+									Name: stepName,
+									State: map[string]json.RawMessage{
+										stepName: func() []byte {
+											r, _ := json.Marshal(&ExecutionData{
+												ExecutionType: script.ExecutionTypeUser,
+												Executors: map[string]struct{}{
+													exampleExecutor:       {},
+													secondExampleExecutor: {},
+												},
+											})
+
+											return r
+										}(),
+									},
+									Errors:      nil,
+									Steps:       nil,
+									BreakPoints: nil,
+									HasError:    false,
+									Status:      "",
+								}, nil,
+							)
+
+							res.On("UpdateStepContext",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.AnythingOfType("*db.UpdateStepRequest"),
+							).Return(
+								nil,
+							)
+
+							return res
+						}(),
+					},
+				},
+			},
+
+			args: args{
+				ctx: context.Background(),
+				data: &script.BlockUpdateData{
+					ByLogin:    exampleExecutor,
+					Action:     string(entity.TaskUpdateActionExecution),
+					Parameters: []byte(`{"decision":"` + ExecutionDecisionExecuted + `"}`),
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "second executor",
+			fields: fields{
+				Name: stepName,
+				ExecutionData: &ExecutionData{
+					IsTakenInWork: true,
+					ExecutionType: script.ExecutionTypeUser,
+					Executors: map[string]struct{}{
+						secondExampleExecutor: {},
+					},
+				},
+				RunContext: &BlockRunContext{
+					skipNotifications: true,
+					VarStore:          store.NewStore(),
+					Services: RunContextServices{
+						ServiceDesc: func() *servicedesc.Service {
+							sdMock := servicedesc.Service{
+								SdURL: "",
+							}
+							httpClient := http.DefaultClient
+							mockTransport := serviceDeskMocks.RoundTripper{}
+							fResponse := func(*http.Request) *http.Response {
+								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								body := io.NopCloser(bytes.NewReader(b))
+								defer body.Close()
+								return &http.Response{
+									Status:     http.StatusText(http.StatusOK),
+									StatusCode: http.StatusOK,
+									Body:       body,
+								}
+							}
+							f_error := func(*http.Request) error {
+								return nil
+							}
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							httpClient.Transport = &mockTransport
+							sdMock.Cli = httpClient
+
+							return &sdMock
+						}(),
+						Storage: func() db.Database {
+							res := &mocks.MockedDatabase{}
+
+							res.On("GetTaskStepById",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								stepId,
+							).Return(
+								&entity.Step{
+									Time: time.Time{},
+									Type: BlockGoExecutionID,
+									Name: stepName,
+									State: map[string]json.RawMessage{
+										stepName: func() []byte {
+											r, _ := json.Marshal(&ExecutionData{
+												ExecutionType: script.ExecutionTypeUser,
+												Executors: map[string]struct{}{
+													secondExampleExecutor: {},
+												},
+											})
+
+											return r
+										}(),
+									},
+									Errors:      nil,
+									Steps:       nil,
+									BreakPoints: nil,
+									HasError:    false,
+									Status:      "",
+								}, nil,
+							)
+
+							res.On("UpdateStepContext",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.AnythingOfType("*db.UpdateStepRequest"),
+							).Return(
+								nil,
+							)
+
+							return res
+						}(),
+					},
+				},
+			},
+
+			args: args{
+				ctx: context.Background(),
+				data: &script.BlockUpdateData{
+					ByLogin:    secondExampleExecutor,
+					Action:     string(entity.TaskUpdateActionExecution),
+					Parameters: []byte(`{"decision":"` + ExecutionDecisionExecuted + `"}`),
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "any of executors",
+			fields: fields{
+				Name: stepName,
+				ExecutionData: &ExecutionData{
+					IsTakenInWork: true,
+					ExecutionType: script.ExecutionTypeUser,
+					Executors: map[string]struct{}{
+						exampleExecutor:       {},
+						secondExampleExecutor: {},
+					},
+				},
+				RunContext: &BlockRunContext{
+					skipNotifications: true,
+					VarStore:          store.NewStore(),
+					Services: RunContextServices{
+						ServiceDesc: func() *servicedesc.Service {
+							sdMock := servicedesc.Service{
+								SdURL: "",
+							}
+							httpClient := http.DefaultClient
+							mockTransport := serviceDeskMocks.RoundTripper{}
+							fResponse := func(*http.Request) *http.Response {
+								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								body := io.NopCloser(bytes.NewReader(b))
+								defer body.Close()
+								return &http.Response{
+									Status:     http.StatusText(http.StatusOK),
+									StatusCode: http.StatusOK,
+									Body:       body,
+								}
+							}
+							f_error := func(*http.Request) error {
+								return nil
+							}
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							httpClient.Transport = &mockTransport
+							sdMock.Cli = httpClient
+
+							return &sdMock
+						}(),
+						Storage: func() db.Database {
+							res := &mocks.MockedDatabase{}
+
+							res.On("GetTaskStepById",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								stepId,
+							).Return(
+								&entity.Step{
+									Time: time.Time{},
+									Type: BlockGoExecutionID,
+									Name: stepName,
+									State: map[string]json.RawMessage{
+										stepName: func() []byte {
+											r, _ := json.Marshal(&ExecutionData{
+												ExecutionType: script.ExecutionTypeUser,
+												Executors: map[string]struct{}{
+													exampleExecutor:       {},
+													secondExampleExecutor: {},
+												},
+											})
+
+											return r
+										}(),
+									},
+									Errors:      nil,
+									Steps:       nil,
+									BreakPoints: nil,
+									HasError:    false,
+									Status:      "",
+								}, nil,
+							)
+
+							res.On("UpdateStepContext",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.AnythingOfType("*db.UpdateStepRequest"),
+							).Return(
+								nil,
+							)
+
+							return res
+						}(),
+					},
+				},
+			},
+
+			args: args{
+				ctx: context.Background(),
+				data: &script.BlockUpdateData{
+					ByLogin:    exampleExecutor,
+					Action:     string(entity.TaskUpdateActionExecution),
+					Parameters: []byte(`{"decision":"` + ExecutionDecisionExecuted + `"}`),
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "acceptance test",
+			fields: fields{
+				Name: stepName,
+				ExecutionData: &ExecutionData{
+					IsTakenInWork: true,
+					ExecutionType: script.ExecutionTypeUser,
+					Executors: map[string]struct{}{
+						exampleExecutor: {},
+					},
+				},
+				RunContext: &BlockRunContext{
+					skipNotifications: true,
+					VarStore:          store.NewStore(),
+					Services: RunContextServices{
+						ServiceDesc: func() *servicedesc.Service {
+							sdMock := servicedesc.Service{
+								SdURL: "",
+							}
+							httpClient := http.DefaultClient
+							mockTransport := serviceDeskMocks.RoundTripper{}
+							fResponse := func(*http.Request) *http.Response {
+								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								body := io.NopCloser(bytes.NewReader(b))
+								defer body.Close()
+								return &http.Response{
+									Status:     http.StatusText(http.StatusOK),
+									StatusCode: http.StatusOK,
+									Body:       body,
+								}
+							}
+							f_error := func(*http.Request) error {
+								return nil
+							}
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							httpClient.Transport = &mockTransport
+							sdMock.Cli = httpClient
+
+							return &sdMock
+						}(),
+						Storage: func() db.Database {
+							res := &mocks.MockedDatabase{}
+
+							res.On("GetTaskStepById",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								stepId,
+							).Return(
+								&entity.Step{
+									Time: time.Time{},
+									Type: BlockGoExecutionID,
+									Name: stepName,
+									State: map[string]json.RawMessage{
+										stepName: func() []byte {
+											r, _ := json.Marshal(&ExecutionData{
+												ExecutionType: script.ExecutionTypeUser,
+												Executors: map[string]struct{}{
+													exampleExecutor: {},
+												},
+											})
+
+											return r
+										}(),
+									},
+									Errors:      nil,
+									Steps:       nil,
+									BreakPoints: nil,
+									HasError:    false,
+									Status:      "",
+								}, nil,
+							)
+
+							res.On("UpdateStepContext",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.AnythingOfType("*db.UpdateStepRequest"),
+							).Return(
+								nil,
+							)
+
+							return res
+						}(),
+					},
+				},
+			},
+
+			args: args{
+				ctx: context.Background(),
+				data: &script.BlockUpdateData{
+					ByLogin:    exampleExecutor,
+					Action:     string(entity.TaskUpdateActionExecution),
+					Parameters: []byte(`{"decision":"` + ExecutionDecisionExecuted + `"}`),
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gb := &GoExecutionBlock{
+				Name:       tt.fields.Name,
+				Title:      tt.fields.Title,
+				Input:      tt.fields.Input,
+				Output:     tt.fields.Output,
+				Sockets:    tt.fields.NextStep,
+				State:      tt.fields.ExecutionData,
+				RunContext: tt.fields.RunContext,
+			}
+			tt.fields.RunContext.UpdateData = tt.args.data
+			_, err := gb.Update(tt.args.ctx)
+			assert.Equalf(t, tt.wantErr, err != nil, fmt.Sprintf("Update(%v, %v)", tt.args.ctx, tt.args.data))
+		})
+	}
 }
