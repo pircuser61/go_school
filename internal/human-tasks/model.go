@@ -3,6 +3,7 @@ package human_tasks
 import (
 	"time"
 
+	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
 )
 
@@ -59,13 +60,9 @@ func (delegations *Delegations) GetUserInArrayWithDelegations(logins []string) (
 				}
 			}
 		}
-
-		for k := range uniqueLogins {
-			result = append(result, k)
-		}
 	}
 
-	return result
+	return maps.Keys(uniqueLogins)
 }
 
 func (delegations *Delegations) GetUserInArrayWithDelegators(logins []string) (result []string) {
@@ -81,13 +78,9 @@ func (delegations *Delegations) GetUserInArrayWithDelegators(logins []string) (r
 				}
 			}
 		}
-
-		for k := range uniqueLogins {
-			result = append(result, k)
-		}
 	}
 
-	return result
+	return maps.Keys(uniqueLogins)
 }
 
 func (delegations *Delegations) FindDelegationsTo(login string) Delegations {
