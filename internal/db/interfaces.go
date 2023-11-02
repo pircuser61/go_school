@@ -195,9 +195,6 @@ type Database interface {
 	GetExecutableByName(ctx c.Context, name string) (*e.EriusScenario, error)
 
 	SetLastRunID(ctx c.Context, taskID, versionID uuid.UUID) error
-	ActiveAlertNGSA(ctx c.Context, sever int,
-		state, source, eventType, cause, addInf, addTxt, moID, specProb, notID, usertext, moi, moc string) error
-	ClearAlertNGSA(ctx c.Context, name string) error
 	CreateTag(ctx c.Context, e *e.EriusTagInfo, author string) (*e.EriusTagInfo, error)
 	GetTag(ctx c.Context, e *e.EriusTagInfo) (*e.EriusTagInfo, error)
 	EditTag(ctx c.Context, e *e.EriusTagInfo) error
