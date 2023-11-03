@@ -9,7 +9,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 
-	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
+	ht "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
 )
 
 type ApproverAction string
@@ -247,7 +247,7 @@ func (a *ApproverData) userIsAnyApprover(login string) bool {
 	return false
 }
 
-func (a *ApproverData) userIsDelegate(login string, delegations human_tasks.Delegations) (delegateFor string, ok bool) {
+func (a *ApproverData) userIsDelegate(login string, delegations ht.Delegations) (delegateFor string, ok bool) {
 	var delegators = delegations.GetDelegators(login)
 	for approver := range a.Approvers {
 		for _, delegator := range delegators {
@@ -268,11 +268,18 @@ func (a *ApproverData) userIsDelegate(login string, delegations human_tasks.Dele
 }
 
 //nolint:gocyclo //its ok here
-func (a *ApproverData) SetDecision(login string,
-	decision ApproverDecision, comment string, attach []entity.Attachment, delegations human_tasks.Delegations) error {
-	_, approverFound := a.Approvers[login]
+func (a *ApproverData) SetDecision(login, comment string, ds ApproverDecision, attach []entity.Attachment, d ht.Delegations) error {
+	if ds == "" {
+		return errors.New("missing decision")
+	}
 
-	delegators := delegations.GetDelegators(login)
+	if a.Decision != nil {
+		return errors.New("decision already set")
+	}
+
+	_, founded := a.Approvers[login]
+
+	delegators := d.GetDelegators(login)
 
 	delegateFor := make([]string, 0)
 	for approver := range a.Approvers {
@@ -283,107 +290,60 @@ func (a *ApproverData) SetDecision(login string,
 		}
 	}
 
-	if !(approverFound || len(delegateFor) > 0) && login != AutoApprover {
+	if !(founded || len(delegateFor) > 0) && login != AutoApprover {
 		return NewUserIsNotPartOfProcessErr()
 	}
 
-	if decision == "" {
-		return errors.New("missing decision")
-	}
-
-	if a.Decision != nil {
-		return errors.New("decision already set")
-	}
-
-	var approvementRule = a.ApprovementRule
-
-	if approvementRule == script.AnyOfApprovementRequired {
-		a.Decision = &decision
+	if a.ApprovementRule == script.AnyOfApprovementRequired {
+		a.Decision = &ds
 		a.Comment = &comment
 		a.ActualApprover = &login
 		a.DecisionAttachments = attach
 
 		approverLogEntry := ApproverLogEntry{
 			Login:       login,
-			Decision:    decision,
+			Decision:    ds,
 			Comment:     comment,
 			Attachments: attach,
 			CreatedAt:   time.Now(),
 			LogType:     ApproverLogDecision,
 		}
-		if len(delegateFor) > 0 && !approverFound {
+		if len(delegateFor) > 0 && !founded {
 			approverLogEntry.DelegateFor = delegateFor[0]
 		}
 
 		a.ApproverLog = append(a.ApproverLog, approverLogEntry)
 	}
 
-	if approvementRule == script.AllOfApprovementRequired {
-		for i := 0; i < len(a.ApproverLog); i++ {
-			entry := a.ApproverLog[i]
-			if entry.Login == login && entry.LogType == ApproverLogDecision {
-				return errors.New(fmt.Sprintf("decision of user %s is already set", login))
-			}
+	if a.ApprovementRule == script.AllOfApprovementRequired {
+		if a.isUserDecisionSet(login) {
+			return errors.New(fmt.Sprintf("decision of user %s is already set", login))
 		}
-		if approverFound {
-			approverLogEntry := ApproverLogEntry{
+
+		a.ApproverLog = append(a.ApproverLog, ApproverLogEntry{
+			Login:       login,
+			Decision:    ds,
+			Comment:     comment,
+			Attachments: attach,
+			CreatedAt:   time.Now(),
+			LogType:     ApproverLogDecision,
+		})
+
+		for _, dl := range delegateFor {
+			a.ApproverLog = append(a.ApproverLog, ApproverLogEntry{
 				Login:       login,
-				Decision:    decision,
+				Decision:    ds,
 				Comment:     comment,
 				Attachments: attach,
 				CreatedAt:   time.Now(),
 				LogType:     ApproverLogDecision,
-			}
-
-			a.ApproverLog = append(a.ApproverLog, approverLogEntry)
+				DelegateFor: dl,
+			})
 		}
 
-		for _, d := range delegateFor {
-			approverLogEntry := ApproverLogEntry{
-				Login:       login,
-				Decision:    decision,
-				Comment:     comment,
-				Attachments: attach,
-				CreatedAt:   time.Now(),
-				LogType:     ApproverLogDecision,
-				DelegateFor: d,
-			}
-
-			a.ApproverLog = append(a.ApproverLog, approverLogEntry)
-		}
-
-		var overallDecision ApproverDecision
-		if decision == ApproverDecisionRejected {
-			overallDecision = ApproverDecisionRejected
-		} else {
-			decisions := make(map[ApproverDecision]int)
-			decisionsCount := 0
-			for i := 0; i < len(a.ApproverLog); i++ {
-				entry := a.ApproverLog[i]
-				if entry.LogType != ApproverLogDecision {
-					continue
-				}
-				decisionsCount += 1
-				if entry.Decision != ApproverDecisionRejected {
-					count, decisionExists := decisions[entry.Decision]
-					if !decisionExists {
-						count = 0
-					}
-					decisions[entry.Decision] = count + 1
-				}
-			}
-
-			if decisionsCount < len(a.Approvers) {
-				return nil
-			}
-
-			maxC := 0
-			for k, v := range decisions {
-				if v > maxC {
-					maxC = v
-					overallDecision = k
-				}
-			}
+		overallDecision, isFinal := a.getFinalGroupDecision(ds)
+		if !isFinal {
+			return nil
 		}
 
 		a.Decision = &overallDecision
@@ -400,6 +360,54 @@ func (a *ApproverData) SetDecision(login string,
 	return nil
 }
 
+func (a *ApproverData) getFinalGroupDecision(ds ApproverDecision) (res ApproverDecision, isFinal bool) {
+	if ds == ApproverDecisionRejected {
+		return ApproverDecisionRejected, true
+	}
+
+	decisionsCount := 0
+	decisions := make(map[ApproverDecision]int)
+
+	for i := range a.ApproverLog {
+		log := a.ApproverLog[i]
+		if log.LogType != ApproverLogDecision {
+			continue
+		}
+		decisionsCount++
+		if log.Decision != ApproverDecisionRejected {
+			count, decisionExists := decisions[log.Decision]
+			if !decisionExists {
+				count = 0
+			}
+			decisions[log.Decision] = count + 1
+		}
+	}
+
+	if decisionsCount < len(a.Approvers) {
+		return res, false
+	}
+
+	maxC := 0
+	for k, v := range decisions {
+		if v > maxC {
+			maxC = v
+			res = k
+		}
+	}
+
+	return res, true
+}
+
+func (a *ApproverData) isUserDecisionSet(login string) bool {
+	for i := range a.ApproverLog {
+		if a.ApproverLog[i].Login == login && a.ApproverLog[i].LogType == ApproverLogDecision {
+			return true
+		}
+	}
+
+	return false
+}
+
 func decisionForPersonExists(login string, logs *[]ApproverLogEntry) bool {
 	for i := 0; i < len(*logs); i++ {
 		logEntry := (*logs)[i]
@@ -412,7 +420,7 @@ func decisionForPersonExists(login string, logs *[]ApproverLogEntry) bool {
 
 //nolint:gocyclo //its ok here
 func (a *ApproverData) SetDecisionByAdditionalApprover(login string,
-	params additionalApproverUpdateParams, delegations human_tasks.Delegations) ([]string, error) {
+	params additionalApproverUpdateParams, delegations ht.Delegations) ([]string, error) {
 	var checkForAdditionalApprover = func(login string) bool {
 		for _, approver := range a.AdditionalApprovers {
 			if login == approver.ApproverLogin {
