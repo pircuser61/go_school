@@ -7,13 +7,15 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/pkg/errors"
-
 	"go.opencensus.io/trace"
 )
 
 const (
 	getUserInfo = "/api/herald/v1/externalData/user/single?search=%s"
+
+	autoApproval = "auto_approve"
+	autoSigner   = "auto_signer"
+	autoFill     = "auto_fill"
 )
 
 type SsoPerson struct {
@@ -28,10 +30,10 @@ type SsoPerson struct {
 }
 
 func (s *Service) GetSsoPerson(ctx context.Context, username string) (*SsoPerson, error) {
-	ctxLocal, span := trace.StartSpan(ctx, "get_user_info")
+	ctxLocal, span := trace.StartSpan(ctx, "get_sso_person")
 	defer span.End()
 
-	if strings.HasPrefix(username, "service-account") {
+	if isServiceUserName(username) {
 		return &SsoPerson{
 			Username: username,
 		}, nil
@@ -50,7 +52,7 @@ func (s *Service) GetSsoPerson(ctx context.Context, username string) (*SsoPerson
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return nil, errors.New("bad status code")
+		return nil, fmt.Errorf("bad status code from sso: %d, username: %s", resp.StatusCode, username)
 	}
 
 	res := &SsoPerson{}
@@ -59,4 +61,24 @@ func (s *Service) GetSsoPerson(ctx context.Context, username string) (*SsoPerson
 	}
 
 	return res, nil
+}
+
+func isServiceUserName(username string) bool {
+	if strings.HasPrefix(username, "service-account") {
+		return true
+	}
+
+	if username == autoApproval {
+		return true
+	}
+
+	if username == autoSigner {
+		return true
+	}
+
+	if username == autoFill {
+		return true
+	}
+
+	return false
 }
