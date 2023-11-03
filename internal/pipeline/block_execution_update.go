@@ -22,8 +22,13 @@ import (
 
 //nolint:gocyclo //its ok here
 func (gb *GoExecutionBlock) Update(ctx c.Context) (interface{}, error) {
+	data := gb.RunContext.UpdateData
+	if data == nil {
+		return nil, errors.New("empty data")
+	}
+
 	gb.RunContext.Delegations = gb.RunContext.Delegations.FilterByType("execution")
-	switch gb.RunContext.UpdateData.Action {
+	switch data.Action {
 	case string(entity.TaskUpdateActionSLABreach):
 		if errUpdate := gb.handleBreachedSLA(ctx); errUpdate != nil {
 			return nil, errUpdate
