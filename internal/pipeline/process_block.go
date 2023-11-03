@@ -105,7 +105,7 @@ func (runCtx *BlockRunContext) Copy() *BlockRunContext {
 //nolint:gocyclo //todo: need to decompose
 func processBlock(ctx c.Context, name string, its int, bl *entity.EriusFunc, runCtx *BlockRunContext, manual bool) (err error) {
 	its++
-	if its > 10000 {
+	if its > 10 {
 		return errors.New("took too long")
 	}
 
