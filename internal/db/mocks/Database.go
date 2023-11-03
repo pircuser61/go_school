@@ -48,20 +48,6 @@ func (_m *MockedDatabase) Acquire(ctx context.Context) (db.Database, error) {
 	return r0, r1
 }
 
-// ActiveAlertNGSA provides a mock function with given fields: ctx, sever, state, source, eventType, cause, addInf, addTxt, moID, specProb, notID, usertext, moi, moc
-func (_m *MockedDatabase) ActiveAlertNGSA(ctx context.Context, sever int, state string, source string, eventType string, cause string, addInf string, addTxt string, moID string, specProb string, notID string, usertext string, moi string, moc string) error {
-	ret := _m.Called(ctx, sever, state, source, eventType, cause, addInf, addTxt, moID, specProb, notID, usertext, moi, moc)
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, int, string, string, string, string, string, string, string, string, string, string, string, string) error); ok {
-		r0 = rf(ctx, sever, state, source, eventType, cause, addInf, addTxt, moID, specProb, notID, usertext, moi, moc)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
 // AddExternalSystemToVersion provides a mock function with given fields: ctx, versionID, systemID
 func (_m *MockedDatabase) AddExternalSystemToVersion(ctx context.Context, versionID string, systemID string) error {
 	ret := _m.Called(ctx, versionID, systemID)
@@ -200,20 +186,6 @@ func (_m *MockedDatabase) CheckUserCanEditForm(ctx context.Context, workNumber s
 	}
 
 	return r0, r1
-}
-
-// ClearAlertNGSA provides a mock function with given fields: ctx, name
-func (_m *MockedDatabase) ClearAlertNGSA(ctx context.Context, name string) error {
-	ret := _m.Called(ctx, name)
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, string) error); ok {
-		r0 = rf(ctx, name)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
 }
 
 // CommitTransaction provides a mock function with given fields: ctx

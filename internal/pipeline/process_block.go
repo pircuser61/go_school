@@ -103,8 +103,12 @@ func (runCtx *BlockRunContext) Copy() *BlockRunContext {
 }
 
 //nolint:gocyclo //todo: need to decompose
-func processBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *BlockRunContext,
-	manual bool) (err error) {
+func processBlock(ctx c.Context, name string, its int, bl *entity.EriusFunc, runCtx *BlockRunContext, manual bool) (err error) {
+	its++
+	if its > 10 {
+		return errors.New("took too long")
+	}
+
 	ctx, s := trace.StartSpan(ctx, "process_block")
 	defer s.End()
 
@@ -193,8 +197,7 @@ func processBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *Bloc
 		}
 
 		ctxCopy := runCtx.Copy()
-		err = processBlock(ctx, b, blockData, ctxCopy, false)
-		if err != nil {
+		if err = processBlock(ctx, b, its, blockData, ctxCopy, false); err != nil {
 			return
 		}
 
@@ -551,7 +554,7 @@ func ProcessBlockWithEndMapping(ctx c.Context, name string, bl *entity.EriusFunc
 
 	runCtx.BlockRunResults = &BlockRunResults{}
 
-	pErr := processBlock(ctx, name, bl, runCtx, manual)
+	pErr := processBlock(ctx, name, 0, bl, runCtx, manual)
 	if pErr != nil {
 		return pErr
 	}

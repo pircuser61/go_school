@@ -1269,15 +1269,6 @@ func (m *MockDB) GetBlockDataFromVersion(_ context.Context, _, _ string) (*entit
 	return nil, errNotImplemented
 }
 
-func (m *MockDB) ActiveAlertNGSA(c context.Context, sever int, state, source,
-	eventType, cause, addInf, addTxt, moID, specProb, notID, usertext, moi, moc string) error {
-	return nil
-}
-
-func (m *MockDB) ClearAlertNGSA(c context.Context, name string) error {
-	return nil
-}
-
 func (m *MockDB) CreateTag(c context.Context, e *entity.EriusTagInfo, author string) (*entity.EriusTagInfo, error) {
 	return nil, errNotImplemented
 }
