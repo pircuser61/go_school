@@ -71,7 +71,7 @@ func (gb *GoSdApplicationBlock) GetStatus() Status {
 }
 
 func (gb *GoSdApplicationBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment string) {
-	return StatusNew, ""
+	return "", ""
 }
 
 func (gb *GoSdApplicationBlock) Next(_ *store.VariableStore) ([]string, bool) {
