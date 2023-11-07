@@ -458,7 +458,7 @@ func (gb *ExecutableFunctionBlock) setStateByResponse(updateData *FunctionUpdate
 			resultOutput[k] = param
 		}
 
-		gb.RunContext.VarStore.ClearValues()
+		gb.RunContext.VarStore.ClearValues(gb.Name)
 
 		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputFunctionDecision], ExecutedDecision)
 

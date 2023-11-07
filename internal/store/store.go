@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"reflect"
+	"strings"
 	"sync"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
@@ -235,12 +236,16 @@ func (c *VariableStore) SetValue(name string, value interface{}) {
 	}
 }
 
-// ClearValues deletes all block values.
-func (c *VariableStore) ClearValues() {
+// ClearValues deletes all block's values.
+func (c *VariableStore) ClearValues(blockName string) {
 	c.Lock()
 	defer c.Unlock()
 
-	c.Values = make(map[string]interface{})
+	for k := range c.Values {
+		if strings.HasPrefix(k, blockName) {
+			delete(c.Values, k)
+		}
+	}
 }
 
 func (c *VariableStore) SetStringWithOutput(outMap map[string]string, key, val string) error {
