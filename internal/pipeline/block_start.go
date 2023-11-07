@@ -45,7 +45,7 @@ func (gb *GoStartBlock) GetStatus() Status {
 }
 
 func (gb *GoStartBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment string) {
-	return "", ""
+	return StatusNew, ""
 }
 
 func (gb *GoStartBlock) Next(_ *store.VariableStore) ([]string, bool) {
