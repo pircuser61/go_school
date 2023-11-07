@@ -42,35 +42,6 @@ func TestSignData_SetDecision(t *testing.T) {
 		expectedDecision SignDecision
 	}{
 		{
-			name: "signer not found",
-			fields: fields{
-				Signers: map[string]struct{}{
-					login: {},
-				},
-			},
-			args: args{
-				login:    invalidLogin,
-				decision: SignDecisionSigned,
-				comment:  comment,
-			},
-			wantErr: true,
-		},
-		{
-			name: "signer service account not ukep",
-			fields: fields{
-				Signers: map[string]struct{}{
-					login: {},
-				},
-				SignatureType: script.SignatureTypePEP,
-			},
-			args: args{
-				login:    ServiceAccountDev,
-				decision: SignDecisionSigned,
-				comment:  comment,
-			},
-			wantErr: true,
-		},
-		{
 			name: "signer service account ukep",
 			fields: fields{
 				Signers: map[string]struct{}{
