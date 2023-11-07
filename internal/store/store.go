@@ -235,6 +235,14 @@ func (c *VariableStore) SetValue(name string, value interface{}) {
 	}
 }
 
+// ClearValues deletes all block values.
+func (c *VariableStore) ClearValues() {
+	c.Lock()
+	defer c.Unlock()
+
+	c.Values = make(map[string]interface{})
+}
+
 func (c *VariableStore) SetStringWithOutput(outMap map[string]string, key, val string) error {
 	outKey, ok := outMap[key]
 	if !ok {
