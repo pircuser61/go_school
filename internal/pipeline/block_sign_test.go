@@ -212,6 +212,24 @@ func TestSignData_SetDecision(t *testing.T) {
 			expectedDecision: SignDecisionRejected,
 		},
 		{
+			name: "decision rejected ukep",
+			fields: fields{
+				Signers: map[string]struct{}{
+					login:  {},
+					login2: {},
+				},
+				SigningRule:   script.AnyOfSigningRequired,
+				SignatureType: script.SignatureTypeUKEP,
+			},
+			args: args{
+				login:    login,
+				decision: SignDecisionRejected,
+				comment:  comment,
+			},
+			wantErr:          false,
+			expectedDecision: SignDecisionRejected,
+		},
+		{
 			name: "decision error many users",
 			fields: fields{
 				Signers: map[string]struct{}{
