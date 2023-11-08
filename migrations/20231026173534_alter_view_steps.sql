@@ -22,7 +22,7 @@ SELECT vs.id AS step_id,
              WHEN vs.step_type = 'execution' AND vs.content::json -> 'State' -> vs.step_name ->> 'executors' != 'null'
                  THEN array_to_string(ARRAY( SELECT json_object_keys(vs.content::json -> 'State' -> vs.step_name -> 'executors') AS keys), ',')
              END AS "case") AS people,
-   ( SELECT content->'pipeline'->'blocks'-> vs.step_name ->> 'title'
+   ( SELECT content->'pipeline'->'blocks'-> vs.step_name ->> 'short_title'
             FROM versions
             WHERE id = w.version_id) AS short_title
 FROM works w
