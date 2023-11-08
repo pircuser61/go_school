@@ -1,5 +1,8 @@
 -- +goose Up
 -- +goose StatementBegin
+drop aggregate if exists jsonb_merge_agg(jsonb);
+drop function if exists jsonb_merge(jsonb, jsonb);
+
 create or replace function jsonb_merge(a jsonb, b jsonb) returns jsonb
     language sql as $$
 select
