@@ -23,8 +23,22 @@ func NewSlaService(hrGate *hrgate.Service) Service {
 }
 
 func (s *service) GetSLAInfoPtr(ctx context.Context, dto InfoDto) (*SLAInfo, error) {
+	startWorkHour, endWorkHour, getWorkingHoursErr := dto.WorkType.GetWorkingHours()
+	if getWorkingHoursErr != nil {
+		return nil, getWorkingHoursErr
+	}
+	weekends, getWeekendsErr := dto.WorkType.GetWeekends()
+	if getWeekendsErr != nil {
+		return nil, getWeekendsErr
+	}
+
 	if s.HrGate == nil {
-		return &SLAInfo{}, nil
+		return &SLAInfo{
+			CalendarDays:     &hrgate.CalendarDays{CalendarMap: map[int64]hrgate.CalendarDayType{}},
+			StartWorkHourPtr: &startWorkHour,
+			EndWorkHourPtr:   &endWorkHour,
+			Weekends:         weekends,
+		}, nil
 	}
 
 	notUseCalendarDays, getNotUseErr := dto.WorkType.GetNotUseCalendarDays()
