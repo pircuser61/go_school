@@ -317,17 +317,13 @@ func (gb *GoFormBlock) handleNotifications(ctx c.Context) error {
 				BlockName:  BlockGoFormID,
 				Login:      login,
 				Deadline:   gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(time.Now(), gb.State.SLA, slaInfoPtr),
-			})
-		} else if gb.State.IsReentry {
-			emails[em] = mail.NewSendToInitiatorEditTpl(
-				gb.RunContext.WorkNumber,
-				gb.RunContext.NotifName,
-				gb.RunContext.Services.Sender.SdAddress)
+			}, gb.State.IsReentry)
 		} else {
 			emails[em] = mail.NewRequestFormExecutionInfoTpl(
 				gb.RunContext.WorkNumber,
 				gb.RunContext.NotifName,
-				gb.RunContext.Services.Sender.SdAddress)
+				gb.RunContext.Services.Sender.SdAddress,
+				gb.State.IsReentry)
 		}
 	}
 
