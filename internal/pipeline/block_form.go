@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	c "context"
+	"fmt"
 	"time"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
@@ -48,6 +49,7 @@ type FormData struct {
 	ApplicationBody        map[string]interface{}  `json:"application_body"`
 	IsFilled               bool                    `json:"is_filled"`
 	IsTakenInWork          bool                    `json:"is_taken_in_work"`
+	IsReentry              bool                    `json:"is_reentry"`
 	ActualExecutor         *string                 `json:"actual_executor,omitempty"`
 	ChangesLog             []ChangesLogItem        `json:"changes_log"`
 
@@ -190,6 +192,10 @@ func (gb *GoFormBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment str
 		return StatusDone, ""
 	}
 
+	if gb.State.IsReentry {
+		return StatusWait, fmt.Sprintf("Заявку вернули на доработку: %s", time.Now().Format("02.01.2006 15:04"))
+	}
+
 	return StatusExecution, ""
 }
 
@@ -311,12 +317,13 @@ func (gb *GoFormBlock) handleNotifications(ctx c.Context) error {
 				BlockName:  BlockGoFormID,
 				Login:      login,
 				Deadline:   gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(time.Now(), gb.State.SLA, slaInfoPtr),
-			})
+			}, gb.State.IsReentry)
 		} else {
 			emails[em] = mail.NewRequestFormExecutionInfoTpl(
 				gb.RunContext.WorkNumber,
 				gb.RunContext.NotifName,
-				gb.RunContext.Services.Sender.SdAddress)
+				gb.RunContext.Services.Sender.SdAddress,
+				gb.State.IsReentry)
 		}
 	}
 

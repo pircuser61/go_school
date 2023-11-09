@@ -103,6 +103,7 @@ func (gb *GoFormBlock) reEntry(ctx c.Context) error {
 
 	gb.State.IsFilled = false
 	gb.State.IsTakenInWork = false
+	gb.State.IsReentry = true
 	gb.State.ActualExecutor = nil
 
 	if !isAutofill && gb.State.ReEnterSettings == nil {

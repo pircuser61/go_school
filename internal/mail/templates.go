@@ -197,11 +197,16 @@ func NewRequestExecutionInfoTpl(id, name, sdUrl string) Template {
 	}
 }
 
-func NewRequestFormExecutionInfoTpl(id, name, sdUrl string) Template {
+func NewRequestFormExecutionInfoTpl(id, name, sdUrl string, isReentry bool) Template {
+	var retryStr string
+	if isReentry {
+		retryStr = " повторно"
+	}
+
 	return Template{
-		Subject: fmt.Sprintf("Заявка №%s %s- Необходимо предоставить информацию", id, name),
-		Text: `Уважаемый коллега, по заявке {{.Id}} {{.Name}} необходимо предоставить информацию.<br>
-				Для просмотра и заполнения полей заявки перейдите по <a href={{.Link}}>ссылке</a>`,
+		Subject: fmt.Sprintf("Заявка № %s %s - Необходимо%s предоставить информацию", id, name, retryStr),
+		Text: fmt.Sprintf(`Уважаемый коллега, по заявке № {{.Id}} {{.Name}} необходимо%s предоставить информацию.<br>
+				Для просмотра и заполнения полей заявки перейдите по <a href={{.Link}}>ссылке</a>`, retryStr),
 		Variables: struct {
 			Id   string
 			Name string
@@ -224,16 +229,21 @@ type NewFormExecutionNeedTakeInWorkDto struct {
 	Deadline   string
 }
 
-func NewFormExecutionNeedTakeInWorkTpl(dto *NewFormExecutionNeedTakeInWorkDto) Template {
+func NewFormExecutionNeedTakeInWorkTpl(dto *NewFormExecutionNeedTakeInWorkDto, isReentry bool) Template {
 	actionSubject := fmt.Sprintf(subjectTpl, dto.BlockName, "", dto.WorkNumber, formExecutorStartWorkAction, dto.Login)
 	actionBtn := getButton(dto.Mailto, actionSubject, "Взять в работу")
 
+	var retryStr string
+	if isReentry {
+		retryStr = " повторно"
+	}
+
 	return Template{
-		Subject: fmt.Sprintf("Заявка № %s %s - Необходимо предоставить информацию", dto.WorkNumber, dto.WorkTitle),
-		Text: `Уважаемый коллега, по заявке № {{.Id}} {{.Name}} необходимо предоставить информацию.<br>
+		Subject: fmt.Sprintf("Заявка № %s %s - Необходимо%s предоставить информацию", dto.WorkNumber, dto.WorkTitle, retryStr),
+		Text: fmt.Sprintf(`Уважаемый коллега, по заявке № {{.Id}} {{.Name}} необходимо%s предоставить информацию.<br>
 					Для просмотра полей заявки перейдите по <a href={{.Link}}>ссылке</a><br>
 					Срок предоставления информации заявки: {{.Deadline}}
-					</br><b>Действия с заявкой</b></br>{{.ActionBtn}}</br>`,
+					</br><b>Действия с заявкой</b></br>{{.ActionBtn}}</br>`, retryStr),
 		Variables: struct {
 			Id        string
 			Name      string
