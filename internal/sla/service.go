@@ -57,11 +57,11 @@ func (s *service) GetSLAInfoPtr(ctx context.Context, dto InfoDto) (*SLAInfo, err
 		}
 	}
 
-	startWorkHour, endWorkHour, getWorkingHoursErr := dto.WorkType.GetWorkingHours()
+	startWorkHour, endWorkHour, getWorkingHoursErr = dto.WorkType.GetWorkingHours()
 	if getWorkingHoursErr != nil {
 		return nil, getWorkingHoursErr
 	}
-	weekends, getWeekendsErr := dto.WorkType.GetWeekends()
+	weekends, getWeekendsErr = dto.WorkType.GetWeekends()
 	if getWeekendsErr != nil {
 		return nil, getWeekendsErr
 	}
