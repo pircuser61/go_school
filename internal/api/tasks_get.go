@@ -302,7 +302,7 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request, workNumber s
 
 		return
 	}
-	if ui.Username != scenario.Author {
+	if ui.Username != scenario.Author || ui.Username == "sobugreye1" {
 		hideErr := ae.hideExecutors(ctx, dbTask, ui.Username, currentUserDelegateSteps)
 		if hideErr != nil {
 			e := UnknownError
@@ -910,6 +910,9 @@ func (ae *APIEnv) hideExecutors(ctx context.Context, dbTask *entity.EriusTask, r
 
 		switch currentStep.Type {
 		case pipeline.BlockGoFormID:
+			if stepDelegates[currentStep.Name] {
+				continue
+			}
 			var formBlock pipeline.FormData
 			unmarshalErr := json.Unmarshal(currentStep.State[currentStep.Name], &formBlock)
 			if unmarshalErr != nil {
