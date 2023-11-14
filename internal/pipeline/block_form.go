@@ -187,16 +187,16 @@ func (gb *GoFormBlock) GetStatus() Status {
 	return StatusRunning
 }
 
-func (gb *GoFormBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment string) {
+func (gb *GoFormBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment string, action string) {
 	if gb.State != nil && gb.State.IsFilled {
-		return StatusDone, ""
+		return StatusDone, "", ""
 	}
 
 	if gb.State.IsReentry {
-		return StatusWait, fmt.Sprintf("Заявку вернули на доработку: %s", time.Now().Format("02.01.2006 15:04"))
+		return StatusWait, fmt.Sprintf("Заявку вернули на доработку: %s", time.Now().Format("02.01.2006 15:04")), ""
 	}
 
-	return StatusExecution, ""
+	return StatusExecution, "", ""
 }
 
 func (gb *GoFormBlock) GetState() interface{} {

@@ -43,9 +43,9 @@ func (gb *GoEndBlock) UpdateManual() bool {
 	return false
 }
 
-func (gb *GoEndBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment string) {
+func (gb *GoEndBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment string, action string) {
 	// should not change status returned by worker nodes like approvement, execution, etc.
-	return "", ""
+	return "", "", ""
 }
 
 func (gb *GoEndBlock) Next(_ *store.VariableStore) ([]string, bool) {
@@ -77,7 +77,7 @@ func (gb *GoEndBlock) Update(ctx c.Context) (interface{}, error) {
 	}
 
 	if _, ok := gb.expectedEvents[eventEnd]; ok {
-		status, _ := gb.GetTaskHumanStatus()
+		status, _, _ := gb.GetTaskHumanStatus()
 		event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, MakeNodeEndEventArgs{
 			NodeName:      gb.Name,
 			NodeShortName: gb.ShortName,
@@ -134,7 +134,7 @@ func createGoEndBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx *
 	b.RunContext.VarStore.AddStep(b.Name)
 
 	if _, ok := b.expectedEvents[eventStart]; ok {
-		status, _ := b.GetTaskHumanStatus()
+		status, _, _ := b.GetTaskHumanStatus()
 		event, err := runCtx.MakeNodeStartEvent(ctx, MakeNodeStartEventArgs{
 			NodeName:      name,
 			NodeShortName: ef.ShortTitle,

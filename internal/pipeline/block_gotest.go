@@ -44,8 +44,8 @@ func (gb *GoTestBlock) GetStatus() Status {
 	return StatusFinished
 }
 
-func (gb *GoTestBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment string) {
-	return "", ""
+func (gb *GoTestBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment string, action string) {
+	return "", "", ""
 }
 
 func (gb *GoTestBlock) GetType() string {
@@ -111,7 +111,7 @@ func (gb *GoTestBlock) GetState() interface{} {
 
 func (gb *GoTestBlock) Update(ctx context.Context) (interface{}, error) {
 	if _, ok := gb.expectedEvents[eventEnd]; ok {
-		status, _ := gb.GetTaskHumanStatus()
+		status, _, _ := gb.GetTaskHumanStatus()
 		event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, MakeNodeEndEventArgs{
 			NodeName:      gb.Name,
 			NodeShortName: gb.ShortName,
@@ -153,7 +153,7 @@ func createGoTestBlock(ctx context.Context, name string, ef *entity.EriusFunc, r
 	}
 
 	if _, ok := b.expectedEvents[eventStart]; ok {
-		status, _ := b.GetTaskHumanStatus()
+		status, _, _ := b.GetTaskHumanStatus()
 		event, err := runCtx.MakeNodeStartEvent(ctx, MakeNodeStartEventArgs{
 			NodeName:      name,
 			NodeShortName: ef.ShortTitle,

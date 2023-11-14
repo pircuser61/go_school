@@ -43,8 +43,8 @@ func (gb *GoBeginParallelTaskBlock) GetStatus() Status {
 	return StatusFinished
 }
 
-func (gb *GoBeginParallelTaskBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment string) {
-	return StatusExecution, ""
+func (gb *GoBeginParallelTaskBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment string, action string) {
+	return StatusExecution, "", ""
 }
 
 func (gb *GoBeginParallelTaskBlock) Next(_ *store.VariableStore) ([]string, bool) {
@@ -61,7 +61,7 @@ func (gb *GoBeginParallelTaskBlock) GetState() interface{} {
 
 func (gb *GoBeginParallelTaskBlock) Update(ctx context.Context) (interface{}, error) {
 	if _, ok := gb.expectedEvents[eventEnd]; ok {
-		status, _ := gb.GetTaskHumanStatus()
+		status, _, _ := gb.GetTaskHumanStatus()
 		event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, MakeNodeEndEventArgs{
 			NodeName:      gb.Name,
 			NodeShortName: gb.ShortName,
@@ -121,7 +121,7 @@ func createGoStartParallelBlock(ctx context.Context, name string, ef *entity.Eri
 	b.RunContext.VarStore.AddStep(b.Name)
 
 	if _, ok := b.expectedEvents[eventStart]; ok {
-		status, _ := b.GetTaskHumanStatus()
+		status, _, _ := b.GetTaskHumanStatus()
 		event, err := runCtx.MakeNodeStartEvent(ctx, MakeNodeStartEventArgs{
 			NodeName:      name,
 			NodeShortName: ef.ShortTitle,

@@ -74,7 +74,7 @@ func (gb *GoFormBlock) Update(ctx c.Context) (interface{}, error) {
 
 	if len(gb.State.ApplicationBody) > 0 {
 		if _, ok := gb.expectedEvents[eventEnd]; ok {
-			status, _ := gb.GetTaskHumanStatus()
+			status, _, _ := gb.GetTaskHumanStatus()
 			event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, MakeNodeEndEventArgs{
 				NodeName:      gb.Name,
 				NodeShortName: gb.ShortName,

@@ -86,22 +86,22 @@ func (gb *GoSignBlock) Next(_ *store.VariableStore) ([]string, bool) {
 	return nexts, true
 }
 
-func (gb *GoSignBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment string) {
+func (gb *GoSignBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment string, action string) {
 	if gb.State != nil && gb.State.Decision != nil {
 		if *gb.State.Decision == SignDecisionRejected {
-			return StatusRejected, ""
+			return StatusRejected, "", ""
 		}
 
 		if *gb.State.Decision == SignDecisionError {
-			return StatusProcessingError, ""
+			return StatusProcessingError, "", ""
 		}
 
-		return StatusSigned, ""
+		return StatusSigned, "", ""
 	}
 	if gb.State.Reentered {
-		return StatusSigning, reentrySignComment
+		return StatusSigning, reentrySignComment, ""
 	}
-	return StatusSigning, ""
+	return StatusSigning, "", ""
 }
 
 func (gb *GoSignBlock) GetStatus() Status {
@@ -537,7 +537,7 @@ func createGoSignBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx 
 		}
 
 		if _, ok := b.expectedEvents[eventStart]; ok {
-			status, _ := b.GetTaskHumanStatus()
+			status, _, _ := b.GetTaskHumanStatus()
 			event, err := runCtx.MakeNodeStartEvent(ctx, MakeNodeStartEventArgs{
 				NodeName:      name,
 				NodeShortName: ef.ShortTitle,

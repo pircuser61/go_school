@@ -155,7 +155,7 @@ func processBlock(ctx c.Context, name string, its int, bl *entity.EriusFunc, run
 		}
 	}
 
-	taskHumanStatus, statusComment := block.GetTaskHumanStatus()
+	taskHumanStatus, statusComment, action := block.GetTaskHumanStatus()
 	err = runCtx.updateStatusByStep(ctx, taskHumanStatus, statusComment)
 	if err != nil {
 		return err
@@ -174,7 +174,12 @@ func processBlock(ctx c.Context, name string, its int, bl *entity.EriusFunc, run
 		return nil
 	}
 
-	err = runCtx.handleInitiatorNotify(ctx, name, bl.TypeID, taskHumanStatus)
+	err = runCtx.handleInitiatorNotify(ctx, handleInitiatorNotifyParams{
+		step:     name,
+		stepType: bl.TypeID,
+		action:   action,
+		status:   taskHumanStatus,
+	})
 	if err != nil {
 		return err
 	}
@@ -481,7 +486,14 @@ func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) (str
 	return descr, nil
 }
 
-func (runCtx *BlockRunContext) handleInitiatorNotify(ctx c.Context, step, stepType string, status TaskHumanStatus) error {
+type handleInitiatorNotifyParams struct {
+	step     string
+	stepType string
+	action   string
+	status   TaskHumanStatus
+}
+
+func (runCtx *BlockRunContext) handleInitiatorNotify(ctx c.Context, params handleInitiatorNotifyParams) error {
 	const (
 		FormStepType     = "form"
 		FunctionStepType = "executable_function"
@@ -491,7 +503,7 @@ func (runCtx *BlockRunContext) handleInitiatorNotify(ctx c.Context, step, stepTy
 		return nil
 	}
 
-	switch status {
+	switch params.status {
 	case StatusNew,
 		StatusApproved,
 		StatusApproveViewed,
@@ -508,13 +520,13 @@ func (runCtx *BlockRunContext) handleInitiatorNotify(ctx c.Context, step, stepTy
 		return nil
 	}
 
-	if status == StatusDone && (stepType == FormStepType || stepType == FunctionStepType) {
+	if params.status == StatusDone && (params.stepType == FormStepType || params.stepType == FunctionStepType) {
 		return nil
 	}
 
 	var attach []e.Attachment
 
-	description, err := runCtx.makeNotificationDescription(step)
+	description, err := runCtx.makeNotificationDescription(params.step)
 	if err != nil {
 		return err
 	}
@@ -531,10 +543,15 @@ func (runCtx *BlockRunContext) handleInitiatorNotify(ctx c.Context, step, stepTy
 
 		emails = append(emails, email)
 	}
+
+	if params.action == "" {
+		params.action = statusToTaskState[params.status]
+	}
+
 	tmpl := mail.NewAppInitiatorStatusNotificationTpl(
 		runCtx.WorkNumber,
 		runCtx.NotifName,
-		statusToTaskState[status],
+		params.action,
 		description,
 		runCtx.Services.Sender.SdAddress)
 

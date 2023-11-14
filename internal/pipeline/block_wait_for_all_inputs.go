@@ -53,12 +53,12 @@ func (gb *GoWaitForAllInputsBlock) GetStatus() Status {
 	return StatusRunning
 }
 
-func (gb *GoWaitForAllInputsBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment string) {
+func (gb *GoWaitForAllInputsBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment string, action string) {
 	if gb.State.Done {
-		return StatusDone, ""
+		return StatusDone, "", ""
 	}
 
-	return StatusExecution, ""
+	return StatusExecution, "", ""
 }
 
 func (gb *GoWaitForAllInputsBlock) Next(_ *store.VariableStore) ([]string, bool) {
@@ -99,7 +99,7 @@ func (gb *GoWaitForAllInputsBlock) Update(ctx context.Context) (interface{}, err
 	gb.RunContext.VarStore.ReplaceState(gb.Name, state)
 
 	if _, ok := gb.expectedEvents[eventEnd]; ok {
-		status, _ := gb.GetTaskHumanStatus()
+		status, _, _ := gb.GetTaskHumanStatus()
 		event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, MakeNodeEndEventArgs{
 			NodeName:      gb.Name,
 			NodeShortName: gb.ShortName,
@@ -166,7 +166,7 @@ func createGoWaitForAllInputsBlock(ctx context.Context, name string, ef *entity.
 		b.RunContext.VarStore.AddStep(b.Name)
 
 		if _, ok := b.expectedEvents[eventStart]; ok {
-			status, _ := b.GetTaskHumanStatus()
+			status, _, _ := b.GetTaskHumanStatus()
 			event, err := runCtx.MakeNodeStartEvent(ctx, MakeNodeStartEventArgs{
 				NodeName:      name,
 				NodeShortName: ef.ShortTitle,

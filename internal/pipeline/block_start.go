@@ -44,8 +44,8 @@ func (gb *GoStartBlock) GetStatus() Status {
 	return StatusFinished
 }
 
-func (gb *GoStartBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment string) {
-	return StatusNew, ""
+func (gb *GoStartBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment string, action string) {
+	return StatusNew, "", ""
 }
 
 func (gb *GoStartBlock) Next(_ *store.VariableStore) ([]string, bool) {
@@ -83,7 +83,7 @@ func (gb *GoStartBlock) Update(ctx context.Context) (interface{}, error) {
 	gb.RunContext.VarStore.SetValue(gb.Output[entity.KeyOutputApplicationInitiator], personData)
 
 	if _, ok := gb.expectedEvents[eventEnd]; ok {
-		status, _ := gb.GetTaskHumanStatus()
+		status, _, _ := gb.GetTaskHumanStatus()
 		event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, MakeNodeEndEventArgs{
 			NodeName:      gb.Name,
 			NodeShortName: gb.ShortName,
@@ -153,7 +153,7 @@ func createGoStartBlock(ctx context.Context, name string, ef *entity.EriusFunc, 
 	b.RunContext.VarStore.AddStep(b.Name)
 
 	if _, ok := b.expectedEvents[eventStart]; ok {
-		status, _ := b.GetTaskHumanStatus()
+		status, _, _ := b.GetTaskHumanStatus()
 		event, err := runCtx.MakeNodeStartEvent(ctx, MakeNodeStartEventArgs{
 			NodeName:      name,
 			NodeShortName: ef.ShortTitle,
