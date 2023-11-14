@@ -99,12 +99,12 @@ func (gb *ExecutablePipeline) ReadyToStart() bool {
 	return len(gb.ActiveBlocks) == 0 && gb.EntryPoint == BlockGoFirstStart
 }
 
-func (gb *ExecutablePipeline) GetTaskHumanStatus() (status TaskHumanStatus, comment string) {
+func (gb *ExecutablePipeline) GetTaskHumanStatus() (status TaskHumanStatus, comment string, action string) {
 	// TODO: проверять, что нет ошибок (потому что только тогда мы Done)
 	if len(gb.ActiveBlocks) == 0 {
-		return StatusDone, ""
+		return StatusDone, "", ""
 	}
-	return StatusNew, ""
+	return StatusNew, "", ""
 }
 
 type CreateTaskDTO struct {

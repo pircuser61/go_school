@@ -70,8 +70,8 @@ func (gb *GoSdApplicationBlock) GetStatus() Status {
 	return StatusRunning
 }
 
-func (gb *GoSdApplicationBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment string) {
-	return "", ""
+func (gb *GoSdApplicationBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment string, action string) {
+	return "", "", ""
 }
 
 func (gb *GoSdApplicationBlock) Next(_ *store.VariableStore) ([]string, bool) {
@@ -123,7 +123,7 @@ func (gb *GoSdApplicationBlock) Update(ctx context.Context) (interface{}, error)
 	gb.RunContext.VarStore.ReplaceState(gb.Name, stateBytes)
 
 	if _, ok := gb.expectedEvents[eventEnd]; ok {
-		status, _ := gb.GetTaskHumanStatus()
+		status, _, _ := gb.GetTaskHumanStatus()
 		event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, MakeNodeEndEventArgs{
 			NodeName:      gb.Name,
 			NodeShortName: gb.ShortName,
@@ -226,7 +226,7 @@ func createGoSdApplicationBlock(ctx context.Context, name string, ef *entity.Eri
 	b.RunContext.VarStore.AddStep(b.Name)
 
 	if _, ok := b.expectedEvents[eventStart]; ok {
-		status, _ := b.GetTaskHumanStatus()
+		status, _, _ := b.GetTaskHumanStatus()
 		event, err := runCtx.MakeNodeStartEvent(ctx, MakeNodeStartEventArgs{
 			NodeName:      name,
 			NodeShortName: ef.ShortTitle,

@@ -327,24 +327,24 @@ func (gb *GoExecutionBlock) UpdateManual() bool {
 }
 
 // nolint:dupl // another block
-func (gb *GoExecutionBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment string) {
+func (gb *GoExecutionBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment string, action string) {
 	if gb.State != nil && gb.State.Decision != nil {
 		if *gb.State.Decision == ExecutionDecisionExecuted {
-			return StatusDone, ""
+			return StatusDone, "", ""
 		}
-		return StatusExecutionRejected, ""
+		return StatusExecutionRejected, "", ""
 	}
 
 	if gb.State.EditingApp != nil {
-		return StatusWait, ""
+		return StatusWait, "", ""
 	}
 
 	if len(gb.State.RequestExecutionInfoLogs) > 0 &&
 		gb.State.RequestExecutionInfoLogs[len(gb.State.RequestExecutionInfoLogs)-1].ReqType == RequestInfoQuestion {
-		return StatusWait, ""
+		return StatusWait, "", ""
 	}
 
-	return StatusExecution, ""
+	return StatusExecution, "", ""
 }
 
 // nolint:dupl // another block

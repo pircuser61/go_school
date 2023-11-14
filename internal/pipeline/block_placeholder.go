@@ -60,8 +60,8 @@ func (gb *GoPlaceholderBlock) GetStatus() Status {
 	return StatusFinished
 }
 
-func (gb *GoPlaceholderBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment string) {
-	return "", ""
+func (gb *GoPlaceholderBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment string, action string) {
+	return "", "", ""
 }
 
 func (gb *GoPlaceholderBlock) GetType() string {
@@ -98,7 +98,7 @@ func (gb *GoPlaceholderBlock) GetState() interface{} {
 
 func (gb *GoPlaceholderBlock) Update(ctx context.Context) (interface{}, error) {
 	if _, ok := gb.expectedEvents[eventEnd]; ok {
-		status, _ := gb.GetTaskHumanStatus()
+		status, _, _ := gb.GetTaskHumanStatus()
 		event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, MakeNodeEndEventArgs{
 			NodeName:      gb.Name,
 			NodeShortName: gb.ShortName,
@@ -144,7 +144,7 @@ func createGoPlaceholderBlock(ctx context.Context, name string, ef *entity.Erius
 	b.RunContext.VarStore.AddStep(b.Name)
 
 	if _, ok := b.expectedEvents[eventStart]; ok {
-		status, _ := b.GetTaskHumanStatus()
+		status, _, _ := b.GetTaskHumanStatus()
 		event, err := runCtx.MakeNodeStartEvent(ctx, MakeNodeStartEventArgs{
 			NodeName:      name,
 			NodeShortName: ef.ShortTitle,

@@ -60,11 +60,11 @@ func (gb *TimerBlock) GetStatus() Status {
 	}
 }
 
-func (gb *TimerBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment string) {
+func (gb *TimerBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment string, action string) {
 	if gb.State.Expired {
-		return StatusDone, ""
+		return StatusDone, "", ""
 	} else {
-		return StatusExecution, ""
+		return StatusExecution, "", ""
 	}
 }
 
@@ -110,7 +110,7 @@ func (gb *TimerBlock) Update(ctx c.Context) (interface{}, error) {
 
 	if gb.State.Expired {
 		if _, ok := gb.expectedEvents[eventEnd]; ok {
-			status, _ := gb.GetTaskHumanStatus()
+			status, _, _ := gb.GetTaskHumanStatus()
 			event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, MakeNodeEndEventArgs{
 				NodeName:      gb.Name,
 				NodeShortName: gb.ShortName,
@@ -215,7 +215,7 @@ func createTimerBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx *
 		b.RunContext.VarStore.AddStep(b.Name)
 
 		if _, ok := b.expectedEvents[eventStart]; ok {
-			status, _ := b.GetTaskHumanStatus()
+			status, _, _ := b.GetTaskHumanStatus()
 			event, err := runCtx.MakeNodeStartEvent(ctx, MakeNodeStartEventArgs{
 				NodeName:      name,
 				NodeShortName: ef.ShortTitle,

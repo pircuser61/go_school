@@ -62,7 +62,7 @@ func createGoExecutionBlock(ctx c.Context, name string, ef *entity.EriusFunc, ru
 			b.RunContext.VarStore.AddStep(b.Name)
 
 			if _, ok := b.expectedEvents[eventStart]; ok {
-				status, _ := b.GetTaskHumanStatus()
+				status, _, _ := b.GetTaskHumanStatus()
 				event, err := runCtx.MakeNodeStartEvent(ctx, MakeNodeStartEventArgs{
 					NodeName:      name,
 					NodeShortName: ef.ShortTitle,
@@ -82,7 +82,7 @@ func createGoExecutionBlock(ctx c.Context, name string, ef *entity.EriusFunc, ru
 		b.RunContext.VarStore.AddStep(b.Name)
 
 		if _, ok := b.expectedEvents[eventStart]; ok {
-			status, _ := b.GetTaskHumanStatus()
+			status, _, _ := b.GetTaskHumanStatus()
 			event, err := runCtx.MakeNodeStartEvent(ctx, MakeNodeStartEventArgs{
 				NodeName:      name,
 				NodeShortName: ef.ShortTitle,
@@ -404,7 +404,7 @@ func (gb *GoExecutionBlock) trySetPreviousDecision(ctx c.Context) (isPrevDecisio
 		gb.State.Decision = parentState.Decision
 
 		if _, ok = gb.expectedEvents[eventEnd]; ok {
-			status, _ := gb.GetTaskHumanStatus()
+			status, _, _ := gb.GetTaskHumanStatus()
 			event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, MakeNodeEndEventArgs{
 				NodeName:      gb.Name,
 				NodeShortName: gb.ShortName,
