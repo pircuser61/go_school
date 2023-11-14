@@ -336,7 +336,7 @@ func (gb *GoExecutionBlock) GetTaskHumanStatus() (status TaskHumanStatus, commen
 	}
 
 	if gb.State.EditingApp != nil {
-		return StatusWait, "", ""
+		return StatusWait, "", "отправлена на доработку"
 	}
 
 	if len(gb.State.RequestExecutionInfoLogs) > 0 &&

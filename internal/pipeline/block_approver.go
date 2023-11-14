@@ -347,7 +347,7 @@ func (gb *GoApproverBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment
 		}
 
 		if *gb.State.Decision == ApproverDecisionSentToEdit {
-			return StatusApprovementRejected, "", "отправлено на доработку"
+			return StatusApprovementRejected, "", "отправлена на доработку"
 		}
 
 		return getPositiveFinishStatus(*gb.State.Decision), "", ""
