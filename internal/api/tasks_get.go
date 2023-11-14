@@ -910,6 +910,9 @@ func (ae *APIEnv) hideExecutors(ctx context.Context, dbTask *entity.EriusTask, r
 
 		switch currentStep.Type {
 		case pipeline.BlockGoFormID:
+			if stepDelegates[currentStep.Name] {
+				continue
+			}
 			var formBlock pipeline.FormData
 			unmarshalErr := json.Unmarshal(currentStep.State[currentStep.Name], &formBlock)
 			if unmarshalErr != nil {
