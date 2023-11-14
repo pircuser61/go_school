@@ -332,11 +332,12 @@ func (gb *GoExecutionBlock) GetTaskHumanStatus() (status TaskHumanStatus, commen
 		if *gb.State.Decision == ExecutionDecisionExecuted {
 			return StatusDone, "", ""
 		}
-		return StatusExecutionRejected, "", ""
+
+		return StatusExecutionRejected, "", "отправлена на доработку"
 	}
 
 	if gb.State.EditingApp != nil {
-		return StatusWait, "", "отправлена на доработку"
+		return StatusWait, "", ""
 	}
 
 	if len(gb.State.RequestExecutionInfoLogs) > 0 &&
