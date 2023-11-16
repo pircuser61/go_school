@@ -238,6 +238,7 @@ func (gb *GoFormBlock) Model() script.FunctionModel {
 			Params: &script.FormParams{
 				FormsAccessibility: []script.FormAccessibility{},
 				Mapping:            script.JSONSchemaProperties{},
+				FullFormMapping:    "",
 			},
 		},
 		Sockets: []script.Socket{script.DefaultSocket},
@@ -250,13 +251,22 @@ func (gb *GoFormBlock) handleAutoFillForm() error {
 		return err
 	}
 
-	formMapping, err := script.MapData(gb.State.Mapping, script.RestoreMapStructure(variables), []string{})
-	if err != nil {
-		return err
-	}
+	var formMapping map[string]interface{}
 
-	if gb.State.FullFormMapping != "" {
-		formMapping["value"] = getVariable(variables, gb.State.FullFormMapping)
+	switch {
+	case gb.State.FullFormMapping != "":
+		mappingAddr, ok := getVariable(variables, gb.State.FullFormMapping).(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("cannot assert variable to map[string]interface{}")
+		}
+		formMapping = mappingAddr
+	case gb.State.Mapping != nil:
+		formMapping, err = script.MapData(gb.State.Mapping, script.RestoreMapStructure(variables), []string{})
+		if err != nil {
+			return err
+		}
+	default:
+		return fmt.Errorf("neither mapping nor full form mapping received")
 	}
 
 	gb.State.ApplicationBody = formMapping

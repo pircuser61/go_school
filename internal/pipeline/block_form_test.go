@@ -361,6 +361,104 @@ func Test_createGoFormBlock(t *testing.T) {
 			},
 			wantErr: assert.NoError,
 		},
+		{
+			name: "success_full_object_mapping",
+			args: args{
+				name: name,
+				ef: &entity.EriusFunc{
+					BlockType:  BlockGoFormID,
+					Title:      title,
+					ShortTitle: shortTitle,
+					Input: []entity.EriusFunctionValue{
+						{
+							Name:   "foo",
+							Type:   "string",
+							Global: "bar",
+						},
+					},
+					Output: &script.JSONSchema{
+						Type: "object",
+						Properties: map[string]script.JSONSchemaPropertiesValue{
+							keyOutputFormExecutor: {
+								Type:   "string",
+								Global: global1,
+							},
+							keyOutputFormBody: {
+								Type:   "string",
+								Global: "sd.form_0",
+							},
+						},
+					},
+					Params: func() []byte {
+						r, _ := json.Marshal(&script.FormParams{
+							SchemaId:         schemaId,
+							Executor:         executor,
+							FormExecutorType: script.FormExecutorTypeAutoFillUser,
+							FullFormMapping:  "sd.form_0",
+							WorkType:         utils.GetAddressOfValue("8/5"),
+						})
+
+						return r
+					}(),
+					Sockets: next,
+				},
+				runCtx: &BlockRunContext{
+					skipNotifications: true,
+					VarStore: func() *store.VariableStore {
+						s := store.NewStore()
+						s.SetValue("sd.form_0", map[string]interface{}{
+							"a": float64(100),
+							"b": float64(200),
+						})
+						return s
+					}(),
+				},
+			},
+			want: &GoFormBlock{
+				Name:      name,
+				ShortName: shortTitle,
+				Title:     title,
+				Input: map[string]string{
+					"foo": "bar",
+				},
+				Output: map[string]string{
+					keyOutputFormExecutor: global1,
+					keyOutputFormBody:     "sd.form_0",
+				},
+				happenedEvents: make([]entity.NodeEvent, 0),
+				State: &FormData{
+					FormExecutorType: script.FormExecutorTypeAutoFillUser,
+					SchemaId:         schemaId,
+					Executors:        map[string]struct{}{"auto_fill": {}},
+					ApplicationBody: map[string]interface{}{
+						"a": float64(100),
+						"b": float64(200),
+					},
+					WorkType:        "8/5",
+					IsFilled:        true,
+					IsTakenInWork:   true,
+					FullFormMapping: "sd.form_0",
+					ActualExecutor: func(s string) *string {
+						return &s
+					}("auto_fill"),
+					ChangesLog: []ChangesLogItem{
+						{
+							ApplicationBody: map[string]interface{}{
+								"a": float64(100),
+								"b": float64(200),
+							},
+							CreatedAt:   timeNow,
+							Executor:    "auto_fill",
+							DelegateFor: "",
+						},
+					},
+					Description:        "",
+					FormsAccessibility: nil,
+				},
+				Sockets: entity.ConvertSocket(next),
+			},
+			wantErr: assert.NoError,
+		},
 	}
 
 	for _, tt := range tests {

@@ -81,6 +81,7 @@ func (gb *GoStartBlock) Update(ctx context.Context) (interface{}, error) {
 
 	gb.RunContext.VarStore.SetValue(gb.Output[entity.KeyOutputWorkNumber], gb.RunContext.WorkNumber)
 	gb.RunContext.VarStore.SetValue(gb.Output[entity.KeyOutputApplicationInitiator], personData)
+	gb.RunContext.VarStore.SetValue(gb.Output[entity.KeyOutputApplicationData], data.InitialApplication.ApplicationBody)
 
 	if _, ok := gb.expectedEvents[eventEnd]; ok {
 		status, _, _ := gb.GetTaskHumanStatus()
