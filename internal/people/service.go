@@ -112,10 +112,10 @@ func (t *TransportForPeople) RoundTrip(req *http.Request) (*http.Response, error
 }
 
 type Service struct {
-	searchUrl string
+	SearchUrl string
 
-	cli *http.Client
-	sso *sso.Service
+	Cli *http.Client
+	Sso *sso.Service
 }
 
 func NewService(c Config, ssoS *sso.Service) (*Service, error) {
@@ -132,15 +132,15 @@ func NewService(c Config, ssoS *sso.Service) (*Service, error) {
 	newCli.Transport = &tr
 
 	s := &Service{
-		cli: newCli,
-		sso: ssoS,
+		Cli: newCli,
+		Sso: ssoS,
 	}
 
 	search, err := s.pathBuilder(c.Url, searchPath)
 	if err != nil {
 		return nil, err
 	}
-	s.searchUrl = search
+	s.SearchUrl = search
 
 	return s, nil
 }
@@ -228,7 +228,7 @@ func (s *Service) getUser(ctx context.Context, search string) ([]SSOUser, error)
 	var req *http.Request
 	var err error
 
-	req, err = http.NewRequestWithContext(ctxLocal, http.MethodGet, s.searchUrl, http.NoBody)
+	req, err = http.NewRequestWithContext(ctxLocal, http.MethodGet, s.SearchUrl, http.NoBody)
 	if err != nil {
 		return nil, err
 	}
@@ -242,7 +242,7 @@ func (s *Service) getUser(ctx context.Context, search string) ([]SSOUser, error)
 
 	req.URL.RawQuery = query.Encode()
 
-	resp, err := s.cli.Do(req)
+	resp, err := s.Cli.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -270,7 +270,7 @@ func (s *Service) getUsers(ctx context.Context, search string, limit int, filter
 	var req *http.Request
 	var err error
 
-	req, err = http.NewRequestWithContext(ctxLocal, http.MethodGet, s.searchUrl, http.NoBody)
+	req, err = http.NewRequestWithContext(ctxLocal, http.MethodGet, s.SearchUrl, http.NoBody)
 	if err != nil {
 		return nil, err
 	}
@@ -286,7 +286,7 @@ func (s *Service) getUsers(ctx context.Context, search string, limit int, filter
 
 	req.URL.RawQuery = query.Encode()
 
-	resp, err := s.cli.Do(req)
+	resp, err := s.Cli.Do(req)
 	if err != nil {
 		return nil, err
 	}
