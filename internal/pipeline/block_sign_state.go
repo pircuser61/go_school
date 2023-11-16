@@ -124,8 +124,8 @@ func (s *SignData) SetDecision(login string, params *signSignatureParams) error 
 		return errors.New("unknown decision")
 	}
 
-	if s.SignatureType == script.SignatureTypeUKEP && s.SignatureCarrier == script.SignatureCarrierToken &&
-		len(params.Attachments) == 0 {
+	if s.SignatureType == script.SignatureTypeUKEP && params.Decision == SignDecisionSigned &&
+		s.SignatureCarrier == script.SignatureCarrierToken && len(params.Attachments) == 0 {
 		return errors.New("attachments for ukep token signing are required")
 	}
 
