@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"sync"
 	"testing"
 	"time"
@@ -25,8 +26,6 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	peopleMocks "gitlab.services.mts.ru/jocasta/pipeliner/internal/people/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
-	serviceDeskMocks "gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
@@ -412,7 +411,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 		want *GoSignBlock
 	}{
 		{
-			name: "no execution params",
+			name: "no sign params",
 			args: args{
 				name: example,
 				ef: &entity.EriusFunc{
@@ -538,14 +537,13 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 					Reentered:          true,
 				},
 				RunContext: &BlockRunContext{
-					TaskID:      uuid.UUID{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0},
+					TaskID:      uuid.MustParse("00000000-0000-0000-0000-000000000000"),
 					IsTest:      false,
 					Delegations: human_tasks.Delegations(nil),
 					VarStore: &store.VariableStore{
 						Mutex: sync.Mutex{},
 						State: map[string]json.RawMessage{
-							"example": {0x7b, 0x22, 0x74, 0x79, 0x70, 0x65, 0x22, 0x3a, 0x22, 0x75, 0x73, 0x65, 0x72, 0x22, 0x2c, 0x22, 0x73, 0x69, 0x67, 0x6e, 0x65, 0x72, 0x73, 0x22, 0x3a, 0x7b, 0x22, 0x74, 0x65, 0x73, 0x74, 0x65, 0x72, 0x22, 0x3a, 0x7b, 0x7d, 0x7d, 0x2c, 0x22, 0x73, 0x69, 0x67, 0x6e, 0x61, 0x74, 0x75, 0x72, 0x65, 0x5f, 0x74, 0x79, 0x70, 0x65, 0x22, 0x3a, 0x22, 0x22, 0x2c, 0x22, 0x66, 0x6f, 0x72, 0x6d, 0x73, 0x5f, 0x61, 0x63, 0x63, 0x65, 0x73, 0x73, 0x69, 0x62, 0x69, 0x6c, 0x69, 0x74, 0x79, 0x22, 0x3a, 0x5b, 0x7b, 0x22, 0x6e, 0x6f, 0x64, 0x65, 0x5f, 0x69, 0x64, 0x22, 0x3a, 0x22, 0x22, 0x2c, 0x22, 0x6e, 0x61, 0x6d, 0x65, 0x22, 0x3a, 0x22, 0x22, 0x2c, 0x22, 0x64, 0x65, 0x73, 0x63, 0x72, 0x69, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x22, 0x3a, 0x22, 0x22, 0x2c, 0x22, 0x61, 0x63, 0x63, 0x65, 0x73, 0x73, 0x54, 0x79, 0x70, 0x65, 0x22, 0x3a, 0x22, 0x22, 0x7d, 0x5d, 0x2c, 0x22, 0x69, 0x73, 0x5f, 0x74, 0x61, 0x6b, 0x65, 0x6e, 0x5f, 0x69, 0x6e, 0x5f, 0x77, 0x6f, 0x72, 0x6b, 0x22, 0x3a, 0x66, 0x61, 0x6c, 0x73, 0x65, 0x2c, 0x22, 0x77, 0x6f, 0x72, 0x6b, 0x65, 0x72, 0x5f, 0x6c, 0x6f, 0x67, 0x69, 0x6e, 0x22, 0x3a, 0x22, 0x22, 0x2c, 0x22, 0x73, 0x6c, 0x61, 0x5f, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x65, 0x64, 0x22, 0x3a, 0x66, 0x61, 0x6c, 0x73, 0x65, 0x2c, 0x22, 0x62, 0x65, 0x66, 0x6f, 0x72, 0x65, 0x5f, 0x64, 0x61, 0x79, 0x5f, 0x73, 0x6c, 0x61, 0x5f, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x65, 0x64, 0x22, 0x3a, 0x66, 0x61, 0x6c, 0x73, 0x65, 0x2c, 0x22, 0x72, 0x65, 0x65, 0x6e, 0x74, 0x65, 0x72, 0x65, 0x64, 0x22, 0x3a, 0x66, 0x61, 0x6c, 0x73, 0x65, 0x7d},
-						},
+							"example": unmarshalFromTestFile(t, "testdata/sign/sign_state.json")},
 						Values:     map[string]interface{}{},
 						Steps:      []string{"example"},
 						Errors:     []string{},
@@ -648,14 +646,13 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 					Reentered:          true,
 				},
 				RunContext: &BlockRunContext{
-					TaskID:      uuid.UUID{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0},
+					TaskID:      uuid.MustParse("00000000-0000-0000-0000-000000000000"),
 					IsTest:      false,
 					Delegations: human_tasks.Delegations(nil),
 					VarStore: &store.VariableStore{
 						Mutex: sync.Mutex{},
 						State: map[string]json.RawMessage{
-							"example": {0x7b, 0x22, 0x74, 0x79, 0x70, 0x65, 0x22, 0x3a, 0x22, 0x75, 0x73, 0x65, 0x72, 0x22, 0x2c, 0x22, 0x73, 0x69, 0x67, 0x6e, 0x65, 0x72, 0x73, 0x22, 0x3a, 0x7b, 0x22, 0x74, 0x65, 0x73, 0x74, 0x65, 0x72, 0x22, 0x3a, 0x7b, 0x7d, 0x7d, 0x2c, 0x22, 0x73, 0x69, 0x67, 0x6e, 0x61, 0x74, 0x75, 0x72, 0x65, 0x5f, 0x74, 0x79, 0x70, 0x65, 0x22, 0x3a, 0x22, 0x22, 0x2c, 0x22, 0x66, 0x6f, 0x72, 0x6d, 0x73, 0x5f, 0x61, 0x63, 0x63, 0x65, 0x73, 0x73, 0x69, 0x62, 0x69, 0x6c, 0x69, 0x74, 0x79, 0x22, 0x3a, 0x5b, 0x7b, 0x22, 0x6e, 0x6f, 0x64, 0x65, 0x5f, 0x69, 0x64, 0x22, 0x3a, 0x22, 0x22, 0x2c, 0x22, 0x6e, 0x61, 0x6d, 0x65, 0x22, 0x3a, 0x22, 0x22, 0x2c, 0x22, 0x64, 0x65, 0x73, 0x63, 0x72, 0x69, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x22, 0x3a, 0x22, 0x22, 0x2c, 0x22, 0x61, 0x63, 0x63, 0x65, 0x73, 0x73, 0x54, 0x79, 0x70, 0x65, 0x22, 0x3a, 0x22, 0x22, 0x7d, 0x5d, 0x2c, 0x22, 0x69, 0x73, 0x5f, 0x74, 0x61, 0x6b, 0x65, 0x6e, 0x5f, 0x69, 0x6e, 0x5f, 0x77, 0x6f, 0x72, 0x6b, 0x22, 0x3a, 0x66, 0x61, 0x6c, 0x73, 0x65, 0x2c, 0x22, 0x77, 0x6f, 0x72, 0x6b, 0x65, 0x72, 0x5f, 0x6c, 0x6f, 0x67, 0x69, 0x6e, 0x22, 0x3a, 0x22, 0x22, 0x2c, 0x22, 0x73, 0x6c, 0x61, 0x5f, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x65, 0x64, 0x22, 0x3a, 0x66, 0x61, 0x6c, 0x73, 0x65, 0x2c, 0x22, 0x62, 0x65, 0x66, 0x6f, 0x72, 0x65, 0x5f, 0x64, 0x61, 0x79, 0x5f, 0x73, 0x6c, 0x61, 0x5f, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x65, 0x64, 0x22, 0x3a, 0x66, 0x61, 0x6c, 0x73, 0x65, 0x2c, 0x22, 0x72, 0x65, 0x65, 0x6e, 0x74, 0x65, 0x72, 0x65, 0x64, 0x22, 0x3a, 0x66, 0x61, 0x6c, 0x73, 0x65, 0x7d},
-						},
+							"example": unmarshalFromTestFile(t, "testdata/sign/sign_state.json")},
 						Values:     map[string]interface{}{},
 						Steps:      []string{"example"},
 						Errors:     []string{},
@@ -758,14 +755,13 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 					Reentered:          true,
 				},
 				RunContext: &BlockRunContext{
-					TaskID:      uuid.UUID{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0},
+					TaskID:      uuid.MustParse("00000000-0000-0000-0000-000000000000"),
 					IsTest:      false,
 					Delegations: human_tasks.Delegations(nil),
 					VarStore: &store.VariableStore{
 						Mutex: sync.Mutex{},
 						State: map[string]json.RawMessage{
-							"example": {0x7b, 0x22, 0x74, 0x79, 0x70, 0x65, 0x22, 0x3a, 0x22, 0x75, 0x73, 0x65, 0x72, 0x22, 0x2c, 0x22, 0x73, 0x69, 0x67, 0x6e, 0x65, 0x72, 0x73, 0x22, 0x3a, 0x7b, 0x22, 0x74, 0x65, 0x73, 0x74, 0x65, 0x72, 0x22, 0x3a, 0x7b, 0x7d, 0x7d, 0x2c, 0x22, 0x73, 0x69, 0x67, 0x6e, 0x61, 0x74, 0x75, 0x72, 0x65, 0x5f, 0x74, 0x79, 0x70, 0x65, 0x22, 0x3a, 0x22, 0x22, 0x2c, 0x22, 0x66, 0x6f, 0x72, 0x6d, 0x73, 0x5f, 0x61, 0x63, 0x63, 0x65, 0x73, 0x73, 0x69, 0x62, 0x69, 0x6c, 0x69, 0x74, 0x79, 0x22, 0x3a, 0x5b, 0x7b, 0x22, 0x6e, 0x6f, 0x64, 0x65, 0x5f, 0x69, 0x64, 0x22, 0x3a, 0x22, 0x22, 0x2c, 0x22, 0x6e, 0x61, 0x6d, 0x65, 0x22, 0x3a, 0x22, 0x22, 0x2c, 0x22, 0x64, 0x65, 0x73, 0x63, 0x72, 0x69, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x22, 0x3a, 0x22, 0x22, 0x2c, 0x22, 0x61, 0x63, 0x63, 0x65, 0x73, 0x73, 0x54, 0x79, 0x70, 0x65, 0x22, 0x3a, 0x22, 0x22, 0x7d, 0x5d, 0x2c, 0x22, 0x69, 0x73, 0x5f, 0x74, 0x61, 0x6b, 0x65, 0x6e, 0x5f, 0x69, 0x6e, 0x5f, 0x77, 0x6f, 0x72, 0x6b, 0x22, 0x3a, 0x66, 0x61, 0x6c, 0x73, 0x65, 0x2c, 0x22, 0x77, 0x6f, 0x72, 0x6b, 0x65, 0x72, 0x5f, 0x6c, 0x6f, 0x67, 0x69, 0x6e, 0x22, 0x3a, 0x22, 0x22, 0x2c, 0x22, 0x73, 0x6c, 0x61, 0x5f, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x65, 0x64, 0x22, 0x3a, 0x66, 0x61, 0x6c, 0x73, 0x65, 0x2c, 0x22, 0x62, 0x65, 0x66, 0x6f, 0x72, 0x65, 0x5f, 0x64, 0x61, 0x79, 0x5f, 0x73, 0x6c, 0x61, 0x5f, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x65, 0x64, 0x22, 0x3a, 0x66, 0x61, 0x6c, 0x73, 0x65, 0x2c, 0x22, 0x72, 0x65, 0x65, 0x6e, 0x74, 0x65, 0x72, 0x65, 0x64, 0x22, 0x3a, 0x66, 0x61, 0x6c, 0x73, 0x65, 0x7d},
-						},
+							"example": unmarshalFromTestFile(t, "testdata/sign/sign_state.json")},
 						Values:     map[string]interface{}{},
 						Steps:      []string{"example"},
 						Errors:     []string{},
@@ -868,14 +864,13 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 					Reentered:          true,
 				},
 				RunContext: &BlockRunContext{
-					TaskID:      uuid.UUID{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0},
+					TaskID:      uuid.MustParse("00000000-0000-0000-0000-000000000000"),
 					IsTest:      false,
 					Delegations: human_tasks.Delegations(nil),
 					VarStore: &store.VariableStore{
 						Mutex: sync.Mutex{},
 						State: map[string]json.RawMessage{
-							"example": {0x7b, 0x22, 0x74, 0x79, 0x70, 0x65, 0x22, 0x3a, 0x22, 0x75, 0x73, 0x65, 0x72, 0x22, 0x2c, 0x22, 0x73, 0x69, 0x67, 0x6e, 0x65, 0x72, 0x73, 0x22, 0x3a, 0x7b, 0x22, 0x74, 0x65, 0x73, 0x74, 0x65, 0x72, 0x22, 0x3a, 0x7b, 0x7d, 0x7d, 0x2c, 0x22, 0x73, 0x69, 0x67, 0x6e, 0x61, 0x74, 0x75, 0x72, 0x65, 0x5f, 0x74, 0x79, 0x70, 0x65, 0x22, 0x3a, 0x22, 0x22, 0x2c, 0x22, 0x66, 0x6f, 0x72, 0x6d, 0x73, 0x5f, 0x61, 0x63, 0x63, 0x65, 0x73, 0x73, 0x69, 0x62, 0x69, 0x6c, 0x69, 0x74, 0x79, 0x22, 0x3a, 0x5b, 0x7b, 0x22, 0x6e, 0x6f, 0x64, 0x65, 0x5f, 0x69, 0x64, 0x22, 0x3a, 0x22, 0x22, 0x2c, 0x22, 0x6e, 0x61, 0x6d, 0x65, 0x22, 0x3a, 0x22, 0x22, 0x2c, 0x22, 0x64, 0x65, 0x73, 0x63, 0x72, 0x69, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x22, 0x3a, 0x22, 0x22, 0x2c, 0x22, 0x61, 0x63, 0x63, 0x65, 0x73, 0x73, 0x54, 0x79, 0x70, 0x65, 0x22, 0x3a, 0x22, 0x22, 0x7d, 0x5d, 0x2c, 0x22, 0x69, 0x73, 0x5f, 0x74, 0x61, 0x6b, 0x65, 0x6e, 0x5f, 0x69, 0x6e, 0x5f, 0x77, 0x6f, 0x72, 0x6b, 0x22, 0x3a, 0x66, 0x61, 0x6c, 0x73, 0x65, 0x2c, 0x22, 0x77, 0x6f, 0x72, 0x6b, 0x65, 0x72, 0x5f, 0x6c, 0x6f, 0x67, 0x69, 0x6e, 0x22, 0x3a, 0x22, 0x22, 0x2c, 0x22, 0x73, 0x6c, 0x61, 0x5f, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x65, 0x64, 0x22, 0x3a, 0x66, 0x61, 0x6c, 0x73, 0x65, 0x2c, 0x22, 0x62, 0x65, 0x66, 0x6f, 0x72, 0x65, 0x5f, 0x64, 0x61, 0x79, 0x5f, 0x73, 0x6c, 0x61, 0x5f, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x65, 0x64, 0x22, 0x3a, 0x66, 0x61, 0x6c, 0x73, 0x65, 0x2c, 0x22, 0x72, 0x65, 0x65, 0x6e, 0x74, 0x65, 0x72, 0x65, 0x64, 0x22, 0x3a, 0x66, 0x61, 0x6c, 0x73, 0x65, 0x7d},
-						},
+							"example": unmarshalFromTestFile(t, "testdata/sign/sign_state.json")},
 						Values:     map[string]interface{}{},
 						Steps:      []string{"example"},
 						Errors:     []string{},
@@ -978,14 +973,13 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 					Reentered:          true,
 				},
 				RunContext: &BlockRunContext{
-					TaskID:      uuid.UUID{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0},
+					TaskID:      uuid.MustParse("00000000-0000-0000-0000-000000000000"),
 					IsTest:      false,
 					Delegations: human_tasks.Delegations(nil),
 					VarStore: &store.VariableStore{
 						Mutex: sync.Mutex{},
 						State: map[string]json.RawMessage{
-							"example": {0x7b, 0x22, 0x74, 0x79, 0x70, 0x65, 0x22, 0x3a, 0x22, 0x75, 0x73, 0x65, 0x72, 0x22, 0x2c, 0x22, 0x73, 0x69, 0x67, 0x6e, 0x65, 0x72, 0x73, 0x22, 0x3a, 0x7b, 0x22, 0x74, 0x65, 0x73, 0x74, 0x65, 0x72, 0x22, 0x3a, 0x7b, 0x7d, 0x7d, 0x2c, 0x22, 0x73, 0x69, 0x67, 0x6e, 0x61, 0x74, 0x75, 0x72, 0x65, 0x5f, 0x74, 0x79, 0x70, 0x65, 0x22, 0x3a, 0x22, 0x22, 0x2c, 0x22, 0x66, 0x6f, 0x72, 0x6d, 0x73, 0x5f, 0x61, 0x63, 0x63, 0x65, 0x73, 0x73, 0x69, 0x62, 0x69, 0x6c, 0x69, 0x74, 0x79, 0x22, 0x3a, 0x5b, 0x7b, 0x22, 0x6e, 0x6f, 0x64, 0x65, 0x5f, 0x69, 0x64, 0x22, 0x3a, 0x22, 0x22, 0x2c, 0x22, 0x6e, 0x61, 0x6d, 0x65, 0x22, 0x3a, 0x22, 0x22, 0x2c, 0x22, 0x64, 0x65, 0x73, 0x63, 0x72, 0x69, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x22, 0x3a, 0x22, 0x22, 0x2c, 0x22, 0x61, 0x63, 0x63, 0x65, 0x73, 0x73, 0x54, 0x79, 0x70, 0x65, 0x22, 0x3a, 0x22, 0x22, 0x7d, 0x5d, 0x2c, 0x22, 0x69, 0x73, 0x5f, 0x74, 0x61, 0x6b, 0x65, 0x6e, 0x5f, 0x69, 0x6e, 0x5f, 0x77, 0x6f, 0x72, 0x6b, 0x22, 0x3a, 0x66, 0x61, 0x6c, 0x73, 0x65, 0x2c, 0x22, 0x77, 0x6f, 0x72, 0x6b, 0x65, 0x72, 0x5f, 0x6c, 0x6f, 0x67, 0x69, 0x6e, 0x22, 0x3a, 0x22, 0x22, 0x2c, 0x22, 0x73, 0x6c, 0x61, 0x5f, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x65, 0x64, 0x22, 0x3a, 0x66, 0x61, 0x6c, 0x73, 0x65, 0x2c, 0x22, 0x62, 0x65, 0x66, 0x6f, 0x72, 0x65, 0x5f, 0x64, 0x61, 0x79, 0x5f, 0x73, 0x6c, 0x61, 0x5f, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x65, 0x64, 0x22, 0x3a, 0x66, 0x61, 0x6c, 0x73, 0x65, 0x2c, 0x22, 0x72, 0x65, 0x65, 0x6e, 0x74, 0x65, 0x72, 0x65, 0x64, 0x22, 0x3a, 0x66, 0x61, 0x6c, 0x73, 0x65, 0x7d},
-						},
+							"example": unmarshalFromTestFile(t, "testdata/sign/sign_state.json")},
 						Values:     map[string]interface{}{},
 						Steps:      []string{"example"},
 						Errors:     []string{},
@@ -1088,14 +1082,13 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 					Reentered:          true,
 				},
 				RunContext: &BlockRunContext{
-					TaskID:      uuid.UUID{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0},
+					TaskID:      uuid.MustParse("00000000-0000-0000-0000-000000000000"),
 					IsTest:      false,
 					Delegations: human_tasks.Delegations(nil),
 					VarStore: &store.VariableStore{
 						Mutex: sync.Mutex{},
 						State: map[string]json.RawMessage{
-							"example": {0x7b, 0x22, 0x74, 0x79, 0x70, 0x65, 0x22, 0x3a, 0x22, 0x75, 0x73, 0x65, 0x72, 0x22, 0x2c, 0x22, 0x73, 0x69, 0x67, 0x6e, 0x65, 0x72, 0x73, 0x22, 0x3a, 0x7b, 0x22, 0x74, 0x65, 0x73, 0x74, 0x65, 0x72, 0x22, 0x3a, 0x7b, 0x7d, 0x7d, 0x2c, 0x22, 0x73, 0x69, 0x67, 0x6e, 0x61, 0x74, 0x75, 0x72, 0x65, 0x5f, 0x74, 0x79, 0x70, 0x65, 0x22, 0x3a, 0x22, 0x22, 0x2c, 0x22, 0x66, 0x6f, 0x72, 0x6d, 0x73, 0x5f, 0x61, 0x63, 0x63, 0x65, 0x73, 0x73, 0x69, 0x62, 0x69, 0x6c, 0x69, 0x74, 0x79, 0x22, 0x3a, 0x5b, 0x7b, 0x22, 0x6e, 0x6f, 0x64, 0x65, 0x5f, 0x69, 0x64, 0x22, 0x3a, 0x22, 0x22, 0x2c, 0x22, 0x6e, 0x61, 0x6d, 0x65, 0x22, 0x3a, 0x22, 0x22, 0x2c, 0x22, 0x64, 0x65, 0x73, 0x63, 0x72, 0x69, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x22, 0x3a, 0x22, 0x22, 0x2c, 0x22, 0x61, 0x63, 0x63, 0x65, 0x73, 0x73, 0x54, 0x79, 0x70, 0x65, 0x22, 0x3a, 0x22, 0x22, 0x7d, 0x5d, 0x2c, 0x22, 0x69, 0x73, 0x5f, 0x74, 0x61, 0x6b, 0x65, 0x6e, 0x5f, 0x69, 0x6e, 0x5f, 0x77, 0x6f, 0x72, 0x6b, 0x22, 0x3a, 0x66, 0x61, 0x6c, 0x73, 0x65, 0x2c, 0x22, 0x77, 0x6f, 0x72, 0x6b, 0x65, 0x72, 0x5f, 0x6c, 0x6f, 0x67, 0x69, 0x6e, 0x22, 0x3a, 0x22, 0x22, 0x2c, 0x22, 0x73, 0x6c, 0x61, 0x5f, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x65, 0x64, 0x22, 0x3a, 0x66, 0x61, 0x6c, 0x73, 0x65, 0x2c, 0x22, 0x62, 0x65, 0x66, 0x6f, 0x72, 0x65, 0x5f, 0x64, 0x61, 0x79, 0x5f, 0x73, 0x6c, 0x61, 0x5f, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x65, 0x64, 0x22, 0x3a, 0x66, 0x61, 0x6c, 0x73, 0x65, 0x2c, 0x22, 0x72, 0x65, 0x65, 0x6e, 0x74, 0x65, 0x72, 0x65, 0x64, 0x22, 0x3a, 0x66, 0x61, 0x6c, 0x73, 0x65, 0x7d},
-						},
+							"example": unmarshalFromTestFile(t, "testdata/sign/sign_state.json")},
 						Values:     map[string]interface{}{},
 						Steps:      []string{"example"},
 						Errors:     []string{},
@@ -1366,14 +1359,13 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 					Reentered:          true,
 				},
 				RunContext: &BlockRunContext{
-					TaskID:      uuid.UUID{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0},
+					TaskID:      uuid.MustParse("00000000-0000-0000-0000-000000000000"),
 					IsTest:      false,
 					Delegations: human_tasks.Delegations(nil),
 					VarStore: &store.VariableStore{
 						Mutex: sync.Mutex{},
 						State: map[string]json.RawMessage{
-							"example": {0x7b, 0x22, 0x74, 0x79, 0x70, 0x65, 0x22, 0x3a, 0x22, 0x75, 0x73, 0x65, 0x72, 0x22, 0x2c, 0x22, 0x73, 0x69, 0x67, 0x6e, 0x65, 0x72, 0x73, 0x22, 0x3a, 0x7b, 0x22, 0x74, 0x65, 0x73, 0x74, 0x65, 0x72, 0x22, 0x3a, 0x7b, 0x7d, 0x7d, 0x2c, 0x22, 0x73, 0x69, 0x67, 0x6e, 0x61, 0x74, 0x75, 0x72, 0x65, 0x5f, 0x74, 0x79, 0x70, 0x65, 0x22, 0x3a, 0x22, 0x22, 0x2c, 0x22, 0x66, 0x6f, 0x72, 0x6d, 0x73, 0x5f, 0x61, 0x63, 0x63, 0x65, 0x73, 0x73, 0x69, 0x62, 0x69, 0x6c, 0x69, 0x74, 0x79, 0x22, 0x3a, 0x5b, 0x7b, 0x22, 0x6e, 0x6f, 0x64, 0x65, 0x5f, 0x69, 0x64, 0x22, 0x3a, 0x22, 0x22, 0x2c, 0x22, 0x6e, 0x61, 0x6d, 0x65, 0x22, 0x3a, 0x22, 0x22, 0x2c, 0x22, 0x64, 0x65, 0x73, 0x63, 0x72, 0x69, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x22, 0x3a, 0x22, 0x22, 0x2c, 0x22, 0x61, 0x63, 0x63, 0x65, 0x73, 0x73, 0x54, 0x79, 0x70, 0x65, 0x22, 0x3a, 0x22, 0x22, 0x7d, 0x5d, 0x2c, 0x22, 0x69, 0x73, 0x5f, 0x74, 0x61, 0x6b, 0x65, 0x6e, 0x5f, 0x69, 0x6e, 0x5f, 0x77, 0x6f, 0x72, 0x6b, 0x22, 0x3a, 0x66, 0x61, 0x6c, 0x73, 0x65, 0x2c, 0x22, 0x77, 0x6f, 0x72, 0x6b, 0x65, 0x72, 0x5f, 0x6c, 0x6f, 0x67, 0x69, 0x6e, 0x22, 0x3a, 0x22, 0x22, 0x2c, 0x22, 0x73, 0x6c, 0x61, 0x5f, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x65, 0x64, 0x22, 0x3a, 0x66, 0x61, 0x6c, 0x73, 0x65, 0x2c, 0x22, 0x62, 0x65, 0x66, 0x6f, 0x72, 0x65, 0x5f, 0x64, 0x61, 0x79, 0x5f, 0x73, 0x6c, 0x61, 0x5f, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x65, 0x64, 0x22, 0x3a, 0x66, 0x61, 0x6c, 0x73, 0x65, 0x2c, 0x22, 0x72, 0x65, 0x65, 0x6e, 0x74, 0x65, 0x72, 0x65, 0x64, 0x22, 0x3a, 0x66, 0x61, 0x6c, 0x73, 0x65, 0x7d},
-						},
+							"example": unmarshalFromTestFile(t, "testdata/sign/sign_state.json")},
 						Values:     map[string]interface{}{},
 						Steps:      []string{"example"},
 						Errors:     []string{},
@@ -1476,13 +1468,13 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 					Reentered:          true,
 				},
 				RunContext: &BlockRunContext{
-					TaskID:      uuid.UUID{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0},
+					TaskID:      uuid.MustParse("00000000-0000-0000-0000-000000000000"),
 					IsTest:      false,
 					Delegations: human_tasks.Delegations(nil),
 					VarStore: &store.VariableStore{
 						Mutex: sync.Mutex{},
 						State: map[string]json.RawMessage{
-							"example": {0x7b, 0x22, 0x74, 0x79, 0x70, 0x65, 0x22, 0x3a, 0x22, 0x75, 0x73, 0x65, 0x72, 0x22, 0x2c, 0x22, 0x73, 0x69, 0x67, 0x6e, 0x65, 0x72, 0x73, 0x22, 0x3a, 0x7b, 0x22, 0x74, 0x65, 0x73, 0x74, 0x65, 0x72, 0x22, 0x3a, 0x7b, 0x7d, 0x7d, 0x2c, 0x22, 0x73, 0x69, 0x67, 0x6e, 0x61, 0x74, 0x75, 0x72, 0x65, 0x5f, 0x74, 0x79, 0x70, 0x65, 0x22, 0x3a, 0x22, 0x22, 0x2c, 0x22, 0x66, 0x6f, 0x72, 0x6d, 0x73, 0x5f, 0x61, 0x63, 0x63, 0x65, 0x73, 0x73, 0x69, 0x62, 0x69, 0x6c, 0x69, 0x74, 0x79, 0x22, 0x3a, 0x5b, 0x7b, 0x22, 0x6e, 0x6f, 0x64, 0x65, 0x5f, 0x69, 0x64, 0x22, 0x3a, 0x22, 0x22, 0x2c, 0x22, 0x6e, 0x61, 0x6d, 0x65, 0x22, 0x3a, 0x22, 0x22, 0x2c, 0x22, 0x64, 0x65, 0x73, 0x63, 0x72, 0x69, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x22, 0x3a, 0x22, 0x22, 0x2c, 0x22, 0x61, 0x63, 0x63, 0x65, 0x73, 0x73, 0x54, 0x79, 0x70, 0x65, 0x22, 0x3a, 0x22, 0x22, 0x7d, 0x5d, 0x2c, 0x22, 0x69, 0x73, 0x5f, 0x74, 0x61, 0x6b, 0x65, 0x6e, 0x5f, 0x69, 0x6e, 0x5f, 0x77, 0x6f, 0x72, 0x6b, 0x22, 0x3a, 0x66, 0x61, 0x6c, 0x73, 0x65, 0x2c, 0x22, 0x77, 0x6f, 0x72, 0x6b, 0x65, 0x72, 0x5f, 0x6c, 0x6f, 0x67, 0x69, 0x6e, 0x22, 0x3a, 0x22, 0x22, 0x2c, 0x22, 0x73, 0x6c, 0x61, 0x5f, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x65, 0x64, 0x22, 0x3a, 0x66, 0x61, 0x6c, 0x73, 0x65, 0x2c, 0x22, 0x62, 0x65, 0x66, 0x6f, 0x72, 0x65, 0x5f, 0x64, 0x61, 0x79, 0x5f, 0x73, 0x6c, 0x61, 0x5f, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x65, 0x64, 0x22, 0x3a, 0x66, 0x61, 0x6c, 0x73, 0x65, 0x2c, 0x22, 0x72, 0x65, 0x65, 0x6e, 0x74, 0x65, 0x72, 0x65, 0x64, 0x22, 0x3a, 0x66, 0x61, 0x6c, 0x73, 0x65, 0x7d},
+							"example": unmarshalFromTestFile(t, "testdata/sign/sign_state.json"),
 						},
 						Values:     map[string]interface{}{},
 						Steps:      []string{"example"},
@@ -1586,13 +1578,13 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 					Reentered:          true,
 				},
 				RunContext: &BlockRunContext{
-					TaskID:      uuid.UUID{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0},
+					TaskID:      uuid.MustParse("00000000-0000-0000-0000-000000000000"),
 					IsTest:      false,
 					Delegations: human_tasks.Delegations(nil),
 					VarStore: &store.VariableStore{
 						Mutex: sync.Mutex{},
 						State: map[string]json.RawMessage{
-							"example": {0x7b, 0x22, 0x74, 0x79, 0x70, 0x65, 0x22, 0x3a, 0x22, 0x75, 0x73, 0x65, 0x72, 0x22, 0x2c, 0x22, 0x73, 0x69, 0x67, 0x6e, 0x65, 0x72, 0x73, 0x22, 0x3a, 0x7b, 0x22, 0x74, 0x65, 0x73, 0x74, 0x65, 0x72, 0x22, 0x3a, 0x7b, 0x7d, 0x7d, 0x2c, 0x22, 0x73, 0x69, 0x67, 0x6e, 0x61, 0x74, 0x75, 0x72, 0x65, 0x5f, 0x74, 0x79, 0x70, 0x65, 0x22, 0x3a, 0x22, 0x22, 0x2c, 0x22, 0x66, 0x6f, 0x72, 0x6d, 0x73, 0x5f, 0x61, 0x63, 0x63, 0x65, 0x73, 0x73, 0x69, 0x62, 0x69, 0x6c, 0x69, 0x74, 0x79, 0x22, 0x3a, 0x5b, 0x7b, 0x22, 0x6e, 0x6f, 0x64, 0x65, 0x5f, 0x69, 0x64, 0x22, 0x3a, 0x22, 0x22, 0x2c, 0x22, 0x6e, 0x61, 0x6d, 0x65, 0x22, 0x3a, 0x22, 0x22, 0x2c, 0x22, 0x64, 0x65, 0x73, 0x63, 0x72, 0x69, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x22, 0x3a, 0x22, 0x22, 0x2c, 0x22, 0x61, 0x63, 0x63, 0x65, 0x73, 0x73, 0x54, 0x79, 0x70, 0x65, 0x22, 0x3a, 0x22, 0x22, 0x7d, 0x5d, 0x2c, 0x22, 0x69, 0x73, 0x5f, 0x74, 0x61, 0x6b, 0x65, 0x6e, 0x5f, 0x69, 0x6e, 0x5f, 0x77, 0x6f, 0x72, 0x6b, 0x22, 0x3a, 0x66, 0x61, 0x6c, 0x73, 0x65, 0x2c, 0x22, 0x77, 0x6f, 0x72, 0x6b, 0x65, 0x72, 0x5f, 0x6c, 0x6f, 0x67, 0x69, 0x6e, 0x22, 0x3a, 0x22, 0x22, 0x2c, 0x22, 0x73, 0x6c, 0x61, 0x5f, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x65, 0x64, 0x22, 0x3a, 0x66, 0x61, 0x6c, 0x73, 0x65, 0x2c, 0x22, 0x62, 0x65, 0x66, 0x6f, 0x72, 0x65, 0x5f, 0x64, 0x61, 0x79, 0x5f, 0x73, 0x6c, 0x61, 0x5f, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x65, 0x64, 0x22, 0x3a, 0x66, 0x61, 0x6c, 0x73, 0x65, 0x2c, 0x22, 0x72, 0x65, 0x65, 0x6e, 0x74, 0x65, 0x72, 0x65, 0x64, 0x22, 0x3a, 0x66, 0x61, 0x6c, 0x73, 0x65, 0x7d},
+							"example": unmarshalFromTestFile(t, "testdata/sign/sign_state.json"),
 						},
 						Values:     map[string]interface{}{},
 						Steps:      []string{"example"},
@@ -1610,18 +1602,18 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 			},
 		},
 	}
-
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			ctx := c.Background()
+
 			got, _, _ := createGoSignBlock(ctx, test.args.name, test.args.ef, test.args.runCtx, nil)
+
 			assert.Equal(t, test.want, got)
 		})
 	}
 }
 
 func TestGoSignBlock_Update(t *testing.T) {
-	stepId := uuid.New()
 	const (
 		invalidLogin = "foobar"
 
@@ -1662,46 +1654,6 @@ func TestGoSignBlock_Update(t *testing.T) {
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
 					VarStore:          store.NewStore(),
-					Services: RunContextServices{
-						Storage: func() db.Database {
-							res := &mocks.MockedDatabase{}
-							res.On("GetTaskStepById",
-								mock.MatchedBy(func(ctx context.Context) bool { return true }),
-								stepId,
-							).Return(
-								&entity.Step{
-									Time: time.Time{},
-									Type: BlockGoExecutionID,
-									Name: stepName,
-									State: map[string]json.RawMessage{
-										stepName: func() []byte {
-											r, _ := json.Marshal(&ExecutionData{
-												ExecutionType: script.ExecutionTypeUser,
-												Executors: map[string]struct{}{
-													invalidLogin: {},
-												},
-											})
-
-											return r
-										}(),
-									},
-									Errors:      nil,
-									Steps:       nil,
-									BreakPoints: nil,
-									HasError:    false,
-									Status:      "",
-								}, nil,
-							)
-							res.On("UpdateStepContext",
-								mock.MatchedBy(func(ctx context.Context) bool { return true }),
-								mock.AnythingOfType("*db.UpdateStepRequest"),
-							).Return(
-								nil,
-							)
-
-							return res
-						}(),
-					},
 				},
 			},
 			args: args{
@@ -1711,7 +1663,7 @@ func TestGoSignBlock_Update(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "one executor ukep",
+			name: "one signer ukep",
 			fields: fields{
 				Name:          stepName,
 				SignatureType: script.SignatureTypeUKEP,
@@ -1724,48 +1676,6 @@ func TestGoSignBlock_Update(t *testing.T) {
 				RunContext: &BlockRunContext{
 					skipNotifications: false,
 					VarStore:          store.NewStore(),
-					Services: RunContextServices{
-						Storage: func() db.Database {
-							res := &mocks.MockedDatabase{}
-
-							res.On("GetTaskStepById",
-								mock.MatchedBy(func(ctx context.Context) bool { return true }),
-								stepId,
-							).Return(
-								&entity.Step{
-									Time: time.Time{},
-									Type: BlockGoExecutionID,
-									Name: stepName,
-									State: map[string]json.RawMessage{
-										stepName: func() []byte {
-											r, _ := json.Marshal(&SignData{
-												Type: script.SignerTypeUser,
-												Signers: map[string]struct{}{
-													invalidLogin: {},
-												},
-											})
-
-											return r
-										}(),
-									},
-									Errors:      nil,
-									Steps:       nil,
-									BreakPoints: nil,
-									HasError:    false,
-									Status:      "",
-								}, nil,
-							)
-
-							res.On("UpdateStepContext",
-								mock.MatchedBy(func(ctx context.Context) bool { return true }),
-								mock.AnythingOfType("*db.UpdateStepRequest"),
-							).Return(
-								nil,
-							)
-
-							return res
-						}(),
-					},
 				},
 			},
 
@@ -1780,7 +1690,7 @@ func TestGoSignBlock_Update(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "one executor unep",
+			name: "one signer unep",
 			fields: fields{
 				Name:          stepName,
 				SignatureType: script.SignatureTypeUNEP,
@@ -1793,48 +1703,6 @@ func TestGoSignBlock_Update(t *testing.T) {
 				RunContext: &BlockRunContext{
 					skipNotifications: false,
 					VarStore:          store.NewStore(),
-					Services: RunContextServices{
-						Storage: func() db.Database {
-							res := &mocks.MockedDatabase{}
-
-							res.On("GetTaskStepById",
-								mock.MatchedBy(func(ctx context.Context) bool { return true }),
-								stepId,
-							).Return(
-								&entity.Step{
-									Time: time.Time{},
-									Type: BlockGoExecutionID,
-									Name: stepName,
-									State: map[string]json.RawMessage{
-										stepName: func() []byte {
-											r, _ := json.Marshal(&SignData{
-												Type: script.SignerTypeUser,
-												Signers: map[string]struct{}{
-													invalidLogin: {},
-												},
-											})
-
-											return r
-										}(),
-									},
-									Errors:      nil,
-									Steps:       nil,
-									BreakPoints: nil,
-									HasError:    false,
-									Status:      "",
-								}, nil,
-							)
-
-							res.On("UpdateStepContext",
-								mock.MatchedBy(func(ctx context.Context) bool { return true }),
-								mock.AnythingOfType("*db.UpdateStepRequest"),
-							).Return(
-								nil,
-							)
-
-							return res
-						}(),
-					},
 				},
 			},
 
@@ -1849,7 +1717,7 @@ func TestGoSignBlock_Update(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "one executor pep",
+			name: "one signer pep",
 			fields: fields{
 				Name:          stepName,
 				SignatureType: script.SignatureTypePEP,
@@ -1862,48 +1730,6 @@ func TestGoSignBlock_Update(t *testing.T) {
 				RunContext: &BlockRunContext{
 					skipNotifications: false,
 					VarStore:          store.NewStore(),
-					Services: RunContextServices{
-						Storage: func() db.Database {
-							res := &mocks.MockedDatabase{}
-
-							res.On("GetTaskStepById",
-								mock.MatchedBy(func(ctx context.Context) bool { return true }),
-								stepId,
-							).Return(
-								&entity.Step{
-									Time: time.Time{},
-									Type: BlockGoExecutionID,
-									Name: stepName,
-									State: map[string]json.RawMessage{
-										stepName: func() []byte {
-											r, _ := json.Marshal(&SignData{
-												Type: script.SignerTypeUser,
-												Signers: map[string]struct{}{
-													invalidLogin: {},
-												},
-											})
-
-											return r
-										}(),
-									},
-									Errors:      nil,
-									Steps:       nil,
-									BreakPoints: nil,
-									HasError:    false,
-									Status:      "",
-								}, nil,
-							)
-
-							res.On("UpdateStepContext",
-								mock.MatchedBy(func(ctx context.Context) bool { return true }),
-								mock.AnythingOfType("*db.UpdateStepRequest"),
-							).Return(
-								nil,
-							)
-
-							return res
-						}(),
-					},
 				},
 			},
 
@@ -1918,7 +1744,7 @@ func TestGoSignBlock_Update(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "one executor ukep and all carrier",
+			name: "one signer ukep and all carrier",
 			fields: fields{
 				Name:             stepName,
 				SignatureType:    script.SignatureTypeUKEP,
@@ -1932,48 +1758,6 @@ func TestGoSignBlock_Update(t *testing.T) {
 				RunContext: &BlockRunContext{
 					skipNotifications: false,
 					VarStore:          store.NewStore(),
-					Services: RunContextServices{
-						Storage: func() db.Database {
-							res := &mocks.MockedDatabase{}
-
-							res.On("GetTaskStepById",
-								mock.MatchedBy(func(ctx context.Context) bool { return true }),
-								stepId,
-							).Return(
-								&entity.Step{
-									Time: time.Time{},
-									Type: BlockGoExecutionID,
-									Name: stepName,
-									State: map[string]json.RawMessage{
-										stepName: func() []byte {
-											r, _ := json.Marshal(&SignData{
-												Type: script.SignerTypeUser,
-												Signers: map[string]struct{}{
-													invalidLogin: {},
-												},
-											})
-
-											return r
-										}(),
-									},
-									Errors:      nil,
-									Steps:       nil,
-									BreakPoints: nil,
-									HasError:    false,
-									Status:      "",
-								}, nil,
-							)
-
-							res.On("UpdateStepContext",
-								mock.MatchedBy(func(ctx context.Context) bool { return true }),
-								mock.AnythingOfType("*db.UpdateStepRequest"),
-							).Return(
-								nil,
-							)
-
-							return res
-						}(),
-					},
 				},
 			},
 
@@ -2002,48 +1786,6 @@ func TestGoSignBlock_Update(t *testing.T) {
 				RunContext: &BlockRunContext{
 					skipNotifications: false,
 					VarStore:          store.NewStore(),
-					Services: RunContextServices{
-						Storage: func() db.Database {
-							res := &mocks.MockedDatabase{}
-
-							res.On("GetTaskStepById",
-								mock.MatchedBy(func(ctx context.Context) bool { return true }),
-								stepId,
-							).Return(
-								&entity.Step{
-									Time: time.Time{},
-									Type: BlockGoExecutionID,
-									Name: stepName,
-									State: map[string]json.RawMessage{
-										stepName: func() []byte {
-											r, _ := json.Marshal(&SignData{
-												Type: script.SignerTypeUser,
-												Signers: map[string]struct{}{
-													invalidLogin: {},
-												},
-											})
-
-											return r
-										}(),
-									},
-									Errors:      nil,
-									Steps:       nil,
-									BreakPoints: nil,
-									HasError:    false,
-									Status:      "",
-								}, nil,
-							)
-
-							res.On("UpdateStepContext",
-								mock.MatchedBy(func(ctx context.Context) bool { return true }),
-								mock.AnythingOfType("*db.UpdateStepRequest"),
-							).Return(
-								nil,
-							)
-
-							return res
-						}(),
-					},
 				},
 			},
 
@@ -2070,49 +1812,6 @@ func TestGoSignBlock_Update(t *testing.T) {
 				RunContext: &BlockRunContext{
 					skipNotifications: false,
 					VarStore:          store.NewStore(),
-					Services: RunContextServices{
-						Storage: func() db.Database {
-							res := &mocks.MockedDatabase{}
-
-							res.On("GetTaskStepById",
-								mock.MatchedBy(func(ctx context.Context) bool { return true }),
-								stepId,
-							).Return(
-								&entity.Step{
-									Time: time.Time{},
-									Type: BlockGoExecutionID,
-									Name: stepName,
-									State: map[string]json.RawMessage{
-										stepName: func() []byte {
-											r, _ := json.Marshal(&SignData{
-												Type:          script.SignerTypeUser,
-												SignatureType: script.SignatureTypeUKEP,
-												Signers: map[string]struct{}{
-													login2: {},
-												},
-											})
-
-											return r
-										}(),
-									},
-									Errors:      nil,
-									Steps:       nil,
-									BreakPoints: nil,
-									HasError:    false,
-									Status:      "",
-								}, nil,
-							)
-
-							res.On("UpdateStepContext",
-								mock.MatchedBy(func(ctx context.Context) bool { return true }),
-								mock.AnythingOfType("*db.UpdateStepRequest"),
-							).Return(
-								nil,
-							)
-
-							return res
-						}(),
-					},
 				},
 			},
 
@@ -2140,49 +1839,6 @@ func TestGoSignBlock_Update(t *testing.T) {
 				RunContext: &BlockRunContext{
 					skipNotifications: false,
 					VarStore:          store.NewStore(),
-					Services: RunContextServices{
-						Storage: func() db.Database {
-							res := &mocks.MockedDatabase{}
-
-							res.On("GetTaskStepById",
-								mock.MatchedBy(func(ctx context.Context) bool { return true }),
-								stepId,
-							).Return(
-								&entity.Step{
-									Time: time.Time{},
-									Type: BlockGoExecutionID,
-									Name: stepName,
-									State: map[string]json.RawMessage{
-										stepName: func() []byte {
-											r, _ := json.Marshal(&SignData{
-												Type:          script.SignerTypeUser,
-												SignatureType: script.SignatureTypeUNEP,
-												Signers: map[string]struct{}{
-													login2: {},
-												},
-											})
-
-											return r
-										}(),
-									},
-									Errors:      nil,
-									Steps:       nil,
-									BreakPoints: nil,
-									HasError:    false,
-									Status:      "",
-								}, nil,
-							)
-
-							res.On("UpdateStepContext",
-								mock.MatchedBy(func(ctx context.Context) bool { return true }),
-								mock.AnythingOfType("*db.UpdateStepRequest"),
-							).Return(
-								nil,
-							)
-
-							return res
-						}(),
-					},
 				},
 			},
 
@@ -2210,49 +1866,6 @@ func TestGoSignBlock_Update(t *testing.T) {
 				RunContext: &BlockRunContext{
 					skipNotifications: false,
 					VarStore:          store.NewStore(),
-					Services: RunContextServices{
-						Storage: func() db.Database {
-							res := &mocks.MockedDatabase{}
-
-							res.On("GetTaskStepById",
-								mock.MatchedBy(func(ctx context.Context) bool { return true }),
-								stepId,
-							).Return(
-								&entity.Step{
-									Time: time.Time{},
-									Type: BlockGoExecutionID,
-									Name: stepName,
-									State: map[string]json.RawMessage{
-										stepName: func() []byte {
-											r, _ := json.Marshal(&SignData{
-												Type:          script.SignerTypeUser,
-												SignatureType: script.SignatureTypePEP,
-												Signers: map[string]struct{}{
-													login2: {},
-												},
-											})
-
-											return r
-										}(),
-									},
-									Errors:      nil,
-									Steps:       nil,
-									BreakPoints: nil,
-									HasError:    false,
-									Status:      "",
-								}, nil,
-							)
-
-							res.On("UpdateStepContext",
-								mock.MatchedBy(func(ctx context.Context) bool { return true }),
-								mock.AnythingOfType("*db.UpdateStepRequest"),
-							).Return(
-								nil,
-							)
-
-							return res
-						}(),
-					},
 				},
 			},
 
@@ -2280,49 +1893,6 @@ func TestGoSignBlock_Update(t *testing.T) {
 				RunContext: &BlockRunContext{
 					skipNotifications: false,
 					VarStore:          store.NewStore(),
-					Services: RunContextServices{
-						Storage: func() db.Database {
-							res := &mocks.MockedDatabase{}
-
-							res.On("GetTaskStepById",
-								mock.MatchedBy(func(ctx context.Context) bool { return true }),
-								stepId,
-							).Return(
-								&entity.Step{
-									Time: time.Time{},
-									Type: BlockGoExecutionID,
-									Name: stepName,
-									State: map[string]json.RawMessage{
-										stepName: func() []byte {
-											r, _ := json.Marshal(&SignData{
-												Type:          script.SignerTypeUser,
-												SignatureType: script.SignatureTypeUKEP,
-												Signers: map[string]struct{}{
-													invalidLogin: {},
-												},
-											})
-
-											return r
-										}(),
-									},
-									Errors:      nil,
-									Steps:       nil,
-									BreakPoints: nil,
-									HasError:    false,
-									Status:      "",
-								}, nil,
-							)
-
-							res.On("UpdateStepContext",
-								mock.MatchedBy(func(ctx context.Context) bool { return true }),
-								mock.AnythingOfType("*db.UpdateStepRequest"),
-							).Return(
-								nil,
-							)
-
-							return res
-						}(),
-					},
 				},
 			},
 
@@ -2350,49 +1920,6 @@ func TestGoSignBlock_Update(t *testing.T) {
 				RunContext: &BlockRunContext{
 					skipNotifications: false,
 					VarStore:          store.NewStore(),
-					Services: RunContextServices{
-						Storage: func() db.Database {
-							res := &mocks.MockedDatabase{}
-
-							res.On("GetTaskStepById",
-								mock.MatchedBy(func(ctx context.Context) bool { return true }),
-								stepId,
-							).Return(
-								&entity.Step{
-									Time: time.Time{},
-									Type: BlockGoExecutionID,
-									Name: stepName,
-									State: map[string]json.RawMessage{
-										stepName: func() []byte {
-											r, _ := json.Marshal(&SignData{
-												Type:          script.SignerTypeUser,
-												SignatureType: script.SignatureTypeUNEP,
-												Signers: map[string]struct{}{
-													invalidLogin: {},
-												},
-											})
-
-											return r
-										}(),
-									},
-									Errors:      nil,
-									Steps:       nil,
-									BreakPoints: nil,
-									HasError:    false,
-									Status:      "",
-								}, nil,
-							)
-
-							res.On("UpdateStepContext",
-								mock.MatchedBy(func(ctx context.Context) bool { return true }),
-								mock.AnythingOfType("*db.UpdateStepRequest"),
-							).Return(
-								nil,
-							)
-
-							return res
-						}(),
-					},
 				},
 			},
 
@@ -2421,49 +1948,6 @@ func TestGoSignBlock_Update(t *testing.T) {
 				RunContext: &BlockRunContext{
 					skipNotifications: false,
 					VarStore:          store.NewStore(),
-					Services: RunContextServices{
-						Storage: func() db.Database {
-							res := &mocks.MockedDatabase{}
-
-							res.On("GetTaskStepById",
-								mock.MatchedBy(func(ctx context.Context) bool { return true }),
-								stepId,
-							).Return(
-								&entity.Step{
-									Time: time.Time{},
-									Type: BlockGoExecutionID,
-									Name: stepName,
-									State: map[string]json.RawMessage{
-										stepName: func() []byte {
-											r, _ := json.Marshal(&SignData{
-												Type:          script.SignerTypeUser,
-												SignatureType: script.SignatureTypePEP,
-												Signers: map[string]struct{}{
-													invalidLogin: {},
-												},
-											})
-
-											return r
-										}(),
-									},
-									Errors:      nil,
-									Steps:       nil,
-									BreakPoints: nil,
-									HasError:    false,
-									Status:      "",
-								}, nil,
-							)
-
-							res.On("UpdateStepContext",
-								mock.MatchedBy(func(ctx context.Context) bool { return true }),
-								mock.AnythingOfType("*db.UpdateStepRequest"),
-							).Return(
-								nil,
-							)
-
-							return res
-						}(),
-					},
 				},
 			},
 
@@ -2491,49 +1975,6 @@ func TestGoSignBlock_Update(t *testing.T) {
 				RunContext: &BlockRunContext{
 					skipNotifications: false,
 					VarStore:          store.NewStore(),
-					Services: RunContextServices{
-						Storage: func() db.Database {
-							res := &mocks.MockedDatabase{}
-
-							res.On("GetTaskStepById",
-								mock.MatchedBy(func(ctx context.Context) bool { return true }),
-								stepId,
-							).Return(
-								&entity.Step{
-									Time: time.Time{},
-									Type: BlockGoExecutionID,
-									Name: stepName,
-									State: map[string]json.RawMessage{
-										stepName: func() []byte {
-											r, _ := json.Marshal(&SignData{
-												Type:          script.SignerTypeUser,
-												SignatureType: script.SignatureTypeUKEP,
-												Signers: map[string]struct{}{
-													ServiceAccount: {},
-												},
-											})
-
-											return r
-										}(),
-									},
-									Errors:      nil,
-									Steps:       nil,
-									BreakPoints: nil,
-									HasError:    false,
-									Status:      "",
-								}, nil,
-							)
-
-							res.On("UpdateStepContext",
-								mock.MatchedBy(func(ctx context.Context) bool { return true }),
-								mock.AnythingOfType("*db.UpdateStepRequest"),
-							).Return(
-								nil,
-							)
-
-							return res
-						}(),
-					},
 				},
 			},
 
@@ -2561,49 +2002,6 @@ func TestGoSignBlock_Update(t *testing.T) {
 				RunContext: &BlockRunContext{
 					skipNotifications: false,
 					VarStore:          store.NewStore(),
-					Services: RunContextServices{
-						Storage: func() db.Database {
-							res := &mocks.MockedDatabase{}
-
-							res.On("GetTaskStepById",
-								mock.MatchedBy(func(ctx context.Context) bool { return true }),
-								stepId,
-							).Return(
-								&entity.Step{
-									Time: time.Time{},
-									Type: BlockGoExecutionID,
-									Name: stepName,
-									State: map[string]json.RawMessage{
-										stepName: func() []byte {
-											r, _ := json.Marshal(&SignData{
-												Type:          script.SignerTypeUser,
-												SignatureType: script.SignatureTypeUKEP,
-												Signers: map[string]struct{}{
-													ServiceAccount: {},
-												},
-											})
-
-											return r
-										}(),
-									},
-									Errors:      nil,
-									Steps:       nil,
-									BreakPoints: nil,
-									HasError:    false,
-									Status:      "",
-								}, nil,
-							)
-
-							res.On("UpdateStepContext",
-								mock.MatchedBy(func(ctx context.Context) bool { return true }),
-								mock.AnythingOfType("*db.UpdateStepRequest"),
-							).Return(
-								nil,
-							)
-
-							return res
-						}(),
-					},
 				},
 			},
 
@@ -2631,49 +2029,6 @@ func TestGoSignBlock_Update(t *testing.T) {
 				RunContext: &BlockRunContext{
 					skipNotifications: false,
 					VarStore:          store.NewStore(),
-					Services: RunContextServices{
-						Storage: func() db.Database {
-							res := &mocks.MockedDatabase{}
-
-							res.On("GetTaskStepById",
-								mock.MatchedBy(func(ctx context.Context) bool { return true }),
-								stepId,
-							).Return(
-								&entity.Step{
-									Time: time.Time{},
-									Type: BlockGoExecutionID,
-									Name: stepName,
-									State: map[string]json.RawMessage{
-										stepName: func() []byte {
-											r, _ := json.Marshal(&SignData{
-												Type:          script.SignerTypeUser,
-												SignatureType: script.SignatureTypeUKEP,
-												Signers: map[string]struct{}{
-													ServiceAccount: {},
-												},
-											})
-
-											return r
-										}(),
-									},
-									Errors:      nil,
-									Steps:       nil,
-									BreakPoints: nil,
-									HasError:    false,
-									Status:      "",
-								}, nil,
-							)
-
-							res.On("UpdateStepContext",
-								mock.MatchedBy(func(ctx context.Context) bool { return true }),
-								mock.AnythingOfType("*db.UpdateStepRequest"),
-							).Return(
-								nil,
-							)
-
-							return res
-						}(),
-					},
 				},
 			},
 
@@ -2703,48 +2058,6 @@ func TestGoSignBlock_Update(t *testing.T) {
 				RunContext: &BlockRunContext{
 					skipNotifications: false,
 					VarStore:          store.NewStore(),
-					Services: RunContextServices{
-						Storage: func() db.Database {
-							res := &mocks.MockedDatabase{}
-
-							res.On("GetTaskStepById",
-								mock.MatchedBy(func(ctx context.Context) bool { return true }),
-								stepId,
-							).Return(
-								&entity.Step{
-									Time: time.Time{},
-									Type: BlockGoExecutionID,
-									Name: stepName,
-									State: map[string]json.RawMessage{
-										stepName: func() []byte {
-											r, _ := json.Marshal(&SignData{
-												Type: script.SignerTypeUser,
-												Signers: map[string]struct{}{
-													login: {},
-												},
-											})
-
-											return r
-										}(),
-									},
-									Errors:      nil,
-									Steps:       nil,
-									BreakPoints: nil,
-									HasError:    false,
-									Status:      "",
-								}, nil,
-							)
-
-							res.On("UpdateStepContext",
-								mock.MatchedBy(func(ctx context.Context) bool { return true }),
-								mock.AnythingOfType("*db.UpdateStepRequest"),
-							).Return(
-								nil,
-							)
-
-							return res
-						}(),
-					},
 				},
 			},
 
@@ -2770,46 +2083,6 @@ func TestGoSignBlock_Update(t *testing.T) {
 				RunContext: &BlockRunContext{
 					skipNotifications: false,
 					VarStore:          store.NewStore(),
-					Services: RunContextServices{
-						Storage: func() db.Database {
-							res := &mocks.MockedDatabase{}
-
-							res.On("GetTaskStepById",
-								mock.MatchedBy(func(ctx context.Context) bool { return true }),
-								stepId,
-							).Return(
-								&entity.Step{
-									Time: time.Time{},
-									Type: BlockGoExecutionID,
-									Name: stepName,
-									State: map[string]json.RawMessage{
-										stepName: func() []byte {
-											r, _ := json.Marshal(&SignData{
-												Type:    script.SignerTypeUser,
-												Signers: map[string]struct{}{},
-											})
-
-											return r
-										}(),
-									},
-									Errors:      nil,
-									Steps:       nil,
-									BreakPoints: nil,
-									HasError:    false,
-									Status:      "",
-								}, nil,
-							)
-
-							res.On("UpdateStepContext",
-								mock.MatchedBy(func(ctx context.Context) bool { return true }),
-								mock.AnythingOfType("*db.UpdateStepRequest"),
-							).Return(
-								nil,
-							)
-
-							return res
-						}(),
-					},
 				},
 			},
 
@@ -2836,73 +2109,6 @@ func TestGoSignBlock_Update(t *testing.T) {
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
 					VarStore:          store.NewStore(),
-					Services: RunContextServices{
-						ServiceDesc: func() *servicedesc.Service {
-							sdMock := servicedesc.Service{
-								SdURL: "",
-							}
-							httpClient := http.DefaultClient
-							mockTransport := serviceDeskMocks.RoundTripper{}
-							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(servicedesc.SsoPerson{})
-								body := io.NopCloser(bytes.NewReader(b))
-								defer body.Close()
-								return &http.Response{
-									Status:     http.StatusText(http.StatusOK),
-									StatusCode: http.StatusOK,
-									Body:       body,
-								}
-							}
-							f_error := func(*http.Request) error {
-								return nil
-							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
-							httpClient.Transport = &mockTransport
-							sdMock.Cli = httpClient
-
-							return &sdMock
-						}(),
-						Storage: func() db.Database {
-							res := &mocks.MockedDatabase{}
-
-							res.On("GetTaskStepById",
-								mock.MatchedBy(func(ctx context.Context) bool { return true }),
-								stepId,
-							).Return(
-								&entity.Step{
-									Time: time.Time{},
-									Type: BlockGoSignID,
-									Name: stepName,
-									State: map[string]json.RawMessage{
-										stepName: func() []byte {
-											r, _ := json.Marshal(&SignData{
-												Type: script.SignerTypeUser,
-												Signers: map[string]struct{}{
-													invalidLogin: {},
-												},
-											})
-
-											return r
-										}(),
-									},
-									Errors:      nil,
-									Steps:       nil,
-									BreakPoints: nil,
-									HasError:    false,
-									Status:      "",
-								}, nil,
-							)
-
-							res.On("UpdateStepContext",
-								mock.MatchedBy(func(ctx context.Context) bool { return true }),
-								mock.AnythingOfType("*db.UpdateStepRequest"),
-							).Return(
-								nil,
-							)
-
-							return res
-						}(),
-					},
 				},
 			},
 
@@ -2937,20 +2143,13 @@ func TestGoSignBlock_Update(t *testing.T) {
 
 func TestGoSignBlock_CreateState(t *testing.T) {
 	const (
-		example             = "example"
-		title               = "title"
-		shortTitle          = "Нода Подписания"
-		executorsFromSchema = "form_0.user.username;form_1.user.username"
-		executorFromSchema  = "form_0.user.username"
-		invalidLogin        = "foobar"
-
-		login  = "example"
-		login2 = "example2"
+		example    = "example"
+		title      = "title"
+		shortTitle = "Нода Подписания"
 
 		stepName = "sign"
 	)
 
-	//stepId := uuid.New()
 	varStore := store.NewStore()
 
 	varStore.SetValue("form_0.user", map[string]interface{}{
@@ -2961,7 +2160,6 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 		"username": "test2",
 		"fullname": "test2 test test",
 	})
-	//myStorage := makeStorage()
 
 	next := []entity.Socket{
 		{
@@ -4667,4 +3865,13 @@ func TestGoSignBlock_LoadState(t *testing.T) {
 			assert.Equalf(t, tt.wantErr, err != nil, fmt.Sprintf("loadState(%v)", tt.args.raw))
 		})
 	}
+}
+
+func unmarshalFromTestFile(t *testing.T, in string) json.RawMessage {
+	bytes, err := os.ReadFile(in)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return bytes
 }
