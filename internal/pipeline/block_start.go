@@ -118,6 +118,9 @@ func (gb *GoStartBlock) Model() script.FunctionModel {
 					Format:      "SsoPerson",
 					Properties:  people.GetSsoPersonSchemaProperties(),
 				},
+				entity.KeyOutputApplicationData: {
+					Type: "object",
+				},
 			},
 		},
 		Sockets: []script.Socket{script.DefaultSocket},

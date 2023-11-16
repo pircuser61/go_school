@@ -65,7 +65,8 @@ type FormData struct {
 
 	HideExecutorFromInitiator bool `json:"hide_executor_from_initiator"`
 
-	Mapping script.JSONSchemaProperties `json:"mapping"`
+	Mapping         script.JSONSchemaProperties `json:"mapping"`
+	FullFormMapping string                      `json:"full_form_mapping"`
 
 	IsEditable      *bool                       `json:"is_editable"`
 	ReEnterSettings *script.FormReEnterSettings `json:"form_re_enter_settings,omitempty"`
@@ -252,6 +253,10 @@ func (gb *GoFormBlock) handleAutoFillForm() error {
 	formMapping, err := script.MapData(gb.State.Mapping, script.RestoreMapStructure(variables), []string{})
 	if err != nil {
 		return err
+	}
+
+	if gb.State.FullFormMapping != "" {
+		formMapping["value"] = getVariable(variables, gb.State.FullFormMapping)
 	}
 
 	gb.State.ApplicationBody = formMapping

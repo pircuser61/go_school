@@ -803,6 +803,7 @@ func ConvertSocket(sockets []Socket) []script.Socket {
 const (
 	KeyOutputWorkNumber           = "workNumber"
 	KeyOutputApplicationInitiator = "initiator"
+	KeyOutputApplicationData      = "application_data"
 )
 
 func (es EriusScenario) FillEntryPointOutput() (err error) {
