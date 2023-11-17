@@ -251,25 +251,21 @@ func (gb *GoFormBlock) handleAutoFillForm() error {
 		return err
 	}
 
-	var formMapping map[string]interface{}
-
 	switch {
 	case gb.State.FullFormMapping != "":
 		mappingAddr, ok := getVariable(variables, gb.State.FullFormMapping).(map[string]interface{})
 		if !ok {
 			return fmt.Errorf("cannot assert variable to map[string]interface{}")
 		}
-		formMapping = mappingAddr
+		gb.State.ApplicationBody = mappingAddr
 	case gb.State.Mapping != nil:
-		formMapping, err = script.MapData(gb.State.Mapping, script.RestoreMapStructure(variables), []string{})
+		gb.State.ApplicationBody, err = script.MapData(gb.State.Mapping, script.RestoreMapStructure(variables), []string{})
 		if err != nil {
 			return err
 		}
 	default:
 		return fmt.Errorf("neither mapping nor full form mapping received")
 	}
-
-	gb.State.ApplicationBody = formMapping
 
 	personData := &servicedesc.SsoPerson{
 		Username: AutoFillUser,
@@ -280,7 +276,7 @@ func (gb *GoFormBlock) handleAutoFillForm() error {
 	}
 	gb.State.ChangesLog = append([]ChangesLogItem{
 		{
-			ApplicationBody: formMapping,
+			ApplicationBody: gb.State.ApplicationBody,
 			CreatedAt:       time.Now(),
 			Executor:        personData.Username,
 			DelegateFor:     "",

@@ -813,18 +813,13 @@ func (es EriusScenario) FillEntryPointOutput() (err error) {
 		return nil
 	}
 
+	entryPoint.Output.Properties = make(map[string]script.JSONSchemaPropertiesValue, 0)
+
 	if es.Settings.StartSchema != nil {
-		entryPoint.Output = es.Settings.StartSchema
 		entryPoint.Output.Properties[KeyOutputApplicationData] = script.JSONSchemaPropertiesValue{
 			Type:       "object",
 			Global:     es.Pipeline.Entrypoint + "." + "application_data",
 			Properties: es.Settings.StartSchema.Properties,
-		}
-	}
-	if entryPoint.Output == nil {
-		entryPoint.Output = &script.JSONSchema{
-			Type:       "object",
-			Properties: make(map[string]script.JSONSchemaPropertiesValue),
 		}
 	}
 
