@@ -1762,7 +1762,7 @@ type SignUpdateParams struct {
 		// id файла, который подписали
 		FileId string `json:"file_id"`
 
-		// id файла открепленной подписи, который была создана в момент подписания
+		// id файла открепленной подписи, которая была создана в момент подписания
 		SignatureFileId string `json:"signature_file_id"`
 	} `json:"signatures,omitempty"`
 }
