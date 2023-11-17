@@ -845,7 +845,7 @@ func (es EriusScenario) FillEntryPointOutput() (err error) {
 
 	entryPoint.Output.Properties[KeyOutputApplicationData] = script.JSONSchemaPropertiesValue{
 		Type:       "object",
-		Global:     es.Pipeline.Entrypoint + "." + "application_body",
+		Global:     es.Pipeline.Entrypoint + "." + "application_data",
 		Properties: es.Settings.StartSchema.Properties,
 	}
 
