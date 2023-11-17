@@ -3899,16 +3899,16 @@ components:
       description: Sign update params
       properties:
         signatures:
-          description: файлы подписи
+          description: files to sign
           type: array
           items:
             type: object
             properties:
               file_id:
-                description: id файла, который подписали
+                description: id file which was signed
                 type: string
               signature_file_id:
-                description: id файла открепленной подписи, которая была создана в момент подписания
+                description: id file of detached signature which was created at the moment of signing
                 type: string
             required:
               - file_id
@@ -5089,6 +5089,22 @@ components:
       enum: [ "Все", "Облачный", "Токен" ]
       x-enum-varnames: [ "all", "cloud", "token" ]
 
+    SigningParams:
+      type: object
+      properties:
+        inn:
+          description: Path to inn in context
+          example: form_0.application_body.inn
+          type: string
+        snils:
+          description: Path to snils in context
+          example: form_0.application_body.snils
+          type: string
+        files:
+          description: Path to files in context
+          example: form_0.application_body.files
+          type: string
+
     SignParams:
       type: object
       description: Signature params
@@ -5113,20 +5129,7 @@ components:
         signingRule:
           $ref: '#/components/schemas/SigningRule'
         signingParams:
-          type: object
-          properties:
-            inn:
-              description: Path to inn in context
-              example: form_0.application_body.inn
-              type: string
-            snils:
-              description: Path to snils in context
-              example: form_0.application_body.snils
-              type: string
-            files:
-              description: Path to files in context
-              example: form_0.application_body.files
-              type: string
+          $ref: '#/components/schemas/SigningParams'
         signatureType:
           $ref: '#/components/schemas/SignatureType'
         formsAccessibility:
