@@ -3898,8 +3898,15 @@ components:
       type: object
       description: Sign update params
       properties:
-        signingParams:
-          $ref: '#/components/schemas/SigningParams'
+        signatures:
+          type: array
+          items:
+            type: object
+            properties:
+              file_id:
+                type: string
+              signature_file_id:
+                type: string
         decision:
           $ref: '#/components/schemas/signDecision'
         comment:
@@ -5076,22 +5083,15 @@ components:
       enum: [ "Все", "Облачный", "Токен" ]
       x-enum-varnames: [ "all", "cloud", "token" ]
 
-    SigningParams:
+    IdentitificationDocuments:
       type: object
       properties:
         inn:
           type: string
         snils:
           type: string
-        signatures:
-          type: array
-          items:
-            type: object
-            properties:
-              file_id:
-                type: string
-              signature_file_id:
-                type: string
+        files:
+          type: string
 
     SignParams:
       type: object
@@ -5117,7 +5117,7 @@ components:
         signingRule:
           $ref: '#/components/schemas/SigningRule'
         SigningParams:
-          $ref: '#/components/schemas/SigningParams'
+          $ref: '#/components/schemas/IdentitificationDocuments'
         signatureType:
           $ref: '#/components/schemas/SignatureType'
         formsAccessibility:
