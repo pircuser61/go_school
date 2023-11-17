@@ -814,15 +814,12 @@ func (es EriusScenario) FillEntryPointOutput() (err error) {
 	}
 
 	if es.Settings.StartSchema != nil {
-		for k := range entryPoint.Output.Properties {
-			val, ok := es.Settings.StartSchema.Properties[k]
-			if !ok {
-				continue
-			}
-			val.Global = es.Pipeline.Entrypoint + "." + k
-			es.Settings.StartSchema.Properties[k] = val
-		}
 		entryPoint.Output = es.Settings.StartSchema
+		entryPoint.Output.Properties[KeyOutputApplicationData] = script.JSONSchemaPropertiesValue{
+			Type:       "object",
+			Global:     es.Pipeline.Entrypoint + "." + "application_data",
+			Properties: es.Settings.StartSchema.Properties,
+		}
 	}
 	if entryPoint.Output == nil {
 		entryPoint.Output = &script.JSONSchema{
@@ -841,12 +838,6 @@ func (es EriusScenario) FillEntryPointOutput() (err error) {
 		Type:       "object",
 		Format:     "SsoPerson",
 		Properties: people.GetSsoPersonSchemaProperties(),
-	}
-
-	entryPoint.Output.Properties[KeyOutputApplicationData] = script.JSONSchemaPropertiesValue{
-		Type:       "object",
-		Global:     es.Pipeline.Entrypoint + "." + "application_data",
-		Properties: es.Settings.StartSchema.Properties,
 	}
 
 	es.Pipeline.Blocks[es.Pipeline.Entrypoint] = entryPoint
