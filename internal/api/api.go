@@ -1276,8 +1276,8 @@ type FunctionValueModel struct {
 	Type    *string `json:"type,omitempty"`
 }
 
-// IdentitificationDocuments defines model for IdentitificationDocuments.
-type IdentitificationDocuments struct {
+// IdentificationDocuments defines model for IdentificationDocuments.
+type IdentificationDocuments struct {
 	Files *string `json:"files,omitempty"`
 	Inn   *string `json:"inn,omitempty"`
 	Snils *string `json:"snils,omitempty"`
@@ -1702,7 +1702,7 @@ type ShapeEntity struct {
 
 // Singature params
 type SignParams struct {
-	SigningParams *IdentitificationDocuments `json:"SigningParams,omitempty"`
+	SigningParams *IdentificationDocuments `json:"SigningParams,omitempty"`
 
 	// reject after expire sla
 	AutoReject *bool `json:"autoReject,omitempty"`

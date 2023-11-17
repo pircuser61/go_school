@@ -5117,7 +5117,7 @@ components:
         signingRule:
           $ref: '#/components/schemas/SigningRule'
         SigningParams:
-          $ref: '#/components/schemas/IdentitificationDocuments'
+          $ref: '#/components/schemas/IdentificationDocuments'
         signatureType:
           $ref: '#/components/schemas/SignatureType'
         formsAccessibility:
