@@ -3899,14 +3899,20 @@ components:
       description: Sign update params
       properties:
         signatures:
+          description: файлы подписи
           type: array
           items:
             type: object
             properties:
               file_id:
+                description: id файла, который подписали
                 type: string
               signature_file_id:
+                description: id файла открепленной подписи, который была создана в момент подписания
                 type: string
+            required:
+              - file_id
+              - signature_file_id
         decision:
           $ref: '#/components/schemas/signDecision'
         comment:
@@ -5083,19 +5089,9 @@ components:
       enum: [ "Все", "Облачный", "Токен" ]
       x-enum-varnames: [ "all", "cloud", "token" ]
 
-    IdentificationDocuments:
-      type: object
-      properties:
-        inn:
-          type: string
-        snils:
-          type: string
-        files:
-          type: string
-
     SignParams:
       type: object
-      description: Singature params
+      description: Signature params
       properties:
         signerType:
           $ref: '#/components/schemas/SignerType'
@@ -5116,8 +5112,21 @@ components:
           $ref: '#/components/schemas/SignatureCarrier'
         signingRule:
           $ref: '#/components/schemas/SigningRule'
-        SigningParams:
-          $ref: '#/components/schemas/IdentificationDocuments'
+        signingParams:
+          type: object
+          properties:
+            inn:
+              description: Path to inn in context
+              example: form_0.applciaiton_body.inn
+              type: string
+            snils:
+              description: Path to snils in context
+              example: form_0.applciaiton_body.snils
+              type: string
+            files:
+              description: Path to files in context
+              example: form_0.applciaiton_body.files
+              type: string
         signatureType:
           $ref: '#/components/schemas/SignatureType'
         formsAccessibility:
