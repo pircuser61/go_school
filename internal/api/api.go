@@ -1695,6 +1695,8 @@ type ShapeEntity struct {
 
 // Singature params
 type SignParams struct {
+	SigningParams *SigningParams `json:"SigningParams,omitempty"`
+
 	// reject after expire sla
 	AutoReject *bool `json:"autoReject,omitempty"`
 
@@ -1745,7 +1747,8 @@ type SignUpdateParams struct {
 	//  * signed - Согласовано
 	//  * rejected - Отклонено
 	//  * error - Произошла ошибка
-	Decision SignDecision `json:"decision"`
+	Decision      SignDecision   `json:"decision"`
+	SigningParams *SigningParams `json:"signingParams,omitempty"`
 }
 
 // SignatureCarrier defines model for SignatureCarrier.
@@ -1759,6 +1762,16 @@ type SignatureType string
 //   - group - Group ID
 //   - FromSchema - Selected by initiator
 type SignerType string
+
+// SigningParams defines model for SigningParams.
+type SigningParams struct {
+	Inn        *string `json:"inn,omitempty"`
+	Signatures *[]struct {
+		FileId          *string `json:"file_id,omitempty"`
+		SignatureFileId *string `json:"signature_file_id,omitempty"`
+	} `json:"signatures,omitempty"`
+	Snils *string `json:"snils,omitempty"`
+}
 
 // Count of singers which will participate in signing will depends of signing type. 'Any of' will check only first sign action, when 'all of' will be waiting for all signers.
 type SigningRule string

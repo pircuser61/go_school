@@ -3520,7 +3520,7 @@ components:
         node_group:
           type: array
           items:
-              $ref: '#/components/schemas/NodeGroup'
+            $ref: '#/components/schemas/NodeGroup'
       required:
         - id
         - version_id
@@ -3898,6 +3898,8 @@ components:
       type: object
       description: Sign update params
       properties:
+        signingParams:
+          $ref: '#/components/schemas/SigningParams'
         decision:
           $ref: '#/components/schemas/signDecision'
         comment:
@@ -3980,10 +3982,10 @@ components:
       description: Sign update params
       properties:
         status:
-            type: string
-            enum:
-              - start
-              - end
+          type: string
+          enum:
+            - start
+            - end
       required:
         - status
 
@@ -5074,6 +5076,23 @@ components:
       enum: [ "Все", "Облачный", "Токен" ]
       x-enum-varnames: [ "all", "cloud", "token" ]
 
+    SigningParams:
+      type: object
+      properties:
+        inn:
+          type: string
+        snils:
+          type: string
+        signatures:
+          type: array
+          items:
+            type: object
+            properties:
+              file_id:
+                type: string
+              signature_file_id:
+                type: string
+
     SignParams:
       type: object
       description: Singature params
@@ -5097,6 +5116,8 @@ components:
           $ref: '#/components/schemas/SignatureCarrier'
         signingRule:
           $ref: '#/components/schemas/SigningRule'
+        SigningParams:
+          $ref: '#/components/schemas/SigningParams'
         signatureType:
           $ref: '#/components/schemas/SignatureType'
         formsAccessibility:
