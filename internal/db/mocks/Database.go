@@ -22,6 +22,18 @@ type MockedDatabase struct {
 	mock.Mock
 }
 
+func (_m *MockedDatabase) GetApprovalListSettings(ctx context.Context, versionID, listID string) (*entity.ApprovalListSettings, error) {
+	return nil, nil
+}
+
+func (_m *MockedDatabase) GetApprovalListsSettings(ctx context.Context, versionID string) ([]entity.ApprovalListSettings, error) {
+	return nil, nil
+}
+
+func (_m *MockedDatabase) SaveApprovalListSettings(ctx context.Context, in entity.SaveApprovalListSettings) (id string, err error) {
+	return "", err
+}
+
 // Acquire provides a mock function with given fields: ctx
 func (_m *MockedDatabase) Acquire(ctx context.Context) (db.Database, error) {
 	ret := _m.Called(ctx)
