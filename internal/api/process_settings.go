@@ -3,6 +3,7 @@ package api
 import (
 	c "context"
 	"encoding/json"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 
 	"io"
 	"net/http"
@@ -204,13 +205,23 @@ func (ae *APIEnv) GetVersionSettings(w http.ResponseWriter, req *http.Request, v
 		}
 	}
 
+	approvalLists, err := ae.DB.GetApprovalListsSettings(ctx, versionID)
+	if err != nil {
+		e := UnknownError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
 	result := entity.ProcessSettingsWithExternalSystems{
 		ExternalSystems:    externalSystems,
 		ProcessSettings:    processSettings,
 		TasksSubscriptions: externalSystemsTaskSubs,
+		ApprovalLists:      approvalLists,
 	}
 
-	if err := sendResponse(w, http.StatusOK, result); err != nil {
+	if err = sendResponse(w, http.StatusOK, result); err != nil {
 		e := UnknownError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
@@ -238,8 +249,7 @@ func (ae *APIEnv) SaveVersionSettings(w http.ResponseWriter, req *http.Request, 
 	}
 
 	var processSettings *entity.ProcessSettings
-	err = json.Unmarshal(b, &processSettings)
-	if err != nil {
+	if err = json.Unmarshal(b, &processSettings); err != nil {
 		e := ProcessSettingsParseError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
@@ -256,9 +266,7 @@ func (ae *APIEnv) SaveVersionSettings(w http.ResponseWriter, req *http.Request, 
 	}
 
 	processSettings.Id = versionID
-
-	err = processSettings.Validate()
-	if err != nil {
+	if err = processSettings.Validate(); err != nil {
 		e := JSONSchemaValidationError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
@@ -275,7 +283,7 @@ func (ae *APIEnv) SaveVersionSettings(w http.ResponseWriter, req *http.Request, 
 		return
 	}
 
-	if err := sendResponse(w, http.StatusOK, processSettings); err != nil {
+	if err = sendResponse(w, http.StatusOK, processSettings); err != nil {
 		e := UnknownError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
@@ -304,8 +312,7 @@ func (ae *APIEnv) SaveExternalSystemSettings(
 	}
 
 	var externalSystem entity.ExternalSystem
-	err = json.Unmarshal(b, &externalSystem)
-	if err != nil {
+	if err = json.Unmarshal(b, &externalSystem); err != nil {
 		e := ExternalSystemSettingsParseError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
@@ -315,8 +322,7 @@ func (ae *APIEnv) SaveExternalSystemSettings(
 
 	externalSystem.Id = systemID
 
-	err = externalSystem.ValidateSchemas()
-	if err != nil {
+	if err = externalSystem.ValidateSchemas(); err != nil {
 		e := JSONSchemaValidationError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
@@ -333,8 +339,7 @@ func (ae *APIEnv) SaveExternalSystemSettings(
 		return
 	}
 
-	err = sendResponse(w, http.StatusOK, nil)
-	if err != nil {
+	if err = sendResponse(w, http.StatusOK, nil); err != nil {
 		e := UnknownError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
@@ -741,8 +746,8 @@ func (ae *APIEnv) SaveApprovalListSettings(w http.ResponseWriter, r *http.Reques
 	}
 	defer r.Body.Close()
 
-	var systemSettings EndSystemSettings
-	if err = json.Unmarshal(b, &systemSettings); err != nil {
+	var req entity.SaveApprovalListSettings
+	if err = json.Unmarshal(b, &req); err != nil {
 		e := ProcessSettingsParseError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
@@ -751,9 +756,11 @@ func (ae *APIEnv) SaveApprovalListSettings(w http.ResponseWriter, r *http.Reques
 	}
 
 	id, err := ae.DB.SaveApprovalListSettings(ctx, entity.SaveApprovalListSettings{
-		VersionId: versionID,
-		Name:      "",
-		Steps:     []string{},
+		VersionId:      versionID,
+		Name:           req.Name,
+		Steps:          req.Steps,
+		ContextMapping: req.ContextMapping,
+		FormsMapping:   req.FormsMapping,
 	})
 	if err != nil {
 		e := UpdateEndingSystemSettingsError
@@ -770,4 +777,71 @@ func (ae *APIEnv) SaveApprovalListSettings(w http.ResponseWriter, r *http.Reques
 
 		return
 	}
+}
+
+func (ae *APIEnv) GetApprovalListSettings(w http.ResponseWriter, r *http.Request, versionID, listID string) {
+	ctx, s := trace.StartSpan(r.Context(), "get_approval_list_settings")
+	defer s.End()
+
+	log := logger.GetLogger(ctx)
+
+	approvalList, err := ae.DB.GetApprovalListSettings(ctx, versionID, listID)
+	if err != nil {
+		e := UnknownError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	//states, err := ae.DB.GetVariable(ctx)
+	//STAATE-step-name where step name in ()
+
+	res, err := toResponseApprovalListSettings(approvalList)
+	if err != nil {
+		e := UnknownError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	if err = sendResponse(w, http.StatusOK, res); err != nil {
+		e := UnknownError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+}
+
+func toResponseApprovalListSettings(in *entity.ApprovalListSettings) (*ResponseVersionApprovalList, error) {
+	return &ResponseVersionApprovalList{
+		Id:   "12eebf5b-0404-4078-9906-792102d07cd4",
+		Name: "Test list name approver_0",
+		Steps: map[string]interface{}{"approver_0": struct {
+			Sla               int    `json:"sla"`
+			TestStringContext string `json:"testStringContext"`
+		}{Sla: 23, TestStringContext: "test value"}},
+		ContextVariables: map[string]interface{}{"testStringContext": "test value", "testNumber": 211122},
+		FormsVariables:   map[string]interface{}{"testStringForm": "test value form", "testNumber": 55},
+	}, nil
+
+	contextVariables, err := script.MapData(in.ContextMapping, map[string]interface{}{}, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	formsVariables, err := script.MapData(in.FormsMapping, map[string]interface{}{}, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ResponseVersionApprovalList{
+		Id:               in.ID,
+		Name:             in.Name,
+		Steps:            in.Steps,
+		ContextVariables: contextVariables,
+		FormsVariables:   formsVariables,
+	}, nil
 }

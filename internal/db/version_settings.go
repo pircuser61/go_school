@@ -338,11 +338,15 @@ func (db *PGCon) GetSlaVersionSettings(ctx context.Context, versionID string) (s
 }
 
 func (db *PGCon) GetApprovalListSettings(ctx c.Context, versionID, listID string) (*e.ApprovalListSettings, error) {
+	ctx, span := trace.StartSpan(ctx, "pg_get_approval_list_settings")
+	defer span.End()
 
 	return nil, nil
 }
 
 func (db *PGCon) GetApprovalListsSettings(ctx c.Context, versionID string) ([]e.ApprovalListSettings, error) {
+	ctx, span := trace.StartSpan(ctx, "pg_get_approval_lists_settings")
+	defer span.End()
 
 	return nil, nil
 }
@@ -354,7 +358,14 @@ func (db *PGCon) SaveApprovalListSettings(ctx c.Context, in e.SaveApprovalListSe
 	// nolint:gocritic
 	// language=PostgreSQL
 	const query = `
-	INSERT INTO version_approval_lists (id, version_id, name, steps, context_mapping, forms_mapping, created_at)
+	INSERT INTO version_approval_lists (
+		id,
+		version_id,
+		name,
+		steps,
+		context_mapping,
+		forms_mapping,
+		created_at)
 	VALUES ($1, $2, $3, $4, $5, $6, now())`
 
 	listID := uuid.New().String()

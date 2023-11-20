@@ -1192,15 +1192,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
-  /pipelines/version/{versionID}/settings/approval-sheet:
+  /pipelines/version/{versionID}/settings/approval-list:
     post:
       tags:
-        - pipeline
         - process_settings
-        - approval_sheet
-      summary: Add approval sheet to version
+        - approval_list
+      summary: Add approval list to version
       description: Добавить лист согласования для версии процесса
-      operationId: save-approval-sheet-settings
+      operationId: save-approval-list-settings
       parameters:
         - name: versionID
           in: path
@@ -1213,7 +1212,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RequestApprovalSheetSettings'
+              $ref: '#/components/schemas/SaveApprovalListSettings'
         required: true
       responses:
         200:
@@ -1228,6 +1227,97 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+    get:
+      tags:
+        - process_settings
+        - approval_list
+      summary: get version approval lists
+      description: получение списков согласований
+      operationId: get-approval-lists-settings
+      parameters:
+        - name: versionID
+          in: path
+          description: Version ID
+          required: true
+          schema:
+            type: string
+            format: uuid
+            example: 916ad995-8d13-49fb-82ee-edd4f97649e2
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ResponseVersionApprovalList'
+                  status_code:
+                    type: integer
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+  /pipelines/version/{versionID}/settings/approval-list/{listID}:
+    get:
+      tags:
+        - process_settings
+        - approval_list
+      summary: get version approval list
+      description: получение списка согласования
+      operationId: get-approval-list-setting
+      parameters:
+        - name: versionID
+          in: path
+          description: Version ID
+          required: true
+          schema:
+            type: string
+            format: uuid
+            example: 916ad995-8d13-49fb-82ee-edd4f97649e2
+        - name: listID
+          in: path
+          description: Version ID
+          required: true
+          schema:
+            type: string
+            format: uuid
+            example: 916ad995-8d13-49fb-82ee-edd4f97649e2
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ResponseVersionApprovalList'
+                  status_code:
+                    type: integer
         401:
           description: Unauthorized
           content:
@@ -3259,6 +3349,9 @@ components:
           type: array
           items:
               $ref: '#/components/schemas/NodeGroup'
+        approval_list:
+          type: object
+          properties: { }
       required:
         - id
         - version_id
@@ -3970,9 +4063,9 @@ components:
       type: boolean
       description: Разрешить системе запуск заявки от третьего лица
 
-    RequestApprovalListSettings:
+    SaveApprovalListSettings:
       type: object
-      description: Create approval list settings
+      description: Add approval list settings
       properties:
         name:
           type: string
@@ -3980,10 +4073,15 @@ components:
           type: array
           items:
             type: string
-        mapping:
+        context_mapping:
           $ref: '#/components/schemas/JSONSchemaProperties'
-        mapping:
+        forms_mapping:
           $ref: '#/components/schemas/JSONSchemaProperties'
+      required:
+        - name
+        - steps
+        - context_mapping
+        - forms_mapping
 
     RequestExecutionInfoType:
       type: string
@@ -3992,6 +4090,34 @@ components:
         - question
         - answer
 
+    ResponseVersionApprovalList:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        steps:
+          type: object
+          properties: { }
+        context_mapping:
+          $ref: '#/components/schemas/JSONSchemaProperties'
+        forms_mapping:
+          $ref: '#/components/schemas/JSONSchemaProperties'
+        context_variables:
+          type: object
+          description: мапа ключ значение, контекстные переменные
+        forms_variables:
+          type: object
+          description: мапа ключ значение, переменные форм
+      required:
+        - id
+        - name
+        - steps
+        - context_mapping
+        - forms_mapping
+        - context_variables
+        - forms_variables
     ResponsePipelineSearch:
       type: object
       properties:
@@ -4195,6 +4321,9 @@ components:
         process_deadline:
           type: string
           description: Плановая дата завершения процесса
+        approval_list:
+          type: object
+          properties: { }
       required:
         - id
         - version_id
@@ -4928,8 +5057,8 @@ components:
         work_type:
           $ref: "#/components/schemas/WorkType"
         approval_list:
-          type: boolean
-          description: Include this node to approval list
+          type: object
+          description: мапа листов согласований из настроек сценария
       required:
         - type
         - approver

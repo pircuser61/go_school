@@ -148,12 +148,12 @@ func (taskResp) toResponse(in *taskToResponseDTO) *taskResp {
 		StatusComment:      in.task.StatusComment,
 		StatusAuthor:       in.task.StatusAuthor,
 		ProcessDeadline:    in.dln,
-		NodeGroup:          groupsToResponce(in.task.NodeGroup),
+		NodeGroup:          groupsToResponse(in.task.NodeGroup),
 	}
 
 	approvalList := map[string]string{}
 	for i := range in.approvalList {
-		approvalList[in.approvalList[i].Id] = in.approvalList[i].Name
+		approvalList[in.approvalList[i].ID] = in.approvalList[i].Name
 	}
 
 	if len(approvalList) > 0 {
@@ -163,13 +163,13 @@ func (taskResp) toResponse(in *taskToResponseDTO) *taskResp {
 	return out
 }
 
-func groupsToResponce(groups []*entity.NodeGroup) []NodeGroup {
+func groupsToResponse(groups []*entity.NodeGroup) []NodeGroup {
 	if groups == nil {
 		return nil
 	}
 	var resp []NodeGroup
 	for i := range groups {
-		insideNodes := groupsToResponce(groups[i].Nodes)
+		insideNodes := groupsToResponse(groups[i].Nodes)
 		resp = append(resp, NodeGroup{
 			EndNode:   groups[i].EndNode,
 			Nodes:     &insideNodes,
@@ -358,7 +358,7 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request, workNumber s
 
 	deadline := ae.SLAService.ComputeMaxDate(dbTask.StartedAt, float32(versionSettings.Sla), slaInfoPtr)
 
-	approvalList, err := ae.DB.GetApprovalListSettings(ctx, dbTask.VersionID.String())
+	approvalLists, err := ae.DB.GetApprovalListsSettings(ctx, dbTask.VersionID.String())
 	if err != nil {
 		e := UnknownError
 		log.Error(e.errorMessage(err))
@@ -374,7 +374,7 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request, workNumber s
 		usrDegSteps:  currentUserDelegateSteps,
 		sNames:       shortNameMap,
 		dln:          deadline,
-		approvalList: approvalList,
+		approvalList: approvalLists,
 	}
 
 	if err = sendResponse(w, http.StatusOK, resp.toResponse(toResponseDTO)); err != nil {
@@ -581,6 +581,24 @@ func (ae *APIEnv) GetTasks(w http.ResponseWriter, req *http.Request, params GetT
 
 		deadline := ae.SLAService.ComputeMaxDate(resp.Tasks[i].StartedAt, float32(versionsSLA[resp.Tasks[i].VersionID.String()].Sla), slaInfoPtr)
 		resp.Tasks[i].ProcessDeadline = deadline
+
+		approvalLists, errGetSettings := ae.DB.GetApprovalListsSettings(ctx, resp.Tasks[i].VersionID.String())
+		if errGetSettings != nil {
+			e := UnknownError
+			log.Error(e.errorMessage(errGetSettings))
+			_ = e.sendError(w)
+
+			return
+		}
+
+		mapApprovalLists := map[string]string{}
+		for j := range approvalLists {
+			mapApprovalLists[approvalLists[j].ID] = approvalLists[j].Name
+		}
+
+		if len(mapApprovalLists) > 0 {
+			resp.Tasks[i].ApprovalList = mapApprovalLists
+		}
 	}
 
 	if err = sendResponse(w, http.StatusOK, resp); err != nil {
