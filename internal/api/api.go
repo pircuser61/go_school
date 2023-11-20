@@ -1719,7 +1719,7 @@ type ShapeEntity struct {
 	Title string `json:"title"`
 }
 
-// Singature params
+// Signature params
 type SignParams struct {
 	// reject after expire sla
 	AutoReject *bool `json:"autoReject,omitempty"`
@@ -1748,7 +1748,8 @@ type SignParams struct {
 	//   * user - Single user
 	//   * group - Group ID
 	//   * FromSchema - Selected by initiator
-	SignerType SignerType `json:"signerType"`
+	SignerType    SignerType     `json:"signerType"`
+	SigningParams *SigningParams `json:"signingParams,omitempty"`
 
 	// Count of singers which will participate in signing will depends of signing type. 'Any of' will check only first sign action, when 'all of' will be waiting for all signers.
 	SigningRule *SigningRule `json:"signingRule,omitempty"`
@@ -1772,6 +1773,15 @@ type SignUpdateParams struct {
 	//  * rejected - Отклонено
 	//  * error - Произошла ошибка
 	Decision SignDecision `json:"decision"`
+
+	// files to sign
+	Signatures *[]struct {
+		// id file, which was signed
+		FileId string `json:"file_id"`
+
+		// id file of detached signature, which was created at the moment of signing
+		SignatureFileId string `json:"signature_file_id"`
+	} `json:"signatures,omitempty"`
 }
 
 // SignatureCarrier defines model for SignatureCarrier.
@@ -1785,6 +1795,18 @@ type SignatureType string
 //   - group - Group ID
 //   - FromSchema - Selected by initiator
 type SignerType string
+
+// SigningParams defines model for SigningParams.
+type SigningParams struct {
+	// Path to files in context
+	Files *string `json:"files,omitempty"`
+
+	// Path to inn in context
+	Inn *string `json:"inn,omitempty"`
+
+	// Path to snils in context
+	Snils *string `json:"snils,omitempty"`
+}
 
 // Count of singers which will participate in signing will depends of signing type. 'Any of' will check only first sign action, when 'all of' will be waiting for all signers.
 type SigningRule string

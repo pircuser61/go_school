@@ -3348,10 +3348,7 @@ components:
         node_group:
           type: array
           items:
-              $ref: '#/components/schemas/NodeGroup'
-        approval_list:
-          type: object
-          properties: { }
+            $ref: '#/components/schemas/NodeGroup'
       required:
         - id
         - version_id
@@ -3729,6 +3726,21 @@ components:
       type: object
       description: Sign update params
       properties:
+        signatures:
+          description: files to sign
+          type: array
+          items:
+            type: object
+            properties:
+              file_id:
+                description: id file which was signed
+                type: string
+              signature_file_id:
+                description: id file of detached signature which was created at the moment of signing
+                type: string
+            required:
+              - file_id
+              - signature_file_id
         decision:
           $ref: '#/components/schemas/signDecision'
         comment:
@@ -3811,10 +3823,10 @@ components:
       description: Sign update params
       properties:
         status:
-            type: string
-            enum:
-              - start
-              - end
+          type: string
+          enum:
+            - start
+            - end
       required:
         - status
 
@@ -4974,9 +4986,25 @@ components:
       enum: [ "Все", "Облачный", "Токен" ]
       x-enum-varnames: [ "all", "cloud", "token" ]
 
+    SigningParams:
+      type: object
+      properties:
+        inn:
+          description: Path to inn in context
+          example: form_0.application_body.inn
+          type: string
+        snils:
+          description: Path to snils in context
+          example: form_0.application_body.snils
+          type: string
+        files:
+          description: Path to files in context
+          example: form_0.application_body.files
+          type: string
+
     SignParams:
       type: object
-      description: Singature params
+      description: Signature params
       properties:
         signerType:
           $ref: '#/components/schemas/SignerType'
@@ -4997,6 +5025,8 @@ components:
           $ref: '#/components/schemas/SignatureCarrier'
         signingRule:
           $ref: '#/components/schemas/SigningRule'
+        signingParams:
+          $ref: '#/components/schemas/SigningParams'
         signatureType:
           $ref: '#/components/schemas/SignatureType'
         formsAccessibility:
