@@ -354,7 +354,7 @@ func (db *PGCon) GetApprovalListsSettings(ctx c.Context, versionID string) ([]e.
 	const query = `
 	SELECT id, name, steps, context_mapping, forms_mapping, created_at
 		FROM version_approval_lists
-	WHERE version_id = $1 AND de
+	WHERE version_id = $1 AND deleted_at IS NULL
 	ORDER BY created_at DESC`
 
 	rows, err := db.Connection.Query(ctx, query, versionID)
