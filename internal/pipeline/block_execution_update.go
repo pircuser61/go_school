@@ -720,9 +720,6 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 	}
 
 	executorName := typedAuthor.GetFullName()
-	if !gb.State.HideExecutor {
-		executorName = ""
-	}
 
 	tpl := mail.NewExecutionTakenInWorkTpl(&mail.ExecutorNotifTemplate{
 		WorkNumber:   gb.RunContext.WorkNumber,
