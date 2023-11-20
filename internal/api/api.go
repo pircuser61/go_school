@@ -1627,14 +1627,8 @@ type ResponsePipelineSearch struct {
 
 // ResponseVersionApprovalList defines model for ResponseVersionApprovalList.
 type ResponseVersionApprovalList struct {
-	// Представляет из себя набор ключ-значение, где ключ - это название переменной/поля объекта, а значение - это структура, которая описывает переменную(или поле объекта). Причём, если переменная - это объект, тогда должно быть заполнено поле propeties(описание полей). Если переменная - массив, тогда должно быть заполнено поле items(описание типа, который хранится в массиве).
-	ContextMapping JSONSchemaProperties `json:"context_mapping"`
-
 	// мапа ключ значение, контекстные переменные
 	ContextVariables map[string]interface{} `json:"context_variables"`
-
-	// Представляет из себя набор ключ-значение, где ключ - это название переменной/поля объекта, а значение - это структура, которая описывает переменную(или поле объекта). Причём, если переменная - это объект, тогда должно быть заполнено поле propeties(описание полей). Если переменная - массив, тогда должно быть заполнено поле items(описание типа, который хранится в массиве).
-	FormsMapping JSONSchemaProperties `json:"forms_mapping"`
 
 	// мапа ключ значение, переменные форм
 	FormsVariables map[string]interface{} `json:"forms_variables"`
@@ -1905,6 +1899,20 @@ type UsedBy struct {
 
 	// Имя сценария
 	Name string `json:"name"`
+}
+
+// VersionApprovalList defines model for VersionApprovalList.
+type VersionApprovalList struct {
+	// Представляет из себя набор ключ-значение, где ключ - это название переменной/поля объекта, а значение - это структура, которая описывает переменную(или поле объекта). Причём, если переменная - это объект, тогда должно быть заполнено поле propeties(описание полей). Если переменная - массив, тогда должно быть заполнено поле items(описание типа, который хранится в массиве).
+	ContextMapping JSONSchemaProperties `json:"context_mapping"`
+
+	// Представляет из себя набор ключ-значение, где ключ - это название переменной/поля объекта, а значение - это структура, которая описывает переменную(или поле объекта). Причём, если переменная - это объект, тогда должно быть заполнено поле propeties(описание полей). Если переменная - массив, тогда должно быть заполнено поле items(описание типа, который хранится в массиве).
+	FormsMapping JSONSchemaProperties `json:"forms_mapping"`
+	Id           string               `json:"id"`
+	Name         string               `json:"name"`
+
+	// названия блоков
+	Steps []string `json:"steps"`
 }
 
 // Рабочий режим

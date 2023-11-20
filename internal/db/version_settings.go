@@ -349,7 +349,40 @@ func (db *PGCon) GetApprovalListsSettings(ctx c.Context, versionID string) ([]e.
 	ctx, span := trace.StartSpan(ctx, "pg_get_approval_lists_settings")
 	defer span.End()
 
-	return nil, nil
+	// nolint:gocritic
+	// language=PostgreSQL
+	const query = `
+	SELECT id, name, steps, context_mapping, forms_mapping, created_at
+		FROM version_approval_lists
+	WHERE version_id = $1 AND de
+	ORDER BY created_at DESC`
+
+	rows, err := db.Connection.Query(ctx, query, versionID)
+	if err != nil {
+		return nil, err
+	}
+
+	res := make([]e.ApprovalListSettings, 0)
+
+	for rows.Next() {
+		al := e.ApprovalListSettings{}
+
+		err = rows.Scan(
+			&al.ID,
+			&al.Name,
+			&al.Steps,
+			&al.ContextMapping,
+			&al.FormsMapping,
+			&al.CreatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		res = append(res, al)
+	}
+
+	return res, nil
 }
 
 func (db *PGCon) SaveApprovalListSettings(ctx c.Context, in e.SaveApprovalListSettings) (id string, err error) {

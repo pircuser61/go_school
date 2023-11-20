@@ -1266,7 +1266,7 @@ paths:
                   data:
                     type: array
                     items:
-                      $ref: '#/components/schemas/ResponseVersionApprovalList'
+                      $ref: '#/components/schemas/VersionApprovalList'
                   status_code:
                     type: integer
         401:
@@ -4089,7 +4089,28 @@ components:
       enum:
         - question
         - answer
-
+    VersionApprovalList:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        steps:
+          type: array
+          items:
+            type: string
+          description: названия блоков
+        context_mapping:
+          $ref: '#/components/schemas/JSONSchemaProperties'
+        forms_mapping:
+          $ref: '#/components/schemas/JSONSchemaProperties'
+      required:
+        - id
+        - name
+        - steps
+        - context_mapping
+        - forms_mapping
     ResponseVersionApprovalList:
       type: object
       properties:
@@ -4101,10 +4122,6 @@ components:
           type: object
           properties: { }
           description: мапа стейтов блоков
-        context_mapping:
-          $ref: '#/components/schemas/JSONSchemaProperties'
-        forms_mapping:
-          $ref: '#/components/schemas/JSONSchemaProperties'
         context_variables:
           type: object
           description: мапа ключ значение, контекстные переменные
@@ -4117,8 +4134,6 @@ components:
         - id
         - name
         - steps
-        - context_mapping
-        - forms_mapping
         - context_variables
         - forms_variables
     ResponsePipelineSearch:

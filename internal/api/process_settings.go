@@ -858,11 +858,27 @@ func (ae *APIEnv) GetApprovalListsSettings(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	if err = sendResponse(w, http.StatusOK, approvalLists); err != nil {
+	if err = sendResponse(w, http.StatusOK, toResponseApprovalListsSettings(approvalLists)); err != nil {
 		e := UnknownError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
 	}
+}
+
+func toResponseApprovalListsSettings(in []entity.ApprovalListSettings) []entity.ApprovalListSettings {
+	res := make([]entity.ApprovalListSettings, 0, len(in))
+
+	for i := range in {
+		res = append(res, entity.ApprovalListSettings{
+			ID:             in[i].ID,
+			Name:           in[i].Name,
+			Steps:          in[i].Steps,
+			ContextMapping: in[i].ContextMapping,
+			FormsMapping:   in[i].FormsMapping,
+		})
+	}
+
+	return res
 }
