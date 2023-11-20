@@ -779,7 +779,7 @@ func (ae *APIEnv) SaveApprovalListSettings(w http.ResponseWriter, r *http.Reques
 	}
 }
 
-func (ae *APIEnv) GetApprovalListSettings(w http.ResponseWriter, r *http.Request, versionID, listID string) {
+func (ae *APIEnv) GetApprovalListSetting(w http.ResponseWriter, r *http.Request, versionID, listID string) {
 	ctx, s := trace.StartSpan(r.Context(), "get_approval_list_settings")
 	defer s.End()
 
@@ -793,9 +793,6 @@ func (ae *APIEnv) GetApprovalListSettings(w http.ResponseWriter, r *http.Request
 
 		return
 	}
-
-	//states, err := ae.DB.GetVariable(ctx)
-	//STAATE-step-name where step name in ()
 
 	res, err := toResponseApprovalListSettings(approvalList)
 	if err != nil {
@@ -838,10 +835,34 @@ func toResponseApprovalListSettings(in *entity.ApprovalListSettings) (*ResponseV
 	}
 
 	return &ResponseVersionApprovalList{
-		Id:               in.ID,
-		Name:             in.Name,
-		Steps:            in.Steps,
+		Id:   in.ID,
+		Name: in.Name,
+		//Steps:            in.Steps,
 		ContextVariables: contextVariables,
 		FormsVariables:   formsVariables,
 	}, nil
+}
+
+func (ae *APIEnv) GetApprovalListsSettings(w http.ResponseWriter, r *http.Request, versionID string) {
+	ctx, s := trace.StartSpan(r.Context(), "get_approval_lists_settings")
+	defer s.End()
+
+	log := logger.GetLogger(ctx)
+
+	approvalLists, err := ae.DB.GetApprovalListsSettings(ctx, versionID)
+	if err != nil {
+		e := UnknownError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	if err = sendResponse(w, http.StatusOK, approvalLists); err != nil {
+		e := UnknownError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
 }
