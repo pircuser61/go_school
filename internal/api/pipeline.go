@@ -227,17 +227,7 @@ func (ae *APIEnv) GetPipeline(w http.ResponseWriter, req *http.Request, pipeline
 		return
 	}
 
-	tags, err := ae.DB.GetPipelineTag(ctx, p.ID)
-	if err != nil {
-		e := GetPipelineTagsError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-	}
-
-	p.Tags = tags
-
-	err = sendResponse(w, http.StatusOK, p)
-	if err != nil {
+	if err = sendResponse(w, http.StatusOK, p); err != nil {
 		e := UnknownError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
@@ -301,17 +291,7 @@ func (ae *APIEnv) DeletePipeline(w http.ResponseWriter, req *http.Request, pipel
 		return
 	}
 
-	err = ae.DB.RemovePipelineTags(ctx, id)
-	if err != nil {
-		e := TagDetachError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	err = ae.DB.DeletePipeline(ctx, id)
-	if err != nil {
+	if err = ae.DB.DeletePipeline(ctx, id); err != nil {
 		e := PipelineDeleteError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
@@ -404,17 +384,7 @@ func (ae *APIEnv) DeleteDraftPipeline(ctx context.Context, w http.ResponseWriter
 	}
 
 	if canDelete {
-		err = ae.DB.RemovePipelineTags(ctx, p.ID)
-		if err != nil {
-			e := TagDetachError
-			log.Error(e.errorMessage(err))
-			_ = e.sendError(w)
-
-			return err
-		}
-
-		err = ae.DB.DeletePipeline(ctx, p.ID)
-		if err != nil {
+		if err = ae.DB.DeletePipeline(ctx, p.ID); err != nil {
 			e := PipelineDeleteError
 			log.Error(e.errorMessage(err))
 			_ = e.sendError(w)
