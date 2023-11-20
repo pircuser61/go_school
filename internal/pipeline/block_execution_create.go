@@ -124,37 +124,37 @@ func (gb *GoExecutionBlock) reEntry(ctx c.Context, ef *entity.EriusFunc) error {
 		if len(execs) == 1 {
 			gb.State.Executors = execs
 		}
-
-		return gb.handleNotifications(ctx)
 	}
 
-	var params script.ExecutionParams
-	err := json.Unmarshal(ef.Params, &params)
-	if err != nil {
-		return errors.Wrap(err, "can not get execution parameters for block: "+gb.Name)
-	}
-
-	if params.ExecutorsGroupIDPath != nil && *params.ExecutorsGroupIDPath != "" {
-		variableStorage, grabStorageErr := gb.RunContext.VarStore.GrabStorage()
-		if grabStorageErr != nil {
-			return grabStorageErr
+	if len(gb.State.Executors) == 0 {
+		var params script.ExecutionParams
+		err := json.Unmarshal(ef.Params, &params)
+		if err != nil {
+			return errors.Wrap(err, "can not get execution parameters for block: "+gb.Name)
 		}
 
-		groupId := getVariable(variableStorage, *params.ExecutorsGroupIDPath)
-		if groupId == nil {
-			return errors.New("can't find group id in variables")
-		}
-		params.ExecutorsGroupID = fmt.Sprintf("%v", groupId)
-	}
+		if params.ExecutorsGroupIDPath != nil && *params.ExecutorsGroupIDPath != "" {
+			variableStorage, grabStorageErr := gb.RunContext.VarStore.GrabStorage()
+			if grabStorageErr != nil {
+				return grabStorageErr
+			}
 
-	err = gb.setExecutorsByParams(ctx, &setExecutorsByParamsDTO{
-		Type:     params.Type,
-		GroupID:  params.ExecutorsGroupID,
-		Executor: params.Executors,
-		WorkType: params.WorkType,
-	})
-	if err != nil {
-		return err
+			groupId := getVariable(variableStorage, *params.ExecutorsGroupIDPath)
+			if groupId == nil {
+				return errors.New("can't find group id in variables")
+			}
+			params.ExecutorsGroupID = fmt.Sprintf("%v", groupId)
+		}
+
+		err = gb.setExecutorsByParams(ctx, &setExecutorsByParamsDTO{
+			Type:     params.Type,
+			GroupID:  params.ExecutorsGroupID,
+			Executor: params.Executors,
+			WorkType: params.WorkType,
+		})
+		if err != nil {
+			return err
+		}
 	}
 
 	return gb.handleNotifications(ctx)
@@ -213,14 +213,16 @@ func (gb *GoExecutionBlock) createState(ctx c.Context, ef *entity.EriusFunc) err
 		}
 	}
 
-	err = gb.setExecutorsByParams(ctx, &setExecutorsByParamsDTO{
-		Type:     params.Type,
-		GroupID:  params.ExecutorsGroupID,
-		Executor: params.Executors,
-		WorkType: params.WorkType,
-	})
-	if err != nil {
-		return err
+	if len(gb.State.Executors) == 0 {
+		err = gb.setExecutorsByParams(ctx, &setExecutorsByParamsDTO{
+			Type:     params.Type,
+			GroupID:  params.ExecutorsGroupID,
+			Executor: params.Executors,
+			WorkType: params.WorkType,
+		})
+		if err != nil {
+			return err
+		}
 	}
 
 	if params.WorkType != nil {
