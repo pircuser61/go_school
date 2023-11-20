@@ -115,6 +115,7 @@ func (gb *GoExecutionBlock) reEntry(ctx c.Context, ef *entity.EriusFunc) error {
 	gb.State.DecisionAttachments = make([]entity.Attachment, 0)
 	gb.State.ActualExecutor = nil
 	gb.State.IsTakenInWork = false
+	gb.State.Executors = make(map[string]struct{})
 
 	if gb.State.UseActualExecutor {
 		execs, prevErr := gb.RunContext.Services.Storage.GetExecutorsFromPrevExecutionBlockRun(ctx, gb.RunContext.TaskID, gb.Name)
