@@ -3,12 +3,14 @@ package db
 import (
 	c "context"
 	"fmt"
+	"golang.org/x/net/context"
+
 	"github.com/google/uuid"
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
+
 	e "gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
-	"golang.org/x/net/context"
 
 	"go.opencensus.io/trace"
 )
@@ -201,12 +203,11 @@ func (db *PGCon) SaveVersionMainSettings(ctx c.Context, params e.ProcessSettings
 	return nil
 }
 
-func (db *PGCon) SaveExternalSystemSettings(
-	ctx context.Context, versionID string, system e.ExternalSystem, schemaFlag *string) error {
+func (db *PGCon) SaveExternalSystemSettings(ctx c.Context, vID string, system e.ExternalSystem, schemaFlag *string) error {
 	ctx, span := trace.StartSpan(ctx, "pg_save_external_system_settings")
 	defer span.End()
 
-	args := []interface{}{versionID, system.Id}
+	args := []interface{}{vID, system.Id}
 	var schemasForUpdate string
 	if schemaFlag != nil {
 		switch *schemaFlag {

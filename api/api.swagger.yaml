@@ -4107,9 +4107,11 @@ components:
         context_variables:
           type: object
           description: мапа ключ значение, контекстные переменные
+          properties: {}
         forms_variables:
           type: object
           description: мапа ключ значение, переменные форм
+          properties: {}
       required:
         - id
         - name
