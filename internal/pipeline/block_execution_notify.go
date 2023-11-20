@@ -169,6 +169,7 @@ func (gb *GoExecutionBlock) notifyNeedRework(ctx c.Context) error {
 	return nil
 }
 
+// 22 (Soglasovanie analogichno)
 func (gb *GoExecutionBlock) notifyNeedMoreInfo(ctx c.Context) error {
 	loginsToNotify := []string{gb.RunContext.Initiator}
 

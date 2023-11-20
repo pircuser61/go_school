@@ -4,6 +4,7 @@ import (
 	c "context"
 	"encoding/json"
 	"fmt"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 	"time"
 
 	"github.com/google/uuid"
@@ -136,6 +137,16 @@ func (gb *GoApproverBlock) handleBreachedSLA(ctx c.Context) error {
 			emails = append(emails, approverEmail)
 		}
 
+		//Deadline
+		slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
+			TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.CurrBlockStartTime,
+				FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100)}},
+			WorkType: sla.WorkHourType(gb.State.WorkType),
+		})
+		if getSlaInfoErr != nil {
+			return getSlaInfoErr
+		}
+
 		if len(emails) == 0 {
 			return nil
 		}
@@ -145,6 +156,8 @@ func (gb *GoApproverBlock) handleBreachedSLA(ctx c.Context) error {
 				gb.RunContext.NotifName,
 				gb.RunContext.Services.Sender.SdAddress,
 				gb.State.ApproveStatusName,
+				gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(gb.RunContext.CurrBlockStartTime, gb.State.SLA,
+					slaInfoPtr),
 			),
 		)
 		if err != nil {
@@ -237,11 +250,11 @@ func (gb *GoApproverBlock) handleHalfBreachedSLA(ctx c.Context) (err error) {
 			login = recipient
 		}
 
-		lastWorksForUser := make([]*entity.EriusTask, 0)
+		//lastWorksForUser := make([]*entity.EriusTask, 0)
 
 		if processSettings.ResubmissionPeriod > 0 {
 			var getWorksErr error
-			lastWorksForUser, getWorksErr = gb.RunContext.Services.Storage.GetWorksForUserWithGivenTimeRange(
+			_, getWorksErr = gb.RunContext.Services.Storage.GetWorksForUserWithGivenTimeRange(
 				ctx,
 				processSettings.ResubmissionPeriod,
 				login,
@@ -252,13 +265,24 @@ func (gb *GoApproverBlock) handleHalfBreachedSLA(ctx c.Context) (err error) {
 				return getWorksErr
 			}
 		}
+
+		slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
+			TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.CurrBlockStartTime,
+				FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100)}},
+			WorkType: sla.WorkHourType(gb.State.WorkType),
+		})
+		if getSlaInfoErr != nil {
+			return getSlaInfoErr
+		}
+
 		errSend := gb.RunContext.Services.Sender.SendNotification(ctx, emails, nil,
 			mail.NewApprovementHalfSLATpl(
 				gb.RunContext.WorkNumber,
 				gb.RunContext.NotifName,
 				gb.RunContext.Services.Sender.SdAddress,
 				gb.State.ApproveStatusName,
-				lastWorksForUser,
+				gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(gb.RunContext.CurrBlockStartTime, gb.State.SLA,
+					slaInfoPtr),
 			),
 		)
 		if errSend != nil {

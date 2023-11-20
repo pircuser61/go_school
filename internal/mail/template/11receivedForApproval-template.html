@@ -1,0 +1,103 @@
+{{define "block" }}
+    <table cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse; mso-table-lspace: 0pt; mso-table-rspace: 0pt;">
+        <tr>
+            <td align="center" style="border-collapse: collapse;">
+                <div align="center" style="width: 100%; background: #F2F3F7;">
+                    <table width="560" cellpadding="0" cellspacing="0" bgcolor="#FFFFFF" style="border-collapse: collapse; mso-table-lspace: 0pt; mso-table-rspace: 0pt; width: 560px;">
+                    <tr>
+                        <td style="border-collapse: collapse;">
+                            <p style="margin: 0; padding: 0; padding-left: 24px; padding-right: 24px; padding-top: 32px; margin-bottom: 24px; font-family: MTS Text; font-size: 24px; font-weight: 500; line-height: 28px;">Добрый день!</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="border-collapse: collapse;">
+                            <p style="margin: 0; padding: 0; padding-left: 24px; padding-right: 24px; margin-bottom: 24px; font-family: MTS Text; font-size: 17px; font-weight: 400; line-height: 24px;">
+<!--                                Уважаемый коллега, <span style="font-weight: 500;">заявка № {{.Id}} {{.Name}} ожидает согласования</span>. Срок согласования до {{.Deadline}}.-->
+                                Уважаемый коллега, <span style="font-weight: 500;">заявка № {{.Id}} {{.Name}} ожидает {{ .ActionName }} </span>. Срок {{ .ActionName }} до {{.Deadline}}.
+                            </p>
+                        </td>
+                    </tr>
+                        <!-- {{ for i : = -->
+                    <tr>
+                        <td style="border-collapse: collapse;">
+                            <p style="margin: 0; padding: 0; padding-left: 24px; padding-right: 24px; margin-bottom: 24px; font-family: MTS Text; font-size: 17px; font-weight: 400; line-height: 24px;">Для просмотра перейдите по <a href={{.Link}} target="_blank" style="text-decoration: none; color: #007CFF; font-family: MTS Text; font-size: 17px; font-weight: 500; line-height: 24px;">ссылке</a></p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align="center" style="border-collapse: collapse; padding-left: 24px; padding-right: 24px;">
+                            <a href="{{.Buttons}}" style="margin: 0; padding: 0; margin-bottom: 12px; display: inline-block; padding-top: 6px; padding-bottom: 6px; width: 100%; border-radius: 6px; text-decoration: none; font-family: MTS Compact; font-size: 14px; font-weight: 500; line-height: 20px; background-color: #FF0032; color: #FFFFFF;">Согласовать</a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align="center" style="border-collapse: collapse; padding-left: 24px; padding-right: 24px;">
+                            <a href="{{.Buttons}}" style="margin: 0; padding: 0; margin-bottom: 12px; display: inline-block; padding-top: 6px; padding-bottom: 6px; width: 100%; border-radius: 6px; text-decoration: none; font-family: MTS Compact; font-size: 14px; font-weight: 500; line-height: 20px; color: #000000; background-color: #F2F3F7;">Отклонить</a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align="center" style="border-collapse: collapse; padding-left: 24px; padding-right: 24px;">
+                            <a href="{{.Buttons}}" style="margin: 0; padding: 0; display: inline-block; padding-top: 6px; padding-bottom: 6px; width: 100%; border-radius: 6px; text-decoration: none; font-family: MTS Compact; font-size: 14px; font-weight: 500; line-height: 20px; color: #000000;">Вернуть на доработку</a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="border-collapse: collapse; padding-left: 24px; padding-right: 24px;">
+                            <p style="margin: 0; padding: 0; margin-bottom: 18px; font-family: MTS Text; font-size: 17px;font-weight: 400; line-height: 24px; color: #1D2023;">Инициатор:</p>
+                            <div style="display: table; margin-bottom: 24px;">
+                                <img src="./img/iconUser.svg"  style="outline: none; text-decoration: none; border: none; -ms-interpolation-mode: bicubic; max-width: 100%; margin: 0; padding: 0; margin-right: 12px; display: table-cell; vertical-align: middle; margin-top: 10px;" alt="iconUser">
+                                <div style="display: table-cell; vertical-align: middle;">
+                                    <p style="margin: 0; padding: 0; font-family: MTS Compact; font-size: 17px; font-weight: 400; line-height: 24px; color: #1D2023; margin-bottom: 4px;">{{.Initiator}}</p>
+                                    <p style="margin: 0; padding: 0; font-family: MTS Compact; font-size: 14px; font-weight: 400; line-height: 20px; color: #626C77;">{{.JobTitle}}</p>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="border-collapse: collapse; padding-left: 24px; padding-right: 24px;">
+                            <div style="width: 512px; background: #F2F3F7; padding: 12px; border-radius: 12px;">
+                                <p style="margin: 0; padding: 0; margin-bottom: 24px; font-family: MTS Compact; font-size: 17px; font-weight: 500; line-height: 24px; color: #1D2023;">Содержание заявки</p>
+                                <!-- начало блока текст + текст -->
+                                <div style="margin-bottom: 12px;">
+                                    <p style="margin: 0; padding: 0; font-family: MTS Compact; font-size: 14px; font-weight: 400; line-height: 20px; color: #626C77; margin-bottom: 4px;">{{.Question}}</p>
+                                    <p style="margin: 0; padding: 0; font-family: MTS Compact; font-size: 17px; font-weight: 400; line-height: 24px; color: #1D2023;">{{.Answer}}</p>
+                                </div>
+                                <!-- end -->
+                                <!-- начало блока текст + сcылка -->
+                                <div style="margin-bottom: 12px;">
+                                    <p style="margin: 0; padding: 0; font-family: MTS Compact; font-size: 14px; font-weight: 400; line-height: 20px; color: #626C77; margin-bottom: 4px;">{{.Question}}</p>
+                                    <a href="{{.Answer}}" style="margin: 0; padding: 0; text-decoration: none; font-family: MTS Compact; font-size: 17px; font-weight: 400; line-height: 24px; color: #007CFF;">{{.Answer}}</a>
+                                </div>
+                                <!-- end -->
+                                <!-- начало блока с файлом-вложением -->
+                                <div style="margin-bottom: 12px;">
+                                    <p style="margin: 0; padding: 0; font-family: MTS Compact; font-size: 14px; font-weight: 400; line-height: 20px; color: #626C77; margin-bottom: 4px;">Файлы</p>
+                                    <a align="left" download href="{{.Attachment}}" style="display: block; width: 486px; margin: 0; padding: 4px 12px; text-decoration: none; font-family: MTS Compact; font-size: 17px; font-weight: 400; line-height: 24px; color: #1D2023; border: 1px solid rgba(188, 195, 208, 0.50); border-radius: 8px;">
+                                        <div style="display: table; width: 486px;">
+                                            <img src="./img/iconDocument.svg" style="display: table-cell;  vertical-align: middle; " alt="Документ">
+                                            <div style="margin: 0; padding: 0; font-family: MTS Compact; font-size: 17px; font-weight: 400; line-height: 24px; color: #1D2023; display: table-cell;  vertical-align: middle;">
+                                                <p style="margin: 0; padding: 0; font-family: MTS Compact; font-size: 17px; font-weight: 400; line-height: 24px; color: #1D2023;">{{.Attachment}}</p>
+                                                <p style="margin: 0; padding: 0; font-family: MTS Compact; font-size: 12px; font-weight: 400; line-height: 16px; color: #626C77;">{{.Size}} MB</p>
+                                            </div>                                            
+                                            <img src="./img/iconDownload.svg" style="display: table-cell;  vertical-align: middle; margin-bottom: 10px; margin-left: 280px;" alt="Скачать">
+                                        </div>                                        
+                                    </a>
+                                </div>
+                                <!-- end -->
+                                <!-- начало блока текст + текст, если файл более 20mb -->
+                                <div style="margin-bottom: 12px;">
+                                    <p style="margin: 0; padding: 0; font-family: MTS Compact; font-size: 14px; font-weight: 400; line-height: 20px; color: #626C77; margin-bottom: 4px;">Файлы</p>
+                                    <p style="margin: 0; padding: 0; font-family: MTS Compact; font-size: 17px; font-weight: 400; line-height: 24px; color: #1D2023;">Файлы находятся во вложении к письму</p>
+                                </div>                                
+                                <!-- end -->
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align="center" style="border-collapse: collapse;">
+                            <p style="margin: 0; padding: 0; padding-left: 24px; padding-right: 24px; padding-top: 24px; margin-bottom: 24px; font-family: MTS Text; font-size: 14px; font-weight: 400; line-height: 20px; color: #969FA8;">По вопросам Service Desk обращайтесь на почту servicedesk@mts.ru</p>
+                        </td>
+                    </tr>
+                </table>                
+                </div>                
+            </td>
+        </tr>
+    </table>
+{{ end }}

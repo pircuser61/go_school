@@ -3,6 +3,7 @@ package api
 import (
 	c "context"
 	"encoding/json"
+	"gitlab.services.mts.ru/abp/mail/pkg/email"
 	"io"
 	"net/http"
 	"strings"
@@ -536,7 +537,21 @@ func (ae *APIEnv) updateTaskInternal(ctx c.Context, workNumber, userLogin string
 	runCtx.NotifyEvents(ctxLocal)
 
 	em := mail.NewRejectPipelineGroupTemplate(dbTask.WorkNumber, dbTask.Name, ae.Mail.SdAddress)
-	err = ae.Mail.SendNotification(ctxLocal, emails, nil, em)
+
+	file, ok := ae.Mail.Images[em.Image]
+	if !ok {
+		return errors.New("file not found " + em.Image)
+	}
+
+	files := []email.Attachment{
+		{
+			Name:    "header.png",
+			Content: file,
+			Type:    email.EmbeddedAttachment,
+		},
+	}
+
+	err = ae.Mail.SendNotification(ctxLocal, emails, files, em)
 	if err != nil {
 		return err
 	}
@@ -736,7 +751,22 @@ func (ae *APIEnv) StopTasks(w http.ResponseWriter, r *http.Request) {
 		}
 
 		em := mail.NewRejectPipelineGroupTemplate(dbTask.WorkNumber, dbTask.Name, ae.Mail.SdAddress)
-		sendNotifErr := ae.Mail.SendNotification(ctx, emails, nil, em)
+
+		file, ok := ae.Mail.Images[em.Image]
+		if !ok {
+			log.Error("couldn't send notification")
+			return
+		}
+
+		files := []email.Attachment{
+			{
+				Name:    "header.png",
+				Content: file,
+				Type:    email.EmbeddedAttachment,
+			},
+		}
+
+		sendNotifErr := ae.Mail.SendNotification(ctx, emails, files, em)
 		if sendNotifErr != nil {
 			log.WithError(sendNotifErr).Error("couldn't send notification")
 		}

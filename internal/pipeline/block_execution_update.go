@@ -225,6 +225,7 @@ func (gb *GoExecutionBlock) handleBreachedSLA(ctx c.Context) error {
 				gb.RunContext.WorkNumber,
 				gb.RunContext.NotifName,
 				gb.RunContext.Services.Sender.SdAddress,
+				gb.State.
 			))
 		if err != nil {
 			return err
@@ -317,6 +318,7 @@ func (gb *GoExecutionBlock) handleHalfSLABreached(ctx c.Context) error {
 				gb.RunContext.WorkNumber,
 				gb.RunContext.NotifName,
 				gb.RunContext.Services.Sender.SdAddress,
+				gb.State.WorkType,
 				lastWorksForUser,
 			))
 		if err != nil {

@@ -166,7 +166,7 @@ func (gb *GoNotificationBlock) Update(ctx context.Context) (interface{}, error) 
 
 	err = gb.RunContext.Services.Sender.SendNotification(ctx, emails, files, mail.Template{
 		Subject:   gb.State.Subject,
-		Text:      text,
+		Template:  text,
 		Variables: nil,
 	})
 

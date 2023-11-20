@@ -200,12 +200,24 @@ func (gb *GoApproverBlock) notifyAdditionalApprovers(ctx c.Context, logins []str
 		}
 	}
 
+	slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
+		TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.CurrBlockStartTime,
+			FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100)}},
+		WorkType: sla.WorkHourType(gb.State.WorkType),
+	})
+
+	if getSlaInfoErr != nil {
+		return getSlaInfoErr
+	}
+
 	for i := range emails {
 		tpl := mail.NewAddApproversTpl(
 			gb.RunContext.WorkNumber,
 			gb.RunContext.NotifName,
 			gb.RunContext.Services.Sender.SdAddress,
 			gb.State.ApproveStatusName,
+			gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(
+				time.Now(), gb.State.SLA, slaInfoPtr),
 			lastWorksForUser,
 		)
 

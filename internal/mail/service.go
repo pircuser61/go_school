@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/labstack/gommon/log"
 	"net/http"
 	"net/mail"
+	"os"
 	"regexp"
 	"strings"
 	"text/template"
@@ -59,6 +61,7 @@ type Service struct {
 
 	from *mail.Address
 
+	Images     map[string][]byte
 	SdAddress  string
 	FetchEmail string
 }
@@ -75,6 +78,11 @@ func NewService(c Config) (*Service, error) {
 		WriteTimeout: c.WriteTimeout,
 	}
 
+	images, err := getImages("internal/mail/img/")
+	if err != nil {
+		return nil, err
+	}
+
 	client, err := mailclient.NewClient(cfg)
 	if err != nil {
 		return nil, err
@@ -85,6 +93,7 @@ func NewService(c Config) (*Service, error) {
 			Name:    c.From.Name,
 			Address: c.From.Email,
 		},
+		Images:     images,
 		SdAddress:  c.SdAddress,
 		FetchEmail: c.FetchEmail,
 	}
@@ -124,7 +133,7 @@ func (s *Service) SendNotification(ctx context.Context, to []string, files []ema
 		}
 	}
 
-	temp, err := template.New("").Parse(messageTplStart + tmpl.Text + msgTplEnd)
+	temp, err := template.ParseFiles("internal/mail/template/00header-template.html", tmpl.Template)
 	if err != nil {
 		return err
 	}
@@ -140,4 +149,23 @@ func (s *Service) SendNotification(ctx context.Context, to []string, files []ema
 		return sendErr
 	}
 	return nil
+}
+
+func getImages(path string) (map[string][]byte, error) {
+	files, err := os.ReadDir(path)
+	if err != nil {
+		log.Error("error read directory", err)
+		return nil, err
+	}
+
+	photos := make(map[string][]byte)
+	for _, v := range files {
+		data, err := os.ReadFile(path + v.Name())
+		if err != nil {
+			log.Error("error read file ", v.Name(), err)
+		}
+		photos[v.Name()] = data
+	}
+
+	return photos, nil
 }
