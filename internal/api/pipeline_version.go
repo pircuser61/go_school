@@ -349,17 +349,7 @@ func (ae *APIEnv) GetPipelineVersion(w http.ResponseWriter, req *http.Request, v
 		return
 	}
 
-	tags, err := ae.DB.GetPipelineTag(ctx, p.ID)
-	if err != nil {
-		e := GetPipelineTagsError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-	}
-
-	p.Tags = tags
-
-	err = sendResponse(w, http.StatusOK, p)
-	if err != nil {
+	if err = sendResponse(w, http.StatusOK, p); err != nil {
 		e := UnknownError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)

@@ -559,150 +559,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/httpError'
 
-  /pipelines/{pipelineID}/tags:
-    get:
-      tags:
-        - pipeline
-        - tags
-      summary: Get Pipeline Tags
-      description: Список тегов сценария
-      operationId: get-pipeline-tags
-      parameters:
-        - name: pipelineID
-          in: path
-          description: Pipeline ID
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/EriusTagInfo'
-                  status_code:
-                    type: integer
-        400:
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-        500:
-          description: Internal Server Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-  /pipelines/{pipelineID}/tags/{ID}:
-    put:
-      tags:
-        - pipeline
-        - tags
-      summary: Attach Tag
-      description: Прикрепить тег к сценарию
-      operationId: attach-tag
-      parameters:
-        - name: pipelineID
-          in: path
-          description: Pipeline ID
-          required: true
-          schema:
-            type: string
-        - name: ID
-          in: path
-          description: Tag ID
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    $ref: '#/components/schemas/EriusTagInfo'
-                  status_code:
-                    type: integer
-        400:
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-        500:
-          description: Internal Server Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-    delete:
-      tags:
-        - pipeline
-        - tags
-      summary: Detach Tag
-      description: Открепить тег от сценария
-      operationId: detach-tag
-      parameters:
-        - name: pipelineID
-          in: path
-          description: Pipeline ID
-          required: true
-          schema:
-            type: string
-        - name: ID
-          in: path
-          description: Tag ID
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpResponse'
-        400:
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-        500:
-          description: Internal Server Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-
   /pipelines/copy:
     post:
       tags:
@@ -1336,6 +1192,54 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
+  /pipelines/version/{versionID}/settings/approval-sheet:
+    post:
+      tags:
+        - pipeline
+        - process_settings
+        - approval_sheet
+      summary: Add approval sheet to version
+      description: Добавить лист согласования для версии процесса
+      operationId: save-approval-sheet-settings
+      parameters:
+        - name: versionID
+          in: path
+          description: Version ID
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: Modified JSON-schemas
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequestApprovalSheetSettings'
+        required: true
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpResponse'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
   /pipelines/version/{versionID}/system/{systemID}/runAsOthers:
     post:
       tags:
@@ -1747,172 +1651,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/httpError'
       x-codegen-request-body-name: variables
-  /tags:
-    get:
-      tags:
-        - tags
-      summary: Get Tags
-      description: Cписок тегов
-      operationId: get-tags
-      responses:
-        200:
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/EriusTagInfo'
-                  status_code:
-                    type: integer
-        400:
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-        500:
-          description: Internal Server Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-    put:
-      tags:
-        - tags
-      summary: Edit Tag
-      description: Изменить тег
-      operationId: edit-tag
-      requestBody:
-        description: Modified tag
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/EriusTagInfo'
-        required: true
-      responses:
-        200:
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    $ref: '#/components/schemas/EriusTagInfo'
-                  status_code:
-                    type: integer
-        400:
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-        500:
-          description: Internal Server Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-      x-codegen-request-body-name: tag
-    post:
-      tags:
-        - tags
-      summary: Create Tag
-      description: Создать новый тег
-      operationId: create-tag
-      requestBody:
-        description: New tag
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/EriusTagInfo'
-        required: true
-      responses:
-        200:
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    $ref: '#/components/schemas/EriusTagInfo'
-                  status_code:
-                    type: integer
-        400:
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-        500:
-          description: Internal Server Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-      x-codegen-request-body-name: tag
-  /tags/{ID}:
-    delete:
-      tags:
-        - tags
-      summary: Remove Tag
-      description: Удалить тег
-      operationId: remove-tag
-      parameters:
-        - name: ID
-          in: path
-          description: Tag ID
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpResponse'
-        400:
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-        500:
-          description: Internal Server Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
   /tasks:
     get:
       tags:
@@ -4231,6 +3969,21 @@ components:
     AllowRunAsOthers:
       type: boolean
       description: Разрешить системе запуск заявки от третьего лица
+
+    RequestApprovalListSettings:
+      type: object
+      description: Create approval list settings
+      properties:
+        name:
+          type: string
+        steps:
+          type: array
+          items:
+            type: string
+        mapping:
+          $ref: '#/components/schemas/JSONSchemaProperties'
+        mapping:
+          $ref: '#/components/schemas/JSONSchemaProperties'
 
     RequestExecutionInfoType:
       type: string

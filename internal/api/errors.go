@@ -46,15 +46,6 @@ const (
 	GetDelegationsError
 	GetTaskError
 	GetTasksCountError
-	GetAllTagsError
-	GetPipelineTagsError
-	GetTagError
-	TagCreateError
-	TagEditError
-	TagAttachError
-	TagDeleteError
-	TagParseError
-	TagDetachError
 	TokenParseError
 	GetProcessSettingsError
 	GetExternalSystemsError
@@ -157,15 +148,6 @@ var errorText = map[Err]string{
 	GetTasksError:                       "can't find tasks",
 	GetTasksCountError:                  "can't get amount of tasks",
 	GetTaskError:                        "can't get task",
-	GetAllTagsError:                     "can't get all tags",
-	GetPipelineTagsError:                "can't get pipeline tags",
-	GetTagError:                         "can't get tag",
-	TagCreateError:                      "can't create tag",
-	TagEditError:                        "can't edit tag",
-	TagAttachError:                      "can't attach tag",
-	TagDeleteError:                      "can't delete tag",
-	TagParseError:                       "can't pars tag data",
-	TagDetachError:                      "can't detaсh tags from pipeline",
 	TokenParseError:                     "cant't parse token",
 	GetProcessSettingsError:             "can't get process settings",
 	GetExternalSystemsError:             "can't get external systems",
@@ -267,15 +249,6 @@ var errorDescription = map[Err]string{
 	GetTasksError:                       "Не удалось найти запуски сценария",
 	GetTasksCountError:                  "Не удалось получить количество задач",
 	GetTaskError:                        "Не удалось получить экземпляр задачи",
-	GetAllTagsError:                     "Невозможно получить список тегов",
-	GetPipelineTagsError:                "Невозможно получить список тегов сценария",
-	GetTagError:                         "Не удалось получить информацию о теге",
-	TagCreateError:                      "Не удалось создать информацию о теге",
-	TagEditError:                        "Не удалось изменить информацию о теге",
-	TagAttachError:                      "Не удалось прикрепить тег к сценарию",
-	TagDeleteError:                      "Не удалось удалить информацию о теге",
-	TagParseError:                       "Не удалось разбрать информацию о теге",
-	TagDetachError:                      "Не удалось открепить тег от сценария",
 	TokenParseError:                     "Не удалось разобрать токен",
 	GetProcessSettingsError:             "Не удалось получить настройки процесса",
 	GetExternalSystemsError:             "Не удалось получить подключенные внешние системы",

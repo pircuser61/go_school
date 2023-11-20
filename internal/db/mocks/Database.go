@@ -76,20 +76,6 @@ func (_m *MockedDatabase) AllowRunAsOthers(ctx context.Context, versionID string
 	return r0
 }
 
-// AttachTag provides a mock function with given fields: ctx, id, p
-func (_m *MockedDatabase) AttachTag(ctx context.Context, id uuid.UUID, p *entity.EriusTagInfo) error {
-	ret := _m.Called(ctx, id, p)
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, *entity.EriusTagInfo) error); ok {
-		r0 = rf(ctx, id, p)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
 // CheckIsArchived provides a mock function with given fields: ctx, taskID
 func (_m *MockedDatabase) CheckIsArchived(ctx context.Context, taskID uuid.UUID) (bool, error) {
 	ret := _m.Called(ctx, taskID)
@@ -216,32 +202,6 @@ func (_m *MockedDatabase) CreatePipeline(c context.Context, p *entity.EriusScena
 	return r0
 }
 
-// CreateTag provides a mock function with given fields: ctx, e, author
-func (_m *MockedDatabase) CreateTag(ctx context.Context, e *entity.EriusTagInfo, author string) (*entity.EriusTagInfo, error) {
-	ret := _m.Called(ctx, e, author)
-
-	var r0 *entity.EriusTagInfo
-	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, *entity.EriusTagInfo, string) (*entity.EriusTagInfo, error)); ok {
-		return rf(ctx, e, author)
-	}
-	if rf, ok := ret.Get(0).(func(context.Context, *entity.EriusTagInfo, string) *entity.EriusTagInfo); ok {
-		r0 = rf(ctx, e, author)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*entity.EriusTagInfo)
-		}
-	}
-
-	if rf, ok := ret.Get(1).(func(context.Context, *entity.EriusTagInfo, string) error); ok {
-		r1 = rf(ctx, e, author)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
 // CreateTask provides a mock function with given fields: ctx, dto
 func (_m *MockedDatabase) CreateTask(ctx context.Context, dto *db.CreateTaskDTO) (*entity.EriusTask, error) {
 	ret := _m.Called(ctx, dto)
@@ -310,34 +270,6 @@ func (_m *MockedDatabase) DeleteVersion(ctx context.Context, versionID uuid.UUID
 	return r0
 }
 
-// DetachTag provides a mock function with given fields: ctx, id, p
-func (_m *MockedDatabase) DetachTag(ctx context.Context, id uuid.UUID, p *entity.EriusTagInfo) error {
-	ret := _m.Called(ctx, id, p)
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, *entity.EriusTagInfo) error); ok {
-		r0 = rf(ctx, id, p)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
-// EditTag provides a mock function with given fields: ctx, e
-func (_m *MockedDatabase) EditTag(ctx context.Context, e *entity.EriusTagInfo) error {
-	ret := _m.Called(ctx, e)
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, *entity.EriusTagInfo) error); ok {
-		r0 = rf(ctx, e)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
 // FinishTaskBlocks provides a mock function with given fields: ctx, workID, ignoreSteps, updateParent
 func (_m *MockedDatabase) FinishTaskBlocks(ctx context.Context, workID uuid.UUID, ignoreSteps []string, updateParent bool) error {
 	ret := _m.Called(ctx, workID, ignoreSteps, updateParent)
@@ -371,32 +303,6 @@ func (_m *MockedDatabase) GetAdditionalForms(workNumber string, nodeName string)
 
 	if rf, ok := ret.Get(1).(func(string, string) error); ok {
 		r1 = rf(workNumber, nodeName)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// GetAllTags provides a mock function with given fields: ctx
-func (_m *MockedDatabase) GetAllTags(ctx context.Context) ([]entity.EriusTagInfo, error) {
-	ret := _m.Called(ctx)
-
-	var r0 []entity.EriusTagInfo
-	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context) ([]entity.EriusTagInfo, error)); ok {
-		return rf(ctx)
-	}
-	if rf, ok := ret.Get(0).(func(context.Context) []entity.EriusTagInfo); ok {
-		r0 = rf(ctx)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]entity.EriusTagInfo)
-		}
-	}
-
-	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
-		r1 = rf(ctx)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -1074,32 +980,6 @@ func (_m *MockedDatabase) GetPipeline(ctx context.Context, id uuid.UUID) (*entit
 	return r0, r1
 }
 
-// GetPipelineTag provides a mock function with given fields: ctx, id
-func (_m *MockedDatabase) GetPipelineTag(ctx context.Context, id uuid.UUID) ([]entity.EriusTagInfo, error) {
-	ret := _m.Called(ctx, id)
-
-	var r0 []entity.EriusTagInfo
-	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) ([]entity.EriusTagInfo, error)); ok {
-		return rf(ctx, id)
-	}
-	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) []entity.EriusTagInfo); ok {
-		r0 = rf(ctx, id)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]entity.EriusTagInfo)
-		}
-	}
-
-	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
-		r1 = rf(ctx, id)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
 // GetPipelineTasks provides a mock function with given fields: ctx, pipelineID
 func (_m *MockedDatabase) GetPipelineTasks(ctx context.Context, pipelineID uuid.UUID) (*entity.EriusTasks, error) {
 	ret := _m.Called(ctx, pipelineID)
@@ -1273,32 +1153,6 @@ func (_m *MockedDatabase) GetSlaVersionSettings(ctx context.Context, versionID s
 
 	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
 		r1 = rf(ctx, versionID)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// GetTag provides a mock function with given fields: ctx, e
-func (_m *MockedDatabase) GetTag(ctx context.Context, e *entity.EriusTagInfo) (*entity.EriusTagInfo, error) {
-	ret := _m.Called(ctx, e)
-
-	var r0 *entity.EriusTagInfo
-	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, *entity.EriusTagInfo) (*entity.EriusTagInfo, error)); ok {
-		return rf(ctx, e)
-	}
-	if rf, ok := ret.Get(0).(func(context.Context, *entity.EriusTagInfo) *entity.EriusTagInfo); ok {
-		r0 = rf(ctx, e)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*entity.EriusTagInfo)
-		}
-	}
-
-	if rf, ok := ret.Get(1).(func(context.Context, *entity.EriusTagInfo) error); ok {
-		r1 = rf(ctx, e)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -2085,34 +1939,6 @@ func (_m *MockedDatabase) RemoveObsoleteMapping(ctx context.Context, id string) 
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(context.Context, string) error); ok {
-		r0 = rf(ctx, id)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
-// RemovePipelineTags provides a mock function with given fields: ctx, id
-func (_m *MockedDatabase) RemovePipelineTags(ctx context.Context, id uuid.UUID) error {
-	ret := _m.Called(ctx, id)
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) error); ok {
-		r0 = rf(ctx, id)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
-// RemoveTag provides a mock function with given fields: ctx, id
-func (_m *MockedDatabase) RemoveTag(ctx context.Context, id uuid.UUID) error {
-	ret := _m.Called(ctx, id)
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) error); ok {
 		r0 = rf(ctx, id)
 	} else {
 		r0 = ret.Error(0)

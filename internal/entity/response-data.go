@@ -696,6 +696,24 @@ type SlaVersionSettings struct {
 	Sla      int    `json:"sla"`
 }
 
+type ApprovalListSettings struct {
+	Id        string    `json:"id"`
+	Name      string    `json:"name"`
+	Steps     []string  `json:"steps"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+type SaveApprovalListSettings struct {
+	Id        string    `json:"id"`
+	VersionId string    `json:"version_id"`
+	Name      string    `json:"name"`
+	Steps     []string  `json:"steps"`
+	CreatedAt time.Time `json:"created_at"`
+
+	ContextMapping script.JSONSchemaProperties `json:"context_mapping"`
+	FormsMapping   script.JSONSchemaProperties `json:"forms_mapping"`
+}
+
 type EndProcessData struct {
 	Id         string `json:"id"`
 	VersionId  string `json:"version_id"`

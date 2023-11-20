@@ -725,3 +725,49 @@ func (ae *APIEnv) AllowRunAsOthers(w http.ResponseWriter, r *http.Request, versi
 		return
 	}
 }
+
+func (ae *APIEnv) SaveApprovalListSettings(w http.ResponseWriter, r *http.Request, versionID string) {
+	ctx, s := trace.StartSpan(r.Context(), "save_approval_list_settings")
+	defer s.End()
+
+	log := logger.GetLogger(ctx)
+
+	b, err := io.ReadAll(r.Body)
+	if err != nil {
+		e := RequestReadError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+		return
+	}
+	defer r.Body.Close()
+
+	var systemSettings EndSystemSettings
+	if err = json.Unmarshal(b, &systemSettings); err != nil {
+		e := ProcessSettingsParseError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	id, err := ae.DB.SaveApprovalListSettings(ctx, entity.SaveApprovalListSettings{
+		VersionId: versionID,
+		Name:      "",
+		Steps:     []string{},
+	})
+	if err != nil {
+		e := UpdateEndingSystemSettingsError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	if err = sendResponse(w, http.StatusOK, id); err != nil {
+		e := UnknownError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+}
