@@ -4100,6 +4100,7 @@ components:
         steps:
           type: object
           properties: { }
+          description: мапа стейтов блоков
         context_mapping:
           $ref: '#/components/schemas/JSONSchemaProperties'
         forms_mapping:
@@ -4107,11 +4108,11 @@ components:
         context_variables:
           type: object
           description: мапа ключ значение, контекстные переменные
-          properties: {}
+          properties: { }
         forms_variables:
           type: object
           description: мапа ключ значение, переменные форм
-          properties: {}
+          properties: { }
       required:
         - id
         - name
