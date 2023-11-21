@@ -229,19 +229,23 @@ func NewRequestFormExecutionInfoTpl(id, name, sdUrl string, isReentry bool) Temp
 	if isReentry {
 		retryStr = " повторно"
 	}
-
+	action := "исполнения"
 	return Template{
-		Subject: fmt.Sprintf("Заявка № %s %s - Необходимо%s предоставить информацию", id, name, retryStr),
-		Template: fmt.Sprintf(`Уважаемый коллега, по заявке № {{.Id}} {{.Name}} необходимо%s предоставить информацию.<br>
-				Для просмотра и заполнения полей заявки перейдите по <a href={{.Link}}>ссылке</a>`, retryStr),
+		Subject:  fmt.Sprintf("Заявка № %s %s - Необходимо%s предоставить информацию", id, name, retryStr),
+		Template: "internal/mail/template/22deadlineForAdditionalInfo-template.html",
+		Image:    "dop_info.png",
+		//Template: fmt.Sprintf(`Уважаемый коллега, по заявке № {{.Id}} {{.Name}} необходимо%s предоставить информацию.<br>
+		//		Для просмотра и заполнения полей заявки перейдите по <a href={{.Link}}>ссылке</a>`, retryStr),
 		Variables: struct {
-			Id   string
-			Name string
-			Link string
+			Id     string
+			Name   string
+			Link   string
+			Action string
 		}{
-			Id:   id,
-			Name: name,
-			Link: fmt.Sprintf(TaskUrlTemplate, sdUrl, id),
+			Id:     id,
+			Name:   name,
+			Action: action,
+			Link:   fmt.Sprintf(TaskUrlTemplate, sdUrl, id),
 		},
 	}
 }
@@ -266,11 +270,13 @@ func NewFormExecutionNeedTakeInWorkTpl(dto *NewFormExecutionNeedTakeInWorkDto, i
 	}
 
 	return Template{
-		Subject: fmt.Sprintf("Заявка № %s %s - Необходимо%s предоставить информацию", dto.WorkNumber, dto.WorkTitle, retryStr),
-		Template: fmt.Sprintf(`Уважаемый коллега, по заявке № {{.Id}} {{.Name}} необходимо%s предоставить информацию.<br>
-					Для просмотра полей заявки перейдите по <a href={{.Link}}>ссылке</a><br>
-					Срок предоставления информации заявки: {{.Deadline}}
-					</br><b>Действия с заявкой</b></br>{{.ActionBtn}}</br>`, retryStr),
+		Subject:  fmt.Sprintf("Заявка № %s %s - Необходимо%s предоставить информацию", dto.WorkNumber, dto.WorkTitle, retryStr),
+		Template: "internal/mail/template/22deadlineForAdditionalInfo-template.html",
+		Image:    "dop_info.png",
+		//Template: fmt.Sprintf(`Уважаемый коллега, по заявке № {{.Id}} {{.Name}} необходимо%s предоставить информацию.<br>
+		//			Для просмотра полей заявки перейдите по <a href={{.Link}}>ссылке</a><br>
+		//			Срок предоставления информации заявки: {{.Deadline}}
+		//			</br><b>Действия с заявкой</b></br>{{.ActionBtn}}</br>`, retryStr),
 		Variables: struct {
 			Id        string
 			Name      string
@@ -813,17 +819,20 @@ func NewRejectPipelineGroupTemplate(workNumber, workTitle, sdUrl string) Templat
 }
 
 func NewSignSLAExpiredTemplate(workNumber, workTitle, sdUrl string) Template {
+	action := "подписания"
 	return Template{
 		Subject:  fmt.Sprintf("По заявке № %s %s- истекло время подписания", workNumber, workTitle),
 		Template: "Истекло время подписания заявки {{.Name}}<br>Для просмотра перейдите по <a href={{.Link}}>ссылке</a>",
 		Variables: struct {
-			Id   string `json:"id"`
-			Name string `json:"name"`
-			Link string `json:"link"`
+			Id     string `json:"id"`
+			Name   string `json:"name"`
+			Link   string `json:"link"`
+			Action string `json:"action"`
 		}{
-			Id:   workNumber,
-			Name: workTitle,
-			Link: fmt.Sprintf(TaskUrlTemplate, sdUrl, workNumber),
+			Id:     workNumber,
+			Name:   workTitle,
+			Action: action,
+			Link:   fmt.Sprintf(TaskUrlTemplate, sdUrl, workNumber),
 		},
 	}
 }
