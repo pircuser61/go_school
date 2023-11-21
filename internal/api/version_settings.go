@@ -623,7 +623,7 @@ func (ae *APIEnv) SaveVersionMainSettings(w http.ResponseWriter, req *http.Reque
 	}
 }
 
-func (ae *APIEnv) SaveExternalSystemEndSettings(w http.ResponseWriter, r *http.Request, versionID string, systemID string) {
+func (ae *APIEnv) SaveExternalSystemEndSettings(w http.ResponseWriter, r *http.Request, versionID, systemID string) {
 	ctx, s := trace.StartSpan(r.Context(), "save_system_ending_settings")
 	defer s.End()
 
@@ -668,7 +668,7 @@ func (ae *APIEnv) SaveExternalSystemEndSettings(w http.ResponseWriter, r *http.R
 	}
 }
 
-func (ae *APIEnv) DeleteExternalSystemEndSettings(w http.ResponseWriter, r *http.Request, versionID string, systemID string) {
+func (ae *APIEnv) DeleteExternalSystemEndSettings(w http.ResponseWriter, r *http.Request, versionID, systemID string) {
 	ctx, s := trace.StartSpan(r.Context(), "delete_system_ending_settings")
 	defer s.End()
 
@@ -731,6 +731,64 @@ func (ae *APIEnv) AllowRunAsOthers(w http.ResponseWriter, r *http.Request, versi
 	}
 }
 
+func (ae *APIEnv) RemoveApprovalListSettings(w http.ResponseWriter, r *http.Request, versionID, listID string) {
+	ctx, s := trace.StartSpan(r.Context(), "remove_approval_list_settings")
+	defer s.End()
+
+	log := logger.GetLogger(ctx)
+
+	if err := ae.DB.RemoveApprovalListSettings(ctx, listID); err != nil {
+		e := UpdateEndingSystemSettingsError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+}
+
+func (ae *APIEnv) UpdateApprovalListSettings(w http.ResponseWriter, r *http.Request, versionID, listID string) {
+	ctx, s := trace.StartSpan(r.Context(), "update_approval_list_settings")
+	defer s.End()
+
+	log := logger.GetLogger(ctx)
+
+	b, err := io.ReadAll(r.Body)
+	if err != nil {
+		e := RequestReadError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+		return
+	}
+	defer r.Body.Close()
+
+	var req entity.UpdateApprovalListSettings
+	if err = json.Unmarshal(b, &req); err != nil {
+		e := ProcessSettingsParseError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	req.ID = listID
+
+	if err = ae.DB.UpdateApprovalListSettings(ctx, req); err != nil {
+		e := UpdateEndingSystemSettingsError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	if err = sendResponse(w, http.StatusOK, nil); err != nil {
+		e := UnknownError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+}
+
 func (ae *APIEnv) SaveApprovalListSettings(w http.ResponseWriter, r *http.Request, versionID string) {
 	ctx, s := trace.StartSpan(r.Context(), "save_approval_list_settings")
 	defer s.End()
@@ -779,13 +837,13 @@ func (ae *APIEnv) SaveApprovalListSettings(w http.ResponseWriter, r *http.Reques
 	}
 }
 
-func (ae *APIEnv) GetApprovalListSetting(w http.ResponseWriter, r *http.Request, versionID, listID string) {
+func (ae *APIEnv) GetApprovalListSetting(w http.ResponseWriter, r *http.Request, workNumber, listID string) {
 	ctx, s := trace.StartSpan(r.Context(), "get_approval_list_settings")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
 
-	approvalList, err := ae.DB.GetApprovalListSettings(ctx, versionID, listID)
+	approvalList, err := ae.DB.GetApprovalListSettings(ctx, workNumber, listID)
 	if err != nil {
 		e := UnknownError
 		log.Error(e.errorMessage(err))
@@ -817,9 +875,10 @@ func toResponseApprovalListSettings(in *entity.ApprovalListSettings) (*ResponseV
 		Id:   "12eebf5b-0404-4078-9906-792102d07cd4",
 		Name: "Test list name approver_0",
 		Steps: map[string]interface{}{"approver_0": struct {
-			Sla               int    `json:"sla"`
-			TestStringContext string `json:"testStringContext"`
-		}{Sla: 23, TestStringContext: "test value"}},
+			Sla               int                    `json:"sla"`
+			TestStringContext string                 `json:"testStringContext"`
+			Approvers         map[string]interface{} `json:"approvers"`
+		}{Sla: 23, TestStringContext: "test value", Approvers: map[string]interface{}{"testlogin": ""}}},
 		ContextVariables: map[string]interface{}{"testStringContext": "test value", "testNumber": 211122},
 		FormsVariables:   map[string]interface{}{"testStringForm": "test value form", "testNumber": 55},
 	}, nil

@@ -22,7 +22,15 @@ type MockedDatabase struct {
 	mock.Mock
 }
 
-func (_m *MockedDatabase) GetApprovalListSettings(ctx context.Context, versionID, listID string) (*entity.ApprovalListSettings, error) {
+func (_m *MockedDatabase) UpdateApprovalListSettings(ctx context.Context, in entity.UpdateApprovalListSettings) error {
+	return nil
+}
+
+func (_m *MockedDatabase) RemoveApprovalListSettings(ctx context.Context, listID string) error {
+	return nil
+}
+
+func (_m *MockedDatabase) GetApprovalListSettings(ctx context.Context, workNumber, listID string) (*entity.ApprovalListSettings, error) {
 	return nil, nil
 }
 

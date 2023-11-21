@@ -1281,26 +1281,25 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
-  /pipelines/version/{versionID}/settings/approval-list/{listID}:
+  /task/{workNumber}/approval-list/{listID}:
     get:
       tags:
         - process_settings
         - approval_list
-      summary: get version approval list
-      description: получение списка согласования
+      summary: get task approval list
+      description: получение списка согласования заявки
       operationId: get-approval-list-setting
       parameters:
-        - name: versionID
+        - name: workNumber
           in: path
-          description: Version ID
+          description: Номер заявки
           required: true
           schema:
             type: string
-            format: uuid
-            example: 916ad995-8d13-49fb-82ee-edd4f97649e2
+            example: J00000000666
         - name: listID
           in: path
-          description: Version ID
+          description: list ID
           required: true
           schema:
             type: string
@@ -1318,6 +1317,104 @@ paths:
                     $ref: '#/components/schemas/ResponseVersionApprovalList'
                   status_code:
                     type: integer
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+  /pipelines/version/{versionID}/settings/approval-list/{listID}:
+    put:
+      tags:
+        - process_settings
+        - approval_list
+      summary: Update approval list
+      description: Обновить лист согласования
+      operationId: update-approval-list-settings
+      parameters:
+        - name: versionID
+          in: path
+          description: Version ID
+          required: true
+          schema:
+            type: string
+        - name: listID
+          in: path
+          description: list ID
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: Modified JSON-schemas
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateApprovalListSettings'
+        required: true
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpResponse'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+    delete:
+      tags:
+        - process_settings
+        - approval_list
+      summary: Delete approval list
+      description: Удалить лист согласования
+      operationId: remove-approval-list-settings
+      parameters:
+        - name: versionID
+          in: path
+          description: Version ID
+          required: true
+          schema:
+            type: string
+        - name: listID
+          in: path
+          description: list ID
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpResponse'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
         401:
           description: Unauthorized
           content:
@@ -4091,10 +4188,25 @@ components:
           $ref: '#/components/schemas/JSONSchemaProperties'
       required:
         - name
+    UpdateApprovalListSettings:
+      type: object
+      description: Update approval list settings
+      properties:
+        name:
+          type: string
+        steps:
+          type: array
+          items:
+            type: string
+        context_mapping:
+          $ref: '#/components/schemas/JSONSchemaProperties'
+        forms_mapping:
+          $ref: '#/components/schemas/JSONSchemaProperties'
+      required:
+        - name
         - steps
         - context_mapping
         - forms_mapping
-
     RequestExecutionInfoType:
       type: string
       description: Type of execution info

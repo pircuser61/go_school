@@ -911,13 +911,12 @@ type EriusTagInfo struct {
 
 // EriusTask defines model for EriusTask.
 type EriusTask struct {
-	ApprovalList     *map[string]interface{} `json:"approval_list,omitempty"`
-	AttachmentsCount *int                    `json:"attachments_count,omitempty"`
-	Author           string                  `json:"author"`
-	BlueprintId      string                  `json:"blueprint_id"`
-	Comment          *string                 `json:"comment,omitempty"`
-	Debug            bool                    `json:"debug"`
-	Description      string                  `json:"description"`
+	AttachmentsCount *int    `json:"attachments_count,omitempty"`
+	Author           string  `json:"author"`
+	BlueprintId      string  `json:"blueprint_id"`
+	Comment          *string `json:"comment,omitempty"`
+	Debug            bool    `json:"debug"`
+	Description      string  `json:"description"`
 
 	// Task human readable status
 	HumanStatus        TaskHumanStatus        `json:"human_status"`
@@ -1686,12 +1685,12 @@ type RunVersionsByPipelineIdRequest_Keys struct {
 // Add approval list settings
 type SaveApprovalListSettings struct {
 	// Представляет из себя набор ключ-значение, где ключ - это название переменной/поля объекта, а значение - это структура, которая описывает переменную(или поле объекта). Причём, если переменная - это объект, тогда должно быть заполнено поле propeties(описание полей). Если переменная - массив, тогда должно быть заполнено поле items(описание типа, который хранится в массиве).
-	ContextMapping JSONSchemaProperties `json:"context_mapping"`
+	ContextMapping *JSONSchemaProperties `json:"context_mapping,omitempty"`
 
 	// Представляет из себя набор ключ-значение, где ключ - это название переменной/поля объекта, а значение - это структура, которая описывает переменную(или поле объекта). Причём, если переменная - это объект, тогда должно быть заполнено поле propeties(описание полей). Если переменная - массив, тогда должно быть заполнено поле items(описание типа, который хранится в массиве).
-	FormsMapping JSONSchemaProperties `json:"forms_mapping"`
-	Name         string               `json:"name"`
-	Steps        []string             `json:"steps"`
+	FormsMapping *JSONSchemaProperties `json:"forms_mapping,omitempty"`
+	Name         string                `json:"name"`
+	Steps        *[]string             `json:"steps,omitempty"`
 }
 
 // ScenarioVersionInfoList defines model for ScenarioVersionInfoList.
@@ -1776,10 +1775,10 @@ type SignUpdateParams struct {
 
 	// files to sign
 	Signatures *[]struct {
-		// id file, which was signed
+		// id file which was signed
 		FileId string `json:"file_id"`
 
-		// id file of detached signature, which was created at the moment of signing
+		// id file of detached signature which was created at the moment of signing
 		SignatureFileId string `json:"signature_file_id"`
 	} `json:"signatures,omitempty"`
 }
@@ -1904,6 +1903,17 @@ type TasksStopped struct {
 type TimerParams struct {
 	// duration for timer
 	Duration string `json:"duration"`
+}
+
+// Update approval list settings
+type UpdateApprovalListSettings struct {
+	// Представляет из себя набор ключ-значение, где ключ - это название переменной/поля объекта, а значение - это структура, которая описывает переменную(или поле объекта). Причём, если переменная - это объект, тогда должно быть заполнено поле propeties(описание полей). Если переменная - массив, тогда должно быть заполнено поле items(описание типа, который хранится в массиве).
+	ContextMapping JSONSchemaProperties `json:"context_mapping"`
+
+	// Представляет из себя набор ключ-значение, где ключ - это название переменной/поля объекта, а значение - это структура, которая описывает переменную(или поле объекта). Причём, если переменная - это объект, тогда должно быть заполнено поле propeties(описание полей). Если переменная - массив, тогда должно быть заполнено поле items(описание типа, который хранится в массиве).
+	FormsMapping JSONSchemaProperties `json:"forms_mapping"`
+	Name         string               `json:"name"`
+	Steps        []string             `json:"steps"`
 }
 
 // UsageResponse defines model for UsageResponse.
@@ -2269,6 +2279,9 @@ type SaveVersionSettingsParamsSchemaFlag string
 // SaveApprovalListSettingsJSONBody defines parameters for SaveApprovalListSettings.
 type SaveApprovalListSettingsJSONBody SaveApprovalListSettings
 
+// UpdateApprovalListSettingsJSONBody defines parameters for UpdateApprovalListSettings.
+type UpdateApprovalListSettingsJSONBody UpdateApprovalListSettings
+
 // SaveVersionTaskSubscriptionSettingsJSONBody defines parameters for SaveVersionTaskSubscriptionSettings.
 type SaveVersionTaskSubscriptionSettingsJSONBody []ExternalSystemSubscriptionParams
 
@@ -2401,6 +2414,9 @@ type SaveVersionSettingsJSONRequestBody SaveVersionSettingsJSONBody
 
 // SaveApprovalListSettingsJSONRequestBody defines body for SaveApprovalListSettings for application/json ContentType.
 type SaveApprovalListSettingsJSONRequestBody SaveApprovalListSettingsJSONBody
+
+// UpdateApprovalListSettingsJSONRequestBody defines body for UpdateApprovalListSettings for application/json ContentType.
+type UpdateApprovalListSettingsJSONRequestBody UpdateApprovalListSettingsJSONBody
 
 // SaveVersionTaskSubscriptionSettingsJSONRequestBody defines body for SaveVersionTaskSubscriptionSettings for application/json ContentType.
 type SaveVersionTaskSubscriptionSettingsJSONRequestBody SaveVersionTaskSubscriptionSettingsJSONBody
@@ -3263,9 +3279,12 @@ type ServerInterface interface {
 	// Add approval list to version
 	// (POST /pipelines/version/{versionID}/settings/approval-list)
 	SaveApprovalListSettings(w http.ResponseWriter, r *http.Request, versionID string)
-	// get version approval list
-	// (GET /pipelines/version/{versionID}/settings/approval-list/{listID})
-	GetApprovalListSetting(w http.ResponseWriter, r *http.Request, versionID string, listID string)
+	// Delete approval list
+	// (DELETE /pipelines/version/{versionID}/settings/approval-list/{listID})
+	RemoveApprovalListSettings(w http.ResponseWriter, r *http.Request, versionID string, listID string)
+	// Update approval list
+	// (PUT /pipelines/version/{versionID}/settings/approval-list/{listID})
+	UpdateApprovalListSettings(w http.ResponseWriter, r *http.Request, versionID string, listID string)
 	// Save process task subscription settings
 	// (POST /pipelines/version/{versionID}/settings/task-subscriptions)
 	SaveVersionTaskSubscriptionSettings(w http.ResponseWriter, r *http.Request, versionID string)
@@ -3311,6 +3330,9 @@ type ServerInterface interface {
 	// Run Pipeline
 	// (POST /run/{pipelineID})
 	RunPipeline(w http.ResponseWriter, r *http.Request, pipelineID string)
+	// get task approval list
+	// (GET /task/{workNumber}/approval-list/{listID})
+	GetApprovalListSetting(w http.ResponseWriter, r *http.Request, workNumber string, listID string)
 	// Get Tasks
 	// (GET /tasks)
 	GetTasks(w http.ResponseWriter, r *http.Request, params GetTasksParams)
@@ -4267,8 +4289,8 @@ func (siw *ServerInterfaceWrapper) SaveApprovalListSettings(w http.ResponseWrite
 	handler(w, r.WithContext(ctx))
 }
 
-// GetApprovalListSetting operation middleware
-func (siw *ServerInterfaceWrapper) GetApprovalListSetting(w http.ResponseWriter, r *http.Request) {
+// RemoveApprovalListSettings operation middleware
+func (siw *ServerInterfaceWrapper) RemoveApprovalListSettings(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	var err error
@@ -4292,7 +4314,42 @@ func (siw *ServerInterfaceWrapper) GetApprovalListSetting(w http.ResponseWriter,
 	}
 
 	var handler = func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetApprovalListSetting(w, r, versionID, listID)
+		siw.Handler.RemoveApprovalListSettings(w, r, versionID, listID)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
+// UpdateApprovalListSettings operation middleware
+func (siw *ServerInterfaceWrapper) UpdateApprovalListSettings(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "versionID" -------------
+	var versionID string
+
+	err = runtime.BindStyledParameter("simple", false, "versionID", chi.URLParam(r, "versionID"), &versionID)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "versionID", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "listID" -------------
+	var listID string
+
+	err = runtime.BindStyledParameter("simple", false, "listID", chi.URLParam(r, "listID"), &listID)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "listID", Err: err})
+		return
+	}
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateApprovalListSettings(w, r, versionID, listID)
 	}
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -4729,6 +4786,41 @@ func (siw *ServerInterfaceWrapper) RunPipeline(w http.ResponseWriter, r *http.Re
 
 	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.RunPipeline(w, r, pipelineID)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
+// GetApprovalListSetting operation middleware
+func (siw *ServerInterfaceWrapper) GetApprovalListSetting(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "workNumber" -------------
+	var workNumber string
+
+	err = runtime.BindStyledParameter("simple", false, "workNumber", chi.URLParam(r, "workNumber"), &workNumber)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workNumber", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "listID" -------------
+	var listID string
+
+	err = runtime.BindStyledParameter("simple", false, "listID", chi.URLParam(r, "listID"), &listID)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "listID", Err: err})
+		return
+	}
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetApprovalListSetting(w, r, workNumber, listID)
 	}
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -5424,7 +5516,10 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Post(options.BaseURL+"/pipelines/version/{versionID}/settings/approval-list", wrapper.SaveApprovalListSettings)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/pipelines/version/{versionID}/settings/approval-list/{listID}", wrapper.GetApprovalListSetting)
+		r.Delete(options.BaseURL+"/pipelines/version/{versionID}/settings/approval-list/{listID}", wrapper.RemoveApprovalListSettings)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/pipelines/version/{versionID}/settings/approval-list/{listID}", wrapper.UpdateApprovalListSettings)
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/pipelines/version/{versionID}/settings/task-subscriptions", wrapper.SaveVersionTaskSubscriptionSettings)
@@ -5470,6 +5565,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/run/{pipelineID}", wrapper.RunPipeline)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/task/{workNumber}/approval-list/{listID}", wrapper.GetApprovalListSetting)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/tasks", wrapper.GetTasks)
