@@ -1239,52 +1239,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
-    put:
-      tags:
-        - process_settings
-        - approval_list
-      summary: Update approval list
-      description: Обновить лист согласования
-      operationId: update-approval-list-settings
-      parameters:
-        - name: versionID
-          in: path
-          description: Version ID
-          required: true
-          schema:
-            type: string
-      requestBody:
-        description: Modified JSON-schemas
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateApprovalListSettings'
-        required: true
-      responses:
-        200:
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpResponse'
-        400:
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-        500:
-          description: Internal Server Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
     get:
       tags:
         - process_settings
@@ -1328,6 +1282,58 @@ paths:
               schema:
                 $ref: '#/components/schemas/httpError'
   /pipelines/version/{versionID}/settings/approval-list/{listID}:
+    put:
+      tags:
+        - process_settings
+        - approval_list
+      summary: Update approval list
+      description: Обновить лист согласования
+      operationId: update-approval-list-settings
+      parameters:
+        - name: versionID
+          in: path
+          description: Version ID
+          required: true
+          schema:
+            type: string
+        - name: listID
+          in: path
+          description: list ID
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: Modified JSON-schemas
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateApprovalListSettings'
+        required: true
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpResponse'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
     get:
       tags:
         - process_settings
@@ -1396,8 +1402,6 @@ paths:
           required: true
           schema:
             type: string
-            format: uuid
-            example: 916ad995-8d13-49fb-82ee-edd4f97649e2
       responses:
         200:
           description: OK
@@ -4188,9 +4192,6 @@ components:
       type: object
       description: Update approval list settings
       properties:
-        id:
-          type: string
-          description: id листа согласования
         name:
           type: string
         steps:
@@ -4202,7 +4203,6 @@ components:
         forms_mapping:
           $ref: '#/components/schemas/JSONSchemaProperties'
       required:
-        - id
         - name
         - steps
         - context_mapping

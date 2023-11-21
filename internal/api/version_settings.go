@@ -746,7 +746,7 @@ func (ae *APIEnv) RemoveApprovalListSettings(w http.ResponseWriter, r *http.Requ
 	}
 }
 
-func (ae *APIEnv) UpdateApprovalListSettings(w http.ResponseWriter, r *http.Request, versionID string) {
+func (ae *APIEnv) UpdateApprovalListSettings(w http.ResponseWriter, r *http.Request, versionID, listID string) {
 	ctx, s := trace.StartSpan(r.Context(), "update_approval_list_settings")
 	defer s.End()
 
@@ -769,6 +769,8 @@ func (ae *APIEnv) UpdateApprovalListSettings(w http.ResponseWriter, r *http.Requ
 
 		return
 	}
+
+	req.ID = listID
 
 	if err = ae.DB.UpdateApprovalListSettings(ctx, req); err != nil {
 		e := UpdateEndingSystemSettingsError

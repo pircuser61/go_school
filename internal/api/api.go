@@ -1912,11 +1912,8 @@ type UpdateApprovalListSettings struct {
 
 	// Представляет из себя набор ключ-значение, где ключ - это название переменной/поля объекта, а значение - это структура, которая описывает переменную(или поле объекта). Причём, если переменная - это объект, тогда должно быть заполнено поле propeties(описание полей). Если переменная - массив, тогда должно быть заполнено поле items(описание типа, который хранится в массиве).
 	FormsMapping JSONSchemaProperties `json:"forms_mapping"`
-
-	// id листа согласования
-	Id    string   `json:"id"`
-	Name  string   `json:"name"`
-	Steps []string `json:"steps"`
+	Name         string               `json:"name"`
+	Steps        []string             `json:"steps"`
 }
 
 // UsageResponse defines model for UsageResponse.
@@ -3282,15 +3279,15 @@ type ServerInterface interface {
 	// Add approval list to version
 	// (POST /pipelines/version/{versionID}/settings/approval-list)
 	SaveApprovalListSettings(w http.ResponseWriter, r *http.Request, versionID string)
-	// Update approval list
-	// (PUT /pipelines/version/{versionID}/settings/approval-list)
-	UpdateApprovalListSettings(w http.ResponseWriter, r *http.Request, versionID string)
 	// Delete approval list
 	// (DELETE /pipelines/version/{versionID}/settings/approval-list/{listID})
 	RemoveApprovalListSettings(w http.ResponseWriter, r *http.Request, versionID string, listID string)
 	// get version approval list
 	// (GET /pipelines/version/{versionID}/settings/approval-list/{listID})
 	GetApprovalListSetting(w http.ResponseWriter, r *http.Request, versionID string, listID string)
+	// Update approval list
+	// (PUT /pipelines/version/{versionID}/settings/approval-list/{listID})
+	UpdateApprovalListSettings(w http.ResponseWriter, r *http.Request, versionID string, listID string)
 	// Save process task subscription settings
 	// (POST /pipelines/version/{versionID}/settings/task-subscriptions)
 	SaveVersionTaskSubscriptionSettings(w http.ResponseWriter, r *http.Request, versionID string)
@@ -4292,32 +4289,6 @@ func (siw *ServerInterfaceWrapper) SaveApprovalListSettings(w http.ResponseWrite
 	handler(w, r.WithContext(ctx))
 }
 
-// UpdateApprovalListSettings operation middleware
-func (siw *ServerInterfaceWrapper) UpdateApprovalListSettings(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	var err error
-
-	// ------------- Path parameter "versionID" -------------
-	var versionID string
-
-	err = runtime.BindStyledParameter("simple", false, "versionID", chi.URLParam(r, "versionID"), &versionID)
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "versionID", Err: err})
-		return
-	}
-
-	var handler = func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.UpdateApprovalListSettings(w, r, versionID)
-	}
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler(w, r.WithContext(ctx))
-}
-
 // RemoveApprovalListSettings operation middleware
 func (siw *ServerInterfaceWrapper) RemoveApprovalListSettings(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -4379,6 +4350,41 @@ func (siw *ServerInterfaceWrapper) GetApprovalListSetting(w http.ResponseWriter,
 
 	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetApprovalListSetting(w, r, versionID, listID)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
+// UpdateApprovalListSettings operation middleware
+func (siw *ServerInterfaceWrapper) UpdateApprovalListSettings(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "versionID" -------------
+	var versionID string
+
+	err = runtime.BindStyledParameter("simple", false, "versionID", chi.URLParam(r, "versionID"), &versionID)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "versionID", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "listID" -------------
+	var listID string
+
+	err = runtime.BindStyledParameter("simple", false, "listID", chi.URLParam(r, "listID"), &listID)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "listID", Err: err})
+		return
+	}
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateApprovalListSettings(w, r, versionID, listID)
 	}
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -5510,13 +5516,13 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Post(options.BaseURL+"/pipelines/version/{versionID}/settings/approval-list", wrapper.SaveApprovalListSettings)
 	})
 	r.Group(func(r chi.Router) {
-		r.Put(options.BaseURL+"/pipelines/version/{versionID}/settings/approval-list", wrapper.UpdateApprovalListSettings)
-	})
-	r.Group(func(r chi.Router) {
 		r.Delete(options.BaseURL+"/pipelines/version/{versionID}/settings/approval-list/{listID}", wrapper.RemoveApprovalListSettings)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/pipelines/version/{versionID}/settings/approval-list/{listID}", wrapper.GetApprovalListSetting)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/pipelines/version/{versionID}/settings/approval-list/{listID}", wrapper.UpdateApprovalListSettings)
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/pipelines/version/{versionID}/settings/task-subscriptions", wrapper.SaveVersionTaskSubscriptionSettings)

@@ -98,7 +98,7 @@ func (db *PGCon) copyProcessSettingsFromOldVersion(c c.Context, newVersionID, ol
 	}
 
 	const qCopyPrevApprovalLists = `
-	INSERT INSERT INTO version_approval_lists (
+	INSERT INTO version_approval_lists (
 		id,
 		version_id,
 		name,
