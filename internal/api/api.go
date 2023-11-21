@@ -3282,9 +3282,6 @@ type ServerInterface interface {
 	// Delete approval list
 	// (DELETE /pipelines/version/{versionID}/settings/approval-list/{listID})
 	RemoveApprovalListSettings(w http.ResponseWriter, r *http.Request, versionID string, listID string)
-	// get version approval list
-	// (GET /pipelines/version/{versionID}/settings/approval-list/{listID})
-	GetApprovalListSetting(w http.ResponseWriter, r *http.Request, versionID string, listID string)
 	// Update approval list
 	// (PUT /pipelines/version/{versionID}/settings/approval-list/{listID})
 	UpdateApprovalListSettings(w http.ResponseWriter, r *http.Request, versionID string, listID string)
@@ -3333,6 +3330,9 @@ type ServerInterface interface {
 	// Run Pipeline
 	// (POST /run/{pipelineID})
 	RunPipeline(w http.ResponseWriter, r *http.Request, pipelineID string)
+	// get task approval list
+	// (GET /task/{workNumber}/approval-list/{listID})
+	GetApprovalListSetting(w http.ResponseWriter, r *http.Request, workNumber string, listID string)
 	// Get Tasks
 	// (GET /tasks)
 	GetTasks(w http.ResponseWriter, r *http.Request, params GetTasksParams)
@@ -4324,41 +4324,6 @@ func (siw *ServerInterfaceWrapper) RemoveApprovalListSettings(w http.ResponseWri
 	handler(w, r.WithContext(ctx))
 }
 
-// GetApprovalListSetting operation middleware
-func (siw *ServerInterfaceWrapper) GetApprovalListSetting(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	var err error
-
-	// ------------- Path parameter "versionID" -------------
-	var versionID string
-
-	err = runtime.BindStyledParameter("simple", false, "versionID", chi.URLParam(r, "versionID"), &versionID)
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "versionID", Err: err})
-		return
-	}
-
-	// ------------- Path parameter "listID" -------------
-	var listID string
-
-	err = runtime.BindStyledParameter("simple", false, "listID", chi.URLParam(r, "listID"), &listID)
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "listID", Err: err})
-		return
-	}
-
-	var handler = func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetApprovalListSetting(w, r, versionID, listID)
-	}
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler(w, r.WithContext(ctx))
-}
-
 // UpdateApprovalListSettings operation middleware
 func (siw *ServerInterfaceWrapper) UpdateApprovalListSettings(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -4821,6 +4786,41 @@ func (siw *ServerInterfaceWrapper) RunPipeline(w http.ResponseWriter, r *http.Re
 
 	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.RunPipeline(w, r, pipelineID)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
+// GetApprovalListSetting operation middleware
+func (siw *ServerInterfaceWrapper) GetApprovalListSetting(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "workNumber" -------------
+	var workNumber string
+
+	err = runtime.BindStyledParameter("simple", false, "workNumber", chi.URLParam(r, "workNumber"), &workNumber)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workNumber", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "listID" -------------
+	var listID string
+
+	err = runtime.BindStyledParameter("simple", false, "listID", chi.URLParam(r, "listID"), &listID)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "listID", Err: err})
+		return
+	}
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetApprovalListSetting(w, r, workNumber, listID)
 	}
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -5519,9 +5519,6 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Delete(options.BaseURL+"/pipelines/version/{versionID}/settings/approval-list/{listID}", wrapper.RemoveApprovalListSettings)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/pipelines/version/{versionID}/settings/approval-list/{listID}", wrapper.GetApprovalListSetting)
-	})
-	r.Group(func(r chi.Router) {
 		r.Put(options.BaseURL+"/pipelines/version/{versionID}/settings/approval-list/{listID}", wrapper.UpdateApprovalListSettings)
 	})
 	r.Group(func(r chi.Router) {
@@ -5568,6 +5565,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/run/{pipelineID}", wrapper.RunPipeline)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/task/{workNumber}/approval-list/{listID}", wrapper.GetApprovalListSetting)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/tasks", wrapper.GetTasks)

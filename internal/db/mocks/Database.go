@@ -30,7 +30,7 @@ func (_m *MockedDatabase) RemoveApprovalListSettings(ctx context.Context, listID
 	return nil
 }
 
-func (_m *MockedDatabase) GetApprovalListSettings(ctx context.Context, versionID, listID string) (*entity.ApprovalListSettings, error) {
+func (_m *MockedDatabase) GetApprovalListSettings(ctx context.Context, workNumber, listID string) (*entity.ApprovalListSettings, error) {
 	return nil, nil
 }
 

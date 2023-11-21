@@ -1281,6 +1281,54 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
+  /task/{workNumber}/approval-list/{listID}:
+    get:
+      tags:
+        - process_settings
+        - approval_list
+      summary: get task approval list
+      description: получение списка согласования заявки
+      operationId: get-approval-list-setting
+      parameters:
+        - name: workNumber
+          in: path
+          description: Номер заявки
+          required: true
+          schema:
+            type: string
+            example: J00000000666
+        - name: listID
+          in: path
+          description: list ID
+          required: true
+          schema:
+            type: string
+            format: uuid
+            example: 916ad995-8d13-49fb-82ee-edd4f97649e2
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ResponseVersionApprovalList'
+                  status_code:
+                    type: integer
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
   /pipelines/version/{versionID}/settings/approval-list/{listID}:
     put:
       tags:
@@ -1322,54 +1370,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-        500:
-          description: Internal Server Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-    get:
-      tags:
-        - process_settings
-        - approval_list
-      summary: get version approval list
-      description: получение списка согласования
-      operationId: get-approval-list-setting
-      parameters:
-        - name: versionID
-          in: path
-          description: Version ID
-          required: true
-          schema:
-            type: string
-            format: uuid
-            example: 916ad995-8d13-49fb-82ee-edd4f97649e2
-        - name: listID
-          in: path
-          description: list ID
-          required: true
-          schema:
-            type: string
-            format: uuid
-            example: 916ad995-8d13-49fb-82ee-edd4f97649e2
-      responses:
-        200:
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    $ref: '#/components/schemas/ResponseVersionApprovalList'
-                  status_code:
-                    type: integer
         401:
           description: Unauthorized
           content:

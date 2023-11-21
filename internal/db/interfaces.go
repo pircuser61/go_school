@@ -226,7 +226,7 @@ type Database interface {
 	GetSlaVersionSettings(ctx c.Context, versionID string) (s e.SlaVersionSettings, err error)
 	GetTaskMembers(ctx c.Context, workNumber string, fromActiveNodes bool) ([]DbMember, error)
 	UpdateGroupsForEmptyVersions(ctx c.Context, versionID string, groups []*e.NodeGroup) error
-	GetApprovalListSettings(ctx c.Context, versionID, listID string) (*e.ApprovalListSettings, error)
+	GetApprovalListSettings(ctx c.Context, workNumber, listID string) (*e.ApprovalListSettings, error)
 	GetApprovalListsSettings(ctx c.Context, versionID string) ([]e.ApprovalListSettings, error)
 	SaveApprovalListSettings(ctx c.Context, in e.SaveApprovalListSettings) (id string, err error)
 	UpdateApprovalListSettings(ctx c.Context, in e.UpdateApprovalListSettings) error

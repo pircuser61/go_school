@@ -363,7 +363,7 @@ func (db *PGCon) GetSlaVersionSettings(ctx context.Context, versionID string) (s
 	return slaSettings, nil
 }
 
-func (db *PGCon) GetApprovalListSettings(ctx c.Context, versionID, listID string) (*e.ApprovalListSettings, error) {
+func (db *PGCon) GetApprovalListSettings(ctx c.Context, workNumber, listID string) (*e.ApprovalListSettings, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_approval_list_settings")
 	defer span.End()
 
