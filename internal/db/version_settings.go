@@ -97,6 +97,31 @@ func (db *PGCon) copyProcessSettingsFromOldVersion(c c.Context, newVersionID, ol
 		return err
 	}
 
+	const qCopyPrevApprovalLists = `
+	INSERT INSERT INTO version_approval_lists (
+		id,
+		version_id,
+		name,
+		steps,
+		context_mapping,
+		forms_mapping,
+		created_at) 
+	SELECT 
+		uuid_generate_v4(), 
+		$1,
+		name,
+		steps,
+		context_mapping,
+		forms_mapping,
+		now()
+	FROM version_approval_lists 
+	WHERE version_id = $2 AND deleted_at IS NULL`
+
+	_, err = db.Connection.Exec(c, qCopyPrevApprovalLists, newVersionID, oldVersionID)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -418,4 +443,48 @@ func (db *PGCon) SaveApprovalListSettings(ctx c.Context, in e.SaveApprovalListSe
 	}
 
 	return listID, nil
+}
+
+func (db *PGCon) UpdateApprovalListSettings(ctx c.Context, in e.UpdateApprovalListSettings) error {
+	ctx, span := trace.StartSpan(ctx, "pg_update_approval_list_settings")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	const query = `
+	UPDATE version_approval_lists
+		SET (name, steps, context_mapping, forms_mapping) = ($1, $2, $3, $4)
+	WHERE id = $5`
+
+	_, err := db.Connection.Exec(
+		ctx,
+		query,
+		in.Name,
+		in.Steps,
+		in.ContextMapping,
+		in.FormsMapping,
+		in.ID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (db *PGCon) RemoveApprovalListSettings(ctx c.Context, listID string) error {
+	ctx, span := trace.StartSpan(ctx, "pg_remove_approval_list_settings")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	const query = `
+	UPDATE version_approval_lists
+		SET deleted_at = now()
+	WHERE id = $1`
+
+	_, err := db.Connection.Exec(ctx, query, listID)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

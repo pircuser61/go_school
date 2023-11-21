@@ -623,7 +623,7 @@ func (ae *APIEnv) SaveVersionMainSettings(w http.ResponseWriter, req *http.Reque
 	}
 }
 
-func (ae *APIEnv) SaveExternalSystemEndSettings(w http.ResponseWriter, r *http.Request, versionID string, systemID string) {
+func (ae *APIEnv) SaveExternalSystemEndSettings(w http.ResponseWriter, r *http.Request, versionID, systemID string) {
 	ctx, s := trace.StartSpan(r.Context(), "save_system_ending_settings")
 	defer s.End()
 
@@ -668,7 +668,7 @@ func (ae *APIEnv) SaveExternalSystemEndSettings(w http.ResponseWriter, r *http.R
 	}
 }
 
-func (ae *APIEnv) DeleteExternalSystemEndSettings(w http.ResponseWriter, r *http.Request, versionID string, systemID string) {
+func (ae *APIEnv) DeleteExternalSystemEndSettings(w http.ResponseWriter, r *http.Request, versionID, systemID string) {
 	ctx, s := trace.StartSpan(r.Context(), "delete_system_ending_settings")
 	defer s.End()
 
@@ -724,6 +724,62 @@ func (ae *APIEnv) AllowRunAsOthers(w http.ResponseWriter, r *http.Request, versi
 	err = ae.DB.AllowRunAsOthers(ctx, versionID, systemID, allowRunAsOthers)
 	if err != nil {
 		e := UpdateRunAsOthersSettingsError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+}
+
+func (ae *APIEnv) RemoveApprovalListSettings(w http.ResponseWriter, r *http.Request, versionID, listID string) {
+	ctx, s := trace.StartSpan(r.Context(), "remove_approval_list_settings")
+	defer s.End()
+
+	log := logger.GetLogger(ctx)
+
+	if err := ae.DB.RemoveApprovalListSettings(ctx, listID); err != nil {
+		e := UpdateEndingSystemSettingsError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+}
+
+func (ae *APIEnv) UpdateApprovalListSettings(w http.ResponseWriter, r *http.Request, versionID string) {
+	ctx, s := trace.StartSpan(r.Context(), "update_approval_list_settings")
+	defer s.End()
+
+	log := logger.GetLogger(ctx)
+
+	b, err := io.ReadAll(r.Body)
+	if err != nil {
+		e := RequestReadError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+		return
+	}
+	defer r.Body.Close()
+
+	var req entity.UpdateApprovalListSettings
+	if err = json.Unmarshal(b, &req); err != nil {
+		e := ProcessSettingsParseError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	if err = ae.DB.UpdateApprovalListSettings(ctx, req); err != nil {
+		e := UpdateEndingSystemSettingsError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	if err = sendResponse(w, http.StatusOK, nil); err != nil {
+		e := UnknownError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 

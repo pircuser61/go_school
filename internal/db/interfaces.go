@@ -229,4 +229,6 @@ type Database interface {
 	GetApprovalListSettings(ctx c.Context, versionID, listID string) (*e.ApprovalListSettings, error)
 	GetApprovalListsSettings(ctx c.Context, versionID string) ([]e.ApprovalListSettings, error)
 	SaveApprovalListSettings(ctx c.Context, in e.SaveApprovalListSettings) (id string, err error)
+	UpdateApprovalListSettings(ctx c.Context, in e.UpdateApprovalListSettings) error
+	RemoveApprovalListSettings(ctx c.Context, listID string) error
 }
