@@ -329,11 +329,16 @@ func (gb *GoExecutionBlock) UpdateManual() bool {
 // nolint:dupl // another block
 func (gb *GoExecutionBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment string, action string) {
 	if gb.State != nil && gb.State.Decision != nil {
-		if *gb.State.Decision == ExecutionDecisionExecuted {
+		switch *gb.State.Decision {
+		case ExecutionDecisionExecuted:
 			return StatusDone, "", ""
+		case ExecutionDecisionSentEdit:
+			return StatusExecutionRejected, "", "отправлена на доработку"
+		case ExecutionDecisionRejected:
+			return StatusExecutionRejected, "", ""
+		default:
+			return "", "", ""
 		}
-
-		return StatusExecutionRejected, "", "отправлена на доработку"
 	}
 
 	if gb.State.EditingApp != nil {
