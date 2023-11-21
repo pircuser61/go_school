@@ -871,14 +871,21 @@ func (ae *APIEnv) GetApprovalListSetting(w http.ResponseWriter, r *http.Request,
 }
 
 func toResponseApprovalListSettings(in *entity.ApprovalListSettings) (*ResponseVersionApprovalList, error) {
+	name := "approver_0"
+	stepType := "approver"
 	return &ResponseVersionApprovalList{
 		Id:   "12eebf5b-0404-4078-9906-792102d07cd4",
 		Name: "Test list name approver_0",
-		Steps: map[string]interface{}{"approver_0": struct {
-			Sla               int                    `json:"sla"`
-			TestStringContext string                 `json:"testStringContext"`
-			Approvers         map[string]interface{} `json:"approvers"`
-		}{Sla: 23, TestStringContext: "test value", Approvers: map[string]interface{}{"testlogin": ""}}},
+		Steps: []TaskResponseStep{{
+			Name: &name,
+			Type: &stepType,
+			State: &map[string]interface{}{
+				"decision":          "approved",
+				"sla":               23,
+				"testStringContext": "test value",
+				"approvers":         map[string]interface{}{"testlogin": ""},
+			},
+		}},
 		ContextVariables: map[string]interface{}{"testStringContext": "test value", "testNumber": 211122},
 		FormsVariables:   map[string]interface{}{"testStringForm": "test value form", "testNumber": 55},
 	}, nil

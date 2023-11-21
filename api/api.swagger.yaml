@@ -4243,9 +4243,9 @@ components:
         name:
           type: string
         steps:
-          type: object
-          properties: { }
-          description: мапа стейтов блоков
+          type: array
+          items:
+            $ref: '#/components/schemas/taskResponseStep'
         context_variables:
           type: object
           description: мапа ключ значение, контекстные переменные
