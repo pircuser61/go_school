@@ -1633,9 +1633,7 @@ type ResponseVersionApprovalList struct {
 	FormsVariables map[string]interface{} `json:"forms_variables"`
 	Id             string                 `json:"id"`
 	Name           string                 `json:"name"`
-
-	// мапа стейтов блоков
-	Steps map[string]interface{} `json:"steps"`
+	Steps          []TaskResponseStep     `json:"steps"`
 }
 
 // RunNewVersionByPrevVersionRequest defines model for RunNewVersionByPrevVersionRequest.
