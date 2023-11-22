@@ -3446,6 +3446,10 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/NodeGroup'
+        approval_list:
+          type: object
+          properties: { }
+          description: мапа листов согласований из настроек сценария
       required:
         - id
         - version_id
@@ -3461,6 +3465,7 @@ components:
         - steps
         - work_number
         - blueprint_id
+        - approval_list
 
     NodeGroup:
       type: object
@@ -4466,6 +4471,7 @@ components:
         approval_list:
           type: object
           properties: { }
+          description: мапа листов согласований из настроек сценария
       required:
         - id
         - version_id
@@ -4485,6 +4491,7 @@ components:
         - rate_comment
         - status_comment
         - process_deadline
+        - approval_list
 
     httpError:
       type: object
@@ -5216,9 +5223,6 @@ components:
           description: Approvement status
         work_type:
           $ref: "#/components/schemas/WorkType"
-        approval_list:
-          type: object
-          description: мапа листов согласований из настроек сценария
       required:
         - type
         - approver
@@ -5231,8 +5235,6 @@ components:
         - approvers_group_id
         - approvers_group_name
         - approve_status_name
-        - approval_list
-
     FormsChangelogResponse:
       type: array
       items:

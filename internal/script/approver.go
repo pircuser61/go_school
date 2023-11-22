@@ -49,15 +49,13 @@ type ApproverParams struct {
 	AutoAction         *string             `json:"auto_action,omitempty"`
 	FormsAccessibility []FormAccessibility `json:"forms_accessibility"`
 
-	IsEditable         bool `json:"is_editable"`
-	RepeatPrevDecision bool `json:"repeat_prev_decision"`
-
+	IsEditable           bool    `json:"is_editable"`
+	RepeatPrevDecision   bool    `json:"repeat_prev_decision"`
 	ApproversGroupID     string  `json:"approvers_group_id"`
 	ApproversGroupName   string  `json:"approvers_group_name"`
 	ApproversGroupIDPath *string `json:"approvers_group_id_path,omitempty"`
 	ApproveStatusName    string  `json:"approve_status_name"`
 	WorkType             *string `json:"work_type"`
-	ApprovalList         bool    `json:"approval_list"`
 }
 
 // nolint:gocyclo // its ok here
