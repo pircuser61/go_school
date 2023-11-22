@@ -582,9 +582,6 @@ type ApprovementRule string
 
 // Approver params
 type ApproverParams struct {
-	// мапа листов согласований из настроек сценария
-	ApprovalList map[string]interface{} `json:"approval_list"`
-
 	// Approvement status
 	ApproveStatusName string `json:"approve_status_name"`
 
@@ -911,12 +908,14 @@ type EriusTagInfo struct {
 
 // EriusTask defines model for EriusTask.
 type EriusTask struct {
-	AttachmentsCount *int    `json:"attachments_count,omitempty"`
-	Author           string  `json:"author"`
-	BlueprintId      string  `json:"blueprint_id"`
-	Comment          *string `json:"comment,omitempty"`
-	Debug            bool    `json:"debug"`
-	Description      string  `json:"description"`
+	// мапа листов согласований из настроек сценария
+	ApprovalList     map[string]interface{} `json:"approval_list"`
+	AttachmentsCount *int                   `json:"attachments_count,omitempty"`
+	Author           string                 `json:"author"`
+	BlueprintId      string                 `json:"blueprint_id"`
+	Comment          *string                `json:"comment,omitempty"`
+	Debug            bool                   `json:"debug"`
+	Description      string                 `json:"description"`
 
 	// Task human readable status
 	HumanStatus        TaskHumanStatus        `json:"human_status"`
@@ -2009,7 +2008,8 @@ type CompareStringOperator string
 
 // EriusTaskResponse defines model for eriusTaskResponse.
 type EriusTaskResponse struct {
-	ApprovalList *map[string]interface{} `json:"approval_list,omitempty"`
+	// мапа листов согласований из настроек сценария
+	ApprovalList map[string]interface{} `json:"approval_list"`
 
 	// Логин инициатора
 	Author string `json:"author"`
