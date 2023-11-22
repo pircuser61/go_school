@@ -30,6 +30,12 @@ func (s SignatureCarrier) String() string {
 	return string(s)
 }
 
+type SigningParamsPaths struct {
+	INN   string `json:"inn"`
+	SNILS string `json:"snils"`
+	Files string `json:"files"`
+}
+
 const (
 	SignerTypeUser       SignerType = "user"
 	SignerTypeGroup      SignerType = "group"
@@ -48,11 +54,12 @@ const (
 )
 
 type SignParams struct {
-	Type             SignerType       `json:"signerType"`
-	SigningRule      SigningRule      `json:"signingRule"`
-	Signer           string           `json:"signer,omitempty"`
-	SignatureType    SignatureType    `json:"signatureType"`
-	SignatureCarrier SignatureCarrier `json:"signatureCarrier,omitempty"`
+	Type               SignerType         `json:"signerType"`
+	SigningRule        SigningRule        `json:"signingRule"`
+	SigningParamsPaths SigningParamsPaths `json:"signingParams"`
+	Signer             string             `json:"signer,omitempty"`
+	SignatureType      SignatureType      `json:"signatureType"`
+	SignatureCarrier   SignatureCarrier   `json:"signatureCarrier,omitempty"`
 
 	SignerGroupID     string `json:"signerGroupId,omitempty"`
 	SignerGroupName   string `json:"signerGroupName,omitempty"`

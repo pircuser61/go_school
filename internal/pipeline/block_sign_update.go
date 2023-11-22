@@ -22,7 +22,18 @@ type signSignatureParams struct {
 	Decision    SignDecision        `json:"decision"`
 	Comment     string              `json:"comment,omitempty"`
 	Attachments []entity.Attachment `json:"attachments"`
+	Signatures  []fileSignature     `json:"signatures"`
 	Username    string              `json:"username"`
+}
+
+type fileSignature struct {
+	FileID          string `json:"file_id"`
+	SignatureFileID string `json:"signature_file_id"`
+}
+
+type fileSignaturePair struct {
+	File          entity.Attachment `json:"file"`
+	SignatureFile entity.Attachment `json:"signature_file"`
 }
 
 type changeStatusSignatureParams struct {
@@ -37,6 +48,27 @@ func (gb *GoSignBlock) handleSignature(ctx c.Context, login string) error {
 	err := json.Unmarshal(gb.RunContext.UpdateData.Parameters, updateParams)
 	if err != nil {
 		return errors.New("can't assert provided update data")
+	}
+
+	if gb.State.SignatureType == script.SignatureTypeUKEP &&
+		gb.State.SignatureCarrier == script.SignatureCarrierToken &&
+		updateParams.Decision == SignDecisionSigned &&
+		len(updateParams.Signatures) != len(updateParams.Attachments) {
+		return errors.New("number of files to sign is not equal to signature files")
+	}
+
+	for _, v := range updateParams.Signatures {
+		newPair := fileSignaturePair{
+			File: entity.Attachment{
+				FileID:       v.FileID,
+				ExternalLink: "",
+			},
+			SignatureFile: entity.Attachment{
+				FileID:       v.SignatureFileID,
+				ExternalLink: "",
+			},
+		}
+		gb.State.Signatures = append(gb.State.Signatures, newPair)
 	}
 
 	if gb.State.SignatureType == script.SignatureTypeUKEP && updateParams.Decision != SignDecisionRejected {
@@ -256,6 +288,7 @@ func (gb *GoSignBlock) setSignerDecision(u *signSignatureParams) error {
 		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputSigner], gb.State.ActualSigner)
 		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputSignDecision], gb.State.Decision)
 		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputSignComment], gb.State.Comment)
+		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputSignatures], gb.State.Signatures)
 		resAttachments := make([]entity.Attachment, 0)
 		for _, l := range gb.State.SignLog {
 			resAttachments = append(resAttachments, l.Attachments...)

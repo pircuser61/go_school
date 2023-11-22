@@ -23,17 +23,26 @@ type SignLogEntry struct {
 	Attachments []entity.Attachment `json:"attachments,omitempty"`
 }
 
+type SigningParams struct {
+	INN   string              `json:"inn"`
+	SNILS string              `json:"snils"`
+	Files []entity.Attachment `json:"files"`
+}
+
 type SignData struct {
-	Type             script.SignerType       `json:"type"`
-	Signers          map[string]struct{}     `json:"signers"`
-	SignatureType    script.SignatureType    `json:"signature_type"`
-	Decision         *SignDecision           `json:"decision,omitempty"`
-	Comment          *string                 `json:"comment,omitempty"`
-	ActualSigner     *string                 `json:"actual_signer,omitempty"`
-	Attachments      []entity.Attachment     `json:"attachments,omitempty"`
-	SigningRule      script.SigningRule      `json:"signing_rule,omitempty"`
-	SignatureCarrier script.SignatureCarrier `json:"signature_carrier,omitempty"`
-	SignLog          []SignLogEntry          `json:"sign_log,omitempty"`
+	Type               script.SignerType         `json:"type"`
+	Signers            map[string]struct{}       `json:"signers"`
+	SignatureType      script.SignatureType      `json:"signature_type"`
+	Decision           *SignDecision             `json:"decision,omitempty"`
+	Comment            *string                   `json:"comment,omitempty"`
+	ActualSigner       *string                   `json:"actual_signer,omitempty"`
+	Attachments        []entity.Attachment       `json:"attachments,omitempty"`
+	Signatures         []fileSignaturePair       `json:"signatures,omitempty"`
+	SigningParams      SigningParams             `json:"signing_params,omitempty"`
+	SigningParamsPaths script.SigningParamsPaths `json:"signing_params_paths,omitempty"`
+	SigningRule        script.SigningRule        `json:"signing_rule,omitempty"`
+	SignatureCarrier   script.SignatureCarrier   `json:"signature_carrier,omitempty"`
+	SignLog            []SignLogEntry            `json:"sign_log,omitempty"`
 
 	FormsAccessibility []script.FormAccessibility `json:"forms_accessibility,omitempty"`
 
