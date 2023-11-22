@@ -28,6 +28,7 @@ const (
 	keyOutputSignDecision    = "decision"
 	keyOutputSignComment     = "comment"
 	keyOutputSignAttachments = "attachments"
+	keyOutputSignatures      = "signatures"
 
 	SignDecisionSigned   SignDecision = "signed"
 	SignDecisionRejected SignDecision = "rejected"
@@ -39,6 +40,10 @@ const (
 
 	signatureTypeActionParamsKey    = "signature_type"
 	signatureCarrierActionParamsKey = "signature_carrier"
+
+	signatureINNParamsKey   = "inn"
+	signatureSNILSParamsKey = "snils"
+	signatureFilesParamsKey = "files"
 
 	reentrySignComment = "Произошла ошибка подписания. Требуется повторное подписание"
 )
@@ -151,6 +156,9 @@ func (gb *GoSignBlock) signActions(login string) []MemberAction {
 			Params: map[string]interface{}{
 				signatureTypeActionParamsKey:    gb.State.SignatureType,
 				signatureCarrierActionParamsKey: gb.State.SignatureCarrier,
+				signatureINNParamsKey:           gb.State.SigningParams.INN,
+				signatureSNILSParamsKey:         gb.State.SigningParams.SNILS,
+				signatureFilesParamsKey:         gb.State.SigningParams.Files,
 			},
 		}
 
@@ -370,8 +378,58 @@ func (gb *GoSignBlock) handleNotifications(ctx c.Context) error {
 	return nil
 }
 
+func lookForFileIdInObject(object map[string]interface{}) (string, error) {
+	existingFileId, ok := object["file_id"]
+	if !ok {
+		return "", errors.New("file_id does not exist in object")
+	}
+	fileID, ok := existingFileId.(string)
+	if !ok {
+		return "", errors.New("failed to type assert path to string")
+	}
+	return fileID, nil
+}
+
+func ValidateFiles(file interface{}) ([]entity.Attachment, error) {
+	resFiles := make([]entity.Attachment, 0)
+
+	switch f := file.(type) {
+	case map[string]interface{}:
+		fileID, err := lookForFileIdInObject(f)
+		if err != nil {
+			return nil, err
+		}
+		resFiles = append(resFiles, entity.Attachment{FileID: fileID})
+	case []interface{}:
+		filesFromInterfaces := make([]entity.Attachment, 0)
+
+		for _, item := range f {
+			object, ok := item.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			fileID, err := lookForFileIdInObject(object)
+			if err != nil {
+				continue
+			}
+			filesFromInterfaces = append(filesFromInterfaces, entity.Attachment{FileID: fileID})
+		}
+
+		if len(filesFromInterfaces) == 0 {
+			return nil, errors.New("did not find file in array")
+		}
+		resFiles = append(resFiles, filesFromInterfaces...)
+	default:
+		return nil, errors.New("did not get an object or an array to look for file")
+	}
+
+	return resFiles, nil
+}
+
 //nolint:dupl,gocyclo //its not duplicate
 func (gb *GoSignBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
+	l := logger.GetLogger(ctx)
+
 	var params script.SignParams
 	err := json.Unmarshal(ef.Params, &params)
 	if err != nil {
@@ -386,6 +444,8 @@ func (gb *GoSignBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 		Type:               params.Type,
 		SigningRule:        params.SigningRule,
 		SignLog:            make([]SignLogEntry, 0),
+		Signatures:         make([]fileSignaturePair, 0),
+		SigningParamsPaths: params.SigningParamsPaths,
 		FormsAccessibility: params.FormsAccessibility,
 		SignatureType:      params.SignatureType,
 		SignatureCarrier:   params.SignatureCarrier,
@@ -399,17 +459,42 @@ func (gb *GoSignBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 		gb.State.SigningRule = script.AnyOfSigningRequired
 	}
 
-	if params.Type == script.SignerTypeGroup && params.SignerGroupIDPath != "" {
-		variableStorage, grabStorageErr := gb.RunContext.VarStore.GrabStorage()
-		if grabStorageErr != nil {
-			return grabStorageErr
-		}
+	variableStorage, grabStorageErr := gb.RunContext.VarStore.GrabStorage()
+	if grabStorageErr != nil {
+		return grabStorageErr
+	}
 
+	if params.Type == script.SignerTypeGroup && params.SignerGroupIDPath != "" {
 		groupId := getVariable(variableStorage, params.SignerGroupIDPath)
 		if groupId == nil {
 			return errors.New("can't find group id in variables")
 		}
 		params.SignerGroupID = fmt.Sprintf("%v", groupId)
+	}
+
+	if params.SignatureType == script.SignatureTypeUKEP &&
+		(params.SignatureCarrier == script.SignatureCarrierToken ||
+			params.SignatureCarrier == script.SignatureCarrierAll) {
+		inn := getVariable(variableStorage, params.SigningParamsPaths.INN)
+		innString, ok := inn.(string)
+		if !ok {
+			l.Error(errors.New("could not find inn"))
+		}
+		gb.State.SigningParams.INN = innString
+
+		snils := getVariable(variableStorage, params.SigningParamsPaths.SNILS)
+		snilsString, ok := snils.(string)
+		if !ok {
+			l.Error(errors.New("could not find snils"))
+		}
+		gb.State.SigningParams.SNILS = snilsString
+
+		filesInterface := getVariable(variableStorage, params.SigningParamsPaths.Files)
+		files, err := ValidateFiles(filesInterface)
+		if err != nil {
+			l.Error(err)
+		}
+		gb.State.SigningParams.Files = files
 	}
 
 	setErr := gb.setSignersByParams(ctx, &setSignersByParamsDTO{
@@ -455,7 +540,8 @@ func (gb *GoSignBlock) Model() script.FunctionModel {
 					Type:        "array",
 					Description: "signed files",
 					Items: &script.ArrayItems{
-						Type: "object",
+						Type:   "object",
+						Format: "file",
 						Properties: map[string]script.JSONSchemaPropertiesValue{
 							"file_id": {
 								Type:        "string",
@@ -464,6 +550,45 @@ func (gb *GoSignBlock) Model() script.FunctionModel {
 							"external_link": {
 								Type:        "string",
 								Description: "link to file in another system",
+							},
+						},
+					},
+				},
+				keyOutputSignatures: {
+					Type:        "array",
+					Description: "signatures",
+					Items: &script.ArrayItems{
+						Type: "object",
+						Properties: map[string]script.JSONSchemaPropertiesValue{
+							"file": {
+								Type:        "object",
+								Description: "file to sign",
+								Format:      "file",
+								Properties: map[string]script.JSONSchemaPropertiesValue{
+									"file_id": {
+										Type:        "string",
+										Description: "file id in file Registry",
+									},
+									"external_link": {
+										Type:        "string",
+										Description: "link to file in another system",
+									},
+								},
+							},
+							"signature_file": {
+								Type:        "object",
+								Description: "signature file",
+								Format:      "file",
+								Properties: map[string]script.JSONSchemaPropertiesValue{
+									"file_id": {
+										Type:        "string",
+										Description: "file id in file Registry",
+									},
+									"external_link": {
+										Type:        "string",
+										Description: "link to file in another system",
+									},
+								},
 							},
 						},
 					},
