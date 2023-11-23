@@ -715,7 +715,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 							SigningParamsPaths: script.SigningParamsPaths{
 								INN:   "form_3.inn",
 								SNILS: "form_3.snils",
-								Files: "form_3.files",
+								Files: []string{"form_3.files"},
 							},
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
@@ -767,7 +767,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 					SigningParamsPaths: script.SigningParamsPaths{
 						INN:   "form_3.inn",
 						SNILS: "form_3.snils",
-						Files: "form_3.files",
+						Files: []string{"form_3.files"},
 					},
 				},
 				RunContext: &BlockRunContext{
@@ -1077,7 +1077,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 							SigningParamsPaths: script.SigningParamsPaths{
 								INN:   "form_3.inn",
 								SNILS: "form_3.snils",
-								Files: "form_3.files",
+								Files: []string{"form_3.files"},
 							},
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
@@ -1125,7 +1125,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 					SigningParamsPaths: script.SigningParamsPaths{
 						INN:   "form_3.inn",
 						SNILS: "form_3.snils",
-						Files: "form_3.files",
+						Files: []string{"form_3.files"},
 					},
 					SignatureCarrier:   "token",
 					SignLog:            []SignLogEntry{},
@@ -1497,7 +1497,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 							SigningParamsPaths: script.SigningParamsPaths{
 								INN:   "form_3.inn",
 								SNILS: "form_3.snils",
-								Files: "form_3.files",
+								Files: []string{"form_3.files"},
 							},
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
@@ -1538,7 +1538,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 					SigningParamsPaths: script.SigningParamsPaths{
 						INN:   "form_3.inn",
 						SNILS: "form_3.snils",
-						Files: "form_3.files",
+						Files: []string{"form_3.files"},
 					},
 					SignLog:            []SignLogEntry{},
 					FormsAccessibility: []script.FormAccessibility{{}},
@@ -3256,7 +3256,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							SigningParamsPaths: script.SigningParamsPaths{
 								INN:   "form_3.inn",
 								SNILS: "form_3.snils",
-								Files: "form_3.files",
+								Files: []string{"form_3.files"},
 							},
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
@@ -3909,7 +3909,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							SigningParamsPaths: script.SigningParamsPaths{
 								INN:   "form_3.inn",
 								SNILS: "form_3.snils",
-								Files: "form_3.files",
+								Files: []string{"form_3.files"},
 							},
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
@@ -4002,7 +4002,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							SigningParamsPaths: script.SigningParamsPaths{
 								INN:   "form_3.inn",
 								SNILS: "form_3.snils",
-								Files: "form_3.files",
+								Files: []string{"form_3.files"},
 							},
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
@@ -4095,7 +4095,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							SigningParamsPaths: script.SigningParamsPaths{
 								INN:   "form_3.inn",
 								SNILS: "form_3.snils",
-								Files: "form_3.files",
+								Files: []string{"form_3.files"},
 							},
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
@@ -4185,7 +4185,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							SigningParamsPaths: script.SigningParamsPaths{
 								INN:   "form_3.inn",
 								SNILS: "form_3.snils",
-								Files: "form_3.files",
+								Files: []string{"form_3.files"},
 							},
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
@@ -4279,7 +4279,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							SigningParamsPaths: script.SigningParamsPaths{
 								INN:   "form_3.inn",
 								SNILS: "form_3.snils",
-								Files: "form_3.files",
+								Files: []string{"form_3.files"},
 							},
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
