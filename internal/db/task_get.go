@@ -1341,27 +1341,49 @@ func (db *PGCon) GetFilteredStates(ctx c.Context, steps []string, wNumber string
 
 	// nolint:gocritic
 	// language=PostgreSQL
-	const query = `
+	const q = `
 		SELECT vs.content-> 'State'
 		FROM variable_storage vs 
-			WHERE work_id = (SELECT id FROM works 
-			                 	WHERE work_number = $1 AND child_id IS NULL LIMIT 1)
+			WHERE vs.work_id = (SELECT id FROM works 
+			                 	WHERE work_number = $1 AND child_id IS NULL LIMIT 1) AND 
+			vs.step_name IN %s AND 
+			vs.time = (SELECT max(time) FROM variable_storage WHERE work_id = $2 AND step_name = vs.step_name)
 		ORDER BY vs.time DESC 
-		LIMIT 1`
+		LIMIT 20`
 
-	res := make(map[string]map[string]interface{})
-	row := db.Connection.QueryRow(ctx, query, wNumber)
-	if err := row.Scan(&res); err != nil {
+	query := fmt.Sprintf(q, buildInExpression(steps))
+
+	res := make([]map[string]map[string]interface{}, 0)
+	rows, err := db.Connection.Query(ctx, query, wNumber, wNumber)
+	if err != nil {
 		return nil, err
 	}
 
-	for stepName := range res {
-		if !utils.IsContainsInSlice(stepName, steps) {
-			delete(res, stepName)
+	defer rows.Close()
+
+	for rows.Next() {
+		states := make(map[string]map[string]interface{})
+		if scanErr := rows.Scan(&states); scanErr != nil {
+			return nil, scanErr
+		}
+
+		res = append(res, states)
+	}
+
+	return mergeStates(res), nil
+}
+
+func mergeStates(in []map[string]map[string]interface{}) (res map[string]map[string]interface{}) {
+	res = make(map[string]map[string]interface{})
+	for i := range in {
+		for stepName := range in[i] {
+			if _, exists := res[stepName]; !exists {
+				res[stepName] = in[i][stepName]
+			}
 		}
 	}
 
-	return res, nil
+	return res
 }
 
 func (db *PGCon) GetTaskHumanStatus(ctx c.Context, taskID uuid.UUID) (string, error) {
