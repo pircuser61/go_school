@@ -5117,9 +5117,13 @@ components:
           example: form_0.application_body.snils
           type: string
         files:
-          description: Path to files in context
-          example: form_0.application_body.files
-          type: string
+          description: Paths to files in context
+          type: array
+          items:
+            type: string
+            example: form_0.application_body.file
+
+
 
     SignParams:
       type: object
