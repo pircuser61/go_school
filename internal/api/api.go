@@ -1794,8 +1794,8 @@ type SignerType string
 
 // SigningParams defines model for SigningParams.
 type SigningParams struct {
-	// Path to files in context
-	Files *string `json:"files,omitempty"`
+	// Paths to files in context
+	Files *[]string `json:"files,omitempty"`
 
 	// Path to inn in context
 	Inn *string `json:"inn,omitempty"`

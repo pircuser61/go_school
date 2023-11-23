@@ -489,12 +489,18 @@ func (gb *GoSignBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 		}
 		gb.State.SigningParams.SNILS = snilsString
 
-		filesInterface := getVariable(variableStorage, params.SigningParamsPaths.Files)
-		files, err := ValidateFiles(filesInterface)
-		if err != nil {
-			l.Error(err)
+		filesForSigningParams := make([]entity.Attachment, 0)
+		for _, pathToFiles := range params.SigningParamsPaths.Files {
+			filesInterface := getVariable(variableStorage, pathToFiles)
+			files, err := ValidateFiles(filesInterface)
+			if err != nil {
+				l.Error(err)
+				continue
+			}
+			filesForSigningParams = append(filesForSigningParams, files...)
+
 		}
-		gb.State.SigningParams.Files = files
+		gb.State.SigningParams.Files = filesForSigningParams
 	}
 
 	setErr := gb.setSignersByParams(ctx, &setSignersByParamsDTO{
