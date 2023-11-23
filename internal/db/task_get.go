@@ -1335,6 +1335,35 @@ func (db *PGCon) GetTaskSteps(ctx c.Context, id uuid.UUID) (entity.TaskSteps, er
 	return el, nil
 }
 
+func (db *PGCon) GetFilteredStates(ctx c.Context, steps []string, wNumber string) (map[string]map[string]interface{}, error) {
+	ctx, span := trace.StartSpan(ctx, "pg_get_filtered_states")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	const query = `
+		SELECT vs.content-> 'State'
+		FROM variable_storage vs 
+			WHERE work_id = (SELECT id FROM works 
+			                 	WHERE work_number = $1 AND child_id IS NULL LIMIT 1)
+		ORDER BY vs.time DESC 
+		LIMIT 1`
+
+	res := make(map[string]map[string]interface{})
+	row := db.Connection.QueryRow(ctx, query, wNumber)
+	if err := row.Scan(&res); err != nil {
+		return nil, err
+	}
+
+	for stepName := range res {
+		if !utils.IsContainsInSlice(stepName, steps) {
+			delete(res, stepName)
+		}
+	}
+
+	return res, nil
+}
+
 func (db *PGCon) GetTaskHumanStatus(ctx c.Context, taskID uuid.UUID) (string, error) {
 	ctx, span := trace.StartSpan(ctx, "get_task_status")
 	defer span.End()

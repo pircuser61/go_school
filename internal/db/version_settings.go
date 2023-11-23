@@ -16,12 +16,11 @@ import (
 )
 
 func (db *PGCon) copyProcessSettingsFromOldVersion(c c.Context, newVersionID, oldVersionID uuid.UUID) error {
-	qCopyPrevSettings := `
+	const qCopyPrevSettings = `
 	INSERT INTO version_settings (id, version_id, start_schema, end_schema, resubmission_period) 
 		SELECT uuid_generate_v4(), $1, start_schema, end_schema, resubmission_period
 		FROM version_settings 
-		WHERE version_id = $2
-	`
+		WHERE version_id = $2`
 
 	_, err := db.Connection.Exec(c, qCopyPrevSettings, newVersionID, oldVersionID)
 	if err != nil {
@@ -77,7 +76,7 @@ func (db *PGCon) copyProcessSettingsFromOldVersion(c c.Context, newVersionID, ol
 
 	// nolint:gocritic
 	// language=PostgreSQL
-	qCopyPrevTaskSubSettings := `
+	const qCopyPrevTaskSubSettings = `
 		INSERT INTO external_system_task_subscriptions (
 			id,
 			version_id,
@@ -215,7 +214,7 @@ func (db *PGCon) SaveVersionMainSettings(ctx c.Context, params e.ProcessSettings
 
 	// nolint:gocritic
 	// language=PostgreSQL
-	query := `INSERT INTO version_settings (id, version_id, resubmission_period) 
+	const query = `INSERT INTO version_settings (id, version_id, resubmission_period) 
 			VALUES ($1, $2, $3)
 			ON CONFLICT (version_id) DO UPDATE 
 			SET resubmission_period = excluded.resubmission_period`
@@ -288,22 +287,22 @@ func (db *PGCon) GetExternalSystemSettings(ctx context.Context, versionID, syste
 
 	row := db.Connection.QueryRow(ctx, query, versionID, systemID)
 
-	externalSystemSettings := e.ExternalSystem{Id: systemID, OutputSettings: &e.EndSystemSettings{}}
+	res := e.ExternalSystem{Id: systemID, OutputSettings: &e.EndSystemSettings{}}
 	err := row.Scan(
-		&externalSystemSettings.InputSchema,
-		&externalSystemSettings.OutputSchema,
-		&externalSystemSettings.InputMapping,
-		&externalSystemSettings.OutputMapping,
-		&externalSystemSettings.OutputSettings.MicroserviceId,
-		&externalSystemSettings.OutputSettings.URL,
-		&externalSystemSettings.OutputSettings.Method,
-		&externalSystemSettings.AllowRunAsOthers,
+		&res.InputSchema,
+		&res.OutputSchema,
+		&res.InputMapping,
+		&res.OutputMapping,
+		&res.OutputSettings.MicroserviceId,
+		&res.OutputSettings.URL,
+		&res.OutputSettings.Method,
+		&res.AllowRunAsOthers,
 	)
 	if err != nil {
-		return externalSystemSettings, err
+		return res, err
 	}
 
-	return externalSystemSettings, nil
+	return res, nil
 }
 
 func (db *PGCon) UpdateEndingSystemSettings(ctx context.Context, versionID, systemID string, s e.EndSystemSettings) (err error) {
@@ -363,11 +362,33 @@ func (db *PGCon) GetSlaVersionSettings(ctx context.Context, versionID string) (s
 	return slaSettings, nil
 }
 
-func (db *PGCon) GetApprovalListSettings(ctx c.Context, workNumber, listID string) (*e.ApprovalListSettings, error) {
+func (db *PGCon) GetApprovalListSettings(ctx c.Context, listID string) (*e.ApprovalListSettings, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_approval_list_settings")
 	defer span.End()
 
-	return nil, nil
+	// nolint:gocritic
+	// language=PostgreSQL
+	const query = `
+	SELECT id, name, steps, context_mapping, forms_mapping, created_at
+		FROM version_approval_lists
+	WHERE id = $1`
+
+	row := db.Connection.QueryRow(ctx, query, listID)
+
+	res := e.ApprovalListSettings{}
+	err := row.Scan(
+		&res.ID,
+		&res.Name,
+		&res.Steps,
+		&res.ContextMapping,
+		&res.FormsMapping,
+		&res.CreatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return &res, nil
 }
 
 func (db *PGCon) GetApprovalListsSettings(ctx c.Context, versionID string) ([]e.ApprovalListSettings, error) {

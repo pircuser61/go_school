@@ -2292,6 +2292,28 @@ func (db *PGCon) GetVariableStorageForStep(ctx context.Context, taskID uuid.UUID
 	return storage, nil
 }
 
+func (db *PGCon) GetVariableStorage(ctx context.Context, workNumber string) (*store.VariableStore, error) {
+	ctx, span := trace.StartSpan(ctx, "get_variable_storage")
+	defer span.End()
+
+	const q = `
+		SELECT content
+		FROM variable_storage
+		WHERE work_id = (SELECT id FROM works 
+					WHERE work_number = $1 AND child_id IS NULL LIMIT 1)
+		ORDER BY time DESC LIMIT 1`
+
+	var content []byte
+	if err := db.Connection.QueryRow(ctx, q, workNumber).Scan(&content); err != nil {
+		return nil, err
+	}
+	storage := store.NewStore()
+	if err := json.Unmarshal(content, &storage); err != nil {
+		return nil, err
+	}
+	return storage, nil
+}
+
 func (db *PGCon) GetBlocksBreachedSLA(ctx context.Context) ([]StepBreachedSLA, error) {
 	ctx, span := trace.StartSpan(ctx, "get_blocks_breached_sla")
 	defer span.End()
