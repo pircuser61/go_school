@@ -97,7 +97,10 @@ func createGoFormBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx 
 
 func (gb *GoFormBlock) reEntry(ctx c.Context) error {
 	isAutofill := gb.State.FormExecutorType == script.FormExecutorTypeAutoFillUser
-	if (gb.State.IsEditable == nil || !*gb.State.IsEditable) && isAutofill {
+	if isAutofill && gb.State.ReEnterSettings == nil {
+		return fmt.Errorf("autofill with empty reenter settings data")
+	}
+	if gb.State.IsEditable == nil || !*gb.State.IsEditable {
 		return nil
 	}
 
@@ -107,7 +110,8 @@ func (gb *GoFormBlock) reEntry(ctx c.Context) error {
 	gb.State.ActualExecutor = nil
 
 	if !isAutofill && gb.State.ReEnterSettings == nil {
-		gb.State.IsTakenInWork = true
+		gb.State.Executors = gb.State.InitialExecutors
+		gb.State.IsTakenInWork = len(gb.State.InitialExecutors) == 1
 	}
 
 	if gb.State.ReEnterSettings != nil {
@@ -280,6 +284,6 @@ func (gb *GoFormBlock) setExecutorsByParams(ctx c.Context, dto *setFormExecutors
 		}
 		gb.State.IsTakenInWork = true
 	}
-
+	gb.State.InitialExecutors = gb.State.Executors
 	return nil
 }

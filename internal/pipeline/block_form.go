@@ -45,6 +45,7 @@ type FormData struct {
 	FormGroupIdPath        *string                 `json:"form_group_id_path,omitempty"`
 	SchemaId               string                  `json:"schema_id"`
 	Executors              map[string]struct{}     `json:"executors"`
+	InitialExecutors       map[string]struct{}     `json:"initial_executors"`
 	Description            string                  `json:"description"`
 	ApplicationBody        map[string]interface{}  `json:"application_body"`
 	IsFilled               bool                    `json:"is_filled"`

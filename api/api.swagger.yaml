@@ -5033,6 +5033,7 @@ components:
         - blueprint_id
         - blueprint_name
         - hide_executor_from_initiator
+        - is_editable
 
     FormExecutorType:
       type: string
