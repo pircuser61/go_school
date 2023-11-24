@@ -30,10 +30,10 @@ const (
 	keyOutputSignAttachments = "attachments"
 	keyOutputSignatures      = "signatures"
 
-	SignDecisionSigned              SignDecision = "signed"
-	SignDecisionRejected            SignDecision = "rejected"
+	SignDecisionSigned              SignDecision = "signed"   // signed by signer
+	SignDecisionRejected            SignDecision = "rejected" // rejected by signer or by additional approver
 	SignDecisionError               SignDecision = "error"
-	SignDecisionAddApproverApproved SignDecision = "approved"
+	SignDecisionAddApproverApproved SignDecision = "approved" // approved by additional approver
 
 	signActionSign                  = "sign_sign"
 	signActionReject                = "sign_reject"

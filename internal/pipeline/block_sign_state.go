@@ -163,15 +163,24 @@ func (s *SignData) handleAllOfDecision(login string, params *signSignatureParams
 	case SignDecisionError:
 		overallDecision = SignDecisionError
 	default:
-		if len(s.SignLog) == len(s.Signers) {
+		var decisionCount int
+		for _, log := range s.SignLog {
+			if log.LogType == SignerLogDecision {
+				decisionCount++
+			}
+		}
+
+		if decisionCount == len(s.Signers) {
 			overallDecision = SignDecisionSigned
 		}
 	}
+
 	if overallDecision != "" {
 		s.Decision = &overallDecision
 		s.Comment = &params.Comment
 		s.ActualSigner = &login
 	}
+
 	return nil
 }
 
@@ -263,7 +272,7 @@ func (s *SignData) SetDecisionByAdditionalApprover(login string,
 	}
 
 	if !couldUpdateOne {
-		return nil, fmt.Errorf("can't sign any request")
+		return nil, fmt.Errorf("can't approve any request")
 	}
 
 	return loginsToNotify, nil
