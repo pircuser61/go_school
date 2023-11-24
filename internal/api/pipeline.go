@@ -167,11 +167,21 @@ func (ae *APIEnv) CopyPipeline(w http.ResponseWriter, req *http.Request) {
 
 	oldVersionID := p.VersionID
 
-	p.ID = uuid.New()
-	p.VersionID = uuid.New()
 	p.Name = fmt.Sprintf("%s - %s", p.Name, copyPostfix)
 
-	err = ae.DB.CreatePipeline(ctx, &p, userFromContext.Username, b, oldVersionID)
+	updated, err := json.Marshal(p)
+	if err != nil {
+		e := PipelineParseError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	p.ID = uuid.New()
+	p.VersionID = uuid.New()
+
+	err = ae.DB.CreatePipeline(ctx, &p, userFromContext.Username, updated, oldVersionID)
 	if err != nil {
 		e := PipelineCreateError
 		if db.IsUniqueConstraintError(err) {
