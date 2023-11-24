@@ -2323,6 +2323,10 @@ func (db *PGCon) GetVariableStorage(ctx context.Context, workNumber string) (*st
 		res = append(res, values)
 	}
 
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
 	storage := &store.VariableStore{
 		Values: mergeValues(res),
 	}

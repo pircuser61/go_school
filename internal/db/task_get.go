@@ -1369,6 +1369,10 @@ func (db *PGCon) GetFilteredStates(ctx c.Context, steps []string, wNumber string
 		res = append(res, states)
 	}
 
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
 	return mergeStates(res), nil
 }
 
