@@ -834,7 +834,7 @@ func (ae *APIEnv) GetVersionTasks(w http.ResponseWriter, req *http.Request, vers
 
 func getTaskStepNameByAction(action entity.TaskUpdateAction) []string {
 	if action == entity.TaskUpdateActionAdditionalApprovement {
-		return []string{pipeline.BlockGoApproverID}
+		return []string{pipeline.BlockGoApproverID, pipeline.BlockGoSignID}
 	}
 
 	if action == entity.TaskUpdateActionApprovement {
@@ -874,7 +874,7 @@ func getTaskStepNameByAction(action entity.TaskUpdateAction) []string {
 	}
 
 	if action == entity.TaskUpdateActionAddApprovers {
-		return []string{pipeline.BlockGoApproverID}
+		return []string{pipeline.BlockGoApproverID, pipeline.BlockGoSignID}
 	}
 
 	if action == entity.TaskUpdateActionFormExecutorStartWork {

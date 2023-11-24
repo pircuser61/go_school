@@ -168,10 +168,11 @@ func (gb *GoApproverBlock) approvementAddActions(a *AdditionalApprover) []Member
 	if gb.State.Decision != nil || a.Decision != nil || gb.State.EditingApp != nil {
 		return []MemberAction{}
 	}
-	return []MemberAction{{
-		Id:   approverAdditionalApprovementAction,
-		Type: ActionTypePrimary,
-	},
+	return []MemberAction{
+		{
+			Id:   approverAdditionalApprovementAction,
+			Type: ActionTypePrimary,
+		},
 		{
 			Id:   approverAdditionalRejectAction,
 			Type: ActionTypeSecondary,
@@ -183,7 +184,8 @@ func (gb *GoApproverBlock) approvementAddActions(a *AdditionalApprover) []Member
 		{
 			Id:   approverRequestAddInfoAction,
 			Type: ActionTypeOther,
-		}}
+		},
+	}
 }
 
 type qna struct {

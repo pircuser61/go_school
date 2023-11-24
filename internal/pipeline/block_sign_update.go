@@ -4,6 +4,7 @@ import (
 	c "context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"time"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
@@ -34,6 +35,28 @@ type fileSignature struct {
 type fileSignaturePair struct {
 	File          entity.Attachment `json:"file"`
 	SignatureFile entity.Attachment `json:"signature_file"`
+}
+
+type additionalApproverSignUpdateParams struct {
+	Decision    SignDecision        `json:"decision"`
+	Comment     string              `json:"comment"`
+	Attachments []entity.Attachment `json:"attachments"`
+}
+
+func (a *additionalApproverSignUpdateParams) Validate() error {
+	if a.Decision != SignDecisionAddApproverApproved && a.Decision != SignDecisionRejected {
+		return fmt.Errorf("unknown decision %s", a.Decision)
+	}
+
+	if len(a.Attachments) > 10 {
+		return fmt.Errorf("max attachments length: 10, current: %d", len(a.Attachments))
+	}
+
+	if len([]rune(a.Comment)) > 500 {
+		return fmt.Errorf("max comment length 500 symbols, current: %d", len([]rune(a.Comment)))
+	}
+
+	return nil
 }
 
 type changeStatusSignatureParams struct {
@@ -135,6 +158,14 @@ func (gb *GoSignBlock) Update(ctx c.Context) (interface{}, error) {
 		if errUpdate := gb.handleSignature(ctx, data.ByLogin); errUpdate != nil {
 			return nil, errUpdate
 		}
+	case string(entity.TaskUpdateActionAdditionalApprovement):
+		if errUpdate := gb.SetDecisionByAdditionalApprover(ctx, data.ByLogin); errUpdate != nil {
+			return nil, errUpdate
+		}
+	case string(entity.TaskUpdateActionAddApprovers):
+		if errUpdate := gb.addApprovers(ctx, data.ByLogin); errUpdate != nil {
+			return nil, errUpdate
+		}
 	case string(entity.TaskUpdateActionSignChangeWorkStatus):
 		if errUpdate := gb.handleChangeWorkStatus(ctx, data.ByLogin); errUpdate != nil {
 			return nil, errUpdate
@@ -163,6 +194,66 @@ func (gb *GoSignBlock) Update(ctx c.Context) (interface{}, error) {
 	}
 
 	return nil, nil
+}
+
+func (gb *GoSignBlock) addApprovers(ctx c.Context, login string) error {
+	if !gb.State.userIsSignerOrAddApprover(login) {
+		return NewUserIsNotPartOfProcessErr()
+	}
+
+	var updateParams addApproversParams
+	if err := json.Unmarshal(gb.RunContext.UpdateData.Parameters, &updateParams); err != nil {
+		return errors.New("can't assert provided data")
+	}
+
+	var logAddApprovers []string
+	crTime := time.Now()
+
+	for _, additionalApproverLogin := range updateParams.AdditionalApproversLogins {
+		if gb.checkAdditionalApproverNotAdded(additionalApproverLogin) {
+			gb.State.AdditionalApprovers = append(gb.State.AdditionalApprovers,
+				AdditionalSignApprover{
+					ApproverLogin: additionalApproverLogin,
+					BaseLogin:     login,
+					Question:      &updateParams.Question,
+					Attachments:   updateParams.Attachments,
+					CreatedAt:     crTime,
+				})
+			logAddApprovers = append(logAddApprovers, additionalApproverLogin)
+		}
+	}
+
+	if len(logAddApprovers) > 0 {
+		var signerLogEntry = SignLogEntry{
+			Login:          login,
+			Decision:       "",
+			Comment:        updateParams.Question,
+			Attachments:    updateParams.Attachments,
+			CreatedAt:      crTime,
+			AddedApprovers: updateParams.AdditionalApproversLogins,
+			LogType:        SignerLogAddApprover,
+		}
+
+		gb.State.SignLog = append(gb.State.SignLog, signerLogEntry)
+		err := gb.notifyAdditionalApprovers(ctx, logAddApprovers, updateParams.Attachments)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (gb *GoSignBlock) checkAdditionalApproverNotAdded(login string) bool {
+	for _, added := range gb.State.AdditionalApprovers {
+		if login == added.ApproverLogin &&
+			added.BaseLogin == gb.RunContext.UpdateData.ByLogin &&
+			added.Decision == nil {
+			return false
+		}
+	}
+
+	return true
 }
 
 //nolint:dupl,gocyclo //its not duplicate
@@ -211,6 +302,32 @@ func (gb *GoSignBlock) handleBreachedSLA(ctx c.Context) error {
 		if err != nil {
 			return err
 		}
+	}
+
+	return nil
+}
+
+func (gb *GoSignBlock) SetDecisionByAdditionalApprover(ctx c.Context, login string) error {
+	var updateParams additionalApproverSignUpdateParams
+
+	if err := json.Unmarshal(gb.RunContext.UpdateData.Parameters, &updateParams); err != nil {
+		return fmt.Errorf("can't assert provided data: %v", err)
+	}
+
+	if err := updateParams.Validate(); err != nil {
+		return err
+	}
+
+	loginsToNotify, err := gb.State.SetDecisionByAdditionalApprover(login, updateParams)
+
+	if err != nil {
+		return err
+	}
+
+	loginsToNotify = append(loginsToNotify, gb.RunContext.Initiator)
+	err = gb.notifyDecisionMadeByAdditionalApprover(ctx, loginsToNotify)
+	if err != nil {
+		return err
 	}
 
 	return nil
