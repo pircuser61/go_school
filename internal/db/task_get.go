@@ -1347,14 +1347,13 @@ func (db *PGCon) GetFilteredStates(ctx c.Context, steps []string, wNumber string
 			WHERE vs.work_id = (SELECT id FROM works 
 			                 	WHERE work_number = $1 AND child_id IS NULL LIMIT 1) AND 
 			vs.step_name IN %s AND 
-			vs.time = (SELECT max(time) FROM variable_storage WHERE work_id = $2 AND step_name = vs.step_name)
-		ORDER BY vs.time DESC 
-		LIMIT 20`
+			vs.time = (SELECT max(time) FROM variable_storage WHERE work_id = vs.work_id AND step_name = vs.step_name)
+		ORDER BY vs.time DESC`
 
 	query := fmt.Sprintf(q, buildInExpression(steps))
 
 	res := make([]map[string]map[string]interface{}, 0)
-	rows, err := db.Connection.Query(ctx, query, wNumber, wNumber)
+	rows, err := db.Connection.Query(ctx, query, wNumber)
 	if err != nil {
 		return nil, err
 	}

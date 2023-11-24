@@ -2297,21 +2297,59 @@ func (db *PGCon) GetVariableStorage(ctx context.Context, workNumber string) (*st
 	defer span.End()
 
 	const q = `
-		SELECT content
-		FROM variable_storage
-		WHERE work_id = (SELECT id FROM works 
-					WHERE work_number = $1 AND child_id IS NULL LIMIT 1)
-		ORDER BY time DESC LIMIT 1`
+		SELECT step_name, vs.content-> 'Values'
+		FROM variable_storage vs 
+			WHERE vs.work_id = (SELECT id FROM works 
+			                 	WHERE work_number = $1 AND child_id IS NULL LIMIT 1) AND 
+			vs.time = (SELECT max(time) FROM variable_storage WHERE work_id = vs.work_id AND step_name = vs.step_name)`
 
-	var content []byte
-	if err := db.Connection.QueryRow(ctx, q, workNumber).Scan(&content); err != nil {
+	res := make([]map[string]interface{}, 0)
+	rows, err := db.Connection.Query(ctx, q, workNumber)
+	if err != nil {
 		return nil, err
 	}
-	storage := store.NewStore()
-	if err := json.Unmarshal(content, &storage); err != nil {
-		return nil, err
+
+	defer rows.Close()
+
+	for rows.Next() {
+		stepName := ""
+		values := make(map[string]interface{})
+		if scanErr := rows.Scan(&stepName, &values); scanErr != nil {
+			return nil, scanErr
+		}
+
+		values[stepNameVariable] = stepName
+
+		res = append(res, values)
 	}
+
+	storage := &store.VariableStore{
+		Values: mergeValues(res),
+	}
+
 	return storage, nil
+}
+
+const stepNameVariable = "stepName"
+
+func mergeValues(stepsValues []map[string]interface{}) map[string]interface{} {
+	res := make(map[string]interface{})
+
+	for i := range stepsValues {
+		stepName, ok := stepsValues[i][stepNameVariable]
+		if !ok {
+			continue
+		}
+		for varName := range stepsValues[i] {
+			if _, exists := res[varName]; !exists &&
+				varName != stepNameVariable &&
+				strings.Contains(varName, fmt.Sprintf("%s", stepName)) {
+				res[varName] = stepsValues[i][varName]
+			}
+		}
+	}
+
+	return res
 }
 
 func (db *PGCon) GetBlocksBreachedSLA(ctx context.Context) ([]StepBreachedSLA, error) {
