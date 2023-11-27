@@ -105,20 +105,20 @@ func (gb *GoSignBlock) notifyDecisionMadeByAdditionalApprover(ctx c.Context, log
 		return err
 	}
 
-	latestDecisonLog := gb.State.SignLog[len(gb.State.SignLog)-1]
+	latestDecisionLog := gb.State.SignLog[len(gb.State.SignLog)-1]
 
 	tpl := mail.NewDecisionMadeByAdditionalApprover(
 		gb.RunContext.WorkNumber,
 		gb.RunContext.NotifName,
 		userInfo.FullName,
-		latestDecisonLog.Decision.ToRuString(),
-		latestDecisonLog.Comment,
+		latestDecisionLog.Decision.ToRuString(),
+		latestDecisionLog.Comment,
 		gb.RunContext.Services.Sender.SdAddress,
 	)
 
 	files, err := gb.RunContext.Services.FileRegistry.GetAttachments(
 		ctx,
-		latestDecisonLog.Attachments,
+		latestDecisionLog.Attachments,
 	)
 
 	if err != nil {

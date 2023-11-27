@@ -269,6 +269,7 @@ func TestSignData_SetDecision(t *testing.T) {
 						Decision:  SignDecisionSigned,
 						Comment:   comment,
 						CreatedAt: time.Time{},
+						LogType:   SignerLogDecision,
 					},
 				},
 			},

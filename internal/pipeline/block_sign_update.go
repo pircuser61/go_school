@@ -401,7 +401,13 @@ func (gb *GoSignBlock) setSignerDecision(u *signSignatureParams) error {
 		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputSignatures], gb.State.Signatures)
 		resAttachments := make([]entity.Attachment, 0)
 		for _, l := range gb.State.SignLog {
+			if l.LogType != SignerLogDecision {
+				continue
+			}
 			resAttachments = append(resAttachments, l.Attachments...)
+		}
+		for _, f := range gb.State.SigningParams.Files {
+			resAttachments = append(resAttachments, f)
 		}
 		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputSignAttachments], resAttachments)
 	}
