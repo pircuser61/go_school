@@ -113,7 +113,7 @@ func (s *Service) getUserinfo(ctx context.Context, r *http.Request) (*UserInfo, 
 		return nil, errors.New("got no access token to make request")
 	case http.StatusOK:
 	default:
-		return nil, errors.New("got bad status code")
+		return nil, errors.Errorf("got bad status code %d", resp.StatusCode)
 	}
 	var user *UserInfo
 	if unmErr := json.NewDecoder(resp.Body).Decode(&user); unmErr != nil {

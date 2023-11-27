@@ -3,7 +3,6 @@ package api
 import (
 	c "context"
 	"encoding/json"
-
 	"io"
 	"net/http"
 
@@ -16,12 +15,12 @@ import (
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	e "gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 )
 
-func (ae *APIEnv) convertProcessSettingsToFlat(ctx c.Context, ps *entity.ProcessSettings) error {
+func (ae *APIEnv) convertProcessSettingsToFlat(ctx c.Context, ps *e.ProcessSettings) error {
 	if ps.StartSchemaRaw != nil {
 		start, err := ae.Forms.MakeFlatSchema(ctx, ps.StartSchemaRaw)
 		if err != nil {
@@ -49,21 +48,21 @@ func (ae *APIEnv) SaveVersionTaskSubscriptionSettings(w http.ResponseWriter, req
 
 	b, err := io.ReadAll(req.Body)
 	if err != nil {
-		e := RequestReadError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		er := RequestReadError
+		log.Error(er.errorMessage(err))
+		_ = er.sendError(w)
 
 		return
 	}
 
 	defer req.Body.Close()
 
-	var settings []*entity.ExternalSystemSubscriptionParams
+	var settings []*e.ExternalSystemSubscriptionParams
 	err = json.Unmarshal(b, &settings)
 	if err != nil {
-		e := ExternalSystemSettingsParseError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		er := ExternalSystemSettingsParseError
+		log.Error(er.errorMessage(err))
+		_ = er.sendError(w)
 
 		return
 	}
@@ -73,8 +72,8 @@ func (ae *APIEnv) SaveVersionTaskSubscriptionSettings(w http.ResponseWriter, req
 	txStorage, transactionErr := ae.DB.StartTransaction(ctx)
 	if transactionErr != nil {
 		log.WithError(transactionErr).Error("couldn't start transaction")
-		e := UnknownError
-		_ = e.sendError(w)
+		er := UnknownError
+		_ = er.sendError(w)
 		return
 	}
 	defer func() {
@@ -94,9 +93,9 @@ func (ae *APIEnv) SaveVersionTaskSubscriptionSettings(w http.ResponseWriter, req
 	}(txStorage, ctx)
 
 	if rmErr := ae.DB.RemoveExternalSystemTaskSubscriptions(ctx, versionID, ""); rmErr != nil {
-		e := ExternalSystemSettingsSaveError
-		log.Error(e.errorMessage(rmErr))
-		_ = e.sendError(w)
+		er := ExternalSystemSettingsSaveError
+		log.Error(er.errorMessage(rmErr))
+		_ = er.sendError(w)
 
 		return
 	}
@@ -104,9 +103,9 @@ func (ae *APIEnv) SaveVersionTaskSubscriptionSettings(w http.ResponseWriter, req
 	for _, s := range settings {
 		err = ae.DB.SaveExternalSystemSubscriptionParams(ctx, versionID, s)
 		if err != nil {
-			e := ExternalSystemSettingsSaveError
-			log.Error(e.errorMessage(err))
-			_ = e.sendError(w)
+			er := ExternalSystemSettingsSaveError
+			log.Error(er.errorMessage(err))
+			_ = er.sendError(w)
 
 			return
 		}
@@ -114,16 +113,16 @@ func (ae *APIEnv) SaveVersionTaskSubscriptionSettings(w http.ResponseWriter, req
 
 	if err = txStorage.CommitTransaction(ctx); err != nil {
 		log.WithError(err).Error("couldn't commit transaction")
-		e := UnknownError
-		_ = e.sendError(w)
+		er := UnknownError
+		_ = er.sendError(w)
 		return
 	}
 
 	err = sendResponse(w, http.StatusOK, nil)
 	if err != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		er := UnknownError
+		log.Error(er.errorMessage(err))
+		_ = er.sendError(w)
 
 		return
 	}
@@ -137,18 +136,18 @@ func (ae *APIEnv) GetVersionSettings(w http.ResponseWriter, req *http.Request, v
 
 	processSettings, err := ae.DB.GetVersionSettings(ctx, versionID)
 	if err != nil {
-		e := GetProcessSettingsError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		er := GetProcessSettingsError
+		log.Error(er.errorMessage(err))
+		_ = er.sendError(w)
 
 		return
 	}
 
 	slaSettings, err := ae.DB.GetSlaVersionSettings(ctx, versionID)
 	if err != nil {
-		e := GetProcessSlaSettingsError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		er := GetProcessSlaSettingsError
+		log.Error(er.errorMessage(err))
+		_ = er.sendError(w)
 
 		return
 	}
@@ -157,35 +156,35 @@ func (ae *APIEnv) GetVersionSettings(w http.ResponseWriter, req *http.Request, v
 
 	externalSystemsIds, err := ae.DB.GetExternalSystemsIDs(ctx, versionID)
 	if err != nil {
-		e := GetExternalSystemsError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		er := GetExternalSystemsError
+		log.Error(er.errorMessage(err))
+		_ = er.sendError(w)
 
 		return
 	}
 
 	systemsNames, err := ae.Integrations.GetSystemsNames(ctx, externalSystemsIds)
 	if err != nil {
-		e := GetExternalSystemsNamesError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		er := GetExternalSystemsNamesError
+		log.Error(er.errorMessage(err))
+		_ = er.sendError(w)
 
 		return
 	}
 
-	externalSystems := make([]entity.ExternalSystem, 0, len(externalSystemsIds))
-	externalSystemsTaskSubs := make([]entity.ExternalSystemSubscriptionParams, 0, len(externalSystemsIds))
+	externalSystems := make([]e.ExternalSystem, 0, len(externalSystemsIds))
+	externalSystemsTaskSubs := make([]e.ExternalSystemSubscriptionParams, 0, len(externalSystemsIds))
 	for _, id := range externalSystemsIds {
 		externalSystemSettings, err := ae.DB.GetExternalSystemSettings(ctx, versionID, id.String())
 		if err != nil {
-			e := GetExternalSystemSettingsError
-			log.Error(e.errorMessage(err))
-			_ = e.sendError(w)
+			er := GetExternalSystemSettingsError
+			log.Error(er.errorMessage(err))
+			_ = er.sendError(w)
 
 			return
 		}
 		validateEndingSettings(&externalSystemSettings)
-		externalSystems = append(externalSystems, entity.ExternalSystem{
+		externalSystems = append(externalSystems, e.ExternalSystem{
 			Id:               id.String(),
 			Name:             systemsNames[id.String()],
 			AllowRunAsOthers: externalSystemSettings.AllowRunAsOthers,
@@ -194,9 +193,9 @@ func (ae *APIEnv) GetVersionSettings(w http.ResponseWriter, req *http.Request, v
 
 		subscriptionSettings, err := ae.DB.GetExternalSystemTaskSubscriptions(ctx, versionID, id.String())
 		if err != nil {
-			e := GetExternalSystemSettingsError
-			log.Error(e.errorMessage(err))
-			_ = e.sendError(w)
+			er := GetExternalSystemSettingsError
+			log.Error(er.errorMessage(err))
+			_ = er.sendError(w)
 
 			return
 		}
@@ -207,14 +206,14 @@ func (ae *APIEnv) GetVersionSettings(w http.ResponseWriter, req *http.Request, v
 
 	approvalLists, err := ae.DB.GetApprovalListsSettings(ctx, versionID)
 	if err != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		er := UnknownError
+		log.Error(er.errorMessage(err))
+		_ = er.sendError(w)
 
 		return
 	}
 
-	result := entity.ProcessSettingsWithExternalSystems{
+	result := e.ProcessSettingsWithExternalSystems{
 		ExternalSystems:    externalSystems,
 		ProcessSettings:    processSettings,
 		TasksSubscriptions: externalSystemsTaskSubs,
@@ -222,9 +221,9 @@ func (ae *APIEnv) GetVersionSettings(w http.ResponseWriter, req *http.Request, v
 	}
 
 	if err = sendResponse(w, http.StatusOK, result); err != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		er := UnknownError
+		log.Error(er.errorMessage(err))
+		_ = er.sendError(w)
 
 		return
 	}
@@ -241,52 +240,52 @@ func (ae *APIEnv) SaveVersionSettings(w http.ResponseWriter, req *http.Request, 
 	defer req.Body.Close()
 
 	if err != nil {
-		e := RequestReadError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		er := RequestReadError
+		log.Error(er.errorMessage(err))
+		_ = er.sendError(w)
 
 		return
 	}
 
-	var processSettings *entity.ProcessSettings
+	var processSettings *e.ProcessSettings
 	if err = json.Unmarshal(b, &processSettings); err != nil {
-		e := ProcessSettingsParseError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		er := ProcessSettingsParseError
+		log.Error(er.errorMessage(err))
+		_ = er.sendError(w)
 
 		return
 	}
 
 	if convErr := ae.convertProcessSettingsToFlat(ctx, processSettings); convErr != nil {
-		e := ProcessSettingsConvertError
-		log.Error(e.errorMessage(convErr))
-		_ = e.sendError(w)
+		er := ProcessSettingsConvertError
+		log.Error(er.errorMessage(convErr))
+		_ = er.sendError(w)
 
 		return
 	}
 
 	processSettings.Id = versionID
 	if err = processSettings.Validate(); err != nil {
-		e := JSONSchemaValidationError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		er := JSONSchemaValidationError
+		log.Error(er.errorMessage(err))
+		_ = er.sendError(w)
 
 		return
 	}
 
 	saveVersionErr := ae.DB.SaveVersionSettings(ctx, *processSettings, (*string)(params.SchemaFlag))
 	if saveVersionErr != nil {
-		e := ProcessSettingsSaveError
-		log.Error(e.errorMessage(saveVersionErr))
-		_ = e.sendError(w)
+		er := ProcessSettingsSaveError
+		log.Error(er.errorMessage(saveVersionErr))
+		_ = er.sendError(w)
 
 		return
 	}
 
 	if err = sendResponse(w, http.StatusOK, processSettings); err != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		er := UnknownError
+		log.Error(er.errorMessage(err))
+		_ = er.sendError(w)
 
 		return
 	}
@@ -304,18 +303,18 @@ func (ae *APIEnv) SaveExternalSystemSettings(
 	defer req.Body.Close()
 
 	if err != nil {
-		e := RequestReadError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		er := RequestReadError
+		log.Error(er.errorMessage(err))
+		_ = er.sendError(w)
 
 		return
 	}
 
-	var externalSystem entity.ExternalSystem
+	var externalSystem e.ExternalSystem
 	if err = json.Unmarshal(b, &externalSystem); err != nil {
-		e := ExternalSystemSettingsParseError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		er := ExternalSystemSettingsParseError
+		log.Error(er.errorMessage(err))
+		_ = er.sendError(w)
 
 		return
 	}
@@ -323,26 +322,26 @@ func (ae *APIEnv) SaveExternalSystemSettings(
 	externalSystem.Id = systemID
 
 	if err = externalSystem.ValidateSchemas(); err != nil {
-		e := JSONSchemaValidationError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		er := JSONSchemaValidationError
+		log.Error(er.errorMessage(err))
+		_ = er.sendError(w)
 
 		return
 	}
 
 	err = ae.DB.SaveExternalSystemSettings(ctx, versionID, externalSystem, (*string)(params.SchemaFlag))
 	if err != nil {
-		e := ExternalSystemSettingsSaveError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		er := ExternalSystemSettingsSaveError
+		log.Error(er.errorMessage(err))
+		_ = er.sendError(w)
 
 		return
 	}
 
 	if err = sendResponse(w, http.StatusOK, nil); err != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		er := UnknownError
+		log.Error(er.errorMessage(err))
+		_ = er.sendError(w)
 
 		return
 	}
@@ -357,8 +356,8 @@ func (ae *APIEnv) RemoveExternalSystem(w http.ResponseWriter, req *http.Request,
 	txStorage, transactionErr := ae.DB.StartTransaction(ctx)
 	if transactionErr != nil {
 		log.WithError(transactionErr).Error("couldn't start transaction")
-		e := UnknownError
-		_ = e.sendError(w)
+		er := UnknownError
+		_ = er.sendError(w)
 		return
 	}
 	defer func() {
@@ -379,34 +378,34 @@ func (ae *APIEnv) RemoveExternalSystem(w http.ResponseWriter, req *http.Request,
 
 	err := txStorage.RemoveExternalSystemTaskSubscriptions(ctx, versionID, systemID)
 	if err != nil {
-		e := ExternalSystemRemoveError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		er := ExternalSystemRemoveError
+		log.Error(er.errorMessage(err))
+		_ = er.sendError(w)
 
 		return
 	}
 
 	err = txStorage.RemoveExternalSystem(ctx, versionID, systemID)
 	if err != nil {
-		e := ExternalSystemRemoveError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		er := ExternalSystemRemoveError
+		log.Error(er.errorMessage(err))
+		_ = er.sendError(w)
 
 		return
 	}
 
 	if err = txStorage.CommitTransaction(ctx); err != nil {
 		log.WithError(err).Error("couldn't commit transaction")
-		e := UnknownError
-		_ = e.sendError(w)
+		er := UnknownError
+		_ = er.sendError(w)
 		return
 	}
 
 	err = sendResponse(w, http.StatusOK, nil)
 	if err != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		er := UnknownError
+		log.Error(er.errorMessage(err))
+		_ = er.sendError(w)
 
 		return
 	}
@@ -420,18 +419,18 @@ func (ae *APIEnv) GetExternalSystemSettings(w http.ResponseWriter, req *http.Req
 
 	externalSystemSettings, err := ae.DB.GetExternalSystemSettings(ctx, versionID, systemID)
 	if err != nil {
-		e := GetExternalSystemSettingsError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		er := GetExternalSystemSettingsError
+		log.Error(er.errorMessage(err))
+		_ = er.sendError(w)
 
 		return
 	}
 	validateEndingSettings(&externalSystemSettings)
 
 	if err := sendResponse(w, http.StatusOK, externalSystemSettings); err != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		er := UnknownError
+		log.Error(er.errorMessage(err))
+		_ = er.sendError(w)
 
 		return
 	}
@@ -447,9 +446,9 @@ func (ae *APIEnv) AddExternalSystemToVersion(w http.ResponseWriter, req *http.Re
 	defer req.Body.Close()
 
 	if err != nil {
-		e := RequestReadError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		er := RequestReadError
+		log.Error(er.errorMessage(err))
+		_ = er.sendError(w)
 
 		return
 	}
@@ -457,27 +456,27 @@ func (ae *APIEnv) AddExternalSystemToVersion(w http.ResponseWriter, req *http.Re
 	var systemID ExternalSystemId
 	err = json.Unmarshal(b, &systemID)
 	if err != nil {
-		e := ExternalSystemSettingsParseError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		er := ExternalSystemSettingsParseError
+		log.Error(er.errorMessage(err))
+		_ = er.sendError(w)
 
 		return
 	}
 
 	err = ae.DB.AddExternalSystemToVersion(ctx, versionID, string(systemID))
 	if err != nil {
-		e := ExternalSystemAddingError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		er := ExternalSystemAddingError
+		log.Error(er.errorMessage(err))
+		_ = er.sendError(w)
 
 		return
 	}
 
 	err = sendResponse(w, http.StatusOK, nil)
 	if err != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		er := UnknownError
+		log.Error(er.errorMessage(err))
+		_ = er.sendError(w)
 
 		return
 	}
@@ -492,19 +491,19 @@ func (ae *APIEnv) SaveVersionMainSettings(w http.ResponseWriter, req *http.Reque
 	b, err := io.ReadAll(req.Body)
 
 	if err != nil {
-		e := RequestReadError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		er := RequestReadError
+		log.Error(er.errorMessage(err))
+		_ = er.sendError(w)
 		return
 	}
 	defer req.Body.Close()
 
-	var processSettings entity.ProcessSettings
+	var processSettings e.ProcessSettings
 	err = json.Unmarshal(b, &processSettings)
 	if err != nil {
-		e := ProcessSettingsParseError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		er := ProcessSettingsParseError
+		log.Error(er.errorMessage(err))
+		_ = er.sendError(w)
 
 		return
 	}
@@ -513,9 +512,9 @@ func (ae *APIEnv) SaveVersionMainSettings(w http.ResponseWriter, req *http.Reque
 
 	transaction, transactionCreateErr := ae.DB.StartTransaction(ctx)
 	if transactionCreateErr != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(transactionCreateErr))
-		_ = e.sendError(w)
+		er := UnknownError
+		log.Error(er.errorMessage(transactionCreateErr))
+		_ = er.sendError(w)
 
 		return
 	}
@@ -538,86 +537,86 @@ func (ae *APIEnv) SaveVersionMainSettings(w http.ResponseWriter, req *http.Reque
 
 	saveVersionErr := transaction.SaveVersionMainSettings(ctx, processSettings)
 	if saveVersionErr != nil {
-		e := ProcessSettingsSaveError
-		log.Error(e.errorMessage(saveVersionErr))
-		_ = e.sendError(w)
+		er := ProcessSettingsSaveError
+		log.Error(er.errorMessage(saveVersionErr))
+		_ = er.sendError(w)
 
 		return
 	}
 
 	isValid := processSettings.ValidateSLA()
 	if !isValid {
-		e := ValidationSlaProcessSettingsError
-		log.Error(e.errorMessage(errors.New("Error while validating SlaSettings")))
-		_ = e.sendError(w)
+		er := ValidationSlaProcessSettingsError
+		log.Error(er.errorMessage(errors.New("Error while validating SlaSettings")))
+		_ = er.sendError(w)
 
 		return
 	}
 	userFromContext, err := user.GetUserInfoFromCtx(ctx)
 	if err != nil {
-		e := GetUserinfoErr
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		er := GetUserinfoErr
+		log.Error(er.errorMessage(err))
+		_ = er.sendError(w)
 
 		return
 	}
 
-	saveVersionSLAErr := transaction.SaveSlaVersionSettings(ctx, versionID, entity.SlaVersionSettings{
+	saveVersionSLAErr := transaction.SaveSlaVersionSettings(ctx, versionID, e.SlaVersionSettings{
 		Author:   userFromContext.Username,
 		WorkType: processSettings.WorkType,
 		Sla:      processSettings.SLA,
 	})
 	if saveVersionSLAErr != nil {
-		e := ProcessSettingsSaveError
-		log.Error(e.errorMessage(saveVersionSLAErr))
-		_ = e.sendError(w)
+		er := ProcessSettingsSaveError
+		log.Error(er.errorMessage(saveVersionSLAErr))
+		_ = er.sendError(w)
 
 		return
 	}
 
 	parsedUUID, parseErr := uuid.Parse(versionID)
 	if parseErr != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(parseErr))
-		_ = e.sendError(w)
+		er := UnknownError
+		log.Error(er.errorMessage(parseErr))
+		_ = er.sendError(w)
 
 		return
 	}
 
 	pipeline, getPipelineErr := transaction.GetPipelineVersion(ctx, parsedUUID, true)
 	if getPipelineErr != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(getPipelineErr))
-		_ = e.sendError(w)
+		er := UnknownError
+		log.Error(er.errorMessage(getPipelineErr))
+		_ = er.sendError(w)
 
 		return
 	}
 
 	renamePipelineErr := transaction.RenamePipeline(ctx, pipeline.ID, processSettings.Name)
 	if renamePipelineErr != nil {
-		e := PipelineCreateError
+		er := PipelineCreateError
 		if db.IsUniqueConstraintError(renamePipelineErr) {
-			e = PipelineNameUsed
+			er = PipelineNameUsed
 		}
-		log.Error(e.errorMessage(renamePipelineErr))
-		_ = e.sendError(w)
+		log.Error(er.errorMessage(renamePipelineErr))
+		_ = er.sendError(w)
 
 		return
 	}
 
 	commitErr := transaction.CommitTransaction(ctx)
 	if commitErr != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(commitErr))
-		_ = e.sendError(w)
+		er := UnknownError
+		log.Error(er.errorMessage(commitErr))
+		_ = er.sendError(w)
 
 		return
 	}
 	err = sendResponse(w, http.StatusOK, nil)
 	if err != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		er := UnknownError
+		log.Error(er.errorMessage(err))
+		_ = er.sendError(w)
 
 		return
 	}
@@ -631,9 +630,9 @@ func (ae *APIEnv) SaveExternalSystemEndSettings(w http.ResponseWriter, r *http.R
 
 	b, err := io.ReadAll(r.Body)
 	if err != nil {
-		e := RequestReadError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		er := RequestReadError
+		log.Error(er.errorMessage(err))
+		_ = er.sendError(w)
 		return
 	}
 	defer r.Body.Close()
@@ -641,28 +640,28 @@ func (ae *APIEnv) SaveExternalSystemEndSettings(w http.ResponseWriter, r *http.R
 	var systemSettings EndSystemSettings
 	err = json.Unmarshal(b, &systemSettings)
 	if err != nil {
-		e := ProcessSettingsParseError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		er := ProcessSettingsParseError
+		log.Error(er.errorMessage(err))
+		_ = er.sendError(w)
 
 		return
 	}
 	if systemSettings.Method == "" || systemSettings.URL == "" || systemSettings.MicroserviceId == "" {
-		e := ValidationEndingSystemSettingsError
-		log.Error(e.errorMessage(errors.New("Error while validating systemSettings")))
-		_ = e.sendError(w)
+		er := ValidationEndingSystemSettingsError
+		log.Error(er.errorMessage(errors.New("Error while validating systemSettings")))
+		_ = er.sendError(w)
 
 		return
 	}
-	err = ae.DB.UpdateEndingSystemSettings(ctx, versionID, systemID, entity.EndSystemSettings{
+	err = ae.DB.UpdateEndingSystemSettings(ctx, versionID, systemID, e.EndSystemSettings{
 		URL:            systemSettings.URL,
 		Method:         string(systemSettings.Method),
 		MicroserviceId: systemSettings.MicroserviceId,
 	})
 	if err != nil {
-		e := UpdateEndingSystemSettingsError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		er := UpdateEndingSystemSettingsError
+		log.Error(er.errorMessage(err))
+		_ = er.sendError(w)
 
 		return
 	}
@@ -674,21 +673,21 @@ func (ae *APIEnv) DeleteExternalSystemEndSettings(w http.ResponseWriter, r *http
 
 	log := logger.GetLogger(ctx)
 
-	err := ae.DB.UpdateEndingSystemSettings(ctx, versionID, systemID, entity.EndSystemSettings{
+	err := ae.DB.UpdateEndingSystemSettings(ctx, versionID, systemID, e.EndSystemSettings{
 		URL:            "",
 		Method:         "",
 		MicroserviceId: "",
 	})
 	if err != nil {
-		e := UpdateEndingSystemSettingsError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		er := UpdateEndingSystemSettingsError
+		log.Error(er.errorMessage(err))
+		_ = er.sendError(w)
 
 		return
 	}
 }
 
-func validateEndingSettings(s *entity.ExternalSystem) {
+func validateEndingSettings(s *e.ExternalSystem) {
 	if s.OutputSettings.MicroserviceId == "" ||
 		s.OutputSettings.URL == "" ||
 		s.OutputSettings.Method == "" {
@@ -704,9 +703,9 @@ func (ae *APIEnv) AllowRunAsOthers(w http.ResponseWriter, r *http.Request, versi
 
 	b, err := io.ReadAll(r.Body)
 	if err != nil {
-		e := RequestReadError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		er := RequestReadError
+		log.Error(er.errorMessage(err))
+		_ = er.sendError(w)
 		return
 	}
 	defer r.Body.Close()
@@ -714,18 +713,18 @@ func (ae *APIEnv) AllowRunAsOthers(w http.ResponseWriter, r *http.Request, versi
 	var allowRunAsOthers bool
 	err = json.Unmarshal(b, &allowRunAsOthers)
 	if err != nil {
-		e := ProcessSettingsParseError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		er := ProcessSettingsParseError
+		log.Error(er.errorMessage(err))
+		_ = er.sendError(w)
 
 		return
 	}
 
 	err = ae.DB.AllowRunAsOthers(ctx, versionID, systemID, allowRunAsOthers)
 	if err != nil {
-		e := UpdateRunAsOthersSettingsError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		er := UpdateRunAsOthersSettingsError
+		log.Error(er.errorMessage(err))
+		_ = er.sendError(w)
 
 		return
 	}
@@ -738,9 +737,9 @@ func (ae *APIEnv) RemoveApprovalListSettings(w http.ResponseWriter, r *http.Requ
 	log := logger.GetLogger(ctx)
 
 	if err := ae.DB.RemoveApprovalListSettings(ctx, listID); err != nil {
-		e := UpdateEndingSystemSettingsError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		er := UpdateEndingSystemSettingsError
+		log.Error(er.errorMessage(err))
+		_ = er.sendError(w)
 
 		return
 	}
@@ -754,18 +753,18 @@ func (ae *APIEnv) UpdateApprovalListSettings(w http.ResponseWriter, r *http.Requ
 
 	b, err := io.ReadAll(r.Body)
 	if err != nil {
-		e := RequestReadError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		er := RequestReadError
+		log.Error(er.errorMessage(err))
+		_ = er.sendError(w)
 		return
 	}
 	defer r.Body.Close()
 
-	var req entity.UpdateApprovalListSettings
+	var req e.UpdateApprovalListSettings
 	if err = json.Unmarshal(b, &req); err != nil {
-		e := ProcessSettingsParseError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		er := ProcessSettingsParseError
+		log.Error(er.errorMessage(err))
+		_ = er.sendError(w)
 
 		return
 	}
@@ -773,17 +772,17 @@ func (ae *APIEnv) UpdateApprovalListSettings(w http.ResponseWriter, r *http.Requ
 	req.ID = listID
 
 	if err = ae.DB.UpdateApprovalListSettings(ctx, req); err != nil {
-		e := UpdateEndingSystemSettingsError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		er := UpdateEndingSystemSettingsError
+		log.Error(er.errorMessage(err))
+		_ = er.sendError(w)
 
 		return
 	}
 
 	if err = sendResponse(w, http.StatusOK, nil); err != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		er := UnknownError
+		log.Error(er.errorMessage(err))
+		_ = er.sendError(w)
 
 		return
 	}
@@ -797,23 +796,23 @@ func (ae *APIEnv) SaveApprovalListSettings(w http.ResponseWriter, r *http.Reques
 
 	b, err := io.ReadAll(r.Body)
 	if err != nil {
-		e := RequestReadError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		er := RequestReadError
+		log.Error(er.errorMessage(err))
+		_ = er.sendError(w)
 		return
 	}
 	defer r.Body.Close()
 
-	var req entity.SaveApprovalListSettings
+	var req e.SaveApprovalListSettings
 	if err = json.Unmarshal(b, &req); err != nil {
-		e := ProcessSettingsParseError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		er := ProcessSettingsParseError
+		log.Error(er.errorMessage(err))
+		_ = er.sendError(w)
 
 		return
 	}
 
-	id, err := ae.DB.SaveApprovalListSettings(ctx, entity.SaveApprovalListSettings{
+	id, err := ae.DB.SaveApprovalListSettings(ctx, e.SaveApprovalListSettings{
 		VersionId:      versionID,
 		Name:           req.Name,
 		Steps:          req.Steps,
@@ -821,17 +820,17 @@ func (ae *APIEnv) SaveApprovalListSettings(w http.ResponseWriter, r *http.Reques
 		FormsMapping:   req.FormsMapping,
 	})
 	if err != nil {
-		e := UpdateEndingSystemSettingsError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		er := UpdateEndingSystemSettingsError
+		log.Error(er.errorMessage(err))
+		_ = er.sendError(w)
 
 		return
 	}
 
 	if err = sendResponse(w, http.StatusOK, id); err != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		er := UnknownError
+		log.Error(er.errorMessage(err))
+		_ = er.sendError(w)
 
 		return
 	}
@@ -843,67 +842,98 @@ func (ae *APIEnv) GetApprovalListSetting(w http.ResponseWriter, r *http.Request,
 
 	log := logger.GetLogger(ctx)
 
-	approvalList, err := ae.DB.GetApprovalListSettings(ctx, workNumber, listID)
+	approvalList, err := ae.DB.GetApprovalListSettings(ctx, listID)
 	if err != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		er := UnknownError
+		log.Error(er.errorMessage(err))
+		_ = er.sendError(w)
 
 		return
 	}
 
-	res, err := toResponseApprovalListSettings(approvalList)
+	states, err := ae.DB.GetFilteredStates(ctx, approvalList.Steps, workNumber)
 	if err != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		er := UnknownError
+		log.Error(er.errorMessage(err))
+		_ = er.sendError(w)
+
+		return
+	}
+
+	varStore, err := ae.DB.GetVariableStorage(ctx, workNumber)
+	if err != nil {
+		er := UnknownError
+		log.Error(er.errorMessage(err))
+		_ = er.sendError(w)
+
+		return
+	}
+
+	variables, err := varStore.GrabStorage()
+	if err != nil {
+		er := UnknownError
+		log.Error(er.errorMessage(err))
+		_ = er.sendError(w)
+
+		return
+	}
+
+	variables = script.RestoreMapStructure(variables)
+
+	res, err := toResponseApprovalListSettings(&toResponseApprovalListSettingsDTO{
+		approvalList,
+		states,
+		variables,
+	})
+	if err != nil {
+		er := UnknownError
+		log.Error(er.errorMessage(err))
+		_ = er.sendError(w)
 
 		return
 	}
 
 	if err = sendResponse(w, http.StatusOK, res); err != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		er := UnknownError
+		log.Error(er.errorMessage(err))
+		_ = er.sendError(w)
 
 		return
 	}
 }
 
-func toResponseApprovalListSettings(in *entity.ApprovalListSettings) (*ResponseVersionApprovalList, error) {
-	name := "approver_0"
-	stepType := "approver"
-	return &ResponseVersionApprovalList{
-		Id:   "12eebf5b-0404-4078-9906-792102d07cd4",
-		Name: "Test list name approver_0",
-		Steps: []TaskResponseStep{{
-			Name: &name,
-			Type: &stepType,
-			State: &map[string]interface{}{
-				"decision":          "approved",
-				"sla":               23,
-				"testStringContext": "test value",
-				"approvers":         map[string]interface{}{"testlogin": ""},
-			},
-		}},
-		ContextVariables: map[string]interface{}{"testStringContext": "test value", "testNumber": 211122},
-		FormsVariables:   map[string]interface{}{"testStringForm": "test value form", "testNumber": 55},
-	}, nil
+type toResponseApprovalListSettingsDTO struct {
+	approvalList *e.ApprovalListSettings
+	stepsStates  map[string]map[string]interface{}
+	variables    map[string]interface{}
+}
 
-	contextVariables, err := script.MapData(in.ContextMapping, map[string]interface{}{}, nil)
+func toResponseApprovalListSettings(dto *toResponseApprovalListSettingsDTO) (
+	*ResponseVersionApprovalList, error) {
+	steps := make([]TaskResponseStep, 0, len(dto.stepsStates))
+	for i := range dto.stepsStates {
+		stepName := i
+		state := dto.stepsStates[stepName]
+		steps = append(steps, TaskResponseStep{
+			Name:  &stepName,
+			State: &state,
+		})
+	}
+
+	contextVariables, err := script.MapData(dto.approvalList.ContextMapping, dto.variables, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	formsVariables, err := script.MapData(in.FormsMapping, map[string]interface{}{}, nil)
+	formsVariables, err := script.MapData(dto.approvalList.FormsMapping, dto.variables, nil)
 	if err != nil {
 		return nil, err
 	}
 
 	return &ResponseVersionApprovalList{
-		Id:   in.ID,
-		Name: in.Name,
-		//Steps:            in.Steps,
+		Id:               dto.approvalList.ID,
+		Name:             dto.approvalList.Name,
+		Steps:            steps,
 		ContextVariables: contextVariables,
 		FormsVariables:   formsVariables,
 	}, nil
@@ -917,27 +947,27 @@ func (ae *APIEnv) GetApprovalListsSettings(w http.ResponseWriter, r *http.Reques
 
 	approvalLists, err := ae.DB.GetApprovalListsSettings(ctx, versionID)
 	if err != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		er := UnknownError
+		log.Error(er.errorMessage(err))
+		_ = er.sendError(w)
 
 		return
 	}
 
 	if err = sendResponse(w, http.StatusOK, toResponseApprovalListsSettings(approvalLists)); err != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		er := UnknownError
+		log.Error(er.errorMessage(err))
+		_ = er.sendError(w)
 
 		return
 	}
 }
 
-func toResponseApprovalListsSettings(in []entity.ApprovalListSettings) []entity.ApprovalListSettings {
-	res := make([]entity.ApprovalListSettings, 0, len(in))
+func toResponseApprovalListsSettings(in []e.ApprovalListSettings) []e.ApprovalListSettings {
+	res := make([]e.ApprovalListSettings, 0, len(in))
 
 	for i := range in {
-		res = append(res, entity.ApprovalListSettings{
+		res = append(res, e.ApprovalListSettings{
 			ID:             in[i].ID,
 			Name:           in[i].Name,
 			Steps:          in[i].Steps,

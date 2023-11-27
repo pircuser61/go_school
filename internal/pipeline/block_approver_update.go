@@ -641,7 +641,7 @@ func (gb *GoApproverBlock) Update(ctx c.Context) (interface{}, error) {
 		var updateParams additionalApproverUpdateParams
 
 		if err := json.Unmarshal(data.Parameters, &updateParams); err != nil {
-			return nil, errors.New("can't assert provided data")
+			return nil, errors.Errorf("can't assert provided data: %v", err)
 		}
 
 		if err := updateParams.Validate(); err != nil {

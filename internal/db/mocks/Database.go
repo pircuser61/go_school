@@ -22,6 +22,14 @@ type MockedDatabase struct {
 	mock.Mock
 }
 
+func (_m *MockedDatabase) GetVariableStorage(ctx context.Context, workNumber string) (*store.VariableStore, error) {
+	return nil, nil
+}
+
+func (_m *MockedDatabase) GetFilteredStates(ctx context.Context, st []string, wn string) (map[string]map[string]interface{}, error) {
+	return nil, nil
+}
+
 func (_m *MockedDatabase) UpdateApprovalListSettings(ctx context.Context, in entity.UpdateApprovalListSettings) error {
 	return nil
 }
@@ -30,7 +38,7 @@ func (_m *MockedDatabase) RemoveApprovalListSettings(ctx context.Context, listID
 	return nil
 }
 
-func (_m *MockedDatabase) GetApprovalListSettings(ctx context.Context, workNumber, listID string) (*entity.ApprovalListSettings, error) {
+func (_m *MockedDatabase) GetApprovalListSettings(ctx context.Context, listID string) (*entity.ApprovalListSettings, error) {
 	return nil, nil
 }
 

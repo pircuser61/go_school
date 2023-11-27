@@ -9,18 +9,42 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
 
+type SignerLogType string
+
+const (
+	SignerLogDecision           SignerLogType = "decision"
+	AdditionalSignerLogDecision SignerLogType = "additionalApproverDecision"
+	SignerLogAddApprover        SignerLogType = "addApprover"
+
+	SignDecisionAddApproverApprovedRU = "согласен"
+	SignDecisionAddApproverRejectedRU = "не согласен"
+)
+
 type SignDecision string
 
-func (a SignDecision) String() string {
-	return string(a)
+func (sd SignDecision) String() string {
+	return string(sd)
+}
+
+func (sd SignDecision) ToRuString() string {
+	switch sd {
+	case SignDecisionRejected:
+		return SignDecisionAddApproverRejectedRU
+	case SignDecisionAddApproverApproved:
+		return SignDecisionAddApproverApprovedRU
+	default:
+		return string(sd)
+	}
 }
 
 type SignLogEntry struct {
-	Login       string              `json:"login"`
-	Decision    SignDecision        `json:"decision"`
-	Comment     string              `json:"comment"`
-	CreatedAt   time.Time           `json:"created_at"`
-	Attachments []entity.Attachment `json:"attachments,omitempty"`
+	Login          string              `json:"login"`
+	Decision       SignDecision        `json:"decision"`
+	Comment        string              `json:"comment"`
+	CreatedAt      time.Time           `json:"created_at"`
+	Attachments    []entity.Attachment `json:"attachments,omitempty"`
+	AddedApprovers []string            `json:"added_approvers"`
+	LogType        SignerLogType       `json:"log_type"`
 }
 
 type SigningParams struct {
@@ -60,7 +84,39 @@ type SignData struct {
 	SLAChecked          bool `json:"sla_checked"`
 	DayBeforeSLAChecked bool `json:"before_day_sla_checked"`
 
+	AdditionalApprovers []AdditionalSignApprover `json:"additional_approvers,omitempty"`
+
 	Reentered bool `json:"reentered"`
+}
+
+type AdditionalSignApprover struct {
+	ApproverLogin string              `json:"approver_login"`
+	BaseLogin     string              `json:"base_login"`
+	Question      *string             `json:"question"`
+	Comment       *string             `json:"comment"`
+	Attachments   []entity.Attachment `json:"attachments"`
+	Decision      *SignDecision       `json:"decision"`
+	CreatedAt     time.Time           `json:"created_at"`
+	DecisionTime  *time.Time          `json:"decision_time"`
+}
+
+func (s *SignData) userIsSignerOrAddApprover(login string) bool {
+	if login == autoSigner {
+		return true
+	}
+
+	_, ok := s.Signers[login]
+	if ok {
+		return true
+	}
+
+	for _, signer := range s.AdditionalApprovers {
+		if signer.Decision == nil && signer.ApproverLogin == login {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (s *SignData) handleAnyOfDecision(login string, params *signSignatureParams) {
@@ -74,6 +130,7 @@ func (s *SignData) handleAnyOfDecision(login string, params *signSignatureParams
 		Comment:     params.Comment,
 		CreatedAt:   time.Now(),
 		Attachments: params.Attachments,
+		LogType:     SignerLogDecision,
 	}
 
 	s.SignLog = append(s.SignLog, signingLogEntry)
@@ -82,6 +139,9 @@ func (s *SignData) handleAnyOfDecision(login string, params *signSignatureParams
 func (s *SignData) handleAllOfDecision(login string, params *signSignatureParams) error {
 	for i := 0; i < len(s.SignLog); i++ {
 		entry := s.SignLog[i]
+		if entry.LogType != SignerLogDecision {
+			continue
+		}
 		if entry.Login == login {
 			return errors.New(fmt.Sprintf("decision of user %s is already set", login))
 		}
@@ -93,6 +153,7 @@ func (s *SignData) handleAllOfDecision(login string, params *signSignatureParams
 		Comment:     params.Comment,
 		CreatedAt:   time.Now(),
 		Attachments: params.Attachments,
+		LogType:     SignerLogDecision,
 	}
 
 	s.SignLog = append(s.SignLog, signingLogEntry)
@@ -105,15 +166,24 @@ func (s *SignData) handleAllOfDecision(login string, params *signSignatureParams
 	case SignDecisionError:
 		overallDecision = SignDecisionError
 	default:
-		if len(s.SignLog) == len(s.Signers) {
+		var decisionCount int
+		for _, log := range s.SignLog {
+			if log.LogType == SignerLogDecision {
+				decisionCount++
+			}
+		}
+
+		if decisionCount == len(s.Signers) {
 			overallDecision = SignDecisionSigned
 		}
 	}
+
 	if overallDecision != "" {
 		s.Decision = &overallDecision
 		s.Comment = &params.Comment
 		s.ActualSigner = &login
 	}
+
 	return nil
 }
 
@@ -134,7 +204,7 @@ func (s *SignData) SetDecision(login string, params *signSignatureParams) error 
 	}
 
 	if s.SignatureType == script.SignatureTypeUKEP && params.Decision == SignDecisionSigned &&
-		s.SignatureCarrier == script.SignatureCarrierToken && len(params.Attachments) == 0 {
+		s.SignatureCarrier == script.SignatureCarrierToken && len(params.Signatures) == 0 {
 		return errors.New("attachments for ukep token signing are required")
 	}
 
@@ -159,4 +229,64 @@ func (s *SignData) SetDecision(login string, params *signSignatureParams) error 
 	}
 
 	return nil
+}
+
+//nolint:gocyclo //its ok here
+func (s *SignData) SetDecisionByAdditionalApprover(login string,
+	params additionalApproverSignUpdateParams) ([]string, error) {
+
+	approverFound := s.checkForAdditionalApprover(login)
+	if !approverFound {
+		return nil, NewUserIsNotPartOfProcessErr()
+	}
+
+	if s.Decision != nil {
+		return nil, errors.New("decision already set")
+	}
+
+	loginsToNotify := make([]string, 0)
+	couldUpdateOne := false
+	timeNow := time.Now()
+
+	for i := range s.AdditionalApprovers {
+		if login != s.AdditionalApprovers[i].ApproverLogin || s.AdditionalApprovers[i].Decision != nil {
+			continue
+		}
+
+		s.AdditionalApprovers[i].Decision = &params.Decision
+		s.AdditionalApprovers[i].Comment = &params.Comment
+		s.AdditionalApprovers[i].Attachments = params.Attachments
+		if s.AdditionalApprovers[i].DecisionTime == nil {
+			s.AdditionalApprovers[i].DecisionTime = &timeNow
+		}
+
+		var signerLogEntry = SignLogEntry{
+			Login:       login,
+			Decision:    params.Decision,
+			Comment:     params.Comment,
+			Attachments: params.Attachments,
+			CreatedAt:   time.Now(),
+			LogType:     AdditionalSignerLogDecision,
+		}
+
+		s.SignLog = append(s.SignLog, signerLogEntry)
+		loginsToNotify = append(loginsToNotify, s.AdditionalApprovers[i].BaseLogin)
+		couldUpdateOne = true
+	}
+
+	if !couldUpdateOne {
+		return nil, fmt.Errorf("can't approve any request")
+	}
+
+	return loginsToNotify, nil
+}
+
+func (s *SignData) checkForAdditionalApprover(login string) bool {
+	for _, signer := range s.AdditionalApprovers {
+		if login == signer.ApproverLogin {
+			return true
+		}
+	}
+
+	return false
 }

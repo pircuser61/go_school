@@ -1335,6 +1335,60 @@ func (db *PGCon) GetTaskSteps(ctx c.Context, id uuid.UUID) (entity.TaskSteps, er
 	return el, nil
 }
 
+func (db *PGCon) GetFilteredStates(ctx c.Context, steps []string, wNumber string) (map[string]map[string]interface{}, error) {
+	ctx, span := trace.StartSpan(ctx, "pg_get_filtered_states")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	const q = `
+		SELECT vs.content-> 'State'
+		FROM variable_storage vs 
+			WHERE vs.work_id = (SELECT id FROM works 
+			                 	WHERE work_number = $1 AND child_id IS NULL LIMIT 1) AND 
+			vs.step_name IN %s AND 
+			vs.time = (SELECT max(time) FROM variable_storage WHERE work_id = vs.work_id AND step_name = vs.step_name)
+		ORDER BY vs.time DESC`
+
+	query := fmt.Sprintf(q, buildInExpression(steps))
+
+	res := make([]map[string]map[string]interface{}, 0)
+	rows, err := db.Connection.Query(ctx, query, wNumber)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		states := make(map[string]map[string]interface{})
+		if scanErr := rows.Scan(&states); scanErr != nil {
+			return nil, scanErr
+		}
+
+		res = append(res, states)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return mergeStates(res), nil
+}
+
+func mergeStates(in []map[string]map[string]interface{}) (res map[string]map[string]interface{}) {
+	res = make(map[string]map[string]interface{})
+	for i := range in {
+		for stepName := range in[i] {
+			if _, exists := res[stepName]; !exists {
+				res[stepName] = in[i][stepName]
+			}
+		}
+	}
+
+	return res
+}
+
 func (db *PGCon) GetTaskHumanStatus(ctx c.Context, taskID uuid.UUID) (string, error) {
 	ctx, span := trace.StartSpan(ctx, "get_task_status")
 	defer span.End()

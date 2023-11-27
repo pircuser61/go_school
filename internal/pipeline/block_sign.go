@@ -30,13 +30,17 @@ const (
 	keyOutputSignAttachments = "attachments"
 	keyOutputSignatures      = "signatures"
 
-	SignDecisionSigned   SignDecision = "signed"
-	SignDecisionRejected SignDecision = "rejected"
-	SignDecisionError    SignDecision = "error"
+	SignDecisionSigned              SignDecision = "signed"   // signed by signer
+	SignDecisionRejected            SignDecision = "rejected" // rejected by signer or by additional approver
+	SignDecisionError               SignDecision = "error"
+	SignDecisionAddApproverApproved SignDecision = "approved" // approved by additional approver
 
-	signActionSign       = "sign_sign"
-	signActionReject     = "sign_reject"
-	signActionTakeInWork = "sign_start_work"
+	signActionSign                  = "sign_sign"
+	signActionReject                = "sign_reject"
+	signActionTakeInWork            = "sign_start_work"
+	signActionAddApprovers          = "add_approvers"
+	signActionAdditionalApprovement = "additional_approvement"
+	signActionAdditionalReject      = "additional_reject"
 
 	signatureTypeActionParamsKey    = "signature_type"
 	signatureCarrierActionParamsKey = "signature_carrier"
@@ -130,6 +134,9 @@ func (gb *GoSignBlock) UpdateManual() bool {
 
 func (gb *GoSignBlock) isSignerActed(login string) bool {
 	for _, s := range gb.State.SignLog {
+		if s.LogType != SignerLogDecision {
+			continue
+		}
 		if s.Login == login {
 			return true
 		}
@@ -144,6 +151,9 @@ func (gb *GoSignBlock) signActions(login string) []MemberAction {
 	}
 
 	for _, s := range gb.State.SignLog {
+		if s.LogType != SignerLogDecision {
+			continue
+		}
 		if s.Login == login {
 			return []MemberAction{}
 		}
@@ -175,20 +185,44 @@ func (gb *GoSignBlock) signActions(login string) []MemberAction {
 		return []MemberAction{takeInWorkAction, rejectAction}
 	}
 
-	signAction := MemberAction{
-		Id:   signActionSign,
-		Type: ActionTypePrimary,
-		Params: map[string]interface{}{
-			signatureTypeActionParamsKey: gb.State.SignatureType,
-		},
-	}
-
 	return []MemberAction{
-		signAction,
+		{
+			Id:   signActionSign,
+			Type: ActionTypePrimary,
+			Params: map[string]interface{}{
+				signatureTypeActionParamsKey: gb.State.SignatureType,
+			},
+		},
 		{
 			Id:   signActionReject,
 			Type: ActionTypeSecondary,
-		}}
+		},
+		{
+			Id:   signActionAddApprovers,
+			Type: ActionTypeOther,
+		},
+	}
+}
+
+func (gb *GoSignBlock) signAddActions(a *AdditionalSignApprover) []MemberAction {
+	if gb.State.Decision != nil || a.Decision != nil {
+		return []MemberAction{}
+	}
+
+	return []MemberAction{
+		{
+			Id:   signActionAdditionalApprovement,
+			Type: ActionTypePrimary,
+		},
+		{
+			Id:   signActionAdditionalReject,
+			Type: ActionTypeSecondary,
+		},
+		{
+			Id:   signActionAddApprovers,
+			Type: ActionTypeOther,
+		},
+	}
 }
 
 func (gb *GoSignBlock) Members() []Member {
@@ -201,6 +235,17 @@ func (gb *GoSignBlock) Members() []Member {
 			ExecutionGroupMember: false,
 		})
 	}
+
+	for i := 0; i < len(gb.State.AdditionalApprovers); i++ {
+		addApprover := gb.State.AdditionalApprovers[i]
+		members = append(members, Member{
+			Login:                addApprover.ApproverLogin,
+			Actions:              gb.signAddActions(&addApprover),
+			IsActed:              gb.isSignerActed(addApprover.ApproverLogin),
+			ExecutionGroupMember: false,
+		})
+	}
+
 	return members
 }
 
@@ -277,26 +322,26 @@ func (gb *GoSignBlock) setSignersByParams(ctx c.Context, dto *setSignersByParams
 			return grabStorageErr
 		}
 
-		approversFromSchema := make(map[string]struct{})
+		signersFromSchema := make(map[string]struct{})
 
-		approversVars := strings.Split(dto.Signer, ";")
-		for i := range approversVars {
+		signersVars := strings.Split(dto.Signer, ";")
+		for i := range signersVars {
 			resolvedEntities, resolveErr := getUsersFromVars(
 				variableStorage,
 				map[string]struct{}{
-					approversVars[i]: {},
+					signersVars[i]: {},
 				},
 			)
 			if resolveErr != nil {
 				return resolveErr
 			}
 
-			for approverLogin := range resolvedEntities {
-				approversFromSchema[approverLogin] = struct{}{}
+			for signerLogin := range resolvedEntities {
+				signersFromSchema[signerLogin] = struct{}{}
 			}
 		}
 
-		gb.State.Signers = approversFromSchema
+		gb.State.Signers = signersFromSchema
 	}
 
 	return nil
@@ -489,12 +534,18 @@ func (gb *GoSignBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 		}
 		gb.State.SigningParams.SNILS = snilsString
 
-		filesInterface := getVariable(variableStorage, params.SigningParamsPaths.Files)
-		files, err := ValidateFiles(filesInterface)
-		if err != nil {
-			l.Error(err)
+		filesForSigningParams := make([]entity.Attachment, 0)
+		for _, pathToFiles := range params.SigningParamsPaths.Files {
+			filesInterface := getVariable(variableStorage, pathToFiles)
+			files, err := ValidateFiles(filesInterface)
+			if err != nil {
+				l.Error(err)
+				continue
+			}
+			filesForSigningParams = append(filesForSigningParams, files...)
+
 		}
-		gb.State.SigningParams.Files = files
+		gb.State.SigningParams.Files = filesForSigningParams
 	}
 
 	setErr := gb.setSignersByParams(ctx, &setSignersByParamsDTO{

@@ -31,9 +31,9 @@ func (s SignatureCarrier) String() string {
 }
 
 type SigningParamsPaths struct {
-	INN   string `json:"inn"`
-	SNILS string `json:"snils"`
-	Files string `json:"files"`
+	INN   string   `json:"inn"`
+	SNILS string   `json:"snils"`
+	Files []string `json:"files"`
 }
 
 const (
