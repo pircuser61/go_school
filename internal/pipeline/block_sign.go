@@ -148,9 +148,19 @@ func (gb *GoSignBlock) signActions(login string) []MemberAction {
 	}
 
 	for _, s := range gb.State.SignLog {
-		if s.Login == login {
+		if s.Login == login && s.LogType == SignerLogDecision {
 			return []MemberAction{}
 		}
+	}
+
+	rejectAction := MemberAction{
+		Id:   signActionReject,
+		Type: ActionTypeSecondary,
+	}
+
+	addApproversAction := MemberAction{
+		Id:   signActionAddApprovers,
+		Type: ActionTypeOther,
 	}
 
 	if gb.State.SignatureType == script.SignatureTypeUKEP {
@@ -166,36 +176,23 @@ func (gb *GoSignBlock) signActions(login string) []MemberAction {
 			},
 		}
 
-		rejectAction := MemberAction{
-			Id:   signActionReject,
-			Type: ActionTypeSecondary,
-		}
-
 		if gb.State.IsTakenInWork && login != gb.State.WorkerLogin {
 			takeInWorkAction.Params["disabled"] = true
 			rejectAction.Params = map[string]interface{}{"disabled": true}
 		}
 
-		return []MemberAction{takeInWorkAction, rejectAction}
+		return []MemberAction{takeInWorkAction, rejectAction, addApproversAction}
 	}
 
-	return []MemberAction{
-		{
-			Id:   signActionSign,
-			Type: ActionTypePrimary,
-			Params: map[string]interface{}{
-				signatureTypeActionParamsKey: gb.State.SignatureType,
-			},
-		},
-		{
-			Id:   signActionReject,
-			Type: ActionTypeSecondary,
-		},
-		{
-			Id:   signActionAddApprovers,
-			Type: ActionTypeOther,
+	signAction := MemberAction{
+		Id:   signActionSign,
+		Type: ActionTypePrimary,
+		Params: map[string]interface{}{
+			signatureTypeActionParamsKey: gb.State.SignatureType,
 		},
 	}
+
+	return []MemberAction{signAction, rejectAction, addApproversAction}
 }
 
 func (gb *GoSignBlock) signAddActions(a *AdditionalSignApprover) []MemberAction {
