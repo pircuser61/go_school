@@ -201,7 +201,7 @@ func (s *SignData) SetDecision(login string, params *signSignatureParams) error 
 	}
 
 	if s.SignatureType == script.SignatureTypeUKEP && params.Decision == SignDecisionSigned &&
-		s.SignatureCarrier == script.SignatureCarrierToken && len(params.Attachments) == 0 {
+		s.SignatureCarrier == script.SignatureCarrierToken && len(params.Signatures) == 0 {
 		return errors.New("attachments for ukep token signing are required")
 	}
 
