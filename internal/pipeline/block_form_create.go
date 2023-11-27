@@ -109,12 +109,12 @@ func (gb *GoFormBlock) reEntry(ctx c.Context) error {
 	gb.State.IsReentry = true
 	gb.State.ActualExecutor = nil
 
-	if !isAutofill && gb.State.ReEnterSettings == nil {
+	if !isAutofill && gb.State.FormExecutorType != script.FormExecutorTypeAutoFillUser {
 		gb.State.Executors = gb.State.InitialExecutors
 		gb.State.IsTakenInWork = len(gb.State.InitialExecutors) == 1
 	}
 
-	if gb.State.ReEnterSettings != nil {
+	if gb.State.FormExecutorType == script.FormExecutorTypeAutoFillUser && gb.State.ReEnterSettings != nil {
 		if gb.State.ReEnterSettings.GroupPath != nil && *gb.State.ReEnterSettings.GroupPath != "" {
 			variableStorage, grabStorageErr := gb.RunContext.VarStore.GrabStorage()
 			if grabStorageErr != nil {
