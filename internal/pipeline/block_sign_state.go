@@ -139,6 +139,9 @@ func (s *SignData) handleAnyOfDecision(login string, params *signSignatureParams
 func (s *SignData) handleAllOfDecision(login string, params *signSignatureParams) error {
 	for i := 0; i < len(s.SignLog); i++ {
 		entry := s.SignLog[i]
+		if entry.LogType != SignerLogDecision {
+			continue
+		}
 		if entry.Login == login {
 			return errors.New(fmt.Sprintf("decision of user %s is already set", login))
 		}
@@ -201,7 +204,7 @@ func (s *SignData) SetDecision(login string, params *signSignatureParams) error 
 	}
 
 	if s.SignatureType == script.SignatureTypeUKEP && params.Decision == SignDecisionSigned &&
-		s.SignatureCarrier == script.SignatureCarrierToken && len(params.Attachments) == 0 {
+		s.SignatureCarrier == script.SignatureCarrierToken && len(params.Signatures) == 0 {
 		return errors.New("attachments for ukep token signing are required")
 	}
 

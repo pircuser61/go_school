@@ -49,6 +49,7 @@ type TaskStorager interface {
 	GetTaskRunContext(ctx c.Context, workNumber string) (e.TaskRunContext, error)
 	GetBlockDataFromVersion(ctx c.Context, workNumber, blockName string) (*e.EriusFunc, error)
 	GetVariableStorageForStep(ctx c.Context, taskID uuid.UUID, stepType string) (*store.VariableStore, error)
+	GetVariableStorage(ctx c.Context, workNumber string) (*store.VariableStore, error)
 	GetBlocksBreachedSLA(ctx c.Context) ([]StepBreachedSLA, error)
 	GetMeanTaskSolveTime(ctx c.Context, pipelineId string) ([]e.TaskCompletionInterval, error)
 	GetTaskInWorkTime(ctx c.Context, workNumber string) (*e.TaskCompletionInterval, error)
@@ -218,7 +219,7 @@ type Database interface {
 	SaveExternalSystemSettings(ctx c.Context, versionID string, settings e.ExternalSystem, schemaFlag *string) error
 	SaveExternalSystemSubscriptionParams(ctx c.Context, versionID string, params *e.ExternalSystemSubscriptionParams) error
 	RemoveObsoleteMapping(ctx c.Context, id string) error
-	GetWorksForUserWithGivenTimeRange(ctx c.Context, hours int, login, versionID, excludeWorkNumber string) ([]*e.EriusTask, error)
+	GetWorksForUserWithGivenTimeRange(ctx c.Context, hours int, login, vID, workNumber string) ([]*e.EriusTask, error)
 	CheckPipelineNameExists(c.Context, string, bool) (*bool, error)
 	UpdateEndingSystemSettings(ctx c.Context, versionID, systemID string, settings e.EndSystemSettings) (err error)
 	AllowRunAsOthers(ctx c.Context, versionID, systemID string, allowRunAsOthers bool) error
@@ -226,9 +227,10 @@ type Database interface {
 	GetSlaVersionSettings(ctx c.Context, versionID string) (s e.SlaVersionSettings, err error)
 	GetTaskMembers(ctx c.Context, workNumber string, fromActiveNodes bool) ([]DbMember, error)
 	UpdateGroupsForEmptyVersions(ctx c.Context, versionID string, groups []*e.NodeGroup) error
-	GetApprovalListSettings(ctx c.Context, workNumber, listID string) (*e.ApprovalListSettings, error)
+	GetApprovalListSettings(ctx c.Context, listID string) (*e.ApprovalListSettings, error)
 	GetApprovalListsSettings(ctx c.Context, versionID string) ([]e.ApprovalListSettings, error)
 	SaveApprovalListSettings(ctx c.Context, in e.SaveApprovalListSettings) (id string, err error)
 	UpdateApprovalListSettings(ctx c.Context, in e.UpdateApprovalListSettings) error
 	RemoveApprovalListSettings(ctx c.Context, listID string) error
+	GetFilteredStates(ctx c.Context, steps []string, wNumber string) (map[string]map[string]interface{}, error)
 }

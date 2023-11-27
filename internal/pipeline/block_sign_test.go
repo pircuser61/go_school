@@ -54,6 +54,7 @@ func TestSignData_SetDecision(t *testing.T) {
 		decision    SignDecision
 		comment     string
 		attachments []entity.Attachment
+		signatures  []fileSignature
 	}
 	tests := []struct {
 		name             string
@@ -163,10 +164,10 @@ func TestSignData_SetDecision(t *testing.T) {
 				SignatureCarrier: script.SignatureCarrierToken,
 			},
 			args: args{
-				login:       ServiceAccountDev,
-				decision:    SignDecisionSigned,
-				comment:     comment,
-				attachments: []entity.Attachment{{FileID: fileID1}},
+				login:      ServiceAccountDev,
+				decision:   SignDecisionSigned,
+				comment:    comment,
+				signatures: []fileSignature{{FileID: fileID1}},
 			},
 			wantErr: false,
 		},
@@ -268,6 +269,7 @@ func TestSignData_SetDecision(t *testing.T) {
 						Decision:  SignDecisionSigned,
 						Comment:   comment,
 						CreatedAt: time.Time{},
+						LogType:   SignerLogDecision,
 					},
 				},
 			},
@@ -338,6 +340,7 @@ func TestSignData_SetDecision(t *testing.T) {
 				Decision:    tt.args.decision,
 				Comment:     tt.args.comment,
 				Attachments: tt.args.attachments,
+				Signatures:  tt.args.signatures,
 			}); (err != nil) != tt.wantErr {
 				t.Errorf(
 					"SetDecision(%v, %v, %v), error: %v",
