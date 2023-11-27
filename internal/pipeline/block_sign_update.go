@@ -75,8 +75,7 @@ func (gb *GoSignBlock) handleSignature(ctx c.Context, login string) error {
 
 	if gb.State.SignatureType == script.SignatureTypeUKEP &&
 		gb.State.SignatureCarrier == script.SignatureCarrierToken &&
-		updateParams.Decision == SignDecisionSigned &&
-		len(updateParams.Signatures) != len(updateParams.Attachments) {
+		updateParams.Decision == SignDecisionSigned {
 		return errors.New("number of files to sign is not equal to signature files")
 	}
 
