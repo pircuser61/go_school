@@ -73,12 +73,6 @@ func (gb *GoSignBlock) handleSignature(ctx c.Context, login string) error {
 		return errors.New("can't assert provided update data")
 	}
 
-	if gb.State.SignatureType == script.SignatureTypeUKEP &&
-		gb.State.SignatureCarrier == script.SignatureCarrierToken &&
-		updateParams.Decision == SignDecisionSigned {
-		return errors.New("number of files to sign is not equal to signature files")
-	}
-
 	for _, v := range updateParams.Signatures {
 		newPair := fileSignaturePair{
 			File: entity.Attachment{
