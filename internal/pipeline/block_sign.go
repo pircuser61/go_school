@@ -134,6 +134,9 @@ func (gb *GoSignBlock) UpdateManual() bool {
 
 func (gb *GoSignBlock) isSignerActed(login string) bool {
 	for _, s := range gb.State.SignLog {
+		if s.LogType != SignerLogDecision {
+			continue
+		}
 		if s.Login == login {
 			return true
 		}
@@ -148,6 +151,9 @@ func (gb *GoSignBlock) signActions(login string) []MemberAction {
 	}
 
 	for _, s := range gb.State.SignLog {
+		if s.LogType != SignerLogDecision {
+			continue
+		}
 		if s.Login == login {
 			return []MemberAction{}
 		}
