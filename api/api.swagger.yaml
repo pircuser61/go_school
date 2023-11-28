@@ -1427,6 +1427,52 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
+    get:
+      tags:
+        - process_settings
+        - approval_list
+      summary: get task approval list by id
+      description: получение списка согласования заявки
+      operationId: get-approval-list-setting-by-id
+      parameters:
+        - name: versionID
+          in: path
+          description: id версии
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: listID
+          in: path
+          description: id списка согласования
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/VersionApprovalList'
+                  status_code:
+                    type: integer
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
   /pipelines/version/{versionID}/system/{systemID}/runAsOthers:
     post:
       tags:
@@ -4223,6 +4269,8 @@ components:
       properties:
         id:
           type: string
+        version_id:
+          type: string
         name:
           type: string
         steps:
@@ -4237,6 +4285,7 @@ components:
       required:
         - id
         - name
+        - version_id
         - steps
         - context_mapping
         - forms_mapping
