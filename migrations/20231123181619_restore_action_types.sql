@@ -45,13 +45,13 @@ SELECT set_action_type(v.pipeline_id)
 FROM pipeliner.public.versions v;
 
 UPDATE pipeliner.public.members v
-    SET actions = replace(actions::text, 'approved', 'approve')::text array;
+    SET actions = replace(actions::text, 'approved:', 'approve:primary')::text array;
 
 UPDATE pipeliner.public.members
-    SET actions = replace(actions::text, 'rejected', 'reject')::text array;
+    SET actions = replace(actions::text, 'rejected:', 'reject:secondary')::text array;
 
 UPDATE pipeliner.public.members
-    SET actions = replace(actions::text, 'send_edit', 'approver_send_edit_app')::text array;
+    SET actions = replace(actions::text, 'send_edit:', 'approver_send_edit_app:other')::text array;
 
 CREATE OR REPLACE FUNCTION set_action_type_varstore() RETURNS void
     language plpgsql
