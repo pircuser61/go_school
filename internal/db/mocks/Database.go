@@ -22,34 +22,6 @@ type MockedDatabase struct {
 	mock.Mock
 }
 
-func (_m *MockedDatabase) GetVariableStorage(ctx context.Context, workNumber string) (*store.VariableStore, error) {
-	return nil, nil
-}
-
-func (_m *MockedDatabase) GetFilteredStates(ctx context.Context, st []string, wn string) (map[string]map[string]interface{}, error) {
-	return nil, nil
-}
-
-func (_m *MockedDatabase) UpdateApprovalListSettings(ctx context.Context, in entity.UpdateApprovalListSettings) error {
-	return nil
-}
-
-func (_m *MockedDatabase) RemoveApprovalListSettings(ctx context.Context, listID string) error {
-	return nil
-}
-
-func (_m *MockedDatabase) GetApprovalListSettings(ctx context.Context, listID string) (*entity.ApprovalListSettings, error) {
-	return nil, nil
-}
-
-func (_m *MockedDatabase) GetApprovalListsSettings(ctx context.Context, versionID string) ([]entity.ApprovalListSettings, error) {
-	return nil, nil
-}
-
-func (_m *MockedDatabase) SaveApprovalListSettings(ctx context.Context, in entity.SaveApprovalListSettings) (id string, err error) {
-	return "", err
-}
-
 // Acquire provides a mock function with given fields: ctx
 func (_m *MockedDatabase) Acquire(ctx context.Context) (db.Database, error) {
 	ret := _m.Called(ctx)
@@ -339,24 +311,74 @@ func (_m *MockedDatabase) GetAdditionalForms(workNumber string, nodeName string)
 }
 
 // GetApplicationData provides a mock function with given fields: workNumber
-func (_m *MockedDatabase) GetApplicationData(workNumber string) (*entity.TaskRunContext, error) {
+func (_m *MockedDatabase) GetApplicationData(workNumber string) (string, error) {
 	ret := _m.Called(workNumber)
 
-	var r0 *entity.TaskRunContext
+	var r0 string
 	var r1 error
-	if rf, ok := ret.Get(0).(func(string) (*entity.TaskRunContext, error)); ok {
+	if rf, ok := ret.Get(0).(func(string) (string, error)); ok {
 		return rf(workNumber)
 	}
-	if rf, ok := ret.Get(0).(func(string) *entity.TaskRunContext); ok {
+	if rf, ok := ret.Get(0).(func(string) string); ok {
 		r0 = rf(workNumber)
 	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*entity.TaskRunContext)
-		}
+		r0 = ret.Get(0).(string)
 	}
 
 	if rf, ok := ret.Get(1).(func(string) error); ok {
 		r1 = rf(workNumber)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetApprovalListSettings provides a mock function with given fields: ctx, listID
+func (_m *MockedDatabase) GetApprovalListSettings(ctx context.Context, listID string) (*entity.ApprovalListSettings, error) {
+	ret := _m.Called(ctx, listID)
+
+	var r0 *entity.ApprovalListSettings
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) (*entity.ApprovalListSettings, error)); ok {
+		return rf(ctx, listID)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string) *entity.ApprovalListSettings); ok {
+		r0 = rf(ctx, listID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*entity.ApprovalListSettings)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, listID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetApprovalListsSettings provides a mock function with given fields: ctx, versionID
+func (_m *MockedDatabase) GetApprovalListsSettings(ctx context.Context, versionID string) ([]entity.ApprovalListSettings, error) {
+	ret := _m.Called(ctx, versionID)
+
+	var r0 []entity.ApprovalListSettings
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) ([]entity.ApprovalListSettings, error)); ok {
+		return rf(ctx, versionID)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string) []entity.ApprovalListSettings); ok {
+		r0 = rf(ctx, versionID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]entity.ApprovalListSettings)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, versionID)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -828,6 +850,32 @@ func (_m *MockedDatabase) GetExternalSystemsIDs(ctx context.Context, versionID s
 	return r0, r1
 }
 
+// GetFilteredStates provides a mock function with given fields: ctx, steps, wNumber
+func (_m *MockedDatabase) GetFilteredStates(ctx context.Context, steps []string, wNumber string) (map[string]map[string]interface{}, error) {
+	ret := _m.Called(ctx, steps, wNumber)
+
+	var r0 map[string]map[string]interface{}
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, []string, string) (map[string]map[string]interface{}, error)); ok {
+		return rf(ctx, steps, wNumber)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, []string, string) map[string]map[string]interface{}); ok {
+		r0 = rf(ctx, steps, wNumber)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(map[string]map[string]interface{})
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, []string, string) error); ok {
+		r1 = rf(ctx, steps, wNumber)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetLastDebugTask provides a mock function with given fields: ctx, versionID, author
 func (_m *MockedDatabase) GetLastDebugTask(ctx context.Context, versionID uuid.UUID, author string) (*entity.EriusTask, error) {
 	ret := _m.Called(ctx, versionID, author)
@@ -1114,17 +1162,17 @@ func (_m *MockedDatabase) GetPipelinesByNameOrId(ctx context.Context, dto *db.Se
 	return r0, r1
 }
 
-// GetPipelinesWithLatestVersion provides a mock function with given fields: ctx, authorLogin, publishedPipelines, page, perPage, filter
-func (_m *MockedDatabase) GetPipelinesWithLatestVersion(ctx context.Context, authorLogin string, publishedPipelines bool, page *int, perPage *int, filter string) ([]entity.EriusScenarioInfo, error) {
-	ret := _m.Called(ctx, authorLogin, publishedPipelines, page, perPage, filter)
+// GetPipelinesWithLatestVersion provides a mock function with given fields: ctx, authorLogin, published, page, perPage, filter
+func (_m *MockedDatabase) GetPipelinesWithLatestVersion(ctx context.Context, authorLogin string, published bool, page *int, perPage *int, filter string) ([]entity.EriusScenarioInfo, error) {
+	ret := _m.Called(ctx, authorLogin, published, page, perPage, filter)
 
 	var r0 []entity.EriusScenarioInfo
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, string, bool, *int, *int, string) ([]entity.EriusScenarioInfo, error)); ok {
-		return rf(ctx, authorLogin, publishedPipelines, page, perPage, filter)
+		return rf(ctx, authorLogin, published, page, perPage, filter)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, string, bool, *int, *int, string) []entity.EriusScenarioInfo); ok {
-		r0 = rf(ctx, authorLogin, publishedPipelines, page, perPage, filter)
+		r0 = rf(ctx, authorLogin, published, page, perPage, filter)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]entity.EriusScenarioInfo)
@@ -1132,7 +1180,7 @@ func (_m *MockedDatabase) GetPipelinesWithLatestVersion(ctx context.Context, aut
 	}
 
 	if rf, ok := ret.Get(1).(func(context.Context, string, bool, *int, *int, string) error); ok {
-		r1 = rf(ctx, authorLogin, publishedPipelines, page, perPage, filter)
+		r1 = rf(ctx, authorLogin, published, page, perPage, filter)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -1653,6 +1701,32 @@ func (_m *MockedDatabase) GetUnfinishedTaskStepsByWorkIdAndStepType(ctx context.
 	return r0, r1
 }
 
+// GetVariableStorage provides a mock function with given fields: ctx, workNumber
+func (_m *MockedDatabase) GetVariableStorage(ctx context.Context, workNumber string) (*store.VariableStore, error) {
+	ret := _m.Called(ctx, workNumber)
+
+	var r0 *store.VariableStore
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) (*store.VariableStore, error)); ok {
+		return rf(ctx, workNumber)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string) *store.VariableStore); ok {
+		r0 = rf(ctx, workNumber)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*store.VariableStore)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, workNumber)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetVariableStorageForStep provides a mock function with given fields: ctx, taskID, stepType
 func (_m *MockedDatabase) GetVariableStorageForStep(ctx context.Context, taskID uuid.UUID, stepType string) (*store.VariableStore, error) {
 	ret := _m.Called(ctx, taskID, stepType)
@@ -1833,17 +1907,17 @@ func (_m *MockedDatabase) GetWorkedVersions(ctx context.Context) ([]entity.Erius
 	return r0, r1
 }
 
-// GetWorksForUserWithGivenTimeRange provides a mock function with given fields: ctx, hours, login, versionID, excludeWorkNumber
-func (_m *MockedDatabase) GetWorksForUserWithGivenTimeRange(ctx context.Context, hours int, login string, versionID string, excludeWorkNumber string) ([]*entity.EriusTask, error) {
-	ret := _m.Called(ctx, hours, login, versionID, excludeWorkNumber)
+// GetWorksForUserWithGivenTimeRange provides a mock function with given fields: ctx, hours, login, vID, workNumber
+func (_m *MockedDatabase) GetWorksForUserWithGivenTimeRange(ctx context.Context, hours int, login string, vID string, workNumber string) ([]*entity.EriusTask, error) {
+	ret := _m.Called(ctx, hours, login, vID, workNumber)
 
 	var r0 []*entity.EriusTask
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, int, string, string, string) ([]*entity.EriusTask, error)); ok {
-		return rf(ctx, hours, login, versionID, excludeWorkNumber)
+		return rf(ctx, hours, login, vID, workNumber)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, int, string, string, string) []*entity.EriusTask); ok {
-		r0 = rf(ctx, hours, login, versionID, excludeWorkNumber)
+		r0 = rf(ctx, hours, login, vID, workNumber)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]*entity.EriusTask)
@@ -1851,7 +1925,7 @@ func (_m *MockedDatabase) GetWorksForUserWithGivenTimeRange(ctx context.Context,
 	}
 
 	if rf, ok := ret.Get(1).(func(context.Context, int, string, string, string) error); ok {
-		r1 = rf(ctx, hours, login, versionID, excludeWorkNumber)
+		r1 = rf(ctx, hours, login, vID, workNumber)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -1928,6 +2002,20 @@ func (_m *MockedDatabase) Release(ctx context.Context) error {
 	var r0 error
 	if rf, ok := ret.Get(0).(func(context.Context) error); ok {
 		r0 = rf(ctx)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// RemoveApprovalListSettings provides a mock function with given fields: ctx, listID
+func (_m *MockedDatabase) RemoveApprovalListSettings(ctx context.Context, listID string) error {
+	ret := _m.Called(ctx, listID)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) error); ok {
+		r0 = rf(ctx, listID)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -2017,6 +2105,30 @@ func (_m *MockedDatabase) RollbackVersion(ctx context.Context, pipelineID uuid.U
 	}
 
 	return r0
+}
+
+// SaveApprovalListSettings provides a mock function with given fields: ctx, in
+func (_m *MockedDatabase) SaveApprovalListSettings(ctx context.Context, in entity.SaveApprovalListSettings) (string, error) {
+	ret := _m.Called(ctx, in)
+
+	var r0 string
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, entity.SaveApprovalListSettings) (string, error)); ok {
+		return rf(ctx, in)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, entity.SaveApprovalListSettings) string); ok {
+		r0 = rf(ctx, in)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, entity.SaveApprovalListSettings) error); ok {
+		r1 = rf(ctx, in)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
 }
 
 // SaveExternalSystemSettings provides a mock function with given fields: ctx, versionID, settings, schemaFlag
@@ -2211,6 +2323,20 @@ func (_m *MockedDatabase) SwitchRejected(ctx context.Context, versionID uuid.UUI
 	var r0 error
 	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, string, string) error); ok {
 		r0 = rf(ctx, versionID, comment, author)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// UpdateApprovalListSettings provides a mock function with given fields: ctx, in
+func (_m *MockedDatabase) UpdateApprovalListSettings(ctx context.Context, in entity.UpdateApprovalListSettings) error {
+	ret := _m.Called(ctx, in)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, entity.UpdateApprovalListSettings) error); ok {
+		r0 = rf(ctx, in)
 	} else {
 		r0 = ret.Error(0)
 	}
