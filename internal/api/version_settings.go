@@ -954,7 +954,7 @@ func (ae *APIEnv) GetApprovalListsSettings(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	if err = sendResponse(w, http.StatusOK, toResponseApprovalListsSettings(approvalLists)); err != nil {
+	if err = sendResponse(w, http.StatusOK, approvalLists); err != nil {
 		er := UnknownError
 		log.Error(er.errorMessage(err))
 		_ = er.sendError(w)
@@ -963,18 +963,26 @@ func (ae *APIEnv) GetApprovalListsSettings(w http.ResponseWriter, r *http.Reques
 	}
 }
 
-func toResponseApprovalListsSettings(in []e.ApprovalListSettings) []e.ApprovalListSettings {
-	res := make([]e.ApprovalListSettings, 0, len(in))
+func (ae *APIEnv) GetApprovalListSettingById(w http.ResponseWriter, r *http.Request, versionID, listID string) {
+	ctx, s := trace.StartSpan(r.Context(), "get_approval_list_setting_by_id")
+	defer s.End()
 
-	for i := range in {
-		res = append(res, e.ApprovalListSettings{
-			ID:             in[i].ID,
-			Name:           in[i].Name,
-			Steps:          in[i].Steps,
-			ContextMapping: in[i].ContextMapping,
-			FormsMapping:   in[i].FormsMapping,
-		})
+	log := logger.GetLogger(ctx)
+
+	approvalList, err := ae.DB.GetApprovalListSettings(ctx, listID)
+	if err != nil {
+		er := UnknownError
+		log.Error(er.errorMessage(err))
+		_ = er.sendError(w)
+
+		return
 	}
 
-	return res
+	if err = sendResponse(w, http.StatusOK, approvalList); err != nil {
+		er := UnknownError
+		log.Error(er.errorMessage(err))
+		_ = er.sendError(w)
+
+		return
+	}
 }
