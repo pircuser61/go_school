@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/iancoleman/orderedmap"
@@ -738,6 +739,8 @@ type Action struct {
 }
 
 func getButton(to, subject, title string) *Button {
+	subject = strings.ReplaceAll(subject, " ", "")
+
 	body := "***КОММЕНТАРИЙ%20НИЖЕ***%0D%0A%0D%0A***ОБЩИЙ%20РАЗМЕР%20ВЛОЖЕНИЙ%20НЕ%20БОЛЕЕ%2040МБ***"
 	href := fmt.Sprintf("mailto:%s?subject=%s&body=%s", to, subject, body)
 	return &Button{
