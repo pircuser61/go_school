@@ -53,7 +53,7 @@ UPDATE pipeliner.public.members
 UPDATE pipeliner.public.members
     SET actions = replace(actions::text, 'send_edit', 'approver_send_edit_app')::text array;
 
-CREATE OR REPLACE FUNCTION set_action_type() RETURNS void
+CREATE OR REPLACE FUNCTION set_action_type_varstore() RETURNS void
     language plpgsql
 AS $function$
 DECLARE
@@ -61,9 +61,9 @@ DECLARE
     s_name varchar;
 BEGIN
     step_names = array(
-            SELECT jsonb_object_keys(content -> 'State')
-            FROM pipeliner.public.variable_storage
-            WHERE jsonb_typeof(content -> 'State') = 'object');
+        SELECT jsonb_object_keys(content -> 'State')
+        FROM pipeliner.public.variable_storage
+        WHERE jsonb_typeof(content -> 'State') = 'object');
     FOREACH s_name IN ARRAY step_names
         LOOP
             IF s_name LIKE 'approver_%' THEN
@@ -72,15 +72,15 @@ BEGIN
                     array['State', s_name, 'action_list']::varchar[],
                     (
                         SELECT jsonb_agg(jsonb_set(
-                                v3::jsonb,
-                                '{id}',
-                                     CASE
-                                         WHEN v3 ->> 'id' = 'approved' THEN to_jsonb('approve'::text)
-                                         WHEN v3 ->> 'id' = 'rejected' THEN to_jsonb('reject'::text)
-                                         WHEN v3 ->> 'id' = 'send_edit' THEN to_jsonb('approver_send_edit_app'::text)
-                                     END
-                                true
-                                         ))
+                        v3::jsonb,
+                        '{id}',
+                         CASE
+                             WHEN v3 ->> 'id' = 'approved' THEN to_jsonb('approve'::text)
+                             WHEN v3 ->> 'id' = 'rejected' THEN to_jsonb('reject'::text)
+                             WHEN v3 ->> 'id' = 'send_edit' THEN to_jsonb('approver_send_edit_app'::text)
+                        END
+                        true
+                        ))
                         FROM jsonb_array_elements(content -> 'State' -> s_name -> 'action_list') v3
                     ),
                     true);
@@ -107,9 +107,11 @@ BEGIN
             END IF;
         END LOOP;
 END $function$;
+
+SELECT set_action_type_varstore();
 -- +goose StatementEnd
 
 -- +goose Down
 -- +goose StatementBegin
-SELECT 'down SQL query';
+
 -- +goose StatementEnd
