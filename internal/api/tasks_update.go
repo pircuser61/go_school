@@ -754,7 +754,7 @@ func (ae *APIEnv) StopTasks(w http.ResponseWriter, r *http.Request) {
 
 		file, ok := ae.Mail.Images[em.Image]
 		if !ok {
-			log.Error("couldn't send notification")
+			log.Error("couldn't find images")
 			return
 		}
 

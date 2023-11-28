@@ -2,11 +2,13 @@ package pipeline
 
 import (
 	c "context"
+	"errors"
 	"time"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	e "gitlab.services.mts.ru/abp/mail/pkg/email"
+
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
@@ -28,8 +30,6 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 	delegates = delegates.FilterByType("execution")
 
 	loginsToNotify := delegates.GetUserInArrayWithDelegations(executors)
-
-	var emailAttachment []e.Attachment
 
 	description, err := gb.RunContext.makeNotificationDescription(gb.Name)
 	if err != nil {
@@ -105,8 +105,20 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 					LastWorks:   lastWorksForUser,
 					IsGroup:     len(gb.State.Executors) > 1,
 				},
+				gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(time.Now(), gb.State.SLA, slaInfoPtr),
 			)
 		} else {
+
+			author, err := gb.RunContext.Services.People.GetUser(ctx, gb.RunContext.Initiator)
+			if err != nil {
+				return err
+			}
+
+			initiatorInfo, err := author.ToUserinfo()
+			if err != nil {
+				return err
+			}
+
 			emails[email] = mail.NewAppPersonStatusNotificationTpl(
 				&mail.NewAppPersonStatusTpl{
 					WorkNumber:  gb.RunContext.WorkNumber,
@@ -119,17 +131,42 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 					Mailto:      gb.RunContext.Services.Sender.FetchEmail,
 					Login:       login,
 					IsEditable:  gb.State.GetIsEditable(),
+					Initiator:   initiatorInfo,
 
 					BlockID:                   BlockGoExecutionID,
 					ExecutionDecisionExecuted: string(ExecutionDecisionExecuted),
 					ExecutionDecisionRejected: string(ExecutionDecisionRejected),
 					LastWorks:                 lastWorksForUser,
-				})
+				},
+			)
 		}
 	}
 
 	for i := range emails {
-		if sendErr := gb.RunContext.Services.Sender.SendNotification(ctx, []string{i}, emailAttachment,
+		file, ok := gb.RunContext.Services.Sender.Images[emails[i].Image]
+		if !ok {
+			return errors.New("file not found " + emails[i].Image)
+		}
+
+		iconUser, ok := gb.RunContext.Services.Sender.Images["iconUser.svg"]
+		if !ok {
+			return errors.New("file not found " + emails[i].Image)
+		}
+
+		files := []e.Attachment{
+			{
+				Name:    "header.png",
+				Content: file,
+				Type:    e.EmbeddedAttachment,
+			},
+			{
+				Name:    "iconUser.svg",
+				Content: iconUser,
+				Type:    e.EmbeddedAttachment,
+			},
+		}
+
+		if sendErr := gb.RunContext.Services.Sender.SendNotification(ctx, []string{i}, files,
 			emails[i]); sendErr != nil {
 			return sendErr
 		}
@@ -162,7 +199,20 @@ func (gb *GoExecutionBlock) notifyNeedRework(ctx c.Context) error {
 	tpl := mail.NewSendToInitiatorEditTpl(gb.RunContext.WorkNumber, gb.RunContext.NotifName,
 		gb.RunContext.Services.Sender.SdAddress)
 
-	if err = gb.RunContext.Services.Sender.SendNotification(ctx, emails, nil, tpl); err != nil {
+	file, ok := gb.RunContext.Services.Sender.Images[tpl.Image]
+	if !ok {
+		return errors.New("file not found " + tpl.Image)
+	}
+
+	files := []e.Attachment{
+		{
+			Name:    "header.png",
+			Content: file,
+			Type:    e.EmbeddedAttachment,
+		},
+	}
+
+	if err = gb.RunContext.Services.Sender.SendNotification(ctx, emails, files, tpl); err != nil {
 		return err
 	}
 
@@ -185,7 +235,20 @@ func (gb *GoExecutionBlock) notifyNeedMoreInfo(ctx c.Context) error {
 	tpl := mail.NewRequestExecutionInfoTpl(gb.RunContext.WorkNumber,
 		gb.RunContext.NotifName, gb.RunContext.Services.Sender.SdAddress)
 
-	if err := gb.RunContext.Services.Sender.SendNotification(ctx, emails, nil, tpl); err != nil {
+	file, ok := gb.RunContext.Services.Sender.Images[tpl.Image]
+	if !ok {
+		return errors.New("file not found " + tpl.Image)
+	}
+
+	files := []e.Attachment{
+		{
+			Name:    "header.png",
+			Content: file,
+			Type:    e.EmbeddedAttachment,
+		},
+	}
+
+	if err := gb.RunContext.Services.Sender.SendNotification(ctx, emails, files, tpl); err != nil {
 		return err
 	}
 
@@ -214,7 +277,20 @@ func (gb *GoExecutionBlock) notifyNewInfoReceived(ctx c.Context) error {
 	tpl := mail.NewAnswerExecutionInfoTpl(gb.RunContext.WorkNumber,
 		gb.RunContext.NotifName, gb.RunContext.Services.Sender.SdAddress)
 
-	if err = gb.RunContext.Services.Sender.SendNotification(ctx, emails, nil, tpl); err != nil {
+	file, ok := gb.RunContext.Services.Sender.Images[tpl.Image]
+	if !ok {
+		return errors.New("file not found " + tpl.Image)
+	}
+
+	files := []e.Attachment{
+		{
+			Name:    "header.png",
+			Content: file,
+			Type:    e.EmbeddedAttachment,
+		},
+	}
+
+	if err = gb.RunContext.Services.Sender.SendNotification(ctx, emails, files, tpl); err != nil {
 		return err
 	}
 

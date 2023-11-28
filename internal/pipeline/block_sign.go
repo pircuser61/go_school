@@ -316,7 +316,6 @@ func (gb *GoSignBlock) handleNotifications(ctx c.Context) error {
 	}
 
 	signers := getSliceFromMapOfStrings(gb.State.Signers)
-	var emailAttachment []e.Attachment
 
 	description, err := gb.RunContext.makeNotificationDescription(gb.Name)
 	if err != nil {
@@ -349,10 +348,10 @@ func (gb *GoSignBlock) handleNotifications(ctx c.Context) error {
 		emails[em] = mail.NewSignerNotificationTpl(
 			gb.RunContext.WorkNumber,
 			gb.RunContext.NotifName,
-			description,
 			gb.RunContext.Services.Sender.SdAddress,
 			slaDeadline,
 			gb.State.AutoReject != nil && *gb.State.AutoReject,
+			description,
 		)
 	}
 
@@ -361,7 +360,20 @@ func (gb *GoSignBlock) handleNotifications(ctx c.Context) error {
 	}
 
 	for i := range emails {
-		if sendErr := gb.RunContext.Services.Sender.SendNotification(ctx, []string{i}, emailAttachment,
+		file, ok := gb.RunContext.Services.Sender.Images[emails[i].Image]
+		if !ok {
+			return errors.New("file not found " + emails[i].Image)
+		}
+
+		files := []e.Attachment{
+			{
+				Name:    "header.png",
+				Content: file,
+				Type:    e.EmbeddedAttachment,
+			},
+		}
+
+		if sendErr := gb.RunContext.Services.Sender.SendNotification(ctx, []string{i}, files,
 			emails[i]); sendErr != nil {
 			return sendErr
 		}

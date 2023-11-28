@@ -4,18 +4,20 @@ import (
 	c "context"
 	"encoding/json"
 	"fmt"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
+
 	"time"
 
 	"github.com/google/uuid"
 
 	"github.com/pkg/errors"
 
+	e "gitlab.services.mts.ru/abp/mail/pkg/email"
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
@@ -137,29 +139,30 @@ func (gb *GoApproverBlock) handleBreachedSLA(ctx c.Context) error {
 			emails = append(emails, approverEmail)
 		}
 
-		//Deadline
-		slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
-			TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.CurrBlockStartTime,
-				FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100)}},
-			WorkType: sla.WorkHourType(gb.State.WorkType),
-		})
-		if getSlaInfoErr != nil {
-			return getSlaInfoErr
+		tpl := mail.NewApprovementSLATpl(
+			gb.RunContext.WorkNumber,
+			gb.RunContext.NotifName,
+			gb.RunContext.Services.Sender.SdAddress,
+			gb.State.WorkType,
+		)
+
+		file, ok := gb.RunContext.Services.Sender.Images[tpl.Image]
+		if !ok {
+			return errors.New("file not found " + tpl.Image)
+		}
+
+		files := []e.Attachment{
+			{
+				Name:    "header.png",
+				Content: file,
+				Type:    e.EmbeddedAttachment,
+			},
 		}
 
 		if len(emails) == 0 {
 			return nil
 		}
-		err = gb.RunContext.Services.Sender.SendNotification(ctx, emails, nil,
-			mail.NewApprovementSLATpl(
-				gb.RunContext.WorkNumber,
-				gb.RunContext.NotifName,
-				gb.RunContext.Services.Sender.SdAddress,
-				gb.State.ApproveStatusName,
-				gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(gb.RunContext.CurrBlockStartTime, gb.State.SLA,
-					slaInfoPtr),
-			),
-		)
+		err = gb.RunContext.Services.Sender.SendNotification(ctx, emails, files, tpl)
 		if err != nil {
 			return err
 		}
@@ -275,16 +278,29 @@ func (gb *GoApproverBlock) handleHalfBreachedSLA(ctx c.Context) (err error) {
 			return getSlaInfoErr
 		}
 
-		errSend := gb.RunContext.Services.Sender.SendNotification(ctx, emails, nil,
-			mail.NewApprovementHalfSLATpl(
-				gb.RunContext.WorkNumber,
-				gb.RunContext.NotifName,
-				gb.RunContext.Services.Sender.SdAddress,
-				gb.State.ApproveStatusName,
-				gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(gb.RunContext.CurrBlockStartTime, gb.State.SLA,
-					slaInfoPtr),
-			),
+		tpl := mail.NewApprovementHalfSLATpl(
+			gb.RunContext.WorkNumber,
+			gb.RunContext.NotifName,
+			gb.RunContext.Services.Sender.SdAddress,
+			gb.State.ApproveStatusName,
+			gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(gb.RunContext.CurrBlockStartTime, gb.State.SLA,
+				slaInfoPtr),
 		)
+
+		file, ok := gb.RunContext.Services.Sender.Images[tpl.Image]
+		if !ok {
+			return errors.New("file not found " + tpl.Image)
+		}
+
+		files := []e.Attachment{
+			{
+				Name:    "header.png",
+				Content: file,
+				Type:    e.EmbeddedAttachment,
+			},
+		}
+
+		errSend := gb.RunContext.Services.Sender.SendNotification(ctx, emails, files, tpl)
 		if errSend != nil {
 			return errSend
 		}
@@ -339,8 +355,22 @@ func (gb *GoApproverBlock) handleReworkSLABreached(ctx c.Context) error {
 	}
 
 	tpl := mail.NewReworkSLATpl(gb.RunContext.WorkNumber, gb.RunContext.NotifName,
-		gb.RunContext.Services.Sender.SdAddress, gb.State.ReworkSLA)
-	err = gb.RunContext.Services.Sender.SendNotification(ctx, emails, nil, tpl)
+		gb.RunContext.Services.Sender.SdAddress, gb.State.ReworkSLA, gb.State.CheckSLA)
+
+	file, ok := gb.RunContext.Services.Sender.Images[tpl.Image]
+	if !ok {
+		return errors.New("file not found " + tpl.Image)
+	}
+
+	files := []e.Attachment{
+		{
+			Name:    "header.png",
+			Content: file,
+			Type:    e.EmbeddedAttachment,
+		},
+	}
+
+	err = gb.RunContext.Services.Sender.SendNotification(ctx, emails, files, tpl)
 	if err != nil {
 		return err
 	}
@@ -384,7 +414,21 @@ func (gb *GoApproverBlock) handleBreachedDayBeforeSLARequestAddInfo(ctx c.Contex
 
 	tpl := mail.NewDayBeforeRequestAddInfoSLABreached(gb.RunContext.WorkNumber,
 		gb.RunContext.NotifName, gb.RunContext.Services.Sender.SdAddress)
-	err := gb.RunContext.Services.Sender.SendNotification(ctx, emails, nil, tpl)
+
+	file, ok := gb.RunContext.Services.Sender.Images[tpl.Image]
+	if !ok {
+		return errors.New("file not found " + tpl.Image)
+	}
+
+	files := []e.Attachment{
+		{
+			Name:    "header.png",
+			Content: file,
+			Type:    e.EmbeddedAttachment,
+		},
+	}
+
+	err := gb.RunContext.Services.Sender.SendNotification(ctx, emails, files, tpl)
 	if err != nil {
 		return err
 	}
@@ -440,8 +484,22 @@ func (gb *GoApproverBlock) HandleBreachedSLARequestAddInfo(ctx c.Context) error 
 		emails = append(emails, em)
 	}
 	tpl := mail.NewRequestAddInfoSLABreached(gb.RunContext.WorkNumber, gb.RunContext.NotifName,
-		gb.RunContext.Services.Sender.SdAddress)
-	err = gb.RunContext.Services.Sender.SendNotification(ctx, emails, nil, tpl)
+		gb.RunContext.Services.Sender.SdAddress, gb.State.ReworkSLA)
+
+	file, ok := gb.RunContext.Services.Sender.Images[tpl.Image]
+	if !ok {
+		return errors.New("file not found " + tpl.Image)
+	}
+
+	files := []e.Attachment{
+		{
+			Name:    "header.png",
+			Content: file,
+			Type:    e.EmbeddedAttachment,
+		},
+	}
+
+	err = gb.RunContext.Services.Sender.SendNotification(ctx, emails, files, tpl)
 	if err != nil {
 		return err
 	}

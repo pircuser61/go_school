@@ -4,7 +4,6 @@ import (
 	"bytes"
 	c "context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -13,6 +12,8 @@ import (
 	"github.com/pkg/errors"
 
 	"go.opencensus.io/trace"
+
+	"github.com/iancoleman/orderedmap"
 
 	e "gitlab.services.mts.ru/abp/mail/pkg/email"
 
@@ -468,22 +469,13 @@ func (runCtx *BlockRunContext) updateStepInDB(ctx c.Context, name string, id uui
 	})
 }
 
-func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) (string, error) {
+func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) (*orderedmap.OrderedMap, error) {
 	descr, err := runCtx.Services.Storage.GetApplicationData(runCtx.WorkNumber)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	additionalDescriptions, err := runCtx.Services.Storage.GetAdditionalForms(runCtx.WorkNumber, nodeName)
-	if err != nil {
-		return "", err
-	}
-	for _, item := range additionalDescriptions {
-		if item == "" {
-			continue
-		}
-		descr = fmt.Sprintf("%s\n\n%s", descr, item)
-	}
-	return descr, nil
+
+	return &descr.InitialApplication.ApplicationBody, nil
 }
 
 type handleInitiatorNotifyParams struct {
@@ -524,8 +516,6 @@ func (runCtx *BlockRunContext) handleInitiatorNotify(ctx c.Context, params handl
 		return nil
 	}
 
-	var attach []e.Attachment
-
 	description, err := runCtx.makeNotificationDescription(params.step)
 	if err != nil {
 		return err
@@ -548,14 +538,32 @@ func (runCtx *BlockRunContext) handleInitiatorNotify(ctx c.Context, params handl
 		params.action = statusToTaskState[params.status]
 	}
 
+	//if getSlaInfoErr != nil {
+	//	return getSlaInfoErr
+	//}
+
 	tmpl := mail.NewAppInitiatorStatusNotificationTpl(
 		runCtx.WorkNumber,
 		runCtx.NotifName,
 		params.action,
+		runCtx.Services.Sender.SdAddress,
 		description,
-		runCtx.Services.Sender.SdAddress)
+	)
 
-	if sendErr := runCtx.Services.Sender.SendNotification(ctx, emails, attach, tmpl); sendErr != nil {
+	file, ok := runCtx.Services.Sender.Images[tmpl.Image]
+	if !ok {
+		return errors.New("file not found " + tmpl.Image)
+	}
+
+	files := []e.Attachment{
+		{
+			Name:    "header.png",
+			Content: file,
+			Type:    e.EmbeddedAttachment,
+		},
+	}
+
+	if sendErr := runCtx.Services.Sender.SendNotification(ctx, emails, files, tmpl); sendErr != nil {
 		return sendErr
 	}
 

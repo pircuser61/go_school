@@ -3,6 +3,7 @@ package pipeline
 import (
 	c "context"
 	"fmt"
+	"github.com/pkg/errors"
 	"time"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
@@ -289,7 +290,6 @@ func (gb *GoFormBlock) handleNotifications(ctx c.Context) error {
 	}
 
 	executors := getSliceFromMapOfStrings(gb.State.Executors)
-	var emailAttachment []e.Attachment
 
 	var emails = make(map[string]mail.Template, 0)
 	for _, login := range executors {
@@ -319,10 +319,22 @@ func (gb *GoFormBlock) handleNotifications(ctx c.Context) error {
 				Deadline:   gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(time.Now(), gb.State.SLA, slaInfoPtr),
 			}, gb.State.IsReentry)
 		} else {
+
+			slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
+				TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.CurrBlockStartTime,
+					FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100)}},
+				WorkType: sla.WorkHourType(gb.State.WorkType),
+			})
+			if getSlaInfoErr != nil {
+				return getSlaInfoErr
+			}
+
 			emails[em] = mail.NewRequestFormExecutionInfoTpl(
 				gb.RunContext.WorkNumber,
 				gb.RunContext.NotifName,
 				gb.RunContext.Services.Sender.SdAddress,
+				gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(gb.RunContext.CurrBlockStartTime, gb.State.SLA,
+					slaInfoPtr),
 				gb.State.IsReentry)
 		}
 	}
@@ -332,7 +344,21 @@ func (gb *GoFormBlock) handleNotifications(ctx c.Context) error {
 	}
 
 	for i := range emails {
-		if sendErr := gb.RunContext.Services.Sender.SendNotification(ctx, []string{i}, emailAttachment,
+
+		file, ok := gb.RunContext.Services.Sender.Images[emails[i].Image]
+		if !ok {
+			return errors.New("file not found " + emails[i].Image)
+		}
+
+		files := []e.Attachment{
+			{
+				Name:    "header.png",
+				Content: file,
+				Type:    e.EmbeddedAttachment,
+			},
+		}
+
+		if sendErr := gb.RunContext.Services.Sender.SendNotification(ctx, []string{i}, files,
 			emails[i]); sendErr != nil {
 			return sendErr
 		}

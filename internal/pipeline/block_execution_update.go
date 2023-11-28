@@ -8,6 +8,8 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/iancoleman/orderedmap"
+
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	e "gitlab.services.mts.ru/abp/mail/pkg/email"
@@ -214,19 +216,30 @@ func (gb *GoExecutionBlock) handleBreachedSLA(ctx c.Context) error {
 			emails = append(emails, executorEmail)
 		}
 
+		tpl := mail.NewExecutionSLATpl(
+			gb.RunContext.WorkNumber,
+			gb.RunContext.NotifName,
+			gb.RunContext.Services.Sender.SdAddress,
+		)
+
+		file, ok := gb.RunContext.Services.Sender.Images[tpl.Image]
+		if !ok {
+			return errors.New("file not found " + tpl.Image)
+		}
+
+		files := []e.Attachment{
+			{
+				Name:    "header.png",
+				Content: file,
+				Type:    e.EmbeddedAttachment,
+			},
+		}
+
 		if len(emails) == 0 {
 			return nil
 		}
-		err = gb.RunContext.Services.Sender.SendNotification(
-			ctx,
-			emails,
-			nil,
-			mail.NewExecutionSLATpl(
-				gb.RunContext.WorkNumber,
-				gb.RunContext.NotifName,
-				gb.RunContext.Services.Sender.SdAddress,
-				gb.State.
-			))
+		err = gb.RunContext.Services.Sender.SendNotification(ctx, emails, files, tpl)
+
 		if err != nil {
 			return err
 		}
@@ -296,11 +309,9 @@ func (gb *GoExecutionBlock) handleHalfSLABreached(ctx c.Context) error {
 			login = recipient
 		}
 
-		lastWorksForUser := make([]*entity.EriusTask, 0)
-
 		if processSettings.ResubmissionPeriod > 0 {
 			var getWorksErr error
-			lastWorksForUser, getWorksErr = gb.RunContext.Services.Storage.GetWorksForUserWithGivenTimeRange(ctx,
+			_, getWorksErr = gb.RunContext.Services.Storage.GetWorksForUserWithGivenTimeRange(ctx,
 				processSettings.ResubmissionPeriod,
 				login,
 				task.VersionID.String(),
@@ -310,17 +321,38 @@ func (gb *GoExecutionBlock) handleHalfSLABreached(ctx c.Context) error {
 				return getWorksErr
 			}
 		}
-		err = gb.RunContext.Services.Sender.SendNotification(
-			ctx,
-			emails,
-			nil,
-			mail.NewExecutiontHalfSLATpl(
-				gb.RunContext.WorkNumber,
-				gb.RunContext.NotifName,
-				gb.RunContext.Services.Sender.SdAddress,
-				gb.State.WorkType,
-				lastWorksForUser,
-			))
+
+		slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
+			TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.CurrBlockStartTime,
+				FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100)}},
+			WorkType: sla.WorkHourType(gb.State.WorkType),
+		})
+		if getSlaInfoErr != nil {
+			return getSlaInfoErr
+		}
+
+		tpl := mail.NewExecutiontHalfSLATpl(
+			gb.RunContext.WorkNumber,
+			gb.RunContext.NotifName,
+			gb.RunContext.Services.Sender.SdAddress,
+			gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(gb.RunContext.CurrBlockStartTime, gb.State.SLA,
+				slaInfoPtr),
+		)
+
+		file, ok := gb.RunContext.Services.Sender.Images[tpl.Image]
+		if !ok {
+			return errors.New("file not found " + tpl.Image)
+		}
+
+		files := []e.Attachment{
+			{
+				Name:    "header.png",
+				Content: file,
+				Type:    e.EmbeddedAttachment,
+			},
+		}
+
+		err = gb.RunContext.Services.Sender.SendNotification(ctx, emails, files, tpl)
 		if err != nil {
 			return err
 		}
@@ -373,8 +405,21 @@ func (gb *GoExecutionBlock) handleReworkSLABreached(ctx c.Context) error {
 		emails = append(emails, em)
 	}
 	tpl := mail.NewReworkSLATpl(gb.RunContext.WorkNumber, gb.RunContext.NotifName,
-		gb.RunContext.Services.Sender.SdAddress, gb.State.ReworkSLA)
-	err = gb.RunContext.Services.Sender.SendNotification(ctx, emails, nil, tpl)
+		gb.RunContext.Services.Sender.SdAddress, gb.State.ReworkSLA, gb.State.CheckSLA)
+
+	file, ok := gb.RunContext.Services.Sender.Images[tpl.Image]
+	if !ok {
+		return errors.New("file not found " + tpl.Image)
+	}
+
+	files := []e.Attachment{
+		{
+			Name:    "header.png",
+			Content: file,
+			Type:    e.EmbeddedAttachment,
+		},
+	}
+	err = gb.RunContext.Services.Sender.SendNotification(ctx, emails, files, tpl)
 	if err != nil {
 		return err
 	}
@@ -417,7 +462,21 @@ func (gb *GoExecutionBlock) handleBreachedDayBeforeSLARequestAddInfo(ctx c.Conte
 	}
 	tpl := mail.NewDayBeforeRequestAddInfoSLABreached(gb.RunContext.WorkNumber, gb.RunContext.NotifName,
 		gb.RunContext.Services.Sender.SdAddress)
-	err := gb.RunContext.Services.Sender.SendNotification(ctx, emails, nil, tpl)
+
+	file, ok := gb.RunContext.Services.Sender.Images[tpl.Image]
+	if !ok {
+		return errors.New("file not found " + tpl.Image)
+	}
+
+	files := []e.Attachment{
+		{
+			Name:    "header.png",
+			Content: file,
+			Type:    e.EmbeddedAttachment,
+		},
+	}
+
+	err := gb.RunContext.Services.Sender.SendNotification(ctx, emails, files, tpl)
 	if err != nil {
 		return err
 	}
@@ -473,8 +532,22 @@ func (gb *GoExecutionBlock) HandleBreachedSLARequestAddInfo(ctx c.Context) error
 		emails = append(emails, em)
 	}
 	tpl := mail.NewRequestAddInfoSLABreached(gb.RunContext.WorkNumber, gb.RunContext.NotifName,
-		gb.RunContext.Services.Sender.SdAddress)
-	err = gb.RunContext.Services.Sender.SendNotification(ctx, emails, nil, tpl)
+		gb.RunContext.Services.Sender.SdAddress, gb.State.ReworkSLA)
+
+	file, ok := gb.RunContext.Services.Sender.Images[tpl.Image]
+	if !ok {
+		return errors.New("file not found " + tpl.Image)
+	}
+
+	files := []e.Attachment{
+		{
+			Name:    "header.png",
+			Content: file,
+			Type:    e.EmbeddedAttachment,
+		},
+	}
+
+	err = gb.RunContext.Services.Sender.SendNotification(ctx, emails, files, tpl)
 	if err != nil {
 		return err
 	}
@@ -665,8 +738,7 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 
 	log.WithField("func", "emailGroupExecutors").WithField("emails", emails)
 
-	var description string
-	var emailAttachment []e.Attachment
+	var description *orderedmap.OrderedMap
 
 	description, err = gb.RunContext.makeNotificationDescription(gb.Name)
 	if err != nil {
@@ -678,7 +750,17 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 		return err
 	}
 
-	typedAuthor, err := author.ToSSOUserTyped()
+	typedAuthor, err := author.ToUserinfo()
+	if err != nil {
+		return err
+	}
+
+	initiator, err := gb.RunContext.Services.People.GetUser(ctx, gb.RunContext.UpdateData.ByLogin)
+	if err != nil {
+		return err
+	}
+
+	initiatorInfo, err := initiator.ToUserinfo()
 	if err != nil {
 		return err
 	}
@@ -721,23 +803,31 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 		}
 	}
 
-	executorName := typedAuthor.GetFullName()
-	if !gb.State.HideExecutor {
-		executorName = ""
-	}
-
 	tpl := mail.NewExecutionTakenInWorkTpl(&mail.ExecutorNotifTemplate{
-		WorkNumber:   gb.RunContext.WorkNumber,
-		Name:         gb.RunContext.NotifName,
-		SdUrl:        gb.RunContext.Services.Sender.SdAddress,
-		Description:  description,
-		ExecutorName: executorName,
-		Initiator:    gb.RunContext.Initiator,
-		LastWorks:    lastWorksForUser,
-		Mailto:       gb.RunContext.Services.Sender.FetchEmail,
+		WorkNumber:  gb.RunContext.WorkNumber,
+		Name:        gb.RunContext.NotifName,
+		SdUrl:       gb.RunContext.Services.Sender.SdAddress,
+		Description: description,
+		Executor:    typedAuthor,
+		Initiator:   initiatorInfo,
+		LastWorks:   lastWorksForUser,
+		Mailto:      gb.RunContext.Services.Sender.FetchEmail,
 	})
 
-	if errSend := gb.RunContext.Services.Sender.SendNotification(ctx, emails, emailAttachment, tpl); errSend != nil {
+	file, ok := gb.RunContext.Services.Sender.Images[tpl.Image]
+	if !ok {
+		return errors.New("file not found " + tpl.Image)
+	}
+
+	files := []e.Attachment{
+		{
+			Name:    "header.png",
+			Content: file,
+			Type:    e.EmbeddedAttachment,
+		},
+	}
+
+	if errSend := gb.RunContext.Services.Sender.SendNotification(ctx, emails, files, tpl); errSend != nil {
 		return errSend
 	}
 
@@ -755,6 +845,17 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 	if getSlaInfoErr != nil {
 		return getSlaInfoErr
 	}
+
+	author1, getUserErr := gb.RunContext.Services.People.GetUser(ctx, gb.RunContext.Initiator)
+	if getUserErr != nil {
+		return err
+	}
+
+	initiatorInfo, toUserErr := author1.ToUserinfo()
+	if toUserErr != nil {
+		return err
+	}
+
 	tpl = mail.NewAppPersonStatusNotificationTpl(
 		&mail.NewAppPersonStatusTpl{
 			WorkNumber:  gb.RunContext.WorkNumber,
@@ -767,6 +868,7 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 			Mailto:      gb.RunContext.Services.Sender.FetchEmail,
 			Login:       loginTakenInWork,
 			IsEditable:  gb.State.GetIsEditable(),
+			Initiator:   initiatorInfo,
 
 			BlockID:                   BlockGoExecutionID,
 			ExecutionDecisionExecuted: string(ExecutionDecisionExecuted),
@@ -774,8 +876,31 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 			LastWorks:                 lastWorksForUser,
 		})
 
+	header, hOk := gb.RunContext.Services.Sender.Images[tpl.Image]
+	if !hOk {
+		return errors.New("file not found " + tpl.Image)
+	}
+
+	iconUser, iOk := gb.RunContext.Services.Sender.Images["iconUser.svg"]
+	if !iOk {
+		return errors.New("file not found iconUser.svg")
+	}
+
+	listFiles := []e.Attachment{
+		{
+			Name:    "header.png",
+			Content: header,
+			Type:    e.EmbeddedAttachment,
+		},
+		{
+			Name:    "iconUser.svg",
+			Content: iconUser,
+			Type:    e.EmbeddedAttachment,
+		},
+	}
+
 	if sendErr := gb.RunContext.Services.Sender.SendNotification(ctx,
-		[]string{emailTakenInWork}, emailAttachment, tpl); sendErr != nil {
+		[]string{emailTakenInWork}, listFiles, tpl); sendErr != nil {
 		return sendErr
 	}
 

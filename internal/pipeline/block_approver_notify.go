@@ -4,6 +4,8 @@ import (
 	c "context"
 	"time"
 
+	"github.com/pkg/errors"
+
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	e "gitlab.services.mts.ru/abp/mail/pkg/email"
@@ -31,8 +33,6 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 
 	approvers := getSliceFromMapOfStrings(gb.State.Approvers)
 	loginsToNotify := delegates.GetUserInArrayWithDelegations(approvers)
-
-	var emailAttachment []e.Attachment
 
 	description, err := gb.RunContext.makeNotificationDescription(gb.Name)
 	if err != nil {
@@ -103,6 +103,16 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 			continue
 		}
 
+		author, err := gb.RunContext.Services.People.GetUser(ctx, gb.RunContext.Initiator)
+		if err != nil {
+			return err
+		}
+
+		initiatorInfo, err := author.ToUserinfo()
+		if err != nil {
+			return err
+		}
+
 		emails[email] = mail.NewAppPersonStatusNotificationTpl(
 			&mail.NewAppPersonStatusTpl{
 				WorkNumber: gb.RunContext.WorkNumber,
@@ -122,12 +132,37 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 				ExecutionDecisionExecuted: string(ExecutionDecisionExecuted),
 				ExecutionDecisionRejected: string(ExecutionDecisionRejected),
 				LastWorks:                 lastWorksForUser,
+				Initiator:                 initiatorInfo,
 			})
 	}
 
 	for i := range emails {
+
+		file, ok := gb.RunContext.Services.Sender.Images[emails[i].Image]
+		if !ok {
+			return errors.New("file not found " + emails[i].Image)
+		}
+
+		iconUser, iOk := gb.RunContext.Services.Sender.Images["iconUser.svg"]
+		if !iOk {
+			return errors.New("file not found " + emails[i].Image)
+		}
+
+		files := []e.Attachment{
+			{
+				Name:    "header.png",
+				Content: file,
+				Type:    e.EmbeddedAttachment,
+			},
+			{
+				Name:    "iconUser.svg",
+				Content: iconUser,
+				Type:    e.EmbeddedAttachment,
+			},
+		}
+
 		if sendErr := gb.RunContext.Services.Sender.SendNotification(
-			ctx, []string{i}, emailAttachment, emails[i],
+			ctx, []string{i}, files, emails[i],
 		); sendErr != nil {
 			return sendErr
 		}
@@ -162,44 +197,6 @@ func (gb *GoApproverBlock) notifyAdditionalApprovers(ctx c.Context, logins []str
 
 	emails = utils.UniqueStrings(emails)
 
-	task, getVersionErr := gb.RunContext.Services.Storage.GetVersionByWorkNumber(ctx, gb.RunContext.WorkNumber)
-	if getVersionErr != nil {
-		return getVersionErr
-	}
-
-	processSettings, getVersionErr := gb.RunContext.Services.Storage.GetVersionSettings(ctx, task.VersionID.String())
-	if getVersionErr != nil {
-		return getVersionErr
-	}
-
-	taskRunContext, getDataErr := gb.RunContext.Services.Storage.GetTaskRunContext(ctx, gb.RunContext.WorkNumber)
-	if getDataErr != nil {
-		return getDataErr
-	}
-
-	login := task.Author
-
-	recipient := getRecipientFromState(&taskRunContext.InitialApplication.ApplicationBody)
-
-	if recipient != "" {
-		login = recipient
-	}
-
-	lastWorksForUser := make([]*entity.EriusTask, 0)
-
-	if processSettings.ResubmissionPeriod > 0 {
-		var getWorksErr error
-		lastWorksForUser, getWorksErr = gb.RunContext.Services.Storage.GetWorksForUserWithGivenTimeRange(ctx,
-			processSettings.ResubmissionPeriod,
-			login,
-			task.VersionID.String(),
-			gb.RunContext.WorkNumber,
-		)
-		if getWorksErr != nil {
-			return getWorksErr
-		}
-	}
-
 	slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
 		TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.CurrBlockStartTime,
 			FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100)}},
@@ -218,8 +215,18 @@ func (gb *GoApproverBlock) notifyAdditionalApprovers(ctx c.Context, logins []str
 			gb.State.ApproveStatusName,
 			gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(
 				time.Now(), gb.State.SLA, slaInfoPtr),
-			lastWorksForUser,
 		)
+
+		file, ok := gb.RunContext.Services.Sender.Images[tpl.Image]
+		if !ok {
+			return errors.New("file not found " + tpl.Image)
+		}
+
+		files = append(files, e.Attachment{
+			Name:    "header.png",
+			Content: file,
+			Type:    e.EmbeddedAttachment,
+		})
 
 		err = gb.RunContext.Services.Sender.SendNotification(ctx, []string{emails[i]}, files, tpl)
 		if err != nil {
@@ -266,10 +273,10 @@ func (gb *GoApproverBlock) notifyDecisionMadeByAdditionalApprover(ctx c.Context,
 	tpl := mail.NewDecisionMadeByAdditionalApprover(
 		gb.RunContext.WorkNumber,
 		gb.RunContext.NotifName,
-		userInfo.FullName,
 		latestDecisonLog.Decision.ToRuString(),
 		latestDecisonLog.Comment,
 		gb.RunContext.Services.Sender.SdAddress,
+		userInfo,
 	)
 
 	files, err := gb.RunContext.Services.FileRegistry.GetAttachments(
@@ -280,6 +287,28 @@ func (gb *GoApproverBlock) notifyDecisionMadeByAdditionalApprover(ctx c.Context,
 	if err != nil {
 		return err
 	}
+
+	file, ok := gb.RunContext.Services.Sender.Images[tpl.Image]
+	if !ok {
+		return errors.New("file not found " + tpl.Image)
+	}
+
+	files = append(files, e.Attachment{
+		Name:    "header.png",
+		Content: file,
+		Type:    e.EmbeddedAttachment,
+	})
+
+	iconUser, okU := gb.RunContext.Services.Sender.Images["iconUser.svg"]
+	if !okU {
+		return errors.New("file not found " + tpl.Image)
+	}
+
+	files = append(files, e.Attachment{
+		Name:    "header.png",
+		Content: iconUser,
+		Type:    e.EmbeddedAttachment,
+	})
 
 	err = gb.RunContext.Services.Sender.SendNotification(ctx, emailsToNotify, files, tpl)
 	if err != nil {
@@ -312,7 +341,21 @@ func (gb *GoApproverBlock) notifyNeedRework(ctx c.Context) error {
 	}
 	tpl := mail.NewSendToInitiatorEditTpl(gb.RunContext.WorkNumber, gb.RunContext.NotifName,
 		gb.RunContext.Services.Sender.SdAddress)
-	err = gb.RunContext.Services.Sender.SendNotification(ctx, emails, nil, tpl)
+
+	file, ok := gb.RunContext.Services.Sender.Images[tpl.Image]
+	if !ok {
+		return errors.New("file not found " + tpl.Image)
+	}
+
+	files := []e.Attachment{
+		{
+			Name:    "header.png",
+			Content: file,
+			Type:    e.EmbeddedAttachment,
+		},
+	}
+
+	err = gb.RunContext.Services.Sender.SendNotification(ctx, emails, files, tpl)
 	if err != nil {
 		return err
 	}
@@ -380,7 +423,20 @@ func (gb *GoApproverBlock) notifyNeedMoreInfo(ctx c.Context) error {
 
 	tpl := mail.NewRequestApproverInfoTpl(gb.RunContext.WorkNumber, gb.RunContext.NotifName,
 		gb.RunContext.Services.Sender.SdAddress)
-	if err := gb.RunContext.Services.Sender.SendNotification(ctx, emails, nil, tpl); err != nil {
+
+	file, ok := gb.RunContext.Services.Sender.Images[tpl.Image]
+	if !ok {
+		return errors.New("file not found " + tpl.Image)
+	}
+
+	files := []e.Attachment{
+		{
+			Name:    "header.png",
+			Content: file,
+			Type:    e.EmbeddedAttachment,
+		},
+	}
+	if err := gb.RunContext.Services.Sender.SendNotification(ctx, emails, files, tpl); err != nil {
 		return err
 	}
 

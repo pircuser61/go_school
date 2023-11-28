@@ -3,6 +3,7 @@ package pipeline
 import (
 	c "context"
 	"encoding/json"
+	e "gitlab.services.mts.ru/abp/mail/pkg/email"
 	"sort"
 	"strings"
 	"time"
@@ -186,7 +187,21 @@ func (gb *ExecutableFunctionBlock) Update(ctx c.Context) (interface{}, error) {
 
 				tpl := mail.NewInvalidFunctionResp(
 					gb.RunContext.WorkNumber, gb.RunContext.NotifName, gb.RunContext.Services.Sender.SdAddress)
-				errSend := gb.RunContext.Services.Sender.SendNotification(ctx, emails, nil, tpl)
+
+				file, ok := gb.RunContext.Services.Sender.Images[tpl.Image]
+				if !ok {
+					return nil, errors.New("file not found " + tpl.Image)
+				}
+
+				files := []e.Attachment{
+					{
+						Name:    "header.png",
+						Content: file,
+						Type:    e.EmbeddedAttachment,
+					},
+				}
+
+				errSend := gb.RunContext.Services.Sender.SendNotification(ctx, emails, files, tpl)
 				if errSend != nil {
 					log.WithField("emails", emails).Error(errSend)
 				}

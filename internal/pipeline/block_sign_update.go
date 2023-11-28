@@ -4,6 +4,7 @@ import (
 	c "context"
 	"encoding/json"
 	"errors"
+	"gitlab.services.mts.ru/abp/mail/pkg/email"
 	"time"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
@@ -70,12 +71,27 @@ func (gb *GoSignBlock) handleSignature(ctx c.Context, login string) error {
 			}
 			emails = append(emails, eml)
 		}
-		err := gb.RunContext.Services.Sender.SendNotification(ctx, emails, nil,
-			mail.NewSignErrorTemplate(
-				gb.RunContext.WorkNumber,
-				gb.RunContext.Services.Sender.SdAddress,
-			),
+
+		tpl := mail.NewSignErrorTemplate(
+			gb.RunContext.WorkNumber,
+			gb.RunContext.WorkTitle,
+			gb.RunContext.Services.Sender.SdAddress,
 		)
+
+		file, ok := gb.RunContext.Services.Sender.Images[tpl.Image]
+		if !ok {
+			return errors.New("file not found " + tpl.Image)
+		}
+
+		files := []email.Attachment{
+			{
+				Name:    "header.png",
+				Content: file,
+				Type:    email.EmbeddedAttachment,
+			},
+		}
+
+		err := gb.RunContext.Services.Sender.SendNotification(ctx, emails, files, tpl)
 		if err != nil {
 			return err
 		}
@@ -168,14 +184,26 @@ func (gb *GoSignBlock) handleBreachedSLA(ctx c.Context) error {
 			}
 			emails = append(emails, eml)
 		}
-
-		err := gb.RunContext.Services.Sender.SendNotification(ctx, emails, nil,
-			mail.NewSignSLAExpiredTemplate(
-				gb.RunContext.WorkNumber,
-				gb.RunContext.WorkTitle,
-				gb.RunContext.Services.Sender.SdAddress,
-			),
+		tpl := mail.NewSignSLAExpiredTemplate(
+			gb.RunContext.WorkNumber,
+			gb.RunContext.WorkTitle,
+			gb.RunContext.Services.Sender.SdAddress,
 		)
+
+		file, ok := gb.RunContext.Services.Sender.Images[tpl.Image]
+		if !ok {
+			return errors.New("file not found " + tpl.Image)
+		}
+
+		files := []email.Attachment{
+			{
+				Name:    "header.png",
+				Content: file,
+				Type:    email.EmbeddedAttachment,
+			},
+		}
+
+		err := gb.RunContext.Services.Sender.SendNotification(ctx, emails, files, tpl)
 		if err != nil {
 			return err
 		}
