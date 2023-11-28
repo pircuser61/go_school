@@ -23,13 +23,12 @@ func Test_mergeStates(t *testing.T) {
 			}},
 			wantRes: map[string]map[string]interface{}{
 				"approver_0": {"sla": 10},
-				"approver_1": {"sla": 12},
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if gotRes := mergeStates(tt.args.in); !reflect.DeepEqual(gotRes, tt.wantRes) {
+			if gotRes := mergeStates(tt.args.in, []string{"approver_0"}); !reflect.DeepEqual(gotRes, tt.wantRes) {
 				t.Errorf("mergeStates() = %v, want %v", gotRes, tt.wantRes)
 			}
 		})
