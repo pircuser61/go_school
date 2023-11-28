@@ -1189,6 +1189,9 @@ type FormParams struct {
 	// List of accessibility properties for forms
 	FormsAccessibility *[]FormsAccessibility `json:"forms_accessibility,omitempty"`
 
+	// Object address for object mapping
+	FullFormMapping *string `json:"full_form_mapping,omitempty"`
+
 	// Hide executor from initiator
 	HideExecutorFromInitiator bool `json:"hide_executor_from_initiator"`
 
