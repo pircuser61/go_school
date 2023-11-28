@@ -224,12 +224,12 @@ func (gb *GoExecutionBlock) handleBreachedSLA(ctx c.Context) error {
 
 		file, ok := gb.RunContext.Services.Sender.Images[tpl.Image]
 		if !ok {
-			return errors.New("file not found " + tpl.Image)
+			return errors.New("file not found: " + tpl.Image)
 		}
 
 		files := []e.Attachment{
 			{
-				Name:    "header.png",
+				Name:    headImg,
 				Content: file,
 				Type:    e.EmbeddedAttachment,
 			},
@@ -341,12 +341,12 @@ func (gb *GoExecutionBlock) handleHalfSLABreached(ctx c.Context) error {
 
 		file, ok := gb.RunContext.Services.Sender.Images[tpl.Image]
 		if !ok {
-			return errors.New("file not found " + tpl.Image)
+			return errors.New("file not found: " + tpl.Image)
 		}
 
 		files := []e.Attachment{
 			{
-				Name:    "header.png",
+				Name:    headImg,
 				Content: file,
 				Type:    e.EmbeddedAttachment,
 			},
@@ -409,12 +409,12 @@ func (gb *GoExecutionBlock) handleReworkSLABreached(ctx c.Context) error {
 
 	file, ok := gb.RunContext.Services.Sender.Images[tpl.Image]
 	if !ok {
-		return errors.New("file not found " + tpl.Image)
+		return errors.New("file not found: " + tpl.Image)
 	}
 
 	files := []e.Attachment{
 		{
-			Name:    "header.png",
+			Name:    headImg,
 			Content: file,
 			Type:    e.EmbeddedAttachment,
 		},
@@ -465,12 +465,12 @@ func (gb *GoExecutionBlock) handleBreachedDayBeforeSLARequestAddInfo(ctx c.Conte
 
 	file, ok := gb.RunContext.Services.Sender.Images[tpl.Image]
 	if !ok {
-		return errors.New("file not found " + tpl.Image)
+		return errors.New("file not found: " + tpl.Image)
 	}
 
 	files := []e.Attachment{
 		{
-			Name:    "header.png",
+			Name:    headImg,
 			Content: file,
 			Type:    e.EmbeddedAttachment,
 		},
@@ -536,12 +536,12 @@ func (gb *GoExecutionBlock) HandleBreachedSLARequestAddInfo(ctx c.Context) error
 
 	file, ok := gb.RunContext.Services.Sender.Images[tpl.Image]
 	if !ok {
-		return errors.New("file not found " + tpl.Image)
+		return errors.New("file not found: " + tpl.Image)
 	}
 
 	files := []e.Attachment{
 		{
-			Name:    "header.png",
+			Name:    headImg,
 			Content: file,
 			Type:    e.EmbeddedAttachment,
 		},
@@ -740,7 +740,7 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 
 	var description *orderedmap.OrderedMap
 
-	description, err = gb.RunContext.makeNotificationDescription(gb.Name)
+	description, err = gb.RunContext.makeNotificationDescription()
 	if err != nil {
 		return err
 	}
@@ -816,12 +816,12 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 
 	file, ok := gb.RunContext.Services.Sender.Images[tpl.Image]
 	if !ok {
-		return errors.New("file not found " + tpl.Image)
+		return errors.New("file not found: " + tpl.Image)
 	}
 
 	files := []e.Attachment{
 		{
-			Name:    "header.png",
+			Name:    headImg,
 			Content: file,
 			Type:    e.EmbeddedAttachment,
 		},
@@ -878,22 +878,22 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 
 	header, hOk := gb.RunContext.Services.Sender.Images[tpl.Image]
 	if !hOk {
-		return errors.New("file not found " + tpl.Image)
+		return errors.New("file not found: " + tpl.Image)
 	}
 
-	iconUser, iOk := gb.RunContext.Services.Sender.Images["iconUser.svg"]
+	iconUser, iOk := gb.RunContext.Services.Sender.Images[userImg]
 	if !iOk {
-		return errors.New("file not found iconUser.svg")
+		return errors.New("file not found: iconUser.svg")
 	}
 
 	listFiles := []e.Attachment{
 		{
-			Name:    "header.png",
+			Name:    headImg,
 			Content: header,
 			Type:    e.EmbeddedAttachment,
 		},
 		{
-			Name:    "iconUser.svg",
+			Name:    userImg,
 			Content: iconUser,
 			Type:    e.EmbeddedAttachment,
 		},

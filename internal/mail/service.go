@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/labstack/gommon/log"
 	"net/http"
 	"net/mail"
 	"os"
@@ -13,6 +12,8 @@ import (
 	"text/template"
 
 	"go.opencensus.io/trace"
+
+	"github.com/labstack/gommon/log"
 
 	"gitlab.services.mts.ru/abp/mail/pkg/broker"
 	"gitlab.services.mts.ru/abp/mail/pkg/email"
@@ -55,6 +56,7 @@ const messageTplStart = `<!DOCTYPE html>
 </head><body>
 `
 const msgTplEnd = "</body></html>"
+const headTemp = "internal/mail/template/00header-template.html"
 
 type Service struct {
 	cli *mailclient.Client
@@ -77,8 +79,8 @@ func NewService(c Config) (*Service, error) {
 		ReadTimeout:  c.ReadTimeout,
 		WriteTimeout: c.WriteTimeout,
 	}
-
-	images, err := getImages("internal/mail/img/")
+	_ = c
+	images, err := getImages(c.ImagesPath)
 	if err != nil {
 		return nil, err
 	}
@@ -133,7 +135,7 @@ func (s *Service) SendNotification(ctx context.Context, to []string, files []ema
 		}
 	}
 
-	temp, err := template.ParseFiles("internal/mail/template/00header-template.html", tmpl.Template)
+	temp, err := template.ParseFiles(headTemp, tmpl.Template)
 	if err != nil {
 		return err
 	}
@@ -160,9 +162,10 @@ func getImages(path string) (map[string][]byte, error) {
 
 	photos := make(map[string][]byte)
 	for _, v := range files {
-		data, err := os.ReadFile(path + v.Name())
-		if err != nil {
+		data, readErr := os.ReadFile(path + v.Name())
+		if readErr != nil {
 			log.Error("error read file ", v.Name(), err)
+			return nil, readErr
 		}
 		photos[v.Name()] = data
 	}

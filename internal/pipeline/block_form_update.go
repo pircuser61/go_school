@@ -4,12 +4,12 @@ import (
 	c "context"
 	"encoding/json"
 	"fmt"
-	e "gitlab.services.mts.ru/abp/mail/pkg/email"
 	"time"
 
-	"gitlab.services.mts.ru/abp/myosotis/logger"
-
 	"github.com/pkg/errors"
+
+	e "gitlab.services.mts.ru/abp/mail/pkg/email"
+	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
@@ -204,12 +204,12 @@ func (gb *GoFormBlock) handleBreachedSLA(ctx c.Context) error {
 
 		file, ok := gb.RunContext.Services.Sender.Images[tpl.Image]
 		if !ok {
-			return errors.New("file not found " + tpl.Image)
+			return errors.New("file not found: " + tpl.Image)
 		}
 
 		files := []e.Attachment{
 			{
-				Name:    "header.png",
+				Name:    headImg,
 				Content: file,
 				Type:    e.EmbeddedAttachment,
 			},
@@ -276,12 +276,12 @@ func (gb *GoFormBlock) handleHalfSLABreached(ctx c.Context) error {
 
 		file, ok := gb.RunContext.Services.Sender.Images[tpl.Image]
 		if !ok {
-			return errors.New("file not found " + tpl.Image)
+			return errors.New("file not found: " + tpl.Image)
 		}
 
 		files := []e.Attachment{
 			{
-				Name:    "header.png",
+				Name:    headImg,
 				Content: file,
 				Type:    e.EmbeddedAttachment,
 			},
@@ -389,7 +389,7 @@ func (gb *GoFormBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork strin
 		return convertErr
 	}
 
-	description, err := gb.RunContext.makeNotificationDescription(gb.Name)
+	description, err := gb.RunContext.makeNotificationDescription()
 	if err != nil {
 		return err
 	}
@@ -408,21 +408,21 @@ func (gb *GoFormBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork strin
 
 	file, ok := gb.RunContext.Services.Sender.Images[tpl.Image]
 	if !ok {
-		return errors.New("file not found " + tpl.Image)
+		return errors.New("file not found: " + tpl.Image)
 	}
 
-	iconUser, iOk := gb.RunContext.Services.Sender.Images["iconUser.svg"]
+	iconUser, iOk := gb.RunContext.Services.Sender.Images[userImg]
 	if !iOk {
-		return errors.New("file not found " + tpl.Image)
+		return errors.New("file not found: " + tpl.Image)
 	}
 	files := []e.Attachment{
 		{
-			Name:    "header.png",
+			Name:    headImg,
 			Content: file,
 			Type:    e.EmbeddedAttachment,
 		},
 		{
-			Name:    "iconUser.svg",
+			Name:    userImg,
 			Content: iconUser,
 			Type:    e.EmbeddedAttachment,
 		},
@@ -455,12 +455,12 @@ func (gb *GoFormBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork strin
 
 	file, ok = gb.RunContext.Services.Sender.Images[tpl.Image]
 	if !ok {
-		return errors.New("file not found " + tpl.Image)
+		return errors.New("file not found: " + tpl.Image)
 	}
 
 	files = []e.Attachment{
 		{
-			Name:    "header.png",
+			Name:    headImg,
 			Content: file,
 			Type:    e.EmbeddedAttachment,
 		},

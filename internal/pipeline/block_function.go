@@ -3,7 +3,6 @@ package pipeline
 import (
 	c "context"
 	"encoding/json"
-	e "gitlab.services.mts.ru/abp/mail/pkg/email"
 	"sort"
 	"strings"
 	"time"
@@ -12,6 +11,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	e "gitlab.services.mts.ru/abp/mail/pkg/email"
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
@@ -190,12 +190,12 @@ func (gb *ExecutableFunctionBlock) Update(ctx c.Context) (interface{}, error) {
 
 				file, ok := gb.RunContext.Services.Sender.Images[tpl.Image]
 				if !ok {
-					return nil, errors.New("file not found " + tpl.Image)
+					return nil, errors.New("file not found: " + tpl.Image)
 				}
 
 				files := []e.Attachment{
 					{
-						Name:    "header.png",
+						Name:    headImg,
 						Content: file,
 						Type:    e.EmbeddedAttachment,
 					},

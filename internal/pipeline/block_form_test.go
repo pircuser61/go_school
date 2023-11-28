@@ -456,6 +456,7 @@ func Test_createGoFormBlock(t *testing.T) {
 					},
 					Description:        "",
 					FormsAccessibility: nil,
+					InitialExecutors:   map[string]struct{}{"auto_fill": {}},
 				},
 				Sockets: entity.ConvertSocket(next),
 			},

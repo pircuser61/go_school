@@ -3,12 +3,12 @@ package pipeline
 import (
 	c "context"
 	"fmt"
-	"github.com/pkg/errors"
 	"time"
 
-	"gitlab.services.mts.ru/abp/myosotis/logger"
+	"github.com/pkg/errors"
 
 	e "gitlab.services.mts.ru/abp/mail/pkg/email"
+	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
@@ -359,12 +359,12 @@ func (gb *GoFormBlock) handleNotifications(ctx c.Context) error {
 
 		file, ok := gb.RunContext.Services.Sender.Images[emails[i].Image]
 		if !ok {
-			return errors.New("file not found " + emails[i].Image)
+			return errors.New("file not found: " + emails[i].Image)
 		}
 
 		files := []e.Attachment{
 			{
-				Name:    "header.png",
+				Name:    headImg,
 				Content: file,
 				Type:    e.EmbeddedAttachment,
 			},

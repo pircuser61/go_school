@@ -2,9 +2,14 @@ package pipeline
 
 import (
 	c "context"
+	"errors"
+	"time"
+
+	e "gitlab.services.mts.ru/abp/mail/pkg/email"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
@@ -26,42 +31,14 @@ func (gb *GoSignBlock) notifyAdditionalApprovers(ctx c.Context, logins []string,
 
 	emails = utils.UniqueStrings(emails)
 
-	task, getVersionErr := gb.RunContext.Services.Storage.GetVersionByWorkNumber(ctx, gb.RunContext.WorkNumber)
-	if getVersionErr != nil {
-		return getVersionErr
-	}
+	slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
+		TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.CurrBlockStartTime,
+			FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100)}},
+		WorkType: sla.WorkHourType(*gb.State.WorkType),
+	})
 
-	processSettings, getVersionErr := gb.RunContext.Services.Storage.GetVersionSettings(ctx, task.VersionID.String())
-	if getVersionErr != nil {
-		return getVersionErr
-	}
-
-	taskRunContext, getDataErr := gb.RunContext.Services.Storage.GetTaskRunContext(ctx, gb.RunContext.WorkNumber)
-	if getDataErr != nil {
-		return getDataErr
-	}
-
-	login := task.Author
-
-	recipient := getRecipientFromState(&taskRunContext.InitialApplication.ApplicationBody)
-
-	if recipient != "" {
-		login = recipient
-	}
-
-	lastWorksForUser := make([]*entity.EriusTask, 0)
-
-	if processSettings.ResubmissionPeriod > 0 {
-		var getWorksErr error
-		lastWorksForUser, getWorksErr = gb.RunContext.Services.Storage.GetWorksForUserWithGivenTimeRange(ctx,
-			processSettings.ResubmissionPeriod,
-			login,
-			task.VersionID.String(),
-			gb.RunContext.WorkNumber,
-		)
-		if getWorksErr != nil {
-			return getWorksErr
-		}
+	if getSlaInfoErr != nil {
+		return getSlaInfoErr
 	}
 
 	for i := range emails {
@@ -69,9 +46,20 @@ func (gb *GoSignBlock) notifyAdditionalApprovers(ctx c.Context, logins []string,
 			gb.RunContext.WorkNumber,
 			gb.RunContext.NotifName,
 			gb.RunContext.Services.Sender.SdAddress,
-			"",
-			lastWorksForUser,
+			gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(
+				time.Now(), *gb.State.SLA, slaInfoPtr),
 		)
+
+		file, ok := gb.RunContext.Services.Sender.Images[tpl.Image]
+		if !ok {
+			return errors.New("file not found: " + tpl.Image)
+		}
+
+		files = append(files, e.Attachment{
+			Name:    headImg,
+			Content: file,
+			Type:    e.EmbeddedAttachment,
+		})
 
 		err = gb.RunContext.Services.Sender.SendNotification(ctx, []string{emails[i]}, files, tpl)
 		if err != nil {
@@ -106,14 +94,13 @@ func (gb *GoSignBlock) notifyDecisionMadeByAdditionalApprover(ctx c.Context, log
 	}
 
 	latestDecisionLog := gb.State.SignLog[len(gb.State.SignLog)-1]
-
 	tpl := mail.NewDecisionMadeByAdditionalApprover(
 		gb.RunContext.WorkNumber,
 		gb.RunContext.NotifName,
-		userInfo.FullName,
 		latestDecisionLog.Decision.ToRuString(),
 		latestDecisionLog.Comment,
 		gb.RunContext.Services.Sender.SdAddress,
+		userInfo,
 	)
 
 	files, err := gb.RunContext.Services.FileRegistry.GetAttachments(
@@ -124,6 +111,17 @@ func (gb *GoSignBlock) notifyDecisionMadeByAdditionalApprover(ctx c.Context, log
 	if err != nil {
 		return err
 	}
+
+	file, ok := gb.RunContext.Services.Sender.Images[tpl.Image]
+	if !ok {
+		return errors.New("file not found: " + tpl.Image)
+	}
+
+	files = append(files, e.Attachment{
+		Name:    headImg,
+		Content: file,
+		Type:    e.EmbeddedAttachment,
+	})
 
 	err = gb.RunContext.Services.Sender.SendNotification(ctx, emailsToNotify, files, tpl)
 	if err != nil {

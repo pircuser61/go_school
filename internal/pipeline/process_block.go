@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"time"
 
+	"golang.org/x/net/context"
+
 	"github.com/google/uuid"
 
 	"github.com/pkg/errors"
@@ -16,7 +18,6 @@ import (
 	"github.com/iancoleman/orderedmap"
 
 	e "gitlab.services.mts.ru/abp/mail/pkg/email"
-
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
@@ -469,8 +470,8 @@ func (runCtx *BlockRunContext) updateStepInDB(ctx c.Context, name string, id uui
 	})
 }
 
-func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) (*orderedmap.OrderedMap, error) {
-	descr, err := runCtx.Services.Storage.GetApplicationData(runCtx.WorkNumber)
+func (runCtx *BlockRunContext) makeNotificationDescription() (*orderedmap.OrderedMap, error) {
+	descr, err := runCtx.Services.Storage.GetTaskRunContext(context.Background(), runCtx.WorkNumber)
 	if err != nil {
 		return nil, err
 	}
@@ -516,7 +517,7 @@ func (runCtx *BlockRunContext) handleInitiatorNotify(ctx c.Context, params handl
 		return nil
 	}
 
-	description, err := runCtx.makeNotificationDescription(params.step)
+	description, err := runCtx.makeNotificationDescription()
 	if err != nil {
 		return err
 	}
@@ -538,10 +539,6 @@ func (runCtx *BlockRunContext) handleInitiatorNotify(ctx c.Context, params handl
 		params.action = statusToTaskState[params.status]
 	}
 
-	//if getSlaInfoErr != nil {
-	//	return getSlaInfoErr
-	//}
-
 	tmpl := mail.NewAppInitiatorStatusNotificationTpl(
 		runCtx.WorkNumber,
 		runCtx.NotifName,
@@ -552,12 +549,12 @@ func (runCtx *BlockRunContext) handleInitiatorNotify(ctx c.Context, params handl
 
 	file, ok := runCtx.Services.Sender.Images[tmpl.Image]
 	if !ok {
-		return errors.New("file not found " + tmpl.Image)
+		return errors.New("file not found: " + tmpl.Image)
 	}
 
 	files := []e.Attachment{
 		{
-			Name:    "header.png",
+			Name:    headImg,
 			Content: file,
 			Type:    e.EmbeddedAttachment,
 		},

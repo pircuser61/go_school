@@ -29,6 +29,21 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
+func getTaskRunContext() db.Database {
+	res := &mocks.MockedDatabase{}
+	res.On("GetTaskRunContext", context.Background(), "J001").Return(entity.TaskRunContext{}, nil)
+	res.On("GetApplicationData", "J001").Return("", nil)
+	res.On("GetAdditionalForms", "J001", "sign").Return([]string{}, nil)
+	res.On("UpdateStepContext",
+		mock.MatchedBy(func(ctx context.Context) bool { return true }),
+		mock.AnythingOfType("*db.UpdateStepRequest"),
+	).Return(
+		nil,
+	)
+
+	return res
+}
+
 func TestSignData_SetDecision(t *testing.T) {
 	const (
 		login   = "example"
@@ -3067,20 +3082,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 
 							return &plMock
 						}(),
-						Storage: func() db.Database {
-							res := &mocks.MockedDatabase{}
-
-							res.On("GetApplicationData", "J001").Return("", nil)
-							res.On("GetAdditionalForms", "J001", "sign").Return([]string{}, nil)
-							res.On("UpdateStepContext",
-								mock.MatchedBy(func(ctx context.Context) bool { return true }),
-								mock.AnythingOfType("*db.UpdateStepRequest"),
-							).Return(
-								nil,
-							)
-
-							return res
-						}(),
+						Storage: getTaskRunContext(),
 					},
 				},
 			},
@@ -3137,20 +3139,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 
 							return &plMock
 						}(),
-						Storage: func() db.Database {
-							res := &mocks.MockedDatabase{}
-
-							res.On("GetApplicationData", "J001").Return("", nil)
-							res.On("GetAdditionalForms", "J001", "sign").Return([]string{}, nil)
-							res.On("UpdateStepContext",
-								mock.MatchedBy(func(ctx context.Context) bool { return true }),
-								mock.AnythingOfType("*db.UpdateStepRequest"),
-							).Return(
-								nil,
-							)
-
-							return res
-						}(),
+						Storage: getTaskRunContext(),
 					},
 				},
 			},
@@ -3226,20 +3215,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 
 							return &plMock
 						}(),
-						Storage: func() db.Database {
-							res := &mocks.MockedDatabase{}
-
-							res.On("GetApplicationData", "J001").Return("", nil)
-							res.On("GetAdditionalForms", "J001", "sign").Return([]string{}, nil)
-							res.On("UpdateStepContext",
-								mock.MatchedBy(func(ctx context.Context) bool { return true }),
-								mock.AnythingOfType("*db.UpdateStepRequest"),
-							).Return(
-								nil,
-							)
-
-							return res
-						}(),
+						Storage: getTaskRunContext(),
 					},
 				},
 			},
@@ -3301,20 +3277,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 
 							return &plMock
 						}(),
-						Storage: func() db.Database {
-							res := &mocks.MockedDatabase{}
-
-							res.On("GetApplicationData", "J001").Return("", nil)
-							res.On("GetAdditionalForms", "J001", "sign").Return([]string{}, nil)
-							res.On("UpdateStepContext",
-								mock.MatchedBy(func(ctx context.Context) bool { return true }),
-								mock.AnythingOfType("*db.UpdateStepRequest"),
-							).Return(
-								nil,
-							)
-
-							return res
-						}(),
+						Storage: getTaskRunContext(),
 					},
 				},
 			},
@@ -3371,20 +3334,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 
 							return &plMock
 						}(),
-						Storage: func() db.Database {
-							res := &mocks.MockedDatabase{}
-
-							res.On("GetApplicationData", "J001").Return("", nil)
-							res.On("GetAdditionalForms", "J001", "sign").Return([]string{}, nil)
-							res.On("UpdateStepContext",
-								mock.MatchedBy(func(ctx context.Context) bool { return true }),
-								mock.AnythingOfType("*db.UpdateStepRequest"),
-							).Return(
-								nil,
-							)
-
-							return res
-						}(),
+						Storage: getTaskRunContext(),
 					},
 				},
 			},
@@ -3441,20 +3391,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 
 							return &plMock
 						}(),
-						Storage: func() db.Database {
-							res := &mocks.MockedDatabase{}
-
-							res.On("GetApplicationData", "J001").Return("", nil)
-							res.On("GetAdditionalForms", "J001", "sign").Return([]string{}, nil)
-							res.On("UpdateStepContext",
-								mock.MatchedBy(func(ctx context.Context) bool { return true }),
-								mock.AnythingOfType("*db.UpdateStepRequest"),
-							).Return(
-								nil,
-							)
-
-							return res
-						}(),
+						Storage: getTaskRunContext(),
 					},
 				},
 			},
@@ -3720,20 +3657,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 
 							return &plMock
 						}(),
-						Storage: func() db.Database {
-							res := &mocks.MockedDatabase{}
-
-							res.On("GetApplicationData", "J001").Return("", nil)
-							res.On("GetAdditionalForms", "J001", "sign").Return([]string{}, nil)
-							res.On("UpdateStepContext",
-								mock.MatchedBy(func(ctx context.Context) bool { return true }),
-								mock.AnythingOfType("*db.UpdateStepRequest"),
-							).Return(
-								nil,
-							)
-
-							return res
-						}(),
+						Storage: getTaskRunContext(),
 					},
 				},
 			},
@@ -3790,20 +3714,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 
 							return &plMock
 						}(),
-						Storage: func() db.Database {
-							res := &mocks.MockedDatabase{}
-
-							res.On("GetApplicationData", "J001").Return("", nil)
-							res.On("GetAdditionalForms", "J001", "sign").Return([]string{}, nil)
-							res.On("UpdateStepContext",
-								mock.MatchedBy(func(ctx context.Context) bool { return true }),
-								mock.AnythingOfType("*db.UpdateStepRequest"),
-							).Return(
-								nil,
-							)
-
-							return res
-						}(),
+						Storage: getTaskRunContext(),
 					},
 				},
 			},
@@ -3879,20 +3790,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 
 							return &plMock
 						}(),
-						Storage: func() db.Database {
-							res := &mocks.MockedDatabase{}
-
-							res.On("GetApplicationData", "J001").Return("", nil)
-							res.On("GetAdditionalForms", "J001", "sign").Return([]string{}, nil)
-							res.On("UpdateStepContext",
-								mock.MatchedBy(func(ctx context.Context) bool { return true }),
-								mock.AnythingOfType("*db.UpdateStepRequest"),
-							).Return(
-								nil,
-							)
-
-							return res
-						}(),
+						Storage: getTaskRunContext(),
 					},
 				},
 			},
@@ -3972,20 +3870,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 
 							return &plMock
 						}(),
-						Storage: func() db.Database {
-							res := &mocks.MockedDatabase{}
-
-							res.On("GetApplicationData", "J001").Return("", nil)
-							res.On("GetAdditionalForms", "J001", "sign").Return([]string{}, nil)
-							res.On("UpdateStepContext",
-								mock.MatchedBy(func(ctx context.Context) bool { return true }),
-								mock.AnythingOfType("*db.UpdateStepRequest"),
-							).Return(
-								nil,
-							)
-
-							return res
-						}(),
+						Storage: getTaskRunContext(),
 					},
 				},
 			},
@@ -4065,20 +3950,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 
 							return &plMock
 						}(),
-						Storage: func() db.Database {
-							res := &mocks.MockedDatabase{}
-
-							res.On("GetApplicationData", "J001").Return("", nil)
-							res.On("GetAdditionalForms", "J001", "sign").Return([]string{}, nil)
-							res.On("UpdateStepContext",
-								mock.MatchedBy(func(ctx context.Context) bool { return true }),
-								mock.AnythingOfType("*db.UpdateStepRequest"),
-							).Return(
-								nil,
-							)
-
-							return res
-						}(),
+						Storage: getTaskRunContext(),
 					},
 				},
 			},
@@ -4155,20 +4027,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 
 							return &plMock
 						}(),
-						Storage: func() db.Database {
-							res := &mocks.MockedDatabase{}
-
-							res.On("GetApplicationData", "J001").Return("", nil)
-							res.On("GetAdditionalForms", "J001", "sign").Return([]string{}, nil)
-							res.On("UpdateStepContext",
-								mock.MatchedBy(func(ctx context.Context) bool { return true }),
-								mock.AnythingOfType("*db.UpdateStepRequest"),
-							).Return(
-								nil,
-							)
-
-							return res
-						}(),
+						Storage: getTaskRunContext(),
 					},
 				},
 			},
@@ -4249,20 +4108,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 
 							return &plMock
 						}(),
-						Storage: func() db.Database {
-							res := &mocks.MockedDatabase{}
-
-							res.On("GetApplicationData", "J001").Return("", nil)
-							res.On("GetAdditionalForms", "J001", "sign").Return([]string{}, nil)
-							res.On("UpdateStepContext",
-								mock.MatchedBy(func(ctx context.Context) bool { return true }),
-								mock.AnythingOfType("*db.UpdateStepRequest"),
-							).Return(
-								nil,
-							)
-
-							return res
-						}(),
+						Storage: getTaskRunContext(),
 					},
 				},
 			},

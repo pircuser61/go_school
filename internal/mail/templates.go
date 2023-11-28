@@ -383,14 +383,14 @@ func NewSignerNotificationTpl(id, name, sdUrl, deadline string, autoReject bool,
 			Id          string
 			Name        string
 			Link        string
-			Description *orderedmap.OrderedMap
+			Description map[string]interface{}
 			Deadline    string
 			AutoReject  bool
 		}{
 			Id:          id,
 			Name:        name,
 			Link:        fmt.Sprintf(TaskUrlTemplate, sdUrl, id),
-			Description: description,
+			Description: description.Values(),
 			Deadline:    deadline,
 			AutoReject:  autoReject,
 		},
@@ -433,7 +433,7 @@ func NewAppPersonStatusNotificationTpl(in *NewAppPersonStatusTpl) Template {
 			Name        string
 			Link        string
 			Action      string
-			Description *orderedmap.OrderedMap
+			Description map[string]interface{}
 			Deadline    string
 			ActionBtn   []Button
 			Initiator   *sso.UserInfo
@@ -443,7 +443,7 @@ func NewAppPersonStatusNotificationTpl(in *NewAppPersonStatusTpl) Template {
 			Name:        in.Name,
 			Link:        fmt.Sprintf(TaskUrlTemplate, in.SdUrl, in.WorkNumber),
 			Action:      actionName,
-			Description: in.Description,
+			Description: in.Description.Values(),
 			Deadline:    in.DeadLine,
 			ActionBtn:   buttons,
 			Initiator:   in.Initiator,
@@ -490,7 +490,7 @@ func NewExecutionNeedTakeInWorkTpl(dto *ExecutorNotifTemplate, deadline string) 
 			Id          string
 			Name        string
 			Link        string
-			Description *orderedmap.OrderedMap
+			Description map[string]interface{}
 			Group       bool
 			Deadline    string
 			ActionBtn   Button
@@ -498,7 +498,7 @@ func NewExecutionNeedTakeInWorkTpl(dto *ExecutorNotifTemplate, deadline string) 
 			Id:          dto.WorkNumber,
 			Name:        dto.Name,
 			Link:        fmt.Sprintf(TaskUrlTemplate, dto.SdUrl, dto.WorkNumber),
-			Description: dto.Description,
+			Description: dto.Description.Values(),
 			Group:       group,
 			Deadline:    deadline,
 			ActionBtn:   *actionBtn,
@@ -517,22 +517,21 @@ func NewExecutionTakenInWorkTpl(dto *ExecutorNotifTemplate) Template {
 			Link        string
 			Executor    *sso.UserInfo
 			Initiator   *sso.UserInfo
-			Description *orderedmap.OrderedMap
+			Description map[string]interface{}
 		}{
 			Id:          dto.WorkNumber,
 			Name:        dto.Name,
 			Link:        fmt.Sprintf(TaskUrlTemplate, dto.SdUrl, dto.WorkNumber),
 			Executor:    dto.Executor,
 			Initiator:   dto.Initiator,
-			Description: dto.Description,
+			Description: dto.Description.Values(),
 		},
 	}
 }
 
-func NewAddApproversTpl(id, name, sdUrl, status, deadline string) Template {
-	actionName := getApprovementActionNameByStatus(status, defaultApprovementActionName)
+func NewAddApproversTpl(id, name, sdUrl, deadline string) Template {
 	return Template{
-		Subject:  fmt.Sprintf("Заявка %s %s ожидает %s", id, name, actionName),
+		Subject:  fmt.Sprintf("Заявка %s %s ожидает согласования", id, name),
 		Template: "internal/mail/template/42receivedForApproval-template.html",
 		Image:    "ozhidaet_ispolneniya.png",
 		Variables: struct {

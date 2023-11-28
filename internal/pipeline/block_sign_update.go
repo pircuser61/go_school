@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"gitlab.services.mts.ru/abp/mail/pkg/email"
 	"time"
 
+	"gitlab.services.mts.ru/abp/mail/pkg/email"
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
@@ -128,12 +128,12 @@ func (gb *GoSignBlock) handleSignature(ctx c.Context, login string) error {
 
 		file, ok := gb.RunContext.Services.Sender.Images[tpl.Image]
 		if !ok {
-			return errors.New("file not found " + tpl.Image)
+			return errors.New("file not found: " + tpl.Image)
 		}
 
 		files := []email.Attachment{
 			{
-				Name:    "header.png",
+				Name:    headImg,
 				Content: file,
 				Type:    email.EmbeddedAttachment,
 			},
@@ -308,12 +308,12 @@ func (gb *GoSignBlock) handleBreachedSLA(ctx c.Context) error {
 
 		file, ok := gb.RunContext.Services.Sender.Images[tpl.Image]
 		if !ok {
-			return errors.New("file not found " + tpl.Image)
+			return errors.New("file not found: " + tpl.Image)
 		}
 
 		files := []email.Attachment{
 			{
-				Name:    "header.png",
+				Name:    headImg,
 				Content: file,
 				Type:    email.EmbeddedAttachment,
 			},

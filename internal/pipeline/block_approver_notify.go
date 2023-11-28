@@ -16,6 +16,11 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
+const (
+	headImg = "header.png"
+	userImg = "iconUser.svg"
+)
+
 //nolint:dupl // maybe later
 func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 	if gb.RunContext.skipNotifications {
@@ -34,7 +39,7 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 	approvers := getSliceFromMapOfStrings(gb.State.Approvers)
 	loginsToNotify := delegates.GetUserInArrayWithDelegations(approvers)
 
-	description, err := gb.RunContext.makeNotificationDescription(gb.Name)
+	description, err := gb.RunContext.makeNotificationDescription()
 	if err != nil {
 		return err
 	}
@@ -140,22 +145,22 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 
 		file, ok := gb.RunContext.Services.Sender.Images[emails[i].Image]
 		if !ok {
-			return errors.New("file not found " + emails[i].Image)
+			return errors.New("file not found: " + emails[i].Image)
 		}
 
-		iconUser, iOk := gb.RunContext.Services.Sender.Images["iconUser.svg"]
+		iconUser, iOk := gb.RunContext.Services.Sender.Images[userImg]
 		if !iOk {
-			return errors.New("file not found " + emails[i].Image)
+			return errors.New("file not found: " + emails[i].Image)
 		}
 
 		files := []e.Attachment{
 			{
-				Name:    "header.png",
+				Name:    headImg,
 				Content: file,
 				Type:    e.EmbeddedAttachment,
 			},
 			{
-				Name:    "iconUser.svg",
+				Name:    userImg,
 				Content: iconUser,
 				Type:    e.EmbeddedAttachment,
 			},
@@ -212,18 +217,17 @@ func (gb *GoApproverBlock) notifyAdditionalApprovers(ctx c.Context, logins []str
 			gb.RunContext.WorkNumber,
 			gb.RunContext.NotifName,
 			gb.RunContext.Services.Sender.SdAddress,
-			gb.State.ApproveStatusName,
 			gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(
 				time.Now(), gb.State.SLA, slaInfoPtr),
 		)
 
 		file, ok := gb.RunContext.Services.Sender.Images[tpl.Image]
 		if !ok {
-			return errors.New("file not found " + tpl.Image)
+			return errors.New("file not found: " + tpl.Image)
 		}
 
 		files = append(files, e.Attachment{
-			Name:    "header.png",
+			Name:    headImg,
 			Content: file,
 			Type:    e.EmbeddedAttachment,
 		})
@@ -290,22 +294,22 @@ func (gb *GoApproverBlock) notifyDecisionMadeByAdditionalApprover(ctx c.Context,
 
 	file, ok := gb.RunContext.Services.Sender.Images[tpl.Image]
 	if !ok {
-		return errors.New("file not found " + tpl.Image)
+		return errors.New("file not found: " + tpl.Image)
 	}
 
 	files = append(files, e.Attachment{
-		Name:    "header.png",
+		Name:    headImg,
 		Content: file,
 		Type:    e.EmbeddedAttachment,
 	})
 
-	iconUser, okU := gb.RunContext.Services.Sender.Images["iconUser.svg"]
+	iconUser, okU := gb.RunContext.Services.Sender.Images[userImg]
 	if !okU {
-		return errors.New("file not found " + tpl.Image)
+		return errors.New("file not found: " + tpl.Image)
 	}
 
 	files = append(files, e.Attachment{
-		Name:    "header.png",
+		Name:    headImg,
 		Content: iconUser,
 		Type:    e.EmbeddedAttachment,
 	})
@@ -344,12 +348,12 @@ func (gb *GoApproverBlock) notifyNeedRework(ctx c.Context) error {
 
 	file, ok := gb.RunContext.Services.Sender.Images[tpl.Image]
 	if !ok {
-		return errors.New("file not found " + tpl.Image)
+		return errors.New("file not found: " + tpl.Image)
 	}
 
 	files := []e.Attachment{
 		{
-			Name:    "header.png",
+			Name:    headImg,
 			Content: file,
 			Type:    e.EmbeddedAttachment,
 		},
@@ -426,12 +430,12 @@ func (gb *GoApproverBlock) notifyNeedMoreInfo(ctx c.Context) error {
 
 	file, ok := gb.RunContext.Services.Sender.Images[tpl.Image]
 	if !ok {
-		return errors.New("file not found " + tpl.Image)
+		return errors.New("file not found: " + tpl.Image)
 	}
 
 	files := []e.Attachment{
 		{
-			Name:    "header.png",
+			Name:    headImg,
 			Content: file,
 			Type:    e.EmbeddedAttachment,
 		},

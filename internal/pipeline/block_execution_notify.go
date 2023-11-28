@@ -5,9 +5,8 @@ import (
 	"errors"
 	"time"
 
-	"gitlab.services.mts.ru/abp/myosotis/logger"
-
 	e "gitlab.services.mts.ru/abp/mail/pkg/email"
+	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
@@ -31,7 +30,7 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 
 	loginsToNotify := delegates.GetUserInArrayWithDelegations(executors)
 
-	description, err := gb.RunContext.makeNotificationDescription(gb.Name)
+	description, err := gb.RunContext.makeNotificationDescription()
 	if err != nil {
 		return err
 	}
@@ -145,22 +144,22 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 	for i := range emails {
 		file, ok := gb.RunContext.Services.Sender.Images[emails[i].Image]
 		if !ok {
-			return errors.New("file not found " + emails[i].Image)
+			return errors.New("file not found: " + emails[i].Image)
 		}
 
-		iconUser, ok := gb.RunContext.Services.Sender.Images["iconUser.svg"]
+		iconUser, ok := gb.RunContext.Services.Sender.Images[userImg]
 		if !ok {
-			return errors.New("file not found " + emails[i].Image)
+			return errors.New("file not found: " + emails[i].Image)
 		}
 
 		files := []e.Attachment{
 			{
-				Name:    "header.png",
+				Name:    headImg,
 				Content: file,
 				Type:    e.EmbeddedAttachment,
 			},
 			{
-				Name:    "iconUser.svg",
+				Name:    userImg,
 				Content: iconUser,
 				Type:    e.EmbeddedAttachment,
 			},
@@ -201,12 +200,12 @@ func (gb *GoExecutionBlock) notifyNeedRework(ctx c.Context) error {
 
 	file, ok := gb.RunContext.Services.Sender.Images[tpl.Image]
 	if !ok {
-		return errors.New("file not found " + tpl.Image)
+		return errors.New("file not found: " + tpl.Image)
 	}
 
 	files := []e.Attachment{
 		{
-			Name:    "header.png",
+			Name:    headImg,
 			Content: file,
 			Type:    e.EmbeddedAttachment,
 		},
@@ -237,12 +236,12 @@ func (gb *GoExecutionBlock) notifyNeedMoreInfo(ctx c.Context) error {
 
 	file, ok := gb.RunContext.Services.Sender.Images[tpl.Image]
 	if !ok {
-		return errors.New("file not found " + tpl.Image)
+		return errors.New("file not found: " + tpl.Image)
 	}
 
 	files := []e.Attachment{
 		{
-			Name:    "header.png",
+			Name:    headImg,
 			Content: file,
 			Type:    e.EmbeddedAttachment,
 		},
@@ -279,12 +278,12 @@ func (gb *GoExecutionBlock) notifyNewInfoReceived(ctx c.Context) error {
 
 	file, ok := gb.RunContext.Services.Sender.Images[tpl.Image]
 	if !ok {
-		return errors.New("file not found " + tpl.Image)
+		return errors.New("file not found: " + tpl.Image)
 	}
 
 	files := []e.Attachment{
 		{
-			Name:    "header.png",
+			Name:    headImg,
 			Content: file,
 			Type:    e.EmbeddedAttachment,
 		},

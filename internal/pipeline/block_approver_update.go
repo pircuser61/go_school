@@ -148,12 +148,12 @@ func (gb *GoApproverBlock) handleBreachedSLA(ctx c.Context) error {
 
 		file, ok := gb.RunContext.Services.Sender.Images[tpl.Image]
 		if !ok {
-			return errors.New("file not found " + tpl.Image)
+			return errors.New("file not found: " + tpl.Image)
 		}
 
 		files := []e.Attachment{
 			{
-				Name:    "header.png",
+				Name:    headImg,
 				Content: file,
 				Type:    e.EmbeddedAttachment,
 			},
@@ -289,12 +289,12 @@ func (gb *GoApproverBlock) handleHalfBreachedSLA(ctx c.Context) (err error) {
 
 		file, ok := gb.RunContext.Services.Sender.Images[tpl.Image]
 		if !ok {
-			return errors.New("file not found " + tpl.Image)
+			return errors.New("file not found: " + tpl.Image)
 		}
 
 		files := []e.Attachment{
 			{
-				Name:    "header.png",
+				Name:    headImg,
 				Content: file,
 				Type:    e.EmbeddedAttachment,
 			},
@@ -359,12 +359,12 @@ func (gb *GoApproverBlock) handleReworkSLABreached(ctx c.Context) error {
 
 	file, ok := gb.RunContext.Services.Sender.Images[tpl.Image]
 	if !ok {
-		return errors.New("file not found " + tpl.Image)
+		return errors.New("file not found: " + tpl.Image)
 	}
 
 	files := []e.Attachment{
 		{
-			Name:    "header.png",
+			Name:    headImg,
 			Content: file,
 			Type:    e.EmbeddedAttachment,
 		},
@@ -417,12 +417,12 @@ func (gb *GoApproverBlock) handleBreachedDayBeforeSLARequestAddInfo(ctx c.Contex
 
 	file, ok := gb.RunContext.Services.Sender.Images[tpl.Image]
 	if !ok {
-		return errors.New("file not found " + tpl.Image)
+		return errors.New("file not found: " + tpl.Image)
 	}
 
 	files := []e.Attachment{
 		{
-			Name:    "header.png",
+			Name:    headImg,
 			Content: file,
 			Type:    e.EmbeddedAttachment,
 		},
@@ -488,12 +488,12 @@ func (gb *GoApproverBlock) HandleBreachedSLARequestAddInfo(ctx c.Context) error 
 
 	file, ok := gb.RunContext.Services.Sender.Images[tpl.Image]
 	if !ok {
-		return errors.New("file not found " + tpl.Image)
+		return errors.New("file not found: " + tpl.Image)
 	}
 
 	files := []e.Attachment{
 		{
-			Name:    "header.png",
+			Name:    headImg,
 			Content: file,
 			Type:    e.EmbeddedAttachment,
 		},

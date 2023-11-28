@@ -3,7 +3,6 @@ package api
 import (
 	c "context"
 	"encoding/json"
-	"gitlab.services.mts.ru/abp/mail/pkg/email"
 	"io"
 	"net/http"
 	"strings"
@@ -15,6 +14,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"gitlab.services.mts.ru/abp/mail/pkg/email"
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
@@ -26,6 +26,8 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
+
+const headImg = "header.png"
 
 func (ae *APIEnv) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 	const funcName = "update_tasks_by_mails"
@@ -540,12 +542,12 @@ func (ae *APIEnv) updateTaskInternal(ctx c.Context, workNumber, userLogin string
 
 	file, ok := ae.Mail.Images[em.Image]
 	if !ok {
-		return errors.New("file not found " + em.Image)
+		return errors.New("file not found: " + em.Image)
 	}
 
 	files := []email.Attachment{
 		{
-			Name:    "header.png",
+			Name:    headImg,
 			Content: file,
 			Type:    email.EmbeddedAttachment,
 		},
@@ -754,13 +756,13 @@ func (ae *APIEnv) StopTasks(w http.ResponseWriter, r *http.Request) {
 
 		file, ok := ae.Mail.Images[em.Image]
 		if !ok {
-			log.Error("couldn't find images")
+			log.Error("couldn't find images: ", em.Image)
 			return
 		}
 
 		files := []email.Attachment{
 			{
-				Name:    "header.png",
+				Name:    headImg,
 				Content: file,
 				Type:    email.EmbeddedAttachment,
 			},
