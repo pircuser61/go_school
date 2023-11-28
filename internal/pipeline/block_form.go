@@ -46,6 +46,7 @@ type FormData struct {
 	FormGroupIdPath        *string                 `json:"form_group_id_path,omitempty"`
 	SchemaId               string                  `json:"schema_id"`
 	Executors              map[string]struct{}     `json:"executors"`
+	InitialExecutors       map[string]struct{}     `json:"initial_executors"`
 	Description            string                  `json:"description"`
 	ApplicationBody        map[string]interface{}  `json:"application_body"`
 	IsFilled               bool                    `json:"is_filled"`
@@ -66,7 +67,8 @@ type FormData struct {
 
 	HideExecutorFromInitiator bool `json:"hide_executor_from_initiator"`
 
-	Mapping script.JSONSchemaProperties `json:"mapping"`
+	Mapping         script.JSONSchemaProperties `json:"mapping"`
+	FullFormMapping string                      `json:"full_form_mapping"`
 
 	IsEditable      *bool                       `json:"is_editable"`
 	ReEnterSettings *script.FormReEnterSettings `json:"form_re_enter_settings,omitempty"`
@@ -238,6 +240,7 @@ func (gb *GoFormBlock) Model() script.FunctionModel {
 			Params: &script.FormParams{
 				FormsAccessibility: []script.FormAccessibility{},
 				Mapping:            script.JSONSchemaProperties{},
+				FullFormMapping:    "",
 			},
 		},
 		Sockets: []script.Socket{script.DefaultSocket},
@@ -250,12 +253,21 @@ func (gb *GoFormBlock) handleAutoFillForm() error {
 		return err
 	}
 
-	formMapping, err := script.MapData(gb.State.Mapping, script.RestoreMapStructure(variables), []string{})
-	if err != nil {
-		return err
+	switch {
+	case gb.State.FullFormMapping != "":
+		mappingAddr, ok := getVariable(variables, gb.State.FullFormMapping).(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("cannot assert variable to map[string]interface{}")
+		}
+		gb.State.ApplicationBody = mappingAddr
+	case gb.State.Mapping != nil:
+		gb.State.ApplicationBody, err = script.MapData(gb.State.Mapping, script.RestoreMapStructure(variables), []string{})
+		if err != nil {
+			return err
+		}
+	default:
+		return fmt.Errorf("neither mapping nor full form mapping received")
 	}
-
-	gb.State.ApplicationBody = formMapping
 
 	personData := &servicedesc.SsoPerson{
 		Username: AutoFillUser,
@@ -266,7 +278,7 @@ func (gb *GoFormBlock) handleAutoFillForm() error {
 	}
 	gb.State.ChangesLog = append([]ChangesLogItem{
 		{
-			ApplicationBody: formMapping,
+			ApplicationBody: gb.State.ApplicationBody,
 			CreatedAt:       time.Now(),
 			Executor:        personData.Username,
 			DelegateFor:     "",

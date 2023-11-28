@@ -559,150 +559,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/httpError'
 
-  /pipelines/{pipelineID}/tags:
-    get:
-      tags:
-        - pipeline
-        - tags
-      summary: Get Pipeline Tags
-      description: Список тегов сценария
-      operationId: get-pipeline-tags
-      parameters:
-        - name: pipelineID
-          in: path
-          description: Pipeline ID
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/EriusTagInfo'
-                  status_code:
-                    type: integer
-        400:
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-        500:
-          description: Internal Server Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-  /pipelines/{pipelineID}/tags/{ID}:
-    put:
-      tags:
-        - pipeline
-        - tags
-      summary: Attach Tag
-      description: Прикрепить тег к сценарию
-      operationId: attach-tag
-      parameters:
-        - name: pipelineID
-          in: path
-          description: Pipeline ID
-          required: true
-          schema:
-            type: string
-        - name: ID
-          in: path
-          description: Tag ID
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    $ref: '#/components/schemas/EriusTagInfo'
-                  status_code:
-                    type: integer
-        400:
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-        500:
-          description: Internal Server Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-    delete:
-      tags:
-        - pipeline
-        - tags
-      summary: Detach Tag
-      description: Открепить тег от сценария
-      operationId: detach-tag
-      parameters:
-        - name: pipelineID
-          in: path
-          description: Pipeline ID
-          required: true
-          schema:
-            type: string
-        - name: ID
-          in: path
-          description: Tag ID
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpResponse'
-        400:
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-        500:
-          description: Internal Server Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-
   /pipelines/copy:
     post:
       tags:
@@ -1336,6 +1192,287 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
+  /pipelines/version/{versionID}/settings/approval-list:
+    post:
+      tags:
+        - process_settings
+        - approval_list
+      summary: Add approval list to version
+      description: Добавить лист согласования для версии процесса
+      operationId: save-approval-list-settings
+      parameters:
+        - name: versionID
+          in: path
+          description: Version ID
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: Modified JSON-schemas
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveApprovalListSettings'
+        required: true
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpResponse'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+    get:
+      tags:
+        - process_settings
+        - approval_list
+      summary: get version approval lists
+      description: получение списков согласований
+      operationId: get-approval-lists-settings
+      parameters:
+        - name: versionID
+          in: path
+          description: Version ID
+          required: true
+          schema:
+            type: string
+            format: uuid
+            example: 916ad995-8d13-49fb-82ee-edd4f97649e2
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/VersionApprovalList'
+                  status_code:
+                    type: integer
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+  /task/{workNumber}/approval-list/{listID}:
+    get:
+      tags:
+        - process_settings
+        - approval_list
+      summary: get task approval list
+      description: получение списка согласования заявки
+      operationId: get-approval-list-setting
+      parameters:
+        - name: workNumber
+          in: path
+          description: Номер заявки
+          required: true
+          schema:
+            type: string
+            example: J00000000666
+        - name: listID
+          in: path
+          description: list ID
+          required: true
+          schema:
+            type: string
+            format: uuid
+            example: 916ad995-8d13-49fb-82ee-edd4f97649e2
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ResponseVersionApprovalList'
+                  status_code:
+                    type: integer
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+  /pipelines/version/{versionID}/settings/approval-list/{listID}:
+    put:
+      tags:
+        - process_settings
+        - approval_list
+      summary: Update approval list
+      description: Обновить лист согласования
+      operationId: update-approval-list-settings
+      parameters:
+        - name: versionID
+          in: path
+          description: Version ID
+          required: true
+          schema:
+            type: string
+        - name: listID
+          in: path
+          description: list ID
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: Modified JSON-schemas
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateApprovalListSettings'
+        required: true
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpResponse'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+    delete:
+      tags:
+        - process_settings
+        - approval_list
+      summary: Delete approval list
+      description: Удалить лист согласования
+      operationId: remove-approval-list-settings
+      parameters:
+        - name: versionID
+          in: path
+          description: Version ID
+          required: true
+          schema:
+            type: string
+        - name: listID
+          in: path
+          description: list ID
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpResponse'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+    get:
+      tags:
+        - process_settings
+        - approval_list
+      summary: get task approval list by id
+      description: получение списка согласования заявки
+      operationId: get-approval-list-setting-by-id
+      parameters:
+        - name: versionID
+          in: path
+          description: id версии
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: listID
+          in: path
+          description: id списка согласования
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/VersionApprovalList'
+                  status_code:
+                    type: integer
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
   /pipelines/version/{versionID}/system/{systemID}/runAsOthers:
     post:
       tags:
@@ -1747,172 +1884,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/httpError'
       x-codegen-request-body-name: variables
-  /tags:
-    get:
-      tags:
-        - tags
-      summary: Get Tags
-      description: Cписок тегов
-      operationId: get-tags
-      responses:
-        200:
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/EriusTagInfo'
-                  status_code:
-                    type: integer
-        400:
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-        500:
-          description: Internal Server Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-    put:
-      tags:
-        - tags
-      summary: Edit Tag
-      description: Изменить тег
-      operationId: edit-tag
-      requestBody:
-        description: Modified tag
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/EriusTagInfo'
-        required: true
-      responses:
-        200:
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    $ref: '#/components/schemas/EriusTagInfo'
-                  status_code:
-                    type: integer
-        400:
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-        500:
-          description: Internal Server Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-      x-codegen-request-body-name: tag
-    post:
-      tags:
-        - tags
-      summary: Create Tag
-      description: Создать новый тег
-      operationId: create-tag
-      requestBody:
-        description: New tag
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/EriusTagInfo'
-        required: true
-      responses:
-        200:
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    $ref: '#/components/schemas/EriusTagInfo'
-                  status_code:
-                    type: integer
-        400:
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-        500:
-          description: Internal Server Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-      x-codegen-request-body-name: tag
-  /tags/{ID}:
-    delete:
-      tags:
-        - tags
-      summary: Remove Tag
-      description: Удалить тег
-      operationId: remove-tag
-      parameters:
-        - name: ID
-          in: path
-          description: Tag ID
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpResponse'
-        400:
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-        500:
-          description: Internal Server Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
   /tasks:
     get:
       tags:
@@ -3521,6 +3492,10 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/NodeGroup'
+        approval_list:
+          type: object
+          properties: { }
+          description: мапа листов согласований из настроек сценария
       required:
         - id
         - version_id
@@ -3536,6 +3511,7 @@ components:
         - steps
         - work_number
         - blueprint_id
+        - approval_list
 
     NodeGroup:
       type: object
@@ -4247,13 +4223,97 @@ components:
       type: boolean
       description: Разрешить системе запуск заявки от третьего лица
 
+    SaveApprovalListSettings:
+      type: object
+      description: Add approval list settings
+      properties:
+        name:
+          type: string
+        steps:
+          type: array
+          items:
+            type: string
+        context_mapping:
+          $ref: '#/components/schemas/JSONSchemaProperties'
+        forms_mapping:
+          $ref: '#/components/schemas/JSONSchemaProperties'
+      required:
+        - name
+    UpdateApprovalListSettings:
+      type: object
+      description: Update approval list settings
+      properties:
+        name:
+          type: string
+        steps:
+          type: array
+          items:
+            type: string
+        context_mapping:
+          $ref: '#/components/schemas/JSONSchemaProperties'
+        forms_mapping:
+          $ref: '#/components/schemas/JSONSchemaProperties'
+      required:
+        - name
+        - steps
+        - context_mapping
+        - forms_mapping
     RequestExecutionInfoType:
       type: string
       description: Type of execution info
       enum:
         - question
         - answer
-
+    VersionApprovalList:
+      type: object
+      properties:
+        id:
+          type: string
+        version_id:
+          type: string
+        name:
+          type: string
+        steps:
+          type: array
+          items:
+            type: string
+          description: названия блоков
+        context_mapping:
+          $ref: '#/components/schemas/JSONSchemaProperties'
+        forms_mapping:
+          $ref: '#/components/schemas/JSONSchemaProperties'
+      required:
+        - id
+        - name
+        - version_id
+        - steps
+        - context_mapping
+        - forms_mapping
+    ResponseVersionApprovalList:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        steps:
+          type: array
+          items:
+            $ref: '#/components/schemas/taskResponseStep'
+        context_variables:
+          type: object
+          description: мапа ключ значение, контекстные переменные
+          properties: { }
+        forms_variables:
+          type: object
+          description: мапа ключ значение, переменные форм
+          properties: { }
+      required:
+        - id
+        - name
+        - steps
+        - context_variables
+        - forms_variables
     ResponsePipelineSearch:
       type: object
       properties:
@@ -4457,6 +4517,10 @@ components:
         process_deadline:
           type: string
           description: Плановая дата завершения процесса
+        approval_list:
+          type: object
+          properties: { }
+          description: мапа листов согласований из настроек сценария
       required:
         - id
         - version_id
@@ -4476,6 +4540,7 @@ components:
         - rate_comment
         - status_comment
         - process_deadline
+        - approval_list
 
     httpError:
       type: object
@@ -4995,6 +5060,9 @@ components:
           description: Hide executor from initiator
         mapping:
           $ref: '#/components/schemas/JSONSchemaProperties'
+        full_form_mapping:
+          type: string
+          description: 'Object address for object mapping'
         form_group_id:
           type: string
           description: Form group id in SD
@@ -5017,6 +5085,7 @@ components:
         - blueprint_id
         - blueprint_name
         - hide_executor_from_initiator
+        - is_editable
 
     FormExecutorType:
       type: string
@@ -5101,9 +5170,13 @@ components:
           example: form_0.application_body.snils
           type: string
         files:
-          description: Path to files in context
-          example: form_0.application_body.files
-          type: string
+          description: Paths to files in context
+          type: array
+          items:
+            type: string
+            example: form_0.application_body.file
+
+
 
     SignParams:
       type: object
@@ -5207,9 +5280,6 @@ components:
           description: Approvement status
         work_type:
           $ref: "#/components/schemas/WorkType"
-        approval_list:
-          type: boolean
-          description: Include this node to approval list
       required:
         - type
         - approver
@@ -5222,8 +5292,6 @@ components:
         - approvers_group_id
         - approvers_group_name
         - approve_status_name
-        - approval_list
-
     FormsChangelogResponse:
       type: array
       items:

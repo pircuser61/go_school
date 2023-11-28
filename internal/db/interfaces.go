@@ -49,6 +49,7 @@ type TaskStorager interface {
 	GetTaskRunContext(ctx c.Context, workNumber string) (e.TaskRunContext, error)
 	GetBlockDataFromVersion(ctx c.Context, workNumber, blockName string) (*e.EriusFunc, error)
 	GetVariableStorageForStep(ctx c.Context, taskID uuid.UUID, stepType string) (*store.VariableStore, error)
+	GetVariableStorage(ctx c.Context, workNumber string) (*store.VariableStore, error)
 	GetBlocksBreachedSLA(ctx c.Context) ([]StepBreachedSLA, error)
 	GetMeanTaskSolveTime(ctx c.Context, pipelineId string) ([]e.TaskCompletionInterval, error)
 	GetTaskInWorkTime(ctx c.Context, workNumber string) (*e.TaskCompletionInterval, error)
@@ -171,11 +172,7 @@ type Database interface {
 	CommitTransaction(ctx c.Context) error
 	RollbackTransaction(ctx c.Context) error
 
-	GetPipelinesWithLatestVersion(ctx c.Context,
-		authorLogin string,
-		publishedPipelines bool,
-		page, perPage *int,
-		filter string) ([]e.EriusScenarioInfo, error)
+	GetPipelinesWithLatestVersion(ctx c.Context, authorLogin string, published bool, page, perPage *int, filter string) ([]e.EriusScenarioInfo, error)
 	GetApprovedVersions(ctx c.Context) ([]e.EriusScenarioInfo, error)
 	GetVersionsByStatus(ctx c.Context, status int, author string) ([]e.EriusScenarioInfo, error)
 	GetDraftVersions(ctx c.Context, author string) ([]e.EriusScenarioInfo, error)
@@ -195,15 +192,6 @@ type Database interface {
 	GetExecutableByName(ctx c.Context, name string) (*e.EriusScenario, error)
 
 	SetLastRunID(ctx c.Context, taskID, versionID uuid.UUID) error
-	CreateTag(ctx c.Context, e *e.EriusTagInfo, author string) (*e.EriusTagInfo, error)
-	GetTag(ctx c.Context, e *e.EriusTagInfo) (*e.EriusTagInfo, error)
-	EditTag(ctx c.Context, e *e.EriusTagInfo) error
-	RemoveTag(ctx c.Context, id uuid.UUID) error
-	GetAllTags(ctx c.Context) ([]e.EriusTagInfo, error)
-	GetPipelineTag(ctx c.Context, id uuid.UUID) ([]e.EriusTagInfo, error)
-	AttachTag(ctx c.Context, id uuid.UUID, p *e.EriusTagInfo) error
-	DetachTag(ctx c.Context, id uuid.UUID, p *e.EriusTagInfo) error
-	RemovePipelineTags(ctx c.Context, id uuid.UUID) error
 	SwitchRejected(ctx c.Context, versionID uuid.UUID, comment, author string) error
 	GetRejectedVersions(ctx c.Context) ([]e.EriusScenarioInfo, error)
 	RollbackVersion(ctx c.Context, pipelineID, versionID uuid.UUID) error
@@ -231,7 +219,7 @@ type Database interface {
 	SaveExternalSystemSettings(ctx c.Context, versionID string, settings e.ExternalSystem, schemaFlag *string) error
 	SaveExternalSystemSubscriptionParams(ctx c.Context, versionID string, params *e.ExternalSystemSubscriptionParams) error
 	RemoveObsoleteMapping(ctx c.Context, id string) error
-	GetWorksForUserWithGivenTimeRange(ctx c.Context, hours int, login, versionID, excludeWorkNumber string) ([]*e.EriusTask, error)
+	GetWorksForUserWithGivenTimeRange(ctx c.Context, hours int, login, vID, workNumber string) ([]*e.EriusTask, error)
 	CheckPipelineNameExists(c.Context, string, bool) (*bool, error)
 	UpdateEndingSystemSettings(ctx c.Context, versionID, systemID string, settings e.EndSystemSettings) (err error)
 	AllowRunAsOthers(ctx c.Context, versionID, systemID string, allowRunAsOthers bool) error
@@ -239,4 +227,10 @@ type Database interface {
 	GetSlaVersionSettings(ctx c.Context, versionID string) (s e.SlaVersionSettings, err error)
 	GetTaskMembers(ctx c.Context, workNumber string, fromActiveNodes bool) ([]DbMember, error)
 	UpdateGroupsForEmptyVersions(ctx c.Context, versionID string, groups []*e.NodeGroup) error
+	GetApprovalListSettings(ctx c.Context, listID string) (*e.ApprovalListSettings, error)
+	GetApprovalListsSettings(ctx c.Context, versionID string) ([]e.ApprovalListSettings, error)
+	SaveApprovalListSettings(ctx c.Context, in e.SaveApprovalListSettings) (id string, err error)
+	UpdateApprovalListSettings(ctx c.Context, in e.UpdateApprovalListSettings) error
+	RemoveApprovalListSettings(ctx c.Context, listID string) error
+	GetFilteredStates(ctx c.Context, steps []string, wNumber string) (map[string]map[string]interface{}, error)
 }

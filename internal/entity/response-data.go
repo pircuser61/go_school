@@ -598,150 +598,6 @@ type EriusFunctionValue struct {
 	Format string `json:"format" example:"string"`
 }
 
-type NodeSubscriptionEvents struct {
-	NodeID string   `json:"node_id"`
-	Notify bool     `json:"notify"`
-	Events []string `json:"events"`
-}
-
-type ExternalSystemSubscriptionParams struct {
-	SystemID           string                      `json:"system_id"`
-	MicroserviceID     string                      `json:"microservice_id"`
-	Path               string                      `json:"path"`
-	Method             string                      `json:"method"`
-	NotificationSchema script.JSONSchema           `json:"notification_schema"`
-	Mapping            script.JSONSchemaProperties `json:"mapping"`
-	Nodes              []NodeSubscriptionEvents    `json:"nodes"`
-}
-
-type ProcessSettingsWithExternalSystems struct {
-	ExternalSystems    []ExternalSystem                   `json:"external_systems"`
-	ProcessSettings    ProcessSettings                    `json:"process_settings"`
-	TasksSubscriptions []ExternalSystemSubscriptionParams `json:"tasks_subscriptions"`
-}
-
-type ProcessSettings struct {
-	Id                 string             `json:"version_id"`
-	StartSchema        *script.JSONSchema `json:"start_schema"`
-	EndSchema          *script.JSONSchema `json:"end_schema"`
-	ResubmissionPeriod int                `json:"resubmission_period"`
-	Name               string             `json:"name"`
-	SLA                int                `json:"sla"`
-	WorkType           string             `json:"work_type"`
-
-	StartSchemaRaw []byte `json:"-"`
-	EndSchemaRaw   []byte `json:"-"`
-}
-
-func (ps *ProcessSettings) UnmarshalJSON(bytes []byte) error {
-	temp := struct {
-		Id                 string           `json:"version_id"`
-		StartSchema        *json.RawMessage `json:"start_schema"`
-		EndSchema          *json.RawMessage `json:"end_schema"`
-		ResubmissionPeriod int              `json:"resubmission_period"`
-		Name               string           `json:"name"`
-		SLA                int              `json:"sla"`
-		WorkType           string           `json:"work_type"`
-	}{}
-
-	if err := json.Unmarshal(bytes, &temp); err != nil {
-		return err
-	}
-
-	ps.Id = temp.Id
-	ps.ResubmissionPeriod = temp.ResubmissionPeriod
-	ps.Name = temp.Name
-	ps.SLA = temp.SLA
-	ps.WorkType = temp.WorkType
-
-	if temp.StartSchema != nil {
-		ps.StartSchemaRaw = *temp.StartSchema
-	}
-	if temp.EndSchema != nil {
-		ps.EndSchemaRaw = *temp.EndSchema
-	}
-	return nil
-}
-
-func (ps *ProcessSettings) ValidateSLA() bool {
-	if (ps.WorkType == "8/5" || ps.WorkType == "24/7" || ps.WorkType == "12/5") && ps.SLA > 0 {
-		return true
-	}
-	return false
-}
-
-type ExternalSystem struct {
-	Id   string `json:"system_id"`
-	Name string `json:"name,omitempty"`
-
-	InputSchema   *script.JSONSchema `json:"input_schema,omitempty"`
-	OutputSchema  *script.JSONSchema `json:"output_schema,omitempty"`
-	InputMapping  *script.JSONSchema `json:"input_mapping,omitempty"`
-	OutputMapping *script.JSONSchema `json:"output_mapping,omitempty"`
-
-	OutputSettings *EndSystemSettings `json:"output_settings,omitempty"`
-
-	AllowRunAsOthers bool `json:"allow_run_as_others"`
-}
-
-type EndSystemSettings struct {
-	URL            string `json:"URL"`
-	Method         string `json:"method"`
-	MicroserviceId string `json:"microservice_id"`
-}
-
-type SlaVersionSettings struct {
-	Author   string `json:"author"`
-	WorkType string `json:"work_type"`
-	Sla      int    `json:"sla"`
-}
-
-type EndProcessData struct {
-	Id         string `json:"id"`
-	VersionId  string `json:"version_id"`
-	StartedAt  string `json:"started_at"`
-	FinishedAt string `json:"finished_at"`
-	Status     string `json:"status"`
-}
-
-func (ps ProcessSettings) Validate() error {
-	err := ps.StartSchema.Validate()
-	if err != nil {
-		return err
-	}
-
-	err = ps.EndSchema.Validate()
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (es ExternalSystem) ValidateSchemas() error {
-	err := es.InputSchema.Validate()
-	if err != nil {
-		return err
-	}
-
-	err = es.OutputSchema.Validate()
-	if err != nil {
-		return err
-	}
-
-	err = es.InputMapping.Validate()
-	if err != nil {
-		return err
-	}
-
-	err = es.OutputMapping.Validate()
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 type UsageResponse struct {
 	Name      string   `json:"name"` // Имя блока
 	Used      bool     `json:"used"`
@@ -803,6 +659,7 @@ func ConvertSocket(sockets []Socket) []script.Socket {
 const (
 	KeyOutputWorkNumber           = "workNumber"
 	KeyOutputApplicationInitiator = "initiator"
+	KeyOutputApplicationData      = "application_data"
 )
 
 func (es EriusScenario) FillEntryPointOutput() (err error) {
@@ -812,21 +669,13 @@ func (es EriusScenario) FillEntryPointOutput() (err error) {
 		return nil
 	}
 
+	entryPoint.Output.Properties = make(map[string]script.JSONSchemaPropertiesValue, 0)
+
 	if es.Settings.StartSchema != nil {
-		for k := range entryPoint.Output.Properties {
-			val, ok := es.Settings.StartSchema.Properties[k]
-			if !ok {
-				continue
-			}
-			val.Global = es.Pipeline.Entrypoint + "." + k
-			es.Settings.StartSchema.Properties[k] = val
-		}
-		entryPoint.Output = es.Settings.StartSchema
-	}
-	if entryPoint.Output == nil {
-		entryPoint.Output = &script.JSONSchema{
+		entryPoint.Output.Properties[KeyOutputApplicationData] = script.JSONSchemaPropertiesValue{
 			Type:       "object",
-			Properties: make(map[string]script.JSONSchemaPropertiesValue),
+			Global:     es.Pipeline.Entrypoint + "." + "application_data",
+			Properties: es.Settings.StartSchema.Properties,
 		}
 	}
 

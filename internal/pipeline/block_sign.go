@@ -28,17 +28,26 @@ const (
 	keyOutputSignDecision    = "decision"
 	keyOutputSignComment     = "comment"
 	keyOutputSignAttachments = "attachments"
+	keyOutputSignatures      = "signatures"
 
-	SignDecisionSigned   SignDecision = "signed"
-	SignDecisionRejected SignDecision = "rejected"
-	SignDecisionError    SignDecision = "error"
+	SignDecisionSigned              SignDecision = "signed"   // signed by signer
+	SignDecisionRejected            SignDecision = "rejected" // rejected by signer or by additional approver
+	SignDecisionError               SignDecision = "error"
+	SignDecisionAddApproverApproved SignDecision = "approved" // approved by additional approver
 
-	signActionSign       = "sign_sign"
-	signActionReject     = "sign_reject"
-	signActionTakeInWork = "sign_start_work"
+	signActionSign                  = "sign_sign"
+	signActionReject                = "sign_reject"
+	signActionTakeInWork            = "sign_start_work"
+	signActionAddApprovers          = "add_approvers"
+	signActionAdditionalApprovement = "additional_approvement"
+	signActionAdditionalReject      = "additional_reject"
 
 	signatureTypeActionParamsKey    = "signature_type"
 	signatureCarrierActionParamsKey = "signature_carrier"
+
+	signatureINNParamsKey   = "inn"
+	signatureSNILSParamsKey = "snils"
+	signatureFilesParamsKey = "files"
 
 	reentrySignComment = "Произошла ошибка подписания. Требуется повторное подписание"
 )
@@ -125,6 +134,9 @@ func (gb *GoSignBlock) UpdateManual() bool {
 
 func (gb *GoSignBlock) isSignerActed(login string) bool {
 	for _, s := range gb.State.SignLog {
+		if s.LogType != SignerLogDecision {
+			continue
+		}
 		if s.Login == login {
 			return true
 		}
@@ -139,9 +151,19 @@ func (gb *GoSignBlock) signActions(login string) []MemberAction {
 	}
 
 	for _, s := range gb.State.SignLog {
-		if s.Login == login {
+		if s.Login == login && s.LogType == SignerLogDecision {
 			return []MemberAction{}
 		}
+	}
+
+	rejectAction := MemberAction{
+		Id:   signActionReject,
+		Type: ActionTypeSecondary,
+	}
+
+	addApproversAction := MemberAction{
+		Id:   signActionAddApprovers,
+		Type: ActionTypeOther,
 	}
 
 	if gb.State.SignatureType == script.SignatureTypeUKEP {
@@ -151,12 +173,10 @@ func (gb *GoSignBlock) signActions(login string) []MemberAction {
 			Params: map[string]interface{}{
 				signatureTypeActionParamsKey:    gb.State.SignatureType,
 				signatureCarrierActionParamsKey: gb.State.SignatureCarrier,
+				signatureINNParamsKey:           gb.State.SigningParams.INN,
+				signatureSNILSParamsKey:         gb.State.SigningParams.SNILS,
+				signatureFilesParamsKey:         gb.State.SigningParams.Files,
 			},
-		}
-
-		rejectAction := MemberAction{
-			Id:   signActionReject,
-			Type: ActionTypeSecondary,
 		}
 
 		if gb.State.IsTakenInWork && login != gb.State.WorkerLogin {
@@ -164,7 +184,7 @@ func (gb *GoSignBlock) signActions(login string) []MemberAction {
 			rejectAction.Params = map[string]interface{}{"disabled": true}
 		}
 
-		return []MemberAction{takeInWorkAction, rejectAction}
+		return []MemberAction{takeInWorkAction, rejectAction, addApproversAction}
 	}
 
 	signAction := MemberAction{
@@ -175,12 +195,28 @@ func (gb *GoSignBlock) signActions(login string) []MemberAction {
 		},
 	}
 
+	return []MemberAction{signAction, rejectAction, addApproversAction}
+}
+
+func (gb *GoSignBlock) signAddActions(a *AdditionalSignApprover) []MemberAction {
+	if gb.State.Decision != nil || a.Decision != nil {
+		return []MemberAction{}
+	}
+
 	return []MemberAction{
-		signAction,
 		{
-			Id:   signActionReject,
+			Id:   signActionAdditionalApprovement,
+			Type: ActionTypePrimary,
+		},
+		{
+			Id:   signActionAdditionalReject,
 			Type: ActionTypeSecondary,
-		}}
+		},
+		{
+			Id:   signActionAddApprovers,
+			Type: ActionTypeOther,
+		},
+	}
 }
 
 func (gb *GoSignBlock) Members() []Member {
@@ -193,6 +229,17 @@ func (gb *GoSignBlock) Members() []Member {
 			ExecutionGroupMember: false,
 		})
 	}
+
+	for i := 0; i < len(gb.State.AdditionalApprovers); i++ {
+		addApprover := gb.State.AdditionalApprovers[i]
+		members = append(members, Member{
+			Login:                addApprover.ApproverLogin,
+			Actions:              gb.signAddActions(&addApprover),
+			IsActed:              gb.isSignerActed(addApprover.ApproverLogin),
+			ExecutionGroupMember: false,
+		})
+	}
+
 	return members
 }
 
@@ -269,26 +316,26 @@ func (gb *GoSignBlock) setSignersByParams(ctx c.Context, dto *setSignersByParams
 			return grabStorageErr
 		}
 
-		approversFromSchema := make(map[string]struct{})
+		signersFromSchema := make(map[string]struct{})
 
-		approversVars := strings.Split(dto.Signer, ";")
-		for i := range approversVars {
+		signersVars := strings.Split(dto.Signer, ";")
+		for i := range signersVars {
 			resolvedEntities, resolveErr := getUsersFromVars(
 				variableStorage,
 				map[string]struct{}{
-					approversVars[i]: {},
+					signersVars[i]: {},
 				},
 			)
 			if resolveErr != nil {
 				return resolveErr
 			}
 
-			for approverLogin := range resolvedEntities {
-				approversFromSchema[approverLogin] = struct{}{}
+			for signerLogin := range resolvedEntities {
+				signersFromSchema[signerLogin] = struct{}{}
 			}
 		}
 
-		gb.State.Signers = approversFromSchema
+		gb.State.Signers = signersFromSchema
 	}
 
 	return nil
@@ -382,8 +429,58 @@ func (gb *GoSignBlock) handleNotifications(ctx c.Context) error {
 	return nil
 }
 
+func lookForFileIdInObject(object map[string]interface{}) (string, error) {
+	existingFileId, ok := object["file_id"]
+	if !ok {
+		return "", errors.New("file_id does not exist in object")
+	}
+	fileID, ok := existingFileId.(string)
+	if !ok {
+		return "", errors.New("failed to type assert path to string")
+	}
+	return fileID, nil
+}
+
+func ValidateFiles(file interface{}) ([]entity.Attachment, error) {
+	resFiles := make([]entity.Attachment, 0)
+
+	switch f := file.(type) {
+	case map[string]interface{}:
+		fileID, err := lookForFileIdInObject(f)
+		if err != nil {
+			return nil, err
+		}
+		resFiles = append(resFiles, entity.Attachment{FileID: fileID})
+	case []interface{}:
+		filesFromInterfaces := make([]entity.Attachment, 0)
+
+		for _, item := range f {
+			object, ok := item.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			fileID, err := lookForFileIdInObject(object)
+			if err != nil {
+				continue
+			}
+			filesFromInterfaces = append(filesFromInterfaces, entity.Attachment{FileID: fileID})
+		}
+
+		if len(filesFromInterfaces) == 0 {
+			return nil, errors.New("did not find file in array")
+		}
+		resFiles = append(resFiles, filesFromInterfaces...)
+	default:
+		return nil, errors.New("did not get an object or an array to look for file")
+	}
+
+	return resFiles, nil
+}
+
 //nolint:dupl,gocyclo //its not duplicate
 func (gb *GoSignBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
+	l := logger.GetLogger(ctx)
+
 	var params script.SignParams
 	err := json.Unmarshal(ef.Params, &params)
 	if err != nil {
@@ -398,6 +495,8 @@ func (gb *GoSignBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 		Type:               params.Type,
 		SigningRule:        params.SigningRule,
 		SignLog:            make([]SignLogEntry, 0),
+		Signatures:         make([]fileSignaturePair, 0),
+		SigningParamsPaths: params.SigningParamsPaths,
 		FormsAccessibility: params.FormsAccessibility,
 		SignatureType:      params.SignatureType,
 		SignatureCarrier:   params.SignatureCarrier,
@@ -411,17 +510,48 @@ func (gb *GoSignBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 		gb.State.SigningRule = script.AnyOfSigningRequired
 	}
 
-	if params.Type == script.SignerTypeGroup && params.SignerGroupIDPath != "" {
-		variableStorage, grabStorageErr := gb.RunContext.VarStore.GrabStorage()
-		if grabStorageErr != nil {
-			return grabStorageErr
-		}
+	variableStorage, grabStorageErr := gb.RunContext.VarStore.GrabStorage()
+	if grabStorageErr != nil {
+		return grabStorageErr
+	}
 
+	if params.Type == script.SignerTypeGroup && params.SignerGroupIDPath != "" {
 		groupId := getVariable(variableStorage, params.SignerGroupIDPath)
 		if groupId == nil {
 			return errors.New("can't find group id in variables")
 		}
 		params.SignerGroupID = fmt.Sprintf("%v", groupId)
+	}
+
+	if params.SignatureType == script.SignatureTypeUKEP &&
+		(params.SignatureCarrier == script.SignatureCarrierToken ||
+			params.SignatureCarrier == script.SignatureCarrierAll) {
+		inn := getVariable(variableStorage, params.SigningParamsPaths.INN)
+		innString, ok := inn.(string)
+		if !ok {
+			l.Error(errors.New("could not find inn"))
+		}
+		gb.State.SigningParams.INN = innString
+
+		snils := getVariable(variableStorage, params.SigningParamsPaths.SNILS)
+		snilsString, ok := snils.(string)
+		if !ok {
+			l.Error(errors.New("could not find snils"))
+		}
+		gb.State.SigningParams.SNILS = snilsString
+
+		filesForSigningParams := make([]entity.Attachment, 0)
+		for _, pathToFiles := range params.SigningParamsPaths.Files {
+			filesInterface := getVariable(variableStorage, pathToFiles)
+			files, err := ValidateFiles(filesInterface)
+			if err != nil {
+				l.Error(err)
+				continue
+			}
+			filesForSigningParams = append(filesForSigningParams, files...)
+
+		}
+		gb.State.SigningParams.Files = filesForSigningParams
 	}
 
 	setErr := gb.setSignersByParams(ctx, &setSignersByParamsDTO{
@@ -467,7 +597,8 @@ func (gb *GoSignBlock) Model() script.FunctionModel {
 					Type:        "array",
 					Description: "signed files",
 					Items: &script.ArrayItems{
-						Type: "object",
+						Type:   "object",
+						Format: "file",
 						Properties: map[string]script.JSONSchemaPropertiesValue{
 							"file_id": {
 								Type:        "string",
@@ -476,6 +607,45 @@ func (gb *GoSignBlock) Model() script.FunctionModel {
 							"external_link": {
 								Type:        "string",
 								Description: "link to file in another system",
+							},
+						},
+					},
+				},
+				keyOutputSignatures: {
+					Type:        "array",
+					Description: "signatures",
+					Items: &script.ArrayItems{
+						Type: "object",
+						Properties: map[string]script.JSONSchemaPropertiesValue{
+							"file": {
+								Type:        "object",
+								Description: "file to sign",
+								Format:      "file",
+								Properties: map[string]script.JSONSchemaPropertiesValue{
+									"file_id": {
+										Type:        "string",
+										Description: "file id in file Registry",
+									},
+									"external_link": {
+										Type:        "string",
+										Description: "link to file in another system",
+									},
+								},
+							},
+							"signature_file": {
+								Type:        "object",
+								Description: "signature file",
+								Format:      "file",
+								Properties: map[string]script.JSONSchemaPropertiesValue{
+									"file_id": {
+										Type:        "string",
+										Description: "file id in file Registry",
+									},
+									"external_link": {
+										Type:        "string",
+										Description: "link to file in another system",
+									},
+								},
 							},
 						},
 					},

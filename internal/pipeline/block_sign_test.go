@@ -54,6 +54,7 @@ func TestSignData_SetDecision(t *testing.T) {
 		decision    SignDecision
 		comment     string
 		attachments []entity.Attachment
+		signatures  []fileSignature
 	}
 	tests := []struct {
 		name             string
@@ -163,10 +164,10 @@ func TestSignData_SetDecision(t *testing.T) {
 				SignatureCarrier: script.SignatureCarrierToken,
 			},
 			args: args{
-				login:       ServiceAccountDev,
-				decision:    SignDecisionSigned,
-				comment:     comment,
-				attachments: []entity.Attachment{{FileID: fileID1}},
+				login:      ServiceAccountDev,
+				decision:   SignDecisionSigned,
+				comment:    comment,
+				signatures: []fileSignature{{FileID: fileID1}},
 			},
 			wantErr: false,
 		},
@@ -268,6 +269,7 @@ func TestSignData_SetDecision(t *testing.T) {
 						Decision:  SignDecisionSigned,
 						Comment:   comment,
 						CreatedAt: time.Time{},
+						LogType:   SignerLogDecision,
 					},
 				},
 			},
@@ -338,6 +340,7 @@ func TestSignData_SetDecision(t *testing.T) {
 				Decision:    tt.args.decision,
 				Comment:     tt.args.comment,
 				Attachments: tt.args.attachments,
+				Signatures:  tt.args.signatures,
 			}); (err != nil) != tt.wantErr {
 				t.Errorf(
 					"SetDecision(%v, %v, %v), error: %v",
@@ -520,6 +523,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 					},
 					SignatureType:      "unep",
 					SigningRule:        "AnyOf",
+					Signatures:         []fileSignaturePair{},
 					SignatureCarrier:   "all",
 					SignLog:            []SignLogEntry{},
 					FormsAccessibility: []script.FormAccessibility{{}},
@@ -532,7 +536,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 					VarStore: &store.VariableStore{
 						Mutex: sync.Mutex{},
 						State: map[string]json.RawMessage{
-							"example": unmarshalFromTestFile(t, "testdata/sign/sign_state.json")},
+							"example": unmarshalFromTestFile(t, "testdata/signing_params/signing_state_signing_params.json")},
 						Values:     map[string]interface{}{},
 						Steps:      []string{"example"},
 						Errors:     []string{},
@@ -629,6 +633,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 					},
 					SignatureType:      "pep",
 					SigningRule:        "AnyOf",
+					Signatures:         []fileSignaturePair{},
 					SignatureCarrier:   "all",
 					SignLog:            []SignLogEntry{},
 					FormsAccessibility: []script.FormAccessibility{{}},
@@ -641,7 +646,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 					VarStore: &store.VariableStore{
 						Mutex: sync.Mutex{},
 						State: map[string]json.RawMessage{
-							"example": unmarshalFromTestFile(t, "testdata/sign/sign_state.json")},
+							"example": unmarshalFromTestFile(t, "testdata/signing_params/signing_state_signing_params.json")},
 						Values:     map[string]interface{}{},
 						Steps:      []string{"example"},
 						Errors:     []string{},
@@ -658,13 +663,19 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 			},
 		},
 		{
-			name: "SignatureCarrierAll and SignatureTypeUKEP",
+			name: "SignatureCarrierAll and SignatureTypeUKEP signingParams",
 			args: args{
 				name: example,
 				runCtx: &BlockRunContext{
 					skipNotifications: true,
 					VarStore: func() *store.VariableStore {
 						s := store.NewStore()
+						s.SetValue("form_3.inn", "inn_1")
+						s.SetValue("form_3.snils", "snils_1")
+						s.SetValue("form_3.files", []entity.Attachment{
+							{FileID: "uuid1"},
+							{FileID: "uuid2"},
+						})
 						r, _ := json.Marshal(&SignData{
 							Type: script.SignerTypeUser,
 							Signers: map[string]struct{}{
@@ -701,9 +712,14 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 					},
 					Params: func() []byte {
 						r, _ := json.Marshal(&script.SignParams{
-							SignatureType:      script.SignatureTypeUKEP,
-							SignatureCarrier:   script.SignatureCarrierAll,
-							Type:               script.SignerTypeUser,
+							SignatureType:    script.SignatureTypeUKEP,
+							SignatureCarrier: script.SignatureCarrierAll,
+							Type:             script.SignerTypeUser,
+							SigningParamsPaths: script.SigningParamsPaths{
+								INN:   "form_3.inn",
+								SNILS: "form_3.snils",
+								Files: []string{"form_3.files"},
+							},
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
@@ -738,10 +754,24 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 					},
 					SignatureType:      "ukep",
 					SigningRule:        "AnyOf",
+					Signatures:         []fileSignaturePair{},
 					SignatureCarrier:   "all",
 					SignLog:            []SignLogEntry{},
 					FormsAccessibility: []script.FormAccessibility{{}},
 					Reentered:          true,
+					SigningParams: SigningParams{
+						INN:   "inn_1",
+						SNILS: "snils_1",
+						Files: []entity.Attachment{
+							{FileID: "uuid1"},
+							{FileID: "uuid2"},
+						},
+					},
+					SigningParamsPaths: script.SigningParamsPaths{
+						INN:   "form_3.inn",
+						SNILS: "form_3.snils",
+						Files: []string{"form_3.files"},
+					},
 				},
 				RunContext: &BlockRunContext{
 					TaskID:      uuid.MustParse("00000000-0000-0000-0000-000000000000"),
@@ -750,8 +780,16 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 					VarStore: &store.VariableStore{
 						Mutex: sync.Mutex{},
 						State: map[string]json.RawMessage{
-							"example": unmarshalFromTestFile(t, "testdata/sign/sign_state.json")},
-						Values:     map[string]interface{}{},
+							"example": unmarshalFromTestFile(t, "testdata/signing_params/signing_state_signing_params.json"),
+						},
+						Values: map[string]interface{}{
+							"form_3.snils": "snils_1",
+							"form_3.inn":   "inn_1",
+							"form_3.files": []interface{}{
+								map[string]interface{}{"file_id": "uuid1"},
+								map[string]interface{}{"file_id": "uuid2"},
+							},
+						},
 						Steps:      []string{"example"},
 						Errors:     []string{},
 						StopPoints: store.StopPoints{},
@@ -847,6 +885,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 					},
 					SignatureType:      "unep",
 					SigningRule:        "AnyOf",
+					Signatures:         []fileSignaturePair{},
 					SignatureCarrier:   "token",
 					SignLog:            []SignLogEntry{},
 					FormsAccessibility: []script.FormAccessibility{{}},
@@ -859,7 +898,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 					VarStore: &store.VariableStore{
 						Mutex: sync.Mutex{},
 						State: map[string]json.RawMessage{
-							"example": unmarshalFromTestFile(t, "testdata/sign/sign_state.json")},
+							"example": unmarshalFromTestFile(t, "testdata/signing_params/signing_state_signing_params.json")},
 						Values:     map[string]interface{}{},
 						Steps:      []string{"example"},
 						Errors:     []string{},
@@ -956,6 +995,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 					},
 					SignatureType:      "pep",
 					SigningRule:        "AnyOf",
+					Signatures:         []fileSignaturePair{},
 					SignatureCarrier:   "token",
 					SignLog:            []SignLogEntry{},
 					FormsAccessibility: []script.FormAccessibility{{}},
@@ -968,7 +1008,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 					VarStore: &store.VariableStore{
 						Mutex: sync.Mutex{},
 						State: map[string]json.RawMessage{
-							"example": unmarshalFromTestFile(t, "testdata/sign/sign_state.json")},
+							"example": unmarshalFromTestFile(t, "testdata/signing_params/signing_state_signing_params.json")},
 						Values:     map[string]interface{}{},
 						Steps:      []string{"example"},
 						Errors:     []string{},
@@ -992,6 +1032,12 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 					skipNotifications: true,
 					VarStore: func() *store.VariableStore {
 						s := store.NewStore()
+						s.SetValue("form_3.inn", "inn_1")
+						s.SetValue("form_3.snils", "snils_1")
+						s.SetValue("form_3.files", []entity.Attachment{
+							{FileID: "uuid1"},
+							{FileID: "uuid2"},
+						})
 						r, _ := json.Marshal(&SignData{
 							Type: script.SignerTypeUser,
 							Signers: map[string]struct{}{
@@ -1028,9 +1074,14 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 					},
 					Params: func() []byte {
 						r, _ := json.Marshal(&script.SignParams{
-							SignatureType:      script.SignatureTypeUKEP,
-							SignatureCarrier:   script.SignatureCarrierToken,
-							Type:               script.SignerTypeUser,
+							SignatureType:    script.SignatureTypeUKEP,
+							SignatureCarrier: script.SignatureCarrierToken,
+							Type:             script.SignerTypeUser,
+							SigningParamsPaths: script.SigningParamsPaths{
+								INN:   "form_3.inn",
+								SNILS: "form_3.snils",
+								Files: []string{"form_3.files"},
+							},
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
@@ -1063,8 +1114,22 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 					Signers: map[string]struct{}{
 						"tester": {},
 					},
-					SignatureType:      "ukep",
-					SigningRule:        "AnyOf",
+					SignatureType: "ukep",
+					SigningRule:   "AnyOf",
+					Signatures:    []fileSignaturePair{},
+					SigningParams: SigningParams{
+						INN:   "inn_1",
+						SNILS: "snils_1",
+						Files: []entity.Attachment{
+							{FileID: "uuid1"},
+							{FileID: "uuid2"},
+						},
+					},
+					SigningParamsPaths: script.SigningParamsPaths{
+						INN:   "form_3.inn",
+						SNILS: "form_3.snils",
+						Files: []string{"form_3.files"},
+					},
 					SignatureCarrier:   "token",
 					SignLog:            []SignLogEntry{},
 					FormsAccessibility: []script.FormAccessibility{{}},
@@ -1077,8 +1142,16 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 					VarStore: &store.VariableStore{
 						Mutex: sync.Mutex{},
 						State: map[string]json.RawMessage{
-							"example": unmarshalFromTestFile(t, "testdata/sign/sign_state.json")},
-						Values:     map[string]interface{}{},
+							"example": unmarshalFromTestFile(t, "testdata/signing_params/signing_state_signing_params.json"),
+						},
+						Values: map[string]interface{}{
+							"form_3.snils": "snils_1",
+							"form_3.inn":   "inn_1",
+							"form_3.files": []interface{}{
+								map[string]interface{}{"file_id": "uuid1"},
+								map[string]interface{}{"file_id": "uuid2"},
+							},
+						},
 						Steps:      []string{"example"},
 						Errors:     []string{},
 						StopPoints: store.StopPoints{},
@@ -1342,6 +1415,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 					},
 					SignatureType:      "unep",
 					SigningRule:        "AnyOf",
+					Signatures:         []fileSignaturePair{},
 					SignatureCarrier:   "cloud",
 					SignLog:            []SignLogEntry{},
 					FormsAccessibility: []script.FormAccessibility{{}},
@@ -1354,7 +1428,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 					VarStore: &store.VariableStore{
 						Mutex: sync.Mutex{},
 						State: map[string]json.RawMessage{
-							"example": unmarshalFromTestFile(t, "testdata/sign/sign_state.json")},
+							"example": unmarshalFromTestFile(t, "testdata/signing_params/signing_state_signing_params.json")},
 						Values:     map[string]interface{}{},
 						Steps:      []string{"example"},
 						Errors:     []string{},
@@ -1378,6 +1452,12 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 					skipNotifications: true,
 					VarStore: func() *store.VariableStore {
 						s := store.NewStore()
+						s.SetValue("form_3.inn", "inn_1")
+						s.SetValue("form_3.snils", "snils_1")
+						s.SetValue("form_3.files", []entity.Attachment{
+							{FileID: "uuid1"},
+							{FileID: "uuid2"},
+						})
 						r, _ := json.Marshal(&SignData{
 							Type: script.SignerTypeUser,
 							Signers: map[string]struct{}{
@@ -1414,9 +1494,14 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 					},
 					Params: func() []byte {
 						r, _ := json.Marshal(&script.SignParams{
-							SignatureType:      script.SignatureTypePEP,
-							SignatureCarrier:   script.SignatureCarrierCloud,
-							Type:               script.SignerTypeUser,
+							SignatureType:    script.SignatureTypePEP,
+							SignatureCarrier: script.SignatureCarrierCloud,
+							Type:             script.SignerTypeUser,
+							SigningParamsPaths: script.SigningParamsPaths{
+								INN:   "form_3.inn",
+								SNILS: "form_3.snils",
+								Files: []string{"form_3.files"},
+							},
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
@@ -1449,9 +1534,15 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 					Signers: map[string]struct{}{
 						"tester": {},
 					},
-					SignatureType:      "pep",
-					SigningRule:        "AnyOf",
-					SignatureCarrier:   "cloud",
+					SignatureType:    "pep",
+					SigningRule:      "AnyOf",
+					SignatureCarrier: "cloud",
+					Signatures:       []fileSignaturePair{},
+					SigningParamsPaths: script.SigningParamsPaths{
+						INN:   "form_3.inn",
+						SNILS: "form_3.snils",
+						Files: []string{"form_3.files"},
+					},
 					SignLog:            []SignLogEntry{},
 					FormsAccessibility: []script.FormAccessibility{{}},
 					Reentered:          true,
@@ -1463,9 +1554,16 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 					VarStore: &store.VariableStore{
 						Mutex: sync.Mutex{},
 						State: map[string]json.RawMessage{
-							"example": unmarshalFromTestFile(t, "testdata/sign/sign_state.json"),
+							"example": unmarshalFromTestFile(t, "testdata/signing_params/signing_state_signing_params.json"),
 						},
-						Values:     map[string]interface{}{},
+						Values: map[string]interface{}{
+							"form_3.snils": "snils_1",
+							"form_3.inn":   "inn_1",
+							"form_3.files": []interface{}{
+								map[string]interface{}{"file_id": "uuid1"},
+								map[string]interface{}{"file_id": "uuid2"},
+							},
+						},
 						Steps:      []string{"example"},
 						Errors:     []string{},
 						StopPoints: store.StopPoints{},
@@ -1561,6 +1659,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 					},
 					SignatureType:      "ukep",
 					SigningRule:        "AnyOf",
+					Signatures:         []fileSignaturePair{},
 					SignatureCarrier:   "cloud",
 					SignLog:            []SignLogEntry{},
 					FormsAccessibility: []script.FormAccessibility{{}},
@@ -1573,7 +1672,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 					VarStore: &store.VariableStore{
 						Mutex: sync.Mutex{},
 						State: map[string]json.RawMessage{
-							"example": unmarshalFromTestFile(t, "testdata/sign/sign_state.json"),
+							"example": unmarshalFromTestFile(t, "testdata/signing_params/signing_state_signing_params.json"),
 						},
 						Values:     map[string]interface{}{},
 						Steps:      []string{"example"},
@@ -2110,6 +2209,34 @@ func TestGoSignBlock_Update(t *testing.T) {
 				},
 			},
 			wantErr: false,
+		},
+		{
+			name: "one signer ukep where attachments and signatures are not equal",
+			fields: fields{
+				Name:          stepName,
+				SignatureType: script.SignatureTypeUKEP,
+				SignData: &SignData{
+					Type:        script.SignerTypeUser,
+					Attachments: []entity.Attachment{{FileID: "some_file_id"}},
+					Signers: map[string]struct{}{
+						invalidLogin: {},
+					},
+				},
+				RunContext: &BlockRunContext{
+					skipNotifications: false,
+					VarStore:          store.NewStore(),
+				},
+			},
+
+			args: args{
+				ctx: context.Background(),
+				data: &script.BlockUpdateData{
+					ByLogin:    invalidLogin,
+					Action:     string(entity.TaskUpdateActionSign),
+					Parameters: []byte(`{"decision":"` + SignDecisionRejected + `",'attachments':[{"file_id":"some_file_id"}]}`),
+				},
+			},
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
@@ -3055,7 +3182,26 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 				Name: stepName,
 				RunContext: &BlockRunContext{
 					WorkNumber: "J001",
-					VarStore:   store.NewStore(),
+					VarStore: func() *store.VariableStore {
+						s := store.NewStore()
+						s.SetValue("form_3.inn", "inn_1")
+						s.SetValue("form_3.snils", "snils_1")
+						s.SetValue("form_3.files", []entity.Attachment{
+							{FileID: "uuid1"},
+							{FileID: "uuid2"},
+						})
+						r, _ := json.Marshal(&SignData{
+							Type: script.SignerTypeUser,
+							Signers: map[string]struct{}{
+								"tester": {},
+							},
+							FormsAccessibility: make([]script.FormAccessibility, 1),
+						})
+						s.State = map[string]json.RawMessage{
+							stepName: r,
+						}
+						return s
+					}(),
 					Services: RunContextServices{
 						People: func() *people.Service {
 							plMock := people.Service{}
@@ -3107,9 +3253,14 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 					Sockets:    next,
 					Params: func() []byte {
 						r, _ := json.Marshal(&script.SignParams{
-							SignatureType:      script.SignatureTypeUKEP,
-							SignatureCarrier:   script.SignatureCarrierToken,
-							Type:               script.SignerTypeUser,
+							SignatureType:    script.SignatureTypeUKEP,
+							SignatureCarrier: script.SignatureCarrierToken,
+							Type:             script.SignerTypeUser,
+							SigningParamsPaths: script.SigningParamsPaths{
+								INN:   "form_3.inn",
+								SNILS: "form_3.snils",
+								Files: []string{"form_3.files"},
+							},
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
@@ -3684,7 +3835,26 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 				Name: stepName,
 				RunContext: &BlockRunContext{
 					WorkNumber: "J001",
-					VarStore:   store.NewStore(),
+					VarStore: func() *store.VariableStore {
+						s := store.NewStore()
+						s.SetValue("form_3.inn", "inn_1")
+						s.SetValue("form_3.snils", "snils_1")
+						s.SetValue("form_3.files", []entity.Attachment{
+							{FileID: "uuid1"},
+							{FileID: "uuid2"},
+						})
+						r, _ := json.Marshal(&SignData{
+							Type: script.SignerTypeUser,
+							Signers: map[string]struct{}{
+								"tester": {},
+							},
+							FormsAccessibility: make([]script.FormAccessibility, 1),
+						})
+						s.State = map[string]json.RawMessage{
+							stepName: r,
+						}
+						return s
+					}(),
 					Services: RunContextServices{
 						People: func() *people.Service {
 							plMock := people.Service{}
@@ -3736,9 +3906,384 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 					Sockets:    next,
 					Params: func() []byte {
 						r, _ := json.Marshal(&script.SignParams{
-							SignatureType:      script.SignatureTypeUKEP,
-							SignatureCarrier:   script.SignatureCarrierAll,
-							Type:               script.SignerTypeUser,
+							SignatureType:    script.SignatureTypeUKEP,
+							SignatureCarrier: script.SignatureCarrierAll,
+							Type:             script.SignerTypeUser,
+							SigningParamsPaths: script.SigningParamsPaths{
+								INN:   "form_3.inn",
+								SNILS: "form_3.snils",
+								Files: []string{"form_3.files"},
+							},
+							Signer:             "tester",
+							FormsAccessibility: make([]script.FormAccessibility, 1),
+						})
+						return r
+					}(),
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "SignatureTypeUKEP and SignatureCarrierToken with missing inn",
+			fields: fields{
+				Name: stepName,
+				RunContext: &BlockRunContext{
+					WorkNumber: "J001",
+					VarStore: func() *store.VariableStore {
+						s := store.NewStore()
+						s.SetValue("form_3.snils", "snils_1")
+						s.SetValue("form_3.files", []entity.Attachment{
+							{FileID: "uuid1"},
+							{FileID: "uuid2"},
+						})
+						r, _ := json.Marshal(&SignData{
+							Type: script.SignerTypeUser,
+							Signers: map[string]struct{}{
+								"tester": {},
+							},
+							FormsAccessibility: make([]script.FormAccessibility, 1),
+						})
+						s.State = map[string]json.RawMessage{
+							stepName: r,
+						}
+						return s
+					}(),
+					Services: RunContextServices{
+						People: func() *people.Service {
+							plMock := people.Service{}
+							httpClient := http.DefaultClient
+							mockTransport := peopleMocks.RoundTripper{}
+							fResponse := func(*http.Request) *http.Response {
+								b, _ := json.Marshal(people.Service{})
+								body := io.NopCloser(bytes.NewReader(b))
+								defer body.Close()
+								return &http.Response{
+									Status:     http.StatusText(http.StatusOK),
+									StatusCode: http.StatusOK,
+									Body:       body,
+								}
+							}
+							f_error := func(*http.Request) error {
+								return nil
+							}
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							httpClient.Transport = &mockTransport
+							plMock.Cli = httpClient
+
+							return &plMock
+						}(),
+						Storage: func() db.Database {
+							res := &mocks.MockedDatabase{}
+
+							res.On("GetApplicationData", "J001").Return("", nil)
+							res.On("GetAdditionalForms", "J001", "sign").Return([]string{}, nil)
+							res.On("UpdateStepContext",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.AnythingOfType("*db.UpdateStepRequest"),
+							).Return(
+								nil,
+							)
+
+							return res
+						}(),
+					},
+				},
+			},
+
+			args: args{
+				ctx: context.Background(),
+				ef: &entity.EriusFunc{
+					BlockType:  BlockGoSignID,
+					Title:      title,
+					ShortTitle: shortTitle,
+					Sockets:    next,
+					Params: func() []byte {
+						r, _ := json.Marshal(&script.SignParams{
+							SignatureType:    script.SignatureTypeUKEP,
+							SignatureCarrier: script.SignatureCarrierToken,
+							Type:             script.SignerTypeUser,
+							SigningParamsPaths: script.SigningParamsPaths{
+								INN:   "form_3.inn",
+								SNILS: "form_3.snils",
+								Files: []string{"form_3.files"},
+							},
+							Signer:             "tester",
+							FormsAccessibility: make([]script.FormAccessibility, 1),
+						})
+						return r
+					}(),
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "SignatureTypeUKEP and SignatureCarrierToken with missing snils",
+			fields: fields{
+				Name: stepName,
+				RunContext: &BlockRunContext{
+					WorkNumber: "J001",
+					VarStore: func() *store.VariableStore {
+						s := store.NewStore()
+						s.SetValue("form_3.inn", "inn_1")
+						s.SetValue("form_3.files", []entity.Attachment{
+							{FileID: "uuid1"},
+							{FileID: "uuid2"},
+						})
+						r, _ := json.Marshal(&SignData{
+							Type: script.SignerTypeUser,
+							Signers: map[string]struct{}{
+								"tester": {},
+							},
+							FormsAccessibility: make([]script.FormAccessibility, 1),
+						})
+						s.State = map[string]json.RawMessage{
+							stepName: r,
+						}
+						return s
+					}(),
+					Services: RunContextServices{
+						People: func() *people.Service {
+							plMock := people.Service{}
+							httpClient := http.DefaultClient
+							mockTransport := peopleMocks.RoundTripper{}
+							fResponse := func(*http.Request) *http.Response {
+								b, _ := json.Marshal(people.Service{})
+								body := io.NopCloser(bytes.NewReader(b))
+								defer body.Close()
+								return &http.Response{
+									Status:     http.StatusText(http.StatusOK),
+									StatusCode: http.StatusOK,
+									Body:       body,
+								}
+							}
+							f_error := func(*http.Request) error {
+								return nil
+							}
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							httpClient.Transport = &mockTransport
+							plMock.Cli = httpClient
+
+							return &plMock
+						}(),
+						Storage: func() db.Database {
+							res := &mocks.MockedDatabase{}
+
+							res.On("GetApplicationData", "J001").Return("", nil)
+							res.On("GetAdditionalForms", "J001", "sign").Return([]string{}, nil)
+							res.On("UpdateStepContext",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.AnythingOfType("*db.UpdateStepRequest"),
+							).Return(
+								nil,
+							)
+
+							return res
+						}(),
+					},
+				},
+			},
+
+			args: args{
+				ctx: context.Background(),
+				ef: &entity.EriusFunc{
+					BlockType:  BlockGoSignID,
+					Title:      title,
+					ShortTitle: shortTitle,
+					Sockets:    next,
+					Params: func() []byte {
+						r, _ := json.Marshal(&script.SignParams{
+							SignatureType:    script.SignatureTypeUKEP,
+							SignatureCarrier: script.SignatureCarrierToken,
+							Type:             script.SignerTypeUser,
+							SigningParamsPaths: script.SigningParamsPaths{
+								INN:   "form_3.inn",
+								SNILS: "form_3.snils",
+								Files: []string{"form_3.files"},
+							},
+							Signer:             "tester",
+							FormsAccessibility: make([]script.FormAccessibility, 1),
+						})
+						return r
+					}(),
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "SignatureTypeUKEP and SignatureCarrierToken with missing files",
+			fields: fields{
+				Name: stepName,
+				RunContext: &BlockRunContext{
+					WorkNumber: "J001",
+					VarStore: func() *store.VariableStore {
+						s := store.NewStore()
+						s.SetValue("form_3.inn", "inn_1")
+						s.SetValue("form_3.snils", "snils_1")
+						r, _ := json.Marshal(&SignData{
+							Type: script.SignerTypeUser,
+							Signers: map[string]struct{}{
+								"tester": {},
+							},
+							FormsAccessibility: make([]script.FormAccessibility, 1),
+						})
+						s.State = map[string]json.RawMessage{
+							stepName: r,
+						}
+						return s
+					}(),
+					Services: RunContextServices{
+						People: func() *people.Service {
+							plMock := people.Service{}
+							httpClient := http.DefaultClient
+							mockTransport := peopleMocks.RoundTripper{}
+							fResponse := func(*http.Request) *http.Response {
+								b, _ := json.Marshal(people.Service{})
+								body := io.NopCloser(bytes.NewReader(b))
+								defer body.Close()
+								return &http.Response{
+									Status:     http.StatusText(http.StatusOK),
+									StatusCode: http.StatusOK,
+									Body:       body,
+								}
+							}
+							f_error := func(*http.Request) error {
+								return nil
+							}
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							httpClient.Transport = &mockTransport
+							plMock.Cli = httpClient
+
+							return &plMock
+						}(),
+						Storage: func() db.Database {
+							res := &mocks.MockedDatabase{}
+
+							res.On("GetApplicationData", "J001").Return("", nil)
+							res.On("GetAdditionalForms", "J001", "sign").Return([]string{}, nil)
+							res.On("UpdateStepContext",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.AnythingOfType("*db.UpdateStepRequest"),
+							).Return(
+								nil,
+							)
+
+							return res
+						}(),
+					},
+				},
+			},
+
+			args: args{
+				ctx: context.Background(),
+				ef: &entity.EriusFunc{
+					BlockType:  BlockGoSignID,
+					Title:      title,
+					ShortTitle: shortTitle,
+					Sockets:    next,
+					Params: func() []byte {
+						r, _ := json.Marshal(&script.SignParams{
+							SignatureType:    script.SignatureTypeUKEP,
+							SignatureCarrier: script.SignatureCarrierToken,
+							Type:             script.SignerTypeUser,
+							SigningParamsPaths: script.SigningParamsPaths{
+								INN:   "form_3.inn",
+								SNILS: "form_3.snils",
+								Files: []string{"form_3.files"},
+							},
+							Signer:             "tester",
+							FormsAccessibility: make([]script.FormAccessibility, 1),
+						})
+						return r
+					}(),
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "signature type UKEP with inn of wrong type",
+			fields: fields{
+				Name: stepName,
+				RunContext: &BlockRunContext{
+					WorkNumber: "J001",
+					VarStore: func() *store.VariableStore {
+						s := store.NewStore()
+						s.SetValue("form_3.inn", 123)
+						s.SetValue("form_3.snils", "snils_1")
+						s.SetValue("form_3.files", []entity.Attachment{
+							{FileID: "uuid1"},
+							{FileID: "uuid2"},
+						})
+						r, _ := json.Marshal(&SignData{
+							Type: script.SignerTypeUser,
+							Signers: map[string]struct{}{
+								"tester": {},
+							},
+							FormsAccessibility: make([]script.FormAccessibility, 1),
+						})
+						s.State = map[string]json.RawMessage{
+							stepName: r,
+						}
+						return s
+					}(),
+					Services: RunContextServices{
+						People: func() *people.Service {
+							plMock := people.Service{}
+							httpClient := http.DefaultClient
+							mockTransport := peopleMocks.RoundTripper{}
+							fResponse := func(*http.Request) *http.Response {
+								b, _ := json.Marshal(people.Service{})
+								body := io.NopCloser(bytes.NewReader(b))
+								defer body.Close()
+								return &http.Response{
+									Status:     http.StatusText(http.StatusOK),
+									StatusCode: http.StatusOK,
+									Body:       body,
+								}
+							}
+							f_error := func(*http.Request) error {
+								return nil
+							}
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							httpClient.Transport = &mockTransport
+							plMock.Cli = httpClient
+
+							return &plMock
+						}(),
+						Storage: func() db.Database {
+							res := &mocks.MockedDatabase{}
+
+							res.On("GetApplicationData", "J001").Return("", nil)
+							res.On("GetAdditionalForms", "J001", "sign").Return([]string{}, nil)
+							res.On("UpdateStepContext",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.AnythingOfType("*db.UpdateStepRequest"),
+							).Return(
+								nil,
+							)
+
+							return res
+						}(),
+					},
+				},
+			},
+
+			args: args{
+				ctx: context.Background(),
+				ef: &entity.EriusFunc{
+					BlockType:  BlockGoSignID,
+					Title:      title,
+					ShortTitle: shortTitle,
+					Sockets:    next,
+					Params: func() []byte {
+						r, _ := json.Marshal(&script.SignParams{
+							SignatureType:    script.SignatureTypeUKEP,
+							SignatureCarrier: script.SignatureCarrierAll,
+							Type:             script.SignerTypeUser,
+							SigningParamsPaths: script.SigningParamsPaths{
+								INN:   "form_3.inn",
+								SNILS: "form_3.snils",
+								Files: []string{"form_3.files"},
+							},
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})

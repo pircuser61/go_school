@@ -54,6 +54,7 @@ type taskResp struct {
 	StatusAuthor       string                 `json:"status_author"`
 	ProcessDeadline    time.Time              `json:"process_deadline"`
 	NodeGroup          []NodeGroup            `json:"node_group"`
+	ApprovalList       map[string]string      `json:"approval_list"`
 }
 
 type step struct {
@@ -84,27 +85,35 @@ type action struct {
 type taskActions []action
 type taskSteps []step
 
-func (taskResp) toResponse(in *entity.EriusTask, usrDegSteps map[string]bool, sNames map[string]string, dln time.Time) *taskResp {
-	steps := make([]step, 0, len(in.Steps))
-	actions := make([]action, 0, len(in.Actions))
-	for i := range in.Steps {
+type taskToResponseDTO struct {
+	task         *entity.EriusTask
+	usrDegSteps  map[string]bool
+	sNames       map[string]string
+	dln          time.Time
+	approvalList []entity.ApprovalListSettings
+}
+
+func (taskResp) toResponse(in *taskToResponseDTO) *taskResp {
+	steps := make([]step, 0, len(in.task.Steps))
+	actions := make([]action, 0, len(in.task.Actions))
+	for i := range in.task.Steps {
 		steps = append(steps, step{
-			Time:                      in.Steps[i].Time,
-			UpdateTime:                in.Steps[i].UpdatedAt,
-			Type:                      in.Steps[i].Type,
-			Name:                      in.Steps[i].Name,
-			State:                     in.Steps[i].State,
-			Storage:                   in.Steps[i].Storage,
-			Errors:                    in.Steps[i].Errors,
-			Steps:                     in.Steps[i].Steps,
-			HasError:                  in.Steps[i].HasError,
-			Status:                    pipeline.Status(in.Steps[i].Status),
-			IsDelegateOfAnyStepMember: usrDegSteps[in.Steps[i].Name],
-			ShortTitle:                sNames[in.Steps[i].Name],
+			Time:                      in.task.Steps[i].Time,
+			UpdateTime:                in.task.Steps[i].UpdatedAt,
+			Type:                      in.task.Steps[i].Type,
+			Name:                      in.task.Steps[i].Name,
+			State:                     in.task.Steps[i].State,
+			Storage:                   in.task.Steps[i].Storage,
+			Errors:                    in.task.Steps[i].Errors,
+			Steps:                     in.task.Steps[i].Steps,
+			HasError:                  in.task.Steps[i].HasError,
+			Status:                    pipeline.Status(in.task.Steps[i].Status),
+			IsDelegateOfAnyStepMember: in.usrDegSteps[in.task.Steps[i].Name],
+			ShortTitle:                in.sNames[in.task.Steps[i].Name],
 		})
 	}
 
-	for _, a := range in.Actions {
+	for _, a := range in.task.Actions {
 		actions = append(actions, action{
 			Id:                 a.Id,
 			ButtonType:         a.ButtonType,
@@ -117,41 +126,50 @@ func (taskResp) toResponse(in *entity.EriusTask, usrDegSteps map[string]bool, sN
 	}
 
 	out := &taskResp{
-		ID:                 in.ID,
-		VersionID:          in.VersionID,
-		StartedAt:          in.StartedAt,
-		LastChangedAt:      in.LastChangedAt,
-		FinishedAt:         in.FinishedAt,
-		Name:               in.Name,
-		Description:        in.Description,
-		Status:             in.Status,
-		HumanStatus:        in.HumanStatus,
-		HumanStatusComment: in.HumanStatusComment,
-		Author:             in.Author,
-		IsDebugMode:        in.IsDebugMode,
-		Parameters:         in.Parameters,
+		ID:                 in.task.ID,
+		VersionID:          in.task.VersionID,
+		StartedAt:          in.task.StartedAt,
+		LastChangedAt:      in.task.LastChangedAt,
+		FinishedAt:         in.task.FinishedAt,
+		Name:               in.task.Name,
+		Description:        in.task.Description,
+		Status:             in.task.Status,
+		HumanStatus:        in.task.HumanStatus,
+		HumanStatusComment: in.task.HumanStatusComment,
+		Author:             in.task.Author,
+		IsDebugMode:        in.task.IsDebugMode,
+		Parameters:         in.task.Parameters,
 		Steps:              steps,
-		WorkNumber:         in.WorkNumber,
-		BlueprintID:        in.BlueprintID,
-		Rate:               in.Rate,
-		RateComment:        in.RateComment,
+		WorkNumber:         in.task.WorkNumber,
+		BlueprintID:        in.task.BlueprintID,
+		Rate:               in.task.Rate,
+		RateComment:        in.task.RateComment,
 		AvailableActions:   actions,
-		StatusComment:      in.StatusComment,
-		StatusAuthor:       in.StatusAuthor,
-		ProcessDeadline:    dln,
-		NodeGroup:          groupsToResponce(in.NodeGroup),
+		StatusComment:      in.task.StatusComment,
+		StatusAuthor:       in.task.StatusAuthor,
+		ProcessDeadline:    in.dln,
+		NodeGroup:          groupsToResponse(in.task.NodeGroup),
+	}
+
+	approvalList := map[string]string{}
+	for i := range in.approvalList {
+		approvalList[in.approvalList[i].ID] = in.approvalList[i].Name
+	}
+
+	if len(approvalList) > 0 {
+		out.ApprovalList = approvalList
 	}
 
 	return out
 }
 
-func groupsToResponce(groups []*entity.NodeGroup) []NodeGroup {
+func groupsToResponse(groups []*entity.NodeGroup) []NodeGroup {
 	if groups == nil {
 		return nil
 	}
 	var resp []NodeGroup
 	for i := range groups {
-		insideNodes := groupsToResponce(groups[i].Nodes)
+		insideNodes := groupsToResponse(groups[i].Nodes)
 		resp = append(resp, NodeGroup{
 			EndNode:   groups[i].EndNode,
 			Nodes:     &insideNodes,
@@ -340,9 +358,26 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request, workNumber s
 
 	deadline := ae.SLAService.ComputeMaxDate(dbTask.StartedAt, float32(versionSettings.Sla), slaInfoPtr)
 
+	approvalLists, err := ae.DB.GetApprovalListsSettings(ctx, dbTask.VersionID.String())
+	if err != nil {
+		e := UnknownError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
 	resp := &taskResp{}
-	if err = sendResponse(w, http.StatusOK,
-		resp.toResponse(dbTask, currentUserDelegateSteps, shortNameMap, deadline)); err != nil {
+
+	toResponseDTO := &taskToResponseDTO{
+		task:         dbTask,
+		usrDegSteps:  currentUserDelegateSteps,
+		sNames:       shortNameMap,
+		dln:          deadline,
+		approvalList: approvalLists,
+	}
+
+	if err = sendResponse(w, http.StatusOK, resp.toResponse(toResponseDTO)); err != nil {
 		e := UnknownError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
@@ -546,6 +581,24 @@ func (ae *APIEnv) GetTasks(w http.ResponseWriter, req *http.Request, params GetT
 
 		deadline := ae.SLAService.ComputeMaxDate(resp.Tasks[i].StartedAt, float32(versionsSLA[resp.Tasks[i].VersionID.String()].Sla), slaInfoPtr)
 		resp.Tasks[i].ProcessDeadline = deadline
+
+		approvalLists, errGetSettings := ae.DB.GetApprovalListsSettings(ctx, resp.Tasks[i].VersionID.String())
+		if errGetSettings != nil {
+			e := UnknownError
+			log.Error(e.errorMessage(errGetSettings))
+			_ = e.sendError(w)
+
+			return
+		}
+
+		mapApprovalLists := map[string]string{}
+		for j := range approvalLists {
+			mapApprovalLists[approvalLists[j].ID] = approvalLists[j].Name
+		}
+
+		if len(mapApprovalLists) > 0 {
+			resp.Tasks[i].ApprovalList = mapApprovalLists
+		}
 	}
 
 	if err = sendResponse(w, http.StatusOK, resp); err != nil {
@@ -781,7 +834,7 @@ func (ae *APIEnv) GetVersionTasks(w http.ResponseWriter, req *http.Request, vers
 
 func getTaskStepNameByAction(action entity.TaskUpdateAction) []string {
 	if action == entity.TaskUpdateActionAdditionalApprovement {
-		return []string{pipeline.BlockGoApproverID}
+		return []string{pipeline.BlockGoApproverID, pipeline.BlockGoSignID}
 	}
 
 	if action == entity.TaskUpdateActionApprovement {
@@ -821,7 +874,7 @@ func getTaskStepNameByAction(action entity.TaskUpdateAction) []string {
 	}
 
 	if action == entity.TaskUpdateActionAddApprovers {
-		return []string{pipeline.BlockGoApproverID}
+		return []string{pipeline.BlockGoApproverID, pipeline.BlockGoSignID}
 	}
 
 	if action == entity.TaskUpdateActionFormExecutorStartWork {

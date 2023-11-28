@@ -151,13 +151,6 @@ const (
 	SystemLogin = "jocasta"
 
 	// language=PostgreSQL
-	qCheckTagIsAttached string = `
-		SELECT COUNT(pipeline_id) AS count
-		FROM pipeline_tags    
-		WHERE 
-			pipeline_id = $1 and tag_id = $2`
-
-	// language=PostgreSQL
 	qWriteHistory = `
 		INSERT INTO pipeline_history (
 			id, 
@@ -464,15 +457,6 @@ func (db *PGCon) GetVersionsByStatus(c context.Context, status int, author strin
 		return nil, err
 	}
 
-	for i := range res {
-		tags, err := db.GetPipelineTag(c, res[i].ID)
-		if err != nil {
-			return nil, err
-		}
-
-		res[i].Tags = tags
-	}
-
 	return res, nil
 }
 
@@ -553,86 +537,6 @@ func (db *PGCon) GetWorkedVersions(ctx context.Context) ([]entity.EriusScenario,
 	}
 
 	return pipes, nil
-}
-
-func (db *PGCon) GetAllTags(c context.Context) ([]entity.EriusTagInfo, error) {
-	c, span := trace.StartSpan(c, "pg_get_all_tags")
-	defer span.End()
-
-	// nolint:gocritic
-	// language=PostgreSQL
-	q := `SELECT 
-		t.id, 
-		t.name, 
-		t.status, 
-		t.color
-	FROM tags t
-    WHERE 
-		t.status <> $1`
-
-	rows, err := db.Connection.Query(c, q, StatusDeleted)
-	if err != nil {
-		return nil, err
-	}
-
-	defer rows.Close()
-
-	tags := make([]entity.EriusTagInfo, 0)
-
-	for rows.Next() {
-		etag := entity.EriusTagInfo{}
-
-		err = rows.Scan(&etag.ID, &etag.Name, &etag.Status, &etag.Color)
-		if err != nil {
-			return nil, err
-		}
-
-		tags = append(tags, etag)
-	}
-
-	return tags, nil
-}
-
-func (db *PGCon) GetPipelineTag(c context.Context, pid uuid.UUID) ([]entity.EriusTagInfo, error) {
-	c, span := trace.StartSpan(c, "pg_get_pipeline_tag")
-	defer span.End()
-
-	// nolint:gocritic
-	// language=PostgreSQL
-	q := `SELECT 
-		t.id, 
-		t.name, 
-		t.status, 
-		t.color, 
-		t.is_marker
-	FROM tags t
-	LEFT OUTER JOIN pipeline_tags pt ON pt.tag_id = t.id
-    WHERE 
-		t.status <> $1 
-	AND
-		pt.pipeline_id = $2`
-
-	rows, err := db.Connection.Query(c, q, StatusDeleted, pid)
-	if err != nil {
-		return nil, err
-	}
-
-	defer rows.Close()
-
-	tags := make([]entity.EriusTagInfo, 0)
-
-	for rows.Next() {
-		etag := entity.EriusTagInfo{}
-
-		err = rows.Scan(&etag.ID, &etag.Name, &etag.Status, &etag.Color, &etag.IsMarker)
-		if err != nil {
-			return nil, err
-		}
-
-		tags = append(tags, etag)
-	}
-
-	return tags, nil
 }
 
 func (db *PGCon) SwitchApproved(c context.Context, pipelineID, versionID uuid.UUID, author string) error {
@@ -859,162 +763,6 @@ func (db *PGCon) CreateVersion(c context.Context,
 	}
 
 	return nil
-}
-
-func (db *PGCon) copyProcessSettingsFromOldVersion(c context.Context, newVersionID, oldVersionID uuid.UUID) error {
-	qCopyPrevSettings := `
-	INSERT INTO version_settings (id, version_id, start_schema, end_schema, resubmission_period) 
-		SELECT uuid_generate_v4(), $1, start_schema, end_schema, resubmission_period
-		FROM version_settings 
-		WHERE version_id = $2
-	`
-
-	_, err := db.Connection.Exec(c, qCopyPrevSettings, newVersionID, oldVersionID)
-	if err != nil {
-		return err
-	}
-
-	qCopyExternalSystems := `
-	INSERT INTO external_systems (id, version_id, system_id, input_schema, output_schema, input_mapping, output_mapping,
-                              microservice_id, ending_url, sending_method, allow_run_as_others)
-SELECT uuid_generate_v4(),
-       $1,
-       system_id,
-       input_schema,
-       output_schema,
-       input_mapping,
-       output_mapping,
-       microservice_id,
-       ending_url,
-       sending_method,
-       allow_run_as_others
-FROM external_systems
-WHERE version_id = $2;
-	`
-
-	_, err = db.Connection.Exec(c, qCopyExternalSystems, newVersionID, oldVersionID)
-	if err != nil {
-		return err
-	}
-
-	// nolint:gocritic
-	// language=PostgreSQL
-	qCopyPrevSlaSettings := `
-	INSERT INTO version_sla (id, version_id, author,created_at,work_type,sla) 
-		SELECT uuid_generate_v4(), $1, author, now(), work_type, sla
-		FROM version_sla 
-		WHERE version_id = $2
-		ORDER BY created_at DESC LIMIT 1;
-	`
-
-	_, err = db.Connection.Exec(c, qCopyPrevSlaSettings, newVersionID, oldVersionID)
-	if err != nil {
-		return err
-	}
-
-	// nolint:gocritic
-	// language=PostgreSQL
-	qCopyPrevTaskSubSettings := `
-INSERT INTO external_system_task_subscriptions (id, version_id, system_id, microservice_id, path, 
-                                                method, notification_schema, mapping, nodes)
-SELECT uuid_generate_v4(), $1, system_id, microservice_id, path, method, notification_schema, mapping, nodes 
-FROM external_system_task_subscriptions
-WHERE version_id = $2`
-
-	_, err = db.Connection.Exec(c, qCopyPrevTaskSubSettings, newVersionID, oldVersionID)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (db *PGCon) CreateTag(c context.Context,
-	e *entity.EriusTagInfo, author string) (*entity.EriusTagInfo, error) {
-	c, span := trace.StartSpan(c, "pg_create_tag")
-	defer span.End()
-
-	tx, err := db.Connection.Begin(c)
-	if err != nil {
-		return nil, err
-	}
-
-	defer tx.Rollback(c) // nolint:errcheck // rollback err
-
-	if e.Name == "" {
-		return nil, nil
-	}
-
-	// nolint:gocritic
-	// language=PostgreSQL
-	qCheckTagExisted := `
-	SELECT 
-		t.id, 
-		t.name, 
-		t.status, 
-		t.color, 
-		t.is_marker
-	FROM tags t
-	WHERE 
-		lower(t.name) = lower($1) AND t.status <> $2 and t.is_marker <> $3
-	LIMIT 1`
-
-	rows, err := tx.Query(c, qCheckTagExisted, e.Name, StatusDeleted, e.IsMarker)
-	if err != nil {
-		return nil, err
-	}
-
-	defer rows.Close()
-
-	if rows.Next() {
-		err = rows.Scan(&e.ID, &e.Name, &e.Status, &e.Color, &e.IsMarker)
-		if err != nil {
-			return nil, err
-		}
-
-		return e, nil
-	}
-
-	// nolint:gocritic
-	// language=PostgreSQL
-	qNewTag := `
-		INSERT INTO tags (
-			id, 
-			name, 
-			status,
-			author,
-			color,
-			is_marker
-		)
-		VALUES (
-			$1, 
-			$2, 
-			$3, 
-			$4, 
-			$5, 
-			$6
-		)
-		RETURNING 
-			id, 
-			name, 
-			status, 
-			color, 
-			is_marker`
-
-	row := tx.QueryRow(c, qNewTag, e.ID, e.Name, StatusDraft, author, e.Color, e.IsMarker)
-
-	etag := &entity.EriusTagInfo{}
-
-	err = row.Scan(&etag.ID, &etag.Name, &etag.Status, &etag.Color, &etag.IsMarker)
-	if err != nil {
-		return nil, err
-	}
-
-	if commitErr := tx.Commit(c); commitErr != nil {
-		return nil, commitErr
-	}
-
-	return etag, nil
 }
 
 func (db *PGCon) DeleteVersion(c context.Context, versionID uuid.UUID) error {
@@ -1281,309 +1029,6 @@ func (db *PGCon) RenamePipeline(c context.Context, id uuid.UUID, name string) er
 	_, err := db.Connection.Exec(c, query, name, id)
 	if err != nil {
 		return err
-	}
-
-	return nil
-}
-
-func (db *PGCon) GetTag(c context.Context, e *entity.EriusTagInfo) (*entity.EriusTagInfo, error) {
-	c, span := trace.StartSpan(c, "pg_get_tag")
-	defer span.End()
-
-	// nolint:gocritic
-	// language=PostgreSQL
-	qGetTag := `
-	SELECT 
-		t.id, 
-		t.name, 
-		t.status, 
-		t.color, 
-		t.is_marker
-	FROM tags t
-	WHERE 
-		t.id = $1 AND t.status <> $2
-	LIMIT 1`
-
-	rows, err := db.Connection.Query(c, qGetTag, e.ID, StatusDeleted)
-	if err != nil {
-		return nil, err
-	}
-
-	defer rows.Close()
-
-	if rows.Next() {
-		err := rows.Scan(&e.ID, &e.Name, &e.Status, &e.Color, &e.IsMarker)
-		if err != nil {
-			return nil, err
-		}
-
-		return e, nil
-	}
-
-	return nil, fmt.Errorf("%w: with id: %v", errCantFindTag, e.ID)
-}
-
-func (db *PGCon) EditTag(c context.Context, e *entity.EriusTagInfo) error {
-	c, span := trace.StartSpan(c, "pg_edit_tag")
-	defer span.End()
-
-	tx, err := db.Connection.Begin(c)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback(c) // nolint:errcheck // rollback err
-
-	// nolint:gocritic
-	// language=PostgreSQL
-	qCheckTagIsCreated := `
-		SELECT count(id) AS count
-		FROM tags 
-		WHERE id = $1 AND status = $2`
-
-	row := tx.QueryRow(c, qCheckTagIsCreated, e.ID, StatusDraft)
-
-	count := 0
-
-	err = row.Scan(&count)
-	if err != nil {
-		return err
-	}
-
-	if count == 0 {
-		return fmt.Errorf("%w: with id: %v", errCantFindTag, e.ID)
-	}
-
-	// nolint:gocritic
-	// language=PostgreSQL
-	qEditTag := `UPDATE tags
-	SET color = $1
-	WHERE id = $2`
-
-	_, err = tx.Exec(c, qEditTag, e.Color, e.ID)
-	if err != nil {
-		return err
-	}
-
-	if commitErr := tx.Commit(c); commitErr != nil {
-		return commitErr
-	}
-
-	return nil
-}
-
-//nolint:dupl //its different
-func (db *PGCon) AttachTag(c context.Context, pid uuid.UUID, e *entity.EriusTagInfo) error {
-	c, span := trace.StartSpan(c, "pg_attach_tag")
-	defer span.End()
-
-	tx, err := db.Connection.Begin(c)
-	if err != nil {
-		return err
-	}
-
-	defer tx.Rollback(c) // nolint:errcheck // rollback err
-
-	row := tx.QueryRow(c, qCheckTagIsAttached, pid, e.ID)
-
-	count := 0
-
-	err = row.Scan(&count)
-	if err != nil {
-		return err
-	}
-
-	if count != 0 {
-		return nil
-	}
-
-	// nolint:gocritic
-	// language=PostgreSQL
-	qAttachTag := `
-	INSERT INTO pipeline_tags (
-		pipeline_id, 
-		tag_id
-	)
-	VALUES (
-		$1, 
-		$2
-	)`
-
-	_, err = tx.Exec(c, qAttachTag, pid, e.ID)
-	if err != nil {
-		return err
-	}
-
-	if commitErr := tx.Commit(c); commitErr != nil {
-		return commitErr
-	}
-
-	return nil
-}
-
-func (db *PGCon) RemoveTag(c context.Context, id uuid.UUID) error {
-	c, span := trace.StartSpan(c, "pg_remove_tag")
-	defer span.End()
-
-	tx, err := db.Connection.Begin(c)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback(c) // nolint:errcheck // rollback err
-
-	t := time.Now()
-
-	// nolint:gocritic
-	// language=PostgreSQL
-	qName := `SELECT 
-		name 
-	FROM tags 
-	WHERE id = $1`
-
-	row := tx.QueryRow(c, qName, id)
-
-	var n string
-
-	err = row.Scan(&n)
-	if err != nil {
-		return err
-	}
-
-	n = n + "_deleted_at_" + t.String()
-
-	// nolint:gocritic
-	// language=PostgreSQL
-	qSetTagDeleted := `UPDATE tags
-	SET 
-		status = $1, 
-		name = $2  
-	WHERE id = $3`
-
-	_, err = tx.Exec(c, qSetTagDeleted, StatusDeleted, n, id)
-	if err != nil {
-		return err
-	}
-
-	// nolint:gocritic
-	// language=PostgreSQL
-	qCheckTagAttached := `
-	SELECT COUNT(pipeline_id) AS count
-	FROM pipeline_tags
-	WHERE tag_id = $1`
-
-	row = tx.QueryRow(c, qCheckTagAttached, id)
-
-	count := 0
-
-	err = row.Scan(&count)
-	if err != nil {
-		return err
-	}
-
-	if count == 0 {
-		return nil
-	}
-
-	// nolint:gocritic
-	// language=PostgreSQL
-	qRemoveAttachedTags := `
-	DELETE FROM pipeline_tags
-	WHERE tag_id = $1`
-
-	_, err = tx.Exec(c, qRemoveAttachedTags, id)
-	if err != nil {
-		return err
-	}
-
-	return tx.Commit(c)
-}
-
-//nolint:dupl //its different
-func (db *PGCon) DetachTag(c context.Context, pid uuid.UUID, e *entity.EriusTagInfo) error {
-	c, span := trace.StartSpan(c, "pg_detach_tag")
-	defer span.End()
-
-	tx, err := db.Connection.Begin(c)
-	if err != nil {
-		return err
-	}
-
-	defer tx.Rollback(c) // nolint:errcheck // rollback err
-
-	row := tx.QueryRow(c, qCheckTagIsAttached, pid, e.ID)
-
-	count := 0
-
-	err = row.Scan(&count)
-	if err != nil {
-		return err
-	}
-
-	if count == 0 {
-		return nil
-	}
-
-	// nolint:gocritic
-	// language=PostgreSQL
-	qDetachTag := `DELETE FROM pipeline_tags
-	WHERE pipeline_id = $1 
-	AND tag_id = $2`
-
-	_, err = tx.Exec(c, qDetachTag, pid, e.ID)
-	if err != nil {
-		return err
-	}
-
-	if commitErr := tx.Commit(c); commitErr != nil {
-		return commitErr
-	}
-
-	return nil
-}
-
-func (db *PGCon) RemovePipelineTags(c context.Context, id uuid.UUID) error {
-	c, span := trace.StartSpan(c, "pg_remove_pipeline_tags")
-	defer span.End()
-
-	tx, err := db.Connection.Begin(c)
-	if err != nil {
-		return err
-	}
-
-	defer tx.Rollback(c) // nolint:errcheck // rollback err
-
-	// nolint:gocritic
-	// language=PostgreSQL
-	qCheckTagIsAttached := `
-	SELECT COUNT(pipeline_id) AS count
-	FROM pipeline_tags
-	WHERE pipeline_id = $1`
-
-	row := tx.QueryRow(c, qCheckTagIsAttached, id)
-
-	count := 0
-
-	err = row.Scan(&count)
-	if err != nil {
-		return err
-	}
-
-	if count == 0 {
-		return nil
-	}
-
-	// nolint:gocritic
-	// language=PostgreSQL
-	qRemovePipelineTags := `
-	DELETE FROM pipeline_tags
-	WHERE pipeline_id = $1`
-
-	_, err = tx.Exec(c, qRemovePipelineTags, id)
-	if err != nil {
-		return err
-	}
-
-	if commitErr := tx.Commit(c); commitErr != nil {
-		return commitErr
 	}
 
 	return nil
@@ -2847,6 +2292,70 @@ func (db *PGCon) GetVariableStorageForStep(ctx context.Context, taskID uuid.UUID
 	return storage, nil
 }
 
+func (db *PGCon) GetVariableStorage(ctx context.Context, workNumber string) (*store.VariableStore, error) {
+	ctx, span := trace.StartSpan(ctx, "get_variable_storage")
+	defer span.End()
+
+	const q = `
+		SELECT step_name, vs.content-> 'Values'
+		FROM variable_storage vs 
+			WHERE vs.work_id = (SELECT id FROM works 
+			                 	WHERE work_number = $1 AND child_id IS NULL LIMIT 1) AND 
+			vs.time = (SELECT max(time) FROM variable_storage WHERE work_id = vs.work_id AND step_name = vs.step_name)`
+
+	res := make([]map[string]interface{}, 0)
+	rows, err := db.Connection.Query(ctx, q, workNumber)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		stepName := ""
+		values := make(map[string]interface{})
+		if scanErr := rows.Scan(&stepName, &values); scanErr != nil {
+			return nil, scanErr
+		}
+
+		values[stepNameVariable] = stepName
+
+		res = append(res, values)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	storage := &store.VariableStore{
+		Values: mergeValues(res),
+	}
+
+	return storage, nil
+}
+
+const stepNameVariable = "stepName"
+
+func mergeValues(stepsValues []map[string]interface{}) map[string]interface{} {
+	res := make(map[string]interface{})
+
+	for i := range stepsValues {
+		stepName, ok := stepsValues[i][stepNameVariable]
+		if !ok {
+			continue
+		}
+		for varName := range stepsValues[i] {
+			if _, exists := res[varName]; !exists &&
+				varName != stepNameVariable &&
+				strings.Contains(varName, fmt.Sprintf("%s", stepName)) {
+				res[varName] = stepsValues[i][varName]
+			}
+		}
+	}
+
+	return res
+}
+
 func (db *PGCon) GetBlocksBreachedSLA(ctx context.Context) ([]StepBreachedSLA, error) {
 	ctx, span := trace.StartSpan(ctx, "get_blocks_breached_sla")
 	defer span.End()
@@ -2968,112 +2477,6 @@ func (db *PGCon) GetTaskForMonitoring(ctx context.Context, workNumber string) ([
 	return res, nil
 }
 
-func (db *PGCon) GetVersionSettings(ctx context.Context, versionID string) (entity.ProcessSettings, error) {
-	ctx, span := trace.StartSpan(ctx, "pg_get_version_settings")
-	defer span.End()
-
-	// nolint:gocritic,lll
-	// language=PostgreSQL
-	query := `
-	SELECT start_schema, end_schema, resubmission_period,
-	       (select p.name from pipelines p where p.id = 
-	                                             (select pipeline_id from versions v where v.id = 
-	                                                                              (select version_id from version_settings vs where vs.id = version_settings.id
-	                                                                                                                          )
-	                                                                        )
-	                                       ) "name"
-	FROM version_settings
-	WHERE version_id = $1`
-
-	row := db.Connection.QueryRow(ctx, query, versionID)
-
-	processSettings := entity.ProcessSettings{Id: versionID}
-	err := row.Scan(&processSettings.StartSchema, &processSettings.EndSchema, &processSettings.ResubmissionPeriod, &processSettings.Name)
-	if err != nil && err != pgx.ErrNoRows {
-		return processSettings, err
-	}
-
-	return processSettings, nil
-}
-
-func (db *PGCon) SaveVersionSettings(ctx context.Context, settings entity.ProcessSettings, schemaFlag *string) error {
-	ctx, span := trace.StartSpan(ctx, "pg_save_version_settings")
-	defer span.End()
-
-	var (
-		commandTag pgconn.CommandTag
-		err        error
-	)
-
-	if schemaFlag == nil {
-		// nolint:gocritic
-		// language=PostgreSQL
-		query := `
-		INSERT INTO version_settings (id, version_id, start_schema, end_schema) 
-		VALUES ($1, $2, $3, $4)
-		ON CONFLICT (version_id) DO UPDATE 
-			SET start_schema = excluded.start_schema, 
-				end_schema = excluded.end_schema`
-		commandTag, err = db.Connection.Exec(ctx,
-			query,
-			uuid.New(),
-			settings.Id,
-			settings.StartSchema,
-			settings.EndSchema,
-		)
-		if err != nil {
-			return err
-		}
-	} else {
-		var jsonSchema *script.JSONSchema
-		switch *schemaFlag {
-		case startSchema:
-			jsonSchema = settings.StartSchema
-		case endSchema:
-			jsonSchema = settings.EndSchema
-		default:
-			return errUnkonwnSchemaFlag
-		}
-
-		// nolint:gocritic
-		// language=PostgreSQL
-		query := fmt.Sprintf(`INSERT INTO version_settings (id, version_id, %[1]s) 
-			VALUES ($1, $2, $3)
-			ON CONFLICT (version_id) DO UPDATE 
-				SET %[1]s = excluded.%[1]s`, *schemaFlag)
-
-		commandTag, err = db.Connection.Exec(ctx, query, uuid.New(), settings.Id, jsonSchema)
-		if err != nil {
-			return err
-		}
-	}
-
-	if commandTag.RowsAffected() != 0 {
-		_ = db.RemoveObsoleteMapping(ctx, settings.Id)
-	}
-
-	return nil
-}
-
-func (db *PGCon) SaveVersionMainSettings(ctx context.Context, params entity.ProcessSettings) error {
-	ctx, span := trace.StartSpan(ctx, "pg_save_version_main_settings")
-	defer span.End()
-
-	// nolint:gocritic
-	// language=PostgreSQL
-	query := `INSERT INTO version_settings (id, version_id, resubmission_period) 
-			VALUES ($1, $2, $3)
-			ON CONFLICT (version_id) DO UPDATE 
-			SET resubmission_period = excluded.resubmission_period`
-
-	_, err := db.Connection.Exec(ctx, query, uuid.New(), params.Id, params.ResubmissionPeriod)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (db *PGCon) AddExternalSystemToVersion(ctx context.Context, versionID, systemID string) error {
 	ctx, span := trace.StartSpan(ctx, "pg_add_external_system_to_version")
 	defer span.End()
@@ -3190,38 +2593,6 @@ func (db *PGCon) GetExternalSystemTaskSubscriptions(ctx context.Context, version
 	return params, nil
 }
 
-func (db *PGCon) GetExternalSystemSettings(ctx context.Context, versionID, systemID string) (entity.ExternalSystem, error) {
-	ctx, span := trace.StartSpan(ctx, "pg_get_external_system_settings")
-	defer span.End()
-
-	// nolint:gocritic
-	// language=PostgreSQL
-	query := `
-	SELECT input_schema, output_schema, input_mapping, output_mapping,
-	microservice_id, ending_url, sending_method, allow_run_as_others
-	FROM external_systems
-	WHERE version_id = $1 AND system_id = $2`
-
-	row := db.Connection.QueryRow(ctx, query, versionID, systemID)
-
-	externalSystemSettings := entity.ExternalSystem{Id: systemID, OutputSettings: &entity.EndSystemSettings{}}
-	err := row.Scan(
-		&externalSystemSettings.InputSchema,
-		&externalSystemSettings.OutputSchema,
-		&externalSystemSettings.InputMapping,
-		&externalSystemSettings.OutputMapping,
-		&externalSystemSettings.OutputSettings.MicroserviceId,
-		&externalSystemSettings.OutputSettings.URL,
-		&externalSystemSettings.OutputSettings.Method,
-		&externalSystemSettings.AllowRunAsOthers,
-	)
-	if err != nil {
-		return externalSystemSettings, err
-	}
-
-	return externalSystemSettings, nil
-}
-
 func (db *PGCon) SaveExternalSystemSubscriptionParams(ctx context.Context, versionID string,
 	params *entity.ExternalSystemSubscriptionParams) error {
 	ctx, span := trace.StartSpan(ctx, "pg_save_external_system_subscription_params")
@@ -3239,53 +2610,6 @@ func (db *PGCon) SaveExternalSystemSubscriptionParams(ctx context.Context, versi
 	if err != nil {
 		return err
 	}
-	return nil
-}
-
-func (db *PGCon) SaveExternalSystemSettings(
-	ctx context.Context, versionID string, system entity.ExternalSystem, schemaFlag *string) error {
-	ctx, span := trace.StartSpan(ctx, "pg_save_external_system_settings")
-	defer span.End()
-
-	args := []interface{}{versionID, system.Id}
-	var schemasForUpdate string
-	if schemaFlag != nil {
-		switch *schemaFlag {
-		case inputSchema:
-			schemasForUpdate = inputSchema + " = $3"
-			args = append(args, system.InputSchema)
-		case outputSchema:
-			schemasForUpdate = outputSchema + " = $3"
-			args = append(args, system.OutputSchema)
-		case inputMapping:
-			schemasForUpdate = inputMapping + " = $3"
-			args = append(args, system.InputMapping)
-		case outputMapping:
-			schemasForUpdate = outputMapping + " = $3"
-			args = append(args, system.OutputMapping)
-		default:
-			return errUnkonwnSchemaFlag
-		}
-	} else {
-		schemasForUpdate = "input_schema = $3, output_schema = $4, input_mapping = $5, output_mapping = $6"
-		args = append(args, system.InputSchema, system.OutputSchema, system.InputMapping, system.OutputMapping)
-	}
-
-	// nolint:gocritic
-	// language=PostgreSQL
-	query := fmt.Sprintf(`UPDATE external_systems
-		SET %s
-		WHERE version_id = $1 AND system_id = $2`, schemasForUpdate)
-
-	commandTag, err := db.Connection.Exec(ctx, query, args...)
-	if err != nil {
-		return err
-	}
-
-	if commandTag.RowsAffected() == 0 {
-		return errCantFindExternalSystem
-	}
-
 	return nil
 }
 
@@ -3429,25 +2753,6 @@ func (db *PGCon) CheckPipelineNameExists(ctx context.Context, name string, check
 	return &pipelineNameExists, nil
 }
 
-func (db *PGCon) UpdateEndingSystemSettings(ctx context.Context, versionID, systemID string, s entity.EndSystemSettings) (err error) {
-	ctx, span := trace.StartSpan(ctx, "pg_update_ending_system_settings")
-	defer span.End()
-
-	// nolint:gocritic
-	// language=PostgreSQL
-	query := `
-	UPDATE external_systems
-	SET (microservice_id, ending_url, sending_method) = ($1, $2, $3)
-	WHERE version_id = $4 AND system_id = $5`
-
-	_, err = db.Connection.Exec(ctx, query, s.MicroserviceId, s.URL, s.Method, versionID, systemID)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (db *PGCon) AllowRunAsOthers(ctx context.Context, versionID, systemID string, allowRunAsOthers bool) (err error) {
 	ctx, span := trace.StartSpan(ctx, "pg_allow_run_as_others")
 	defer span.End()
@@ -3494,47 +2799,4 @@ func (db *PGCon) GetTaskInWorkTime(ctx context.Context, workNumber string) (*ent
 	}
 
 	return &interval, nil
-}
-
-func (db *PGCon) SaveSlaVersionSettings(ctx context.Context, versionID string, s entity.SlaVersionSettings) (err error) {
-	ctx, span := trace.StartSpan(ctx, "pg_save_sla_version_settings")
-	defer span.End()
-
-	// nolint:gocritic
-	// language=PostgreSQL
-	query := `
-	INSERT INTO version_sla (id, version_id, author, created_at, work_type, sla)
-	VALUES ( $1, $2, $3, now(), $4, $5)`
-
-	_, err = db.Connection.Exec(ctx, query, uuid.New(), versionID, s.Author, s.WorkType, s.Sla)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (db *PGCon) GetSlaVersionSettings(ctx context.Context, versionID string) (s entity.SlaVersionSettings, err error) {
-	ctx, span := trace.StartSpan(ctx, "pg_get_sla_version_settings")
-	defer span.End()
-
-	// nolint:gocritic
-	// language=PostgreSQL
-	query := `
-	SELECT author, work_type, sla
-	FROM version_sla
-	WHERE version_id = $1
-	ORDER BY created_at DESC`
-
-	row := db.Connection.QueryRow(ctx, query, versionID)
-	slaSettings := entity.SlaVersionSettings{}
-	err = row.Scan(
-		&slaSettings.Author,
-		&slaSettings.WorkType,
-		&slaSettings.Sla,
-	)
-	if err != nil {
-		return entity.SlaVersionSettings{}, err
-	}
-	return slaSettings, nil
 }
