@@ -2297,13 +2297,13 @@ func (db *PGCon) GetVariableStorage(ctx context.Context, workNumber string) (*st
 	defer span.End()
 
 	const q = `
-		SELECT step_name, vs.content-> 'Values'
+		SELECT step_name, vs.content
 		FROM variable_storage vs 
 			WHERE vs.work_id = (SELECT id FROM works 
 			                 	WHERE work_number = $1 AND child_id IS NULL LIMIT 1) AND 
 			vs.time = (SELECT max(time) FROM variable_storage WHERE work_id = vs.work_id AND step_name = vs.step_name)`
 
-	res := make([]map[string]interface{}, 0)
+	states := make([]map[string]interface{}, 0)
 	rows, err := db.Connection.Query(ctx, q, workNumber)
 	if err != nil {
 		return nil, err
@@ -2312,15 +2312,20 @@ func (db *PGCon) GetVariableStorage(ctx context.Context, workNumber string) (*st
 	defer rows.Close()
 
 	for rows.Next() {
-		stepName := ""
-		values := make(map[string]interface{})
-		if scanErr := rows.Scan(&stepName, &values); scanErr != nil {
+		var stepName string
+		var content []byte
+
+		if scanErr := rows.Scan(&stepName, &content); scanErr != nil {
 			return nil, scanErr
 		}
 
-		values[stepNameVariable] = stepName
+		storage := store.NewStore()
+		if unmErr := json.Unmarshal(content, &storage); unmErr != nil {
+			return nil, unmErr
+		}
 
-		res = append(res, values)
+		storage.Values[stepNameVariable] = stepName
+		states = append(states, storage.Values)
 	}
 
 	if err = rows.Err(); err != nil {
@@ -2328,7 +2333,7 @@ func (db *PGCon) GetVariableStorage(ctx context.Context, workNumber string) (*st
 	}
 
 	storage := &store.VariableStore{
-		Values: mergeValues(res),
+		Values: mergeValues(states),
 	}
 
 	return storage, nil
