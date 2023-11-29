@@ -3,6 +3,7 @@ package pipeline
 import (
 	c "context"
 	"errors"
+	"golang.org/x/net/context"
 	"time"
 
 	e "gitlab.services.mts.ru/abp/mail/pkg/email"
@@ -11,6 +12,11 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
+)
+
+const (
+	downloadImg = "iconDownload.svg"
+	documentImg = "iconDocument.svg"
 )
 
 //nolint:dupl,gocyclo // maybe later
@@ -35,7 +41,7 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 		return err
 	}
 
-	emails := make(map[string]mail.Template, 0)
+	emails := make(map[string]mail.Template)
 
 	task, getVersionErr := gb.RunContext.Services.Storage.GetVersionByWorkNumber(ctx, gb.RunContext.WorkNumber)
 	if getVersionErr != nil {
@@ -82,6 +88,33 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 		WorkType: sla.WorkHourType(gb.State.WorkType),
 	})
 
+	filesAttach, err := gb.RunContext.makeNotificationAttachment()
+	if err != nil {
+		return err
+	}
+
+	attachFields, err := gb.RunContext.getFileField()
+	if err != nil {
+		return err
+	}
+
+	req, skip := sortAndFilterAttachments(filesAttach)
+
+	attach, err := gb.RunContext.Services.FileRegistry.GetAttachments(context.Background(), req)
+	if err != nil {
+		return err
+	}
+
+	attachLinks, err := gb.RunContext.Services.FileRegistry.GetAttachmentLink(context.Background(), skip)
+	if err != nil {
+		return err
+	}
+
+	attachExists := false
+	if len(attach) != 0 {
+		attachExists = true
+	}
+
 	if getSlaInfoErr != nil {
 		return getSlaInfoErr
 	}
@@ -105,6 +138,9 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 					IsGroup:     len(gb.State.Executors) > 1,
 				},
 				gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(time.Now(), gb.State.SLA, slaInfoPtr),
+				attachLinks,
+				attachExists,
+				attachFields,
 			)
 		} else {
 
@@ -136,9 +172,26 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 					ExecutionDecisionExecuted: string(ExecutionDecisionExecuted),
 					ExecutionDecisionRejected: string(ExecutionDecisionRejected),
 					LastWorks:                 lastWorksForUser,
-				},
+				}, attachLinks,
+				attachExists,
+				attachFields,
 			)
 		}
+	}
+
+	iconUser, ok := gb.RunContext.Services.Sender.Images[userImg]
+	if !ok {
+		return errors.New("file not found: " + userImg)
+	}
+
+	iconDownload, dowOk := gb.RunContext.Services.Sender.Images[downloadImg]
+	if !dowOk {
+		return errors.New("file not found: " + downloadImg)
+	}
+
+	iconDocument, docOk := gb.RunContext.Services.Sender.Images[documentImg]
+	if !docOk {
+		return errors.New("file not found: " + downloadImg)
 	}
 
 	for i := range emails {
@@ -147,15 +200,20 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 			return errors.New("file not found: " + emails[i].Image)
 		}
 
-		iconUser, ok := gb.RunContext.Services.Sender.Images[userImg]
-		if !ok {
-			return errors.New("file not found: " + emails[i].Image)
-		}
-
 		files := []e.Attachment{
 			{
 				Name:    headImg,
 				Content: file,
+				Type:    e.EmbeddedAttachment,
+			},
+			{
+				Name:    downloadImg,
+				Content: iconDownload,
+				Type:    e.EmbeddedAttachment,
+			},
+			{
+				Name:    documentImg,
+				Content: iconDocument,
 				Type:    e.EmbeddedAttachment,
 			},
 			{

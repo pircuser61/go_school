@@ -4,6 +4,7 @@ import (
 	c "context"
 	"encoding/json"
 	"fmt"
+	"golang.org/x/net/context"
 	"strings"
 	"time"
 
@@ -384,6 +385,33 @@ func (gb *GoSignBlock) handleNotifications(ctx c.Context) error {
 			*gb.State.SLA, slaInfoPtr)
 	}
 
+	filesAttach, err := gb.RunContext.makeNotificationAttachment()
+	if err != nil {
+		return err
+	}
+
+	attachFields, err := gb.RunContext.getFileField()
+	if err != nil {
+		return err
+	}
+
+	req, skip := sortAndFilterAttachments(filesAttach)
+
+	attach, err := gb.RunContext.Services.FileRegistry.GetAttachments(context.Background(), req)
+	if err != nil {
+		return err
+	}
+
+	attachLinks, err := gb.RunContext.Services.FileRegistry.GetAttachmentLink(context.Background(), skip)
+	if err != nil {
+		return err
+	}
+
+	attachExists := false
+	if len(attach) != 0 {
+		attachExists = true
+	}
+
 	var emails = make(map[string]mail.Template, 0)
 	for _, login := range signers {
 		em, getUserEmailErr := gb.RunContext.Services.People.GetUserEmail(ctx, login)
@@ -399,11 +427,24 @@ func (gb *GoSignBlock) handleNotifications(ctx c.Context) error {
 			slaDeadline,
 			gb.State.AutoReject != nil && *gb.State.AutoReject,
 			description,
+			attachLinks,
+			attachExists,
+			attachFields,
 		)
 	}
 
 	if len(emails) == 0 {
 		return nil
+	}
+
+	iconDownload, dowOk := gb.RunContext.Services.Sender.Images[downloadImg]
+	if !dowOk {
+		return errors.New("file not found: " + downloadImg)
+	}
+
+	iconDocument, docOk := gb.RunContext.Services.Sender.Images[documentImg]
+	if !docOk {
+		return errors.New("file not found: " + documentImg)
 	}
 
 	for i := range emails {
@@ -416,6 +457,16 @@ func (gb *GoSignBlock) handleNotifications(ctx c.Context) error {
 			{
 				Name:    headImg,
 				Content: file,
+				Type:    e.EmbeddedAttachment,
+			},
+			{
+				Name:    downloadImg,
+				Content: iconDownload,
+				Type:    e.EmbeddedAttachment,
+			},
+			{
+				Name:    documentImg,
+				Content: iconDocument,
 				Type:    e.EmbeddedAttachment,
 			},
 		}

@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	c "context"
+	"golang.org/x/net/context"
 	"time"
 
 	"github.com/pkg/errors"
@@ -98,6 +99,33 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 		WorkType: sla.WorkHourType(gb.State.WorkType),
 	})
 
+	filesAttach, err := gb.RunContext.makeNotificationAttachment()
+	if err != nil {
+		return err
+	}
+
+	attachFields, err := gb.RunContext.getFileField()
+	if err != nil {
+		return err
+	}
+
+	req, skip := sortAndFilterAttachments(filesAttach)
+
+	attach, err := gb.RunContext.Services.FileRegistry.GetAttachments(context.Background(), req)
+	if err != nil {
+		return err
+	}
+
+	attachLinks, err := gb.RunContext.Services.FileRegistry.GetAttachmentLink(context.Background(), skip)
+	if err != nil {
+		return err
+	}
+
+	attachExists := false
+	if len(attach) != 0 {
+		attachExists = true
+	}
+
 	if getSlaInfoErr != nil {
 		return getSlaInfoErr
 	}
@@ -138,7 +166,9 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 				ExecutionDecisionRejected: string(ExecutionDecisionRejected),
 				LastWorks:                 lastWorksForUser,
 				Initiator:                 initiatorInfo,
-			})
+			}, attachLinks,
+			attachExists,
+			attachFields)
 	}
 
 	for i := range emails {
@@ -153,6 +183,16 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 			return errors.New("file not found: " + emails[i].Image)
 		}
 
+		iconDownload, dowOk := gb.RunContext.Services.Sender.Images[downloadImg]
+		if !dowOk {
+			return errors.New("file not found: " + downloadImg)
+		}
+
+		iconDocument, docOk := gb.RunContext.Services.Sender.Images[documentImg]
+		if !docOk {
+			return errors.New("file not found: " + downloadImg)
+		}
+
 		files := []e.Attachment{
 			{
 				Name:    headImg,
@@ -162,6 +202,16 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 			{
 				Name:    userImg,
 				Content: iconUser,
+				Type:    e.EmbeddedAttachment,
+			},
+			{
+				Name:    documentImg,
+				Content: iconDocument,
+				Type:    e.EmbeddedAttachment,
+			},
+			{
+				Name:    downloadImg,
+				Content: iconDownload,
 				Type:    e.EmbeddedAttachment,
 			},
 		}

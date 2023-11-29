@@ -79,7 +79,7 @@ func NewService(c Config) (*Service, error) {
 		ReadTimeout:  c.ReadTimeout,
 		WriteTimeout: c.WriteTimeout,
 	}
-	_ = c
+
 	images, err := getImages(c.ImagesPath)
 	if err != nil {
 		return nil, err
@@ -135,7 +135,12 @@ func (s *Service) SendNotification(ctx context.Context, to []string, files []ema
 		}
 	}
 
-	temp, err := template.ParseFiles(headTemp, tmpl.Template)
+	temp, err := template.New("00header-template.html").Funcs(template.FuncMap{
+		"isOrder": isOrder,
+		"retMap":  retMap,
+		"isLink":  isLink,
+		"isFile":  isFile,
+	}).ParseFiles(headTemp, tmpl.Template)
 	if err != nil {
 		return err
 	}

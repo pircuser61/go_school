@@ -298,10 +298,10 @@ func createGoNotificationBlock(ctx context.Context, name string, ef *entity.Eriu
 	return b, reEntry, nil
 }
 
-func sortAndFilterAttachments(files []file_registry.FileInfo) (requiredFiles []entity.Attachment, skippedFiles []string) {
-	const attachmentsLimitMB = 35
+func sortAndFilterAttachments(files []file_registry.FileInfo) (requiredFiles []entity.Attachment, skippedFiles []file_registry.AttachInfo) {
+	const attachmentsLimitMB = 20
 	var limitCounter float64
-	skippedFiles = make([]string, 0)
+	skippedFiles = make([]file_registry.AttachInfo, 0)
 
 	sort.Slice(files, func(i, j int) bool {
 		return files[i].Size < files[j].Size
@@ -313,7 +313,7 @@ func sortAndFilterAttachments(files []file_registry.FileInfo) (requiredFiles []e
 		if limitCounter <= attachmentsLimitMB {
 			requiredFiles = append(requiredFiles, entity.Attachment{FileID: files[i].FileId}) // store fileIDs to get files later
 		} else {
-			skippedFiles = append(skippedFiles, files[i].Name) // store file names to use them in template
+			skippedFiles = append(skippedFiles, file_registry.AttachInfo{FileId: files[i].FileId, Name: files[i].Name, Size: files[i].Size}) // store file names to use them in template
 		}
 	}
 

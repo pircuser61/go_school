@@ -4,6 +4,7 @@ import (
 	c "context"
 	"encoding/json"
 	"fmt"
+	"golang.org/x/net/context"
 	"time"
 
 	"github.com/pkg/errors"
@@ -803,6 +804,33 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 		}
 	}
 
+	filesAttach, err := gb.RunContext.makeNotificationAttachment()
+	if err != nil {
+		return err
+	}
+
+	attachFields, err := gb.RunContext.getFileField()
+	if err != nil {
+		return err
+	}
+
+	req, skip := sortAndFilterAttachments(filesAttach)
+
+	attach, err := gb.RunContext.Services.FileRegistry.GetAttachments(context.Background(), req)
+	if err != nil {
+		return err
+	}
+
+	attachLinks, err := gb.RunContext.Services.FileRegistry.GetAttachmentLink(context.Background(), skip)
+	if err != nil {
+		return err
+	}
+
+	attachExists := false
+	if len(attach) != 0 {
+		attachExists = true
+	}
+
 	tpl := mail.NewExecutionTakenInWorkTpl(&mail.ExecutorNotifTemplate{
 		WorkNumber:  gb.RunContext.WorkNumber,
 		Name:        gb.RunContext.NotifName,
@@ -812,17 +840,49 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 		Initiator:   initiatorInfo,
 		LastWorks:   lastWorksForUser,
 		Mailto:      gb.RunContext.Services.Sender.FetchEmail,
-	})
+	}, attachLinks,
+		attachExists,
+		attachFields)
 
 	file, ok := gb.RunContext.Services.Sender.Images[tpl.Image]
 	if !ok {
 		return errors.New("file not found: " + tpl.Image)
 	}
 
+	iconUser, iOk := gb.RunContext.Services.Sender.Images[userImg]
+	if !iOk {
+		return errors.New("file not found: " + tpl.Image)
+	}
+
+	iconDownload, dowOk := gb.RunContext.Services.Sender.Images[downloadImg]
+	if !dowOk {
+		return errors.New("file not found: " + downloadImg)
+	}
+
+	iconDocument, docOk := gb.RunContext.Services.Sender.Images[documentImg]
+	if !docOk {
+		return errors.New("file not found: " + documentImg)
+	}
+
 	files := []e.Attachment{
 		{
 			Name:    headImg,
 			Content: file,
+			Type:    e.EmbeddedAttachment,
+		},
+		{
+			Name:    downloadImg,
+			Content: iconDownload,
+			Type:    e.EmbeddedAttachment,
+		},
+		{
+			Name:    documentImg,
+			Content: iconDocument,
+			Type:    e.EmbeddedAttachment,
+		},
+		{
+			Name:    userImg,
+			Content: iconUser,
 			Type:    e.EmbeddedAttachment,
 		},
 	}
@@ -874,22 +934,30 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 			ExecutionDecisionExecuted: string(ExecutionDecisionExecuted),
 			ExecutionDecisionRejected: string(ExecutionDecisionRejected),
 			LastWorks:                 lastWorksForUser,
-		})
+		}, attachLinks,
+		attachExists,
+		attachFields,
+	)
 
 	header, hOk := gb.RunContext.Services.Sender.Images[tpl.Image]
 	if !hOk {
 		return errors.New("file not found: " + tpl.Image)
 	}
 
-	iconUser, iOk := gb.RunContext.Services.Sender.Images[userImg]
-	if !iOk {
-		return errors.New("file not found: iconUser.svg")
-	}
-
 	listFiles := []e.Attachment{
 		{
 			Name:    headImg,
 			Content: header,
+			Type:    e.EmbeddedAttachment,
+		},
+		{
+			Name:    downloadImg,
+			Content: iconDownload,
+			Type:    e.EmbeddedAttachment,
+		},
+		{
+			Name:    documentImg,
+			Content: iconDocument,
 			Type:    e.EmbeddedAttachment,
 		},
 		{

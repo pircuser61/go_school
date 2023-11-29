@@ -56,6 +56,23 @@ func NewService(cfg Config) (*Service, error) {
 	}, nil
 }
 
+func (s *Service) GetAttachmentLink(ctx context.Context, skipedList []AttachInfo) ([]AttachInfo, error) {
+	_, span := trace.StartSpan(ctx, "get_attachment_info")
+	defer span.End()
+
+	for k, v := range skipedList {
+		link, err := s.grpcCLi.GetFileLinkById(ctx, &fileregistry.GetFileLinkRequest{
+			FileId: v.FileId,
+		})
+		if err != nil {
+			return nil, err
+		}
+		skipedList[k].ExternalLink = link.Url
+	}
+
+	return skipedList, nil
+}
+
 func (s *Service) getAttachmentInfo(ctx context.Context, fileId string) (FileInfo, error) {
 	_, span := trace.StartSpan(ctx, "get_attachment_info")
 	defer span.End()

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	c "context"
 	"encoding/json"
+	"log"
 	"net/http"
 	"time"
 
@@ -470,6 +471,51 @@ func (runCtx *BlockRunContext) updateStepInDB(ctx c.Context, name string, id uui
 	})
 }
 
+func (runCtx *BlockRunContext) getFileField() ([]string, error) {
+	task, err := runCtx.Services.Storage.GetTaskRunContext(context.Background(), runCtx.WorkNumber)
+	if err != nil {
+		return nil, err
+	}
+
+	return task.InitialApplication.AttachmentFields, nil
+}
+
+func (runCtx *BlockRunContext) makeNotificationAttachment() ([]file_registry.FileInfo, error) {
+	task, err := runCtx.Services.Storage.GetTaskRunContext(context.Background(), runCtx.WorkNumber)
+	if err != nil {
+		return nil, err
+	}
+
+	attachments := make([]entity.Attachment, 0)
+	mapFiles := make(map[string][]entity.Attachment)
+	for _, v := range task.InitialApplication.AttachmentFields {
+		filesAttach, ok := task.InitialApplication.ApplicationBody.Get(v)
+		if ok {
+			for _, vv := range filesAttach.([]interface{}) {
+				fileMap := vv.(orderedmap.OrderedMap)
+				fileId, _ := fileMap.Get("file_id")
+				attachments = append(attachments, entity.Attachment{FileID: fileId.(string)})
+			}
+		} else {
+			log.Println("Поле без вложений: ", v)
+		}
+	}
+
+	mapFiles["files"] = attachments
+
+	file, err := runCtx.Services.FileRegistry.GetAttachmentsInfo(context.Background(), mapFiles)
+	if err != nil {
+		return nil, err
+	}
+
+	ta := make([]file_registry.FileInfo, 0)
+	for _, v := range file["files"] {
+		ta = append(ta, file_registry.FileInfo{FileId: v.FileId, Size: v.Size, Name: v.Name})
+	}
+
+	return ta, nil
+}
+
 func (runCtx *BlockRunContext) makeNotificationDescription() (*orderedmap.OrderedMap, error) {
 	descr, err := runCtx.Services.Storage.GetTaskRunContext(context.Background(), runCtx.WorkNumber)
 	if err != nil {
@@ -522,6 +568,30 @@ func (runCtx *BlockRunContext) handleInitiatorNotify(ctx c.Context, params handl
 		return err
 	}
 
+	filesAttach, err := runCtx.makeNotificationAttachment()
+	if err != nil {
+		return err
+	}
+
+	attachFields, err := runCtx.getFileField()
+	if err != nil {
+		return err
+	}
+
+	req, skip := sortAndFilterAttachments(filesAttach)
+
+	attach, err := runCtx.Services.FileRegistry.GetAttachments(context.Background(), req)
+	if err != nil {
+		log.Println("Error get attachments: ", req, err)
+		return err
+	}
+
+	attachLinks, err := runCtx.Services.FileRegistry.GetAttachmentLink(context.Background(), skip)
+	if err != nil {
+		log.Println("Error get attachments link: ", skip, err)
+		return err
+	}
+
 	loginsToNotify := []string{runCtx.Initiator}
 
 	var email string
@@ -539,17 +609,35 @@ func (runCtx *BlockRunContext) handleInitiatorNotify(ctx c.Context, params handl
 		params.action = statusToTaskState[params.status]
 	}
 
+	attachExists := false
+	if len(attach) != 0 {
+		attachExists = true
+	}
+
 	tmpl := mail.NewAppInitiatorStatusNotificationTpl(
 		runCtx.WorkNumber,
 		runCtx.NotifName,
 		params.action,
 		runCtx.Services.Sender.SdAddress,
 		description,
+		attachLinks,
+		attachExists,
+		attachFields,
 	)
 
 	file, ok := runCtx.Services.Sender.Images[tmpl.Image]
 	if !ok {
 		return errors.New("file not found: " + tmpl.Image)
+	}
+
+	iconDownload, dowOk := runCtx.Services.Sender.Images[downloadImg]
+	if !dowOk {
+		return errors.New("file not found: " + downloadImg)
+	}
+
+	iconDocument, docOk := runCtx.Services.Sender.Images[documentImg]
+	if !docOk {
+		return errors.New("file not found: " + documentImg)
 	}
 
 	files := []e.Attachment{
@@ -558,7 +646,19 @@ func (runCtx *BlockRunContext) handleInitiatorNotify(ctx c.Context, params handl
 			Content: file,
 			Type:    e.EmbeddedAttachment,
 		},
+		{
+			Name:    downloadImg,
+			Content: iconDownload,
+			Type:    e.EmbeddedAttachment,
+		},
+		{
+			Name:    documentImg,
+			Content: iconDocument,
+			Type:    e.EmbeddedAttachment,
+		},
 	}
+
+	files = append(files, attach...)
 
 	if sendErr := runCtx.Services.Sender.SendNotification(ctx, emails, files, tmpl); sendErr != nil {
 		return sendErr

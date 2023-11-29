@@ -4,6 +4,8 @@ import (
 	c "context"
 	"encoding/json"
 	"fmt"
+	"golang.org/x/net/context"
+	"log"
 	"time"
 
 	"github.com/pkg/errors"
@@ -394,6 +396,35 @@ func (gb *GoFormBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork strin
 		return err
 	}
 
+	filesAttach, err := gb.RunContext.makeNotificationAttachment()
+	if err != nil {
+		return err
+	}
+
+	attachFields, err := gb.RunContext.getFileField()
+	if err != nil {
+		return err
+	}
+
+	req, skip := sortAndFilterAttachments(filesAttach)
+
+	attach, err := gb.RunContext.Services.FileRegistry.GetAttachments(context.Background(), req)
+	if err != nil {
+		log.Println("Error get attachments: ", req, err)
+		return err
+	}
+
+	attachLinks, err := gb.RunContext.Services.FileRegistry.GetAttachmentLink(context.Background(), skip)
+	if err != nil {
+		log.Println("Error get attachments link: ", skip, err)
+		return err
+	}
+
+	attachExists := false
+	if len(attach) != 0 {
+		attachExists = true
+	}
+
 	tpl := mail.NewFormExecutionTakenInWorkTpl(
 		&mail.ExecutorNotifTemplate{
 			WorkNumber:  gb.RunContext.WorkNumber,
@@ -404,6 +435,9 @@ func (gb *GoFormBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork strin
 			Initiator:   inititatorInfo,
 			Mailto:      gb.RunContext.Services.Sender.FetchEmail,
 		},
+		attachLinks,
+		attachExists,
+		attachFields,
 	)
 
 	file, ok := gb.RunContext.Services.Sender.Images[tpl.Image]
@@ -415,10 +449,31 @@ func (gb *GoFormBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork strin
 	if !iOk {
 		return errors.New("file not found: " + tpl.Image)
 	}
+
+	iconDownload, dowOk := gb.RunContext.Services.Sender.Images[downloadImg]
+	if !dowOk {
+		return errors.New("file not found: " + tpl.Image)
+	}
+
+	iconDocument, docOk := gb.RunContext.Services.Sender.Images[documentImg]
+	if !docOk {
+		return errors.New("file not found: " + tpl.Image)
+	}
+
 	files := []e.Attachment{
 		{
 			Name:    headImg,
 			Content: file,
+			Type:    e.EmbeddedAttachment,
+		},
+		{
+			Name:    downloadImg,
+			Content: iconDownload,
+			Type:    e.EmbeddedAttachment,
+		},
+		{
+			Name:    documentImg,
+			Content: iconDocument,
 			Type:    e.EmbeddedAttachment,
 		},
 		{

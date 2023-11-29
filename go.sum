@@ -261,6 +261,7 @@ github.com/gopherjs/gopherjs v0.0.0-20181017120253-0766667cb4d1/go.mod h1:wJfORR
 github.com/gorilla/securecookie v1.1.1/go.mod h1:ra0sb63/xPlUeL+yeDciTfxMRAA+MP+HVt/4epWDjd4=
 github.com/gorilla/sessions v1.2.1/go.mod h1:dk2InVEVJ0sfLlnXv9EAgkf6ecYs/i80K/zI+bUmuGM=
 github.com/gorilla/websocket v1.4.0/go.mod h1:E7qHFY5m1UJ88s3WnNqhKjPHQ0heANvMoAMk2YaljkQ=
+github.com/grpc-ecosystem/grpc-gateway v1.16.0 h1:gmcG1KaJ57LophUzW0Hy8NmPhnMZb4M0+kPpLofRdBo=
 github.com/grpc-ecosystem/grpc-gateway v1.16.0/go.mod h1:BDjrQk3hbvj6Nolgz8mAMFbcEtjT1g+wF4CSlocrBnw=
 github.com/grpc-ecosystem/grpc-gateway/v2 v2.5.0/go.mod h1:r1hZAcvfFXuYmcKyCJI9wlyOPIZUJl6FCB8Cpca/NLE=
 github.com/grpc-ecosystem/grpc-gateway/v2 v2.17.1 h1:LSsiG61v9IzzxMkqEr6nrix4miJI62xlRjwT7BYD2SM=
@@ -607,8 +608,8 @@ gitlab.services.mts.ru/abp/myosotis v1.4.4 h1:De8ST0tK1aZKnVFvOd1a3FReloOh3hl6G3
 gitlab.services.mts.ru/abp/myosotis v1.4.4/go.mod h1:x1TTaEJ+kgNbCkQViA5eWgnNLAprspL6qJWJWkhVZFE=
 gitlab.services.mts.ru/jocasta/conditions-kit v1.0.9 h1:P5majeENiPzqlb0HzgsEJRzo7NOJNS1ifWZKJXrrwdw=
 gitlab.services.mts.ru/jocasta/conditions-kit v1.0.9/go.mod h1:jXNMNsVS3a0g3RML5d2HEw9NRipvE/V+A44O5ffePr8=
-gitlab.services.mts.ru/jocasta/file-registry v1.1.2-rc.1 h1:KDG7ZfhKbqwB5we4i7mjfEp7P1LLOm3iU+zu4PYD0y0=
-gitlab.services.mts.ru/jocasta/file-registry v1.1.2-rc.1/go.mod h1:/otsOvcT23tOs3a7Mtay4MB+58VKIDkwlnS4gzOS5Kc=
+gitlab.services.mts.ru/jocasta/file-registry v1.4.0 h1:DoUWZmVSwkKTJ/1eMcuAatEOYunvAIcGA4CMShta58o=
+gitlab.services.mts.ru/jocasta/file-registry v1.4.0/go.mod h1:nKSDD0s9LOFfnYjgY1CJnCs8AA0Pa76P3h3WpJIH0/s=
 gitlab.services.mts.ru/jocasta/forms v1.0.0-alpha.1 h1:TnRdahGzSxmTysW065+Rd0ZKfd84CUCziCf2dPZZM7Y=
 gitlab.services.mts.ru/jocasta/forms v1.0.0-alpha.1/go.mod h1:PIbWjThxX2EFcLjWmeJ2LRNKK3BUakWvTZbT0aB2UhU=
 gitlab.services.mts.ru/jocasta/functions v1.5.0-alpha.2 h1:pYrpp2rBRmSYz+yKxj0U/lyqa+CrStWUJ4nAd5H5j4w=

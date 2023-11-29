@@ -38,7 +38,7 @@
             url(./fonts/MTSWide-Regular.woff2) format("woff2"),
             url(./fonts/MTSWide-Regular.woff) format("woff");
             font-weight: 400;
-            font-style: normal;            
+            font-style: normal;
             font-display: swap;
         }
         @font-face {
@@ -47,14 +47,14 @@
             url(./fonts/MTSWide-Medium.woff2) format("woff2"),
             url(./fonts/MTSWide-Medium.woff) format("woff");
             font-weight: 500;
-            font-style: normal;            
+            font-style: normal;
             font-display: swap;
         }
         @font-face {
             font-family: "MTS Text";
             src: url("MTSText-Regular"),
             url(./fonts/MTSText-Regular.woff2) format("woff2"),
-            url(./fonts/MTSText-Regular.woff) format("woff");            
+            url(./fonts/MTSText-Regular.woff) format("woff");
             font-weight: 400;
             font-style: normal;
             font-display: swap;
@@ -63,16 +63,16 @@
             font-family: "MTS Text";
             src: url("MTSText-Medium"),
             url(./fonts/MTSText-Medium.woff2) format("woff2"),
-            url(./fonts/MTSText-Medium.woff) format("woff");            
+            url(./fonts/MTSText-Medium.woff) format("woff");
             font-weight: 500;
             font-style: normal;
             font-display: swap;
-        }        
+        }
         @font-face {
             font-family: "MTS Compact";
             src: url("MTSCompact-Regular"),
             url(./fonts/MTSCompact-Regular.woff2) format("woff2"),
-            url(./fonts/MTSCompact-Regular.woff) format("woff");            
+            url(./fonts/MTSCompact-Regular.woff) format("woff");
             font-weight: 400;
             font-style: normal;
             font-display: swap;
@@ -81,7 +81,7 @@
             font-family: "MTS Compact";
             src: url("MTSCompact-Medium"),
             url(./fonts/MTSCompact-Medium.woff2) format("woff2"),
-            url(./fonts/MTSCompact-Medium.woff) format("woff");            
+            url(./fonts/MTSCompact-Medium.woff) format("woff");
             font-weight: 500;
             font-style: normal;
             font-display: swap;
@@ -91,6 +91,7 @@
         }
     </style>
 </head>
+<body>
     <table cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse; mso-table-lspace: 0pt; mso-table-rspace: 0pt;">
         <tr>
             <td align="center" style="border-collapse: collapse;">
@@ -99,11 +100,12 @@
                         <td align="center" valign="center" style="border-collapse: collapse;">
                             <img src="cid:header.png" alt="Header" style="outline: none; text-decoration: none; border: none; -ms-interpolation-mode: bicubic; max-width: 100%; margin: 0; padding: 0;"/>
                         </td>
-                </table>
-                </div>                
+                    </table>
+                </div>
             </td>
         </tr>
     </table>
     {{ block "body" .}}
     {{ end }}
+</body>
 </html>

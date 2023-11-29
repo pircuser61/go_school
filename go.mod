@@ -31,7 +31,7 @@ require (
 	gitlab.services.mts.ru/abp/mail/pkg v1.19.0
 	gitlab.services.mts.ru/abp/myosotis v1.4.4
 	gitlab.services.mts.ru/jocasta/conditions-kit v1.0.9
-	gitlab.services.mts.ru/jocasta/file-registry v1.1.2-rc.1
+	gitlab.services.mts.ru/jocasta/file-registry v1.4.0
 	gitlab.services.mts.ru/jocasta/forms v1.0.0-alpha.1
 	gitlab.services.mts.ru/jocasta/functions v1.5.0-alpha.2
 	gitlab.services.mts.ru/jocasta/human-tasks v1.0.0-alpha.3
@@ -67,6 +67,7 @@ require (
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
+	github.com/grpc-ecosystem/grpc-gateway v1.16.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.17.1 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
