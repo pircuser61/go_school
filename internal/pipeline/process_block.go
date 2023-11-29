@@ -613,7 +613,7 @@ func (runCtx *BlockRunContext) handleInitiatorNotify(ctx c.Context, params handl
 	if len(attach) != 0 {
 		attachExists = true
 	}
-	//id, name, action, sdUrl string, description *orderedmap.OrderedMap, links []file_registry.AttachInfo, attachFilesExist bool, attachFields
+
 	tmpl := mail.NewAppInitiatorStatusNotificationTpl(
 		&mail.SignerNotifTemplate{
 			WorkNumber:   runCtx.WorkNumber,
