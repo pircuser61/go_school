@@ -121,7 +121,7 @@ FROM pipeliner.public.variable_storage vs1
 INNER JOIN (
     SELECT work_id, min(time) AS first_create_approve
     FROM pipeliner.public.variable_storage
-    WHERE step_name = 'approver_0'
+    WHERE step_type = 'approver'
     GROUP BY work_id
 ) vs2
     ON vs1.work_id = vs2.work_id
