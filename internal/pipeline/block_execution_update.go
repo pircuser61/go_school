@@ -4,7 +4,6 @@ import (
 	c "context"
 	"encoding/json"
 	"fmt"
-	"golang.org/x/net/context"
 	"time"
 
 	"github.com/pkg/errors"
@@ -816,12 +815,12 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 
 	req, skip := sortAndFilterAttachments(filesAttach)
 
-	attach, err := gb.RunContext.Services.FileRegistry.GetAttachments(context.Background(), req)
+	attach, err := gb.RunContext.Services.FileRegistry.GetAttachments(c.Background(), req)
 	if err != nil {
 		return err
 	}
 
-	attachLinks, err := gb.RunContext.Services.FileRegistry.GetAttachmentLink(context.Background(), skip)
+	attachLinks, err := gb.RunContext.Services.FileRegistry.GetAttachmentLink(c.Background(), skip)
 	if err != nil {
 		return err
 	}
@@ -832,17 +831,18 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 	}
 
 	tpl := mail.NewExecutionTakenInWorkTpl(&mail.ExecutorNotifTemplate{
-		WorkNumber:  gb.RunContext.WorkNumber,
-		Name:        gb.RunContext.NotifName,
-		SdUrl:       gb.RunContext.Services.Sender.SdAddress,
-		Description: description,
-		Executor:    typedAuthor,
-		Initiator:   initiatorInfo,
-		LastWorks:   lastWorksForUser,
-		Mailto:      gb.RunContext.Services.Sender.FetchEmail,
-	}, attachLinks,
-		attachExists,
-		attachFields)
+		WorkNumber:   gb.RunContext.WorkNumber,
+		Name:         gb.RunContext.NotifName,
+		SdUrl:        gb.RunContext.Services.Sender.SdAddress,
+		Description:  description,
+		Executor:     typedAuthor,
+		Initiator:    initiatorInfo,
+		LastWorks:    lastWorksForUser,
+		Mailto:       gb.RunContext.Services.Sender.FetchEmail,
+		AttachLinks:  attachLinks,
+		AttachExists: attachExists,
+		AttachFields: attachFields,
+	})
 
 	file, ok := gb.RunContext.Services.Sender.Images[tpl.Image]
 	if !ok {
@@ -934,10 +934,12 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 			ExecutionDecisionExecuted: string(ExecutionDecisionExecuted),
 			ExecutionDecisionRejected: string(ExecutionDecisionRejected),
 			LastWorks:                 lastWorksForUser,
-		}, attachLinks,
-		attachExists,
-		attachFields,
-	)
+		},
+		&mail.SignerNotifTemplate{
+			AttachFields: attachFields,
+			AttachExists: attachExists,
+			AttachLinks:  attachLinks,
+		})
 
 	header, hOk := gb.RunContext.Services.Sender.Images[tpl.Image]
 	if !hOk {

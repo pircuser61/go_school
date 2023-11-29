@@ -2,7 +2,6 @@ package pipeline
 
 import (
 	c "context"
-	"golang.org/x/net/context"
 	"time"
 
 	"github.com/pkg/errors"
@@ -111,12 +110,12 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 
 	req, skip := sortAndFilterAttachments(filesAttach)
 
-	attach, err := gb.RunContext.Services.FileRegistry.GetAttachments(context.Background(), req)
+	attach, err := gb.RunContext.Services.FileRegistry.GetAttachments(c.Background(), req)
 	if err != nil {
 		return err
 	}
 
-	attachLinks, err := gb.RunContext.Services.FileRegistry.GetAttachmentLink(context.Background(), skip)
+	attachLinks, err := gb.RunContext.Services.FileRegistry.GetAttachmentLink(c.Background(), skip)
 	if err != nil {
 		return err
 	}
@@ -166,9 +165,12 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 				ExecutionDecisionRejected: string(ExecutionDecisionRejected),
 				LastWorks:                 lastWorksForUser,
 				Initiator:                 initiatorInfo,
-			}, attachLinks,
-			attachExists,
-			attachFields)
+			},
+			&mail.SignerNotifTemplate{
+				AttachFields: attachFields,
+				AttachExists: attachExists,
+				AttachLinks:  attachLinks,
+			})
 	}
 
 	for i := range emails {

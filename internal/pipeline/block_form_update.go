@@ -427,18 +427,17 @@ func (gb *GoFormBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork strin
 
 	tpl := mail.NewFormExecutionTakenInWorkTpl(
 		&mail.ExecutorNotifTemplate{
-			WorkNumber:  gb.RunContext.WorkNumber,
-			Name:        gb.RunContext.NotifName,
-			SdUrl:       gb.RunContext.Services.Sender.SdAddress,
-			Description: description,
-			Executor:    typeExecutor,
-			Initiator:   inititatorInfo,
-			Mailto:      gb.RunContext.Services.Sender.FetchEmail,
-		},
-		attachLinks,
-		attachExists,
-		attachFields,
-	)
+			WorkNumber:   gb.RunContext.WorkNumber,
+			Name:         gb.RunContext.NotifName,
+			SdUrl:        gb.RunContext.Services.Sender.SdAddress,
+			Description:  description,
+			Executor:     typeExecutor,
+			Initiator:    inititatorInfo,
+			Mailto:       gb.RunContext.Services.Sender.FetchEmail,
+			AttachExists: attachExists,
+			AttachFields: attachFields,
+			AttachLinks:  attachLinks,
+		})
 
 	file, ok := gb.RunContext.Services.Sender.Images[tpl.Image]
 	if !ok {

@@ -419,18 +419,20 @@ func (gb *GoSignBlock) handleNotifications(ctx c.Context) error {
 			l.WithField("login", login).WithError(getUserEmailErr).Warning("couldn't get email")
 			continue
 		}
-
+		//		id, name, sdUrl, deadline string, autoReject bool, description *orderedmap.OrderedMap, links []file_registry.AttachInfo, exists bool, fields []string
 		emails[em] = mail.NewSignerNotificationTpl(
-			gb.RunContext.WorkNumber,
-			gb.RunContext.NotifName,
-			gb.RunContext.Services.Sender.SdAddress,
-			slaDeadline,
-			gb.State.AutoReject != nil && *gb.State.AutoReject,
-			description,
-			attachLinks,
-			attachExists,
-			attachFields,
-		)
+			&mail.SignerNotifTemplate{
+				gb.RunContext.WorkNumber,
+				gb.RunContext.NotifName,
+				gb.RunContext.Services.Sender.SdAddress,
+				slaDeadline,
+				gb.State.AutoReject != nil && *gb.State.AutoReject,
+				description,
+				attachLinks,
+				attachExists,
+				attachFields,
+				"",
+			})
 	}
 
 	if len(emails) == 0 {

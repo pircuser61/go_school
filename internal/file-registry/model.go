@@ -8,7 +8,7 @@ type FileInfo struct {
 }
 
 type AttachInfo struct {
-	FileId       string
+	FileID       string
 	Name         string
 	CreatedAt    string
 	Size         int64

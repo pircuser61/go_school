@@ -3,7 +3,6 @@ package pipeline
 import (
 	c "context"
 	"errors"
-	"golang.org/x/net/context"
 	"time"
 
 	e "gitlab.services.mts.ru/abp/mail/pkg/email"
@@ -100,12 +99,12 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 
 	req, skip := sortAndFilterAttachments(filesAttach)
 
-	attach, err := gb.RunContext.Services.FileRegistry.GetAttachments(context.Background(), req)
+	attach, err := gb.RunContext.Services.FileRegistry.GetAttachments(c.Background(), req)
 	if err != nil {
 		return err
 	}
 
-	attachLinks, err := gb.RunContext.Services.FileRegistry.GetAttachmentLink(context.Background(), skip)
+	attachLinks, err := gb.RunContext.Services.FileRegistry.GetAttachmentLink(c.Background(), skip)
 	if err != nil {
 		return err
 	}
@@ -127,20 +126,20 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 		if !gb.State.IsTakenInWork {
 			emails[email] = mail.NewExecutionNeedTakeInWorkTpl(
 				&mail.ExecutorNotifTemplate{
-					WorkNumber:  gb.RunContext.WorkNumber,
-					Name:        gb.RunContext.NotifName,
-					SdUrl:       gb.RunContext.Services.Sender.SdAddress,
-					BlockID:     BlockGoExecutionID,
-					Description: description,
-					Mailto:      gb.RunContext.Services.Sender.FetchEmail,
-					Login:       login,
-					LastWorks:   lastWorksForUser,
-					IsGroup:     len(gb.State.Executors) > 1,
+					WorkNumber:   gb.RunContext.WorkNumber,
+					Name:         gb.RunContext.NotifName,
+					SdUrl:        gb.RunContext.Services.Sender.SdAddress,
+					BlockID:      BlockGoExecutionID,
+					Description:  description,
+					Mailto:       gb.RunContext.Services.Sender.FetchEmail,
+					Login:        login,
+					LastWorks:    lastWorksForUser,
+					IsGroup:      len(gb.State.Executors) > 1,
+					Deadline:     gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(time.Now(), gb.State.SLA, slaInfoPtr),
+					AttachLinks:  attachLinks,
+					AttachExists: attachExists,
+					AttachFields: attachFields,
 				},
-				gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(time.Now(), gb.State.SLA, slaInfoPtr),
-				attachLinks,
-				attachExists,
-				attachFields,
 			)
 		} else {
 
@@ -172,10 +171,11 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 					ExecutionDecisionExecuted: string(ExecutionDecisionExecuted),
 					ExecutionDecisionRejected: string(ExecutionDecisionRejected),
 					LastWorks:                 lastWorksForUser,
-				}, attachLinks,
-				attachExists,
-				attachFields,
-			)
+				}, &mail.SignerNotifTemplate{
+					AttachFields: attachFields,
+					AttachExists: attachExists,
+					AttachLinks:  attachLinks,
+				})
 		}
 	}
 
@@ -195,8 +195,8 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 	}
 
 	for i := range emails {
-		file, ok := gb.RunContext.Services.Sender.Images[emails[i].Image]
-		if !ok {
+		file, oks := gb.RunContext.Services.Sender.Images[emails[i].Image]
+		if !oks {
 			return errors.New("file not found: " + emails[i].Image)
 		}
 
@@ -269,8 +269,8 @@ func (gb *GoExecutionBlock) notifyNeedRework(ctx c.Context) error {
 		},
 	}
 
-	if err = gb.RunContext.Services.Sender.SendNotification(ctx, emails, files, tpl); err != nil {
-		return err
+	if sendErr := gb.RunContext.Services.Sender.SendNotification(ctx, emails, files, tpl); sendErr != nil {
+		return sendErr
 	}
 
 	return nil
@@ -347,8 +347,8 @@ func (gb *GoExecutionBlock) notifyNewInfoReceived(ctx c.Context) error {
 		},
 	}
 
-	if err = gb.RunContext.Services.Sender.SendNotification(ctx, emails, files, tpl); err != nil {
-		return err
+	if sendErr := gb.RunContext.Services.Sender.SendNotification(ctx, emails, files, tpl); sendErr != nil {
+		return sendErr
 	}
 
 	return nil

@@ -62,7 +62,7 @@ func (s *Service) GetAttachmentLink(ctx context.Context, skipedList []AttachInfo
 
 	for k, v := range skipedList {
 		link, err := s.grpcCLi.GetFileLinkById(ctx, &fileregistry.GetFileLinkRequest{
-			FileId: v.FileId,
+			FileId: v.FileID,
 		})
 		if err != nil {
 			return nil, err

@@ -3,9 +3,7 @@ package mail
 import (
 	"fmt"
 	file_registry "gitlab.services.mts.ru/jocasta/pipeliner/internal/file-registry"
-	"log"
 	"math"
-	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -36,18 +34,37 @@ type Notification struct {
 	To       []string
 }
 
+//		id, name, sdUrl, deadline string, autoReject bool, description *orderedmap.OrderedMap, links []file_registry.AttachInfo, exists bool, fields []string
+
+type SignerNotifTemplate struct {
+	WorkNumber   string
+	Name         string
+	SdUrl        string
+	Deadline     string
+	AutoReject   bool
+	Description  *orderedmap.OrderedMap
+	AttachLinks  []file_registry.AttachInfo
+	AttachExists bool
+	AttachFields []string
+	Action       string
+}
+
 type ExecutorNotifTemplate struct {
-	WorkNumber  string
-	Name        string
-	SdUrl       string
-	Executor    *sso.UserInfo
-	Initiator   *sso.UserInfo
-	Description *orderedmap.OrderedMap
-	BlockID     string
-	Mailto      string
-	Login       string
-	IsGroup     bool
-	LastWorks   []*entity.EriusTask
+	WorkNumber   string
+	Name         string
+	SdUrl        string
+	Executor     *sso.UserInfo
+	Initiator    *sso.UserInfo
+	Description  *orderedmap.OrderedMap
+	BlockID      string
+	Mailto       string
+	Login        string
+	IsGroup      bool
+	LastWorks    []*entity.EriusTask
+	Deadline     string
+	AttachLinks  []file_registry.AttachInfo
+	AttachExists bool
+	AttachFields []string
 }
 
 type LastWork struct {
@@ -358,14 +375,12 @@ func isLink(v interface{}) bool {
 }
 
 func isFile(v interface{}) bool {
-
 	vv, ok := v.([]interface{})
 	if !ok {
 		return false
 	}
 
-	for k, vs := range vv {
-		log.Printf("Key %v | Value %v", k, reflect.TypeOf(vs))
+	for _, vs := range vv {
 		vvs, oks := vs.(orderedmap.OrderedMap)
 		if !oks {
 			return false
@@ -374,24 +389,23 @@ func isFile(v interface{}) bool {
 		if _, fileOks := vvs.Get("file_id"); fileOks {
 			return true
 		}
-
 	}
 
 	return true
 }
 
-func NewAppInitiatorStatusNotificationTpl(id, name, action, sdUrl string, description *orderedmap.OrderedMap, links []file_registry.AttachInfo, attachFilesExist bool, attachFields []string) Template {
-	subject := fmt.Sprintf("Заявка %s %s %s", id, name, action)
-	textPart := fmt.Sprintf(`Уважаемый коллега, <span style="font-weight: 500;">заявка %s %s <b>%s</b></span>`, id, name, action)
+func NewAppInitiatorStatusNotificationTpl(dto *SignerNotifTemplate) Template {
+	subject := fmt.Sprintf("Заявка %s %s %s", dto.WorkNumber, dto.Name, dto.Action)
+	textPart := fmt.Sprintf(`Уважаемый коллега, <span style="font-weight: 500;">заявка %s %s <b>%s</b></span>`, dto.WorkNumber, dto.Name, dto.Action)
 
-	if action == "ознакомлено" {
-		subject = fmt.Sprintf("Ознакомление по заявке %s %s", id, name)
-		textPart = fmt.Sprintf(`Уважаемый коллега,<span style="font-weight: 500;"> заявка %s %s получена виза <b>Ознакомлен</b></span>`, id, name)
+	if dto.Action == "ознакомлено" {
+		subject = fmt.Sprintf("Ознакомление по заявке %s %s", dto.WorkNumber, dto.Name)
+		textPart = fmt.Sprintf(`Уважаемый коллега,<span style="font-weight: 500;"> заявка %s %s получена виза <b>Ознакомлен</b></span>`, dto.WorkNumber, dto.Name)
 	}
 
-	if action == "проинформировано" {
-		subject = fmt.Sprintf("Информирование по заявке %s %s", id, name)
-		textPart = fmt.Sprintf(`Уважаемый коллега, <span style="font-weight: 500;">заявка %s %s получена виза <b>Проинформирован</b></span>`, id, name)
+	if dto.Action == "проинформировано" {
+		subject = fmt.Sprintf("Информирование по заявке %s %s", dto.WorkNumber, dto.Name)
+		textPart = fmt.Sprintf(`Уважаемый коллега, <span style="font-weight: 500;">заявка %s %s получена виза <b>Проинформирован</b></span>`, dto.WorkNumber, dto.Name)
 	}
 
 	return Template{
@@ -407,11 +421,11 @@ func NewAppInitiatorStatusNotificationTpl(id, name, action, sdUrl string, descri
 			AttachFields     []string                   `json:"attachFields"`
 		}{
 			Body:             textPart,
-			Description:      description.Values(),
-			Link:             fmt.Sprintf(TaskUrlTemplate, sdUrl, id),
-			AttachLinks:      links,
-			AttachFilesExist: attachFilesExist,
-			AttachFields:     attachFields,
+			Description:      dto.Description.Values(),
+			Link:             fmt.Sprintf(TaskUrlTemplate, dto.SdUrl, dto.WorkNumber),
+			AttachLinks:      dto.AttachLinks,
+			AttachFilesExist: dto.AttachExists,
+			AttachFields:     dto.AttachFields,
 		},
 	}
 }
@@ -440,9 +454,9 @@ type NewAppPersonStatusTpl struct {
 	LastWorks []*entity.EriusTask
 }
 
-func NewSignerNotificationTpl(id, name, sdUrl, deadline string, autoReject bool, description *orderedmap.OrderedMap, links []file_registry.AttachInfo, exists bool, fields []string) Template {
+func NewSignerNotificationTpl(dto *SignerNotifTemplate) Template {
 	return Template{
-		Subject:  fmt.Sprintf("Заявка №%s %s ожидает подписания", id, name),
+		Subject:  fmt.Sprintf("Заявка №%s %s ожидает подписания", dto.WorkNumber, dto.Name),
 		Template: "internal/mail/template/26applicationIsAwaitingSignature-template.html",
 		Image:    "ozhidaet_podpisaniya.png",
 		Variables: struct {
@@ -456,15 +470,15 @@ func NewSignerNotificationTpl(id, name, sdUrl, deadline string, autoReject bool,
 			AttachFilesExist bool                       `json:"attachFilesExist"`
 			AttachFields     []string                   `json:"attachFields"`
 		}{
-			Id:               id,
-			Name:             name,
-			Link:             fmt.Sprintf(TaskUrlTemplate, sdUrl, id),
-			Description:      description.Values(),
-			Deadline:         deadline,
-			AutoReject:       autoReject,
-			AttachLinks:      links,
-			AttachFilesExist: exists,
-			AttachFields:     fields,
+			Id:               dto.WorkNumber,
+			Name:             dto.Name,
+			Link:             fmt.Sprintf(TaskUrlTemplate, dto.SdUrl, dto.WorkNumber),
+			Deadline:         dto.Deadline,
+			Description:      dto.Description.Values(),
+			AutoReject:       dto.AutoReject,
+			AttachLinks:      dto.AttachLinks,
+			AttachFilesExist: dto.AttachExists,
+			AttachFields:     dto.AttachFields,
 		},
 	}
 }
@@ -473,7 +487,7 @@ const (
 	statusExecution = "processing"
 )
 
-func NewAppPersonStatusNotificationTpl(in *NewAppPersonStatusTpl, links []file_registry.AttachInfo, attachFilesExist bool, attachFields []string) Template {
+func NewAppPersonStatusNotificationTpl(in *NewAppPersonStatusTpl, dto *SignerNotifTemplate) Template {
 	actionName := getApprovementActionNameByStatus(in.Status, in.Action)
 	buttons := make([]Button, 0)
 	template := ""
@@ -522,9 +536,9 @@ func NewAppPersonStatusNotificationTpl(in *NewAppPersonStatusTpl, links []file_r
 			Deadline:         in.DeadLine,
 			ActionBtn:        buttons,
 			Initiator:        in.Initiator,
-			AttachLinks:      links,
-			AttachFilesExist: attachFilesExist,
-			AttachFields:     attachFields,
+			AttachLinks:      dto.AttachLinks,
+			AttachFilesExist: dto.AttachExists,
+			AttachFields:     dto.AttachFields,
 		},
 	}
 }
@@ -546,7 +560,7 @@ func NewSendToInitiatorEditTpl(id, name, sdUrl string) Template {
 	}
 }
 
-func NewExecutionNeedTakeInWorkTpl(dto *ExecutorNotifTemplate, deadline string, links []file_registry.AttachInfo, exists bool, fields []string) Template {
+func NewExecutionNeedTakeInWorkTpl(dto *ExecutorNotifTemplate) Template {
 	actionSubject := fmt.Sprintf(subjectTpl, dto.BlockID, "", dto.WorkNumber, executionStartWorkAction, dto.Login)
 	actionBtn := getButton(dto.Mailto, actionSubject, "Взять в работу")
 
@@ -581,16 +595,16 @@ func NewExecutionNeedTakeInWorkTpl(dto *ExecutorNotifTemplate, deadline string, 
 			Link:             fmt.Sprintf(TaskUrlTemplate, dto.SdUrl, dto.WorkNumber),
 			Description:      dto.Description.Values(),
 			Group:            group,
-			Deadline:         deadline,
+			Deadline:         dto.Deadline,
 			ActionBtn:        *actionBtn,
-			AttachLinks:      links,
-			AttachFilesExist: exists,
-			AttachFields:     fields,
+			AttachLinks:      dto.AttachLinks,
+			AttachFilesExist: dto.AttachExists,
+			AttachFields:     dto.AttachFields,
 		},
 	}
 }
 
-func NewExecutionTakenInWorkTpl(dto *ExecutorNotifTemplate, links []file_registry.AttachInfo, exists bool, fields []string) Template {
+func NewExecutionTakenInWorkTpl(dto *ExecutorNotifTemplate) Template {
 	return Template{
 		Subject:  fmt.Sprintf("Заявка №%s %s взята в работу пользователем %s", dto.WorkNumber, dto.Name, dto.Executor.FullName),
 		Template: "internal/mail/template/05applicationAccepted-template.html",
@@ -612,9 +626,9 @@ func NewExecutionTakenInWorkTpl(dto *ExecutorNotifTemplate, links []file_registr
 			Executor:         dto.Executor,
 			Initiator:        dto.Initiator,
 			Description:      dto.Description.Values(),
-			AttachLinks:      links,
-			AttachFilesExist: exists,
-			AttachFields:     fields,
+			AttachLinks:      dto.AttachLinks,
+			AttachFilesExist: dto.AttachExists,
+			AttachFields:     dto.AttachFields,
 		},
 	}
 }
@@ -714,7 +728,7 @@ func NewInvalidFunctionResp(id, name, sdUrl string) Template {
 	}
 }
 
-func NewFormExecutionTakenInWorkTpl(dto *ExecutorNotifTemplate, links []file_registry.AttachInfo, attachFilesExist bool, attachFields []string) Template {
+func NewFormExecutionTakenInWorkTpl(dto *ExecutorNotifTemplate) Template {
 	return Template{
 		Subject:  fmt.Sprintf("Заявка № %s %s взята в работу в работу пользователем %s", dto.WorkNumber, dto.Name, dto.Executor.FullName),
 		Template: "internal/mail/template/05applicationAccepted-template.html",
@@ -734,9 +748,9 @@ func NewFormExecutionTakenInWorkTpl(dto *ExecutorNotifTemplate, links []file_reg
 			Link:             fmt.Sprintf(TaskUrlTemplate, dto.SdUrl, dto.WorkNumber),
 			Executor:         dto.Executor,
 			Initiator:        dto.Initiator,
-			AttachLinks:      links,
-			AttachFields:     attachFields,
-			AttachFilesExist: attachFilesExist,
+			AttachLinks:      dto.AttachLinks,
+			AttachFilesExist: dto.AttachExists,
+			AttachFields:     dto.AttachFields,
 		},
 	}
 }

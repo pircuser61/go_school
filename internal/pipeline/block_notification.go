@@ -311,9 +311,9 @@ func sortAndFilterAttachments(files []file_registry.FileInfo) (requiredFiles []e
 	for i := range files {
 		limitCounter += float64(files[i].Size) / 1024 / 1024
 		if limitCounter <= attachmentsLimitMB {
-			requiredFiles = append(requiredFiles, entity.Attachment{FileID: files[i].FileId}) // store fileIDs to get files later
+			requiredFiles = append(requiredFiles, entity.Attachment{FileID: files[i].FileId})
 		} else {
-			skippedFiles = append(skippedFiles, file_registry.AttachInfo{FileId: files[i].FileId, Name: files[i].Name, Size: files[i].Size}) // store file names to use them in template
+			skippedFiles = append(skippedFiles, file_registry.AttachInfo{FileID: files[i].FileId, Name: files[i].Name, Size: files[i].Size})
 		}
 	}
 

@@ -253,8 +253,6 @@ func (gb *GoApproverBlock) handleHalfBreachedSLA(ctx c.Context) (err error) {
 			login = recipient
 		}
 
-		//lastWorksForUser := make([]*entity.EriusTask, 0)
-
 		if processSettings.ResubmissionPeriod > 0 {
 			var getWorksErr error
 			_, getWorksErr = gb.RunContext.Services.Storage.GetWorksForUserWithGivenTimeRange(
