@@ -66,7 +66,7 @@ BEGIN
         SELECT jsonb_object_keys(content -> 'State')
         FROM pipeliner.public.variable_storage
         WHERE jsonb_typeof(content -> 'State') = 'object'
-            AND work_id = input_v_ids);
+            AND id = input_v_ids);
     FOREACH s_name IN ARRAY step_names
         LOOP
             IF s_name LIKE 'approver_%' THEN
@@ -88,7 +88,7 @@ BEGIN
                         FROM jsonb_array_elements(content -> 'State' -> s_name -> 'action_list') v3
                     ),
                     false)
-                WHERE work_id = input_v_ids;
+                WHERE id = input_v_ids;
 
                 UPDATE pipeliner.public.variable_storage v1
                 SET content = jsonb_set(content,
@@ -111,14 +111,25 @@ BEGIN
                         FROM jsonb_array_elements(content -> 'State' -> s_name -> 'action_list') v3
                     ),
                     false)
-                WHERE work_id = input_v_ids;
+                WHERE id = input_v_ids;
             END IF;
         END LOOP;
 END $function$;
 
-SELECT set_action_type_varstore(vs.work_id)
-FROM pipeliner.public.variable_storage vs
-WHERE vs.step_type = 'approver';
+SELECT set_action_type_varstore(vs1.id)
+FROM pipeliner.public.variable_storage vs1
+INNER JOIN (
+    SELECT work_id, min(time) AS first_create_approve
+    FROM pipeliner.public.variable_storage
+    WHERE step_name = 'approver_0'
+    GROUP BY work_id
+) vs2
+    ON vs1.work_id = vs2.work_id
+        AND vs1.time >= vs2.first_create_approve;
+
+DROP function IF EXISTS set_action_type(input_v_ids uuid);
+
+DROP function IF EXISTS set_action_type_varstore(input_v_ids uuid);
 -- +goose StatementEnd
 
 -- +goose Down
