@@ -40,7 +40,7 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 		return err
 	}
 
-	emails := make(map[string]mail.Template)
+	emails := make(map[string]mail.Template, 0)
 
 	task, getVersionErr := gb.RunContext.Services.Storage.GetVersionByWorkNumber(ctx, gb.RunContext.WorkNumber)
 	if getVersionErr != nil {

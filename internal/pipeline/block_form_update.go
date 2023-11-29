@@ -446,17 +446,17 @@ func (gb *GoFormBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork strin
 
 	iconUser, iOk := gb.RunContext.Services.Sender.Images[userImg]
 	if !iOk {
-		return errors.New("file not found: " + tpl.Image)
+		return errors.New("file not found: " + userImg)
 	}
 
 	iconDownload, dowOk := gb.RunContext.Services.Sender.Images[downloadImg]
 	if !dowOk {
-		return errors.New("file not found: " + tpl.Image)
+		return errors.New("file not found: " + downloadImg)
 	}
 
 	iconDocument, docOk := gb.RunContext.Services.Sender.Images[documentImg]
 	if !docOk {
-		return errors.New("file not found: " + tpl.Image)
+		return errors.New("file not found: " + documentImg)
 	}
 
 	files := []e.Attachment{
