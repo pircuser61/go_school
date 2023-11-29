@@ -413,19 +413,19 @@ func NewAppInitiatorStatusNotificationTpl(dto *SignerNotifTemplate) Template {
 		Template: "internal/mail/template/40newAppInitiator-template.html",
 		Image:    "new_zayavka.png",
 		Variables: struct {
-			Body             string                     `json:"body"`
-			Description      map[string]interface{}     `json:"description"`
-			Link             string                     `json:"link"`
-			AttachLinks      []file_registry.AttachInfo `json:"attachLinks"`
-			AttachFilesExist bool                       `json:"attachFilesExist"`
-			AttachFields     []string                   `json:"attachFields"`
+			Body         string                     `json:"body"`
+			Description  map[string]interface{}     `json:"description"`
+			Link         string                     `json:"link"`
+			AttachLinks  []file_registry.AttachInfo `json:"attachLinks"`
+			AttachExists bool                       `json:"attachFilesExist"`
+			AttachFields []string                   `json:"attachFields"`
 		}{
-			Body:             textPart,
-			Description:      dto.Description.Values(),
-			Link:             fmt.Sprintf(TaskUrlTemplate, dto.SdUrl, dto.WorkNumber),
-			AttachLinks:      dto.AttachLinks,
-			AttachFilesExist: dto.AttachExists,
-			AttachFields:     dto.AttachFields,
+			Body:         textPart,
+			Description:  dto.Description.Values(),
+			Link:         fmt.Sprintf(TaskUrlTemplate, dto.SdUrl, dto.WorkNumber),
+			AttachLinks:  dto.AttachLinks,
+			AttachExists: dto.AttachExists,
+			AttachFields: dto.AttachFields,
 		},
 	}
 }
