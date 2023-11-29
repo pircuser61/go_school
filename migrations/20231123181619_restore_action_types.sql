@@ -23,18 +23,20 @@ BEGIN
                         SELECT jsonb_agg(jsonb_set(
                             v3::jsonb,
                             '{actionType}',
-                            CASE WHEN v3 ->> 'actionType' = ''::text OR v3 -> 'actionType' = null THEN
-                                CASE
-                                    WHEN v3 ->> 'id' = 'approve' THEN to_jsonb('primary'::text)
-                                    WHEN v3 ->> 'id' = 'reject' THEN to_jsonb('secondary'::text)
-                                    ELSE to_jsonb('other'::text)
-                                END
+                            CASE
+                                WHEN v3 ->> 'actionType' = ''::text OR v3 -> 'actionType' = null THEN
+                                    CASE
+                                        WHEN v3 ->> 'id' = 'approve' THEN to_jsonb('primary'::text)
+                                        WHEN v3 ->> 'id' = 'reject' THEN to_jsonb('secondary'::text)
+                                        ELSE to_jsonb('other'::text)
+                                    END
+                                WHEN v3 ->> 'actionType' != ''::text THEN v3 -> 'actionType'
                             END,
                             true
                         ))
                         FROM jsonb_array_elements(content -> 'pipeline' -> 'blocks' -> s_name -> 'sockets') v3
                     ),
-                    true)
+                    false)
                 WHERE v1.pipeline_id = input_v_ids
                     AND content -> 'pipeline' -> 'blocks' -> s_name -> 'sockets' IS NOT NULL;
             END IF;
@@ -53,7 +55,7 @@ UPDATE pipeliner.public.members
 UPDATE pipeliner.public.members
     SET actions = replace(actions::text, 'send_edit:', 'approver_send_edit_app:other')::text array;
 
-CREATE OR REPLACE FUNCTION set_action_type_varstore() RETURNS void
+CREATE OR REPLACE FUNCTION set_action_type_varstore(input_v_ids uuid) RETURNS void
     language plpgsql
 AS $function$
 DECLARE
@@ -63,7 +65,8 @@ BEGIN
     step_names = array(
         SELECT jsonb_object_keys(content -> 'State')
         FROM pipeliner.public.variable_storage
-        WHERE jsonb_typeof(content -> 'State') = 'object');
+        WHERE jsonb_typeof(content -> 'State') = 'object'
+            AND work_id = input_v_ids);
     FOREACH s_name IN ARRAY step_names
         LOOP
             IF s_name LIKE 'approver_%' THEN
@@ -78,12 +81,14 @@ BEGIN
                              WHEN v3 ->> 'id' = 'approved' THEN to_jsonb('approve'::text)
                              WHEN v3 ->> 'id' = 'rejected' THEN to_jsonb('reject'::text)
                              WHEN v3 ->> 'id' = 'send_edit' THEN to_jsonb('approver_send_edit_app'::text)
-                        END
+                             ELSE v3 -> 'id'
+                        END,
                         true
                         ))
                         FROM jsonb_array_elements(content -> 'State' -> s_name -> 'action_list') v3
                     ),
-                    true);
+                    false)
+                WHERE work_id = input_v_ids;
 
                 UPDATE pipeliner.public.variable_storage v1
                 SET content = jsonb_set(content,
@@ -92,23 +97,28 @@ BEGIN
                         SELECT jsonb_agg(jsonb_set(
                             v3::jsonb,
                             '{type}',
-                            CASE WHEN v3 ->> 'type' = ''::text OR v3 -> 'type' = null THEN
-                                 CASE
-                                     WHEN v3 ->> 'id' = 'approve' THEN to_jsonb('primary'::text)
-                                     WHEN v3 ->> 'id' = 'reject' THEN to_jsonb('secondary'::text)
-                                     ELSE to_jsonb('other'::text)
-                                 END
+                            CASE
+                                WHEN v3 ->> 'type' = ''::text OR v3 -> 'type' = null THEN
+                                    CASE
+                                        WHEN v3 ->> 'id' = 'approve' THEN to_jsonb('primary'::text)
+                                        WHEN v3 ->> 'id' = 'reject' THEN to_jsonb('secondary'::text)
+                                        ELSE to_jsonb('other'::text)
+                                    END
+                                WHEN v3 ->> 'type' != ''::text THEN v3 -> 'type'
                             END,
                             true
                         ))
                         FROM jsonb_array_elements(content -> 'State' -> s_name -> 'action_list') v3
                     ),
-                    true);
+                    false)
+                WHERE work_id = input_v_ids;
             END IF;
         END LOOP;
 END $function$;
 
-SELECT set_action_type_varstore();
+SELECT set_action_type_varstore(vs.work_id)
+FROM pipeliner.public.variable_storage vs
+WHERE vs.step_type = 'approver';
 -- +goose StatementEnd
 
 -- +goose Down
