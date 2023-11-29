@@ -32,7 +32,7 @@ BEGIN
                                     END
                                 WHEN v3 ->> 'actionType' != ''::text THEN v3 -> 'actionType'
                             END,
-                            true
+                            false
                         ))
                         FROM jsonb_array_elements(content -> 'pipeline' -> 'blocks' -> s_name -> 'sockets') v3
                     ),
@@ -83,7 +83,7 @@ BEGIN
                              WHEN v3 ->> 'id' = 'send_edit' THEN to_jsonb('approver_send_edit_app'::text)
                              ELSE v3 -> 'id'
                         END,
-                        true
+                        false
                         ))
                         FROM jsonb_array_elements(content -> 'State' -> s_name -> 'action_list') v3
                     ),
@@ -106,7 +106,7 @@ BEGIN
                                     END
                                 WHEN v3 ->> 'type' != ''::text THEN v3 -> 'type'
                             END,
-                            true
+                            false
                         ))
                         FROM jsonb_array_elements(content -> 'State' -> s_name -> 'action_list') v3
                     ),
