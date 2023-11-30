@@ -34,8 +34,6 @@ type Notification struct {
 	To       []string
 }
 
-//		id, name, sdUrl, deadline string, autoReject bool, description *orderedmap.OrderedMap, links []file_registry.AttachInfo, exists bool, fields []string
-
 type SignerNotifTemplate struct {
 	WorkNumber   string
 	Name         string

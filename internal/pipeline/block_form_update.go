@@ -371,7 +371,6 @@ func (gb *GoFormBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork strin
 	}
 
 	formExecutorSSOPerson, getUserErr := gb.RunContext.Services.People.GetUser(ctx, loginTakenInWork)
-
 	if getUserErr != nil {
 		return getUserErr
 	}
@@ -444,18 +443,18 @@ func (gb *GoFormBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork strin
 		return errors.New("file not found: " + tpl.Image)
 	}
 
-	iconUser, iOk := gb.RunContext.Services.Sender.Images[userImg]
-	if !iOk {
+	iconUser, ok := gb.RunContext.Services.Sender.Images[userImg]
+	if !ok {
 		return errors.New("file not found: " + userImg)
 	}
 
-	iconDownload, dowOk := gb.RunContext.Services.Sender.Images[downloadImg]
-	if !dowOk {
+	iconDownload, ok := gb.RunContext.Services.Sender.Images[downloadImg]
+	if !ok {
 		return errors.New("file not found: " + downloadImg)
 	}
 
-	iconDocument, docOk := gb.RunContext.Services.Sender.Images[documentImg]
-	if !docOk {
+	iconDocument, ok := gb.RunContext.Services.Sender.Images[documentImg]
+	if !ok {
 		return errors.New("file not found: " + documentImg)
 	}
 
