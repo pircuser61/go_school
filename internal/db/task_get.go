@@ -517,6 +517,7 @@ func (db *PGCon) GetAdditionalForms(workNumber, nodeName string) ([]string, erro
 	) vs2
 		ON vs1.id = vs2.id
 	WHERE vs1.step_name IN (SELECT rule FROM actual_step_name)
+		AND vs1.work_id = (SELECT id from actual_work_id)
 	ORDER BY time`
 	ff := make([]string, 0)
 	rows, err := db.Connection.Query(c.Background(), q, workNumber, nodeName)
