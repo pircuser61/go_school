@@ -464,9 +464,9 @@ func NewSignerNotificationTpl(dto *SignerNotifTemplate) Template {
 			Description  map[string]interface{}
 			Deadline     string
 			AutoReject   bool
-			AttachLinks  []file_registry.AttachInfo `json:"attachLinks"`
-			AttachExists bool                       `json:"attachExists"`
-			AttachFields []string                   `json:"attachFields"`
+			AttachLinks  []file_registry.AttachInfo
+			AttachExists bool
+			AttachFields []string
 		}{
 			Id:           dto.WorkNumber,
 			Name:         dto.Name,
@@ -522,9 +522,9 @@ func NewAppPersonStatusNotificationTpl(in *NewAppPersonStatusTpl, dto *SignerNot
 			ActionBtn    []Button
 			Initiator    *sso.UserInfo
 			JobTitle     string
-			AttachLinks  []file_registry.AttachInfo `json:"attachLinks"`
-			AttachExists bool                       `json:"attachExists"`
-			AttachFields []string                   `json:"attachFields"`
+			AttachLinks  []file_registry.AttachInfo
+			AttachExists bool
+			AttachFields []string
 		}{
 			Id:           in.WorkNumber,
 			Name:         in.Name,
@@ -584,9 +584,9 @@ func NewExecutionNeedTakeInWorkTpl(dto *ExecutorNotifTemplate) Template {
 			Group        bool
 			Deadline     string
 			ActionBtn    Button
-			AttachLinks  []file_registry.AttachInfo `json:"attachLinks"`
-			AttachExists bool                       `json:"attachExists"`
-			AttachFields []string                   `json:"attachFields"`
+			AttachLinks  []file_registry.AttachInfo
+			AttachExists bool
+			AttachFields []string
 		}{
 			Id:           dto.WorkNumber,
 			Name:         dto.Name,
@@ -614,9 +614,9 @@ func NewExecutionTakenInWorkTpl(dto *ExecutorNotifTemplate) Template {
 			Executor     *sso.UserInfo
 			Initiator    *sso.UserInfo
 			Description  map[string]interface{}
-			AttachLinks  []file_registry.AttachInfo `json:"attachLinks"`
-			AttachExists bool                       `json:"attachExists"`
-			AttachFields []string                   `json:"attachFields"`
+			AttachLinks  []file_registry.AttachInfo
+			AttachExists bool
+			AttachFields []string
 		}{
 			Id:           dto.WorkNumber,
 			Name:         dto.Name,
@@ -737,9 +737,9 @@ func NewFormExecutionTakenInWorkTpl(dto *ExecutorNotifTemplate) Template {
 			Link         string `json:"link"`
 			Executor     *sso.UserInfo
 			Initiator    *sso.UserInfo
-			AttachLinks  []file_registry.AttachInfo `json:"attachLinks"`
-			AttachExists bool                       `json:"attachExists"`
-			AttachFields []string                   `json:"attachFields"`
+			AttachLinks  []file_registry.AttachInfo
+			AttachExists bool
+			AttachFields []string
 		}{
 			Id:           dto.WorkNumber,
 			Name:         dto.Name,

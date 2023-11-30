@@ -21,56 +21,56 @@
                                 <p style="margin: 0; padding: 0; padding-left: 24px; padding-right: 24px; margin-bottom: 24px; font-family: MTS Text; font-size: 17px; font-weight: 400; line-height: 24px;">Для просмотра перейдите по <a href={{.Link}} target="_blank" style="text-decoration: none; color: #007CFF; font-family: MTS Text; font-size: 17px; font-weight: 500; line-height: 24px;">ссылке</a></p>
                             </td>
                         </tr>
-                        <tr>
-                            <td style="border-collapse: collapse; padding-left: 24px; padding-right: 24px;">
-                                <div style="width: 512px; background: #F2F3F7; padding: 12px; border-radius: 12px;">
-
-                                    <p style="margin: 0; padding: 0; margin-bottom: 24px; font-family: MTS Compact; font-size: 17px; font-weight: 500; line-height: 24px; color: #1D2023;">Содержание заявки</p>
-                                    {{ range $key, $val := .Description }}
-                                        <div style="margin-bottom: 12px;">
-                                            {{ if isOrder $val }}
-                                                <p style="margin: 0; padding: 0; font-family: MTS Compact; font-size: 14px; font-weight: 400; line-height: 20px; color: #626C77; margin-bottom: 4px;">{{ $key }}</p>
-                                                <p style="margin: 0; padding: 0; font-family: MTS Compact; font-size: 17px; font-weight: 400; line-height: 24px; color: #1D2023;">{{ index (retMap $val) "fullname" }} ({{ index (retMap $val) "username" }})</p>
-                                            {{ else }}
-                                                {{ if not (isFile $val) }}
-                                                    {{ if isLink $val }}
-                                                        <p style="margin: 0; padding: 0; font-family: MTS Compact; font-size: 14px; font-weight: 400; line-height: 20px; color: #626C77; margin-bottom: 4px;">{{ $key }}</p>
-                                                        <a href="{{$val}}" style="margin: 0; padding: 0; text-decoration: none; font-family: MTS Compact; font-size: 17px; font-weight: 400; line-height: 24px; color: #007CFF;">{{ $val }}</a>
-                                                    {{ else }}
-                                                        <p style="margin: 0; padding: 0; font-family: MTS Compact; font-size: 14px; font-weight: 400; line-height: 20px; color: #626C77; margin-bottom: 4px;">{{ $key }}</p>
-                                                        <p style="margin: 0; padding: 0; font-family: MTS Compact; font-size: 17px; font-weight: 400; line-height: 24px; color: #1D2023;">{{ $val }}</p>
+                        {{ if .Description }}
+                            <tr>
+                                <td style="border-collapse: collapse; padding-left: 24px; padding-right: 24px;">
+                                    <div style="width: 512px; background: #F2F3F7; padding: 12px; border-radius: 12px;">
+                                        <p style="margin: 0; padding: 0; margin-bottom: 24px; font-family: MTS Compact; font-size: 17px; font-weight: 500; line-height: 24px; color: #1D2023;">Содержание заявки</p>
+                                        {{ range $key, $val := .Description }}
+                                            <div style="margin-bottom: 12px;">
+                                                {{ if isOrder $val }}
+                                                    <p style="margin: 0; padding: 0; font-family: MTS Compact; font-size: 14px; font-weight: 400; line-height: 20px; color: #626C77; margin-bottom: 4px;">{{ $key }}</p>
+                                                    <p style="margin: 0; padding: 0; font-family: MTS Compact; font-size: 17px; font-weight: 400; line-height: 24px; color: #1D2023;">{{ index (retMap $val) "fullname" }} ({{ index (retMap $val) "username" }})</p>
+                                                {{ else }}
+                                                    {{ if not (isFile $val) }}
+                                                        {{ if isLink $val }}
+                                                            <p style="margin: 0; padding: 0; font-family: MTS Compact; font-size: 14px; font-weight: 400; line-height: 20px; color: #626C77; margin-bottom: 4px;">{{ $key }}</p>
+                                                            <a href="{{$val}}" style="margin: 0; padding: 0; text-decoration: none; font-family: MTS Compact; font-size: 17px; font-weight: 400; line-height: 24px; color: #007CFF;">{{ $val }}</a>
+                                                        {{ else }}
+                                                            <p style="margin: 0; padding: 0; font-family: MTS Compact; font-size: 14px; font-weight: 400; line-height: 20px; color: #626C77; margin-bottom: 4px;">{{ $key }}</p>
+                                                            <p style="margin: 0; padding: 0; font-family: MTS Compact; font-size: 17px; font-weight: 400; line-height: 24px; color: #1D2023;">{{ $val }}</p>
+                                                        {{ end }}
                                                     {{ end }}
                                                 {{ end }}
-                                            {{ end }}
-                                        </div>
-                                    {{ end }}
-                                    {{ if .AttachLinks }}
-                                    <div style="margin-bottom: 12px;">
-                                        <p style="margin: 0; padding: 0; font-family: MTS Compact; font-size: 14px; font-weight: 400; line-height: 20px; color: #626C77; margin-bottom: 4px;">Файлы</p>
-                                        {{ range .AttachLinks }}
-                                            <a align="left" download href="{{.ExternalLink}}" style="display: block; width: 486px; margin: 0; padding: 4px 12px; text-decoration: none; font-family: MTS Compact; font-size: 17px; font-weight: 400; line-height: 24px; color: #1D2023; border: 1px solid rgba(188, 195, 208, 0.50); border-radius: 8px;">
-                                                <div style="display: table; width: 486px;">
-                                                    <img src="cid:iconDocument.svg" style="display: table-cell;  vertical-align: middle; " alt="Документ">
-                                                    <div style="margin: 0; padding: 0; font-family: MTS Compact; font-size: 17px; font-weight: 400; line-height: 24px; color: #1D2023; display: table-cell;  vertical-align: middle;">
-                                                        <p style="margin: 0; padding: 0; font-family: MTS Compact; font-size: 17px; font-weight: 400; line-height: 24px; color: #1D2023;">{{ .Name }} </p>
-                                                        <p style="margin: 0; padding: 0; font-family: MTS Compact; font-size: 12px; font-weight: 400; line-height: 16px; color: #626C77;">{{ .Size }} MB</p>
-                                                    </div>
-                                                    <img src="cid:iconDownload.svg" style="display: table-cell;  vertical-align: middle; margin-bottom: 10px; margin-left: 280px;" alt="Скачать">
-                                                </div>
-                                            </a><br>
+                                            </div>
+                                        {{ end }}
+                                        {{ if .AttachLinks }}
+                                            <div style="margin-bottom: 12px;">
+                                                <p style="margin: 0; padding: 0; font-family: MTS Compact; font-size: 14px; font-weight: 400; line-height: 20px; color: #626C77; margin-bottom: 4px;">Файлы</p>
+                                                {{ range .AttachLinks }}
+                                                    <a align="left" download href="{{.ExternalLink}}" style="display: block; width: 486px; margin: 0; padding: 4px 12px; text-decoration: none; font-family: MTS Compact; font-size: 17px; font-weight: 400; line-height: 24px; color: #1D2023; border: 1px solid rgba(188, 195, 208, 0.50); border-radius: 8px;">
+                                                        <div style="display: table; width: 486px;">
+                                                            <img src="cid:iconDocument.svg" style="display: table-cell;  vertical-align: middle; " alt="Документ">
+                                                            <div style="margin: 0; padding: 0; font-family: MTS Compact; font-size: 17px; font-weight: 400; line-height: 24px; color: #1D2023; display: table-cell;  vertical-align: middle;">
+                                                                <p style="margin: 0; padding: 0; font-family: MTS Compact; font-size: 17px; font-weight: 400; line-height: 24px; color: #1D2023;">{{ .Name }} </p>
+                                                                <p style="margin: 0; padding: 0; font-family: MTS Compact; font-size: 12px; font-weight: 400; line-height: 16px; color: #626C77;">{{ .Size }} MB</p>
+                                                            </div>
+                                                            <img src="cid:iconDownload.svg" style="display: table-cell;  vertical-align: middle; margin-bottom: 10px; margin-left: 280px;" alt="Скачать">
+                                                        </div>
+                                                    </a><br>
+                                                {{ end }}
+                                            </div>
+                                        {{ end }}
+                                        {{ if .AttachExists }}
+                                            <div style="margin-bottom: 12px;">
+                                                <p style="margin: 0; padding: 0; font-family: MTS Compact; font-size: 14px; font-weight: 400; line-height: 20px; color: #626C77; margin-bottom: 4px;">Файлы</p>
+                                                <p style="margin: 0; padding: 0; font-family: MTS Compact; font-size: 17px; font-weight: 400; line-height: 24px; color: #1D2023;">Файлы находятся во вложении к письму</p>
+                                            </div>
                                         {{ end }}
                                     </div>
-                                    {{ end }}
-                                    {{ if .AttachExists }}
-                                        <div style="margin-bottom: 12px;">
-                                            <p style="margin: 0; padding: 0; font-family: MTS Compact; font-size: 14px; font-weight: 400; line-height: 20px; color: #626C77; margin-bottom: 4px;">Файлы</p>
-                                            <p style="margin: 0; padding: 0; font-family: MTS Compact; font-size: 17px; font-weight: 400; line-height: 24px; color: #1D2023;">Файлы находятся во вложении к письму</p>
-                                        </div>
-                                    {{ end }}
-                                </div>
-
-                            </td>
-                        </tr>
+                                </td>
+                            </tr>
+                        {{ end }}
                         <tr>
                             <td align="center" style="border-collapse: collapse;">
                                 <p style="margin: 0; padding: 0; padding-left: 24px; padding-right: 24px; padding-top: 24px; margin-bottom: 24px; font-family: MTS Text; font-size: 14px; font-weight: 400; line-height: 20px; color: #969FA8;">По вопросам Service Desk обращайтесь на почту servicedesk@mts.ru</p>
