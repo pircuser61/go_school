@@ -510,7 +510,7 @@ func (db *PGCon) GetAdditionalForms(workNumber, nodeName string) ([]string, erro
     SELECT content -> 'State' -> step_name ->> 'description'
 	FROM variable_storage
 		WHERE step_name IN (SELECT rule FROM actual_step_name)
-			AND time > (
+			AND time >= (
 				SELECT max(time)
 				FROM variable_storage
 				WHERE work_id = (SELECT id from actual_work_id)
