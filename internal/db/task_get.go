@@ -495,15 +495,28 @@ func (db *PGCon) GetAdditionalForms(workNumber, nodeName string) ([]string, erro
 		SELECT jsonb_array_elements(content -> 'pipeline' -> 'blocks' -> $2 -> 'params' -> 'formsAccessibility') as rules
 		FROM versions
 			WHERE id = (SELECT version_id FROM works WHERE work_number = $1 AND child_id IS NULL)
+	),
+	actual_work_id as (
+		SELECT id 
+		FROM works 
+		WHERE work_number = $1 
+			AND child_id IS NULL
+	),
+	actual_step_name as (
+		SELECT rules ->> 'node_id' as rule
+		FROM content
+		WHERE rules ->> 'accessType' != 'None'
 	)
     SELECT content -> 'State' -> step_name ->> 'description'
 	FROM variable_storage
-		WHERE step_name in (
-			SELECT rules ->> 'node_id' as rule
-			FROM content
-			WHERE rules ->> 'accessType' != 'None'
-		)
-		AND work_id = (SELECT id FROM works WHERE work_number = $1 AND child_id IS NULL)
+		WHERE step_name IN (SELECT rule FROM actual_step_name)
+			AND time > (
+				SELECT max(time)
+				FROM variable_storage
+				WHERE work_id = (SELECT id from actual_work_id)
+					AND step_name IN (SELECT rule FROM actual_step_name)
+			)
+			AND work_id = (SELECT id from actual_work_id)
 	ORDER BY time`
 	ff := make([]string, 0)
 	rows, err := db.Connection.Query(c.Background(), q, workNumber, nodeName)

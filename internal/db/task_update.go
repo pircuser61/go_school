@@ -215,7 +215,13 @@ func (db *PGCon) UpdateBlockStateInOthers(ctx c.Context, blockName, taskId strin
 	const q = `
 		UPDATE variable_storage 
 		SET content = jsonb_set(content, array['State', $1]::varchar[], $2::jsonb, false)
-		WHERE work_id = $3`
+		WHERE work_id = $3
+			AND time > (
+			    SELECT max(time)
+			    FROM variable_storage
+			    WHERE step_name = $1
+			    	AND work_id = $3
+			)`
 
 	_, err := db.Connection.Exec(ctx, q, blockName, blockState, taskId)
 
