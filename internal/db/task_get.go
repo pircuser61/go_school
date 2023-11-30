@@ -516,7 +516,7 @@ func (db *PGCon) GetAdditionalForms(workNumber, nodeName string) ([]string, erro
 		GROUP BY step_name
 	) vs2
 		ON vs1.time = vs2.time
-			AND vs1.step_name = vs2.step_name
+			AND vs1.step_name = vs2.max_data
 	WHERE vs1.work_id = (SELECT id from actual_work_id)
 	ORDER BY time`
 	ff := make([]string, 0)
