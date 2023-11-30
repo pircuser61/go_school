@@ -1373,13 +1373,16 @@ func (db *PGCon) GetFilteredStates(ctx c.Context, steps []string, wNumber string
 		return nil, err
 	}
 
-	return mergeStates(res), nil
+	return mergeStates(res, steps), nil
 }
 
-func mergeStates(in []map[string]map[string]interface{}) (res map[string]map[string]interface{}) {
+func mergeStates(in []map[string]map[string]interface{}, steps []string) (res map[string]map[string]interface{}) {
 	res = make(map[string]map[string]interface{})
 	for i := range in {
 		for stepName := range in[i] {
+			if !utils.IsContainsInSlice(stepName, steps) {
+				continue
+			}
 			if _, exists := res[stepName]; !exists {
 				res[stepName] = in[i][stepName]
 			}
