@@ -415,7 +415,7 @@ func NewAppInitiatorStatusNotificationTpl(dto *SignerNotifTemplate) Template {
 			Description  map[string]interface{}     `json:"description"`
 			Link         string                     `json:"link"`
 			AttachLinks  []file_registry.AttachInfo `json:"attachLinks"`
-			AttachExists bool                       `json:"attachFilesExist"`
+			AttachExists bool                       `json:"attachExists"`
 			AttachFields []string                   `json:"attachFields"`
 		}{
 			Body:         textPart,
@@ -458,25 +458,25 @@ func NewSignerNotificationTpl(dto *SignerNotifTemplate) Template {
 		Template: "internal/mail/template/26applicationIsAwaitingSignature-template.html",
 		Image:    "ozhidaet_podpisaniya.png",
 		Variables: struct {
-			Id               string
-			Name             string
-			Link             string
-			Description      map[string]interface{}
-			Deadline         string
-			AutoReject       bool
-			AttachLinks      []file_registry.AttachInfo `json:"attachLinks"`
-			AttachFilesExist bool                       `json:"attachFilesExist"`
-			AttachFields     []string                   `json:"attachFields"`
+			Id           string
+			Name         string
+			Link         string
+			Description  map[string]interface{}
+			Deadline     string
+			AutoReject   bool
+			AttachLinks  []file_registry.AttachInfo `json:"attachLinks"`
+			AttachExists bool                       `json:"attachExists"`
+			AttachFields []string                   `json:"attachFields"`
 		}{
-			Id:               dto.WorkNumber,
-			Name:             dto.Name,
-			Link:             fmt.Sprintf(TaskUrlTemplate, dto.SdUrl, dto.WorkNumber),
-			Deadline:         dto.Deadline,
-			Description:      dto.Description.Values(),
-			AutoReject:       dto.AutoReject,
-			AttachLinks:      dto.AttachLinks,
-			AttachFilesExist: dto.AttachExists,
-			AttachFields:     dto.AttachFields,
+			Id:           dto.WorkNumber,
+			Name:         dto.Name,
+			Link:         fmt.Sprintf(TaskUrlTemplate, dto.SdUrl, dto.WorkNumber),
+			Deadline:     dto.Deadline,
+			Description:  dto.Description.Values(),
+			AutoReject:   dto.AutoReject,
+			AttachLinks:  dto.AttachLinks,
+			AttachExists: dto.AttachExists,
+			AttachFields: dto.AttachFields,
 		},
 	}
 }
@@ -513,30 +513,30 @@ func NewAppPersonStatusNotificationTpl(in *NewAppPersonStatusTpl, dto *SignerNot
 		Template: template,
 		Image:    "ozhidaet_ispolneniya.png",
 		Variables: struct {
-			Id               string
-			Name             string
-			Link             string
-			Action           string
-			Description      map[string]interface{}
-			Deadline         string
-			ActionBtn        []Button
-			Initiator        *sso.UserInfo
-			JobTitle         string
-			AttachLinks      []file_registry.AttachInfo `json:"attachLinks"`
-			AttachFilesExist bool                       `json:"attachFilesExist"`
-			AttachFields     []string                   `json:"attachFields"`
+			Id           string
+			Name         string
+			Link         string
+			Action       string
+			Description  map[string]interface{}
+			Deadline     string
+			ActionBtn    []Button
+			Initiator    *sso.UserInfo
+			JobTitle     string
+			AttachLinks  []file_registry.AttachInfo `json:"attachLinks"`
+			AttachExists bool                       `json:"attachExists"`
+			AttachFields []string                   `json:"attachFields"`
 		}{
-			Id:               in.WorkNumber,
-			Name:             in.Name,
-			Link:             fmt.Sprintf(TaskUrlTemplate, in.SdUrl, in.WorkNumber),
-			Action:           actionName,
-			Description:      in.Description.Values(),
-			Deadline:         in.DeadLine,
-			ActionBtn:        buttons,
-			Initiator:        in.Initiator,
-			AttachLinks:      dto.AttachLinks,
-			AttachFilesExist: dto.AttachExists,
-			AttachFields:     dto.AttachFields,
+			Id:           in.WorkNumber,
+			Name:         in.Name,
+			Link:         fmt.Sprintf(TaskUrlTemplate, in.SdUrl, in.WorkNumber),
+			Action:       actionName,
+			Description:  in.Description.Values(),
+			Deadline:     in.DeadLine,
+			ActionBtn:    buttons,
+			Initiator:    in.Initiator,
+			AttachLinks:  dto.AttachLinks,
+			AttachExists: dto.AttachExists,
+			AttachFields: dto.AttachFields,
 		},
 	}
 }
@@ -577,27 +577,27 @@ func NewExecutionNeedTakeInWorkTpl(dto *ExecutorNotifTemplate) Template {
 		Template: "internal/mail/template/27reassignment-template.html",
 		Image:    "ozhidaet_ispolneniya.png",
 		Variables: struct {
-			Id               string
-			Name             string
-			Link             string
-			Description      map[string]interface{}
-			Group            bool
-			Deadline         string
-			ActionBtn        Button
-			AttachLinks      []file_registry.AttachInfo `json:"attachLinks"`
-			AttachFilesExist bool                       `json:"attachFilesExist"`
-			AttachFields     []string                   `json:"attachFields"`
+			Id           string
+			Name         string
+			Link         string
+			Description  map[string]interface{}
+			Group        bool
+			Deadline     string
+			ActionBtn    Button
+			AttachLinks  []file_registry.AttachInfo `json:"attachLinks"`
+			AttachExists bool                       `json:"attachExists"`
+			AttachFields []string                   `json:"attachFields"`
 		}{
-			Id:               dto.WorkNumber,
-			Name:             dto.Name,
-			Link:             fmt.Sprintf(TaskUrlTemplate, dto.SdUrl, dto.WorkNumber),
-			Description:      dto.Description.Values(),
-			Group:            group,
-			Deadline:         dto.Deadline,
-			ActionBtn:        *actionBtn,
-			AttachLinks:      dto.AttachLinks,
-			AttachFilesExist: dto.AttachExists,
-			AttachFields:     dto.AttachFields,
+			Id:           dto.WorkNumber,
+			Name:         dto.Name,
+			Link:         fmt.Sprintf(TaskUrlTemplate, dto.SdUrl, dto.WorkNumber),
+			Description:  dto.Description.Values(),
+			Group:        group,
+			Deadline:     dto.Deadline,
+			ActionBtn:    *actionBtn,
+			AttachLinks:  dto.AttachLinks,
+			AttachExists: dto.AttachExists,
+			AttachFields: dto.AttachFields,
 		},
 	}
 }
@@ -608,25 +608,25 @@ func NewExecutionTakenInWorkTpl(dto *ExecutorNotifTemplate) Template {
 		Template: "internal/mail/template/05applicationAccepted-template.html",
 		Image:    "zayavka_vzyata_v_rabotu.png",
 		Variables: struct {
-			Id               string
-			Name             string
-			Link             string
-			Executor         *sso.UserInfo
-			Initiator        *sso.UserInfo
-			Description      map[string]interface{}
-			AttachLinks      []file_registry.AttachInfo `json:"attachLinks"`
-			AttachFilesExist bool                       `json:"attachFilesExist"`
-			AttachFields     []string                   `json:"attachFields"`
+			Id           string
+			Name         string
+			Link         string
+			Executor     *sso.UserInfo
+			Initiator    *sso.UserInfo
+			Description  map[string]interface{}
+			AttachLinks  []file_registry.AttachInfo `json:"attachLinks"`
+			AttachExists bool                       `json:"attachExists"`
+			AttachFields []string                   `json:"attachFields"`
 		}{
-			Id:               dto.WorkNumber,
-			Name:             dto.Name,
-			Link:             fmt.Sprintf(TaskUrlTemplate, dto.SdUrl, dto.WorkNumber),
-			Executor:         dto.Executor,
-			Initiator:        dto.Initiator,
-			Description:      dto.Description.Values(),
-			AttachLinks:      dto.AttachLinks,
-			AttachFilesExist: dto.AttachExists,
-			AttachFields:     dto.AttachFields,
+			Id:           dto.WorkNumber,
+			Name:         dto.Name,
+			Link:         fmt.Sprintf(TaskUrlTemplate, dto.SdUrl, dto.WorkNumber),
+			Executor:     dto.Executor,
+			Initiator:    dto.Initiator,
+			Description:  dto.Description.Values(),
+			AttachLinks:  dto.AttachLinks,
+			AttachExists: dto.AttachExists,
+			AttachFields: dto.AttachFields,
 		},
 	}
 }
@@ -732,23 +732,23 @@ func NewFormExecutionTakenInWorkTpl(dto *ExecutorNotifTemplate) Template {
 		Template: "internal/mail/template/05applicationAccepted-template.html",
 		Image:    "zayavka_vzyata_v_rabotu.png",
 		Variables: struct {
-			Id               string `json:"id"`
-			Name             string `json:"name"`
-			Link             string `json:"link"`
-			Executor         *sso.UserInfo
-			Initiator        *sso.UserInfo
-			AttachLinks      []file_registry.AttachInfo `json:"attachLinks"`
-			AttachFilesExist bool                       `json:"attachFilesExist"`
-			AttachFields     []string                   `json:"attachFields"`
+			Id           string `json:"id"`
+			Name         string `json:"name"`
+			Link         string `json:"link"`
+			Executor     *sso.UserInfo
+			Initiator    *sso.UserInfo
+			AttachLinks  []file_registry.AttachInfo `json:"attachLinks"`
+			AttachExists bool                       `json:"attachExists"`
+			AttachFields []string                   `json:"attachFields"`
 		}{
-			Id:               dto.WorkNumber,
-			Name:             dto.Name,
-			Link:             fmt.Sprintf(TaskUrlTemplate, dto.SdUrl, dto.WorkNumber),
-			Executor:         dto.Executor,
-			Initiator:        dto.Initiator,
-			AttachLinks:      dto.AttachLinks,
-			AttachFilesExist: dto.AttachExists,
-			AttachFields:     dto.AttachFields,
+			Id:           dto.WorkNumber,
+			Name:         dto.Name,
+			Link:         fmt.Sprintf(TaskUrlTemplate, dto.SdUrl, dto.WorkNumber),
+			Executor:     dto.Executor,
+			Initiator:    dto.Initiator,
+			AttachLinks:  dto.AttachLinks,
+			AttachExists: dto.AttachExists,
+			AttachFields: dto.AttachFields,
 		},
 	}
 }
