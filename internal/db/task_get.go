@@ -486,20 +486,20 @@ func addProcessedGroups(q string, selectFor *string, groupIds *[]string) string 
 func (db *PGCon) GetAdditionalForms(workNumber, nodeName string) ([]string, error) {
 	const q = `
 		WITH content as (
-	    SELECT jsonb_array_elements(content -> 'pipeline' -> 'blocks' -> 'approver_0' -> 'params' -> 'forms_accessibility') as rules
+	    SELECT jsonb_array_elements(content -> 'pipeline' -> 'blocks' -> $2 -> 'params' -> 'forms_accessibility') as rules
 	    FROM versions
-	    WHERE id = (SELECT version_id FROM works WHERE work_number = 'J00000000018560' AND child_id IS NULL)
+	    WHERE id = (SELECT version_id FROM works WHERE work_number = $1 AND child_id IS NULL)
 	
 	    UNION
 	
-	    SELECT jsonb_array_elements(content -> 'pipeline' -> 'blocks' -> 'approver_0' -> 'params' -> 'formsAccessibility') as rules
+	    SELECT jsonb_array_elements(content -> 'pipeline' -> 'blocks' -> $2 -> 'params' -> 'formsAccessibility') as rules
 	    FROM versions
-	    WHERE id = (SELECT version_id FROM works WHERE work_number = 'J00000000018560' AND child_id IS NULL)
+	    WHERE id = (SELECT version_id FROM works WHERE work_number = $1 AND child_id IS NULL)
 		),
 	     actual_work_id as (
 	         SELECT id
 	         FROM works
-	         WHERE work_number = 'J00000000018560'
+	         WHERE work_number = $1
 	           AND child_id IS NULL
 	     ),
 	     actual_step_name as (
