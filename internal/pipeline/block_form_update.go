@@ -4,8 +4,6 @@ import (
 	c "context"
 	"encoding/json"
 	"fmt"
-	"golang.org/x/net/context"
-	"log"
 	"time"
 
 	"github.com/pkg/errors"
@@ -395,33 +393,9 @@ func (gb *GoFormBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork strin
 		return err
 	}
 
-	filesAttach, err := gb.RunContext.makeNotificationAttachment()
+	attachment, err := gb.RunContext.GetAttach()
 	if err != nil {
 		return err
-	}
-
-	attachFields, err := gb.RunContext.getFileField()
-	if err != nil {
-		return err
-	}
-
-	req, skip := sortAndFilterAttachments(filesAttach)
-
-	attach, err := gb.RunContext.Services.FileRegistry.GetAttachments(context.Background(), req)
-	if err != nil {
-		log.Println("Error get attachments: ", req, err)
-		return err
-	}
-
-	attachLinks, err := gb.RunContext.Services.FileRegistry.GetAttachmentLink(context.Background(), skip)
-	if err != nil {
-		log.Println("Error get attachments link: ", skip, err)
-		return err
-	}
-
-	attachExists := false
-	if len(attach) != 0 {
-		attachExists = true
 	}
 
 	tpl := mail.NewFormExecutionTakenInWorkTpl(
@@ -433,53 +407,14 @@ func (gb *GoFormBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork strin
 			Executor:     typeExecutor,
 			Initiator:    inititatorInfo,
 			Mailto:       gb.RunContext.Services.Sender.FetchEmail,
-			AttachExists: attachExists,
-			AttachFields: attachFields,
-			AttachLinks:  attachLinks,
+			AttachExists: attachment.AttachExists,
+			AttachFields: attachment.AttachFields,
+			AttachLinks:  attachment.AttachLinks,
 		})
 
-	file, ok := gb.RunContext.Services.Sender.Images[tpl.Image]
-	if !ok {
-		return errors.New("file not found: " + tpl.Image)
-	}
-
-	iconUser, ok := gb.RunContext.Services.Sender.Images[userImg]
-	if !ok {
-		return errors.New("file not found: " + userImg)
-	}
-
-	iconDownload, ok := gb.RunContext.Services.Sender.Images[downloadImg]
-	if !ok {
-		return errors.New("file not found: " + downloadImg)
-	}
-
-	iconDocument, ok := gb.RunContext.Services.Sender.Images[documentImg]
-	if !ok {
-		return errors.New("file not found: " + documentImg)
-	}
-
-	files := []e.Attachment{
-		{
-			Name:    headImg,
-			Content: file,
-			Type:    e.EmbeddedAttachment,
-		},
-		{
-			Name:    downloadImg,
-			Content: iconDownload,
-			Type:    e.EmbeddedAttachment,
-		},
-		{
-			Name:    documentImg,
-			Content: iconDocument,
-			Type:    e.EmbeddedAttachment,
-		},
-		{
-			Name:    userImg,
-			Content: iconUser,
-			Type:    e.EmbeddedAttachment,
-		},
-	}
+	iconsName := []string{tpl.Image, documentImg, downloadImg, userImg}
+	files, err := gb.RunContext.GetIcons(iconsName)
+	files = append(files, attachment.AttachmentsList...)
 
 	if errSend := gb.RunContext.Services.Sender.SendNotification(ctx, emails, files, tpl); errSend != nil {
 		return errSend
@@ -506,18 +441,12 @@ func (gb *GoFormBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork strin
 			slaInfoPtr),
 	)
 
-	file, ok = gb.RunContext.Services.Sender.Images[tpl.Image]
-	if !ok {
-		return errors.New("file not found: " + tpl.Image)
+	iconsName = []string{tpl.Image, documentImg, downloadImg, userImg}
+	files, err = gb.RunContext.GetIcons(iconsName)
+	if err != nil {
+		return err
 	}
-
-	files = []e.Attachment{
-		{
-			Name:    headImg,
-			Content: file,
-			Type:    e.EmbeddedAttachment,
-		},
-	}
+	files = append(files, attachment.AttachmentsList...)
 
 	if sendErr := gb.RunContext.Services.Sender.SendNotification(ctx, []string{emailTakenInWork}, files,
 		tpl); sendErr != nil {

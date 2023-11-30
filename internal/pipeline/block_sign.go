@@ -4,13 +4,10 @@ import (
 	c "context"
 	"encoding/json"
 	"fmt"
-	"golang.org/x/net/context"
 	"strings"
 	"time"
 
 	"github.com/pkg/errors"
-
-	e "gitlab.services.mts.ru/abp/mail/pkg/email"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
@@ -385,31 +382,9 @@ func (gb *GoSignBlock) handleNotifications(ctx c.Context) error {
 			*gb.State.SLA, slaInfoPtr)
 	}
 
-	filesAttach, err := gb.RunContext.makeNotificationAttachment()
+	attachment, err := gb.RunContext.GetAttach()
 	if err != nil {
 		return err
-	}
-
-	attachFields, err := gb.RunContext.getFileField()
-	if err != nil {
-		return err
-	}
-
-	req, skip := sortAndFilterAttachments(filesAttach)
-
-	attach, err := gb.RunContext.Services.FileRegistry.GetAttachments(context.Background(), req)
-	if err != nil {
-		return err
-	}
-
-	attachLinks, err := gb.RunContext.Services.FileRegistry.GetAttachmentLink(context.Background(), skip)
-	if err != nil {
-		return err
-	}
-
-	attachExists := false
-	if len(attach) != 0 {
-		attachExists = true
 	}
 
 	var emails = make(map[string]mail.Template, 0)
@@ -427,9 +402,9 @@ func (gb *GoSignBlock) handleNotifications(ctx c.Context) error {
 				Deadline:     slaDeadline,
 				AutoReject:   gb.State.AutoReject != nil && *gb.State.AutoReject,
 				Description:  description,
-				AttachLinks:  attachLinks,
-				AttachExists: attachExists,
-				AttachFields: attachFields,
+				AttachLinks:  attachment.AttachLinks,
+				AttachExists: attachment.AttachExists,
+				AttachFields: attachment.AttachFields,
 			})
 	}
 
@@ -437,39 +412,16 @@ func (gb *GoSignBlock) handleNotifications(ctx c.Context) error {
 		return nil
 	}
 
-	iconDownload, dowOk := gb.RunContext.Services.Sender.Images[downloadImg]
-	if !dowOk {
-		return errors.New("file not found: " + downloadImg)
-	}
-
-	iconDocument, docOk := gb.RunContext.Services.Sender.Images[documentImg]
-	if !docOk {
-		return errors.New("file not found: " + documentImg)
-	}
-
 	for i := range emails {
-		file, ok := gb.RunContext.Services.Sender.Images[emails[i].Image]
-		if !ok {
-			return errors.New("file not found: " + emails[i].Image)
+		item := emails[i]
+
+		iconsName := []string{item.Image, documentImg, downloadImg, userImg}
+		files, filesErr := gb.RunContext.GetIcons(iconsName)
+		if filesErr != nil {
+			return err
 		}
 
-		files := []e.Attachment{
-			{
-				Name:    headImg,
-				Content: file,
-				Type:    e.EmbeddedAttachment,
-			},
-			{
-				Name:    downloadImg,
-				Content: iconDownload,
-				Type:    e.EmbeddedAttachment,
-			},
-			{
-				Name:    documentImg,
-				Content: iconDocument,
-				Type:    e.EmbeddedAttachment,
-			},
-		}
+		files = append(files, attachment.AttachmentsList...)
 
 		if sendErr := gb.RunContext.Services.Sender.SendNotification(ctx, []string{i}, files,
 			emails[i]); sendErr != nil {

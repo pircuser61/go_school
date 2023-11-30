@@ -2,7 +2,7 @@ package mail
 
 import (
 	"fmt"
-	file_registry "gitlab.services.mts.ru/jocasta/pipeliner/internal/file-registry"
+	"gitlab.services.mts.ru/abp/mail/pkg/email"
 	"math"
 	"strconv"
 	"strings"
@@ -11,6 +11,7 @@ import (
 	"github.com/iancoleman/orderedmap"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	file_registry "gitlab.services.mts.ru/jocasta/pipeliner/internal/file-registry"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
@@ -32,6 +33,13 @@ type Template struct {
 type Notification struct {
 	Template Template
 	To       []string
+}
+
+type Attachments struct {
+	AttachmentsList []email.Attachment
+	AttachExists    bool
+	AttachFields    []string
+	AttachLinks     []file_registry.AttachInfo
 }
 
 type SignerNotifTemplate struct {
@@ -338,21 +346,21 @@ func NewAnswerExecutionInfoTpl(id, name, sdUrl string) Template {
 	}
 }
 
-func isOrder(v interface{}) bool {
+func isUser(v interface{}) bool {
 	vv, ok := v.(orderedmap.OrderedMap)
 	if !ok {
 		return false
 	}
 
-	if _, oks := vv.Get("fullname"); oks {
-		return true
+	if _, oks := vv.Get("fullname"); !oks {
+		return false
 	}
 
-	if _, oks := vv.Get("username"); oks {
-		return true
+	if _, oks := vv.Get("fullname"); !oks {
+		return false
 	}
 
-	return false
+	return true
 }
 
 func retMap(v orderedmap.OrderedMap) map[string]interface{} {
@@ -361,12 +369,17 @@ func retMap(v orderedmap.OrderedMap) map[string]interface{} {
 
 func isLink(v interface{}) bool {
 	str, ok := v.(string)
+
+	if len(str) < 5 {
+		return false
+	}
+
 	if ok {
 		if str[0:4] == "http" {
 			return true
-		} else {
-			return false
 		}
+
+		return false
 	}
 
 	return ok

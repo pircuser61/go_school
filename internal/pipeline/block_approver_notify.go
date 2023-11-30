@@ -91,38 +91,16 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 		}
 	}
 
-	emails := make(map[string]mail.Template, 0)
+	templates := make(map[string]mail.Template, 0)
 	slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
 		TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.CurrBlockStartTime,
 			FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100)}},
 		WorkType: sla.WorkHourType(gb.State.WorkType),
 	})
 
-	filesAttach, err := gb.RunContext.makeNotificationAttachment()
+	attachment, err := gb.RunContext.GetAttach()
 	if err != nil {
 		return err
-	}
-
-	attachFields, err := gb.RunContext.getFileField()
-	if err != nil {
-		return err
-	}
-
-	req, skip := sortAndFilterAttachments(filesAttach)
-
-	attach, err := gb.RunContext.Services.FileRegistry.GetAttachments(c.Background(), req)
-	if err != nil {
-		return err
-	}
-
-	attachLinks, err := gb.RunContext.Services.FileRegistry.GetAttachmentLink(c.Background(), skip)
-	if err != nil {
-		return err
-	}
-
-	attachExists := false
-	if len(attach) != 0 {
-		attachExists = true
 	}
 
 	if getSlaInfoErr != nil {
@@ -145,7 +123,7 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 			return err
 		}
 
-		emails[email] = mail.NewAppPersonStatusNotificationTpl(
+		templates[email] = mail.NewAppPersonStatusNotificationTpl(
 			&mail.NewAppPersonStatusTpl{
 				WorkNumber: gb.RunContext.WorkNumber,
 				Name:       gb.RunContext.NotifName,
@@ -167,59 +145,24 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 				Initiator:                 initiatorInfo,
 			},
 			&mail.SignerNotifTemplate{
-				AttachFields: attachFields,
-				AttachExists: attachExists,
-				AttachLinks:  attachLinks,
+				AttachFields: attachment.AttachFields,
+				AttachExists: attachment.AttachExists,
+				AttachLinks:  attachment.AttachLinks,
 			})
 	}
 
-	for i := range emails {
+	for i := range templates {
+		item := templates[i]
 
-		file, ok := gb.RunContext.Services.Sender.Images[emails[i].Image]
-		if !ok {
-			return errors.New("file not found: " + emails[i].Image)
+		iconsName := []string{item.Image, documentImg, downloadImg, userImg}
+		files, iconsErr := gb.RunContext.GetIcons(iconsName)
+		if iconsErr != nil {
+			return iconsErr
 		}
-
-		iconUser, iOk := gb.RunContext.Services.Sender.Images[userImg]
-		if !iOk {
-			return errors.New("file not found: " + emails[i].Image)
-		}
-
-		iconDownload, dowOk := gb.RunContext.Services.Sender.Images[downloadImg]
-		if !dowOk {
-			return errors.New("file not found: " + downloadImg)
-		}
-
-		iconDocument, docOk := gb.RunContext.Services.Sender.Images[documentImg]
-		if !docOk {
-			return errors.New("file not found: " + downloadImg)
-		}
-
-		files := []e.Attachment{
-			{
-				Name:    headImg,
-				Content: file,
-				Type:    e.EmbeddedAttachment,
-			},
-			{
-				Name:    userImg,
-				Content: iconUser,
-				Type:    e.EmbeddedAttachment,
-			},
-			{
-				Name:    documentImg,
-				Content: iconDocument,
-				Type:    e.EmbeddedAttachment,
-			},
-			{
-				Name:    downloadImg,
-				Content: iconDownload,
-				Type:    e.EmbeddedAttachment,
-			},
-		}
+		files = append(files, attachment.AttachmentsList...)
 
 		if sendErr := gb.RunContext.Services.Sender.SendNotification(
-			ctx, []string{i}, files, emails[i],
+			ctx, []string{i}, files, item,
 		); sendErr != nil {
 			return sendErr
 		}

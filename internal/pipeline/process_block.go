@@ -4,7 +4,6 @@ import (
 	"bytes"
 	c "context"
 	"encoding/json"
-	"log"
 	"net/http"
 	"time"
 
@@ -18,7 +17,6 @@ import (
 
 	"github.com/iancoleman/orderedmap"
 
-	e "gitlab.services.mts.ru/abp/mail/pkg/email"
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
@@ -491,13 +489,20 @@ func (runCtx *BlockRunContext) makeNotificationAttachment() ([]file_registry.Fil
 	for _, v := range task.InitialApplication.AttachmentFields {
 		filesAttach, ok := task.InitialApplication.ApplicationBody.Get(v)
 		if ok {
-			for _, vv := range filesAttach.([]interface{}) {
+			fileAttach, oks := filesAttach.([]interface{})
+			if !oks {
+				return nil, errors.New("fields is not files")
+			}
+
+			for _, vv := range fileAttach {
 				fileMap := vv.(orderedmap.OrderedMap)
-				fileId, _ := fileMap.Get("file_id")
+				fileId, oks := fileMap.Get("file_id")
+				if !oks {
+					continue
+				}
+
 				attachments = append(attachments, entity.Attachment{FileID: fileId.(string)})
 			}
-		} else {
-			log.Println("Поле без вложений: ", v)
 		}
 	}
 
@@ -521,6 +526,18 @@ func (runCtx *BlockRunContext) makeNotificationDescription() (*orderedmap.Ordere
 	if err != nil {
 		return nil, err
 	}
+
+	//additionalDescriptions, err := runCtx.Services.Storage.GetAdditionalForms(runCtx.WorkNumber, runCtx.WorkTitle)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//for _, item := range additionalDescriptions {
+	//	if item == nil {
+	//		continue
+	//	}
+	//
+	//	descr = fmt.Sprintf("%s\n\n%s", descr, item)
+	//}
 
 	return &descr.InitialApplication.ApplicationBody, nil
 }
@@ -568,27 +585,8 @@ func (runCtx *BlockRunContext) handleInitiatorNotify(ctx c.Context, params handl
 		return err
 	}
 
-	filesAttach, err := runCtx.makeNotificationAttachment()
+	attachment, err := runCtx.GetAttach()
 	if err != nil {
-		return err
-	}
-
-	attachFields, err := runCtx.getFileField()
-	if err != nil {
-		return err
-	}
-
-	req, skip := sortAndFilterAttachments(filesAttach)
-
-	attach, err := runCtx.Services.FileRegistry.GetAttachments(context.Background(), req)
-	if err != nil {
-		log.Println("Error get attachments: ", req, err)
-		return err
-	}
-
-	attachLinks, err := runCtx.Services.FileRegistry.GetAttachmentLink(context.Background(), skip)
-	if err != nil {
-		log.Println("Error get attachments link: ", skip, err)
 		return err
 	}
 
@@ -609,57 +607,22 @@ func (runCtx *BlockRunContext) handleInitiatorNotify(ctx c.Context, params handl
 		params.action = statusToTaskState[params.status]
 	}
 
-	attachExists := false
-	if len(attach) != 0 {
-		attachExists = true
-	}
-
 	tmpl := mail.NewAppInitiatorStatusNotificationTpl(
 		&mail.SignerNotifTemplate{
 			WorkNumber:   runCtx.WorkNumber,
 			Name:         runCtx.NotifName,
 			SdUrl:        runCtx.Services.Sender.SdAddress,
 			Description:  description,
-			AttachLinks:  attachLinks,
-			AttachExists: attachExists,
-			AttachFields: attachFields,
+			AttachLinks:  attachment.AttachLinks,
+			AttachExists: attachment.AttachExists,
+			AttachFields: attachment.AttachFields,
 			Action:       params.action,
 		})
 
-	file, ok := runCtx.Services.Sender.Images[tmpl.Image]
-	if !ok {
-		return errors.New("file not found: " + tmpl.Image)
-	}
+	iconsName := []string{tmpl.Image, documentImg, downloadImg, userImg}
+	files, err := runCtx.GetIcons(iconsName)
 
-	iconDownload, dowOk := runCtx.Services.Sender.Images[downloadImg]
-	if !dowOk {
-		return errors.New("file not found: " + downloadImg)
-	}
-
-	iconDocument, docOk := runCtx.Services.Sender.Images[documentImg]
-	if !docOk {
-		return errors.New("file not found: " + documentImg)
-	}
-
-	files := []e.Attachment{
-		{
-			Name:    headImg,
-			Content: file,
-			Type:    e.EmbeddedAttachment,
-		},
-		{
-			Name:    downloadImg,
-			Content: iconDownload,
-			Type:    e.EmbeddedAttachment,
-		},
-		{
-			Name:    documentImg,
-			Content: iconDocument,
-			Type:    e.EmbeddedAttachment,
-		},
-	}
-
-	files = append(files, attach...)
+	files = append(files, attachment.AttachmentsList...)
 
 	if sendErr := runCtx.Services.Sender.SendNotification(ctx, emails, files, tmpl); sendErr != nil {
 		return sendErr

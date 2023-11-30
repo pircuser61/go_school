@@ -803,31 +803,9 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 		}
 	}
 
-	filesAttach, err := gb.RunContext.makeNotificationAttachment()
+	attachment, err := gb.RunContext.GetAttach()
 	if err != nil {
 		return err
-	}
-
-	attachFields, err := gb.RunContext.getFileField()
-	if err != nil {
-		return err
-	}
-
-	req, skip := sortAndFilterAttachments(filesAttach)
-
-	attach, err := gb.RunContext.Services.FileRegistry.GetAttachments(c.Background(), req)
-	if err != nil {
-		return err
-	}
-
-	attachLinks, err := gb.RunContext.Services.FileRegistry.GetAttachmentLink(c.Background(), skip)
-	if err != nil {
-		return err
-	}
-
-	attachExists := false
-	if len(attach) != 0 {
-		attachExists = true
 	}
 
 	tpl := mail.NewExecutionTakenInWorkTpl(&mail.ExecutorNotifTemplate{
@@ -839,53 +817,18 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 		Initiator:    initiatorInfo,
 		LastWorks:    lastWorksForUser,
 		Mailto:       gb.RunContext.Services.Sender.FetchEmail,
-		AttachLinks:  attachLinks,
-		AttachExists: attachExists,
-		AttachFields: attachFields,
+		AttachLinks:  attachment.AttachLinks,
+		AttachExists: attachment.AttachExists,
+		AttachFields: attachment.AttachFields,
 	})
 
-	file, ok := gb.RunContext.Services.Sender.Images[tpl.Image]
-	if !ok {
-		return errors.New("file not found: " + tpl.Image)
+	iconsName := []string{tpl.Image, downloadImg, documentImg, userImg}
+	files, err := gb.RunContext.GetIcons(iconsName)
+	if err != nil {
+		return err
 	}
 
-	iconUser, iOk := gb.RunContext.Services.Sender.Images[userImg]
-	if !iOk {
-		return errors.New("file not found: " + tpl.Image)
-	}
-
-	iconDownload, dowOk := gb.RunContext.Services.Sender.Images[downloadImg]
-	if !dowOk {
-		return errors.New("file not found: " + downloadImg)
-	}
-
-	iconDocument, docOk := gb.RunContext.Services.Sender.Images[documentImg]
-	if !docOk {
-		return errors.New("file not found: " + documentImg)
-	}
-
-	files := []e.Attachment{
-		{
-			Name:    headImg,
-			Content: file,
-			Type:    e.EmbeddedAttachment,
-		},
-		{
-			Name:    downloadImg,
-			Content: iconDownload,
-			Type:    e.EmbeddedAttachment,
-		},
-		{
-			Name:    documentImg,
-			Content: iconDocument,
-			Type:    e.EmbeddedAttachment,
-		},
-		{
-			Name:    userImg,
-			Content: iconUser,
-			Type:    e.EmbeddedAttachment,
-		},
-	}
+	files = append(files, attachment.AttachmentsList...)
 
 	if errSend := gb.RunContext.Services.Sender.SendNotification(ctx, emails, files, tpl); errSend != nil {
 		return errSend
@@ -936,41 +879,21 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 			LastWorks:                 lastWorksForUser,
 		},
 		&mail.SignerNotifTemplate{
-			AttachFields: attachFields,
-			AttachExists: attachExists,
-			AttachLinks:  attachLinks,
+			AttachFields: attachment.AttachFields,
+			AttachExists: attachment.AttachExists,
+			AttachLinks:  attachment.AttachLinks,
 		})
 
-	header, hOk := gb.RunContext.Services.Sender.Images[tpl.Image]
-	if !hOk {
-		return errors.New("file not found: " + tpl.Image)
+	iconsName = []string{tpl.Image, downloadImg, documentImg, userImg}
+	files, err = gb.RunContext.GetIcons(iconsName)
+	if err != nil {
+		return err
 	}
 
-	listFiles := []e.Attachment{
-		{
-			Name:    headImg,
-			Content: header,
-			Type:    e.EmbeddedAttachment,
-		},
-		{
-			Name:    downloadImg,
-			Content: iconDownload,
-			Type:    e.EmbeddedAttachment,
-		},
-		{
-			Name:    documentImg,
-			Content: iconDocument,
-			Type:    e.EmbeddedAttachment,
-		},
-		{
-			Name:    userImg,
-			Content: iconUser,
-			Type:    e.EmbeddedAttachment,
-		},
-	}
+	files = append(files, attachment.AttachmentsList...)
 
 	if sendErr := gb.RunContext.Services.Sender.SendNotification(ctx,
-		[]string{emailTakenInWork}, listFiles, tpl); sendErr != nil {
+		[]string{emailTakenInWork}, files, tpl); sendErr != nil {
 		return sendErr
 	}
 

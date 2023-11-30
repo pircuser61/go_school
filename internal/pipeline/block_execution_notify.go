@@ -87,31 +87,9 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 		WorkType: sla.WorkHourType(gb.State.WorkType),
 	})
 
-	filesAttach, err := gb.RunContext.makeNotificationAttachment()
+	attachment, err := gb.RunContext.GetAttach()
 	if err != nil {
 		return err
-	}
-
-	attachFields, err := gb.RunContext.getFileField()
-	if err != nil {
-		return err
-	}
-
-	req, skip := sortAndFilterAttachments(filesAttach)
-
-	attach, err := gb.RunContext.Services.FileRegistry.GetAttachments(c.Background(), req)
-	if err != nil {
-		return err
-	}
-
-	attachLinks, err := gb.RunContext.Services.FileRegistry.GetAttachmentLink(c.Background(), skip)
-	if err != nil {
-		return err
-	}
-
-	attachExists := false
-	if len(attach) != 0 {
-		attachExists = true
 	}
 
 	if getSlaInfoErr != nil {
@@ -136,20 +114,20 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 					LastWorks:    lastWorksForUser,
 					IsGroup:      len(gb.State.Executors) > 1,
 					Deadline:     gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(time.Now(), gb.State.SLA, slaInfoPtr),
-					AttachLinks:  attachLinks,
-					AttachExists: attachExists,
-					AttachFields: attachFields,
+					AttachLinks:  attachment.AttachLinks,
+					AttachExists: attachment.AttachExists,
+					AttachFields: attachment.AttachFields,
 				},
 			)
 		} else {
 
-			author, err := gb.RunContext.Services.People.GetUser(ctx, gb.RunContext.Initiator)
-			if err != nil {
+			author, errAuthor := gb.RunContext.Services.People.GetUser(ctx, gb.RunContext.Initiator)
+			if errAuthor != nil {
 				return err
 			}
 
-			initiatorInfo, err := author.ToUserinfo()
-			if err != nil {
+			initiatorInfo, errInitiator := author.ToUserinfo()
+			if errInitiator != nil {
 				return err
 			}
 
@@ -172,55 +150,20 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 					ExecutionDecisionRejected: string(ExecutionDecisionRejected),
 					LastWorks:                 lastWorksForUser,
 				}, &mail.SignerNotifTemplate{
-					AttachFields: attachFields,
-					AttachExists: attachExists,
-					AttachLinks:  attachLinks,
+					AttachFields: attachment.AttachFields,
+					AttachExists: attachment.AttachExists,
+					AttachLinks:  attachment.AttachLinks,
 				})
 		}
 	}
 
-	iconUser, ok := gb.RunContext.Services.Sender.Images[userImg]
-	if !ok {
-		return errors.New("file not found: " + userImg)
-	}
-
-	iconDownload, dowOk := gb.RunContext.Services.Sender.Images[downloadImg]
-	if !dowOk {
-		return errors.New("file not found: " + downloadImg)
-	}
-
-	iconDocument, docOk := gb.RunContext.Services.Sender.Images[documentImg]
-	if !docOk {
-		return errors.New("file not found: " + downloadImg)
-	}
-
 	for i := range emails {
-		file, oks := gb.RunContext.Services.Sender.Images[emails[i].Image]
-		if !oks {
-			return errors.New("file not found: " + emails[i].Image)
-		}
+		item := emails[i]
 
-		files := []e.Attachment{
-			{
-				Name:    headImg,
-				Content: file,
-				Type:    e.EmbeddedAttachment,
-			},
-			{
-				Name:    downloadImg,
-				Content: iconDownload,
-				Type:    e.EmbeddedAttachment,
-			},
-			{
-				Name:    documentImg,
-				Content: iconDocument,
-				Type:    e.EmbeddedAttachment,
-			},
-			{
-				Name:    userImg,
-				Content: iconUser,
-				Type:    e.EmbeddedAttachment,
-			},
+		iconsName := []string{item.Image, documentImg, downloadImg, userImg}
+		files, errFiles := gb.RunContext.GetIcons(iconsName)
+		if err != nil {
+			return errFiles
 		}
 
 		if sendErr := gb.RunContext.Services.Sender.SendNotification(ctx, []string{i}, files,
