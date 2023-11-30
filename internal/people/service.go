@@ -40,7 +40,8 @@ var (
 	englishCheck = regexp.MustCompile(`[^а-яё]`)
 	newStringRm  = regexp.MustCompile(`(\s\s+)|(\n)`)
 
-	usernameEqFilter = fmt.Sprintf("(username eq %q)", usernamePH)
+	usernameEqFilter            = fmt.Sprintf("(username eq %q)", usernamePH)
+	usernameEqOnlyEnabledFilter = fmt.Sprintf("((username eq %q) and (enabled eq true))", usernamePH)
 
 	usernameFilter = fmt.Sprintf("(username sw %q)", usernamePH)
 	onePartFilter  = fmt.Sprintf("(lastName sw %q)", name1PH)
@@ -158,7 +159,7 @@ func (s *Service) GetUserEmail(ctx context.Context, username string) (string, er
 	ctxLocal, span := trace.StartSpan(ctx, "GetUserEmail")
 	defer span.End()
 
-	users, err := s.getUser(ctxLocal, username)
+	users, err := s.getUser(ctxLocal, username, true)
 	if err != nil {
 		return "", err
 	}
@@ -183,7 +184,7 @@ func (s *Service) GetUser(ctx context.Context, username string) (SSOUser, error)
 	ctxLocal, span := trace.StartSpan(ctx, "GetUser")
 	defer span.End()
 
-	users, err := s.getUser(ctxLocal, username)
+	users, err := s.getUser(ctxLocal, username, false)
 	if err != nil {
 		return nil, err
 	}
@@ -216,7 +217,7 @@ func (s *Service) GetUsers(ctx context.Context, username string, limit *int, fil
 	return users, nil
 }
 
-func (s *Service) getUser(ctx context.Context, search string) ([]SSOUser, error) {
+func (s *Service) getUser(ctx context.Context, search string, onlyEnabled bool) ([]SSOUser, error) {
 	search = strings.TrimSpace(search)
 	if search == "" {
 		return make([]SSOUser, 0), nil
@@ -236,6 +237,10 @@ func (s *Service) getUser(ctx context.Context, search string) ([]SSOUser, error)
 	query := req.URL.Query()
 
 	f := strings.Replace(usernameEqFilter, usernamePH, search, 1)
+	if onlyEnabled {
+		f = strings.Replace(usernameEqOnlyEnabledFilter, usernamePH, search, 1)
+	}
+
 	query.Add(filterParam, f)
 	query.Add(limitParam, "1")
 	query.Add(sortByParam, sortByVal)
