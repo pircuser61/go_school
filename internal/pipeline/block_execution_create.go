@@ -452,6 +452,7 @@ func (gb *GoExecutionBlock) setPreviousExecutors(ctx c.Context) {
 	}
 
 	if parentState.Executors != nil {
+		gb.State.Executors = map[string]struct{}{}
 		for login := range parentState.Executors {
 			gb.State.Executors[login] = struct{}{}
 		}
