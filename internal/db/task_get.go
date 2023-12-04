@@ -18,8 +18,6 @@ import (
 
 	"go.opencensus.io/trace"
 
-	"github.com/iancoleman/orderedmap"
-
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"

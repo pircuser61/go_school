@@ -286,8 +286,8 @@ func (_m *MockedDatabase) FinishTaskBlocks(ctx context.Context, workID uuid.UUID
 	return r0
 }
 
-// GetAdditionalForms provides a mock function with given fields: workNumber, nodeName
-func (_m *MockedDatabase) GetAdditionalForms(workNumber string, nodeName string) ([]orderedmap.OrderedMap, error) {
+// GetAdditionalDescriptionForms provides a mock function with given fields: workNumber, nodeName
+func (_m *MockedDatabase) GetAdditionalDescriptionForms(workNumber string, nodeName string) ([]orderedmap.OrderedMap, error) {
 	ret := _m.Called(workNumber, nodeName)
 
 	var r0 []orderedmap.OrderedMap
@@ -300,6 +300,32 @@ func (_m *MockedDatabase) GetAdditionalForms(workNumber string, nodeName string)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]orderedmap.OrderedMap)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(string, string) error); ok {
+		r1 = rf(workNumber, nodeName)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetAdditionalForms provides a mock function with given fields: workNumber, nodeName
+func (_m *MockedDatabase) GetAdditionalForms(workNumber string, nodeName string) ([]string, error) {
+	ret := _m.Called(workNumber, nodeName)
+
+	var r0 []string
+	var r1 error
+	if rf, ok := ret.Get(0).(func(string, string) ([]string, error)); ok {
+		return rf(workNumber, nodeName)
+	}
+	if rf, ok := ret.Get(0).(func(string, string) []string); ok {
+		r0 = rf(workNumber, nodeName)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]string)
 		}
 	}
 
