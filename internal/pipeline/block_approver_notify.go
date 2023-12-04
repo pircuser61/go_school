@@ -39,8 +39,7 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 	approvers := getSliceFromMapOfStrings(gb.State.Approvers)
 	loginsToNotify := delegates.GetUserInArrayWithDelegations(approvers)
 
-	files := make([]e.Attachment, 0)
-	description, err := gb.RunContext.makeNotificationDescription(gb.Name, &files)
+	description, files, err := gb.RunContext.makeNotificationDescription(gb.Name)
 
 	if err != nil {
 		return err

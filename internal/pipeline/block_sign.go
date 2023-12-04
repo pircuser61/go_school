@@ -9,7 +9,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	e "gitlab.services.mts.ru/abp/mail/pkg/email"
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
@@ -363,8 +362,7 @@ func (gb *GoSignBlock) handleNotifications(ctx c.Context) error {
 
 	signers := getSliceFromMapOfStrings(gb.State.Signers)
 
-	files := make([]e.Attachment, 0)
-	description, err := gb.RunContext.makeNotificationDescription(gb.Name, &files)
+	description, files, err := gb.RunContext.makeNotificationDescription(gb.Name)
 	if err != nil {
 		return err
 	}

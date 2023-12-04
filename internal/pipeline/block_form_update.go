@@ -388,8 +388,7 @@ func (gb *GoFormBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork strin
 		return convertErr
 	}
 
-	files := make([]e.Attachment, 0)
-	description, err := gb.RunContext.makeNotificationDescription(gb.Name, &files)
+	description, files, err := gb.RunContext.makeNotificationDescription(gb.Name)
 	if err != nil {
 		return err
 	}
@@ -449,9 +448,9 @@ func (gb *GoFormBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork strin
 	)
 
 	iconsName = []string{tpl.Image, documentImg, downloadImg, userImg}
-	files, err = gb.RunContext.GetIcons(iconsName)
-	if err != nil {
-		return err
+	iconFiles, iconErr = gb.RunContext.GetIcons(iconsName)
+	if iconErr != nil {
+		return iconErr
 	}
 	files = append(files, attachment.AttachmentsList...)
 

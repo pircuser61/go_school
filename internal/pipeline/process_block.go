@@ -547,10 +547,10 @@ func (runCtx *BlockRunContext) makeNotificationAttachment() ([]file_registry.Fil
 	return ta, nil
 }
 
-func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string, files *[]e.Attachment) ([]orderedmap.OrderedMap, error) {
+func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) ([]orderedmap.OrderedMap, []e.Attachment, error) {
 	descr, err := runCtx.Services.Storage.GetTaskRunContext(c.Background(), runCtx.WorkNumber)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	apBody := descr.InitialApplication.ApplicationBody
@@ -559,22 +559,27 @@ func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string, file
 
 	filesAttach, err := runCtx.makeNotificationAttachment()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	attachments, err := runCtx.GetAttach(filesAttach)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	apBody.Set("attachLinks", attachments.AttachLinks)
-	apBody.Set("attachExist", attachments.AttachExists)
-	apBody.Set("attachList", attachments.AttachmentsList)
+	files := make([]e.Attachment, 0)
+
+	if len(attachments.AttachmentsList) != 0 {
+		apBody.Set("attachLinks", attachments.AttachLinks)
+		apBody.Set("attachExist", attachments.AttachExists)
+		apBody.Set("attachList", attachments.AttachmentsList)
+	}
+
 	descriptions = append(descriptions, apBody)
 
 	additionalForms, err := runCtx.Services.Storage.GetAdditionalForms(runCtx.WorkNumber, nodeName)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	for _, v := range additionalForms {
@@ -593,24 +598,24 @@ func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string, file
 
 		fileInfo, fileErr := runCtx.makeNotificationFormAttachment(attachmentFiles)
 		if fileErr != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
 		attach, attachErr := runCtx.GetAttach(fileInfo)
 		if attachErr != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
 		v.Set("attachLinks", attach.AttachLinks)
 		v.Set("attachExist", attach.AttachExists)
 		v.Set("attachList", attach.AttachmentsList)
 
-		*files = append(*files, attach.AttachmentsList...)
+		files = append(files, attach.AttachmentsList...)
 		descriptions = append(descriptions, v)
 	}
 
-	*files = append(*files, attachments.AttachmentsList...)
-	return descriptions, nil
+	files = append(files, attachments.AttachmentsList...)
+	return descriptions, files, nil
 }
 
 type handleInitiatorNotifyParams struct {
@@ -651,8 +656,7 @@ func (runCtx *BlockRunContext) handleInitiatorNotify(ctx c.Context, params handl
 		return nil
 	}
 
-	files := make([]e.Attachment, 0)
-	description, err := runCtx.makeNotificationDescription(params.step, &files)
+	description, files, err := runCtx.makeNotificationDescription(params.step)
 	if err != nil {
 		return err
 	}

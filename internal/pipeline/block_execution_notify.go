@@ -35,8 +35,7 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 
 	loginsToNotify := delegates.GetUserInArrayWithDelegations(executors)
 
-	files := make([]e.Attachment, 0)
-	description, err := gb.RunContext.makeNotificationDescription(gb.Name, &files)
+	description, files, err := gb.RunContext.makeNotificationDescription(gb.Name)
 	if err != nil {
 		return err
 	}

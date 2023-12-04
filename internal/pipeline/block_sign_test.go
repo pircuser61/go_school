@@ -12,12 +12,12 @@ import (
 	"testing"
 	"time"
 
-	"golang.org/x/net/context"
-
 	"github.com/google/uuid"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+
+	"github.com/iancoleman/orderedmap"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db/mocks"
@@ -31,11 +31,13 @@ import (
 
 func getTaskRunContext() db.Database {
 	res := &mocks.MockedDatabase{}
-	res.On("GetTaskRunContext", context.Background(), "J001").Return(entity.TaskRunContext{}, nil)
+
+	res.On("GetAttach", nil).Return(nil, nil)
+	res.On("GetTaskRunContext", c.Background(), "J001").Return(entity.TaskRunContext{}, nil)
 	res.On("GetApplicationData", "J001").Return("", nil)
-	res.On("GetAdditionalForms", "J001", "sign").Return([]string{}, nil)
+	res.On("GetAdditionalForms", "J001", "sign").Return([]orderedmap.OrderedMap{}, nil)
 	res.On("UpdateStepContext",
-		mock.MatchedBy(func(ctx context.Context) bool { return true }),
+		mock.MatchedBy(func(ctx c.Context) bool { return true }),
 		mock.AnythingOfType("*db.UpdateStepRequest"),
 	).Return(
 		nil,
@@ -1740,7 +1742,7 @@ func TestGoSignBlock_Update(t *testing.T) {
 		SignatureCarrier script.SignatureCarrier
 	}
 	type args struct {
-		ctx  context.Context
+		ctx  c.Context
 		data *script.BlockUpdateData
 	}
 	tests := []struct {
@@ -1760,7 +1762,7 @@ func TestGoSignBlock_Update(t *testing.T) {
 				},
 			},
 			args: args{
-				ctx:  context.Background(),
+				ctx:  c.Background(),
 				data: nil,
 			},
 			wantErr: true,
@@ -1783,7 +1785,7 @@ func TestGoSignBlock_Update(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				data: &script.BlockUpdateData{
 					ByLogin:    invalidLogin,
 					Action:     string(entity.TaskUpdateActionSign),
@@ -1810,7 +1812,7 @@ func TestGoSignBlock_Update(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				data: &script.BlockUpdateData{
 					ByLogin:    invalidLogin,
 					Action:     string(entity.TaskUpdateActionSign),
@@ -1837,7 +1839,7 @@ func TestGoSignBlock_Update(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				data: &script.BlockUpdateData{
 					ByLogin:    invalidLogin,
 					Action:     string(entity.TaskUpdateActionSign),
@@ -1865,7 +1867,7 @@ func TestGoSignBlock_Update(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				data: &script.BlockUpdateData{
 					ByLogin:    invalidLogin,
 					Action:     string(entity.TaskUpdateActionSign),
@@ -1893,7 +1895,7 @@ func TestGoSignBlock_Update(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				data: &script.BlockUpdateData{
 					ByLogin: invalidLogin,
 					Action:  string(entity.TaskUpdateActionSign),
@@ -1919,7 +1921,7 @@ func TestGoSignBlock_Update(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				data: &script.BlockUpdateData{
 					ByLogin:    login2,
 					Action:     string(entity.TaskUpdateActionSign),
@@ -1946,7 +1948,7 @@ func TestGoSignBlock_Update(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				data: &script.BlockUpdateData{
 					ByLogin:    login2,
 					Action:     string(entity.TaskUpdateActionSign),
@@ -1973,7 +1975,7 @@ func TestGoSignBlock_Update(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				data: &script.BlockUpdateData{
 					ByLogin:    login2,
 					Action:     string(entity.TaskUpdateActionSign),
@@ -2000,7 +2002,7 @@ func TestGoSignBlock_Update(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				data: &script.BlockUpdateData{
 					ByLogin:    invalidLogin,
 					Action:     string(entity.TaskUpdateActionSign),
@@ -2027,7 +2029,7 @@ func TestGoSignBlock_Update(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				data: &script.BlockUpdateData{
 					ByLogin:    invalidLogin,
 					Action:     string(entity.TaskUpdateActionSign),
@@ -2055,7 +2057,7 @@ func TestGoSignBlock_Update(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				data: &script.BlockUpdateData{
 					ByLogin:    invalidLogin,
 					Action:     string(entity.TaskUpdateActionSign),
@@ -2082,7 +2084,7 @@ func TestGoSignBlock_Update(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				data: &script.BlockUpdateData{
 					ByLogin:    ServiceAccount,
 					Action:     string(entity.TaskUpdateActionSign),
@@ -2109,7 +2111,7 @@ func TestGoSignBlock_Update(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				data: &script.BlockUpdateData{
 					ByLogin:    ServiceAccount,
 					Action:     string(entity.TaskUpdateActionSign),
@@ -2136,7 +2138,7 @@ func TestGoSignBlock_Update(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				data: &script.BlockUpdateData{
 					ByLogin:    ServiceAccount,
 					Action:     string(entity.TaskUpdateActionSign),
@@ -2165,7 +2167,7 @@ func TestGoSignBlock_Update(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				data: &script.BlockUpdateData{
 					ByLogin:    login,
 					Action:     string(entity.TaskUpdateActionSign),
@@ -2190,7 +2192,7 @@ func TestGoSignBlock_Update(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				data: &script.BlockUpdateData{
 					Action:     string(entity.TaskUpdateActionSign),
 					Parameters: []byte(`{"decision":"` + SignDecisionSigned + `"}`),
@@ -2216,7 +2218,7 @@ func TestGoSignBlock_Update(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				data: &script.BlockUpdateData{
 					ByLogin:    invalidLogin,
 					Action:     string(entity.TaskUpdateActionSign),
@@ -2244,7 +2246,7 @@ func TestGoSignBlock_Update(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				data: &script.BlockUpdateData{
 					ByLogin:    invalidLogin,
 					Action:     string(entity.TaskUpdateActionSign),
@@ -2320,7 +2322,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 	type args struct {
 		name string
 		ef   *entity.EriusFunc
-		ctx  context.Context
+		ctx  c.Context
 	}
 
 	tests := []struct {
@@ -2341,7 +2343,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 			},
 			args: args{
 				name: example,
-				ctx:  context.Background(),
+				ctx:  c.Background(),
 				ef: &entity.EriusFunc{
 					BlockType:  BlockGoSignID,
 					Title:      title,
@@ -2388,7 +2390,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							res.On("GetApplicationData", "J001").Return("", nil)
 							res.On("GetAdditionalForms", "J001", "sign").Return([]string{}, nil)
 							res.On("UpdateStepContext",
-								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(ctx c.Context) bool { return true }),
 								mock.AnythingOfType("*db.UpdateStepRequest"),
 							).Return(
 								nil,
@@ -2401,7 +2403,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				ef: &entity.EriusFunc{
 					BlockType:  BlockGoSignID,
 					Title:      title,
@@ -2458,7 +2460,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							res.On("GetApplicationData", "J001").Return("", nil)
 							res.On("GetAdditionalForms", "J001", "sign").Return([]string{}, nil)
 							res.On("UpdateStepContext",
-								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(ctx c.Context) bool { return true }),
 								mock.AnythingOfType("*db.UpdateStepRequest"),
 							).Return(
 								nil,
@@ -2471,7 +2473,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				ef: &entity.EriusFunc{
 					BlockType:  BlockGoSignID,
 					Title:      title,
@@ -2528,7 +2530,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							res.On("GetApplicationData", "J001").Return("", nil)
 							res.On("GetAdditionalForms", "J001", "sign").Return([]string{}, nil)
 							res.On("UpdateStepContext",
-								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(ctx c.Context) bool { return true }),
 								mock.AnythingOfType("*db.UpdateStepRequest"),
 							).Return(
 								nil,
@@ -2541,7 +2543,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				ef: &entity.EriusFunc{
 					BlockType:  BlockGoSignID,
 					Title:      title,
@@ -2598,7 +2600,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							res.On("GetApplicationData", "J001").Return("", nil)
 							res.On("GetAdditionalForms", "J001", "sign").Return([]string{}, nil)
 							res.On("UpdateStepContext",
-								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(ctx c.Context) bool { return true }),
 								mock.AnythingOfType("*db.UpdateStepRequest"),
 							).Return(
 								nil,
@@ -2611,7 +2613,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				ef: &entity.EriusFunc{
 					BlockType:  BlockGoSignID,
 					Title:      title,
@@ -2668,7 +2670,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							res.On("GetApplicationData", "J001").Return("", nil)
 							res.On("GetAdditionalForms", "J001", "sign").Return([]string{}, nil)
 							res.On("UpdateStepContext",
-								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(ctx c.Context) bool { return true }),
 								mock.AnythingOfType("*db.UpdateStepRequest"),
 							).Return(
 								nil,
@@ -2681,7 +2683,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				ef: &entity.EriusFunc{
 					BlockType:  BlockGoSignID,
 					Title:      title,
@@ -2738,7 +2740,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							res.On("GetApplicationData", "J001").Return("", nil)
 							res.On("GetAdditionalForms", "J001", "sign").Return([]string{}, nil)
 							res.On("UpdateStepContext",
-								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(ctx c.Context) bool { return true }),
 								mock.AnythingOfType("*db.UpdateStepRequest"),
 							).Return(
 								nil,
@@ -2751,7 +2753,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				ef: &entity.EriusFunc{
 					BlockType:  BlockGoSignID,
 					Title:      title,
@@ -2808,7 +2810,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							res.On("GetApplicationData", "J001").Return("", nil)
 							res.On("GetAdditionalForms", "J001", "sign").Return([]string{}, nil)
 							res.On("UpdateStepContext",
-								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(ctx c.Context) bool { return true }),
 								mock.AnythingOfType("*db.UpdateStepRequest"),
 							).Return(
 								nil,
@@ -2821,7 +2823,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				ef: &entity.EriusFunc{
 					BlockType:  BlockGoSignID,
 					Title:      title,
@@ -2878,7 +2880,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							res.On("GetApplicationData", "J001").Return("", nil)
 							res.On("GetAdditionalForms", "J001", "sign").Return([]string{}, nil)
 							res.On("UpdateStepContext",
-								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(ctx c.Context) bool { return true }),
 								mock.AnythingOfType("*db.UpdateStepRequest"),
 							).Return(
 								nil,
@@ -2891,7 +2893,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				ef: &entity.EriusFunc{
 					BlockType:  BlockGoSignID,
 					Title:      title,
@@ -2948,7 +2950,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							res.On("GetApplicationData", "J001").Return("", nil)
 							res.On("GetAdditionalForms", "J001", "sign").Return([]string{}, nil)
 							res.On("UpdateStepContext",
-								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(ctx c.Context) bool { return true }),
 								mock.AnythingOfType("*db.UpdateStepRequest"),
 							).Return(
 								nil,
@@ -2961,7 +2963,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				ef: &entity.EriusFunc{
 					BlockType:  BlockGoSignID,
 					Title:      title,
@@ -3012,26 +3014,13 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 
 							return &plMock
 						}(),
-						Storage: func() db.Database {
-							res := &mocks.MockedDatabase{}
-
-							res.On("GetApplicationData", "J001").Return("", nil)
-							res.On("GetAdditionalForms", "J001", "sign").Return([]string{}, nil)
-							res.On("UpdateStepContext",
-								mock.MatchedBy(func(ctx context.Context) bool { return true }),
-								mock.AnythingOfType("*db.UpdateStepRequest"),
-							).Return(
-								nil,
-							)
-
-							return res
-						}(),
+						Storage: getTaskRunContext(),
 					},
 				},
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				ef: &entity.EriusFunc{
 					BlockType:  BlockGoSignID,
 					Title:      title,
@@ -3088,7 +3077,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				ef: &entity.EriusFunc{
 					BlockType:  BlockGoSignID,
 					Title:      title,
@@ -3145,7 +3134,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				ef: &entity.EriusFunc{
 					BlockType:  BlockGoSignID,
 					Title:      title,
@@ -3221,7 +3210,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				ef: &entity.EriusFunc{
 					BlockType:  BlockGoSignID,
 					Title:      title,
@@ -3283,7 +3272,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				ef: &entity.EriusFunc{
 					BlockType:  BlockGoSignID,
 					Title:      title,
@@ -3340,7 +3329,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				ef: &entity.EriusFunc{
 					BlockType:  BlockGoSignID,
 					Title:      title,
@@ -3397,7 +3386,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				ef: &entity.EriusFunc{
 					BlockType:  BlockGoSignID,
 					Title:      title,
@@ -3453,7 +3442,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							res.On("GetApplicationData", "J001").Return("", nil)
 							res.On("GetAdditionalForms", "J001", "sign").Return([]string{}, nil)
 							res.On("UpdateStepContext",
-								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(ctx c.Context) bool { return true }),
 								mock.AnythingOfType("*db.UpdateStepRequest"),
 							).Return(
 								nil,
@@ -3466,7 +3455,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				ef: &entity.EriusFunc{
 					BlockType:  BlockGoSignID,
 					Title:      title,
@@ -3523,7 +3512,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							res.On("GetApplicationData", "J001").Return("", nil)
 							res.On("GetAdditionalForms", "J001", "sign").Return([]string{}, nil)
 							res.On("UpdateStepContext",
-								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(ctx c.Context) bool { return true }),
 								mock.AnythingOfType("*db.UpdateStepRequest"),
 							).Return(
 								nil,
@@ -3536,7 +3525,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				ef: &entity.EriusFunc{
 					BlockType:  BlockGoSignID,
 					Title:      title,
@@ -3593,7 +3582,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							res.On("GetApplicationData", "J001").Return("", nil)
 							res.On("GetAdditionalForms", "J001", "sign").Return([]string{}, nil)
 							res.On("UpdateStepContext",
-								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(ctx c.Context) bool { return true }),
 								mock.AnythingOfType("*db.UpdateStepRequest"),
 							).Return(
 								nil,
@@ -3606,7 +3595,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				ef: &entity.EriusFunc{
 					BlockType:  BlockGoSignID,
 					Title:      title,
@@ -3663,7 +3652,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				ef: &entity.EriusFunc{
 					BlockType:  BlockGoSignID,
 					Title:      title,
@@ -3720,7 +3709,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				ef: &entity.EriusFunc{
 					BlockType:  BlockGoSignID,
 					Title:      title,
@@ -3796,7 +3785,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				ef: &entity.EriusFunc{
 					BlockType:  BlockGoSignID,
 					Title:      title,
@@ -3876,7 +3865,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				ef: &entity.EriusFunc{
 					BlockType:  BlockGoSignID,
 					Title:      title,
@@ -3956,7 +3945,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				ef: &entity.EriusFunc{
 					BlockType:  BlockGoSignID,
 					Title:      title,
@@ -4033,7 +4022,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				ef: &entity.EriusFunc{
 					BlockType:  BlockGoSignID,
 					Title:      title,
@@ -4114,7 +4103,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				ef: &entity.EriusFunc{
 					BlockType:  BlockGoSignID,
 					Title:      title,
@@ -4177,7 +4166,7 @@ func TestGoSignBlock_LoadState(t *testing.T) {
 		SignatureCarrier script.SignatureCarrier
 	}
 	type args struct {
-		ctx  context.Context
+		ctx  c.Context
 		data *script.BlockUpdateData
 		raw  json.RawMessage
 	}
@@ -4197,7 +4186,7 @@ func TestGoSignBlock_LoadState(t *testing.T) {
 				},
 			},
 			args: args{
-				ctx:  context.Background(),
+				ctx:  c.Background(),
 				data: nil,
 			},
 			wantErr: true,
@@ -4212,7 +4201,7 @@ func TestGoSignBlock_LoadState(t *testing.T) {
 				},
 			},
 			args: args{
-				ctx:  context.Background(),
+				ctx:  c.Background(),
 				data: nil,
 				raw: func() json.RawMessage {
 					s := &SignData{
