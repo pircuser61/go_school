@@ -567,7 +567,7 @@ func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) ([]o
 		return nil, nil, err
 	}
 
-	files := make([]e.Attachment, 0)
+	files := make([]e.Attachment, 0, len(attachments.AttachmentsList))
 
 	if len(attachments.AttachmentsList) != 0 {
 		apBody.Set("attachLinks", attachments.AttachLinks)
@@ -577,7 +577,7 @@ func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) ([]o
 
 	descriptions = append(descriptions, apBody)
 
-	additionalForms, err := runCtx.Services.Storage.GetAdditionalForms(runCtx.WorkNumber, nodeName)
+	additionalForms, err := runCtx.Services.Storage.GetAdditionalDescriptionForms(runCtx.WorkNumber, nodeName)
 	if err != nil {
 		return nil, nil, err
 	}
