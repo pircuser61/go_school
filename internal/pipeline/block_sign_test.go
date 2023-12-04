@@ -35,7 +35,7 @@ func getTaskRunContext() db.Database {
 	res.On("GetAttach", nil).Return(nil, nil)
 	res.On("GetTaskRunContext", c.Background(), "J001").Return(entity.TaskRunContext{}, nil)
 	res.On("GetApplicationData", "J001").Return("", nil)
-	res.On("GetAdditionalForms", "J001", "sign").Return([]orderedmap.OrderedMap{}, nil)
+	res.On("GetAdditionalDescriptionForms", "J001", "sign").Return([]orderedmap.OrderedMap{}, nil)
 	res.On("UpdateStepContext",
 		mock.MatchedBy(func(ctx c.Context) bool { return true }),
 		mock.AnythingOfType("*db.UpdateStepRequest"),
