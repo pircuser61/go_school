@@ -145,12 +145,18 @@ func (runCtx BlockRunContext) GetCancelledStepsEvents(ctx c.Context) ([]entity.N
 			continue
 		}
 		runCtx.CurrBlockStartTime = s.Time
-		event, eventErr := runCtx.MakeNodeEndEvent(ctx, MakeNodeEndEventArgs{
-			NodeName:      s.Name,
-			NodeShortName: *s.ShortTitle,
-			HumanStatus:   StatusRevoke,
-			NodeStatus:    StatusCanceled,
-		})
+
+		nodeEvent := MakeNodeEndEventArgs{
+			NodeName:    s.Name,
+			HumanStatus: StatusRevoke,
+			NodeStatus:  StatusCanceled,
+		}
+
+		if s.ShortTitle != nil {
+			nodeEvent.NodeShortName = *s.ShortTitle
+		}
+
+		event, eventErr := runCtx.MakeNodeEndEvent(ctx, nodeEvent)
 		if eventErr != nil {
 			return nil, eventErr
 		}
