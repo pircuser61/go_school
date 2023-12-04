@@ -3,6 +3,23 @@
             <td align="center" style="border-collapse: collapse;">
                 <div align="center" style="width: 100%; background: #F2F3F7;">
                     <table width="560" cellpadding="0" cellspacing="0" bgcolor="#FFFFFF" style="border-collapse: collapse; mso-table-lspace: 0pt; mso-table-rspace: 0pt; width: 560px;">
+                    {{ if .LastWorks }}
+                    <tr>
+                        <td style="border-collapse: collapse; padding-left: 24px; padding-right: 24px; width: 512px; padding-top: 32px;" >
+                            <div style="width: 486px; background: #F2F3F7; padding: 12px; border-radius: 12px;">
+                                <div style="display: table; margin-bottom: 12px;">
+                                    <img src="cid:warning.svg" style="outline: none; text-decoration: none; border: none; -ms-interpolation-mode: bicubic; max-width: 100%; margin: 0; padding: 0; width: 24px; height: 24px; margin-right: 8px; display: table-cell; vertical-align: middle;" alt="iconUser">
+                                    <p style="margin: 0; padding: 0; font-family: MTS Compact; font-size: 14px; font-weight: 500; line-height: 20px; color: #1D2023; display: table-cell; vertical-align: middle;">Внимание! Предыдущие заявки:</p>
+                                </div>
+                                <ul style="margin: 0;">
+                                    {{ range .LastWorks }}
+                                    <li style="color: #8D969F; font-family: MTS Compact; font-size: 14px; font-style: normal; font-weight: 400; line-height: 20px; margin-top: 12px;"><span style="color: #1D2023;">№ {{ .WorkNumber }} была подана {{ .DaysAgo }} день назад. Для просмотра заявки перейдите по <a href={{.Link}} target="_blank" style="text-decoration: none; color: #007CFF;">ссылке</a></span></li>
+                                    {{ end }}
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>
+                    {{ end }}
                     <tr>
                         <td style="border-collapse: collapse;">
                             <p style="margin: 0; padding: 0; padding-left: 24px; padding-right: 24px; padding-top: 32px; margin-bottom: 24px; font-family: MTS Text; font-size: 24px; font-weight: 500; line-height: 28px;">Добрый день!</p>

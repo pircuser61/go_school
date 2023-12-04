@@ -4,11 +4,7 @@ import (
 	c "context"
 	"time"
 
-	"github.com/pkg/errors"
-
 	"gitlab.services.mts.ru/abp/myosotis/logger"
-
-	e "gitlab.services.mts.ru/abp/mail/pkg/email"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
@@ -17,8 +13,9 @@ import (
 )
 
 const (
-	headImg = "header.png"
-	userImg = "iconUser.svg"
+	headImg   = "header.png"
+	userImg   = "iconUser.svg"
+	waningImg = "warning.svg"
 )
 
 //nolint:dupl // maybe later
@@ -146,7 +143,7 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 	for i := range templates {
 		item := templates[i]
 
-		iconsName := []string{item.Image, documentImg, downloadImg, userImg}
+		iconsName := []string{item.Image, documentImg, downloadImg, userImg, waningImg}
 		iconsFiles, iconsErr := gb.RunContext.GetIcons(iconsName)
 		if iconsErr != nil {
 			return iconsErr
@@ -236,16 +233,13 @@ func (gb *GoApproverBlock) notifyAdditionalApprovers(ctx c.Context, logins []str
 			lastWorksForUser,
 		)
 
-		file, ok := gb.RunContext.Services.Sender.Images[tpl.Image]
-		if !ok {
-			return errors.New("file not found: " + tpl.Image)
+		filesList := []string{tpl.Image, waningImg}
+		iconFiles, iconErr := gb.RunContext.GetIcons(filesList)
+		if iconErr != nil {
+			return iconErr
 		}
 
-		files = append(files, e.Attachment{
-			Name:    headImg,
-			Content: file,
-			Type:    e.EmbeddedAttachment,
-		})
+		files = append(files, iconFiles...)
 
 		err = gb.RunContext.Services.Sender.SendNotification(ctx, []string{emails[i]}, files, tpl)
 		if err != nil {
@@ -307,27 +301,12 @@ func (gb *GoApproverBlock) notifyDecisionMadeByAdditionalApprover(ctx c.Context,
 		return err
 	}
 
-	file, ok := gb.RunContext.Services.Sender.Images[tpl.Image]
-	if !ok {
-		return errors.New("file not found: " + tpl.Image)
+	filesList := []string{tpl.Image, userImg}
+	iconFiles, iconEerr := gb.RunContext.GetIcons(filesList)
+	if iconEerr != nil {
+		return iconEerr
 	}
-
-	files = append(files, e.Attachment{
-		Name:    headImg,
-		Content: file,
-		Type:    e.EmbeddedAttachment,
-	})
-
-	iconUser, okU := gb.RunContext.Services.Sender.Images[userImg]
-	if !okU {
-		return errors.New("file not found: " + tpl.Image)
-	}
-
-	files = append(files, e.Attachment{
-		Name:    headImg,
-		Content: iconUser,
-		Type:    e.EmbeddedAttachment,
-	})
+	files = append(files, iconFiles...)
 
 	err = gb.RunContext.Services.Sender.SendNotification(ctx, emailsToNotify, files, tpl)
 	if err != nil {
@@ -361,17 +340,10 @@ func (gb *GoApproverBlock) notifyNeedRework(ctx c.Context) error {
 	tpl := mail.NewSendToInitiatorEditTpl(gb.RunContext.WorkNumber, gb.RunContext.NotifName,
 		gb.RunContext.Services.Sender.SdAddress)
 
-	file, ok := gb.RunContext.Services.Sender.Images[tpl.Image]
-	if !ok {
-		return errors.New("file not found: " + tpl.Image)
-	}
-
-	files := []e.Attachment{
-		{
-			Name:    headImg,
-			Content: file,
-			Type:    e.EmbeddedAttachment,
-		},
+	filesList := []string{tpl.Image}
+	files, iconEerr := gb.RunContext.GetIcons(filesList)
+	if iconEerr != nil {
+		return iconEerr
 	}
 
 	err = gb.RunContext.Services.Sender.SendNotification(ctx, emails, files, tpl)
@@ -443,18 +415,12 @@ func (gb *GoApproverBlock) notifyNeedMoreInfo(ctx c.Context) error {
 	tpl := mail.NewRequestApproverInfoTpl(gb.RunContext.WorkNumber, gb.RunContext.NotifName,
 		gb.RunContext.Services.Sender.SdAddress)
 
-	file, ok := gb.RunContext.Services.Sender.Images[tpl.Image]
-	if !ok {
-		return errors.New("file not found: " + tpl.Image)
+	filesList := []string{tpl.Image}
+	files, iconEerr := gb.RunContext.GetIcons(filesList)
+	if iconEerr != nil {
+		return iconEerr
 	}
 
-	files := []e.Attachment{
-		{
-			Name:    headImg,
-			Content: file,
-			Type:    e.EmbeddedAttachment,
-		},
-	}
 	if err := gb.RunContext.Services.Sender.SendNotification(ctx, emails, files, tpl); err != nil {
 		return err
 	}

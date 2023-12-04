@@ -161,7 +161,7 @@ func (gb *GoNotificationBlock) Update(ctx context.Context) (interface{}, error) 
 
 	text, files, err := gb.compileText(ctx)
 	if err != nil {
-		return nil, errors.New("couldn't compile template text")
+		return nil, errors.New("couldn't compile notification text")
 	}
 
 	err = gb.RunContext.Services.Sender.SendNotification(ctx, emails, files, mail.Template{
@@ -239,11 +239,11 @@ func createGoNotificationBlock(ctx context.Context, name string, ef *entity.Eriu
 	var params script.NotificationParams
 	err := json.Unmarshal(ef.Params, &params)
 	if err != nil {
-		return nil, reEntry, errors.Wrap(err, "can not get template parameters")
+		return nil, reEntry, errors.Wrap(err, "can not get notification parameters")
 	}
 
 	if err = params.Validate(); err != nil {
-		return nil, reEntry, errors.Wrap(err, "invalid template parameters")
+		return nil, reEntry, errors.Wrap(err, "invalid notification parameters")
 	}
 
 	variableStorage, grabStorageErr := b.RunContext.VarStore.GrabStorage()

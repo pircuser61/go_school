@@ -8,7 +8,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	e "gitlab.services.mts.ru/abp/mail/pkg/email"
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
@@ -202,17 +201,10 @@ func (gb *GoFormBlock) handleBreachedSLA(ctx c.Context) error {
 			gb.RunContext.Services.Sender.SdAddress,
 		)
 
-		file, ok := gb.RunContext.Services.Sender.Images[tpl.Image]
-		if !ok {
-			return errors.New("file not found: " + tpl.Image)
-		}
-
-		files := []e.Attachment{
-			{
-				Name:    headImg,
-				Content: file,
-				Type:    e.EmbeddedAttachment,
-			},
+		filesList := []string{tpl.Image}
+		files, iconEerr := gb.RunContext.GetIcons(filesList)
+		if iconEerr != nil {
+			return iconEerr
 		}
 
 		if len(emails) == 0 {
@@ -274,17 +266,10 @@ func (gb *GoFormBlock) handleHalfSLABreached(ctx c.Context) error {
 				slaInfoPtr),
 		)
 
-		file, ok := gb.RunContext.Services.Sender.Images[tpl.Image]
-		if !ok {
-			return errors.New("file not found: " + tpl.Image)
-		}
-
-		files := []e.Attachment{
-			{
-				Name:    headImg,
-				Content: file,
-				Type:    e.EmbeddedAttachment,
-			},
+		filesList := []string{tpl.Image}
+		files, iconEerr := gb.RunContext.GetIcons(filesList)
+		if iconEerr != nil {
+			return iconEerr
 		}
 
 		if len(emails) == 0 {

@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"time"
 
-	"gitlab.services.mts.ru/abp/mail/pkg/email"
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
@@ -126,22 +125,15 @@ func (gb *GoSignBlock) handleSignature(ctx c.Context, login string) error {
 			gb.RunContext.Services.Sender.SdAddress,
 		)
 
-		file, ok := gb.RunContext.Services.Sender.Images[tpl.Image]
-		if !ok {
-			return errors.New("file not found: " + tpl.Image)
+		filesList := []string{tpl.Image}
+		files, iconEerr := gb.RunContext.GetIcons(filesList)
+		if iconEerr != nil {
+			return iconEerr
 		}
 
-		files := []email.Attachment{
-			{
-				Name:    headImg,
-				Content: file,
-				Type:    email.EmbeddedAttachment,
-			},
-		}
-
-		err := gb.RunContext.Services.Sender.SendNotification(ctx, emails, files, tpl)
-		if err != nil {
-			return err
+		sendErr := gb.RunContext.Services.Sender.SendNotification(ctx, emails, files, tpl)
+		if sendErr != nil {
+			return sendErr
 		}
 	}
 	return nil
@@ -306,17 +298,10 @@ func (gb *GoSignBlock) handleBreachedSLA(ctx c.Context) error {
 			gb.RunContext.Services.Sender.SdAddress,
 		)
 
-		file, ok := gb.RunContext.Services.Sender.Images[tpl.Image]
-		if !ok {
-			return errors.New("file not found: " + tpl.Image)
-		}
-
-		files := []email.Attachment{
-			{
-				Name:    headImg,
-				Content: file,
-				Type:    email.EmbeddedAttachment,
-			},
+		filesList := []string{tpl.Image}
+		files, iconEerr := gb.RunContext.GetIcons(filesList)
+		if iconEerr != nil {
+			return iconEerr
 		}
 
 		err := gb.RunContext.Services.Sender.SendNotification(ctx, emails, files, tpl)

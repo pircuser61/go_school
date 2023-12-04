@@ -5,9 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/pkg/errors"
-
-	e "gitlab.services.mts.ru/abp/mail/pkg/email"
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
@@ -356,18 +353,12 @@ func (gb *GoFormBlock) handleNotifications(ctx c.Context) error {
 	}
 
 	for i := range emails {
+		item := emails[i]
 
-		file, ok := gb.RunContext.Services.Sender.Images[emails[i].Image]
-		if !ok {
-			return errors.New("file not found: " + emails[i].Image)
-		}
-
-		files := []e.Attachment{
-			{
-				Name:    headImg,
-				Content: file,
-				Type:    e.EmbeddedAttachment,
-			},
+		filesList := []string{item.Image}
+		files, iconEerr := gb.RunContext.GetIcons(filesList)
+		if iconEerr != nil {
+			return iconEerr
 		}
 
 		if sendErr := gb.RunContext.Services.Sender.SendNotification(ctx, []string{i}, files,

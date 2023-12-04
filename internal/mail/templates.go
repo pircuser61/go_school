@@ -79,7 +79,7 @@ type LastWork struct {
 	WorkNumber string `json:"work_number"`
 	Name       string `json:"work_title"`
 	DaysAgo    int    `json:"days_ago"`
-	WorkURL    string `json:"work_url"`
+	Link       string `json:"work_url"`
 }
 
 type LastWorks []*LastWork
@@ -965,7 +965,7 @@ func getLastWorksForTemplate(lastWorks []*entity.EriusTask, sdUrl string) LastWo
 			WorkNumber: task.WorkNumber,
 			Name:       task.Name,
 			DaysAgo:    int(math.Round(utils.GetDateUnitNumBetweenDates(task.StartedAt, time.Now(), utils.Day))),
-			WorkURL:    fmt.Sprintf(TaskUrlTemplate, sdUrl, task.WorkNumber),
+			Link:       fmt.Sprintf(TaskUrlTemplate, sdUrl, task.WorkNumber),
 		})
 	}
 	return lastWorksTemplate

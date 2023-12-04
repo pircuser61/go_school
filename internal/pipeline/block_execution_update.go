@@ -10,8 +10,6 @@ import (
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
-	e "gitlab.services.mts.ru/abp/mail/pkg/email"
-
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
@@ -220,17 +218,10 @@ func (gb *GoExecutionBlock) handleBreachedSLA(ctx c.Context) error {
 			gb.RunContext.Services.Sender.SdAddress,
 		)
 
-		file, ok := gb.RunContext.Services.Sender.Images[tpl.Image]
-		if !ok {
-			return errors.New("file not found: " + tpl.Image)
-		}
-
-		files := []e.Attachment{
-			{
-				Name:    headImg,
-				Content: file,
-				Type:    e.EmbeddedAttachment,
-			},
+		filesList := []string{tpl.Image}
+		files, iconEerr := gb.RunContext.GetIcons(filesList)
+		if iconEerr != nil {
+			return iconEerr
 		}
 
 		if len(emails) == 0 {
@@ -353,20 +344,13 @@ func (gb *GoExecutionBlock) handleHalfSLABreached(ctx c.Context) error {
 			lastWorksForUser,
 		)
 
-		file, ok := gb.RunContext.Services.Sender.Images[tpl.Image]
-		if !ok {
-			return errors.New("file not found: " + tpl.Image)
+		files := []string{tpl.Image, waningImg}
+		iconFiles, fileErr := gb.RunContext.GetIcons(files)
+		if fileErr != nil {
+			return fileErr
 		}
 
-		files := []e.Attachment{
-			{
-				Name:    headImg,
-				Content: file,
-				Type:    e.EmbeddedAttachment,
-			},
-		}
-
-		err = gb.RunContext.Services.Sender.SendNotification(ctx, emails, files, tpl)
+		err = gb.RunContext.Services.Sender.SendNotification(ctx, emails, iconFiles, tpl)
 		if err != nil {
 			return err
 		}
@@ -421,18 +405,12 @@ func (gb *GoExecutionBlock) handleReworkSLABreached(ctx c.Context) error {
 	tpl := mail.NewReworkSLATpl(gb.RunContext.WorkNumber, gb.RunContext.NotifName,
 		gb.RunContext.Services.Sender.SdAddress, gb.State.ReworkSLA, gb.State.CheckSLA)
 
-	file, ok := gb.RunContext.Services.Sender.Images[tpl.Image]
-	if !ok {
-		return errors.New("file not found: " + tpl.Image)
+	filesList := []string{tpl.Image}
+	files, iconEerr := gb.RunContext.GetIcons(filesList)
+	if iconEerr != nil {
+		return iconEerr
 	}
 
-	files := []e.Attachment{
-		{
-			Name:    headImg,
-			Content: file,
-			Type:    e.EmbeddedAttachment,
-		},
-	}
 	err = gb.RunContext.Services.Sender.SendNotification(ctx, emails, files, tpl)
 	if err != nil {
 		return err
@@ -477,17 +455,10 @@ func (gb *GoExecutionBlock) handleBreachedDayBeforeSLARequestAddInfo(ctx c.Conte
 	tpl := mail.NewDayBeforeRequestAddInfoSLABreached(gb.RunContext.WorkNumber, gb.RunContext.NotifName,
 		gb.RunContext.Services.Sender.SdAddress)
 
-	file, ok := gb.RunContext.Services.Sender.Images[tpl.Image]
-	if !ok {
-		return errors.New("file not found: " + tpl.Image)
-	}
-
-	files := []e.Attachment{
-		{
-			Name:    headImg,
-			Content: file,
-			Type:    e.EmbeddedAttachment,
-		},
+	filesList := []string{tpl.Image}
+	files, iconEerr := gb.RunContext.GetIcons(filesList)
+	if iconEerr != nil {
+		return iconEerr
 	}
 
 	err := gb.RunContext.Services.Sender.SendNotification(ctx, emails, files, tpl)
@@ -548,17 +519,10 @@ func (gb *GoExecutionBlock) HandleBreachedSLARequestAddInfo(ctx c.Context) error
 	tpl := mail.NewRequestAddInfoSLABreached(gb.RunContext.WorkNumber, gb.RunContext.NotifName,
 		gb.RunContext.Services.Sender.SdAddress, gb.State.ReworkSLA)
 
-	file, ok := gb.RunContext.Services.Sender.Images[tpl.Image]
-	if !ok {
-		return errors.New("file not found: " + tpl.Image)
-	}
-
-	files := []e.Attachment{
-		{
-			Name:    headImg,
-			Content: file,
-			Type:    e.EmbeddedAttachment,
-		},
+	filesList := []string{tpl.Image}
+	files, iconEerr := gb.RunContext.GetIcons(filesList)
+	if iconEerr != nil {
+		return iconEerr
 	}
 
 	err = gb.RunContext.Services.Sender.SendNotification(ctx, emails, files, tpl)
@@ -826,7 +790,7 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 		Mailto:      gb.RunContext.Services.Sender.FetchEmail,
 	})
 
-	iconsName := []string{tpl.Image, downloadImg, documentImg, userImg}
+	iconsName := []string{tpl.Image, downloadImg, documentImg, userImg, waningImg}
 	iconFiles, err := gb.RunContext.GetIcons(iconsName)
 	if err != nil {
 		return err

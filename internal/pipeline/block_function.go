@@ -11,7 +11,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	e "gitlab.services.mts.ru/abp/mail/pkg/email"
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
@@ -188,17 +187,10 @@ func (gb *ExecutableFunctionBlock) Update(ctx c.Context) (interface{}, error) {
 				tpl := mail.NewInvalidFunctionResp(
 					gb.RunContext.WorkNumber, gb.RunContext.NotifName, gb.RunContext.Services.Sender.SdAddress)
 
-				file, ok := gb.RunContext.Services.Sender.Images[tpl.Image]
-				if !ok {
-					return nil, errors.New("file not found: " + tpl.Image)
-				}
-
-				files := []e.Attachment{
-					{
-						Name:    headImg,
-						Content: file,
-						Type:    e.EmbeddedAttachment,
-					},
+				filesList := []string{tpl.Image}
+				files, iconEerr := gb.RunContext.GetIcons(filesList)
+				if iconEerr != nil {
+					return nil, iconEerr
 				}
 
 				errSend := gb.RunContext.Services.Sender.SendNotification(ctx, emails, files, tpl)

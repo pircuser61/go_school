@@ -2,10 +2,8 @@ package pipeline
 
 import (
 	c "context"
-	"errors"
 	"time"
 
-	e "gitlab.services.mts.ru/abp/mail/pkg/email"
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
@@ -148,7 +146,7 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 	for i := range emails {
 		item := emails[i]
 
-		iconsName := []string{item.Image, documentImg, downloadImg}
+		iconsName := []string{item.Image, documentImg, downloadImg, waningImg}
 		iconFiles, errFiles := gb.RunContext.GetIcons(iconsName)
 		if err != nil {
 			return errFiles
@@ -189,17 +187,10 @@ func (gb *GoExecutionBlock) notifyNeedRework(ctx c.Context) error {
 	tpl := mail.NewSendToInitiatorEditTpl(gb.RunContext.WorkNumber, gb.RunContext.NotifName,
 		gb.RunContext.Services.Sender.SdAddress)
 
-	file, ok := gb.RunContext.Services.Sender.Images[tpl.Image]
-	if !ok {
-		return errors.New("file not found: " + tpl.Image)
-	}
-
-	files := []e.Attachment{
-		{
-			Name:    headImg,
-			Content: file,
-			Type:    e.EmbeddedAttachment,
-		},
+	filesList := []string{tpl.Image}
+	files, iconEerr := gb.RunContext.GetIcons(filesList)
+	if iconEerr != nil {
+		return iconEerr
 	}
 
 	if sendErr := gb.RunContext.Services.Sender.SendNotification(ctx, emails, files, tpl); sendErr != nil {
@@ -225,17 +216,10 @@ func (gb *GoExecutionBlock) notifyNeedMoreInfo(ctx c.Context) error {
 	tpl := mail.NewRequestExecutionInfoTpl(gb.RunContext.WorkNumber,
 		gb.RunContext.NotifName, gb.RunContext.Services.Sender.SdAddress)
 
-	file, ok := gb.RunContext.Services.Sender.Images[tpl.Image]
-	if !ok {
-		return errors.New("file not found: " + tpl.Image)
-	}
-
-	files := []e.Attachment{
-		{
-			Name:    headImg,
-			Content: file,
-			Type:    e.EmbeddedAttachment,
-		},
+	filesList := []string{tpl.Image}
+	files, iconEerr := gb.RunContext.GetIcons(filesList)
+	if iconEerr != nil {
+		return iconEerr
 	}
 
 	if err := gb.RunContext.Services.Sender.SendNotification(ctx, emails, files, tpl); err != nil {
@@ -267,17 +251,10 @@ func (gb *GoExecutionBlock) notifyNewInfoReceived(ctx c.Context) error {
 	tpl := mail.NewAnswerExecutionInfoTpl(gb.RunContext.WorkNumber,
 		gb.RunContext.NotifName, gb.RunContext.Services.Sender.SdAddress)
 
-	file, ok := gb.RunContext.Services.Sender.Images[tpl.Image]
-	if !ok {
-		return errors.New("file not found: " + tpl.Image)
-	}
-
-	files := []e.Attachment{
-		{
-			Name:    headImg,
-			Content: file,
-			Type:    e.EmbeddedAttachment,
-		},
+	filesList := []string{tpl.Image}
+	files, iconEerr := gb.RunContext.GetIcons(filesList)
+	if iconEerr != nil {
+		return iconEerr
 	}
 
 	if sendErr := gb.RunContext.Services.Sender.SendNotification(ctx, emails, files, tpl); sendErr != nil {

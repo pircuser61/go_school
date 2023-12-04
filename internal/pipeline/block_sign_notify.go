@@ -2,10 +2,7 @@ package pipeline
 
 import (
 	c "context"
-	"errors"
 	"time"
-
-	e "gitlab.services.mts.ru/abp/mail/pkg/email"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
@@ -78,16 +75,13 @@ func (gb *GoSignBlock) notifyAdditionalApprovers(ctx c.Context, logins []string,
 			lastWorksForUser,
 		)
 
-		file, ok := gb.RunContext.Services.Sender.Images[tpl.Image]
-		if !ok {
-			return errors.New("file not found: " + tpl.Image)
+		filesList := []string{tpl.Image, waningImg}
+		iconFiles, iconErr := gb.RunContext.GetIcons(filesList)
+		if iconErr != nil {
+			return iconErr
 		}
 
-		files = append(files, e.Attachment{
-			Name:    headImg,
-			Content: file,
-			Type:    e.EmbeddedAttachment,
-		})
+		files = append(files, iconFiles...)
 
 		err = gb.RunContext.Services.Sender.SendNotification(ctx, []string{emails[i]}, files, tpl)
 		if err != nil {
@@ -140,16 +134,13 @@ func (gb *GoSignBlock) notifyDecisionMadeByAdditionalApprover(ctx c.Context, log
 		return err
 	}
 
-	file, ok := gb.RunContext.Services.Sender.Images[tpl.Image]
-	if !ok {
-		return errors.New("file not found: " + tpl.Image)
+	filesList := []string{tpl.Image}
+	iconFiles, iconEerr := gb.RunContext.GetIcons(filesList)
+	if iconEerr != nil {
+		return iconEerr
 	}
 
-	files = append(files, e.Attachment{
-		Name:    headImg,
-		Content: file,
-		Type:    e.EmbeddedAttachment,
-	})
+	files = append(files, iconFiles...)
 
 	err = gb.RunContext.Services.Sender.SendNotification(ctx, emailsToNotify, files, tpl)
 	if err != nil {
