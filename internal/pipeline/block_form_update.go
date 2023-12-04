@@ -388,33 +388,40 @@ func (gb *GoFormBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork strin
 		return convertErr
 	}
 
-	description, err := gb.RunContext.makeNotificationDescription()
+	files := make([]e.Attachment, 0)
+	description, err := gb.RunContext.makeNotificationDescription(gb.Name, &files)
 	if err != nil {
 		return err
 	}
 
-	attachment, err := gb.RunContext.GetAttach()
+	filesAttach, err := gb.RunContext.makeNotificationAttachment()
+	if err != nil {
+		return err
+	}
+
+	attachment, err := gb.RunContext.GetAttach(filesAttach)
 	if err != nil {
 		return err
 	}
 
 	tpl := mail.NewFormExecutionTakenInWorkTpl(
 		&mail.ExecutorNotifTemplate{
-			WorkNumber:   gb.RunContext.WorkNumber,
-			Name:         gb.RunContext.NotifName,
-			SdUrl:        gb.RunContext.Services.Sender.SdAddress,
-			Description:  description,
-			Executor:     typeExecutor,
-			Initiator:    inititatorInfo,
-			Mailto:       gb.RunContext.Services.Sender.FetchEmail,
-			AttachExists: attachment.AttachExists,
-			AttachFields: attachment.AttachFields,
-			AttachLinks:  attachment.AttachLinks,
+			WorkNumber:  gb.RunContext.WorkNumber,
+			Name:        gb.RunContext.NotifName,
+			SdUrl:       gb.RunContext.Services.Sender.SdAddress,
+			Description: description,
+			Executor:    typeExecutor,
+			Initiator:   inititatorInfo,
+			Mailto:      gb.RunContext.Services.Sender.FetchEmail,
 		})
 
 	iconsName := []string{tpl.Image, documentImg, downloadImg, userImg}
-	files, err := gb.RunContext.GetIcons(iconsName)
-	files = append(files, attachment.AttachmentsList...)
+	iconFiles, iconErr := gb.RunContext.GetIcons(iconsName)
+	if iconErr != nil {
+		return err
+	}
+
+	files = append(files, iconFiles...)
 
 	if errSend := gb.RunContext.Services.Sender.SendNotification(ctx, emails, files, tpl); errSend != nil {
 		return errSend

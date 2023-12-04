@@ -276,6 +276,22 @@ func (gb *GoApproverBlock) handleHalfBreachedSLA(ctx c.Context) (err error) {
 			return getSlaInfoErr
 		}
 
+		lastWorksForUser := make([]*entity.EriusTask, 0)
+
+		if processSettings.ResubmissionPeriod > 0 {
+			var getWorksErr error
+			lastWorksForUser, getWorksErr = gb.RunContext.Services.Storage.GetWorksForUserWithGivenTimeRange(
+				ctx,
+				processSettings.ResubmissionPeriod,
+				login,
+				task.VersionID.String(),
+				gb.RunContext.WorkNumber,
+			)
+			if getWorksErr != nil {
+				return getWorksErr
+			}
+		}
+
 		tpl := mail.NewApprovementHalfSLATpl(
 			gb.RunContext.WorkNumber,
 			gb.RunContext.NotifName,
@@ -283,6 +299,7 @@ func (gb *GoApproverBlock) handleHalfBreachedSLA(ctx c.Context) (err error) {
 			gb.State.ApproveStatusName,
 			gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(gb.RunContext.CurrBlockStartTime, gb.State.SLA,
 				slaInfoPtr),
+			lastWorksForUser,
 		)
 
 		file, ok := gb.RunContext.Services.Sender.Images[tpl.Image]

@@ -7,8 +7,6 @@ import (
 	"net/http"
 	"time"
 
-	"golang.org/x/net/context"
-
 	"github.com/google/uuid"
 
 	"github.com/pkg/errors"
@@ -17,6 +15,7 @@ import (
 
 	"github.com/iancoleman/orderedmap"
 
+	e "gitlab.services.mts.ru/abp/mail/pkg/email"
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
@@ -470,7 +469,7 @@ func (runCtx *BlockRunContext) updateStepInDB(ctx c.Context, name string, id uui
 }
 
 func (runCtx *BlockRunContext) getFileField() ([]string, error) {
-	task, err := runCtx.Services.Storage.GetTaskRunContext(context.Background(), runCtx.WorkNumber)
+	task, err := runCtx.Services.Storage.GetTaskRunContext(c.Background(), runCtx.WorkNumber)
 	if err != nil {
 		return nil, err
 	}
@@ -478,37 +477,16 @@ func (runCtx *BlockRunContext) getFileField() ([]string, error) {
 	return task.InitialApplication.AttachmentFields, nil
 }
 
-func (runCtx *BlockRunContext) makeNotificationAttachment() ([]file_registry.FileInfo, error) {
-	task, err := runCtx.Services.Storage.GetTaskRunContext(context.Background(), runCtx.WorkNumber)
-	if err != nil {
-		return nil, err
-	}
-
+func (runCtx *BlockRunContext) makeNotificationFormAttachment(files []string) ([]file_registry.FileInfo, error) {
 	attachments := make([]entity.Attachment, 0)
 	mapFiles := make(map[string][]entity.Attachment)
-	for _, v := range task.InitialApplication.AttachmentFields {
-		filesAttach, ok := task.InitialApplication.ApplicationBody.Get(v)
-		if ok {
-			fileAttach, oks := filesAttach.([]interface{})
-			if !oks {
-				return nil, errors.New("fields is not files")
-			}
-
-			for _, vv := range fileAttach {
-				fileMap := vv.(orderedmap.OrderedMap)
-				fileId, oks := fileMap.Get("file_id")
-				if !oks {
-					continue
-				}
-
-				attachments = append(attachments, entity.Attachment{FileID: fileId.(string)})
-			}
-		}
+	for _, v := range files {
+		attachments = append(attachments, entity.Attachment{FileID: v})
 	}
 
 	mapFiles["files"] = attachments
 
-	file, err := runCtx.Services.FileRegistry.GetAttachmentsInfo(context.Background(), mapFiles)
+	file, err := runCtx.Services.FileRegistry.GetAttachmentsInfo(c.Background(), mapFiles)
 	if err != nil {
 		return nil, err
 	}
@@ -521,25 +499,118 @@ func (runCtx *BlockRunContext) makeNotificationAttachment() ([]file_registry.Fil
 	return ta, nil
 }
 
-func (runCtx *BlockRunContext) makeNotificationDescription() (*orderedmap.OrderedMap, error) {
-	descr, err := runCtx.Services.Storage.GetTaskRunContext(context.Background(), runCtx.WorkNumber)
+func (runCtx *BlockRunContext) makeNotificationAttachment() ([]file_registry.FileInfo, error) {
+	task, err := runCtx.Services.Storage.GetTaskRunContext(c.Background(), runCtx.WorkNumber)
 	if err != nil {
 		return nil, err
 	}
 
-	//additionalDescriptions, err := runCtx.Services.Storage.GetAdditionalForms(runCtx.WorkNumber, runCtx.WorkTitle)
-	//if err != nil {
-	//	return nil, err
-	//}
-	//for _, item := range additionalDescriptions {
-	//	if item == nil {
-	//		continue
-	//	}
-	//
-	//	descr = fmt.Sprintf("%s\n\n%s", descr, item)
-	//}
+	attachments := make([]entity.Attachment, 0)
+	mapFiles := make(map[string][]entity.Attachment)
+	for _, v := range task.InitialApplication.AttachmentFields {
+		filesAttach, ok := task.InitialApplication.ApplicationBody.Get(v)
+		if ok {
+			switch data := filesAttach.(type) {
+			case orderedmap.OrderedMap:
+				fileId, get := data.Get("file_id")
+				if !get {
+					continue
+				}
 
-	return &descr.InitialApplication.ApplicationBody, nil
+				attachments = append(attachments, entity.Attachment{FileID: fileId.(string)})
+			case []interface{}:
+				for _, vv := range data {
+					fileMap := vv.(orderedmap.OrderedMap)
+					fileId, oks := fileMap.Get("file_id")
+					if !oks {
+						continue
+					}
+
+					attachments = append(attachments, entity.Attachment{FileID: fileId.(string)})
+				}
+			}
+		}
+	}
+
+	mapFiles["files"] = attachments
+
+	file, err := runCtx.Services.FileRegistry.GetAttachmentsInfo(c.Background(), mapFiles)
+	if err != nil {
+		return nil, err
+	}
+
+	ta := make([]file_registry.FileInfo, 0)
+	for _, v := range file["files"] {
+		ta = append(ta, file_registry.FileInfo{FileId: v.FileId, Size: v.Size, Name: v.Name})
+	}
+
+	return ta, nil
+}
+
+func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string, files *[]e.Attachment) ([]orderedmap.OrderedMap, error) {
+	descr, err := runCtx.Services.Storage.GetTaskRunContext(c.Background(), runCtx.WorkNumber)
+	if err != nil {
+		return nil, err
+	}
+
+	apBody := descr.InitialApplication.ApplicationBody
+
+	descriptions := make([]orderedmap.OrderedMap, 0)
+
+	filesAttach, err := runCtx.makeNotificationAttachment()
+	if err != nil {
+		return nil, err
+	}
+
+	attachments, err := runCtx.GetAttach(filesAttach)
+	if err != nil {
+		return nil, err
+	}
+
+	apBody.Set("attachLinks", attachments.AttachLinks)
+	apBody.Set("attachExist", attachments.AttachExists)
+	apBody.Set("attachList", attachments.AttachmentsList)
+	descriptions = append(descriptions, apBody)
+
+	additionalForms, err := runCtx.Services.Storage.GetAdditionalForms(runCtx.WorkNumber, nodeName)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, v := range additionalForms {
+		attachmentFiles := make([]string, 0)
+
+		for _, val := range v.Values() {
+			file, ok := val.(orderedmap.OrderedMap)
+			if !ok {
+				continue
+			}
+
+			if fileId, fileOk := file.Get("file_id"); fileOk {
+				attachmentFiles = append(attachmentFiles, fileId.(string))
+			}
+		}
+
+		fileInfo, fileErr := runCtx.makeNotificationFormAttachment(attachmentFiles)
+		if fileErr != nil {
+			return nil, err
+		}
+
+		attach, attachErr := runCtx.GetAttach(fileInfo)
+		if attachErr != nil {
+			return nil, err
+		}
+
+		v.Set("attachLinks", attach.AttachLinks)
+		v.Set("attachExist", attach.AttachExists)
+		v.Set("attachList", attach.AttachmentsList)
+
+		*files = append(*files, attach.AttachmentsList...)
+		descriptions = append(descriptions, v)
+	}
+
+	*files = append(*files, attachments.AttachmentsList...)
+	return descriptions, nil
 }
 
 type handleInitiatorNotifyParams struct {
@@ -580,12 +651,8 @@ func (runCtx *BlockRunContext) handleInitiatorNotify(ctx c.Context, params handl
 		return nil
 	}
 
-	description, err := runCtx.makeNotificationDescription()
-	if err != nil {
-		return err
-	}
-
-	attachment, err := runCtx.GetAttach()
+	files := make([]e.Attachment, 0)
+	description, err := runCtx.makeNotificationDescription(params.step, &files)
 	if err != nil {
 		return err
 	}
@@ -609,20 +676,20 @@ func (runCtx *BlockRunContext) handleInitiatorNotify(ctx c.Context, params handl
 
 	tmpl := mail.NewAppInitiatorStatusNotificationTpl(
 		&mail.SignerNotifTemplate{
-			WorkNumber:   runCtx.WorkNumber,
-			Name:         runCtx.NotifName,
-			SdUrl:        runCtx.Services.Sender.SdAddress,
-			Description:  description,
-			AttachLinks:  attachment.AttachLinks,
-			AttachExists: attachment.AttachExists,
-			AttachFields: attachment.AttachFields,
-			Action:       params.action,
+			WorkNumber:  runCtx.WorkNumber,
+			Name:        runCtx.NotifName,
+			SdUrl:       runCtx.Services.Sender.SdAddress,
+			Description: description,
+			Action:      params.action,
 		})
 
-	iconsName := []string{tmpl.Image, documentImg, downloadImg, userImg}
-	files, err := runCtx.GetIcons(iconsName)
+	iconsName := []string{tmpl.Image, documentImg, downloadImg}
+	iconFiles, iconErr := runCtx.GetIcons(iconsName)
+	if iconErr != nil {
+		return err
+	}
 
-	files = append(files, attachment.AttachmentsList...)
+	files = append(files, iconFiles...)
 
 	if sendErr := runCtx.Services.Sender.SendNotification(ctx, emails, files, tmpl); sendErr != nil {
 		return sendErr

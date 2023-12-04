@@ -35,7 +35,8 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 
 	loginsToNotify := delegates.GetUserInArrayWithDelegations(executors)
 
-	description, err := gb.RunContext.makeNotificationDescription()
+	files := make([]e.Attachment, 0)
+	description, err := gb.RunContext.makeNotificationDescription(gb.Name, &files)
 	if err != nil {
 		return err
 	}
@@ -87,11 +88,6 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 		WorkType: sla.WorkHourType(gb.State.WorkType),
 	})
 
-	attachment, err := gb.RunContext.GetAttach()
-	if err != nil {
-		return err
-	}
-
 	if getSlaInfoErr != nil {
 		return getSlaInfoErr
 	}
@@ -104,19 +100,16 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 		if !gb.State.IsTakenInWork {
 			emails[email] = mail.NewExecutionNeedTakeInWorkTpl(
 				&mail.ExecutorNotifTemplate{
-					WorkNumber:   gb.RunContext.WorkNumber,
-					Name:         gb.RunContext.NotifName,
-					SdUrl:        gb.RunContext.Services.Sender.SdAddress,
-					BlockID:      BlockGoExecutionID,
-					Description:  description,
-					Mailto:       gb.RunContext.Services.Sender.FetchEmail,
-					Login:        login,
-					LastWorks:    lastWorksForUser,
-					IsGroup:      len(gb.State.Executors) > 1,
-					Deadline:     gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(time.Now(), gb.State.SLA, slaInfoPtr),
-					AttachLinks:  attachment.AttachLinks,
-					AttachExists: attachment.AttachExists,
-					AttachFields: attachment.AttachFields,
+					WorkNumber:  gb.RunContext.WorkNumber,
+					Name:        gb.RunContext.NotifName,
+					SdUrl:       gb.RunContext.Services.Sender.SdAddress,
+					BlockID:     BlockGoExecutionID,
+					Description: description,
+					Mailto:      gb.RunContext.Services.Sender.FetchEmail,
+					Login:       login,
+					LastWorks:   lastWorksForUser,
+					IsGroup:     len(gb.State.Executors) > 1,
+					Deadline:    gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(time.Now(), gb.State.SLA, slaInfoPtr),
 				},
 			)
 		} else {
@@ -149,10 +142,6 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 					ExecutionDecisionExecuted: string(ExecutionDecisionExecuted),
 					ExecutionDecisionRejected: string(ExecutionDecisionRejected),
 					LastWorks:                 lastWorksForUser,
-				}, &mail.SignerNotifTemplate{
-					AttachFields: attachment.AttachFields,
-					AttachExists: attachment.AttachExists,
-					AttachLinks:  attachment.AttachLinks,
 				})
 		}
 	}
@@ -160,11 +149,13 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 	for i := range emails {
 		item := emails[i]
 
-		iconsName := []string{item.Image, documentImg, downloadImg, userImg}
-		files, errFiles := gb.RunContext.GetIcons(iconsName)
+		iconsName := []string{item.Image, documentImg, downloadImg}
+		iconFiles, errFiles := gb.RunContext.GetIcons(iconsName)
 		if err != nil {
 			return errFiles
 		}
+
+		files = append(files, iconFiles...)
 
 		if sendErr := gb.RunContext.Services.Sender.SendNotification(ctx, []string{i}, files,
 			emails[i]); sendErr != nil {

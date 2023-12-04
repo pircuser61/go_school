@@ -10,6 +10,8 @@ import (
 
 	mock "github.com/stretchr/testify/mock"
 
+	orderedmap "github.com/iancoleman/orderedmap"
+
 	store "gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 
 	time "time"
@@ -285,19 +287,19 @@ func (_m *MockedDatabase) FinishTaskBlocks(ctx context.Context, workID uuid.UUID
 }
 
 // GetAdditionalForms provides a mock function with given fields: workNumber, nodeName
-func (_m *MockedDatabase) GetAdditionalForms(workNumber string, nodeName string) ([]string, error) {
+func (_m *MockedDatabase) GetAdditionalForms(workNumber string, nodeName string) ([]orderedmap.OrderedMap, error) {
 	ret := _m.Called(workNumber, nodeName)
 
-	var r0 []string
+	var r0 []orderedmap.OrderedMap
 	var r1 error
-	if rf, ok := ret.Get(0).(func(string, string) ([]string, error)); ok {
+	if rf, ok := ret.Get(0).(func(string, string) ([]orderedmap.OrderedMap, error)); ok {
 		return rf(workNumber, nodeName)
 	}
-	if rf, ok := ret.Get(0).(func(string, string) []string); ok {
+	if rf, ok := ret.Get(0).(func(string, string) []orderedmap.OrderedMap); ok {
 		r0 = rf(workNumber, nodeName)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]string)
+			r0 = ret.Get(0).([]orderedmap.OrderedMap)
 		}
 	}
 

@@ -42,12 +42,18 @@
                             </div>
                         </td>
                     </tr>
-                        {{ if .Description }}
+                    {{ $attachLinks := .AttachLinks }}
+                    {{ $attachExist := .AttachExists }}
+                    {{ if .Description }}
+                    {{ range $ko, $vo := .Description }}
                         <tr>
                             <td style="border-collapse: collapse; padding-left: 24px; padding-right: 24px; width: 512px;">
                                 <div style="width: 464px; background: #F2F3F7; padding: 12px; border-radius: 12px;">
+                                    {{ if eq $ko 0 }}
                                     <p style="margin: 0; padding: 0; margin-bottom: 24px; font-family: MTS Compact; font-size: 17px; font-weight: 500; line-height: 24px; color: #1D2023;">Содержание заявки</p>
-                                    {{ range $key, $val := .Description }}
+                                    {{ else }}
+                                    <p style="margin: 0; padding: 0; margin-bottom: 24px; font-family: MTS Compact; font-size: 17px; font-weight: 500; line-height: 24px; color: #1D2023;">Форма</p>
+                                    {{ end }}                                    {{ range $key, $val := retMap $vo }}
                                     <div style="margin-bottom: 12px;">
                                         {{ if isUser $val }}
                                         <p style="margin: 0; padding: 0; font-family: MTS Compact; font-size: 14px; font-weight: 400; line-height: 20px; color: #626C77; margin-bottom: 4px;">{{ $key }}</p>
@@ -65,32 +71,33 @@
                                         {{ end }}
                                     </div>
                                     {{ end }}
-                                    {{ if .AttachLinks }}
+                                    {{ if $attachLinks }}
                                     <div style="margin-bottom: 12px;">
                                         <p style="margin: 0; padding: 0; font-family: MTS Compact; font-size: 14px; font-weight: 400; line-height: 20px; color: #626C77; margin-bottom: 4px;">Файлы</p>
-                                        {{ range .AttachLinks }}
+                                        {{ range $attachLinks }}
                                         <a align="left" download href="{{.ExternalLink}}" style="display: block; width: 486px; margin: 0; padding: 4px 12px; text-decoration: none; font-family: MTS Compact; font-size: 17px; font-weight: 400; line-height: 24px; color: #1D2023; border: 1px solid rgba(188, 195, 208, 0.50); border-radius: 8px; width: 440px;">
                                             <div style="display: table; width: 440px;">
-                                                <img src="cid:iconDocument.svg" style="display: table-cell;  vertical-align: middle; " alt="Документ">
-                                                <div style="margin: 0; padding: 0; font-family: MTS Compact; font-size: 17px; font-weight: 400; line-height: 24px; color: #1D2023; display: table-cell;  vertical-align: middle;">
-                                                    <p style="margin: 0; padding: 0; font-family: MTS Compact; font-size: 17px; font-weight: 400; line-height: 24px; color: #1D2023;">{{ .Name }} </p>
+                                                <img src="cid:iconDocument.svg" style="display: table-cell;  vertical-align: middle; margin-right: 12px;" alt="Документ">
+                                                <div style="margin: 0; padding: 0; font-family: MTS Compact; font-size: 17px; font-weight: 400; line-height: 24px; color: #1D2023; display: table-cell;  vertical-align: middle; width: 300px; overflow: hidden;">
+                                                    <p style="margin: 0; padding: 0; font-family: MTS Compact; font-size: 17px; font-weight: 400; line-height: 24px; color: #1D2023; word-break: break-all; margin-right: 12px;">{{ .Name }} </p>
                                                     <p style="margin: 0; padding: 0; font-family: MTS Compact; font-size: 12px; font-weight: 400; line-height: 16px; color: #626C77;">{{ .Size }} MB</p>
                                                 </div>
-                                                <img src="cid:iconDownload.svg" style="display: table-cell;  vertical-align: middle; margin-bottom: 10px; margin-right: auto;" alt="Скачать">
+                                                <img src="cid:iconDownload.svg" style="display: table-cell;  vertical-align: middle; margin-bottom: 10px;" alt="Скачать">
                                             </div>
                                         </a><br>
                                         {{ end }}
                                     </div>
                                     {{ end }}
-                                    {{ if .AttachExists }}
+                                    {{ if $attachExist }}
                                     <div style="margin-bottom: 12px;">
                                         <p style="margin: 0; padding: 0; font-family: MTS Compact; font-size: 14px; font-weight: 400; line-height: 20px; color: #626C77; margin-bottom: 4px;">Файлы</p>
                                         <p style="margin: 0; padding: 0; font-family: MTS Compact; font-size: 17px; font-weight: 400; line-height: 24px; color: #1D2023;">Файлы находятся во вложении к письму</p>
                                     </div>
                                     {{ end }}
                                 </div>
-                            </td>
+                            </td><br>
                         </tr>
+                        {{ end }}
                     {{ end }}
                     <tr>
                         <td align="center" style="border-collapse: collapse;">

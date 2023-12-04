@@ -4,6 +4,8 @@ import (
 	c "context"
 	"time"
 
+	"github.com/iancoleman/orderedmap"
+
 	"github.com/google/uuid"
 
 	e "gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
@@ -28,7 +30,7 @@ type PipelineStorager interface {
 
 type TaskStorager interface {
 	GetTaskFormSchemaID(workNumber, formID string) (string, error)
-	GetAdditionalForms(workNumber, nodeName string) ([]string, error)
+	GetAdditionalForms(workNumber, nodeName string) ([]orderedmap.OrderedMap, error)
 	GetApplicationData(workNumber string) (string, error)
 	GetTasks(ctx c.Context, filters e.TaskFilter, delegations []string) (*e.EriusTasksPage, error)
 	GetTasksCount(ctx c.Context, currentUser string, delegationsByApprovement, delegationsByExecution []string) (*e.CountTasks, error)

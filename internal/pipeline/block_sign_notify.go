@@ -41,6 +41,33 @@ func (gb *GoSignBlock) notifyAdditionalApprovers(ctx c.Context, logins []string,
 		return getSlaInfoErr
 	}
 
+	lastWorksForUser := make([]*entity.EriusTask, 0)
+
+	task, getVersionErr := gb.RunContext.Services.Storage.GetVersionByWorkNumber(ctx, gb.RunContext.WorkNumber)
+	if getVersionErr != nil {
+		return getVersionErr
+	}
+
+	processSettings, getVersionErr := gb.RunContext.Services.Storage.GetVersionSettings(ctx, task.VersionID.String())
+	if getVersionErr != nil {
+		return getVersionErr
+	}
+
+	login := task.Author
+
+	if processSettings.ResubmissionPeriod > 0 {
+		var getWorksErr error
+		lastWorksForUser, getWorksErr = gb.RunContext.Services.Storage.GetWorksForUserWithGivenTimeRange(ctx,
+			processSettings.ResubmissionPeriod,
+			login,
+			task.VersionID.String(),
+			gb.RunContext.WorkNumber,
+		)
+		if getWorksErr != nil {
+			return getWorksErr
+		}
+	}
+
 	for i := range emails {
 		tpl := mail.NewAddApproversTpl(
 			gb.RunContext.WorkNumber,
@@ -48,6 +75,7 @@ func (gb *GoSignBlock) notifyAdditionalApprovers(ctx c.Context, logins []string,
 			gb.RunContext.Services.Sender.SdAddress,
 			gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(
 				time.Now(), *gb.State.SLA, slaInfoPtr),
+			lastWorksForUser,
 		)
 
 		file, ok := gb.RunContext.Services.Sender.Images[tpl.Image]

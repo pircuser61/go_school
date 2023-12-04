@@ -39,7 +39,9 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 	approvers := getSliceFromMapOfStrings(gb.State.Approvers)
 	loginsToNotify := delegates.GetUserInArrayWithDelegations(approvers)
 
-	description, err := gb.RunContext.makeNotificationDescription()
+	files := make([]e.Attachment, 0)
+	description, err := gb.RunContext.makeNotificationDescription(gb.Name, &files)
+
 	if err != nil {
 		return err
 	}
@@ -98,14 +100,10 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 		WorkType: sla.WorkHourType(gb.State.WorkType),
 	})
 
-	attachment, err := gb.RunContext.GetAttach()
-	if err != nil {
-		return err
-	}
-
 	if getSlaInfoErr != nil {
 		return getSlaInfoErr
 	}
+
 	for _, login = range loginsToNotify {
 		email, getEmailErr := gb.RunContext.Services.People.GetUserEmail(ctx, login)
 		if getEmailErr != nil {
@@ -113,14 +111,14 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 			continue
 		}
 
-		author, err := gb.RunContext.Services.People.GetUser(ctx, gb.RunContext.Initiator)
-		if err != nil {
-			return err
+		author, autorErr := gb.RunContext.Services.People.GetUser(ctx, gb.RunContext.Initiator)
+		if autorErr != nil {
+			return autorErr
 		}
 
-		initiatorInfo, err := author.ToUserinfo()
-		if err != nil {
-			return err
+		initiatorInfo, initialErr := author.ToUserinfo()
+		if initialErr != nil {
+			return initialErr
 		}
 
 		templates[email] = mail.NewAppPersonStatusNotificationTpl(
@@ -143,11 +141,6 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 				ExecutionDecisionRejected: string(ExecutionDecisionRejected),
 				LastWorks:                 lastWorksForUser,
 				Initiator:                 initiatorInfo,
-			},
-			&mail.SignerNotifTemplate{
-				AttachFields: attachment.AttachFields,
-				AttachExists: attachment.AttachExists,
-				AttachLinks:  attachment.AttachLinks,
 			})
 	}
 
@@ -155,11 +148,11 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 		item := templates[i]
 
 		iconsName := []string{item.Image, documentImg, downloadImg, userImg}
-		files, iconsErr := gb.RunContext.GetIcons(iconsName)
+		iconsFiles, iconsErr := gb.RunContext.GetIcons(iconsName)
 		if iconsErr != nil {
 			return iconsErr
 		}
-		files = append(files, attachment.AttachmentsList...)
+		files = append(files, iconsFiles...)
 
 		if sendErr := gb.RunContext.Services.Sender.SendNotification(
 			ctx, []string{i}, files, item,
@@ -207,6 +200,33 @@ func (gb *GoApproverBlock) notifyAdditionalApprovers(ctx c.Context, logins []str
 		return getSlaInfoErr
 	}
 
+	lastWorksForUser := make([]*entity.EriusTask, 0)
+
+	task, getVersionErr := gb.RunContext.Services.Storage.GetVersionByWorkNumber(ctx, gb.RunContext.WorkNumber)
+	if getVersionErr != nil {
+		return getVersionErr
+	}
+
+	processSettings, getVersionErr := gb.RunContext.Services.Storage.GetVersionSettings(ctx, task.VersionID.String())
+	if getVersionErr != nil {
+		return getVersionErr
+	}
+
+	login := task.Author
+
+	if processSettings.ResubmissionPeriod > 0 {
+		var getWorksErr error
+		lastWorksForUser, getWorksErr = gb.RunContext.Services.Storage.GetWorksForUserWithGivenTimeRange(ctx,
+			processSettings.ResubmissionPeriod,
+			login,
+			task.VersionID.String(),
+			gb.RunContext.WorkNumber,
+		)
+		if getWorksErr != nil {
+			return getWorksErr
+		}
+	}
+
 	for i := range emails {
 		tpl := mail.NewAddApproversTpl(
 			gb.RunContext.WorkNumber,
@@ -214,6 +234,7 @@ func (gb *GoApproverBlock) notifyAdditionalApprovers(ctx c.Context, logins []str
 			gb.RunContext.Services.Sender.SdAddress,
 			gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(
 				time.Now(), gb.State.SLA, slaInfoPtr),
+			lastWorksForUser,
 		)
 
 		file, ok := gb.RunContext.Services.Sender.Images[tpl.Image]

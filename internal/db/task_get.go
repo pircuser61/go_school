@@ -18,6 +18,8 @@ import (
 
 	"go.opencensus.io/trace"
 
+	"github.com/iancoleman/orderedmap"
+
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
@@ -483,7 +485,7 @@ func addProcessedGroups(q string, selectFor *string, groupIds *[]string) string 
 	)
 }
 
-func (db *PGCon) GetAdditionalForms(workNumber, nodeName string) ([]string, error) {
+func (db *PGCon) GetAdditionalForms(workNumber, nodeName string) ([]orderedmap.OrderedMap, error) {
 	const q = `
 	WITH content as (
 		SELECT jsonb_array_elements(content -> 'pipeline' -> 'blocks' -> $2 -> 'params' -> 'forms_accessibility') as rules
@@ -496,7 +498,7 @@ func (db *PGCon) GetAdditionalForms(workNumber, nodeName string) ([]string, erro
 		FROM versions
 			WHERE id = (SELECT version_id FROM works WHERE work_number = $1 AND child_id IS NULL)
 	)
-    SELECT content -> 'State' -> step_name ->> 'description'
+    SELECT content -> 'State' -> step_name -> 'application_body'
 	FROM variable_storage
 		WHERE step_name in (
 			SELECT rules ->> 'node_id' as rule
@@ -505,7 +507,7 @@ func (db *PGCon) GetAdditionalForms(workNumber, nodeName string) ([]string, erro
 		)
 		AND work_id = (SELECT id FROM works WHERE work_number = $1 AND child_id IS NULL)
 	ORDER BY time`
-	ff := make([]string, 0)
+	ff := make([]orderedmap.OrderedMap, 0)
 	rows, err := db.Connection.Query(c.Background(), q, workNumber, nodeName)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -515,7 +517,7 @@ func (db *PGCon) GetAdditionalForms(workNumber, nodeName string) ([]string, erro
 	}
 	defer rows.Close()
 	for rows.Next() {
-		var form string
+		var form orderedmap.OrderedMap
 		if scanErr := rows.Scan(&form); scanErr != nil {
 			return nil, scanErr
 		}
