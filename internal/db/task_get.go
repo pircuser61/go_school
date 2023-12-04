@@ -485,29 +485,44 @@ func addProcessedGroups(q string, selectFor *string, groupIds *[]string) string 
 	)
 }
 
-func (db *PGCon) GetAdditionalForms(workNumber, nodeName string) ([]orderedmap.OrderedMap, error) {
+func (db *PGCon) GetAdditionalForms(workNumber, nodeName string) ([]string, error) {
 	const q = `
-	WITH content as (
-		SELECT jsonb_array_elements(content -> 'pipeline' -> 'blocks' -> $2 -> 'params' -> 'forms_accessibility') as rules
-		FROM versions
-			WHERE id = (SELECT version_id FROM works WHERE work_number = $1 AND child_id IS NULL)
-
-		UNION
-
-		SELECT jsonb_array_elements(content -> 'pipeline' -> 'blocks' -> $2 -> 'params' -> 'formsAccessibility') as rules
-		FROM versions
-			WHERE id = (SELECT version_id FROM works WHERE work_number = $1 AND child_id IS NULL)
-	)
-    SELECT content -> 'State' -> step_name -> 'application_body'
-	FROM variable_storage
-		WHERE step_name in (
-			SELECT rules ->> 'node_id' as rule
-			FROM content
-			WHERE rules ->> 'accessType' != 'None'
-		)
-		AND work_id = (SELECT id FROM works WHERE work_number = $1 AND child_id IS NULL)
-	ORDER BY time`
-	ff := make([]orderedmap.OrderedMap, 0)
+		WITH content as (
+	    SELECT jsonb_array_elements(content -> 'pipeline' -> 'blocks' -> $2 -> 'params' -> 'forms_accessibility') as rules
+	    FROM versions
+	    WHERE id = (SELECT version_id FROM works WHERE work_number = $1 AND child_id IS NULL)
+	
+	    UNION
+	
+	    SELECT jsonb_array_elements(content -> 'pipeline' -> 'blocks' -> $2 -> 'params' -> 'formsAccessibility') as rules
+	    FROM versions
+	    WHERE id = (SELECT version_id FROM works WHERE work_number = $1 AND child_id IS NULL)
+		),
+	     actual_work_id as (
+	         SELECT id
+	         FROM works
+	         WHERE work_number = $1
+	           AND child_id IS NULL
+	     ),
+	     actual_step_name as (
+	         SELECT rules ->> 'node_id' as rule
+	         FROM content
+	         WHERE rules ->> 'accessType' != 'None'
+	     )
+		SELECT content -> 'State' -> vs1.step_name ->> 'description'
+		FROM variable_storage vs1
+		INNER JOIN (
+		    SELECT step_name, max(time) AS max_data
+		    FROM variable_storage
+		    WHERE work_id = (SELECT id from actual_work_id)
+		    GROUP BY step_name
+		) vs2
+		    ON vs1.time = vs2.max_data
+		        AND vs1.step_name = vs2.step_name
+		WHERE vs1.work_id = (SELECT id from actual_work_id) 
+			AND vs1.step_name in (SELECT rule FROM actual_step_name)
+		ORDER BY time;`
+	ff := make([]string, 0)
 	rows, err := db.Connection.Query(c.Background(), q, workNumber, nodeName)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -517,7 +532,7 @@ func (db *PGCon) GetAdditionalForms(workNumber, nodeName string) ([]orderedmap.O
 	}
 	defer rows.Close()
 	for rows.Next() {
-		var form orderedmap.OrderedMap
+		var form string
 		if scanErr := rows.Scan(&form); scanErr != nil {
 			return nil, scanErr
 		}

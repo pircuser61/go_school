@@ -318,6 +318,8 @@ func (gb *GoApproverBlock) setPrevDecision(ctx c.Context) error {
 		gb.setEditingAppLogFromPreviousBlock(ctx)
 	}
 
+	gb.setPreviousApprovers(ctx)
+
 	if decision == nil && gb.State.GetRepeatPrevDecision() {
 		if gb.trySetPreviousDecision(ctx) {
 			return nil
@@ -424,4 +426,38 @@ func (gb *GoApproverBlock) trySetPreviousDecision(ctx c.Context) (isPrevDecision
 	}
 
 	return true
+}
+
+// nolint:dupl // not dupl
+func (gb *GoApproverBlock) setPreviousApprovers(ctx c.Context) {
+	const funcName = "pipeline.approver.setPreviousApprovers"
+	l := logger.GetLogger(ctx)
+
+	var parentStep *entity.Step
+	var err error
+
+	parentStep, err = gb.RunContext.Services.Storage.GetParentTaskStepByName(ctx, gb.RunContext.TaskID, gb.Name)
+	if err != nil || parentStep == nil {
+		l.Error(err)
+		return
+	}
+
+	data, ok := parentStep.State[gb.Name]
+	if !ok {
+		l.Error(funcName, "parent step state is not found: "+gb.Name)
+		return
+	}
+
+	var parentState ApproverData
+	if err = json.Unmarshal(data, &parentState); err != nil {
+		l.Error(funcName, "invalid format of go-approver-block state")
+		return
+	}
+
+	if parentState.Approvers != nil {
+		gb.State.Approvers = map[string]struct{}{}
+		for login := range parentState.Approvers {
+			gb.State.Approvers[login] = struct{}{}
+		}
+	}
 }
