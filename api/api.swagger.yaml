@@ -5060,9 +5060,6 @@ components:
           description: Hide executor from initiator
         mapping:
           $ref: '#/components/schemas/JSONSchemaProperties'
-        full_form_mapping:
-          type: string
-          description: 'Object address for object mapping'
         form_group_id:
           type: string
           description: Form group id in SD
