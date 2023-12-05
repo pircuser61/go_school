@@ -575,7 +575,9 @@ func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) ([]o
 		apBody.Set("attachList", attachments.AttachmentsList)
 	}
 
-	descriptions = append(descriptions, apBody)
+	if len(apBody.Keys()) != 0 {
+		descriptions = append(descriptions, apBody)
+	}
 
 	additionalForms, err := runCtx.Services.Storage.GetAdditionalDescriptionForms(runCtx.WorkNumber, nodeName)
 	if err != nil {
