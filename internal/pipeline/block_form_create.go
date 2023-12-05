@@ -166,7 +166,6 @@ func (gb *GoFormBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 		ApplicationBody:           map[string]interface{}{},
 		FormsAccessibility:        params.FormsAccessibility,
 		Mapping:                   params.Mapping,
-		FullFormMapping:           params.FullFormMapping,
 		HideExecutorFromInitiator: params.HideExecutorFromInitiator,
 		IsEditable:                params.IsEditable,
 		ReEnterSettings:           params.ReEnterSettings,
