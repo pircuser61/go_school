@@ -2226,6 +2226,7 @@ func (db *PGCon) GetAdditionalDescriptionForms(workNumber, nodeName string) ([]o
 		return nil, err
 	}
 	defer rows.Close()
+
 	for rows.Next() {
 		var form orderedmap.OrderedMap
 		if scanErr := rows.Scan(&form); scanErr != nil {
