@@ -3,7 +3,6 @@ package mail
 import (
 	"fmt"
 	"math"
-	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -388,18 +387,10 @@ func isLink(v interface{}) bool {
 	}
 
 	if ok {
-		if str[0:4] == "http" {
-			return true
-		}
-
-		return false
+		return str[0:4] == "http"
 	}
 
 	return ok
-}
-
-func printType(v interface{}) reflect.Type {
-	return reflect.TypeOf(v)
 }
 
 func checkKey(key string) bool {
