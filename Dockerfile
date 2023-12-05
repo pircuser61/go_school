@@ -10,5 +10,6 @@ ENV CONFIG_PATH ${CONFIG_PATH}
 
 COPY ${CONFIG_PATH} /etc/application/config.yaml
 COPY ${BINARY_PATH}/${BINARY_NAME} /bin/${BINARY_NAME}
+COPY internal/mail/img /bin/internal/mail/img
 
 CMD /bin/${BINARY_NAME} -c /etc/application/config.yaml
