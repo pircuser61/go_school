@@ -162,7 +162,7 @@ func (s *Service) SendNotification(ctx context.Context, to []string, files []ema
 func getImages(path string) (map[string][]byte, error) {
 	files, err := os.ReadDir(path)
 	if err != nil {
-		log.Error("error read directory", err)
+		log.Errorf("error read directory path: %v error: %v", path, err)
 		return nil, err
 	}
 
