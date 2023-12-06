@@ -49,11 +49,14 @@
                             <a href="{{ (index .ActionBtn 1).Href }}" style="margin: 0; padding: 0; margin-bottom: 12px;  display: inline-block; padding-top: 6px; padding-bottom: 6px; width: 100%; border-radius: 6px; text-decoration: none; font-family: MTS Compact; font-size: 14px; font-weight: 500; line-height: 20px; color: #000000; background-color: #F2F3F7;" target='_blank'>{{ (index .ActionBtn 1).Title }}</a>
                         </td>
                     </tr>
+                    {{ $length := len .ActionBtn }}
+                    {{ if eq $length 3 }}
                     <tr>
                         <td align="center" style="border-collapse: collapse; padding-left: 24px; padding-right: 24px;">
                             <a href="{{ (index .ActionBtn 2).Href }}"  target='_blank' style="margin: 0; padding: 0;  display: inline-block; padding-top: 6px; padding-bottom: 6px; width: 100%; border-radius: 6px; text-decoration: none; font-family: MTS Compact; font-size: 14px; font-weight: 500; line-height: 20px; color: #000000;">{{ (index .ActionBtn 2).Title }}</a>
                         </td>
                     </tr>
+                    {{ end }}
                     <tr>
                         <td style="border-collapse: collapse; padding-left: 24px; padding-right: 24px;">
                             <p style="margin: 0; padding: 0; margin-bottom: 18px; font-family: MTS Text; font-size: 17px;font-weight: 400; line-height: 24px; color: #1D2023;">Инициатор:</p>
