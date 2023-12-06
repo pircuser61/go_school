@@ -188,7 +188,7 @@ func NewExecutiontHalfSLATpl(id, name, sdUrl, deadline string, lastWorks []*enti
 func NewFormDayHalfSLATpl(id, name, sdUrl, deadline string) Template {
 	return Template{
 		Subject:  fmt.Sprintf("По заявке №%s %s истекает время предоставления информации", id, name),
-		Template: "internal/mail/template/my-template/33dopInfoIstekaet-template.html",
+		Template: "internal/mail/template/33dopInfoIstekaet-template.html",
 		Image:    "dop_info_istekaet.png",
 		Variables: struct {
 			Name     string `json:"name"`
@@ -288,7 +288,7 @@ func NewFormExecutionNeedTakeInWorkTpl(dto *NewFormExecutionNeedTakeInWorkDto, i
 
 	return Template{
 		Subject:  fmt.Sprintf("Заявка № %s %s - Необходимо%s предоставить информацию", dto.WorkNumber, dto.WorkTitle, retryStr),
-		Template: "internal/mail/template/my-template/39takeInWork-template.html",
+		Template: "internal/mail/template/39takeInWork-template.html",
 		Image:    "dop_info.png",
 		Variables: struct {
 			Id        string
@@ -736,7 +736,7 @@ func NewRequestAddInfoSLABreached(id, name, sdUrl string, reworkSla int) Templat
 func NewInvalidFunctionResp(id, name, sdUrl string) Template {
 	return Template{
 		Subject:  fmt.Sprintf("По заявке №%s %s не удалось получить обратную связь от внешней системы", id, name),
-		Template: "internal/mail/template/my-template/35errorRespOtherSystem-template.html",
+		Template: "internal/mail/template/35errorRespOtherSystem-template.html",
 		Image:    "oshibka_other.png",
 		Variables: struct {
 			Id   string
@@ -810,7 +810,7 @@ func NewRejectPipelineGroupTemplate(workNumber, workTitle, sdUrl string) Templat
 func NewSignSLAExpiredTemplate(workNumber, workTitle, sdUrl string) Template {
 	return Template{
 		Subject:  fmt.Sprintf("По заявке № %s %s- истекло время подписания", workNumber, workTitle),
-		Template: "internal/mail/template/my-template/37SignIsteklo-template.html",
+		Template: "internal/mail/template/37SignIsteklo-template.html",
 		Image:    "isteklo_podpisanie.png",
 		Variables: struct {
 			Id   string `json:"id"`
