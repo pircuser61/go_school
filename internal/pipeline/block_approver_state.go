@@ -318,14 +318,16 @@ func (a *ApproverData) SetDecision(login, comment string, ds ApproverDecision, a
 			return errors.New(fmt.Sprintf("decision of user %s is already set", login))
 		}
 
-		a.ApproverLog = append(a.ApproverLog, ApproverLogEntry{
-			Login:       login,
-			Decision:    ds,
-			Comment:     comment,
-			Attachments: attach,
-			CreatedAt:   time.Now(),
-			LogType:     ApproverLogDecision,
-		})
+		if founded {
+			a.ApproverLog = append(a.ApproverLog, ApproverLogEntry{
+				Login:       login,
+				Decision:    ds,
+				Comment:     comment,
+				Attachments: attach,
+				CreatedAt:   time.Now(),
+				LogType:     ApproverLogDecision,
+			})
+		}
 
 		for _, dl := range delegateFor {
 			a.ApproverLog = append(a.ApproverLog, ApproverLogEntry{
