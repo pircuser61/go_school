@@ -22,7 +22,7 @@ import (
 
 const imageMimeTypePrefix = "image"
 const headTemp = "internal/mail/template/00header-template.html"
-const imagePath = "internal/mail/img/"
+const imagePath = "./internal/mail/img/"
 
 type Service struct {
 	cli *mailclient.Client
