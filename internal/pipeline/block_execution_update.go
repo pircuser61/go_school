@@ -12,6 +12,7 @@ import (
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	file_registry "gitlab.services.mts.ru/jocasta/pipeliner/internal/file-registry"
 	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
@@ -344,7 +345,12 @@ func (gb *GoExecutionBlock) handleHalfSLABreached(ctx c.Context) error {
 			lastWorksForUser,
 		)
 
-		files := []string{tpl.Image, waningImg}
+		files := []string{tpl.Image}
+
+		if len(lastWorksForUser) != 0 {
+			files = append(files, warningImg)
+		}
+
 		iconFiles, fileErr := gb.RunContext.GetIcons(files)
 		if fileErr != nil {
 			return fileErr
@@ -456,9 +462,9 @@ func (gb *GoExecutionBlock) handleBreachedDayBeforeSLARequestAddInfo(ctx c.Conte
 		gb.RunContext.Services.Sender.SdAddress)
 
 	filesList := []string{tpl.Image}
-	files, iconEerr := gb.RunContext.GetIcons(filesList)
-	if iconEerr != nil {
-		return iconEerr
+	files, iconErr := gb.RunContext.GetIcons(filesList)
+	if iconErr != nil {
+		return iconErr
 	}
 
 	err := gb.RunContext.Services.Sender.SendNotification(ctx, emails, files, tpl)
@@ -790,7 +796,24 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 		Mailto:      gb.RunContext.Services.Sender.FetchEmail,
 	})
 
-	iconsName := []string{tpl.Image, downloadImg, documentImg, userImg, waningImg}
+	iconsName := []string{tpl.Image, userImg}
+
+	if len(lastWorksForUser) != 0 {
+		iconsName = append(iconsName, warningImg)
+	}
+
+	for _, v := range description {
+		links, link := v.Get("attachLinks")
+		if link {
+			attachFiles, ok := links.([]file_registry.AttachInfo)
+			if ok && len(attachFiles) != 0 {
+				descIcons := []string{documentImg, downloadImg}
+				iconsName = append(iconsName, descIcons...)
+				break
+			}
+		}
+	}
+
 	iconFiles, err := gb.RunContext.GetIcons(iconsName)
 	if err != nil {
 		return err
@@ -846,8 +869,31 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 			LastWorks:                 lastWorksForUser,
 		})
 
+	iconsName = []string{tpl.Image, userImg}
+
+	if len(lastWorksForUser) != 0 {
+		iconsName = append(iconsName, warningImg)
+	}
+
+	for _, v := range description {
+		links, link := v.Get("attachLinks")
+		if link {
+			attachFiles, ok := links.([]file_registry.AttachInfo)
+			if ok && len(attachFiles) != 0 {
+				descIcons := []string{documentImg, downloadImg}
+				iconsName = append(iconsName, descIcons...)
+				break
+			}
+		}
+	}
+
+	attachFiles, err := gb.RunContext.GetIcons(iconsName)
+	if err != nil {
+		return err
+	}
+
 	if sendErr := gb.RunContext.Services.Sender.SendNotification(ctx,
-		[]string{emailTakenInWork}, files, tpl); sendErr != nil {
+		[]string{emailTakenInWork}, attachFiles, tpl); sendErr != nil {
 		return sendErr
 	}
 

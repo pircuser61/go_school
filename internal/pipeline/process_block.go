@@ -689,7 +689,20 @@ func (runCtx *BlockRunContext) handleInitiatorNotify(ctx c.Context, params handl
 			Action:      params.action,
 		})
 
-	iconsName := []string{tmpl.Image, documentImg, downloadImg}
+	iconsName := []string{tmpl.Image}
+
+	for _, v := range description {
+		links, link := v.Get("attachLinks")
+		if link {
+			attachFiles, ok := links.([]file_registry.AttachInfo)
+			if ok && len(attachFiles) != 0 {
+				descIcons := []string{documentImg, downloadImg}
+				iconsName = append(iconsName, descIcons...)
+				break
+			}
+		}
+	}
+
 	iconFiles, iconErr := runCtx.GetIcons(iconsName)
 	if iconErr != nil {
 		return err

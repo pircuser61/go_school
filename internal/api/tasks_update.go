@@ -540,20 +540,13 @@ func (ae *APIEnv) updateTaskInternal(ctx c.Context, workNumber, userLogin string
 
 	em := mail.NewRejectPipelineGroupTemplate(dbTask.WorkNumber, dbTask.Name, ae.Mail.SdAddress)
 
-	file, ok := ae.Mail.Images[em.Image]
-	if !ok {
-		return errors.New("file not found: " + em.Image)
+	files := []string{em.Image}
+	iconFiles, err := runCtx.GetIcons(files)
+	if err != nil {
+		return err
 	}
 
-	files := []email.Attachment{
-		{
-			Name:    headImg,
-			Content: file,
-			Type:    email.EmbeddedAttachment,
-		},
-	}
-
-	err = ae.Mail.SendNotification(ctxLocal, emails, files, em)
+	err = ae.Mail.SendNotification(ctxLocal, emails, iconFiles, em)
 	if err != nil {
 		return err
 	}

@@ -7,6 +7,7 @@ import (
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	file_registry "gitlab.services.mts.ru/jocasta/pipeliner/internal/file-registry"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 )
@@ -85,6 +86,8 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 		WorkType: sla.WorkHourType(gb.State.WorkType),
 	})
 
+	initiator := false
+
 	if getSlaInfoErr != nil {
 		return getSlaInfoErr
 	}
@@ -110,7 +113,6 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 				},
 			)
 		} else {
-
 			author, errAuthor := gb.RunContext.Services.People.GetUser(ctx, gb.RunContext.Initiator)
 			if errAuthor != nil {
 				return err
@@ -120,6 +122,8 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 			if errInitiator != nil {
 				return err
 			}
+
+			initiator = true
 
 			emails[email] = mail.NewAppPersonStatusNotificationTpl(
 				&mail.NewAppPersonStatusTpl{
@@ -146,7 +150,28 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 	for i := range emails {
 		item := emails[i]
 
-		iconsName := []string{item.Image, documentImg, downloadImg, waningImg}
+		iconsName := []string{item.Image}
+
+		if initiator {
+			iconsName = append(iconsName, userImg)
+		}
+
+		if len(lastWorksForUser) != 0 {
+			iconsName = append(iconsName, warningImg)
+		}
+
+		for _, v := range description {
+			links, link := v.Get("attachLinks")
+			if link {
+				attachFiles, ok := links.([]file_registry.AttachInfo)
+				if ok && len(attachFiles) != 0 {
+					descIcons := []string{documentImg, downloadImg}
+					iconsName = append(iconsName, descIcons...)
+					break
+				}
+			}
+		}
+
 		iconFiles, errFiles := gb.RunContext.GetIcons(iconsName)
 		if err != nil {
 			return errFiles
@@ -251,13 +276,13 @@ func (gb *GoExecutionBlock) notifyNewInfoReceived(ctx c.Context) error {
 	tpl := mail.NewAnswerExecutionInfoTpl(gb.RunContext.WorkNumber,
 		gb.RunContext.NotifName, gb.RunContext.Services.Sender.SdAddress)
 
-	filesList := []string{tpl.Image}
-	files, iconEerr := gb.RunContext.GetIcons(filesList)
+	files := []string{tpl.Image}
+	iconFiles, iconEerr := gb.RunContext.GetIcons(files)
 	if iconEerr != nil {
 		return iconEerr
 	}
 
-	if sendErr := gb.RunContext.Services.Sender.SendNotification(ctx, emails, files, tpl); sendErr != nil {
+	if sendErr := gb.RunContext.Services.Sender.SendNotification(ctx, emails, iconFiles, tpl); sendErr != nil {
 		return sendErr
 	}
 

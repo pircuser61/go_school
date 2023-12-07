@@ -12,6 +12,7 @@ import (
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	file_registry "gitlab.services.mts.ru/jocasta/pipeliner/internal/file-registry"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
@@ -407,7 +408,20 @@ func (gb *GoSignBlock) handleNotifications(ctx c.Context) error {
 	for i := range emails {
 		item := emails[i]
 
-		iconsName := []string{item.Image, documentImg, downloadImg, userImg}
+		iconsName := []string{item.Image}
+
+		for _, v := range description {
+			links, link := v.Get("attachLinks")
+			if link {
+				attachFiles, ok := links.([]file_registry.AttachInfo)
+				if ok && len(attachFiles) != 0 {
+					descIcons := []string{documentImg, downloadImg}
+					iconsName = append(iconsName, descIcons...)
+					break
+				}
+			}
+		}
+
 		iconFiles, filesErr := gb.RunContext.GetIcons(iconsName)
 		if filesErr != nil {
 			return err

@@ -294,7 +294,12 @@ func (gb *GoApproverBlock) handleHalfBreachedSLA(ctx c.Context) (err error) {
 			lastWorksForUser,
 		)
 
-		files := []string{tpl.Image, waningImg}
+		files := []string{tpl.Image}
+
+		if len(lastWorksForUser) != 0 {
+			files = append(files, warningImg)
+		}
+
 		iconFiles, iconErr := gb.RunContext.GetIcons(files)
 		if iconErr != nil {
 			return err

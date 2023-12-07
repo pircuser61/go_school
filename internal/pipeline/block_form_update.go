@@ -432,14 +432,14 @@ func (gb *GoFormBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork strin
 			slaInfoPtr),
 	)
 
-	icons := []string{tpl.Image, documentImg, downloadImg, userImg}
+	icons := []string{tpl.Image}
 	iconFiles, iconErr = gb.RunContext.GetIcons(icons)
 	if iconErr != nil {
 		return iconErr
 	}
-	files = append(files, attachment.AttachmentsList...)
+	iconFiles = append(iconFiles, attachment.AttachmentsList...)
 
-	if sendErr := gb.RunContext.Services.Sender.SendNotification(ctx, []string{emailTakenInWork}, files,
+	if sendErr := gb.RunContext.Services.Sender.SendNotification(ctx, []string{emailTakenInWork}, iconFiles,
 		tpl); sendErr != nil {
 		return sendErr
 	}

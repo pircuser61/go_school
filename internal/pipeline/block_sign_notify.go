@@ -75,7 +75,12 @@ func (gb *GoSignBlock) notifyAdditionalApprovers(ctx c.Context, logins []string,
 			lastWorksForUser,
 		)
 
-		filesList := []string{tpl.Image, waningImg}
+		filesList := []string{tpl.Image}
+
+		if len(lastWorksForUser) != 0 {
+			filesList = append(filesList, warningImg)
+		}
+
 		iconFiles, iconErr := gb.RunContext.GetIcons(filesList)
 		if iconErr != nil {
 			return iconErr
@@ -134,7 +139,7 @@ func (gb *GoSignBlock) notifyDecisionMadeByAdditionalApprover(ctx c.Context, log
 		return err
 	}
 
-	filesList := []string{tpl.Image}
+	filesList := []string{tpl.Image, userImg}
 	iconFiles, iconEerr := gb.RunContext.GetIcons(filesList)
 	if iconEerr != nil {
 		return iconEerr

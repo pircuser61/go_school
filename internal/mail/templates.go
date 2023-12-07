@@ -756,17 +756,21 @@ func NewFormExecutionTakenInWorkTpl(dto *ExecutorNotifTemplate) Template {
 		Template: "internal/mail/template/05applicationAccepted-template.html",
 		Image:    "zayavka_vzyata_v_rabotu.png",
 		Variables: struct {
-			Id        string `json:"id"`
-			Name      string `json:"name"`
-			Link      string `json:"link"`
-			Executor  *sso.UserInfo
-			Initiator *sso.UserInfo
+			Id          string `json:"id"`
+			Name        string `json:"name"`
+			Link        string `json:"link"`
+			Executor    *sso.UserInfo
+			Initiator   *sso.UserInfo
+			Description []orderedmap.OrderedMap `json:"description"`
+			LastWorks   LastWorks               `json:"last_works"`
 		}{
-			Id:        dto.WorkNumber,
-			Name:      dto.Name,
-			Link:      fmt.Sprintf(TaskUrlTemplate, dto.SdUrl, dto.WorkNumber),
-			Executor:  dto.Executor,
-			Initiator: dto.Initiator,
+			Id:          dto.WorkNumber,
+			Name:        dto.Name,
+			Link:        fmt.Sprintf(TaskUrlTemplate, dto.SdUrl, dto.WorkNumber),
+			Executor:    dto.Executor,
+			Initiator:   dto.Initiator,
+			Description: nil,
+			LastWorks:   nil,
 		},
 	}
 }

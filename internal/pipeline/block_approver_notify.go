@@ -7,15 +7,16 @@ import (
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	file_registry "gitlab.services.mts.ru/jocasta/pipeliner/internal/file-registry"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
 const (
-	headImg   = "header.png"
-	userImg   = "iconUser.svg"
-	waningImg = "warning.svg"
+	headImg    = "header.png"
+	userImg    = "iconUser.svg"
+	warningImg = "warning.svg"
 )
 
 //nolint:dupl // maybe later
@@ -143,7 +144,24 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 	for i := range templates {
 		item := templates[i]
 
-		iconsName := []string{item.Image, documentImg, downloadImg, userImg, waningImg}
+		iconsName := []string{item.Image, userImg}
+
+		if len(lastWorksForUser) != 0 {
+			iconsName = append(iconsName, warningImg)
+		}
+
+		for _, v := range description {
+			links, link := v.Get("attachLinks")
+			if link {
+				attachFiles, ok := links.([]file_registry.AttachInfo)
+				if ok && len(attachFiles) != 0 {
+					descIcons := []string{documentImg, downloadImg}
+					iconsName = append(iconsName, descIcons...)
+					break
+				}
+			}
+		}
+
 		iconsFiles, iconsErr := gb.RunContext.GetIcons(iconsName)
 		if iconsErr != nil {
 			return iconsErr
@@ -233,7 +251,12 @@ func (gb *GoApproverBlock) notifyAdditionalApprovers(ctx c.Context, logins []str
 			lastWorksForUser,
 		)
 
-		filesList := []string{tpl.Image, waningImg}
+		filesList := []string{tpl.Image}
+
+		if len(lastWorksForUser) != 0 {
+			filesList = append(filesList, warningImg)
+		}
+
 		iconFiles, iconErr := gb.RunContext.GetIcons(filesList)
 		if iconErr != nil {
 			return iconErr
@@ -384,7 +407,14 @@ func (gb *GoApproverBlock) notifyNewInfoReceived(ctx c.Context, approverLogin st
 
 	tpl := mail.NewAnswerApproverInfoTpl(gb.RunContext.WorkNumber, gb.RunContext.NotifName,
 		gb.RunContext.Services.Sender.SdAddress)
-	if err = gb.RunContext.Services.Sender.SendNotification(ctx, emails, nil, tpl); err != nil {
+
+	files := []string{tpl.Image}
+	iconFiles, err := gb.RunContext.GetIcons(files)
+	if err != nil {
+		return err
+	}
+
+	if err = gb.RunContext.Services.Sender.SendNotification(ctx, emails, iconFiles, tpl); err != nil {
 		return err
 	}
 
