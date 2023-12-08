@@ -29,7 +29,7 @@ BEGIN
                                           array ['pipeline', 'blocks', s_name, 'output', 'properties', 'signatures']::varchar[],
                                           jsonb_build_object(
                                                   'type', 'array',
-                                                  'global', concat('s_name', '.signatures'),
+                                                  'global', concat(s_name, '.signatures'),
                                                   'items', jsonb_build_object(
                                                           'properties', jsonb_build_object(
                                                           'file', jsonb_build_object(
