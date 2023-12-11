@@ -289,6 +289,7 @@ func (gb *GoFormBlock) handleNotifications(ctx c.Context) error {
 
 	executors := getSliceFromMapOfStrings(gb.State.Executors)
 
+	fileNames := make([]string, 0)
 	var emails = make(map[string]mail.Template, 0)
 	for _, login := range executors {
 		em, getUserEmailErr := gb.RunContext.Services.People.GetUserEmail(ctx, login)
@@ -316,6 +317,8 @@ func (gb *GoFormBlock) handleNotifications(ctx c.Context) error {
 				Login:      login,
 				Deadline:   gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(time.Now(), gb.State.SLA, slaInfoPtr),
 			}, gb.State.IsReentry)
+
+			fileNames = append(fileNames, vRabotuBtn)
 		} else {
 
 			slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
@@ -344,8 +347,8 @@ func (gb *GoFormBlock) handleNotifications(ctx c.Context) error {
 	for i := range emails {
 		item := emails[i]
 
-		filesList := []string{item.Image}
-		files, iconEerr := gb.RunContext.GetIcons(filesList)
+		fileNames = append(fileNames, item.Image)
+		files, iconEerr := gb.RunContext.GetIcons(fileNames)
 		if iconEerr != nil {
 			return iconEerr
 		}

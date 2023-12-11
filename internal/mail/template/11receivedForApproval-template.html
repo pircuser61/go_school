@@ -1,142 +1,1354 @@
 {{ define "body" }}
-    <table cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse; mso-table-lspace: 0pt; mso-table-rspace: 0pt;">
-        <tr>
-            <td align="center" style="border-collapse: collapse;">
-                <div align="center" style="width: 100%; background: #F2F3F7;">
-                    <table width="560" cellpadding="0" cellspacing="0" bgcolor="#FFFFFF" style="border-collapse: collapse; mso-table-lspace: 0pt; mso-table-rspace: 0pt; width: 560px;">
+<table
+        cellpadding="0"
+        cellspacing="0"
+        width="100%"
+        style="
+    border-collapse: collapse;
+    mso-table-lspace: 0pt;
+    mso-table-rspace: 0pt;
+    background-color: #f2f3f7;
+  "
+>
+    <tr>
+        <td align="center" style="border-collapse: collapse">
+            <div align="center" style="width: 100%; background-color: #f2f3f7">
+                <table
+                        width="560"
+                        cellpadding="0"
+                        cellspacing="0"
+                        bgcolor="#FFFFFF"
+                        style="
+            border-collapse: collapse;
+            mso-table-lspace: 0pt;
+            mso-table-rspace: 0pt;
+            width: 560px;
+          "
+                >
                     {{ if .LastWorks }}
                     <tr>
-                        <td style="border-collapse: collapse; padding-left: 24px; padding-right: 24px; width: 512px; padding-top: 32px;" >
-                            <div style="width: 486px; background: #F2F3F7; padding: 12px; border-radius: 12px;">
-                                <div style="display: table; margin-bottom: 12px;">
-                                    <img src="cid:warning.svg" style="outline: none; text-decoration: none; border: none; -ms-interpolation-mode: bicubic; max-width: 100%; margin: 0; padding: 0; width: 24px; height: 24px; margin-right: 8px; display: table-cell; vertical-align: middle;" alt="iconUser">
-                                    <p style="margin: 0; padding: 0; font-family: MTS Compact; font-size: 14px; font-weight: 500; line-height: 20px; color: #1D2023; display: table-cell; vertical-align: middle;">Внимание! Предыдущие заявки:</p>
-                                </div>
-                                <ul style="margin: 0;">
-                                    {{ range .LastWorks }}
-                                    <li style="color: #8D969F; font-family: MTS Compact; font-size: 14px; font-style: normal; font-weight: 400; line-height: 20px; margin-top: 12px;"><span style="color: #1D2023;">№ {{ .WorkNumber }} была подана {{if eq .DaysAgo 0 }} сегодня{{ else }} {{ .DaysAgo }} день  назад {{ end}}. Для просмотра заявки перейдите по <a href={{.Link}} target="_blank" style="text-decoration: none; color: #007CFF;">ссылке</a></span></li>
-                                    {{ end }}
-                                </ul>
-                            </div>
-                        </td>
-                    </tr>
-                    {{ end }}
-                    <tr>
-                        <td style="border-collapse: collapse;">
-                            <p style="margin: 0; padding: 0; padding-left: 24px; padding-right: 24px; padding-top: 32px; margin-bottom: 24px; font-family: MTS Text; font-size: 24px; font-weight: 500; line-height: 28px;">Добрый день!</p>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td style="border-collapse: collapse;">
-                            <p style="margin: 0; padding: 0; padding-left: 24px; padding-right: 24px; margin-bottom: 24px; font-family: MTS Text; font-size: 17px; font-weight: 400; line-height: 24px;">
-                                Уважаемый коллега, <span style="font-weight: 500;">заявка № {{.Id}} {{.Name}} ожидает согласования</span>.
-                                {{ if .Deadline }}  Срок согласования до {{.Deadline}}. {{end}}
+                        <td
+                                style="
+                border-collapse: collapse;
+                padding-left: 24px;
+                padding-right: 24px;
+                width: 512px;
+              "
+                        >
+                            <!-- пустая линия -->
+                            <p
+                                    style="
+                  margin: 0cm;
+                  padding: 0;
+                  line-height: 24pt;
+                  vertical-align: baseline;
+                "
+                            >
+                <span
+                        style="
+                    font-size: 10pt;
+                    font-family: 'MTS Text', sans-serif, serif, EmojiFont;
+                    color: transparent;
+                  "
+                >&nbsp;</span
+                >
                             </p>
+                            <!-- конец пустой линии -->
+                            <table
+                                    cellpadding="0"
+                                    cellspacing="0"
+                                    style="
+                  border-collapse: collapse;
+                  mso-table-lspace: 0pt;
+                  mso-table-rspace: 0pt;
+                "
+                            >
+                                <tr>
+                                    <td
+                                            style="
+                      border-collapse: collapse;
+                      width: 486px;
+                      background-color: #f2f3f7;
+                      border-radius: 12px;
+                      padding-left: 12px;
+                      padding-right: 12px;
+                    "
+                                    >
+                                        <!-- пустая линия -->
+                                        <p
+                                                style="
+                        margin: 0cm;
+                        padding: 0;
+                        line-height: 4px;
+                        vertical-align: baseline;
+                      "
+                                        >
+                      <span
+                              style="
+                          font-size: 10pt;
+                          font-family: 'MTS Text', sans-serif, serif, EmojiFont;
+                          color: transparent;
+                        "
+                      >&nbsp;</span
+                      >
+                                        </p>
+                                        <!-- конец пустой линии -->
+                                        <table
+                                                cellpadding="0"
+                                                cellspacing="0"
+                                                style="
+                        border-collapse: collapse;
+                        mso-table-lspace: 0pt;
+                        mso-table-rspace: 0pt;
+                      "
+                                        >
+                                            <tr>
+                                                <td
+                                                        style="border-collapse: collapse; padding-right: 8px"
+                                                >
+                                                    <!-- <img
+                                              src="cid:warning.svg"
+                                              style="
+                                                outline: none;
+                                                text-decoration: none;
+                                                border: none;
+                                                -ms-interpolation-mode: bicubic;
+                                                max-width: 100%;
+                                                margin: 0;
+                                                padding: 0;
+                                                width: 24px;
+                                                height: 24px;
+                                                display: table-cell;
+                                                vertical-align: middle;
+                                              "
+                                              alt="Внимание"
+                                            /> -->
+                                                    <img
+                                                            src="cid:warning.png"
+                                                            style="
+                              outline: none;
+                              text-decoration: none;
+                              border: none;
+                              -ms-interpolation-mode: bicubic;
+                              max-width: 100%;
+                              margin: 0;
+                              padding: 0;
+                              width: 24px;
+                              height: 24px;
+                              display: table-cell;
+                              vertical-align: middle;
+                            "
+                                                            alt="Внимание"
+                                                    />
+                                                </td>
+                                                <td style="border-collapse: collapse; width: 376px">
+                                                    <p
+                                                            style="
+                              margin: 0;
+                              padding: 0;
+                              font-family: MTS Compact, sans-serif, serif,
+                                EmojiFont;
+                              font-size: 14px;
+                              font-weight: 500;
+                              line-height: 15pt;
+                              color: #1d2023;
+                              display: table-cell;
+                              vertical-align: middle;
+                            "
+                                                    >
+                                                        Внимание! Предыдущие заявки:
+                                                    </p>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                        <ul style="margin: 0">
+                                            {{ range .LastWorks }}
+                                            <!-- пустая линия -->
+                                            <p
+                                                    style="
+                          margin: 0cm;
+                          padding: 0;
+                          line-height: 9pt;
+                          vertical-align: baseline;
+                        "
+                                            >
+                        <span
+                                style="
+                            font-size: 10pt;
+                            font-family: 'MTS Text', sans-serif, serif,
+                              EmojiFont;
+                            color: transparent;
+                          "
+                        >&nbsp;</span
+                        >
+                                            </p>
+                                            <!-- конец пустой линии -->
+                                            <li
+                                                    style="
+                          color: #8d969f;
+                          font-family: MTS Compact, sans-serif, serif, EmojiFont;
+                          font-size: 14px;
+                          font-style: normal;
+                          font-weight: 400;
+                          line-height: 15pt;
+                        "
+                                            >
+                        <span
+                                style="
+                            font-family: MTS Text, sans-serif, serif, EmojiFont;
+                            font-size: 14px;
+                            line-height: 15pt;
+                            font-weight: 400;
+                            color: #1d2023;
+                          "
+                        >№ {{ .WorkNumber }} была подана {{if eq .DaysAgo 0 }}
+                          сегодня{{ else }} {{ .DaysAgo }} день назад {{ end}}.
+                          Для просмотра заявки перейдите по
+                          <a
+                                  href="{{.Link}}"
+                                  target="_blank"
+                                  style="
+                              font-family: MTS Text, sans-serif, serif,
+                                EmojiFont;
+                              font-size: 14px;
+                              line-height: 15pt;
+                              font-weight: 400;
+                              text-decoration: none;
+                              color: #007cff;
+                            "
+                          >ссылке</a
+                          ></span
+                        >
+                                            </li>
+                                            {{ end }}
+                                        </ul>
+                                        <!-- пустая линия -->
+                                        <p
+                                                style="
+                        margin: 0cm;
+                        padding: 0;
+                        line-height: 9pt;
+                        vertical-align: baseline;
+                      "
+                                        >
+                      <span
+                              style="
+                          font-size: 10pt;
+                          font-family: 'MTS Text', sans-serif, serif, EmojiFont;
+                          color: transparent;
+                        "
+                      >&nbsp;</span
+                      >
+                                        </p>
+                                        <!-- конец пустой линии -->
+                                    </td>
+                                </tr>
+                            </table>
                         </td>
                     </tr>
-                    <tr>
-                        <td style="border-collapse: collapse;">
-                            <p style="margin: 0; padding: 0; padding-left: 24px; padding-right: 24px; margin-bottom: 24px; font-family: MTS Text; font-size: 17px; font-weight: 400; line-height: 24px;">Для просмотра перейдите по <a href={{.Link}} target="_blank" style="text-decoration: none; color: #007CFF; font-family: MTS Text; font-size: 17px; font-weight: 500; line-height: 24px;">ссылке</a></p>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td align="center" style="border-collapse: collapse; padding-left: 24px; padding-right: 24px;">
-                            <a href="{{ (index .ActionBtn 0).Href}}" style="margin: 0; padding: 0; margin-bottom: 12px; display: inline-block; padding-top: 6px; padding-bottom: 6px; width: 100%; border-radius: 6px; text-decoration: none; font-family: MTS Compact; font-size: 14px; font-weight: 500; line-height: 20px; background-color: #FF0032; color: #FFFFFF;">{{ (index .ActionBtn 0).Title}}</a>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td align="center" style="border-collapse: collapse; padding-left: 24px; padding-right: 24px;">
-                            <a href="{{ (index .ActionBtn 1).Href}}" style="margin: 0; padding: 0; margin-bottom: 12px; display: inline-block; padding-top: 6px; padding-bottom: 6px; width: 100%; border-radius: 6px; text-decoration: none; font-family: MTS Compact; font-size: 14px; font-weight: 500; line-height: 20px; color: #000000; background-color: #F2F3F7;">{{ (index .ActionBtn 1).Title}}</a>
-                        </td>
-                    </tr>
-                    {{ $length := len .ActionBtn }}
-                    {{ if eq $length 3 }}
-                        <tr>
-                            <td align="center" style="border-collapse: collapse; padding-left: 24px; padding-right: 24px;">
-                                <a href="{{ (index .ActionBtn 2).Href}}" style="margin: 0; padding: 0; display: inline-block; padding-top: 6px; padding-bottom: 6px; width: 100%; border-radius: 6px; text-decoration: none; font-family: MTS Compact; font-size: 14px; font-weight: 500; line-height: 20px; color: #000000;">{{ (index .ActionBtn 2).Title}}</a>
-                            </td>
-                        </tr>
                     {{ end }}
                     <tr>
-                        <td style="border-collapse: collapse; padding-left: 24px; padding-right: 24px;">
-                            <p style="margin: 0; padding: 0; margin-bottom: 18px; font-family: MTS Text; font-size: 17px;font-weight: 400; line-height: 24px; color: #1D2023;">Инициатор:</p>
-                            <div style="display: table; margin-bottom: 24px;">
-                                <img src="cid:iconUser.svg" style="outline: none; text-decoration: none; border: none; -ms-interpolation-mode: bicubic; max-width: 100%; margin: 0; padding: 0; margin-right: 12px; display: table-cell; vertical-align: middle; margin-top: 10px;" alt="iconUser">
-                                <div style="display: table-cell; vertical-align: middle;">
-                                    <p style="margin: 0; padding: 0; font-family: MTS Compact; font-size: 17px; font-weight: 400; line-height: 24px; color: #1D2023; margin-bottom: 4px;">{{.Initiator.FullName}} ({{ .Initiator.Username }})</p>
-                                    <p style="margin: 0; padding: 0; font-family: MTS Compact; font-size: 14px; font-weight: 400; line-height: 20px; color: #626C77;">{{ .Initiator.Title }}</p>
-                                </div>
-                            </div>
+                        <td
+                                style="
+                border-collapse: collapse;
+                padding-left: 24px;
+                padding-right: 24px;
+              "
+                        >
+                            <!-- пустая линия -->
+                            <p
+                                    style="
+                  margin: 0cm;
+                  padding: 0;
+                  line-height: 24pt;
+                  vertical-align: baseline;
+                "
+                            >
+                <span
+                        style="
+                    font-size: 10pt;
+                    font-family: 'MTS Text', sans-serif, serif, EmojiFont;
+                    color: transparent;
+                  "
+                >&nbsp;</span
+                >
+                            </p>
+                            <!-- конец пустой линии -->
+                            <p
+                                    style="
+                  margin: 0;
+                  padding: 0;
+                  font-family: MTS Text, sans-serif, serif, EmojiFont;
+                  font-size: 24px;
+                  font-weight: 500;
+                  line-height: 21pt;
+                "
+                            >
+                                <strong>Добрый день!</strong>
+                            </p>
+                            <!-- пустая линия -->
+                            <p
+                                    style="
+                  margin: 0cm;
+                  padding: 0;
+                  line-height: 18pt;
+                  vertical-align: baseline;
+                "
+                            >
+                <span
+                        style="
+                    font-size: 10pt;
+                    font-family: 'MTS Text', sans-serif, serif, EmojiFont;
+                    color: transparent;
+                  "
+                >&nbsp;</span
+                >
+                            </p>
+                            <!-- конец пустой линии -->
                         </td>
                     </tr>
-                        {{ if .Description }}
-                        {{ range $ko, $vo := .Description }}
-                        {{ $item := retMap $vo }}
-                        <tr>
-                            <td style="border-collapse: collapse; padding-left: 24px; padding-right: 24px; width: 512px;">
-                                <div style="width: 464px; background: #F2F3F7; padding: 12px; border-radius: 12px;">
-                                    {{ if eq $ko 0 }}
-                                    <p style="margin: 0; padding: 0; margin-bottom: 24px; font-family: MTS Compact; font-size: 17px; font-weight: 500; line-height: 24px; color: #1D2023;">Содержание заявки</p>
-                                    {{ else }}
-                                    <p style="margin: 0; padding: 0; margin-bottom: 24px; font-family: MTS Compact; font-size: 17px; font-weight: 500; line-height: 24px; color: #1D2023;">Форма</p>
-                                    {{ end }}
-                                    {{ range $key, $val := retMap $vo }}
-                                    <div style="margin-bottom: 12px;">
-                                        {{ if isUser $val }}
-                                        <p style="margin: 0; padding: 0; font-family: MTS Compact; font-size: 14px; font-weight: 400; line-height: 20px; color: #626C77; margin-bottom: 4px;">{{ $key }}</p>
-                                        <p style="margin: 0; padding: 0; font-family: MTS Compact; font-size: 17px; font-weight: 400; line-height: 24px; color: #1D2023;">{{ index (retMap $val) "fullname" }} ({{ index (retMap $val) "username" }})</p>
-                                        {{ else }}
-                                        {{ if not (isFile $val) }}
-                                        {{ if isLink $val }}
-                                        <p style="margin: 0; padding: 0; font-family: MTS Compact; font-size: 14px; font-weight: 400; line-height: 20px; color: #626C77; margin-bottom: 4px;">{{ $key }}</p>
-                                        <a href="{{$val}}" style="margin: 0; padding: 0; text-decoration: none; font-family: MTS Compact; font-size: 17px; font-weight: 400; line-height: 24px; color: #007CFF;">{{ $val }}</a>
-                                        {{ else }}
-                                        {{ if checkKey $key }}
-                                        <p style="margin: 0; padding: 0; font-family: MTS Compact; font-size: 14px; font-weight: 400; line-height: 20px; color: #626C77; margin-bottom: 4px;">{{ $key }}</p>
-                                        <p style="margin: 0; padding: 0; font-family: MTS Compact; font-size: 17px; font-weight: 400; line-height: 24px; color: #1D2023;">{{ $val }}</p>
-                                        {{ end }}
-
-                                        {{ end }}
-                                        {{ end }}
-                                        {{ end }}
-                                    </div>
-                                    {{ end }}
-                                    {{ if (index $item "attachLinks") }}
-                                    <div style="margin-bottom: 12px;">
-                                        <p style="margin: 0; padding: 0; font-family: MTS Compact; font-size: 14px; font-weight: 400; line-height: 20px; color: #626C77; margin-bottom: 4px;">Файлы</p>
-                                        {{ range (index $item "attachLinks") }}
-                                        <a align="left" download href="{{.ExternalLink}}" style="display: block; width: 486px; margin: 0; padding: 4px 12px; text-decoration: none; font-family: MTS Compact; font-size: 17px; font-weight: 400; line-height: 24px; color: #1D2023; border: 1px solid rgba(188, 195, 208, 0.50); border-radius: 8px; width: 440px;">
-                                            <div style="display: table; width: 440px;">
-                                                <img src="cid:iconDocument.svg" style="display: table-cell;  vertical-align: middle; margin-right: 12px;" alt="Документ">
-                                                <div style="margin: 0; padding: 0; font-family: MTS Compact; font-size: 17px; font-weight: 400; line-height: 24px; color: #1D2023; display: table-cell;  vertical-align: middle; width: 300px; overflow: hidden;">
-                                                    <p style="margin: 0; padding: 0; font-family: MTS Compact; font-size: 17px; font-weight: 400; line-height: 24px; color: #1D2023; word-break: break-all; margin-right: 12px;">{{ .Name }} </p>
-                                                    <p style="margin: 0; padding: 0; font-family: MTS Compact; font-size: 12px; font-weight: 400; line-height: 16px; color: #626C77;">{{ .Size }} MB</p>
-                                                </div>
-                                                <img src="cid:iconDownload.svg" style="display: table-cell;  vertical-align: middle; margin-bottom: 10px;" alt="Скачать">
-                                            </div>
-                                        </a><br>
-                                        {{ end }}
-                                    </div>
-                                    {{ end }}
-                                    {{ if (index $item "attachExist")}}
-                                    <div style="margin-bottom: 12px;">
-                                        <p style="margin: 0; padding: 0; font-family: MTS Compact; font-size: 14px; font-weight: 400; line-height: 20px; color: #626C77; margin-bottom: 4px;">Файлы</p>
-                                        <p style="margin: 0; padding: 0; font-family: MTS Compact; font-size: 17px; font-weight: 400; line-height: 24px; color: #1D2023;">Файлы находятся во вложении к письму</p>
-                                    </div>
-                                    {{ end }}
-                                </div><br>
-                            </td>
-                        </tr>
-                        {{ end }}
-                        {{ end }}
                     <tr>
-                        <td align="center" style="border-collapse: collapse;">
-                            <p style="margin: 0; padding: 0; padding-left: 24px; padding-right: 24px; padding-top: 24px; margin-bottom: 24px; font-family: MTS Text; font-size: 14px; font-weight: 400; line-height: 20px; color: #969FA8;">По вопросам Service Desk обращайтесь на почту servicedesk@mts.ru</p>
+                        <td
+                                style="
+                border-collapse: collapse;
+                padding-left: 24px;
+                padding-right: 24px;
+              "
+                        >
+                            <p
+                                    style="
+                  margin: 0;
+                  padding: 0;
+                  font-family: MTS Text, sans-serif, serif, EmojiFont;
+                  font-size: 17px;
+                  font-weight: 400;
+                  line-height: 18pt;
+                "
+                            >
+                                Уважаемый коллега,
+                                <span
+                                        style="
+                    font-family: MTS Text, sans-serif, serif, EmojiFont;
+                    font-size: 17px;
+                    line-height: 18pt;
+                    font-weight: 500;
+                  "
+                                ><strong
+                                >заявка № {{.Id}} {{.Name}} ожидает согласования.</strong
+                                ></span
+                                >
+                                {{ if .Deadline }} Срок согласования до {{.Deadline}}. {{end}}
+                            </p>
+                            <!-- пустая линия -->
+                            <p
+                                    style="
+                  margin: 0cm;
+                  padding: 0;
+                  line-height: 18pt;
+                  vertical-align: baseline;
+                "
+                            >
+                <span
+                        style="
+                    font-size: 10pt;
+                    font-family: 'MTS Text', sans-serif, serif, EmojiFont;
+                    color: transparent;
+                  "
+                >&nbsp;</span
+                >
+                            </p>
+                            <!-- конец пустой линии -->
                         </td>
                     </tr>
-                </table>                
-                </div>                
-            </td>
-        </tr>
-    </table>
+                    <tr>
+                        <td
+                                style="
+                border-collapse: collapse;
+                padding-left: 24px;
+                padding-right: 24px;
+              "
+                        >
+                            <p
+                                    style="
+                  margin: 0;
+                  padding: 0;
+                  font-family: MTS Text, sans-serif, serif, EmojiFont;
+                  font-size: 17px;
+                  font-weight: 400;
+                  line-height: 18pt;
+                "
+                            >
+                                Для просмотра перейдите по
+                                <a
+                                        href="{{.Link}}"
+                                        target="_blank"
+                                        style="
+                    text-decoration: none;
+                    color: #007cff;
+                    font-family: MTS Text, sans-serif, serif, EmojiFont;
+                    font-size: 17px;
+                    font-weight: 500;
+                    line-height: 18pt;
+                  "
+                                >ссылке</a
+                                >
+                            </p>
+                            <!-- пустая линия -->
+                            <p
+                                    style="
+                  margin: 0cm;
+                  padding: 0;
+                  line-height: 18pt;
+                  vertical-align: baseline;
+                "
+                            >
+                <span
+                        style="
+                    font-size: 10pt;
+                    font-family: 'MTS Text', sans-serif, serif, EmojiFont;
+                    color: transparent;
+                  "
+                >&nbsp;</span
+                >
+                            </p>
+                            <!-- конец пустой линии -->
+                        </td>
+                    </tr>
+                    <tr>
+                        <td
+                                align="center"
+                                style="
+                border-collapse: collapse;
+                padding-left: 24px;
+                padding-right: 24px;
+                padding-bottom: 12px;
+              "
+                        >
+                            <a
+                                    href="{{ (index .ActionBtn 0).Href}}"
+                                    target="_blank"
+                                    style="
+                  margin: 0;
+                  padding: 0;
+                  display: inline-block;
+                  width: 100%;
+                  border-radius: 6px;
+                  text-decoration: none;
+                  font-family: MTS Compact, sans-serif, serif, EmojiFont;
+                  font-size: 14px;
+                  font-weight: 500;
+                  line-height: 15pt;
+                "
+                            >
+                                <!-- <img src="cid:soglButton.png" alt="Согласовать" style="outline: none;
+                                    text-decoration: none;
+                                    border: none;
+                                    -ms-interpolation-mode: bicubic; border-radius: 6px; color: #000000;"/> -->
+                                <img
+                                        src="cid:soglButton.png"
+                                        alt="Согласовать"
+                                        style="
+                    outline: none;
+                    text-decoration: none;
+                    border: none;
+                    -ms-interpolation-mode: bicubic;
+                    border-radius: 6px;
+                    color: #000000;
+                  "
+                                />
+                            </a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td
+                                align="center"
+                                style="
+                border-collapse: collapse;
+                padding-left: 24px;
+                padding-right: 24px;
+                padding-bottom: 12px;
+              "
+                        >
+                            <a
+                                    href="{{ (index .ActionBtn 1).Href}}"
+                                    target="_blank"
+                                    style="
+                  margin: 0;
+                  padding: 0;
+                  display: inline-block;
+                  width: 100%;
+                  border-radius: 6px;
+                  text-decoration: none;
+                  font-family: MTS Compact, sans-serif, serif, EmojiFont;
+                  font-size: 14px;
+                  font-weight: 500;
+                  line-height: 15pt;
+                "
+                            >
+                                <!-- <img src="cid:otklonButton.png" alt="Отклонить" style="outline: none;
+                                    text-decoration: none;
+                                    border: none;
+                                    -ms-interpolation-mode: bicubic; border-radius: 6px; color: #000000;"/> -->
+                                <img
+                                        src="cid:otklonButton.png"
+                                        alt="Отклонить"
+                                        style="
+                    outline: none;
+                    text-decoration: none;
+                    border: none;
+                    -ms-interpolation-mode: bicubic;
+                    border-radius: 6px;
+                    color: #000000;
+                  "
+                                />
+                            </a>
+                        </td>
+                    </tr>
+                    {{ $length := len .ActionBtn }} {{ if eq $length 3 }}
+                    <tr>
+                        <td
+                                align="center"
+                                style="
+                border-collapse: collapse;
+                padding-left: 24px;
+                padding-right: 24px;
+                padding-bottom: 12px;
+              "
+                        >
+                            <a
+                                    href="{{ (index .ActionBtn 2).Href}}"
+                                    target="_blank"
+                                    style="
+                  margin: 0;
+                  padding: 0;
+                  display: inline-block;
+                  width: 100%;
+                  border-radius: 6px;
+                  text-decoration: none;
+                  font-family: MTS Compact, sans-serif, serif, EmojiFont;
+                  font-size: 14px;
+                  font-weight: 500;
+                  line-height: 15pt;
+                "
+                            >
+                                <!-- <img
+                                  src="cid:naDorabotkuButton.png"
+                                  alt="Вернуть на доработку"
+                                  style="outline: none;
+                                    text-decoration: none;
+                                    border: none;
+                                    -ms-interpolation-mode: bicubic; border-radius: 6px; color: #000000"
+                                /> -->
+                                <img
+                                        src="cid:naDorabotkuButton.png"
+                                        alt="Вернуть на доработку"
+                                        style="
+                    outline: none;
+                    text-decoration: none;
+                    border: none;
+                    -ms-interpolation-mode: bicubic;
+                    border-radius: 6px;
+                    color: #000000;
+                  "
+                                />
+                            </a>
+                        </td>
+                    </tr>
+                    {{ end }}
+                    <tr>
+                        <td
+                                style="
+                border-collapse: collapse;
+                padding-left: 24px;
+                padding-right: 24px;
+              "
+                        >
+                            <p
+                                    style="
+                  margin: 0;
+                  padding: 0;
+                  font-family: MTS Text, sans-serif, serif, EmojiFont;
+                  font-size: 17px;
+                  font-weight: 400;
+                  line-height: 18pt;
+                  color: #1d2023;
+                "
+                            >
+                                Инициатор:
+                            </p>
+                            <!-- пустая линия -->
+                            <p
+                                    style="
+                  margin: 0cm;
+                  padding: 0;
+                  line-height: 6pt;
+                  vertical-align: baseline;
+                "
+                            >
+                <span
+                        style="
+                    font-size: 10pt;
+                    font-family: 'MTS Text', sans-serif, serif, EmojiFont;
+                    color: transparent;
+                  "
+                >&nbsp;</span
+                >
+                            </p>
+                            <!-- конец пустой линии -->
+                            <table
+                                    cellpadding="0"
+                                    cellspacing="0"
+                                    style="
+                  border-collapse: collapse;
+                  mso-table-lspace: 0pt;
+                  mso-table-rspace: 0pt;
+                "
+                            >
+                                <tr>
+                                    <td style="border-collapse: collapse; padding-right: 12px">
+                                        <!-- <img
+                                      src="cid:iconUser.svg"
+                                      style="
+                                        outline: none;
+                                        text-decoration: none;
+                                        border: none;
+                                        -ms-interpolation-mode: bicubic;
+                                        max-width: 100%;
+                                        margin: 0;
+                                        padding: 0;
+                                        display: table-cell;
+                                        vertical-align: middle;
+                                      "
+                                      alt="iconUser"
+                                    /> -->
+                                        <img
+                                                src="cid:iconUser.png"
+                                                style="
+                        outline: none;
+                        text-decoration: none;
+                        border: none;
+                        -ms-interpolation-mode: bicubic;
+                        max-width: 100%;
+                        margin: 0;
+                        padding: 0;
+                        display: table-cell;
+                        vertical-align: middle;
+                      "
+                                                alt="iconUser"
+                                        />
+                                    </td>
+                                    <td style="border-collapse: collapse">
+                                        <p
+                                                style="
+                        margin: 0;
+                        padding: 0;
+                        font-family: MTS Compact, sans-serif, serif, EmojiFont;
+                        font-size: 17px;
+                        font-weight: 400;
+                        line-height: 18pt;
+                        color: #1d2023;
+                        padding-bottom: 4px;
+                      "
+                                        >
+                                            {{.Initiator.FullName}} ({{ .Initiator.Username}})
+                                        </p>
+                                        <p
+                                                style="
+                        margin: 0;
+                        padding: 0;
+                        font-family: MTS Compact, sans-serif, serif, EmojiFont;
+                        font-size: 14px;
+                        font-weight: 400;
+                        line-height: 15pt;
+                        color: #626c77;
+                      "
+                                        >
+                                            {{.Initiator.Title}}
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+                            <!-- пустая линия -->
+                            <p
+                                    style="
+                  margin: 0cm;
+                  padding: 0;
+                  line-height: 7.5pt;
+                  vertical-align: baseline;
+                "
+                            >
+                <span
+                        style="
+                    font-size: 10pt;
+                    font-family: 'MTS Text', sans-serif, serif, EmojiFont;
+                    color: transparent;
+                  "
+                >&nbsp;</span
+                >
+                            </p>
+                            <!-- конец пустой линии -->
+                        </td>
+                    </tr>
+                    {{ if .Description }} {{ range $ko, $vo := .Description }} {{ $item :=
+                    retMap $vo }}
+                    <tr>
+                        <td
+                                style="
+                border-collapse: collapse;
+                padding-left: 24px;
+                padding-right: 24px;
+                width: 512px;
+              "
+                        >
+                            <!-- пустая линия -->
+                            <p
+                                    style="
+                  margin: 0cm;
+                  padding: 0;
+                  line-height: 10.5pt;
+                  vertical-align: baseline;
+                "
+                            >
+                <span
+                        style="
+                    font-size: 10pt;
+                    font-family: 'MTS Text', sans-serif, serif, EmojiFont;
+                    color: transparent;
+                  "
+                >&nbsp;</span
+                >
+                            </p>
+                            <!-- конец пустой линии -->
+                            <table
+                                    cellpadding="0"
+                                    cellspacing="0"
+                                    style="
+                  border-collapse: collapse;
+                  mso-table-lspace: 0pt;
+                  mso-table-rspace: 0pt;
+                "
+                            >
+                                <tr>
+                                    <td
+                                            style="
+                      width: 486px;
+                      background-color: #f2f3f7;
+                      border-radius: 12px;
+                      padding-left: 12px;
+                      padding-right: 12px;
+                    "
+                                    >
+                                        <!-- пустая линия -->
+                                        <p
+                                                style="
+                        margin: 0cm;
+                        padding: 0;
+                        line-height: 9pt;
+                        vertical-align: baseline;
+                      "
+                                        >
+                      <span
+                              style="
+                          font-size: 10pt;
+                          font-family: 'MTS Text', sans-serif, serif, EmojiFont;
+                          color: transparent;
+                        "
+                      >&nbsp;</span
+                      >
+                                        </p>
+                                        <!-- конец пустой линии -->
+                                        {{ if eq $ko 0 }}
+                                        <p
+                                                style="
+                        margin: 0;
+                        padding: 0;
+                        font-family: MTS Compact, sans-serif, serif, EmojiFont;
+                        font-size: 17px;
+                        font-weight: 500;
+                        line-height: 18pt;
+                        color: #1d2023;
+                      "
+                                        >
+                                            Содержание заявки
+                                        </p>
+                                        <!-- пустая линия -->
+                                        <p
+                                                style="
+                        margin: 0cm;
+                        padding: 0;
+                        line-height: 18pt;
+                        vertical-align: baseline;
+                      "
+                                        >
+                      <span
+                              style="
+                          font-size: 10pt;
+                          font-family: 'MTS Text', sans-serif, serif, EmojiFont;
+                          color: transparent;
+                        "
+                      >&nbsp;</span
+                      >
+                                        </p>
+                                        <!-- конец пустой линии -->
+                                        {{ else }}
+                                        <p
+                                                style="
+                        margin: 0;
+                        padding: 0;
+                        font-family: MTS Compact, sans-serif, serif, EmojiFont;
+                        font-size: 17px;
+                        font-weight: 500;
+                        line-height: 18pt;
+                        color: #1d2023;
+                      "
+                                        >
+                                            Форма
+                                        </p>
+                                        <!-- пустая линия -->
+                                        <p
+                                                style="
+                        margin: 0cm;
+                        padding: 0;
+                        line-height: 18pt;
+                        vertical-align: baseline;
+                      "
+                                        >
+                      <span
+                              style="
+                          font-size: 10pt;
+                          font-family: 'MTS Text', sans-serif, serif, EmojiFont;
+                          color: transparent;
+                        "
+                      >&nbsp;</span
+                      >
+                                        </p>
+                                        <!-- конец пустой линии -->
+                                        {{ end }} {{ range $key, $val := retMap $vo }}
+                                        <div>
+                                            {{ if isUser $val }}
+                                            <p
+                                                    style="
+                          margin: 0;
+                          padding: 0;
+                          font-family: MTS Compact, sans-serif, serif, EmojiFont;
+                          font-size: 14px;
+                          font-weight: 400;
+                          line-height: 15pt;
+                          color: #626c77;
+                          padding-bottom: 4px;
+                        "
+                                            >
+                                                {{ $key }}
+                                            </p>
+
+                                            <p
+                                                    style="
+                          margin: 0;
+                          padding: 0;
+                          font-family: MTS Compact, sans-serif, serif, EmojiFont;
+                          font-size: 17px;
+                          font-weight: 400;
+                          line-height: 18pt;
+                          color: #1d2023;
+                        "
+                                            >
+                                                {{ index (retMap $val) "fullname" }} ({{ index (retMap
+                                                $val) "username" }})
+                                            </p>
+                                            <!-- пустая линия -->
+                                            <p
+                                                    style="
+                          margin: 0cm;
+                          padding: 0;
+                          line-height: 9pt;
+                          vertical-align: baseline;
+                        "
+                                            >
+                        <span
+                                style="
+                            font-size: 10pt;
+                            font-family: 'MTS Text', sans-serif, serif,
+                              EmojiFont;
+                            color: transparent;
+                          "
+                        >&nbsp;</span
+                        >
+                                            </p>
+                                            <!-- конец пустой линии -->
+                                            {{ else }} {{ if not (isFile $val) }} {{ if isLink $val }}
+                                            <p
+                                                    style="
+                          margin: 0;
+                          padding: 0;
+                          font-family: MTS Compact, sans-serif, serif, EmojiFont;
+                          font-size: 14px;
+                          font-weight: 400;
+                          line-height: 15pt;
+                          color: #626c77;
+                          padding-bottom: 4px;
+                        "
+                                            >
+                                                {{ $key }}
+                                            </p>
+                                            <a
+                                                    href="{{$val}}"
+                                                    style="
+                          margin: 0;
+                          padding: 0;
+                          text-decoration: none;
+                          font-family: MTS Compact, sans-serif, serif, EmojiFont;
+                          font-size: 17px;
+                          font-weight: 400;
+                          line-height: 18pt;
+                          color: #007cff;
+                        "
+                                            >{{ $val }}</a
+                                            >
+                                            <!-- пустая линия -->
+                                            <p
+                                                    style="
+                          margin: 0cm;
+                          padding: 0;
+                          line-height: 9pt;
+                          vertical-align: baseline;
+                        "
+                                            >
+                        <span
+                                style="
+                            font-size: 10pt;
+                            font-family: 'MTS Text', sans-serif, serif,
+                              EmojiFont;
+                            color: transparent;
+                          "
+                        >&nbsp;</span
+                        >
+                                            </p>
+                                            <!-- конец пустой линии -->
+                                            {{ else }} {{ if checkKey $key }}
+                                            <p
+                                                    style="
+                          margin: 0;
+                          padding: 0;
+                          font-family: MTS Compact, sans-serif, serif, EmojiFont;
+                          font-size: 14px;
+                          font-weight: 400;
+                          line-height: 15pt;
+                          color: #626c77;
+                          padding-bottom: 4px;
+                        "
+                                            >
+                                                {{ $key }}
+                                            </p>
+                                            <p
+                                                    style="
+                          margin: 0;
+                          padding: 0;
+                          font-family: MTS Compact, sans-serif, serif, EmojiFont;
+                          font-size: 17px;
+                          font-weight: 400;
+                          line-height: 18pt;
+                          color: #1d2023;
+                        "
+                                            >
+                                                {{ $val }}
+                                            </p>
+                                            <!-- пустая линия -->
+                                            <p
+                                                    style="
+                          margin: 0cm;
+                          padding: 0;
+                          line-height: 9pt;
+                          vertical-align: baseline;
+                        "
+                                            >
+                        <span
+                                style="
+                            font-size: 10pt;
+                            font-family: 'MTS Text', sans-serif, serif,
+                              EmojiFont;
+                            color: transparent;
+                          "
+                        >&nbsp;</span
+                        >
+                                            </p>
+                                            <!-- конец пустой линии -->
+                                        </div>
+                                        {{ end }} {{ end }} {{ end }} {{ end }} {{ end }} {{ if
+                                        (index $item "attachLinks") }}
+
+                                        <div>
+                                            <p
+                                                    style="
+                          margin: 0;
+                          padding: 0;
+                          font-family: MTS Compact, sans-serif, serif, EmojiFont;
+                          font-size: 14px;
+                          font-weight: 400;
+                          line-height: 15pt;
+                          color: #626c77;
+                          padding-bottom: 4px;
+                        "
+                                            >
+                                                Файлы
+                                            </p>
+                                            {{ range (index $item "attachLinks") }}
+                                            <a
+                                                    align="left"
+                                                    download
+                                                    href="{{.ExternalLink}}"
+                                                    style="
+                          display: block;
+                          width: 484px;
+                          margin: 0;
+                          text-decoration: none;
+                          font-family: MTS Compact, sans-serif, serif, EmojiFont;
+                          font-size: 17px;
+                          font-weight: 400;
+                          line-height: 18pt;
+                          color: #1d2023;
+                        "
+                                            >
+                                                <table
+                                                        cellpadding="0"
+                                                        cellspacing="0"
+                                                        style="
+                            border-collapse: collapse;
+                            mso-table-lspace: 0pt;
+                            mso-table-rspace: 0pt;
+                            border: 1px solid rgba(188, 195, 208, 0.5);
+                            border-radius: 8px;
+                            padding: 4px 12px;
+                            padding-top: 4px;
+                            padding-bottom: 4px;
+                            padding-right: 12px;
+                            padding-left: 12px;
+                          "
+                                                >
+                                                    <tr>
+                                                        <td
+                                                                style="
+                                border-collapse: collapse;
+                                padding-right: 12px;
+                              "
+                                                        >
+                                                            <!-- <img
+                                                      src="cid:iconDocument.svg"
+                                                      style="
+                                                      margin: 0;
+                                                      padding: 0;
+                                                      outline: none;
+                                                      text-decoration: none;
+                                                      border: none;
+                                                      -ms-interpolation-mode: bicubic;
+                                                        display: table-cell;
+                                                        vertical-align: middle;
+                                                        width: 44px;
+                                                        height: 44px;
+                                                      "
+                                                      alt="Документ"
+                                                    /> -->
+                                                            <img
+                                                                    src="cid:iconDocument.png"
+                                                                    style="
+                                  margin: 0;
+                                  padding: 0;
+                                  outline: none;
+                                  text-decoration: none;
+                                  border: none;
+                                  -ms-interpolation-mode: bicubic;
+                                  display: table-cell;
+                                  vertical-align: middle;
+                                  width: 44px;
+                                  height: 44px;
+                                "
+                                                                    alt="Документ"
+                                                            />
+                                                        </td>
+                                                        <td style="border-collapse: collapse; width: 376px">
+                                                            <div
+                                                                    style="
+                                  margin: 0;
+                                  padding: 0;
+                                  font-family: MTS Compact, sans-serif, serif,
+                                    EmojiFont;
+                                  font-size: 17px;
+                                  font-weight: 400;
+                                  line-height: 18pt;
+                                  color: #1d2023;
+                                  display: table-cell;
+                                  vertical-align: middle;
+                                  width: 376px;
+                                  overflow: hidden;
+                                "
+                                                            >
+                                                                <p
+                                                                        style="
+                                    margin: 0;
+                                    padding: 0;
+                                    font-family: MTS Compact, sans-serif, serif,
+                                      EmojiFont, EmojiFont;
+                                    font-size: 17px;
+                                    font-weight: 400;
+                                    line-height: 18pt;
+                                    color: #1d2023;
+                                    word-break: break-all;
+                                    padding-right: 12px;
+                                  "
+                                                                >
+                                                                    {{ .Name }}
+                                                                </p>
+                                                                <p
+                                                                        style="
+                                    margin: 0;
+                                    padding: 0;
+                                    font-family: MTS Compact, sans-serif, serif,
+                                      EmojiFont, EmojiFont;
+                                    font-size: 12px;
+                                    font-weight: 400;
+                                    line-height: 12pt;
+                                    color: #626c77;
+                                  "
+                                                                >
+                                                                    {{ .Size }} MB
+                                                                </p>
+                                                            </div>
+                                                        </td>
+                                                        <td style="border-collapse: collapse">
+                                                            <!-- <img
+                                                      src="cid:iconDownload.svg"
+                                                      style="
+                                                      margin: 0;
+                                                      padding: 0;
+                                                      outline: none;
+                                                      text-decoration: none;
+                                                      border: none;
+                                                      -ms-interpolation-mode: bicubic;
+                                                        display: table-cell;
+                                                        vertical-align: middle;
+                                                      "
+                                                      alt="Скачать"
+                                                    /> -->
+                                                            <img
+                                                                    src="cid:iconDownload.png"
+                                                                    style="
+                                  margin: 0;
+                                  padding: 0;
+                                  outline: none;
+                                  text-decoration: none;
+                                  border: none;
+                                  -ms-interpolation-mode: bicubic;
+                                  width: 24px;
+                                  height: 24px;
+                                  display: table-cell;
+                                  vertical-align: middle;
+                                "
+                                                                    alt="Скачать"
+                                                            />
+                                                        </td>
+                                                    </tr>
+                                                </table>
+                                            </a>
+                                            <!-- пустая линия -->
+                                            <p
+                                                    style="
+                          margin: 0cm;
+                          padding: 0;
+                          line-height: 3pt;
+                          vertical-align: baseline;
+                        "
+                                            >
+                        <span
+                                style="
+                            font-size: 10pt;
+                            font-family: 'MTS Text', sans-serif, serif,
+                              EmojiFont;
+                            color: transparent;
+                          "
+                        >&nbsp;</span
+                        >
+                                            </p>
+                                            <!-- конец пустой линии -->
+                                            {{ end }}
+                                        </div>
+                                        <!-- пустая линия -->
+                                        <p
+                                                style="
+                        margin: 0cm;
+                        padding: 0;
+                        line-height: 9pt;
+                        vertical-align: baseline;
+                      "
+                                        >
+                      <span
+                              style="
+                          font-size: 10pt;
+                          font-family: 'MTS Text', sans-serif, serif, EmojiFont;
+                          color: transparent;
+                        "
+                      >&nbsp;</span
+                      >
+                                        </p>
+                                        <!-- конец пустой линии -->
+                                        {{ end }} {{ if (index $item "attachExist")}}
+                                        <div>
+                                            <p
+                                                    style="
+                          margin: 0;
+                          padding: 0;
+                          font-family: MTS Compact, sans-serif, serif, EmojiFont;
+                          font-size: 14px;
+                          font-weight: 400;
+                          line-height: 15pt;
+                          color: #626c77;
+                        "
+                                            >
+                                                Файлы
+                                            </p>
+                                            <!-- пустая линия -->
+                                            <p
+                                                    style="
+                          margin: 0cm;
+                          padding: 0;
+                          line-height: 3pt;
+                          vertical-align: baseline;
+                        "
+                                            >
+                        <span
+                                style="
+                            font-size: 10pt;
+                            font-family: 'MTS Text', sans-serif, serif,
+                              EmojiFont;
+                            color: transparent;
+                          "
+                        >&nbsp;</span
+                        >
+                                            </p>
+                                            <!-- конец пустой линии -->
+                                            <p
+                                                    style="
+                          margin: 0;
+                          padding: 0;
+                          font-family: MTS Compact, sans-serif, serif, EmojiFont;
+                          font-size: 17px;
+                          font-weight: 400;
+                          line-height: 18pt;
+                          color: #1d2023;
+                        "
+                                            >
+                                                Файлы находятся во вложении к письму
+                                            </p>
+                                        </div>
+                                        <!-- пустая линия -->
+                                        <p
+                                                style="
+                        margin: 0cm;
+                        padding: 0;
+                        line-height: 9pt;
+                        vertical-align: baseline;
+                      "
+                                        >
+                      <span
+                              style="
+                          font-size: 10pt;
+                          font-family: 'MTS Text', sans-serif, serif, EmojiFont;
+                          color: transparent;
+                        "
+                      >&nbsp;</span
+                      >
+                                        </p>
+                                        <!-- конец пустой линии -->
+                                        {{ end }}
+                                        <!-- пустая линия -->
+                                        <p
+                                                style="
+                        margin: 0cm;
+                        padding: 0;
+                        line-height: 9pt;
+                        vertical-align: baseline;
+                      "
+                                        >
+                      <span
+                              style="
+                          font-size: 10pt;
+                          font-family: 'MTS Text', sans-serif, serif, EmojiFont;
+                          color: transparent;
+                        "
+                      >&nbsp;</span
+                      >
+                                        </p>
+                                        <!-- конец пустой линии -->
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    {{ end }} {{ end }}
+                    <tr>
+                        <td
+                                align="center"
+                                style="
+                border-collapse: collapse;
+                padding-left: 24px;
+                padding-right: 24px;
+              "
+                        >
+                            <!-- пустая линия -->
+                            <p
+                                    style="
+                  margin: 0cm;
+                  padding: 0;
+                  line-height: 18pt;
+                  vertical-align: baseline;
+                "
+                            >
+                <span
+                        style="
+                    font-size: 10pt;
+                    font-family: 'MTS Text', sans-serif, serif, EmojiFont;
+                    color: transparent;
+                  "
+                >&nbsp;</span
+                >
+                            </p>
+                            <!-- конец пустой линии -->
+                            <p
+                                    style="
+                  margin: 0;
+                  padding: 0;
+                  text-decoration: none;
+                  font-family: MTS Text, sans-serif, serif, EmojiFont;
+                  font-size: 14px;
+                  font-weight: 400;
+                  line-height: 15pt;
+                  color: #969fa8;
+                "
+                            >
+                                По вопросам Service Desk обращайтесь на почту servicedesk@mts.ru
+                            </p>
+                            <!-- пустая линия -->
+                            <p
+                                    style="
+                  margin: 0cm;
+                  padding: 0;
+                  line-height: 18pt;
+                  vertical-align: baseline;
+                "
+                            >
+                <span
+                        style="
+                    font-size: 10pt;
+                    font-family: 'MTS Text', sans-serif, serif, EmojiFont;
+                    color: transparent;
+                  "
+                >&nbsp;</span
+                >
+                            </p>
+                            <!-- конец пустой линии -->
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </td>
+    </tr>
+</table>
 {{ end }}

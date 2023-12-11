@@ -752,7 +752,7 @@ func NewInvalidFunctionResp(id, name, sdUrl string) Template {
 
 func NewFormExecutionTakenInWorkTpl(dto *ExecutorNotifTemplate) Template {
 	return Template{
-		Subject:  fmt.Sprintf("Заявка № %s %s взята в работу в работу пользователем %s", dto.WorkNumber, dto.Name, dto.Executor.FullName),
+		Subject:  fmt.Sprintf("Заявка № %s %s взята в работу пользователем %s", dto.WorkNumber, dto.Name, dto.Executor.FullName),
 		Template: "internal/mail/template/05applicationAccepted-template.html",
 		Image:    "zayavka_vzyata_v_rabotu.png",
 		Variables: struct {

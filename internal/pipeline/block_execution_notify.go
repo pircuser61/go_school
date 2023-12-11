@@ -13,8 +13,8 @@ import (
 )
 
 const (
-	downloadImg = "iconDownload.svg"
-	documentImg = "iconDocument.svg"
+	downloadImg = "iconDownload.png"
+	documentImg = "iconDocument.png"
 )
 
 //nolint:dupl,gocyclo // maybe later
@@ -86,7 +86,7 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 		WorkType: sla.WorkHourType(gb.State.WorkType),
 	})
 
-	initiator := false
+	iconsName := make([]string, 0)
 
 	if getSlaInfoErr != nil {
 		return getSlaInfoErr
@@ -112,6 +112,8 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 					Deadline:    gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(time.Now(), gb.State.SLA, slaInfoPtr),
 				},
 			)
+
+			iconsName = append(iconsName)
 		} else {
 			author, errAuthor := gb.RunContext.Services.People.GetUser(ctx, gb.RunContext.Initiator)
 			if errAuthor != nil {
@@ -122,8 +124,6 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 			if errInitiator != nil {
 				return err
 			}
-
-			initiator = true
 
 			emails[email] = mail.NewAppPersonStatusNotificationTpl(
 				&mail.NewAppPersonStatusTpl{
@@ -144,16 +144,22 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 					ExecutionDecisionRejected: string(ExecutionDecisionRejected),
 					LastWorks:                 lastWorksForUser,
 				})
+
+			if initiatorInfo != nil {
+				iconsName = append(iconsName, userImg)
+			}
+
+			iconsName = append(iconsName, reshitBtn, otkBtn)
 		}
 	}
 
 	for i := range emails {
 		item := emails[i]
 
-		iconsName := []string{item.Image}
+		iconsName = append(iconsName, item.Image, userImg)
 
-		if initiator {
-			iconsName = append(iconsName, userImg)
+		if gb.State.GetIsEditable() {
+			iconsName = append(iconsName, dorabotkaBtn)
 		}
 
 		if len(lastWorksForUser) != 0 {

@@ -14,9 +14,14 @@ import (
 )
 
 const (
-	headImg    = "header.png"
-	userImg    = "iconUser.svg"
-	warningImg = "warning.svg"
+	headImg      = "header.png"
+	userImg      = "iconUser.png"
+	warningImg   = "warning.png"
+	soglBtn      = "soglButton.png"
+	dorabotkaBtn = "naDorabotkuButton.png"
+	otkBtn       = "otklonButton.png"
+	reshitBtn    = "reshitButton.png"
+	vRabotuBtn   = "vRabotuButton.png"
 )
 
 //nolint:dupl // maybe later
@@ -144,7 +149,11 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 	for i := range templates {
 		item := templates[i]
 
-		iconsName := []string{item.Image, userImg}
+		iconsName := []string{item.Image, userImg, soglBtn, otkBtn}
+
+		if gb.State.GetIsEditable() {
+			iconsName = append(iconsName, dorabotkaBtn)
+		}
 
 		if len(lastWorksForUser) != 0 {
 			iconsName = append(iconsName, warningImg)

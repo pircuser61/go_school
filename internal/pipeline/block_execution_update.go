@@ -869,7 +869,11 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 			LastWorks:                 lastWorksForUser,
 		})
 
-	iconsName = []string{tpl.Image, userImg}
+	iconsName = []string{tpl.Image, userImg, reshitBtn, otkBtn}
+
+	if gb.State.GetIsEditable() {
+		iconsName = append(iconsName, dorabotkaBtn)
+	}
 
 	if len(lastWorksForUser) != 0 {
 		iconsName = append(iconsName, warningImg)

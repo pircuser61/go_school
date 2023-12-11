@@ -569,13 +569,11 @@ func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) ([]o
 
 	files := make([]e.Attachment, 0, len(attachments.AttachmentsList))
 
-	if len(attachments.AttachmentsList) != 0 {
+	if len(apBody.Values()) != 0 {
 		apBody.Set("attachLinks", attachments.AttachLinks)
 		apBody.Set("attachExist", attachments.AttachExists)
 		apBody.Set("attachList", attachments.AttachmentsList)
-	}
 
-	if len(apBody.Keys()) != 0 {
 		descriptions = append(descriptions, apBody)
 	}
 
