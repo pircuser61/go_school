@@ -217,7 +217,7 @@ var errorText = map[Err]string{
 	GetDecisionsError:                   "can't get node decisions",
 	GetBlockStateError:                  "can't get block state",
 	ParallelPathIntersected:             "invalid pipeline schema: parallel path's are intersected",
-	GetDeadlineError:                    "can`t get deadline",
+	GetDeadlineError:                    "can't get deadline",
 }
 
 // JOKE.

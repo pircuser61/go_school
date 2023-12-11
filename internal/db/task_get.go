@@ -692,7 +692,7 @@ func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter, delegations 
 	}, nil
 }
 
-func (db *PGCon) GetDeadline(ctx c.Context, workNumber string) (*time.Time, error) {
+func (db *PGCon) GetDeadline(ctx c.Context, workNumber string) (time.Time, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_last_debug_task")
 	defer span.End()
 
@@ -710,20 +710,20 @@ func (db *PGCon) GetDeadline(ctx c.Context, workNumber string) (*time.Time, erro
 	var deadline string
 	err := row.Scan(&deadline)
 	if err != nil {
-		return nil, err
+		return time.Time{}, err
 	}
 
 	if deadline != "" {
 		loc, _ := time.LoadLocation("Europe/Moscow")
 		deadlines, deadErr := time.ParseInLocation(time.RFC3339, deadline, loc)
 		if deadErr != nil {
-			return nil, err
+			return time.Time{}, err
 		}
 
-		return &deadlines, nil
+		return deadlines, nil
 	}
 
-	return nil, nil
+	return time.Time{}, nil
 }
 
 func (db *PGCon) GetTasksCount(

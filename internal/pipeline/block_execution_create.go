@@ -185,7 +185,7 @@ func (gb *GoExecutionBlock) createState(ctx c.Context, ef *entity.EriusFunc) err
 		WorkType: sla.WorkHourType(*params.WorkType),
 	})
 	if getSlaInfoErr != nil {
-		return errors.Wrap(err, "can not get slaInfo")
+		return errors.Wrap(getSlaInfoErr, "can not get slaInfo")
 	}
 
 	gb.State = &ExecutionData{
