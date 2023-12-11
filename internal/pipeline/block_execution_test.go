@@ -268,7 +268,7 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 				State: &ExecutionData{
 					WorkType:           workType,
 					ExecutionType:      script.ExecutionTypeFromSchema,
-					Deadline:           time.Date(1, time.January, 1, 0, 0, 0, 0, time.UTC),
+					Deadline:           time.Date(1, time.January, 1, 14, 0, 0, 0, time.UTC),
 					Executors:          map[string]struct{}{"test": {}, "test2": {}},
 					SLA:                8,
 					FormsAccessibility: make([]script.FormAccessibility, 1),
@@ -352,7 +352,7 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 				State: &ExecutionData{
 					WorkType:           workType,
 					ExecutionType:      script.ExecutionTypeFromSchema,
-					Deadline:           time.Date(1, time.January, 1, 0, 0, 0, 0, time.UTC),
+					Deadline:           time.Date(1, time.January, 1, 14, 0, 0, 0, time.UTC),
 					Executors:          map[string]struct{}{"test": {}},
 					SLA:                8,
 					FormsAccessibility: make([]script.FormAccessibility, 1),
@@ -367,6 +367,12 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 				name: example,
 				runCtx: &BlockRunContext{
 					skipNotifications: true,
+					Services: RunContextServices{
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSlaService(nil)
+							return slaMock
+						}(),
+					},
 					VarStore: func() *store.VariableStore {
 						s := store.NewStore()
 						r, _ := json.Marshal(&ExecutionData{
@@ -375,6 +381,7 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 								"tester": {},
 							},
 							SLA:                1,
+							WorkType:           workType,
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
 						s.State = map[string]json.RawMessage{
@@ -409,6 +416,7 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 							Type:               script.ExecutionTypeUser,
 							Executors:          "tester",
 							SLA:                1,
+							WorkType:           &workType,
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
 						return r
@@ -429,6 +437,12 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 				Sockets:        entity.ConvertSocket(next),
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
+					Services: RunContextServices{
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSlaService(nil)
+							return slaMock
+						}(),
+					},
 					VarStore: func() *store.VariableStore {
 						s := store.NewStore()
 						r, _ := json.Marshal(&ExecutionData{
@@ -437,6 +451,7 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 								"tester": {},
 							},
 							SLA:                1,
+							WorkType:           workType,
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
 						s.State = map[string]json.RawMessage{
@@ -452,6 +467,8 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 						"tester": {},
 					},
 					SLA:                 1,
+					WorkType:            workType,
+					Deadline:            time.Date(1, time.January, 1, 7, 0, 0, 0, time.UTC),
 					FormsAccessibility:  make([]script.FormAccessibility, 1),
 					DecisionAttachments: make([]entity.Attachment, 0),
 					IsTakenInWork:       false,
@@ -629,6 +646,8 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 				Name: stepName,
 				ExecutionData: &ExecutionData{
 					IsTakenInWork: true,
+					WorkType:      workType,
+					SLA:           8,
 					ExecutionType: script.ExecutionTypeUser,
 					Executors: map[string]struct{}{
 						exampleExecutor:       {},
@@ -639,6 +658,10 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 					skipNotifications: true,
 					VarStore:          store.NewStore(),
 					Services: RunContextServices{
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSlaService(nil)
+							return slaMock
+						}(),
 						ServiceDesc: func() *servicedesc.Service {
 							sdMock := servicedesc.Service{
 								SdURL: "",
@@ -689,6 +712,8 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 				Name: stepName,
 				ExecutionData: &ExecutionData{
 					IsTakenInWork: true,
+					WorkType:      workType,
+					SLA:           8,
 					ExecutionType: script.ExecutionTypeUser,
 					Executors: map[string]struct{}{
 						exampleExecutor:       {},
@@ -699,6 +724,10 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 					skipNotifications: true,
 					VarStore:          store.NewStore(),
 					Services: RunContextServices{
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSlaService(nil)
+							return slaMock
+						}(),
 						ServiceDesc: func() *servicedesc.Service {
 							sdMock := servicedesc.Service{
 								SdURL: "",
@@ -753,11 +782,17 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 					Executors: map[string]struct{}{
 						secondExampleExecutor: {},
 					},
+					SLA:      8,
+					WorkType: workType,
 				},
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
 					VarStore:          store.NewStore(),
 					Services: RunContextServices{
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSlaService(nil)
+							return slaMock
+						}(),
 						ServiceDesc: func() *servicedesc.Service {
 							sdMock := servicedesc.Service{
 								SdURL: "",
@@ -813,11 +848,17 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 						exampleExecutor:       {},
 						secondExampleExecutor: {},
 					},
+					WorkType: workType,
+					SLA:      8,
 				},
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
 					VarStore:          store.NewStore(),
 					Services: RunContextServices{
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSlaService(nil)
+							return slaMock
+						}(),
 						ServiceDesc: func() *servicedesc.Service {
 							sdMock := servicedesc.Service{
 								SdURL: "",
@@ -870,6 +911,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 					IsTakenInWork: true,
 					CheckSLA:      true,
 					SLA:           1,
+					WorkType:      workType,
 					ExecutionType: script.ExecutionTypeUser,
 					Executors: map[string]struct{}{
 						secondExampleExecutor: {},
@@ -879,6 +921,10 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 					skipNotifications: true,
 					VarStore:          store.NewStore(),
 					Services: RunContextServices{
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSlaService(nil)
+							return slaMock
+						}(),
 						ServiceDesc: func() *servicedesc.Service {
 							sdMock := servicedesc.Service{
 								SdURL: "",
@@ -934,11 +980,17 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 					Executors: map[string]struct{}{
 						secondExampleExecutor: {},
 					},
+					WorkType: workType,
+					SLA:      8,
 				},
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
 					VarStore:          store.NewStore(),
 					Services: RunContextServices{
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSlaService(nil)
+							return slaMock
+						}(),
 						ServiceDesc: func() *servicedesc.Service {
 							sdMock := servicedesc.Service{
 								SdURL: "",
@@ -994,11 +1046,17 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 						secondExampleExecutor: {},
 					},
 					CheckReworkSLA: false,
+					WorkType:       workType,
+					SLA:            8,
 				},
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
 					VarStore:          store.NewStore(),
 					Services: RunContextServices{
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSlaService(nil)
+							return slaMock
+						}(),
 						ServiceDesc: func() *servicedesc.Service {
 							sdMock := servicedesc.Service{
 								SdURL: "",
@@ -1149,11 +1207,17 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 						secondExampleExecutor: {},
 					},
 					ActualExecutor: nil,
+					WorkType:       workType,
+					SLA:            8,
 				},
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
 					VarStore:          store.NewStore(),
 					Services: RunContextServices{
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSlaService(nil)
+							return slaMock
+						}(),
 						ServiceDesc: func() *servicedesc.Service {
 							sdMock := servicedesc.Service{
 								SdURL: "",
@@ -1244,11 +1308,17 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 						secondExampleExecutor: {},
 					},
 					ActualExecutor: &actualExecutor,
+					WorkType:       workType,
+					SLA:            8,
 				},
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
 					VarStore:          store.NewStore(),
 					Services: RunContextServices{
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSlaService(nil)
+							return slaMock
+						}(),
 						ServiceDesc: func() *servicedesc.Service {
 							sdMock := servicedesc.Service{
 								SdURL: "",
@@ -1363,11 +1433,17 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 					Executors: map[string]struct{}{
 						exampleExecutor: {},
 					},
+					WorkType: workType,
+					SLA:      8,
 				},
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
 					VarStore:          store.NewStore(),
 					Services: RunContextServices{
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSlaService(nil)
+							return slaMock
+						}(),
 						ServiceDesc: func() *servicedesc.Service {
 							sdMock := servicedesc.Service{
 								SdURL: "",
@@ -1721,11 +1797,17 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 					Executors: map[string]struct{}{
 						secondExampleExecutor: {},
 					},
+					WorkType: workType,
+					SLA:      8,
 				},
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
 					VarStore:          store.NewStore(),
 					Services: RunContextServices{
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSlaService(nil)
+							return slaMock
+						}(),
 						ServiceDesc: func() *servicedesc.Service {
 							sdMock := servicedesc.Service{
 								SdURL: "",
@@ -1861,12 +1943,18 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 						secondExampleExecutor: {},
 					},
 					CheckDayBeforeSLARequestInfo: false,
+					WorkType:                     workType,
+					SLA:                          8,
 				},
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
 					Initiator:         secondExampleExecutor,
 					VarStore:          store.NewStore(),
 					Services: RunContextServices{
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSlaService(nil)
+							return slaMock
+						}(),
 						People: func() *people.Service {
 							return &people.Service{}
 						}(),
@@ -1924,11 +2012,17 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 					Executors: map[string]struct{}{
 						exampleExecutor: {},
 					},
+					WorkType: workType,
+					SLA:      8,
 				},
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
 					VarStore:          store.NewStore(),
 					Services: RunContextServices{
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSlaService(nil)
+							return slaMock
+						}(),
 						ServiceDesc: func() *servicedesc.Service {
 							sdMock := servicedesc.Service{
 								SdURL: "",

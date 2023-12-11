@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/pkg/errors"
+
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
@@ -48,6 +50,19 @@ type GoExecutionBlock struct {
 
 func (gb *GoExecutionBlock) GetNewEvents() []entity.NodeEvent {
 	return gb.happenedEvents
+}
+
+func (gb *GoExecutionBlock) getDeadline(ctx context.Context, workType string) (time.Time, error) {
+	slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
+		TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.CurrBlockStartTime,
+			FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100)}},
+		WorkType: sla.WorkHourType(workType),
+	})
+	if getSlaInfoErr != nil {
+		return time.Time{}, errors.Wrap(getSlaInfoErr, "can not get slaInfo")
+	}
+
+	return gb.getNewSLADeadline(slaInfoPtr, false), nil
 }
 
 func (gb *GoExecutionBlock) Members() []Member {
@@ -230,6 +245,17 @@ func (gb *GoExecutionBlock) getNewSLADeadline(slaInfoPtr *sla.SLAInfo, half bool
 	deadline := gb.RunContext.Services.SLAService.ComputeMaxDate(gb.RunContext.CurrBlockStartTime, float32(newSLA), slaInfoPtr)
 
 	var qTime time.Time
+
+	for _, item := range gb.State.RequestExecutionInfoLogs {
+		if item.CreatedAt.Before(gb.RunContext.CurrBlockStartTime) {
+			continue
+		}
+		if qTime.IsZero() {
+			qTime = item.CreatedAt
+			continue
+		}
+	}
+
 	for _, item := range gb.State.RequestExecutionInfoLogs {
 		if qTime.IsZero() {
 			qTime = item.CreatedAt
