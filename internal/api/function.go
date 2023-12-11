@@ -3,7 +3,6 @@ package api
 import (
 	c "context"
 	"encoding/json"
-	"github.com/pkg/errors"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
@@ -14,44 +13,60 @@ import (
 )
 
 func (ae *APIEnv) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessage) error {
-	log := ae.Log.WithField("step_id", message.TaskID).WithField("mainFuncName", "FunctionReturnHandler")
+	log := ae.Log
+	log.WithField("funcName", "FunctionReturnHandler").
+		WithField("message", message).
+		Info("start handle message from kafka")
+
 	ctx = logger.WithLogger(ctx, log)
 
 	txStorage, transactionErr := ae.DB.StartTransaction(ctx)
 	if transactionErr != nil {
+		log.WithField("funcName", "DB.StartTransaction").
+			WithError(transactionErr).
+			Error("start transaction")
+
 		return transactionErr
 	}
 
 	defer func() {
 		if r := recover(); r != nil {
-			log = log.WithField("funcName", "FunctionReturnHandler").
-				WithField("panic handle", true)
-			log.Error(r)
+			log.WithField("funcName", "recover").
+				Error(r)
+
 			if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
-				log.WithError(errors.New("couldn't rollback tx")).
-					Error(txErr)
+				log.WithField("funcName", "RollbackTransaction").
+					WithError(txErr).
+					Error("rollback transaction")
 			}
 		}
 	}()
 
 	if message.Err != "" {
+		log.WithField("message.Err", message.Err).
+			Error("message from kafka has error")
+
 		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
-			log.WithField("funcName", "message has err").
-				WithError(errors.New("couldn't rollback tx")).
-				Error(txErr)
+			log.WithField("funcName", "RollbackTransaction").
+				WithError(txErr).
+				Error("rollback transaction")
 		}
-		log.Error(message.Err)
+
 		return nil
 	}
 
 	step, err := ae.DB.GetTaskStepById(ctx, message.TaskID)
 	if err != nil {
+		log.WithField("funcName", "GetTaskStepById").
+			WithError(err).
+			Error("get task step by id")
+
 		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
-			log.WithField("funcName", "GetTaskStepById").
-				WithError(errors.New("couldn't rollback tx")).
-				Error(txErr)
+			log.WithField("funcName", "RollbackTransaction").
+				WithError(txErr).
+				Error("rollback transaction")
 		}
-		log.Error(err)
+
 		return nil
 	}
 
@@ -66,12 +81,17 @@ func (ae *APIEnv) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMes
 
 	mapping, err := json.Marshal(functionMapping)
 	if err != nil {
+		log.WithField("funcName", "json.Marshal").
+			WithField("functionMapping", functionMapping).
+			WithError(err).
+			Error("marshal functionMapping")
+
 		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
-			log.WithField("funcName", "marshal mapping").
-				WithError(errors.New("couldn't rollback tx")).
-				Error(txErr)
+			log.WithField("funcName", "RollbackTransaction").
+				WithError(txErr).
+				Error("rollback transaction")
 		}
-		log.Error(err)
+
 		return nil
 	}
 
@@ -108,32 +128,51 @@ func (ae *APIEnv) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMes
 
 	blockFunc, err := ae.DB.GetBlockDataFromVersion(ctx, step.WorkNumber, step.Name)
 	if err != nil {
+		log.WithField("funcName", "GetBlockDataFromVersion").
+			WithField("step.WorkNumber", step.WorkNumber).
+			WithField("step.Name", step.Name).
+			WithError(err).
+			Error("get block data from pipeline version")
+
 		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
-			log.WithField("funcName", "GetBlockDataFromVersion").
-				WithError(errors.New("couldn't rollback tx")).
-				Error(txErr)
+			log.WithField("funcName", "RollbackTransaction").
+				WithError(txErr).
+				Error("rollback transaction")
 		}
-		log.WithError(err).Error("couldn't get block to update")
+
 		return nil
 	}
 
 	blockErr := pipeline.ProcessBlockWithEndMapping(ctx, step.Name, blockFunc, runCtx, true)
 	if blockErr != nil {
+		log.WithField("funcName", "ProcessBlockWithEndMapping").
+			WithField("step.WorkNumber", step.WorkNumber).
+			WithField("step.Name", step.Name).
+			WithError(blockErr).
+			Error("process block with end mapping")
+
 		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
-			log.WithField("funcName", "ProcessBlock").
-				WithError(errors.New("couldn't rollback tx")).
-				Error(txErr)
+			log.WithField("funcName", "RollbackTransaction").
+				WithError(txErr).
+				Error("rollback transaction")
 		}
-		log.WithError(blockErr).Error("couldn't update block")
+
 		return nil
 	}
 
 	if commitErr := txStorage.CommitTransaction(ctx); commitErr != nil {
-		log.WithError(commitErr).Error("couldn't commit transaction")
+		log.WithField("funcName", "CommitTransaction").
+			WithError(commitErr).
+			Error("commit transaction")
+
 		return commitErr
 	}
 
 	runCtx.NotifyEvents(ctx)
+
+	log.WithField("funcName", "FunctionReturnHandler").
+		WithField("message", message).
+		Info("message from kafka successfully handled")
 
 	return nil
 }
