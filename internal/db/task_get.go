@@ -717,7 +717,7 @@ func (db *PGCon) GetDeadline(ctx c.Context, workNumber string) (time.Time, error
 		loc, _ := time.LoadLocation("Europe/Moscow")
 		deadlines, deadErr := time.ParseInLocation(time.RFC3339, deadline, loc)
 		if deadErr != nil {
-			return time.Time{}, err
+			return time.Time{}, deadErr
 		}
 
 		return deadlines, nil

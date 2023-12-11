@@ -647,20 +647,18 @@ func (_m *MockedDatabase) GetCanceledTaskSteps(ctx context.Context, taskID uuid.
 }
 
 // GetDeadline provides a mock function with given fields: ctx, workId
-func (_m *MockedDatabase) GetDeadline(ctx context.Context, workId string) (*time.Time, error) {
+func (_m *MockedDatabase) GetDeadline(ctx context.Context, workId string) (time.Time, error) {
 	ret := _m.Called(ctx, workId)
 
-	var r0 *time.Time
+	var r0 time.Time
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string) (*time.Time, error)); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, string) (time.Time, error)); ok {
 		return rf(ctx, workId)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, string) *time.Time); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, string) time.Time); ok {
 		r0 = rf(ctx, workId)
 	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*time.Time)
-		}
+		r0 = ret.Get(0).(time.Time)
 	}
 
 	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
