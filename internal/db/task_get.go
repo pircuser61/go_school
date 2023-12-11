@@ -700,9 +700,9 @@ func (db *PGCon) GetDeadline(ctx c.Context, workNumber string) (time.Time, error
 	// language=PostgreSQL
 	q := `
     WITH blocks AS (
-        SELECT  JSONB_EACH(content->'State') AS block FROM variable_storage vs WHERE work_id = (SELECT id from works WHERE work_number = $1 and child_id is null) and step_type = 'execution' and status = 'running'
-    )
-    SELECT coalesce(min(value(block) ->> 'deadline'),'') FROM blocks WHERE key(block) LIKE 'execution%';
+    	SELECT  content->'State'->step_name AS block FROM variable_storage vs WHERE work_id = (SELECT id from works WHERE work_number = $1 and child_id is null) and step_type = 'execution' and status = 'running'
+	)
+	SELECT coalesce(min(block ->> 'deadline'),'') FROM blocks;
   `
 
 	row := db.Connection.QueryRow(ctx, q, workNumber)
