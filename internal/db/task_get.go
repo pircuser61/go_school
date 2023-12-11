@@ -692,6 +692,30 @@ func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter, delegations 
 	}, nil
 }
 
+func (db *PGCon) GetDeadline(ctx c.Context, workId string) (*time.Time, error) {
+	ctx, span := trace.StartSpan(ctx, "pg_get_last_debug_task")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	q := `
+    WITH blocks AS (
+        SELECT  JSONB_EACH(content->'State') AS block FROM variable_storage vs WHERE work_id = $1 and step_type = 'execution' and status = 'running'
+    )
+    SELECT coalesce(min(value(block) ->> 'deadline'),'') FROM blocks WHERE key(block) LIKE 'execution%';
+  `
+
+	row := db.Connection.QueryRow(ctx, q, workId)
+
+	var deadline time.Time
+	err := row.Scan(&deadline)
+	if err != nil {
+		return nil, err
+	}
+
+	return &deadline, nil
+}
+
 func (db *PGCon) GetTasksCount(
 	ctx c.Context,
 	currentUser string,
