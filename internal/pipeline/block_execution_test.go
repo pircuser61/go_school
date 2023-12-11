@@ -268,7 +268,7 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 				State: &ExecutionData{
 					WorkType:           workType,
 					ExecutionType:      script.ExecutionTypeFromSchema,
-					Deadline:           time.Date(1, time.January, 1, 14, 0, 0, 0, time.UTC),
+					Deadline:           time.Date(1, time.January, 1, 0, 0, 0, 0, time.UTC),
 					Executors:          map[string]struct{}{"test": {}, "test2": {}},
 					SLA:                8,
 					FormsAccessibility: make([]script.FormAccessibility, 1),
@@ -352,7 +352,7 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 				State: &ExecutionData{
 					WorkType:           workType,
 					ExecutionType:      script.ExecutionTypeFromSchema,
-					Deadline:           time.Date(1, time.January, 1, 14, 0, 0, 0, time.UTC),
+					Deadline:           time.Date(1, time.January, 1, 0, 0, 0, 0, time.UTC),
 					Executors:          map[string]struct{}{"test": {}},
 					SLA:                8,
 					FormsAccessibility: make([]script.FormAccessibility, 1),

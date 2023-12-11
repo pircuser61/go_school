@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/pkg/errors"
 
@@ -13,7 +12,6 @@ import (
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 )
 
 // nolint:dupl // another block
@@ -179,15 +177,6 @@ func (gb *GoExecutionBlock) createState(ctx c.Context, ef *entity.EriusFunc) err
 		return errors.Wrap(err, "invalid execution parameters, work number")
 	}
 
-	slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
-		TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.CurrBlockStartTime,
-			FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100)}},
-		WorkType: sla.WorkHourType(*params.WorkType),
-	})
-	if getSlaInfoErr != nil {
-		return errors.Wrap(getSlaInfoErr, "can not get slaInfo")
-	}
-
 	gb.State = &ExecutionData{
 		ExecutionType:      params.Type,
 		CheckSLA:           params.CheckSLA,
@@ -200,8 +189,6 @@ func (gb *GoExecutionBlock) createState(ctx c.Context, ef *entity.EriusFunc) err
 		UseActualExecutor:  params.UseActualExecutor,
 		HideExecutor:       params.HideExecutor,
 	}
-
-	gb.State.Deadline = gb.getNewSLADeadline(slaInfoPtr, false)
 
 	if params.ExecutorsGroupIDPath != nil && *params.ExecutorsGroupIDPath != "" {
 		variableStorage, grabStorageErr := gb.RunContext.VarStore.GrabStorage()

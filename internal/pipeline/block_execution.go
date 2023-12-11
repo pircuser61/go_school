@@ -277,6 +277,9 @@ func (gb *GoExecutionBlock) Deadlines(ctx context.Context) ([]Deadline, error) {
 		if getSlaInfoErr != nil {
 			return nil, getSlaInfoErr
 		}
+
+		gb.State.Deadline = gb.getNewSLADeadline(slaInfoPtr, false)
+
 		if !gb.State.SLAChecked {
 			deadlines = append(deadlines,
 				Deadline{Deadline: gb.getNewSLADeadline(slaInfoPtr, false),

@@ -579,20 +579,15 @@ func (ae *APIEnv) GetTasks(w http.ResponseWriter, req *http.Request, params GetT
 			return
 		}
 
-		var deadline time.Time
+		deadline, deadlineErr := ae.DB.GetDeadline(ctx, resp.Tasks[i].WorkNumber)
+		if deadlineErr != nil {
+			e := GetDeadlineError
+			log.Error(e.errorMessage(deadlineErr))
+			_ = e.sendError(w)
 
-		if params.SelectAs != nil && *params.SelectAs == "executor" {
-			var deadlineErr error
-			deadline, deadlineErr = ae.DB.GetDeadline(ctx, resp.Tasks[i].WorkNumber)
-			if deadlineErr != nil {
-				e := GetDeadlineError
-				log.Error(e.errorMessage(deadlineErr))
-				_ = e.sendError(w)
-
-				return
-			}
+			return
 		}
-		
+
 		if deadline.IsZero() {
 			deadline = ae.SLAService.ComputeMaxDate(resp.Tasks[i].StartedAt, float32(versionsSLA[resp.Tasks[i].VersionID.String()].Sla), slaInfoPtr)
 		}
