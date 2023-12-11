@@ -707,13 +707,22 @@ func (db *PGCon) GetDeadline(ctx c.Context, workId string) (*time.Time, error) {
 
 	row := db.Connection.QueryRow(ctx, q, workId)
 
-	var deadline time.Time
+	var deadline string
 	err := row.Scan(&deadline)
 	if err != nil {
 		return nil, err
 	}
 
-	return &deadline, nil
+	if deadline != "" {
+		deadlines, deadErr := time.Parse("2006-01-02 15:04", deadline)
+		if deadErr != nil {
+			return nil, err
+		}
+
+		return &deadlines, nil
+	}
+
+	return nil, nil
 }
 
 func (db *PGCon) GetTasksCount(
