@@ -581,12 +581,11 @@ func (ae *APIEnv) GetTasks(w http.ResponseWriter, req *http.Request, params GetT
 
 		var deadline time.Time
 
-		////Можно добавить условие
 		if *params.SelectAs == "executor" {
 			var deadelineErr error
 
 			var dead *time.Time
-			dead, deadelineErr = ae.DB.GetDeadline(ctx, resp.Tasks[i].ID.String())
+			dead, deadelineErr = ae.DB.GetDeadline(ctx, resp.Tasks[i].WorkNumber)
 			if deadelineErr != nil {
 				e := GetDeadlineError
 				log.Error(e.errorMessage(getSlaInfoErr))
@@ -600,15 +599,6 @@ func (ae *APIEnv) GetTasks(w http.ResponseWriter, req *http.Request, params GetT
 			} else {
 				deadline = *dead
 			}
-
-			//  вызвать новый метод база (
-			/*
-			   select min(content -> 'state' -> 'step_name' -> '*sla_deadline*') from vs where work.id == $1 and step_type = "execution" and status = 'running'
-			*/
-
-			// coalesce(content -> 'state' -> 'step_name' -> '*sla_deadline*', null_timestamp)
-			// if date_from_db == nil_timestamp then use compute_max_date
-			// Взять актуальные получить даты и сравнить
 		}
 
 		resp.Tasks[i].ProcessDeadline = deadline

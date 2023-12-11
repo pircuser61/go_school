@@ -692,7 +692,7 @@ func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter, delegations 
 	}, nil
 }
 
-func (db *PGCon) GetDeadline(ctx c.Context, workId string) (*time.Time, error) {
+func (db *PGCon) GetDeadline(ctx c.Context, workNumber string) (*time.Time, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_last_debug_task")
 	defer span.End()
 
@@ -700,12 +700,12 @@ func (db *PGCon) GetDeadline(ctx c.Context, workId string) (*time.Time, error) {
 	// language=PostgreSQL
 	q := `
     WITH blocks AS (
-        SELECT  JSONB_EACH(content->'State') AS block FROM variable_storage vs WHERE work_id = $1 and step_type = 'execution' and status = 'running'
+        SELECT  JSONB_EACH(content->'State') AS block FROM variable_storage vs WHERE work_id = (SELECT id from works WHERE work_number = $1 and child_id is null) and step_type = 'execution' and status = 'running'
     )
     SELECT coalesce(min(value(block) ->> 'deadline'),'') FROM blocks WHERE key(block) LIKE 'execution%';
   `
 
-	row := db.Connection.QueryRow(ctx, q, workId)
+	row := db.Connection.QueryRow(ctx, q, workNumber)
 
 	var deadline string
 	err := row.Scan(&deadline)
@@ -714,7 +714,8 @@ func (db *PGCon) GetDeadline(ctx c.Context, workId string) (*time.Time, error) {
 	}
 
 	if deadline != "" {
-		deadlines, deadErr := time.Parse("2006-01-02 15:04", deadline)
+		loc, _ := time.LoadLocation("Europe/Moscow")
+		deadlines, deadErr := time.ParseInLocation(time.RFC3339, deadline, loc)
 		if deadErr != nil {
 			return nil, err
 		}

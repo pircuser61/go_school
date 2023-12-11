@@ -106,6 +106,8 @@ func TestExecution_Next(t *testing.T) {
 }
 
 func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
+	workType := "8/5"
+
 	const (
 		example             = "example"
 		title               = "title"
@@ -200,6 +202,10 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 					VarStore:          varStore,
 					Services: RunContextServices{
 						Storage: myStorage,
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSlaService(nil)
+							return slaMock
+						}(),
 					},
 				},
 				ef: &entity.EriusFunc{
@@ -228,6 +234,7 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 							Type:               script.ExecutionTypeFromSchema,
 							Executors:          executorsFromSchema,
 							SLA:                8,
+							WorkType:           &workType,
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
 						return r
@@ -249,14 +256,19 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 				RunContext: &BlockRunContext{
 					Services: RunContextServices{
 						Storage: myStorage,
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSlaService(nil)
+							return slaMock
+						}(),
 					},
 					WorkNumber:        "J001",
 					skipNotifications: true,
 					VarStore:          varStore,
 				},
 				State: &ExecutionData{
-					WorkType:           "8/5",
+					WorkType:           workType,
 					ExecutionType:      script.ExecutionTypeFromSchema,
+					Deadline:           time.Date(1, time.January, 1, 14, 0, 0, 0, time.UTC),
 					Executors:          map[string]struct{}{"test": {}, "test2": {}},
 					SLA:                8,
 					FormsAccessibility: make([]script.FormAccessibility, 1),
@@ -274,6 +286,10 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 					VarStore:          varStore,
 					Services: RunContextServices{
 						Storage: myStorage,
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSlaService(nil)
+							return slaMock
+						}(),
 					},
 				},
 				ef: &entity.EriusFunc{
@@ -302,6 +318,7 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 							Type:               script.ExecutionTypeFromSchema,
 							Executors:          executorFromSchema,
 							SLA:                8,
+							WorkType:           &workType,
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
 						return r
@@ -323,14 +340,19 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 				RunContext: &BlockRunContext{
 					Services: RunContextServices{
 						Storage: myStorage,
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSlaService(nil)
+							return slaMock
+						}(),
 					},
 					WorkNumber:        "J001",
 					skipNotifications: true,
 					VarStore:          varStore,
 				},
 				State: &ExecutionData{
-					WorkType:           "8/5",
+					WorkType:           workType,
 					ExecutionType:      script.ExecutionTypeFromSchema,
+					Deadline:           time.Date(1, time.January, 1, 14, 0, 0, 0, time.UTC),
 					Executors:          map[string]struct{}{"test": {}},
 					SLA:                8,
 					FormsAccessibility: make([]script.FormAccessibility, 1),

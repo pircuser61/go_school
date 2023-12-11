@@ -150,10 +150,14 @@ func TestProcessBlock(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	workType := "24/7"
+
 	execParams, err := json.Marshal(script.ExecutionParams{
 		Type:      script.ExecutionTypeUser,
 		SLA:       1,
 		Executors: "tester",
+		WorkType:  &workType,
 	})
 	if err != nil {
 		t.Fatal(err)
