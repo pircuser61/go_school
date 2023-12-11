@@ -423,8 +423,8 @@ func (gb *GoApproverBlock) notifyNewInfoReceived(ctx c.Context, approverLogin st
 		return err
 	}
 
-	if err = gb.RunContext.Services.Sender.SendNotification(ctx, emails, iconFiles, tpl); err != nil {
-		return err
+	if notifErr := gb.RunContext.Services.Sender.SendNotification(ctx, emails, iconFiles, tpl); notifErr != nil {
+		return notifErr
 	}
 
 	return nil

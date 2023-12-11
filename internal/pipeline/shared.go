@@ -40,7 +40,6 @@ type castUser struct {
 const dotSeparator = "."
 
 func (runCtx *BlockRunContext) GetIcons(need []string) ([]e.Attachment, error) {
-
 	outFiles := make([]e.Attachment, 0)
 	for k, v := range need {
 		file, oks := runCtx.Services.Sender.Images[v]

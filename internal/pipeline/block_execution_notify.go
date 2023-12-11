@@ -86,7 +86,7 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 		WorkType: sla.WorkHourType(gb.State.WorkType),
 	})
 
-	iconsName := make([]string, 0)
+	filesNames := make([]string, 0)
 
 	if getSlaInfoErr != nil {
 		return getSlaInfoErr
@@ -113,7 +113,7 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 				},
 			)
 
-			iconsName = append(iconsName)
+			filesNames = append(filesNames, vRabotuBtn)
 		} else {
 			author, errAuthor := gb.RunContext.Services.People.GetUser(ctx, gb.RunContext.Initiator)
 			if errAuthor != nil {
@@ -146,17 +146,18 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 				})
 
 			if initiatorInfo != nil {
-				iconsName = append(iconsName, userImg)
+				filesNames = append(filesNames, userImg)
 			}
 
-			iconsName = append(iconsName, reshitBtn, otkBtn)
+			filesNames = append(filesNames, reshitBtn, otkBtn)
 		}
 	}
 
 	for i := range emails {
 		item := emails[i]
 
-		iconsName = append(iconsName, item.Image, userImg)
+		iconsName := []string{item.Image}
+		iconsName = append(iconsName, filesNames...)
 
 		if gb.State.GetIsEditable() {
 			iconsName = append(iconsName, dorabotkaBtn)
