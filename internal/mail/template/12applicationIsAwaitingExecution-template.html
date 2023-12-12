@@ -287,7 +287,7 @@
                     font-weight: 500;
                   "
                   ><strong
-                    >заявка № {{.Id}} {{.Name}} ожидает исполнения.</strong
+                    >заявка № {{.Id}} {{.Name}} ожидает {{ .Action }}.</strong
                   >
                 </span>
                 {{ if .Deadline }} Срок согласования до {{.Deadline}}. {{end}}
@@ -331,7 +331,7 @@
                   line-height: 24px;
                 "
               >
-                Для просмотра перейдите по
+                Для просмотра заявки перейдите по
                 <a
                   href="{{.Link}}"
                   target="_blank"

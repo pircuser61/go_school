@@ -278,7 +278,7 @@
                   line-height: 18pt;
                 "
               >
-                Уважаемый коллега,
+                Уважаемый коллега, заявка
                 <span
                   style="
                     font-family: MTS Text, sans-serif, serif, EmojiFont;
@@ -287,7 +287,7 @@
                     font-weight: 500;
                   "
                   ><strong
-                    >заявка № {{.Id}} {{.Name}} ожидает согласования.</strong
+                    > № {{.Id}} {{.Name}} ожидает согласования.</strong
                   ></span
                 >
                 {{ if .Deadline }} Срок согласования до {{.Deadline}}. {{end}}
@@ -331,7 +331,7 @@
                   line-height: 18pt;
                 "
               >
-                Для просмотра перейдите по
+                Для просмотра заявки перейдите по
                 <a
                   href="{{.Link}}"
                   target="_blank"

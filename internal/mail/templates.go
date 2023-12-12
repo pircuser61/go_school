@@ -539,7 +539,7 @@ func NewAppPersonStatusNotificationTpl(in *NewAppPersonStatusTpl) Template {
 	lastWorksTemplate := getLastWorksForTemplate(in.LastWorks, in.SdUrl)
 
 	return Template{
-		Subject:  fmt.Sprintf("Заявка %s %s ожидает ии %s", in.WorkNumber, in.Name, actionName),
+		Subject:  fmt.Sprintf("Заявка %s %s ожидает %s", in.WorkNumber, in.Name, actionName),
 		Template: template,
 		Image:    "ozhidaet_ispolneniya.png",
 		Variables: struct {
@@ -871,7 +871,7 @@ type Action struct {
 func getButton(to, subject, title string) *Button {
 	subject = strings.ReplaceAll(subject, " ", "")
 
-	body := "***КОММЕНТАРИЙ%20НИЖЕ***%0D%0A%0D%0A***ОБЩИЙ%20РАЗМЕР%20ВЛОЖЕНИЙ%20НЕ%20БОЛЕЕ%2040МБ***"
+	body := "***КОММЕНТАРИЙ%20НИЖЕ***%0D%0A%0D%0A***ОБЩИЙ%20РАЗМЕР%20ВЛОЖЕНИЙ%20НЕ%20БОЛЕЕ%2020МБ***"
 	href := fmt.Sprintf("mailto:%s?subject=%s&body=%s", to, subject, body)
 	return &Button{
 		Href:  href,

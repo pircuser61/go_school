@@ -106,6 +106,8 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 		return getSlaInfoErr
 	}
 
+	filesName := make([]string, 0, 1)
+
 	for _, login = range loginsToNotify {
 		email, getEmailErr := gb.RunContext.Services.People.GetUserEmail(ctx, login)
 		if getEmailErr != nil {
@@ -123,37 +125,40 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 			return initialErr
 		}
 
-		templates[email] = mail.NewAppPersonStatusNotificationTpl(
-			&mail.NewAppPersonStatusTpl{
-				WorkNumber: gb.RunContext.WorkNumber,
-				Name:       gb.RunContext.NotifName,
-				Status:     gb.State.ApproveStatusName,
-				Action:     statusToTaskAction[StatusApprovement],
-				DeadLine: gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(
-					time.Now(), gb.State.SLA, slaInfoPtr,
-				),
-				SdUrl:                     gb.RunContext.Services.Sender.SdAddress,
-				Mailto:                    gb.RunContext.Services.Sender.FetchEmail,
-				Login:                     login,
-				IsEditable:                gb.State.GetIsEditable(),
-				ApproverActions:           actionsList,
-				Description:               description,
-				BlockID:                   BlockGoApproverID,
-				ExecutionDecisionExecuted: string(ExecutionDecisionExecuted),
-				ExecutionDecisionRejected: string(ExecutionDecisionRejected),
-				LastWorks:                 lastWorksForUser,
-				Initiator:                 initiatorInfo,
-			})
+		tpl := &mail.NewAppPersonStatusTpl{
+			WorkNumber: gb.RunContext.WorkNumber,
+			Name:       gb.RunContext.NotifName,
+			Status:     gb.State.ApproveStatusName,
+			Action:     statusToTaskAction[StatusApprovement],
+			DeadLine: gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(
+				time.Now(), gb.State.SLA, slaInfoPtr,
+			),
+			SdUrl:                     gb.RunContext.Services.Sender.SdAddress,
+			Mailto:                    gb.RunContext.Services.Sender.FetchEmail,
+			Login:                     login,
+			IsEditable:                gb.State.GetIsEditable(),
+			ApproverActions:           actionsList,
+			Description:               description,
+			BlockID:                   BlockGoApproverID,
+			ExecutionDecisionExecuted: string(ExecutionDecisionExecuted),
+			ExecutionDecisionRejected: string(ExecutionDecisionRejected),
+			LastWorks:                 lastWorksForUser,
+			Initiator:                 initiatorInfo,
+		}
+
+		templates[email] = mail.NewAppPersonStatusNotificationTpl(tpl)
+
+		if tpl.IsEditable {
+			filesName = append(filesName, dorabotkaBtn)
+		}
+
 	}
 
 	for i := range templates {
 		item := templates[i]
 
 		iconsName := []string{item.Image, userImg, soglBtn, otkBtn}
-
-		if gb.State.GetIsEditable() {
-			iconsName = append(iconsName, dorabotkaBtn)
-		}
+		iconsName = append(iconsName, filesName...)
 
 		if len(lastWorksForUser) != 0 {
 			iconsName = append(iconsName, warningImg)
