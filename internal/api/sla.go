@@ -2,7 +2,6 @@ package api
 
 import (
 	c "context"
-	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 	"net/http"
 
 	"github.com/pkg/errors"
@@ -14,6 +13,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
+	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
 func (ae *APIEnv) handleBreachSlA(ctx c.Context, item db.StepBreachedSLA) {

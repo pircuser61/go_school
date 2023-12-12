@@ -3,7 +3,6 @@ package api
 import (
 	c "context"
 	"encoding/json"
-	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 	"io"
 	"net/http"
 	"strings"
@@ -30,6 +29,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
+	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
 const (

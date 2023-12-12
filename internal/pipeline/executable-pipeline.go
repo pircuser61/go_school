@@ -2,7 +2,6 @@ package pipeline
 
 import (
 	c "context"
-	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 	"net/http"
 
 	"go.opencensus.io/trace"
@@ -22,6 +21,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
+	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
 type void = struct{}
