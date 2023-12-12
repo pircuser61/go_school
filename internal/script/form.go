@@ -40,7 +40,7 @@ func (a *FormParams) Validate() error {
 		return errors.New("got no form name, id or executor")
 	}
 
-	if a.SLA < 1 && a.CheckSLA {
+	if a.SLA < 1 && a.CheckSLA && a.FormExecutorType != FormExecutorTypeAutoFillUser {
 		return fmt.Errorf("invalid SLA value %d", a.SLA)
 	}
 
