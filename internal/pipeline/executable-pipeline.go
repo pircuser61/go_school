@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	c "context"
+	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 	"net/http"
 
 	"go.opencensus.io/trace"
@@ -158,14 +159,11 @@ func (gb *ExecutablePipeline) CreateBlocks(ctx c.Context, source map[string]enti
 
 	ctx, s := trace.StartSpan(ctx, "create_blocks")
 	defer s.End()
-	isTest, err := gb.Storage.CheckIsTest(ctx, gb.TaskID)
+	props, err := gb.Storage.GetTaskCustomProps(ctx, gb.TaskID)
 	if err != nil {
 		return err
 	}
-	notifName := gb.Name
-	if isTest {
-		notifName = notifName + " (ТЕСТОВАЯ ЗАЯВКА)"
-	}
+
 	for k := range source {
 		bl := source[k]
 
@@ -195,8 +193,8 @@ func (gb *ExecutablePipeline) CreateBlocks(ctx c.Context, source map[string]enti
 			VarStore: gb.VarStore,
 
 			UpdateData: nil,
-			IsTest:     isTest,
-			NotifName:  notifName,
+			IsTest:     props.IsTest,
+			NotifName:  utils.MakeTaskTitle(gb.Name, props.CustomTitle, props.IsTest),
 		})
 		if err != nil {
 			return err

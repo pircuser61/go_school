@@ -196,10 +196,18 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 			w.version_id,
 			w.work_number,
 			CASE
-        		WHEN w.run_context -> 'initial_application' -> 'is_test_application' = 'true'
-            		THEN concat(p.name, ' (ТЕСТОВАЯ ЗАЯВКА)')
-        		ELSE p.name
-    		END,
+			WHEN w.run_context -> 'initial_application' -> 'is_test_application' = 'true'
+				THEN CASE
+					WHEN w.run_context -> 'initial_application' -> 'custom_title' IS NULL
+						THEN concat(p.name, ' (ТЕСТОВАЯ ЗАЯВКА)')
+					ELSE p.name ||' - '||(w.run_context -> 'initial_application' -> 'custom_title')||' (ТЕСТОВАЯ ЗАЯВКА)'
+				END
+			ELSE CASE
+				 WHEN w.run_context -> 'initial_application' -> 'custom_title' IS NULL
+					 THEN p.name
+				 ELSE p.name || ' - ' || (w.run_context -> 'initial_application' -> 'custom_title')
+				END
+			END,
 			COALESCE(w.run_context -> 'initial_application' ->> 'description',
                 COALESCE(descr.description, '')),
 			COALESCE(descr.blueprint_id, ''),
@@ -949,11 +957,19 @@ func (db *PGCon) GetTask(
 			w.author,
 			w.version_id,
 			w.work_number,
-			 CASE
-        		WHEN run_context -> 'initial_application' -> 'is_test_application' = 'true'
-            		THEN concat(p.name, ' (ТЕСТОВАЯ ЗАЯВКА)')
-        		ELSE p.name
-    		END,
+			CASE
+			WHEN run_context -> 'initial_application' -> 'is_test_application' = 'true'
+				THEN CASE
+					WHEN run_context -> 'initial_application' -> 'custom_title' IS NULL
+						THEN concat(p.name, ' (ТЕСТОВАЯ ЗАЯВКА)')
+					ELSE p.name ||' - '||(run_context -> 'initial_application' -> 'custom_title')||' (ТЕСТОВАЯ ЗАЯВКА)'
+				END
+			ELSE CASE
+				 WHEN run_context -> 'initial_application' -> 'custom_title' IS NULL
+					 THEN p.name
+				 ELSE p.name || ' - ' || (run_context -> 'initial_application' -> 'custom_title')
+				END
+			END,
 			COALESCE(w.run_context -> 'initial_application' ->> 'description',
                 COALESCE(descr.description, '')),
 			COALESCE(descr.blueprint_id, ''),
@@ -1949,21 +1965,31 @@ func (db *PGCon) GetTaskMembers(ctx c.Context, workNumber string, fromActiveNode
 	return members, nil
 }
 
-func (db *PGCon) CheckIsTest(ctx c.Context, taskID uuid.UUID) (bool, error) {
-	ctx, span := trace.StartSpan(ctx, "check_is_test")
+type TaskCustomProps struct {
+	IsTest      bool
+	CustomTitle string
+}
+
+func (db *PGCon) GetTaskCustomProps(ctx c.Context, taskID uuid.UUID) (*TaskCustomProps, error) {
+	ctx, span := trace.StartSpan(ctx, "get_task_custom_props")
 	defer span.End()
 
-	q := `
-		SELECT run_context -> 'initial_application' -> 'is_test_application'
+	const q = `
+		SELECT run_context -> 'initial_application' -> 'is_test_application',
+		       run_context -> 'initial_application' -> 'custom_title'
 		FROM works
 		WHERE id = $1`
 
 	var isTest bool
-	if err := db.Connection.QueryRow(ctx, q, taskID).Scan(&isTest); err != nil {
-		return false, err
+	var customTitle string
+	if err := db.Connection.QueryRow(ctx, q, taskID).Scan(&isTest, &customTitle); err != nil {
+		return nil, err
 	}
 
-	return isTest, nil
+	return &TaskCustomProps{
+		IsTest:      isTest,
+		CustomTitle: customTitle,
+	}, nil
 }
 func (db *PGCon) GetExecutorsFromPrevExecutionBlockRun(ctx c.Context, taskID uuid.UUID, name string) (
 	exec map[string]struct{}, err error) {

@@ -2,6 +2,7 @@ package api
 
 import (
 	c "context"
+	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 	"net/http"
 
 	"github.com/pkg/errors"
@@ -35,10 +36,6 @@ func (ae *APIEnv) handleBreachSlA(ctx c.Context, item db.StepBreachedSLA) {
 		}
 	}()
 
-	notifName := item.WorkTitle
-	if item.IsTest {
-		notifName = notifName + " (ТЕСТОВАЯ ЗАЯВКА)"
-	}
 	// goroutines?
 	runCtx := &pipeline.BlockRunContext{
 		TaskID:     item.TaskID,
@@ -69,7 +66,7 @@ func (ae *APIEnv) handleBreachSlA(ctx c.Context, item db.StepBreachedSLA) {
 			Action: string(item.Action),
 		},
 		IsTest:    item.IsTest,
-		NotifName: notifName,
+		NotifName: utils.MakeTaskTitle(item.WorkTitle, item.CustomTitle, item.IsTest),
 	}
 
 	runCtx.SetTaskEvents(ctx)

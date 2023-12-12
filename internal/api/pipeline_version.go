@@ -3,6 +3,7 @@ package api
 import (
 	c "context"
 	"encoding/json"
+	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 	"io"
 	"net/http"
 	"strings"
@@ -704,10 +705,7 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 		e := PipelineRunError
 		return nil, e, err
 	}
-	notifName := ep.Name
-	if dto.runCtx.InitialApplication.IsTestApplication {
-		notifName = notifName + " (ТЕСТОВАЯ ЗАЯВКА)"
-	}
+
 	runCtx := &pipeline.BlockRunContext{
 		TaskID:     ep.TaskID,
 		WorkNumber: ep.WorkNumber,
@@ -735,7 +733,10 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 
 		UpdateData: nil,
 		IsTest:     dto.runCtx.InitialApplication.IsTestApplication,
-		NotifName:  notifName,
+		NotifName: utils.MakeTaskTitle(
+			ep.Name,
+			dto.runCtx.InitialApplication.CustomTitle,
+			dto.runCtx.InitialApplication.IsTestApplication),
 	}
 	blockData := dto.p.Pipeline.Blocks[ep.EntryPoint]
 
