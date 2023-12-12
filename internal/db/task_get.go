@@ -1390,7 +1390,7 @@ func (db *PGCon) GetFilteredStates(ctx c.Context, steps []string, wNumber string
 
 	// nolint:gocritic
 	// language=PostgreSQL
-	const q = `
+	query := `
 		SELECT vs.content-> 'State'
 		FROM variable_storage vs 
 			WHERE vs.work_id = (SELECT id FROM works 
@@ -1399,7 +1399,11 @@ func (db *PGCon) GetFilteredStates(ctx c.Context, steps []string, wNumber string
 			vs.time = (SELECT max(time) FROM variable_storage WHERE work_id = vs.work_id AND step_name = vs.step_name)
 		ORDER BY vs.time DESC`
 
-	query := fmt.Sprintf(q, buildInExpression(steps))
+	if len(steps) == 0 {
+		query = fmt.Sprintf(query, "('')")
+	} else {
+		query = fmt.Sprintf(query, buildInExpression(steps))
+	}
 
 	res := make([]map[string]map[string]interface{}, 0)
 	rows, err := db.Connection.Query(ctx, query, wNumber)
