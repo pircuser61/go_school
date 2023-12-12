@@ -692,6 +692,40 @@ func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter, delegations 
 	}, nil
 }
 
+func (db *PGCon) GetDeadline(ctx c.Context, workNumber string) (time.Time, error) {
+	ctx, span := trace.StartSpan(ctx, "pg_get_last_debug_task")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	q := `
+    WITH blocks AS (
+    	SELECT  content->'State'->step_name AS block FROM variable_storage vs WHERE work_id = (SELECT id from works WHERE work_number = $1 and child_id is null) and step_type = 'execution' and status = 'running'
+	)
+	SELECT coalesce(min(block ->> 'deadline'),'') FROM blocks;
+  `
+
+	row := db.Connection.QueryRow(ctx, q, workNumber)
+
+	var deadline string
+	err := row.Scan(&deadline)
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	if deadline != "" {
+		loc, _ := time.LoadLocation("Europe/Moscow")
+		deadlines, deadErr := time.ParseInLocation(time.RFC3339, deadline, loc)
+		if deadErr != nil {
+			return time.Time{}, deadErr
+		}
+
+		return deadlines, nil
+	}
+
+	return time.Time{}, nil
+}
+
 func (db *PGCon) GetTasksCount(
 	ctx c.Context,
 	currentUser string,
@@ -702,27 +736,19 @@ func (db *PGCon) GetTasksCount(
 	// nolint:gocritic
 	// language=PostgreSQL
 	q := `
-WITH ids AS (
-    SELECT w.id
-    FROM works w
-             JOIN versions v ON v.id = w.version_id
-             JOIN pipelines p ON p.id = v.pipeline_id
-             JOIN work_status ws ON w.status = ws.id
-    WHERE w.child_id IS NULL
-)
-   , active_counts as (
+WITH active_counts as (
     SELECT count(*) as active_count
     FROM works w
-             join ids on w.id = ids.id
     WHERE author = $1
       AND (w.finished_at IS NULL OR (w.archived = false
         AND (now()::TIMESTAMP - w.finished_at::TIMESTAMP) < '3 days'))
+      AND child_id IS NULL    
 )
    , approve_counts AS (
     SELECT count(*) OVER () as c
     FROM members m
              JOIN variable_storage vs ON vs.id = m.block_id
-             JOIN ids ON vs.work_id = ids.id
+             JOIN works w ON vs.work_id = w.id AND w.child_id IS NULL
     WHERE vs.status IN ('running', 'idle', 'ready')
       AND m.login = ANY ($2)
       AND vs.step_type = 'approver'
@@ -733,7 +759,7 @@ WITH ids AS (
     SELECT count(*) over () as c
     FROM members m
              JOIN variable_storage vs ON vs.id = m.block_id
-             JOIN ids ON vs.work_id = ids.id
+             JOIN works w ON vs.work_id = w.id AND w.child_id IS NULL
     WHERE vs.status IN ('running', 'idle', 'ready')
       AND m.login = ANY ($3)
       AND vs.step_type = 'execution'
@@ -744,7 +770,7 @@ WITH ids AS (
     SELECT count(*) OVER () as c
     FROM members m
              JOIN variable_storage vs ON vs.id = m.block_id
-             JOIN ids ON vs.work_id = ids.id
+             JOIN works w ON vs.work_id = w.id AND w.child_id IS NULL
     WHERE vs.status IN ('running', 'idle', 'ready')
       AND m.login = $1
       AND vs.step_type = 'form'
@@ -755,7 +781,7 @@ WITH ids AS (
     SELECT count(*) OVER () as c
     FROM members m
              JOIN variable_storage vs ON vs.id = m.block_id
-             JOIN ids ON vs.work_id = ids.id
+             JOIN works w ON vs.work_id = w.id AND w.child_id IS NULL
     WHERE vs.status IN ('running', 'idle', 'ready')
       AND m.login = $1
       AND vs.step_type = 'sign'

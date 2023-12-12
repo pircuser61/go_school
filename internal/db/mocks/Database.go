@@ -674,6 +674,30 @@ func (_m *MockedDatabase) GetCanceledTaskSteps(ctx context.Context, taskID uuid.
 	return r0, r1
 }
 
+// GetDeadline provides a mock function with given fields: ctx, workId
+func (_m *MockedDatabase) GetDeadline(ctx context.Context, workId string) (time.Time, error) {
+	ret := _m.Called(ctx, workId)
+
+	var r0 time.Time
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) (time.Time, error)); ok {
+		return rf(ctx, workId)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string) time.Time); ok {
+		r0 = rf(ctx, workId)
+	} else {
+		r0 = ret.Get(0).(time.Time)
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, workId)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetDraftVersions provides a mock function with given fields: ctx, author
 func (_m *MockedDatabase) GetDraftVersions(ctx context.Context, author string) ([]entity.EriusScenarioInfo, error) {
 	ret := _m.Called(ctx, author)

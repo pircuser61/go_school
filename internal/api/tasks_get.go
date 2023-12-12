@@ -579,7 +579,19 @@ func (ae *APIEnv) GetTasks(w http.ResponseWriter, req *http.Request, params GetT
 			return
 		}
 
-		deadline := ae.SLAService.ComputeMaxDate(resp.Tasks[i].StartedAt, float32(versionsSLA[resp.Tasks[i].VersionID.String()].Sla), slaInfoPtr)
+		deadline, deadlineErr := ae.DB.GetDeadline(ctx, resp.Tasks[i].WorkNumber)
+		if deadlineErr != nil {
+			e := GetDeadlineError
+			log.Error(e.errorMessage(deadlineErr))
+			_ = e.sendError(w)
+
+			return
+		}
+
+		if deadline.IsZero() {
+			deadline = ae.SLAService.ComputeMaxDate(resp.Tasks[i].StartedAt, float32(versionsSLA[resp.Tasks[i].VersionID.String()].Sla), slaInfoPtr)
+		}
+
 		resp.Tasks[i].ProcessDeadline = deadline
 
 		approvalLists, errGetSettings := ae.DB.GetApprovalListsSettings(ctx, resp.Tasks[i].VersionID.String())

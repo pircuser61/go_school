@@ -85,6 +85,13 @@ func (gb *GoExecutionBlock) Update(ctx c.Context) (interface{}, error) {
 		}
 	}
 
+	deadline, deadlineErr := gb.getDeadline(ctx, gb.State.WorkType)
+	if deadlineErr != nil {
+		return nil, deadlineErr
+	}
+
+	gb.State.Deadline = deadline
+
 	var stateBytes []byte
 	stateBytes, err := json.Marshal(gb.State)
 	if err != nil {
