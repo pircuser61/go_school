@@ -736,27 +736,19 @@ func (db *PGCon) GetTasksCount(
 	// nolint:gocritic
 	// language=PostgreSQL
 	q := `
-WITH ids AS (
-    SELECT w.id
-    FROM works w
-             JOIN versions v ON v.id = w.version_id
-             JOIN pipelines p ON p.id = v.pipeline_id
-             JOIN work_status ws ON w.status = ws.id
-    WHERE w.child_id IS NULL
-)
-   , active_counts as (
+WITH active_counts as (
     SELECT count(*) as active_count
     FROM works w
-             join ids on w.id = ids.id
     WHERE author = $1
       AND (w.finished_at IS NULL OR (w.archived = false
         AND (now()::TIMESTAMP - w.finished_at::TIMESTAMP) < '3 days'))
+      AND child_id IS NULL    
 )
    , approve_counts AS (
     SELECT count(*) OVER () as c
     FROM members m
              JOIN variable_storage vs ON vs.id = m.block_id
-             JOIN ids ON vs.work_id = ids.id
+             JOIN works w ON vs.work_id = w.id AND w.child_id IS NULL
     WHERE vs.status IN ('running', 'idle', 'ready')
       AND m.login = ANY ($2)
       AND vs.step_type = 'approver'
@@ -767,7 +759,7 @@ WITH ids AS (
     SELECT count(*) over () as c
     FROM members m
              JOIN variable_storage vs ON vs.id = m.block_id
-             JOIN ids ON vs.work_id = ids.id
+             JOIN works w ON vs.work_id = w.id AND w.child_id IS NULL
     WHERE vs.status IN ('running', 'idle', 'ready')
       AND m.login = ANY ($3)
       AND vs.step_type = 'execution'
@@ -778,7 +770,7 @@ WITH ids AS (
     SELECT count(*) OVER () as c
     FROM members m
              JOIN variable_storage vs ON vs.id = m.block_id
-             JOIN ids ON vs.work_id = ids.id
+             JOIN works w ON vs.work_id = w.id AND w.child_id IS NULL
     WHERE vs.status IN ('running', 'idle', 'ready')
       AND m.login = $1
       AND vs.step_type = 'form'
@@ -789,7 +781,7 @@ WITH ids AS (
     SELECT count(*) OVER () as c
     FROM members m
              JOIN variable_storage vs ON vs.id = m.block_id
-             JOIN ids ON vs.work_id = ids.id
+             JOIN works w ON vs.work_id = w.id AND w.child_id IS NULL
     WHERE vs.status IN ('running', 'idle', 'ready')
       AND m.login = $1
       AND vs.step_type = 'sign'
