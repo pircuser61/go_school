@@ -147,6 +147,13 @@ func (gb *GoExecutionBlock) reEntry(ctx c.Context, ef *entity.EriusFunc) error {
 			params.ExecutorsGroupID = fmt.Sprintf("%v", groupId)
 		}
 
+		deadline, err := gb.getDeadline(ctx, *params.WorkType)
+		if err != nil {
+			return err
+		}
+
+		gb.State.Deadline = deadline
+
 		err = gb.setExecutorsByParams(ctx, &setExecutorsByParamsDTO{
 			Type:     params.Type,
 			GroupID:  params.ExecutorsGroupID,
@@ -189,6 +196,13 @@ func (gb *GoExecutionBlock) createState(ctx c.Context, ef *entity.EriusFunc) err
 		UseActualExecutor:  params.UseActualExecutor,
 		HideExecutor:       params.HideExecutor,
 	}
+
+	deadline, err := gb.getDeadline(ctx, *params.WorkType)
+	if err != nil {
+		return err
+	}
+
+	gb.State.Deadline = deadline
 
 	if params.ExecutorsGroupIDPath != nil && *params.ExecutorsGroupIDPath != "" {
 		variableStorage, grabStorageErr := gb.RunContext.VarStore.GrabStorage()

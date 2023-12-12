@@ -30,6 +30,7 @@ type TaskStorager interface {
 	GetTaskFormSchemaID(workNumber, formID string) (string, error)
 	GetAdditionalForms(workNumber, nodeName string) ([]string, error)
 	GetApplicationData(workNumber string) (string, error)
+	GetDeadline(ctx c.Context, workId string) (time.Time, error)
 	GetTasks(ctx c.Context, filters e.TaskFilter, delegations []string) (*e.EriusTasksPage, error)
 	GetTasksCount(ctx c.Context, currentUser string, delegationsByApprovement, delegationsByExecution []string) (*e.CountTasks, error)
 	GetPipelineTasks(ctx c.Context, pipelineID uuid.UUID) (*e.EriusTasks, error)

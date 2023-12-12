@@ -65,5 +65,9 @@ func (a *ExecutionParams) Validate() error {
 		return fmt.Errorf("invalid Rework SLA: %d", a.SLA)
 	}
 
+	if a.SLA == 0 || a.WorkType == nil {
+		return fmt.Errorf("invalid SLA or empty WorkType: %d %v", a.SLA, a.WorkType)
+	}
+
 	return nil
 }
