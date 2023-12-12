@@ -1,5 +1,9 @@
 -- +goose Up
 -- +goose StatementBegin
+CREATE TABLE versions12122023 AS (SELECT * FROM versions);
+
+CREATE TABLE variable_storage12122023 AS (SELECT * FROM variable_storage);
+
 CREATE OR REPLACE FUNCTION set_action_type(input_v_ids uuid) RETURNS void
     language plpgsql
 AS $function$
