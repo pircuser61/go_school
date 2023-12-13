@@ -195,19 +195,9 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 			w.author, 
 			w.version_id,
 			w.work_number,
-			CASE
-			WHEN w.run_context -> 'initial_application' -> 'is_test_application' = 'true'
-				THEN CASE
-					WHEN w.run_context -> 'initial_application' -> 'custom_title' IS NULL
-						THEN concat(p.name, ' (ТЕСТОВАЯ ЗАЯВКА)')
-					ELSE p.name ||' - '||(w.run_context -> 'initial_application' -> 'custom_title')||' (ТЕСТОВАЯ ЗАЯВКА)'
-				END
-			ELSE CASE
-				 WHEN w.run_context -> 'initial_application' -> 'custom_title' IS NULL
-					 THEN p.name
-				 ELSE p.name || ' - ' || (w.run_context -> 'initial_application' -> 'custom_title')
-				END
-			END,
+			p.name,
+			w.run_context -> 'initial_application' ->> 'custom_title',
+			w.run_context -> 'initial_application' -> 'is_test_application',
 			COALESCE(w.run_context -> 'initial_application' ->> 'description',
                 COALESCE(descr.description, '')),
 			COALESCE(descr.blueprint_id, ''),
@@ -957,19 +947,8 @@ func (db *PGCon) GetTask(
 			w.author,
 			w.version_id,
 			w.work_number,
-			CASE
-			WHEN run_context -> 'initial_application' -> 'is_test_application' = 'true'
-				THEN CASE
-					WHEN run_context -> 'initial_application' -> 'custom_title' IS NULL
-						THEN concat(p.name, ' (ТЕСТОВАЯ ЗАЯВКА)')
-					ELSE p.name ||' - '||(run_context -> 'initial_application' -> 'custom_title')||' (ТЕСТОВАЯ ЗАЯВКА)'
-				END
-			ELSE CASE
-				 WHEN run_context -> 'initial_application' -> 'custom_title' IS NULL
-					 THEN p.name
-				 ELSE p.name || ' - ' || (run_context -> 'initial_application' -> 'custom_title')
-				END
-			END,
+			p.name,
+			run_context -> 'initial_application' ->> 'custom_title',
 			COALESCE(w.run_context -> 'initial_application' ->> 'description',
                 COALESCE(descr.description, '')),
 			COALESCE(descr.blueprint_id, ''),
@@ -1016,6 +995,7 @@ func (db *PGCon) getTask(ctx c.Context, delegators []string, q, workNumber strin
 	var nullStringParameters sql.NullString
 	var actionData []byte
 	var nodeGroups string
+	var customTitle string
 
 	row := db.Connection.QueryRow(ctx, q, workNumber)
 
@@ -1032,6 +1012,7 @@ func (db *PGCon) getTask(ctx c.Context, delegators []string, q, workNumber strin
 		&et.VersionID,
 		&et.WorkNumber,
 		&et.Name,
+		&customTitle,
 		&et.Description,
 		&et.BlueprintID,
 		&et.Rate,
@@ -1047,6 +1028,8 @@ func (db *PGCon) getTask(ctx c.Context, delegators []string, q, workNumber strin
 	if err != nil {
 		return nil, err
 	}
+
+	et.Name = utils.MakeTaskTitle(et.Name, customTitle, et.IsTest)
 
 	var actions []DbTaskAction
 	if actionData != nil {
@@ -1277,6 +1260,7 @@ func (db *PGCon) getTasks(ctx c.Context, filters *entity.TaskFilter,
 		et := entity.EriusTask{}
 		var nullStringParameters sql.NullString
 		var actionData []byte
+		var customTitle string
 
 		err = rows.Scan(
 			&et.ID,
@@ -1290,6 +1274,8 @@ func (db *PGCon) getTasks(ctx c.Context, filters *entity.TaskFilter,
 			&et.VersionID,
 			&et.WorkNumber,
 			&et.Name,
+			&customTitle,
+			&et.IsTest,
 			&et.Description,
 			&et.BlueprintID,
 			&et.Total,
@@ -1301,6 +1287,8 @@ func (db *PGCon) getTasks(ctx c.Context, filters *entity.TaskFilter,
 		if err != nil {
 			return nil, err
 		}
+
+		et.Name = utils.MakeTaskTitle(et.Name, customTitle, et.IsTest)
 
 		if nullStringParameters.Valid && nullStringParameters.String != "" {
 			err = json.Unmarshal([]byte(nullStringParameters.String), &et.Parameters)
@@ -1976,7 +1964,7 @@ func (db *PGCon) GetTaskCustomProps(ctx c.Context, taskID uuid.UUID) (*TaskCusto
 
 	const q = `
 		SELECT run_context -> 'initial_application' -> 'is_test_application',
-		       run_context -> 'initial_application' -> 'custom_title'
+		       run_context -> 'initial_application' ->> 'custom_title'
 		FROM works
 		WHERE id = $1`
 
