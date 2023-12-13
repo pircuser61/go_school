@@ -1970,7 +1970,11 @@ func (db *PGCon) GetTaskCustomProps(ctx c.Context, taskID uuid.UUID) (*TaskCusto
 
 	const q = `
 		SELECT run_context -> 'initial_application' -> 'is_test_application',
-		       run_context -> 'initial_application' ->> 'custom_title'
+		       CASE 
+			    WHEN run_context -> 'initial_application' -> 'custom_title' IS NULL
+			        THEN ''
+			        ELSE run_context -> 'initial_application' ->> 'custom_title'
+				END,
 		FROM works
 		WHERE id = $1`
 
