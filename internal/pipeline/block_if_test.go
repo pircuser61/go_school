@@ -86,6 +86,13 @@ func TestIF_DebugRun(t *testing.T) {
 		title   = "title"
 	)
 
+	type TestOperand struct {
+		OperandType string      `json:"operandType"`
+		Value       interface{} `json:"value"`
+		VariableRef string      `json:"variableRef"`
+		conditions_kit.OperandBase
+	}
+
 	type fields struct {
 		Name          string
 		FunctionName  string
@@ -142,17 +149,19 @@ func TestIF_DebugRun(t *testing.T) {
 									LogicalOperator: "or",
 									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &conditions_kit.ValueOperand{
+											LeftOperand: &TestOperand{
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
-												Value: "test",
+												OperandType: "valueOperand",
+												Value:       "test",
 											},
-											RightOperand: &conditions_kit.ValueOperand{
+											RightOperand: &TestOperand{
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
-												Value: "test2",
+												OperandType: "valueOperand",
+												Value:       "test2",
 											},
 											Operator: "NotEqual",
 										},
@@ -189,16 +198,18 @@ func TestIF_DebugRun(t *testing.T) {
 									LogicalOperator: "or",
 									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &conditions_kit.VariableOperand{
+											LeftOperand: &TestOperand{
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
+												OperandType: "variableOperand",
 												VariableRef: "data.testStringVariable1",
 											},
-											RightOperand: &conditions_kit.VariableOperand{
+											RightOperand: &TestOperand{
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
+												OperandType: "variableOperand",
 												VariableRef: "data.testStringVariable2",
 											},
 											Operator: "Equal",
@@ -238,13 +249,15 @@ func TestIF_DebugRun(t *testing.T) {
 									Id: "test-group-1",
 									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &conditions_kit.VariableOperand{
+											LeftOperand: &TestOperand{
+												OperandType: "variableOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
 												VariableRef: "data.testStringVariable1",
 											},
-											RightOperand: &conditions_kit.VariableOperand{
+											RightOperand: &TestOperand{
+												OperandType: "variableOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
@@ -287,13 +300,15 @@ func TestIF_DebugRun(t *testing.T) {
 									Id: "test-group-1",
 									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &conditions_kit.VariableOperand{
+											LeftOperand: &TestOperand{
+												OperandType: "variableOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
 												VariableRef: "testStringVariable",
 											},
-											RightOperand: &conditions_kit.VariableOperand{
+											RightOperand: &TestOperand{
+												OperandType: "variableOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "boolean",
 												},
@@ -337,13 +352,15 @@ func TestIF_DebugRun(t *testing.T) {
 									LogicalOperator: "or",
 									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &conditions_kit.VariableOperand{
+											LeftOperand: &TestOperand{
+												OperandType: "variableOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
 												VariableRef: "level1.level2",
 											},
-											RightOperand: &conditions_kit.VariableOperand{
+											RightOperand: &TestOperand{
+												OperandType: "variableOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
@@ -388,13 +405,15 @@ func TestIF_DebugRun(t *testing.T) {
 									LogicalOperator: "or",
 									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &conditions_kit.VariableOperand{
+											LeftOperand: &TestOperand{
+												OperandType: "variableOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
 												VariableRef: "level1.level2",
 											},
-											RightOperand: &conditions_kit.VariableOperand{
+											RightOperand: &TestOperand{
+												OperandType: "variableOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
@@ -438,13 +457,15 @@ func TestIF_DebugRun(t *testing.T) {
 									LogicalOperator: "or",
 									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &conditions_kit.VariableOperand{
+											LeftOperand: &TestOperand{
+												OperandType: "variableOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
 												VariableRef: "level1.level2.level3",
 											},
-											RightOperand: &conditions_kit.VariableOperand{
+											RightOperand: &TestOperand{
+												OperandType: "variableOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
@@ -493,13 +514,15 @@ func TestIF_DebugRun(t *testing.T) {
 									LogicalOperator: "or",
 									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &conditions_kit.VariableOperand{
+											LeftOperand: &TestOperand{
+												OperandType: "variableOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
 												VariableRef: "level1.level2.level3.level4",
 											},
-											RightOperand: &conditions_kit.VariableOperand{
+											RightOperand: &TestOperand{
+												OperandType: "variableOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
@@ -550,13 +573,15 @@ func TestIF_DebugRun(t *testing.T) {
 									LogicalOperator: "or",
 									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &conditions_kit.VariableOperand{
+											LeftOperand: &TestOperand{
+												OperandType: "variableOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
 												VariableRef: "level1.level2.level3",
 											},
-											RightOperand: &conditions_kit.VariableOperand{
+											RightOperand: &TestOperand{
+												OperandType: "variableOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
@@ -605,13 +630,15 @@ func TestIF_DebugRun(t *testing.T) {
 									LogicalOperator: "or",
 									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &conditions_kit.VariableOperand{
+											LeftOperand: &TestOperand{
+												OperandType: "variableOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
 												VariableRef: "data.testStringVariable",
 											},
-											RightOperand: &conditions_kit.ValueOperand{
+											RightOperand: &TestOperand{
+												OperandType: "valueOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
@@ -654,13 +681,15 @@ func TestIF_DebugRun(t *testing.T) {
 									LogicalOperator: "and",
 									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &conditions_kit.ValueOperand{
+											LeftOperand: &TestOperand{
+												OperandType: "valueOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
 												Value: "test",
 											},
-											RightOperand: &conditions_kit.ValueOperand{
+											RightOperand: &TestOperand{
+												OperandType: "valueOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
@@ -669,13 +698,15 @@ func TestIF_DebugRun(t *testing.T) {
 											Operator: "Equal",
 										},
 										{
-											LeftOperand: &conditions_kit.ValueOperand{
+											LeftOperand: &TestOperand{
+												OperandType: "valueOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
 												Value: "test",
 											},
-											RightOperand: &conditions_kit.ValueOperand{
+											RightOperand: &TestOperand{
+												OperandType: "valueOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
@@ -690,13 +721,15 @@ func TestIF_DebugRun(t *testing.T) {
 									LogicalOperator: "or",
 									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &conditions_kit.ValueOperand{
+											LeftOperand: &TestOperand{
+												OperandType: "valueOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
 												Value: "testAbc",
 											},
-											RightOperand: &conditions_kit.ValueOperand{
+											RightOperand: &TestOperand{
+												OperandType: "valueOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
@@ -737,13 +770,15 @@ func TestIF_DebugRun(t *testing.T) {
 									LogicalOperator: "and",
 									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &conditions_kit.ValueOperand{
+											LeftOperand: &TestOperand{
+												OperandType: "valueOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "integer",
 												},
 												Value: 10,
 											},
-											RightOperand: &conditions_kit.ValueOperand{
+											RightOperand: &TestOperand{
+												OperandType: "valueOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
@@ -784,13 +819,15 @@ func TestIF_DebugRun(t *testing.T) {
 									LogicalOperator: "or",
 									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &conditions_kit.ValueOperand{
+											LeftOperand: &TestOperand{
+												OperandType: "valueOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
 												Value: "10",
 											},
-											RightOperand: &conditions_kit.ValueOperand{
+											RightOperand: &TestOperand{
+												OperandType: "valueOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "integer",
 												},
@@ -831,13 +868,15 @@ func TestIF_DebugRun(t *testing.T) {
 									LogicalOperator: "or",
 									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &conditions_kit.ValueOperand{
+											LeftOperand: &TestOperand{
+												OperandType: "valueOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
 												Value: "unable to cast to integer string",
 											},
-											RightOperand: &conditions_kit.ValueOperand{
+											RightOperand: &TestOperand{
+												OperandType: "valueOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "integer",
 												},
@@ -878,13 +917,15 @@ func TestIF_DebugRun(t *testing.T) {
 									LogicalOperator: "or",
 									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &conditions_kit.ValueOperand{
+											LeftOperand: &TestOperand{
+												OperandType: "valueOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "number",
 												},
 												Value: 10.05,
 											},
-											RightOperand: &conditions_kit.ValueOperand{
+											RightOperand: &TestOperand{
+												OperandType: "valueOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
@@ -925,13 +966,15 @@ func TestIF_DebugRun(t *testing.T) {
 									LogicalOperator: "or",
 									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &conditions_kit.ValueOperand{
+											LeftOperand: &TestOperand{
+												OperandType: "valueOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "number",
 												},
 												Value: nil,
 											},
-											RightOperand: &conditions_kit.ValueOperand{
+											RightOperand: &TestOperand{
+												OperandType: "valueOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "number",
 												},
@@ -972,13 +1015,15 @@ func TestIF_DebugRun(t *testing.T) {
 									LogicalOperator: "or",
 									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &conditions_kit.ValueOperand{
+											LeftOperand: &TestOperand{
+												OperandType: "valueOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
 												Value: "10.05",
 											},
-											RightOperand: &conditions_kit.ValueOperand{
+											RightOperand: &TestOperand{
+												OperandType: "valueOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "number",
 												},
@@ -1019,13 +1064,15 @@ func TestIF_DebugRun(t *testing.T) {
 									LogicalOperator: "or",
 									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &conditions_kit.ValueOperand{
+											LeftOperand: &TestOperand{
+												OperandType: "valueOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "integer",
 												},
 												Value: 10,
 											},
-											RightOperand: &conditions_kit.ValueOperand{
+											RightOperand: &TestOperand{
+												OperandType: "valueOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "number",
 												},
@@ -1066,13 +1113,15 @@ func TestIF_DebugRun(t *testing.T) {
 									LogicalOperator: "or",
 									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &conditions_kit.ValueOperand{
+											LeftOperand: &TestOperand{
+												OperandType: "valueOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "number",
 												},
 												Value: 10.05,
 											},
-											RightOperand: &conditions_kit.ValueOperand{
+											RightOperand: &TestOperand{
+												OperandType: "valueOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "integer",
 												},
@@ -1113,13 +1162,15 @@ func TestIF_DebugRun(t *testing.T) {
 									LogicalOperator: "or",
 									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &conditions_kit.ValueOperand{
+											LeftOperand: &TestOperand{
+												OperandType: "valueOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
 												Value: "false",
 											},
-											RightOperand: &conditions_kit.ValueOperand{
+											RightOperand: &TestOperand{
+												OperandType: "valueOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "boolean",
 												},
@@ -1160,13 +1211,15 @@ func TestIF_DebugRun(t *testing.T) {
 									LogicalOperator: "or",
 									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &conditions_kit.ValueOperand{
+											LeftOperand: &TestOperand{
+												OperandType: "valueOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "boolean",
 												},
 												Value: false,
 											},
-											RightOperand: &conditions_kit.ValueOperand{
+											RightOperand: &TestOperand{
+												OperandType: "valueOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
@@ -1207,13 +1260,15 @@ func TestIF_DebugRun(t *testing.T) {
 									LogicalOperator: "or",
 									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &conditions_kit.ValueOperand{
+											LeftOperand: &TestOperand{
+												OperandType: "valueOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "integer",
 												},
 												Value: 1,
 											},
-											RightOperand: &conditions_kit.ValueOperand{
+											RightOperand: &TestOperand{
+												OperandType: "valueOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "boolean",
 												},
@@ -1254,13 +1309,15 @@ func TestIF_DebugRun(t *testing.T) {
 									LogicalOperator: "or",
 									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &conditions_kit.ValueOperand{
+											LeftOperand: &TestOperand{
+												OperandType: "valueOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "boolean",
 												},
 												Value: true,
 											},
-											RightOperand: &conditions_kit.ValueOperand{
+											RightOperand: &TestOperand{
+												OperandType: "valueOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "integer",
 												},
@@ -1301,13 +1358,15 @@ func TestIF_DebugRun(t *testing.T) {
 									LogicalOperator: "or",
 									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &conditions_kit.VariableOperand{
+											LeftOperand: &TestOperand{
+												OperandType: "variableOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
 												VariableRef: "data.testStringVariable1",
 											},
-											RightOperand: &conditions_kit.VariableOperand{
+											RightOperand: &TestOperand{
+												OperandType: "variableOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
@@ -1351,13 +1410,15 @@ func TestIF_DebugRun(t *testing.T) {
 									LogicalOperator: "or",
 									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &conditions_kit.VariableOperand{
+											LeftOperand: &TestOperand{
+												OperandType: "variableOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
 												VariableRef: "data.testStringVariable1",
 											},
-											RightOperand: &conditions_kit.VariableOperand{
+											RightOperand: &TestOperand{
+												OperandType: "variableOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
@@ -1401,13 +1462,15 @@ func TestIF_DebugRun(t *testing.T) {
 									LogicalOperator: "or",
 									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &conditions_kit.ValueOperand{
+											LeftOperand: &TestOperand{
+												OperandType: "valueOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "integer",
 												},
 												Value: 10,
 											},
-											RightOperand: &conditions_kit.ValueOperand{
+											RightOperand: &TestOperand{
+												OperandType: "valueOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "integer",
 												},
@@ -1449,13 +1512,15 @@ func TestIF_DebugRun(t *testing.T) {
 									LogicalOperator: "or",
 									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &conditions_kit.ValueOperand{
+											LeftOperand: &TestOperand{
+												OperandType: "valueOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "integer",
 												},
 												Value: 10,
 											},
-											RightOperand: &conditions_kit.ValueOperand{
+											RightOperand: &TestOperand{
+												OperandType: "valueOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "integer",
 												},
@@ -1497,13 +1562,15 @@ func TestIF_DebugRun(t *testing.T) {
 									LogicalOperator: "or",
 									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &conditions_kit.ValueOperand{
+											LeftOperand: &TestOperand{
+												OperandType: "valueOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "integer",
 												},
 												Value: 100,
 											},
-											RightOperand: &conditions_kit.ValueOperand{
+											RightOperand: &TestOperand{
+												OperandType: "valueOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "integer",
 												},
@@ -1545,13 +1612,15 @@ func TestIF_DebugRun(t *testing.T) {
 									LogicalOperator: "or",
 									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &conditions_kit.ValueOperand{
+											LeftOperand: &TestOperand{
+												OperandType: "valueOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "integer",
 												},
 												Value: 100,
 											},
-											RightOperand: &conditions_kit.ValueOperand{
+											RightOperand: &TestOperand{
+												OperandType: "valueOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "integer",
 												},
@@ -1593,13 +1662,15 @@ func TestIF_DebugRun(t *testing.T) {
 									LogicalOperator: "or",
 									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &conditions_kit.ValueOperand{
+											LeftOperand: &TestOperand{
+												OperandType: "valueOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "number",
 												},
 												Value: 10.05,
 											},
-											RightOperand: &conditions_kit.ValueOperand{
+											RightOperand: &TestOperand{
+												OperandType: "valueOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "number",
 												},
@@ -1641,13 +1712,15 @@ func TestIF_DebugRun(t *testing.T) {
 									LogicalOperator: "or",
 									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &conditions_kit.ValueOperand{
+											LeftOperand: &TestOperand{
+												OperandType: "valueOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "number",
 												},
 												Value: 10.05,
 											},
-											RightOperand: &conditions_kit.ValueOperand{
+											RightOperand: &TestOperand{
+												OperandType: "valueOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "number",
 												},
@@ -1689,13 +1762,15 @@ func TestIF_DebugRun(t *testing.T) {
 									LogicalOperator: "or",
 									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &conditions_kit.ValueOperand{
+											LeftOperand: &TestOperand{
+												OperandType: "valueOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "number",
 												},
 												Value: 100,
 											},
-											RightOperand: &conditions_kit.ValueOperand{
+											RightOperand: &TestOperand{
+												OperandType: "valueOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "number",
 												},
@@ -1737,13 +1812,15 @@ func TestIF_DebugRun(t *testing.T) {
 									LogicalOperator: "or",
 									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &conditions_kit.ValueOperand{
+											LeftOperand: &TestOperand{
+												OperandType: "valueOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "number",
 												},
 												Value: 100,
 											},
-											RightOperand: &conditions_kit.ValueOperand{
+											RightOperand: &TestOperand{
+												OperandType: "valueOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "number",
 												},
@@ -1785,13 +1862,15 @@ func TestIF_DebugRun(t *testing.T) {
 									LogicalOperator: "or",
 									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &conditions_kit.ValueOperand{
+											LeftOperand: &TestOperand{
+												OperandType: "valueOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "date",
 												},
 												Value: "11.08.2022",
 											},
-											RightOperand: &conditions_kit.ValueOperand{
+											RightOperand: &TestOperand{
+												OperandType: "valueOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "date",
 												},
@@ -1832,13 +1911,15 @@ func TestIF_DebugRun(t *testing.T) {
 									LogicalOperator: "or",
 									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &conditions_kit.VariableOperand{
+											LeftOperand: &TestOperand{
+												OperandType: "variableOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "date",
 												},
 												VariableRef: "data.testStringVariable1",
 											},
-											RightOperand: &conditions_kit.VariableOperand{
+											RightOperand: &TestOperand{
+												OperandType: "variableOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "date",
 												},
@@ -1882,13 +1963,15 @@ func TestIF_DebugRun(t *testing.T) {
 									LogicalOperator: "or",
 									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &conditions_kit.ValueOperand{
+											LeftOperand: &TestOperand{
+												OperandType: "valueOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "date",
 												},
 												Value: "11.08.2022",
 											},
-											RightOperand: &conditions_kit.ValueOperand{
+											RightOperand: &TestOperand{
+												OperandType: "valueOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "date",
 												},
@@ -1930,13 +2013,15 @@ func TestIF_DebugRun(t *testing.T) {
 									LogicalOperator: "or",
 									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &conditions_kit.ValueOperand{
+											LeftOperand: &TestOperand{
+												OperandType: "valueOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "date",
 												},
 												Value: "11.08.2022",
 											},
-											RightOperand: &conditions_kit.ValueOperand{
+											RightOperand: &TestOperand{
+												OperandType: "valueOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "date",
 												},
@@ -1978,13 +2063,15 @@ func TestIF_DebugRun(t *testing.T) {
 									LogicalOperator: "or",
 									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &conditions_kit.ValueOperand{
+											LeftOperand: &TestOperand{
+												OperandType: "valueOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "date",
 												},
 												Value: "11.08.2022",
 											},
-											RightOperand: &conditions_kit.ValueOperand{
+											RightOperand: &TestOperand{
+												OperandType: "valueOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "date",
 												},
@@ -2026,13 +2113,15 @@ func TestIF_DebugRun(t *testing.T) {
 									LogicalOperator: "or",
 									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &conditions_kit.ValueOperand{
+											LeftOperand: &TestOperand{
+												OperandType: "valueOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "date",
 												},
 												Value: "11.08.2022",
 											},
-											RightOperand: &conditions_kit.ValueOperand{
+											RightOperand: &TestOperand{
+												OperandType: "valueOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "date",
 												},
@@ -2074,13 +2163,15 @@ func TestIF_DebugRun(t *testing.T) {
 									LogicalOperator: "or",
 									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &conditions_kit.ValueOperand{
+											LeftOperand: &TestOperand{
+												OperandType: "valueOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
 												Value: "11.08.2022",
 											},
-											RightOperand: &conditions_kit.ValueOperand{
+											RightOperand: &TestOperand{
+												OperandType: "valueOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "date",
 												},
@@ -2121,13 +2212,15 @@ func TestIF_DebugRun(t *testing.T) {
 									LogicalOperator: "or",
 									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &conditions_kit.ValueOperand{
+											LeftOperand: &TestOperand{
+												OperandType: "valueOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "date",
 												},
 												Value: "11.08.2022",
 											},
-											RightOperand: &conditions_kit.ValueOperand{
+											RightOperand: &TestOperand{
+												OperandType: "valueOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
@@ -2168,13 +2261,15 @@ func TestIF_DebugRun(t *testing.T) {
 									LogicalOperator: "or",
 									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &conditions_kit.VariableOperand{
+											LeftOperand: &TestOperand{
+												OperandType: "variableOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "date",
 												},
 												VariableRef: "data.testStringVariable1",
 											},
-											RightOperand: &conditions_kit.VariableOperand{
+											RightOperand: &TestOperand{
+												OperandType: "variableOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "date",
 												},
@@ -2218,13 +2313,14 @@ func TestIF_DebugRun(t *testing.T) {
 									LogicalOperator: "or",
 									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &conditions_kit.VariableOperand{
+											LeftOperand: &TestOperand{
+												OperandType: "variableOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "date",
 												},
 												VariableRef: "data.testStringVariable1",
 											},
-											RightOperand: &conditions_kit.VariableOperand{},
+											RightOperand: &TestOperand{},
 											Operator:     "Exists",
 										},
 									},
@@ -2263,13 +2359,14 @@ func TestIF_DebugRun(t *testing.T) {
 									LogicalOperator: "or",
 									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &conditions_kit.VariableOperand{
+											LeftOperand: &TestOperand{
+												OperandType: "variableOperand",
 												OperandBase: conditions_kit.OperandBase{
 													DataType: "date",
 												},
 												VariableRef: "data.testStringVariable3",
 											},
-											RightOperand: &conditions_kit.VariableOperand{},
+											RightOperand: &TestOperand{},
 											Operator:     "NotExists",
 										},
 									},
