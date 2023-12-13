@@ -74,6 +74,7 @@ type BlockRunContext struct {
 	WorkTitle   string
 	Initiator   string
 	IsTest      bool
+	CustomTitle string
 	NotifName   string
 	Delegations human_tasks.Delegations
 

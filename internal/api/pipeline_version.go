@@ -29,6 +29,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
+	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
 const (
@@ -704,10 +705,7 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 		e := PipelineRunError
 		return nil, e, err
 	}
-	notifName := ep.Name
-	if dto.runCtx.InitialApplication.IsTestApplication {
-		notifName = notifName + " (ТЕСТОВАЯ ЗАЯВКА)"
-	}
+
 	runCtx := &pipeline.BlockRunContext{
 		TaskID:     ep.TaskID,
 		WorkNumber: ep.WorkNumber,
@@ -735,7 +733,10 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 
 		UpdateData: nil,
 		IsTest:     dto.runCtx.InitialApplication.IsTestApplication,
-		NotifName:  notifName,
+		NotifName: utils.MakeTaskTitle(
+			ep.Name,
+			dto.runCtx.InitialApplication.CustomTitle,
+			dto.runCtx.InitialApplication.IsTestApplication),
 	}
 	blockData := dto.p.Pipeline.Blocks[ep.EntryPoint]
 

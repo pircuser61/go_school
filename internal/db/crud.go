@@ -2377,7 +2377,8 @@ func (db *PGCon) GetBlocksBreachedSLA(ctx context.Context) ([]StepBreachedSLA, e
 		       v.content->'pipeline'->'blocks'->vs.step_name,
 		       vs.step_name,
 		       d.action,
-			   w.run_context -> 'initial_application' -> 'is_test_application' as isTest
+			   w.run_context -> 'initial_application' -> 'is_test_application' as isTest,
+			   w.run_context -> 'initial_application' ->> 'custom_title' as customTitle
 		FROM variable_storage vs 
 		    JOIN works w on vs.work_id = w.id 
 		    JOIN versions v on w.version_id = v.id
@@ -2409,6 +2410,7 @@ func (db *PGCon) GetBlocksBreachedSLA(ctx context.Context) ([]StepBreachedSLA, e
 			&item.StepName,
 			&item.Action,
 			&item.IsTest,
+			&item.CustomTitle,
 		); scanErr != nil {
 			return nil, scanErr
 		}
