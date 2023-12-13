@@ -196,7 +196,11 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 			w.version_id,
 			w.work_number,
 			p.name,
-			w.run_context -> 'initial_application' ->> 'custom_title',
+			CASE 
+			    WHEN w.run_context -> 'initial_application' -> 'custom_title' IS NULL
+			        THEN ''
+			        ELSE w.run_context -> 'initial_application' ->> 'custom_title'
+			END,
 			w.run_context -> 'initial_application' -> 'is_test_application',
 			COALESCE(w.run_context -> 'initial_application' ->> 'description',
                 COALESCE(descr.description, '')),
@@ -948,7 +952,11 @@ func (db *PGCon) GetTask(
 			w.version_id,
 			w.work_number,
 			p.name,
-			run_context -> 'initial_application' ->> 'custom_title',
+			CASE 
+			    WHEN run_context -> 'initial_application' -> 'custom_title' IS NULL
+			        THEN ''
+			        ELSE run_context -> 'initial_application' ->> 'custom_title'
+			END,
 			COALESCE(w.run_context -> 'initial_application' ->> 'description',
                 COALESCE(descr.description, '')),
 			COALESCE(descr.blueprint_id, ''),
