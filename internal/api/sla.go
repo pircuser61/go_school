@@ -65,8 +65,9 @@ func (ae *APIEnv) handleBreachSlA(ctx c.Context, item db.StepBreachedSLA) {
 		UpdateData: &script.BlockUpdateData{
 			Action: string(item.Action),
 		},
-		IsTest:    item.IsTest,
-		NotifName: utils.MakeTaskTitle(item.WorkTitle, item.CustomTitle, item.IsTest),
+		IsTest:      item.IsTest,
+		CustomTitle: item.CustomTitle,
+		NotifName:   utils.MakeTaskTitle(item.WorkTitle, item.CustomTitle, item.IsTest),
 	}
 
 	runCtx.SetTaskEvents(ctx)
