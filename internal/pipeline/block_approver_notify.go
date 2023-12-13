@@ -17,7 +17,7 @@ const (
 	headImg    = "header.png"
 	userImg    = "iconUser.png"
 	warningImg = "warning.png"
-	vRabotuBtn = "vRabotuButton.png"
+	vRabotuBtn = "v_rabotu.png"
 )
 
 //nolint:dupl // maybe later
@@ -103,7 +103,7 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 	}
 
 	var buttons []mail.Button
-	buttonImg := make([]string, 0)
+	buttonImg := make([]string, 0, 7)
 	for _, login = range loginsToNotify {
 		email, getEmailErr := gb.RunContext.Services.People.GetUserEmail(ctx, login)
 		if getEmailErr != nil {

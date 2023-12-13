@@ -891,14 +891,15 @@ const (
 
 func getApproverButtons(workNumber, mailto, blockId, login string, actions []Action, isEditable bool) []Button {
 	buttons := make([]Button, 0, len(actions))
-	fmt.Println("Len", len(actions))
 	for i := range actions {
 		if actions[i].InternalActionName == actionApproverSignUkep {
 			return nil
 		}
+
 		if actions[i].InternalActionName == actionApproverSendEditApp {
 			continue
 		}
+
 		subject := fmt.Sprintf(
 			subjectTpl,
 			blockId,
@@ -909,38 +910,27 @@ func getApproverButtons(workNumber, mailto, blockId, login string, actions []Act
 		)
 		var img string
 
-		fmt.Println(actions[i].InternalActionName)
 		switch actions[i].InternalActionName {
 		case "approve":
-			img = "otklonButton.png"
+			img = "soglas.png"
 		case "reject":
-			img = "otklonButton.png"
+			img = "otklon.png"
 		case "informed":
-			img = "otklonButton.png"
+			img = "proinform.png"
 		case "confirm":
-			img = "otklonButton.png"
+			img = "utverdit.png"
 		case "sign":
-			img = "otklonButton.png"
+			img = "podpisat.png"
 		case "viewed":
-			img = "otklonButton.png"
+			img = "oznakomlen.png"
 		}
 
 		buttons = append(buttons, *getButton(mailto, subject, actions[i].Title, img))
 	}
 
-	if len(buttons) == 0 {
-		approveAppSubject := fmt.Sprintf(subjectTpl, blockId, "approve", workNumber, taskUpdateActionApprovement, login)
-		approveAppBtn := getButton(mailto, approveAppSubject, "Согласовать", "soglButton.png")
-		buttons = append(buttons, *approveAppBtn)
-
-		rejectAppSubject := fmt.Sprintf(subjectTpl, blockId, "reject", workNumber, taskUpdateActionApprovement, login)
-		rejectAppBtn := getButton(mailto, rejectAppSubject, "Отклонить", "otklonButton.png")
-		buttons = append(buttons, *rejectAppBtn)
-	}
-
 	if isEditable {
 		sendEditAppSubject := fmt.Sprintf(subjectTpl, blockId, "", workNumber, actionApproverSendEditApp, login)
-		sendEditAppBtn := getButton(mailto, sendEditAppSubject, "Вернуть на доработку", "naDorabotkuButton.png")
+		sendEditAppBtn := getButton(mailto, sendEditAppSubject, "Вернуть на доработку", "dorabot.png")
 		buttons = append(buttons, *sendEditAppBtn)
 	}
 
@@ -949,10 +939,10 @@ func getApproverButtons(workNumber, mailto, blockId, login string, actions []Act
 
 func getExecutionButtons(workNumber, mailto, blockId, executed, rejected, login string, isEditable bool) []Button {
 	executedSubject := fmt.Sprintf(subjectTpl, blockId, executed, workNumber, taskUpdateActionExecution, login)
-	executedBtn := getButton(mailto, executedSubject, "Решить", "reshitButton.png")
+	executedBtn := getButton(mailto, executedSubject, "Решить", "reshit.png")
 
 	rejectedSubject := fmt.Sprintf(subjectTpl, blockId, rejected, workNumber, taskUpdateActionExecution, login)
-	rejectedBtn := getButton(mailto, rejectedSubject, "Отклонить", "otklonButton.png")
+	rejectedBtn := getButton(mailto, rejectedSubject, "Отклонить", "otklon.png")
 
 	buttons := []Button{
 		*executedBtn,
