@@ -288,7 +288,7 @@ func (gb *GoSignBlock) handleBreachedSLA(ctx c.Context) error {
 		err := gb.RunContext.Services.Sender.SendNotification(ctx, emails, nil,
 			mail.NewSignSLAExpiredTemplate(
 				gb.RunContext.WorkNumber,
-				gb.RunContext.WorkTitle,
+				gb.RunContext.NotifName,
 				gb.RunContext.Services.Sender.SdAddress,
 			),
 		)
