@@ -892,8 +892,7 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 		if link {
 			attachFiles, ok := links.([]file_registry.AttachInfo)
 			if ok && len(attachFiles) != 0 {
-				descIcons := []string{documentImg, downloadImg}
-				iconsName = append(iconsName, descIcons...)
+				iconsName = append(iconsName, downloadImg)
 				break
 			}
 		}

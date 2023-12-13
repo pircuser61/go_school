@@ -14,7 +14,6 @@ import (
 
 const (
 	downloadImg = "iconDownload.png"
-	documentImg = "iconDocument.png"
 )
 
 //nolint:dupl,gocyclo // maybe later

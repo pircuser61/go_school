@@ -930,7 +930,7 @@ func getApproverButtons(workNumber, mailto, blockId, login string, actions []Act
 
 	if isEditable {
 		sendEditAppSubject := fmt.Sprintf(subjectTpl, blockId, "", workNumber, actionApproverSendEditApp, login)
-		sendEditAppBtn := getButton(mailto, sendEditAppSubject, "Вернуть на доработку", "dorabot.png")
+		sendEditAppBtn := getButton(mailto, sendEditAppSubject, "Вернуть на доработку", "vernut.png")
 		buttons = append(buttons, *sendEditAppBtn)
 	}
 
@@ -951,7 +951,7 @@ func getExecutionButtons(workNumber, mailto, blockId, executed, rejected, login 
 
 	if isEditable {
 		sendEditAppSubject := fmt.Sprintf(subjectTpl, blockId, "", workNumber, actionExecutorSendEditApp, login)
-		sendEditAppBtn := getButton(mailto, sendEditAppSubject, "Вернуть на доработку", "naDorabotkuButton.png")
+		sendEditAppBtn := getButton(mailto, sendEditAppSubject, "Вернуть на доработку", "vernut.png")
 		buttons = append(buttons, *sendEditAppBtn)
 	}
 

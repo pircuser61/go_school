@@ -694,7 +694,7 @@ func (runCtx *BlockRunContext) handleInitiatorNotify(ctx c.Context, params handl
 		if link {
 			attachFiles, ok := links.([]file_registry.AttachInfo)
 			if ok && len(attachFiles) != 0 {
-				descIcons := []string{documentImg, downloadImg}
+				descIcons := []string{downloadImg}
 				iconsName = append(iconsName, descIcons...)
 				break
 			}

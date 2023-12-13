@@ -1,9 +1,9 @@
 {{ define "body" }}
 <table
-  cellpadding="0"
-  cellspacing="0"
-  width="100%"
-  style="
+        cellpadding="0"
+        cellspacing="0"
+        width="100%"
+        style="
     border-collapse: collapse;
     mso-table-lspace: 0pt;
     mso-table-rspace: 0pt;
@@ -14,11 +14,11 @@
     <td align="center" style="border-collapse: collapse">
       <div align="center" style="width: 100%; background-color: #f2f3f7">
         <table
-          width="560"
-          cellpadding="0"
-          cellspacing="0"
-          bgcolor="#FFFFFF"
-          style="
+                width="560"
+                cellpadding="0"
+                cellspacing="0"
+                bgcolor="#FFFFFF"
+                style="
             border-collapse: collapse;
             mso-table-lspace: 0pt;
             mso-table-rspace: 0pt;
@@ -27,7 +27,7 @@
         >
           <tr>
             <td
-              style="
+                    style="
                 border-collapse: collapse;
                 padding-left: 24px;
                 padding-right: 24px;
@@ -35,25 +35,25 @@
             >
               <!-- пустая линия -->
               <p
-                style="
+                      style="
                   margin: 0cm;
                   padding: 0;
-                  line-height: 32px;
+                  line-height: 24px;
                   vertical-align: baseline;
                 "
               >
                 <span
-                  style="
+                        style="
                     font-size: 10pt;
                     font-family: 'MTS Text', sans-serif, serif, EmojiFont;
                     color: transparent;
                   "
-                  >&nbsp;</span
+                >&nbsp;</span
                 >
               </p>
               <!-- конец пустой линии -->
               <p
-                style="
+                      style="
                   margin: 0;
                   padding: 0;
                   font-family: MTS Text, sans-serif, serif, EmojiFont;
@@ -66,7 +66,7 @@
               </p>
               <!-- пустая линия -->
               <p
-                style="
+                      style="
                   margin: 0cm;
                   padding: 0;
                   line-height: 24px;
@@ -74,12 +74,12 @@
                 "
               >
                 <span
-                  style="
+                        style="
                     font-size: 10pt;
                     font-family: 'MTS Text', sans-serif, serif, EmojiFont;
                     color: transparent;
                   "
-                  >&nbsp;</span
+                >&nbsp;</span
                 >
               </p>
               <!-- конец пустой линии -->
@@ -87,14 +87,14 @@
           </tr>
           <tr>
             <td
-              style="
+                    style="
                 border-collapse: collapse;
                 padding-left: 24px;
                 padding-right: 24px;
               "
             >
               <p
-                style="
+                      style="
                   margin: 0;
                   padding: 0;
                   font-family: MTS Text, sans-serif, serif, EmojiFont;
@@ -105,23 +105,24 @@
               >
                 Уважаемый коллега,
                 <span
-                  style="
+                        style="
                     font-family: MTS Text, sans-serif, serif, EmojiFont;
                     font-size: 17px;
                     line-height: 24px;
                     font-weight: 500;
                   "
-                  ><strong
-                    >по заявке № {{.Id}} {{.Name}} необходимо предоставить
+                ><strong
+                >по заявке № {{.Id}} {{.Name}} необходимо предоставить
                     информацию.</strong
-                  ></span
+                ></span
                 >
                 {{ if .Deadline }} Срок предоставления информации по заявке: до
                 {{.Deadline}}. {{ end }}
+                {{ if .Deadline }} Срок исполнения до {{.Deadline}}. {{ end }}
               </p>
               <!-- пустая линия -->
               <p
-                style="
+                      style="
                   margin: 0cm;
                   padding: 0;
                   line-height: 24px;
@@ -129,12 +130,12 @@
                 "
               >
                 <span
-                  style="
+                        style="
                     font-size: 10pt;
                     font-family: 'MTS Text', sans-serif, serif, EmojiFont;
                     color: transparent;
                   "
-                  >&nbsp;</span
+                >&nbsp;</span
                 >
               </p>
               <!-- конец пустой линии -->
@@ -142,14 +143,14 @@
           </tr>
           <tr>
             <td
-              style="
+                    style="
                 border-collapse: collapse;
                 padding-left: 24px;
                 padding-right: 24px;
               "
             >
               <p
-                style="
+                      style="
                   margin: 0;
                   padding: 0;
                   font-family: MTS Text, sans-serif, serif, EmojiFont;
@@ -158,11 +159,11 @@
                   line-height: 24px;
                 "
               >
-                Для просмотра заявки перейдите по
+                Для просмотра перейдите по
                 <a
-                  href="{{.Link}}"
-                  target="_blank"
-                  style="
+                        href="{{.Link}}"
+                        target="_blank"
+                        style="
                     text-decoration: none;
                     color: #007cff;
                     font-family: MTS Text, sans-serif, serif, EmojiFont;
@@ -170,12 +171,12 @@
                     font-weight: 500;
                     line-height: 24px;
                   "
-                  >ссылке</a
+                >ссылке</a
                 >
               </p>
               <!-- пустая линия -->
               <p
-                style="
+                      style="
                   margin: 0cm;
                   padding: 0;
                   line-height: 24px;
@@ -183,12 +184,12 @@
                 "
               >
                 <span
-                  style="
+                        style="
                     font-size: 10pt;
                     font-family: 'MTS Text', sans-serif, serif, EmojiFont;
                     color: transparent;
                   "
-                  >&nbsp;</span
+                >&nbsp;</span
                 >
               </p>
               <!-- конец пустой линии -->
@@ -196,34 +197,34 @@
           </tr>
           <tr>
             <td
-              align="center"
-              style="
+                    align="center"
+                    style="
                 border-collapse: collapse;
                 padding-left: 24px;
                 padding-right: 24px;
+                padding-bottom: 12px;
               "
             >
               <a
-                href="{{ (index .ActionBtn 0).Href }}"
-                style="
+                      href="{{.ActionBtn.Href}}"
+                      target="_blank"
+                      style="
                   margin: 0;
                   padding: 0;
                   display: inline-block;
-                  width: 100%;
+                  width: 512px;
                   border-radius: 6px;
                   text-decoration: none;
                   font-family: MTS Compact, sans-serif, serif, EmojiFont;
+                  font-size: 14px;
+                  font-weight: 500;
+                  line-height: 20px;
                 "
-                target="_blank"
               >
-                <!-- <img src="cid:vRabotuButton.png" alt="Взять в работу" style="outline: none;
-                    text-decoration: none;
-                    border: none;
-                    -ms-interpolation-mode: bicubic; border-radius: 6px; color: #000000;"/> -->
                 <img
-                  src="cid:vRabotuButton.png"
-                  alt="Взять в работу"
-                  style="
+                        src="cid:v_rabotu.png"
+                        alt="Кнопка"
+                        style="
                     outline: none;
                     text-decoration: none;
                     border: none;
@@ -231,33 +232,13 @@
                     border-radius: 6px;
                     color: #000000;
                   "
-                />
-              </a>
-              <!-- пустая линия -->
-              <p
-                style="
-                  margin: 0cm;
-                  padding: 0;
-                  line-height: 12px;
-                  vertical-align: baseline;
-                "
-              >
-                <span
-                  style="
-                    font-size: 10pt;
-                    font-family: 'MTS Text', sans-serif, serif, EmojiFont;
-                    color: transparent;
-                  "
-                  >&nbsp;</span
-                >
-              </p>
-              <!-- конец пустой линии -->
+                /></a>
             </td>
           </tr>
           <tr>
             <td
-              align="center"
-              style="
+                    align="center"
+                    style="
                 border-collapse: collapse;
                 padding-left: 24px;
                 padding-right: 24px;
@@ -265,7 +246,7 @@
             >
               <!-- пустая линия -->
               <p
-                style="
+                      style="
                   margin: 0cm;
                   padding: 0;
                   line-height: 24px;
@@ -273,17 +254,17 @@
                 "
               >
                 <span
-                  style="
+                        style="
                     font-size: 10pt;
                     font-family: 'MTS Text', sans-serif, serif, EmojiFont;
                     color: transparent;
                   "
-                  >&nbsp;</span
+                >&nbsp;</span
                 >
               </p>
               <!-- конец пустой линии -->
               <p
-                style="
+                      style="
                   margin: 0;
                   padding: 0;
                   text-decoration: none;
@@ -298,7 +279,7 @@
               </p>
               <!-- пустая линия -->
               <p
-                style="
+                      style="
                   margin: 0cm;
                   padding: 0;
                   line-height: 24px;
@@ -306,12 +287,12 @@
                 "
               >
                 <span
-                  style="
+                        style="
                     font-size: 10pt;
                     font-family: 'MTS Text', sans-serif, serif, EmojiFont;
                     color: transparent;
                   "
-                  >&nbsp;</span
+                >&nbsp;</span
                 >
               </p>
               <!-- конец пустой линии -->

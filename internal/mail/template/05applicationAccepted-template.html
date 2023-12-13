@@ -1,9 +1,9 @@
 {{ define "body" }}
 <table
-  cellpadding="0"
-  cellspacing="0"
-  width="100%"
-  style="
+        cellpadding="0"
+        cellspacing="0"
+        width="100%"
+        style="
     border-collapse: collapse;
     mso-table-lspace: 0pt;
     mso-table-rspace: 0pt;
@@ -14,11 +14,11 @@
     <td align="center" style="border-collapse: collapse">
       <div align="center" style="width: 100%; background-color: #f2f3f7">
         <table
-          width="560"
-          cellpadding="0"
-          cellspacing="0"
-          bgcolor="#FFFFFF"
-          style="
+                width="560"
+                cellpadding="0"
+                cellspacing="0"
+                bgcolor="#FFFFFF"
+                style="
             border-collapse: collapse;
             mso-table-lspace: 0pt;
             mso-table-rspace: 0pt;
@@ -28,16 +28,16 @@
           {{ if .LastWorks }}
           <tr>
             <td
-              style="
+                    style="
                 border-collapse: collapse;
                 padding-left: 24px;
                 padding-right: 24px;
-                width: 512px;
+                width: 560px;
               "
             >
               <!-- пустая линия -->
               <p
-                style="
+                      style="
                   margin: 0cm;
                   padding: 0;
                   line-height: 24pt;
@@ -45,19 +45,19 @@
                 "
               >
                 <span
-                  style="
+                        style="
                     font-size: 10pt;
                     font-family: 'MTS Text', sans-serif, serif, EmojiFont;
                     color: transparent;
                   "
-                  >&nbsp;</span
+                >&nbsp;</span
                 >
               </p>
               <!-- конец пустой линии -->
               <table
-                cellpadding="0"
-                cellspacing="0"
-                style="
+                      cellpadding="0"
+                      cellspacing="0"
+                      style="
                   border-collapse: collapse;
                   mso-table-lspace: 0pt;
                   mso-table-rspace: 0pt;
@@ -65,9 +65,9 @@
               >
                 <tr>
                   <td
-                    style="
+                          style="
                       border-collapse: collapse;
-                      width: 486px;
+                      width: 512px;
                       background-color: #f2f3f7;
                       border-radius: 12px;
                       padding-left: 12px;
@@ -77,9 +77,9 @@
                     "
                   >
                     <table
-                      cellpadding="0"
-                      cellspacing="0"
-                      style="
+                            cellpadding="0"
+                            cellspacing="0"
+                            style="
                         border-collapse: collapse;
                         mso-table-lspace: 0pt;
                         mso-table-rspace: 0pt;
@@ -87,29 +87,11 @@
                     >
                       <tr>
                         <td
-                          style="border-collapse: collapse; padding-right: 6px"
+                                style="border-collapse: collapse; padding-right: 6px"
                         >
-                          <!-- <img
-                            src="cid:warning.svg"
-                            style="
-                              outline: none;
-                              text-decoration: none;
-                              border: none;
-                              -ms-interpolation-mode: bicubic;
-                              max-width: 100%;
-                              margin: 0;
-                              padding: 0;
-                              width: 24px;
-                              height: 24px;                              
-                            padding-bottom: 8px;
-                              display: table-cell;
-                              vertical-align: middle;
-                            "
-                            alt="Внимание"
-                          /> -->
                           <img
-                            src="cid:warning.png"
-                            style="
+                                  src="cid:warning.png"
+                                  style="
                               outline: none;
                               text-decoration: none;
                               border: none;
@@ -122,18 +104,18 @@
                               display: table-cell;
                               vertical-align: middle;
                             "
-                            alt="Внимание"
+                                  alt="Внимание"
                           />
                         </td>
                         <td
-                          style="
+                                style="
                             border-collapse: collapse;
                             width: 376px;
                             padding-bottom: 8pt;
                           "
                         >
                           <p
-                            style="
+                                  style="
                               margin: 0;
                               padding: 0;
                               font-family: MTS Compact, sans-serif, serif,
@@ -155,7 +137,7 @@
                     <ul style="margin: 0" type="disc">
                       {{ range .LastWorks }}
                       <li
-                        style="
+                              style="
                           color: #8d969f;
                           font-family: MTS Compact, sans-serif, serif, EmojiFont;
                           font-size: 14px;
@@ -166,20 +148,20 @@
                         "
                       >
                         <span
-                          style="
+                                style="
                             font-family: MTS Text, sans-serif, serif, EmojiFont;
                             font-size: 14px;
                             line-height: 15pt;
                             font-weight: 400;
                             color: #1d2023;
                           "
-                          >№ {{ .WorkNumber }} была подана {{if eq .DaysAgo 0 }}
+                        >№ {{ .WorkNumber }} была подана {{if eq .DaysAgo 0 }}
                           сегодня{{ else }} {{ .DaysAgo }} день назад {{ end}}.
                           Для просмотра заявки перейдите по
                           <a
-                            href="{{.Link}}"
-                            target="_blank"
-                            style="
+                                  href="{{.Link}}"
+                                  target="_blank"
+                                  style="
                               font-family: MTS Text, sans-serif, serif,
                                 EmojiFont;
                               font-size: 14px;
@@ -188,7 +170,7 @@
                               text-decoration: none;
                               color: #007cff;
                             "
-                            >ссылке</a
+                          >ссылке</a
                           ></span
                         >
                       </li>
@@ -202,7 +184,7 @@
           {{ end }}
           <tr>
             <td
-              style="
+                    style="
                 border-collapse: collapse;
                 padding-left: 24px;
                 padding-right: 24px;
@@ -210,7 +192,7 @@
             >
               <!-- пустая линия -->
               <p
-                style="
+                      style="
                   margin: 0cm;
                   padding: 0;
                   line-height: 24px;
@@ -218,17 +200,17 @@
                 "
               >
                 <span
-                  style="
+                        style="
                     font-size: 10pt;
                     font-family: 'MTS Text', sans-serif, serif, EmojiFont;
                     color: transparent;
                   "
-                  >&nbsp;</span
+                >&nbsp;</span
                 >
               </p>
               <!-- конец пустой линии -->
               <p
-                style="
+                      style="
                   margin: 0;
                   padding: 0;
                   font-family: MTS Text, sans-serif, serif, EmojiFont;
@@ -241,7 +223,7 @@
               </p>
               <!-- пустая линия -->
               <p
-                style="
+                      style="
                   margin: 0cm;
                   padding: 0;
                   line-height: 24px;
@@ -249,12 +231,12 @@
                 "
               >
                 <span
-                  style="
+                        style="
                     font-size: 10pt;
                     font-family: 'MTS Text', sans-serif, serif, EmojiFont;
                     color: transparent;
                   "
-                  >&nbsp;</span
+                >&nbsp;</span
                 >
               </p>
               <!-- конец пустой линии -->
@@ -262,14 +244,14 @@
           </tr>
           <tr>
             <td
-              style="
+                    style="
                 border-collapse: collapse;
                 padding-left: 24px;
                 padding-right: 24px;
               "
             >
               <p
-                style="
+                      style="
                   margin: 0;
                   padding: 0;
                   font-family: MTS Text, sans-serif, serif, EmojiFont;
@@ -280,14 +262,14 @@
               >
                 Уважаемый коллега,
                 <span style="font-weight: 500"
-                  ><strong
-                    >заявка № {{.Id}} {{.Name}} взята в работу.</strong
-                  ></span
+                ><strong
+                >заявка № {{.Id}} {{.Name}} взята в работу.</strong
+                ></span
                 >
               </p>
               <!-- пустая линия -->
               <p
-                style="
+                      style="
                   margin: 0cm;
                   padding: 0;
                   line-height: 24px;
@@ -295,12 +277,12 @@
                 "
               >
                 <span
-                  style="
+                        style="
                     font-size: 10pt;
                     font-family: 'MTS Text', sans-serif, serif, EmojiFont;
                     color: transparent;
                   "
-                  >&nbsp;</span
+                >&nbsp;</span
                 >
               </p>
               <!-- конец пустой линии -->
@@ -308,14 +290,14 @@
           </tr>
           <tr>
             <td
-              style="
+                    style="
                 border-collapse: collapse;
                 padding-left: 24px;
                 padding-right: 24px;
               "
             >
               <p
-                style="
+                      style="
                   margin: 0;
                   padding: 0;
                   font-family: MTS Text, sans-serif, serif, EmojiFont;
@@ -324,11 +306,11 @@
                   line-height: 24px;
                 "
               >
-                Для просмотра заявки перейдите по
+                Для просмотра перейдите по
                 <a
-                  href="{{.Link}}"
-                  target="_blank"
-                  style="
+                        href="{{.Link}}"
+                        target="_blank"
+                        style="
                     text-decoration: none;
                     color: #007cff;
                     font-family: MTS Text, sans-serif, serif, EmojiFont;
@@ -336,12 +318,12 @@
                     font-weight: 500;
                     line-height: 24px;
                   "
-                  >ссылке</a
+                >ссылке</a
                 >
               </p>
               <!-- пустая линия -->
               <p
-                style="
+                      style="
                   margin: 0cm;
                   padding: 0;
                   line-height: 24px;
@@ -349,12 +331,12 @@
                 "
               >
                 <span
-                  style="
+                        style="
                     font-size: 10pt;
                     font-family: 'MTS Text', sans-serif, serif, EmojiFont;
                     color: transparent;
                   "
-                  >&nbsp;</span
+                >&nbsp;</span
                 >
               </p>
               <!-- конец пустой линии -->
@@ -362,7 +344,7 @@
           </tr>
           <tr>
             <td
-              style="
+                    style="
                 border-collapse: collapse;
                 padding-left: 24px;
                 padding-right: 24px;
@@ -370,7 +352,7 @@
               "
             >
               <p
-                style="
+                      style="
                   margin: 0;
                   padding: 0;
                   font-family: MTS Text, sans-serif, serif, EmojiFont;
@@ -384,7 +366,7 @@
               </p>
               <!-- пустая линия -->
               <p
-                style="
+                      style="
                   margin: 0cm;
                   padding: 0;
                   line-height: 6pt;
@@ -392,12 +374,12 @@
                 "
               >
                 <span
-                  style="
+                        style="
                     font-size: 10pt;
                     font-family: 'MTS Text', sans-serif, serif, EmojiFont;
                     color: transparent;
                   "
-                  >&nbsp;</span
+                >&nbsp;</span
                 >
               </p>
               <!-- конец пустой линии -->
@@ -420,8 +402,8 @@
                   alt="iconUser"
                 /> -->
                     <img
-                      src="cid:iconUser.png"
-                      style="
+                            src="cid:iconUser.png"
+                            style="
                         outline: none;
                         text-decoration: none;
                         border: none;
@@ -432,12 +414,12 @@
                         display: table-cell;
                         vertical-align: middle;
                       "
-                      alt="iconUser"
+                            alt="iconUser"
                     />
                   </td>
                   <td style="border-collapse: collapse">
                     <p
-                      style="
+                            style="
                         margin: 0;
                         padding: 0;
                         font-family: MTS Compact, sans-serif, serif, EmojiFont;
@@ -451,7 +433,7 @@
                       {{.Initiator.FullName}} ({{ .Initiator.Username}})
                     </p>
                     <p
-                      style="
+                            style="
                         margin: 0;
                         padding: 0;
                         font-family: MTS Compact, sans-serif, serif, EmojiFont;
@@ -468,7 +450,7 @@
               </table>
               <!-- пустая линия -->
               <p
-                style="
+                      style="
                   margin: 0cm;
                   padding: 0;
                   line-height: 7.5pt;
@@ -476,18 +458,18 @@
                 "
               >
                 <span
-                  style="
+                        style="
                     font-size: 10pt;
                     font-family: 'MTS Text', sans-serif, serif, EmojiFont;
                     color: transparent;
                   "
-                  >&nbsp;</span
+                >&nbsp;</span
                 >
               </p>
               <!-- конец пустой линии -->
 
               <p
-                style="
+                      style="
                   margin: 0;
                   padding: 0;
                   font-family: MTS Text, sans-serif, serif, EmojiFont;
@@ -501,7 +483,7 @@
               </p>
               <!-- пустая линия -->
               <p
-                style="
+                      style="
                   margin: 0cm;
                   padding: 0;
                   line-height: 6pt;
@@ -509,36 +491,21 @@
                 "
               >
                 <span
-                  style="
+                        style="
                     font-size: 10pt;
                     font-family: 'MTS Text', sans-serif, serif, EmojiFont;
                     color: transparent;
                   "
-                  >&nbsp;</span
+                >&nbsp;</span
                 >
               </p>
               <!-- конец пустой линии -->
               <table>
                 <tr>
                   <td style="border-collapse: collapse; padding-right: 12px">
-                    <!-- <img
-                  src="cid:iconUser.svg"
-                  style="
-                    outline: none;
-                    text-decoration: none;
-                    border: none;
-                    -ms-interpolation-mode: bicubic;
-                    max-width: 100%;
-                    margin: 0;
-                    padding: 0;
-                    display: table-cell;
-                    vertical-align: middle;
-                  "
-                  alt="iconUser"
-                /> -->
                     <img
-                      src="cid:iconUser.png"
-                      style="
+                            src="cid:iconUser.png"
+                            style="
                         outline: none;
                         text-decoration: none;
                         border: none;
@@ -549,12 +516,12 @@
                         display: table-cell;
                         vertical-align: middle;
                       "
-                      alt="iconUser"
+                            alt="iconUser"
                     />
                   </td>
                   <td style="border-collapse: collapse">
                     <p
-                      style="
+                            style="
                         margin: 0;
                         padding: 0;
                         font-family: MTS Compact, sans-serif, serif, EmojiFont;
@@ -568,7 +535,7 @@
                       {{.Executor.FullName}} ({{.Executor.Username}})
                     </p>
                     <p
-                      style="
+                            style="
                         margin: 0;
                         padding: 0;
                         font-family: MTS Compact, sans-serif, serif, EmojiFont;
@@ -585,7 +552,7 @@
               </table>
               <!-- пустая линия -->
               <p
-                style="
+                      style="
                   margin: 0cm;
                   padding: 0;
                   line-height: 7.5pt;
@@ -593,12 +560,12 @@
                 "
               >
                 <span
-                  style="
+                        style="
                     font-size: 10pt;
                     font-family: 'MTS Text', sans-serif, serif, EmojiFont;
                     color: transparent;
                   "
-                  >&nbsp;</span
+                >&nbsp;</span
                 >
               </p>
               <!-- конец пустой линии -->
@@ -608,16 +575,16 @@
           retMap $vo }}
           <tr>
             <td
-              style="
+                    style="
                 border-collapse: collapse;
                 padding-left: 24px;
                 padding-right: 24px;
-                width: 512px;
+                width: 560px;
               "
             >
               <!-- пустая линия -->
               <p
-                style="
+                      style="
                   margin: 0cm;
                   padding: 0;
                   line-height: 10.5pt;
@@ -625,21 +592,28 @@
                 "
               >
                 <span
-                  style="
+                        style="
                     font-size: 10pt;
                     font-family: 'MTS Text', sans-serif, serif, EmojiFont;
                     color: transparent;
                   "
-                  >&nbsp;</span
+                >&nbsp;</span
                 >
               </p>
               <!-- конец пустой линии -->
-
-              <table>
+              <table
+                      cellpadding="0"
+                      cellspacing="0"
+                      style="
+                  border-collapse: collapse;
+                  mso-table-lspace: 0pt;
+                  mso-table-rspace: 0pt;
+                "
+              >
                 <tr>
                   <td
-                    style="
-                      width: 486px;
+                          style="
+                      width: 512px;
                       background-color: #f2f3f7;
                       border-radius: 12px;
                       padding-left: 12px;
@@ -648,7 +622,7 @@
                   >
                     <!-- пустая линия -->
                     <p
-                      style="
+                            style="
                         margin: 0cm;
                         padding: 0;
                         line-height: 9pt;
@@ -656,18 +630,18 @@
                       "
                     >
                       <span
-                        style="
+                              style="
                           font-size: 10pt;
                           font-family: 'MTS Text', sans-serif, serif, EmojiFont;
                           color: transparent;
                         "
-                        >&nbsp;</span
+                      >&nbsp;</span
                       >
                     </p>
                     <!-- конец пустой линии -->
                     {{ if eq $ko 0 }}
                     <p
-                      style="
+                            style="
                         margin: 0;
                         padding: 0;
                         font-family: MTS Compact, sans-serif, serif, EmojiFont;
@@ -681,7 +655,7 @@
                     </p>
                     <!-- пустая линия -->
                     <p
-                      style="
+                            style="
                         margin: 0cm;
                         padding: 0;
                         line-height: 15pt;
@@ -689,18 +663,18 @@
                       "
                     >
                       <span
-                        style="
+                              style="
                           font-size: 10pt;
                           font-family: 'MTS Text', sans-serif, serif, EmojiFont;
                           color: transparent;
                         "
-                        >&nbsp;</span
+                      >&nbsp;</span
                       >
                     </p>
                     <!-- конец пустой линии -->
                     {{ else }}
                     <p
-                      style="
+                            style="
                         margin: 0;
                         padding: 0;
                         font-family: MTS Compact, sans-serif, serif, EmojiFont;
@@ -714,20 +688,20 @@
                     </p>
                     <!-- пустая линия -->
                     <p
-                      style="
+                            style="
                         margin: 0cm;
                         padding: 0;
-                        line-height: 18pt;
+                        line-height: 15pt;
                         vertical-align: baseline;
                       "
                     >
                       <span
-                        style="
+                              style="
                           font-size: 10pt;
                           font-family: 'MTS Text', sans-serif, serif, EmojiFont;
                           color: transparent;
                         "
-                        >&nbsp;</span
+                      >&nbsp;</span
                       >
                     </p>
                     <!-- конец пустой линии -->
@@ -735,7 +709,7 @@
                     <div>
                       {{ if isUser $val }}
                       <p
-                        style="
+                              style="
                           margin: 0;
                           padding: 0;
                           font-family: MTS Compact, sans-serif, serif, EmojiFont;
@@ -750,7 +724,7 @@
                       </p>
 
                       <p
-                        style="
+                              style="
                           margin: 0;
                           padding: 0;
                           font-family: MTS Compact, sans-serif, serif, EmojiFont;
@@ -765,7 +739,7 @@
                       </p>
                       <!-- пустая линия -->
                       <p
-                        style="
+                              style="
                           margin: 0cm;
                           padding: 0;
                           line-height: 9pt;
@@ -773,19 +747,19 @@
                         "
                       >
                         <span
-                          style="
+                                style="
                             font-size: 10pt;
                             font-family: 'MTS Text', sans-serif, serif,
                               EmojiFont;
                             color: transparent;
                           "
-                          >&nbsp;</span
+                        >&nbsp;</span
                         >
                       </p>
                       <!-- конец пустой линии -->
                       {{ else }} {{ if not (isFile $val) }} {{ if isLink $val }}
                       <p
-                        style="
+                              style="
                           margin: 0;
                           padding: 0;
                           font-family: MTS Compact, sans-serif, serif, EmojiFont;
@@ -799,8 +773,8 @@
                         {{ $key }}
                       </p>
                       <a
-                        href="{{$val}}"
-                        style="
+                              href="{{$val}}"
+                              style="
                           margin: 0;
                           padding: 0;
                           text-decoration: none;
@@ -810,11 +784,11 @@
                           line-height: 18pt;
                           color: #007cff;
                         "
-                        >{{ $val }}</a
+                      >{{ $val }}</a
                       >
                       <!-- пустая линия -->
                       <p
-                        style="
+                              style="
                           margin: 0cm;
                           padding: 0;
                           line-height: 9pt;
@@ -822,19 +796,19 @@
                         "
                       >
                         <span
-                          style="
+                                style="
                             font-size: 10pt;
                             font-family: 'MTS Text', sans-serif, serif,
                               EmojiFont;
                             color: transparent;
                           "
-                          >&nbsp;</span
+                        >&nbsp;</span
                         >
                       </p>
                       <!-- конец пустой линии -->
                       {{ else }} {{ if checkKey $key }}
                       <p
-                        style="
+                              style="
                           margin: 0;
                           padding: 0;
                           font-family: MTS Compact, sans-serif, serif, EmojiFont;
@@ -848,7 +822,7 @@
                         {{ $key }}
                       </p>
                       <p
-                        style="
+                              style="
                           margin: 0;
                           padding: 0;
                           font-family: MTS Compact, sans-serif, serif, EmojiFont;
@@ -862,7 +836,7 @@
                       </p>
                       <!-- пустая линия -->
                       <p
-                        style="
+                              style="
                           margin: 0cm;
                           padding: 0;
                           line-height: 9pt;
@@ -870,13 +844,13 @@
                         "
                       >
                         <span
-                          style="
+                                style="
                             font-size: 10pt;
                             font-family: 'MTS Text', sans-serif, serif,
                               EmojiFont;
                             color: transparent;
                           "
-                          >&nbsp;</span
+                        >&nbsp;</span
                         >
                       </p>
                       <!-- конец пустой линии -->
@@ -886,7 +860,7 @@
 
                     <div>
                       <p
-                        style="
+                              style="
                           margin: 0;
                           padding: 0;
                           font-family: MTS Compact, sans-serif, serif, EmojiFont;
@@ -894,146 +868,45 @@
                           font-weight: 400;
                           line-height: 15pt;
                           color: #626c77;
-                          padding-bottom: 4px;
                         "
                       >
                         Файлы
                       </p>
                       {{ range (index $item "attachLinks") }}
-                      <a
-                        align="left"
-                        download
-                        href="{{.ExternalLink}}"
-                        style="
-                          display: block;
-                          width: 484px;
-                          margin: 0;
-                          text-decoration: none;
-                          font-family: MTS Compact, sans-serif, serif, EmojiFont;
-                          font-size: 17px;
-                          font-weight: 400;
-                          line-height: 18pt;
-                          color: #1d2023;
+                      <table
+                              cellpadding="0"
+                              cellspacing="0"
+                              style="
+                          width: 488px;
+                          border-radius: 8px;
+                          margin-top: 4px;
+                          margin-bottom: 4px;
+                          padding-right: 12px;
+                          padding-left: 12px;
                         "
                       >
-                        <table
-                          style="
-                            border: 1px solid #bcc3d0;
-                            border-radius: 8px;
-                            padding: 4px 12px;
-                            padding-top: 4px;
-                            padding-bottom: 4px;
-                            padding-right: 12px;
-                            padding-left: 12px;
-                          "
-                        >
-                          <tr>
-                            <td
-                              style="
-                                border-collapse: collapse;
-                                padding-right: 12px;
+                        <tr>
+                          <td style="border-collapse: collapse; width: 34px">
+                            <a
+                                    align="left"
+                                    download
+                                    href="{{.ExternalLink}}"
+                                    style="
+                                display: block;
+                                width: 24px;
+                                margin: 0;
+                                text-decoration: none;
+                                font-family: MTS Compact, sans-serif, serif,
+                                  EmojiFont;
+                                font-size: 17px;
+                                font-weight: 400;
+                                line-height: 18pt;
+                                color: #1d2023;
                               "
                             >
-                              <!-- <img
-                        src="cid:iconDocument.svg"
-                        style="                        
-                        margin: 0;
-                        padding: 0;
-                        outline: none;
-                        text-decoration: none;
-                        border: none;
-                        -ms-interpolation-mode: bicubic;
-                          display: table-cell;
-                          vertical-align: middle;
-                          width: 44px;
-                          height: 44px;
-                        "
-                        alt="Документ"
-                      /> -->
                               <img
-                                src="cid:iconDocument.png"
-                                style="
-                                  margin: 0;
-                                  padding: 0;
-                                  outline: none;
-                                  text-decoration: none;
-                                  border: none;
-                                  -ms-interpolation-mode: bicubic;
-                                  display: table-cell;
-                                  vertical-align: middle;
-                                  width: 44px;
-                                  height: 44px;
-                                "
-                                alt="Документ"
-                              />
-                            </td>
-                            <td style="border-collapse: collapse; width: 376px">
-                              <div
-                                style="
-                                  margin: 0;
-                                  padding: 0;
-                                  font-family: MTS Compact, sans-serif, serif,
-                                    EmojiFont;
-                                  font-size: 17px;
-                                  font-weight: 400;
-                                  line-height: 18pt;
-                                  color: #1d2023;
-                                  display: table-cell;
-                                  vertical-align: middle;
-                                  width: 376px;
-                                  overflow: hidden;
-                                "
-                              >
-                                <p
-                                  style="
-                                    margin: 0;
-                                    padding: 0;
-                                    font-family: MTS Compact, sans-serif, serif,
-                                      EmojiFont, EmojiFont;
-                                    font-size: 17px;
-                                    font-weight: 400;
-                                    line-height: 18pt;
-                                    color: #1d2023;
-                                    word-break: break-all;
-                                    padding-right: 12px;
-                                  "
-                                >
-                                  {{ .Name }}
-                                </p>
-                                <p
-                                  style="
-                                    margin: 0;
-                                    padding: 0;
-                                    font-family: MTS Compact, sans-serif, serif,
-                                      EmojiFont, EmojiFont;
-                                    font-size: 12px;
-                                    font-weight: 400;
-                                    line-height: 12pt;
-                                    color: #626c77;
-                                  "
-                                >
-                                  {{ .Size }} MB
-                                </p>
-                              </div>
-                            </td>
-                            <td style="border-collapse: collapse">
-                              <!-- <img
-                        src="cid:iconDownload.svg"
-                        style="                        
-                        margin: 0;
-                        padding: 0;
-                        outline: none;
-                        text-decoration: none;
-                        border: none;
-                        -ms-interpolation-mode: bicubic;
-                          display: table-cell;
-                          vertical-align: middle;
-                        "
-                        alt="Скачать"
-                      /> -->
-                              <img
-                                src="cid:iconDownload.png"
-                                style="
+                                      src="cid:iconDownload.png"
+                                      style="
                                   margin: 0;
                                   padding: 0;
                                   outline: none;
@@ -1045,37 +918,65 @@
                                   display: table-cell;
                                   vertical-align: middle;
                                 "
-                                alt="Скачать"
+                                      alt="Скачать"
                               />
-                            </td>
-                          </tr>
-                        </table>
-                      </a>
-                      <!-- пустая линия -->
-                      <p
-                        style="
-                          margin: 0cm;
-                          padding: 0;
-                          line-height: 3pt;
-                          vertical-align: baseline;
-                        "
-                      >
-                        <span
-                          style="
-                            font-size: 10pt;
-                            font-family: 'MTS Text', sans-serif, serif,
-                              EmojiFont;
-                            color: transparent;
-                          "
-                          >&nbsp;</span
-                        >
-                      </p>
-                      <!-- конец пустой линии -->
+                            </a>
+                          </td>
+                          <td style="border-collapse: collapse; width: 430px">
+                            <div
+                                    style="
+                                margin: 0;
+                                padding: 0;
+                                font-family: MTS Compact, sans-serif, serif,
+                                  EmojiFont;
+                                font-size: 17px;
+                                font-weight: 400;
+                                line-height: 18pt;
+                                color: #1d2023;
+                                display: table-cell;
+                                vertical-align: middle;
+                                width: 420px;
+                                overflow: hidden;
+                              "
+                            >
+                              <p
+                                      style="
+                                  margin: 0;
+                                  padding: 0;
+                                  font-family: MTS Compact, sans-serif, serif,
+                                    EmojiFont, EmojiFont;
+                                  font-size: 17px;
+                                  font-weight: 400;
+                                  line-height: 18pt;
+                                  color: #1d2023;
+                                  word-break: break-all;
+                                "
+                              >
+                                {{ .Name }}
+                              </p>
+                              <p
+                                      style="
+                                  margin: 0;
+                                  padding: 0;
+                                  font-family: MTS Compact, sans-serif, serif,
+                                    EmojiFont, EmojiFont;
+                                  font-size: 12px;
+                                  font-weight: 400;
+                                  line-height: 12pt;
+                                  color: #626c77;
+                                "
+                              >
+                                {{ .Size }} MB
+                              </p>
+                            </div>
+                          </td>
+                        </tr>
+                      </table>
                       {{ end }}
                     </div>
                     <!-- пустая линия -->
                     <p
-                      style="
+                            style="
                         margin: 0cm;
                         padding: 0;
                         line-height: 9pt;
@@ -1083,19 +984,19 @@
                       "
                     >
                       <span
-                        style="
+                              style="
                           font-size: 10pt;
                           font-family: 'MTS Text', sans-serif, serif, EmojiFont;
                           color: transparent;
                         "
-                        >&nbsp;</span
+                      >&nbsp;</span
                       >
                     </p>
                     <!-- конец пустой линии -->
                     {{ end }} {{ if (index $item "attachExist")}}
                     <div>
                       <p
-                        style="
+                              style="
                           margin: 0;
                           padding: 0;
                           font-family: MTS Compact, sans-serif, serif, EmojiFont;
@@ -1103,32 +1004,13 @@
                           font-weight: 400;
                           line-height: 15pt;
                           color: #626c77;
+                          margin-bottom: 4px;
                         "
                       >
                         Файлы
                       </p>
-                      <!-- пустая линия -->
                       <p
-                        style="
-                          margin: 0cm;
-                          padding: 0;
-                          line-height: 3pt;
-                          vertical-align: baseline;
-                        "
-                      >
-                        <span
-                          style="
-                            font-size: 10pt;
-                            font-family: 'MTS Text', sans-serif, serif,
-                              EmojiFont;
-                            color: transparent;
-                          "
-                          >&nbsp;</span
-                        >
-                      </p>
-                      <!-- конец пустой линии -->
-                      <p
-                        style="
+                              style="
                           margin: 0;
                           padding: 0;
                           font-family: MTS Compact, sans-serif, serif, EmojiFont;
@@ -1143,40 +1025,40 @@
                     </div>
                     <!-- пустая линия -->
                     <p
-                      style="
+                            style="
                         margin: 0cm;
                         padding: 0;
-                        line-height: 9pt;
+                        line-height: 7pt;
                         vertical-align: baseline;
                       "
                     >
                       <span
-                        style="
+                              style="
                           font-size: 10pt;
                           font-family: 'MTS Text', sans-serif, serif, EmojiFont;
                           color: transparent;
                         "
-                        >&nbsp;</span
+                      >&nbsp;</span
                       >
                     </p>
                     <!-- конец пустой линии -->
                     {{ end }}
                     <!-- пустая линия -->
                     <p
-                      style="
+                            style="
                         margin: 0cm;
                         padding: 0;
-                        line-height: 9pt;
+                        line-height: 8pt;
                         vertical-align: baseline;
                       "
                     >
                       <span
-                        style="
+                              style="
                           font-size: 10pt;
                           font-family: 'MTS Text', sans-serif, serif, EmojiFont;
                           color: transparent;
                         "
-                        >&nbsp;</span
+                      >&nbsp;</span
                       >
                     </p>
                     <!-- конец пустой линии -->
@@ -1188,8 +1070,8 @@
           {{ end }} {{ end }}
           <tr>
             <td
-              align="center"
-              style="
+                    align="center"
+                    style="
                 border-collapse: collapse;
                 padding-left: 24px;
                 padding-right: 24px;
@@ -1197,7 +1079,7 @@
             >
               <!-- пустая линия -->
               <p
-                style="
+                      style="
                   margin: 0cm;
                   padding: 0;
                   line-height: 24px;
@@ -1205,17 +1087,17 @@
                 "
               >
                 <span
-                  style="
+                        style="
                     font-size: 10pt;
                     font-family: 'MTS Text', sans-serif, serif, EmojiFont;
                     color: transparent;
                   "
-                  >&nbsp;</span
+                >&nbsp;</span
                 >
               </p>
               <!-- конец пустой линии -->
               <p
-                style="
+                      style="
                   margin: 0;
                   padding: 0;
                   text-decoration: none;
@@ -1230,7 +1112,7 @@
               </p>
               <!-- пустая линия -->
               <p
-                style="
+                      style="
                   margin: 0cm;
                   padding: 0;
                   line-height: 24px;
@@ -1238,12 +1120,12 @@
                 "
               >
                 <span
-                  style="
+                        style="
                     font-size: 10pt;
                     font-family: 'MTS Text', sans-serif, serif, EmojiFont;
                     color: transparent;
                   "
-                  >&nbsp;</span
+                >&nbsp;</span
                 >
               </p>
               <!-- конец пустой линии -->
