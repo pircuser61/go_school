@@ -14,14 +14,10 @@ import (
 )
 
 const (
-	headImg      = "header.png"
-	userImg      = "iconUser.png"
-	warningImg   = "warning.png"
-	soglBtn      = "soglButton.png"
-	dorabotkaBtn = "naDorabotkuButton.png"
-	otkBtn       = "otklonButton.png"
-	reshitBtn    = "reshitButton.png"
-	vRabotuBtn   = "vRabotuButton.png"
+	headImg    = "header.png"
+	userImg    = "iconUser.png"
+	warningImg = "warning.png"
+	vRabotuBtn = "vRabotuButton.png"
 )
 
 //nolint:dupl // maybe later
@@ -106,8 +102,8 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 		return getSlaInfoErr
 	}
 
-	filesName := make([]string, 0, 1)
-
+	var buttons []mail.Button
+	buttonImg := make([]string, 0)
 	for _, login = range loginsToNotify {
 		email, getEmailErr := gb.RunContext.Services.People.GetUserEmail(ctx, login)
 		if getEmailErr != nil {
@@ -146,19 +142,19 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 			Initiator:                 initiatorInfo,
 		}
 
-		templates[email] = mail.NewAppPersonStatusNotificationTpl(tpl)
+		templates[email], buttons = mail.NewAppPersonStatusNotificationTpl(tpl)
 
-		if tpl.IsEditable {
-			filesName = append(filesName, dorabotkaBtn)
-		}
+	}
 
+	for _, v := range buttons {
+		buttonImg = append(buttonImg, v.Img)
 	}
 
 	for i := range templates {
 		item := templates[i]
 
-		iconsName := []string{item.Image, userImg, soglBtn, otkBtn}
-		iconsName = append(iconsName, filesName...)
+		iconsName := []string{item.Image, userImg}
+		iconsName = append(iconsName, buttonImg...)
 
 		if len(lastWorksForUser) != 0 {
 			iconsName = append(iconsName, warningImg)
@@ -169,8 +165,7 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 			if link {
 				attachFiles, ok := links.([]file_registry.AttachInfo)
 				if ok && len(attachFiles) != 0 {
-					descIcons := []string{documentImg, downloadImg}
-					iconsName = append(iconsName, descIcons...)
+					iconsName = append(iconsName, downloadImg)
 					break
 				}
 			}

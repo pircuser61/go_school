@@ -279,7 +279,7 @@ type NewFormExecutionNeedTakeInWorkDto struct {
 
 func NewFormExecutionNeedTakeInWorkTpl(dto *NewFormExecutionNeedTakeInWorkDto, isReentry bool) Template {
 	actionSubject := fmt.Sprintf(subjectTpl, dto.BlockName, "", dto.WorkNumber, formExecutorStartWorkAction, dto.Login)
-	actionBtn := getButton(dto.Mailto, actionSubject, "Взять в работу")
+	actionBtn := getButton(dto.Mailto, actionSubject, "Взять в работу", "")
 
 	var retryStr string
 	if isReentry {
@@ -514,7 +514,7 @@ const (
 	statusExecution = "processing"
 )
 
-func NewAppPersonStatusNotificationTpl(in *NewAppPersonStatusTpl) Template {
+func NewAppPersonStatusNotificationTpl(in *NewAppPersonStatusTpl) (Template, []Button) {
 	actionName := getApprovementActionNameByStatus(in.Status, in.Action)
 	buttons := make([]Button, 0)
 	template := ""
@@ -564,7 +564,7 @@ func NewAppPersonStatusNotificationTpl(in *NewAppPersonStatusTpl) Template {
 			Initiator:   in.Initiator,
 			LastWorks:   lastWorksTemplate,
 		},
-	}
+	}, buttons
 }
 
 func NewSendToInitiatorEditTpl(id, name, sdUrl string) Template {
@@ -586,13 +586,11 @@ func NewSendToInitiatorEditTpl(id, name, sdUrl string) Template {
 
 func NewExecutionNeedTakeInWorkTpl(dto *ExecutorNotifTemplate) Template {
 	actionSubject := fmt.Sprintf(subjectTpl, dto.BlockID, "", dto.WorkNumber, executionStartWorkAction, dto.Login)
-	actionBtn := getButton(dto.Mailto, actionSubject, "Взять в работу")
+	actionBtn := getButton(dto.Mailto, actionSubject, "Взять в работу", "")
 
 	subject := ""
-	group := false
 
 	if dto.IsGroup {
-		group = true
 		subject = fmt.Sprintf("Заявка №%s %s назначена на Группу исполнителей", dto.WorkNumber, dto.Name)
 	} else {
 		subject = fmt.Sprintf("Заявка №%s %s назначена на исполнение", dto.WorkNumber, dto.Name)
@@ -618,7 +616,7 @@ func NewExecutionNeedTakeInWorkTpl(dto *ExecutorNotifTemplate) Template {
 			Name:        dto.Name,
 			Link:        fmt.Sprintf(TaskUrlTemplate, dto.SdUrl, dto.WorkNumber),
 			Description: dto.Description,
-			Group:       group,
+			Group:       dto.IsGroup,
 			Deadline:    dto.Deadline,
 			ActionBtn:   *actionBtn,
 			LastWorks:   lastWorksTemplate,
@@ -868,14 +866,14 @@ type Action struct {
 	InternalActionName string
 }
 
-func getButton(to, subject, title string) *Button {
+func getButton(to, subject, title, image string) *Button {
 	subject = strings.ReplaceAll(subject, " ", "")
 
 	body := "***КОММЕНТАРИЙ%20НИЖЕ***%0D%0A%0D%0A***ОБЩИЙ%20РАЗМЕР%20ВЛОЖЕНИЙ%20НЕ%20БОЛЕЕ%2020МБ***"
 	href := fmt.Sprintf("mailto:%s?subject=%s&body=%s", to, subject, body)
 	return &Button{
-		Href:  href,
-		Title: title,
+		Href: href,
+		Img:  image,
 	}
 }
 
@@ -893,6 +891,7 @@ const (
 
 func getApproverButtons(workNumber, mailto, blockId, login string, actions []Action, isEditable bool) []Button {
 	buttons := make([]Button, 0, len(actions))
+	fmt.Println("Len", len(actions))
 	for i := range actions {
 		if actions[i].InternalActionName == actionApproverSignUkep {
 			return nil
@@ -908,23 +907,40 @@ func getApproverButtons(workNumber, mailto, blockId, login string, actions []Act
 			taskUpdateActionApprovement,
 			login,
 		)
+		var img string
 
-		buttons = append(buttons, *getButton(mailto, subject, actions[i].Title))
+		fmt.Println(actions[i].InternalActionName)
+		switch actions[i].InternalActionName {
+		case "approve":
+			img = "otklonButton.png"
+		case "reject":
+			img = "otklonButton.png"
+		case "informed":
+			img = "otklonButton.png"
+		case "confirm":
+			img = "otklonButton.png"
+		case "sign":
+			img = "otklonButton.png"
+		case "viewed":
+			img = "otklonButton.png"
+		}
+
+		buttons = append(buttons, *getButton(mailto, subject, actions[i].Title, img))
 	}
 
 	if len(buttons) == 0 {
 		approveAppSubject := fmt.Sprintf(subjectTpl, blockId, "approve", workNumber, taskUpdateActionApprovement, login)
-		approveAppBtn := getButton(mailto, approveAppSubject, "Согласовать")
+		approveAppBtn := getButton(mailto, approveAppSubject, "Согласовать", "soglButton.png")
 		buttons = append(buttons, *approveAppBtn)
 
 		rejectAppSubject := fmt.Sprintf(subjectTpl, blockId, "reject", workNumber, taskUpdateActionApprovement, login)
-		rejectAppBtn := getButton(mailto, rejectAppSubject, "Отклонить")
+		rejectAppBtn := getButton(mailto, rejectAppSubject, "Отклонить", "otklonButton.png")
 		buttons = append(buttons, *rejectAppBtn)
 	}
 
 	if isEditable {
 		sendEditAppSubject := fmt.Sprintf(subjectTpl, blockId, "", workNumber, actionApproverSendEditApp, login)
-		sendEditAppBtn := getButton(mailto, sendEditAppSubject, "Вернуть на доработку")
+		sendEditAppBtn := getButton(mailto, sendEditAppSubject, "Вернуть на доработку", "naDorabotkuButton.png")
 		buttons = append(buttons, *sendEditAppBtn)
 	}
 
@@ -933,10 +949,10 @@ func getApproverButtons(workNumber, mailto, blockId, login string, actions []Act
 
 func getExecutionButtons(workNumber, mailto, blockId, executed, rejected, login string, isEditable bool) []Button {
 	executedSubject := fmt.Sprintf(subjectTpl, blockId, executed, workNumber, taskUpdateActionExecution, login)
-	executedBtn := getButton(mailto, executedSubject, "Решить")
+	executedBtn := getButton(mailto, executedSubject, "Решить", "reshitButton.png")
 
 	rejectedSubject := fmt.Sprintf(subjectTpl, blockId, rejected, workNumber, taskUpdateActionExecution, login)
-	rejectedBtn := getButton(mailto, rejectedSubject, "Отклонить")
+	rejectedBtn := getButton(mailto, rejectedSubject, "Отклонить", "otklonButton.png")
 
 	buttons := []Button{
 		*executedBtn,
@@ -945,7 +961,7 @@ func getExecutionButtons(workNumber, mailto, blockId, executed, rejected, login 
 
 	if isEditable {
 		sendEditAppSubject := fmt.Sprintf(subjectTpl, blockId, "", workNumber, actionExecutorSendEditApp, login)
-		sendEditAppBtn := getButton(mailto, sendEditAppSubject, "Вернуть на доработку")
+		sendEditAppBtn := getButton(mailto, sendEditAppSubject, "Вернуть на доработку", "naDorabotkuButton.png")
 		buttons = append(buttons, *sendEditAppBtn)
 	}
 
@@ -967,6 +983,6 @@ func getLastWorksForTemplate(lastWorks []*entity.EriusTask, sdUrl string) LastWo
 }
 
 type Button struct {
-	Href  string `json:"href"`
-	Title string `json:"title"`
+	Href string `json:"href"`
+	Img  string `json:"img"`
 }

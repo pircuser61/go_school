@@ -317,7 +317,6 @@ func (gb *GoFormBlock) handleNotifications(ctx c.Context) error {
 				Login:      login,
 				Deadline:   gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(time.Now(), gb.State.SLA, slaInfoPtr),
 			}, gb.State.IsReentry)
-
 			fileNames = append(fileNames, vRabotuBtn)
 		} else {
 

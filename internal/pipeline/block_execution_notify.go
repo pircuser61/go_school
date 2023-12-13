@@ -87,7 +87,7 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 	})
 
 	filesNames := make([]string, 0)
-
+	var buttons []mail.Button
 	if getSlaInfoErr != nil {
 		return getSlaInfoErr
 	}
@@ -112,7 +112,6 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 					Deadline:    gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(time.Now(), gb.State.SLA, slaInfoPtr),
 				},
 			)
-
 			filesNames = append(filesNames, vRabotuBtn)
 		} else {
 			author, errAuthor := gb.RunContext.Services.People.GetUser(ctx, gb.RunContext.Initiator)
@@ -125,7 +124,7 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 				return err
 			}
 
-			emails[email] = mail.NewAppPersonStatusNotificationTpl(
+			emails[email], _ = mail.NewAppPersonStatusNotificationTpl(
 				&mail.NewAppPersonStatusTpl{
 					WorkNumber:  gb.RunContext.WorkNumber,
 					Name:        gb.RunContext.NotifName,
@@ -148,9 +147,11 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 			if initiatorInfo != nil {
 				filesNames = append(filesNames, userImg)
 			}
-
-			filesNames = append(filesNames, reshitBtn, otkBtn)
 		}
+	}
+
+	for _, v := range buttons {
+		filesNames = append(filesNames, v.Img)
 	}
 
 	for i := range emails {
@@ -158,10 +159,6 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 
 		iconsName := []string{item.Image}
 		iconsName = append(iconsName, filesNames...)
-
-		if gb.State.GetIsEditable() {
-			iconsName = append(iconsName, dorabotkaBtn)
-		}
 
 		if len(lastWorksForUser) != 0 {
 			iconsName = append(iconsName, warningImg)
@@ -172,7 +169,7 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 			if link {
 				attachFiles, ok := links.([]file_registry.AttachInfo)
 				if ok && len(attachFiles) != 0 {
-					descIcons := []string{documentImg, downloadImg}
+					descIcons := []string{downloadImg}
 					iconsName = append(iconsName, descIcons...)
 					break
 				}

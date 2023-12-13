@@ -814,7 +814,7 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 		if link {
 			attachFiles, ok := links.([]file_registry.AttachInfo)
 			if ok && len(attachFiles) != 0 {
-				descIcons := []string{documentImg, downloadImg}
+				descIcons := []string{downloadImg}
 				iconsName = append(iconsName, descIcons...)
 				break
 			}
@@ -856,7 +856,8 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 		return err
 	}
 
-	tpl = mail.NewAppPersonStatusNotificationTpl(
+	var buttons []mail.Button
+	tpl, buttons = mail.NewAppPersonStatusNotificationTpl(
 		&mail.NewAppPersonStatusTpl{
 			WorkNumber:  gb.RunContext.WorkNumber,
 			Name:        gb.RunContext.NotifName,
@@ -876,10 +877,10 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 			LastWorks:                 lastWorksForUser,
 		})
 
-	iconsName = []string{tpl.Image, userImg, reshitBtn, otkBtn}
+	iconsName = []string{tpl.Image, userImg}
 
-	if gb.State.GetIsEditable() {
-		iconsName = append(iconsName, dorabotkaBtn)
+	for _, v := range buttons {
+		iconsName = append(iconsName, v.Img)
 	}
 
 	if len(lastWorksForUser) != 0 {
