@@ -292,10 +292,13 @@ func (gb *GoSignBlock) handleBreachedSLA(ctx c.Context) error {
 			}
 			emails = append(emails, eml)
 		}
-		tpl := mail.NewSignSLAExpiredTemplate(
-			gb.RunContext.WorkNumber,
-			gb.RunContext.WorkTitle,
-			gb.RunContext.Services.Sender.SdAddress,
+
+		err := gb.RunContext.Services.Sender.SendNotification(ctx, emails, nil,
+			mail.NewSignSLAExpiredTemplate(
+				gb.RunContext.WorkNumber,
+				gb.RunContext.NotifName,
+				gb.RunContext.Services.Sender.SdAddress,
+			),
 		)
 
 		filesList := []string{tpl.Image}
