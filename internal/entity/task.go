@@ -105,6 +105,7 @@ type EriusTask struct {
 	Total                  int                 `json:"-"`
 	AttachmentsCount       *int                `json:"attachments_count"`
 	IsTest                 bool                `json:"-"`
+	CustomTitle            string              `json:"-"`
 	StatusComment          string              `json:"status_comment"`
 	StatusAuthor           string              `json:"status_author"`
 

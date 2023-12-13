@@ -995,7 +995,6 @@ func (db *PGCon) getTask(ctx c.Context, delegators []string, q, workNumber strin
 	var nullStringParameters sql.NullString
 	var actionData []byte
 	var nodeGroups string
-	var customTitle string
 
 	row := db.Connection.QueryRow(ctx, q, workNumber)
 
@@ -1012,7 +1011,7 @@ func (db *PGCon) getTask(ctx c.Context, delegators []string, q, workNumber strin
 		&et.VersionID,
 		&et.WorkNumber,
 		&et.Name,
-		&customTitle,
+		&et.CustomTitle,
 		&et.Description,
 		&et.BlueprintID,
 		&et.Rate,
@@ -1029,7 +1028,7 @@ func (db *PGCon) getTask(ctx c.Context, delegators []string, q, workNumber strin
 		return nil, err
 	}
 
-	et.Name = utils.MakeTaskTitle(et.Name, customTitle, et.IsTest)
+	et.Name = utils.MakeTaskTitle(et.Name, et.CustomTitle, et.IsTest)
 
 	var actions []DbTaskAction
 	if actionData != nil {
@@ -1260,7 +1259,6 @@ func (db *PGCon) getTasks(ctx c.Context, filters *entity.TaskFilter,
 		et := entity.EriusTask{}
 		var nullStringParameters sql.NullString
 		var actionData []byte
-		var customTitle string
 
 		err = rows.Scan(
 			&et.ID,
@@ -1274,7 +1272,7 @@ func (db *PGCon) getTasks(ctx c.Context, filters *entity.TaskFilter,
 			&et.VersionID,
 			&et.WorkNumber,
 			&et.Name,
-			&customTitle,
+			&et.CustomTitle,
 			&et.IsTest,
 			&et.Description,
 			&et.BlueprintID,
@@ -1288,7 +1286,7 @@ func (db *PGCon) getTasks(ctx c.Context, filters *entity.TaskFilter,
 			return nil, err
 		}
 
-		et.Name = utils.MakeTaskTitle(et.Name, customTitle, et.IsTest)
+		et.Name = utils.MakeTaskTitle(et.Name, et.CustomTitle, et.IsTest)
 
 		if nullStringParameters.Valid && nullStringParameters.String != "" {
 			err = json.Unmarshal([]byte(nullStringParameters.String), &et.Parameters)
