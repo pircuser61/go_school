@@ -4416,6 +4416,8 @@ components:
           type: string
         is_test_application:
           type: boolean
+        custom_title:
+          type: string
         description:
           type: string
         keys:

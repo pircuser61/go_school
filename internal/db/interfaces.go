@@ -66,7 +66,7 @@ type TaskStorager interface {
 	CheckUserCanEditForm(ctx c.Context, workNumber string, stepName string, login string) (bool, error)
 	SendTaskToArchive(ctx c.Context, taskID uuid.UUID) (err error)
 	CheckIsArchived(ctx c.Context, taskID uuid.UUID) (bool, error)
-	CheckIsTest(ctx c.Context, taskID uuid.UUID) (bool, error)
+	GetTaskCustomProps(ctx c.Context, taskID uuid.UUID) (*TaskCustomProps, error)
 	StopTaskBlocks(ctx c.Context, taskID uuid.UUID) error
 	FinishTaskBlocks(ctx c.Context, workID uuid.UUID, ignoreSteps []string, updateParent bool) error
 	ParallelIsFinished(ctx c.Context, workNumber, blockName string) (bool, error)
@@ -150,15 +150,16 @@ type SearchPipelineRequest struct {
 }
 
 type StepBreachedSLA struct {
-	TaskID     uuid.UUID
-	WorkNumber string
-	WorkTitle  string
-	Initiator  string
-	VarStore   *store.VariableStore
-	BlockData  *e.EriusFunc
-	StepName   string
-	Action     e.TaskUpdateAction
-	IsTest     bool
+	TaskID      uuid.UUID
+	WorkNumber  string
+	WorkTitle   string
+	Initiator   string
+	VarStore    *store.VariableStore
+	BlockData   *e.EriusFunc
+	StepName    string
+	Action      e.TaskUpdateAction
+	IsTest      bool
+	CustomTitle string
 }
 
 //go:generate mockery --name=Database --structname=MockedDatabase

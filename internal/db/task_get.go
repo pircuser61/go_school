@@ -195,11 +195,13 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 			w.author, 
 			w.version_id,
 			w.work_number,
-			CASE
-        		WHEN w.run_context -> 'initial_application' -> 'is_test_application' = 'true'
-            		THEN concat(p.name, ' (ТЕСТОВАЯ ЗАЯВКА)')
-        		ELSE p.name
-    		END,
+			p.name,
+			CASE 
+			    WHEN w.run_context -> 'initial_application' -> 'custom_title' IS NULL
+			        THEN ''
+			        ELSE w.run_context -> 'initial_application' ->> 'custom_title'
+			END,
+			w.run_context -> 'initial_application' -> 'is_test_application',
 			COALESCE(w.run_context -> 'initial_application' ->> 'description',
                 COALESCE(descr.description, '')),
 			COALESCE(descr.blueprint_id, ''),
@@ -941,11 +943,12 @@ func (db *PGCon) GetTask(
 			w.author,
 			w.version_id,
 			w.work_number,
-			 CASE
-        		WHEN run_context -> 'initial_application' -> 'is_test_application' = 'true'
-            		THEN concat(p.name, ' (ТЕСТОВАЯ ЗАЯВКА)')
-        		ELSE p.name
-    		END,
+			p.name,
+			CASE 
+			    WHEN run_context -> 'initial_application' -> 'custom_title' IS NULL
+			        THEN ''
+			        ELSE run_context -> 'initial_application' ->> 'custom_title'
+			END,
 			COALESCE(w.run_context -> 'initial_application' ->> 'description',
                 COALESCE(descr.description, '')),
 			COALESCE(descr.blueprint_id, ''),
@@ -1008,6 +1011,7 @@ func (db *PGCon) getTask(ctx c.Context, delegators []string, q, workNumber strin
 		&et.VersionID,
 		&et.WorkNumber,
 		&et.Name,
+		&et.CustomTitle,
 		&et.Description,
 		&et.BlueprintID,
 		&et.Rate,
@@ -1023,6 +1027,8 @@ func (db *PGCon) getTask(ctx c.Context, delegators []string, q, workNumber strin
 	if err != nil {
 		return nil, err
 	}
+
+	et.Name = utils.MakeTaskTitle(et.Name, et.CustomTitle, et.IsTest)
 
 	var actions []DbTaskAction
 	if actionData != nil {
@@ -1266,6 +1272,8 @@ func (db *PGCon) getTasks(ctx c.Context, filters *entity.TaskFilter,
 			&et.VersionID,
 			&et.WorkNumber,
 			&et.Name,
+			&et.CustomTitle,
+			&et.IsTest,
 			&et.Description,
 			&et.BlueprintID,
 			&et.Total,
@@ -1277,6 +1285,8 @@ func (db *PGCon) getTasks(ctx c.Context, filters *entity.TaskFilter,
 		if err != nil {
 			return nil, err
 		}
+
+		et.Name = utils.MakeTaskTitle(et.Name, et.CustomTitle, et.IsTest)
 
 		if nullStringParameters.Valid && nullStringParameters.String != "" {
 			err = json.Unmarshal([]byte(nullStringParameters.String), &et.Parameters)
@@ -1382,7 +1392,7 @@ func (db *PGCon) GetFilteredStates(ctx c.Context, steps []string, wNumber string
 
 	// nolint:gocritic
 	// language=PostgreSQL
-	const q = `
+	query := `
 		SELECT vs.content-> 'State'
 		FROM variable_storage vs 
 			WHERE vs.work_id = (SELECT id FROM works 
@@ -1391,7 +1401,11 @@ func (db *PGCon) GetFilteredStates(ctx c.Context, steps []string, wNumber string
 			vs.time = (SELECT max(time) FROM variable_storage WHERE work_id = vs.work_id AND step_name = vs.step_name)
 		ORDER BY vs.time DESC`
 
-	query := fmt.Sprintf(q, buildInExpression(steps))
+	if len(steps) == 0 {
+		query = fmt.Sprintf(query, "('')")
+	} else {
+		query = fmt.Sprintf(query, buildInExpression(steps))
+	}
 
 	res := make([]map[string]map[string]interface{}, 0)
 	rows, err := db.Connection.Query(ctx, query, wNumber)
@@ -1937,21 +1951,35 @@ func (db *PGCon) GetTaskMembers(ctx c.Context, workNumber string, fromActiveNode
 	return members, nil
 }
 
-func (db *PGCon) CheckIsTest(ctx c.Context, taskID uuid.UUID) (bool, error) {
-	ctx, span := trace.StartSpan(ctx, "check_is_test")
+type TaskCustomProps struct {
+	IsTest      bool
+	CustomTitle string
+}
+
+func (db *PGCon) GetTaskCustomProps(ctx c.Context, taskID uuid.UUID) (*TaskCustomProps, error) {
+	ctx, span := trace.StartSpan(ctx, "get_task_custom_props")
 	defer span.End()
 
-	q := `
-		SELECT run_context -> 'initial_application' -> 'is_test_application'
+	const q = `
+		SELECT run_context -> 'initial_application' -> 'is_test_application',
+		       CASE 
+			    WHEN run_context -> 'initial_application' -> 'custom_title' IS NULL
+			        THEN ''
+			        ELSE run_context -> 'initial_application' ->> 'custom_title'
+				END
 		FROM works
 		WHERE id = $1`
 
 	var isTest bool
-	if err := db.Connection.QueryRow(ctx, q, taskID).Scan(&isTest); err != nil {
-		return false, err
+	var customTitle string
+	if err := db.Connection.QueryRow(ctx, q, taskID).Scan(&isTest, &customTitle); err != nil {
+		return nil, err
 	}
 
-	return isTest, nil
+	return &TaskCustomProps{
+		IsTest:      isTest,
+		CustomTitle: customTitle,
+	}, nil
 }
 func (db *PGCon) GetExecutorsFromPrevExecutionBlockRun(ctx c.Context, taskID uuid.UUID, name string) (
 	exec map[string]struct{}, err error) {

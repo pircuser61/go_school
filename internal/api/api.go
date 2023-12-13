@@ -1668,6 +1668,7 @@ type RunVersionBody map[string]interface{}
 type RunVersionsByPipelineIdRequest struct {
 	ApplicationBody   map[string]interface{}              `json:"application_body"`
 	AttachmentFields  []Attachment                        `json:"attachment_fields"`
+	CustomTitle       *string                             `json:"custom_title,omitempty"`
 	Description       string                              `json:"description"`
 	IsTestApplication *bool                               `json:"is_test_application,omitempty"`
 	Keys              RunVersionsByPipelineIdRequest_Keys `json:"keys"`

@@ -103,27 +103,8 @@ func (_m *MockedDatabase) CheckIsArchived(ctx context.Context, taskID uuid.UUID)
 }
 
 // CheckIsTest provides a mock function with given fields: ctx, taskID
-func (_m *MockedDatabase) CheckIsTest(ctx context.Context, taskID uuid.UUID) (bool, error) {
-	ret := _m.Called(ctx, taskID)
-
-	var r0 bool
-	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) (bool, error)); ok {
-		return rf(ctx, taskID)
-	}
-	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) bool); ok {
-		r0 = rf(ctx, taskID)
-	} else {
-		r0 = ret.Get(0).(bool)
-	}
-
-	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
-		r1 = rf(ctx, taskID)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
+func (_m *MockedDatabase) GetTaskCustomProps(ctx context.Context, taskID uuid.UUID) (*db.TaskCustomProps, error) {
+	return nil, nil
 }
 
 // CheckPipelineNameExists provides a mock function with given fields: _a0, _a1, _a2

@@ -105,6 +105,7 @@ type EriusTask struct {
 	Total                  int                 `json:"-"`
 	AttachmentsCount       *int                `json:"attachments_count"`
 	IsTest                 bool                `json:"-"`
+	CustomTitle            string              `json:"-"`
 	StatusComment          string              `json:"status_comment"`
 	StatusAuthor           string              `json:"status_author"`
 
@@ -262,6 +263,7 @@ type InitialApplication struct {
 	AttachmentFields          []string              `json:"attachment_fields"`
 	Keys                      map[string]string     `json:"keys"`
 	IsTestApplication         bool                  `json:"is_test_application"`
+	CustomTitle               string                `json:"custom_title"`
 	ApplicationBodyFromSystem orderedmap.OrderedMap `json:"application_body_from_system"`
 }
 

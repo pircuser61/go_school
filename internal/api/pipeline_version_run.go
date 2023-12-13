@@ -160,6 +160,7 @@ type runVersionByPipelineIDRequest struct {
 	AttachmentFields  []string              `json:"attachment_fields"`
 	Keys              map[string]string     `json:"keys"`
 	IsTestApplication bool                  `json:"is_test_application"`
+	CustomTitle       string                `json:"custom_title"`
 }
 
 //nolint:gocyclo //its ok here
@@ -276,6 +277,7 @@ func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request
 				AttachmentFields:          req.AttachmentFields,
 				IsTestApplication:         req.IsTestApplication,
 				ApplicationBodyFromSystem: req.ApplicationBody,
+				CustomTitle:               req.CustomTitle,
 			},
 		},
 	})

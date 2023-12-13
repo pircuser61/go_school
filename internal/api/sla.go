@@ -13,6 +13,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
+	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
 func (ae *APIEnv) handleBreachSlA(ctx c.Context, item db.StepBreachedSLA) {
@@ -35,10 +36,6 @@ func (ae *APIEnv) handleBreachSlA(ctx c.Context, item db.StepBreachedSLA) {
 		}
 	}()
 
-	notifName := item.WorkTitle
-	if item.IsTest {
-		notifName = notifName + " (ТЕСТОВАЯ ЗАЯВКА)"
-	}
 	// goroutines?
 	runCtx := &pipeline.BlockRunContext{
 		TaskID:     item.TaskID,
@@ -69,7 +66,7 @@ func (ae *APIEnv) handleBreachSlA(ctx c.Context, item db.StepBreachedSLA) {
 			Action: string(item.Action),
 		},
 		IsTest:    item.IsTest,
-		NotifName: notifName,
+		NotifName: utils.MakeTaskTitle(item.WorkTitle, item.CustomTitle, item.IsTest),
 	}
 
 	runCtx.SetTaskEvents(ctx)
