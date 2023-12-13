@@ -2425,7 +2425,11 @@ func (db *PGCon) GetBlocksBreachedSLA(ctx context.Context) ([]StepBreachedSLA, e
 		       vs.step_name,
 		       d.action,
 			   w.run_context -> 'initial_application' -> 'is_test_application' as isTest,
-			   w.run_context -> 'initial_application' ->> 'custom_title' as customTitle
+			   CASE 
+			    	WHEN w.run_context -> 'initial_application' -> 'custom_title' IS NULL
+			        	THEN ''
+			        	ELSE w.run_context -> 'initial_application' ->> 'custom_title'
+				END
 		FROM variable_storage vs 
 		    JOIN works w on vs.work_id = w.id 
 		    JOIN versions v on w.version_id = v.id
