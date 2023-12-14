@@ -88,7 +88,7 @@ func NewApprovementSLATpl(id, name, sdUrl, status string) Template {
 	actionName := getApprovementActionNameByStatus(status, defaultApprovementActionName)
 
 	return Template{
-		Subject:  fmt.Sprintf("Поf  заявке %s %s истекло время %s", id, name, actionName),
+		Subject:  fmt.Sprintf("По заявке %s %s истекло время %s", id, name, actionName),
 		Template: "internal/mail/template/13approvalHasExpired-template.html",
 		Image:    "isteklo_ispolnenie.png",
 		Variables: struct {
@@ -114,17 +114,19 @@ func NewApprovementHalfSLATpl(id, name, sdUrl, status, deadline string, lastWork
 		Template: "internal/mail/template/14approvalExpires-template.html",
 		Image:    "istekaet_soglasovanie.png",
 		Variables: struct {
-			Id        string    `json:"id"`
-			Name      string    `json:"name"`
-			Link      string    `json:"link"`
-			Deadline  string    `json:"deadline"`
-			LastWorks LastWorks `json:"last_works"`
+			Id         string    `json:"id"`
+			Name       string    `json:"name"`
+			Link       string    `json:"link"`
+			Deadline   string    `json:"deadline"`
+			LastWorks  LastWorks `json:"last_works"`
+			ActionName string    `json:"action_name"`
 		}{
-			Id:        id,
-			Name:      name,
-			Link:      fmt.Sprintf(TaskUrlTemplate, sdUrl, id),
-			Deadline:  deadline,
-			LastWorks: lastWorksTemplate,
+			Id:         id,
+			Name:       name,
+			Link:       fmt.Sprintf(TaskUrlTemplate, sdUrl, id),
+			Deadline:   deadline,
+			ActionName: actionName,
+			LastWorks:  lastWorksTemplate,
 		},
 	}
 }
@@ -431,16 +433,37 @@ func isFile(v interface{}) bool {
 
 func NewAppInitiatorStatusNotificationTpl(dto *SignerNotifTemplate) Template {
 	subject := fmt.Sprintf("Заявка %s %s %s", dto.WorkNumber, dto.Name, dto.Action)
-	textPart := fmt.Sprintf(`Уважаемый коллега, <span style="font-weight: 500;">заявка %s %s <b>%s</b></span>`, dto.WorkNumber, dto.Name, dto.Action)
+	textPart := fmt.Sprintf(`Уважаемый коллега, <span
+                  style="
+                    font-family: MTS Text, sans-serif, serif, EmojiFont;
+                    font-size: 17px;
+                    line-height: 24px;
+                    font-weight: 500;
+                  "
+                  ><strong>заявка № %s %s <b>%s</b>.</span>`, dto.WorkNumber, dto.Name, dto.Action)
 
 	if dto.Action == "ознакомлено" {
 		subject = fmt.Sprintf("Ознакомление по заявке %s %s", dto.WorkNumber, dto.Name)
-		textPart = fmt.Sprintf(`Уважаемый коллега,<span style="font-weight: 500;"> заявка %s %s получена виза <b>Ознакомлен</b></span>`, dto.WorkNumber, dto.Name)
+		textPart = fmt.Sprintf(`Уважаемый коллега, <span
+                  style="
+                    font-family: MTS Text, sans-serif, serif, EmojiFont;
+                    font-size: 17px;
+                    line-height: 24px;
+                    font-weight: 500;
+                  "
+                  ><strong>заявка № %s %s получена виза <b>Ознакомлен</b>.</strong></span>`, dto.WorkNumber, dto.Name)
 	}
 
 	if dto.Action == "проинформировано" {
 		subject = fmt.Sprintf("Информирование по заявке %s %s", dto.WorkNumber, dto.Name)
-		textPart = fmt.Sprintf(`Уважаемый коллега, <span style="font-weight: 500;">заявка %s %s получена виза <b>Проинформирован</b></span>`, dto.WorkNumber, dto.Name)
+		textPart = fmt.Sprintf(`Уважаемый коллега, <span
+                  style="
+                    font-family: MTS Text, sans-serif, serif, EmojiFont;
+                    font-size: 17px;
+                    line-height: 24px;
+                    font-weight: 500;
+                  "
+                  ><strong>заявка № %s %s получена виза <b>Проинформирован</b>.</strong></span>`, dto.WorkNumber, dto.Name)
 	}
 
 	return Template{

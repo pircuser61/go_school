@@ -175,7 +175,7 @@
                           "
                           >№ {{ .WorkNumber }} была подана {{if eq .DaysAgo 0 }}
                           сегодня{{ else }} {{ .DaysAgo }} день назад {{ end}}.
-                          Для просмотра заявки перейдите по
+                          Для просмотра перейдите по
                           <a
                             href="{{.Link}}"
                             target="_blank"
@@ -291,7 +291,7 @@
                     истекает.</strong
                   ></span
                 >
-                {{ if .Deadline }} Срок исполнения до {{.Deadline}}. {{ end }}
+                {{ if .Deadline }} Срок {{ .ActionName }} до {{.Deadline}}. {{ end }}
               </p>
               <!-- пустая линия -->
               <p
@@ -332,7 +332,7 @@
                   line-height: 24px;
                 "
               >
-                Для просмотра заявки перейдите по
+                Для просмотра перейдите по
                 <a
                   href="{{.Link}}"
                   target="_blank"

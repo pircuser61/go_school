@@ -524,7 +524,8 @@
                       >
                     </p>
                     <!-- конец пустой линии -->
-                    {{ end }} {{ range $key, $val := retMap $vo }}
+                    {{ end }}
+                    {{ range $key, $val := retMap $vo }}
                     <div>
                       {{ if isUser $val }}
                       <p
@@ -576,106 +577,112 @@
                         >
                       </p>
                       <!-- конец пустой линии -->
-                      {{ else }} {{ if not (isFile $val) }} {{ if isLink $val }}
-                      <p
-                              style="
-                          margin: 0;
-                          padding: 0;
-                          font-family: MTS Compact, sans-serif, serif, EmojiFont;
-                          font-size: 14px;
-                          font-weight: 400;
-                          line-height: 15pt;
-                          color: #626c77;
-                          padding-bottom: 4px;
-                        "
-                      >
-                        {{ $key }}
-                      </p>
-                      <a
-                              href="{{$val}}"
-                              style="
-                          margin: 0;
-                          padding: 0;
-                          text-decoration: none;
-                          font-family: MTS Compact, sans-serif, serif, EmojiFont;
-                          font-size: 17px;
-                          font-weight: 400;
-                          line-height: 18pt;
-                          color: #007cff;
-                        "
-                      >{{ $val }}</a
-                      >
-                      <!-- пустая линия -->
-                      <p
-                              style="
-                          margin: 0cm;
-                          padding: 0;
-                          line-height: 9pt;
-                          vertical-align: baseline;
-                        "
-                      >
-                        <span
+                      {{ else }}
+                        {{ if not (isFile $val) }} {{ if isLink $val }}
+                        <p
                                 style="
-                            font-size: 10pt;
-                            font-family: 'MTS Text', sans-serif, serif,
-                              EmojiFont;
-                            color: transparent;
+                            margin: 0;
+                            padding: 0;
+                            font-family: MTS Compact, sans-serif, serif, EmojiFont;
+                            font-size: 14px;
+                            font-weight: 400;
+                            line-height: 15pt;
+                            color: #626c77;
+                            padding-bottom: 4px;
                           "
-                        >&nbsp;</span
                         >
-                      </p>
-                      <!-- конец пустой линии -->
-                      {{ else }} {{ if checkKey $key }}
-                      <p
-                              style="
-                          margin: 0;
-                          padding: 0;
-                          font-family: MTS Compact, sans-serif, serif, EmojiFont;
-                          font-size: 14px;
-                          font-weight: 400;
-                          line-height: 15pt;
-                          color: #626c77;
-                          padding-bottom: 4px;
-                        "
-                      >
-                        {{ $key }}
-                      </p>
-                      <p
-                              style="
-                          margin: 0;
-                          padding: 0;
-                          font-family: MTS Compact, sans-serif, serif, EmojiFont;
-                          font-size: 17px;
-                          font-weight: 400;
-                          line-height: 18pt;
-                          color: #1d2023;
-                        "
-                      >
-                        {{ $val }}
-                      </p>
-                      <!-- пустая линия -->
-                      <p
-                              style="
-                          margin: 0cm;
-                          padding: 0;
-                          line-height: 9pt;
-                          vertical-align: baseline;
-                        "
-                      >
-                        <span
+                          {{ $key }}
+                        </p>
+                        <a
+                                href="{{$val}}"
                                 style="
-                            font-size: 10pt;
-                            font-family: 'MTS Text', sans-serif, serif,
-                              EmojiFont;
-                            color: transparent;
+                            margin: 0;
+                            padding: 0;
+                            text-decoration: none;
+                            font-family: MTS Compact, sans-serif, serif, EmojiFont;
+                            font-size: 17px;
+                            font-weight: 400;
+                            line-height: 18pt;
+                            color: #007cff;
                           "
-                        >&nbsp;</span
+                        >{{ $val }}</a
                         >
-                      </p>
-                      <!-- конец пустой линии -->
-                    </div>
-                    {{ end }} {{ end }} {{ end }} {{ end }} {{ end }} {{ if
-                    (index $item "attachLinks") }}
+                        <!-- пустая линия -->
+                        <p
+                                style="
+                            margin: 0cm;
+                            padding: 0;
+                            line-height: 9pt;
+                            vertical-align: baseline;
+                          "
+                        >
+                          <span
+                                  style="
+                              font-size: 10pt;
+                              font-family: 'MTS Text', sans-serif, serif,
+                                EmojiFont;
+                              color: transparent;
+                            "
+                          >&nbsp;</span
+                          >
+                        </p>
+                        <!-- конец пустой линии -->
+                        {{ else }}
+                          {{ if checkKey $key }}
+                          <p
+                                  style="
+                              margin: 0;
+                              padding: 0;
+                              font-family: MTS Compact, sans-serif, serif, EmojiFont;
+                              font-size: 14px;
+                              font-weight: 400;
+                              line-height: 15pt;
+                              color: #626c77;
+                              padding-bottom: 4px;
+                            "
+                          >
+                            {{ $key }}
+                          </p>
+                          <p
+                                  style="
+                              margin: 0;
+                              padding: 0;
+                              font-family: MTS Compact, sans-serif, serif, EmojiFont;
+                              font-size: 17px;
+                              font-weight: 400;
+                              line-height: 18pt;
+                              color: #1d2023;
+                            "
+                          >
+                            {{ $val }}
+                          </p>
+                          <!-- пустая линия -->
+                          <p
+                                  style="
+                              margin: 0cm;
+                              padding: 0;
+                              line-height: 9pt;
+                              vertical-align: baseline;
+                            "
+                          >
+                            <span
+                                    style="
+                                font-size: 10pt;
+                                font-family: 'MTS Text', sans-serif, serif,
+                                  EmojiFont;
+                                color: transparent;
+                              "
+                            >&nbsp;</span
+                            >
+                          </p>
+                          <!-- конец пустой линии -->
+                        </div>
+                        {{ end }}
+                      {{ end }}
+                    {{ end }}
+                  {{ end }}
+                {{ end }}
+                    {{ if (index $item "attachLinks") }}
 
                     <div>
                       <p
@@ -812,7 +819,8 @@
                       >
                     </p>
                     <!-- конец пустой линии -->
-                    {{ end }} {{ if (index $item "attachExist")}}
+                    {{ end }}
+                    {{ if (index $item "attachExist")}}
                     <div>
                       <p
                               style="
