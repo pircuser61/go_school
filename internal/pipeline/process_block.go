@@ -497,6 +497,7 @@ type handleInitiatorNotifyParams struct {
 func (runCtx *BlockRunContext) handleInitiatorNotify(ctx c.Context, params handleInitiatorNotifyParams) error {
 	const (
 		FormStepType     = "form"
+		TimerStepType    = "timer"
 		FunctionStepType = "executable_function"
 	)
 
@@ -521,7 +522,7 @@ func (runCtx *BlockRunContext) handleInitiatorNotify(ctx c.Context, params handl
 		return nil
 	}
 
-	if params.status == StatusDone && (params.stepType == FormStepType || params.stepType == FunctionStepType) {
+	if params.status == StatusDone && (params.stepType == FormStepType || params.stepType == FunctionStepType || params.stepType == TimerStepType) {
 		return nil
 	}
 
