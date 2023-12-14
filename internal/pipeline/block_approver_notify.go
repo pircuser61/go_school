@@ -143,7 +143,6 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 		}
 
 		templates[email], buttons = mail.NewAppPersonStatusNotificationTpl(tpl)
-
 	}
 
 	for _, v := range buttons {
