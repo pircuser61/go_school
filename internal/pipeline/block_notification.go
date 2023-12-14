@@ -3,10 +3,11 @@ package pipeline
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log"
 	"sort"
 	"strings"
+
+	"github.com/iancoleman/orderedmap"
 
 	"github.com/pkg/errors"
 
@@ -16,6 +17,7 @@ import (
 	file_registry "gitlab.services.mts.ru/jocasta/pipeliner/internal/file-registry"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
@@ -66,33 +68,42 @@ func (gb *GoNotificationBlock) GetTaskHumanStatus() (status TaskHumanStatus, com
 	return "", "", ""
 }
 
-func (gb *GoNotificationBlock) compileText(ctx context.Context) (string, []email.Attachment, error) {
+func (gb *GoNotificationBlock) compileText(ctx context.Context) (*mail.MailNotif, []email.Attachment, error) {
 	author, err := gb.RunContext.Services.People.GetUser(ctx, gb.RunContext.Initiator)
 	if err != nil {
-		return "", nil, err
+		return nil, nil, err
 	}
 
-	typedAuthor, err := author.ToSSOUserTyped()
+	typedAuthor, err := author.ToUserinfo()
 	if err != nil {
-		return "", nil, err
+		return nil, nil, err
 	}
-
-	text := mail.MakeBodyHeader(typedAuthor.Username, typedAuthor.Attributes.FullName,
-		gb.RunContext.Services.Sender.GetApplicationLink(gb.RunContext.WorkNumber), gb.State.Text)
 
 	body, err := gb.RunContext.Services.Storage.GetTaskRunContext(ctx, gb.RunContext.WorkNumber)
 	if err != nil {
-		return "", nil, err
+		return nil, nil, err
 	}
 
-	descr := mail.MakeDescription(body.InitialApplication.ApplicationBody)
-	text = mail.WrapDescription(text, descr)
+	description, files, err := gb.RunContext.makeNotificationDescription(gb.Name)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	//descr := mail.MakeDescription(body.InitialApplication.ApplicationBody)
+
+	tpl := &mail.MailNotif{
+		Title:       gb.State.Text,
+		Body:        gb.State.Subject,
+		Description: description,
+		Link:        gb.RunContext.Services.Sender.GetApplicationLink(gb.RunContext.WorkNumber),
+		Initiator:   typedAuthor,
+	}
 
 	aa := mail.GetAttachmentsFromBody(body.InitialApplication.ApplicationBody)
 
 	attachmentsInfo, err := gb.RunContext.Services.FileRegistry.GetAttachmentsInfo(ctx, aa)
 	if err != nil {
-		return "", nil, err
+		return nil, nil, err
 	}
 
 	filesInfo := make([]file_registry.FileInfo, 0)
@@ -100,23 +111,8 @@ func (gb *GoNotificationBlock) compileText(ctx context.Context) (string, []email
 		filesInfo = append(filesInfo, attachmentsInfo[k]...)
 	}
 
-	requiredFiles, skippedFiles := sortAndFilterAttachments(filesInfo)
-
-	files, err := gb.RunContext.Services.FileRegistry.GetAttachments(ctx, requiredFiles)
-	if err != nil {
-		return "", nil, err
-	}
-
-	text = mail.SwapKeys(text, body.InitialApplication.Keys)
-
-	if len(skippedFiles) > 0 {
-		text = fmt.Sprintf("%s <p>%s</p>", text, "Список файлов, которые не были доставлены в нотификацию:")
-		for i := range skippedFiles {
-			text = fmt.Sprintf("%s <p>%d. %s</p>", text, i+1, skippedFiles[i].Name)
-		}
-	}
-	text = mail.AddStyles(text)
-	return text, files, nil
+	//text = mail.AddStyles(text)
+	return tpl, files, nil
 }
 
 func (gb *GoNotificationBlock) Next(_ *store.VariableStore) ([]string, bool) {
@@ -164,13 +160,55 @@ func (gb *GoNotificationBlock) Update(ctx context.Context) (interface{}, error) 
 		return nil, errors.New("couldn't compile notification text")
 	}
 
-	err = gb.RunContext.Services.Sender.SendNotification(ctx, emails, files, mail.Template{
-		Subject:   gb.State.Subject,
-		Template:  text,
-		Variables: nil,
-	})
+	iconsName := make([]string, 0, 1)
+	for _, v := range text.Description {
+		links, link := v.Get("attachLinks")
+		if link {
+			attachFiles, ok := links.([]file_registry.AttachInfo)
+			if ok && len(attachFiles) != 0 {
+				descIcons := []string{downloadImg}
+				iconsName = append(iconsName, descIcons...)
+				break
+			}
+		}
+	}
 
-	if _, ok := gb.expectedEvents[eventEnd]; ok {
+	tpl := mail.Template{
+		Subject:  gb.State.Subject,
+		Template: "internal/mail/template/28email-template.html",
+		Image:    "28_e-mail.png",
+		Variables: struct {
+			Title       string
+			Body        string
+			Initiator   *sso.UserInfo
+			Description []orderedmap.OrderedMap
+			Link        string
+		}{
+			Title:       text.Title,
+			Body:        text.Body,
+			Initiator:   text.Initiator,
+			Description: text.Description,
+			Link:        text.Link,
+		},
+	}
+
+	fileNames := []string{tpl.Image, userImg}
+	fileNames = append(fileNames, iconsName...)
+
+	filesAttach, err := gb.RunContext.GetIcons(fileNames)
+	if err != nil {
+		return nil, errors.New("couldn't get icons")
+	}
+
+	files = append(files, filesAttach...)
+
+	err = gb.RunContext.Services.Sender.SendNotification(ctx, emails, files, tpl)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
+	if _, oks := gb.expectedEvents[eventEnd]; oks {
 		status, _, _ := gb.GetTaskHumanStatus()
 		event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, MakeNodeEndEventArgs{
 			NodeName:      gb.Name,

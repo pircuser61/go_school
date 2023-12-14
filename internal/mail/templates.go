@@ -59,6 +59,14 @@ type SignerNotifTemplate struct {
 	Action      string
 }
 
+type MailNotif struct {
+	Title       string
+	Body        string
+	Description []orderedmap.OrderedMap
+	Link        string
+	Initiator   *sso.UserInfo
+}
+
 type ExecutorNotifTemplate struct {
 	WorkNumber  string
 	Name        string
@@ -90,7 +98,7 @@ func NewApprovementSLATpl(id, name, sdUrl, status string) Template {
 	return Template{
 		Subject:  fmt.Sprintf("По заявке %s %s истекло время %s", id, name, actionName),
 		Template: "internal/mail/template/13approvalHasExpired-template.html",
-		Image:    "isteklo_ispolnenie.png",
+		Image:    "13_isteklo_sogl.png",
 		Variables: struct {
 			Id   string `json:"id"`
 			Name string `json:"name"`
@@ -112,7 +120,7 @@ func NewApprovementHalfSLATpl(id, name, sdUrl, status, deadline string, lastWork
 	return Template{
 		Subject:  fmt.Sprintf("По заявке %s %s истекает время %s", id, name, actionName),
 		Template: "internal/mail/template/14approvalExpires-template.html",
-		Image:    "istekaet_soglasovanie.png",
+		Image:    "14_istekaet_sogl.png",
 		Variables: struct {
 			Id         string    `json:"id"`
 			Name       string    `json:"name"`
@@ -135,7 +143,7 @@ func NewExecutionSLATpl(id, name, sdUrl string) Template {
 	return Template{
 		Subject:  fmt.Sprintf("По заявке %s %s истекло время исполнения", id, name),
 		Template: "internal/mail/template/19executionExpired-template.html",
-		Image:    "isteklo_ispolnenie.png",
+		Image:    "19_isteklo_isp.png",
 		Variables: struct {
 			Id   string `json:"id"`
 			Name string `json:"name"`
@@ -152,7 +160,7 @@ func NewFormSLATpl(id, name, sdUrl string) Template {
 	return Template{
 		Subject:  fmt.Sprintf("По заявке №%s %s истекло время предоставления дополнительной информации", id, name),
 		Template: "internal/mail/template/32dopInfoIsteklo-template.html",
-		Image:    "dop_info_isteklo.png",
+		Image:    "32_vremja_isteklo.png",
 		Variables: struct {
 			Id   string `json:"id"`
 			Name string `json:"name"`
@@ -170,7 +178,7 @@ func NewExecutiontHalfSLATpl(id, name, sdUrl, deadline string, lastWorks []*enti
 	return Template{
 		Subject:  fmt.Sprintf("По заявке %s %s истекает время исполнения", id, name),
 		Template: "internal/mail/template/20executionExpires-template.html",
-		Image:    "istekaet_ispolnenie.png",
+		Image:    "20_istekaet_isp.png",
 		Variables: struct {
 			Id        string    `json:"id"`
 			Name      string    `json:"name"`
@@ -191,7 +199,7 @@ func NewFormDayHalfSLATpl(id, name, sdUrl, deadline string) Template {
 	return Template{
 		Subject:  fmt.Sprintf("По заявке №%s %s истекает время предоставления информации", id, name),
 		Template: "internal/mail/template/33dopInfoIstekaet-template.html",
-		Image:    "dop_info_istekaet.png",
+		Image:    "33_vremja_istekaet.png",
 		Variables: struct {
 			Name     string `json:"name"`
 			Id       string `json:"id"`
@@ -210,7 +218,7 @@ func NewReworkSLATpl(id, name, sdUrl string, reworkSla int, checkSla bool) Templ
 	return Template{
 		Subject:  fmt.Sprintf("Заявка %s %s автоматически перенесена в архив", id, name),
 		Template: "internal/mail/template/34rejectToarchive-template.html",
-		Image:    "istekla_dorabotka.png",
+		Image:    "34_istjok_srok_ojidaniya_dorabotok.png",
 		Variables: struct {
 			Id       string `json:"id"`
 			Name     string `json:"name"`
@@ -231,7 +239,7 @@ func NewRequestExecutionInfoTpl(id, name, sdUrl string) Template {
 	return Template{
 		Subject:  fmt.Sprintf("Заявка %s %s запрос дополнительной информации", id, name),
 		Template: "internal/mail/template/15moreInfoRequired-template.html",
-		Image:    "dop_info.png",
+		Image:    "15_dop_info_trebuetsya.png",
 		Variables: struct {
 			Id   string `json:"id"`
 			Name string `json:"name"`
@@ -254,7 +262,7 @@ func NewRequestFormExecutionInfoTpl(id, name, sdUrl, deadline string, isReentry 
 	return Template{
 		Subject:  fmt.Sprintf("Заявка № %s %s - Необходимо%s предоставить информацию", id, name, retryStr),
 		Template: "internal/mail/template/29form-template.html",
-		Image:    "dop_info.png",
+		Image:    "29_neobhodimo_predostavit'_info.png",
 		Variables: struct {
 			Id       string
 			Name     string
@@ -291,7 +299,7 @@ func NewFormExecutionNeedTakeInWorkTpl(dto *NewFormExecutionNeedTakeInWorkDto, i
 	return Template{
 		Subject:  fmt.Sprintf("Заявка № %s %s - Необходимо%s предоставить информацию", dto.WorkNumber, dto.WorkTitle, retryStr),
 		Template: "internal/mail/template/39takeInWork-template.html",
-		Image:    "dop_info.png",
+		Image:    "39_neobhodimo_info.png",
 		Variables: struct {
 			Id        string
 			Name      string
@@ -312,7 +320,7 @@ func NewRequestApproverInfoTpl(id, name, sdUrl string) Template {
 	return Template{
 		Subject:  fmt.Sprintf("Заявка %s %s запрос дополнительной информации", id, name),
 		Template: "internal/mail/template/15moreInfoRequired-template.html",
-		Image:    "dop_info.png",
+		Image:    "15_dop_info_trebuetsya.png",
 		Variables: struct {
 			Id   string `json:"id"`
 			Name string `json:"name"`
@@ -328,8 +336,8 @@ func NewRequestApproverInfoTpl(id, name, sdUrl string) Template {
 func NewAnswerApproverInfoTpl(id, name, sdUrl string) Template {
 	return Template{
 		Subject:  fmt.Sprintf("Заявка %s %s запрос дополнительной информации", id, name),
-		Template: "internal/mail/template/16additionalInfoReceived-template.html",
-		Image:    "dop_info_poluchena.png",
+		Template: "internal/mail/template/15moreInfoRequired-template.html",
+		Image:    "15_dop_info_trebuetsya.png",
 		Variables: struct {
 			Id   string `json:"id"`
 			Name string `json:"name"`
@@ -346,7 +354,7 @@ func NewAnswerExecutionInfoTpl(id, name, sdUrl string) Template {
 	return Template{
 		Subject:  fmt.Sprintf("Заявка %s %s получена дополнительная информация", id, name),
 		Template: "internal/mail/template/16additionalInfoReceived-template.html",
-		Image:    "dop_info_poluchena.png",
+		Image:    "16_dop_info_polucheno.png",
 		Variables: struct {
 			Id   string `json:"id"`
 			Name string `json:"name"`
@@ -393,6 +401,36 @@ func isLink(v interface{}) bool {
 	}
 
 	return ok
+}
+
+func checkGroup(desc []orderedmap.OrderedMap) []orderedmap.OrderedMap {
+	for _, item := range desc {
+		for _, v := range item.Keys() {
+			if len(v) < 6 {
+				continue
+			}
+
+			if v[0:5] == "group" {
+				groupMap, ok := item.Get(v)
+				if !ok {
+					return desc
+				}
+
+				group, oks := groupMap.(orderedmap.OrderedMap)
+				if !oks {
+					return desc
+				}
+
+				for key, dVal := range group.Values() {
+					item.Set(key, dVal)
+				}
+
+				item.Delete(v)
+			}
+		}
+	}
+
+	return desc
 }
 
 func checkKey(key string) bool {
@@ -466,10 +504,12 @@ func NewAppInitiatorStatusNotificationTpl(dto *SignerNotifTemplate) Template {
                   ><strong>заявка № %s %s получена виза <b>Проинформирован</b>.</strong></span>`, dto.WorkNumber, dto.Name)
 	}
 
+	dto.Description = checkGroup(dto.Description)
+
 	return Template{
 		Subject:  subject,
 		Template: "internal/mail/template/40newAppInitiator-template.html",
-		Image:    "new_zayavka.png",
+		Image:    "40_answer_po_zayavke.png",
 		Variables: struct {
 			Body        string                  `json:"body"`
 			Description []orderedmap.OrderedMap `json:"description"`
@@ -511,10 +551,12 @@ type NewAppPersonStatusTpl struct {
 }
 
 func NewSignerNotificationTpl(dto *SignerNotifTemplate) Template {
+	dto.Description = checkGroup(dto.Description)
+
 	return Template{
 		Subject:  fmt.Sprintf("Заявка №%s %s ожидает подписания", dto.WorkNumber, dto.Name),
 		Template: "internal/mail/template/26applicationIsAwaitingSignature-template.html",
-		Image:    "ozhidaet_podpisaniya.png",
+		Image:    "26_zayavka_ojidaet_podpis.png",
 		Variables: struct {
 			Id          string
 			Name        string
@@ -561,10 +603,12 @@ func NewAppPersonStatusNotificationTpl(in *NewAppPersonStatusTpl) (Template, []B
 	}
 	lastWorksTemplate := getLastWorksForTemplate(in.LastWorks, in.SdUrl)
 
+	in.Description = checkGroup(in.Description)
+
 	return Template{
 		Subject:  fmt.Sprintf("Заявка %s %s ожидает %s", in.WorkNumber, in.Name, actionName),
 		Template: template,
-		Image:    "ozhidaet_ispolneniya.png",
+		Image:    "11_postupila_na_sogl.png",
 		Variables: struct {
 			Id          string
 			Name        string
@@ -594,7 +638,7 @@ func NewSendToInitiatorEditTpl(id, name, sdUrl string) Template {
 	return Template{
 		Subject:  fmt.Sprintf("Заявка %s %s требует доработки", id, name),
 		Template: "internal/mail/template/17needsImprovement-template.html",
-		Image:    "nuzhna_dorabotka.png",
+		Image:    "17_nujna_dorabotka.png",
 		Variables: struct {
 			Id   string `json:"id"`
 			Name string `json:"name"`
@@ -621,10 +665,12 @@ func NewExecutionNeedTakeInWorkTpl(dto *ExecutorNotifTemplate) Template {
 
 	lastWorksTemplate := getLastWorksForTemplate(dto.LastWorks, dto.SdUrl)
 
+	dto.Description = checkGroup(dto.Description)
+
 	return Template{
 		Subject:  subject,
 		Template: "internal/mail/template/27reassignment-template.html",
-		Image:    "ozhidaet_ispolneniya.png",
+		Image:    "27_zayavka_ojidaet_isp.png",
 		Variables: struct {
 			Id          string
 			Name        string
@@ -649,10 +695,12 @@ func NewExecutionNeedTakeInWorkTpl(dto *ExecutorNotifTemplate) Template {
 
 func NewExecutionTakenInWorkTpl(dto *ExecutorNotifTemplate) Template {
 	lastWorksTemplate := getLastWorksForTemplate(dto.LastWorks, dto.SdUrl)
+	dto.Description = checkGroup(dto.Description)
+
 	return Template{
 		Subject:  fmt.Sprintf("Заявка №%s %s взята в работу пользователем %s", dto.WorkNumber, dto.Name, dto.Executor.FullName),
 		Template: "internal/mail/template/05applicationAccepted-template.html",
-		Image:    "zayavka_vzyata_v_rabotu.png",
+		Image:    "05_zayavka_vzyata_v_rabotu.png",
 		Variables: struct {
 			Id          string
 			Name        string
@@ -678,7 +726,7 @@ func NewAddApproversTpl(id, name, sdUrl, deadline string, lastWorks []*entity.Er
 	return Template{
 		Subject:  fmt.Sprintf("Заявка %s %s ожидает согласования", id, name),
 		Template: "internal/mail/template/42receivedForApproval-template.html",
-		Image:    "ozhidaet_ispolneniya.png",
+		Image:    "42_zayavka_ojidaet_sogl.png",
 		Variables: struct {
 			Id        string    `json:"id"`
 			Name      string    `json:"name"`
@@ -699,7 +747,7 @@ func NewDecisionMadeByAdditionalApprover(id, name, decision, comment, sdUrl stri
 	return Template{
 		Subject:  fmt.Sprintf("Получена рецензия по Заявке №%s %s", id, name),
 		Template: "internal/mail/template/18reviewReceived-template.html",
-		Image:    "poluchena_retsenzia.png",
+		Image:    "18_poluchena_recenziya.png",
 		Variables: struct {
 			Id       string `json:"id"`
 			Name     string `json:"name"`
@@ -722,7 +770,7 @@ func NewDayBeforeRequestAddInfoSLABreached(id, name, sdUrl string) Template {
 	return Template{
 		Subject:  fmt.Sprintf("По заявке №%s %s требуется дополнительная информация", id, name),
 		Template: "internal/mail/template/41infoWithinOneBusinessDay-template.html",
-		Image:    "dop_info.png",
+		Image:    "41_neobhodimo_dop_info.png",
 		Variables: struct {
 			Id   string `json:"id"`
 			Name string `json:"name"`
@@ -739,17 +787,15 @@ func NewRequestAddInfoSLABreached(id, name, sdUrl string, reworkSla int) Templat
 	return Template{
 		Subject:  fmt.Sprintf("Заявка №%s %s автоматически перенесена в архив", id, name),
 		Template: "internal/mail/template/36notGetDopInfo-template.html",
-		Image:    "dop_info_isteklo.png",
+		Image:    "36_avto_perenesena_v_archiv.png",
 		Variables: struct {
-			Id       string `json:"id"`
-			Name     string `json:"name"`
-			Link     string `json:"link"`
-			Duration string `json:"duration"`
+			Id   string `json:"id"`
+			Name string `json:"name"`
+			Link string `json:"link"`
 		}{
-			Id:       id,
-			Name:     name,
-			Link:     fmt.Sprintf(TaskUrlTemplate, sdUrl, id),
-			Duration: strconv.Itoa(reworkSla / 8),
+			Id:   id,
+			Name: name,
+			Link: fmt.Sprintf(TaskUrlTemplate, sdUrl, id),
 		},
 	}
 }
@@ -758,7 +804,7 @@ func NewInvalidFunctionResp(id, name, sdUrl string) Template {
 	return Template{
 		Subject:  fmt.Sprintf("По заявке №%s %s не удалось получить обратную связь от внешней системы", id, name),
 		Template: "internal/mail/template/35errorRespOtherSystem-template.html",
-		Image:    "oshibka_other.png",
+		Image:    "35_ne_poluchili_obr_svyaz'.png",
 		Variables: struct {
 			Id   string
 			Name string
@@ -772,10 +818,12 @@ func NewInvalidFunctionResp(id, name, sdUrl string) Template {
 }
 
 func NewFormExecutionTakenInWorkTpl(dto *ExecutorNotifTemplate) Template {
+	dto.Description = checkGroup(dto.Description)
+
 	return Template{
 		Subject:  fmt.Sprintf("Заявка № %s %s взята в работу пользователем %s", dto.WorkNumber, dto.Name, dto.Executor.FullName),
 		Template: "internal/mail/template/05applicationAccepted-template.html",
-		Image:    "zayavka_vzyata_v_rabotu.png",
+		Image:    "05_zayavka_vzyata_v_rabotu.png",
 		Variables: struct {
 			Id          string `json:"id"`
 			Name        string `json:"name"`
@@ -800,7 +848,7 @@ func NewFormPersonExecutionNotificationTemplate(workNumber, workTitle, sdUrl, de
 	return Template{
 		Subject:  fmt.Sprintf("Заявка № %s %s - Необходимо предоставить информацию", workNumber, workTitle),
 		Template: "internal/mail/template/29form-template.html",
-		Image:    "dop_info.png",
+		Image:    "29_neobhodimo_predostavit'_info.png",
 		Variables: struct {
 			Id       string
 			Name     string
@@ -819,7 +867,7 @@ func NewRejectPipelineGroupTemplate(workNumber, workTitle, sdUrl string) Templat
 	return Template{
 		Subject:  fmt.Sprintf("Заявка № %s %s - отозвана", workNumber, workTitle),
 		Template: "internal/mail/template/24applicationWithdrawn-template.html",
-		Image:    "otozvana.png",
+		Image:    "24_zayavka_otozvana_inic.png",
 		Variables: struct {
 			Id   string `json:"id"`
 			Name string `json:"name"`
@@ -836,7 +884,7 @@ func NewSignSLAExpiredTemplate(workNumber, workTitle, sdUrl string) Template {
 	return Template{
 		Subject:  fmt.Sprintf("По заявке № %s %s- истекло время подписания", workNumber, workTitle),
 		Template: "internal/mail/template/37SignIsteklo-template.html",
-		Image:    "isteklo_podpisanie.png",
+		Image:    "37_isteklo_vremja_podpisanija.png",
 		Variables: struct {
 			Id   string `json:"id"`
 			Name string `json:"name"`
@@ -871,7 +919,7 @@ func NewSignErrorTemplate(workNumber, name, sdUrl string) Template {
 	return Template{
 		Subject:  fmt.Sprintf("По заявке № %s - возникла ошибка подписания", workNumber),
 		Template: "internal/mail/template/31signingError-template.html",
-		Image:    "oshibka_podisania.png",
+		Image:    "31_oshibka_podpisaniya.png",
 		Variables: struct {
 			Id   string `json:"id"`
 			Name string `json:"name"`
