@@ -142,7 +142,7 @@ func (gb *GoApproverBlock) handleBreachedSLA(ctx c.Context) error {
 			gb.RunContext.WorkNumber,
 			gb.RunContext.NotifName,
 			gb.RunContext.Services.Sender.SdAddress,
-			gb.State.WorkType,
+			gb.State.ApproveStatusName,
 		)
 
 		filesList := []string{tpl.Image}

@@ -96,7 +96,7 @@ func NewApprovementSLATpl(id, name, sdUrl, status string) Template {
 	actionName := getApprovementActionNameByStatus(status, defaultApprovementActionName)
 
 	return Template{
-		Subject:  fmt.Sprintf("По заявке %s %s истекло время %s", id, name, actionName),
+		Subject:  fmt.Sprintf("По заявке № %s %s истекло время %s", id, name, actionName),
 		Template: "internal/mail/template/13approvalHasExpired-template.html",
 		Image:    "13_isteklo_sogl.png",
 		Variables: struct {
@@ -120,7 +120,7 @@ func NewApprovementHalfSLATpl(id, name, sdUrl, status, deadline string, lastWork
 	lastWorksTemplate := getLastWorksForTemplate(lastWorks, sdUrl)
 
 	return Template{
-		Subject:  fmt.Sprintf("По заявке %s %s истекает время %s", id, name, actionName),
+		Subject:  fmt.Sprintf("По заявке № %s %s истекает время %s", id, name, actionName),
 		Template: "internal/mail/template/14approvalExpires-template.html",
 		Image:    "14_istekaet_sogl.png",
 		Variables: struct {
@@ -143,7 +143,7 @@ func NewApprovementHalfSLATpl(id, name, sdUrl, status, deadline string, lastWork
 
 func NewExecutionSLATpl(id, name, sdUrl string) Template {
 	return Template{
-		Subject:  fmt.Sprintf("По заявке %s %s истекло время исполнения", id, name),
+		Subject:  fmt.Sprintf("По заявке № %s %s истекло время исполнения", id, name),
 		Template: "internal/mail/template/19executionExpired-template.html",
 		Image:    "19_isteklo_isp.png",
 		Variables: struct {
@@ -160,7 +160,7 @@ func NewExecutionSLATpl(id, name, sdUrl string) Template {
 
 func NewFormSLATpl(id, name, sdUrl string) Template {
 	return Template{
-		Subject:  fmt.Sprintf("По заявке №%s %s истекло время предоставления дополнительной информации", id, name),
+		Subject:  fmt.Sprintf("По заявке № %s %s истекло время предоставления дополнительной информации", id, name),
 		Template: "internal/mail/template/32dopInfoIsteklo-template.html",
 		Image:    "32_vremja_isteklo.png",
 		Variables: struct {
@@ -178,7 +178,7 @@ func NewFormSLATpl(id, name, sdUrl string) Template {
 func NewExecutiontHalfSLATpl(id, name, sdUrl, deadline string, lastWorks []*entity.EriusTask) Template {
 	lastWorksTemplate := getLastWorksForTemplate(lastWorks, sdUrl)
 	return Template{
-		Subject:  fmt.Sprintf("По заявке %s %s истекает время исполнения", id, name),
+		Subject:  fmt.Sprintf("По заявке № %s %s истекает время выполнения", id, name),
 		Template: "internal/mail/template/20executionExpires-template.html",
 		Image:    "20_istekaet_isp.png",
 		Variables: struct {
@@ -199,7 +199,7 @@ func NewExecutiontHalfSLATpl(id, name, sdUrl, deadline string, lastWorks []*enti
 
 func NewFormDayHalfSLATpl(id, name, sdUrl, deadline string) Template {
 	return Template{
-		Subject:  fmt.Sprintf("По заявке №%s %s истекает время предоставления информации", id, name),
+		Subject:  fmt.Sprintf("По заявке № %s %s истекает время предоставления информации", id, name),
 		Template: "internal/mail/template/33dopInfoIstekaet-template.html",
 		Image:    "33_vremja_istekaet.png",
 		Variables: struct {
@@ -218,7 +218,7 @@ func NewFormDayHalfSLATpl(id, name, sdUrl, deadline string) Template {
 
 func NewReworkSLATpl(id, name, sdUrl string, reworkSla int, checkSla bool) Template {
 	return Template{
-		Subject:  fmt.Sprintf("Заявка %s %s автоматически перенесена в архив", id, name),
+		Subject:  fmt.Sprintf("Заявка № %s %s автоматически перенесена в архив", id, name),
 		Template: "internal/mail/template/34rejectToarchive-template.html",
 		Image:    "34_istjok_srok_ojidaniya_dorabotok.png",
 		Variables: struct {
@@ -239,7 +239,7 @@ func NewReworkSLATpl(id, name, sdUrl string, reworkSla int, checkSla bool) Templ
 
 func NewRequestExecutionInfoTpl(id, name, sdUrl string) Template {
 	return Template{
-		Subject:  fmt.Sprintf("Заявка %s %s запрос дополнительной информации", id, name),
+		Subject:  fmt.Sprintf("Заявка № %s %s запрос дополнительной информации", id, name),
 		Template: "internal/mail/template/15moreInfoRequired-template.html",
 		Image:    "15_dop_info_trebuetsya.png",
 		Variables: struct {
@@ -320,7 +320,7 @@ func NewFormExecutionNeedTakeInWorkTpl(dto *NewFormExecutionNeedTakeInWorkDto, i
 
 func NewRequestApproverInfoTpl(id, name, sdUrl string) Template {
 	return Template{
-		Subject:  fmt.Sprintf("Заявка %s %s запрос дополнительной информации", id, name),
+		Subject:  fmt.Sprintf("Заявка № %s %s запрос дополнительной информации", id, name),
 		Template: "internal/mail/template/15moreInfoRequired-template.html",
 		Image:    "15_dop_info_trebuetsya.png",
 		Variables: struct {
@@ -337,7 +337,7 @@ func NewRequestApproverInfoTpl(id, name, sdUrl string) Template {
 
 func NewAnswerApproverInfoTpl(id, name, sdUrl string) Template {
 	return Template{
-		Subject:  fmt.Sprintf("Заявка %s %s запрос дополнительной информации", id, name),
+		Subject:  fmt.Sprintf("Заявка № %s %s запрос дополнительной информации", id, name),
 		Template: "internal/mail/template/15moreInfoRequired-template.html",
 		Image:    "15_dop_info_trebuetsya.png",
 		Variables: struct {
@@ -354,7 +354,7 @@ func NewAnswerApproverInfoTpl(id, name, sdUrl string) Template {
 
 func NewAnswerExecutionInfoTpl(id, name, sdUrl string) Template {
 	return Template{
-		Subject:  fmt.Sprintf("Заявка %s %s получена дополнительная информация", id, name),
+		Subject:  fmt.Sprintf("Заявка № %s %s получена дополнительная информация", id, name),
 		Template: "internal/mail/template/16additionalInfoReceived-template.html",
 		Image:    "16_dop_info_polucheno.png",
 		Variables: struct {
@@ -412,52 +412,56 @@ func CheckGroup(desc []orderedmap.OrderedMap) []orderedmap.OrderedMap {
 				continue
 			}
 
-			if s, ok := v.(bool); ok {
+			if boolBlock, ok := v.(bool); ok {
 				answer := "Нет"
-				if s {
+				if boolBlock {
 					answer = "Да"
 				}
 				item.Set(key, answer)
 			}
 
-			if field, ok := v.(orderedmap.OrderedMap); ok {
-				if isUser(field) {
-					continue
-				}
+			field, ok := v.(orderedmap.OrderedMap)
+			if !ok {
+				continue
+			}
 
-				groupMap, oks := item.Get(key)
-				if !oks {
-					continue
-				}
+			if isUser(field) {
+				continue
+			}
 
-				switch group := groupMap.(type) {
-				case orderedmap.OrderedMap:
-					for keys, dVal := range group.Values() {
-						switch itemGroup := dVal.(type) {
-						case []interface{}:
-							s := make([]string, 0, len(itemGroup))
-							for _, vars := range itemGroup {
-								if str, strOk := vars.(string); strOk {
-									s = append(s, str)
-								}
+			groupMap, oks := item.Get(key)
+			if !oks {
+				continue
+			}
+
+			switch group := groupMap.(type) {
+			case orderedmap.OrderedMap:
+				for keys, dVal := range group.Values() {
+					switch itemGroup := dVal.(type) {
+					case []interface{}:
+						arrayBlock := make([]string, 0, len(itemGroup))
+						for _, vars := range itemGroup {
+							if str, strOk := vars.(string); strOk {
+								arrayBlock = append(arrayBlock, str)
 							}
+						}
 
-							if cap(s) != 0 {
-								text := strings.Join(s, `, `)
-								item.Set(keys, text)
-								continue
-							}
+						if cap(arrayBlock) != 0 {
+							text := strings.Join(arrayBlock, `, `)
+							item.Set(keys, text)
+							continue
+						}
 
-							if len(itemGroup) != 0 {
-								item.Set(keys, dVal)
-							}
-						default:
+						if len(itemGroup) != 0 {
 							item.Set(keys, dVal)
 						}
+					default:
+						item.Set(keys, dVal)
 					}
 				}
-				item.Delete(key)
 			}
+			item.Delete(key)
+
 		}
 	}
 
@@ -501,7 +505,7 @@ func isFile(v interface{}) bool {
 }
 
 func NewAppInitiatorStatusNotificationTpl(dto *SignerNotifTemplate) Template {
-	subject := fmt.Sprintf("Заявка %s %s %s", dto.WorkNumber, dto.Name, dto.Action)
+	subject := fmt.Sprintf("Заявка № %s %s %s", dto.WorkNumber, dto.Name, dto.Action)
 	textPart := fmt.Sprintf(`Уважаемый коллега, <span
                   style="
                     font-family: MTS Text, sans-serif, serif, EmojiFont;
@@ -512,7 +516,7 @@ func NewAppInitiatorStatusNotificationTpl(dto *SignerNotifTemplate) Template {
                   ><strong>заявка № %s %s <b>%s</b>.</span>`, dto.WorkNumber, dto.Name, dto.Action)
 
 	if dto.Action == "ознакомлено" {
-		subject = fmt.Sprintf("Ознакомление по заявке %s %s", dto.WorkNumber, dto.Name)
+		subject = fmt.Sprintf("Ознакомление по заявке № %s %s", dto.WorkNumber, dto.Name)
 		textPart = fmt.Sprintf(`Уважаемый коллега, <span
                   style="
                     font-family: MTS Text, sans-serif, serif, EmojiFont;
@@ -524,7 +528,7 @@ func NewAppInitiatorStatusNotificationTpl(dto *SignerNotifTemplate) Template {
 	}
 
 	if dto.Action == "проинформировано" {
-		subject = fmt.Sprintf("Информирование по заявке %s %s", dto.WorkNumber, dto.Name)
+		subject = fmt.Sprintf("Информирование по заявке № %s %s", dto.WorkNumber, dto.Name)
 		textPart = fmt.Sprintf(`Уважаемый коллега, <span
                   style="
                     font-family: MTS Text, sans-serif, serif, EmojiFont;
@@ -585,7 +589,7 @@ func NewSignerNotificationTpl(dto *SignerNotifTemplate) Template {
 	dto.Description = CheckGroup(dto.Description)
 
 	return Template{
-		Subject:  fmt.Sprintf("Заявка №%s %s ожидает подписания", dto.WorkNumber, dto.Name),
+		Subject:  fmt.Sprintf("Заявка № %s %s ожидает подписания", dto.WorkNumber, dto.Name),
 		Template: "internal/mail/template/26applicationIsAwaitingSignature-template.html",
 		Image:    "26_zayavka_ojidaet_podpis.png",
 		Variables: struct {
@@ -612,6 +616,7 @@ const (
 
 func NewAppPersonStatusNotificationTpl(in *NewAppPersonStatusTpl) (Template, []Button) {
 	actionName := getApprovementActionNameByStatus(in.Status, in.Action)
+
 	buttons := make([]Button, 0)
 	template := ""
 
@@ -637,7 +642,7 @@ func NewAppPersonStatusNotificationTpl(in *NewAppPersonStatusTpl) (Template, []B
 	in.Description = CheckGroup(in.Description)
 
 	return Template{
-		Subject:  fmt.Sprintf("Заявка %s %s ожидает %s", in.WorkNumber, in.Name, actionName),
+		Subject:  fmt.Sprintf("Заявка № %s %s ожидает %s", in.WorkNumber, in.Name, actionName),
 		Template: template,
 		Image:    "11_postupila_na_sogl.png",
 		Variables: struct {
@@ -667,7 +672,7 @@ func NewAppPersonStatusNotificationTpl(in *NewAppPersonStatusTpl) (Template, []B
 
 func NewSendToInitiatorEditTpl(id, name, sdUrl string) Template {
 	return Template{
-		Subject:  fmt.Sprintf("Заявка %s %s требует доработки", id, name),
+		Subject:  fmt.Sprintf("Заявка № %s %s требует доработки", id, name),
 		Template: "internal/mail/template/17needsImprovement-template.html",
 		Image:    "17_nujna_dorabotka.png",
 		Variables: struct {
@@ -689,9 +694,9 @@ func NewExecutionNeedTakeInWorkTpl(dto *ExecutorNotifTemplate) Template {
 	subject := ""
 
 	if dto.IsGroup {
-		subject = fmt.Sprintf("Заявка №%s %s назначена на Группу исполнителей", dto.WorkNumber, dto.Name)
+		subject = fmt.Sprintf("Заявка № %s %s назначена на Группу исполнителей", dto.WorkNumber, dto.Name)
 	} else {
-		subject = fmt.Sprintf("Заявка №%s %s назначена на исполнение", dto.WorkNumber, dto.Name)
+		subject = fmt.Sprintf("Заявка № %s %s назначена на исполнение", dto.WorkNumber, dto.Name)
 	}
 
 	lastWorksTemplate := getLastWorksForTemplate(dto.LastWorks, dto.SdUrl)
@@ -729,7 +734,7 @@ func NewExecutionTakenInWorkTpl(dto *ExecutorNotifTemplate) Template {
 	dto.Description = CheckGroup(dto.Description)
 
 	return Template{
-		Subject:  fmt.Sprintf("Заявка №%s %s взята в работу пользователем %s", dto.WorkNumber, dto.Name, dto.Executor.FullName),
+		Subject:  fmt.Sprintf("Заявка № %s %s взята в работу пользователем %s", dto.WorkNumber, dto.Name, dto.Executor.FullName),
 		Template: "internal/mail/template/05applicationAccepted-template.html",
 		Image:    "05_zayavka_vzyata_v_rabotu.png",
 		Variables: struct {
@@ -757,7 +762,7 @@ func NewAddApproversTpl(id, name, sdUrl, status, deadline string, lastWorks []*e
 	actionName := getApprovementActionNameByStatus(status, defaultApprovementActionName)
 
 	return Template{
-		Subject:  fmt.Sprintf("Заявка %s %s ожидает %s", id, name, actionName),
+		Subject:  fmt.Sprintf("Заявка № %s %s ожидает %s", id, name, actionName),
 		Template: "internal/mail/template/42receivedForApproval-template.html",
 		Image:    "42_zayavka_ojidaet_sogl.png",
 		Variables: struct {
@@ -780,7 +785,7 @@ func NewAddApproversTpl(id, name, sdUrl, status, deadline string, lastWorks []*e
 
 func NewDecisionMadeByAdditionalApprover(id, name, decision, comment, sdUrl string, author *sso.UserInfo) Template {
 	return Template{
-		Subject:  fmt.Sprintf("Получена рецензия по Заявке №%s %s", id, name),
+		Subject:  fmt.Sprintf("Получена рецензия по Заявке № %s %s", id, name),
 		Template: "internal/mail/template/18reviewReceived-template.html",
 		Image:    "18_poluchena_recenziya.png",
 		Variables: struct {
@@ -803,7 +808,7 @@ func NewDecisionMadeByAdditionalApprover(id, name, decision, comment, sdUrl stri
 
 func NewDayBeforeRequestAddInfoSLABreached(id, name, sdUrl string) Template {
 	return Template{
-		Subject:  fmt.Sprintf("По заявке №%s %s требуется дополнительная информация", id, name),
+		Subject:  fmt.Sprintf("По заявке № %s %s требуется дополнительная информация", id, name),
 		Template: "internal/mail/template/41infoWithinOneBusinessDay-template.html",
 		Image:    "41_neobhodimo_dop_info.png",
 		Variables: struct {
@@ -820,7 +825,7 @@ func NewDayBeforeRequestAddInfoSLABreached(id, name, sdUrl string) Template {
 
 func NewRequestAddInfoSLABreached(id, name, sdUrl string, reworkSla int) Template {
 	return Template{
-		Subject:  fmt.Sprintf("Заявка №%s %s автоматически перенесена в архив", id, name),
+		Subject:  fmt.Sprintf("Заявка № %s %s автоматически перенесена в архив", id, name),
 		Template: "internal/mail/template/36notGetDopInfo-template.html",
 		Image:    "36_avto_perenesena_v_archiv.png",
 		Variables: struct {
@@ -837,7 +842,7 @@ func NewRequestAddInfoSLABreached(id, name, sdUrl string, reworkSla int) Templat
 
 func NewInvalidFunctionResp(id, name, sdUrl string) Template {
 	return Template{
-		Subject:  fmt.Sprintf("По заявке №%s %s не удалось получить обратную связь от внешней системы", id, name),
+		Subject:  fmt.Sprintf("По заявке № %s %s не удалось получить обратную связь от внешней системы", id, name),
 		Template: "internal/mail/template/35errorRespOtherSystem-template.html",
 		Image:    "35_ne_poluchili_obr_svyaz'.png",
 		Variables: struct {
