@@ -914,8 +914,11 @@ func toResponseApprovalListSettings(dto *toResponseApprovalListSettingsDTO) (
 	for i := range dto.stepsStates {
 		stepName := i
 		state := dto.stepsStates[stepName]
+		stepType := "approver"
+
 		steps = append(steps, TaskResponseStep{
 			Name:  &stepName,
+			Type:  &stepType,
 			State: &state,
 		})
 	}
