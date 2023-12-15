@@ -3,6 +3,7 @@ package mail
 import (
 	"fmt"
 	"math"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -408,6 +409,12 @@ func isLink(v interface{}) bool {
 func CheckGroup(desc []orderedmap.OrderedMap) []orderedmap.OrderedMap {
 	for _, item := range desc {
 		for key, v := range item.Values() {
+			fmt.Printf("Key: %v | Val: %v | Type: %v\n", key, v, reflect.TypeOf(v))
+
+			if key == "attachExist" || key == "attachLinks" || key == "attachList" {
+				continue
+			}
+
 			if s, ok := v.(bool); ok {
 				answer := "Нет"
 				if s {
@@ -415,6 +422,7 @@ func CheckGroup(desc []orderedmap.OrderedMap) []orderedmap.OrderedMap {
 				}
 				item.Set(key, answer)
 			}
+
 			if field, ok := v.(orderedmap.OrderedMap); ok {
 				if isUser(field) {
 					continue
@@ -443,7 +451,9 @@ func CheckGroup(desc []orderedmap.OrderedMap) []orderedmap.OrderedMap {
 								continue
 							}
 
-							item.Set(keys, dVal)
+							if len(itemGroup) != 0 {
+								item.Set(keys, dVal)
+							}
 						default:
 							item.Set(keys, dVal)
 						}
