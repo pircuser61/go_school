@@ -3,7 +3,6 @@ package mail
 import (
 	"fmt"
 	"math"
-	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -409,8 +408,6 @@ func isLink(v interface{}) bool {
 func CheckGroup(desc []orderedmap.OrderedMap) []orderedmap.OrderedMap {
 	for _, item := range desc {
 		for key, v := range item.Values() {
-			fmt.Printf("Key: %v | Val: %v | Type: %v\n", key, v, reflect.TypeOf(v))
-
 			if key == "attachExist" || key == "attachLinks" || key == "attachList" {
 				continue
 			}
