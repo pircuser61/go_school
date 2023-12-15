@@ -173,6 +173,7 @@ func (gb *GoNotificationBlock) Update(ctx context.Context) (interface{}, error) 
 		}
 	}
 
+	text.Description = mail.CheckGroup(text.Description)
 	tpl := mail.Template{
 		Subject:  gb.State.Subject,
 		Template: "internal/mail/template/28email-template.html",

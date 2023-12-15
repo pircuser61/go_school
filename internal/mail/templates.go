@@ -405,7 +405,7 @@ func isLink(v interface{}) bool {
 	return ok
 }
 
-func checkGroup(desc []orderedmap.OrderedMap) []orderedmap.OrderedMap {
+func CheckGroup(desc []orderedmap.OrderedMap) []orderedmap.OrderedMap {
 	for _, item := range desc {
 		for key, v := range item.Values() {
 			if s, ok := v.(bool); ok {
@@ -528,7 +528,7 @@ func NewAppInitiatorStatusNotificationTpl(dto *SignerNotifTemplate) Template {
                   ><strong>заявка № %s %s получена виза <b>Проинформирован</b>.</strong></span>`, dto.WorkNumber, dto.Name)
 	}
 
-	dto.Description = checkGroup(dto.Description)
+	dto.Description = CheckGroup(dto.Description)
 
 	return Template{
 		Subject:  subject,
@@ -575,7 +575,7 @@ type NewAppPersonStatusTpl struct {
 }
 
 func NewSignerNotificationTpl(dto *SignerNotifTemplate) Template {
-	dto.Description = checkGroup(dto.Description)
+	dto.Description = CheckGroup(dto.Description)
 
 	return Template{
 		Subject:  fmt.Sprintf("Заявка №%s %s ожидает подписания", dto.WorkNumber, dto.Name),
@@ -627,7 +627,7 @@ func NewAppPersonStatusNotificationTpl(in *NewAppPersonStatusTpl) (Template, []B
 	}
 	lastWorksTemplate := getLastWorksForTemplate(in.LastWorks, in.SdUrl)
 
-	in.Description = checkGroup(in.Description)
+	in.Description = CheckGroup(in.Description)
 
 	return Template{
 		Subject:  fmt.Sprintf("Заявка %s %s ожидает %s", in.WorkNumber, in.Name, actionName),
@@ -689,7 +689,7 @@ func NewExecutionNeedTakeInWorkTpl(dto *ExecutorNotifTemplate) Template {
 
 	lastWorksTemplate := getLastWorksForTemplate(dto.LastWorks, dto.SdUrl)
 
-	dto.Description = checkGroup(dto.Description)
+	dto.Description = CheckGroup(dto.Description)
 
 	return Template{
 		Subject:  subject,
@@ -719,7 +719,7 @@ func NewExecutionNeedTakeInWorkTpl(dto *ExecutorNotifTemplate) Template {
 
 func NewExecutionTakenInWorkTpl(dto *ExecutorNotifTemplate) Template {
 	lastWorksTemplate := getLastWorksForTemplate(dto.LastWorks, dto.SdUrl)
-	dto.Description = checkGroup(dto.Description)
+	dto.Description = CheckGroup(dto.Description)
 
 	return Template{
 		Subject:  fmt.Sprintf("Заявка №%s %s взята в работу пользователем %s", dto.WorkNumber, dto.Name, dto.Executor.FullName),
@@ -846,7 +846,7 @@ func NewInvalidFunctionResp(id, name, sdUrl string) Template {
 }
 
 func NewFormExecutionTakenInWorkTpl(dto *ExecutorNotifTemplate) Template {
-	dto.Description = checkGroup(dto.Description)
+	dto.Description = CheckGroup(dto.Description)
 
 	return Template{
 		Subject:  fmt.Sprintf("Заявка № %s %s взята в работу пользователем %s", dto.WorkNumber, dto.Name, dto.Executor.FullName),
