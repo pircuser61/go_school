@@ -92,8 +92,8 @@ func (gb *GoNotificationBlock) compileText(ctx context.Context) (*mail.MailNotif
 	//descr := mail.MakeDescription(body.InitialApplication.ApplicationBody)
 
 	tpl := &mail.MailNotif{
-		Title:       gb.State.Text,
-		Body:        gb.State.Subject,
+		Title:       gb.State.Subject,
+		Body:        gb.State.Text,
 		Description: description,
 		Link:        gb.RunContext.Services.Sender.GetApplicationLink(gb.RunContext.WorkNumber),
 		Initiator:   typedAuthor,

@@ -62,7 +62,7 @@
                   line-height: 28px;
                 "
               >
-                <strong>{{.Title}}</strong>
+                <strong>{{ .Title}}</strong>
               </p>
               <!-- пустая линия -->
               <p
@@ -286,6 +286,25 @@
                   </td>
                 </tr>
               </table>
+              <!-- пустая линия -->
+              <p
+                      style="
+                  margin: 0cm;
+                  padding: 0;
+                  line-height: 7.5pt;
+                  vertical-align: baseline;
+                "
+              >
+                <span
+                        style="
+                    font-size: 10pt;
+                    font-family: 'MTS Text', sans-serif, serif, EmojiFont;
+                    color: transparent;
+                  "
+                >&nbsp;</span
+                >
+              </p>
+              <!-- конец пустой линии -->
             </td>
           </tr>
           {{ if .Description }} {{ range $ko, $vo := .Description }} {{ $item :=

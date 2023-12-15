@@ -254,6 +254,7 @@ func (gb *GoApproverBlock) notifyAdditionalApprovers(ctx c.Context, logins []str
 			gb.RunContext.WorkNumber,
 			gb.RunContext.NotifName,
 			gb.RunContext.Services.Sender.SdAddress,
+			gb.State.ApproveStatusName,
 			gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(
 				time.Now(), gb.State.SLA, slaInfoPtr),
 			lastWorksForUser,

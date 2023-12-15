@@ -289,7 +289,7 @@ type NewFormExecutionNeedTakeInWorkDto struct {
 
 func NewFormExecutionNeedTakeInWorkTpl(dto *NewFormExecutionNeedTakeInWorkDto, isReentry bool) Template {
 	actionSubject := fmt.Sprintf(subjectTpl, dto.BlockName, "", dto.WorkNumber, formExecutorStartWorkAction, dto.Login)
-	actionBtn := getButton(dto.Mailto, actionSubject, "Взять в работу", "")
+	actionBtn := getButton(dto.Mailto, actionSubject, "")
 
 	var retryStr string
 	if isReentry {
@@ -405,27 +405,49 @@ func isLink(v interface{}) bool {
 
 func checkGroup(desc []orderedmap.OrderedMap) []orderedmap.OrderedMap {
 	for _, item := range desc {
-		for _, v := range item.Keys() {
-			if len(v) < 6 {
-				continue
+		for key, v := range item.Values() {
+			if s, ok := v.(bool); ok {
+				answer := "Нет"
+				if s {
+					answer = "Да"
+				}
+				item.Set(key, answer)
 			}
-
-			if v[0:5] == "group" {
-				groupMap, ok := item.Get(v)
-				if !ok {
-					return desc
+			if field, ok := v.(orderedmap.OrderedMap); ok {
+				if isUser(field) {
+					continue
 				}
 
-				group, oks := groupMap.(orderedmap.OrderedMap)
+				groupMap, oks := item.Get(key)
 				if !oks {
-					return desc
+					continue
 				}
 
-				for key, dVal := range group.Values() {
-					item.Set(key, dVal)
-				}
+				switch group := groupMap.(type) {
+				case orderedmap.OrderedMap:
+					for keys, dVal := range group.Values() {
+						switch itemGroup := dVal.(type) {
+						case []interface{}:
+							s := make([]string, 0, len(itemGroup))
+							for _, vars := range itemGroup {
+								if str, strOk := vars.(string); strOk {
+									s = append(s, str)
+								}
+							}
 
-				item.Delete(v)
+							if cap(s) != 0 {
+								text := strings.Join(s, `, `)
+								item.Set(keys, text)
+								continue
+							}
+
+							item.Set(keys, dVal)
+						default:
+							item.Set(keys, dVal)
+						}
+					}
+				}
+				item.Delete(key)
 			}
 		}
 	}
@@ -653,7 +675,7 @@ func NewSendToInitiatorEditTpl(id, name, sdUrl string) Template {
 
 func NewExecutionNeedTakeInWorkTpl(dto *ExecutorNotifTemplate) Template {
 	actionSubject := fmt.Sprintf(subjectTpl, dto.BlockID, "", dto.WorkNumber, executionStartWorkAction, dto.Login)
-	actionBtn := getButton(dto.Mailto, actionSubject, "Взять в работу", "")
+	actionBtn := getButton(dto.Mailto, actionSubject, "")
 
 	subject := ""
 
@@ -721,10 +743,12 @@ func NewExecutionTakenInWorkTpl(dto *ExecutorNotifTemplate) Template {
 	}
 }
 
-func NewAddApproversTpl(id, name, sdUrl, deadline string, lastWorks []*entity.EriusTask) Template {
+func NewAddApproversTpl(id, name, sdUrl, status, deadline string, lastWorks []*entity.EriusTask) Template {
 	lastWorksTemplate := getLastWorksForTemplate(lastWorks, sdUrl)
+	actionName := getApprovementActionNameByStatus(status, defaultApprovementActionName)
+
 	return Template{
-		Subject:  fmt.Sprintf("Заявка %s %s ожидает согласования", id, name),
+		Subject:  fmt.Sprintf("Заявка %s %s ожидает %s", id, name, actionName),
 		Template: "internal/mail/template/42receivedForApproval-template.html",
 		Image:    "42_zayavka_ojidaet_sogl.png",
 		Variables: struct {
@@ -732,11 +756,13 @@ func NewAddApproversTpl(id, name, sdUrl, deadline string, lastWorks []*entity.Er
 			Name      string    `json:"name"`
 			Link      string    `json:"link"`
 			Deadline  string    `json:"deadline"`
+			Action    string    `json:"action"`
 			LastWorks LastWorks `json:"last_works"`
 		}{
 			Id:        id,
 			Name:      name,
 			Link:      fmt.Sprintf(TaskUrlTemplate, sdUrl, id),
+			Action:    actionName,
 			Deadline:  deadline,
 			LastWorks: lastWorksTemplate,
 		},
@@ -937,7 +963,7 @@ type Action struct {
 	InternalActionName string
 }
 
-func getButton(to, subject, title, image string) *Button {
+func getButton(to, subject, image string) *Button {
 	subject = strings.ReplaceAll(subject, " ", "")
 
 	body := "***КОММЕНТАРИЙ%20НИЖЕ***%0D%0A%0D%0A***ОБЩИЙ%20РАЗМЕР%20ВЛОЖЕНИЙ%20НЕ%20БОЛЕЕ%2020МБ***"
@@ -996,12 +1022,12 @@ func getApproverButtons(workNumber, mailto, blockId, login string, actions []Act
 			img = "oznakomlen.png"
 		}
 
-		buttons = append(buttons, *getButton(mailto, subject, actions[i].Title, img))
+		buttons = append(buttons, *getButton(mailto, subject, img))
 	}
 
 	if isEditable {
 		sendEditAppSubject := fmt.Sprintf(subjectTpl, blockId, "", workNumber, actionApproverSendEditApp, login)
-		sendEditAppBtn := getButton(mailto, sendEditAppSubject, "Вернуть на доработку", "vernut.png")
+		sendEditAppBtn := getButton(mailto, sendEditAppSubject, "vernut.png")
 		buttons = append(buttons, *sendEditAppBtn)
 	}
 
@@ -1010,10 +1036,10 @@ func getApproverButtons(workNumber, mailto, blockId, login string, actions []Act
 
 func getExecutionButtons(workNumber, mailto, blockId, executed, rejected, login string, isEditable bool) []Button {
 	executedSubject := fmt.Sprintf(subjectTpl, blockId, executed, workNumber, taskUpdateActionExecution, login)
-	executedBtn := getButton(mailto, executedSubject, "Решить", "reshit.png")
+	executedBtn := getButton(mailto, executedSubject, "reshit.png")
 
 	rejectedSubject := fmt.Sprintf(subjectTpl, blockId, rejected, workNumber, taskUpdateActionExecution, login)
-	rejectedBtn := getButton(mailto, rejectedSubject, "Отклонить", "otklon.png")
+	rejectedBtn := getButton(mailto, rejectedSubject, "otklon.png")
 
 	buttons := []Button{
 		*executedBtn,
@@ -1022,7 +1048,7 @@ func getExecutionButtons(workNumber, mailto, blockId, executed, rejected, login 
 
 	if isEditable {
 		sendEditAppSubject := fmt.Sprintf(subjectTpl, blockId, "", workNumber, actionExecutorSendEditApp, login)
-		sendEditAppBtn := getButton(mailto, sendEditAppSubject, "Вернуть на доработку", "vernut.png")
+		sendEditAppBtn := getButton(mailto, sendEditAppSubject, "vernut.png")
 		buttons = append(buttons, *sendEditAppBtn)
 	}
 

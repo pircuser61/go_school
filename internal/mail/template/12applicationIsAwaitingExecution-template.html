@@ -269,10 +269,10 @@
                     font-weight: 500;
                   "
                 ><strong
-                >заявка № {{.Id}} {{.Name}} ожидает исполнения.</strong
+                >заявка № {{.Id}} {{.Name}} ожидает {{.Action}}.</strong
                 >
                 </span>
-                {{ if .Deadline }} Срок исполнения до {{.Deadline}}. {{end}}
+                {{ if .Deadline }} Срок {{.Action}} до {{.Deadline}}. {{end}}
               </p>
               <!-- пустая линия -->
               <p

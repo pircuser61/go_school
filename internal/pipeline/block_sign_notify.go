@@ -70,6 +70,7 @@ func (gb *GoSignBlock) notifyAdditionalApprovers(ctx c.Context, logins []string,
 			gb.RunContext.WorkNumber,
 			gb.RunContext.NotifName,
 			gb.RunContext.Services.Sender.SdAddress,
+			"",
 			gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(
 				time.Now(), *gb.State.SLA, slaInfoPtr),
 			lastWorksForUser,
