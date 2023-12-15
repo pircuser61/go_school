@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"time"
 
 	"go.opencensus.io/trace"
 
@@ -915,11 +916,28 @@ func toResponseApprovalListSettings(dto *toResponseApprovalListSettingsDTO) (
 		stepName := i
 		state := dto.stepsStates[stepName]
 		stepType := "approver"
+		errs := make([]string, 0)
+		hasError := false
+		storage := map[string]interface{}{}
+		shortTitle := ""
+		isDelegateOfAnyStepMember := false
+		status := ""
+		updateTime := time.Now().String()
+		tisulka := time.Now().String()
 
 		steps = append(steps, TaskResponseStep{
-			Name:  &stepName,
-			Type:  &stepType,
-			State: &state,
+			Name:                      &stepName,
+			ShortTitle:                &shortTitle,
+			Type:                      &stepType,
+			State:                     &state,
+			Errors:                    &errs,
+			HasError:                  &hasError,
+			Storage:                   &storage,
+			IsDelegateOfAnyStepMember: &isDelegateOfAnyStepMember,
+			Status:                    &status,
+			Steps:                     &dto.approvalList.Steps,
+			UpdateTime:                &updateTime,
+			Time:                      &tisulka,
 		})
 	}
 
