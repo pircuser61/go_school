@@ -100,13 +100,15 @@ func NewApprovementSLATpl(id, name, sdUrl, status string) Template {
 		Template: "internal/mail/template/13approvalHasExpired-template.html",
 		Image:    "13_isteklo_sogl.png",
 		Variables: struct {
-			Id   string `json:"id"`
-			Name string `json:"name"`
-			Link string `json:"link"`
+			Id     string `json:"id"`
+			Name   string `json:"name"`
+			Action string `json:"action"`
+			Link   string `json:"link"`
 		}{
-			Id:   id,
-			Name: name,
-			Link: fmt.Sprintf(TaskUrlTemplate, sdUrl, id),
+			Id:     id,
+			Name:   name,
+			Action: actionName,
+			Link:   fmt.Sprintf(TaskUrlTemplate, sdUrl, id),
 		},
 	}
 }
