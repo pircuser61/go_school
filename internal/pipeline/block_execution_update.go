@@ -10,10 +10,9 @@ import (
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
-	e "gitlab.services.mts.ru/abp/mail/pkg/email"
-
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	file_registry "gitlab.services.mts.ru/jocasta/pipeliner/internal/file-registry"
 	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
@@ -221,18 +220,23 @@ func (gb *GoExecutionBlock) handleBreachedSLA(ctx c.Context) error {
 			emails = append(emails, executorEmail)
 		}
 
+		tpl := mail.NewExecutionSLATpl(
+			gb.RunContext.WorkNumber,
+			gb.RunContext.NotifName,
+			gb.RunContext.Services.Sender.SdAddress,
+		)
+
+		filesList := []string{tpl.Image}
+		files, iconEerr := gb.RunContext.GetIcons(filesList)
+		if iconEerr != nil {
+			return iconEerr
+		}
+
 		if len(emails) == 0 {
 			return nil
 		}
-		err = gb.RunContext.Services.Sender.SendNotification(
-			ctx,
-			emails,
-			nil,
-			mail.NewExecutionSLATpl(
-				gb.RunContext.WorkNumber,
-				gb.RunContext.NotifName,
-				gb.RunContext.Services.Sender.SdAddress,
-			))
+		err = gb.RunContext.Services.Sender.SendNotification(ctx, emails, files, tpl)
+
 		if err != nil {
 			return err
 		}
@@ -302,6 +306,28 @@ func (gb *GoExecutionBlock) handleHalfSLABreached(ctx c.Context) error {
 			login = recipient
 		}
 
+		if processSettings.ResubmissionPeriod > 0 {
+			var getWorksErr error
+			_, getWorksErr = gb.RunContext.Services.Storage.GetWorksForUserWithGivenTimeRange(ctx,
+				processSettings.ResubmissionPeriod,
+				login,
+				task.VersionID.String(),
+				gb.RunContext.WorkNumber,
+			)
+			if getWorksErr != nil {
+				return getWorksErr
+			}
+		}
+
+		slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
+			TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.CurrBlockStartTime,
+				FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100)}},
+			WorkType: sla.WorkHourType(gb.State.WorkType),
+		})
+		if getSlaInfoErr != nil {
+			return getSlaInfoErr
+		}
+
 		lastWorksForUser := make([]*entity.EriusTask, 0)
 
 		if processSettings.ResubmissionPeriod > 0 {
@@ -316,16 +342,28 @@ func (gb *GoExecutionBlock) handleHalfSLABreached(ctx c.Context) error {
 				return getWorksErr
 			}
 		}
-		err = gb.RunContext.Services.Sender.SendNotification(
-			ctx,
-			emails,
-			nil,
-			mail.NewExecutiontHalfSLATpl(
-				gb.RunContext.WorkNumber,
-				gb.RunContext.NotifName,
-				gb.RunContext.Services.Sender.SdAddress,
-				lastWorksForUser,
-			))
+
+		tpl := mail.NewExecutiontHalfSLATpl(
+			gb.RunContext.WorkNumber,
+			gb.RunContext.NotifName,
+			gb.RunContext.Services.Sender.SdAddress,
+			gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(gb.RunContext.CurrBlockStartTime, gb.State.SLA,
+				slaInfoPtr),
+			lastWorksForUser,
+		)
+
+		files := []string{tpl.Image}
+
+		if len(lastWorksForUser) != 0 {
+			files = append(files, warningImg)
+		}
+
+		iconFiles, fileErr := gb.RunContext.GetIcons(files)
+		if fileErr != nil {
+			return fileErr
+		}
+
+		err = gb.RunContext.Services.Sender.SendNotification(ctx, emails, iconFiles, tpl)
 		if err != nil {
 			return err
 		}
@@ -378,8 +416,15 @@ func (gb *GoExecutionBlock) handleReworkSLABreached(ctx c.Context) error {
 		emails = append(emails, em)
 	}
 	tpl := mail.NewReworkSLATpl(gb.RunContext.WorkNumber, gb.RunContext.NotifName,
-		gb.RunContext.Services.Sender.SdAddress, gb.State.ReworkSLA)
-	err = gb.RunContext.Services.Sender.SendNotification(ctx, emails, nil, tpl)
+		gb.RunContext.Services.Sender.SdAddress, gb.State.ReworkSLA, gb.State.CheckSLA)
+
+	filesList := []string{tpl.Image}
+	files, iconEerr := gb.RunContext.GetIcons(filesList)
+	if iconEerr != nil {
+		return iconEerr
+	}
+
+	err = gb.RunContext.Services.Sender.SendNotification(ctx, emails, files, tpl)
 	if err != nil {
 		return err
 	}
@@ -422,7 +467,14 @@ func (gb *GoExecutionBlock) handleBreachedDayBeforeSLARequestAddInfo(ctx c.Conte
 	}
 	tpl := mail.NewDayBeforeRequestAddInfoSLABreached(gb.RunContext.WorkNumber, gb.RunContext.NotifName,
 		gb.RunContext.Services.Sender.SdAddress)
-	err := gb.RunContext.Services.Sender.SendNotification(ctx, emails, nil, tpl)
+
+	filesList := []string{tpl.Image}
+	files, iconErr := gb.RunContext.GetIcons(filesList)
+	if iconErr != nil {
+		return iconErr
+	}
+
+	err := gb.RunContext.Services.Sender.SendNotification(ctx, emails, files, tpl)
 	if err != nil {
 		return err
 	}
@@ -478,8 +530,15 @@ func (gb *GoExecutionBlock) HandleBreachedSLARequestAddInfo(ctx c.Context) error
 		emails = append(emails, em)
 	}
 	tpl := mail.NewRequestAddInfoSLABreached(gb.RunContext.WorkNumber, gb.RunContext.NotifName,
-		gb.RunContext.Services.Sender.SdAddress)
-	err = gb.RunContext.Services.Sender.SendNotification(ctx, emails, nil, tpl)
+		gb.RunContext.Services.Sender.SdAddress, gb.State.ReworkSLA)
+
+	filesList := []string{tpl.Image}
+	files, iconEerr := gb.RunContext.GetIcons(filesList)
+	if iconEerr != nil {
+		return iconEerr
+	}
+
+	err = gb.RunContext.Services.Sender.SendNotification(ctx, emails, files, tpl)
 	if err != nil {
 		return err
 	}
@@ -670,10 +729,7 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 
 	log.WithField("func", "emailGroupExecutors").WithField("emails", emails)
 
-	var description string
-	var emailAttachment []e.Attachment
-
-	description, err = gb.RunContext.makeNotificationDescription(gb.Name)
+	description, files, err := gb.RunContext.makeNotificationDescription(gb.Name)
 	if err != nil {
 		return err
 	}
@@ -683,7 +739,17 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 		return err
 	}
 
-	typedAuthor, err := author.ToSSOUserTyped()
+	typedAuthor, err := author.ToUserinfo()
+	if err != nil {
+		return err
+	}
+
+	initiator, err := gb.RunContext.Services.People.GetUser(ctx, gb.RunContext.UpdateData.ByLogin)
+	if err != nil {
+		return err
+	}
+
+	initiatorInfo, err := initiator.ToUserinfo()
 	if err != nil {
 		return err
 	}
@@ -726,20 +792,42 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 		}
 	}
 
-	executorName := typedAuthor.GetFullName()
-
 	tpl := mail.NewExecutionTakenInWorkTpl(&mail.ExecutorNotifTemplate{
-		WorkNumber:   gb.RunContext.WorkNumber,
-		Name:         gb.RunContext.NotifName,
-		SdUrl:        gb.RunContext.Services.Sender.SdAddress,
-		Description:  description,
-		ExecutorName: executorName,
-		Initiator:    gb.RunContext.Initiator,
-		LastWorks:    lastWorksForUser,
-		Mailto:       gb.RunContext.Services.Sender.FetchEmail,
+		WorkNumber:  gb.RunContext.WorkNumber,
+		Name:        gb.RunContext.NotifName,
+		SdUrl:       gb.RunContext.Services.Sender.SdAddress,
+		Description: description,
+		Executor:    typedAuthor,
+		Initiator:   initiatorInfo,
+		LastWorks:   lastWorksForUser,
+		Mailto:      gb.RunContext.Services.Sender.FetchEmail,
 	})
 
-	if errSend := gb.RunContext.Services.Sender.SendNotification(ctx, emails, emailAttachment, tpl); errSend != nil {
+	iconsName := []string{tpl.Image, userImg}
+
+	if len(lastWorksForUser) != 0 {
+		iconsName = append(iconsName, warningImg)
+	}
+
+	for _, v := range description {
+		links, link := v.Get("attachLinks")
+		if link {
+			attachFiles, ok := links.([]file_registry.AttachInfo)
+			if ok && len(attachFiles) != 0 {
+				descIcons := []string{downloadImg}
+				iconsName = append(iconsName, descIcons...)
+				break
+			}
+		}
+	}
+
+	iconFiles, err := gb.RunContext.GetIcons(iconsName)
+	if err != nil {
+		return err
+	}
+	files = append(files, iconFiles...)
+
+	if errSend := gb.RunContext.Services.Sender.SendNotification(ctx, emails, files, tpl); errSend != nil {
 		return errSend
 	}
 
@@ -757,7 +845,19 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 	if getSlaInfoErr != nil {
 		return getSlaInfoErr
 	}
-	tpl = mail.NewAppPersonStatusNotificationTpl(
+
+	author1, getUserErr := gb.RunContext.Services.People.GetUser(ctx, gb.RunContext.Initiator)
+	if getUserErr != nil {
+		return err
+	}
+
+	initiatorInfo, toUserErr := author1.ToUserinfo()
+	if toUserErr != nil {
+		return err
+	}
+
+	var buttons []mail.Button
+	tpl, buttons = mail.NewAppPersonStatusNotificationTpl(
 		&mail.NewAppPersonStatusTpl{
 			WorkNumber:  gb.RunContext.WorkNumber,
 			Name:        gb.RunContext.NotifName,
@@ -769,6 +869,7 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 			Mailto:      gb.RunContext.Services.Sender.FetchEmail,
 			Login:       loginTakenInWork,
 			IsEditable:  gb.State.GetIsEditable(),
+			Initiator:   initiatorInfo,
 
 			BlockID:                   BlockGoExecutionID,
 			ExecutionDecisionExecuted: string(ExecutionDecisionExecuted),
@@ -776,8 +877,34 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 			LastWorks:                 lastWorksForUser,
 		})
 
+	iconsName = []string{tpl.Image, userImg}
+
+	for _, v := range buttons {
+		iconsName = append(iconsName, v.Img)
+	}
+
+	if len(lastWorksForUser) != 0 {
+		iconsName = append(iconsName, warningImg)
+	}
+
+	for _, v := range description {
+		links, link := v.Get("attachLinks")
+		if link {
+			attachFiles, ok := links.([]file_registry.AttachInfo)
+			if ok && len(attachFiles) != 0 {
+				iconsName = append(iconsName, downloadImg)
+				break
+			}
+		}
+	}
+
+	attachFiles, err := gb.RunContext.GetIcons(iconsName)
+	if err != nil {
+		return err
+	}
+
 	if sendErr := gb.RunContext.Services.Sender.SendNotification(ctx,
-		[]string{emailTakenInWork}, emailAttachment, tpl); sendErr != nil {
+		[]string{emailTakenInWork}, attachFiles, tpl); sendErr != nil {
 		return sendErr
 	}
 

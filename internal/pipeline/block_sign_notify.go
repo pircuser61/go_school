@@ -2,9 +2,11 @@ package pipeline
 
 import (
 	c "context"
+	"time"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
@@ -26,6 +28,18 @@ func (gb *GoSignBlock) notifyAdditionalApprovers(ctx c.Context, logins []string,
 
 	emails = utils.UniqueStrings(emails)
 
+	slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
+		TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.CurrBlockStartTime,
+			FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100)}},
+		WorkType: sla.WorkHourType(*gb.State.WorkType),
+	})
+
+	if getSlaInfoErr != nil {
+		return getSlaInfoErr
+	}
+
+	lastWorksForUser := make([]*entity.EriusTask, 0)
+
 	task, getVersionErr := gb.RunContext.Services.Storage.GetVersionByWorkNumber(ctx, gb.RunContext.WorkNumber)
 	if getVersionErr != nil {
 		return getVersionErr
@@ -36,20 +50,7 @@ func (gb *GoSignBlock) notifyAdditionalApprovers(ctx c.Context, logins []string,
 		return getVersionErr
 	}
 
-	taskRunContext, getDataErr := gb.RunContext.Services.Storage.GetTaskRunContext(ctx, gb.RunContext.WorkNumber)
-	if getDataErr != nil {
-		return getDataErr
-	}
-
 	login := task.Author
-
-	recipient := getRecipientFromState(&taskRunContext.InitialApplication.ApplicationBody)
-
-	if recipient != "" {
-		login = recipient
-	}
-
-	lastWorksForUser := make([]*entity.EriusTask, 0)
 
 	if processSettings.ResubmissionPeriod > 0 {
 		var getWorksErr error
@@ -70,8 +71,23 @@ func (gb *GoSignBlock) notifyAdditionalApprovers(ctx c.Context, logins []string,
 			gb.RunContext.NotifName,
 			gb.RunContext.Services.Sender.SdAddress,
 			"",
+			gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(
+				time.Now(), *gb.State.SLA, slaInfoPtr),
 			lastWorksForUser,
 		)
+
+		filesList := []string{tpl.Image}
+
+		if len(lastWorksForUser) != 0 {
+			filesList = append(filesList, warningImg)
+		}
+
+		iconFiles, iconErr := gb.RunContext.GetIcons(filesList)
+		if iconErr != nil {
+			return iconErr
+		}
+
+		files = append(files, iconFiles...)
 
 		err = gb.RunContext.Services.Sender.SendNotification(ctx, []string{emails[i]}, files, tpl)
 		if err != nil {
@@ -106,14 +122,13 @@ func (gb *GoSignBlock) notifyDecisionMadeByAdditionalApprover(ctx c.Context, log
 	}
 
 	latestDecisionLog := gb.State.SignLog[len(gb.State.SignLog)-1]
-
 	tpl := mail.NewDecisionMadeByAdditionalApprover(
 		gb.RunContext.WorkNumber,
 		gb.RunContext.NotifName,
-		userInfo.FullName,
 		latestDecisionLog.Decision.ToRuString(),
 		latestDecisionLog.Comment,
 		gb.RunContext.Services.Sender.SdAddress,
+		userInfo,
 	)
 
 	files, err := gb.RunContext.Services.FileRegistry.GetAttachments(
@@ -124,6 +139,14 @@ func (gb *GoSignBlock) notifyDecisionMadeByAdditionalApprover(ctx c.Context, log
 	if err != nil {
 		return err
 	}
+
+	filesList := []string{tpl.Image, userImg}
+	iconFiles, iconEerr := gb.RunContext.GetIcons(filesList)
+	if iconEerr != nil {
+		return iconEerr
+	}
+
+	files = append(files, iconFiles...)
 
 	err = gb.RunContext.Services.Sender.SendNotification(ctx, emailsToNotify, files, tpl)
 	if err != nil {

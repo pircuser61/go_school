@@ -1,16 +1,21 @@
 package pipeline
 
 import (
+	c "context"
 	"encoding/json"
 	"reflect"
 	"strings"
 
 	"github.com/google/uuid"
 
+	e "gitlab.services.mts.ru/abp/mail/pkg/email"
+
 	"github.com/iancoleman/orderedmap"
 
 	"github.com/pkg/errors"
 
+	file_registry "gitlab.services.mts.ru/jocasta/pipeliner/internal/file-registry"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
@@ -33,6 +38,49 @@ type castUser struct {
 }
 
 const dotSeparator = "."
+
+func (runCtx *BlockRunContext) GetIcons(need []string) ([]e.Attachment, error) {
+	outFiles := make([]e.Attachment, 0)
+	for k, v := range need {
+		file, oks := runCtx.Services.Sender.Images[v]
+		if !oks {
+			return nil, errors.New("file not found: " + v)
+		}
+
+		if k == 0 {
+			outFiles = append(outFiles, e.Attachment{Name: headImg, Content: file, Type: e.EmbeddedAttachment})
+			continue
+		}
+
+		outFiles = append(outFiles, e.Attachment{Name: v, Content: file, Type: e.EmbeddedAttachment})
+	}
+	return outFiles, nil
+}
+func (runCtx *BlockRunContext) GetAttach(filesAttach []file_registry.FileInfo) (*mail.Attachments, error) {
+	req, skip := sortAndFilterAttachments(filesAttach)
+
+	attachFields, err := runCtx.getFileField()
+	if err != nil {
+		return nil, err
+	}
+
+	attach, err := runCtx.Services.FileRegistry.GetAttachments(c.Background(), req)
+	if err != nil {
+		return nil, err
+	}
+
+	attachLinks, err := runCtx.Services.FileRegistry.GetAttachmentLink(c.Background(), skip)
+	if err != nil {
+		return nil, err
+	}
+
+	attachExists := false
+	if len(attach) != 0 {
+		attachExists = true
+	}
+
+	return &mail.Attachments{AttachFields: attachFields, AttachExists: attachExists, AttachLinks: attachLinks, AttachmentsList: attach}, nil
+}
 
 func getVariable(variables map[string]interface{}, key string) interface{} {
 	variableMemberNames := strings.Split(key, dotSeparator)

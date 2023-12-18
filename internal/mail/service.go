@@ -6,11 +6,14 @@ import (
 	"fmt"
 	"net/http"
 	"net/mail"
+	"os"
 	"regexp"
 	"strings"
 	"text/template"
 
 	"go.opencensus.io/trace"
+
+	"github.com/labstack/gommon/log"
 
 	"gitlab.services.mts.ru/abp/mail/pkg/broker"
 	"gitlab.services.mts.ru/abp/mail/pkg/email"
@@ -18,47 +21,15 @@ import (
 )
 
 const imageMimeTypePrefix = "image"
-const messageTplStart = `<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-    <meta content="width=device-width, initial-scale=1" name="viewport" />
-    <meta name="x-apple-disable-message-reformatting" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta content="telephone=no" name="format-detection" />
-    <title></title>
-    <!--[if mso]>
-    <xml>
-        <o:OfficeDocumentSettings>
-            <o:AllowPNG />
-            <o:PixelsPerInch>96</o:PixelsPerInch>
-        </o:OfficeDocumentSettings>
-    </xml>
-    <![endif]-->
-    <!--[if lte mso 11]>
-    <style type="text/css">
-        .mj-outlook-group-fix {
-            width: 100% !important;
-        }
-        .preheader {
-            display: none !important;
-            visibility: hidden;
-            opacity: 0;
-            color: transparent;
-            height: 0;
-            width: 0;
-        }
-    </style>
-    <![endif]-->
-</head><body>
-`
-const msgTplEnd = "</body></html>"
+const headTemp = "internal/mail/template/00header-template.html"
+const imagePath = "./internal/mail/img/"
 
 type Service struct {
 	cli *mailclient.Client
 
 	from *mail.Address
 
+	Images     map[string][]byte
 	SdAddress  string
 	FetchEmail string
 }
@@ -75,6 +46,11 @@ func NewService(c Config) (*Service, error) {
 		WriteTimeout: c.WriteTimeout,
 	}
 
+	images, err := getImages(imagePath)
+	if err != nil {
+		return nil, err
+	}
+
 	client, err := mailclient.NewClient(cfg)
 	if err != nil {
 		return nil, err
@@ -85,6 +61,7 @@ func NewService(c Config) (*Service, error) {
 			Name:    c.From.Name,
 			Address: c.From.Email,
 		},
+		Images:     images,
 		SdAddress:  c.SdAddress,
 		FetchEmail: c.FetchEmail,
 	}
@@ -124,7 +101,13 @@ func (s *Service) SendNotification(ctx context.Context, to []string, files []ema
 		}
 	}
 
-	temp, err := template.New("").Parse(messageTplStart + tmpl.Text + msgTplEnd)
+	temp, err := template.New("00header-template.html").Funcs(template.FuncMap{
+		"isUser":   isUser,
+		"retMap":   retMap,
+		"isLink":   isLink,
+		"isFile":   isFile,
+		"checkKey": checkKey,
+	}).ParseFiles(headTemp, tmpl.Template)
 	if err != nil {
 		return err
 	}
@@ -140,4 +123,24 @@ func (s *Service) SendNotification(ctx context.Context, to []string, files []ema
 		return sendErr
 	}
 	return nil
+}
+
+func getImages(path string) (map[string][]byte, error) {
+	files, err := os.ReadDir(path)
+	if err != nil {
+		log.Errorf("error read directory path: %v error: %v", path, err)
+		return nil, err
+	}
+
+	photos := make(map[string][]byte)
+	for _, v := range files {
+		data, readErr := os.ReadFile(path + v.Name())
+		if readErr != nil {
+			log.Error("error read file ", v.Name(), err)
+			return nil, readErr
+		}
+		photos[v.Name()] = data
+	}
+
+	return photos, nil
 }
