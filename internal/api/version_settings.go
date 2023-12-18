@@ -926,10 +926,12 @@ func toResponseApprovalListSettings(dto *toResponseApprovalListSettingsDTO) (
 		tisulka := time.Now().String()
 
 		steps = append(steps, TaskResponseStep{
-			Name:                      &stepName,
-			ShortTitle:                &shortTitle,
-			Type:                      &stepType,
-			State:                     &state,
+			Name:       &stepName,
+			ShortTitle: &shortTitle,
+			Type:       &stepType,
+			State: &map[string]interface{}{
+				stepName: state,
+			},
 			Errors:                    &errs,
 			HasError:                  &hasError,
 			Storage:                   &storage,
