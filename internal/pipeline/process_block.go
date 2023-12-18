@@ -527,14 +527,14 @@ func (runCtx *BlockRunContext) handleInitiatorNotify(ctx c.Context, params handl
 
 	var attach []e.Attachment
 
-	log := logger.GetLogger(ctx)
-
 	description, err := runCtx.makeNotificationDescription(params.step)
 	if err != nil {
 		return err
 	}
 
 	loginsToNotify := []string{runCtx.Initiator}
+
+	log := logger.GetLogger(ctx)
 
 	var email string
 	emails := make([]string, 0, len(loginsToNotify))
