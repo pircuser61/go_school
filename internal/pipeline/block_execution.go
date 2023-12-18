@@ -234,6 +234,23 @@ func (gb *GoExecutionBlock) executionActions() []MemberAction {
 		})
 	}
 
+	for _, v := range gb.State.FormsAccessibility {
+		if _, ok := gb.RunContext.VarStore.State[v.NodeId]; !ok {
+			continue
+		}
+
+		if v.AccessType == "ReadWrite" {
+			memAction := MemberAction{
+				Id:   formFillFormAction,
+				Type: ActionTypeCustom,
+				Params: map[string]interface{}{
+					formName: v.NodeId,
+				},
+			}
+			actions = append(actions, memAction)
+		}
+	}
+
 	return actions
 }
 
