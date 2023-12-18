@@ -7,6 +7,14 @@ type FileInfo struct {
 	Size      int64
 }
 
+type AttachInfo struct {
+	FileID       string
+	Name         string
+	CreatedAt    string
+	Size         int64
+	ExternalLink string
+}
+
 type fileID struct {
 	Data string `json:"data"`
 }

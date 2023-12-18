@@ -4,7 +4,6 @@ import (
 	"bytes"
 	c "context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -14,8 +13,9 @@ import (
 
 	"go.opencensus.io/trace"
 
-	e "gitlab.services.mts.ru/abp/mail/pkg/email"
+	"github.com/iancoleman/orderedmap"
 
+	e "gitlab.services.mts.ru/abp/mail/pkg/email"
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
@@ -469,22 +469,154 @@ func (runCtx *BlockRunContext) updateStepInDB(ctx c.Context, name string, id uui
 	})
 }
 
-func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) (string, error) {
-	descr, err := runCtx.Services.Storage.GetApplicationData(runCtx.WorkNumber)
+func (runCtx *BlockRunContext) getFileField() ([]string, error) {
+	task, err := runCtx.Services.Storage.GetTaskRunContext(c.Background(), runCtx.WorkNumber)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	additionalDescriptions, err := runCtx.Services.Storage.GetAdditionalForms(runCtx.WorkNumber, nodeName)
+
+	return task.InitialApplication.AttachmentFields, nil
+}
+
+func (runCtx *BlockRunContext) makeNotificationFormAttachment(files []string) ([]file_registry.FileInfo, error) {
+	attachments := make([]entity.Attachment, 0)
+	mapFiles := make(map[string][]entity.Attachment)
+	for _, v := range files {
+		attachments = append(attachments, entity.Attachment{FileID: v})
+	}
+
+	mapFiles["files"] = attachments
+
+	file, err := runCtx.Services.FileRegistry.GetAttachmentsInfo(c.Background(), mapFiles)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	for _, item := range additionalDescriptions {
-		if item == "" {
-			continue
+
+	ta := make([]file_registry.FileInfo, 0)
+	for _, v := range file["files"] {
+		ta = append(ta, file_registry.FileInfo{FileId: v.FileId, Size: v.Size, Name: v.Name})
+	}
+
+	return ta, nil
+}
+
+func (runCtx *BlockRunContext) makeNotificationAttachment() ([]file_registry.FileInfo, error) {
+	task, err := runCtx.Services.Storage.GetTaskRunContext(c.Background(), runCtx.WorkNumber)
+	if err != nil {
+		return nil, err
+	}
+
+	attachments := make([]entity.Attachment, 0)
+	mapFiles := make(map[string][]entity.Attachment)
+	for _, v := range task.InitialApplication.AttachmentFields {
+		filesAttach, ok := task.InitialApplication.ApplicationBody.Get(v)
+		if ok {
+			switch data := filesAttach.(type) {
+			case orderedmap.OrderedMap:
+				fileId, get := data.Get("file_id")
+				if !get {
+					continue
+				}
+
+				attachments = append(attachments, entity.Attachment{FileID: fileId.(string)})
+			case []interface{}:
+				for _, vv := range data {
+					fileMap := vv.(orderedmap.OrderedMap)
+					fileId, oks := fileMap.Get("file_id")
+					if !oks {
+						continue
+					}
+
+					attachments = append(attachments, entity.Attachment{FileID: fileId.(string)})
+				}
+			}
 		}
-		descr = fmt.Sprintf("%s\n\n%s", descr, item)
 	}
-	return descr, nil
+
+	mapFiles["files"] = attachments
+
+	file, err := runCtx.Services.FileRegistry.GetAttachmentsInfo(c.Background(), mapFiles)
+	if err != nil {
+		return nil, err
+	}
+
+	ta := make([]file_registry.FileInfo, 0)
+	for _, v := range file["files"] {
+		ta = append(ta, file_registry.FileInfo{FileId: v.FileId, Size: v.Size, Name: v.Name})
+	}
+
+	return ta, nil
+}
+
+func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) ([]orderedmap.OrderedMap, []e.Attachment, error) {
+	descr, err := runCtx.Services.Storage.GetTaskRunContext(c.Background(), runCtx.WorkNumber)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	apBody := descr.InitialApplication.ApplicationBody
+
+	descriptions := make([]orderedmap.OrderedMap, 0)
+
+	filesAttach, err := runCtx.makeNotificationAttachment()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	attachments, err := runCtx.GetAttach(filesAttach)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	files := make([]e.Attachment, 0, len(attachments.AttachmentsList))
+
+	if len(apBody.Values()) != 0 {
+		apBody.Set("attachLinks", attachments.AttachLinks)
+		apBody.Set("attachExist", attachments.AttachExists)
+		apBody.Set("attachList", attachments.AttachmentsList)
+
+		descriptions = append(descriptions, apBody)
+	}
+
+	additionalForms, err := runCtx.Services.Storage.GetAdditionalDescriptionForms(runCtx.WorkNumber, nodeName)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	for _, v := range additionalForms {
+		attachmentFiles := make([]string, 0)
+
+		for _, val := range v.Values() {
+			file, ok := val.(orderedmap.OrderedMap)
+			if !ok {
+				continue
+			}
+
+			if fileId, fileOk := file.Get("file_id"); fileOk {
+				attachmentFiles = append(attachmentFiles, fileId.(string))
+			}
+		}
+
+		fileInfo, fileErr := runCtx.makeNotificationFormAttachment(attachmentFiles)
+		if fileErr != nil {
+			return nil, nil, err
+		}
+
+		attach, attachErr := runCtx.GetAttach(fileInfo)
+		if attachErr != nil {
+			return nil, nil, err
+		}
+
+		v.Set("attachLinks", attach.AttachLinks)
+		v.Set("attachExist", attach.AttachExists)
+		v.Set("attachList", attach.AttachmentsList)
+
+		files = append(files, attach.AttachmentsList...)
+		descriptions = append(descriptions, v)
+	}
+
+	files = append(files, attachments.AttachmentsList...)
+	return descriptions, files, nil
 }
 
 type handleInitiatorNotifyParams struct {
@@ -526,9 +658,7 @@ func (runCtx *BlockRunContext) handleInitiatorNotify(ctx c.Context, params handl
 		return nil
 	}
 
-	var attach []e.Attachment
-
-	description, err := runCtx.makeNotificationDescription(params.step)
+	description, files, err := runCtx.makeNotificationDescription(params.step)
 	if err != nil {
 		return err
 	}
@@ -551,13 +681,36 @@ func (runCtx *BlockRunContext) handleInitiatorNotify(ctx c.Context, params handl
 	}
 
 	tmpl := mail.NewAppInitiatorStatusNotificationTpl(
-		runCtx.WorkNumber,
-		runCtx.NotifName,
-		params.action,
-		description,
-		runCtx.Services.Sender.SdAddress)
+		&mail.SignerNotifTemplate{
+			WorkNumber:  runCtx.WorkNumber,
+			Name:        runCtx.NotifName,
+			SdUrl:       runCtx.Services.Sender.SdAddress,
+			Description: description,
+			Action:      params.action,
+		})
 
-	if sendErr := runCtx.Services.Sender.SendNotification(ctx, emails, attach, tmpl); sendErr != nil {
+	iconsName := []string{tmpl.Image}
+
+	for _, v := range description {
+		links, link := v.Get("attachLinks")
+		if link {
+			attachFiles, ok := links.([]file_registry.AttachInfo)
+			if ok && len(attachFiles) != 0 {
+				descIcons := []string{downloadImg}
+				iconsName = append(iconsName, descIcons...)
+				break
+			}
+		}
+	}
+
+	iconFiles, iconErr := runCtx.GetIcons(iconsName)
+	if iconErr != nil {
+		return err
+	}
+
+	files = append(files, iconFiles...)
+
+	if sendErr := runCtx.Services.Sender.SendNotification(ctx, emails, files, tmpl); sendErr != nil {
 		return sendErr
 	}
 

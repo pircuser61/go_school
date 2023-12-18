@@ -6,10 +6,14 @@ import (
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
-	e "gitlab.services.mts.ru/abp/mail/pkg/email"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	file_registry "gitlab.services.mts.ru/jocasta/pipeliner/internal/file-registry"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
+)
+
+const (
+	downloadImg = "iconDownload.png"
 )
 
 //nolint:dupl,gocyclo // maybe later
@@ -29,9 +33,7 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 
 	loginsToNotify := delegates.GetUserInArrayWithDelegations(executors)
 
-	var emailAttachment []e.Attachment
-
-	description, err := gb.RunContext.makeNotificationDescription(gb.Name)
+	description, files, err := gb.RunContext.makeNotificationDescription(gb.Name)
 	if err != nil {
 		return err
 	}
@@ -83,6 +85,8 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 		WorkType: sla.WorkHourType(gb.State.WorkType),
 	})
 
+	filesNames := make([]string, 0)
+	var buttons []mail.Button
 	if getSlaInfoErr != nil {
 		return getSlaInfoErr
 	}
@@ -104,10 +108,22 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 					Login:       login,
 					LastWorks:   lastWorksForUser,
 					IsGroup:     len(gb.State.Executors) > 1,
+					Deadline:    gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(time.Now(), gb.State.SLA, slaInfoPtr),
 				},
 			)
+			filesNames = append(filesNames, vRabotuBtn)
 		} else {
-			emails[email] = mail.NewAppPersonStatusNotificationTpl(
+			author, errAuthor := gb.RunContext.Services.People.GetUser(ctx, gb.RunContext.Initiator)
+			if errAuthor != nil {
+				return err
+			}
+
+			initiatorInfo, errInitiator := author.ToUserinfo()
+			if errInitiator != nil {
+				return err
+			}
+
+			emails[email], _ = mail.NewAppPersonStatusNotificationTpl(
 				&mail.NewAppPersonStatusTpl{
 					WorkNumber:  gb.RunContext.WorkNumber,
 					Name:        gb.RunContext.NotifName,
@@ -119,17 +135,54 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 					Mailto:      gb.RunContext.Services.Sender.FetchEmail,
 					Login:       login,
 					IsEditable:  gb.State.GetIsEditable(),
+					Initiator:   initiatorInfo,
 
 					BlockID:                   BlockGoExecutionID,
 					ExecutionDecisionExecuted: string(ExecutionDecisionExecuted),
 					ExecutionDecisionRejected: string(ExecutionDecisionRejected),
 					LastWorks:                 lastWorksForUser,
 				})
+
+			if initiatorInfo != nil {
+				filesNames = append(filesNames, userImg)
+			}
 		}
 	}
 
+	for _, v := range buttons {
+		filesNames = append(filesNames, v.Img)
+	}
+
 	for i := range emails {
-		if sendErr := gb.RunContext.Services.Sender.SendNotification(ctx, []string{i}, emailAttachment,
+		item := emails[i]
+
+		iconsName := []string{item.Image}
+		iconsName = append(iconsName, filesNames...)
+
+		if len(lastWorksForUser) != 0 {
+			iconsName = append(iconsName, warningImg)
+		}
+
+		for _, v := range description {
+			links, link := v.Get("attachLinks")
+			if link {
+				attachFiles, ok := links.([]file_registry.AttachInfo)
+				if ok && len(attachFiles) != 0 {
+					descIcons := []string{downloadImg}
+					iconsName = append(iconsName, descIcons...)
+					break
+				}
+			}
+		}
+
+		iconFiles, errFiles := gb.RunContext.GetIcons(iconsName)
+		if err != nil {
+			return errFiles
+		}
+
+		files = append(files, iconFiles...)
+
+		if sendErr := gb.RunContext.Services.Sender.SendNotification(ctx, []string{i}, files,
 			emails[i]); sendErr != nil {
 			return sendErr
 		}
@@ -162,13 +215,20 @@ func (gb *GoExecutionBlock) notifyNeedRework(ctx c.Context) error {
 	tpl := mail.NewSendToInitiatorEditTpl(gb.RunContext.WorkNumber, gb.RunContext.NotifName,
 		gb.RunContext.Services.Sender.SdAddress)
 
-	if err = gb.RunContext.Services.Sender.SendNotification(ctx, emails, nil, tpl); err != nil {
-		return err
+	filesList := []string{tpl.Image}
+	files, iconEerr := gb.RunContext.GetIcons(filesList)
+	if iconEerr != nil {
+		return iconEerr
+	}
+
+	if sendErr := gb.RunContext.Services.Sender.SendNotification(ctx, emails, files, tpl); sendErr != nil {
+		return sendErr
 	}
 
 	return nil
 }
 
+// 22 (Soglasovanie analogichno)
 func (gb *GoExecutionBlock) notifyNeedMoreInfo(ctx c.Context) error {
 	loginsToNotify := []string{gb.RunContext.Initiator}
 
@@ -184,7 +244,13 @@ func (gb *GoExecutionBlock) notifyNeedMoreInfo(ctx c.Context) error {
 	tpl := mail.NewRequestExecutionInfoTpl(gb.RunContext.WorkNumber,
 		gb.RunContext.NotifName, gb.RunContext.Services.Sender.SdAddress)
 
-	if err := gb.RunContext.Services.Sender.SendNotification(ctx, emails, nil, tpl); err != nil {
+	filesList := []string{tpl.Image}
+	files, iconEerr := gb.RunContext.GetIcons(filesList)
+	if iconEerr != nil {
+		return iconEerr
+	}
+
+	if err := gb.RunContext.Services.Sender.SendNotification(ctx, emails, files, tpl); err != nil {
 		return err
 	}
 
@@ -213,8 +279,14 @@ func (gb *GoExecutionBlock) notifyNewInfoReceived(ctx c.Context) error {
 	tpl := mail.NewAnswerExecutionInfoTpl(gb.RunContext.WorkNumber,
 		gb.RunContext.NotifName, gb.RunContext.Services.Sender.SdAddress)
 
-	if err = gb.RunContext.Services.Sender.SendNotification(ctx, emails, nil, tpl); err != nil {
-		return err
+	files := []string{tpl.Image}
+	iconFiles, iconEerr := gb.RunContext.GetIcons(files)
+	if iconEerr != nil {
+		return iconEerr
+	}
+
+	if sendErr := gb.RunContext.Services.Sender.SendNotification(ctx, emails, iconFiles, tpl); sendErr != nil {
+		return sendErr
 	}
 
 	return nil

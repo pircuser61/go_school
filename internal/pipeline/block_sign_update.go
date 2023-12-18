@@ -118,14 +118,22 @@ func (gb *GoSignBlock) handleSignature(ctx c.Context, login string) error {
 			}
 			emails = append(emails, eml)
 		}
-		err := gb.RunContext.Services.Sender.SendNotification(ctx, emails, nil,
-			mail.NewSignErrorTemplate(
-				gb.RunContext.WorkNumber,
-				gb.RunContext.Services.Sender.SdAddress,
-			),
+
+		tpl := mail.NewSignErrorTemplate(
+			gb.RunContext.WorkNumber,
+			gb.RunContext.WorkTitle,
+			gb.RunContext.Services.Sender.SdAddress,
 		)
-		if err != nil {
-			return err
+
+		filesList := []string{tpl.Image}
+		files, iconEerr := gb.RunContext.GetIcons(filesList)
+		if iconEerr != nil {
+			return iconEerr
+		}
+
+		sendErr := gb.RunContext.Services.Sender.SendNotification(ctx, emails, files, tpl)
+		if sendErr != nil {
+			return sendErr
 		}
 	}
 	return nil
@@ -285,14 +293,19 @@ func (gb *GoSignBlock) handleBreachedSLA(ctx c.Context) error {
 			emails = append(emails, eml)
 		}
 
-		err := gb.RunContext.Services.Sender.SendNotification(ctx, emails, nil,
-			mail.NewSignSLAExpiredTemplate(
-				gb.RunContext.WorkNumber,
-				gb.RunContext.NotifName,
-				gb.RunContext.Services.Sender.SdAddress,
-			),
+		tpl := mail.NewSignSLAExpiredTemplate(
+			gb.RunContext.WorkNumber,
+			gb.RunContext.NotifName,
+			gb.RunContext.Services.Sender.SdAddress,
 		)
-		if err != nil {
+
+		filesList := []string{tpl.Image}
+		files, iconEerr := gb.RunContext.GetIcons(filesList)
+		if iconEerr != nil {
+			return iconEerr
+		}
+
+		if err := gb.RunContext.Services.Sender.SendNotification(ctx, emails, files, tpl); err != nil {
 			return err
 		}
 	}
