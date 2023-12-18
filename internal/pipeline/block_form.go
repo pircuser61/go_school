@@ -22,7 +22,7 @@ const (
 )
 
 const (
-	formName            = "name"
+	formName            = "form_name"
 	formFillFormAction  = "fill_form"
 	formStartWorkAction = "form_executor_start_work"
 )
@@ -126,29 +126,34 @@ func (gb *GoFormBlock) formActions() []MemberAction {
 		return []MemberAction{action}
 	}
 
-	actions := []MemberAction{
-		{
-			Id:   formFillFormAction,
-			Type: ActionTypeCustom,
-		},
-	}
+	actions := []MemberAction{}
 
+	formNames := make([]string, 0)
 	for _, v := range gb.State.FormsAccessibility {
 		if _, ok := gb.RunContext.VarStore.State[v.NodeId]; !ok {
 			continue
 		}
 
+		if gb.Name == v.Name {
+			continue
+		}
+
 		if v.AccessType == "ReadWrite" {
-			memAction := MemberAction{
-				Id:   formFillFormAction,
-				Type: ActionTypeCustom,
-				Params: map[string]interface{}{
-					formName: v.NodeId,
-				},
-			}
-			actions = append(actions, memAction)
+			formNames = append(formNames, v.NodeId)
 		}
 	}
+
+	if len(formNames) == 0 {
+		formNames = append(formNames, gb.Name)
+	}
+
+	actions = append(actions, MemberAction{
+		Id:   formFillFormAction,
+		Type: ActionTypeCustom,
+		Params: map[string]interface{}{
+			formName: formNames,
+		},
+	})
 
 	return actions
 }

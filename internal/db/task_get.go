@@ -1139,9 +1139,10 @@ func (db *PGCon) computeActions(ctx c.Context, currentUserDelegators []string, a
 			if len(compositeActionId) > 1 {
 				id := compositeActionId[0]
 
-				if _, ok := metActions[id]; ok {
+				if _, ok := metActions[id]; ok && id == "fill_form" {
 					continue
 				}
+
 				metActions[id] = struct{}{}
 
 				priority := compositeActionId[1]
