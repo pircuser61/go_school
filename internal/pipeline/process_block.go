@@ -665,12 +665,15 @@ func (runCtx *BlockRunContext) handleInitiatorNotify(ctx c.Context, params handl
 
 	loginsToNotify := []string{runCtx.Initiator}
 
+	log := logger.GetLogger(ctx)
+
 	var email string
 	emails := make([]string, 0, len(loginsToNotify))
 	for _, login := range loginsToNotify {
 		email, err = runCtx.Services.People.GetUserEmail(ctx, login)
 		if err != nil {
-			return err
+			log.WithField("login", login).WithError(err).Warning("couldn't get email")
+			return nil
 		}
 
 		emails = append(emails, email)

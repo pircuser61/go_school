@@ -339,6 +339,7 @@ func (a *FormData) IncreaseSLA(addSla int) {
 }
 
 func (gb *GoFormBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork string, logins map[string]struct{}) (err error) {
+	log := logger.GetLogger(ctx)
 	executors := getSliceFromMapOfStrings(logins)
 
 	emails := make([]string, 0, len(executors))
@@ -346,7 +347,8 @@ func (gb *GoFormBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork strin
 		if login != loginTakenInWork {
 			email, emailErr := gb.RunContext.Services.People.GetUserEmail(ctx, login)
 			if emailErr != nil {
-				return emailErr
+				log.WithField("login", login).WithError(emailErr).Warning("couldn't get email")
+				continue
 			}
 
 			emails = append(emails, email)
