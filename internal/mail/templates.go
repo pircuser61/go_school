@@ -20,8 +20,10 @@ import (
 
 const (
 	defaultApprovementActionName = "согласования"
-
-	TaskUrlTemplate = "%s/applications/details/%s"
+	attachExists                 = "attachExist"
+	attachLinks                  = "attachLinks"
+	attachList                   = "attachList"
+	TaskUrlTemplate              = "%s/applications/details/%s"
 )
 
 type Descriptions struct {
@@ -405,10 +407,11 @@ func isLink(v interface{}) bool {
 	return ok
 }
 
+//nolint:gocognit // ok here
 func CheckGroup(desc []orderedmap.OrderedMap) []orderedmap.OrderedMap {
 	for _, item := range desc {
 		for key, v := range item.Values() {
-			if key == "attachExist" || key == "attachLinks" || key == "attachList" {
+			if key == attachExists || key == attachLinks || key == attachList {
 				continue
 			}
 
@@ -434,8 +437,7 @@ func CheckGroup(desc []orderedmap.OrderedMap) []orderedmap.OrderedMap {
 				continue
 			}
 
-			switch group := groupMap.(type) {
-			case orderedmap.OrderedMap:
+			if group, types := groupMap.(orderedmap.OrderedMap); types {
 				for keys, dVal := range group.Values() {
 					switch itemGroup := dVal.(type) {
 					case []interface{}:
@@ -447,8 +449,7 @@ func CheckGroup(desc []orderedmap.OrderedMap) []orderedmap.OrderedMap {
 						}
 
 						if cap(arrayBlock) != 0 {
-							text := strings.Join(arrayBlock, `, `)
-							item.Set(keys, text)
+							item.Set(keys, strings.Join(arrayBlock, `, `))
 							continue
 						}
 
@@ -461,16 +462,14 @@ func CheckGroup(desc []orderedmap.OrderedMap) []orderedmap.OrderedMap {
 				}
 			}
 			item.Delete(key)
-
 		}
 	}
-
 	return desc
 }
 
 func checkKey(key string) bool {
 	switch key {
-	case "attachExist", "attachList", "attachLinks":
+	case attachExists, attachList, attachLinks:
 		return false
 	default:
 		return true
