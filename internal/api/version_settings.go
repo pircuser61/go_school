@@ -922,8 +922,8 @@ func toResponseApprovalListSettings(dto *toResponseApprovalListSettingsDTO) (
 		shortTitle := ""
 		isDelegateOfAnyStepMember := false
 		status := ""
-		updateTime := time.Now().String()
-		tisulka := time.Now().String()
+		updateTime := time.Now().Format(time.RFC3339)
+		tisulka := time.Now().Format(time.RFC3339)
 
 		steps = append(steps, TaskResponseStep{
 			Name:       &stepName,
