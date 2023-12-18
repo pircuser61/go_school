@@ -661,7 +661,8 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 		if login != loginTakenInWork {
 			email, emailErr := gb.RunContext.Services.People.GetUserEmail(ctx, login)
 			if emailErr != nil {
-				return emailErr
+				log.WithField("login", login).WithError(emailErr).Warning("couldn't get email")
+				continue
 			}
 
 			emails = append(emails, email)

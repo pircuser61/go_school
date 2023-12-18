@@ -3,17 +3,21 @@ package pipeline
 import (
 	c "context"
 
+	"gitlab.services.mts.ru/abp/myosotis/logger"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
 func (gb *GoSignBlock) notifyAdditionalApprovers(ctx c.Context, logins []string, attachsId []entity.Attachment) error {
+	l := logger.GetLogger(ctx)
+
 	emails := make([]string, 0, len(logins))
 	for _, login := range logins {
 		approverEmail, emailErr := gb.RunContext.Services.People.GetUserEmail(ctx, login)
 		if emailErr != nil {
-			return emailErr
+			l.WithField("login", login).WithError(emailErr).Warning("couldn't get email")
+			continue
 		}
 
 		emails = append(emails, approverEmail)
@@ -85,11 +89,14 @@ func (gb *GoSignBlock) notifyAdditionalApprovers(ctx c.Context, logins []string,
 // notifyDecisionMadeByAdditionalApprover notifies requesting signers
 // and the task initiator that an additional approver has left a review
 func (gb *GoSignBlock) notifyDecisionMadeByAdditionalApprover(ctx c.Context, logins []string) error {
+	l := logger.GetLogger(ctx)
+
 	emailsToNotify := make([]string, 0, len(logins))
 	for _, login := range logins {
 		emailToNotify, emailErr := gb.RunContext.Services.People.GetUserEmail(ctx, login)
 		if emailErr != nil {
-			return emailErr
+			l.WithField("login", login).WithError(emailErr).Warning("couldn't get email")
+			continue
 		}
 
 		emailsToNotify = append(emailsToNotify, emailToNotify)

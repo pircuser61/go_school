@@ -170,13 +170,16 @@ func (gb *GoExecutionBlock) notifyNeedRework(ctx c.Context) error {
 }
 
 func (gb *GoExecutionBlock) notifyNeedMoreInfo(ctx c.Context) error {
+	l := logger.GetLogger(ctx)
+
 	loginsToNotify := []string{gb.RunContext.Initiator}
 
 	emails := make([]string, 0, len(loginsToNotify))
 	for _, login := range loginsToNotify {
 		email, err := gb.RunContext.Services.People.GetUserEmail(ctx, login)
 		if err != nil {
-			return err
+			l.WithField("login", login).WithError(err).Warning("couldn't get email")
+			return nil
 		}
 
 		emails = append(emails, email)
@@ -192,6 +195,8 @@ func (gb *GoExecutionBlock) notifyNeedMoreInfo(ctx c.Context) error {
 }
 
 func (gb *GoExecutionBlock) notifyNewInfoReceived(ctx c.Context) error {
+	l := logger.GetLogger(ctx)
+
 	delegates, err := gb.RunContext.Services.HumanTasks.GetDelegationsByLogins(ctx,
 		getSliceFromMapOfStrings(gb.State.Executors))
 	if err != nil {
@@ -205,6 +210,7 @@ func (gb *GoExecutionBlock) notifyNewInfoReceived(ctx c.Context) error {
 	for _, login := range loginsToNotify {
 		email, err = gb.RunContext.Services.People.GetUserEmail(ctx, login)
 		if err != nil {
+			l.WithField("login", login).WithError(err).Warning("couldn't get email")
 			continue
 		}
 

@@ -114,6 +114,7 @@ func (gb *GoSignBlock) handleSignature(ctx c.Context, login string) error {
 		for i := range logins {
 			eml, err := gb.RunContext.Services.People.GetUserEmail(ctx, logins[i])
 			if err != nil {
+				log.WithField("login", login).WithError(err).Warning("couldn't get email")
 				continue
 			}
 			emails = append(emails, eml)
