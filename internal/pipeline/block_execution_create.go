@@ -100,6 +100,7 @@ func createGoExecutionBlock(ctx c.Context, name string, ef *entity.EriusFunc, ru
 		if err := b.setPrevDecision(ctx); err != nil {
 			return nil, false, err
 		}
+
 	}
 
 	return b, reEntry, nil
@@ -328,12 +329,18 @@ func (gb *GoExecutionBlock) setPrevDecision(ctx c.Context) error {
 		gb.setEditingAppLogFromPreviousBlock(ctx)
 	}
 
-	gb.setPreviousExecutors(ctx)
+	if !gb.State.RepeatPrevDecision {
+		return nil
+	}
 
-	if decision == nil && gb.State.GetRepeatPrevDecision() {
+	if decision == nil {
 		if gb.trySetPreviousDecision(ctx) {
 			return nil
 		}
+	}
+
+	if gb.State.UseActualExecutor || gb.State.Decision != nil {
+		gb.setPreviousExecutors(ctx)
 	}
 	return nil
 }
