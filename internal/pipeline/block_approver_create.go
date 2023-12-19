@@ -318,9 +318,13 @@ func (gb *GoApproverBlock) setPrevDecision(ctx c.Context) error {
 		gb.setEditingAppLogFromPreviousBlock(ctx)
 	}
 
+	if !gb.State.RepeatPrevDecision {
+		return nil
+	}
+
 	gb.setPreviousApprovers(ctx)
 
-	if decision == nil && gb.State.GetRepeatPrevDecision() {
+	if decision == nil {
 		if gb.trySetPreviousDecision(ctx) {
 			return nil
 		}
