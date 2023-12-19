@@ -2216,7 +2216,7 @@ func (db *PGCon) GetAdditionalDescriptionForms(workNumber, nodeName string) ([]o
 			WHERE rules ->> 'accessType' != 'None'
 		)
 		AND work_id = (SELECT id FROM works WHERE work_number = $1 AND child_id IS NULL)
-	ORDER BY time`
+	ORDER BY time DESC LIMIT 1`
 	ff := make([]orderedmap.OrderedMap, 0)
 	rows, err := db.Connection.Query(context.Background(), q, workNumber, nodeName)
 	if err != nil {

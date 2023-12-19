@@ -308,7 +308,7 @@
             </td>
           </tr>
           {{ if .Description }} {{ range $ko, $vo := .Description }} {{ $item :=
-          retMap $vo }}
+          retMap $vo }} {{ if (hasValue $vo) }}
           <tr>
             <td
                     style="
@@ -803,7 +803,7 @@
               </table>
             </td>
           </tr>
-          {{ end }} {{ end }}
+          {{ end }} {{ end }} {{ end }}
           <tr>
             <td
                     align="center"
