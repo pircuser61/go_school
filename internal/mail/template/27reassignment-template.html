@@ -578,7 +578,7 @@
                       </p>
                       <!-- конец пустой линии -->
                       {{ else }}
-                        {{ if not (isFile $val) }} {{ if isLink $val }}
+                        {{ if not (isFile $val) }} {{ if ne $key "file_id" }} {{ if isLink $val }}
                         <p
                                 style="
                             margin: 0;
@@ -681,6 +681,7 @@
                       {{ end }}
                     {{ end }}
                   {{ end }}
+                 {{ end }}
                 {{ end }}
                     {{ if (index $item "attachLinks") }}
 
