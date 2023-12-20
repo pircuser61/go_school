@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -304,6 +305,15 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request, workNumber s
 	}
 	dbTask.Steps = steps
 
+	currentUserDelegateSteps2, ttErr := ae.getCurrentUserDelegates(ui.Username, &steps, &delegations)
+	if ttErr != nil {
+		e := GetDelegationsError
+		log.Error(e.errorMessage(ttErr))
+		_ = e.sendError(w)
+
+		return
+	}
+
 	currentUserDelegateSteps, tErr := ae.getCurrentUserInDelegatesForSteps(ui.Username, &steps, &delegations)
 	if tErr != nil {
 		e := GetDelegationsError
@@ -320,6 +330,20 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request, workNumber s
 
 		return
 	}
+
+	stepDelegates, checkErr := ae.checkHideExecutors(ctx, dbTask, ui.Username, currentUserDelegateSteps2)
+	if checkErr != nil {
+		if checkErr != nil {
+			e := UnknownError
+			log.Error(e.errorMessage(checkErr))
+			_ = e.sendError(w)
+
+			return
+		}
+	}
+
+	fmt.Printf("StepDelegates: %v\n", stepDelegates)
+
 	if ui.Username != scenario.Author {
 		hideErr := ae.hideExecutors(ctx, dbTask, ui.Username, currentUserDelegateSteps)
 		if hideErr != nil {
@@ -397,6 +421,64 @@ type executionBlock struct {
 
 type additionalApprover struct {
 	ApproverLogin string `json:"approver_login"`
+}
+
+func (ae *APIEnv) getCurrentUserDelegates(currentUser string, steps *entity.TaskSteps, delegates *ht.Delegations) (
+	res map[string]bool, err error) {
+	const (
+		ApproverBlockType  = "approver"
+		ExecutionBlockType = "execution"
+		FormBlockType      = "form"
+	)
+
+	res = make(map[string]bool, 0)
+	for _, s := range *steps {
+		var isDelegateAnyPersonOfStep = false
+
+		if s.State == nil || (s.Status != "running" && s.Status != "idle") {
+			continue
+		}
+
+		switch s.Type {
+		case ApproverBlockType:
+			var approver approverBlock
+			unmarshalErr := json.Unmarshal(s.State[s.Name], &approver)
+			if unmarshalErr != nil {
+				return nil, unmarshalErr
+			}
+
+			for member := range approver.Approvers {
+				if isDelegate(currentUser, member, delegates) {
+					isDelegateAnyPersonOfStep = true
+					break
+				}
+			}
+
+			for _, member := range approver.AdditionalApprovers {
+				if isDelegate(currentUser, member.ApproverLogin, delegates) {
+					isDelegateAnyPersonOfStep = true
+					break
+				}
+			}
+		case ExecutionBlockType, FormBlockType:
+			var execution executionBlock
+			unmarshalErr := json.Unmarshal(s.State[s.Name], &execution)
+			if unmarshalErr != nil {
+				return nil, unmarshalErr
+			}
+
+			for member := range execution.Executors {
+				if isDelegate(currentUser, member, delegates) {
+					isDelegateAnyPersonOfStep = true
+					break
+				}
+			}
+		}
+
+		res[s.Name] = isDelegateAnyPersonOfStep
+	}
+
+	return res, nil
 }
 
 func (ae *APIEnv) getCurrentUserInDelegatesForSteps(currentUser string, steps *entity.TaskSteps, delegates *ht.Delegations) (
@@ -951,6 +1033,118 @@ func (ae *APIEnv) GetTaskMeanSolveTime(w http.ResponseWriter, req *http.Request,
 
 		return
 	}
+}
+
+func (ae *APIEnv) checkHideExecutors(ctx context.Context, dbTask *entity.EriusTask, requesterLogin string, stepDelegates map[string]bool) (map[string]bool, error) {
+	dbMembers, membErr := ae.DB.GetTaskMembers(ctx, dbTask.WorkNumber, false)
+	if membErr != nil {
+		return stepDelegates, membErr
+	}
+
+	members := make([]string, 0)
+	for i := range dbMembers {
+		if dbMembers[i].Login != dbTask.Author {
+			members = append(members, dbMembers[i].Login)
+		}
+	}
+
+	for stepIndex := range dbTask.Steps {
+		currentStep := dbTask.Steps[stepIndex]
+		if currentStep.State == nil {
+			continue
+		}
+
+		switch currentStep.Type {
+		case pipeline.BlockGoFormID:
+			if stepDelegates[currentStep.Name] {
+				continue
+			}
+
+			var formBlock pipeline.FormData
+			unmarshalErr := json.Unmarshal(currentStep.State[currentStep.Name], &formBlock)
+			if unmarshalErr != nil {
+				return stepDelegates, unmarshalErr
+			}
+
+			for _, v := range formBlock.FormsAccessibility {
+				if v.NodeId == currentStep.Name && (v.AccessType != "ReadWrite" || v.AccessType != "Read") {
+					delete(stepDelegates, v.NodeId)
+				}
+			}
+
+			if !formBlock.HideExecutorFromInitiator || slices.Contains(members, requesterLogin) {
+				continue
+			}
+
+			formBlock.Executors = map[string]struct{}{
+				hiddenUserLogin: {},
+			}
+			formBlock.ActualExecutor = utils.GetAddressOfValue(hiddenUserLogin)
+
+			for historyIdx := range formBlock.ChangesLog {
+				formBlock.ChangesLog[historyIdx].Executor = hiddenUserLogin
+				formBlock.ChangesLog[historyIdx].DelegateFor = hideDelegator(formBlock.ChangesLog[historyIdx].DelegateFor)
+			}
+			data, marshalErr := json.Marshal(formBlock)
+			if marshalErr != nil {
+				return stepDelegates, marshalErr
+			}
+			currentStep.State[currentStep.Name] = data
+
+		case pipeline.BlockGoExecutionID:
+			if !stepDelegates[currentStep.Name] {
+				continue
+			}
+			var execBlock pipeline.ExecutionData
+			unmarshalErr := json.Unmarshal(currentStep.State[currentStep.Name], &execBlock)
+			if unmarshalErr != nil {
+				return stepDelegates, unmarshalErr
+			}
+			if !execBlock.HideExecutor || slices.Contains(members, requesterLogin) {
+				continue
+			}
+			execBlock.Executors = map[string]struct{}{
+				hiddenUserLogin: {},
+			}
+
+			execBlock.InitialExecutors = map[string]struct{}{
+				hiddenUserLogin: {},
+			}
+
+			if execBlock.ActualExecutor != nil {
+				execBlock.ActualExecutor = utils.GetAddressOfValue(hiddenUserLogin)
+			}
+
+			for i := range execBlock.ChangedExecutorsLogs {
+				execBlock.ChangedExecutorsLogs[i].OldLogin = hiddenUserLogin
+				execBlock.ChangedExecutorsLogs[i].NewLogin = hiddenUserLogin
+				execBlock.ChangedExecutorsLogs[i].Comment = ""
+			}
+
+			for i := range execBlock.RequestExecutionInfoLogs {
+				if execBlock.RequestExecutionInfoLogs[i].ReqType == pipeline.RequestInfoQuestion {
+					execBlock.RequestExecutionInfoLogs[i].Login = hiddenUserLogin
+					execBlock.RequestExecutionInfoLogs[i].DelegateFor = hideDelegator(execBlock.RequestExecutionInfoLogs[i].DelegateFor)
+				}
+			}
+
+			for i := range execBlock.EditingAppLog {
+				execBlock.EditingAppLog[i].Executor = hiddenUserLogin
+				execBlock.EditingAppLog[i].DelegateFor = hideDelegator(execBlock.EditingAppLog[i].DelegateFor)
+			}
+
+			if execBlock.EditingApp != nil {
+				execBlock.EditingApp.Executor = hiddenUserLogin
+				execBlock.EditingApp.DelegateFor = hideDelegator(execBlock.EditingApp.DelegateFor)
+			}
+			data, marshalErr := json.Marshal(execBlock)
+			if marshalErr != nil {
+				return stepDelegates, marshalErr
+			}
+			currentStep.State[currentStep.Name] = data
+		}
+	}
+	return stepDelegates, nil
 }
 
 func (ae *APIEnv) hideExecutors(ctx context.Context, dbTask *entity.EriusTask, requesterLogin string, stepDelegates map[string]bool) error {

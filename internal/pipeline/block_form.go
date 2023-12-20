@@ -126,7 +126,15 @@ func (gb *GoFormBlock) formActions() []MemberAction {
 		return []MemberAction{action}
 	}
 
-	actions := []MemberAction{}
+	actions := []MemberAction{
+		{
+			Id:   formFillFormAction,
+			Type: ActionTypeCustom,
+			Params: map[string]interface{}{
+				formName: gb.Name,
+			},
+		},
+	}
 
 	formNames := make([]string, 0)
 	for _, v := range gb.State.FormsAccessibility {
@@ -143,17 +151,15 @@ func (gb *GoFormBlock) formActions() []MemberAction {
 		}
 	}
 
-	if len(formNames) == 0 {
-		formNames = append(formNames, gb.Name)
+	if len(formNames) != 0 {
+		actions = append(actions, MemberAction{
+			Id:   formFillFormAction,
+			Type: ActionTypeCustom,
+			Params: map[string]interface{}{
+				formName: formNames,
+			},
+		})
 	}
-
-	actions = append(actions, MemberAction{
-		Id:   formFillFormAction,
-		Type: ActionTypeCustom,
-		Params: map[string]interface{}{
-			formName: formNames,
-		},
-	})
 
 	return actions
 }
