@@ -555,7 +555,7 @@ func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) ([]o
 		return nil, nil, err
 	}
 
-	apBody := flatUser(descr.InitialApplication.ApplicationBody)
+	apBody := flatArray(descr.InitialApplication.ApplicationBody)
 
 	descriptions := make([]orderedmap.OrderedMap, 0)
 
@@ -613,21 +613,21 @@ func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) ([]o
 		v.Set("attachList", attach.AttachmentsList)
 
 		files = append(files, attach.AttachmentsList...)
-		descriptions = append(descriptions, flatUser(v))
+		descriptions = append(descriptions, flatArray(v))
 	}
 
 	files = append(files, attachments.AttachmentsList...)
 	return descriptions, files, nil
 }
 
-func flatUser(v orderedmap.OrderedMap) orderedmap.OrderedMap {
+func flatArray(v orderedmap.OrderedMap) orderedmap.OrderedMap {
 	res := orderedmap.New()
 	keys := v.Keys()
 	values := v.Values()
 
 	for _, k := range keys {
 		vv, ok := values[k].([]interface{})
-		if ok && isUser(vv[0]) {
+		if ok {
 			for i, v := range vv {
 				res.Set(k+"("+strconv.Itoa(i)+")", v)
 			}
@@ -637,19 +637,6 @@ func flatUser(v orderedmap.OrderedMap) orderedmap.OrderedMap {
 	}
 
 	return *res
-}
-
-func isUser(v interface{}) bool {
-	vv, ok := v.(orderedmap.OrderedMap)
-	if !ok {
-		return false
-	}
-
-	if _, oks := vv.Get("fullname"); !oks {
-		return false
-	}
-
-	return true
 }
 
 type handleInitiatorNotifyParams struct {
