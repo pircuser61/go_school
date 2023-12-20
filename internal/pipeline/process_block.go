@@ -5,6 +5,7 @@ import (
 	c "context"
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/google/uuid"
@@ -554,7 +555,7 @@ func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) ([]o
 		return nil, nil, err
 	}
 
-	apBody := descr.InitialApplication.ApplicationBody
+	apBody := flatArray(descr.InitialApplication.ApplicationBody)
 
 	descriptions := make([]orderedmap.OrderedMap, 0)
 
@@ -612,11 +613,30 @@ func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) ([]o
 		v.Set("attachList", attach.AttachmentsList)
 
 		files = append(files, attach.AttachmentsList...)
-		descriptions = append(descriptions, v)
+		descriptions = append(descriptions, flatArray(v))
 	}
 
 	files = append(files, attachments.AttachmentsList...)
 	return descriptions, files, nil
+}
+
+func flatArray(v orderedmap.OrderedMap) orderedmap.OrderedMap {
+	res := orderedmap.New()
+	keys := v.Keys()
+	values := v.Values()
+
+	for _, k := range keys {
+		vv, ok := values[k].([]interface{})
+		if ok {
+			for i, v := range vv {
+				res.Set(k+"("+strconv.Itoa(i)+")", v)
+			}
+		} else {
+			res.Set(k, values[k])
+		}
+	}
+
+	return *res
 }
 
 type handleInitiatorNotifyParams struct {
