@@ -147,12 +147,14 @@ func (gb *GoExecutionBlock) reEntry(ctx c.Context, ef *entity.EriusFunc) error {
 			params.ExecutorsGroupID = fmt.Sprintf("%v", groupId)
 		}
 
-		deadline, err := gb.getDeadline(ctx, *params.WorkType)
-		if err != nil {
-			return err
-		}
+		if params.WorkType != nil {
+			deadline, err := gb.getDeadline(ctx, *params.WorkType)
+			if err != nil {
+				return err
+			}
 
-		gb.State.Deadline = deadline
+			gb.State.Deadline = deadline
+		}
 
 		err = gb.setExecutorsByParams(ctx, &setExecutorsByParamsDTO{
 			Type:     params.Type,
@@ -197,13 +199,6 @@ func (gb *GoExecutionBlock) createState(ctx c.Context, ef *entity.EriusFunc) err
 		HideExecutor:       params.HideExecutor,
 	}
 
-	deadline, err := gb.getDeadline(ctx, *params.WorkType)
-	if err != nil {
-		return err
-	}
-
-	gb.State.Deadline = deadline
-
 	if params.ExecutorsGroupIDPath != nil && *params.ExecutorsGroupIDPath != "" {
 		variableStorage, grabStorageErr := gb.RunContext.VarStore.GrabStorage()
 		if grabStorageErr != nil {
@@ -242,6 +237,13 @@ func (gb *GoExecutionBlock) createState(ctx c.Context, ef *entity.EriusFunc) err
 
 	if params.WorkType != nil {
 		gb.State.WorkType = *params.WorkType
+
+		deadline, err := gb.getDeadline(ctx, gb.State.WorkType)
+		if err != nil {
+			return err
+		}
+
+		gb.State.Deadline = deadline
 	} else {
 		task, getVersionErr := gb.RunContext.Services.Storage.GetVersionByWorkNumber(ctx, gb.RunContext.WorkNumber)
 		if getVersionErr != nil {
