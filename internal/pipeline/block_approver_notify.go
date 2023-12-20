@@ -9,6 +9,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	file_registry "gitlab.services.mts.ru/jocasta/pipeliner/internal/file-registry"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
@@ -257,7 +258,7 @@ func (gb *GoApproverBlock) notifyAdditionalApprovers(ctx c.Context, logins []str
 			gb.RunContext.WorkNumber,
 			gb.RunContext.NotifName,
 			gb.RunContext.Services.Sender.SdAddress,
-			gb.State.ApproveStatusName,
+			script.SettingStatusApprovement,
 			gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(
 				time.Now(), gb.State.SLA, slaInfoPtr),
 			lastWorksForUser,
