@@ -304,7 +304,7 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request, workNumber s
 	}
 	dbTask.Steps = steps
 
-	currentActualDelegates, ttErr := ae.getCurrentUserDelegates(ui.Username, &steps, &delegations)
+	accessibleForms, ttErr := ae.getCurrentActualNode(ui.Username, &steps, &delegations)
 	if ttErr != nil {
 		e := GetDelegationsError
 		log.Error(e.errorMessage(ttErr))
@@ -330,15 +330,13 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request, workNumber s
 		return
 	}
 
-	removeErr := ae.removeForms(dbTask, currentActualDelegates)
+	removeErr := ae.removeForms(dbTask, accessibleForms)
 	if removeErr != nil {
-		if removeErr != nil {
-			e := UnknownError
-			log.Error(e.errorMessage(removeErr))
-			_ = e.sendError(w)
+		e := UnknownError
+		log.Error(e.errorMessage(removeErr))
+		_ = e.sendError(w)
 
-			return
-		}
+		return
 	}
 
 	if ui.Username != scenario.Author {
@@ -351,6 +349,7 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request, workNumber s
 			return
 		}
 	}
+
 	versionSettings, errSla := ae.DB.GetSlaVersionSettings(ctx, dbTask.VersionID.String())
 	if errSla != nil {
 		e := GetProcessSlaSettingsError
@@ -420,17 +419,17 @@ type additionalApprover struct {
 	ApproverLogin string `json:"approver_login"`
 }
 
-func (ae *APIEnv) getCurrentUserDelegates(currentUser string, steps *entity.TaskSteps, delegates *ht.Delegations) (
-	res map[string]bool, err error) {
+func (ae *APIEnv) getCurrentActualNode(currentUser string, steps *entity.TaskSteps, delegates *ht.Delegations) (
+	accessibleForms map[string]struct{}, err error) {
 	const (
 		ApproverBlockType  = "approver"
 		ExecutionBlockType = "execution"
 		FormBlockType      = "form"
 	)
 
-	res = make(map[string]bool, 0)
+	accessibleForms = make(map[string]struct{}, 0)
 	for _, s := range *steps {
-		var isDelegateAnyPersonOfStep = false
+		var userHasAccess bool
 
 		if s.State == nil || (s.Status != "running" && s.Status != "idle") {
 			continue
@@ -438,27 +437,39 @@ func (ae *APIEnv) getCurrentUserDelegates(currentUser string, steps *entity.Task
 
 		switch s.Type {
 		case ApproverBlockType:
-			var approver approverBlock
+			var approver pipeline.ApproverData
 			unmarshalErr := json.Unmarshal(s.State[s.Name], &approver)
 			if unmarshalErr != nil {
 				return nil, unmarshalErr
 			}
 
+			delegate := delegates.FilterByType("approvement")
+
 			for member := range approver.Approvers {
-				if isDelegate(currentUser, member, delegates) {
-					isDelegateAnyPersonOfStep = true
+				if currentUser == member || isDelegate(currentUser, member, &delegate) {
+					userHasAccess = true
 					break
 				}
 			}
 
 			for _, member := range approver.AdditionalApprovers {
-				if currentUser == member.ApproverLogin && isDelegate(currentUser, member.ApproverLogin, delegates) {
-					isDelegateAnyPersonOfStep = true
-					res[s.Name] = isDelegateAnyPersonOfStep
+				if currentUser == member.ApproverLogin || isDelegate(currentUser, member.ApproverLogin, &delegate) {
+					userHasAccess = true
 					break
 				}
 			}
-		case pipeline.BlockGoFormID:
+
+			if !userHasAccess {
+				continue
+			}
+
+			for _, form := range approver.FormsAccessibility {
+				if form.AccessType != "None" {
+					accessibleForms[form.Name] = struct{}{}
+				}
+			}
+
+		case FormBlockType:
 			var form pipeline.FormData
 			unmarshalErr := json.Unmarshal(s.State[s.Name], &form)
 			if unmarshalErr != nil {
@@ -466,37 +477,50 @@ func (ae *APIEnv) getCurrentUserDelegates(currentUser string, steps *entity.Task
 			}
 
 			for member := range form.Executors {
-				if member != currentUser && !isDelegate(currentUser, member, delegates) {
-					continue
+				if currentUser == member {
+					userHasAccess = true
+					break
 				}
+			}
 
-				for _, v := range form.FormsAccessibility {
-					if v.NodeId == s.Name {
-						isDelegateAnyPersonOfStep = true
-						res[s.Name] = isDelegateAnyPersonOfStep
-						break
-					}
+			if !userHasAccess {
+				continue
+			}
+
+			for _, form := range form.FormsAccessibility {
+				if form.AccessType != "None" {
+					accessibleForms[s.Name] = struct{}{}
 				}
 			}
 
 		case ExecutionBlockType:
-			var execution executionBlock
+			var execution pipeline.ExecutionData
 			unmarshalErr := json.Unmarshal(s.State[s.Name], &execution)
 			if unmarshalErr != nil {
 				return nil, unmarshalErr
 			}
+
 			for member := range execution.Executors {
-				if member == currentUser && isDelegate(currentUser, member, delegates) {
-					isDelegateAnyPersonOfStep = true
-					res[s.Name] = isDelegateAnyPersonOfStep
+				delegate := delegates.FilterByType("execution")
+				if member == currentUser || isDelegate(currentUser, member, &delegate) {
+					userHasAccess = true
 					break
 				}
 			}
-		}
 
+			if !userHasAccess {
+				continue
+			}
+
+			for _, form := range execution.FormsAccessibility {
+				if form.AccessType != "None" {
+					accessibleForms[form.Name] = struct{}{}
+				}
+			}
+		}
 	}
 
-	return res, nil
+	return accessibleForms, nil
 }
 
 func (ae *APIEnv) getCurrentUserInDelegatesForSteps(currentUser string, steps *entity.TaskSteps, delegates *ht.Delegations) (
@@ -1053,40 +1077,36 @@ func (ae *APIEnv) GetTaskMeanSolveTime(w http.ResponseWriter, req *http.Request,
 	}
 }
 
-func (ae *APIEnv) removeForms(dbTask *entity.EriusTask, stepDelegates map[string]bool) error {
-	actualForm := make([]*entity.Step, 0)
-	for stepIndex := range dbTask.Steps {
-		currentStep := dbTask.Steps[stepIndex]
-		if currentStep.State == nil {
+func (ae *APIEnv) removeForms(dbTask *entity.EriusTask, accessibleForms map[string]struct{}) error {
+	actualSteps := make([]*entity.Step, 0, len(dbTask.Steps))
+
+	for _, step := range dbTask.Steps {
+		if _, ok := accessibleForms[step.Name]; !ok && step.Type == "form" {
 			continue
 		}
 
-		if _, ok := stepDelegates[currentStep.Name]; ok {
-			for k, v := range currentStep.Steps {
-				if len(v) < 5 {
-					continue
-				}
-
-				if currentStep.Name != v && v[0:4] == "form" {
-					currentStep.Steps[k] = currentStep.Steps[len(currentStep.Steps)-1]
-					currentStep.Steps = currentStep.Steps[:len(currentStep.Steps)-1]
-				}
+		newSteps := make([]string, 0, len(step.Steps))
+		for _, s := range step.Steps {
+			if _, ok := accessibleForms[s]; !ok && strings.HasPrefix(s, "form") {
+				continue
 			}
-
-			for k, _ := range currentStep.State {
-				if len(k) < 5 {
-					continue
-				}
-
-				if currentStep.Name != k && k[0:4] == "form" {
-					delete(currentStep.State, k)
-				}
-			}
-			actualForm = append(actualForm, currentStep)
+			newSteps = append(newSteps, s)
 		}
+
+		step.Steps = newSteps
+
+		newStates := make(map[string]json.RawMessage, len(step.State))
+		for k, v := range step.State {
+			if _, ok := accessibleForms[k]; !ok && strings.HasPrefix(k, "form") {
+				continue
+			}
+			newStates[k] = v
+		}
+		step.State = newStates
+		actualSteps = append(actualSteps, step)
 	}
 
-	dbTask.Steps = actualForm
+	dbTask.Steps = actualSteps
 
 	return nil
 }
