@@ -2208,15 +2208,20 @@ func (db *PGCon) GetAdditionalDescriptionForms(workNumber, nodeName string) ([]o
 		FROM versions
 			WHERE id = (SELECT version_id FROM works WHERE work_number = $1 AND child_id IS NULL)
 	)
-    SELECT content -> 'State' -> step_name -> 'application_body'
-	FROM variable_storage
-		WHERE step_name in (
+    SELECT v.content -> 'State' -> v.step_name -> 'application_body'
+	FROM variable_storage v
+	    INNER JOIN  (
+		      SELECT max(time) as mtime, step_name from variable_storage
+	          where work_id = (SELECT id FROM works WHERE work_number = $1 AND child_id IS NULL)
+		      group by step_name
+        ) t ON t.mtime= v.time and t.step_name=v.step_name
+		WHERE v.step_name in (
 			SELECT rules ->> 'node_id' as rule
 			FROM content
 			WHERE rules ->> 'accessType' != 'None'
 		)
-		AND work_id = (SELECT id FROM works WHERE work_number = $1 AND child_id IS NULL)
-	ORDER BY time DESC LIMIT 1`
+		AND v.work_id = (SELECT id FROM works WHERE work_number = $1 AND child_id IS NULL)
+	ORDER BY v.time`
 	ff := make([]orderedmap.OrderedMap, 0)
 	rows, err := db.Connection.Query(context.Background(), q, workNumber, nodeName)
 	if err != nil {
