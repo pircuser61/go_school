@@ -32,14 +32,18 @@ func (gb *GoSignBlock) notifyAdditionalApprovers(ctx c.Context, logins []string,
 
 	emails = utils.UniqueStrings(emails)
 
-	slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
-		TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.CurrBlockStartTime,
-			FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100)}},
-		WorkType: sla.WorkHourType(*gb.State.WorkType),
-	})
+	slaDeadline := ""
+	if gb.State.SLA != nil && gb.State.WorkType != nil {
+		slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
+			TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.CurrBlockStartTime,
+				FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100)}},
+			WorkType: sla.WorkHourType(*gb.State.WorkType),
+		})
+		if getSlaInfoErr != nil {
+			return getSlaInfoErr
+		}
 
-	if getSlaInfoErr != nil {
-		return getSlaInfoErr
+		slaDeadline = gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(time.Now(), *gb.State.SLA, slaInfoPtr)
 	}
 
 	lastWorksForUser := make([]*entity.EriusTask, 0)
@@ -75,8 +79,7 @@ func (gb *GoSignBlock) notifyAdditionalApprovers(ctx c.Context, logins []string,
 			gb.RunContext.NotifName,
 			gb.RunContext.Services.Sender.SdAddress,
 			"",
-			gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(
-				time.Now(), *gb.State.SLA, slaInfoPtr),
+			slaDeadline,
 			lastWorksForUser,
 		)
 
