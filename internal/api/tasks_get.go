@@ -3,7 +3,6 @@ package api
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -331,7 +330,7 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request, workNumber s
 		return
 	}
 
-	stepDelegates, checkErr := ae.checkHideExecutors(ctx, dbTask, ui.Username, currentUserDelegateSteps2)
+	checkErr := ae.checkHideExecutors(ctx, dbTask, ui.Username, currentUserDelegateSteps2)
 	if checkErr != nil {
 		if checkErr != nil {
 			e := UnknownError
@@ -341,8 +340,6 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request, workNumber s
 			return
 		}
 	}
-
-	fmt.Printf("StepDelegates: %v\n", stepDelegates)
 
 	if ui.Username != scenario.Author {
 		hideErr := ae.hideExecutors(ctx, dbTask, ui.Username, currentUserDelegateSteps)
@@ -1035,10 +1032,10 @@ func (ae *APIEnv) GetTaskMeanSolveTime(w http.ResponseWriter, req *http.Request,
 	}
 }
 
-func (ae *APIEnv) checkHideExecutors(ctx context.Context, dbTask *entity.EriusTask, requesterLogin string, stepDelegates map[string]bool) (map[string]bool, error) {
+func (ae *APIEnv) checkHideExecutors(ctx context.Context, dbTask *entity.EriusTask, requesterLogin string, stepDelegates map[string]bool) error {
 	dbMembers, membErr := ae.DB.GetTaskMembers(ctx, dbTask.WorkNumber, false)
 	if membErr != nil {
-		return stepDelegates, membErr
+		return membErr
 	}
 
 	members := make([]string, 0)
@@ -1063,12 +1060,12 @@ func (ae *APIEnv) checkHideExecutors(ctx context.Context, dbTask *entity.EriusTa
 			var formBlock pipeline.FormData
 			unmarshalErr := json.Unmarshal(currentStep.State[currentStep.Name], &formBlock)
 			if unmarshalErr != nil {
-				return stepDelegates, unmarshalErr
+				return unmarshalErr
 			}
 
 			for _, v := range formBlock.FormsAccessibility {
 				if v.NodeId == currentStep.Name && (v.AccessType != "ReadWrite" || v.AccessType != "Read") {
-					delete(stepDelegates, v.NodeId)
+					delete(currentStep.State, currentStep.Name)
 				}
 			}
 
@@ -1087,7 +1084,7 @@ func (ae *APIEnv) checkHideExecutors(ctx context.Context, dbTask *entity.EriusTa
 			}
 			data, marshalErr := json.Marshal(formBlock)
 			if marshalErr != nil {
-				return stepDelegates, marshalErr
+				return marshalErr
 			}
 			currentStep.State[currentStep.Name] = data
 
@@ -1098,7 +1095,7 @@ func (ae *APIEnv) checkHideExecutors(ctx context.Context, dbTask *entity.EriusTa
 			var execBlock pipeline.ExecutionData
 			unmarshalErr := json.Unmarshal(currentStep.State[currentStep.Name], &execBlock)
 			if unmarshalErr != nil {
-				return stepDelegates, unmarshalErr
+				return unmarshalErr
 			}
 			if !execBlock.HideExecutor || slices.Contains(members, requesterLogin) {
 				continue
@@ -1139,12 +1136,12 @@ func (ae *APIEnv) checkHideExecutors(ctx context.Context, dbTask *entity.EriusTa
 			}
 			data, marshalErr := json.Marshal(execBlock)
 			if marshalErr != nil {
-				return stepDelegates, marshalErr
+				return marshalErr
 			}
 			currentStep.State[currentStep.Name] = data
 		}
 	}
-	return stepDelegates, nil
+	return nil
 }
 
 func (ae *APIEnv) hideExecutors(ctx context.Context, dbTask *entity.EriusTask, requesterLogin string, stepDelegates map[string]bool) error {
