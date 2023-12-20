@@ -107,6 +107,7 @@ func (s *Service) SendNotification(ctx context.Context, to []string, files []ema
 		"isLink":   isLink,
 		"isFile":   isFile,
 		"checkKey": checkKey,
+		"hasValue": hasValue,
 	}).ParseFiles(headTemp, tmpl.Template)
 	if err != nil {
 		return err
