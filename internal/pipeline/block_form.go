@@ -152,13 +152,9 @@ func (gb *GoFormBlock) formActions() []MemberAction {
 	}
 
 	if len(formNames) != 0 {
-		actions = append(actions, MemberAction{
-			Id:   formFillFormAction,
-			Type: ActionTypeCustom,
-			Params: map[string]interface{}{
-				formName: formNames,
-			},
-		})
+		actions[0].Params = map[string]interface{}{
+			formName: formNames,
+		}
 	}
 
 	return actions
