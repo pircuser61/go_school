@@ -148,9 +148,9 @@ func (gb *GoExecutionBlock) reEntry(ctx c.Context, ef *entity.EriusFunc) error {
 		}
 
 		if params.WorkType != nil {
-			deadline, err := gb.getDeadline(ctx, *params.WorkType)
-			if err != nil {
-				return err
+			deadline, deadErr := gb.getDeadline(ctx, *params.WorkType)
+			if deadErr != nil {
+				return deadErr
 			}
 
 			gb.State.Deadline = deadline
