@@ -174,10 +174,10 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 		if iconsErr != nil {
 			return iconsErr
 		}
-		files = append(files, iconsFiles...)
+		iconsFiles = append(iconsFiles, files...)
 
 		if sendErr := gb.RunContext.Services.Sender.SendNotification(
-			ctx, []string{i}, files, item,
+			ctx, []string{i}, iconsFiles, item,
 		); sendErr != nil {
 			return sendErr
 		}

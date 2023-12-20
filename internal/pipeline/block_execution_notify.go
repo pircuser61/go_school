@@ -90,6 +90,11 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 	if getSlaInfoErr != nil {
 		return getSlaInfoErr
 	}
+
+	if !gb.State.IsTakenInWork {
+		filesNames = append(filesNames, vRabotuBtn)
+	}
+
 	for _, login = range loginsToNotify {
 		email, getUserEmailErr := gb.RunContext.Services.People.GetUserEmail(ctx, login)
 		if getUserEmailErr != nil {
@@ -111,7 +116,6 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 					Deadline:    gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(time.Now(), gb.State.SLA, slaInfoPtr),
 				},
 			)
-			filesNames = append(filesNames, vRabotuBtn)
 		} else {
 			author, errAuthor := gb.RunContext.Services.People.GetUser(ctx, gb.RunContext.Initiator)
 			if errAuthor != nil {
@@ -180,9 +184,9 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 			return errFiles
 		}
 
-		files = append(files, iconFiles...)
+		iconFiles = append(iconFiles, files...)
 
-		if sendErr := gb.RunContext.Services.Sender.SendNotification(ctx, []string{i}, files,
+		if sendErr := gb.RunContext.Services.Sender.SendNotification(ctx, []string{i}, iconFiles,
 			emails[i]); sendErr != nil {
 			return sendErr
 		}
