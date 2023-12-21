@@ -2,6 +2,10 @@
 -- +goose StatementBegin
 CREATE TABLE versions_21122023 AS (SELECT * FROM pipeliner.public.versions);
 
+CREATE TABLE variable_storage_21122023 AS (SELECT * FROM pipeliner.public.variable_storage);
+
+
+
 CREATE OR REPLACE FUNCTION add_app_body_prefix_mapping(input_v_ids uuid) RETURNS void
     language plpgsql
 AS $function$
@@ -87,6 +91,8 @@ END $function$;
 
 SELECT add_app_body_prefix_output(id)
 FROM pipeliner.public.versions;
+
+
 
 WITH cte AS (
     SELECT
