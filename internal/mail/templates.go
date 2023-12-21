@@ -312,12 +312,14 @@ func NewFormExecutionNeedTakeInWorkTpl(dto *NewFormExecutionNeedTakeInWorkDto, i
 			Link      string
 			Deadline  string
 			ActionBtn Button
+			RetryStr  string
 		}{
 			Id:        dto.WorkNumber,
 			Name:      dto.WorkTitle,
 			Link:      fmt.Sprintf(TaskUrlTemplate, dto.SdUrl, dto.WorkNumber),
 			Deadline:  dto.Deadline,
 			ActionBtn: *actionBtn,
+			RetryStr:  retryStr,
 		},
 	}
 }
