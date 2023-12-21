@@ -89,9 +89,10 @@ type DbMemberAction struct {
 }
 
 type DbTaskAction struct {
-	BlockID string                            `json:"block_id"`
-	Actions []string                          `json:"actions"`
-	Params  map[string]map[string]interface{} `json:"params"`
+	BlockID     string                            `json:"block_id"`
+	Actions     []string                          `json:"actions"`
+	Params      map[string]map[string]interface{} `json:"params"`
+	IsInitiator bool                              `json:"is_initiator"`
 }
 
 type DbMember struct {

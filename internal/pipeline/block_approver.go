@@ -53,6 +53,7 @@ func (gb *GoApproverBlock) Members() []Member {
 			Actions:              gb.approvementBaseActions(login),
 			IsActed:              gb.isApprovementActed(login),
 			ExecutionGroupMember: false,
+			IsInitiator:          false,
 		})
 		addedMembers[login] = struct{}{}
 	}
@@ -64,6 +65,7 @@ func (gb *GoApproverBlock) Members() []Member {
 			Actions:              gb.approvementAddActions(&addApprover),
 			IsActed:              gb.isApprovementActed(addApprover.ApproverLogin),
 			ExecutionGroupMember: false,
+			IsInitiator:          false,
 		})
 		addedMembers[addApprover.ApproverLogin] = struct{}{}
 	}
@@ -78,6 +80,7 @@ func (gb *GoApproverBlock) Members() []Member {
 			Actions:              []MemberAction{},
 			IsActed:              true,
 			ExecutionGroupMember: false,
+			IsInitiator:          false,
 		})
 		addedMembers[log.Login] = struct{}{}
 	}
@@ -92,6 +95,7 @@ func (gb *GoApproverBlock) Members() []Member {
 			Actions:              []MemberAction{},
 			IsActed:              true,
 			ExecutionGroupMember: false,
+			IsInitiator:          false,
 		})
 		addedMembers[log.Approver] = struct{}{}
 	}
@@ -107,11 +111,40 @@ func (gb *GoApproverBlock) Members() []Member {
 				Actions:              []MemberAction{},
 				IsActed:              true,
 				ExecutionGroupMember: false,
+				IsInitiator:          false,
 			})
 			addedMembers[log.Login] = struct{}{}
+
+			if !isQuestionAnswered(log.LinkId, gb.State.AddInfo) {
+				members = append(members, Member{
+					Login: gb.RunContext.Initiator,
+					Actions: []MemberAction{
+						{
+							Id:   string(entity.TaskUpdateActionRequestApproveInfo),
+							Type: ActionTypeCustom,
+							Params: map[string]interface{}{
+								"type":    ReplyAddInfoType,
+								"link_id": log.LinkId,
+							},
+						},
+					},
+					IsActed:              false,
+					ExecutionGroupMember: false,
+					IsInitiator:          true,
+				})
+			}
 		}
 	}
 	return members
+}
+
+func isQuestionAnswered(questionLinkID *string, logReply []AdditionalInfo) bool {
+	for i := range logReply {
+		if logReply[i].Type == ReplyAddInfoType && logReply[i].LinkId == questionLinkID {
+			return true
+		}
+	}
+	return false
 }
 
 func (gb *GoApproverBlock) isApprovementActed(login string) bool {

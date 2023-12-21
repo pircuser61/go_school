@@ -71,8 +71,9 @@ func uniqueActiveActions(approverLogins, executionLogins []string, currentUser, 
 	var executionLoginsIn = buildInExpression(executionLogins)
 
 	return fmt.Sprintf(`WITH actions AS (
-    SELECT vs.work_id                                                                                 AS work_id
-         , vs.step_name                                                                               AS block_id
+    SELECT vs.work_id AS work_id
+         , vs.step_name AS block_id
+         , m.is_initiator
          , CASE WHEN vs.status IN ('running', 'idle') AND NOT m.finished THEN m.actions ELSE '{}' END AS action
          , CASE WHEN vs.status IN ('running', 'idle') AND NOT m.finished THEN m.params ELSE '{}' END  AS params
     FROM members m
@@ -1123,7 +1124,16 @@ func (db *PGCon) computeActions(ctx c.Context, currentUserDelegators []string, a
 		CancelAppPriority = "other"
 		CancelAppTitle    = "Отозвать"
 		CancelAppNodeType = "common"
+
+		RepeatAppId       = "repeat_app"
+		RepeatAppPriority = "other"
+		RepeatAppTitle    = "Повторить"
+		RepeatAppNodeType = "common"
 	)
+
+	canBeRepeated := []string{
+		string(entity.TaskUpdateActionRequestApproveInfo),
+	}
 
 	var computedActions = make([]entity.TaskAction, 0)
 	var computedActionIds = make([]string, 0)
@@ -1139,7 +1149,7 @@ func (db *PGCon) computeActions(ctx c.Context, currentUserDelegators []string, a
 			if len(compositeActionId) > 1 {
 				id := compositeActionId[0]
 
-				if _, ok := metActions[id]; ok {
+				if _, ok := metActions[id]; ok && !utils.IsContainsInSlice(id, canBeRepeated) {
 					continue
 				}
 				metActions[id] = struct{}{}
@@ -1186,8 +1196,9 @@ func (db *PGCon) computeActions(ctx c.Context, currentUserDelegators []string, a
 	}
 
 	var isDelegateOfAuthor = slices.Contains(currentUserDelegators, author)
+	isInitiator := ui.Username == author || isDelegateOfAuthor
 
-	if ui.Username == author || isDelegateOfAuthor {
+	if isInitiator {
 		var cancelAppAction = entity.TaskAction{
 			Id:                 CancelAppId,
 			ButtonType:         CancelAppPriority,
@@ -1197,7 +1208,17 @@ func (db *PGCon) computeActions(ctx c.Context, currentUserDelegators []string, a
 			AttachmentsEnabled: false,
 		}
 
+		var repeatAppAction = entity.TaskAction{
+			Id:                 RepeatAppId,
+			ButtonType:         RepeatAppPriority,
+			NodeType:           RepeatAppNodeType,
+			Title:              RepeatAppTitle,
+			CommentEnabled:     true,
+			AttachmentsEnabled: false,
+		}
+
 		result = append(result, cancelAppAction)
+		result = append(result, repeatAppAction)
 	}
 
 	return result, nil

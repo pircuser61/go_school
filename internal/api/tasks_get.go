@@ -369,7 +369,7 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request, workNumber s
 
 	resp := &taskResp{}
 
-	toResponseDTO := &taskToResponseDTO{
+	toResponse := &taskToResponseDTO{
 		task:         dbTask,
 		usrDegSteps:  currentUserDelegateSteps,
 		sNames:       shortNameMap,
@@ -377,7 +377,7 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request, workNumber s
 		approvalList: approvalLists,
 	}
 
-	if err = sendResponse(w, http.StatusOK, resp.toResponse(toResponseDTO)); err != nil {
+	if err = sendResponse(w, http.StatusOK, resp.toResponse(toResponse)); err != nil {
 		e := UnknownError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
