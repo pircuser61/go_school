@@ -1,7 +1,7 @@
 -- +goose Up
 -- +goose StatementBegin
 ALTER TABLE versions
-ADD COLUMN is_hidden boolean IF NOT EXISTS DEFAULT false;
+ADD COLUMN IF NOT EXISTS is_hidden boolean DEFAULT false;
 -- +goose StatementEnd
 
 -- +goose Down
