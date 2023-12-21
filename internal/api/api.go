@@ -2150,7 +2150,7 @@ type TaskResponseStep struct {
 	Storage    *map[string]interface{} `json:"storage,omitempty"`
 	Time       *string                 `json:"time,omitempty"`
 	Type       *string                 `json:"type,omitempty"`
-	UpdateTime *string                 `json:"updateTime,omitempty"`
+	UpdateTime *string                 `json:"updatedAt,omitempty"`
 }
 
 // ValueOperand defines model for valueOperand.
