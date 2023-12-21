@@ -112,7 +112,5 @@ WHERE v.pipeline_id = cte.pipeline_id;
 
 -- +goose Down
 -- +goose StatementBegin
-DROP TABLE pipeliner.public.versions;
 
-ALTER TABLE versions_21122023 RENAME TO versions;
 -- +goose StatementEnd
