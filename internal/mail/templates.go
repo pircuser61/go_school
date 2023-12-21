@@ -400,6 +400,10 @@ func hasValue(v orderedmap.OrderedMap) bool {
 	return len(t) != 0
 }
 
+func toMbyte(v int64) string {
+	return fmt.Sprintf("%.2f", float64(v)/1000000)
+}
+
 func isLink(v interface{}) bool {
 	str, ok := v.(string)
 
