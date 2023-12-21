@@ -884,29 +884,9 @@ func (_m *MockedDatabase) GetExternalSystemsIDs(ctx context.Context, versionID s
 }
 
 // GetFilteredStates provides a mock function with given fields: ctx, steps, wNumber
-func (_m *MockedDatabase) GetFilteredStates(ctx context.Context, steps []string, wNumber string) (map[string]map[string]interface{}, error) {
-	ret := _m.Called(ctx, steps, wNumber)
-
-	var r0 map[string]map[string]interface{}
-	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, []string, string) (map[string]map[string]interface{}, error)); ok {
-		return rf(ctx, steps, wNumber)
-	}
-	if rf, ok := ret.Get(0).(func(context.Context, []string, string) map[string]map[string]interface{}); ok {
-		r0 = rf(ctx, steps, wNumber)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(map[string]map[string]interface{})
-		}
-	}
-
-	if rf, ok := ret.Get(1).(func(context.Context, []string, string) error); ok {
-		r1 = rf(ctx, steps, wNumber)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
+func (_m *MockedDatabase) GetFilteredStates(ctx context.Context, steps []string, wNumber string) (
+	map[string]map[string]interface{}, map[string]map[string]*time.Time, error) {
+	return nil, nil, nil
 }
 
 // GetLastDebugTask provides a mock function with given fields: ctx, versionID, author

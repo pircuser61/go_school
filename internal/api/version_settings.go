@@ -852,7 +852,7 @@ func (ae *APIEnv) GetApprovalListSetting(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
-	states, err := ae.DB.GetFilteredStates(ctx, approvalList.Steps, workNumber)
+	states, dates, err := ae.DB.GetFilteredStates(ctx, approvalList.Steps, workNumber)
 	if err != nil {
 		er := UnknownError
 		log.Error(er.errorMessage(err))
@@ -885,6 +885,7 @@ func (ae *APIEnv) GetApprovalListSetting(w http.ResponseWriter, r *http.Request,
 		approvalList,
 		states,
 		variables,
+		dates,
 	})
 	if err != nil {
 		er := UnknownError
@@ -907,6 +908,7 @@ type toResponseApprovalListSettingsDTO struct {
 	approvalList *e.ApprovalListSettings
 	stepsStates  map[string]map[string]interface{}
 	variables    map[string]interface{}
+	dates        map[string]map[string]*time.Time
 }
 
 func toResponseApprovalListSettings(dto *toResponseApprovalListSettingsDTO) (
@@ -922,8 +924,19 @@ func toResponseApprovalListSettings(dto *toResponseApprovalListSettingsDTO) (
 		shortTitle := ""
 		isDelegateOfAnyStepMember := false
 		status := ""
-		updateTime := time.Now().Format(time.RFC3339)
-		tisulka := time.Now().Format(time.RFC3339)
+
+		var updatedAt *string
+		var createdAt *string
+
+		if ut, ok := dto.dates[stepName]["updatedAt"]; ok && ut != nil {
+			utt := ut.Format(time.RFC3339)
+			updatedAt = &utt
+		}
+
+		if ct, ok := dto.dates[stepName]["createdAt"]; ok && ct != nil {
+			ctt := ct.Format(time.RFC3339)
+			createdAt = &ctt
+		}
 
 		steps = append(steps, TaskResponseStep{
 			Name:       &stepName,
@@ -938,8 +951,8 @@ func toResponseApprovalListSettings(dto *toResponseApprovalListSettingsDTO) (
 			IsDelegateOfAnyStepMember: &isDelegateOfAnyStepMember,
 			Status:                    &status,
 			Steps:                     &dto.approvalList.Steps,
-			UpdateTime:                &updateTime,
-			Time:                      &tisulka,
+			UpdateTime:                updatedAt,
+			Time:                      createdAt,
 		})
 	}
 

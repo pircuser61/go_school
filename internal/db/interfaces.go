@@ -237,5 +237,6 @@ type Database interface {
 	SaveApprovalListSettings(ctx c.Context, in e.SaveApprovalListSettings) (id string, err error)
 	UpdateApprovalListSettings(ctx c.Context, in e.UpdateApprovalListSettings) error
 	RemoveApprovalListSettings(ctx c.Context, listID string) error
-	GetFilteredStates(ctx c.Context, steps []string, wNumber string) (map[string]map[string]interface{}, error)
+	GetFilteredStates(ctx c.Context, steps []string, wNumber string) (
+		map[string]map[string]interface{}, map[string]map[string]*time.Time, error)
 }
