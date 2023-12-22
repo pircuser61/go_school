@@ -304,13 +304,24 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request, workNumber s
 	}
 	dbTask.Steps = steps
 
-	accessibleForms, ttErr := ae.getAccessibleForms(ui.Username, &steps, &delegations)
-	if ttErr != nil {
-		e := GetDelegationsError
-		log.Error(e.errorMessage(ttErr))
-		_ = e.sendError(w)
+	if ui.Username != dbTask.Author {
+		accessibleForms, ttErr := ae.getAccessibleForms(ui.Username, &steps, &delegations)
+		if ttErr != nil {
+			e := GetDelegationsError
+			log.Error(e.errorMessage(ttErr))
+			_ = e.sendError(w)
 
-		return
+			return
+		}
+
+		removeErr := ae.removeForms(dbTask, accessibleForms)
+		if removeErr != nil {
+			e := UnknownError
+			log.Error(e.errorMessage(removeErr))
+			_ = e.sendError(w)
+
+			return
+		}
 	}
 
 	currentUserDelegateSteps, tErr := ae.getCurrentUserInDelegatesForSteps(ui.Username, &steps, &delegations)
@@ -325,15 +336,6 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request, workNumber s
 	if getVersionErr != nil {
 		e := UnknownError
 		log.Error(e.errorMessage(getVersionErr))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	removeErr := ae.removeForms(dbTask, accessibleForms)
-	if removeErr != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(removeErr))
 		_ = e.sendError(w)
 
 		return
@@ -549,15 +551,17 @@ func (ae *APIEnv) getCurrentUserInDelegatesForSteps(currentUser string, steps *e
 				return nil, unmarshalErr
 			}
 
+			delegate := delegates.FilterByType("approvement")
+
 			for member := range approver.Approvers {
-				if isDelegate(currentUser, member, delegates) {
+				if isDelegate(currentUser, member, &delegate) {
 					isDelegateAnyPersonOfStep = true
 					break
 				}
 			}
 
 			for _, member := range approver.AdditionalApprovers {
-				if isDelegate(currentUser, member.ApproverLogin, delegates) {
+				if isDelegate(currentUser, member.ApproverLogin, &delegate) {
 					isDelegateAnyPersonOfStep = true
 					break
 				}
@@ -569,8 +573,10 @@ func (ae *APIEnv) getCurrentUserInDelegatesForSteps(currentUser string, steps *e
 				return nil, unmarshalErr
 			}
 
+			delegate := delegates.FilterByType("execution")
+
 			for member := range execution.Executors {
-				if isDelegate(currentUser, member, delegates) {
+				if isDelegate(currentUser, member, &delegate) {
 					isDelegateAnyPersonOfStep = true
 					break
 				}
