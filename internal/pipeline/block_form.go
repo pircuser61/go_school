@@ -126,17 +126,7 @@ func (gb *GoFormBlock) formActions() []MemberAction {
 		return []MemberAction{action}
 	}
 
-	actions := []MemberAction{
-		{
-			Id:   formFillFormAction,
-			Type: ActionTypeCustom,
-			Params: map[string]interface{}{
-				formName: gb.Name,
-			},
-		},
-	}
-
-	formNames := make([]string, 0)
+	formNames := []string{gb.Name}
 	for _, v := range gb.State.FormsAccessibility {
 		if _, ok := gb.RunContext.VarStore.State[v.NodeId]; !ok {
 			continue
@@ -151,10 +141,14 @@ func (gb *GoFormBlock) formActions() []MemberAction {
 		}
 	}
 
-	if len(formNames) != 0 {
-		actions[0].Params = map[string]interface{}{
-			formName: formNames,
-		}
+	actions := []MemberAction{
+		{
+			Id:   formFillFormAction,
+			Type: ActionTypeCustom,
+			Params: map[string]interface{}{
+				formName: formNames,
+			},
+		},
 	}
 
 	return actions

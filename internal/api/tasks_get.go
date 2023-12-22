@@ -304,7 +304,7 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request, workNumber s
 	}
 	dbTask.Steps = steps
 
-	accessibleForms, ttErr := ae.getCurrentActualNode(ui.Username, &steps, &delegations)
+	accessibleForms, ttErr := ae.getAccessibleForms(ui.Username, &steps, &delegations)
 	if ttErr != nil {
 		e := GetDelegationsError
 		log.Error(e.errorMessage(ttErr))
@@ -419,7 +419,7 @@ type additionalApprover struct {
 	ApproverLogin string `json:"approver_login"`
 }
 
-func (ae *APIEnv) getCurrentActualNode(currentUser string, steps *entity.TaskSteps, delegates *ht.Delegations) (
+func (ae *APIEnv) getAccessibleForms(currentUser string, steps *entity.TaskSteps, delegates *ht.Delegations) (
 	accessibleForms map[string]struct{}, err error) {
 	const (
 		ApproverBlockType  = "approver"
@@ -465,7 +465,7 @@ func (ae *APIEnv) getCurrentActualNode(currentUser string, steps *entity.TaskSte
 
 			for _, form := range approver.FormsAccessibility {
 				if form.AccessType != "None" {
-					accessibleForms[form.Name] = struct{}{}
+					accessibleForms[form.NodeId] = struct{}{}
 				}
 			}
 
@@ -487,9 +487,11 @@ func (ae *APIEnv) getCurrentActualNode(currentUser string, steps *entity.TaskSte
 				continue
 			}
 
+			accessibleForms[s.Name] = struct{}{}
+
 			for _, form := range form.FormsAccessibility {
 				if form.AccessType != "None" {
-					accessibleForms[s.Name] = struct{}{}
+					accessibleForms[form.NodeId] = struct{}{}
 				}
 			}
 
@@ -514,7 +516,7 @@ func (ae *APIEnv) getCurrentActualNode(currentUser string, steps *entity.TaskSte
 
 			for _, form := range execution.FormsAccessibility {
 				if form.AccessType != "None" {
-					accessibleForms[form.Name] = struct{}{}
+					accessibleForms[form.NodeId] = struct{}{}
 				}
 			}
 		}
@@ -1102,6 +1104,14 @@ func (ae *APIEnv) removeForms(dbTask *entity.EriusTask, accessibleForms map[stri
 			}
 			newStates[k] = v
 		}
+
+		for k, _ := range step.Storage {
+			key := strings.Split(k, ".")
+			if _, ok := accessibleForms[key[0]]; !ok && strings.HasPrefix(k, "form") {
+				delete(step.Storage, k)
+			}
+		}
+
 		step.State = newStates
 		actualSteps = append(actualSteps, step)
 	}
