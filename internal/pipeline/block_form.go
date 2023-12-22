@@ -132,7 +132,7 @@ func (gb *GoFormBlock) formActions() []MemberAction {
 			continue
 		}
 
-		if gb.Name == v.Name {
+		if gb.Name == v.NodeId {
 			continue
 		}
 
