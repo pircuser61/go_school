@@ -3776,6 +3776,7 @@ components:
             - $ref: '#/components/schemas/ExecutionUpdateParams'
             - $ref: '#/components/schemas/ExecutorChangeParams'
             - $ref: '#/components/schemas/RequestInfoUpdateParams'
+            - $ref: '#/components/schemas/ReplyInfoUpdateParams'
             - $ref: '#/components/schemas/ExecutableFunctionParams'
             - $ref: '#/components/schemas/FillFormUpdateParams'
             - $ref: '#/components/schemas/AddApproversParams'
@@ -4049,6 +4050,26 @@ components:
         - newExecutorLogin
         - comment
         - attachments
+
+    ReplyInfoUpdateParams:
+      type: object
+      description: Executor reply info params
+      properties:
+        executorLogin:
+          type: string
+          description: executor login
+        comment:
+          type: string
+          description: Comment from executor
+        attachments:
+          type: array
+          items:
+            $ref: '#/components/schemas/Attachment'
+      required:
+        - comment
+        - attachments
+        - executorLogin
+
 
     RequestInfoUpdateParams:
       type: object

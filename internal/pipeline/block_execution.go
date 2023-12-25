@@ -107,6 +107,25 @@ func (gb *GoExecutionBlock) Members() []Member {
 		}
 	}
 
+	latestInfoRequest := gb.State.latestUnansweredAddInfoLogEntry()
+	isQuestionExist := latestInfoRequest != nil && latestInfoRequest.ReqType == RequestInfoQuestion
+
+	if isQuestionExist {
+		members = append(members, Member{
+			Login: gb.RunContext.Initiator,
+			Actions: []MemberAction{
+				{
+					Id:     string(entity.TaskUpdateActionReplyExecutionInfo),
+					Type:   ActionTypeCustom,
+					Params: map[string]interface{}{},
+				},
+			},
+			IsActed:              false,
+			ExecutionGroupMember: false,
+			IsInitiator:          true,
+		})
+	}
+
 	for i := range gb.State.ChangedExecutorsLogs {
 		if _, ok := addedMembers[gb.State.ChangedExecutorsLogs[i].OldLogin]; !ok {
 			continue

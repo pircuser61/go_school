@@ -1599,6 +1599,17 @@ type RateApplicationRequest struct {
 	Rate    *int    `json:"rate,omitempty"`
 }
 
+// Executor reply info params
+type ReplyInfoUpdateParams struct {
+	Attachments []Attachment `json:"attachments"`
+
+	// Comment from executor
+	Comment string `json:"comment"`
+
+	// executor login
+	ExecutorLogin string `json:"executorLogin"`
+}
+
 // Type of execution info
 type RequestExecutionInfoType string
 

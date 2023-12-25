@@ -385,7 +385,7 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request, workNumber s
 
 	resp := &taskResp{}
 
-	toResponseDTO := &taskToResponseDTO{
+	toResponse := &taskToResponseDTO{
 		task:         dbTask,
 		usrDegSteps:  currentUserDelegateSteps,
 		sNames:       shortNameMap,
@@ -393,7 +393,7 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request, workNumber s
 		approvalList: approvalLists,
 	}
 
-	if err = sendResponse(w, http.StatusOK, resp.toResponse(toResponseDTO)); err != nil {
+	if err = sendResponse(w, http.StatusOK, resp.toResponse(toResponse)); err != nil {
 		e := UnknownError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
@@ -989,6 +989,10 @@ func getTaskStepNameByAction(action entity.TaskUpdateAction) []string {
 		return []string{pipeline.BlockGoApproverID}
 	}
 
+	if action == entity.TaskUpdateActionReplyApproverInfo {
+		return []string{pipeline.BlockGoApproverID}
+	}
+
 	if action == entity.TaskUpdateActionExecution {
 		return []string{pipeline.BlockGoExecutionID}
 	}
@@ -998,6 +1002,10 @@ func getTaskStepNameByAction(action entity.TaskUpdateAction) []string {
 	}
 
 	if action == entity.TaskUpdateActionRequestExecutionInfo {
+		return []string{pipeline.BlockGoExecutionID}
+	}
+
+	if action == entity.TaskUpdateActionReplyExecutionInfo {
 		return []string{pipeline.BlockGoExecutionID}
 	}
 
