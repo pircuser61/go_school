@@ -118,6 +118,8 @@ const (
 	GetBlockStateError
 	ParallelPathIntersected
 	GetDeadlineError
+	ForbiddenError
+	CheckForHiddenError
 )
 
 //nolint:dupl //its not duplicate
@@ -218,6 +220,8 @@ var errorText = map[Err]string{
 	GetBlockStateError:                  "can't get block state",
 	ParallelPathIntersected:             "invalid pipeline schema: parallel path's are intersected",
 	GetDeadlineError:                    "can't get deadline",
+	ForbiddenError:                      "no access rights",
+	CheckForHiddenError:                 "error while checking for hidden",
 }
 
 // JOKE.
@@ -320,6 +324,8 @@ var errorDescription = map[Err]string{
 	GetDecisionsError:            "Не удалось получить список решений нод",
 	GetBlockStateError:           "can't get block state",
 	ParallelPathIntersected:      "Процесс не опубликован. Внутри параллельности один из сокетов ведет на другую ветвь внутри параллельности",
+	ForbiddenError:               "У вас нет прав на просмотр содержимого",
+	CheckForHiddenError:          "Ошибка при проверке на hidden",
 }
 
 var errorStatus = map[Err]int{
@@ -340,6 +346,7 @@ var errorStatus = map[Err]int{
 	ParallelNodeReturnCycle:       http.StatusBadRequest,
 	ParallelNodeExitsNotConnected: http.StatusBadRequest,
 	OutOfParallelNodesConnection:  http.StatusBadRequest,
+	ForbiddenError:                http.StatusForbidden,
 }
 
 type httpError struct {
