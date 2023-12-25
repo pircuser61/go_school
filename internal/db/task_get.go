@@ -1131,10 +1131,6 @@ func (db *PGCon) computeActions(ctx c.Context, currentUserDelegators []string, a
 		RepeatAppNodeType = "common"
 	)
 
-	canBeRepeated := []string{
-		string(entity.TaskUpdateActionReplyApproverInfo),
-	}
-
 	var computedActions = make([]entity.TaskAction, 0)
 	var computedActionIds = make([]string, 0)
 	var actionsToIgnore = getActionsToIgnoreIfOtherExist()
@@ -1142,7 +1138,7 @@ func (db *PGCon) computeActions(ctx c.Context, currentUserDelegators []string, a
 	result = make([]entity.TaskAction, 0)
 
 	canBeRepeated := []string{
-		string(entity.TaskUpdateActionRequestApproveInfo),
+		string(entity.TaskUpdateActionReplyApproverInfo),
 		string(entity.TaskUpdateActionRequestFillForm),
 	}
 

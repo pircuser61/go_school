@@ -665,7 +665,7 @@ func (gb *GoExecutionBlock) updateReplyInfo(ctx c.Context) (err error) {
 		return err
 	}
 
-	return err
+	return nil
 }
 
 func (a *ExecutionData) setReplyExecutionInfo(login string, in *replyInfoUpdateParams) error {
