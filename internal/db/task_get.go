@@ -1131,6 +1131,11 @@ func (db *PGCon) computeActions(ctx c.Context, currentUserDelegators []string, a
 
 	result = make([]entity.TaskAction, 0)
 
+	canBeRepeated := []string{
+		string(entity.TaskUpdateActionRequestApproveInfo),
+		string(entity.TaskUpdateActionRequestFillForm),
+	}
+
 	metActions := make(map[string]struct{})
 
 	for _, blockActions := range actions {
@@ -1139,9 +1144,10 @@ func (db *PGCon) computeActions(ctx c.Context, currentUserDelegators []string, a
 			if len(compositeActionId) > 1 {
 				id := compositeActionId[0]
 
-				if _, ok := metActions[id]; ok {
+				if _, ok := metActions[id]; ok && !utils.IsContainsInSlice(id, canBeRepeated) {
 					continue
 				}
+
 				metActions[id] = struct{}{}
 
 				priority := compositeActionId[1]
