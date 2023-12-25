@@ -1120,13 +1120,13 @@ func getMaxPriorities(existingPriorities []entity.TaskAction) string {
 	nodeTypes := map[string]int{
 		"execution":   3,
 		"approvement": 2,
-		"form":        1,
-		"sign":        0,
+		"sign":        1,
+		"form":        0,
 	}
 
 	result := ""
 	for _, v := range existingPriorities {
-		if nums, ok := nodeTypes[v.NodeType]; ok && nums > nodeTypes[result] {
+		if nums, ok := nodeTypes[v.NodeType]; ok && nums > nodeTypes[result] && (v.ButtonType == "primary" || v.ButtonType == "secondary") {
 			result = v.NodeType
 		}
 	}
