@@ -570,7 +570,7 @@ func (gb *GoApproverBlock) isNextBlockServiceDesk() bool {
 //nolint:gocyclo //ok
 func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context) (err error) {
 	var updateParams requestInfoParams
-	var delegations = gb.RunContext.Delegations
+	var delegations = gb.RunContext.Delegations.FilterByType("approvement")
 
 	if err = json.Unmarshal(gb.RunContext.UpdateData.Parameters, &updateParams); err != nil {
 		return errors.New("can't assert provided update requestApproverInfo data")
@@ -649,7 +649,6 @@ func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context) (err error) 
 //nolint:gocyclo //ok
 func (gb *GoApproverBlock) updateReplyApproverInfo(ctx c.Context) (err error) {
 	var updateParams replyInfoParams
-	var delegations = gb.RunContext.Delegations
 
 	if err = json.Unmarshal(gb.RunContext.UpdateData.Parameters, &updateParams); err != nil {
 		return errors.New("can't assert provided update replyInfoParams data")
@@ -695,8 +694,6 @@ func (gb *GoApproverBlock) updateReplyApproverInfo(ctx c.Context) (err error) {
 		return err
 	}
 
-	delegateFor, _ := gb.State.userIsDelegate(gb.RunContext.UpdateData.ByLogin, delegations)
-
 	gb.State.AddInfo = append(gb.State.AddInfo, AdditionalInfo{
 		Id:          id,
 		Type:        ReplyAddInfoType,
@@ -705,7 +702,7 @@ func (gb *GoApproverBlock) updateReplyApproverInfo(ctx c.Context) (err error) {
 		LinkId:      linkId,
 		Login:       gb.RunContext.UpdateData.ByLogin,
 		CreatedAt:   time.Now(),
-		DelegateFor: delegateFor,
+		DelegateFor: "",
 	})
 
 	return nil

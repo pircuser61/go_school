@@ -650,14 +650,13 @@ func (gb *GoExecutionBlock) updateReplyInfo(ctx c.Context) (err error) {
 	}
 
 	var updateParams replyInfoUpdateParams
-	var delegations = gb.RunContext.Delegations.FilterByType("execution")
 
 	err = json.Unmarshal(gb.RunContext.UpdateData.Parameters, &updateParams)
 	if err != nil {
 		return errors.New("can't assert provided update replyInfoUpdateParams data")
 	}
 
-	errSet := gb.State.SetReplyExecutionInfo(gb.RunContext.UpdateData.ByLogin, delegations, &updateParams)
+	errSet := gb.State.setReplyExecutionInfo(gb.RunContext.UpdateData.ByLogin, &updateParams)
 	if errSet != nil {
 		return errSet
 	}
@@ -669,16 +668,14 @@ func (gb *GoExecutionBlock) updateReplyInfo(ctx c.Context) (err error) {
 	return err
 }
 
-func (a *ExecutionData) SetReplyExecutionInfo(login string, delgs hs.Delegations, in *replyInfoUpdateParams) error {
-	delegateFor, _ := delgs.FindDelegatorFor(login, getSliceFromMapOfStrings(a.Executors))
-
+func (a *ExecutionData) setReplyExecutionInfo(login string, in *replyInfoUpdateParams) error {
 	a.RequestExecutionInfoLogs = append(a.RequestExecutionInfoLogs, RequestExecutionInfoLog{
 		Login:       login,
 		Comment:     in.Comment,
 		CreatedAt:   time.Now(),
 		ReqType:     RequestInfoAnswer,
 		Attachments: in.Attachments,
-		DelegateFor: delegateFor,
+		DelegateFor: "",
 	})
 
 	return nil
