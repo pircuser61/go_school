@@ -1195,8 +1195,7 @@ func (db *PGCon) computeActions(ctx c.Context, currentUserDelegators []string, a
 		return nil, err
 	}
 
-	var isDelegateOfAuthor = slices.Contains(currentUserDelegators, author)
-	isInitiator := ui.Username == author || isDelegateOfAuthor
+	isInitiator := ui.Username == author
 
 	if isInitiator {
 		var cancelAppAction = entity.TaskAction{

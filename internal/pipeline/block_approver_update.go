@@ -50,6 +50,12 @@ type requestInfoParams struct {
 	LinkId      *string             `json:"link_id,omitempty"`
 }
 
+type replyInfoParams struct {
+	Comment     string              `json:"comment"`
+	Attachments []entity.Attachment `json:"attachments"`
+	LinkId      *string             `json:"link_id,omitempty"`
+}
+
 type addApproversParams struct {
 	AdditionalApproversLogins []string            `json:"additionalApprovers"`
 	Question                  string              `json:"question"`
@@ -640,6 +646,71 @@ func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context) (err error) 
 	return nil
 }
 
+//nolint:gocyclo //ok
+func (gb *GoApproverBlock) updateReplyApproverInfo(ctx c.Context) (err error) {
+	var updateParams replyInfoParams
+	var delegations = gb.RunContext.Delegations
+
+	if err = json.Unmarshal(gb.RunContext.UpdateData.Parameters, &updateParams); err != nil {
+		return errors.New("can't assert provided update replyInfoParams data")
+	}
+
+	if gb.State.Decision != nil {
+		return errors.New("decision already set")
+	}
+
+	var (
+		id     = uuid.NewString()
+		linkId *string
+	)
+
+	var initiator = gb.RunContext.Initiator
+	var currentLogin = gb.RunContext.UpdateData.ByLogin
+
+	if len(gb.State.AddInfo) == 0 {
+		return errors.New("don't answer after request")
+	}
+
+	if currentLogin != initiator {
+		return NewUserIsNotPartOfProcessErr()
+	}
+
+	if updateParams.LinkId == nil {
+		return errors.New("linkId is null when reply")
+	}
+
+	parentEntry := gb.State.findAddInfoLogEntry(*updateParams.LinkId)
+	if parentEntry == nil || parentEntry.Type == ReplyAddInfoType ||
+		gb.State.addInfoLogEntryHasResponse(*updateParams.LinkId) {
+		return errors.New("bad linkId to submit an answer")
+	}
+
+	linkId = updateParams.LinkId
+	approverLogin, linkErr := setLinkIdRequest(id, *updateParams.LinkId, gb.State.AddInfo)
+	if linkErr != nil {
+		return linkErr
+	}
+
+	if err = gb.notifyNewInfoReceived(ctx, approverLogin); err != nil {
+		return err
+	}
+
+	delegateFor, _ := gb.State.userIsDelegate(gb.RunContext.UpdateData.ByLogin, delegations)
+
+	gb.State.AddInfo = append(gb.State.AddInfo, AdditionalInfo{
+		Id:          id,
+		Type:        ReplyAddInfoType,
+		Comment:     updateParams.Comment,
+		Attachments: updateParams.Attachments,
+		LinkId:      linkId,
+		Login:       gb.RunContext.UpdateData.ByLogin,
+		CreatedAt:   time.Now(),
+		DelegateFor: delegateFor,
+	})
+
+	return nil
+}
+
 func setLinkIdRequest(replyId, linkId string, addInfo []AdditionalInfo) (string, error) {
 	for i := range addInfo {
 		if addInfo[i].Id == linkId {
@@ -739,6 +810,11 @@ func (gb *GoApproverBlock) Update(ctx c.Context) (interface{}, error) {
 
 	case string(entity.TaskUpdateActionRequestApproveInfo):
 		if errUpdate := gb.updateRequestApproverInfo(ctx); errUpdate != nil {
+			return nil, errUpdate
+		}
+
+	case string(entity.TaskUpdateActionReplyApproverInfo):
+		if errUpdate := gb.updateReplyApproverInfo(ctx); errUpdate != nil {
 			return nil, errUpdate
 		}
 

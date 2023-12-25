@@ -120,10 +120,9 @@ func (gb *GoApproverBlock) Members() []Member {
 					Login: gb.RunContext.Initiator,
 					Actions: []MemberAction{
 						{
-							Id:   string(entity.TaskUpdateActionRequestApproveInfo),
+							Id:   string(entity.TaskUpdateActionReplyApproverInfo),
 							Type: ActionTypeCustom,
 							Params: map[string]interface{}{
-								"type":    ReplyAddInfoType,
 								"link_id": log.LinkId,
 							},
 						},

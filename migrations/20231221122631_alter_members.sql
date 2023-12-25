@@ -1,7 +1,7 @@
 -- +goose Up
 -- +goose StatementBegin
 ALTER TABLE members
-    ADD COLUMN IF NOT EXISTS is_initiator not null default false;
+    ADD COLUMN IF NOT EXISTS is_initiator boolean not null default false;
 -- +goose StatementEnd
 
 -- +goose Down

@@ -861,6 +861,10 @@ func getTaskStepNameByAction(action entity.TaskUpdateAction) []string {
 		return []string{pipeline.BlockGoApproverID}
 	}
 
+	if action == entity.TaskUpdateActionReplyApproverInfo {
+		return []string{pipeline.BlockGoApproverID}
+	}
+
 	if action == entity.TaskUpdateActionExecution {
 		return []string{pipeline.BlockGoExecutionID}
 	}
@@ -870,6 +874,10 @@ func getTaskStepNameByAction(action entity.TaskUpdateAction) []string {
 	}
 
 	if action == entity.TaskUpdateActionRequestExecutionInfo {
+		return []string{pipeline.BlockGoExecutionID}
+	}
+
+	if action == entity.TaskUpdateActionReplyExecutionInfo {
 		return []string{pipeline.BlockGoExecutionID}
 	}
 

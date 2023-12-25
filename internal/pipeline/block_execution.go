@@ -107,16 +107,17 @@ func (gb *GoExecutionBlock) Members() []Member {
 		}
 	}
 
-	if len(gb.State.RequestExecutionInfoLogs)%2 != 0 {
+	latestInfoRequest := gb.State.latestUnansweredAddInfoLogEntry()
+	isQuestionExist := latestInfoRequest != nil && latestInfoRequest.ReqType == RequestInfoQuestion
+
+	if isQuestionExist {
 		members = append(members, Member{
 			Login: gb.RunContext.Initiator,
 			Actions: []MemberAction{
 				{
-					Id:   string(entity.TaskUpdateActionRequestExecutionInfo),
-					Type: ActionTypeCustom,
-					Params: map[string]interface{}{
-						"req_type": RequestInfoAnswer,
-					},
+					Id:     string(entity.TaskUpdateActionReplyExecutionInfo),
+					Type:   ActionTypeCustom,
+					Params: map[string]interface{}{},
 				},
 			},
 			IsActed:              false,
