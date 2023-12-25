@@ -181,10 +181,12 @@ const (
 	TaskUpdateActionExecution                  TaskUpdateAction = "execution"
 	TaskUpdateActionChangeExecutor             TaskUpdateAction = "change_executor"
 	TaskUpdateActionRequestExecutionInfo       TaskUpdateAction = "request_execution_info"
+	TaskUpdateActionReplyExecutionInfo         TaskUpdateAction = "reply_execution_info"
 	TaskUpdateActionExecutorStartWork          TaskUpdateAction = "executor_start_work"
 	TaskUpdateActionApproverSendEditApp        TaskUpdateAction = "approver_send_edit_app"
 	TaskUpdateActionExecutorSendEditApp        TaskUpdateAction = "executor_send_edit_app"
 	TaskUpdateActionRequestApproveInfo         TaskUpdateAction = "request_add_info"
+	TaskUpdateActionReplyApproverInfo          TaskUpdateAction = "reply_approver_info"
 	TaskUpdateActionRequestFillForm            TaskUpdateAction = "fill_form"
 	TaskUpdateActionCancelApp                  TaskUpdateAction = "cancel_app"
 	TaskUpdateActionAddApprovers               TaskUpdateAction = "add_approvers"
@@ -215,6 +217,8 @@ var (
 		TaskUpdateActionFinishTimer:           {},
 		TaskUpdateActionFuncSLAExpired:        {},
 		TaskUpdateActionSignChangeWorkStatus:  {},
+		TaskUpdateActionReplyExecutionInfo:    {},
+		TaskUpdateActionReplyApproverInfo:     {},
 	}
 )
 

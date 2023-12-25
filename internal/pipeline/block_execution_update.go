@@ -13,7 +13,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	file_registry "gitlab.services.mts.ru/jocasta/pipeliner/internal/file-registry"
-	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
+	hs "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
@@ -59,6 +59,13 @@ func (gb *GoExecutionBlock) Update(ctx c.Context) (interface{}, error) {
 			return nil, errors.New("is not taken in work")
 		}
 		if errUpdate := gb.updateRequestInfo(ctx); errUpdate != nil {
+			return nil, errUpdate
+		}
+	case string(entity.TaskUpdateActionReplyExecutionInfo):
+		if !gb.State.IsTakenInWork {
+			return nil, errors.New("is not taken in work")
+		}
+		if errUpdate := gb.updateReplyInfo(ctx); errUpdate != nil {
 			return nil, errUpdate
 		}
 	case string(entity.TaskUpdateActionExecutorStartWork):
@@ -585,16 +592,22 @@ func (gb *GoExecutionBlock) updateDecision(ctx c.Context) error {
 	return nil
 }
 
-type RequestInfoUpdateParams struct {
+type requestInfoUpdateParams struct {
 	Comment       string              `json:"comment"`
 	ReqType       RequestInfoType     `json:"req_type"`
 	Attachments   []entity.Attachment `json:"attachments"`
 	ExecutorLogin string              `json:"executor_login"`
 }
 
+type replyInfoUpdateParams struct {
+	Comment       string              `json:"comment"`
+	Attachments   []entity.Attachment `json:"attachments"`
+	ExecutorLogin string              `json:"executor_login"`
+}
+
 //nolint:gocyclo //its ok here
 func (gb *GoExecutionBlock) updateRequestInfo(ctx c.Context) (err error) {
-	var updateParams RequestInfoUpdateParams
+	var updateParams requestInfoUpdateParams
 	var delegations = gb.RunContext.Delegations.FilterByType("execution")
 
 	err = json.Unmarshal(gb.RunContext.UpdateData.Parameters, &updateParams)
@@ -630,8 +643,46 @@ func (gb *GoExecutionBlock) updateRequestInfo(ctx c.Context) (err error) {
 	return err
 }
 
-func (a *ExecutionData) SetRequestExecutionInfo(login string, delegations human_tasks.Delegations,
-	in *RequestInfoUpdateParams) error {
+//nolint:gocyclo //its ok here
+func (gb *GoExecutionBlock) updateReplyInfo(ctx c.Context) (err error) {
+	if gb.RunContext.UpdateData.ByLogin != gb.RunContext.Initiator {
+		return NewUserIsNotPartOfProcessErr()
+	}
+
+	var updateParams replyInfoUpdateParams
+
+	err = json.Unmarshal(gb.RunContext.UpdateData.Parameters, &updateParams)
+	if err != nil {
+		return errors.New("can't assert provided update replyInfoUpdateParams data")
+	}
+
+	errSet := gb.State.setReplyExecutionInfo(gb.RunContext.UpdateData.ByLogin, &updateParams)
+	if errSet != nil {
+		return errSet
+	}
+
+	if err = gb.notifyNewInfoReceived(ctx); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (a *ExecutionData) setReplyExecutionInfo(login string, in *replyInfoUpdateParams) error {
+	a.RequestExecutionInfoLogs = append(a.RequestExecutionInfoLogs, RequestExecutionInfoLog{
+		Login:       login,
+		Comment:     in.Comment,
+		CreatedAt:   time.Now(),
+		ReqType:     RequestInfoAnswer,
+		Attachments: in.Attachments,
+		DelegateFor: "",
+	})
+
+	return nil
+}
+
+func (a *ExecutionData) SetRequestExecutionInfo(login string, delegations hs.Delegations,
+	in *requestInfoUpdateParams) error {
 	_, executorFound := a.Executors[login]
 	delegateFor, isDelegate := delegations.FindDelegatorFor(
 		login, getSliceFromMapOfStrings(a.Executors))

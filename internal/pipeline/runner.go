@@ -27,6 +27,7 @@ type Member struct {
 	Actions              []MemberAction
 	IsActed              bool
 	ExecutionGroupMember bool
+	IsInitiator          bool
 }
 
 type Deadline struct {
