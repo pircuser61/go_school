@@ -4,6 +4,8 @@ import (
 	c "context"
 	"time"
 
+	"github.com/iancoleman/orderedmap"
+
 	"github.com/google/uuid"
 
 	e "gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
@@ -28,6 +30,7 @@ type PipelineStorager interface {
 
 type TaskStorager interface {
 	GetTaskFormSchemaID(workNumber, formID string) (string, error)
+	GetAdditionalDescriptionForms(workNumber, nodeName string) ([]orderedmap.OrderedMap, error)
 	GetAdditionalForms(workNumber, nodeName string) ([]string, error)
 	GetApplicationData(workNumber string) (string, error)
 	GetDeadline(ctx c.Context, workId string) (time.Time, error)
@@ -235,5 +238,6 @@ type Database interface {
 	SaveApprovalListSettings(ctx c.Context, in e.SaveApprovalListSettings) (id string, err error)
 	UpdateApprovalListSettings(ctx c.Context, in e.UpdateApprovalListSettings) error
 	RemoveApprovalListSettings(ctx c.Context, listID string) error
-	GetFilteredStates(ctx c.Context, steps []string, wNumber string) (map[string]map[string]interface{}, error)
+	GetFilteredStates(ctx c.Context, steps []string, wNumber string) (
+		map[string]map[string]interface{}, map[string]map[string]*time.Time, error)
 }

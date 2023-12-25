@@ -27,7 +27,7 @@ const (
 )
 
 var statusToTaskState = map[TaskHumanStatus]string{
-	StatusNew:                 "была создана",
+	StatusNew:                 "успешно создана",
 	StatusApproved:            "согласована",
 	StatusApproveViewed:       "ознакомлено",
 	StatusApproveInformed:     "проинформировано",

@@ -186,7 +186,14 @@ func (gb *ExecutableFunctionBlock) Update(ctx c.Context) (interface{}, error) {
 
 				tpl := mail.NewInvalidFunctionResp(
 					gb.RunContext.WorkNumber, gb.RunContext.NotifName, gb.RunContext.Services.Sender.SdAddress)
-				errSend := gb.RunContext.Services.Sender.SendNotification(ctx, emails, nil, tpl)
+
+				filesList := []string{tpl.Image}
+				files, iconEerr := gb.RunContext.GetIcons(filesList)
+				if iconEerr != nil {
+					return nil, iconEerr
+				}
+
+				errSend := gb.RunContext.Services.Sender.SendNotification(ctx, emails, files, tpl)
 				if errSend != nil {
 					log.WithField("emails", emails).Error(errSend)
 				}

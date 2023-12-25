@@ -10,6 +10,8 @@ import (
 
 	mock "github.com/stretchr/testify/mock"
 
+	orderedmap "github.com/iancoleman/orderedmap"
+
 	store "gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 
 	time "time"
@@ -263,6 +265,32 @@ func (_m *MockedDatabase) FinishTaskBlocks(ctx context.Context, workID uuid.UUID
 	}
 
 	return r0
+}
+
+// GetAdditionalDescriptionForms provides a mock function with given fields: workNumber, nodeName
+func (_m *MockedDatabase) GetAdditionalDescriptionForms(workNumber string, nodeName string) ([]orderedmap.OrderedMap, error) {
+	ret := _m.Called(workNumber, nodeName)
+
+	var r0 []orderedmap.OrderedMap
+	var r1 error
+	if rf, ok := ret.Get(0).(func(string, string) ([]orderedmap.OrderedMap, error)); ok {
+		return rf(workNumber, nodeName)
+	}
+	if rf, ok := ret.Get(0).(func(string, string) []orderedmap.OrderedMap); ok {
+		r0 = rf(workNumber, nodeName)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]orderedmap.OrderedMap)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(string, string) error); ok {
+		r1 = rf(workNumber, nodeName)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
 }
 
 // GetAdditionalForms provides a mock function with given fields: workNumber, nodeName
@@ -856,29 +884,9 @@ func (_m *MockedDatabase) GetExternalSystemsIDs(ctx context.Context, versionID s
 }
 
 // GetFilteredStates provides a mock function with given fields: ctx, steps, wNumber
-func (_m *MockedDatabase) GetFilteredStates(ctx context.Context, steps []string, wNumber string) (map[string]map[string]interface{}, error) {
-	ret := _m.Called(ctx, steps, wNumber)
-
-	var r0 map[string]map[string]interface{}
-	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, []string, string) (map[string]map[string]interface{}, error)); ok {
-		return rf(ctx, steps, wNumber)
-	}
-	if rf, ok := ret.Get(0).(func(context.Context, []string, string) map[string]map[string]interface{}); ok {
-		r0 = rf(ctx, steps, wNumber)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(map[string]map[string]interface{})
-		}
-	}
-
-	if rf, ok := ret.Get(1).(func(context.Context, []string, string) error); ok {
-		r1 = rf(ctx, steps, wNumber)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
+func (_m *MockedDatabase) GetFilteredStates(ctx context.Context, steps []string, wNumber string) (
+	map[string]map[string]interface{}, map[string]map[string]*time.Time, error) {
+	return nil, nil, nil
 }
 
 // GetLastDebugTask provides a mock function with given fields: ctx, versionID, author

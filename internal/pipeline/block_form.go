@@ -7,8 +7,6 @@ import (
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
-	e "gitlab.services.mts.ru/abp/mail/pkg/email"
-
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
@@ -290,9 +288,14 @@ func (gb *GoFormBlock) handleNotifications(ctx c.Context) error {
 	}
 
 	executors := getSliceFromMapOfStrings(gb.State.Executors)
-	var emailAttachment []e.Attachment
 
+	fileNames := make([]string, 0)
 	var emails = make(map[string]mail.Template, 0)
+
+	if !gb.State.IsTakenInWork {
+		fileNames = append(fileNames, vRabotuBtn)
+	}
+
 	for _, login := range executors {
 		em, getUserEmailErr := gb.RunContext.Services.People.GetUserEmail(ctx, login)
 		if getUserEmailErr != nil {
@@ -320,10 +323,22 @@ func (gb *GoFormBlock) handleNotifications(ctx c.Context) error {
 				Deadline:   gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(time.Now(), gb.State.SLA, slaInfoPtr),
 			}, gb.State.IsReentry)
 		} else {
+
+			slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
+				TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.CurrBlockStartTime,
+					FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100)}},
+				WorkType: sla.WorkHourType(gb.State.WorkType),
+			})
+			if getSlaInfoErr != nil {
+				return getSlaInfoErr
+			}
+
 			emails[em] = mail.NewRequestFormExecutionInfoTpl(
 				gb.RunContext.WorkNumber,
 				gb.RunContext.NotifName,
 				gb.RunContext.Services.Sender.SdAddress,
+				gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(gb.RunContext.CurrBlockStartTime, gb.State.SLA,
+					slaInfoPtr),
 				gb.State.IsReentry)
 		}
 	}
@@ -333,7 +348,16 @@ func (gb *GoFormBlock) handleNotifications(ctx c.Context) error {
 	}
 
 	for i := range emails {
-		if sendErr := gb.RunContext.Services.Sender.SendNotification(ctx, []string{i}, emailAttachment,
+		item := emails[i]
+
+		iconNames := []string{item.Image}
+		iconNames = append(iconNames, fileNames...)
+		files, iconErr := gb.RunContext.GetIcons(iconNames)
+		if iconErr != nil {
+			return iconErr
+		}
+
+		if sendErr := gb.RunContext.Services.Sender.SendNotification(ctx, []string{i}, files,
 			emails[i]); sendErr != nil {
 			return sendErr
 		}

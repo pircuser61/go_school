@@ -100,6 +100,7 @@ func createGoExecutionBlock(ctx c.Context, name string, ef *entity.EriusFunc, ru
 		if err := b.setPrevDecision(ctx); err != nil {
 			return nil, false, err
 		}
+
 	}
 
 	return b, reEntry, nil
@@ -147,12 +148,14 @@ func (gb *GoExecutionBlock) reEntry(ctx c.Context, ef *entity.EriusFunc) error {
 			params.ExecutorsGroupID = fmt.Sprintf("%v", groupId)
 		}
 
-		deadline, err := gb.getDeadline(ctx, *params.WorkType)
-		if err != nil {
-			return err
-		}
+		if params.WorkType != nil {
+			deadline, deadErr := gb.getDeadline(ctx, *params.WorkType)
+			if deadErr != nil {
+				return deadErr
+			}
 
-		gb.State.Deadline = deadline
+			gb.State.Deadline = deadline
+		}
 
 		err = gb.setExecutorsByParams(ctx, &setExecutorsByParamsDTO{
 			Type:     params.Type,
@@ -197,13 +200,6 @@ func (gb *GoExecutionBlock) createState(ctx c.Context, ef *entity.EriusFunc) err
 		HideExecutor:       params.HideExecutor,
 	}
 
-	deadline, err := gb.getDeadline(ctx, *params.WorkType)
-	if err != nil {
-		return err
-	}
-
-	gb.State.Deadline = deadline
-
 	if params.ExecutorsGroupIDPath != nil && *params.ExecutorsGroupIDPath != "" {
 		variableStorage, grabStorageErr := gb.RunContext.VarStore.GrabStorage()
 		if grabStorageErr != nil {
@@ -242,6 +238,13 @@ func (gb *GoExecutionBlock) createState(ctx c.Context, ef *entity.EriusFunc) err
 
 	if params.WorkType != nil {
 		gb.State.WorkType = *params.WorkType
+
+		deadline, err := gb.getDeadline(ctx, gb.State.WorkType)
+		if err != nil {
+			return err
+		}
+
+		gb.State.Deadline = deadline
 	} else {
 		task, getVersionErr := gb.RunContext.Services.Storage.GetVersionByWorkNumber(ctx, gb.RunContext.WorkNumber)
 		if getVersionErr != nil {
@@ -328,12 +331,18 @@ func (gb *GoExecutionBlock) setPrevDecision(ctx c.Context) error {
 		gb.setEditingAppLogFromPreviousBlock(ctx)
 	}
 
-	gb.setPreviousExecutors(ctx)
+	if !gb.State.RepeatPrevDecision {
+		return nil
+	}
 
-	if decision == nil && gb.State.GetRepeatPrevDecision() {
+	if decision == nil {
 		if gb.trySetPreviousDecision(ctx) {
 			return nil
 		}
+	}
+
+	if gb.State.UseActualExecutor || gb.State.Decision != nil {
+		gb.setPreviousExecutors(ctx)
 	}
 	return nil
 }

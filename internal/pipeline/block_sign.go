@@ -9,11 +9,10 @@ import (
 
 	"github.com/pkg/errors"
 
-	e "gitlab.services.mts.ru/abp/mail/pkg/email"
-
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	file_registry "gitlab.services.mts.ru/jocasta/pipeliner/internal/file-registry"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
@@ -363,9 +362,8 @@ func (gb *GoSignBlock) handleNotifications(ctx c.Context) error {
 	}
 
 	signers := getSliceFromMapOfStrings(gb.State.Signers)
-	var emailAttachment []e.Attachment
 
-	description, err := gb.RunContext.makeNotificationDescription(gb.Name)
+	description, files, err := gb.RunContext.makeNotificationDescription(gb.Name)
 	if err != nil {
 		return err
 	}
@@ -392,15 +390,15 @@ func (gb *GoSignBlock) handleNotifications(ctx c.Context) error {
 			l.WithField("login", login).WithError(getUserEmailErr).Warning("couldn't get email")
 			continue
 		}
-
 		emails[em] = mail.NewSignerNotificationTpl(
-			gb.RunContext.WorkNumber,
-			gb.RunContext.NotifName,
-			description,
-			gb.RunContext.Services.Sender.SdAddress,
-			slaDeadline,
-			gb.State.AutoReject != nil && *gb.State.AutoReject,
-		)
+			&mail.SignerNotifTemplate{
+				WorkNumber:  gb.RunContext.WorkNumber,
+				Name:        gb.RunContext.NotifName,
+				SdUrl:       gb.RunContext.Services.Sender.SdAddress,
+				Deadline:    slaDeadline,
+				AutoReject:  gb.State.AutoReject != nil && *gb.State.AutoReject,
+				Description: description,
+			})
 	}
 
 	if len(emails) == 0 {
@@ -408,7 +406,29 @@ func (gb *GoSignBlock) handleNotifications(ctx c.Context) error {
 	}
 
 	for i := range emails {
-		if sendErr := gb.RunContext.Services.Sender.SendNotification(ctx, []string{i}, emailAttachment,
+		item := emails[i]
+
+		iconsName := []string{item.Image}
+
+		for _, v := range description {
+			links, link := v.Get("attachLinks")
+			if link {
+				attachFiles, ok := links.([]file_registry.AttachInfo)
+				if ok && len(attachFiles) != 0 {
+					iconsName = append(iconsName, downloadImg)
+					break
+				}
+			}
+		}
+
+		iconFiles, filesErr := gb.RunContext.GetIcons(iconsName)
+		if filesErr != nil {
+			return err
+		}
+
+		iconFiles = append(iconFiles, files...)
+
+		if sendErr := gb.RunContext.Services.Sender.SendNotification(ctx, []string{i}, iconFiles,
 			emails[i]); sendErr != nil {
 			return sendErr
 		}

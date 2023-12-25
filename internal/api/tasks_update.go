@@ -14,6 +14,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"gitlab.services.mts.ru/abp/mail/pkg/email"
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
@@ -25,6 +26,8 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
+
+const headImg = "header.png"
 
 func (ae *APIEnv) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 	const funcName = "update_tasks_by_mails"
@@ -536,7 +539,22 @@ func (ae *APIEnv) updateTaskInternal(ctx c.Context, workNumber, userLogin string
 	runCtx.NotifyEvents(ctxLocal)
 
 	em := mail.NewRejectPipelineGroupTemplate(dbTask.WorkNumber, dbTask.Name, ae.Mail.SdAddress)
-	err = ae.Mail.SendNotification(ctxLocal, emails, nil, em)
+
+	file, ok := ae.Mail.Images[em.Image]
+	if !ok {
+		log.Error("couldn't find images: ", em.Image)
+		return
+	}
+
+	files := []email.Attachment{
+		{
+			Name:    headImg,
+			Content: file,
+			Type:    email.EmbeddedAttachment,
+		},
+	}
+
+	err = ae.Mail.SendNotification(ctxLocal, emails, files, em)
 	if err != nil {
 		return err
 	}
@@ -736,7 +754,22 @@ func (ae *APIEnv) StopTasks(w http.ResponseWriter, r *http.Request) {
 		}
 
 		em := mail.NewRejectPipelineGroupTemplate(dbTask.WorkNumber, dbTask.Name, ae.Mail.SdAddress)
-		sendNotifErr := ae.Mail.SendNotification(ctx, emails, nil, em)
+
+		file, ok := ae.Mail.Images[em.Image]
+		if !ok {
+			log.Error("couldn't find images: ", em.Image)
+			return
+		}
+
+		files := []email.Attachment{
+			{
+				Name:    headImg,
+				Content: file,
+				Type:    email.EmbeddedAttachment,
+			},
+		}
+
+		sendNotifErr := ae.Mail.SendNotification(ctx, emails, files, em)
 		if sendNotifErr != nil {
 			log.WithError(sendNotifErr).Error("couldn't send notification")
 		}
