@@ -272,11 +272,13 @@ func NewRequestFormExecutionInfoTpl(id, name, sdUrl, deadline string, isReentry 
 			Name     string
 			Link     string
 			Deadline string
+			RetryStr string
 		}{
 			Id:       id,
 			Name:     name,
 			Link:     fmt.Sprintf(TaskUrlTemplate, sdUrl, id),
 			Deadline: deadline,
+			RetryStr: retryStr,
 		},
 	}
 }
@@ -310,12 +312,14 @@ func NewFormExecutionNeedTakeInWorkTpl(dto *NewFormExecutionNeedTakeInWorkDto, i
 			Link      string
 			Deadline  string
 			ActionBtn Button
+			RetryStr  string
 		}{
 			Id:        dto.WorkNumber,
 			Name:      dto.WorkTitle,
 			Link:      fmt.Sprintf(TaskUrlTemplate, dto.SdUrl, dto.WorkNumber),
 			Deadline:  dto.Deadline,
 			ActionBtn: *actionBtn,
+			RetryStr:  retryStr,
 		},
 	}
 }
@@ -391,6 +395,15 @@ func isUser(v interface{}) bool {
 func retMap(v orderedmap.OrderedMap) map[string]interface{} {
 	t := v.Values()
 	return t
+}
+
+func hasValue(v orderedmap.OrderedMap) bool {
+	t := v.Values()
+	return len(t) != 0
+}
+
+func toMbyte(v int64) string {
+	return fmt.Sprintf("%.2f", float64(v)/1000000)
 }
 
 func isLink(v interface{}) bool {

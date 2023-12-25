@@ -426,9 +426,9 @@ func (gb *GoSignBlock) handleNotifications(ctx c.Context) error {
 			return err
 		}
 
-		files = append(files, iconFiles...)
+		iconFiles = append(iconFiles, files...)
 
-		if sendErr := gb.RunContext.Services.Sender.SendNotification(ctx, []string{i}, files,
+		if sendErr := gb.RunContext.Services.Sender.SendNotification(ctx, []string{i}, iconFiles,
 			emails[i]); sendErr != nil {
 			return sendErr
 		}

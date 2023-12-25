@@ -390,8 +390,8 @@
                 /></a>
             </td>
           </tr>
-          {{ if .Description }} {{ range $ko, $vo := .Description }}
-          {{ $item := retMap $vo }}
+          {{ if .Description }} {{ range $ko, $vo := .Description }} 
+          {{ $item := retMap $vo }} {{ if (hasValue $vo) }}
           <tr>
             <td
                     style="
@@ -578,7 +578,7 @@
                       </p>
                       <!-- конец пустой линии -->
                       {{ else }}
-                        {{ if not (isFile $val) }} {{ if isLink $val }}
+                        {{ if not (isFile $val) }} {{ if ne $key "file_id" }} {{ if isLink $val }}
                         <p
                                 style="
                             margin: 0;
@@ -681,6 +681,7 @@
                       {{ end }}
                     {{ end }}
                   {{ end }}
+                 {{ end }}
                 {{ end }}
                     {{ if (index $item "attachLinks") }}
 
@@ -792,7 +793,7 @@
                                   color: #626c77;
                                 "
                               >
-                                {{ .Size }} MB
+                                {{ toMbyte .Size }} MB
                               </p>
                             </div>
                           </td>
@@ -894,7 +895,7 @@
               </table>
             </td>
           </tr>
-          {{ end }} {{ end }}
+          {{ end }} {{ end }} {{ end }}
           <tr>
             <td
                     align="center"

@@ -4,6 +4,7 @@ import (
 	c "context"
 	"time"
 
+	"gitlab.services.mts.ru/abp/myosotis/logger"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
@@ -11,11 +12,14 @@ import (
 )
 
 func (gb *GoSignBlock) notifyAdditionalApprovers(ctx c.Context, logins []string, attachsId []entity.Attachment) error {
+	l := logger.GetLogger(ctx)
+
 	emails := make([]string, 0, len(logins))
 	for _, login := range logins {
 		approverEmail, emailErr := gb.RunContext.Services.People.GetUserEmail(ctx, login)
 		if emailErr != nil {
-			return emailErr
+			l.WithField("login", login).WithError(emailErr).Warning("couldn't get email")
+			continue
 		}
 
 		emails = append(emails, approverEmail)
@@ -28,14 +32,18 @@ func (gb *GoSignBlock) notifyAdditionalApprovers(ctx c.Context, logins []string,
 
 	emails = utils.UniqueStrings(emails)
 
-	slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
-		TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.CurrBlockStartTime,
-			FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100)}},
-		WorkType: sla.WorkHourType(*gb.State.WorkType),
-	})
+	slaDeadline := ""
+	if gb.State.SLA != nil && gb.State.WorkType != nil {
+		slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
+			TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.CurrBlockStartTime,
+				FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100)}},
+			WorkType: sla.WorkHourType(*gb.State.WorkType),
+		})
+		if getSlaInfoErr != nil {
+			return getSlaInfoErr
+		}
 
-	if getSlaInfoErr != nil {
-		return getSlaInfoErr
+		slaDeadline = gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(time.Now(), *gb.State.SLA, slaInfoPtr)
 	}
 
 	lastWorksForUser := make([]*entity.EriusTask, 0)
@@ -71,8 +79,7 @@ func (gb *GoSignBlock) notifyAdditionalApprovers(ctx c.Context, logins []string,
 			gb.RunContext.NotifName,
 			gb.RunContext.Services.Sender.SdAddress,
 			"",
-			gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(
-				time.Now(), *gb.State.SLA, slaInfoPtr),
+			slaDeadline,
 			lastWorksForUser,
 		)
 
@@ -101,11 +108,14 @@ func (gb *GoSignBlock) notifyAdditionalApprovers(ctx c.Context, logins []string,
 // notifyDecisionMadeByAdditionalApprover notifies requesting signers
 // and the task initiator that an additional approver has left a review
 func (gb *GoSignBlock) notifyDecisionMadeByAdditionalApprover(ctx c.Context, logins []string) error {
+	l := logger.GetLogger(ctx)
+
 	emailsToNotify := make([]string, 0, len(logins))
 	for _, login := range logins {
 		emailToNotify, emailErr := gb.RunContext.Services.People.GetUserEmail(ctx, login)
 		if emailErr != nil {
-			return emailErr
+			l.WithField("login", login).WithError(emailErr).Warning("couldn't get email")
+			continue
 		}
 
 		emailsToNotify = append(emailsToNotify, emailToNotify)

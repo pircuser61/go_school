@@ -9,6 +9,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	file_registry "gitlab.services.mts.ru/jocasta/pipeliner/internal/file-registry"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
@@ -174,10 +175,10 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 		if iconsErr != nil {
 			return iconsErr
 		}
-		files = append(files, iconsFiles...)
+		iconsFiles = append(iconsFiles, files...)
 
 		if sendErr := gb.RunContext.Services.Sender.SendNotification(
-			ctx, []string{i}, files, item,
+			ctx, []string{i}, iconsFiles, item,
 		); sendErr != nil {
 			return sendErr
 		}
@@ -187,6 +188,8 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 }
 
 func (gb *GoApproverBlock) notifyAdditionalApprovers(ctx c.Context, logins []string, attachsId []entity.Attachment) error {
+	l := logger.GetLogger(ctx)
+
 	delegates, err := gb.RunContext.Services.HumanTasks.GetDelegationsByLogins(ctx, logins)
 	if err != nil {
 		return err
@@ -199,7 +202,8 @@ func (gb *GoApproverBlock) notifyAdditionalApprovers(ctx c.Context, logins []str
 	for _, login := range loginsToNotify {
 		approverEmail, emailErr := gb.RunContext.Services.People.GetUserEmail(ctx, login)
 		if emailErr != nil {
-			return emailErr
+			l.WithField("login", login).WithError(emailErr).Warning("couldn't get email")
+			continue
 		}
 
 		emails = append(emails, approverEmail)
@@ -254,7 +258,7 @@ func (gb *GoApproverBlock) notifyAdditionalApprovers(ctx c.Context, logins []str
 			gb.RunContext.WorkNumber,
 			gb.RunContext.NotifName,
 			gb.RunContext.Services.Sender.SdAddress,
-			gb.State.ApproveStatusName,
+			script.SettingStatusApprovement,
 			gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(
 				time.Now(), gb.State.SLA, slaInfoPtr),
 			lastWorksForUser,
@@ -285,6 +289,8 @@ func (gb *GoApproverBlock) notifyAdditionalApprovers(ctx c.Context, logins []str
 // notifyDecisionMadeByAdditionalApprover notifies requesting approvers
 // and the task initiator that an additional approver has left a review
 func (gb *GoApproverBlock) notifyDecisionMadeByAdditionalApprover(ctx c.Context, logins []string) error {
+	l := logger.GetLogger(ctx)
+
 	delegates, err := gb.RunContext.Services.HumanTasks.GetDelegationsByLogins(ctx, logins)
 	if err != nil {
 		return err
@@ -297,7 +303,8 @@ func (gb *GoApproverBlock) notifyDecisionMadeByAdditionalApprover(ctx c.Context,
 	for _, login := range loginsWithDelegates {
 		emailToNotify, emailErr := gb.RunContext.Services.People.GetUserEmail(ctx, login)
 		if emailErr != nil {
-			return emailErr
+			l.WithField("login", login).WithError(emailErr).Warning("couldn't get email")
+			continue
 		}
 
 		emailsToNotify = append(emailsToNotify, emailToNotify)
@@ -408,7 +415,7 @@ func (gb *GoApproverBlock) notifyNewInfoReceived(ctx c.Context, approverLogin st
 		em, err = gb.RunContext.Services.People.GetUserEmail(ctx, login)
 		if err != nil {
 			l.WithField("login", login).WithError(err).Warning("couldn't get email")
-			return err
+			continue
 		}
 
 		emails = append(emails, em)
@@ -445,7 +452,7 @@ func (gb *GoApproverBlock) notifyNeedMoreInfo(ctx c.Context) error {
 		em, err := gb.RunContext.Services.People.GetUserEmail(ctx, login)
 		if err != nil {
 			l.WithField("login", login).WithError(err).Warning("couldn't get email")
-			return err
+			continue
 		}
 
 		emails = append(emails, em)

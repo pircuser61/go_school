@@ -1392,14 +1392,15 @@ func (db *PGCon) GetTaskSteps(ctx c.Context, id uuid.UUID) (entity.TaskSteps, er
 	return el, nil
 }
 
-func (db *PGCon) GetFilteredStates(ctx c.Context, steps []string, wNumber string) (map[string]map[string]interface{}, error) {
+func (db *PGCon) GetFilteredStates(ctx c.Context, steps []string, wNumber string) (
+	map[string]map[string]interface{}, map[string]map[string]*time.Time, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_filtered_states")
 	defer span.End()
 
 	// nolint:gocritic
 	// language=PostgreSQL
 	query := `
-		SELECT vs.content-> 'State'
+		SELECT step_name, vs.content-> 'State', time, updated_at
 		FROM variable_storage vs 
 			WHERE vs.work_id = (SELECT id FROM works 
 			                 	WHERE work_number = $1 AND child_id IS NULL LIMIT 1) AND 
@@ -1416,25 +1417,34 @@ func (db *PGCon) GetFilteredStates(ctx c.Context, steps []string, wNumber string
 	res := make([]map[string]map[string]interface{}, 0)
 	rows, err := db.Connection.Query(ctx, query, wNumber)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	defer rows.Close()
 
+	dates := make(map[string]map[string]*time.Time)
+
 	for rows.Next() {
+		stepName := ""
 		states := make(map[string]map[string]interface{})
-		if scanErr := rows.Scan(&states); scanErr != nil {
-			return nil, scanErr
+		var createdAt *time.Time
+		var updatedAt *time.Time
+		if scanErr := rows.Scan(&stepName, &states, &createdAt, &updatedAt); scanErr != nil {
+			return nil, nil, scanErr
 		}
 
+		dates[stepName] = map[string]*time.Time{
+			"createdAt": createdAt,
+			"updatedAt": updatedAt,
+		}
 		res = append(res, states)
 	}
 
 	if err = rows.Err(); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return mergeStates(res, steps), nil
+	return mergeStates(res, steps), dates, nil
 }
 
 func mergeStates(in []map[string]map[string]interface{}, steps []string) (res map[string]map[string]interface{}) {

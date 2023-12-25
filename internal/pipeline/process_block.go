@@ -5,6 +5,7 @@ import (
 	c "context"
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/google/uuid"
@@ -554,7 +555,7 @@ func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) ([]o
 		return nil, nil, err
 	}
 
-	apBody := descr.InitialApplication.ApplicationBody
+	apBody := flatArray(descr.InitialApplication.ApplicationBody)
 
 	descriptions := make([]orderedmap.OrderedMap, 0)
 
@@ -574,9 +575,9 @@ func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) ([]o
 		apBody.Set("attachLinks", attachments.AttachLinks)
 		apBody.Set("attachExist", attachments.AttachExists)
 		apBody.Set("attachList", attachments.AttachmentsList)
-
-		descriptions = append(descriptions, apBody)
 	}
+
+	descriptions = append(descriptions, apBody)
 
 	additionalForms, err := runCtx.Services.Storage.GetAdditionalDescriptionForms(runCtx.WorkNumber, nodeName)
 	if err != nil {
@@ -612,11 +613,30 @@ func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) ([]o
 		v.Set("attachList", attach.AttachmentsList)
 
 		files = append(files, attach.AttachmentsList...)
-		descriptions = append(descriptions, v)
+		descriptions = append(descriptions, flatArray(v))
 	}
 
 	files = append(files, attachments.AttachmentsList...)
 	return descriptions, files, nil
+}
+
+func flatArray(v orderedmap.OrderedMap) orderedmap.OrderedMap {
+	res := orderedmap.New()
+	keys := v.Keys()
+	values := v.Values()
+
+	for _, k := range keys {
+		vv, ok := values[k].([]interface{})
+		if ok {
+			for i, v := range vv {
+				res.Set(k+"("+strconv.Itoa(i)+")", v)
+			}
+		} else {
+			res.Set(k, values[k])
+		}
+	}
+
+	return *res
 }
 
 type handleInitiatorNotifyParams struct {
@@ -665,12 +685,15 @@ func (runCtx *BlockRunContext) handleInitiatorNotify(ctx c.Context, params handl
 
 	loginsToNotify := []string{runCtx.Initiator}
 
+	log := logger.GetLogger(ctx)
+
 	var email string
 	emails := make([]string, 0, len(loginsToNotify))
 	for _, login := range loginsToNotify {
 		email, err = runCtx.Services.People.GetUserEmail(ctx, login)
 		if err != nil {
-			return err
+			log.WithField("login", login).WithError(err).Warning("couldn't get email")
+			return nil
 		}
 
 		emails = append(emails, email)
