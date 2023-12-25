@@ -19,10 +19,14 @@ import (
 	"go.opencensus.io/trace"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
+)
+
+const (
+	ActionTypePrimary   = "primary"
+	ActionTypeSecondary = "secondary"
 )
 
 func uniqueActionsByRole(loginsIn, stepType string, finished, acted bool) string {
@@ -1128,7 +1132,7 @@ func getMaxPriority(existingPriorities []entity.TaskAction) string {
 
 	result := ""
 	for _, v := range existingPriorities {
-		if nums, ok := nodeTypes[v.NodeType]; ok && nums > nodeTypes[result] && (v.ButtonType == pipeline.ActionTypePrimary || v.ButtonType == pipeline.ActionTypeSecondary) {
+		if nums, ok := nodeTypes[v.NodeType]; ok && nums > nodeTypes[result] && (v.ButtonType == ActionTypePrimary || v.ButtonType == ActionTypeSecondary) {
 			result = v.NodeType
 		}
 	}
@@ -1201,7 +1205,7 @@ func (db *PGCon) computeActions(ctx c.Context, currentUserDelegators []string, a
 	for _, a := range computedActions {
 		var ignoreAction = false
 
-		if maxPriority != "" && a.NodeType != maxPriority && (a.ButtonType == pipeline.ActionTypePrimary || a.ButtonType == pipeline.ActionTypeSecondary) {
+		if maxPriority != "" && a.NodeType != maxPriority && (a.ButtonType == ActionTypePrimary || a.ButtonType == ActionTypeSecondary) {
 			a.ButtonType = "other"
 		}
 
