@@ -1919,10 +1919,8 @@ func (db *PGCon) CheckBlockForHiddenFlag(ctx c.Context, blockId string) (bool, e
     		join versions v on w.version_id = v.id
 		where vs.id = $1`
 
-	row := db.Connection.QueryRow(ctx, q, blockId)
 	var res bool
-	err := row.Scan(&res)
-	if err != nil {
+	if err := db.Connection.QueryRow(ctx, q, blockId).Scan(&res); err != nil {
 		return false, err
 	}
 
@@ -1939,12 +1937,10 @@ func (db *PGCon) CheckTaskForHiddenFlag(ctx c.Context, workNumber string) (bool,
 		SELECT v.is_hidden
 		from works w
     		join versions v on w.version_id = v.id
-		where w.work_number = $1`
+		where w.work_number = $1 AND w.child_id is null`
 
-	row := db.Connection.QueryRow(ctx, q, workNumber)
 	var res bool
-	err := row.Scan(&res)
-	if err != nil {
+	if err := db.Connection.QueryRow(ctx, q, workNumber).Scan(&res); err != nil {
 		return false, err
 	}
 

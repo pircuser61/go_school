@@ -133,7 +133,7 @@ func (ae *APIEnv) GetBlockContext(w http.ResponseWriter, r *http.Request, blockI
 
 	if blockIsHidden {
 		e := ForbiddenError
-		log.Error(e.errorMessage(err))
+		log.Error(e.error())
 		_ = e.sendError(w)
 		return
 	}
@@ -193,7 +193,7 @@ func (ae *APIEnv) GetMonitoringTask(w http.ResponseWriter, req *http.Request, wo
 
 	if taskIsHidden {
 		e := ForbiddenError
-		log.Error(e.errorMessage(err))
+		log.Error(e.error())
 		_ = e.sendError(w)
 		return
 	}
@@ -315,7 +315,7 @@ func (ae *APIEnv) GetMonitoringTasksBlockBlockIdParams(w http.ResponseWriter, re
 
 	if blockIsHidden {
 		e := ForbiddenError
-		log.Error(e.errorMessage(err))
+		log.Error(e.error())
 		_ = e.sendError(w)
 		return
 	}
@@ -373,7 +373,7 @@ func (ae *APIEnv) GetBlockState(w http.ResponseWriter, r *http.Request, blockId 
 
 	if blockIsHidden {
 		e := ForbiddenError
-		log.Error(e.errorMessage(err))
+		log.Error(e.error())
 		_ = e.sendError(w)
 		return
 	}
