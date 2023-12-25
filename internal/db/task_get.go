@@ -1132,7 +1132,7 @@ func (db *PGCon) computeActions(ctx c.Context, currentUserDelegators []string, a
 	)
 
 	canBeRepeated := []string{
-		string(entity.TaskUpdateActionRequestApproveInfo),
+		string(entity.TaskUpdateActionReplyApproverInfo),
 	}
 
 	var computedActions = make([]entity.TaskAction, 0)
@@ -1216,8 +1216,7 @@ func (db *PGCon) computeActions(ctx c.Context, currentUserDelegators []string, a
 			AttachmentsEnabled: false,
 		}
 
-		result = append(result, cancelAppAction)
-		result = append(result, repeatAppAction)
+		result = append(result, cancelAppAction, repeatAppAction)
 	}
 
 	return result, nil
