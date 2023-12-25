@@ -27,7 +27,8 @@ import (
 )
 
 const (
-	hiddenUserLogin = "hidden_user"
+	hiddenUserLogin                      = "hidden_user"
+	TypeAccessFormNone script.AccessType = "None"
 )
 
 type taskResp struct {
@@ -314,14 +315,7 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request, workNumber s
 			return
 		}
 
-		removeErr := ae.removeForms(dbTask, accessibleForms)
-		if removeErr != nil {
-			e := UnknownError
-			log.Error(e.errorMessage(removeErr))
-			_ = e.sendError(w)
-
-			return
-		}
+		ae.removeForms(dbTask, accessibleForms)
 	}
 
 	currentUserDelegateSteps, tErr := ae.getCurrentUserInDelegatesForSteps(ui.Username, &steps, &delegations)
@@ -466,7 +460,8 @@ func (ae *APIEnv) getAccessibleForms(currentUser string, steps *entity.TaskSteps
 			}
 
 			for _, form := range approver.FormsAccessibility {
-				if form.AccessType != "None" {
+
+				if form.AccessType != TypeAccessFormNone {
 					accessibleForms[form.NodeId] = struct{}{}
 				}
 			}
@@ -492,7 +487,7 @@ func (ae *APIEnv) getAccessibleForms(currentUser string, steps *entity.TaskSteps
 			accessibleForms[s.Name] = struct{}{}
 
 			for _, form := range form.FormsAccessibility {
-				if form.AccessType != "None" {
+				if form.AccessType != TypeAccessFormNone {
 					accessibleForms[form.NodeId] = struct{}{}
 				}
 			}
@@ -517,7 +512,7 @@ func (ae *APIEnv) getAccessibleForms(currentUser string, steps *entity.TaskSteps
 			}
 
 			for _, form := range execution.FormsAccessibility {
-				if form.AccessType != "None" {
+				if form.AccessType != TypeAccessFormNone {
 					accessibleForms[form.NodeId] = struct{}{}
 				}
 			}
@@ -1085,7 +1080,7 @@ func (ae *APIEnv) GetTaskMeanSolveTime(w http.ResponseWriter, req *http.Request,
 	}
 }
 
-func (ae *APIEnv) removeForms(dbTask *entity.EriusTask, accessibleForms map[string]struct{}) error {
+func (ae *APIEnv) removeForms(dbTask *entity.EriusTask, accessibleForms map[string]struct{}) {
 	actualSteps := make([]*entity.Step, 0, len(dbTask.Steps))
 
 	for _, step := range dbTask.Steps {
@@ -1111,7 +1106,7 @@ func (ae *APIEnv) removeForms(dbTask *entity.EriusTask, accessibleForms map[stri
 			newStates[k] = v
 		}
 
-		for k, _ := range step.Storage {
+		for k := range step.Storage {
 			key := strings.Split(k, ".")
 			if _, ok := accessibleForms[key[0]]; !ok && strings.HasPrefix(k, "form") {
 				delete(step.Storage, k)
@@ -1123,8 +1118,6 @@ func (ae *APIEnv) removeForms(dbTask *entity.EriusTask, accessibleForms map[stri
 	}
 
 	dbTask.Steps = actualSteps
-
-	return nil
 }
 
 func (ae *APIEnv) hideExecutors(ctx context.Context, dbTask *entity.EriusTask, requesterLogin string, stepDelegates map[string]bool) error {
