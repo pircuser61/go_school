@@ -1116,6 +1116,24 @@ func getActionsToIgnoreIfOtherExist() []IgnoreActionRule {
 	}
 }
 
+func getMaxPriorities(existingPriorities []entity.TaskAction) string {
+	nodeTypes := map[string]int{
+		"execution":   3,
+		"approvement": 2,
+		"form":        1,
+		"sign":        0,
+	}
+
+	result := ""
+	for _, v := range existingPriorities {
+		if nums, ok := nodeTypes[v.NodeType]; ok && nums > nodeTypes[result] {
+			result = v.NodeType
+		}
+	}
+
+	return result
+}
+
 func (db *PGCon) computeActions(ctx c.Context, currentUserDelegators []string, actions []DbTaskAction,
 	allActions map[string]entity.TaskAction, author string) (result []entity.TaskAction, err error) {
 	const (
@@ -1165,8 +1183,14 @@ func (db *PGCon) computeActions(ctx c.Context, currentUserDelegators []string, a
 		}
 	}
 
+	maxPriority := getMaxPriorities(computedActions)
+
 	for _, a := range computedActions {
 		var ignoreAction = false
+
+		if maxPriority != "" && a.NodeType != maxPriority && (a.ButtonType == "primary" || a.ButtonType == "secondary") {
+			a.ButtonType = "other"
+		}
 
 		for _, actionRule := range actionsToIgnore {
 			if a.Id == actionRule.IgnoreActionId && slices.Contains(computedActionIds, actionRule.ExistingActionId) {
