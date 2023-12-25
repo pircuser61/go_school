@@ -415,6 +415,7 @@ type additionalApprover struct {
 	ApproverLogin string `json:"approver_login"`
 }
 
+// nolint:gocognit //its ok here
 func (ae *APIEnv) getAccessibleForms(currentUser string, steps *entity.TaskSteps, delegates *ht.Delegations) (
 	accessibleForms map[string]struct{}, err error) {
 	const (
