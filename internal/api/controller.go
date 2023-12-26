@@ -21,6 +21,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/kafka"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	mail_fetcher "gitlab.services.mts.ru/jocasta/pipeliner/internal/mail/fetcher"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/scheduler"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
@@ -31,6 +32,7 @@ import (
 
 type APIEnv struct {
 	Log                     logger.Logger
+	Metrics                 metrics.Metrics
 	DB                      db.Database
 	Remedy                  string
 	FaaS                    string
@@ -79,7 +81,7 @@ func NewServer(ctx context.Context, param *ServerParam) (*http.Server, error) {
 	)
 
 	mux.Mount(baseURL+"/pprof", middleware.Profiler())
-	mux.Handle(baseURL+"/metrics", param.APIEnv.ServePrometheus())
+	mux.Handle(baseURL+"/metrics", param.APIEnv.Metrics.ServePrometheus())
 
 	mux.With(middleware.SetHeader("Content-Type", "text/json")).
 		Route(baseURL, func(r chi.Router) {

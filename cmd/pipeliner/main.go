@@ -11,8 +11,6 @@ import (
 
 	"go.opencensus.io/trace"
 
-	"github.com/prometheus/client_golang/prometheus/push"
-
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/api"
@@ -176,10 +174,15 @@ func main() {
 
 	slaService := sla.NewSlaService(hrgateService)
 
+	metrics.InitMetricsAuth(cfg.Prometheus)
+
+	m := metrics.New()
+
 	includePlaceholderBlock := cfg.IncludePlaceholderBlock
 
 	APIEnv := &api.APIEnv{
 		Log:                     log,
+		Metrics:                 m,
 		DB:                      &dbConn,
 		Remedy:                  cfg.Remedy,
 		FaaS:                    cfg.FaaS,
@@ -226,10 +229,6 @@ func main() {
 		trace.RegisterExporter(jr)
 		trace.ApplyConfig(trace.Config{DefaultSampler: trace.ProbabilitySampler(cfg.Tracing.SampleFraction)})
 	}
-
-	metrics.InitMetricsAuth()
-
-	metrics.Pusher = push.New(cfg.Push.URL, cfg.Push.Job).Gatherer(metrics.Registry)
 
 	s := server.NewServer(ctx, log, kafkaService, &serverParam)
 	s.Run(ctx)

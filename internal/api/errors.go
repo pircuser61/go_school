@@ -371,7 +371,7 @@ func (c Err) error() string {
 	return errorText[UnknownError]
 }
 
-func (c Err) status() int {
+func (c Err) Status() int {
 	if s, ok := errorStatus[c]; ok {
 		return s
 	}
@@ -389,7 +389,7 @@ func (c Err) description() string {
 
 func (c Err) sendError(w http.ResponseWriter) error {
 	resp := httpError{
-		StatusCode:  c.status(),
+		StatusCode:  c.Status(),
 		Error:       c.error(),
 		Description: c.description(),
 	}

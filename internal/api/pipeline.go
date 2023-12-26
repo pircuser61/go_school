@@ -15,8 +15,6 @@ import (
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
@@ -494,8 +492,4 @@ func (ae *APIEnv) PipelineNameExists(w http.ResponseWriter, r *http.Request, par
 
 		return
 	}
-}
-
-func (ae *APIEnv) ServePrometheus() http.Handler {
-	return promhttp.Handler()
 }
