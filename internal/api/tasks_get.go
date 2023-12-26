@@ -618,7 +618,7 @@ func (ae *APIEnv) GetTasks(w http.ResponseWriter, req *http.Request, params GetT
 		switch *filters.SelectAs {
 		case entity.SelectAsValApprover:
 			delegations = delegations.FilterByType("approvement")
-		case entity.SelectAsValExecutor:
+		case entity.SelectAsValQueueExecutor, entity.SelectAsValInWorkExecutor:
 			delegations = delegations.FilterByType("execution")
 		default:
 			delegations = delegations[:0]
@@ -791,7 +791,9 @@ func (p *GetTasksParams) toEntity(req *http.Request) (entity.TaskFilter, error) 
 			*selectAs != entity.SelectAsValFinishedSignerJur &&
 			*selectAs != entity.SelectAsValInitiators &&
 			*selectAs != entity.SelectAsValGroupExecutor &&
-			*selectAs != entity.SelectAsValFinishedGroupExecutor {
+			*selectAs != entity.SelectAsValFinishedGroupExecutor &&
+			*selectAs != entity.SelectAsValQueueExecutor &&
+			*selectAs != entity.SelectAsValInWorkExecutor {
 			return filters, errors.New("invalid value in SelectAs filter")
 		}
 	}

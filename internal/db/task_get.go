@@ -139,6 +139,16 @@ func getUniqueActions(selectFilter string, logins []string) string {
 		return uniqueActionsByRole(loginsIn, "form", false, false)
 	case entity.SelectAsValFinishedFormExecutor:
 		return uniqueActionsByRole(loginsIn, "form", true, true)
+	case entity.SelectAsValQueueExecutor:
+		q := uniqueActionsByRole(loginsIn, "execution", false, false)
+		q = strings.Replace(q, "--unique-actions-filter--",
+			"AND (vs.content -> 'State' -> vs.step_name -> 'is_taken_in_work')::bool = false --unique-actions-filter--", 1)
+		return q
+	case entity.SelectAsValInWorkExecutor:
+		q := uniqueActionsByRole(loginsIn, "execution", false, true)
+		q = strings.Replace(q, "--unique-actions-filter--",
+			"AND (vs.content -> 'State' -> vs.step_name -> 'is_taken_in_work')::bool = true --unique-actions-filter--", 1)
+		return q
 	case entity.SelectAsValSignerPhys:
 		q := uniqueActionsByRole(loginsIn, "sign", false, false)
 		q = strings.Replace(q, "--unique-actions-filter--", "AND vs.content -> 'State' -> vs.step_name ->> 'signature_type' in ('pep', 'unep') --unique-actions-filter--", 1)
