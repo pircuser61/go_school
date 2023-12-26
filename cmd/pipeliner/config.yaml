@@ -72,9 +72,10 @@ monitoring:
   addr: 'http://monitoring:9000/api/monitoring/v1/pipeliner'
   timeout: '5s'
 
-push:
-  url: 'http://openfaas-prometheus-pushgateway.openfaas:9091'
-  job: 'pipeliner'
+prometheus:
+  push:
+    url: 'http://openfaas-prometheus-pushgateway.openfaas:9091'
+    job: 'pipeliner'
 
 log:
   title: 'pipeliner'

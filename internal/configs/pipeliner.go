@@ -86,8 +86,7 @@ type PushConfig struct {
 }
 
 type PrometheusConfig struct {
-	Namespace string     `yaml:"namespace"`
-	Push      PushConfig `yaml:"push"`
+	Push PushConfig `yaml:"push"`
 }
 
 func (d *Database) String() string {
