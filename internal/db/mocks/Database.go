@@ -214,13 +214,13 @@ func (_m *MockedDatabase) CommitTransaction(ctx context.Context) error {
 	return r0
 }
 
-// CreatePipeline provides a mock function with given fields: c, p, author, pipelineData, oldVersionID
-func (_m *MockedDatabase) CreatePipeline(c context.Context, p *entity.EriusScenario, author string, pipelineData []byte, oldVersionID uuid.UUID) error {
-	ret := _m.Called(c, p, author, pipelineData, oldVersionID)
+// CreatePipeline provides a mock function with given fields: c, p, author, pipelineData, oldVersionID, hasPrivateFunction
+func (_m *MockedDatabase) CreatePipeline(c context.Context, p *entity.EriusScenario, author string, pipelineData []byte, oldVersionID uuid.UUID, hasPrivateFunction bool) error {
+	ret := _m.Called(c, p, author, pipelineData, oldVersionID, hasPrivateFunction)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, *entity.EriusScenario, string, []byte, uuid.UUID) error); ok {
-		r0 = rf(c, p, author, pipelineData, oldVersionID)
+	if rf, ok := ret.Get(0).(func(context.Context, *entity.EriusScenario, string, []byte, uuid.UUID, bool) error); ok {
+		r0 = rf(c, p, author, pipelineData, oldVersionID, hasPrivateFunction)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -254,13 +254,13 @@ func (_m *MockedDatabase) CreateTask(ctx context.Context, dto *db.CreateTaskDTO)
 	return r0, r1
 }
 
-// CreateVersion provides a mock function with given fields: ctx, p, author, pipelineData, oldVersionID
-func (_m *MockedDatabase) CreateVersion(ctx context.Context, p *entity.EriusScenario, author string, pipelineData []byte, oldVersionID uuid.UUID) error {
-	ret := _m.Called(ctx, p, author, pipelineData, oldVersionID)
+// CreateVersion provides a mock function with given fields: ctx, p, author, pipelineData, oldVersionID, hasPrivateFucntion
+func (_m *MockedDatabase) CreateVersion(ctx context.Context, p *entity.EriusScenario, author string, pipelineData []byte, oldVersionID uuid.UUID, hasPrivateFucntion bool) error {
+	ret := _m.Called(ctx, p, author, pipelineData, oldVersionID, hasPrivateFucntion)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, *entity.EriusScenario, string, []byte, uuid.UUID) error); ok {
-		r0 = rf(ctx, p, author, pipelineData, oldVersionID)
+	if rf, ok := ret.Get(0).(func(context.Context, *entity.EriusScenario, string, []byte, uuid.UUID, bool) error); ok {
+		r0 = rf(ctx, p, author, pipelineData, oldVersionID, hasPrivateFucntion)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -2474,13 +2474,13 @@ func (_m *MockedDatabase) UpdateBlockVariablesInOthers(ctx context.Context, task
 	return r0
 }
 
-// UpdateDraft provides a mock function with given fields: ctx, p, pipelineData, groups
-func (_m *MockedDatabase) UpdateDraft(ctx context.Context, p *entity.EriusScenario, pipelineData []byte, groups []*entity.NodeGroup) error {
-	ret := _m.Called(ctx, p, pipelineData, groups)
+// UpdateDraft provides a mock function with given fields: ctx, p, pipelineData, groups, isHidden
+func (_m *MockedDatabase) UpdateDraft(ctx context.Context, p *entity.EriusScenario, pipelineData []byte, groups []*entity.NodeGroup, isHidden bool) error {
+	ret := _m.Called(ctx, p, pipelineData, groups, isHidden)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, *entity.EriusScenario, []byte, []*entity.NodeGroup) error); ok {
-		r0 = rf(ctx, p, pipelineData, groups)
+	if rf, ok := ret.Get(0).(func(context.Context, *entity.EriusScenario, []byte, []*entity.NodeGroup, bool) error); ok {
+		r0 = rf(ctx, p, pipelineData, groups, isHidden)
 	} else {
 		r0 = ret.Error(0)
 	}

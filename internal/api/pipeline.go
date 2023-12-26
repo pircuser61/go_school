@@ -98,7 +98,13 @@ func (ae *APIEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	err = ae.DB.CreatePipeline(ctx, &p, userFromContext.Username, b, uuid.Nil)
+	hasPrivateFunction, err := p.Pipeline.Blocks.HasPrivateFunction()
+	if err != nil {
+		log.Error(err.Error())
+		return
+	}
+
+	err = ae.DB.CreatePipeline(ctx, &p, userFromContext.Username, b, uuid.Nil, hasPrivateFunction)
 	if err != nil {
 		e := PipelineCreateError
 		if db.IsUniqueConstraintError(err) {
@@ -181,7 +187,13 @@ func (ae *APIEnv) CopyPipeline(w http.ResponseWriter, req *http.Request) {
 	p.ID = uuid.New()
 	p.VersionID = uuid.New()
 
-	err = ae.DB.CreatePipeline(ctx, &p, userFromContext.Username, updated, oldVersionID)
+	hasPrivateFunction, err := p.Pipeline.Blocks.HasPrivateFunction()
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	err = ae.DB.CreatePipeline(ctx, &p, userFromContext.Username, updated, oldVersionID, hasPrivateFunction)
 	if err != nil {
 		e := PipelineCreateError
 		if db.IsUniqueConstraintError(err) {

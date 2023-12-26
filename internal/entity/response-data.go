@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -52,6 +53,7 @@ type EriusTagInfo struct {
 
 type BlocksType map[string]EriusFunc
 
+// Добавить проверку на приватную функцию
 const (
 	BlockGoStartName       = "start"
 	StartBlock0            = "start_0"
@@ -453,6 +455,32 @@ func (bt *BlocksType) addDefaultStartNode() {
 			},
 		},
 	}
+}
+
+func (bt *BlocksType) HasPrivateFunction() (bool, error) {
+	privateFunctionExists := false
+	for block, content := range *bt {
+		if strings.Contains(block, "executable_function") {
+			data := content.Params
+			var p script.ExecutableFunctionParams
+			if err := json.Unmarshal(data, &p); err != nil {
+				return false, err
+			}
+
+			data = []byte(p.Function.Options)
+			var opts script.ExecutableFunctionOptions
+			if err := json.Unmarshal(data, &opts); err != nil {
+				return false, err
+			}
+
+			privateFunctionExists = opts.Private
+			if privateFunctionExists {
+				break
+			}
+		}
+	}
+
+	return privateFunctionExists, nil
 }
 
 func (bt *BlocksType) blockTypeExists(blockType string) bool {

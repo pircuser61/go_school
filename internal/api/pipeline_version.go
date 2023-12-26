@@ -127,7 +127,13 @@ func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request
 		}
 	}()
 
-	err = ae.DB.CreateVersion(ctx, &p, ui.Username, updated, oldVersionID)
+	hasPrivateFunction, err := p.Pipeline.Blocks.HasPrivateFunction()
+	if err != nil {
+		log.Error(err.Error())
+		return
+	}
+
+	err = ae.DB.CreateVersion(ctx, &p, ui.Username, updated, oldVersionID, hasPrivateFunction)
 	if err != nil {
 		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
 			log.WithField("funcName", "CreateVersion").
@@ -475,7 +481,12 @@ func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	err = ae.DB.UpdateDraft(ctx, &p, updated, groups)
+	hasPrivateFunction, err := p.Pipeline.Blocks.HasPrivateFunction()
+	if err != nil {
+		log.Error(err.Error())
+	}
+
+	err = ae.DB.UpdateDraft(ctx, &p, updated, groups, hasPrivateFunction)
 	if err != nil {
 		e := PipelineWriteError
 		log.Error(e.errorMessage(err))

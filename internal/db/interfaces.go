@@ -22,7 +22,7 @@ type PipelineStorager interface {
 	GetWorkedVersions(ctx c.Context) ([]e.EriusScenario, error)
 	GetPipeline(ctx c.Context, id uuid.UUID) (*e.EriusScenario, error)
 
-	CreatePipeline(c c.Context, p *e.EriusScenario, author string, pipelineData []byte, oldVersionID uuid.UUID) error
+	CreatePipeline(c c.Context, p *e.EriusScenario, author string, pipelineData []byte, oldVersionID uuid.UUID, hasPrivateFunction bool) error
 	PipelineRemovable(ctx c.Context, id uuid.UUID) (bool, error)
 	DeletePipeline(ctx c.Context, id uuid.UUID) error
 	RenamePipeline(ctx c.Context, id uuid.UUID, name string) error
@@ -184,11 +184,11 @@ type Database interface {
 	GetOnApproveVersions(ctx c.Context) ([]e.EriusScenarioInfo, error)
 	SwitchApproved(ctx c.Context, pipelineID, versionID uuid.UUID, author string) error
 	VersionEditable(ctx c.Context, versionID uuid.UUID) (bool, error)
-	CreateVersion(ctx c.Context, p *e.EriusScenario, author string, pipelineData []byte, oldVersionID uuid.UUID) error
+	CreateVersion(ctx c.Context, p *e.EriusScenario, author string, pipelineData []byte, oldVersionID uuid.UUID, hasPrivateFucntion bool) error
 	DeleteVersion(ctx c.Context, versionID uuid.UUID) error
 	GetPipelineVersion(ctx c.Context, id uuid.UUID, checkNotDeleted bool) (*e.EriusScenario, error)
 	GetPipelineVersions(ctx c.Context, id uuid.UUID) ([]e.EriusVersionInfo, error)
-	UpdateDraft(ctx c.Context, p *e.EriusScenario, pipelineData []byte, groups []*e.NodeGroup) error
+	UpdateDraft(ctx c.Context, p *e.EriusScenario, pipelineData []byte, groups []*e.NodeGroup, isHidden bool) error
 	SaveStepContext(ctx c.Context, dto *SaveStepRequest) (uuid.UUID, time.Time, error)
 	UpdateStepContext(ctx c.Context, dto *UpdateStepRequest) error
 	UpdateTaskBlocksData(ctx c.Context, dto *UpdateTaskBlocksDataRequest) error
