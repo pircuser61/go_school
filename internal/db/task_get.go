@@ -24,6 +24,11 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
+const (
+	ActionTypePrimary   = "primary"
+	ActionTypeSecondary = "secondary"
+)
+
 func uniqueActionsByRole(loginsIn, stepType string, finished, acted bool) string {
 	statuses := "('running', 'idle', 'ready')"
 	if finished {
@@ -1117,6 +1122,28 @@ func getActionsToIgnoreIfOtherExist() []IgnoreActionRule {
 	}
 }
 
+func getMaxPriority(existingPriorities []entity.TaskAction) string {
+	nodeTypes := map[string]int{
+		"execution":   3,
+		"approvement": 2,
+		"sign":        1,
+		"form":        0,
+	}
+
+	result := ""
+	for _, v := range existingPriorities {
+		if v.ButtonType != ActionTypePrimary && v.ButtonType != ActionTypeSecondary {
+			continue
+		}
+
+		if nums, ok := nodeTypes[v.NodeType]; ok && nums > nodeTypes[result] {
+			result = v.NodeType
+		}
+	}
+
+	return result
+}
+
 func (db *PGCon) computeActions(ctx c.Context, currentUserDelegators []string, actions []DbTaskAction,
 	allActions map[string]entity.TaskAction, author string) (result []entity.TaskAction, err error) {
 	const (
@@ -1177,8 +1204,14 @@ func (db *PGCon) computeActions(ctx c.Context, currentUserDelegators []string, a
 		}
 	}
 
+	maxPriority := getMaxPriority(computedActions)
+
 	for _, a := range computedActions {
 		var ignoreAction = false
+
+		if maxPriority != "" && a.NodeType != maxPriority && (a.ButtonType == ActionTypePrimary || a.ButtonType == ActionTypeSecondary) {
+			a.ButtonType = "other"
+		}
 
 		for _, actionRule := range actionsToIgnore {
 			if a.Id == actionRule.IgnoreActionId && slices.Contains(computedActionIds, actionRule.ExistingActionId) {
