@@ -122,6 +122,22 @@ func (ae *APIEnv) GetBlockContext(w http.ResponseWriter, r *http.Request, blockI
 
 	log := logger.GetLogger(ctx)
 
+	blockIsHidden, err := ae.DB.CheckBlockForHiddenFlag(ctx, blockId)
+	if err != nil {
+		e := CheckForHiddenError
+		log.WithField("blockId", blockId).
+			Error(e.errorMessage(err))
+		_ = e.sendError(w)
+		return
+	}
+
+	if blockIsHidden {
+		e := ForbiddenError
+		log.Error(e.error())
+		_ = e.sendError(w)
+		return
+	}
+
 	blocksOutputs, err := ae.DB.GetBlocksOutputs(ctx, blockId)
 	if err != nil {
 		e := GetBlockContextError
@@ -163,6 +179,21 @@ func (ae *APIEnv) GetMonitoringTask(w http.ResponseWriter, req *http.Request, wo
 	if workNumber == "" {
 		e := UUIDParsingError
 		log.Error(e.errorMessage(errors.New("workNumber is empty")))
+		_ = e.sendError(w)
+		return
+	}
+
+	taskIsHidden, err := ae.DB.CheckTaskForHiddenFlag(ctx, workNumber)
+	if err != nil {
+		e := CheckForHiddenError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+		return
+	}
+
+	if taskIsHidden {
+		e := ForbiddenError
+		log.Error(e.error())
 		_ = e.sendError(w)
 		return
 	}
@@ -272,6 +303,23 @@ func (ae *APIEnv) GetMonitoringTasksBlockBlockIdParams(w http.ResponseWriter, re
 		return
 	}
 
+	blockIsHidden, err := ae.DB.CheckBlockForHiddenFlag(ctx, blockId)
+	if err != nil {
+		e := CheckForHiddenError
+		log.WithField("blockId", blockId).
+			WithField("taskStep.Name", taskStep.Name).
+			Error(e.errorMessage(err))
+		_ = e.sendError(w)
+		return
+	}
+
+	if blockIsHidden {
+		e := ForbiddenError
+		log.Error(e.error())
+		_ = e.sendError(w)
+		return
+	}
+
 	outputs := make(map[string]MonitoringBlockParam, 0)
 	for _, bo := range blockOutputs {
 		outputs[bo.Name] = MonitoringBlockParam{
@@ -310,6 +358,22 @@ func (ae *APIEnv) GetBlockState(w http.ResponseWriter, r *http.Request, blockId 
 	if err != nil {
 		e := UnknownError
 		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+		return
+	}
+
+	blockIsHidden, err := ae.DB.CheckBlockForHiddenFlag(ctx, blockId)
+	if err != nil {
+		e := CheckForHiddenError
+		log.WithField("blockId", blockId).
+			Error(e.errorMessage(err))
+		_ = e.sendError(w)
+		return
+	}
+
+	if blockIsHidden {
+		e := ForbiddenError
+		log.Error(e.error())
 		_ = e.sendError(w)
 		return
 	}

@@ -1816,7 +1816,7 @@ func getTasksForMonitoringQuery(filters *entity.TasksForMonitoringFilters) *stri
 			FROM works w
 			LEFT JOIN versions v on w.version_id = v.id
 			LEFT JOIN pipelines p on v.pipeline_id = p.id
-			WHERE w.started_at IS NOT NULL AND p.name IS NOT NULL
+			WHERE w.started_at IS NOT NULL AND p.name IS NOT NULL AND v.is_hidden = false
 	`
 
 	if filters.FromDate != nil || filters.ToDate != nil {
@@ -1964,6 +1964,47 @@ func (db *PGCon) GetBlockState(ctx c.Context, blockId string) (entity.BlockState
 	}
 
 	return state, nil
+}
+
+func (db *PGCon) CheckBlockForHiddenFlag(ctx c.Context, blockId string) (bool, error) {
+	ctx, span := trace.StartSpan(ctx, "check_task_node_for_hidden_flag_monitoring")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	q := `
+		SELECT v.is_hidden
+		from variable_storage vs
+		    join works w on w.id = vs.work_id
+    		join versions v on w.version_id = v.id
+		where vs.id = $1`
+
+	var res bool
+	if err := db.Connection.QueryRow(ctx, q, blockId).Scan(&res); err != nil {
+		return false, err
+	}
+
+	return res, nil
+}
+
+func (db *PGCon) CheckTaskForHiddenFlag(ctx c.Context, workNumber string) (bool, error) {
+	ctx, span := trace.StartSpan(ctx, "check_task_for_hidden_flag_monitoring")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	q := `
+		SELECT v.is_hidden
+		from works w
+    		join versions v on w.version_id = v.id
+		where w.work_number = $1 AND w.child_id is null`
+
+	var res bool
+	if err := db.Connection.QueryRow(ctx, q, workNumber).Scan(&res); err != nil {
+		return false, err
+	}
+
+	return res, nil
 }
 
 func (db *PGCon) GetTaskMembers(ctx c.Context, workNumber string, fromActiveNodes bool) ([]DbMember, error) {

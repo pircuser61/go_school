@@ -208,7 +208,9 @@ type Database interface {
 	GetBlocksOutputs(ctx c.Context, blockId string) (e.BlockOutputs, error)
 	GetBlockOutputs(ctx c.Context, blockId, blockName string) (e.BlockOutputs, error)
 	GetBlockInputs(ctx c.Context, blockName, workNumber string) (e.BlockInputs, error)
+	CheckBlockForHiddenFlag(ctx c.Context, blockId string) (bool, error)
 	GetMergedVariableStorage(ctx c.Context, workId uuid.UUID, blockIds []string) (*store.VariableStore, error)
+	CheckTaskForHiddenFlag(ctx c.Context, workNumber string) (bool, error)
 	GetTasksForMonitoring(ctx c.Context, filters *e.TasksForMonitoringFilters) (*e.TasksForMonitoring, error)
 	GetBlockState(ctx c.Context, blockId string) (e.BlockState, error)
 
