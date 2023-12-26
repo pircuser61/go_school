@@ -53,7 +53,6 @@ type EriusTagInfo struct {
 
 type BlocksType map[string]EriusFunc
 
-// Добавить проверку на приватную функцию
 const (
 	BlockGoStartName       = "start"
 	StartBlock0            = "start_0"
