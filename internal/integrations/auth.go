@@ -45,13 +45,13 @@ const (
 	contentTypeFormValue = "application/x-www-form-urlencoded"
 	grantTypeGetValue    = "client_credentials"
 
-	//nolint
+	// nolint
 	tokensPath = "/auth/realms/mts/protocol/openid-connect/token"
 
 	mainSsoUrl = "https://isso%s.mts.ru"
 )
 
-func (s *Service) getToken(ctx context.Context, scopes []string, clientSecret, clientId, stand string) (token string, err error) {
+func (s *Service) GetToken(ctx context.Context, scopes []string, clientSecret, clientId, stand string) (token string, err error) {
 	ctxLocal, span := trace.StartSpan(ctx, "getToken")
 	defer span.End()
 
@@ -114,7 +114,7 @@ func (s *Service) FillAuth(ctx context.Context, key string) (result *Auth, err e
 		}
 	} else {
 		oauthGrpc := res.Auth.GetOAuth2()
-		token, tokenErr := s.getToken(ctx, oauthGrpc.Scopes, oauthGrpc.ClientSecret, oauthGrpc.ClientId, oauthGrpc.SSOStand)
+		token, tokenErr := s.GetToken(ctx, oauthGrpc.Scopes, oauthGrpc.ClientSecret, oauthGrpc.ClientId, oauthGrpc.SSOStand)
 		if tokenErr != nil {
 			return nil, tokenErr
 		}
