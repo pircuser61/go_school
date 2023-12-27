@@ -457,13 +457,14 @@ func (bt *BlocksType) addDefaultStartNode() {
 
 func (bt *BlocksType) GetExecutableFunctionIDs() ([]string, error) {
 	functionIDs := make([]string, 0)
-	for _, block := range *bt {
-		if block.BlockType == "executable_function" {
-			data := block.Params
+	for key := range *bt {
+		if (*bt)[key].TypeID == "executable_function" {
+			data := (*bt)[key].Params
 			var p script.ExecutableFunctionParams
 			if err := json.Unmarshal(data, &p); err != nil {
 				return nil, err
 			}
+
 			functionIDs = append(functionIDs, p.Function.FunctionId)
 		}
 	}
