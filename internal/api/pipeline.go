@@ -112,7 +112,7 @@ func (ae *APIEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
 		function, getFunctionErr := ae.FunctionStore.GetFunction(ctx, id)
 		if getFunctionErr != nil {
 			e := GetFunctionError
-			log.Error(e.errorMessage(err))
+			log.Error(e.errorMessage(getFunctionErr))
 			_ = e.sendError(w)
 
 			return
@@ -221,7 +221,7 @@ func (ae *APIEnv) CopyPipeline(w http.ResponseWriter, req *http.Request) {
 		function, getFunctionErr := ae.FunctionStore.GetFunction(ctx, id)
 		if getFunctionErr != nil {
 			e := GetFunctionError
-			log.Error(e.errorMessage(err))
+			log.Error(e.errorMessage(getFunctionErr))
 			_ = e.sendError(w)
 
 			return
