@@ -460,9 +460,8 @@ func (bt *BlocksType) GetExecutableFunctionIDs() ([]string, error) {
 	for key := range *bt {
 		block := (*bt)[key]
 		if block.TypeID == "executable_function" {
-			data := block.Params
 			var p script.ExecutableFunctionParams
-			if err := json.Unmarshal(data, &p); err != nil {
+			if err := json.Unmarshal(block.Params, &p); err != nil {
 				return nil, err
 			}
 
