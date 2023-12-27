@@ -4,6 +4,7 @@ import (
 	"bytes"
 	c "context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -755,7 +756,7 @@ func ProcessBlockWithEndMapping(ctx c.Context, name string, bl *entity.EriusFunc
 	}
 	intStatus, stringStatus, err := runCtx.Services.Storage.GetTaskStatusWithReadableString(ctx, runCtx.TaskID)
 	if err != nil {
-		log.WithError(err)
+		log.WithError(err).Error("couldn't get task status")
 		return nil
 	}
 
@@ -765,7 +766,7 @@ func ProcessBlockWithEndMapping(ctx c.Context, name string, bl *entity.EriusFunc
 
 	endErr := processBlockEnd(ctx, stringStatus, runCtx)
 	if endErr != nil {
-		log.WithError(endErr)
+		log.WithError(endErr).Error("couldn't send process end notification")
 	}
 	return nil
 }
@@ -773,6 +774,8 @@ func ProcessBlockWithEndMapping(ctx c.Context, name string, bl *entity.EriusFunc
 func processBlockEnd(ctx c.Context, status string, runCtx *BlockRunContext) (err error) {
 	ctx, s := trace.StartSpan(ctx, "process_block_end")
 	defer s.End()
+
+	log := logger.GetLogger(ctx)
 
 	version, versErr := runCtx.Services.Storage.GetVersionByWorkNumber(ctx, runCtx.WorkNumber)
 	if versErr != nil {
@@ -790,6 +793,7 @@ func processBlockEnd(ctx c.Context, status string, runCtx *BlockRunContext) (err
 	if namesErr != nil {
 		return namesErr
 	}
+	couldSend := false
 	for key, cc := range systemsClients {
 		clientFound := false
 		for _, cli := range cc {
@@ -808,6 +812,7 @@ func processBlockEnd(ctx c.Context, status string, runCtx *BlockRunContext) (err
 		if systemSettings.OutputSettings.Method == "" ||
 			systemSettings.OutputSettings.URL == "" ||
 			systemSettings.OutputSettings.MicroserviceId == "" {
+			log.Info(fmt.Sprintf("no output settings for clientID %s", context.ClientID))
 			return nil
 		}
 		taskTime, timeErr := runCtx.Services.Storage.GetTaskInWorkTime(ctx, runCtx.WorkNumber)
@@ -823,8 +828,11 @@ func processBlockEnd(ctx c.Context, status string, runCtx *BlockRunContext) (err
 		}, runCtx, systemSettings.OutputSettings)
 		if sendingErr != nil {
 			return sendingErr
-
 		}
+		couldSend = true
+	}
+	if !couldSend {
+		log.Info(fmt.Sprintf("found no system for clientID %s to send end process notification", context.ClientID))
 	}
 	return nil
 }
