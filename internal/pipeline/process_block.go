@@ -4,6 +4,7 @@ import (
 	"bytes"
 	c "context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -745,7 +746,7 @@ func ProcessBlockWithEndMapping(ctx c.Context, name string, bl *entity.EriusFunc
 	ctx, s := trace.StartSpan(ctx, "process_block_with_end_mapping")
 	defer s.End()
 
-	log := logger.GetLogger(ctx)
+	log := logger.GetLogger(ctx).WithField("workNumber", runCtx.WorkNumber)
 
 	runCtx.BlockRunResults = &BlockRunResults{}
 
@@ -755,7 +756,7 @@ func ProcessBlockWithEndMapping(ctx c.Context, name string, bl *entity.EriusFunc
 	}
 	intStatus, stringStatus, err := runCtx.Services.Storage.GetTaskStatusWithReadableString(ctx, runCtx.TaskID)
 	if err != nil {
-		log.WithError(err)
+		log.WithError(err).Error("couldn't get task status")
 		return nil
 	}
 
@@ -765,7 +766,7 @@ func ProcessBlockWithEndMapping(ctx c.Context, name string, bl *entity.EriusFunc
 
 	endErr := processBlockEnd(ctx, stringStatus, runCtx)
 	if endErr != nil {
-		log.WithError(endErr)
+		log.WithError(endErr).Error("couldn't send process end notification")
 	}
 	return nil
 }
@@ -773,6 +774,8 @@ func ProcessBlockWithEndMapping(ctx c.Context, name string, bl *entity.EriusFunc
 func processBlockEnd(ctx c.Context, status string, runCtx *BlockRunContext) (err error) {
 	ctx, s := trace.StartSpan(ctx, "process_block_end")
 	defer s.End()
+
+	log := logger.GetLogger(ctx)
 
 	version, versErr := runCtx.Services.Storage.GetVersionByWorkNumber(ctx, runCtx.WorkNumber)
 	if versErr != nil {
@@ -786,43 +789,62 @@ func processBlockEnd(ctx c.Context, status string, runCtx *BlockRunContext) (err
 	if contextErr != nil {
 		return contextErr
 	}
-	systemsNames, namesErr := runCtx.Services.Integrations.GetSystemsNames(ctx, systemsIds)
+	systemsClients, namesErr := runCtx.Services.Integrations.GetSystemsClients(ctx, systemsIds)
 	if namesErr != nil {
 		return namesErr
 	}
-	for key, val := range systemsNames {
-		if val == context.ClientID {
-			systemSettings, sysErr := runCtx.Services.Storage.GetExternalSystemSettings(ctx, version.VersionID.String(), key)
-			if sysErr != nil {
-				return sysErr
-			}
-			if systemSettings.OutputSettings.Method == "" ||
-				systemSettings.OutputSettings.URL == "" ||
-				systemSettings.OutputSettings.MicroserviceId == "" {
-				return nil
-			}
-			taskTime, timeErr := runCtx.Services.Storage.GetTaskInWorkTime(ctx, runCtx.WorkNumber)
-			if timeErr != nil {
-				return timeErr
-			}
-			sendingErr := sendEndingMapping(ctx, val, &entity.EndProcessData{
-				Id:         runCtx.TaskID.String(),
-				VersionId:  version.VersionID.String(),
-				StartedAt:  taskTime.StartedAt.String(),
-				FinishedAt: taskTime.FinishedAt.String(),
-				Status:     status,
-			}, runCtx, systemSettings.OutputSettings)
-			if sendingErr != nil {
-				return sendingErr
+	couldSend := false
+	for key, cc := range systemsClients {
+		clientFound := false
+		for _, cli := range cc {
+			if cli == context.ClientID {
+				clientFound = true
+				break
 			}
 		}
+		if !clientFound {
+			continue
+		}
+		systemSettings, sysErr := runCtx.Services.Storage.GetExternalSystemSettings(ctx, version.VersionID.String(), key)
+		if sysErr != nil {
+			return sysErr
+		}
+		if systemSettings.OutputSettings.Method == "" ||
+			systemSettings.OutputSettings.URL == "" ||
+			systemSettings.OutputSettings.MicroserviceId == "" {
+			log.Info(fmt.Sprintf("no output settings for clientID %s", context.ClientID))
+			return nil
+		}
+		taskTime, timeErr := runCtx.Services.Storage.GetTaskInWorkTime(ctx, runCtx.WorkNumber)
+		if timeErr != nil {
+			return timeErr
+		}
+		sendingErr := sendEndingMapping(ctx, &entity.EndProcessData{
+			Id:         runCtx.TaskID.String(),
+			VersionId:  version.VersionID.String(),
+			StartedAt:  taskTime.StartedAt.String(),
+			FinishedAt: taskTime.FinishedAt.String(),
+			Status:     status,
+		}, runCtx, systemSettings.OutputSettings)
+		if sendingErr != nil {
+			return sendingErr
+		}
+		couldSend = true
+	}
+	if !couldSend {
+		log.Info(fmt.Sprintf("found no system for clientID %s to send end process notification", context.ClientID))
 	}
 	return nil
 }
 
-func sendEndingMapping(ctx c.Context, clientId string, data *entity.EndProcessData,
+func sendEndingMapping(ctx c.Context, data *entity.EndProcessData,
 	runCtx *BlockRunContext, settings *entity.EndSystemSettings) (err error) {
-	auth, authErr := runCtx.Services.Integrations.FillAuth(ctx, clientId)
+	secretsHumanKey, secretsErr := runCtx.Services.Integrations.GetMicroserviceHumanKey(ctx, settings.MicroserviceId)
+	if secretsErr != nil {
+		return secretsErr
+	}
+
+	auth, authErr := runCtx.Services.Integrations.FillAuth(ctx, secretsHumanKey)
 	if authErr != nil {
 		return authErr
 	}
