@@ -127,7 +127,33 @@ func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request
 		}
 	}()
 
-	err = ae.DB.CreateVersion(ctx, &p, ui.Username, updated, oldVersionID)
+	executableFunctionIDs, err := p.Pipeline.Blocks.GetExecutableFunctionIDs()
+	if err != nil {
+		e := GetExecutableFunctionIDsError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	hasPrivateFunction := false
+	for _, id := range executableFunctionIDs {
+		function, getFunctionErr := ae.FunctionStore.GetFunction(ctx, id)
+		if getFunctionErr != nil {
+			e := GetFunctionError
+			log.Error(e.errorMessage(getFunctionErr))
+			_ = e.sendError(w)
+
+			return
+		}
+
+		hasPrivateFunction = function.Options.Private
+		if hasPrivateFunction {
+			break
+		}
+	}
+
+	err = ae.DB.CreateVersion(ctx, &p, ui.Username, updated, oldVersionID, hasPrivateFunction)
 	if err != nil {
 		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
 			log.WithField("funcName", "CreateVersion").
@@ -475,7 +501,33 @@ func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	err = ae.DB.UpdateDraft(ctx, &p, updated, groups)
+	executableFunctionIDs, err := p.Pipeline.Blocks.GetExecutableFunctionIDs()
+	if err != nil {
+		e := GetExecutableFunctionIDsError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	hasPrivateFunction := false
+	for _, id := range executableFunctionIDs {
+		function, getFunctionErr := ae.FunctionStore.GetFunction(ctx, id)
+		if getFunctionErr != nil {
+			e := GetFunctionError
+			log.Error(e.errorMessage(getFunctionErr))
+			_ = e.sendError(w)
+
+			return
+		}
+
+		hasPrivateFunction = function.Options.Private
+		if hasPrivateFunction {
+			break
+		}
+	}
+
+	err = ae.DB.UpdateDraft(ctx, &p, updated, groups, hasPrivateFunction)
 	if err != nil {
 		e := PipelineWriteError
 		log.Error(e.errorMessage(err))
