@@ -45,7 +45,7 @@ const (
 	contentTypeFormValue = "application/x-www-form-urlencoded"
 	grantTypeGetValue    = "client_credentials"
 
-	// nolint path has no secrets
+	// //nolint:gosec // just a path
 	tokensPath = "/auth/realms/mts/protocol/openid-connect/token"
 
 	mainSsoUrl = "https://isso%s.mts.ru"
