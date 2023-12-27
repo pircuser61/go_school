@@ -103,11 +103,6 @@ type FunctionParam struct {
 	Options     string       `json:"options"`
 }
 
-type ExecutableFunctionOptions struct {
-	Private bool   `json:"private"`
-	Type    string `json:"type"`
-}
-
 type functionTime time.Time
 
 type ParamMetadata struct {

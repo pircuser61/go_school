@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -456,30 +455,20 @@ func (bt *BlocksType) addDefaultStartNode() {
 	}
 }
 
-func (bt *BlocksType) HasPrivateFunction() (bool, error) {
-	privateFunctionExists := false
-	for block, content := range *bt {
-		if strings.Contains(block, "executable_function") {
-			data := content.Params
+func (bt *BlocksType) GetExecutableFunctionIDs() ([]string, error) {
+	functionIDs := make([]string, 0)
+	for _, block := range *bt {
+		if block.BlockType == "executable_function" {
+			data := block.Params
 			var p script.ExecutableFunctionParams
 			if err := json.Unmarshal(data, &p); err != nil {
-				return false, err
+				return nil, err
 			}
-
-			data = []byte(p.Function.Options)
-			var opts script.ExecutableFunctionOptions
-			if err := json.Unmarshal(data, &opts); err != nil {
-				return false, err
-			}
-
-			privateFunctionExists = opts.Private
-			if privateFunctionExists {
-				break
-			}
+			functionIDs = append(functionIDs, p.Function.FunctionId)
 		}
 	}
 
-	return privateFunctionExists, nil
+	return functionIDs, nil
 }
 
 func (bt *BlocksType) blockTypeExists(blockType string) bool {

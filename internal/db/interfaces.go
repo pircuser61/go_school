@@ -184,7 +184,7 @@ type Database interface {
 	GetOnApproveVersions(ctx c.Context) ([]e.EriusScenarioInfo, error)
 	SwitchApproved(ctx c.Context, pipelineID, versionID uuid.UUID, author string) error
 	VersionEditable(ctx c.Context, versionID uuid.UUID) (bool, error)
-	CreateVersion(ctx c.Context, p *e.EriusScenario, author string, pipelineData []byte, oldVersionID uuid.UUID, hasPrivateFucntion bool) error
+	CreateVersion(ctx c.Context, p *e.EriusScenario, author string, pipelineData []byte, oldVersionID uuid.UUID, hasPrivateFunction bool) error
 	DeleteVersion(ctx c.Context, versionID uuid.UUID) error
 	GetPipelineVersion(ctx c.Context, id uuid.UUID, checkNotDeleted bool) (*e.EriusScenario, error)
 	GetPipelineVersions(ctx c.Context, id uuid.UUID) ([]e.EriusVersionInfo, error)
