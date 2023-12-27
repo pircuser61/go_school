@@ -741,7 +741,17 @@ func (db *PGCon) CreateVersion(c context.Context,
 
 	createdAt := time.Now()
 
-	_, err := db.Connection.Exec(c, qNewVersion, p.VersionID, StatusDraft, p.ID, createdAt, pipelineData, author, p.Comment, createdAt, isHidden)
+	_, err := db.Connection.Exec(c,
+		qNewVersion,
+		p.VersionID,
+		StatusDraft,
+		p.ID,
+		createdAt,
+		pipelineData,
+		author,
+		p.Comment,
+		createdAt,
+		isHidden)
 	if err != nil {
 		return err
 	}
