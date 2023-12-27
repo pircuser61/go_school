@@ -1952,6 +1952,8 @@ paths:
               - initiators
               - group_executor
               - finished_group_executor
+              - active_group_executor
+              - finished_executor
         - name: forCarousel
           in: query
           schema:
