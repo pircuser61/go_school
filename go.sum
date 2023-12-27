@@ -137,6 +137,7 @@ github.com/envoyproxy/protoc-gen-validate v0.10.1 h1:c0g45+xCJhdgFGw7a5QAfdS4byA
 github.com/envoyproxy/protoc-gen-validate v0.10.1/go.mod h1:DRjgyB0I43LtJapqN6NiRwroiAU2PaFuvk/vjgh61ss=
 github.com/etcd-io/bbolt v1.3.3/go.mod h1:ZF2nL25h33cCyBtcyWeZ2/I3HQOfTP+0PIEvHjkjCrw=
 github.com/fasthttp-contrib/websocket v0.0.0-20160511215533-1f3b11f56072/go.mod h1:duJ4Jxv5lDcvg4QuQr0oowTf7dz4/CR8NtyCooz9HL8=
+github.com/fatih/structs v1.1.0 h1:Q7juDM0QtcnhCpeyLGQKyg4TOIghuNXrkL32pHAUMxo=
 github.com/fatih/structs v1.1.0/go.mod h1:9NiDSp5zOcgEDl+j00MP/WkGVPOlPRLejGD8Ga6PJ7M=
 github.com/flosch/pongo2 v0.0.0-20190707114632-bbf5a6c351f4/go.mod h1:T9YF2M40nIgbVgp3rreNmTged+9HrbNTIQf1PsaIiTA=
 github.com/fortytw2/leaktest v1.3.0 h1:u8491cBMTQ8ft8aeV+adlcytMZylmA5nnwwkRZjI8vw=
@@ -616,8 +617,8 @@ gitlab.services.mts.ru/jocasta/functions v1.5.0-alpha.2 h1:pYrpp2rBRmSYz+yKxj0U/
 gitlab.services.mts.ru/jocasta/functions v1.5.0-alpha.2/go.mod h1:ANtPfoYQBM4QcDLHXkOZL+NJwQ3mKm3MF3M3KnwFIPs=
 gitlab.services.mts.ru/jocasta/human-tasks v1.0.0-alpha.3 h1:5pW66koPEYP8/ZUilXUjJYRgJO4doHbs+ZVOEvKUgIE=
 gitlab.services.mts.ru/jocasta/human-tasks v1.0.0-alpha.3/go.mod h1:s5ymK5liDXfZRBcLNOFZr+YleyYBNCUCUhzr6ddtJuo=
-gitlab.services.mts.ru/jocasta/integrations v1.6.0 h1:JjOF2a1+whFc+0NMsD0h1Ip0yq60YO8e8e1MPsOo41s=
-gitlab.services.mts.ru/jocasta/integrations v1.6.0/go.mod h1:9rKUlXs3NW0eWoWKkEMtVYNZwS71L4gu04UTtoRoG4Q=
+gitlab.services.mts.ru/jocasta/integrations v1.8.0 h1:a/RByKp2k7v03lwHSAjP/dKnjRjPi23lJUAvjZfTKp4=
+gitlab.services.mts.ru/jocasta/integrations v1.8.0/go.mod h1:9rKUlXs3NW0eWoWKkEMtVYNZwS71L4gu04UTtoRoG4Q=
 gitlab.services.mts.ru/jocasta/msg-kit v0.1.1 h1:+cqIlLRKbmJmBwzGsvdtwzXkUaui8KhVg1spmsbfHS8=
 gitlab.services.mts.ru/jocasta/msg-kit v0.1.1/go.mod h1:yXp0u760CmAViHEQ6ZgIRZl/fO7oblf98t3N1O+IYac=
 gitlab.services.mts.ru/jocasta/scheduler v1.5.0-rc.1 h1:6ajL6sXSTFTKvMO7DnJNIRIyUlJW/pF5re/KgZDjM/4=

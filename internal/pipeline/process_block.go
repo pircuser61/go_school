@@ -10,15 +10,15 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-
 	"github.com/pkg/errors"
 
 	"go.opencensus.io/trace"
 
 	"github.com/iancoleman/orderedmap"
 
-	e "gitlab.services.mts.ru/abp/mail/pkg/email"
 	"gitlab.services.mts.ru/abp/myosotis/logger"
+
+	e "gitlab.services.mts.ru/abp/mail/pkg/email"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
@@ -38,15 +38,17 @@ import (
 )
 
 type TaskSubscriptionData struct {
-	TaskRunClientID    string
-	SystemID           string
-	MicroserviceID     string
-	MicroserviceURL    string
-	NotificationPath   string
-	Method             string
-	Mapping            script.JSONSchemaProperties
-	NotificationSchema script.JSONSchema
-	ExpectedEvents     []entity.NodeSubscriptionEvents
+	TaskRunClientID      string
+	SystemID             string
+	MicroserviceID       string
+	MicroserviceURL      string
+	MicroserviceAuthType string
+	MicroserviceSecrets  map[string]interface{}
+	NotificationPath     string
+	Method               string
+	Mapping              script.JSONSchemaProperties
+	NotificationSchema   script.JSONSchema
+	ExpectedEvents       []entity.NodeSubscriptionEvents
 }
 
 type RunContextServices struct {
