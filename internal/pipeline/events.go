@@ -4,10 +4,16 @@ import (
 	"bytes"
 	c "context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/url"
 	"path"
+	"strings"
 	"time"
+
+	"github.com/fatih/structs"
+	"go.opencensus.io/trace"
+	"golang.org/x/net/context"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 
@@ -15,12 +21,38 @@ import (
 
 	integration_v1 "gitlab.services.mts.ru/jocasta/integrations/pkg/proto/gen/integration/v1"
 	microservice_v1 "gitlab.services.mts.ru/jocasta/integrations/pkg/proto/gen/microservice/v1"
+
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
+
+type SSOToken struct {
+	AccessToken      string `json:"access_token"`
+	ExpiresIn        int    `json:"expires_in"`
+	RefreshToken     string `json:"refresh_token"`
+	RefreshExpiresIn int    `json:"refresh_expires_in"`
+}
+
+type scope struct {
+	getTokensFormData url.Values
+}
 
 const (
 	eventStart = "start"
 	eventEnd   = "end"
+
+	clientIDKey  = "client_id"
+	grantTypeKey = "grant_type"
+	secretKey    = "client_secret"
+	scopeKey     = "scope"
+
+	// header keys for tokens management
+	contentTypeHeader = "Content-Type"
+
+	// header values for tokens management
+	contentTypeFormValue = "application/x-www-form-urlencoded"
+	grantTypeGetValue    = "client_credentials"
+
+	tokensPath = "https://isso.mts.ru/auth/realms/mts/protocol/openid-connect/token"
 )
 
 type MakeNodeStartEventArgs struct {
@@ -109,6 +141,11 @@ func (runCtx BlockRunContext) NotifyEvents(ctx c.Context) {
 			log.WithError(reqErr).Error("couldn't create request")
 			continue
 		}
+		headerErr := runCtx.addAuthHeader(ctx, req)
+		if headerErr != nil {
+			log.WithError(reqErr).Error("couldn't add auth Headers")
+			continue
+		}
 		resp, respErr := runCtx.Services.HTTPClient.Do(req)
 		if respErr != nil {
 			log.WithError(respErr).Error("couldn't make request")
@@ -122,6 +159,81 @@ func (runCtx BlockRunContext) NotifyEvents(ctx c.Context) {
 	return
 }
 
+func (runCtx BlockRunContext) addAuthHeader(ctx context.Context, r *http.Request) (err error) {
+	jsonbody, err := json.Marshal(runCtx.TaskSubscriptionData.MicroserviceSecrets)
+	if err != nil {
+		return err
+	}
+	switch runCtx.TaskSubscriptionData.MicroserviceAuthType {
+	case microservice_v1.AuthType_oAuth2.String():
+		oauthSecret := microservice_v1.OAuth2{}
+		err := json.Unmarshal(jsonbody, &oauthSecret)
+		if err != nil {
+			return err
+		}
+		token, tokenErr := runCtx.getToken(ctx, &oauthSecret)
+		if tokenErr != nil {
+			return tokenErr
+		}
+		r.Header.Add("Authorization", token)
+	case microservice_v1.AuthType_basicAuth.String():
+		basicSecret := microservice_v1.BasicAuth{}
+		err := json.Unmarshal(jsonbody, &basicSecret)
+		if err != nil {
+			return err
+		}
+		r.Header.Add("login", basicSecret.Login)
+		r.Header.Add("password", basicSecret.Pass)
+	case microservice_v1.AuthType_bearerToken.String():
+		bearerSecret := microservice_v1.BearerToken{}
+		err := json.Unmarshal(jsonbody, &bearerSecret)
+		if err != nil {
+			return err
+		}
+		r.Header.Add("Authorization", bearerSecret.Token)
+	default:
+		return
+	}
+	return nil
+}
+func (runCtx BlockRunContext) getToken(ctx context.Context, authdata *microservice_v1.OAuth2) (token string, err error) {
+	ctxLocal, span := trace.StartSpan(ctx, "getToken")
+	defer span.End()
+
+	initedScopes := runCtx.initScopes(authdata.Scopes, authdata.ClientSecret, authdata.ClientId)
+
+	req, err := http.NewRequestWithContext(ctxLocal, http.MethodPost, tokensPath, strings.NewReader(initedScopes.getTokensFormData.Encode()))
+	if err != nil {
+		return "", err
+	}
+	req.Header.Add(contentTypeHeader, contentTypeFormValue)
+
+	resp, err := runCtx.Services.HTTPClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("bad status code while geting Notif Token")
+	}
+	var res SSOToken
+	if unmErr := json.NewDecoder(resp.Body).Decode(&res); unmErr != nil {
+		return "", unmErr
+	}
+
+	return res.AccessToken, nil
+}
+
+func (runCtx BlockRunContext) initScopes(scopes []string, clientSecret, clientId string) *scope {
+	return &scope{
+		getTokensFormData: url.Values{
+			secretKey:    []string{clientSecret},
+			grantTypeKey: []string{grantTypeGetValue},
+			clientIDKey:  []string{clientId},
+			scopeKey:     []string{strings.Join(scopes, " ")},
+		},
+	}
+}
 func (runCtx BlockRunContext) GetCancelledStepsEvents(ctx c.Context) ([]entity.NodeEvent, error) {
 	steps, err := runCtx.Services.Storage.GetCanceledTaskSteps(ctx, runCtx.TaskID)
 	if err != nil {
@@ -212,16 +324,32 @@ func (runCtx *BlockRunContext) SetTaskEvents(ctx c.Context) {
 	}
 
 	runCtx.TaskSubscriptionData = TaskSubscriptionData{
-		TaskRunClientID:    taskRunCtx.ClientID,
-		SystemID:           sResp.Integration.IntegrationId,
-		MicroserviceID:     expectedEvents.MicroserviceID,
-		MicroserviceURL:    resp.Microservice.Creds.Prod.Addr,
-		NotificationPath:   expectedEvents.Path,
-		Method:             expectedEvents.Method,
-		Mapping:            expectedEvents.Mapping,
-		NotificationSchema: expectedEvents.NotificationSchema,
-		ExpectedEvents:     expectedEvents.Nodes,
+		TaskRunClientID:      taskRunCtx.ClientID,
+		SystemID:             sResp.Integration.IntegrationId,
+		MicroserviceID:       expectedEvents.MicroserviceID,
+		MicroserviceURL:      resp.Microservice.Creds.Prod.Addr,
+		MicroserviceAuthType: resp.Microservice.Creds.Prod.Type.String(),
+		MicroserviceSecrets:  fillSecrets(resp.Microservice.Creds.Prod),
+		NotificationPath:     expectedEvents.Path,
+		Method:               expectedEvents.Method,
+		Mapping:              expectedEvents.Mapping,
+		NotificationSchema:   expectedEvents.NotificationSchema,
+		ExpectedEvents:       expectedEvents.Nodes,
 	}
 
 	return
+}
+
+func fillSecrets(a *microservice_v1.Auth) (result map[string]interface{}) {
+	switch a.Type {
+	case microservice_v1.AuthType_oAuth2:
+		return structs.Map(a.GetOAuth2())
+	case microservice_v1.AuthType_basicAuth:
+		structs.Map(a.GetBasic())
+	case microservice_v1.AuthType_bearerToken:
+		structs.Map(a.GetBearerToken())
+	default:
+		return nil
+	}
+	return nil
 }
