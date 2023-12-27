@@ -82,7 +82,7 @@ func (runCtx *BlockRunContext) MakeNodeEndEvent(ctx c.Context, args MakeNodeEndE
 }
 
 func (runCtx BlockRunContext) NotifyEvents(ctx c.Context) {
-	log := logger.GetLogger(ctx)
+	log := logger.GetLogger(ctx).WithField("workNumber", runCtx.WorkNumber)
 
 	reqUrl, err := url.Parse(runCtx.TaskSubscriptionData.MicroserviceURL)
 	if err != nil {

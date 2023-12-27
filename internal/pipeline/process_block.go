@@ -745,7 +745,7 @@ func ProcessBlockWithEndMapping(ctx c.Context, name string, bl *entity.EriusFunc
 	ctx, s := trace.StartSpan(ctx, "process_block_with_end_mapping")
 	defer s.End()
 
-	log := logger.GetLogger(ctx)
+	log := logger.GetLogger(ctx).WithField("workNumber", runCtx.WorkNumber)
 
 	runCtx.BlockRunResults = &BlockRunResults{}
 
