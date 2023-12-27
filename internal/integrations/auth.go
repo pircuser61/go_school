@@ -105,14 +105,15 @@ func (s *Service) FillAuth(ctx context.Context, key string) (result *Auth, err e
 	if GRPCerr != nil {
 		return nil, GRPCerr
 	}
-	if res.Auth.Type == microservice_v1.AuthType_basicAuth {
+	switch res.Auth.Type {
+	case microservice_v1.AuthType_basicAuth:
 		result = &Auth{
 			AuthType: "basicAuth",
 			Login:    res.Auth.GetBasic().Login,
 			Password: res.Auth.GetBasic().Pass,
 			Path:     res.Auth.Addr,
 		}
-	} else {
+	case microservice_v1.AuthType_oAuth2:
 		oauthGrpc := res.Auth.GetOAuth2()
 		token, tokenErr := s.GetToken(ctx, oauthGrpc.Scopes, oauthGrpc.ClientSecret, oauthGrpc.ClientId, oauthGrpc.SSOStand)
 		if tokenErr != nil {
@@ -121,6 +122,12 @@ func (s *Service) FillAuth(ctx context.Context, key string) (result *Auth, err e
 		result = &Auth{
 			AuthType: "oAuth",
 			Token:    token,
+			Path:     res.Auth.Addr,
+		}
+	case microservice_v1.AuthType_bearerToken:
+		result = &Auth{
+			AuthType: "bearerToken",
+			Token:    res.Auth.GetBearerToken().Token,
 			Path:     res.Auth.Addr,
 		}
 	}
