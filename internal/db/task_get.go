@@ -406,13 +406,7 @@ func addProcessingGroups(q string, selectAs *string, groupIds *[]string) string 
 
 func getStepTypeBySelectForFilter(selectFor string) string {
 	switch selectFor {
-	case "active_group_executor":
-		return "execution"
-	case "finished_executor":
-		return "execution"
-	case "group_executor":
-		return "execution"
-	case "finished_group_executor":
+	case "queue_executor", "in_work_executor", "finished_executor", "group_executor", "finished_group_executor":
 		return "execution"
 	}
 	return ""
