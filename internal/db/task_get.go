@@ -272,7 +272,10 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 		name := strings.Replace(*fl.Name, "_", "!_", -1)
 		name = strings.Replace(name, "%", "!%", -1)
 		args = append(args, name)
-		q = fmt.Sprintf("%s AND ((p.name ILIKE '%%' || $%d || '%%' ESCAPE '!')  OR (w.work_number ILIKE '%%' || $%d || '%%'  ESCAPE '!'))", q, len(args), len(args))
+		q = fmt.Sprintf(`%s AND ((p.name ILIKE '%%' || $%d || '%%' ESCAPE '!') 
+							OR (w.work_number ILIKE '%%' || $%d || '%%'  ESCAPE '!') 
+							OR (w.run_context -> 'initial_application' ->> 'custom_title' ILIKE '%%' || $%d || '%%'  ESCAPE '!') )`,
+			q, len(args), len(args), len(args))
 	}
 	if fl.Created != nil {
 		args = append(args, time.Unix(int64(fl.Created.Start), 0).UTC(), time.Unix(int64(fl.Created.End), 0).UTC())
