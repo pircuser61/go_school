@@ -892,10 +892,7 @@ func checkEqualityOfGroups(g1, g2 []*entity.NodeGroup) bool {
 	}
 	gm1 := groupSliceToMap(g1)
 	gm2 := groupSliceToMap(g2)
-	if cmp.Equal(gm1, gm2) {
-		return true
-	}
-	return false
+	return cmp.Equal(gm1, gm2)
 }
 
 func groupSliceToMap(g []*entity.NodeGroup) map[string]NodeGroupMap {
