@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strconv"
 
 	"github.com/google/uuid"
 	"github.com/labstack/gommon/log"
@@ -96,7 +95,33 @@ func (ae *APIEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	err = ae.DB.CreatePipeline(ctx, &p, userFromContext.Username, b, uuid.Nil)
+	executableFunctionIDs, err := p.Pipeline.Blocks.GetExecutableFunctionIDs()
+	if err != nil {
+		e := GetExecutableFunctionIDsError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	hasPrivateFunction := false
+	for _, id := range executableFunctionIDs {
+		function, getFunctionErr := ae.FunctionStore.GetFunction(ctx, id)
+		if getFunctionErr != nil {
+			e := GetFunctionError
+			log.Error(e.errorMessage(getFunctionErr))
+			_ = e.sendError(w)
+
+			return
+		}
+
+		hasPrivateFunction = function.Options.Private
+		if hasPrivateFunction {
+			break
+		}
+	}
+
+	err = ae.DB.CreatePipeline(ctx, &p, userFromContext.Username, b, uuid.Nil, hasPrivateFunction)
 	if err != nil {
 		e := PipelineCreateError
 		if db.IsUniqueConstraintError(err) {
@@ -179,7 +204,33 @@ func (ae *APIEnv) CopyPipeline(w http.ResponseWriter, req *http.Request) {
 	p.ID = uuid.New()
 	p.VersionID = uuid.New()
 
-	err = ae.DB.CreatePipeline(ctx, &p, userFromContext.Username, updated, oldVersionID)
+	executableFunctionIDs, err := p.Pipeline.Blocks.GetExecutableFunctionIDs()
+	if err != nil {
+		e := GetExecutableFunctionIDsError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	hasPrivateFunction := false
+	for _, id := range executableFunctionIDs {
+		function, getFunctionErr := ae.FunctionStore.GetFunction(ctx, id)
+		if getFunctionErr != nil {
+			e := GetFunctionError
+			log.Error(e.errorMessage(getFunctionErr))
+			_ = e.sendError(w)
+
+			return
+		}
+
+		hasPrivateFunction = function.Options.Private
+		if hasPrivateFunction {
+			break
+		}
+	}
+
+	err = ae.DB.CreatePipeline(ctx, &p, userFromContext.Username, updated, oldVersionID, hasPrivateFunction)
 	if err != nil {
 		e := PipelineCreateError
 		if db.IsUniqueConstraintError(err) {
@@ -315,65 +366,6 @@ func (ae *APIEnv) DeletePipeline(w http.ResponseWriter, req *http.Request, pipel
 
 		return
 	}
-}
-
-func (ae *APIEnv) RunPipeline(w http.ResponseWriter, req *http.Request, pipelineID string) {
-	ctx, s := trace.StartSpan(req.Context(), "run_pipeline")
-	defer s.End()
-
-	log := logger.GetLogger(ctx)
-
-	withStop := false
-
-	if withStopCtx := req.Context().Value("with_stop"); withStopCtx != nil {
-		withStop = true
-	}
-
-	keys := req.URL.Query()
-	if ws, ok := keys["with_stop"]; ok && !withStop {
-		if stop, err := strconv.ParseBool(ws[0]); err == nil {
-			withStop = stop
-		}
-	}
-
-	id, err := uuid.Parse(pipelineID)
-	if err != nil {
-		e := UUIDParsingError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	p, err := ae.DB.GetPipeline(ctx, id)
-	if err != nil {
-		e := GetPipelineError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	runResponse, err := ae.execVersion(ctx, &execVersionDTO{
-		storage:  ae.DB,
-		version:  p,
-		withStop: withStop,
-		w:        w,
-		req:      req,
-	})
-	if err != nil {
-		e := PipelineExecutionError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	_ = sendResponse(w, http.StatusOK, entity.RunResponse{
-		PipelineID: runResponse.PipelineID,
-		WorkNumber: runResponse.WorkNumber,
-		Status:     statusRunned,
-	})
 }
 
 func (ae *APIEnv) DeleteDraftPipeline(ctx context.Context, w http.ResponseWriter, p *entity.EriusScenario) error {

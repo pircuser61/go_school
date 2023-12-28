@@ -618,7 +618,7 @@ func (ae *APIEnv) GetTasks(w http.ResponseWriter, req *http.Request, params GetT
 		switch *filters.SelectAs {
 		case entity.SelectAsValApprover:
 			delegations = delegations.FilterByType("approvement")
-		case entity.SelectAsValExecutor:
+		case entity.SelectAsValExecutor, entity.SelectAsValQueueExecutor, entity.SelectAsValInWorkExecutor:
 			delegations = delegations.FilterByType("execution")
 		default:
 			delegations = delegations[:0]
@@ -791,7 +791,9 @@ func (p *GetTasksParams) toEntity(req *http.Request) (entity.TaskFilter, error) 
 			*selectAs != entity.SelectAsValFinishedSignerJur &&
 			*selectAs != entity.SelectAsValInitiators &&
 			*selectAs != entity.SelectAsValGroupExecutor &&
-			*selectAs != entity.SelectAsValFinishedGroupExecutor {
+			*selectAs != entity.SelectAsValFinishedGroupExecutor &&
+			*selectAs != entity.SelectAsValQueueExecutor &&
+			*selectAs != entity.SelectAsValInWorkExecutor {
 			return filters, errors.New("invalid value in SelectAs filter")
 		}
 	}
@@ -889,74 +891,6 @@ func (ae *APIEnv) GetTasksCount(w http.ResponseWriter, req *http.Request) {
 
 	if err != nil {
 		e := GetTasksCountError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	if err = sendResponse(w, http.StatusOK, resp); err != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-}
-
-//nolint:dupl //its not duplicate
-func (ae *APIEnv) GetPipelineTasks(w http.ResponseWriter, req *http.Request, pipelineID string) {
-	ctx, s := trace.StartSpan(req.Context(), "get_pipeline_tasks")
-	defer s.End()
-
-	log := logger.GetLogger(ctx)
-
-	id, err := uuid.Parse(pipelineID)
-	if err != nil {
-		e := UUIDParsingError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	resp, err := ae.DB.GetPipelineTasks(ctx, id)
-	if err != nil {
-		e := GetTasksError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	if err := sendResponse(w, http.StatusOK, resp); err != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-}
-
-//nolint:dupl //its not duplicate
-func (ae *APIEnv) GetVersionTasks(w http.ResponseWriter, req *http.Request, versionID string) {
-	ctx, s := trace.StartSpan(req.Context(), "get_version_logs")
-	defer s.End()
-
-	log := logger.GetLogger(ctx)
-
-	id, err := uuid.Parse(versionID)
-	if err != nil {
-		e := UUIDParsingError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	resp, err := ae.DB.GetVersionTasks(ctx, id)
-	if err != nil {
-		e := GetTasksError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 

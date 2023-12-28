@@ -678,7 +678,7 @@ func (db *PGCon) PipelineRemovable(c context.Context, id uuid.UUID) (bool, error
 }
 
 func (db *PGCon) CreatePipeline(c context.Context,
-	p *entity.EriusScenario, author string, pipelineData []byte, oldVersionID uuid.UUID) error {
+	p *entity.EriusScenario, author string, pipelineData []byte, oldVersionID uuid.UUID, hasPrivateFunction bool) error {
 	c, span := trace.StartSpan(c, "pg_create_pipeline")
 	defer span.End()
 
@@ -705,11 +705,11 @@ func (db *PGCon) CreatePipeline(c context.Context,
 		return err
 	}
 
-	return db.CreateVersion(c, p, author, pipelineData, oldVersionID)
+	return db.CreateVersion(c, p, author, pipelineData, oldVersionID, hasPrivateFunction)
 }
 
 func (db *PGCon) CreateVersion(c context.Context,
-	p *entity.EriusScenario, author string, pipelineData []byte, oldVersionID uuid.UUID) error {
+	p *entity.EriusScenario, author string, pipelineData []byte, oldVersionID uuid.UUID, isHidden bool) error {
 	c, span := trace.StartSpan(c, "pg_create_version")
 	defer span.End()
 
@@ -724,7 +724,8 @@ func (db *PGCon) CreateVersion(c context.Context,
 		content, 
 		author, 
 		comment,
-		updated_at
+		updated_at,
+	    is_hidden
 	)
 	VALUES (
 		$1, 
@@ -734,12 +735,23 @@ func (db *PGCon) CreateVersion(c context.Context,
 		$5, 
 		$6, 
 		$7,
-		$8
+		$8,
+	    $9
 	)`
 
 	createdAt := time.Now()
 
-	_, err := db.Connection.Exec(c, qNewVersion, p.VersionID, StatusDraft, p.ID, createdAt, pipelineData, author, p.Comment, createdAt)
+	_, err := db.Connection.Exec(c,
+		qNewVersion,
+		p.VersionID,
+		StatusDraft,
+		p.ID,
+		createdAt,
+		pipelineData,
+		author,
+		p.Comment,
+		createdAt,
+		isHidden)
 	if err != nil {
 		return err
 	}
@@ -1037,7 +1049,7 @@ func (db *PGCon) RenamePipeline(c context.Context, id uuid.UUID, name string) er
 }
 
 func (db *PGCon) UpdateDraft(c context.Context,
-	p *entity.EriusScenario, pipelineData []byte, groups []*entity.NodeGroup) error {
+	p *entity.EriusScenario, pipelineData []byte, groups []*entity.NodeGroup, isHidden bool) error {
 	c, span := trace.StartSpan(c, "pg_update_draft")
 	defer span.End()
 
@@ -1057,10 +1069,11 @@ func (db *PGCon) UpdateDraft(c context.Context,
 		comment = $3,
 		is_actual = $4,
 		updated_at = $5,
-		node_groups = $6
-	WHERE id = $7`
+		node_groups = $6,
+		is_hidden = $7
+	WHERE id = $8`
 
-	_, err = tx.Exec(c, q, p.Status, pipelineData, p.Comment, p.Status == StatusApproved, time.Now(), groups, p.VersionID)
+	_, err = tx.Exec(c, q, p.Status, pipelineData, p.Comment, p.Status == StatusApproved, time.Now(), groups, isHidden, p.VersionID)
 	if err != nil {
 		return err
 	}

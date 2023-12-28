@@ -41,9 +41,10 @@ type ParamMetadata struct {
 }
 
 type Options struct {
-	Type   string
-	Input  map[string]interface{}
-	Output map[string]ParamMetadata
+	Private bool
+	Type    string
+	Input   map[string]interface{}
+	Output  map[string]ParamMetadata
 }
 
 const (

@@ -9,6 +9,7 @@ require (
 	github.com/deepmap/oapi-codegen v1.12.4
 	github.com/emersion/go-imap v1.2.1
 	github.com/emersion/go-message v0.15.0
+	github.com/fatih/structs v1.1.0
 	github.com/go-chi/chi v4.1.2+incompatible
 	github.com/go-chi/chi/v5 v5.0.8
 	github.com/go-chi/render v1.0.1
@@ -35,7 +36,7 @@ require (
 	gitlab.services.mts.ru/jocasta/forms v1.0.0-alpha.1
 	gitlab.services.mts.ru/jocasta/functions v1.5.0-alpha.2
 	gitlab.services.mts.ru/jocasta/human-tasks v1.0.0-alpha.3
-	gitlab.services.mts.ru/jocasta/integrations v1.6.0
+	gitlab.services.mts.ru/jocasta/integrations v1.8.0
 	gitlab.services.mts.ru/jocasta/msg-kit v0.1.1
 	gitlab.services.mts.ru/jocasta/scheduler v1.5.0-rc.1
 	gitlab.services.mts.ru/prodboard/infra v0.3.0
