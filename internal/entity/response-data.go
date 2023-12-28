@@ -465,7 +465,9 @@ func (bt *BlocksType) GetExecutableFunctionIDs() ([]string, error) {
 				return nil, err
 			}
 
-			functionIDs = append(functionIDs, p.Function.FunctionId)
+			if p.Function.FunctionId != "" {
+				functionIDs = append(functionIDs, p.Function.FunctionId)
+			}
 		}
 	}
 
