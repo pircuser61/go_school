@@ -48,7 +48,7 @@ func (runCtx BlockRunContext) addAuthHeader(ctx c.Context, r *http.Request) (err
 		if tokenErr != nil {
 			return tokenErr
 		}
-		r.Header.Add("Authorization", token)
+		r.Header.Add("Authorization", "Bearer "+token)
 	case microservice_v1.AuthType_basicAuth.String():
 		basicSecret := microservice_v1.BasicAuth{}
 		err := json.Unmarshal(jsonbody, &basicSecret)
