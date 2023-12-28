@@ -541,19 +541,10 @@ type AdditionalApproverUpdateParams struct {
 	Comment string `json:"comment"`
 
 	// Approver decision:
+	//
 	//  * approved - Согласовать
 	//  * rejected - Отклонить
 	Decision AdditionalApproverDecision `json:"decision"`
-}
-
-// AllUsageResponse defines model for AllUsageResponse.
-type AllUsageResponse struct {
-	Pipelines AllUsageResponse_Pipelines `json:"pipelines"`
-}
-
-// AllUsageResponse_Pipelines defines model for AllUsageResponse.Pipelines.
-type AllUsageResponse_Pipelines struct {
-	AdditionalProperties map[string][]string `json:"-"`
 }
 
 // Разрешить системе запуск заявки от третьего лица
@@ -623,6 +614,7 @@ type ApproverParams struct {
 	Sla int `json:"sla"`
 
 	// Approver type:
+	//
 	//   * user - Single user
 	//   * group - Approver group ID
 	//   * head - Receiver's head
@@ -634,6 +626,7 @@ type ApproverParams struct {
 }
 
 // Approver type:
+//
 //   - user - Single user
 //   - group - Approver group ID
 //   - head - Receiver's head
@@ -648,6 +641,7 @@ type ApproverUpdateParams struct {
 	Comment string `json:"comment"`
 
 	// Approver decision:
+	//
 	//  * approve - Согласовать
 	//  * reject - Отклонить
 	//  * viewed - Ознакомлен
@@ -782,23 +776,6 @@ type DateOperandDataType string
 // DateOperandOperandType defines model for DateOperand.OperandType.
 type DateOperandOperandType string
 
-// DebugResult defines model for DebugResult.
-type DebugResult struct {
-	BlockName   string   `json:"block_name"`
-	BreakPoints []string `json:"break_points"`
-
-	// todo define values
-	Status string    `json:"status"`
-	Task   EriusTask `json:"task"`
-}
-
-// DebugRunRequest defines model for DebugRunRequest.
-type DebugRunRequest struct {
-	Action      string   `json:"action"`
-	BreakPoints []string `json:"break_points"`
-	WorkNumber  string   `json:"work_number"`
-}
-
 // EndSystemSettings defines model for EndSystemSettings.
 type EndSystemSettings struct {
 	URL            string                  `json:"URL"`
@@ -882,6 +859,7 @@ type EriusScenarioInfo struct {
 	Name            string  `json:"name"`
 
 	// Tag status:
+	//
 	//  * 1 - Draft
 	//  * 2 - Approved
 	//  * 3 - Deleted
@@ -933,11 +911,6 @@ type EriusTask struct {
 	WorkNumber         string                 `json:"work_number"`
 }
 
-// EriusTasks defines model for EriusTasks.
-type EriusTasks struct {
-	Tasks *[]EriusTask `json:"tasks,omitempty"`
-}
-
 // EriusTasksPage defines model for EriusTasksPage.
 type EriusTasksPage struct {
 	Tasks []EriusTask `json:"tasks"`
@@ -955,6 +928,7 @@ type EriusVersionInfo struct {
 	IsActual bool `json:"is_actual"`
 
 	// Tag status:
+	//
 	//  * 1 - Draft
 	//  * 2 - Approved
 	//  * 3 - Deleted
@@ -1031,6 +1005,7 @@ type ExecutionParams struct {
 	Sla int `json:"sla"`
 
 	// Execution type:
+	//
 	//  * user - Single user
 	//  * group - Execution group ID
 	//  * from_schema - Selected by initiator
@@ -1044,6 +1019,7 @@ type ExecutionParams struct {
 }
 
 // Execution type:
+//
 //   - user - Single user
 //   - group - Execution group ID
 //   - from_schema - Selected by initiator
@@ -1057,6 +1033,7 @@ type ExecutionUpdateParams struct {
 	Comment string `json:"comment"`
 
 	// Executor decision:
+	//
 	//  * executed - executor executed block
 	//  * rejected - executor rejected block
 	Decision ExecutionDecision `json:"decision"`
@@ -1151,6 +1128,7 @@ type FormChangelogItem struct {
 }
 
 // Form executor type:
+//
 //   - User - Single user
 //   - group - Form group ID
 //   - Initiator - Process initiator
@@ -1170,6 +1148,7 @@ type FormParams struct {
 	Executor *string `json:"executor,omitempty"`
 
 	// Form executor type:
+	//
 	//   * User - Single user
 	//   * group - Form group ID
 	//   * Initiator - Process initiator
@@ -1211,6 +1190,7 @@ type FormParams struct {
 // Настройки блока при повторном заходе в этот блок
 type FormReEnterSettings struct {
 	// Form executor type:
+	//
 	//   * User - Single user
 	//   * group - Form group ID
 	//   * Initiator - Process initiator
@@ -1660,9 +1640,6 @@ type RunNewVersionByPrevVersionRequest_Keys struct {
 	AdditionalProperties map[string]string `json:"-"`
 }
 
-// RunPipelineBody defines model for RunPipelineBody.
-type RunPipelineBody map[string]interface{}
-
 // RunResponse defines model for RunResponse.
 type RunResponse struct {
 	Errors     []string               `json:"errors"`
@@ -1671,9 +1648,6 @@ type RunResponse struct {
 	Status     string                 `json:"status"`
 	WorkNumber string                 `json:"work_number"`
 }
-
-// RunVersionBody defines model for RunVersionBody.
-type RunVersionBody map[string]interface{}
 
 // RunVersionsByPipelineIdRequest defines model for RunVersionsByPipelineIdRequest.
 type RunVersionsByPipelineIdRequest struct {
@@ -1753,6 +1727,7 @@ type SignParams struct {
 	SignerGroupName *string `json:"signerGroupName,omitempty"`
 
 	// Signer type:
+	//
 	//   * user - Single user
 	//   * group - Group ID
 	//   * FromSchema - Selected by initiator
@@ -1777,6 +1752,7 @@ type SignUpdateParams struct {
 	Comment *string `json:"comment,omitempty"`
 
 	// Approver decision:
+	//
 	//  * signed - Согласовано
 	//  * rejected - Отклонено
 	//  * error - Произошла ошибка
@@ -1799,6 +1775,7 @@ type SignatureCarrier string
 type SignatureType string
 
 // Signer type:
+//
 //   - user - Single user
 //   - group - Group ID
 //   - FromSchema - Selected by initiator
@@ -1925,23 +1902,6 @@ type UpdateApprovalListSettings struct {
 	Steps        []string             `json:"steps"`
 }
 
-// UsageResponse defines model for UsageResponse.
-type UsageResponse struct {
-	// Имя блока
-	Name      string   `json:"name"`
-	Pipelines []UsedBy `json:"pipelines"`
-	Used      bool     `json:"used"`
-}
-
-// UsedBy defines model for UsedBy.
-type UsedBy struct {
-	// ID сценария
-	Id string `json:"id"`
-
-	// Имя сценария
-	Name string `json:"name"`
-}
-
 // VersionApprovalList defines model for VersionApprovalList.
 type VersionApprovalList struct {
 	// Представляет из себя набор ключ-значение, где ключ - это название переменной/поля объекта, а значение - это структура, которая описывает переменную(или поле объекта). Причём, если переменная - это объект, тогда должно быть заполнено поле propeties(описание полей). Если переменная - массив, тогда должно быть заполнено поле items(описание типа, который хранится в массиве).
@@ -1987,11 +1947,13 @@ type Action_Params struct {
 }
 
 // Approver decision:
+//
 //   - approved - Согласовать
 //   - rejected - Отклонить
 type AdditionalApproverDecision string
 
 // Approver decision:
+//
 //   - approve - Согласовать
 //   - reject - Отклонить
 //   - viewed - Ознакомлен
@@ -2087,6 +2049,7 @@ type EriusTaskResponse struct {
 type EriusTaskResponseStatus string
 
 // Executor decision:
+//
 //   - executed - executor executed block
 //   - rejected - executor rejected block
 type ExecutionDecision string
@@ -2119,6 +2082,7 @@ type Pipeline_Blocks struct {
 }
 
 // Tag status:
+//
 //   - 1 - Draft
 //   - 2 - Approved
 //   - 3 - Deleted
@@ -2127,6 +2091,7 @@ type Pipeline_Blocks struct {
 type ScenarioStatus int
 
 // Approver decision:
+//
 //   - signed - Согласовано
 //   - rejected - Отклонено
 //   - error - Произошла ошибка
@@ -2180,9 +2145,6 @@ type VariableOperand struct {
 
 // RateApplicationJSONBody defines parameters for RateApplication.
 type RateApplicationJSONBody RateApplicationRequest
-
-// StartDebugTaskJSONBody defines parameters for StartDebugTask.
-type StartDebugTaskJSONBody DebugRunRequest
 
 // GetFormsChangelogParams defines parameters for GetFormsChangelog.
 type GetFormsChangelogParams struct {
@@ -2320,14 +2282,8 @@ type AllowRunAsOthersJSONBody AllowRunAsOthers
 // RunNewVersionByPrevVersionJSONBody defines parameters for RunNewVersionByPrevVersion.
 type RunNewVersionByPrevVersionJSONBody RunNewVersionByPrevVersionRequest
 
-// RunVersionJSONBody defines parameters for RunVersion.
-type RunVersionJSONBody RunVersionBody
-
 // RunVersionsByPipelineIdJSONBody defines parameters for RunVersionsByPipelineId.
 type RunVersionsByPipelineIdJSONBody RunVersionsByPipelineIdRequest
-
-// RunPipelineJSONBody defines parameters for RunPipeline.
-type RunPipelineJSONBody RunPipelineBody
 
 // GetTasksParams defines parameters for GetTasks.
 type GetTasksParams struct {
@@ -2402,9 +2358,6 @@ type UpdateTaskJSONBody TaskUpdate
 // RateApplicationJSONRequestBody defines body for RateApplication for application/json ContentType.
 type RateApplicationJSONRequestBody RateApplicationJSONBody
 
-// StartDebugTaskJSONRequestBody defines body for StartDebugTask for application/json ContentType.
-type StartDebugTaskJSONRequestBody StartDebugTaskJSONBody
-
 // SaveVersionMainSettingsJSONRequestBody defines body for SaveVersionMainSettings for application/json ContentType.
 type SaveVersionMainSettingsJSONRequestBody SaveVersionMainSettingsJSONBody
 
@@ -2447,73 +2400,14 @@ type AllowRunAsOthersJSONRequestBody AllowRunAsOthersJSONBody
 // RunNewVersionByPrevVersionJSONRequestBody defines body for RunNewVersionByPrevVersion for application/json ContentType.
 type RunNewVersionByPrevVersionJSONRequestBody RunNewVersionByPrevVersionJSONBody
 
-// RunVersionJSONRequestBody defines body for RunVersion for application/json ContentType.
-type RunVersionJSONRequestBody RunVersionJSONBody
-
 // RunVersionsByPipelineIdJSONRequestBody defines body for RunVersionsByPipelineId for application/json ContentType.
 type RunVersionsByPipelineIdJSONRequestBody RunVersionsByPipelineIdJSONBody
-
-// RunPipelineJSONRequestBody defines body for RunPipeline for application/json ContentType.
-type RunPipelineJSONRequestBody RunPipelineJSONBody
 
 // StopTasksJSONRequestBody defines body for StopTasks for application/json ContentType.
 type StopTasksJSONRequestBody StopTasksJSONBody
 
 // UpdateTaskJSONRequestBody defines body for UpdateTask for application/json ContentType.
 type UpdateTaskJSONRequestBody UpdateTaskJSONBody
-
-// Getter for additional properties for AllUsageResponse_Pipelines. Returns the specified
-// element and whether it was found
-func (a AllUsageResponse_Pipelines) Get(fieldName string) (value []string, found bool) {
-	if a.AdditionalProperties != nil {
-		value, found = a.AdditionalProperties[fieldName]
-	}
-	return
-}
-
-// Setter for additional properties for AllUsageResponse_Pipelines
-func (a *AllUsageResponse_Pipelines) Set(fieldName string, value []string) {
-	if a.AdditionalProperties == nil {
-		a.AdditionalProperties = make(map[string][]string)
-	}
-	a.AdditionalProperties[fieldName] = value
-}
-
-// Override default JSON handling for AllUsageResponse_Pipelines to handle AdditionalProperties
-func (a *AllUsageResponse_Pipelines) UnmarshalJSON(b []byte) error {
-	object := make(map[string]json.RawMessage)
-	err := json.Unmarshal(b, &object)
-	if err != nil {
-		return err
-	}
-
-	if len(object) != 0 {
-		a.AdditionalProperties = make(map[string][]string)
-		for fieldName, fieldBuf := range object {
-			var fieldVal []string
-			err := json.Unmarshal(fieldBuf, &fieldVal)
-			if err != nil {
-				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
-			}
-			a.AdditionalProperties[fieldName] = fieldVal
-		}
-	}
-	return nil
-}
-
-// Override default JSON handling for AllUsageResponse_Pipelines to handle AdditionalProperties
-func (a AllUsageResponse_Pipelines) MarshalJSON() ([]byte, error) {
-	var err error
-	object := make(map[string]json.RawMessage)
-
-	for fieldName, field := range a.AdditionalProperties {
-		object[fieldName], err = json.Marshal(field)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
-		}
-	}
-	return json.Marshal(object)
-}
 
 // Getter for additional properties for BlockContextResponse_Blocks. Returns the specified
 // element and whether it was found
@@ -3203,12 +3097,6 @@ type ServerInterface interface {
 	// Check if any steps breached SLA
 	// (GET /cron/sla)
 	CheckBreachSLA(w http.ResponseWriter, r *http.Request)
-	// Start debug task
-	// (POST /debug/run)
-	StartDebugTask(w http.ResponseWriter, r *http.Request)
-	// Debug task
-	// (GET /debug/{workNumber})
-	DebugTask(w http.ResponseWriter, r *http.Request, workNumber string)
 	// Get approve action names dictionary
 	// (GET /dictionaries/approve-action-names)
 	GetApproveActionNames(w http.ResponseWriter, r *http.Request)
@@ -3227,12 +3115,6 @@ type ServerInterface interface {
 	// Get list of modules
 	// (GET /modules)
 	GetModules(w http.ResponseWriter, r *http.Request)
-	// Get list of modules usage
-	// (GET /modules/usage)
-	AllModulesUsage(w http.ResponseWriter, r *http.Request)
-	// Usage of module in pipelines
-	// (GET /modules/{moduleName}/usage)
-	ModuleUsage(w http.ResponseWriter, r *http.Request, moduleName string)
 	// Get tasks for monitoring
 	// (GET /monitoring/tasks)
 	GetTasksForMonitoring(w http.ResponseWriter, r *http.Request, params GetTasksForMonitoringParams)
@@ -3335,15 +3217,9 @@ type ServerInterface interface {
 	// Run Version
 	// (POST /run/version/new_version)
 	RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Request)
-	// Run Version
-	// (POST /run/version/{versionID})
-	RunVersion(w http.ResponseWriter, r *http.Request, versionID string)
 	// Run Version By pipeline_id
 	// (POST /run/versions/pipeline_id)
 	RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request)
-	// Run Pipeline
-	// (POST /run/{pipelineID})
-	RunPipeline(w http.ResponseWriter, r *http.Request, pipelineID string)
 	// get task approval list
 	// (GET /task/{workNumber}/approval-list/{listID})
 	GetApprovalListSetting(w http.ResponseWriter, r *http.Request, workNumber string, listID string)
@@ -3356,21 +3232,12 @@ type ServerInterface interface {
 	// Get amount of tasks
 	// (GET /tasks/count)
 	GetTasksCount(w http.ResponseWriter, r *http.Request)
-	// Get last debug task for version
-	// (GET /tasks/last-by-version/{versionID})
-	LastVersionDebugTask(w http.ResponseWriter, r *http.Request, versionID string)
 	// Get Task Mean Solve time
 	// (GET /tasks/mean/{pipelineId})
 	GetTaskMeanSolveTime(w http.ResponseWriter, r *http.Request, pipelineId string)
-	// Get Pipeline Tasks
-	// (GET /tasks/pipeline/{pipelineID})
-	GetPipelineTasks(w http.ResponseWriter, r *http.Request, pipelineID string)
 	// Stop tasks by work number
 	// (POST /tasks/stop)
 	StopTasks(w http.ResponseWriter, r *http.Request)
-	// Get Version Tasks
-	// (GET /tasks/version/{versionID})
-	GetVersionTasks(w http.ResponseWriter, r *http.Request, versionID string)
 	// Get Task
 	// (GET /tasks/{workNumber})
 	GetTask(w http.ResponseWriter, r *http.Request, workNumber string)
@@ -3423,47 +3290,6 @@ func (siw *ServerInterfaceWrapper) CheckBreachSLA(w http.ResponseWriter, r *http
 
 	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.CheckBreachSLA(w, r)
-	}
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler(w, r.WithContext(ctx))
-}
-
-// StartDebugTask operation middleware
-func (siw *ServerInterfaceWrapper) StartDebugTask(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	var handler = func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.StartDebugTask(w, r)
-	}
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler(w, r.WithContext(ctx))
-}
-
-// DebugTask operation middleware
-func (siw *ServerInterfaceWrapper) DebugTask(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	var err error
-
-	// ------------- Path parameter "workNumber" -------------
-	var workNumber string
-
-	err = runtime.BindStyledParameter("simple", false, "workNumber", chi.URLParam(r, "workNumber"), &workNumber)
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workNumber", Err: err})
-		return
-	}
-
-	var handler = func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.DebugTask(w, r, workNumber)
 	}
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -3587,47 +3413,6 @@ func (siw *ServerInterfaceWrapper) GetModules(w http.ResponseWriter, r *http.Req
 
 	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetModules(w, r)
-	}
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler(w, r.WithContext(ctx))
-}
-
-// AllModulesUsage operation middleware
-func (siw *ServerInterfaceWrapper) AllModulesUsage(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	var handler = func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.AllModulesUsage(w, r)
-	}
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler(w, r.WithContext(ctx))
-}
-
-// ModuleUsage operation middleware
-func (siw *ServerInterfaceWrapper) ModuleUsage(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	var err error
-
-	// ------------- Path parameter "moduleName" -------------
-	var moduleName string
-
-	err = runtime.BindStyledParameter("simple", false, "moduleName", chi.URLParam(r, "moduleName"), &moduleName)
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "moduleName", Err: err})
-		return
-	}
-
-	var handler = func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.ModuleUsage(w, r, moduleName)
 	}
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -4777,64 +4562,12 @@ func (siw *ServerInterfaceWrapper) RunNewVersionByPrevVersion(w http.ResponseWri
 	handler(w, r.WithContext(ctx))
 }
 
-// RunVersion operation middleware
-func (siw *ServerInterfaceWrapper) RunVersion(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	var err error
-
-	// ------------- Path parameter "versionID" -------------
-	var versionID string
-
-	err = runtime.BindStyledParameter("simple", false, "versionID", chi.URLParam(r, "versionID"), &versionID)
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "versionID", Err: err})
-		return
-	}
-
-	var handler = func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.RunVersion(w, r, versionID)
-	}
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler(w, r.WithContext(ctx))
-}
-
 // RunVersionsByPipelineId operation middleware
 func (siw *ServerInterfaceWrapper) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.RunVersionsByPipelineId(w, r)
-	}
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler(w, r.WithContext(ctx))
-}
-
-// RunPipeline operation middleware
-func (siw *ServerInterfaceWrapper) RunPipeline(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	var err error
-
-	// ------------- Path parameter "pipelineID" -------------
-	var pipelineID string
-
-	err = runtime.BindStyledParameter("simple", false, "pipelineID", chi.URLParam(r, "pipelineID"), &pipelineID)
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "pipelineID", Err: err})
-		return
-	}
-
-	var handler = func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.RunPipeline(w, r, pipelineID)
 	}
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -5152,32 +4885,6 @@ func (siw *ServerInterfaceWrapper) GetTasksCount(w http.ResponseWriter, r *http.
 	handler(w, r.WithContext(ctx))
 }
 
-// LastVersionDebugTask operation middleware
-func (siw *ServerInterfaceWrapper) LastVersionDebugTask(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	var err error
-
-	// ------------- Path parameter "versionID" -------------
-	var versionID string
-
-	err = runtime.BindStyledParameter("simple", false, "versionID", chi.URLParam(r, "versionID"), &versionID)
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "versionID", Err: err})
-		return
-	}
-
-	var handler = func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.LastVersionDebugTask(w, r, versionID)
-	}
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler(w, r.WithContext(ctx))
-}
-
 // GetTaskMeanSolveTime operation middleware
 func (siw *ServerInterfaceWrapper) GetTaskMeanSolveTime(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -5204,64 +4911,12 @@ func (siw *ServerInterfaceWrapper) GetTaskMeanSolveTime(w http.ResponseWriter, r
 	handler(w, r.WithContext(ctx))
 }
 
-// GetPipelineTasks operation middleware
-func (siw *ServerInterfaceWrapper) GetPipelineTasks(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	var err error
-
-	// ------------- Path parameter "pipelineID" -------------
-	var pipelineID string
-
-	err = runtime.BindStyledParameter("simple", false, "pipelineID", chi.URLParam(r, "pipelineID"), &pipelineID)
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "pipelineID", Err: err})
-		return
-	}
-
-	var handler = func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetPipelineTasks(w, r, pipelineID)
-	}
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler(w, r.WithContext(ctx))
-}
-
 // StopTasks operation middleware
 func (siw *ServerInterfaceWrapper) StopTasks(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.StopTasks(w, r)
-	}
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler(w, r.WithContext(ctx))
-}
-
-// GetVersionTasks operation middleware
-func (siw *ServerInterfaceWrapper) GetVersionTasks(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	var err error
-
-	// ------------- Path parameter "versionID" -------------
-	var versionID string
-
-	err = runtime.BindStyledParameter("simple", false, "versionID", chi.URLParam(r, "versionID"), &versionID)
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "versionID", Err: err})
-		return
-	}
-
-	var handler = func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetVersionTasks(w, r, versionID)
 	}
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -5478,12 +5133,6 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/cron/sla", wrapper.CheckBreachSLA)
 	})
 	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/debug/run", wrapper.StartDebugTask)
-	})
-	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/debug/{workNumber}", wrapper.DebugTask)
-	})
-	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/dictionaries/approve-action-names", wrapper.GetApproveActionNames)
 	})
 	r.Group(func(r chi.Router) {
@@ -5500,12 +5149,6 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/modules", wrapper.GetModules)
-	})
-	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/modules/usage", wrapper.AllModulesUsage)
-	})
-	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/modules/{moduleName}/usage", wrapper.ModuleUsage)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/monitoring/tasks", wrapper.GetTasksForMonitoring)
@@ -5610,13 +5253,7 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Post(options.BaseURL+"/run/version/new_version", wrapper.RunNewVersionByPrevVersion)
 	})
 	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/run/version/{versionID}", wrapper.RunVersion)
-	})
-	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/run/versions/pipeline_id", wrapper.RunVersionsByPipelineId)
-	})
-	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/run/{pipelineID}", wrapper.RunPipeline)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/task/{workNumber}/approval-list/{listID}", wrapper.GetApprovalListSetting)
@@ -5631,19 +5268,10 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/tasks/count", wrapper.GetTasksCount)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/tasks/last-by-version/{versionID}", wrapper.LastVersionDebugTask)
-	})
-	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/tasks/mean/{pipelineId}", wrapper.GetTaskMeanSolveTime)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/tasks/pipeline/{pipelineID}", wrapper.GetPipelineTasks)
-	})
-	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/tasks/stop", wrapper.StopTasks)
-	})
-	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/tasks/version/{versionID}", wrapper.GetVersionTasks)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/tasks/{workNumber}", wrapper.GetTask)

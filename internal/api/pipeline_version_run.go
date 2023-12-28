@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/iancoleman/orderedmap"
 	"github.com/pkg/errors"
 	"go.opencensus.io/trace"
@@ -111,52 +110,6 @@ func (ae *APIEnv) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Requ
 	}
 }
 
-func (ae *APIEnv) RunVersion(w http.ResponseWriter, req *http.Request, versionID string) {
-	ctx, s := trace.StartSpan(req.Context(), "run_pipeline")
-	defer s.End()
-
-	log := logger.GetLogger(ctx)
-
-	id, err := uuid.Parse(versionID)
-	if err != nil {
-		e := UUIDParsingError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	p, err := ae.DB.GetPipelineVersion(ctx, id, true)
-	if err != nil {
-		e := GetPipelineError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	runResponse, err := ae.execVersion(ctx, &execVersionDTO{
-		storage:  ae.DB,
-		version:  p,
-		withStop: false,
-		w:        w,
-		req:      req,
-	})
-	if err != nil {
-		e := PipelineExecutionError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	_ = sendResponse(w, http.StatusOK, entity.RunResponse{
-		PipelineID: runResponse.PipelineID,
-		WorkNumber: runResponse.WorkNumber,
-		Status:     statusRunned,
-	})
-}
-
 type runVersionByPipelineIDRequest struct {
 	ApplicationBody   orderedmap.OrderedMap `json:"application_body"`
 	Description       string                `json:"description"`
@@ -175,7 +128,7 @@ func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request
 	requestInfo := &metrics.RequestInfo{Method: http.MethodGet, Path: runByPipelineIDPath}
 	defer func() {
 		s.End()
-		requestInfo.Duration = time.Now().Sub(start)
+		requestInfo.Duration = time.Since(start)
 		ae.Metrics.RequestsIncrease(requestInfo)
 	}()
 
