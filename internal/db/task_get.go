@@ -306,6 +306,10 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 		q = fmt.Sprintf("%s AND w.author=$%d ", q, len(args))
 	}
 
+	if fl.Initiator != nil {
+		q = fmt.Sprintf("%s AND w.author IN %s", q, buildInExpression(*fl.Initiator))
+	}
+
 	if (fl.ProcessingLogins != nil || fl.ProcessingGroupIds != nil) ||
 		fl.ExecutorTypeAssigned != nil {
 		q = getProcessingSteps(q, &fl)

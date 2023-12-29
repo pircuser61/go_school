@@ -2318,6 +2318,9 @@ type GetTasksParams struct {
 	HasAttachments *bool `json:"hasAttachments,omitempty"`
 
 	// filter for initiators
+	Initiator *[]string `json:"initiator,omitempty"`
+
+	// filter for initiators
 	InitiatorLogins *[]string `json:"initiatorLogins,omitempty"`
 
 	// filter in process by logins
@@ -4753,6 +4756,17 @@ func (siw *ServerInterfaceWrapper) GetTasks(w http.ResponseWriter, r *http.Reque
 	err = runtime.BindQueryParameter("form", true, false, "hasAttachments", r.URL.Query(), &params.HasAttachments)
 	if err != nil {
 		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "hasAttachments", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "initiator" -------------
+	if paramValue := r.URL.Query().Get("initiator"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "initiator", r.URL.Query(), &params.Initiator)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "initiator", Err: err})
 		return
 	}
 

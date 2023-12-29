@@ -1701,6 +1701,13 @@ paths:
           schema:
             type: boolean
           description: filter for attachments
+        - name: initiator
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+          description: filter for initiators
         - name: initiatorLogins
           in: query
           schema:
