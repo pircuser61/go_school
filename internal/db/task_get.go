@@ -147,12 +147,12 @@ func getUniqueActions(selectFilter string, logins []string) string {
 	case entity.SelectAsValQueueExecutor:
 		q := uniqueActionsByRole(loginsIn, "execution", false, false)
 		q = strings.Replace(q, "--unique-actions-filter--",
-			"AND (vs.content -> 'State' -> vs.step_name -> 'is_taken_in_work')::bool = false --unique-actions-filter--", 1)
+			"AND vs.content -> 'State' -> vs.step_name ->> 'is_taken_in_work' = 'false' --unique-actions-filter--", 1)
 		return q
 	case entity.SelectAsValInWorkExecutor:
 		q := uniqueActionsByRole(loginsIn, "execution", false, true)
 		q = strings.Replace(q, "--unique-actions-filter--",
-			"AND (vs.content -> 'State' -> vs.step_name -> 'is_taken_in_work')::bool = true --unique-actions-filter--", 1)
+			"AND vs.content -> 'State' -> vs.step_name ->> 'is_taken_in_work' = 'true' --unique-actions-filter--", 1)
 		return q
 	case entity.SelectAsValSignerPhys:
 		q := uniqueActionsByRole(loginsIn, "sign", false, false)
@@ -306,9 +306,9 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 		q = fmt.Sprintf("%s AND w.author=$%d ", q, len(args))
 	}
 
-	if (fl.SelectFor != nil && (fl.ProcessingLogins != nil || fl.ProcessingGroupIds != nil)) ||
+	if (fl.ProcessingLogins != nil || fl.ProcessingGroupIds != nil) ||
 		fl.ExecutorTypeAssigned != nil {
-		q = getProcessingSteps(q, &fl, delegations)
+		q = getProcessingSteps(q, &fl)
 	}
 
 	if fl.SelectFor != nil && (fl.ProcessedLogins != nil || fl.ProcessedGroupIds != nil) {
@@ -335,14 +335,14 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 	return q, args
 }
 
-func getProcessingSteps(q string, fl *entity.TaskFilter, delegations []string) string {
+func getProcessingSteps(q string, fl *entity.TaskFilter) string {
 	varStorage := `, var_storage as (
 		SELECT DISTINCT work_id FROM variable_storage
 		WHERE work_id IS NOT NULL AND status IN ('running', 'idle', 'processing')`
 
 	varStorage = addAssignType(varStorage, fl.CurrentUser, fl.ExecutorTypeAssigned)
-	varStorage = addProcessingLogins(varStorage, fl.SelectFor, fl.ProcessingLogins, delegations)
-	varStorage = addProcessingGroups(varStorage, fl.SelectFor, fl.ProcessingGroupIds)
+	varStorage = addProcessingLogins(varStorage, fl.SelectAs, fl.ProcessingLogins)
+	varStorage = addProcessingGroups(varStorage, fl.SelectAs, fl.ProcessingGroupIds)
 
 	varStorage += ")"
 
@@ -377,16 +377,15 @@ func addAssignType(q, login string, typeAssign *string) string {
 	return q
 }
 
-func addProcessingLogins(q string, selectFor *string, logins *[]string, delegations []string) string {
-	if selectFor == nil || logins == nil || len(*logins) == 0 {
+func addProcessingLogins(q string, selectAs *string, logins *[]string) string {
+	if selectAs == nil || logins == nil || len(*logins) == 0 {
 		return q
 	}
 
 	ls := *logins
-	ls = append(ls, delegations...)
 	ls = utils.UniqueStrings(ls)
 
-	stepType := getStepTypeBySelectForFilter(*selectFor)
+	stepType := getStepTypeBySelectForFilter(*selectAs)
 
 	return fmt.Sprintf(`
 		%s AND step_type = '%s' AND content -> 'State' -> step_name -> '%s' ?| '%s'`,
@@ -397,8 +396,8 @@ func addProcessingLogins(q string, selectFor *string, logins *[]string, delegati
 	)
 }
 
-func addProcessingGroups(q string, selectFor *string, groupIds *[]string) string {
-	if selectFor == nil || groupIds == nil || len(*groupIds) == 0 {
+func addProcessingGroups(q string, selectAs *string, groupIds *[]string) string {
+	if selectAs == nil || groupIds == nil || len(*groupIds) == 0 {
 		return q
 	}
 
@@ -407,7 +406,7 @@ func addProcessingGroups(q string, selectFor *string, groupIds *[]string) string
 		ids[i] = fmt.Sprintf("'%s'", ids[i])
 	}
 
-	stepType := getStepTypeBySelectForFilter(*selectFor)
+	stepType := getStepTypeBySelectForFilter(*selectAs)
 
 	return fmt.Sprintf(`%s AND step_type = '%s' AND content -> 'State' -> step_name ->> '%s'::varchar IN(%s)`,
 		q,
@@ -419,9 +418,7 @@ func addProcessingGroups(q string, selectFor *string, groupIds *[]string) string
 
 func getStepTypeBySelectForFilter(selectFor string) string {
 	switch selectFor {
-	case "group_executor":
-		return "execution"
-	case "finished_group_executor":
+	case "queue_executor", "in_work_executor", "finished_executor", "group_executor", "finished_group_executor":
 		return "execution"
 	}
 	return ""

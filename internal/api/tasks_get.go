@@ -629,18 +629,6 @@ func (ae *APIEnv) GetTasks(w http.ResponseWriter, req *http.Request, params GetT
 
 	users := delegations.GetUserInArrayWithDelegators([]string{filters.CurrentUser})
 
-	if filters.ProcessingLogins != nil && len(*filters.ProcessingLogins) > 0 {
-		delegations, err = ae.HumanTasks.GetDelegationsToLogins(ctx, *filters.ProcessingLogins)
-		if err != nil {
-			e := GetDelegationsError
-			log.Error(e.errorMessage(err))
-			_ = e.sendError(w)
-			return
-		}
-
-		users = delegations.GetUserInArrayWithDelegators(*filters.ProcessingLogins)
-	}
-
 	if filters.Status != nil {
 		ss := strings.Split(*filters.Status, ",")
 		uniqueS := make(map[pipeline.TaskHumanStatus]struct{})
