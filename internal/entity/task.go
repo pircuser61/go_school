@@ -151,6 +151,7 @@ type GetTaskParams struct {
 	SignatureCarrier *string `json:"signature_carrier"`
 
 	SelectFor            *string   `json:"selectFor"`
+	Initiator            *[]string `json:"initiator"`
 	InitiatorLogins      *[]string `json:"initiatorLogins"`
 	ProcessingLogins     *[]string `json:"processingLogins"`
 	ProcessedLogins      *[]string `json:"processedLogins"`
