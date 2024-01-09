@@ -219,6 +219,10 @@ func (gb *ExecutableFunctionBlock) Update(ctx c.Context) (interface{}, error) {
 		if !gb.RunContext.skipProduce {
 			err = gb.RunContext.Services.Kafka.Produce(ctx, kafka.RunnerOutMessage{
 				TaskID:          taskStep.ID,
+				PipelineID:      gb.RunContext.PipelineID,
+				VersionID:       gb.RunContext.VersionID,
+				ClientID:        gb.RunContext.ClientID,
+				WorkNumber:      gb.RunContext.WorkNumber,
 				FunctionMapping: functionMapping,
 				Contracts:       gb.State.Contracts,
 				RetryPolicy:     string(SimpleFunctionRetryPolicy),

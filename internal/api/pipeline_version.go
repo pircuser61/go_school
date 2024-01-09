@@ -761,6 +761,9 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 	runCtx := &pipeline.BlockRunContext{
 		TaskID:     ep.TaskID,
 		WorkNumber: ep.WorkNumber,
+		ClientID:   dto.runCtx.ClientID,
+		PipelineID: ep.PipelineID,
+		VersionID:  ep.VersionID,
 		WorkTitle:  ep.Name,
 		Initiator:  dto.authorName,
 		VarStore:   variableStorage,

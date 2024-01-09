@@ -75,6 +75,9 @@ type BlockRunResults struct {
 type BlockRunContext struct {
 	TaskID      uuid.UUID
 	WorkNumber  string
+	ClientID    string
+	PipelineID  uuid.UUID
+	VersionID   uuid.UUID
 	WorkTitle   string
 	Initiator   string
 	IsTest      bool
