@@ -150,7 +150,7 @@ func getUniqueActions(selectFilter string, logins []string) string {
 			"AND vs.content -> 'State' -> vs.step_name ->> 'is_taken_in_work' = 'false' --unique-actions-filter--", 1)
 		return q
 	case entity.SelectAsValInWorkExecutor:
-		q := uniqueActionsByRole(loginsIn, "execution", false, true)
+		q := uniqueActionsByRole(loginsIn, "execution", false, false)
 		q = strings.Replace(q, "--unique-actions-filter--",
 			"AND vs.content -> 'State' -> vs.step_name ->> 'is_taken_in_work' = 'true' --unique-actions-filter--", 1)
 		return q
