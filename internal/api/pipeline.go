@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/labstack/gommon/log"
+	"github.com/pkg/errors"
 
 	"go.opencensus.io/trace"
 
@@ -90,7 +91,7 @@ func (ae *APIEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
 		default:
 			e = PipelineValidateError
 		}
-		log.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(errors.New(valErr)))
 		_ = e.sendError(w)
 		return
 	}
