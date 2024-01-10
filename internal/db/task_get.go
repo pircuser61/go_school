@@ -250,8 +250,6 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 		q = fmt.Sprintf("%s %s", getUniqueActions("initiators", *fl.InitiatorLogins), q)
 	} else if fl.SelectAs != nil {
 		q = fmt.Sprintf("%s %s", getUniqueActions(*fl.SelectAs, delegations), q)
-	} else if fl.SelectFor != nil {
-		q = fmt.Sprintf("%s %s", getUniqueActions(*fl.SelectFor, delegations), q)
 	} else {
 		q = fmt.Sprintf("%s %s", getUniqueActions("", delegations), q)
 	}
@@ -315,10 +313,6 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 		q = getProcessingSteps(q, &fl)
 	}
 
-	if fl.SelectFor != nil && (fl.ProcessedLogins != nil || fl.ProcessedGroupIds != nil) {
-		q = getProcessedSteps(q, &fl)
-	}
-
 	if order != "" {
 		q = fmt.Sprintf("%s\n ORDER BY w.started_at %s", q, order)
 	}
@@ -342,7 +336,7 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 func getProcessingSteps(q string, fl *entity.TaskFilter) string {
 	varStorage := `, var_storage as (
 		SELECT DISTINCT work_id FROM variable_storage
-		WHERE work_id IS NOT NULL AND status IN ('running', 'idle', 'processing')`
+		WHERE work_id IS NOT NULL`
 
 	varStorage = addAssignType(varStorage, fl.CurrentUser, fl.ExecutorTypeAssigned)
 	varStorage = addProcessingLogins(varStorage, fl.SelectAs, fl.ProcessingLogins)
@@ -448,61 +442,6 @@ func getGroupActorsNameByStepType(stepName string) string {
 		return "approvers_group_id"
 	}
 	return ""
-}
-
-func getProcessedSteps(q string, fl *entity.TaskFilter) string {
-	varStorage := `, var_storage as (
-                SELECT DISTINCT work_id FROM variable_storage                                                                                                                                                                                              
-                WHERE work_id IS NOT NULL AND status IN ('finished', 'cancel', 'no_success', 'error')`
-
-	varStorage = addProcessedLogins(varStorage, fl.SelectFor, fl.ProcessedLogins)
-	varStorage = addProcessedGroups(varStorage, fl.SelectFor, fl.ProcessedGroupIds)
-
-	varStorage += ")"
-
-	q = strings.Replace(q, "[with_variable_storage]", varStorage, 1)
-	q = strings.Replace(q, "[join_variable_storage]", "JOIN var_storage vs ON vs.work_id = w.id ", 1)
-
-	return q
-}
-
-func addProcessedLogins(q string, selectFor *string, logins *[]string) string {
-	if selectFor == nil || logins == nil || len(*logins) == 0 {
-		return q
-	}
-
-	ls := *logins
-	ls = utils.UniqueStrings(ls)
-
-	stepType := getStepTypeBySelectForFilter(*selectFor)
-
-	return fmt.Sprintf(`
-		%s AND step_type = '%s' AND content -> 'State' -> step_name -> '%s' ?| '%s'`,
-		q,
-		stepType,
-		getActorsNameByStepType(stepType),
-		"{"+strings.Join(ls, ",")+"}",
-	)
-}
-
-func addProcessedGroups(q string, selectFor *string, groupIds *[]string) string {
-	if selectFor == nil || groupIds == nil || len(*groupIds) == 0 {
-		return q
-	}
-
-	ids := *groupIds
-	for i := range ids {
-		ids[i] = fmt.Sprintf("'%s'", ids[i])
-	}
-
-	stepType := getStepTypeBySelectForFilter(*selectFor)
-
-	return fmt.Sprintf(`%s AND step_type = '%s' AND content -> 'State' -> step_name ->> '%s'::varchar IN(%s)`,
-		q,
-		stepType,
-		getGroupActorsNameByStepType(stepType),
-		strings.Join(ids, ","),
-	)
 }
 
 func (db *PGCon) GetAdditionalForms(workNumber, nodeName string) ([]string, error) {

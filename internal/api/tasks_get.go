@@ -760,9 +760,6 @@ func (p *GetTasksParams) toEntity(req *http.Request) (entity.TaskFilter, error) 
 		}
 	}
 
-	if p.ProcessingLogins != nil && p.ProcessedLogins != nil {
-		return filters, errors.New("can't filter by processingLogins and processedLogins at the same time")
-	}
 	var selectAs *string
 	if p.SelectAs != nil {
 		at := string(*p.SelectAs)
@@ -786,10 +783,6 @@ func (p *GetTasksParams) toEntity(req *http.Request) (entity.TaskFilter, error) 
 		}
 	}
 
-	if p.ProcessingGroupIds != nil && p.ProcessedGroupIds != nil {
-		return filters, errors.New("can't filter by processingGroupIds and processedGroupIds at the same time")
-	}
-
 	ui, err := user.GetEffectiveUserInfoFromCtx(req.Context())
 	if err != nil {
 		return filters, err
@@ -797,6 +790,9 @@ func (p *GetTasksParams) toEntity(req *http.Request) (entity.TaskFilter, error) 
 
 	filters.CurrentUser = ui.Username
 	limit, offset := parseLimitOffsetWithDefault(p.Limit, p.Offset)
+	if limit > 1000 {
+		limit = 1000
+	}
 
 	filters.GetTaskParams = entity.GetTaskParams{
 		Name:                 p.Name,
@@ -811,13 +807,10 @@ func (p *GetTasksParams) toEntity(req *http.Request) (entity.TaskFilter, error) 
 		Status:               statusToEntity(p.Status),
 		Receiver:             p.Receiver,
 		HasAttachments:       p.HasAttachments,
-		SelectFor:            p.SelectFor,
 		Initiator:            p.Initiator,
 		InitiatorLogins:      p.InitiatorLogins,
 		ProcessingLogins:     p.ProcessingLogins,
 		ProcessingGroupIds:   p.ProcessingGroupIds,
-		ProcessedLogins:      p.ProcessedLogins,
-		ProcessedGroupIds:    p.ProcessedGroupIds,
 		ExecutorTypeAssigned: typeAssigned,
 		SignatureCarrier:     signatureCarrier,
 	}

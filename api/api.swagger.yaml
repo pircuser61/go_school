@@ -1643,6 +1643,7 @@ paths:
           schema:
             type: integer
             default: 10
+            maximum: 1000
         - name: offset
           in: query
           description: Offset
@@ -1729,24 +1730,6 @@ paths:
             items:
               type: string
           description: filter in process by group ids
-        - name: processedLogins
-          in: query
-          schema:
-            type: array
-            items:
-              type: string
-          description: filter by processed logins
-        - name: processedGroupIds
-          in: query
-          schema:
-            type: array
-            items:
-              type: string
-          description: filter by processed group ids
-        - name: selectFor
-          in: query
-          schema:
-            type: string
         - name: executorTypeAssigned
           in: query
           schema:
