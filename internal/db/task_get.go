@@ -345,7 +345,6 @@ func getProcessingSteps(q string, fl *entity.TaskFilter) string {
 	varStorage += ")"
 
 	q = strings.Replace(q, "[with_variable_storage]", varStorage, 1)
-	q = fmt.Sprintf("%s AND w.status = 1", q)
 	q = strings.Replace(q, "[join_variable_storage]", "JOIN var_storage vs ON vs.work_id = w.id ", 1)
 
 	return q
