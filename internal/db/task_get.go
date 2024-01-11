@@ -177,11 +177,8 @@ func getUniqueActions(selectFilter string, logins []string) string {
 			WHERE status = 1 AND author IN %s AND child_id IS NULL
 		)`, loginsIn)
 	case entity.SelectAsValGroupExecutor:
-		return `WITH unique_actions AS (
-			SELECT id AS work_id, '[]' AS actions
-			FROM works
-			WHERE status = 1 AND child_id IS NULL
-		)`
+		q := uniqueActionsByRole(loginsIn, "execution", false, false)
+		return strings.Replace(q, "--unique-actions-filter--", "AND m.execution_group_member = true", 1)
 	case entity.SelectAsValFinishedGroupExecutor:
 		q := uniqueActionsByRole(loginsIn, "execution", true, false)
 		return strings.Replace(q, "--unique-actions-filter--", "AND m.execution_group_member = true", 1)
