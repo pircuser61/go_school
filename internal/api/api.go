@@ -2329,13 +2329,6 @@ type GetTasksParams struct {
 	// filter in process by group ids
 	ProcessingGroupIds *[]string `json:"processingGroupIds,omitempty"`
 
-	// filter by processed logins
-	ProcessedLogins *[]string `json:"processedLogins,omitempty"`
-
-	// filter by processed group ids
-	ProcessedGroupIds *[]string `json:"processedGroupIds,omitempty"`
-	SelectFor         *string   `json:"selectFor,omitempty"`
-
 	// filter type assigned
 	ExecutorTypeAssigned *GetTasksParamsExecutorTypeAssigned `json:"executorTypeAssigned,omitempty"`
 
@@ -4800,39 +4793,6 @@ func (siw *ServerInterfaceWrapper) GetTasks(w http.ResponseWriter, r *http.Reque
 	err = runtime.BindQueryParameter("form", true, false, "processingGroupIds", r.URL.Query(), &params.ProcessingGroupIds)
 	if err != nil {
 		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "processingGroupIds", Err: err})
-		return
-	}
-
-	// ------------- Optional query parameter "processedLogins" -------------
-	if paramValue := r.URL.Query().Get("processedLogins"); paramValue != "" {
-
-	}
-
-	err = runtime.BindQueryParameter("form", true, false, "processedLogins", r.URL.Query(), &params.ProcessedLogins)
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "processedLogins", Err: err})
-		return
-	}
-
-	// ------------- Optional query parameter "processedGroupIds" -------------
-	if paramValue := r.URL.Query().Get("processedGroupIds"); paramValue != "" {
-
-	}
-
-	err = runtime.BindQueryParameter("form", true, false, "processedGroupIds", r.URL.Query(), &params.ProcessedGroupIds)
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "processedGroupIds", Err: err})
-		return
-	}
-
-	// ------------- Optional query parameter "selectFor" -------------
-	if paramValue := r.URL.Query().Get("selectFor"); paramValue != "" {
-
-	}
-
-	err = runtime.BindQueryParameter("form", true, false, "selectFor", r.URL.Query(), &params.SelectFor)
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "selectFor", Err: err})
 		return
 	}
 
