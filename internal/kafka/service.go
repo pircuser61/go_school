@@ -20,15 +20,20 @@ type Service struct {
 	producer *msgkit.Producer
 	consumer *msgkit.Consumer
 
-	brokers     []string
-	topics      []string
-	config      *sarama.Config
-	configKafka Config
+	brokers       []string
+	topics        []string
+	serviceConfig Config
 
 	MessageHandler *msgkit.MessageHandler[RunnerInMessage]
 }
 
 func NewService(log logger.Logger, cfg Config) (*Service, error) {
+	topics := []string{cfg.ProducerTopic, cfg.ConsumerTopic}
+
+	if len(cfg.Brokers) == 0 || len(topics) == 0 {
+		return nil, errors.New("brokers or topics is emptys")
+	}
+
 	m := metrics.DefaultRegistry
 	m.UnregisterAll()
 	saramaCfg := sarama.NewConfig()
@@ -50,15 +55,12 @@ func NewService(log logger.Logger, cfg Config) (*Service, error) {
 		return nil, err
 	}
 
-	topics := []string{cfg.ProducerTopic, cfg.ConsumerTopic}
-
 	return &Service{
 		log: log,
 
-		topics:      topics,
-		brokers:     cfg.Brokers,
-		config:      saramaCfg,
-		configKafka: cfg,
+		topics:        topics,
+		brokers:       cfg.Brokers,
+		serviceConfig: cfg,
 
 		producer: producer,
 		consumer: consumer,
@@ -104,51 +106,46 @@ func (s *Service) StartConsumer(ctx c.Context) {
 }
 
 func (s *Service) StartCheckHealth() error {
-	if len(s.brokers) == 0 || len(s.topics) == 0 {
-		return errors.New("brokers or topics is emptys")
-	}
+	for {
+		to := time.After(s.serviceConfig.Delay * time.Second)
+		select {
+		case <-to:
+			m := metrics.DefaultRegistry
+			m.UnregisterAll()
+			saramaCfg := sarama.NewConfig()
+			saramaCfg.MetricRegistry = m
+			saramaCfg.Producer.Return.Successes = true // Producer.Return.Successes must be true to be used in a SyncProducer
 
-	chanErr := make(chan error, 1)
-	go func() {
-		for {
-			time.Sleep(30 * time.Second)
-			admin, err := sarama.NewClusterAdmin(s.brokers, s.config)
+			admin, err := sarama.NewClusterAdmin(s.brokers, saramaCfg)
 			if err != nil {
-				s.log.Error(err)
-				chanErr <- err
-			}
-			defer admin.Close()
-
-			select {
-			case <-chanErr:
+				s.log.WithError(err).Error("error create new cluster")
 				msg := s.MessageHandler
 
-				s, err = NewService(s.log, s.configKafka)
+				s, err = NewService(s.log, s.serviceConfig)
 				if err != nil {
-					s.log.Error(err)
-					chanErr <- err
+					s.log.WithError(err).Error("error create new service")
+					admin.Close()
 					continue
 				}
 
 				s.MessageHandler = msg
-			default:
-				topics, topicErr := admin.DescribeTopics(s.topics)
-				if topicErr == nil {
-					for _, v := range topics {
-						if v.Err != 0 {
-							s.log.Error("topic error ", v.Err)
-							chanErr <- v.Err
-							continue
-						}
-					}
-					continue
-				}
-
-				s.log.Error("error describe topics: ", err)
-				chanErr <- err
 			}
-		}
-	}()
 
-	return nil
+			topics, topicErr := admin.DescribeTopics(s.topics)
+			if topicErr == nil {
+				for _, v := range topics {
+					if v.Err != 0 {
+						s.log.WithError(err).Error("topic exists error")
+						admin.Close()
+						continue
+					}
+				}
+				admin.Close()
+				continue
+			}
+
+			s.log.WithError(topicErr).Error("error describe topics")
+			admin.Close()
+		}
+	}
 }
