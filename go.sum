@@ -157,8 +157,6 @@ github.com/go-chi/chi v4.1.2+incompatible h1:fGFk2Gmi/YKXk0OmGfBh0WgmN3XB8lVnEyN
 github.com/go-chi/chi v4.1.2+incompatible/go.mod h1:eB3wogJHnLi3x/kFX2A+IbTBlXxmMeXJVKy9tTv1XzQ=
 github.com/go-chi/chi/v5 v5.0.8 h1:lD+NLqFcAi1ovnVZpsnObHGW4xb4J8lNmoYVfECH1Y0=
 github.com/go-chi/chi/v5 v5.0.8/go.mod h1:DslCQbL2OYiznFReuXYUmQ2hGd1aDpCnlMNITLSKoi8=
-github.com/go-chi/render v1.0.1 h1:4/5tis2cKaNdnv9zFLfXzcquC9HbeZgCnxGnKrltBS8=
-github.com/go-chi/render v1.0.1/go.mod h1:pq4Rr7HbnsdaeHagklXub+p6Wd16Af5l9koip1OvJns=
 github.com/go-errors/errors v1.0.1/go.mod h1:f4zRHt4oKfwPJE5k8C9vpYG+aDHdBFUsgrm6/TyX73Q=
 github.com/go-errors/errors v1.4.2 h1:J6MZopCL4uSllY1OfXM374weqZFFItUbrImctkmUxIA=
 github.com/go-gl/glfw v0.0.0-20190409004039-e6da0acd62b1/go.mod h1:vR7hzQXu2zJy9AVAgeJqvqgH9Q5CA+iKCZ2gyEVpxRU=
@@ -613,8 +611,8 @@ gitlab.services.mts.ru/jocasta/file-registry v1.4.0 h1:DoUWZmVSwkKTJ/1eMcuAatEOY
 gitlab.services.mts.ru/jocasta/file-registry v1.4.0/go.mod h1:nKSDD0s9LOFfnYjgY1CJnCs8AA0Pa76P3h3WpJIH0/s=
 gitlab.services.mts.ru/jocasta/forms v1.0.0-alpha.1 h1:TnRdahGzSxmTysW065+Rd0ZKfd84CUCziCf2dPZZM7Y=
 gitlab.services.mts.ru/jocasta/forms v1.0.0-alpha.1/go.mod h1:PIbWjThxX2EFcLjWmeJ2LRNKK3BUakWvTZbT0aB2UhU=
-gitlab.services.mts.ru/jocasta/functions v1.5.0-alpha.2 h1:pYrpp2rBRmSYz+yKxj0U/lyqa+CrStWUJ4nAd5H5j4w=
-gitlab.services.mts.ru/jocasta/functions v1.5.0-alpha.2/go.mod h1:ANtPfoYQBM4QcDLHXkOZL+NJwQ3mKm3MF3M3KnwFIPs=
+gitlab.services.mts.ru/jocasta/functions v1.8.1 h1:DRgIXyz42h6aXTkF6Si8bXu/aY3lcVIpSv15CIVvNF0=
+gitlab.services.mts.ru/jocasta/functions v1.8.1/go.mod h1:Ubz3OfokfsWP4+zO3fPXqtEbnuAz2bqFWlmh0hRQkoM=
 gitlab.services.mts.ru/jocasta/human-tasks v1.0.0-alpha.3 h1:5pW66koPEYP8/ZUilXUjJYRgJO4doHbs+ZVOEvKUgIE=
 gitlab.services.mts.ru/jocasta/human-tasks v1.0.0-alpha.3/go.mod h1:s5ymK5liDXfZRBcLNOFZr+YleyYBNCUCUhzr6ddtJuo=
 gitlab.services.mts.ru/jocasta/integrations v1.8.0 h1:a/RByKp2k7v03lwHSAjP/dKnjRjPi23lJUAvjZfTKp4=
