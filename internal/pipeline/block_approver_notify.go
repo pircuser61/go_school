@@ -254,6 +254,9 @@ func (gb *GoApproverBlock) notifyAdditionalApprovers(ctx c.Context, logins []str
 	}
 
 	description, files, err := gb.RunContext.makeNotificationDescription(gb.Name)
+	if err != nil {
+		return err
+	}
 
 	author, autorErr := gb.RunContext.Services.People.GetUser(ctx, gb.RunContext.Initiator)
 	if autorErr != nil {
