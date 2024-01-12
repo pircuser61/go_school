@@ -455,8 +455,8 @@ func (bt *BlocksType) addDefaultStartNode() {
 	}
 }
 
-func (bt *BlocksType) GetExecutableFunctionIDs() ([]string, error) {
-	functionIDs := make([]string, 0)
+func (bt *BlocksType) GetExecutableFunctions() ([]script.FunctionParam, error) {
+	functionIDs := make([]script.FunctionParam, 0)
 	for key := range *bt {
 		block := (*bt)[key]
 		if block.TypeID == "executable_function" {
@@ -466,7 +466,7 @@ func (bt *BlocksType) GetExecutableFunctionIDs() ([]string, error) {
 			}
 
 			if p.Function.FunctionId != "" {
-				functionIDs = append(functionIDs, p.Function.FunctionId)
+				functionIDs = append(functionIDs, p.Function)
 			}
 		}
 	}

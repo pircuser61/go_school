@@ -127,7 +127,7 @@ func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request
 		}
 	}()
 
-	executableFunctionIDs, err := p.Pipeline.Blocks.GetExecutableFunctionIDs()
+	executableFunctions, err := p.Pipeline.Blocks.GetExecutableFunctions()
 	if err != nil {
 		e := GetExecutableFunctionIDsError
 		log.Error(e.errorMessage(err))
@@ -137,8 +137,8 @@ func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request
 	}
 
 	hasPrivateFunction := false
-	for _, id := range executableFunctionIDs {
-		function, getFunctionErr := ae.FunctionStore.GetFunction(ctx, id)
+	for _, fn := range executableFunctions {
+		function, getFunctionErr := ae.FunctionStore.GetFunctionVersion(ctx, fn.FunctionId, fn.VersionId)
 		if getFunctionErr != nil {
 			e := GetFunctionError
 			log.Error(e.errorMessage(getFunctionErr))
@@ -501,7 +501,7 @@ func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	executableFunctionIDs, err := p.Pipeline.Blocks.GetExecutableFunctionIDs()
+	executableFunctions, err := p.Pipeline.Blocks.GetExecutableFunctions()
 	if err != nil {
 		e := GetExecutableFunctionIDsError
 		log.Error(e.errorMessage(err))
@@ -511,8 +511,8 @@ func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 	}
 
 	hasPrivateFunction := false
-	for _, id := range executableFunctionIDs {
-		function, getFunctionErr := ae.FunctionStore.GetFunction(ctx, id)
+	for _, fn := range executableFunctions {
+		function, getFunctionErr := ae.FunctionStore.GetFunctionVersion(ctx, fn.FunctionId, fn.VersionId)
 		if getFunctionErr != nil {
 			e := GetFunctionError
 			log.Error(e.errorMessage(getFunctionErr))
