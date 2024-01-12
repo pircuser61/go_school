@@ -10,5 +10,5 @@ type Config struct {
 	ConsumerGroup string `yaml:"consumer_group"`
 	ConsumerTopic string `yaml:"consumer_topic"`
 
-	Delay time.Duration `yaml:"delay"`
+	HealthCheck time.Duration `yaml:"health_check"`
 }

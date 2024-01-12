@@ -211,14 +211,14 @@ func main() {
 		LivenessPath:      cfg.Probes.Liveness,
 	}
 
+	kafkaService.InitMessageHandler(APIEnv.FunctionReturnHandler)
+
 	go func() {
 		kafkaHearthErr := kafkaService.StartCheckHealth()
 		if kafkaHearthErr != nil {
 			log.WithError(kafkaHearthErr).Error("can't check health kafka")
 			return
 		}
-
-		kafkaService.InitMessageHandler(APIEnv.FunctionReturnHandler)
 	}()
 
 	jr, err := jaeger.NewExporter(jaeger.Options{

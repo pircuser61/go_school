@@ -106,8 +106,12 @@ func (s *Service) StartConsumer(ctx c.Context) {
 }
 
 func (s *Service) StartCheckHealth() error {
+	if s.serviceConfig.HealthCheck == 0 {
+		return errors.New("field health_check is empty")
+	}
+
 	for {
-		to := time.After(s.serviceConfig.Delay * time.Second)
+		to := time.After(s.serviceConfig.HealthCheck * time.Second)
 		select {
 		case <-to:
 			m := metrics.DefaultRegistry
@@ -135,7 +139,7 @@ func (s *Service) StartCheckHealth() error {
 			if topicErr == nil {
 				for _, v := range topics {
 					if v.Err != 0 {
-						s.log.WithError(err).Error("topic exists error")
+						s.log.WithError(err).Error(fmt.Sprintf("topic %s exists error", v.Name))
 						admin.Close()
 						continue
 					}

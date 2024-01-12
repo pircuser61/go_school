@@ -50,7 +50,7 @@ kafka:
   producer_topic: "from.pipeliner.to.runner"
   consumer_group: "pipeliner"
   consumer_topic: "from.runner.to.pipeliner"
-  delay: 30
+  health_check: 30
 
 remedy: "http://remedy"
 
