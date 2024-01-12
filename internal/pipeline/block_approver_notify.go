@@ -258,9 +258,9 @@ func (gb *GoApproverBlock) notifyAdditionalApprovers(ctx c.Context, logins []str
 		return err
 	}
 
-	author, autorErr := gb.RunContext.Services.People.GetUser(ctx, gb.RunContext.Initiator)
-	if autorErr != nil {
-		return autorErr
+	author, authorErr := gb.RunContext.Services.People.GetUser(ctx, gb.RunContext.Initiator)
+	if authorErr != nil {
+		return authorErr
 	}
 
 	initiatorInfo, initialErr := author.ToUserinfo()
@@ -309,8 +309,8 @@ func (gb *GoApproverBlock) notifyAdditionalApprovers(ctx c.Context, logins []str
 		}
 
 		for _, v := range description {
-			links, link := v.Get("attachLinks")
-			if link {
+			links, ok := v.Get("attachLinks")
+			if ok {
 				attachFiles, ok := links.([]file_registry.AttachInfo)
 				if ok && len(attachFiles) != 0 {
 					filesList = append(filesList, downloadImg)
