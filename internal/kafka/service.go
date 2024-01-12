@@ -129,7 +129,7 @@ func (s *Service) StartCheckHealth() {
 				if err != nil {
 					s.log.WithError(err).Error("error create new service")
 					if adminErr := admin.Close(); adminErr != nil {
-						s.log.WithError(adminErr).Error("error with close admin")
+						s.log.WithError(adminErr).Error("couldn't close admin client connection")
 						continue
 					}
 					continue
@@ -144,14 +144,14 @@ func (s *Service) StartCheckHealth() {
 					if v.Err != 0 {
 						s.log.WithError(err).Error(fmt.Sprintf("topic %s exists error", v.Name))
 						if adminErr := admin.Close(); adminErr != nil {
-							s.log.WithError(adminErr).Error("error with close admin")
+							s.log.WithError(adminErr).Error("couldn't close admin client connection")
 							continue
 						}
 						continue
 					}
 				}
 				if adminErr := admin.Close(); adminErr != nil {
-					s.log.WithError(adminErr).Error("error with close admin")
+					s.log.WithError(adminErr).Error("couldn't close admin client connection")
 					continue
 				}
 				continue
@@ -159,7 +159,7 @@ func (s *Service) StartCheckHealth() {
 
 			s.log.WithError(topicErr).Error("error describe topics")
 			if adminErr := admin.Close(); adminErr != nil {
-				s.log.WithError(adminErr).Error("error with close admin")
+				s.log.WithError(adminErr).Error("couldn't close admin client connection")
 				continue
 			}
 		}
