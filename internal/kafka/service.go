@@ -31,10 +31,10 @@ func NewService(log logger.Logger, cfg Config) (*Service, error) {
 	topics := []string{cfg.ProducerTopic, cfg.ConsumerTopic}
 
 	if len(cfg.Brokers) == 0 || len(topics) == 0 {
-		return nil, errors.New("brokers or topics is emptys")
+		return nil, errors.New("brokers or topics is empty")
 	}
 
-	if cfg.HealthCheck == 0 {
+	if cfg.HealthCheckTimeout == 0 {
 		return nil, errors.New("field health_check is empty")
 	}
 
@@ -111,7 +111,7 @@ func (s *Service) StartConsumer(ctx c.Context) {
 
 func (s *Service) StartCheckHealth() {
 	for {
-		to := time.After(s.serviceConfig.HealthCheck * time.Second)
+		to := time.After(s.serviceConfig.HealthCheckTimeout * time.Second)
 		select {
 		case <-to:
 			m := metrics.DefaultRegistry
@@ -128,7 +128,10 @@ func (s *Service) StartCheckHealth() {
 				s, err = NewService(s.log, s.serviceConfig)
 				if err != nil {
 					s.log.WithError(err).Error("error create new service")
-					admin.Close()
+					if adminErr := admin.Close(); adminErr != nil {
+						s.log.WithError(adminErr).Error("error with close admin")
+						continue
+					}
 					continue
 				}
 
@@ -140,16 +143,25 @@ func (s *Service) StartCheckHealth() {
 				for _, v := range topics {
 					if v.Err != 0 {
 						s.log.WithError(err).Error(fmt.Sprintf("topic %s exists error", v.Name))
-						admin.Close()
+						if adminErr := admin.Close(); adminErr != nil {
+							s.log.WithError(adminErr).Error("error with close admin")
+							continue
+						}
 						continue
 					}
 				}
-				admin.Close()
+				if adminErr := admin.Close(); adminErr != nil {
+					s.log.WithError(adminErr).Error("error with close admin")
+					continue
+				}
 				continue
 			}
 
 			s.log.WithError(topicErr).Error("error describe topics")
-			admin.Close()
+			if adminErr := admin.Close(); adminErr != nil {
+				s.log.WithError(adminErr).Error("error with close admin")
+				continue
+			}
 		}
 	}
 }
