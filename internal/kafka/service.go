@@ -34,6 +34,10 @@ func NewService(log logger.Logger, cfg Config) (*Service, error) {
 		return nil, errors.New("brokers or topics is emptys")
 	}
 
+	if cfg.HealthCheck == 0 {
+		return nil, errors.New("field health_check is empty")
+	}
+
 	m := metrics.DefaultRegistry
 	m.UnregisterAll()
 	saramaCfg := sarama.NewConfig()
@@ -105,11 +109,7 @@ func (s *Service) StartConsumer(ctx c.Context) {
 	}()
 }
 
-func (s *Service) StartCheckHealth() error {
-	if s.serviceConfig.HealthCheck == 0 {
-		return errors.New("field health_check is empty")
-	}
-
+func (s *Service) StartCheckHealth() {
 	for {
 		to := time.After(s.serviceConfig.HealthCheck * time.Second)
 		select {
