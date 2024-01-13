@@ -14,52 +14,46 @@ func (s *Service) GetFunctionVersion(ctx context.Context, functionID, versionID 
 		return Function{}, err
 	}
 
-	versionNotFound := true
-	versionIndex := 0
-	for i, v := range function.Versions {
-		if v.VersionId == versionID {
-			versionNotFound = false
-			versionIndex = i
-			break
+	for _, v := range function.Versions {
+		if v.VersionId != versionID {
+			continue
 		}
+
+		input, inputConvertErr := convertToParamMetadata(v.Input)
+		if inputConvertErr != nil {
+			return Function{}, inputConvertErr
+		}
+
+		output, outputConvertErr := convertToParamMetadata(v.Output)
+		if outputConvertErr != nil {
+			return Function{}, outputConvertErr
+		}
+
+		var options Options
+		optionsUnmarshalErr := json.Unmarshal([]byte(v.Options), &options)
+		if err != nil {
+			return Function{}, optionsUnmarshalErr
+		}
+
+		return Function{
+			Name:        function.Name,
+			FunctionId:  v.FunctionId,
+			VersionId:   v.VersionId,
+			Description: v.Description,
+			Version:     v.Version,
+			Uses:        function.Uses,
+			Input:       input,
+			Output:      output,
+			Options:     options,
+			Contracts:   v.Contracts,
+			CreatedAt:   v.CreatedAt,
+			DeletedAt:   v.DeletedAt,
+			UpdatedAt:   v.UpdatedAt,
+			Versions:    function.Versions,
+		}, nil
 	}
 
-	if versionNotFound {
-		return Function{}, fmt.Errorf("couldn't find function %s with version id %s", function.Name, versionID)
-	}
-
-	input, inputConvertErr := convertToParamMetadata(function.Versions[versionIndex].Input)
-	if inputConvertErr != nil {
-		return Function{}, inputConvertErr
-	}
-
-	output, outputConvertErr := convertToParamMetadata(function.Versions[versionIndex].Output)
-	if outputConvertErr != nil {
-		return Function{}, outputConvertErr
-	}
-
-	var options Options
-	optionsUnmarshalErr := json.Unmarshal([]byte(function.Versions[versionIndex].Options), &options)
-	if err != nil {
-		return Function{}, optionsUnmarshalErr
-	}
-
-	return Function{
-		Name:        function.Name,
-		FunctionId:  function.Versions[versionIndex].FunctionId,
-		VersionId:   function.Versions[versionIndex].VersionId,
-		Description: function.Versions[versionIndex].Description,
-		Version:     function.Versions[versionIndex].Version,
-		Uses:        function.Uses,
-		Input:       input,
-		Output:      output,
-		Options:     options,
-		Contracts:   function.Versions[versionIndex].Contracts,
-		CreatedAt:   function.Versions[versionIndex].CreatedAt,
-		DeletedAt:   function.Versions[versionIndex].DeletedAt,
-		UpdatedAt:   function.Versions[versionIndex].UpdatedAt,
-		Versions:    function.Versions,
-	}, nil
+	return Function{}, fmt.Errorf("couldn't find function %s with version id %s", function.Name, versionID)
 }
 
 func (s *Service) GetFunction(ctx context.Context, id string) (result Function, err error) {
