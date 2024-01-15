@@ -14,41 +14,41 @@ func (s *Service) GetFunctionVersion(ctx context.Context, functionID, versionID 
 		return Function{}, err
 	}
 
-	for _, v := range function.Versions {
-		if v.VersionId != versionID {
+	for index := range function.Versions {
+		if function.Versions[index].VersionId != versionID {
 			continue
 		}
 
-		input, inputConvertErr := convertToParamMetadata(v.Input)
+		input, inputConvertErr := convertToParamMetadata(function.Versions[index].Input)
 		if inputConvertErr != nil {
 			return Function{}, inputConvertErr
 		}
 
-		output, outputConvertErr := convertToParamMetadata(v.Output)
+		output, outputConvertErr := convertToParamMetadata(function.Versions[index].Output)
 		if outputConvertErr != nil {
 			return Function{}, outputConvertErr
 		}
 
 		var options Options
-		optionsUnmarshalErr := json.Unmarshal([]byte(v.Options), &options)
+		optionsUnmarshalErr := json.Unmarshal([]byte(function.Versions[index].Options), &options)
 		if err != nil {
 			return Function{}, optionsUnmarshalErr
 		}
 
 		return Function{
 			Name:        function.Name,
-			FunctionId:  v.FunctionId,
-			VersionId:   v.VersionId,
-			Description: v.Description,
-			Version:     v.Version,
+			FunctionId:  function.Versions[index].FunctionId,
+			VersionId:   function.Versions[index].VersionId,
+			Description: function.Versions[index].Description,
+			Version:     function.Versions[index].Version,
 			Uses:        function.Uses,
 			Input:       input,
 			Output:      output,
 			Options:     options,
-			Contracts:   v.Contracts,
-			CreatedAt:   v.CreatedAt,
-			DeletedAt:   v.DeletedAt,
-			UpdatedAt:   v.UpdatedAt,
+			Contracts:   function.Versions[index].Contracts,
+			CreatedAt:   function.Versions[index].CreatedAt,
+			DeletedAt:   function.Versions[index].DeletedAt,
+			UpdatedAt:   function.Versions[index].UpdatedAt,
 			Versions:    function.Versions,
 		}, nil
 	}
