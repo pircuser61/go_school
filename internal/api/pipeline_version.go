@@ -455,7 +455,7 @@ func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 		default:
 			e = PipelineValidateError
 		}
-		log.Error(e.errorMessage(errors.New(valErr)))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 		return
 	}
