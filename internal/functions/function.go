@@ -53,7 +53,7 @@ func (s *Service) GetFunctionVersion(ctx context.Context, functionID, versionID 
 		}, nil
 	}
 
-	return Function{}, fmt.Errorf("couldn't find function %s with version id %s", function.Name, versionID)
+	return Function{}, fmt.Errorf("couldn't find function with id %s with version id %s", functionID, versionID)
 }
 
 func (s *Service) GetFunction(ctx context.Context, id string) (result Function, err error) {
