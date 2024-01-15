@@ -51,5 +51,13 @@ SET content = content #- '{pipeline, blocks, start_0, output, properties, applic
 
 -- +goose Down
 -- +goose StatementBegin
+DROP TABLE versions;
 
+ALTER TABLE versions_09012024
+    RENAME TO versions;
+
+DROP TABLE variable_storage;
+
+ALTER TABLE variable_storage_09012024
+    RENAME TO variable_storage;
 -- +goose StatementEnd
