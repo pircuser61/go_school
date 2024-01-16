@@ -4,6 +4,7 @@ import (
 	"bytes"
 	c "context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/url"
 	"path"
@@ -117,6 +118,7 @@ func (runCtx BlockRunContext) NotifyEvents(ctx c.Context) {
 			log.WithError(reqErr).Error("couldn't add auth Headers")
 			continue
 		}
+		log.Info(req.Header.Get("Authorization"))
 		resp, respErr := runCtx.Services.HTTPClient.Do(req)
 		if respErr != nil {
 			log.WithError(respErr).Error("couldn't make request")
@@ -124,7 +126,8 @@ func (runCtx BlockRunContext) NotifyEvents(ctx c.Context) {
 		}
 		_ = resp.Body.Close()
 		if resp.StatusCode != http.StatusOK {
-			log.WithError(respErr).Error("didn't get 200 for request")
+			errMsg := fmt.Sprintf("didn't get 200 for request, got %d", resp.StatusCode)
+			log.Error(errMsg)
 		}
 	}
 	return
