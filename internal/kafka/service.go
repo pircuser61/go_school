@@ -109,6 +109,7 @@ func (s *Service) StartConsumer(ctx c.Context) {
 	}()
 }
 
+// nolint:gocognit //its ok here
 func (s *Service) StartCheckHealth() {
 	for {
 		to := time.After(s.serviceConfig.HealthCheckTimeout * time.Second)
@@ -116,6 +117,7 @@ func (s *Service) StartCheckHealth() {
 		case <-to:
 			m := metrics.DefaultRegistry
 			m.UnregisterAll()
+
 			saramaCfg := sarama.NewConfig()
 			saramaCfg.MetricRegistry = m
 			saramaCfg.Producer.Return.Successes = true // Producer.Return.Successes must be true to be used in a SyncProducer
@@ -123,44 +125,49 @@ func (s *Service) StartCheckHealth() {
 			admin, err := sarama.NewClusterAdmin(s.brokers, saramaCfg)
 			if err != nil {
 				s.log.WithError(err).Error("error create new cluster")
+
 				msg := s.MessageHandler
 
 				s, err = NewService(s.log, s.serviceConfig)
 				if err != nil {
 					s.log.WithError(err).Error("error create new service")
-					if adminErr := admin.Close(); adminErr != nil {
-						s.log.WithError(adminErr).Error("couldn't close admin client connection")
-						continue
-					}
+
 					continue
 				}
 
 				s.MessageHandler = msg
+
+				continue
 			}
 
 			topics, topicErr := admin.DescribeTopics(s.topics)
-			if topicErr == nil {
-				for _, v := range topics {
-					if v.Err != 0 {
-						s.log.WithError(err).Error(fmt.Sprintf("topic %s exists error", v.Name))
-						if adminErr := admin.Close(); adminErr != nil {
-							s.log.WithError(adminErr).Error("couldn't close admin client connection")
-							continue
-						}
-						continue
-					}
-				}
-				if adminErr := admin.Close(); adminErr != nil {
+			if topicErr != nil {
+				s.log.WithError(topicErr).Error("error describe topics")
+
+				adminErr := admin.Close()
+				if adminErr != nil {
 					s.log.WithError(adminErr).Error("couldn't close admin client connection")
-					continue
 				}
+
 				continue
 			}
 
-			s.log.WithError(topicErr).Error("error describe topics")
-			if adminErr := admin.Close(); adminErr != nil {
+			for _, v := range topics {
+				if v.Err == 0 {
+					continue
+				}
+
+				s.log.WithError(err).Error(fmt.Sprintf("topic %s exists error", v.Name))
+
+				adminErr := admin.Close()
+				if adminErr != nil {
+					s.log.WithError(adminErr).Error("couldn't close admin client connection")
+				}
+			}
+
+			adminErr := admin.Close()
+			if adminErr != nil {
 				s.log.WithError(adminErr).Error("couldn't close admin client connection")
-				continue
 			}
 		}
 	}
