@@ -769,12 +769,15 @@ func NewExecutionTakenInWorkTpl(dto *ExecutorNotifTemplate) Template {
 	}
 }
 
-func NewAddApproversTpl(id, name, sdUrl, status, deadline string, lastWorks []*entity.EriusTask) Template {
-	lastWorksTemplate := getLastWorksForTemplate(lastWorks, sdUrl)
-	actionName := getApprovementActionNameByStatus(status, defaultApprovementActionName)
+func NewAddApproversTpl(in *NewAppPersonStatusTpl) (Template, []Button) {
+	lastWorksTemplate := getLastWorksForTemplate(in.LastWorks, in.SdUrl)
+	actionName := getApprovementActionNameByStatus(in.Status, defaultApprovementActionName)
+	buttons := getApproverButtons(in.WorkNumber, in.Mailto, in.BlockID, in.Login, in.ApproverActions, in.IsEditable)
+
+	in.Description = CheckGroup(in.Description)
 
 	return Template{
-		Subject:  fmt.Sprintf("Заявка № %s %s ожидает %s", id, name, actionName),
+		Subject:  fmt.Sprintf("Заявка № %s %s ожидает %s", in.WorkNumber, in.Name, actionName),
 		Template: "internal/mail/template/42receivedForApproval-template.html",
 		Image:    "42_zayavka_ojidaet_sogl.png",
 		Variables: struct {
@@ -784,15 +787,23 @@ func NewAddApproversTpl(id, name, sdUrl, status, deadline string, lastWorks []*e
 			Deadline  string    `json:"deadline"`
 			Action    string    `json:"action"`
 			LastWorks LastWorks `json:"last_works"`
+
+			Description []orderedmap.OrderedMap
+			ActionBtn   []Button
+			Initiator   *sso.UserInfo
 		}{
-			Id:        id,
-			Name:      name,
-			Link:      fmt.Sprintf(TaskUrlTemplate, sdUrl, id),
+			Id:        in.WorkNumber,
+			Name:      in.Name,
+			Link:      fmt.Sprintf(TaskUrlTemplate, in.SdUrl, in.WorkNumber),
 			Action:    actionName,
-			Deadline:  deadline,
+			Deadline:  in.DeadLine,
 			LastWorks: lastWorksTemplate,
+
+			Description: in.Description,
+			ActionBtn:   buttons,
+			Initiator:   in.Initiator,
 		},
-	}
+	}, buttons
 }
 
 func NewDecisionMadeByAdditionalApprover(id, name, decision, comment, sdUrl string, author *sso.UserInfo) Template {
