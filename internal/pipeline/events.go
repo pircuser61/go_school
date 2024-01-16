@@ -118,7 +118,6 @@ func (runCtx BlockRunContext) NotifyEvents(ctx c.Context) {
 			log.WithError(reqErr).Error("couldn't add auth Headers")
 			continue
 		}
-		log.Info(req.Header.Get("Authorization"))
 		resp, respErr := runCtx.Services.HTTPClient.Do(req)
 		if respErr != nil {
 			log.WithError(respErr).Error("couldn't make request")
