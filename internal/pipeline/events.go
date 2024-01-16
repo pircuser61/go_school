@@ -4,6 +4,7 @@ import (
 	"bytes"
 	c "context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/url"
 	"path"
@@ -124,7 +125,8 @@ func (runCtx BlockRunContext) NotifyEvents(ctx c.Context) {
 		}
 		_ = resp.Body.Close()
 		if resp.StatusCode != http.StatusOK {
-			log.WithError(respErr).Error("didn't get 200 for request")
+			errMsg := fmt.Sprintf("didn't get 200 for request, got %d", resp.StatusCode)
+			log.Error(errMsg)
 		}
 	}
 	return
