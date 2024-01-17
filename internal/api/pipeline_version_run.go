@@ -206,7 +206,7 @@ func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request
 	requestInfo.ClientID = clientID
 
 	var externalSystem *entity.ExternalSystem
-	externalSystem, err = ae.getExternalSystem(ctx, storage, clientID, version.VersionID.String())
+	externalSystem, err = ae.getExternalSystem(ctx, storage, clientID, req.PipelineId, version.VersionID.String())
 	if err != nil {
 		e := GetExternalSystemsError
 		log.Error(e.errorMessage(err))

@@ -197,10 +197,12 @@ func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request
 	}
 }
 
-func (ae *APIEnv) getExternalSystem(ctx c.Context, storage db.Database, clientID, versionID string) (
+func (ae *APIEnv) getExternalSystem(ctx c.Context, storage db.Database, clientID, pipelineID, versionID string) (
 	*entity.ExternalSystem, error) {
 	system, err := ae.Integrations.RpcIntCli.GetIntegrationByClientId(ctx, &integration_v1.GetIntegrationByClientIdRequest{
-		ClientId: clientID,
+		ClientId:   clientID,
+		PipelineId: pipelineID,
+		VersionId:  versionID,
 	})
 	if err != nil {
 		if strings.Contains(err.Error(), "system not found") { // TODO: delete
