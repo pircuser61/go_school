@@ -12,7 +12,6 @@ require (
 	github.com/fatih/structs v1.1.0
 	github.com/go-chi/chi v4.1.2+incompatible
 	github.com/go-chi/chi/v5 v5.0.8
-	github.com/go-chi/render v1.0.1
 	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/google/go-cmp v0.5.9
 	github.com/google/uuid v1.3.1
@@ -36,7 +35,7 @@ require (
 	gitlab.services.mts.ru/jocasta/forms v1.0.0-alpha.1
 	gitlab.services.mts.ru/jocasta/functions v1.5.0-alpha.2
 	gitlab.services.mts.ru/jocasta/human-tasks v1.0.0-alpha.3
-	gitlab.services.mts.ru/jocasta/integrations v1.8.0
+	gitlab.services.mts.ru/jocasta/integrations v1.9.0
 	gitlab.services.mts.ru/jocasta/msg-kit v0.1.1
 	gitlab.services.mts.ru/jocasta/scheduler v1.5.0-rc.1
 	gitlab.services.mts.ru/prodboard/infra v0.3.0

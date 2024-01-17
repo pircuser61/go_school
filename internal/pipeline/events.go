@@ -195,7 +195,11 @@ func (runCtx *BlockRunContext) SetTaskEvents(ctx c.Context) {
 	}
 
 	sResp, err := runCtx.Services.Integrations.RpcIntCli.GetIntegrationByClientId(ctx,
-		&integration_v1.GetIntegrationByClientIdRequest{ClientId: taskRunCtx.ClientID})
+		&integration_v1.GetIntegrationByClientIdRequest{
+			ClientId:   taskRunCtx.ClientID,
+			PipelineId: runCtx.PipelineID.String(),
+			VersionId:  runCtx.VersionID.String(),
+		})
 	if err != nil {
 		return
 	}
@@ -213,7 +217,13 @@ func (runCtx *BlockRunContext) SetTaskEvents(ctx c.Context) {
 	}
 
 	resp, err := runCtx.Services.Integrations.RpcMicrCli.GetMicroservice(ctx,
-		&microservice_v1.GetMicroserviceRequest{MicroserviceId: expectedEvents.MicroserviceID})
+		&microservice_v1.GetMicroserviceRequest{
+			MicroserviceId: expectedEvents.MicroserviceID,
+			PipelineId:     runCtx.PipelineID.String(),
+			VersionId:      runCtx.VersionID.String(),
+			WorkNumber:     runCtx.WorkNumber,
+			ClientId:       runCtx.ClientID,
+		})
 	if err != nil {
 		return
 	}

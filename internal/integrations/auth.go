@@ -98,9 +98,16 @@ func (s *Service) initScopes(scopes []string, clientSecret, clientId string) *sc
 	}
 }
 
-func (s *Service) FillAuth(ctx context.Context, key string) (result *Auth, err error) {
+func (s *Service) FillAuth(
+	ctx context.Context, key string, pipelineID, versionID, workNumber, clientID string) (result *Auth, err error) {
 	res, GRPCerr := s.RpcMicrCli.GetCredentialsByKey(ctx,
-		&microservice_v1.GetCredentialsByKeyRequest{HumanReadableKey: key},
+		&microservice_v1.GetCredentialsByKeyRequest{
+			HumanReadableKey: key,
+			PipelineId:       pipelineID,
+			VersionId:        versionID,
+			WorkNumber:       workNumber,
+			ClientId:         clientID,
+		},
 	)
 	if GRPCerr != nil {
 		return nil, GRPCerr
