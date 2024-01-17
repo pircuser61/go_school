@@ -124,19 +124,22 @@ func (s *Service) StartCheckHealth() {
 
 			admin, err := sarama.NewClusterAdmin(s.brokers, saramaCfg)
 			if err != nil {
-				s.log.WithError(err).Error("error create new cluster")
+				s.log.WithError(err).Error("couldn't connect to kafka! Trying to reconnect")
 
 				msg := s.MessageHandler
 
-				s, err = NewService(s.log, s.serviceConfig)
-				if err != nil {
-					s.log.WithError(err).Error("error create new service")
+				newService, reconnectErr := NewService(s.log, s.serviceConfig)
+				if reconnectErr != nil {
+					s.log.WithError(reconnectErr).Error("failed to reconnect to kafka")
 
 					continue
 				}
 
+				*s = *newService
+
 				s.MessageHandler = msg
 
+				s.log.Info("the reconnection to kafka was successful")
 				continue
 			}
 
