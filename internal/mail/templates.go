@@ -343,9 +343,9 @@ func NewRequestApproverInfoTpl(id, name, sdUrl string) Template {
 
 func NewAnswerApproverInfoTpl(id, name, sdUrl string) Template {
 	return Template{
-		Subject:  fmt.Sprintf("Заявка № %s %s запрос дополнительной информации", id, name),
-		Template: "internal/mail/template/15moreInfoRequired-template.html",
-		Image:    "15_dop_info_trebuetsya.png",
+		Subject:  fmt.Sprintf("Заявка № %s %s — Получена дополнительная информация", id, name),
+		Template: "internal/mail/template/16additionalInfoReceived-template.html",
+		Image:    "16_dop_info_polucheno.png",
 		Variables: struct {
 			Id   string `json:"id"`
 			Name string `json:"name"`
@@ -360,7 +360,7 @@ func NewAnswerApproverInfoTpl(id, name, sdUrl string) Template {
 
 func NewAnswerExecutionInfoTpl(id, name, sdUrl string) Template {
 	return Template{
-		Subject:  fmt.Sprintf("Заявка № %s %s получена дополнительная информация", id, name),
+		Subject:  fmt.Sprintf("Заявка № %s %s — Получена дополнительная информация", id, name),
 		Template: "internal/mail/template/16additionalInfoReceived-template.html",
 		Image:    "16_dop_info_polucheno.png",
 		Variables: struct {
@@ -590,7 +590,8 @@ type NewAppPersonStatusTpl struct {
 	AttachFields []string                   `json:"attachFields"`
 
 	// actions for approver
-	ApproverActions []Action
+	ApproverActions    []Action
+	AdditionalApprover []string
 
 	IsEditable bool
 
@@ -769,12 +770,24 @@ func NewExecutionTakenInWorkTpl(dto *ExecutorNotifTemplate) Template {
 	}
 }
 
-func NewAddApproversTpl(id, name, sdUrl, status, deadline string, lastWorks []*entity.EriusTask) Template {
-	lastWorksTemplate := getLastWorksForTemplate(lastWorks, sdUrl)
-	actionName := getApprovementActionNameByStatus(status, defaultApprovementActionName)
+func NewAddApproversTpl(in *NewAppPersonStatusTpl, email string) (Template, []Button) {
+	lastWorksTemplate := getLastWorksForTemplate(in.LastWorks, in.SdUrl)
+	actionName := getApprovementActionNameByStatus(in.Status, defaultApprovementActionName)
+	buttons := getApproverButtons(in.WorkNumber, in.Mailto, in.BlockID, in.Login, in.ApproverActions, in.IsEditable)
+
+	in.Description = CheckGroup(in.Description)
+
+	for _, v := range in.AdditionalApprover {
+		emails := strings.Split(email, "@")
+		if v == emails[0] {
+			actions := []Action{{InternalActionName: "approve"}, {InternalActionName: "reject"}}
+			buttons = getApproverButtons(in.WorkNumber, in.Mailto, in.BlockID, in.Login, actions, in.IsEditable)
+			break
+		}
+	}
 
 	return Template{
-		Subject:  fmt.Sprintf("Заявка № %s %s ожидает %s", id, name, actionName),
+		Subject:  fmt.Sprintf("Заявка № %s %s ожидает %s", in.WorkNumber, in.Name, actionName),
 		Template: "internal/mail/template/42receivedForApproval-template.html",
 		Image:    "42_zayavka_ojidaet_sogl.png",
 		Variables: struct {
@@ -784,15 +797,23 @@ func NewAddApproversTpl(id, name, sdUrl, status, deadline string, lastWorks []*e
 			Deadline  string    `json:"deadline"`
 			Action    string    `json:"action"`
 			LastWorks LastWorks `json:"last_works"`
+
+			Description []orderedmap.OrderedMap
+			ActionBtn   []Button
+			Initiator   *sso.UserInfo
 		}{
-			Id:        id,
-			Name:      name,
-			Link:      fmt.Sprintf(TaskUrlTemplate, sdUrl, id),
+			Id:        in.WorkNumber,
+			Name:      in.Name,
+			Link:      fmt.Sprintf(TaskUrlTemplate, in.SdUrl, in.WorkNumber),
 			Action:    actionName,
-			Deadline:  deadline,
+			Deadline:  in.DeadLine,
 			LastWorks: lastWorksTemplate,
+
+			Description: in.Description,
+			ActionBtn:   buttons,
+			Initiator:   in.Initiator,
 		},
-	}
+	}, buttons
 }
 
 func NewDecisionMadeByAdditionalApprover(id, name, decision, comment, sdUrl string, author *sso.UserInfo) Template {

@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
+
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
@@ -73,14 +74,45 @@ func (gb *GoSignBlock) notifyAdditionalApprovers(ctx c.Context, logins []string,
 		}
 	}
 
+	description, files, err := gb.RunContext.makeNotificationDescription(gb.Name)
+	if err != nil {
+		return err
+	}
+
+	author, authorErr := gb.RunContext.Services.People.GetUser(ctx, gb.RunContext.Initiator)
+	if authorErr != nil {
+		return authorErr
+	}
+
+	initiatorInfo, initialErr := author.ToUserinfo()
+	if initialErr != nil {
+		return initialErr
+	}
+
+	additionalApproveLogin := make([]string, 0)
+
+	for _, email := range gb.State.AdditionalApprovers {
+		additionalApproveLogin = append(additionalApproveLogin, email.ApproverLogin)
+	}
+
 	for i := range emails {
-		tpl := mail.NewAddApproversTpl(
-			gb.RunContext.WorkNumber,
-			gb.RunContext.NotifName,
-			gb.RunContext.Services.Sender.SdAddress,
-			"",
-			slaDeadline,
-			lastWorksForUser,
+		tpl, _ := mail.NewAddApproversTpl(
+			&mail.NewAppPersonStatusTpl{
+				WorkNumber:         gb.RunContext.WorkNumber,
+				Name:               gb.RunContext.NotifName,
+				SdUrl:              gb.RunContext.Services.Sender.SdAddress,
+				Action:             "",
+				DeadLine:           slaDeadline,
+				LastWorks:          lastWorksForUser,
+				Description:        description,
+				Mailto:             gb.RunContext.Services.Sender.FetchEmail,
+				Login:              login,
+				IsEditable:         false,
+				ApproverActions:    nil,
+				BlockID:            BlockGoSignID,
+				Initiator:          initiatorInfo,
+				AdditionalApprover: additionalApproveLogin,
+			}, emails[i],
 		)
 
 		filesList := []string{tpl.Image}
