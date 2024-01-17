@@ -770,7 +770,7 @@ func NewExecutionTakenInWorkTpl(dto *ExecutorNotifTemplate) Template {
 	}
 }
 
-func NewAddApproversTpl(in *NewAppPersonStatusTpl, email string) (Template, []Button) {
+func NewAddApproversTpl(in *NewAppPersonStatusTpl, recipientEmail string) (Template, []Button) {
 	lastWorksTemplate := getLastWorksForTemplate(in.LastWorks, in.SdUrl)
 	actionName := getApprovementActionNameByStatus(in.Status, defaultApprovementActionName)
 	buttons := getApproverButtons(in.WorkNumber, in.Mailto, in.BlockID, in.Login, in.ApproverActions, in.IsEditable)
@@ -778,12 +778,14 @@ func NewAddApproversTpl(in *NewAppPersonStatusTpl, email string) (Template, []Bu
 	in.Description = CheckGroup(in.Description)
 
 	for _, v := range in.AdditionalApprover {
-		emails := strings.Split(email, "@")
-		if v == emails[0] {
-			actions := []Action{{InternalActionName: "approve"}, {InternalActionName: "reject"}}
-			buttons = getApproverButtons(in.WorkNumber, in.Mailto, in.BlockID, in.Login, actions, in.IsEditable)
-			break
+		emails := strings.Split(recipientEmail, "@")
+		if v != emails[0] {
+			continue
 		}
+
+		actions := []Action{{InternalActionName: "approve"}, {InternalActionName: "reject"}}
+		buttons = getApproverButtons(in.WorkNumber, in.Mailto, in.BlockID, in.Login, actions, in.IsEditable)
+		break
 	}
 
 	return Template{
