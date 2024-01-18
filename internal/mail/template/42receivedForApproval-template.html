@@ -219,7 +219,7 @@
                   line-height: 21pt;
                 "
               >
-                <strong>Добрый день (42)!</strong>
+                <strong>Добрый день!</strong>
               </p>
               <!-- пустая линия -->
               <p
@@ -349,53 +349,10 @@
               <!-- конец пустой линии -->
             </td>
           </tr>
-          {{ if .ActionBtn }}
-            {{ range .ActionBtn }}
-            <tr>
-              <td
-                      align="center"
-                      style="
-                  border-collapse: collapse;
-                  padding-left: 24px;
-                  padding-right: 24px;
-                  padding-bottom: 12px;
-                "
-              >
-                <a
-                        href="{{.Href}}"
-                        target="_blank"
-                        style="
-                    margin: 0;
-                    padding: 0;
-                    display: inline-block;
-                    width: 512px;
-                    border-radius: 6px;
-                    text-decoration: none;
-                    font-family: MTS Compact, sans-serif, serif, EmojiFont;
-                    font-size: 14px;
-                    font-weight: 500;
-                    line-height: 20px;
-                  "
-                >
-                  <img
-                          src="cid:{{.Img}}"
-                          alt="Кнопка"
-                          style="
-                      outline: none;
-                      text-decoration: none;
-                      border: none;
-                      -ms-interpolation-mode: bicubic;
-                      border-radius: 6px;
-                      color: #000000;
-                    "
-                  /></a>
-              </td>
-            </tr>
-            {{ end }}
-          {{ end }}
           <tr>
             <td
-                    style="
+              align="center"
+              style="
                 border-collapse: collapse;
                 padding-left: 24px;
                 padding-right: 24px;

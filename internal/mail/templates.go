@@ -343,9 +343,9 @@ func NewRequestApproverInfoTpl(id, name, sdUrl string) Template {
 
 func NewAnswerApproverInfoTpl(id, name, sdUrl string) Template {
 	return Template{
-		Subject:  fmt.Sprintf("Заявка № %s %s запрос дополнительной информации", id, name),
-		Template: "internal/mail/template/15moreInfoRequired-template.html",
-		Image:    "15_dop_info_trebuetsya.png",
+		Subject:  fmt.Sprintf("Заявка № %s %s — Получена дополнительная информация", id, name),
+		Template: "internal/mail/template/16additionalInfoReceived-template.html",
+		Image:    "16_dop_info_polucheno.png",
 		Variables: struct {
 			Id   string `json:"id"`
 			Name string `json:"name"`
@@ -360,7 +360,7 @@ func NewAnswerApproverInfoTpl(id, name, sdUrl string) Template {
 
 func NewAnswerExecutionInfoTpl(id, name, sdUrl string) Template {
 	return Template{
-		Subject:  fmt.Sprintf("Заявка № %s %s получена дополнительная информация", id, name),
+		Subject:  fmt.Sprintf("Заявка № %s %s — Получена дополнительная информация", id, name),
 		Template: "internal/mail/template/16additionalInfoReceived-template.html",
 		Image:    "16_dop_info_polucheno.png",
 		Variables: struct {
@@ -590,7 +590,8 @@ type NewAppPersonStatusTpl struct {
 	AttachFields []string                   `json:"attachFields"`
 
 	// actions for approver
-	ApproverActions []Action
+	ApproverActions    []Action
+	AdditionalApprover []string
 
 	IsEditable bool
 
@@ -769,12 +770,24 @@ func NewExecutionTakenInWorkTpl(dto *ExecutorNotifTemplate) Template {
 	}
 }
 
-func NewAddApproversTpl(in *NewAppPersonStatusTpl) (Template, []Button) {
+func NewAddApproversTpl(in *NewAppPersonStatusTpl, recipientEmail string) (Template, []Button) {
 	lastWorksTemplate := getLastWorksForTemplate(in.LastWorks, in.SdUrl)
 	actionName := getApprovementActionNameByStatus(in.Status, defaultApprovementActionName)
 	buttons := getApproverButtons(in.WorkNumber, in.Mailto, in.BlockID, in.Login, in.ApproverActions, in.IsEditable)
 
 	in.Description = CheckGroup(in.Description)
+
+	for _, v := range in.AdditionalApprover {
+		emails := strings.Split(recipientEmail, "@")
+		if v != emails[0] {
+			continue
+		}
+
+		actions := []Action{{InternalActionName: "approve"}, {InternalActionName: "reject"}}
+		buttons = getApproverButtons(in.WorkNumber, in.Mailto, in.BlockID, emails[0], actions, in.IsEditable)
+		
+		break
+	}
 
 	return Template{
 		Subject:  fmt.Sprintf("Заявка № %s %s ожидает %s", in.WorkNumber, in.Name, actionName),
