@@ -526,6 +526,23 @@ func (ae *APIEnv) getAccessibleForms(currentUser string, steps *entity.TaskSteps
 				return nil, unmarshalErr
 			}
 
+			for member := range sign.Signers {
+				if member == currentUser {
+					userHasAccess = true
+					break
+				}
+			}
+
+			for addMember := range sign.AdditionalApprovers {
+				if sign.AdditionalApprovers[addMember].ApproverLogin == currentUser {
+					userHasAccess = true
+					break
+				}
+			}
+
+			if !userHasAccess {
+				continue
+			}
 			for _, form := range sign.FormsAccessibility {
 				if form.AccessType != TypeAccessFormNone {
 					accessibleForms[form.NodeId] = struct{}{}
