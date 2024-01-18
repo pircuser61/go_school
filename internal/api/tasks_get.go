@@ -422,6 +422,7 @@ func (ae *APIEnv) getAccessibleForms(currentUser string, steps *entity.TaskSteps
 		ApproverBlockType  = "approver"
 		ExecutionBlockType = "execution"
 		FormBlockType      = "form"
+		SignBlockType      = "sign"
 	)
 
 	accessibleForms = make(map[string]struct{}, 0)
@@ -513,6 +514,36 @@ func (ae *APIEnv) getAccessibleForms(currentUser string, steps *entity.TaskSteps
 			}
 
 			for _, form := range execution.FormsAccessibility {
+				if form.AccessType != TypeAccessFormNone {
+					accessibleForms[form.NodeId] = struct{}{}
+				}
+			}
+
+		case SignBlockType:
+			var sign pipeline.SignData
+			unmarshalErr := json.Unmarshal(s.State[s.Name], &sign)
+			if unmarshalErr != nil {
+				return nil, unmarshalErr
+			}
+
+			for member := range sign.Signers {
+				if member == currentUser {
+					userHasAccess = true
+					break
+				}
+			}
+
+			for addMember := range sign.AdditionalApprovers {
+				if sign.AdditionalApprovers[addMember].ApproverLogin == currentUser {
+					userHasAccess = true
+					break
+				}
+			}
+
+			if !userHasAccess {
+				continue
+			}
+			for _, form := range sign.FormsAccessibility {
 				if form.AccessType != TypeAccessFormNone {
 					accessibleForms[form.NodeId] = struct{}{}
 				}

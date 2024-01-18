@@ -29,6 +29,7 @@ type RequestInfo struct {
 	Method     string
 	Path       string
 	PipelineID string
+	VersionID  string
 	ClientID   string
 	WorkNumber string
 	Status     int
@@ -44,7 +45,7 @@ func New() Metrics {
 			Namespace: "jocasta",
 			Subsystem: "pipeliner",
 			Name:      incomingRequests,
-		}, []string{"method", "path", "pipeline_id", "client_id", "work_number", "status"}),
+		}, []string{"method", "path", "pipeline_id", "version_id", "client_id", "work_number", "status"}),
 	}
 
 	m.MustRegisterMetrics(registry)
@@ -72,6 +73,7 @@ func (m *appMetrics) RequestsIncrease(label *RequestInfo) {
 		label.Method,
 		label.Path,
 		label.PipelineID,
+		label.VersionID,
 		label.ClientID,
 		label.WorkNumber,
 		strconv.Itoa(label.Status),

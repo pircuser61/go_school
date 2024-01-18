@@ -75,6 +75,9 @@ type BlockRunResults struct {
 type BlockRunContext struct {
 	TaskID      uuid.UUID
 	WorkNumber  string
+	ClientID    string
+	PipelineID  uuid.UUID
+	VersionID   uuid.UUID
 	WorkTitle   string
 	Initiator   string
 	IsTest      bool
@@ -841,12 +844,24 @@ func processBlockEnd(ctx c.Context, status string, runCtx *BlockRunContext) (err
 
 func sendEndingMapping(ctx c.Context, data *entity.EndProcessData,
 	runCtx *BlockRunContext, settings *entity.EndSystemSettings) (err error) {
-	secretsHumanKey, secretsErr := runCtx.Services.Integrations.GetMicroserviceHumanKey(ctx, settings.MicroserviceId)
+	secretsHumanKey, secretsErr := runCtx.Services.Integrations.GetMicroserviceHumanKey(
+		ctx,
+		settings.MicroserviceId,
+		runCtx.PipelineID.String(),
+		runCtx.VersionID.String(),
+		runCtx.WorkNumber,
+		runCtx.ClientID)
 	if secretsErr != nil {
 		return secretsErr
 	}
 
-	auth, authErr := runCtx.Services.Integrations.FillAuth(ctx, secretsHumanKey)
+	auth, authErr := runCtx.Services.Integrations.FillAuth(
+		ctx,
+		secretsHumanKey,
+		runCtx.PipelineID.String(),
+		runCtx.VersionID.String(),
+		runCtx.WorkNumber,
+		runCtx.ClientID)
 	if authErr != nil {
 		return authErr
 	}
