@@ -455,6 +455,25 @@ func (bt *BlocksType) addDefaultStartNode() {
 	}
 }
 
+func (bt *BlocksType) GetExecutableFunctions() ([]script.FunctionParam, error) {
+	functionIDs := make([]script.FunctionParam, 0)
+	for key := range *bt {
+		block := (*bt)[key]
+		if block.TypeID == "executable_function" {
+			var p script.ExecutableFunctionParams
+			if err := json.Unmarshal(block.Params, &p); err != nil {
+				return nil, err
+			}
+
+			if p.Function.FunctionId != "" {
+				functionIDs = append(functionIDs, p.Function)
+			}
+		}
+	}
+
+	return functionIDs, nil
+}
+
 func (bt *BlocksType) blockTypeExists(blockType string) bool {
 	return len(bt.getNodesByType(blockType)) != 0
 }

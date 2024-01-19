@@ -41,7 +41,7 @@ type Pipeliner struct {
 	AuthBaseURL             *URL                 `yaml:"auth"`
 	SchedulerBaseURL        *URL                 `yaml:"scheduler"`
 	NetworkMonitorBaseURL   *URL                 `yaml:"network_monitor"`
-	Push                    PushConfig           `yaml:"push"`
+	Prometheus              PrometheusConfig     `yaml:"prometheus"`
 	HTTPClientConfig        *HTTPClient          `yaml:"http_client_config"`
 	SSO                     sso.Config           `yaml:"sso"`
 	People                  people.Config        `yaml:"people"`
@@ -83,6 +83,10 @@ type Database struct {
 type PushConfig struct {
 	URL string `yaml:"url"`
 	Job string `yaml:"job"`
+}
+
+type PrometheusConfig struct {
+	Push PushConfig `yaml:"push"`
 }
 
 func (d *Database) String() string {

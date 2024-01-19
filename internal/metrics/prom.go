@@ -3,9 +3,10 @@ package metrics
 import (
 	"sync"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/push"
 
-	"github.com/prometheus/client_golang/prometheus"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/configs"
 )
 
 type NGSAStatus struct {
@@ -35,7 +36,7 @@ var (
 	Pusher   *push.Pusher
 )
 
-func InitMetricsAuth() {
+func InitMetricsAuth(config configs.PrometheusConfig) {
 	once.Do(func() {
 		Stats.NGSAPushes.Ok = prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "ngsa_push_ok_unixtime",
@@ -63,4 +64,6 @@ func InitMetricsAuth() {
 		Registry.MustRegister(Stats.RemedyPushes.Ok)
 		Registry.MustRegister(Stats.RemedyPushes.Fail)
 	})
+
+	Pusher = push.New(config.Push.URL, config.Push.Job).Gatherer(Registry)
 }

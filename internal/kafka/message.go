@@ -4,6 +4,10 @@ import "github.com/google/uuid"
 
 type RunnerOutMessage struct {
 	TaskID          uuid.UUID              `json:"task_id"`
+	PipelineID      uuid.UUID              `json:"pipeline_id"`
+	VersionID       uuid.UUID              `json:"version_id"`
+	ClientID        string                 `json:"client_id"`
+	WorkNumber      string                 `json:"work_number"`
 	FunctionMapping map[string]interface{} `json:"function_mapping"`
 	Contracts       string                 `json:"contracts"`
 	FunctionName    string                 `json:"function_name"`

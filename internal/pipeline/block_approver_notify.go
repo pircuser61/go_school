@@ -253,22 +253,79 @@ func (gb *GoApproverBlock) notifyAdditionalApprovers(ctx c.Context, logins []str
 		}
 	}
 
+	description, files, err := gb.RunContext.makeNotificationDescription(gb.Name)
+	if err != nil {
+		return err
+	}
+
+	author, authorErr := gb.RunContext.Services.People.GetUser(ctx, gb.RunContext.Initiator)
+	if authorErr != nil {
+		return authorErr
+	}
+
+	initiatorInfo, initialErr := author.ToUserinfo()
+	if initialErr != nil {
+		return initialErr
+	}
+
+	actionsList := make([]mail.Action, 0, len(gb.State.ActionList))
+	for i := range gb.State.ActionList {
+		actionsList = append(actionsList, mail.Action{
+			InternalActionName: gb.State.ActionList[i].Id,
+			Title:              gb.State.ActionList[i].Title,
+		})
+	}
+
+	buttonList := make([]string, 0)
+	additionalApproveLogin := make([]string, 0)
+
+	for _, email := range gb.State.AdditionalApprovers {
+		additionalApproveLogin = append(additionalApproveLogin, email.ApproverLogin)
+	}
+
 	for i := range emails {
-		tpl := mail.NewAddApproversTpl(
-			gb.RunContext.WorkNumber,
-			gb.RunContext.NotifName,
-			gb.RunContext.Services.Sender.SdAddress,
-			script.SettingStatusApprovement,
-			gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(
-				time.Now(), gb.State.SLA, slaInfoPtr),
-			lastWorksForUser,
+		tpl, buttons := mail.NewAddApproversTpl(
+			&mail.NewAppPersonStatusTpl{
+				WorkNumber: gb.RunContext.WorkNumber,
+				Name:       gb.RunContext.NotifName,
+				SdUrl:      gb.RunContext.Services.Sender.SdAddress,
+				Action:     script.SettingStatusApprovement,
+				DeadLine: gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(
+					time.Now(), gb.State.SLA, slaInfoPtr),
+				LastWorks:          lastWorksForUser,
+				Description:        description,
+				Mailto:             gb.RunContext.Services.Sender.FetchEmail,
+				Login:              login,
+				IsEditable:         gb.State.GetIsEditable(),
+				ApproverActions:    actionsList,
+				BlockID:            BlockGoApproverID,
+				Initiator:          initiatorInfo,
+				AdditionalApprover: additionalApproveLogin,
+			}, emails[i],
 		)
 
-		filesList := []string{tpl.Image}
+		for _, v := range buttons {
+			buttonList = append(buttonList, v.Img)
+		}
+
+		filesList := []string{tpl.Image, userImg}
 
 		if len(lastWorksForUser) != 0 {
 			filesList = append(filesList, warningImg)
 		}
+
+		for _, v := range description {
+			links, ok := v.Get("attachLinks")
+			if ok {
+				attachFiles, ok := links.([]file_registry.AttachInfo)
+				if ok && len(attachFiles) != 0 {
+					filesList = append(filesList, downloadImg)
+					break
+				}
+			}
+		}
+
+		filesList = append(filesList, buttonList...)
 
 		iconFiles, iconErr := gb.RunContext.GetIcons(filesList)
 		if iconErr != nil {

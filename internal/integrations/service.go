@@ -2,6 +2,7 @@ package integrations
 
 import (
 	c "context"
+	"errors"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -55,5 +56,40 @@ func (s *Service) GetSystemsNames(ctx c.Context, systemIDs []uuid.UUID) (map[str
 		return res.Names, nil
 	}
 
-	return nil, nil
+	return nil, errors.New("couldn't get system names")
+}
+
+func (s *Service) GetSystemsClients(ctx c.Context, systemIDs []uuid.UUID) (map[string][]string, error) {
+	cc := make(map[string][]string)
+	for _, id := range systemIDs {
+		res, err := s.RpcIntCli.GetIntegrationById(ctx, &integration_v1.GetIntegrationByIdRequest{IntegrationId: id.String()})
+		if err != nil {
+			return nil, err
+		}
+
+		if res != nil && res.Integration != nil {
+			cc[id.String()] = res.Integration.ClientIds
+		}
+	}
+	return cc, nil
+}
+
+func (s *Service) GetMicroserviceHumanKey(
+	ctx c.Context, microserviceID, pipelineID, versionID, workNumber, clientID string) (string, error) {
+	res, err := s.RpcMicrCli.GetMicroservice(ctx, &microservice_v1.GetMicroserviceRequest{
+		MicroserviceId: microserviceID,
+		PipelineId:     pipelineID,
+		VersionId:      versionID,
+		WorkNumber:     workNumber,
+		ClientId:       clientID,
+	})
+	if err != nil {
+		return "", err
+	}
+
+	if res != nil && res.Microservice != nil && res.Microservice.Creds != nil && res.Microservice.Creds.Prod != nil {
+		return res.Microservice.Creds.Prod.HumanKey, nil
+	}
+
+	return "", errors.New("couldn't get microservice human key")
 }

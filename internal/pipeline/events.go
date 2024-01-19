@@ -4,10 +4,13 @@ import (
 	"bytes"
 	c "context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/url"
 	"path"
 	"time"
+
+	"github.com/fatih/structs"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 
@@ -15,6 +18,7 @@ import (
 
 	integration_v1 "gitlab.services.mts.ru/jocasta/integrations/pkg/proto/gen/integration/v1"
 	microservice_v1 "gitlab.services.mts.ru/jocasta/integrations/pkg/proto/gen/microservice/v1"
+
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
 
@@ -82,7 +86,7 @@ func (runCtx *BlockRunContext) MakeNodeEndEvent(ctx c.Context, args MakeNodeEndE
 }
 
 func (runCtx BlockRunContext) NotifyEvents(ctx c.Context) {
-	log := logger.GetLogger(ctx)
+	log := logger.GetLogger(ctx).WithField("workNumber", runCtx.WorkNumber)
 
 	reqUrl, err := url.Parse(runCtx.TaskSubscriptionData.MicroserviceURL)
 	if err != nil {
@@ -109,6 +113,11 @@ func (runCtx BlockRunContext) NotifyEvents(ctx c.Context) {
 			log.WithError(reqErr).Error("couldn't create request")
 			continue
 		}
+		headerErr := runCtx.addAuthHeader(ctx, req)
+		if headerErr != nil {
+			log.WithError(reqErr).Error("couldn't add auth Headers")
+			continue
+		}
 		resp, respErr := runCtx.Services.HTTPClient.Do(req)
 		if respErr != nil {
 			log.WithError(respErr).Error("couldn't make request")
@@ -116,7 +125,8 @@ func (runCtx BlockRunContext) NotifyEvents(ctx c.Context) {
 		}
 		_ = resp.Body.Close()
 		if resp.StatusCode != http.StatusOK {
-			log.WithError(respErr).Error("didn't get 200 for request")
+			errMsg := fmt.Sprintf("didn't get 200 for request, got %d", resp.StatusCode)
+			log.Error(errMsg)
 		}
 	}
 	return
@@ -185,7 +195,11 @@ func (runCtx *BlockRunContext) SetTaskEvents(ctx c.Context) {
 	}
 
 	sResp, err := runCtx.Services.Integrations.RpcIntCli.GetIntegrationByClientId(ctx,
-		&integration_v1.GetIntegrationByClientIdRequest{ClientId: taskRunCtx.ClientID})
+		&integration_v1.GetIntegrationByClientIdRequest{
+			ClientId:   taskRunCtx.ClientID,
+			PipelineId: runCtx.PipelineID.String(),
+			VersionId:  runCtx.VersionID.String(),
+		})
 	if err != nil {
 		return
 	}
@@ -203,7 +217,13 @@ func (runCtx *BlockRunContext) SetTaskEvents(ctx c.Context) {
 	}
 
 	resp, err := runCtx.Services.Integrations.RpcMicrCli.GetMicroservice(ctx,
-		&microservice_v1.GetMicroserviceRequest{MicroserviceId: expectedEvents.MicroserviceID})
+		&microservice_v1.GetMicroserviceRequest{
+			MicroserviceId: expectedEvents.MicroserviceID,
+			PipelineId:     runCtx.PipelineID.String(),
+			VersionId:      runCtx.VersionID.String(),
+			WorkNumber:     runCtx.WorkNumber,
+			ClientId:       runCtx.ClientID,
+		})
 	if err != nil {
 		return
 	}
@@ -212,16 +232,31 @@ func (runCtx *BlockRunContext) SetTaskEvents(ctx c.Context) {
 	}
 
 	runCtx.TaskSubscriptionData = TaskSubscriptionData{
-		TaskRunClientID:    taskRunCtx.ClientID,
-		SystemID:           sResp.Integration.IntegrationId,
-		MicroserviceID:     expectedEvents.MicroserviceID,
-		MicroserviceURL:    resp.Microservice.Creds.Prod.Addr,
-		NotificationPath:   expectedEvents.Path,
-		Method:             expectedEvents.Method,
-		Mapping:            expectedEvents.Mapping,
-		NotificationSchema: expectedEvents.NotificationSchema,
-		ExpectedEvents:     expectedEvents.Nodes,
+		TaskRunClientID:      taskRunCtx.ClientID,
+		SystemID:             sResp.Integration.IntegrationId,
+		MicroserviceID:       expectedEvents.MicroserviceID,
+		MicroserviceURL:      resp.Microservice.Creds.Prod.Addr,
+		MicroserviceAuthType: resp.Microservice.Creds.Prod.Type.String(),
+		MicroserviceSecrets:  fillSecrets(resp.Microservice.Creds.Prod),
+		NotificationPath:     expectedEvents.Path,
+		Method:               expectedEvents.Method,
+		Mapping:              expectedEvents.Mapping,
+		NotificationSchema:   expectedEvents.NotificationSchema,
+		ExpectedEvents:       expectedEvents.Nodes,
 	}
 
 	return
+}
+
+func fillSecrets(a *microservice_v1.Auth) (result map[string]interface{}) {
+	switch a.Type {
+	case microservice_v1.AuthType_oAuth2:
+		return structs.Map(a.GetOAuth2())
+	case microservice_v1.AuthType_basicAuth:
+		return structs.Map(a.GetBasic())
+	case microservice_v1.AuthType_bearerToken:
+		return structs.Map(a.GetBearerToken())
+	default:
+		return nil
+	}
 }

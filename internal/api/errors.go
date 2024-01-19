@@ -118,6 +118,10 @@ const (
 	GetBlockStateError
 	ParallelPathIntersected
 	GetDeadlineError
+	ForbiddenError
+	CheckForHiddenError
+	GetExecutableFunctionIDsError
+	GetFunctionError
 )
 
 //nolint:dupl //its not duplicate
@@ -218,6 +222,10 @@ var errorText = map[Err]string{
 	GetBlockStateError:                  "can't get block state",
 	ParallelPathIntersected:             "invalid pipeline schema: parallel path's are intersected",
 	GetDeadlineError:                    "can't get deadline",
+	ForbiddenError:                      "no access rights",
+	CheckForHiddenError:                 "error while checking for hidden",
+	GetExecutableFunctionIDsError:       "error while getting executable function ids",
+	GetFunctionError:                    "error when getting function from function store",
 }
 
 // JOKE.
@@ -315,11 +323,15 @@ var errorDescription = map[Err]string{
 	ParallelNodeReturnCycle:             "Линии блоков внутри параллельности должны быть изолированы",
 	ParallelNodeExitsNotConnected:       "Процесс не опубликован. Соедините все ноды в процессе",
 	// nolint
-	OutOfParallelNodesConnection: "Процесс не опубликован. Есть ноды, которые не располагаются внутри параллельности или не проходят через начало/конец шлюза, но связаны с блоками внутри параллельности.",
-	ParallelOutOfStartInsert:     "Процесс не опубликован. Есть ноды, которые соеденены с нодой конец параллельности, но не проходят через ноду начало параллельности",
-	GetDecisionsError:            "Не удалось получить список решений нод",
-	GetBlockStateError:           "can't get block state",
-	ParallelPathIntersected:      "Процесс не опубликован. Внутри параллельности один из сокетов ведет на другую ветвь внутри параллельности",
+	OutOfParallelNodesConnection:  "Процесс не опубликован. Есть ноды, которые не располагаются внутри параллельности или не проходят через начало/конец шлюза, но связаны с блоками внутри параллельности.",
+	ParallelOutOfStartInsert:      "Процесс не опубликован. Есть ноды, которые соеденены с нодой конец параллельности, но не проходят через ноду начало параллельности",
+	GetDecisionsError:             "Не удалось получить список решений нод",
+	GetBlockStateError:            "can't get block state",
+	ParallelPathIntersected:       "Процесс не опубликован. Внутри параллельности один из сокетов ведет на другую ветвь внутри параллельности",
+	ForbiddenError:                "У вас нет прав на просмотр содержимого",
+	CheckForHiddenError:           "Ошибка при проверке на hidden",
+	GetExecutableFunctionIDsError: "Ошибка при получении id у executable functions",
+	GetFunctionError:              "Ошибка при получении функции",
 }
 
 var errorStatus = map[Err]int{
@@ -340,6 +352,7 @@ var errorStatus = map[Err]int{
 	ParallelNodeReturnCycle:       http.StatusBadRequest,
 	ParallelNodeExitsNotConnected: http.StatusBadRequest,
 	OutOfParallelNodesConnection:  http.StatusBadRequest,
+	ForbiddenError:                http.StatusForbidden,
 }
 
 type httpError struct {
@@ -364,7 +377,7 @@ func (c Err) error() string {
 	return errorText[UnknownError]
 }
 
-func (c Err) status() int {
+func (c Err) Status() int {
 	if s, ok := errorStatus[c]; ok {
 		return s
 	}
@@ -382,7 +395,7 @@ func (c Err) description() string {
 
 func (c Err) sendError(w http.ResponseWriter) error {
 	resp := httpError{
-		StatusCode:  c.status(),
+		StatusCode:  c.Status(),
 		Error:       c.error(),
 		Description: c.description(),
 	}

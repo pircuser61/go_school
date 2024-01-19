@@ -24,6 +24,11 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
+const (
+	ActionTypePrimary   = "primary"
+	ActionTypeSecondary = "secondary"
+)
+
 func uniqueActionsByRole(loginsIn, stepType string, finished, acted bool) string {
 	statuses := "('running', 'idle', 'ready')"
 	if finished {
@@ -71,8 +76,9 @@ func uniqueActiveActions(approverLogins, executionLogins []string, currentUser, 
 	var executionLoginsIn = buildInExpression(executionLogins)
 
 	return fmt.Sprintf(`WITH actions AS (
-    SELECT vs.work_id                                                                                 AS work_id
-         , vs.step_name                                                                               AS block_id
+    SELECT vs.work_id AS work_id
+         , vs.step_name AS block_id
+         , m.is_initiator
          , CASE WHEN vs.status IN ('running', 'idle') AND NOT m.finished THEN m.actions ELSE '{}' END AS action
          , CASE WHEN vs.status IN ('running', 'idle') AND NOT m.finished THEN m.params ELSE '{}' END  AS params
     FROM members m
@@ -138,6 +144,16 @@ func getUniqueActions(selectFilter string, logins []string) string {
 		return uniqueActionsByRole(loginsIn, "form", false, false)
 	case entity.SelectAsValFinishedFormExecutor:
 		return uniqueActionsByRole(loginsIn, "form", true, true)
+	case entity.SelectAsValQueueExecutor:
+		q := uniqueActionsByRole(loginsIn, "execution", false, false)
+		q = strings.Replace(q, "--unique-actions-filter--",
+			"AND vs.content -> 'State' -> vs.step_name ->> 'is_taken_in_work' = 'false' --unique-actions-filter--", 1)
+		return q
+	case entity.SelectAsValInWorkExecutor:
+		q := uniqueActionsByRole(loginsIn, "execution", false, false)
+		q = strings.Replace(q, "--unique-actions-filter--",
+			"AND vs.content -> 'State' -> vs.step_name ->> 'is_taken_in_work' = 'true' --unique-actions-filter--", 1)
+		return q
 	case entity.SelectAsValSignerPhys:
 		q := uniqueActionsByRole(loginsIn, "sign", false, false)
 		q = strings.Replace(q, "--unique-actions-filter--", "AND vs.content -> 'State' -> vs.step_name ->> 'signature_type' in ('pep', 'unep') --unique-actions-filter--", 1)
@@ -161,11 +177,8 @@ func getUniqueActions(selectFilter string, logins []string) string {
 			WHERE status = 1 AND author IN %s AND child_id IS NULL
 		)`, loginsIn)
 	case entity.SelectAsValGroupExecutor:
-		return `WITH unique_actions AS (
-			SELECT id AS work_id, '[]' AS actions
-			FROM works
-			WHERE status = 1 AND child_id IS NULL
-		)`
+		q := uniqueActionsByRole(loginsIn, "execution", false, false)
+		return strings.Replace(q, "--unique-actions-filter--", "AND m.execution_group_member = true", 1)
 	case entity.SelectAsValFinishedGroupExecutor:
 		q := uniqueActionsByRole(loginsIn, "execution", true, false)
 		return strings.Replace(q, "--unique-actions-filter--", "AND m.execution_group_member = true", 1)
@@ -234,8 +247,6 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 		q = fmt.Sprintf("%s %s", getUniqueActions("initiators", *fl.InitiatorLogins), q)
 	} else if fl.SelectAs != nil {
 		q = fmt.Sprintf("%s %s", getUniqueActions(*fl.SelectAs, delegations), q)
-	} else if fl.SelectFor != nil {
-		q = fmt.Sprintf("%s %s", getUniqueActions(*fl.SelectFor, delegations), q)
 	} else {
 		q = fmt.Sprintf("%s %s", getUniqueActions("", delegations), q)
 	}
@@ -256,7 +267,10 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 		name := strings.Replace(*fl.Name, "_", "!_", -1)
 		name = strings.Replace(name, "%", "!%", -1)
 		args = append(args, name)
-		q = fmt.Sprintf("%s AND ((p.name ILIKE '%%' || $%d || '%%' ESCAPE '!')  OR (w.work_number ILIKE '%%' || $%d || '%%'  ESCAPE '!'))", q, len(args), len(args))
+		q = fmt.Sprintf(`%s AND ((p.name ILIKE '%%' || $%d || '%%' ESCAPE '!') 
+							OR (w.work_number ILIKE '%%' || $%d || '%%'  ESCAPE '!') 
+							OR (w.run_context -> 'initial_application' ->> 'custom_title' ILIKE '%%' || $%d || '%%'  ESCAPE '!') )`,
+			q, len(args), len(args), len(args))
 	}
 	if fl.Created != nil {
 		args = append(args, time.Unix(int64(fl.Created.Start), 0).UTC(), time.Unix(int64(fl.Created.End), 0).UTC())
@@ -287,13 +301,13 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 		q = fmt.Sprintf("%s AND w.author=$%d ", q, len(args))
 	}
 
-	if (fl.SelectFor != nil && (fl.ProcessingLogins != nil || fl.ProcessingGroupIds != nil)) ||
-		fl.ExecutorTypeAssigned != nil {
-		q = getProcessingSteps(q, &fl, delegations)
+	if fl.Initiator != nil {
+		q = fmt.Sprintf("%s AND w.author IN %s", q, buildInExpression(*fl.Initiator))
 	}
 
-	if fl.SelectFor != nil && (fl.ProcessedLogins != nil || fl.ProcessedGroupIds != nil) {
-		q = getProcessedSteps(q, &fl)
+	if (fl.ProcessingLogins != nil || fl.ProcessingGroupIds != nil) ||
+		fl.ExecutorTypeAssigned != nil {
+		q = getProcessingSteps(q, &fl)
 	}
 
 	if order != "" {
@@ -316,19 +330,18 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 	return q, args
 }
 
-func getProcessingSteps(q string, fl *entity.TaskFilter, delegations []string) string {
+func getProcessingSteps(q string, fl *entity.TaskFilter) string {
 	varStorage := `, var_storage as (
 		SELECT DISTINCT work_id FROM variable_storage
-		WHERE work_id IS NOT NULL AND status IN ('running', 'idle', 'processing')`
+		WHERE work_id IS NOT NULL`
 
 	varStorage = addAssignType(varStorage, fl.CurrentUser, fl.ExecutorTypeAssigned)
-	varStorage = addProcessingLogins(varStorage, fl.SelectFor, fl.ProcessingLogins, delegations)
-	varStorage = addProcessingGroups(varStorage, fl.SelectFor, fl.ProcessingGroupIds)
+	varStorage = addProcessingLogins(varStorage, fl.SelectAs, fl.ProcessingLogins)
+	varStorage = addProcessingGroups(varStorage, fl.SelectAs, fl.ProcessingGroupIds)
 
 	varStorage += ")"
 
 	q = strings.Replace(q, "[with_variable_storage]", varStorage, 1)
-	q = fmt.Sprintf("%s AND w.status = 1", q)
 	q = strings.Replace(q, "[join_variable_storage]", "JOIN var_storage vs ON vs.work_id = w.id ", 1)
 
 	return q
@@ -358,16 +371,15 @@ func addAssignType(q, login string, typeAssign *string) string {
 	return q
 }
 
-func addProcessingLogins(q string, selectFor *string, logins *[]string, delegations []string) string {
-	if selectFor == nil || logins == nil || len(*logins) == 0 {
+func addProcessingLogins(q string, selectAs *string, logins *[]string) string {
+	if selectAs == nil || logins == nil || len(*logins) == 0 {
 		return q
 	}
 
 	ls := *logins
-	ls = append(ls, delegations...)
 	ls = utils.UniqueStrings(ls)
 
-	stepType := getStepTypeBySelectForFilter(*selectFor)
+	stepType := getStepTypeBySelectForFilter(*selectAs)
 
 	return fmt.Sprintf(`
 		%s AND step_type = '%s' AND content -> 'State' -> step_name -> '%s' ?| '%s'`,
@@ -378,8 +390,8 @@ func addProcessingLogins(q string, selectFor *string, logins *[]string, delegati
 	)
 }
 
-func addProcessingGroups(q string, selectFor *string, groupIds *[]string) string {
-	if selectFor == nil || groupIds == nil || len(*groupIds) == 0 {
+func addProcessingGroups(q string, selectAs *string, groupIds *[]string) string {
+	if selectAs == nil || groupIds == nil || len(*groupIds) == 0 {
 		return q
 	}
 
@@ -388,7 +400,7 @@ func addProcessingGroups(q string, selectFor *string, groupIds *[]string) string
 		ids[i] = fmt.Sprintf("'%s'", ids[i])
 	}
 
-	stepType := getStepTypeBySelectForFilter(*selectFor)
+	stepType := getStepTypeBySelectForFilter(*selectAs)
 
 	return fmt.Sprintf(`%s AND step_type = '%s' AND content -> 'State' -> step_name ->> '%s'::varchar IN(%s)`,
 		q,
@@ -400,9 +412,7 @@ func addProcessingGroups(q string, selectFor *string, groupIds *[]string) string
 
 func getStepTypeBySelectForFilter(selectFor string) string {
 	switch selectFor {
-	case "group_executor":
-		return "execution"
-	case "finished_group_executor":
+	case "queue_executor", "in_work_executor", "finished_executor", "group_executor", "finished_group_executor":
 		return "execution"
 	}
 	return ""
@@ -428,61 +438,6 @@ func getGroupActorsNameByStepType(stepName string) string {
 		return "approvers_group_id"
 	}
 	return ""
-}
-
-func getProcessedSteps(q string, fl *entity.TaskFilter) string {
-	varStorage := `, var_storage as (
-                SELECT DISTINCT work_id FROM variable_storage                                                                                                                                                                                              
-                WHERE work_id IS NOT NULL AND status IN ('finished', 'cancel', 'no_success', 'error')`
-
-	varStorage = addProcessedLogins(varStorage, fl.SelectFor, fl.ProcessedLogins)
-	varStorage = addProcessedGroups(varStorage, fl.SelectFor, fl.ProcessedGroupIds)
-
-	varStorage += ")"
-
-	q = strings.Replace(q, "[with_variable_storage]", varStorage, 1)
-	q = strings.Replace(q, "[join_variable_storage]", "JOIN var_storage vs ON vs.work_id = w.id ", 1)
-
-	return q
-}
-
-func addProcessedLogins(q string, selectFor *string, logins *[]string) string {
-	if selectFor == nil || logins == nil || len(*logins) == 0 {
-		return q
-	}
-
-	ls := *logins
-	ls = utils.UniqueStrings(ls)
-
-	stepType := getStepTypeBySelectForFilter(*selectFor)
-
-	return fmt.Sprintf(`
-		%s AND step_type = '%s' AND content -> 'State' -> step_name -> '%s' ?| '%s'`,
-		q,
-		stepType,
-		getActorsNameByStepType(stepType),
-		"{"+strings.Join(ls, ",")+"}",
-	)
-}
-
-func addProcessedGroups(q string, selectFor *string, groupIds *[]string) string {
-	if selectFor == nil || groupIds == nil || len(*groupIds) == 0 {
-		return q
-	}
-
-	ids := *groupIds
-	for i := range ids {
-		ids[i] = fmt.Sprintf("'%s'", ids[i])
-	}
-
-	stepType := getStepTypeBySelectForFilter(*selectFor)
-
-	return fmt.Sprintf(`%s AND step_type = '%s' AND content -> 'State' -> step_name ->> '%s'::varchar IN(%s)`,
-		q,
-		stepType,
-		getGroupActorsNameByStepType(stepType),
-		strings.Join(ids, ","),
-	)
 }
 
 func (db *PGCon) GetAdditionalForms(workNumber, nodeName string) ([]string, error) {
@@ -1116,6 +1071,28 @@ func getActionsToIgnoreIfOtherExist() []IgnoreActionRule {
 	}
 }
 
+func getMaxPriority(existingPriorities []entity.TaskAction) string {
+	nodeTypes := map[string]int{
+		"execution":   3,
+		"approvement": 2,
+		"sign":        1,
+		"form":        0,
+	}
+
+	result := ""
+	for _, v := range existingPriorities {
+		if v.ButtonType != ActionTypePrimary && v.ButtonType != ActionTypeSecondary {
+			continue
+		}
+
+		if nums, ok := nodeTypes[v.NodeType]; ok && nums > nodeTypes[result] {
+			result = v.NodeType
+		}
+	}
+
+	return result
+}
+
 func (db *PGCon) computeActions(ctx c.Context, currentUserDelegators []string, actions []DbTaskAction,
 	allActions map[string]entity.TaskAction, author string) (result []entity.TaskAction, err error) {
 	const (
@@ -1123,6 +1100,11 @@ func (db *PGCon) computeActions(ctx c.Context, currentUserDelegators []string, a
 		CancelAppPriority = "other"
 		CancelAppTitle    = "Отозвать"
 		CancelAppNodeType = "common"
+
+		RepeatAppId       = "repeat_app"
+		RepeatAppPriority = "other"
+		RepeatAppTitle    = "Повторить"
+		RepeatAppNodeType = "common"
 	)
 
 	var computedActions = make([]entity.TaskAction, 0)
@@ -1130,6 +1112,11 @@ func (db *PGCon) computeActions(ctx c.Context, currentUserDelegators []string, a
 	var actionsToIgnore = getActionsToIgnoreIfOtherExist()
 
 	result = make([]entity.TaskAction, 0)
+
+	canBeRepeated := []string{
+		string(entity.TaskUpdateActionReplyApproverInfo),
+		string(entity.TaskUpdateActionRequestFillForm),
+	}
 
 	metActions := make(map[string]struct{})
 
@@ -1139,9 +1126,10 @@ func (db *PGCon) computeActions(ctx c.Context, currentUserDelegators []string, a
 			if len(compositeActionId) > 1 {
 				id := compositeActionId[0]
 
-				if _, ok := metActions[id]; ok {
+				if _, ok := metActions[id]; ok && !utils.IsContainsInSlice(id, canBeRepeated) {
 					continue
 				}
+
 				metActions[id] = struct{}{}
 
 				priority := compositeActionId[1]
@@ -1165,8 +1153,14 @@ func (db *PGCon) computeActions(ctx c.Context, currentUserDelegators []string, a
 		}
 	}
 
+	maxPriority := getMaxPriority(computedActions)
+
 	for _, a := range computedActions {
 		var ignoreAction = false
+
+		if maxPriority != "" && a.NodeType != maxPriority && (a.ButtonType == ActionTypePrimary || a.ButtonType == ActionTypeSecondary) {
+			a.ButtonType = "other"
+		}
 
 		for _, actionRule := range actionsToIgnore {
 			if a.Id == actionRule.IgnoreActionId && slices.Contains(computedActionIds, actionRule.ExistingActionId) {
@@ -1185,9 +1179,9 @@ func (db *PGCon) computeActions(ctx c.Context, currentUserDelegators []string, a
 		return nil, err
 	}
 
-	var isDelegateOfAuthor = slices.Contains(currentUserDelegators, author)
+	isInitiator := ui.Username == author
 
-	if ui.Username == author || isDelegateOfAuthor {
+	if isInitiator {
 		var cancelAppAction = entity.TaskAction{
 			Id:                 CancelAppId,
 			ButtonType:         CancelAppPriority,
@@ -1197,7 +1191,16 @@ func (db *PGCon) computeActions(ctx c.Context, currentUserDelegators []string, a
 			AttachmentsEnabled: false,
 		}
 
-		result = append(result, cancelAppAction)
+		var repeatAppAction = entity.TaskAction{
+			Id:                 RepeatAppId,
+			ButtonType:         RepeatAppPriority,
+			NodeType:           RepeatAppNodeType,
+			Title:              RepeatAppTitle,
+			CommentEnabled:     true,
+			AttachmentsEnabled: false,
+		}
+
+		result = append(result, cancelAppAction, repeatAppAction)
 	}
 
 	return result, nil
@@ -1766,7 +1769,7 @@ func getTasksForMonitoringQuery(filters *entity.TasksForMonitoringFilters) *stri
 			FROM works w
 			LEFT JOIN versions v on w.version_id = v.id
 			LEFT JOIN pipelines p on v.pipeline_id = p.id
-			WHERE w.started_at IS NOT NULL AND p.name IS NOT NULL
+			WHERE w.started_at IS NOT NULL AND p.name IS NOT NULL AND v.is_hidden = false
 	`
 
 	if filters.FromDate != nil || filters.ToDate != nil {
@@ -1914,6 +1917,47 @@ func (db *PGCon) GetBlockState(ctx c.Context, blockId string) (entity.BlockState
 	}
 
 	return state, nil
+}
+
+func (db *PGCon) CheckBlockForHiddenFlag(ctx c.Context, blockId string) (bool, error) {
+	ctx, span := trace.StartSpan(ctx, "check_task_node_for_hidden_flag_monitoring")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	q := `
+		SELECT v.is_hidden
+		from variable_storage vs
+		    join works w on w.id = vs.work_id
+    		join versions v on w.version_id = v.id
+		where vs.id = $1`
+
+	var res bool
+	if err := db.Connection.QueryRow(ctx, q, blockId).Scan(&res); err != nil {
+		return false, err
+	}
+
+	return res, nil
+}
+
+func (db *PGCon) CheckTaskForHiddenFlag(ctx c.Context, workNumber string) (bool, error) {
+	ctx, span := trace.StartSpan(ctx, "check_task_for_hidden_flag_monitoring")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	q := `
+		SELECT v.is_hidden
+		from works w
+    		join versions v on w.version_id = v.id
+		where w.work_number = $1 AND w.child_id is null`
+
+	var res bool
+	if err := db.Connection.QueryRow(ctx, q, workNumber).Scan(&res); err != nil {
+		return false, err
+	}
+
+	return res, nil
 }
 
 func (db *PGCon) GetTaskMembers(ctx c.Context, workNumber string, fromActiveNodes bool) ([]DbMember, error) {

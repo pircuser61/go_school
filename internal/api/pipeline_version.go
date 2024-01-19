@@ -127,7 +127,33 @@ func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request
 		}
 	}()
 
-	err = ae.DB.CreateVersion(ctx, &p, ui.Username, updated, oldVersionID)
+	executableFunctions, err := p.Pipeline.Blocks.GetExecutableFunctions()
+	if err != nil {
+		e := GetExecutableFunctionIDsError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	hasPrivateFunction := false
+	for _, fn := range executableFunctions {
+		function, getFunctionErr := ae.FunctionStore.GetFunctionVersion(ctx, fn.FunctionId, fn.VersionId)
+		if getFunctionErr != nil {
+			e := GetFunctionError
+			log.Error(e.errorMessage(getFunctionErr))
+			_ = e.sendError(w)
+
+			return
+		}
+
+		hasPrivateFunction = function.Options.Private
+		if hasPrivateFunction {
+			break
+		}
+	}
+
+	err = ae.DB.CreateVersion(ctx, &p, ui.Username, updated, oldVersionID, hasPrivateFunction)
 	if err != nil {
 		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
 			log.WithField("funcName", "CreateVersion").
@@ -171,10 +197,12 @@ func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request
 	}
 }
 
-func (ae *APIEnv) getExternalSystem(ctx c.Context, storage db.Database, clientID, versionID string) (
+func (ae *APIEnv) getExternalSystem(ctx c.Context, storage db.Database, clientID, pipelineID, versionID string) (
 	*entity.ExternalSystem, error) {
 	system, err := ae.Integrations.RpcIntCli.GetIntegrationByClientId(ctx, &integration_v1.GetIntegrationByClientIdRequest{
-		ClientId: clientID,
+		ClientId:   clientID,
+		PipelineId: pipelineID,
+		VersionId:  versionID,
 	})
 	if err != nil {
 		if strings.Contains(err.Error(), "system not found") { // TODO: delete
@@ -475,7 +503,33 @@ func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	err = ae.DB.UpdateDraft(ctx, &p, updated, groups)
+	executableFunctions, err := p.Pipeline.Blocks.GetExecutableFunctions()
+	if err != nil {
+		e := GetExecutableFunctionIDsError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	hasPrivateFunction := false
+	for _, fn := range executableFunctions {
+		function, getFunctionErr := ae.FunctionStore.GetFunctionVersion(ctx, fn.FunctionId, fn.VersionId)
+		if getFunctionErr != nil {
+			e := GetFunctionError
+			log.Error(e.errorMessage(getFunctionErr))
+			_ = e.sendError(w)
+
+			return
+		}
+
+		hasPrivateFunction = function.Options.Private
+		if hasPrivateFunction {
+			break
+		}
+	}
+
+	err = ae.DB.UpdateDraft(ctx, &p, updated, groups, hasPrivateFunction)
 	if err != nil {
 		e := PipelineWriteError
 		log.Error(e.errorMessage(err))
@@ -709,6 +763,9 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 	runCtx := &pipeline.BlockRunContext{
 		TaskID:     ep.TaskID,
 		WorkNumber: ep.WorkNumber,
+		ClientID:   dto.runCtx.ClientID,
+		PipelineID: ep.PipelineID,
+		VersionID:  ep.VersionID,
 		WorkTitle:  ep.Name,
 		Initiator:  dto.authorName,
 		VarStore:   variableStorage,

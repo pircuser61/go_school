@@ -1,7 +1,7 @@
 openapi: 3.0.1
 info:
   title: Pipeliner API
-  contact: { }
+  contact: {}
   version: "0.1"
 servers:
   - url: //localhost:8181/api/pipeliner/v1
@@ -58,96 +58,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
-
-  /debug/{workNumber}:
-    get:
-      tags:
-        - tasks
-      summary: Debug task
-      description: Получить debug-задачу
-      operationId: debug-task
-      parameters:
-        - name: workNumber
-          in: path
-          description: work number
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    $ref: '#/components/schemas/DebugResult'
-                  status_code:
-                    type: integer
-        400:
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-        500:
-          description: Internal Server Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-  /debug/run:
-    post:
-      tags:
-        - debug
-      summary: Start debug task
-      description: Начать отладку
-      operationId: start-debug-task
-      requestBody:
-        description: debug request
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/DebugRunRequest'
-        required: false
-      responses:
-        200:
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    $ref: '#/components/schemas/EriusTask'
-                  status_code:
-                    type: integer
-        400:
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-        500:
-          description: Internal Server Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-      x-codegen-request-body-name: variables
   /modules:
     get:
       tags:
@@ -165,75 +75,6 @@ paths:
                 properties:
                   data:
                     $ref: '#/components/schemas/EriusFunctionList'
-                  status_code:
-                    type: integer
-        400:
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-        500:
-          description: Internal Server Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-  /modules/{moduleName}/usage:
-    get:
-      tags:
-        - modules
-      summary: Usage of module in pipelines
-      description: Сценарии, в которых используется блок
-      operationId: module-usage
-      parameters:
-        - name: moduleName
-          in: path
-          description: module name
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    $ref: '#/components/schemas/UsageResponse'
-                  status_code:
-                    type: integer
-        400:
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-        500:
-          description: Internal Server Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-  /modules/usage:
-    get:
-      tags:
-        - modules
-      summary: Get list of modules usage
-      description: Блоки и сценарии, в которых они используются
-      operationId: all-modules-usage
-      responses:
-        200:
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    $ref: '#/components/schemas/AllUsageResponse'
                   status_code:
                     type: integer
         400:
@@ -385,7 +226,6 @@ paths:
                     $ref: '#/components/schemas/NameExists'
                   status_code:
                     type: integer
-
         400:
           description: Bad Request
           content:
@@ -486,7 +326,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
-
   /tasks/by-mails:
     get:
       tags:
@@ -513,7 +352,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
-
   /pipelines/{pipelineID}/versions:
     get:
       tags:
@@ -558,7 +396,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
-
   /pipelines/copy:
     post:
       tags:
@@ -602,7 +439,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
-
   /pipelines/version:
     put:
       tags:
@@ -781,7 +617,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
-
   /pipelines/version/{versionID}/settings:
     get:
       tags:
@@ -887,7 +722,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
-
   /pipelines/version/{versionID}/settings/task-subscriptions:
     post:
       tags:
@@ -937,7 +771,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
-
   /pipeline/version/{versionID}/settings/main:
     post:
       tags:
@@ -985,7 +818,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
-
   /pipelines/version/{versionID}/system:
     post:
       tags:
@@ -1692,113 +1524,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
-
-  /run/{pipelineID}:
-    post:
-      tags:
-        - pipeline
-        - run
-      summary: Run Pipeline
-      description: Запустить сценарий
-      operationId: run-pipeline
-      parameters:
-        - name: pipelineID
-          in: path
-          description: Pipeline ID
-          required: true
-          schema:
-            type: string
-      requestBody:
-        description: pipeline input
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/RunPipelineBody'
-        required: false
-      responses:
-        200:
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    $ref: '#/components/schemas/RunResponse'
-                  status_code:
-                    type: integer
-        400:
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-        500:
-          description: Internal Server Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-      x-codegen-request-body-name: variables
-  /run/version/{versionID}:
-    post:
-      tags:
-        - version
-        - run
-      summary: Run Version
-      description: Запустить версию
-      operationId: run-version
-      parameters:
-        - name: versionID
-          in: path
-          description: Version ID
-          required: true
-          schema:
-            type: string
-      requestBody:
-        description: pipeline input
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/RunVersionBody'
-        required: false
-      responses:
-        200:
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    $ref: '#/components/schemas/RunResponse'
-                  status_code:
-                    type: integer
-        400:
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-        500:
-          description: Internal Server Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-      x-codegen-request-body-name: variables
   /run/versions/pipeline_id:
     post:
       tags:
@@ -1918,6 +1643,7 @@ paths:
           schema:
             type: integer
             default: 10
+            maximum: 1000
         - name: offset
           in: query
           description: Offset
@@ -1952,6 +1678,8 @@ paths:
               - initiators
               - group_executor
               - finished_group_executor
+              - queue_executor
+              - in_work_executor
         - name: forCarousel
           in: query
           schema:
@@ -1974,6 +1702,13 @@ paths:
           schema:
             type: boolean
           description: filter for attachments
+        - name: initiator
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+          description: filter for initiators
         - name: initiatorLogins
           in: query
           schema:
@@ -1995,24 +1730,6 @@ paths:
             items:
               type: string
           description: filter in process by group ids
-        - name: processedLogins
-          in: query
-          schema:
-            type: array
-            items:
-              type: string
-          description: filter by processed logins
-        - name: processedGroupIds
-          in: query
-          schema:
-            type: array
-            items:
-              type: string
-          description: filter by processed group ids
-        - name: selectFor
-          in: query
-          schema:
-            type: string
         - name: executorTypeAssigned
           in: query
           schema:
@@ -2110,7 +1827,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
-
   /tasks/{workNumber}:
     get:
       tags:
@@ -2239,140 +1955,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
-  /tasks/last-by-version/{versionID}:
-    get:
-      tags:
-        - tasks
-      summary: Get last debug task for version
-      description: Получить последнюю debug-задачу версии сценария
-      operationId: last-version-debug-task
-      parameters:
-        - name: versionID
-          in: path
-          description: Version ID
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    $ref: '#/components/schemas/EriusTask'
-                  status_code:
-                    type: integer
-        400:
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-        500:
-          description: Internal Server Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-  /tasks/pipeline/{pipelineID}:
-    get:
-      tags:
-        - pipeline
-        - tasks
-      summary: Get Pipeline Tasks
-      description: Получить задачи по сценарию
-      operationId: get-pipeline-tasks
-      parameters:
-        - name: pipelineID
-          in: path
-          description: Pipeline ID
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    $ref: '#/components/schemas/EriusTasks'
-                  status_code:
-                    type: integer
-        400:
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-        500:
-          description: Internal Server Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-  /tasks/version/{versionID}:
-    get:
-      tags:
-        - version
-        - tasks
-      summary: Get Version Tasks
-      description: Получить задачи по версии сценарию
-      operationId: get-version-tasks
-      parameters:
-        - name: versionID
-          in: path
-          description: Version ID
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    $ref: '#/components/schemas/EriusTasks'
-                  status_code:
-                    type: integer
-        400:
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-        500:
-          description: Internal Server Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
   /tasks/mean/{pipelineId}:
     get:
       tags:
@@ -2461,7 +2043,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
-
   /forms/changelog:
     get:
       tags:
@@ -2512,7 +2093,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
-
   /dictionaries/schema/task-event:
     get:
       tags:
@@ -2544,8 +2124,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
-
-
   /dictionaries/approve-action-names:
     get:
       tags:
@@ -2620,7 +2198,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
-
   /dictionaries/get-node-decisions:
     get:
       tags:
@@ -2660,7 +2237,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
-
   /monitoring/tasks/block/{blockId}/context:
     get:
       operationId: GetBlockContext
@@ -2699,6 +2275,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
+        403:
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
         500:
           description: Internal Server Error
           content:
@@ -2706,7 +2288,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/httpError'
       x-codegen-request-body-name: variables
-
   /monitoring/tasks/block/{blockId}/state:
     get:
       operationId: GetBlockState
@@ -2745,6 +2326,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
+        403:
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
         500:
           description: Internal Server Error
           content:
@@ -2752,7 +2339,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/httpError'
       x-codegen-request-body-name: variables
-
   /monitoring/tasks/block/{blockId}/params:
     get:
       tags:
@@ -2790,6 +2376,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
+        403:
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
         500:
           description: Internal Server Error
           content:
@@ -2797,7 +2389,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/httpError'
       x-codegen-request-body-name: variables
-
   /monitoring/tasks:
     get:
       tags:
@@ -2861,7 +2452,7 @@ paths:
           style: form
           schema:
             type: array
-            default: [ ]
+            default: []
             items:
               type: string
               enum:
@@ -2900,8 +2491,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
-
-
   /monitoring/tasks/{workNumber}:
     get:
       tags:
@@ -2938,6 +2527,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
+        403:
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
         500:
           description: Internal Server Error
           content:
@@ -2958,7 +2553,6 @@ components:
       required:
         - id
         - title
-
     ApproveActionNamesResponse:
       type: object
       properties:
@@ -2971,7 +2565,6 @@ components:
       required:
         - id
         - title
-
     AllUsageResponse:
       type: object
       properties:
@@ -2983,7 +2576,6 @@ components:
               type: string
       required:
         - pipelines
-
     CountTasks:
       type: object
       properties:
@@ -3003,7 +2595,6 @@ components:
         - execute
         - form_execute
         - sign
-
     DebugResult:
       type: object
       properties:
@@ -3024,7 +2615,6 @@ components:
         - status
         - break_points
         - task
-
     EriusFunc:
       type: object
       properties:
@@ -3050,7 +2640,7 @@ components:
           type: string
         params:
           type: object
-          properties: { }
+          properties: {}
         short_title:
           type: string
           example: lock-bts
@@ -3069,7 +2659,6 @@ components:
         - block_type
         - title
         - next
-
     EriusFunctionList:
       type: object
       properties:
@@ -3086,7 +2675,6 @@ components:
       required:
         - funcs
         - shapes
-
     EriusFunctionValue:
       type: object
       properties:
@@ -3107,7 +2695,6 @@ components:
         - type
         - global
         - format
-
     pipeline:
       type: object
       properties:
@@ -3134,7 +2721,6 @@ components:
       required:
         - name
         - id
-
     EriusScenario:
       type: object
       description: A single scenario with all content
@@ -3173,8 +2759,7 @@ components:
           $ref: '#/components/schemas/pipeline'
         status:
           type: integer
-          description: 1 - Draft, 2 - Approved, 3 - Deleted, 4 - Rejected, 5 - On
-            Approve
+          description: 1 - Draft, 2 - Approved, 3 - Deleted, 4 - Rejected, 5 - On Approve
         tags:
           type: array
           items:
@@ -3194,17 +2779,14 @@ components:
         - tags
         - comment
         - comment_rejected
-
     ScenarioVersionInfoList:
       type: array
       items:
         $ref: '#/components/schemas/EriusVersionInfo'
-
     NodeEvent:
       type: string
       description: Возможный ивент ноды
-      enum: [ "start", "end" ]
-
+      enum: ["start", "end"]
     NodeSubscriptionEvents:
       type: object
       properties:
@@ -3221,7 +2803,6 @@ components:
       required:
         - node_id
         - notify
-
     ExternalSystemSubscriptionParams:
       type: object
       description: Настройки подписки системы на изменения в заявках
@@ -3240,7 +2821,7 @@ components:
         method:
           type: string
           description: Какой http метод использовать
-          enum: [ "POST" ]
+          enum: ["POST"]
         notification_schema:
           $ref: '#/components/schemas/JSONSchema'
         mapping:
@@ -3258,7 +2839,6 @@ components:
         - notification_schema
         - mapping
         - nodes
-
     ProcessSettingsWithExternalSystems:
       type: object
       description: Настройки старта версии пайплайна(процесса)
@@ -3279,7 +2859,6 @@ components:
         - process_settings
         - external_systems
         - tasks_subscriptions
-
     ProcessSettings:
       type: object
       description: Настройки старта версии пайплайна(процесса)
@@ -3311,7 +2890,6 @@ components:
         - resubmission_period
         - sla
         - work_type
-
     ExternalSystem:
       type: object
       properties:
@@ -3338,13 +2916,11 @@ components:
       required:
         - system_id
         - name
-
     ExternalSystemId:
       type: string
       format: uuid
       description: Id внешней системы
       example: bde144c9-8d4e-4b42-8ff3-2eda48e1f32d
-
     EriusScenarioInfo:
       type: object
       properties:
@@ -3386,7 +2962,6 @@ components:
           type: string
           format: uuid
           example: 916ad995-8d13-49fb-82ee-edd4f97649e2
-
       required:
         - id
         - version_id
@@ -3398,15 +2973,13 @@ components:
         - status
         - comment
         - comment_rejected
-
     EriusScenarioList:
       type: array
       items:
         $ref: '#/components/schemas/EriusScenarioInfo'
-
     EriusTagInfo:
       type: object
-      required: [ id,name,status,color,isMarker ]
+      required: [id, name, status, color, isMarker]
       properties:
         color:
           type: string
@@ -3421,7 +2994,6 @@ components:
         status:
           type: integer
           description: 1 - Created, 3 - Deleted
-
     taskHumanStatus:
       type: string
       description: Task human readable status
@@ -3445,7 +3017,6 @@ components:
         - wait
         - revoke
         - cancel
-
     EriusTask:
       type: object
       properties:
@@ -3469,7 +3040,7 @@ components:
           type: string
         parameters:
           type: object
-          properties: { }
+          properties: {}
         started_at:
           type: string
         status:
@@ -3494,7 +3065,7 @@ components:
             $ref: '#/components/schemas/NodeGroup'
         approval_list:
           type: object
-          properties: { }
+          properties: {}
           description: мапа листов согласований из настроек сценария
       required:
         - id
@@ -3512,7 +3083,6 @@ components:
         - work_number
         - blueprint_id
         - approval_list
-
     NodeGroup:
       type: object
       properties:
@@ -3529,7 +3099,6 @@ components:
       required:
         - start_node
         - end_node
-
     EriusTasks:
       type: object
       properties:
@@ -3549,7 +3118,6 @@ components:
       required:
         - tasks
         - total
-
     MonitoringTasksPage:
       type: object
       properties:
@@ -3563,13 +3131,12 @@ components:
       required:
         - tasks
         - total
-
     MonitoringTableTask:
       type: object
       properties:
         status:
           type: string
-          enum: [ "В работе", "Завершен", "Остановлен", "Неизвестный статус" ]
+          enum: ["В работе", "Завершен", "Остановлен", "Неизвестный статус"]
           description: task status
         process_name:
           type: string
@@ -3597,7 +3164,6 @@ components:
         - finished_at
         - initiator
         - initiator_fullname
-
     EriusVersionInfo:
       type: object
       properties:
@@ -3637,7 +3203,6 @@ components:
         - usage_count
         - is_actual
         - status
-
     scenarioStatus:
       type: integer
       enum:
@@ -3648,6 +3213,7 @@ components:
         - 5
       description: >
         Tag status:
+
          * 1 - Draft
          * 2 - Approved
          * 3 - Deleted
@@ -3679,7 +3245,7 @@ components:
             type: string
         output:
           type: object
-          properties: { }
+          properties: {}
         pipeline_id:
           type: string
           format: uuid
@@ -3695,7 +3261,6 @@ components:
         - status
         - output
         - errors
-
     Step:
       type: object
       properties:
@@ -3709,7 +3274,7 @@ components:
           type: string
         state:
           type: object
-          properties: { }
+          properties: {}
         status:
           type: string
           description: Task step execution status
@@ -3724,7 +3289,7 @@ components:
             type: string
         storage:
           type: object
-          properties: { }
+          properties: {}
         time:
           type: string
         type:
@@ -3739,7 +3304,6 @@ components:
         - steps
         - has_error
         - status
-
     TaskUpdate:
       type: object
       properties:
@@ -3776,6 +3340,7 @@ components:
             - $ref: '#/components/schemas/ExecutionUpdateParams'
             - $ref: '#/components/schemas/ExecutorChangeParams'
             - $ref: '#/components/schemas/RequestInfoUpdateParams'
+            - $ref: '#/components/schemas/ReplyInfoUpdateParams'
             - $ref: '#/components/schemas/ExecutableFunctionParams'
             - $ref: '#/components/schemas/FillFormUpdateParams'
             - $ref: '#/components/schemas/AddApproversParams'
@@ -3786,7 +3351,6 @@ components:
         - action
         - parameters
         - step_names
-
     TaskMeanSolveTime:
       type: object
       properties:
@@ -3794,7 +3358,6 @@ components:
           type: number
       required:
         - meanWorkHours
-
     TasksStop:
       type: object
       properties:
@@ -3805,7 +3368,6 @@ components:
             type: string
       required:
         - tasks
-
     TasksStopped:
       type: object
       properties:
@@ -3815,7 +3377,6 @@ components:
             $ref: '#/components/schemas/TaskStatus'
       required:
         - tasks
-
     TaskStatus:
       type: object
       properties:
@@ -3833,7 +3394,6 @@ components:
         - status
         - work_number
         - finished_at
-
     FillFormUpdateParams:
       type: object
       description: Fill form
@@ -3843,7 +3403,7 @@ components:
           description: form data
         application_body:
           type: object
-          properties: { }
+          properties: {}
         block_id:
           type: string
           description: Form block id
@@ -3851,7 +3411,6 @@ components:
         - description
         - application_body
         - block_id
-
     ApproverUpdateParams:
       type: object
       description: Approver update params
@@ -3869,7 +3428,6 @@ components:
         - decision
         - comment
         - attachments
-
     SignUpdateParams:
       type: object
       description: Sign update params
@@ -3900,7 +3458,6 @@ components:
             $ref: '#/components/schemas/Attachment'
       required:
         - decision
-
     AdditionalApproverUpdateParams:
       type: object
       description: Approver update params
@@ -3918,7 +3475,6 @@ components:
         - decision
         - comment
         - attachments
-
     ExecutionUpdateParams:
       type: object
       description: Executor update params
@@ -3936,7 +3492,6 @@ components:
         - decision
         - comment
         - attachments
-
     AddApproversParams:
       type: object
       description: Add Approver params
@@ -3957,7 +3512,6 @@ components:
         - additionalApprovers
         - question
         - attachments
-
     CancelAppParams:
       type: object
       properties:
@@ -3965,7 +3519,6 @@ components:
           type: string
       required:
         - comment
-
     ChangeWorkStatusParams:
       type: object
       description: Sign update params
@@ -3977,7 +3530,6 @@ components:
             - end
       required:
         - status
-
     signDecision:
       type: string
       enum:
@@ -3986,10 +3538,10 @@ components:
         - error
       description: >
         Approver decision:
+
          * signed - Согласовано
          * rejected - Отклонено
          * error - Произошла ошибка
-
     approverDecision:
       type: string
       enum:
@@ -4002,6 +3554,7 @@ components:
         - sign_ukep
       description: >
         Approver decision:
+
          * approve - Согласовать
          * reject - Отклонить
          * viewed - Ознакомлен
@@ -4009,7 +3562,6 @@ components:
          * sign - Подписать
          * confirm - Утвердить
          * sign_ukep - Подписать УКЭП
-
     additionalApproverDecision:
       type: string
       enum:
@@ -4017,10 +3569,9 @@ components:
         - rejected
       description: >
         Approver decision:
+
          * approved - Согласовать
          * rejected - Отклонить
-
-
     executionDecision:
       type: string
       enum:
@@ -4028,9 +3579,9 @@ components:
         - rejected
       description: >
         Executor decision:
+
          * executed - executor executed block
          * rejected - executor rejected block
-
     ExecutorChangeParams:
       type: object
       description: Executor change params
@@ -4049,7 +3600,24 @@ components:
         - newExecutorLogin
         - comment
         - attachments
-
+    ReplyInfoUpdateParams:
+      type: object
+      description: Executor reply info params
+      properties:
+        executorLogin:
+          type: string
+          description: executor login
+        comment:
+          type: string
+          description: Comment from executor
+        attachments:
+          type: array
+          items:
+            $ref: '#/components/schemas/Attachment'
+      required:
+        - comment
+        - attachments
+        - executorLogin
     RequestInfoUpdateParams:
       type: object
       description: Executor request info params
@@ -4071,7 +3639,6 @@ components:
         - comment
         - attachments
         - executorLogin
-
     ExecutableFunctionParams:
       type: object
       description: Chosen function to be executed
@@ -4105,13 +3672,12 @@ components:
         - constants
         - check_sla
         - sla
-
     JSONSchema:
       type: object
       properties:
         type:
           type: string
-          enum: [ object ]
+          enum: [object]
         properties:
           $ref: '#/components/schemas/JSONSchemaProperties'
         required:
@@ -4121,7 +3687,6 @@ components:
       required:
         - type
         - properties
-
     FormReEnterSettings:
       type: object
       description: Настройки блока при повторном заходе в этот блок
@@ -4134,13 +3699,9 @@ components:
         group_path:
           type: string
           description: path to group id
-
     JSONSchemaProperties:
       type: object
-      description: Представляет из себя набор ключ-значение, где ключ - это название переменной/поля объекта,
-        а значение - это структура, которая описывает переменную(или поле объекта).
-        Причём, если переменная - это объект, тогда должно быть заполнено поле propeties(описание полей).
-        Если переменная - массив, тогда должно быть заполнено поле items(описание типа, который хранится в массиве).
+      description: Представляет из себя набор ключ-значение, где ключ - это название переменной/поля объекта, а значение - это структура, которая описывает переменную(или поле объекта). Причём, если переменная - это объект, тогда должно быть заполнено поле propeties(описание полей). Если переменная - массив, тогда должно быть заполнено поле items(описание типа, который хранится в массиве).
       additionalProperties:
         type: object
         properties:
@@ -4182,13 +3743,9 @@ components:
         required:
           - title
           - type
-
     ArrayItems:
       type: object
-      description: Описание типа, который хранится в массиве.
-        Если type = object, тогда поле properties обязательное. Оно нужно для описание конкретного типа объектов,
-        которые хранятся в массиве.
-        Если type = array(многомерный массив у нас то есть), тогда поле items обязательное. Оно описывает тип массивов.
+      description: Описание типа, который хранится в массиве. Если type = object, тогда поле properties обязательное. Оно нужно для описание конкретного типа объектов, которые хранятся в массиве. Если type = array(многомерный массив у нас то есть), тогда поле items обязательное. Оно описывает тип массивов.
       properties:
         type:
           type: string
@@ -4201,7 +3758,6 @@ components:
           $ref: '#/components/schemas/ArrayItems'
       required:
         - type
-
     EndSystemSettings:
       type: object
       properties:
@@ -4213,16 +3769,14 @@ components:
           type: string
         method:
           type: string
-          enum: [ "POST" ]
+          enum: ["POST"]
       required:
         - microservice_id
         - URL
         - method
-
     AllowRunAsOthers:
       type: boolean
       description: Разрешить системе запуск заявки от третьего лица
-
     SaveApprovalListSettings:
       type: object
       description: Add approval list settings
@@ -4303,11 +3857,11 @@ components:
         context_variables:
           type: object
           description: мапа ключ значение, контекстные переменные
-          properties: { }
+          properties: {}
         forms_variables:
           type: object
           description: мапа ключ значение, переменные форм
-          properties: { }
+          properties: {}
       required:
         - id
         - name
@@ -4327,7 +3881,6 @@ components:
       required:
         - items
         - total
-
     SearchPipelineItem:
       type: object
       properties:
@@ -4339,7 +3892,6 @@ components:
           format: uuid
           example: 916ad995-8d13-49fb-82ee-edd4f97649e2
           description: ID пайплайна
-
     UsageResponse:
       type: object
       properties:
@@ -4356,7 +3908,6 @@ components:
         - name
         - used
         - pipelines
-
     UsedBy:
       type: object
       properties:
@@ -4369,7 +3920,6 @@ components:
       required:
         - name
         - id
-
     RateApplicationRequest:
       type: object
       properties:
@@ -4377,20 +3927,19 @@ components:
           type: string
         rate:
           type: integer
-
     CreateTaskRequest:
       type: object
-      required: [ parameters,version_id ]
+      required: [parameters, version_id]
       properties:
         parameters:
           type: object
-          properties: { }
+          properties: {}
         version_id:
           type: string
           format: uuid
     DebugRunRequest:
       type: object
-      required: [ action,break_points,work_number ]
+      required: [action, break_points, work_number]
       properties:
         action:
           type: string
@@ -4406,12 +3955,12 @@ components:
     RunVersionBody:
       type: object
     RunVersionsByPipelineIdRequest:
-      required: [ application_body,pipeline_id,description,keys,attachment_fields ]
+      required: [application_body, pipeline_id, description, keys, attachment_fields]
       type: object
       properties:
         application_body:
           type: object
-          properties: { }
+          properties: {}
         pipeline_id:
           type: string
         is_test_application:
@@ -4429,7 +3978,7 @@ components:
           items:
             $ref: '#/components/schemas/Attachment'
     RunNewVersionByPrevVersionRequest:
-      required: [ work_number,description,application_body,keys,attachment_fields ]
+      required: [work_number, description, application_body, keys, attachment_fields]
       type: object
       properties:
         work_number:
@@ -4438,7 +3987,7 @@ components:
           type: string
         application_body:
           type: object
-          properties: { }
+          properties: {}
         keys:
           type: object
           additionalProperties:
@@ -4476,7 +4025,7 @@ components:
         parameters:
           type: object
           description: Параметры заявки
-          properties: { }
+          properties: {}
         started_at:
           type: string
           description: Время начала исполнения заявки
@@ -4521,7 +4070,7 @@ components:
           description: Плановая дата завершения процесса
         approval_list:
           type: object
-          properties: { }
+          properties: {}
           description: мапа листов согласований из настроек сценария
       required:
         - id
@@ -4543,7 +4092,6 @@ components:
         - status_comment
         - process_deadline
         - approval_list
-
     httpError:
       type: object
       properties:
@@ -4553,7 +4101,6 @@ components:
           type: string
         status_code:
           type: integer
-
     taskResponseStep:
       type: object
       properties:
@@ -4577,7 +4124,7 @@ components:
         state:
           type: object
           description: Объект состояния
-          properties: { }
+          properties: {}
         status:
           description: Статус шага
           type: string
@@ -4587,14 +4134,13 @@ components:
             type: string
         storage:
           type: object
-          properties: { }
+          properties: {}
         time:
           type: string
         updateTime:
           type: string
         type:
           type: string
-
     action:
       type: object
       properties:
@@ -4622,7 +4168,6 @@ components:
         - button_type
         - comment_enabled
         - attachments_enabled
-
     Attachment:
       type: object
       properties:
@@ -4632,7 +4177,6 @@ components:
         external_link:
           type: string
           description: "Ссылка на файл в сторонней системе"
-
     blockType:
       type: string
       description: Block type (language)
@@ -4640,7 +4184,6 @@ components:
         - python3
         - go
         - scenario
-
     FunctionModel:
       type: object
       properties:
@@ -4671,7 +4214,6 @@ components:
         - next_funcs
         - id
         - sockets
-
     Socket:
       type: object
       description: Socket object
@@ -4689,11 +4231,10 @@ components:
           description: IDs of next blocks
         actionType:
           type: string
-          enum: [ "primary", "secondary", "other" ]
+          enum: ["primary", "secondary", "other"]
           description: action type
       required:
         - id
-
     Params:
       type: object
       description: Block constant params
@@ -4708,7 +4249,6 @@ components:
         - $ref: "#/components/schemas/TimerParams"
         - $ref: "#/components/schemas/PlaceholderParams"
         - $ref: "#/components/schemas/SignParams"
-
     ConditionGroup:
       type: object
       description: Group with conditions
@@ -4719,7 +4259,7 @@ components:
           type: string
         logicalOperator:
           type: string
-          enum: [ "or", "and" ]
+          enum: ["or", "and"]
         conditions:
           type: array
           items:
@@ -4728,7 +4268,6 @@ components:
         - id
         - logicalOperator
         - conditions
-
     Condition:
       type: object
       description: Compare operands using operator
@@ -4748,7 +4287,6 @@ components:
         - leftOperand
         - rightOperand
         - operator
-
     operand:
       description: Operand for comparison
       oneOf:
@@ -4759,77 +4297,71 @@ components:
         mapping:
           varOperand: variableOperand
           valOperand: valueOperand
-
     StringOperand:
       type: object
       description: Basic string operand, can provide working compare types for this type
       properties:
         dataType:
           type: string
-          enum: [ "integer", "number", "date", "boolean", "string" ]
+          enum: ["integer", "number", "date", "boolean", "string"]
         operandType:
           type: string
-          enum: [ "variableOperand", "valueOperand" ]
+          enum: ["variableOperand", "valueOperand"]
       required:
         - dataType
         - operandType
-
     IntegerOperand:
       type: object
       description: Basic integer operand, can provide working compare types for this type
       properties:
         dataType:
           type: string
-          enum: [ "integer", "number",  "boolean" ]
+          enum: ["integer", "number", "boolean"]
         operandType:
           type: string
-          enum: [ "variableOperand", "valueOperand" ]
+          enum: ["variableOperand", "valueOperand"]
       required:
         - dataType
         - operandType
-
     NumberOperand:
       type: object
       description: Basic number operand, can provide working compare types for this type
       properties:
         dataType:
           type: string
-          enum: [ "integer", "number", "string" ]
+          enum: ["integer", "number", "string"]
         operandType:
           type: string
-          enum: [ "variableOperand", "valueOperand" ]
+          enum: ["variableOperand", "valueOperand"]
       required:
         - dataType
         - operandType
-
     BooleanOperand:
       type: object
       description: Basic boolean operand, can provide working compare types for this type
       properties:
         dataType:
           type: string
-          enum: [ "integer", "boolean", "string" ]
+          enum: ["integer", "boolean", "string"]
         operandType:
           type: string
-          enum: [ "variableOperand", "valueOperand" ]
+          enum: ["variableOperand", "valueOperand"]
       required:
         - dataType
         - operandType
-
     DateOperand:
       type: object
       description: Basic date operand, can provide working compare types for this type
       properties:
         dataType:
           type: string
-          enum: [ "date", "string" ]
+          enum: ["date", "string"]
         operandType:
           type: string
-          enum: [ "variableOperand", "valueOperand" ]
+          enum: ["variableOperand", "valueOperand"]
       required:
         - dataType
         - operandType
-
     variableOperand:
       description: Operand which uses variable to compare in conditions. You can use for accessing object variable members (i.e. "applicationData", "applicationData.comment"), required one Operand
       allOf:
@@ -4845,7 +4377,6 @@ components:
             - $ref: '#/components/schemas/NumberOperand'
             - $ref: '#/components/schemas/BooleanOperand'
             - $ref: '#/components/schemas/DateOperand'
-
     valueOperand:
       description: Operand which uses simple value to compare in conditions, required one Operand
       allOf:
@@ -4861,37 +4392,31 @@ components:
             - $ref: '#/components/schemas/NumberOperand'
             - $ref: '#/components/schemas/BooleanOperand'
             - $ref: '#/components/schemas/DateOperand'
-
     compareStringOperator:
       type: string
       description: Used operator to compare string operands
-      enum: [ "Равно", "Не равно", "Содержит", "Не Содержит", "Не Пустое", "Пустое" ]
-      x-enum-varnames: [ "Equal", "NotEqual", "Contain", "NotContain", "Exists", "NotExists" ]
-
+      enum: ["Равно", "Не равно", "Содержит", "Не Содержит", "Не Пустое", "Пустое"]
+      x-enum-varnames: ["Equal", "NotEqual", "Contain", "NotContain", "Exists", "NotExists"]
     compareIntegerOperator:
       type: string
       description: Used operator to compare integer operands
-      enum: [ "Равно", "Не равно", "Больше", "Больше или равно", "Меньше", "Меньше или равно", "Не Пустое", "Пустое" ]
-      x-enum-varnames: [ "Equal", "NotEqual", "More", "MoreOrEqual", "Less", "LessOrEqual", "Exists", "NotExists" ]
-
+      enum: ["Равно", "Не равно", "Больше", "Больше или равно", "Меньше", "Меньше или равно", "Не Пустое", "Пустое"]
+      x-enum-varnames: ["Equal", "NotEqual", "More", "MoreOrEqual", "Less", "LessOrEqual", "Exists", "NotExists"]
     compareNumberOperator:
       type: string
       description: Used operator to compare number operands
-      enum: [ "Равно", "Не равно", "Больше", "Больше или равно", "Меньше", "Меньше или равно", "Не Пустое", "Пустое" ]
-      x-enum-varnames: [ "Equal", "NotEqual", "More", "MoreOrEqual", "Less", "LessOrEqual", "Exists", "NotExists" ]
-
+      enum: ["Равно", "Не равно", "Больше", "Больше или равно", "Меньше", "Меньше или равно", "Не Пустое", "Пустое"]
+      x-enum-varnames: ["Equal", "NotEqual", "More", "MoreOrEqual", "Less", "LessOrEqual", "Exists", "NotExists"]
     compareBooleanOperator:
       type: string
       description: Used operator to compare bool operands
-      enum: [ "Равно", "Не равно", "Не Пустое", "Пустое" ]
-      x-enum-varnames: [ "Equal", "NotEqual", "Exists", "NotExists" ]
-
+      enum: ["Равно", "Не равно", "Не Пустое", "Пустое"]
+      x-enum-varnames: ["Equal", "NotEqual", "Exists", "NotExists"]
     compareDateOperator:
       type: string
       description: Used operator to compare date operands
-      enum: [ "Равно", "Не равно", "Больше", "Больше или равно", "Меньше", "Меньше или равно", "Не Пустое", "Пустое" ]
-      x-enum-varnames: [ "Equal", "NotEqual", "More", "MoreOrEqual", "Less", "LessOrEqual", "Exists", "NotExists" ]
-
+      enum: ["Равно", "Не равно", "Больше", "Больше или равно", "Меньше", "Меньше или равно", "Не Пустое", "Пустое"]
+      x-enum-varnames: ["Equal", "NotEqual", "More", "MoreOrEqual", "Less", "LessOrEqual", "Exists", "NotExists"]
     ConditionParams:
       type: object
       description: Condition params
@@ -4901,7 +4426,6 @@ components:
           description: Groups with conditions
           items:
             $ref: '#/components/schemas/ConditionGroup'
-
     NotificationParams:
       type: object
       description: Notification params
@@ -4934,7 +4458,6 @@ components:
         - usersFromSchema
         - subject
         - text
-
     SdApplicationParams:
       type: object
       description: SD Application params
@@ -4944,7 +4467,6 @@ components:
           description: Template application ID
       required:
         - blueprint_id
-
     ExecutionParams:
       type: object
       description: Execution params
@@ -4957,6 +4479,7 @@ components:
             - from_schema
           description: >
             Execution type:
+
              * user - Single user
              * group - Execution group ID
              * from_schema - Selected by initiator
@@ -5018,7 +4541,6 @@ components:
         - repeat_prev_decision
         - is_editable
         - use_actual_executor
-
     PlaceholderParams:
       type: object
       description: Placeholder block params
@@ -5032,7 +4554,6 @@ components:
       required:
         - name
         - description
-
     FormParams:
       type: object
       description: Form params
@@ -5085,7 +4606,6 @@ components:
         - blueprint_name
         - hide_executor_from_initiator
         - is_editable
-
     FormExecutorType:
       type: string
       enum:
@@ -5096,12 +4616,12 @@ components:
         - auto_fill
       description: >
         Form executor type:
+
           * User - Single user
           * group - Form group ID
           * Initiator - Process initiator
           * From_schema - Selected by initiator
           * Auto_Fill - Auto Fill form by system
-
     ApproverType:
       type: string
       enum:
@@ -5111,11 +4631,11 @@ components:
         - fromSchema
       description: >
         Approver type:
+
           * user - Single user
           * group - Approver group ID
           * head - Receiver's head
           * FromSchema - Selected by initiator
-
     SignerType:
       type: string
       enum:
@@ -5124,17 +4644,16 @@ components:
         - fromSchema
       description: >
         Signer type:
+
           * user - Single user
           * group - Group ID
           * FromSchema - Selected by initiator
-
     SignatureType:
       type: string
       enum:
         - pep
         - unep
         - ukep
-
     TimerParams:
       type: object
       description: Timer params
@@ -5144,19 +4663,16 @@ components:
           description: duration for timer
       required:
         - duration
-
     SignatureCarrier:
       type: string
       enum:
         - all
         - cloud
         - token
-
     SignatureCarrierTranslated:
       type: string
-      enum: [ "Все", "Облачный", "Токен" ]
-      x-enum-varnames: [ "all", "cloud", "token" ]
-
+      enum: ["Все", "Облачный", "Токен"]
+      x-enum-varnames: ["all", "cloud", "token"]
     SigningParams:
       type: object
       properties:
@@ -5174,9 +4690,6 @@ components:
           items:
             type: string
             example: form_0.application_body.file
-
-
-
     SignParams:
       type: object
       description: Signature params
@@ -5225,7 +4738,6 @@ components:
         - signerType
         - signatureType
         - formsAccessibility
-
     ApproverParams:
       type: object
       description: Approver params
@@ -5296,7 +4808,6 @@ components:
       items:
         $ref: '#/components/schemas/FormChangelogItem'
       description: Changelog of filled form data
-
     FormChangelogItem:
       type: object
       properties:
@@ -5305,7 +4816,7 @@ components:
           description: id of form schema id
         application_body:
           type: object
-          properties: { }
+          properties: {}
           description: Filled form values
         description:
           type: string
@@ -5316,7 +4827,6 @@ components:
         executor:
           type: string
           description: Login of form executor
-
     FormsAccessibility:
       type: object
       properties:
@@ -5335,7 +4845,6 @@ components:
         - node_id
         - name
         - accessType
-
     FormAccessType:
       type: string
       enum:
@@ -5343,39 +4852,33 @@ components:
         - Read
         - ReadWrite
       description: Form accessibility preferences for certain node
-
     FormAccessTypeTranslated:
       type: string
-      enum: [ "Скрыть", "Только для чтения", "Чтение и редактирование" ]
-      x-enum-varnames: [ 'None', 'Read', 'ReadWrite' ]
+      enum: ["Скрыть", "Только для чтения", "Чтение и редактирование"]
+      x-enum-varnames: ['None', 'Read', 'ReadWrite']
       description: Form accessibility preferences for certain node (translated)
-
     ApprovementRule:
       type: string
       enum:
         - AnyOf
         - AllOf
       description: Count of approvers which will participate in approvement will depends of approvement type. 'Any of' will check only first approvement action, when 'all of' will be waiting for all approvers or auto actions.
-
     SigningRule:
       type: string
       enum:
         - AnyOf
         - AllOf
       description: Count of singers which will participate in signing will depends of signing type. 'Any of' will check only first sign action, when 'all of' will be waiting for all signers.
-
     SigningRuleTranslated:
       type: string
-      enum: [ "Один из подписантов", "Все подписанты" ]
-      x-enum-varnames: [ 'AnyOf', 'AllOf' ]
+      enum: ["Один из подписантов", "Все подписанты"]
+      x-enum-varnames: ['AnyOf', 'AllOf']
       description: Count of signers which will participate in signing will depends of signing type. 'Any of' will check only first signing action, when 'all of' will be waiting for all signers.
-
     ApprovementRuleTranslated:
       type: string
-      enum: [ "Один из согласующих", "Все согласующие" ]
-      x-enum-varnames: [ 'AnyOf', 'AllOf' ]
+      enum: ["Один из согласующих", "Все согласующие"]
+      x-enum-varnames: ['AnyOf', 'AllOf']
       description: Count of approvers which will participate in approvement will depends of approvement type. 'Any of' will check only first approvement action, when 'all of' will be waiting for all approvers or auto actions (translated).
-
     FunctionParams:
       type: object
       properties:
@@ -5397,7 +4900,6 @@ components:
           $ref: '#/components/schemas/Params'
       required:
         - type
-
     FunctionValueModel:
       type: object
       properties:
@@ -5435,12 +4937,11 @@ components:
       properties:
         data:
           type: object
-          properties: { }
+          properties: {}
         status_code:
           type: integer
       required:
         - status_code
-
     MonitoringTask:
       type: object
       properties:
@@ -5463,7 +4964,6 @@ components:
         - work_number
         - scenario_info
         - history
-
     MonitoringHistory:
       type: object
       properties:
@@ -5474,7 +4974,7 @@ components:
           description: "Айди ноды в variable_storage"
         status:
           type: string
-          enum: [ "running", "finished" ]
+          enum: ["running", "finished"]
           description: "Статус ноды"
         node_id:
           type: string
@@ -5491,7 +4991,6 @@ components:
         - status
         - block_id
         - real_name
-
     MonitoringScenarioInfo:
       type: object
       properties:
@@ -5508,7 +5007,6 @@ components:
         - scenario_name
         - creation_time
         - author
-
     BlockContextResponse:
       type: object
       properties:
@@ -5517,7 +5015,6 @@ components:
           description: Ноды
           additionalProperties:
             $ref: '#/components/schemas/MonitoringBlockOutput'
-
     BlockStateResponse:
       type: object
       properties:
@@ -5526,7 +5023,6 @@ components:
           description: Стейт блока
           additionalProperties:
             $ref: '#/components/schemas/MonitoringBlockState'
-
     MonitoringBlockOutput:
       type: object
       properties:
@@ -5553,7 +5049,6 @@ components:
         - type
         - description
         - value
-
     MonitoringBlockState:
       type: object
       properties:
@@ -5580,7 +5075,6 @@ components:
         - type
         - description
         - value
-
     MonitoringParamsResponse:
       type: object
       properties:
@@ -5600,7 +5094,6 @@ components:
           description: Выходные параметы
           additionalProperties:
             $ref: '#/components/schemas/MonitoringBlockParam'
-
     MonitoringBlockParam:
       type: object
       properties:
@@ -5642,7 +5135,6 @@ components:
         - 24/7
         - 8/5
         - 12/5
-
     NodeDecision:
       type: object
       properties:

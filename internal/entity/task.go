@@ -150,12 +150,10 @@ type GetTaskParams struct {
 	HasAttachments   *bool   `json:"hasAttachments"`
 	SignatureCarrier *string `json:"signature_carrier"`
 
-	SelectFor            *string   `json:"selectFor"`
+	Initiator            *[]string `json:"initiator"`
 	InitiatorLogins      *[]string `json:"initiatorLogins"`
 	ProcessingLogins     *[]string `json:"processingLogins"`
-	ProcessedLogins      *[]string `json:"processedLogins"`
 	ProcessingGroupIds   *[]string `json:"processingGroupIds"`
-	ProcessedGroupIds    *[]string `json:"processedGroupIds"`
 	ExecutorTypeAssigned *string   `json:"executorTypeAssigned"`
 }
 
@@ -181,10 +179,12 @@ const (
 	TaskUpdateActionExecution                  TaskUpdateAction = "execution"
 	TaskUpdateActionChangeExecutor             TaskUpdateAction = "change_executor"
 	TaskUpdateActionRequestExecutionInfo       TaskUpdateAction = "request_execution_info"
+	TaskUpdateActionReplyExecutionInfo         TaskUpdateAction = "reply_execution_info"
 	TaskUpdateActionExecutorStartWork          TaskUpdateAction = "executor_start_work"
 	TaskUpdateActionApproverSendEditApp        TaskUpdateAction = "approver_send_edit_app"
 	TaskUpdateActionExecutorSendEditApp        TaskUpdateAction = "executor_send_edit_app"
 	TaskUpdateActionRequestApproveInfo         TaskUpdateAction = "request_add_info"
+	TaskUpdateActionReplyApproverInfo          TaskUpdateAction = "reply_approver_info"
 	TaskUpdateActionRequestFillForm            TaskUpdateAction = "fill_form"
 	TaskUpdateActionCancelApp                  TaskUpdateAction = "cancel_app"
 	TaskUpdateActionAddApprovers               TaskUpdateAction = "add_approvers"
@@ -215,6 +215,8 @@ var (
 		TaskUpdateActionFinishTimer:           {},
 		TaskUpdateActionFuncSLAExpired:        {},
 		TaskUpdateActionSignChangeWorkStatus:  {},
+		TaskUpdateActionReplyExecutionInfo:    {},
+		TaskUpdateActionReplyApproverInfo:     {},
 	}
 )
 
