@@ -13,7 +13,6 @@ func (s *Service) GetFunction(ctx context.Context, id string) (result Function, 
 			FunctionId: id,
 		},
 	)
-
 	if err != nil {
 		return Function{}, err
 	}
@@ -29,6 +28,7 @@ func (s *Service) GetFunction(ctx context.Context, id string) (result Function, 
 	}
 
 	var options Options
+
 	optionsUnmarshalErr := json.Unmarshal([]byte(res.Function.Options), &options)
 	if err != nil {
 		return Function{}, optionsUnmarshalErr
@@ -38,8 +38,8 @@ func (s *Service) GetFunction(ctx context.Context, id string) (result Function, 
 
 	for _, v := range res.Function.Versions {
 		versions = append(versions, Version{
-			FunctionId:  v.FunctionId,
-			VersionId:   v.VersionId,
+			FunctionID:  v.FunctionId,
+			VersionID:   v.VersionId,
 			Description: v.Description,
 			Version:     v.Version,
 			Input:       v.Input,
@@ -53,8 +53,8 @@ func (s *Service) GetFunction(ctx context.Context, id string) (result Function, 
 	}
 
 	return Function{
-		FunctionId:  res.Function.FunctionId,
-		VersionId:   res.Function.VersionId,
+		FunctionID:  res.Function.FunctionId,
+		VersionID:   res.Function.VersionId,
 		Name:        res.Function.Name,
 		Description: res.Function.Description,
 		Version:     res.Function.Version,

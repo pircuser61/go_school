@@ -115,6 +115,7 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 		executorsFromSchema = "form_0.user.username;form_1.user.username"
 		executorFromSchema  = "form_0.user.username"
 	)
+
 	myStorage := makeStorage()
 
 	varStore := store.NewStore()
@@ -123,6 +124,7 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 		"username": "test",
 		"fullname": "test test test",
 	})
+
 	varStore.SetValue("form_1.user", map[string]interface{}{
 		"username": "test2",
 		"fullname": "test2 test test",
@@ -203,7 +205,7 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 					Services: RunContextServices{
 						Storage: myStorage,
 						SLAService: func() sla.Service {
-							slaMock := sla.NewSlaService(nil)
+							slaMock := sla.NewSLAService(nil)
 							return slaMock
 						}(),
 					},
@@ -257,7 +259,7 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 					Services: RunContextServices{
 						Storage: myStorage,
 						SLAService: func() sla.Service {
-							slaMock := sla.NewSlaService(nil)
+							slaMock := sla.NewSLAService(nil)
 							return slaMock
 						}(),
 					},
@@ -287,7 +289,7 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 					Services: RunContextServices{
 						Storage: myStorage,
 						SLAService: func() sla.Service {
-							slaMock := sla.NewSlaService(nil)
+							slaMock := sla.NewSLAService(nil)
 							return slaMock
 						}(),
 					},
@@ -341,7 +343,7 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 					Services: RunContextServices{
 						Storage: myStorage,
 						SLAService: func() sla.Service {
-							slaMock := sla.NewSlaService(nil)
+							slaMock := sla.NewSLAService(nil)
 							return slaMock
 						}(),
 					},
@@ -369,7 +371,7 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 					skipNotifications: true,
 					Services: RunContextServices{
 						SLAService: func() sla.Service {
-							slaMock := sla.NewSlaService(nil)
+							slaMock := sla.NewSLAService(nil)
 							return slaMock
 						}(),
 					},
@@ -439,7 +441,7 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 					skipNotifications: true,
 					Services: RunContextServices{
 						SLAService: func() sla.Service {
-							slaMock := sla.NewSlaService(nil)
+							slaMock := sla.NewSLAService(nil)
 							return slaMock
 						}(),
 					},
@@ -491,6 +493,7 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 
 func TestGoExecutionBlock_Update(t *testing.T) {
 	stepId := uuid.New()
+
 	const (
 		exampleExecutor       = "example"
 		secondExampleExecutor = "example1"
@@ -503,19 +506,22 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 		actualExecutor2 = "example"
 	)
 
-	type fields struct {
-		Name          string
-		Title         string
-		Input         map[string]string
-		Output        map[string]string
-		NextStep      []script.Socket
-		ExecutionData *ExecutionData
-		RunContext    *BlockRunContext
-	}
-	type args struct {
-		ctx  context.Context
-		data *script.BlockUpdateData
-	}
+	type (
+		fields struct {
+			Name          string
+			Title         string
+			Input         map[string]string
+			Output        map[string]string
+			NextStep      []script.Socket
+			ExecutionData *ExecutionData
+			RunContext    *BlockRunContext
+		}
+		args struct {
+			ctx  context.Context
+			data *script.BlockUpdateData
+		}
+	)
+
 	tests := []struct {
 		name    string
 		fields  fields
@@ -659,7 +665,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 					VarStore:          store.NewStore(),
 					Services: RunContextServices{
 						SLAService: func() sla.Service {
-							slaMock := sla.NewSlaService(nil)
+							slaMock := sla.NewSLAService(nil)
 							return slaMock
 						}(),
 						ServiceDesc: func() *servicedesc.Service {
@@ -725,7 +731,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 					VarStore:          store.NewStore(),
 					Services: RunContextServices{
 						SLAService: func() sla.Service {
-							slaMock := sla.NewSlaService(nil)
+							slaMock := sla.NewSLAService(nil)
 							return slaMock
 						}(),
 						ServiceDesc: func() *servicedesc.Service {
@@ -790,7 +796,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 					VarStore:          store.NewStore(),
 					Services: RunContextServices{
 						SLAService: func() sla.Service {
-							slaMock := sla.NewSlaService(nil)
+							slaMock := sla.NewSLAService(nil)
 							return slaMock
 						}(),
 						ServiceDesc: func() *servicedesc.Service {
@@ -856,7 +862,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 					VarStore:          store.NewStore(),
 					Services: RunContextServices{
 						SLAService: func() sla.Service {
-							slaMock := sla.NewSlaService(nil)
+							slaMock := sla.NewSLAService(nil)
 							return slaMock
 						}(),
 						ServiceDesc: func() *servicedesc.Service {
@@ -922,7 +928,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 					VarStore:          store.NewStore(),
 					Services: RunContextServices{
 						SLAService: func() sla.Service {
-							slaMock := sla.NewSlaService(nil)
+							slaMock := sla.NewSLAService(nil)
 							return slaMock
 						}(),
 						ServiceDesc: func() *servicedesc.Service {
@@ -988,7 +994,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 					VarStore:          store.NewStore(),
 					Services: RunContextServices{
 						SLAService: func() sla.Service {
-							slaMock := sla.NewSlaService(nil)
+							slaMock := sla.NewSLAService(nil)
 							return slaMock
 						}(),
 						ServiceDesc: func() *servicedesc.Service {
@@ -1054,7 +1060,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 					VarStore:          store.NewStore(),
 					Services: RunContextServices{
 						SLAService: func() sla.Service {
-							slaMock := sla.NewSlaService(nil)
+							slaMock := sla.NewSLAService(nil)
 							return slaMock
 						}(),
 						ServiceDesc: func() *servicedesc.Service {
@@ -1215,7 +1221,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 					VarStore:          store.NewStore(),
 					Services: RunContextServices{
 						SLAService: func() sla.Service {
-							slaMock := sla.NewSlaService(nil)
+							slaMock := sla.NewSLAService(nil)
 							return slaMock
 						}(),
 						ServiceDesc: func() *servicedesc.Service {
@@ -1316,7 +1322,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 					VarStore:          store.NewStore(),
 					Services: RunContextServices{
 						SLAService: func() sla.Service {
-							slaMock := sla.NewSlaService(nil)
+							slaMock := sla.NewSLAService(nil)
 							return slaMock
 						}(),
 						ServiceDesc: func() *servicedesc.Service {
@@ -1441,7 +1447,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 					VarStore:          store.NewStore(),
 					Services: RunContextServices{
 						SLAService: func() sla.Service {
-							slaMock := sla.NewSlaService(nil)
+							slaMock := sla.NewSLAService(nil)
 							return slaMock
 						}(),
 						ServiceDesc: func() *servicedesc.Service {
@@ -1681,7 +1687,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 					VarStore:          store.NewStore(),
 					Services: RunContextServices{
 						SLAService: func() sla.Service {
-							slaMock := sla.NewSlaService(nil)
+							slaMock := sla.NewSLAService(nil)
 							return slaMock
 						}(),
 						ServiceDesc: func() *servicedesc.Service {
@@ -1805,7 +1811,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 					VarStore:          store.NewStore(),
 					Services: RunContextServices{
 						SLAService: func() sla.Service {
-							slaMock := sla.NewSlaService(nil)
+							slaMock := sla.NewSLAService(nil)
 							return slaMock
 						}(),
 						ServiceDesc: func() *servicedesc.Service {
@@ -1952,7 +1958,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 					VarStore:          store.NewStore(),
 					Services: RunContextServices{
 						SLAService: func() sla.Service {
-							slaMock := sla.NewSlaService(nil)
+							slaMock := sla.NewSLAService(nil)
 							return slaMock
 						}(),
 						People: func() *people.Service {
@@ -2020,7 +2026,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 					VarStore:          store.NewStore(),
 					Services: RunContextServices{
 						SLAService: func() sla.Service {
-							slaMock := sla.NewSlaService(nil)
+							slaMock := sla.NewSLAService(nil)
 							return slaMock
 						}(),
 						ServiceDesc: func() *servicedesc.Service {
@@ -2103,6 +2109,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 			wantErr: false,
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			gb := &GoExecutionBlock{

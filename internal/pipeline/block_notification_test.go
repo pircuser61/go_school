@@ -72,6 +72,7 @@ func Test_createGoNotificationBlock(t *testing.T) {
 		ef     *entity.EriusFunc
 		runCtx *BlockRunContext
 	}
+
 	tests := []struct {
 		name    string
 		args    args

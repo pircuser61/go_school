@@ -92,8 +92,10 @@ func (gb *GoSignBlock) handleSignature(ctx c.Context, login string) error {
 			if updateParams.Username == "" {
 				return errors.New("is not taken in work")
 			}
+
 			log.Info("setting signature with no 'taken in work'")
 		}
+
 		if !gb.isValidLogin(login) {
 			return NewUserIsNotPartOfProcessErr()
 		}
@@ -115,8 +117,10 @@ func (gb *GoSignBlock) handleSignature(ctx c.Context, login string) error {
 			eml, err := gb.RunContext.Services.People.GetUserEmail(ctx, logins[i])
 			if err != nil {
 				log.WithField("login", login).WithError(err).Warning("couldn't get email")
+
 				continue
 			}
+
 			emails = append(emails, eml)
 		}
 
@@ -127,6 +131,7 @@ func (gb *GoSignBlock) handleSignature(ctx c.Context, login string) error {
 		)
 
 		filesList := []string{tpl.Image}
+
 		files, iconEerr := gb.RunContext.GetIcons(filesList)
 		if iconEerr != nil {
 			return iconEerr
@@ -137,6 +142,7 @@ func (gb *GoSignBlock) handleSignature(ctx c.Context, login string) error {
 			return sendErr
 		}
 	}
+
 	return nil
 }
 
@@ -173,7 +179,9 @@ func (gb *GoSignBlock) Update(ctx c.Context) (interface{}, error) {
 			return nil, errUpdate
 		}
 	}
+
 	var stateBytes []byte
+
 	stateBytes, err := json.Marshal(gb.State)
 	if err != nil {
 		return nil, err
@@ -183,6 +191,7 @@ func (gb *GoSignBlock) Update(ctx c.Context) (interface{}, error) {
 
 	if _, ok := gb.expectedEvents[eventEnd]; ok {
 		status, _, _ := gb.GetTaskHumanStatus()
+
 		event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, MakeNodeEndEventArgs{
 			NodeName:      gb.Name,
 			NodeShortName: gb.ShortName,
@@ -192,6 +201,7 @@ func (gb *GoSignBlock) Update(ctx c.Context) (interface{}, error) {
 		if eventErr != nil {
 			return nil, eventErr
 		}
+
 		gb.happenedEvents = append(gb.happenedEvents, event)
 	}
 
@@ -209,6 +219,7 @@ func (gb *GoSignBlock) addApprovers(ctx c.Context, login string) error {
 	}
 
 	var logAddApprovers []string
+
 	crTime := time.Now()
 
 	for _, additionalApproverLogin := range updateParams.AdditionalApproversLogins {
@@ -221,12 +232,13 @@ func (gb *GoSignBlock) addApprovers(ctx c.Context, login string) error {
 					Attachments:   updateParams.Attachments,
 					CreatedAt:     crTime,
 				})
+
 			logAddApprovers = append(logAddApprovers, additionalApproverLogin)
 		}
 	}
 
 	if len(logAddApprovers) > 0 {
-		var signerLogEntry = SignLogEntry{
+		signerLogEntry := SignLogEntry{
 			Login:          login,
 			Decision:       "",
 			Comment:        updateParams.Question,
@@ -237,6 +249,7 @@ func (gb *GoSignBlock) addApprovers(ctx c.Context, login string) error {
 		}
 
 		gb.State.SignLog = append(gb.State.SignLog, signerLogEntry)
+
 		err := gb.notifyAdditionalApprovers(ctx, logAddApprovers, updateParams.Attachments)
 		if err != nil {
 			return err
@@ -272,6 +285,7 @@ func (gb *GoSignBlock) handleBreachedSLA(ctx c.Context) error {
 	if gb.State.AutoReject != nil && *gb.State.AutoReject {
 		gb.RunContext.UpdateData.ByLogin = autoSigner
 		gb.State.ActualSigner = &gb.RunContext.UpdateData.ByLogin
+
 		if setErr := gb.setSignerDecision(&signSignatureParams{
 			Decision: SignDecisionRejected,
 			Comment:  AutoActionComment,
@@ -291,6 +305,7 @@ func (gb *GoSignBlock) handleBreachedSLA(ctx c.Context) error {
 			if err != nil {
 				continue
 			}
+
 			emails = append(emails, eml)
 		}
 
@@ -301,6 +316,7 @@ func (gb *GoSignBlock) handleBreachedSLA(ctx c.Context) error {
 		)
 
 		filesList := []string{tpl.Image}
+
 		files, iconEerr := gb.RunContext.GetIcons(filesList)
 		if iconEerr != nil {
 			return iconEerr
@@ -326,12 +342,12 @@ func (gb *GoSignBlock) SetDecisionByAdditionalApprover(ctx c.Context, login stri
 	}
 
 	loginsToNotify, err := gb.State.SetDecisionByAdditionalApprover(login, updateParams)
-
 	if err != nil {
 		return err
 	}
 
 	loginsToNotify = append(loginsToNotify, gb.RunContext.Initiator)
+
 	err = gb.notifyDecisionMadeByAdditionalApprover(ctx, loginsToNotify)
 	if err != nil {
 		return err
@@ -361,6 +377,7 @@ func (gb *GoSignBlock) handleChangeWorkStatus(ctx c.Context, login string) error
 		if !gb.isValidSigner(login) {
 			return NewUserIsNotPartOfProcessErr()
 		}
+
 		gb.State.IsTakenInWork = true
 		gb.State.WorkerLogin = login
 
@@ -404,6 +421,7 @@ func (gb *GoSignBlock) setSignerDecision(u *signSignatureParams) error {
 	if u.Username != "" {
 		login = u.Username
 	}
+
 	if errUpdate := gb.State.SetDecision(login, u); errUpdate != nil {
 		return errUpdate
 	}
@@ -413,16 +431,19 @@ func (gb *GoSignBlock) setSignerDecision(u *signSignatureParams) error {
 		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputSignDecision], gb.State.Decision)
 		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputSignComment], gb.State.Comment)
 		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputSignatures], gb.State.Signatures)
+
 		resAttachments := make([]entity.Attachment, 0)
+
 		for _, l := range gb.State.SignLog {
 			if l.LogType != SignerLogDecision {
 				continue
 			}
+
 			resAttachments = append(resAttachments, l.Attachments...)
 		}
-		for _, f := range gb.State.SigningParams.Files {
-			resAttachments = append(resAttachments, f)
-		}
+
+		resAttachments = append(resAttachments, gb.State.SigningParams.Files...)
+
 		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputSignAttachments], resAttachments)
 	}
 

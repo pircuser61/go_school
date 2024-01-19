@@ -99,12 +99,11 @@ func (ae *APIEnv) GetApproveActionNames(w http.ResponseWriter, r *http.Request) 
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
+	errorHandler := newHttpErrorHandler(log, w)
 
 	data, err := ae.DB.GetApproveActionNames(ctx)
 	if err != nil {
-		e := UnknownError
-		log.Error(err)
-		_ = e.sendError(w)
+		errorHandler.handleError(UnknownError, err)
 
 		return
 	}
@@ -112,7 +111,7 @@ func (ae *APIEnv) GetApproveActionNames(w http.ResponseWriter, r *http.Request) 
 	res := make([]GetApproveActionNamesResponse, 0, len(data))
 	for i := range data {
 		res = append(res, GetApproveActionNamesResponse{
-			Id:    data[i].Id,
+			Id:    data[i].ID,
 			Title: data[i].Title,
 		})
 	}
@@ -137,12 +136,11 @@ func (ae *APIEnv) GetApproveStatuses(w http.ResponseWriter, r *http.Request) {
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
+	errorHandler := newHttpErrorHandler(log, w)
 
 	data, err := ae.DB.GetApproveStatuses(ctx)
 	if err != nil {
-		e := UnknownError
-		log.Error(err)
-		_ = e.sendError(w)
+		errorHandler.handleError(UnknownError, err)
 
 		return
 	}
@@ -150,15 +148,13 @@ func (ae *APIEnv) GetApproveStatuses(w http.ResponseWriter, r *http.Request) {
 	res := make([]GetApproveStatusesResponse, 0, len(data))
 	for i := range data {
 		res = append(res, GetApproveStatusesResponse{
-			Id:    data[i].Id,
+			Id:    data[i].ID,
 			Title: data[i].Title,
 		})
 	}
 
 	if err = sendResponse(w, http.StatusOK, res); err != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(UnknownError, err)
 
 		return
 	}
@@ -174,6 +170,7 @@ func (ae *APIEnv) GetNodeDecisions(w http.ResponseWriter, r *http.Request) {
 	data, err := ae.DB.GetNodeDecisions(ctx)
 	if err != nil {
 		log.Error(err)
+
 		_ = GetDecisionsError.sendError(w)
 
 		return
@@ -182,7 +179,7 @@ func (ae *APIEnv) GetNodeDecisions(w http.ResponseWriter, r *http.Request) {
 	res := make([]NodeDecision, 0, len(data))
 	for i := range data {
 		res = append(res, NodeDecision{
-			Id:       data[i].Id,
+			Id:       data[i].ID,
 			NodeType: data[i].NodeType,
 			Decision: data[i].Decision,
 			Title:    data[i].Title,

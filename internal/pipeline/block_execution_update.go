@@ -1,7 +1,7 @@
 package pipeline
 
 import (
-	c "context"
+	"context"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -19,23 +19,21 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
-//nolint:gocyclo //its ok here
-func (gb *GoExecutionBlock) Update(ctx c.Context) (interface{}, error) {
+func (gb *GoExecutionBlock) Update(ctx context.Context) (interface{}, error) {
 	data := gb.RunContext.UpdateData
 	if data == nil {
 		return nil, errors.New("empty data")
 	}
 
 	gb.RunContext.Delegations = gb.RunContext.Delegations.FilterByType("execution")
+
 	switch data.Action {
 	case string(entity.TaskUpdateActionSLABreach):
 		if errUpdate := gb.handleBreachedSLA(ctx); errUpdate != nil {
 			return nil, errUpdate
 		}
 	case string(entity.TaskUpdateActionHalfSLABreach):
-		if errUpdate := gb.handleHalfSLABreached(ctx); errUpdate != nil {
-			return nil, errUpdate
-		}
+		gb.handleHalfSLABreached(ctx)
 	case string(entity.TaskUpdateActionReworkSLABreach):
 		if errUpdate := gb.handleReworkSLABreached(ctx); errUpdate != nil {
 			return nil, errUpdate
@@ -44,6 +42,7 @@ func (gb *GoExecutionBlock) Update(ctx c.Context) (interface{}, error) {
 		if !gb.State.IsTakenInWork {
 			return nil, errors.New("is not taken in work")
 		}
+
 		if errUpdate := gb.updateDecision(ctx); errUpdate != nil {
 			return nil, errUpdate
 		}
@@ -51,6 +50,7 @@ func (gb *GoExecutionBlock) Update(ctx c.Context) (interface{}, error) {
 		if !gb.State.IsTakenInWork {
 			return nil, errors.New("is not taken in work")
 		}
+
 		if errUpdate := gb.changeExecutor(ctx); errUpdate != nil {
 			return nil, errUpdate
 		}
@@ -58,6 +58,7 @@ func (gb *GoExecutionBlock) Update(ctx c.Context) (interface{}, error) {
 		if !gb.State.IsTakenInWork {
 			return nil, errors.New("is not taken in work")
 		}
+
 		if errUpdate := gb.updateRequestInfo(ctx); errUpdate != nil {
 			return nil, errUpdate
 		}
@@ -65,6 +66,7 @@ func (gb *GoExecutionBlock) Update(ctx c.Context) (interface{}, error) {
 		if !gb.State.IsTakenInWork {
 			return nil, errors.New("is not taken in work")
 		}
+
 		if errUpdate := gb.updateReplyInfo(ctx); errUpdate != nil {
 			return nil, errUpdate
 		}
@@ -72,6 +74,7 @@ func (gb *GoExecutionBlock) Update(ctx c.Context) (interface{}, error) {
 		if gb.State.IsTakenInWork {
 			return nil, errors.New("is already taken in work")
 		}
+
 		if errUpdate := gb.executorStartWork(ctx); errUpdate != nil {
 			return nil, errUpdate
 		}
@@ -79,6 +82,7 @@ func (gb *GoExecutionBlock) Update(ctx c.Context) (interface{}, error) {
 		if !gb.State.IsTakenInWork {
 			return nil, errors.New("is not taken in work")
 		}
+
 		if errUpdate := gb.toEditApplication(ctx); errUpdate != nil {
 			return nil, errUpdate
 		}
@@ -100,6 +104,7 @@ func (gb *GoExecutionBlock) Update(ctx c.Context) (interface{}, error) {
 	gb.State.Deadline = deadline
 
 	var stateBytes []byte
+
 	stateBytes, err := json.Marshal(gb.State)
 	if err != nil {
 		return nil, err
@@ -109,6 +114,7 @@ func (gb *GoExecutionBlock) Update(ctx c.Context) (interface{}, error) {
 
 	if _, ok := gb.expectedEvents[eventEnd]; ok {
 		status, _, _ := gb.GetTaskHumanStatus()
+
 		event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, MakeNodeEndEventArgs{
 			NodeName:      gb.Name,
 			NodeShortName: gb.ShortName,
@@ -118,6 +124,7 @@ func (gb *GoExecutionBlock) Update(ctx c.Context) (interface{}, error) {
 		if eventErr != nil {
 			return nil, eventErr
 		}
+
 		gb.happenedEvents = append(gb.happenedEvents, event)
 	}
 
@@ -130,8 +137,8 @@ type ExecutorChangeParams struct {
 	Attachments      []entity.Attachment `json:"attachments,omitempty"`
 }
 
-func (gb *GoExecutionBlock) changeExecutor(ctx c.Context) (err error) {
-	var currentLogin = gb.RunContext.UpdateData.ByLogin
+func (gb *GoExecutionBlock) changeExecutor(ctx context.Context) (err error) {
+	currentLogin := gb.RunContext.UpdateData.ByLogin
 	_, executorFound := gb.State.Executors[currentLogin]
 
 	_, isDelegate := gb.RunContext.Delegations.FindDelegatorFor(currentLogin, getSliceFromMapOfStrings(gb.State.Executors))
@@ -195,12 +202,13 @@ type ExecutionUpdateParams struct {
 }
 
 //nolint:dupl //its not duplicate
-func (gb *GoExecutionBlock) handleBreachedSLA(ctx c.Context) error {
+func (gb *GoExecutionBlock) handleBreachedSLA(ctx context.Context) error {
 	const fn = "pipeline.execution.handleBreachedSLA"
 
 	if !gb.State.CheckSLA {
 		gb.State.SLAChecked = true
 		gb.State.HalfSLAChecked = true
+
 		return nil
 	}
 
@@ -214,16 +222,20 @@ func (gb *GoExecutionBlock) handleBreachedSLA(ctx c.Context) error {
 		if err != nil {
 			log.WithError(err).Info(fn, fmt.Sprintf("executors %v have no delegates", logins))
 		}
+
 		delegations = delegations.FilterByType("execution")
 		logins = delegations.GetUserInArrayWithDelegations(logins)
 
 		var executorEmail string
+
 		for i := range logins {
 			executorEmail, err = gb.RunContext.Services.People.GetUserEmail(ctx, logins[i])
 			if err != nil {
 				log.WithError(err).Warning(fn, fmt.Sprintf("executor login %s not found", logins[i]))
+
 				continue
 			}
+
 			emails = append(emails, executorEmail)
 		}
 
@@ -234,7 +246,8 @@ func (gb *GoExecutionBlock) handleBreachedSLA(ctx c.Context) error {
 		)
 
 		filesList := []string{tpl.Image}
-		files, iconEerr := gb.RunContext.GetIcons(filesList)
+
+		icons, iconEerr := gb.RunContext.GetIcons(filesList)
 		if iconEerr != nil {
 			return iconEerr
 		}
@@ -242,145 +255,163 @@ func (gb *GoExecutionBlock) handleBreachedSLA(ctx c.Context) error {
 		if len(emails) == 0 {
 			return nil
 		}
-		err = gb.RunContext.Services.Sender.SendNotification(ctx, emails, files, tpl)
 
+		err = gb.RunContext.Services.Sender.SendNotification(ctx, emails, icons, tpl)
 		if err != nil {
 			return err
 		}
 	}
+
 	gb.State.SLAChecked = true
 	gb.State.HalfSLAChecked = true
+
 	return nil
 }
 
 //nolint:dupl //its not duplicate
-func (gb *GoExecutionBlock) handleHalfSLABreached(ctx c.Context) error {
+func (gb *GoExecutionBlock) handleHalfSLABreached(ctx context.Context) {
 	const fn = "pipeline.execution.handleHalfSLABreached"
 
 	if !gb.State.CheckSLA {
 		gb.State.SLAChecked = true
 		gb.State.HalfSLAChecked = true
-		return nil
+
+		return
 	}
 
 	log := logger.GetLogger(ctx)
 
 	if gb.State.SLA >= 8 {
-		emails := make([]string, 0, len(gb.State.Executors))
-		logins := getSliceFromMapOfStrings(gb.State.Executors)
+		gb.sendNotification(ctx, log, fn)
+	}
 
-		delegations, err := gb.RunContext.Services.HumanTasks.GetDelegationsByLogins(ctx, logins)
-		if err != nil {
-			log.WithError(err).Info(fn, fmt.Sprintf("executors %v have no delegates", logins))
-		}
-		delegations = delegations.FilterByType("execution")
-		logins = delegations.GetUserInArrayWithDelegations(logins)
+	gb.State.HalfSLAChecked = true
+}
 
-		var executorEmail string
-		for i := range logins {
-			executorEmail, err = gb.RunContext.Services.People.GetUserEmail(ctx, logins[i])
-			if err != nil {
-				log.WithError(err).Warning(fn, fmt.Sprintf("executor login %s not found", logins[i]))
-				continue
-			}
-			emails = append(emails, executorEmail)
-		}
+func (gb *GoExecutionBlock) sendNotification(ctx context.Context, log logger.Logger, fn string) error {
+	emails := make([]string, 0, len(gb.State.Executors))
+	logins := getSliceFromMapOfStrings(gb.State.Executors)
 
-		if len(emails) == 0 {
-			return nil
-		}
+	delegations, err := gb.RunContext.Services.HumanTasks.GetDelegationsByLogins(ctx, logins)
+	if err != nil {
+		log.WithError(err).Info(fn, fmt.Sprintf("executors %v have no delegates", logins))
+	}
 
-		task, getVersionErr := gb.RunContext.Services.Storage.GetVersionByWorkNumber(ctx, gb.RunContext.WorkNumber)
-		if getVersionErr != nil {
-			return getVersionErr
+	delegations = delegations.FilterByType("execution")
+	logins = delegations.GetUserInArrayWithDelegations(logins)
+
+	for i := range logins {
+		executorEmail, getEmailErr := gb.RunContext.Services.People.GetUserEmail(ctx, logins[i])
+		if getEmailErr != nil {
+			log.WithError(getEmailErr).Warning(fn, fmt.Sprintf("executor login %s not found", logins[i]))
+
+			continue
 		}
 
-		processSettings, getVersionErr := gb.RunContext.Services.Storage.GetVersionSettings(ctx, task.VersionID.String())
-		if getVersionErr != nil {
-			return getVersionErr
-		}
+		emails = append(emails, executorEmail)
+	}
 
-		taskRunContext, getDataErr := gb.RunContext.Services.Storage.GetTaskRunContext(ctx, gb.RunContext.WorkNumber)
-		if getDataErr != nil {
-			return getDataErr
-		}
+	if len(emails) == 0 {
+		return nil
+	}
 
-		login := task.Author
+	task, getVersionErr := gb.RunContext.Services.Storage.GetVersionByWorkNumber(ctx, gb.RunContext.WorkNumber)
+	if getVersionErr != nil {
+		return getVersionErr
+	}
 
-		recipient := getRecipientFromState(&taskRunContext.InitialApplication.ApplicationBody)
+	processSettings, getVersionErr := gb.RunContext.Services.Storage.GetVersionSettings(ctx, task.VersionID.String())
+	if getVersionErr != nil {
+		return getVersionErr
+	}
 
-		if recipient != "" {
-			login = recipient
-		}
+	taskRunContext, getDataErr := gb.RunContext.Services.Storage.GetTaskRunContext(ctx, gb.RunContext.WorkNumber)
+	if getDataErr != nil {
+		return getDataErr
+	}
 
-		if processSettings.ResubmissionPeriod > 0 {
-			var getWorksErr error
-			_, getWorksErr = gb.RunContext.Services.Storage.GetWorksForUserWithGivenTimeRange(ctx,
-				processSettings.ResubmissionPeriod,
-				login,
-				task.VersionID.String(),
-				gb.RunContext.WorkNumber,
-			)
-			if getWorksErr != nil {
-				return getWorksErr
-			}
-		}
+	login := task.Author
 
-		slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
-			TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.CurrBlockStartTime,
-				FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100)}},
-			WorkType: sla.WorkHourType(gb.State.WorkType),
-		})
-		if getSlaInfoErr != nil {
-			return getSlaInfoErr
-		}
+	recipient := getRecipientFromState(&taskRunContext.InitialApplication.ApplicationBody)
 
-		lastWorksForUser := make([]*entity.EriusTask, 0)
+	if recipient != "" {
+		login = recipient
+	}
 
-		if processSettings.ResubmissionPeriod > 0 {
-			var getWorksErr error
-			lastWorksForUser, getWorksErr = gb.RunContext.Services.Storage.GetWorksForUserWithGivenTimeRange(ctx,
-				processSettings.ResubmissionPeriod,
-				login,
-				task.VersionID.String(),
-				gb.RunContext.WorkNumber,
-			)
-			if getWorksErr != nil {
-				return getWorksErr
-			}
-		}
-
-		tpl := mail.NewExecutiontHalfSLATpl(
+	if processSettings.ResubmissionPeriod > 0 {
+		_, getWorksErr := gb.RunContext.Services.Storage.GetWorksForUserWithGivenTimeRange(ctx,
+			processSettings.ResubmissionPeriod,
+			login,
+			task.VersionID.String(),
 			gb.RunContext.WorkNumber,
-			gb.RunContext.NotifName,
-			gb.RunContext.Services.Sender.SdAddress,
-			gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(gb.RunContext.CurrBlockStartTime, gb.State.SLA,
-				slaInfoPtr),
-			lastWorksForUser,
 		)
-
-		files := []string{tpl.Image}
-
-		if len(lastWorksForUser) != 0 {
-			files = append(files, warningImg)
-		}
-
-		iconFiles, fileErr := gb.RunContext.GetIcons(files)
-		if fileErr != nil {
-			return fileErr
-		}
-
-		err = gb.RunContext.Services.Sender.SendNotification(ctx, emails, iconFiles, tpl)
-		if err != nil {
-			return err
+		if getWorksErr != nil {
+			return getWorksErr
 		}
 	}
-	gb.State.HalfSLAChecked = true
+
+	slaInfoPtr, getSLAInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(
+		ctx,
+		sla.InfoDTO{
+			TaskCompletionIntervals: []entity.TaskCompletionInterval{
+				{
+					StartedAt:  gb.RunContext.CurrBlockStartTime,
+					FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100),
+				},
+			},
+			WorkType: sla.WorkHourType(gb.State.WorkType),
+		},
+	)
+	if getSLAInfoErr != nil {
+		return getSLAInfoErr
+	}
+
+	lastWorksForUser := make([]*entity.EriusTask, 0)
+
+	if processSettings.ResubmissionPeriod > 0 {
+		var getWorksErr error
+
+		lastWorksForUser, getWorksErr = gb.RunContext.Services.Storage.GetWorksForUserWithGivenTimeRange(ctx,
+			processSettings.ResubmissionPeriod,
+			login,
+			task.VersionID.String(),
+			gb.RunContext.WorkNumber,
+		)
+		if getWorksErr != nil {
+			return getWorksErr
+		}
+	}
+
+	tpl := mail.NewExecutiontHalfSLATpl(
+		gb.RunContext.WorkNumber,
+		gb.RunContext.NotifName,
+		gb.RunContext.Services.Sender.SdAddress,
+		gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(gb.RunContext.CurrBlockStartTime, gb.State.SLA,
+			slaInfoPtr),
+		lastWorksForUser,
+	)
+
+	files := []string{tpl.Image}
+
+	if len(lastWorksForUser) != 0 {
+		files = append(files, warningImg)
+	}
+
+	iconFiles, fileErr := gb.RunContext.GetIcons(files)
+	if fileErr != nil {
+		return fileErr
+	}
+
+	err = gb.RunContext.Services.Sender.SendNotification(ctx, emails, iconFiles, tpl)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
 // nolint:dupl // another action
-func (gb *GoExecutionBlock) handleReworkSLABreached(ctx c.Context) error {
+func (gb *GoExecutionBlock) handleReworkSLABreached(ctx context.Context) error {
 	const fn = "pipeline.execution.handleReworkSLABreached"
 
 	if !gb.State.CheckReworkSLA {
@@ -410,22 +441,29 @@ func (gb *GoExecutionBlock) handleReworkSLABreached(ctx c.Context) error {
 
 	loginsToNotify := []string{gb.RunContext.Initiator}
 
-	var em string
-	var err error
+	var (
+		em  string
+		err error
+	)
+
 	emails := make([]string, 0, len(loginsToNotify))
+
 	for _, login := range loginsToNotify {
 		em, err = gb.RunContext.Services.People.GetUserEmail(ctx, login)
 		if err != nil {
 			log.WithError(err).Warning(fn, fmt.Sprintf("login %s not found", login))
+
 			continue
 		}
 
 		emails = append(emails, em)
 	}
+
 	tpl := mail.NewReworkSLATpl(gb.RunContext.WorkNumber, gb.RunContext.NotifName,
 		gb.RunContext.Services.Sender.SdAddress, gb.State.ReworkSLA, gb.State.CheckSLA)
 
 	filesList := []string{tpl.Image}
+
 	files, iconEerr := gb.RunContext.GetIcons(filesList)
 	if iconEerr != nil {
 		return iconEerr
@@ -440,18 +478,20 @@ func (gb *GoExecutionBlock) handleReworkSLABreached(ctx c.Context) error {
 	if err != nil {
 		return err
 	}
+
 	for _, event := range nodeEvents {
 		// event for this node will spawn later
 		if event.NodeName == gb.Name {
 			continue
 		}
+
 		gb.happenedEvents = append(gb.happenedEvents, event)
 	}
 
 	return nil
 }
 
-func (gb *GoExecutionBlock) handleBreachedDayBeforeSLARequestAddInfo(ctx c.Context) error {
+func (gb *GoExecutionBlock) handleBreachedDayBeforeSLARequestAddInfo(ctx context.Context) error {
 	const fn = "pipeline.execution.handleBreachedDayBeforeSLARequestAddInfo"
 
 	if !gb.State.CheckDayBeforeSLARequestInfo {
@@ -463,19 +503,23 @@ func (gb *GoExecutionBlock) handleBreachedDayBeforeSLARequestAddInfo(ctx c.Conte
 	loginsToNotify := []string{gb.RunContext.Initiator}
 
 	emails := make([]string, 0, len(loginsToNotify))
+
 	for _, login := range loginsToNotify {
 		email, err := gb.RunContext.Services.People.GetUserEmail(ctx, login)
 		if err != nil {
 			log.WithError(err).Warning(fn, fmt.Sprintf("login %s not found", login))
+
 			continue
 		}
 
 		emails = append(emails, email)
 	}
+
 	tpl := mail.NewDayBeforeRequestAddInfoSLABreached(gb.RunContext.WorkNumber, gb.RunContext.NotifName,
 		gb.RunContext.Services.Sender.SdAddress)
 
 	filesList := []string{tpl.Image}
+
 	files, iconErr := gb.RunContext.GetIcons(filesList)
 	if iconErr != nil {
 		return iconErr
@@ -492,9 +536,10 @@ func (gb *GoExecutionBlock) handleBreachedDayBeforeSLARequestAddInfo(ctx c.Conte
 }
 
 //nolint:dupl // dont duplicate
-func (gb *GoExecutionBlock) HandleBreachedSLARequestAddInfo(ctx c.Context) error {
+func (gb *GoExecutionBlock) HandleBreachedSLARequestAddInfo(ctx context.Context) error {
 	const fn = "pipeline.execution.HandleBreachedSLARequestAddInfo"
-	var comment = "заявка автоматически перенесена в архив по истечении 3 дней"
+
+	comment := "заявка автоматически перенесена в архив по истечении 3 дней"
 
 	log := logger.GetLogger(ctx)
 
@@ -515,31 +560,40 @@ func (gb *GoExecutionBlock) HandleBreachedSLARequestAddInfo(ctx c.Context) error
 	}
 
 	executors := getSliceFromMapOfStrings(gb.State.Executors)
+
 	delegates, getDelegationsErr := gb.RunContext.Services.HumanTasks.GetDelegationsByLogins(ctx, executors)
 	if getDelegationsErr != nil {
 		return getDelegationsErr
 	}
+
 	delegates = delegates.FilterByType("execution")
 
 	loginsToNotify := delegates.GetUserInArrayWithDelegations(executors)
 	loginsToNotify = append(loginsToNotify, gb.RunContext.Initiator)
 
-	var em string
-	var err error
+	var (
+		em  string
+		err error
+	)
+
 	emails := make([]string, 0, len(loginsToNotify))
+
 	for _, login := range loginsToNotify {
 		em, err = gb.RunContext.Services.People.GetUserEmail(ctx, login)
 		if err != nil {
 			log.WithError(err).Warning(fn, fmt.Sprintf("login %s not found", login))
+
 			continue
 		}
 
 		emails = append(emails, em)
 	}
+
 	tpl := mail.NewRequestAddInfoSLABreached(gb.RunContext.WorkNumber, gb.RunContext.NotifName,
 		gb.RunContext.Services.Sender.SdAddress, gb.State.ReworkSLA)
 
 	filesList := []string{tpl.Image}
+
 	files, iconEerr := gb.RunContext.GetIcons(filesList)
 	if iconEerr != nil {
 		return iconEerr
@@ -554,18 +608,20 @@ func (gb *GoExecutionBlock) HandleBreachedSLARequestAddInfo(ctx c.Context) error
 	if err != nil {
 		return err
 	}
+
 	for _, event := range nodeEvents {
 		// event for this node will spawn later
 		if event.NodeName == gb.Name {
 			continue
 		}
+
 		gb.happenedEvents = append(gb.happenedEvents, event)
 	}
 
 	return nil
 }
 
-func (gb *GoExecutionBlock) updateDecision(ctx c.Context) error {
+func (gb *GoExecutionBlock) updateDecision(ctx context.Context) error {
 	var updateParams ExecutionUpdateParams
 
 	err := json.Unmarshal(gb.RunContext.UpdateData.Parameters, &updateParams)
@@ -605,10 +661,10 @@ type replyInfoUpdateParams struct {
 	ExecutorLogin string              `json:"executor_login"`
 }
 
-//nolint:gocyclo //its ok here
-func (gb *GoExecutionBlock) updateRequestInfo(ctx c.Context) (err error) {
+func (gb *GoExecutionBlock) updateRequestInfo(ctx context.Context) (err error) {
 	var updateParams requestInfoUpdateParams
-	var delegations = gb.RunContext.Delegations.FilterByType("execution")
+
+	delegations := gb.RunContext.Delegations.FilterByType("execution")
 
 	err = json.Unmarshal(gb.RunContext.UpdateData.Parameters, &updateParams)
 	if err != nil {
@@ -643,8 +699,7 @@ func (gb *GoExecutionBlock) updateRequestInfo(ctx c.Context) (err error) {
 	return err
 }
 
-//nolint:gocyclo //its ok here
-func (gb *GoExecutionBlock) updateReplyInfo(ctx c.Context) (err error) {
+func (gb *GoExecutionBlock) updateReplyInfo(ctx context.Context) (err error) {
 	if gb.RunContext.UpdateData.ByLogin != gb.RunContext.Initiator {
 		return NewUserIsNotPartOfProcessErr()
 	}
@@ -661,7 +716,8 @@ func (gb *GoExecutionBlock) updateReplyInfo(ctx c.Context) (err error) {
 		return errSet
 	}
 
-	if err = gb.notifyNewInfoReceived(ctx); err != nil {
+	err = gb.notifyNewInfoReceived(ctx)
+	if err != nil {
 		return err
 	}
 
@@ -681,11 +737,16 @@ func (a *ExecutionData) setReplyExecutionInfo(login string, in *replyInfoUpdateP
 	return nil
 }
 
-func (a *ExecutionData) SetRequestExecutionInfo(login string, delegations hs.Delegations,
-	in *requestInfoUpdateParams) error {
+func (a *ExecutionData) SetRequestExecutionInfo(
+	login string,
+	delegations hs.Delegations,
+	in *requestInfoUpdateParams,
+) error {
 	_, executorFound := a.Executors[login]
 	delegateFor, isDelegate := delegations.FindDelegatorFor(
-		login, getSliceFromMapOfStrings(a.Executors))
+		login,
+		getSliceFromMapOfStrings(a.Executors),
+	)
 
 	if !(executorFound || isDelegate) && in.ReqType == RequestInfoQuestion {
 		return NewUserIsNotPartOfProcessErr()
@@ -707,12 +768,14 @@ func (a *ExecutionData) SetRequestExecutionInfo(login string, delegations hs.Del
 	return nil
 }
 
-func (gb *GoExecutionBlock) executorStartWork(ctx c.Context) (err error) {
-	var currentLogin = gb.RunContext.UpdateData.ByLogin
+func (gb *GoExecutionBlock) executorStartWork(ctx context.Context) (err error) {
+	currentLogin := gb.RunContext.UpdateData.ByLogin
 	_, executorFound := gb.State.Executors[currentLogin]
 
-	_, isDelegate := gb.RunContext.Delegations.FindDelegatorFor(currentLogin,
-		getSliceFromMapOfStrings(gb.State.Executors))
+	_, isDelegate := gb.RunContext.Delegations.FindDelegatorFor(
+		currentLogin,
+		getSliceFromMapOfStrings(gb.State.Executors),
+	)
 	if !(executorFound || isDelegate) {
 		return NewUserIsNotPartOfProcessErr()
 	}
@@ -728,30 +791,37 @@ func (gb *GoExecutionBlock) executorStartWork(ctx c.Context) (err error) {
 
 	gb.State.IsTakenInWork = true
 
-	slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
-		TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.CurrBlockStartTime,
-			FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100)}},
+	slaInfoPtr, getSLAInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDTO{
+		TaskCompletionIntervals: []entity.TaskCompletionInterval{{
+			StartedAt:  gb.RunContext.CurrBlockStartTime,
+			FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100),
+		}},
 		WorkType: sla.WorkHourType(gb.State.WorkType),
 	})
-
-	if getSlaInfoErr != nil {
-		return getSlaInfoErr
+	if getSLAInfoErr != nil {
+		return getSLAInfoErr
 	}
-	workHours := gb.RunContext.Services.SLAService.GetWorkHoursBetweenDates(gb.RunContext.CurrBlockStartTime,
-		time.Now(), slaInfoPtr)
+
+	workHours := gb.RunContext.Services.SLAService.GetWorkHoursBetweenDates(
+		gb.RunContext.CurrBlockStartTime,
+		time.Now(),
+		slaInfoPtr,
+	)
 	gb.State.IncreaseSLA(workHours)
 
-	if !gb.RunContext.skipNotifications {
-		if err = gb.emailGroupExecutors(ctx, gb.RunContext.UpdateData.ByLogin, executorLogins); err != nil {
-			return err
-		}
+	if gb.RunContext.skipNotifications {
+		return nil
+	}
+
+	err = gb.emailGroupExecutors(ctx, gb.RunContext.UpdateData.ByLogin, executorLogins)
+	if err != nil {
+		return err
 	}
 
 	return nil
 }
 
-// nolint:gocyclo // mb later
-func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork string, logins map[string]struct{}) (err error) {
+func (gb *GoExecutionBlock) emailGroupExecutors(ctx context.Context, loginTakenInWork string, logins map[string]struct{}) (err error) {
 	log := logger.GetLogger(ctx)
 
 	executors := getSliceFromMapOfStrings(logins)
@@ -767,11 +837,13 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 	loginsToNotify := delegates.GetUserInArrayWithDelegations(executors)
 
 	emails := make([]string, 0, len(executors))
+
 	for _, login := range loginsToNotify {
 		if login != loginTakenInWork {
 			email, emailErr := gb.RunContext.Services.People.GetUserEmail(ctx, login)
 			if emailErr != nil {
 				log.WithField("login", login).WithError(emailErr).Warning("couldn't get email")
+
 				continue
 			}
 
@@ -833,6 +905,7 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 
 	if processSettings.ResubmissionPeriod > 0 {
 		var getWorksErr error
+
 		lastWorksForUser, getWorksErr = gb.RunContext.Services.Storage.GetWorksForUserWithGivenTimeRange(ctx,
 			processSettings.ResubmissionPeriod,
 			login,
@@ -847,7 +920,7 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 	tpl := mail.NewExecutionTakenInWorkTpl(&mail.ExecutorNotifTemplate{
 		WorkNumber:  gb.RunContext.WorkNumber,
 		Name:        gb.RunContext.NotifName,
-		SdUrl:       gb.RunContext.Services.Sender.SdAddress,
+		SdURL:       gb.RunContext.Services.Sender.SdAddress,
 		Description: description,
 		Executor:    typedAuthor,
 		Initiator:   initiatorInfo,
@@ -868,6 +941,7 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 			if ok && len(attachFiles) != 0 {
 				descIcons := []string{downloadImg}
 				iconsName = append(iconsName, descIcons...)
+
 				break
 			}
 		}
@@ -877,6 +951,7 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 	if err != nil {
 		return err
 	}
+
 	files = append(files, iconFiles...)
 
 	if errSend := gb.RunContext.Services.Sender.SendNotification(ctx, emails, files, tpl); errSend != nil {
@@ -888,9 +963,11 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 		return emailErr
 	}
 
-	slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
-		TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.CurrBlockStartTime,
-			FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100)}},
+	slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDTO{
+		TaskCompletionIntervals: []entity.TaskCompletionInterval{{
+			StartedAt:  gb.RunContext.CurrBlockStartTime,
+			FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100),
+		}},
 		WorkType: sla.WorkHourType(gb.State.WorkType),
 	})
 
@@ -945,6 +1022,7 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 			attachFiles, ok := links.([]file_registry.AttachInfo)
 			if ok && len(attachFiles) != 0 {
 				iconsName = append(iconsName, downloadImg)
+
 				break
 			}
 		}
@@ -968,8 +1046,7 @@ type executorUpdateEditParams struct {
 	Attachments []entity.Attachment `json:"attachments"`
 }
 
-//nolint:gocyclo //its ok here
-func (gb *GoExecutionBlock) toEditApplication(ctx c.Context) (err error) {
+func (gb *GoExecutionBlock) toEditApplication(ctx context.Context) (err error) {
 	if gb.State.Decision != nil {
 		return errors.New("decision already set")
 	}
@@ -995,7 +1072,8 @@ func (gb *GoExecutionBlock) toEditApplication(ctx c.Context) (err error) {
 			return editErr
 		}
 
-		if err = gb.notifyNeedRework(ctx); err != nil {
+		err = gb.notifyNeedRework(ctx)
+		if err != nil {
 			return err
 		}
 

@@ -205,10 +205,13 @@ func converter(data interface{}) interface{} {
 	if err != nil {
 		return data
 	}
+
 	var newData interface{}
+
 	if unmErr := json.Unmarshal(bytes, &newData); unmErr != nil {
 		return data
 	}
+
 	return newData
 }
 
@@ -219,8 +222,10 @@ func (c *VariableStore) SetValue(name string, value interface{}) {
 	for reflect.TypeOf(value).Kind() == reflect.Pointer {
 		if reflect.ValueOf(value).IsNil() {
 			value = reflect.New(reflect.TypeOf(value).Elem()).Elem().Interface()
+
 			break
 		}
+
 		value = reflect.ValueOf(value).Elem().Interface()
 	}
 
@@ -282,6 +287,7 @@ func (c *VariableStore) GetState(stepName string) (interface{}, bool) {
 	defer c.Unlock()
 
 	val, ok := c.State[stepName]
+
 	return val, ok
 }
 

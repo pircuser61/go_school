@@ -31,17 +31,23 @@ const headImg = "header.png"
 
 func (ae *APIEnv) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 	const funcName = "update_tasks_by_mails"
+
 	ctx, s := trace.StartSpan(req.Context(), funcName)
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
+	errorHandler := newHttpErrorHandler(log, w)
+
 	log.Info(funcName, ", started")
 
 	emails, err := ae.MailFetcher.FetchEmails(ctx)
 	if err != nil {
 		e := ParseMailsError
+
 		log.WithField(funcName, "parse parsedEmails failed").Error(err)
-		_ = e.sendError(w)
+
+		errorHandler.sendError(e)
+
 		return
 	}
 
@@ -56,12 +62,14 @@ func (ae *APIEnv) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 		if errGetUser != nil {
 			log.WithField("workNumber", emails[i].Action.WorkNumber).
 				WithField("login", emails[i].Action.Login).Error(errGetUser)
+
 			continue
 		}
 
 		useInfo, errToUserinfo := usr.ToUserinfo()
 		if errToUserinfo != nil {
 			log.Error(errToUserinfo)
+
 			continue
 		}
 
@@ -70,6 +78,7 @@ func (ae *APIEnv) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 				WithField("emailFromEmail", emails[i].From).
 				WithField("proxyEmails", useInfo.ProxyEmails).
 				Error(errors.New("login from email not eq or not in proxyAddresses"))
+
 			continue
 		}
 
@@ -79,6 +88,7 @@ func (ae *APIEnv) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 				log.WithField("workNumber", emails[i].Action.WorkNumber).
 					WithField("fileName", fileName).
 					Error(errSave)
+
 				continue
 			}
 
@@ -88,6 +98,7 @@ func (ae *APIEnv) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 		jsonBody, errParse := json.Marshal(emails[i].Action)
 		if errParse != nil {
 			log.WithField("workNumber", emails[i].Action.WorkNumber).Error(errParse)
+
 			continue
 		}
 
@@ -101,6 +112,7 @@ func (ae *APIEnv) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 			log.WithField("action", *emails[i].Action).
 				WithField("workNumber", emails[i].Action.WorkNumber).
 				Error(errUpdate)
+
 			continue
 		}
 	}
@@ -114,7 +126,6 @@ func (ae *APIEnv) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-//nolint:gocyclo //its ok here
 func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumber string) {
 	ctx, s := trace.StartSpan(req.Context(), "update_task")
 	defer s.End()
@@ -154,6 +165,7 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 		e := NoUserInContextError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
+
 		return
 	}
 
@@ -193,7 +205,7 @@ type updateStepData struct {
 	login       string
 }
 
-func (ae *APIEnv) updateStepInternal(ctx c.Context, data updateStepData) bool {
+func (ae *APIEnv) updateStepInternal(ctx c.Context, data *updateStepData) bool {
 	log := logger.GetLogger(ctx)
 
 	txStorage, transactionErr := ae.DB.StartTransaction(ctx)
@@ -207,6 +219,7 @@ func (ae *APIEnv) updateStepInternal(ctx c.Context, data updateStepData) bool {
 			log = log.WithField("funcName", "updateStepInternal").
 				WithField("panic handle", true)
 			log.Error(r)
+
 			if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
 				log.WithError(errors.New("couldn't rollback tx")).
 					Error(txErr)
@@ -221,9 +234,12 @@ func (ae *APIEnv) updateStepInternal(ctx c.Context, data updateStepData) bool {
 				WithError(errors.New("couldn't rollback tx")).
 				Error(txErr)
 		}
+
 		log.WithError(getErr).Error("couldn't get block to update")
+
 		return false
 	}
+
 	runCtx := &pipeline.BlockRunContext{
 		TaskID:      data.task.ID,
 		WorkNumber:  data.workNumber,
@@ -267,8 +283,11 @@ func (ae *APIEnv) updateStepInternal(ctx c.Context, data updateStepData) bool {
 				WithError(errors.New("couldn't rollback tx")).
 				Error(txErr)
 		}
-		log.WithError(errors.New("couldn't get block from pipeline")).
+
+		log.
+			WithError(errors.New("couldn't get block from pipeline")).
 			Error("couldn't get block to update")
+
 		return false
 	}
 
@@ -281,20 +300,23 @@ func (ae *APIEnv) updateStepInternal(ctx c.Context, data updateStepData) bool {
 				WithError(errors.New("couldn't rollback tx")).
 				Error(txErr)
 		}
+
 		log.WithError(blockErr).Error("couldn't update block")
+
 		return false
 	}
 
 	if err := txStorage.CommitTransaction(ctx); err != nil {
 		log.WithError(err).Error("couldn't update block, CommitTransaction")
+
 		return false
 	}
 
 	runCtx.NotifyEvents(ctx)
+
 	return true
 }
 
-//nolint:gocyclo // ok here
 func (ae *APIEnv) updateTaskBlockInternal(ctx c.Context, workNumber, userLogin string, in *entity.TaskUpdate) (err error) {
 	ctxLocal, span := trace.StartSpan(ctx, "update_task_internal")
 	defer span.End()
@@ -320,50 +342,61 @@ func (ae *APIEnv) updateTaskBlockInternal(ctx c.Context, workNumber, userLogin s
 		delegationsByApprovement.GetUserInArrayWithDelegators([]string{userLogin}),
 		delegationsByExecution.GetUserInArrayWithDelegators([]string{userLogin}),
 		userLogin,
-		workNumber)
-
+		workNumber,
+	)
 	if err != nil {
 		e := GetTaskError
+
 		return errors.New(e.errorMessage(nil))
 	}
 
 	if !dbTask.IsRun() {
 		e := UpdateNotRunningTaskError
+
 		return errors.New(e.errorMessage(nil))
 	}
 
 	scenario, err := ae.DB.GetPipelineVersion(ctxLocal, dbTask.VersionID, false)
 	if err != nil {
 		e := GetVersionError
+
 		return errors.New(e.errorMessage(err))
 	}
 
 	var steps entity.TaskSteps
+
 	for _, blockType := range blockTypes {
 		stepsByBlock, stepErr := ae.DB.GetUnfinishedTaskStepsByWorkIdAndStepType(ctxLocal, dbTask.ID, blockType, in)
 		if stepErr != nil {
 			e := GetTaskError
+
 			return errors.New(e.errorMessage(nil))
 		}
+
 		steps = append(steps, stepsByBlock...)
 	}
 
 	if len(steps) == 0 {
 		e := GetTaskError
+
 		return errors.New(e.errorMessage(nil))
 	}
 
 	couldUpdateOne := false
+
 	for _, item := range steps {
-		success := ae.updateStepInternal(ctxLocal, updateStepData{
-			scenario:    scenario,
-			task:        dbTask,
-			step:        item,
-			updData:     in,
-			delegations: delegations,
-			workNumber:  workNumber,
-			login:       userLogin,
-		})
+		success := ae.updateStepInternal(
+			ctxLocal,
+			&updateStepData{
+				scenario:    scenario,
+				task:        dbTask,
+				step:        item,
+				updData:     in,
+				delegations: delegations,
+				workNumber:  workNumber,
+				login:       userLogin,
+			},
+		)
 		if success {
 			couldUpdateOne = true
 		}
@@ -371,10 +404,11 @@ func (ae *APIEnv) updateTaskBlockInternal(ctx c.Context, workNumber, userLogin s
 
 	if !couldUpdateOne {
 		e := UpdateBlockError
+
 		return errors.New(e.errorMessage(errors.New("couldn't update work")))
 	}
 
-	return
+	return nil
 }
 
 func (ae *APIEnv) getAuthorAndMembersToNotify(ctx c.Context, workNumber, userLogin string) ([]string, error) {
@@ -382,9 +416,11 @@ func (ae *APIEnv) getAuthorAndMembersToNotify(ctx c.Context, workNumber, userLog
 	if err != nil {
 		return nil, err
 	}
+
 	executors := make([]string, 0, len(taskMembers))
 	approvers := make([]string, 0, len(taskMembers))
 	formexec := make([]string, 0, len(taskMembers))
+
 	for _, m := range taskMembers {
 		switch m.Type {
 		case "execution":
@@ -400,6 +436,7 @@ func (ae *APIEnv) getAuthorAndMembersToNotify(ctx c.Context, workNumber, userLog
 	if getDelegatesErr != nil {
 		return nil, getDelegatesErr
 	}
+
 	execDelegates = execDelegates.FilterByType("execution")
 	executorDelegates := (&execDelegates).GetUniqueLogins()
 
@@ -407,14 +444,22 @@ func (ae *APIEnv) getAuthorAndMembersToNotify(ctx c.Context, workNumber, userLog
 	if getDelegatesErr != nil {
 		return nil, getDelegatesErr
 	}
+
 	apprDelegates = apprDelegates.FilterByType("approvement")
 	approverDelegates := (&execDelegates).GetUniqueLogins()
 
 	uniquePeople := make(map[string]struct{})
+
 	peopleGroups := [][]string{
-		executors, approvers, executorDelegates, approverDelegates, formexec,
+		executors,
+		approvers,
+		executorDelegates,
+		approverDelegates,
+		formexec,
 	}
+
 	uniquePeople[userLogin] = struct{}{}
+
 	for _, g := range peopleGroups {
 		for _, p := range g {
 			uniquePeople[p] = struct{}{}
@@ -425,6 +470,7 @@ func (ae *APIEnv) getAuthorAndMembersToNotify(ctx c.Context, workNumber, userLog
 	for k := range uniquePeople {
 		res = append(res, k)
 	}
+
 	return res, nil
 }
 
@@ -453,12 +499,14 @@ func (ae *APIEnv) updateTaskInternal(ctx c.Context, workNumber, userLogin string
 	}
 
 	emails := make([]string, 0, len(logins))
+
 	for _, login := range logins {
-		email, getUserEmailErr := ae.People.GetUserEmail(ctxLocal, login)
+		userEmail, getUserEmailErr := ae.People.GetUserEmail(ctxLocal, login)
 		if getUserEmailErr != nil {
 			continue
 		}
-		emails = append(emails, email)
+
+		emails = append(emails, userEmail)
 	}
 
 	cancelAppParams := entity.CancelAppParams{}
@@ -470,11 +518,13 @@ func (ae *APIEnv) updateTaskInternal(ctx c.Context, workNumber, userLogin string
 	if transactionErr != nil {
 		return transactionErr
 	}
+
 	defer func() {
 		if r := recover(); r != nil {
 			log = log.WithField("funcName", "updateTaskInternal").
 				WithField("panic handle", true)
 			log.Error(r)
+
 			if txErr := txStorage.RollbackTransaction(ctxLocal); txErr != nil {
 				log.WithError(errors.New("couldn't rollback tx")).
 					Error(txErr)
@@ -482,38 +532,14 @@ func (ae *APIEnv) updateTaskInternal(ctx c.Context, workNumber, userLogin string
 		}
 	}()
 
-	err = ae.DB.StopTaskBlocks(ctxLocal, dbTask.ID)
+	err = ae.updateTasks(ctx, dbTask, txStorage, cancelAppParams, userLogin)
 	if err != nil {
-		if txErr := txStorage.RollbackTransaction(ctxLocal); txErr != nil {
-			log.WithField("funcName", "StopTaskBlocks").
-				WithError(errors.New("couldn't rollback tx")).
-				Error(txErr)
-		}
-		return err
-	}
-
-	err = ae.DB.UpdateTaskStatus(ctxLocal, dbTask.ID, db.RunStatusFinished, cancelAppParams.Comment, userLogin)
-	if err != nil {
-		if txErr := txStorage.RollbackTransaction(ctxLocal); txErr != nil {
-			log.WithField("funcName", "UpdateTaskStatus").
-				WithError(errors.New("couldn't rollback tx")).
-				Error(txErr)
-		}
-		return err
-	}
-
-	_, err = ae.DB.UpdateTaskHumanStatus(ctxLocal, dbTask.ID, string(pipeline.StatusRevoke), "")
-	if err != nil {
-		if txErr := txStorage.RollbackTransaction(ctxLocal); txErr != nil {
-			log.WithField("funcName", "UpdateTaskHumanStatus").
-				WithError(errors.New("couldn't rollback tx")).
-				Error(txErr)
-		}
 		return err
 	}
 
 	if commitErr := txStorage.CommitTransaction(ctxLocal); commitErr != nil {
 		log.WithError(commitErr).Error("couldn't commit transaction")
+
 		return commitErr
 	}
 
@@ -543,7 +569,8 @@ func (ae *APIEnv) updateTaskInternal(ctx c.Context, workNumber, userLogin string
 	file, ok := ae.Mail.Images[em.Image]
 	if !ok {
 		log.Error("couldn't find images: ", em.Image)
-		return
+
+		return nil
 	}
 
 	files := []email.Attachment{
@@ -562,12 +589,57 @@ func (ae *APIEnv) updateTaskInternal(ctx c.Context, workNumber, userLogin string
 	return nil
 }
 
-//nolint:gocyclo //its ok here
+func (ae *APIEnv) updateTasks(
+	ctx c.Context,
+	dbTask *entity.EriusTask,
+	txStorage db.Database,
+	cancelAppParams entity.CancelAppParams,
+	userLogin string,
+) error {
+	log := logger.GetLogger(ctx)
+
+	err := ae.DB.StopTaskBlocks(ctx, dbTask.ID)
+	if err != nil {
+		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
+			log.WithField("funcName", "StopTaskBlocks").
+				WithError(errors.New("couldn't rollback tx")).
+				Error(txErr)
+		}
+
+		return err
+	}
+
+	err = ae.DB.UpdateTaskStatus(ctx, dbTask.ID, db.RunStatusFinished, cancelAppParams.Comment, userLogin)
+	if err != nil {
+		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
+			log.WithField("funcName", "UpdateTaskStatus").
+				WithError(errors.New("couldn't rollback tx")).
+				Error(txErr)
+		}
+
+		return err
+	}
+
+	_, err = ae.DB.UpdateTaskHumanStatus(ctx, dbTask.ID, string(pipeline.StatusRevoke), "")
+	if err != nil {
+		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
+			log.WithField("funcName", "UpdateTaskHumanStatus").
+				WithError(errors.New("couldn't rollback tx")).
+				Error(txErr)
+		}
+
+		return err
+	}
+
+	return nil
+}
+
 func (ae *APIEnv) RateApplication(w http.ResponseWriter, r *http.Request, workNumber string) {
 	ctx, s := trace.StartSpan(r.Context(), "rate_application")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
+	errorHandler := newHttpErrorHandler(log, w)
 
 	b, err := io.ReadAll(r.Body)
 	defer r.Body.Close()
@@ -582,18 +654,15 @@ func (ae *APIEnv) RateApplication(w http.ResponseWriter, r *http.Request, workNu
 
 	req := &RateApplicationRequest{}
 	if err = json.Unmarshal(b, req); err != nil {
-		e := UpdateTaskParsingError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(UpdateTaskParsingError, err)
 
 		return
 	}
 
 	ui, err := user.GetUserInfoFromCtx(ctx)
 	if err != nil {
-		e := NoUserInContextError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(NoUserInContextError, err)
+
 		return
 	}
 
@@ -604,17 +673,13 @@ func (ae *APIEnv) RateApplication(w http.ResponseWriter, r *http.Request, workNu
 		Rate:       req.Rate,
 	})
 	if err != nil {
-		e := UpdateTaskRateError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(UpdateTaskRateError, err)
 
 		return
 	}
 
 	if err = sendResponse(w, http.StatusOK, nil); err != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(UnknownError, err)
 
 		return
 	}
@@ -632,30 +697,27 @@ func (ae *APIEnv) StopTasks(w http.ResponseWriter, r *http.Request) {
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
+	errorHandler := newHttpErrorHandler(log, w)
 
 	b, err := io.ReadAll(r.Body)
 	if err != nil {
-		e := RequestReadError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(RequestReadError, err)
+
 		return
 	}
 	defer r.Body.Close()
 
 	req := &TasksStop{}
 	if err = json.Unmarshal(b, req); err != nil {
-		e := StopTaskParsingError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(StopTaskParsingError, err)
 
 		return
 	}
 
 	ui, err := user.GetUserInfoFromCtx(ctx)
 	if err != nil {
-		e := NoUserInContextError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(NoUserInContextError, err)
+
 		return
 	}
 
@@ -668,15 +730,17 @@ func (ae *APIEnv) StopTasks(w http.ResponseWriter, r *http.Request) {
 	txStorage, transactionErr := ae.DB.StartTransaction(ctx)
 	if transactionErr != nil {
 		log.WithError(transactionErr).Error("couldn't start transaction")
-		e := UnknownError
-		_ = e.sendError(w)
+		errorHandler.sendError(UnknownError)
+
 		return
 	}
+
 	defer func() {
 		if r := recover(); r != nil {
 			log = log.WithField("funcName", "StopTasks").
 				WithField("panic handle", true)
 			log.Error(r)
+
 			if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
 				log.WithError(errors.New("couldn't rollback tx")).
 					Error(txErr)
@@ -692,7 +756,9 @@ func (ae *APIEnv) StopTasks(w http.ResponseWriter, r *http.Request) {
 					WithError(errors.New("couldn't rollback tx")).
 					Error(txErr)
 			}
+
 			log.WithError(getTaskErr).Error("couldn't get task")
+
 			continue
 		}
 
@@ -703,6 +769,7 @@ func (ae *APIEnv) StopTasks(w http.ResponseWriter, r *http.Request) {
 				WorkNumber: dbTask.WorkNumber,
 				ID:         dbTask.ID,
 			})
+
 			continue
 		}
 
@@ -713,7 +780,9 @@ func (ae *APIEnv) StopTasks(w http.ResponseWriter, r *http.Request) {
 					WithError(errors.New("couldn't rollback tx")).
 					Error(txErr)
 			}
+
 			log.WithError(err).Error("couldn't stop task blocks")
+
 			continue
 		}
 
@@ -724,7 +793,9 @@ func (ae *APIEnv) StopTasks(w http.ResponseWriter, r *http.Request) {
 					WithError(errors.New("couldn't rollback tx")).
 					Error(txErr)
 			}
+
 			log.WithError(err).Error("couldn't update task status")
+
 			continue
 		}
 
@@ -735,7 +806,9 @@ func (ae *APIEnv) StopTasks(w http.ResponseWriter, r *http.Request) {
 					WithError(errors.New("couldn't rollback tx")).
 					Error(txErr)
 			}
+
 			log.WithError(updateTaskErr).Error("couldn't update human status")
+
 			continue
 		}
 
@@ -745,12 +818,14 @@ func (ae *APIEnv) StopTasks(w http.ResponseWriter, r *http.Request) {
 		}
 
 		emails := make([]string, 0, len(logins))
+
 		for _, login := range logins {
-			email, getUserEmailErr := ae.People.GetUserEmail(ctx, login)
+			userEmail, getUserEmailErr := ae.People.GetUserEmail(ctx, login)
 			if getUserEmailErr != nil {
 				continue
 			}
-			emails = append(emails, email)
+
+			emails = append(emails, userEmail)
 		}
 
 		em := mail.NewRejectPipelineGroupTemplate(dbTask.WorkNumber, dbTask.Name, ae.Mail.SdAddress)
@@ -758,6 +833,7 @@ func (ae *APIEnv) StopTasks(w http.ResponseWriter, r *http.Request) {
 		file, ok := ae.Mail.Images[em.Image]
 		if !ok {
 			log.Error("couldn't find images: ", em.Image)
+
 			return
 		}
 
@@ -784,8 +860,8 @@ func (ae *APIEnv) StopTasks(w http.ResponseWriter, r *http.Request) {
 
 	if err = txStorage.CommitTransaction(ctx); err != nil {
 		log.WithError(err).Error("couldn't commit transaction")
-		e := UnknownError
-		_ = e.sendError(w)
+		errorHandler.handleError(UnknownError, err)
+
 		return
 	}
 
@@ -806,9 +882,9 @@ func (ae *APIEnv) StopTasks(w http.ResponseWriter, r *http.Request) {
 
 		nodeEvents, eventErr := runCtx.GetCancelledStepsEvents(ctx)
 		if eventErr != nil {
-			log.WithError(eventErr).Error("couldn't get cancelled steps events")
-			e := UnknownError
-			_ = e.sendError(w)
+			log.WithError(eventErr).Error("couldn't get canceled steps events")
+			errorHandler.sendError(UnknownError)
+
 			return
 		}
 

@@ -8,6 +8,7 @@ func TestMakeTaskTitle(t *testing.T) {
 		customTitle  string
 		isTest       bool
 	}
+
 	tests := []struct {
 		name    string
 		args    args
@@ -41,6 +42,7 @@ func TestMakeTaskTitle(t *testing.T) {
 			wantRes: "version name - custom title (ТЕСТОВАЯ ЗАЯВКА)",
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if gotRes := MakeTaskTitle(tt.args.versionTitle, tt.args.customTitle, tt.args.isTest); gotRes != tt.wantRes {

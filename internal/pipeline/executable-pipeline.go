@@ -105,6 +105,7 @@ func (gb *ExecutablePipeline) GetTaskHumanStatus() (status TaskHumanStatus, comm
 	if len(gb.ActiveBlocks) == 0 {
 		return StatusDone, "", ""
 	}
+
 	return StatusNew, "", ""
 }
 
@@ -135,6 +136,7 @@ func (gb *ExecutablePipeline) CreateTask(ctx c.Context, dto *CreateTaskDTO) erro
 	}
 
 	gb.WorkNumber = task.WorkNumber
+
 	return nil
 }
 
@@ -143,6 +145,7 @@ func (gb *ExecutablePipeline) Next(_ *store.VariableStore) ([]string, bool) {
 	if !ok {
 		return nil, false
 	}
+
 	return nexts, true
 }
 
@@ -159,6 +162,7 @@ func (gb *ExecutablePipeline) CreateBlocks(ctx c.Context, source map[string]enti
 
 	ctx, s := trace.StartSpan(ctx, "create_blocks")
 	defer s.End()
+
 	props, err := gb.Storage.GetTaskCustomProps(ctx, gb.TaskID)
 	if err != nil {
 		return err

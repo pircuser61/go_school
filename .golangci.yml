@@ -1,27 +1,37 @@
 linters-settings:
   govet:
     check-shadowing: true
+    fieldalignment: true
   golint:
     min-confidence: 0
   gocyclo:
-    min-complexity: 15
+    min-complexity: 20
   maligned:
     suggest-new: true
   dupl:
-    threshold: 100
+    threshold: 200
   goconst:
     min-len: 2
     min-occurrences: 2
-  depguard:
-    list-type: blacklist
-    packages:
-      - gitlab.services.mts.ru/3click/core2
   misspell:
     locale: US
   lll:
     line-length: 140
-  goimports:
-    local-prefixes: github.com/golangci/golangci-lint
+  # gci:
+  #   sections:
+  #   # все дефолтные 
+  #     - standard
+  #   # _ "github.com/lib/lib"
+  #     - blank
+  #   # third party
+  #     - default
+  #   # все от мтс
+  #     - prefix(gitlab.services.mts.ru)
+  #   # специально для functions runner
+  #     - prefix(gitlab.services.mts.ru/functions-runner)
+  #   # jocasta
+  #     - prefix(gitlab.services.mts.ru/jocasta)
+  #   custom-order: true
   gocritic:
     enabled-tags:
       - performance
@@ -29,36 +39,63 @@ linters-settings:
       - experimental
     disabled-checks:
       - wrapperFunc
+  depguard:
+    rules:
+      main:
+        files: 
+          - $all
+        deny:
+          - pkg: "github.com/labstack/gommon/log"
+            description: используем только gitlab.services.mts.ru/abp/myosotis/logger  
 
 linters:
-  disable-all: true
   enable:
-    - govet
-    - gocyclo
-    - dupl
-    - lll
-    - gosec
-    - dupl
-    - goconst
-    - depguard
-    - misspell
-    - goimports
-    - gocritic
-    - staticcheck
-    - deadcode
-    - errcheck
-    - unused
-    - gosimple
-    - structcheck
-    - varcheck
-    - ineffassign
-    - typecheck
+    - asciicheck
     - bodyclose
+    - dogsled
+    - dupl
+    - errcheck
+    - exhaustive
+    - exportloopref
+    - gochecknoglobals
+    - gochecknoinits
+    - gocognit
+    - goconst
+    - gocritic
+    - gocyclo
+    - gofmt
+    - gofumpt
+    - goheader
+    - goimports
+    - gomodguard
+    - goprintffuncname
+    - gosec
+    - gosimple
+    - govet
+    - ineffassign
+    - lll
+    - misspell
+    - nakedret
+    - nestif
+    - nlreturn
+    - noctx
+    - prealloc
+    - revive
+    - sqlclosecheck
+    - staticcheck
+    - stylecheck
+    - testpackage
+    - typecheck
     - unconvert
     - unparam
-    - prealloc
+    - unused
     - whitespace
-    - scopelint
+    - wsl
+    - depguard
+    # - gci
+
+severity:
+  default-severity: error
 
 run:
   tests: false
@@ -67,5 +104,6 @@ run:
     - configs
     - templates
     - \.go
+    - migrations
   skip-files:
     - .*-local.*

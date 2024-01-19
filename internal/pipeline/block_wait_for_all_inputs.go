@@ -50,6 +50,7 @@ func (gb *GoWaitForAllInputsBlock) GetStatus() Status {
 	if gb.State.Done {
 		return StatusFinished
 	}
+
 	return StatusRunning
 }
 
@@ -66,6 +67,7 @@ func (gb *GoWaitForAllInputsBlock) Next(_ *store.VariableStore) ([]string, bool)
 	if !ok {
 		return nil, false
 	}
+
 	return nexts, true
 }
 
@@ -96,10 +98,12 @@ func (gb *GoWaitForAllInputsBlock) Update(ctx context.Context) (interface{}, err
 	if stateErr != nil {
 		return nil, stateErr
 	}
+
 	gb.RunContext.VarStore.ReplaceState(gb.Name, state)
 
 	if _, ok := gb.expectedEvents[eventEnd]; ok {
 		status, _, _ := gb.GetTaskHumanStatus()
+
 		event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, MakeNodeEndEventArgs{
 			NodeName:      gb.Name,
 			NodeShortName: gb.ShortName,
@@ -109,6 +113,7 @@ func (gb *GoWaitForAllInputsBlock) Update(ctx context.Context) (interface{}, err
 		if eventErr != nil {
 			return nil, eventErr
 		}
+
 		gb.happenedEvents = append(gb.happenedEvents, event)
 	}
 
@@ -117,7 +122,7 @@ func (gb *GoWaitForAllInputsBlock) Update(ctx context.Context) (interface{}, err
 
 func (gb *GoWaitForAllInputsBlock) Model() script.FunctionModel {
 	return script.FunctionModel{
-		ID:        BlockWaitForAllInputsId,
+		ID:        BlockWaitForAllInputsID,
 		BlockType: script.TypeGo,
 		Title:     BlockGoWaitForAllInputsTitle,
 		Inputs:    nil,
@@ -128,7 +133,8 @@ func (gb *GoWaitForAllInputsBlock) Model() script.FunctionModel {
 
 //nolint:unparam // its ok
 func createGoWaitForAllInputsBlock(ctx context.Context, name string, ef *entity.EriusFunc,
-	runCtx *BlockRunContext, expectedEvents map[string]struct{}) (*GoWaitForAllInputsBlock, bool, error) {
+	runCtx *BlockRunContext, expectedEvents map[string]struct{},
+) (*GoWaitForAllInputsBlock, bool, error) {
 	const reEntry = false
 
 	b := &GoWaitForAllInputsBlock{
@@ -163,10 +169,12 @@ func createGoWaitForAllInputsBlock(ctx context.Context, name string, ef *entity.
 		if err := b.createState(ctx); err != nil {
 			return nil, reEntry, err
 		}
+
 		b.RunContext.VarStore.AddStep(b.Name)
 
 		if _, ok := b.expectedEvents[eventStart]; ok {
 			status, _, _ := b.GetTaskHumanStatus()
+
 			event, err := runCtx.MakeNodeStartEvent(ctx, MakeNodeStartEventArgs{
 				NodeName:      name,
 				NodeShortName: ef.ShortTitle,
@@ -176,6 +184,7 @@ func createGoWaitForAllInputsBlock(ctx context.Context, name string, ef *entity.
 			if err != nil {
 				return nil, false, err
 			}
+
 			b.happenedEvents = append(b.happenedEvents, event)
 		}
 	}
@@ -192,6 +201,8 @@ func (gb *GoWaitForAllInputsBlock) createState(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+
 	gb.State = &SyncData{IncomingBlockIds: steps}
+
 	return nil
 }

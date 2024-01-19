@@ -27,6 +27,7 @@ func (sd SignDecision) String() string {
 }
 
 func (sd SignDecision) ToRuString() string {
+	//nolint:exhaustive //не хотим обрабатывать остальные случаи
 	switch sd {
 	case SignDecisionRejected:
 		return SignDecisionAddApproverRejectedRU
@@ -124,7 +125,7 @@ func (s *SignData) handleAnyOfDecision(login string, params *signSignatureParams
 	s.Comment = &params.Comment
 	s.ActualSigner = &login
 
-	var signingLogEntry = SignLogEntry{
+	signingLogEntry := SignLogEntry{
 		Login:       login,
 		Decision:    params.Decision,
 		Comment:     params.Comment,
@@ -142,12 +143,13 @@ func (s *SignData) handleAllOfDecision(login string, params *signSignatureParams
 		if entry.LogType != SignerLogDecision {
 			continue
 		}
+
 		if entry.Login == login {
-			return errors.New(fmt.Sprintf("decision of user %s is already set", login))
+			return fmt.Errorf("decision of user %s is already set", login)
 		}
 	}
 
-	var signingLogEntry = SignLogEntry{
+	signingLogEntry := SignLogEntry{
 		Login:       login,
 		Decision:    params.Decision,
 		Comment:     params.Comment,
@@ -160,6 +162,7 @@ func (s *SignData) handleAllOfDecision(login string, params *signSignatureParams
 
 	var overallDecision SignDecision
 
+	//nolint:exhaustive // не хотим обратывать остальные случаи
 	switch params.Decision {
 	case SignDecisionRejected:
 		overallDecision = SignDecisionRejected
@@ -167,6 +170,7 @@ func (s *SignData) handleAllOfDecision(login string, params *signSignatureParams
 		overallDecision = SignDecisionError
 	default:
 		var decisionCount int
+
 		for _, log := range s.SignLog {
 			if log.LogType == SignerLogDecision {
 				decisionCount++
@@ -192,9 +196,11 @@ func (s *SignData) SetDecision(login string, params *signSignatureParams) error 
 
 	if isAutoDecision {
 		s.handleAnyOfDecision(login, params)
+
 		return nil
 	}
 
+	//nolint:exhaustive // не надо обрабатывать эти случаи значит не надо
 	switch params.Decision {
 	case "":
 		return errors.New("missing decision")
@@ -212,7 +218,7 @@ func (s *SignData) SetDecision(login string, params *signSignatureParams) error 
 		return errors.New("decision already set")
 	}
 
-	var signingRule = s.SigningRule
+	signingRule := s.SigningRule
 
 	if params.Decision == SignDecisionSigned {
 		params.Comment = ""
@@ -231,10 +237,10 @@ func (s *SignData) SetDecision(login string, params *signSignatureParams) error 
 	return nil
 }
 
-//nolint:gocyclo //its ok here
-func (s *SignData) SetDecisionByAdditionalApprover(login string,
-	params additionalApproverSignUpdateParams) ([]string, error) {
-
+func (s *SignData) SetDecisionByAdditionalApprover(
+	login string,
+	params additionalApproverSignUpdateParams,
+) ([]string, error) {
 	approverFound := s.checkForAdditionalApprover(login)
 	if !approverFound {
 		return nil, NewUserIsNotPartOfProcessErr()
@@ -256,11 +262,12 @@ func (s *SignData) SetDecisionByAdditionalApprover(login string,
 		s.AdditionalApprovers[i].Decision = &params.Decision
 		s.AdditionalApprovers[i].Comment = &params.Comment
 		s.AdditionalApprovers[i].Attachments = params.Attachments
+
 		if s.AdditionalApprovers[i].DecisionTime == nil {
 			s.AdditionalApprovers[i].DecisionTime = &timeNow
 		}
 
-		var signerLogEntry = SignLogEntry{
+		signerLogEntry := SignLogEntry{
 			Login:       login,
 			Decision:    params.Decision,
 			Comment:     params.Comment,

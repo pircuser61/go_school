@@ -23,6 +23,7 @@ func (db *PGCon) deleteFinishedPipelineDeadlines(ctx c.Context, taskID uuid.UUID
 		WHERE block_id IN (SELECT id FROM variable_storage WHERE work_id = $1)
 	`
 	_, err := db.Connection.Exec(ctx, q, taskID)
+
 	return err
 }
 
@@ -37,6 +38,7 @@ func (db *PGCon) deleteFinishedPipelineMembers(ctx c.Context, taskID uuid.UUID) 
 		AND is_acted = false AND execution_group_member = false
 	`
 	_, err := db.Connection.Exec(ctx, q, taskID)
+
 	return err
 }
 
@@ -52,6 +54,7 @@ func (db *PGCon) UpdateTaskStatus(ctx c.Context, taskID uuid.UUID, status int, c
 		q = `UPDATE works 
 		SET status = $1, finished_at = now(), status_comment = $3, status_author = $4
 		WHERE id = $2`
+
 		_, err := db.Connection.Exec(ctx, q, status, taskID, comment, author)
 		if err != nil {
 			return err
@@ -60,6 +63,7 @@ func (db *PGCon) UpdateTaskStatus(ctx c.Context, taskID uuid.UUID, status int, c
 		q = `UPDATE works 
 		SET status = $1
 		WHERE id = $2`
+
 		_, err := db.Connection.Exec(ctx, q, status, taskID)
 		if err != nil {
 			return err
@@ -71,6 +75,7 @@ func (db *PGCon) UpdateTaskStatus(ctx c.Context, taskID uuid.UUID, status int, c
 		if delErr := db.deleteFinishedPipelineDeadlines(ctx, taskID); delErr != nil {
 			return delErr
 		}
+
 		if delErr := db.deleteFinishedPipelineMembers(ctx, taskID); delErr != nil {
 			return delErr
 		}
@@ -177,7 +182,8 @@ func (db *PGCon) UpdateTaskBlocksData(ctx c.Context, dto *UpdateTaskBlocksDataRe
 				prev_update_status_blocks = $5
 		WHERE id = $1`
 
-	_, err = db.Connection.Exec(ctx, query, dto.Id, activeBlocks, skippedBlocks, notifiedBlocks, prevUpdateStatusBlocks)
+	_, err = db.Connection.Exec(ctx, query, dto.ID, activeBlocks, skippedBlocks, notifiedBlocks, prevUpdateStatusBlocks)
+
 	return err
 }
 
@@ -208,7 +214,7 @@ func (db *PGCon) SendTaskToArchive(ctx c.Context, taskID uuid.UUID) (err error) 
 	return err
 }
 
-func (db *PGCon) UpdateBlockStateInOthers(ctx c.Context, blockName, taskId string, blockState []byte) error {
+func (db *PGCon) UpdateBlockStateInOthers(ctx c.Context, blockName, taskID string, blockState []byte) error {
 	ctx, span := trace.StartSpan(ctx, "update_block_state_in_others")
 	defer span.End()
 
@@ -223,7 +229,7 @@ func (db *PGCon) UpdateBlockStateInOthers(ctx c.Context, blockName, taskId strin
 			    	AND work_id = $3
 			)`
 
-	_, err := db.Connection.Exec(ctx, q, blockName, blockState, taskId)
+	_, err := db.Connection.Exec(ctx, q, blockName, blockState, taskID)
 
 	return err
 }

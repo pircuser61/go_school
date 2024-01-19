@@ -16,7 +16,7 @@ const (
 	downloadImg = "iconDownload.png"
 )
 
-//nolint:dupl,gocyclo // maybe later
+//nolint:dupl // maybe later
 func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 	if gb.RunContext.skipNotifications {
 		return nil
@@ -25,10 +25,12 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 	l := logger.GetLogger(ctx)
 
 	executors := getSliceFromMapOfStrings(gb.State.Executors)
+
 	delegates, getDelegationsErr := gb.RunContext.Services.HumanTasks.GetDelegationsByLogins(ctx, executors)
 	if getDelegationsErr != nil {
 		return getDelegationsErr
 	}
+
 	delegates = delegates.FilterByType("execution")
 
 	loginsToNotify := delegates.GetUserInArrayWithDelegations(executors)
@@ -67,6 +69,7 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 
 	if processSettings.ResubmissionPeriod > 0 {
 		var getWorksErr error
+
 		lastWorksForUser, getWorksErr = gb.RunContext.Services.Storage.GetWorksForUserWithGivenTimeRange(
 			ctx,
 			processSettings.ResubmissionPeriod,
@@ -79,16 +82,23 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 		}
 	}
 
-	slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
-		TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.CurrBlockStartTime,
-			FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100)}},
-		WorkType: sla.WorkHourType(gb.State.WorkType),
-	})
+	slaInfoPtr, getSLAInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(
+		ctx,
+		sla.InfoDTO{
+			TaskCompletionIntervals: []entity.TaskCompletionInterval{
+				{
+					StartedAt:  gb.RunContext.CurrBlockStartTime,
+					FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100),
+				},
+			},
+			WorkType: sla.WorkHourType(gb.State.WorkType),
+		},
+	)
 
 	filesNames := make([]string, 0)
-	var buttons []mail.Button
-	if getSlaInfoErr != nil {
-		return getSlaInfoErr
+
+	if getSLAInfoErr != nil {
+		return getSLAInfoErr
 	}
 
 	if !gb.State.IsTakenInWork {
@@ -99,14 +109,16 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 		email, getUserEmailErr := gb.RunContext.Services.People.GetUserEmail(ctx, login)
 		if getUserEmailErr != nil {
 			l.WithField("login", login).WithError(getUserEmailErr).Warning("couldn't get email")
+
 			continue
 		}
+
 		if !gb.State.IsTakenInWork {
 			emails[email] = mail.NewExecutionNeedTakeInWorkTpl(
 				&mail.ExecutorNotifTemplate{
 					WorkNumber:  gb.RunContext.WorkNumber,
 					Name:        gb.RunContext.NotifName,
-					SdUrl:       gb.RunContext.Services.Sender.SdAddress,
+					SdURL:       gb.RunContext.Services.Sender.SdAddress,
 					BlockID:     BlockGoExecutionID,
 					Description: description,
 					Mailto:      gb.RunContext.Services.Sender.FetchEmail,
@@ -153,10 +165,6 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 		}
 	}
 
-	for _, v := range buttons {
-		filesNames = append(filesNames, v.Img)
-	}
-
 	for i := range emails {
 		item := emails[i]
 
@@ -169,13 +177,16 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 
 		for _, v := range description {
 			links, link := v.Get("attachLinks")
-			if link {
-				attachFiles, ok := links.([]file_registry.AttachInfo)
-				if ok && len(attachFiles) != 0 {
-					descIcons := []string{downloadImg}
-					iconsName = append(iconsName, descIcons...)
-					break
-				}
+			if !link {
+				continue
+			}
+
+			attachFiles, ok := links.([]file_registry.AttachInfo)
+
+			if ok && len(attachFiles) != 0 {
+				iconsName = append(iconsName, downloadImg)
+
+				break
 			}
 		}
 
@@ -186,8 +197,13 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 
 		iconFiles = append(iconFiles, files...)
 
-		if sendErr := gb.RunContext.Services.Sender.SendNotification(ctx, []string{i}, iconFiles,
-			emails[i]); sendErr != nil {
+		sendErr := gb.RunContext.Services.Sender.SendNotification(
+			ctx,
+			[]string{i},
+			iconFiles,
+			emails[i],
+		)
+		if sendErr != nil {
 			return sendErr
 		}
 	}
@@ -206,20 +222,25 @@ func (gb *GoExecutionBlock) notifyNeedRework(ctx c.Context) error {
 	loginsToNotify := delegates.GetUserInArrayWithDelegations([]string{gb.RunContext.Initiator})
 
 	var em string
+
 	emails := make([]string, 0, len(loginsToNotify))
+
 	for _, login := range loginsToNotify {
 		em, err = gb.RunContext.Services.People.GetUserEmail(ctx, login)
 		if err != nil {
 			l.WithField("login", login).WithError(err).Warning("couldn't get email")
+
 			continue
 		}
 
 		emails = append(emails, em)
 	}
+
 	tpl := mail.NewSendToInitiatorEditTpl(gb.RunContext.WorkNumber, gb.RunContext.NotifName,
 		gb.RunContext.Services.Sender.SdAddress)
 
 	filesList := []string{tpl.Image}
+
 	files, iconEerr := gb.RunContext.GetIcons(filesList)
 	if iconEerr != nil {
 		return iconEerr
@@ -239,19 +260,26 @@ func (gb *GoExecutionBlock) notifyNeedMoreInfo(ctx c.Context) error {
 	loginsToNotify := []string{gb.RunContext.Initiator}
 
 	emails := make([]string, 0, len(loginsToNotify))
+
 	for _, login := range loginsToNotify {
 		email, err := gb.RunContext.Services.People.GetUserEmail(ctx, login)
 		if err != nil {
 			l.WithField("login", login).WithError(err).Warning("couldn't get email")
+
 			return nil
 		}
 
 		emails = append(emails, email)
 	}
-	tpl := mail.NewRequestExecutionInfoTpl(gb.RunContext.WorkNumber,
-		gb.RunContext.NotifName, gb.RunContext.Services.Sender.SdAddress)
+
+	tpl := mail.NewRequestExecutionInfoTpl(
+		gb.RunContext.WorkNumber,
+		gb.RunContext.NotifName,
+		gb.RunContext.Services.Sender.SdAddress,
+	)
 
 	filesList := []string{tpl.Image}
+
 	files, iconEerr := gb.RunContext.GetIcons(filesList)
 	if iconEerr != nil {
 		return iconEerr
@@ -276,20 +304,28 @@ func (gb *GoExecutionBlock) notifyNewInfoReceived(ctx c.Context) error {
 	loginsToNotify := delegates.GetUserInArrayWithDelegations(getSliceFromMapOfStrings(gb.State.Executors))
 
 	var email string
+
 	emails := make([]string, 0, len(loginsToNotify))
+
 	for _, login := range loginsToNotify {
 		email, err = gb.RunContext.Services.People.GetUserEmail(ctx, login)
 		if err != nil {
 			l.WithField("login", login).WithError(err).Warning("couldn't get email")
+
 			continue
 		}
 
 		emails = append(emails, email)
 	}
-	tpl := mail.NewAnswerExecutionInfoTpl(gb.RunContext.WorkNumber,
-		gb.RunContext.NotifName, gb.RunContext.Services.Sender.SdAddress)
+
+	tpl := mail.NewAnswerExecutionInfoTpl(
+		gb.RunContext.WorkNumber,
+		gb.RunContext.NotifName,
+		gb.RunContext.Services.Sender.SdAddress,
+	)
 
 	files := []string{tpl.Image}
+
 	iconFiles, iconEerr := gb.RunContext.GetIcons(files)
 	if iconEerr != nil {
 		return iconEerr

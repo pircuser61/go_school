@@ -26,13 +26,17 @@ type Service struct {
 func NewService(cfg Config) (*Service, error) {
 	opts := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithStatsHandler(&ocgrpc.ClientHandler{})}
+		grpc.WithStatsHandler(&ocgrpc.ClientHandler{}),
+	}
+
 	conn, err := grpc.Dial(cfg.URL, opts...)
 	if err != nil {
 		return nil, err
 	}
+
 	clientInt := integration_v1.NewIntegrationServiceClient(conn)
 	clientMic := microservice_v1.NewMicroserviceServiceClient(conn)
+
 	return &Service{
 		C:          conn,
 		RpcIntCli:  clientInt,
@@ -61,6 +65,7 @@ func (s *Service) GetSystemsNames(ctx c.Context, systemIDs []uuid.UUID) (map[str
 
 func (s *Service) GetSystemsClients(ctx c.Context, systemIDs []uuid.UUID) (map[string][]string, error) {
 	cc := make(map[string][]string)
+
 	for _, id := range systemIDs {
 		res, err := s.RpcIntCli.GetIntegrationById(ctx, &integration_v1.GetIntegrationByIdRequest{IntegrationId: id.String()})
 		if err != nil {
@@ -71,6 +76,7 @@ func (s *Service) GetSystemsClients(ctx c.Context, systemIDs []uuid.UUID) (map[s
 			cc[id.String()] = res.Integration.ClientIds
 		}
 	}
+
 	return cc, nil
 }
 

@@ -46,6 +46,7 @@ func (runCtx *BlockRunContext) MakeNodeStartEvent(ctx c.Context, args MakeNodeSt
 		if err != nil {
 			return entity.NodeEvent{}, nil
 		}
+
 		args.HumanStatus = TaskHumanStatus(hStatus)
 	}
 
@@ -60,12 +61,13 @@ func (runCtx *BlockRunContext) MakeNodeStartEvent(ctx c.Context, args MakeNodeSt
 	}, nil
 }
 
-func (runCtx *BlockRunContext) MakeNodeEndEvent(ctx c.Context, args MakeNodeEndEventArgs) (entity.NodeEvent, error) {
+func (runCtx BlockRunContext) MakeNodeEndEvent(ctx c.Context, args MakeNodeEndEventArgs) (entity.NodeEvent, error) {
 	if args.HumanStatus == "" {
 		hStatus, err := runCtx.Services.Storage.GetTaskHumanStatus(ctx, runCtx.TaskID)
 		if err != nil {
 			return entity.NodeEvent{}, nil
 		}
+
 		args.HumanStatus = TaskHumanStatus(hStatus)
 	}
 
@@ -84,52 +86,75 @@ func (runCtx *BlockRunContext) MakeNodeEndEvent(ctx c.Context, args MakeNodeEndE
 	}, nil
 }
 
+//nolint:gocritic // DANGER: лучше не стоит ставить здесь указатель у runCtx, возможны непредвиденные последствия
 func (runCtx BlockRunContext) NotifyEvents(ctx c.Context) {
 	log := logger.GetLogger(ctx).WithField("workNumber", runCtx.WorkNumber)
 
-	reqUrl, err := url.Parse(runCtx.TaskSubscriptionData.MicroserviceURL)
+	reqURL, err := url.Parse(runCtx.TaskSubscriptionData.MicroserviceURL)
 	if err != nil {
 		log.WithError(err).Error("couldn't parse url to send event notification")
+
 		return
 	}
-	reqUrl.Path = path.Join(reqUrl.Path, runCtx.TaskSubscriptionData.NotificationPath)
+
+	reqURL.Path = path.Join(reqURL.Path, runCtx.TaskSubscriptionData.NotificationPath)
 
 	for i := range runCtx.BlockRunResults.NodeEvents {
 		event := runCtx.BlockRunResults.NodeEvents[i]
+
 		data, mapErr := script.MapData(runCtx.TaskSubscriptionData.Mapping, event.ToMap(), []string{})
 		if mapErr != nil {
 			log.WithError(mapErr).Error("couldn't map data")
+
 			continue
 		}
+
 		body, jsonErr := json.Marshal(data)
 		if jsonErr != nil {
 			log.WithError(jsonErr).Error("couldn't marshal data")
+
 			continue
 		}
-		req, reqErr := http.NewRequestWithContext(ctx, runCtx.TaskSubscriptionData.Method, reqUrl.String(),
+
+		req, reqErr := http.NewRequestWithContext(ctx, runCtx.TaskSubscriptionData.Method, reqURL.String(),
 			bytes.NewBuffer(body))
 		if reqErr != nil {
 			log.WithError(reqErr).Error("couldn't create request")
+
 			continue
 		}
+
 		headerErr := runCtx.addAuthHeader(ctx, req)
 		if headerErr != nil {
 			log.WithError(reqErr).Error("couldn't add auth Headers")
+
 			continue
 		}
+
 		resp, respErr := runCtx.Services.HTTPClient.Do(req)
 		if respErr != nil {
 			log.WithError(respErr).Error("couldn't make request")
+
 			continue
 		}
+
 		_ = resp.Body.Close()
+
 		if resp.StatusCode != http.StatusOK {
 			log.WithError(respErr).Error("didn't get 200 for request")
 		}
 	}
-	return
 }
 
+//nolint:gocritic
+/*
+	тут есть строчка
+	runCtx.CurrBlockStartTime = s.Time
+
+	по сути она не имеет никакого эффекта вне функции так как струтура не по указателю
+	но используется в MakeNodeEndEvent в рамках этой функции, немного опасно ставить здесь указатель
+	так как может повлиять на те места о которых я даже не подозреваю
+*/
 func (runCtx BlockRunContext) GetCancelledStepsEvents(ctx c.Context) ([]entity.NodeEvent, error) {
 	steps, err := runCtx.Services.Storage.GetCanceledTaskSteps(ctx, runCtx.TaskID)
 	if err != nil {
@@ -140,18 +165,27 @@ func (runCtx BlockRunContext) GetCancelledStepsEvents(ctx c.Context) ([]entity.N
 
 	for _, s := range steps {
 		notify := false
+
 		for _, event := range runCtx.TaskSubscriptionData.ExpectedEvents {
 			if event.NodeID == s.Name && event.Notify {
 				for _, ev := range event.Events {
 					if ev == eventEnd {
 						notify = true
+
+						break
 					}
+				}
+
+				if notify {
+					break
 				}
 			}
 		}
+
 		if !notify {
 			continue
 		}
+
 		runCtx.CurrBlockStartTime = s.Time
 
 		nodeEvent := MakeNodeEndEventArgs{
@@ -168,6 +202,7 @@ func (runCtx BlockRunContext) GetCancelledStepsEvents(ctx c.Context) ([]entity.N
 		if eventErr != nil {
 			return nil, eventErr
 		}
+
 		nodeEvents = append(nodeEvents, event)
 	}
 
@@ -176,6 +211,7 @@ func (runCtx BlockRunContext) GetCancelledStepsEvents(ctx c.Context) ([]entity.N
 
 func (runCtx *BlockRunContext) SetTaskEvents(ctx c.Context) {
 	var err error
+
 	defer func() {
 		if err != nil {
 			log := logger.GetLogger(ctx).WithField("funcName", "setTaskEvents")
@@ -192,11 +228,14 @@ func (runCtx *BlockRunContext) SetTaskEvents(ctx c.Context) {
 		return
 	}
 
-	sResp, err := runCtx.Services.Integrations.RpcIntCli.GetIntegrationByClientId(ctx,
-		&integration_v1.GetIntegrationByClientIdRequest{ClientId: taskRunCtx.ClientID})
+	sResp, err := runCtx.Services.Integrations.RpcIntCli.GetIntegrationByClientId(
+		ctx,
+		&integration_v1.GetIntegrationByClientIdRequest{ClientId: taskRunCtx.ClientID},
+	)
 	if err != nil {
 		return
 	}
+
 	if sResp == nil || sResp.Integration == nil {
 		return
 	}
@@ -206,6 +245,7 @@ func (runCtx *BlockRunContext) SetTaskEvents(ctx c.Context) {
 	if err != nil {
 		return
 	}
+
 	if expectedEvents.SystemID == "" {
 		return
 	}
@@ -215,6 +255,7 @@ func (runCtx *BlockRunContext) SetTaskEvents(ctx c.Context) {
 	if err != nil {
 		return
 	}
+
 	if resp == nil || resp.Microservice == nil || resp.Microservice.Creds == nil || resp.Microservice.Creds.Prod == nil {
 		return
 	}
@@ -232,8 +273,6 @@ func (runCtx *BlockRunContext) SetTaskEvents(ctx c.Context) {
 		NotificationSchema:   expectedEvents.NotificationSchema,
 		ExpectedEvents:       expectedEvents.Nodes,
 	}
-
-	return
 }
 
 func fillSecrets(a *microservice_v1.Auth) (result map[string]interface{}) {

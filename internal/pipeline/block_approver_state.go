@@ -32,7 +32,9 @@ func ApproverActionFromString(action *string) *ApproverAction {
 	if action == nil {
 		return nil
 	}
+
 	appAction := ApproverAction(*action)
+
 	return &appAction
 }
 
@@ -87,6 +89,7 @@ func (a ApproverDecision) ToAction() ApproverAction {
 }
 
 func (a ApproverDecision) ToRuString() string {
+	// nolint:exhaustive //не хотим обрабатывать остальные случаи
 	switch a {
 	case ApproverDecisionApproved:
 		return ApproverDecisionApprovedRU
@@ -132,11 +135,11 @@ const (
 )
 
 type AdditionalInfo struct {
-	Id          string              `json:"id"`
+	ID          string              `json:"id"`
 	Login       string              `json:"login"`
 	Comment     string              `json:"comment"`
 	Attachments []entity.Attachment `json:"attachments"`
-	LinkId      *string             `json:"link_id,omitempty"`
+	LinkID      *string             `json:"link_id,omitempty"`
 	Type        AdditionalInfoType  `json:"type"`
 	CreatedAt   time.Time           `json:"created_at"`
 	DelegateFor string              `json:"delegate_for"`
@@ -173,7 +176,7 @@ type ApproverData struct {
 	ApproversGroupID   string `json:"approvers_group_id"`
 	ApproversGroupName string `json:"approvers_group_name"`
 
-	ApproversGroupIdPath *string `json:"approvers_group_id_path,omitempty"`
+	ApproversGroupIDPath *string `json:"approvers_group_id_path,omitempty"`
 
 	AddInfo []AdditionalInfo `json:"additional_info,omitempty"`
 
@@ -232,6 +235,7 @@ func (a *ApproverData) userIsAnyApprover(login string) bool {
 	if login == AutoApprover {
 		return true
 	}
+
 	_, ok := a.Approvers[login]
 	if ok {
 		return true
@@ -242,11 +246,12 @@ func (a *ApproverData) userIsAnyApprover(login string) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
 func (a *ApproverData) userIsDelegate(login string, delegations ht.Delegations) (delegateFor string, ok bool) {
-	var delegators = delegations.GetDelegators(login)
+	delegators := delegations.GetDelegators(login)
 	for approver := range a.Approvers {
 		for _, delegator := range delegators {
 			if delegator == approver {
@@ -262,6 +267,7 @@ func (a *ApproverData) userIsDelegate(login string, delegations ht.Delegations) 
 			}
 		}
 	}
+
 	return "", false
 }
 
@@ -280,6 +286,7 @@ func (a *ApproverData) SetDecision(login, comment string, ds ApproverDecision, a
 	delegators := d.GetDelegators(login)
 
 	delegateFor := make([]string, 0)
+
 	for approver := range a.Approvers {
 		for _, delegator := range delegators {
 			if delegator == approver && !decisionForPersonExists(delegator, &a.ApproverLog) {
@@ -315,7 +322,7 @@ func (a *ApproverData) SetDecision(login, comment string, ds ApproverDecision, a
 
 	if a.ApprovementRule == script.AllOfApprovementRequired {
 		if a.isUserDecisionSet(login) {
-			return errors.New(fmt.Sprintf("decision of user %s is already set", login))
+			return fmt.Errorf("decision of user %s is already set", login)
 		}
 
 		if founded {
@@ -350,6 +357,7 @@ func (a *ApproverData) SetDecision(login, comment string, ds ApproverDecision, a
 		a.Comment = &comment
 		a.ActualApprover = &login
 		a.DecisionAttachments = []entity.Attachment{}
+
 		for _, l := range a.ApproverLog {
 			if l.LogType == ApproverLogDecision {
 				a.DecisionAttachments = append(a.DecisionAttachments, l.Attachments...)
@@ -374,11 +382,13 @@ func (a *ApproverData) getFinalGroupDecision(ds ApproverDecision) (res ApproverD
 			continue
 		}
 		decisionsCount++
+
 		if log.Decision != ApproverDecisionRejected {
 			count, decisionExists := decisions[log.Decision]
 			if !decisionExists {
 				count = 0
 			}
+
 			decisions[log.Decision] = count + 1
 		}
 	}
@@ -415,22 +425,26 @@ func decisionForPersonExists(login string, logs *[]ApproverLogEntry) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
 //nolint:gocyclo //its ok here
 func (a *ApproverData) SetDecisionByAdditionalApprover(login string,
-	params additionalApproverUpdateParams, delegations ht.Delegations) ([]string, error) {
-	var checkForAdditionalApprover = func(login string) bool {
+	params additionalApproverUpdateParams, delegations ht.Delegations,
+) ([]string, error) {
+	checkForAdditionalApprover := func(login string) bool {
 		for _, approver := range a.AdditionalApprovers {
 			if login == approver.ApproverLogin {
 				return true
 			}
 		}
+
 		return false
 	}
 
 	approverFound := checkForAdditionalApprover(login)
+
 	delegateFor, isDelegate := delegations.FindDelegatorFor(login, a.getAdditionalApproversSlice())
 	if !(approverFound || isDelegate) {
 		return nil, NewUserIsNotPartOfProcessErr()
@@ -445,8 +459,10 @@ func (a *ApproverData) SetDecisionByAdditionalApprover(login string,
 	timeNow := time.Now()
 
 	for i := range a.AdditionalApprovers {
-		var additionalApprover = a.AdditionalApprovers[i].ApproverLogin
-		var isDelegateForAdditionalApprover = delegations.IsLoginDelegateFor(login, additionalApprover)
+		var (
+			additionalApprover              = a.AdditionalApprovers[i].ApproverLogin
+			isDelegateForAdditionalApprover = delegations.IsLoginDelegateFor(login, additionalApprover)
+		)
 
 		if (login != additionalApprover && !isDelegateForAdditionalApprover) ||
 			a.AdditionalApprovers[i].Decision != nil {
@@ -456,11 +472,12 @@ func (a *ApproverData) SetDecisionByAdditionalApprover(login string,
 		a.AdditionalApprovers[i].Decision = &params.Decision
 		a.AdditionalApprovers[i].Comment = &params.Comment
 		a.AdditionalApprovers[i].Attachments = params.Attachments
+
 		if a.AdditionalApprovers[i].DecisionTime == nil {
 			a.AdditionalApprovers[i].DecisionTime = &timeNow
 		}
 
-		var approverLogEntry = ApproverLogEntry{
+		approverLogEntry := ApproverLogEntry{
 			Login:       login,
 			Decision:    params.Decision,
 			Comment:     params.Comment,
@@ -483,10 +500,12 @@ func (a *ApproverData) SetDecisionByAdditionalApprover(login string,
 }
 
 func (a *ApproverData) getAdditionalApproversSlice() []string {
-	var result = make([]string, 0)
+	result := make([]string, 0, len(a.AdditionalApprovers))
+
 	for _, approver := range a.AdditionalApprovers {
 		result = append(result, approver.ApproverLogin)
 	}
+
 	return result
 }
 
@@ -507,14 +526,14 @@ func (a *ApproverData) setEditAppToInitiator(login, delegateFor string, params a
 }
 
 //nolint:dupl //its not duplicate
-func (a *ApproverData) setEditToNextBlock(approver string, delegateFor string, params approverUpdateEditingParams) error {
+func (a *ApproverData) setEditToNextBlock(approver, delegateFor string, params approverUpdateEditingParams) error {
 	sentToEdit := ApproverDecisionSentToEdit
 	a.ActualApprover = &approver
 	a.Decision = &sentToEdit
 	a.Comment = &params.Comment
 	a.DecisionAttachments = params.Attachments
 
-	var logEntry = ApproverLogEntry{
+	logEntry := ApproverLogEntry{
 		Login:       approver,
 		Decision:    sentToEdit,
 		Comment:     params.Comment,
@@ -530,9 +549,9 @@ func (a *ApproverData) setEditToNextBlock(approver string, delegateFor string, p
 }
 
 // if exists empty link, then true, else false
-func (a *ApproverData) checkEmptyLinkIdAddInfo() bool {
+func (a *ApproverData) checkEmptyLinkIDAddInfo() bool {
 	for i := range a.AddInfo {
-		if a.AddInfo[i].LinkId == nil {
+		if a.AddInfo[i].LinkID == nil {
 			return true
 		}
 	}
@@ -542,45 +561,50 @@ func (a *ApproverData) checkEmptyLinkIdAddInfo() bool {
 
 func (a *ApproverData) latestUnansweredAddInfoLogEntry() *AdditionalInfo {
 	qq := make(map[string]*AdditionalInfo)
+
 	for i := range a.AddInfo {
 		item := a.AddInfo[i]
 		if item.Type == RequestAddInfoType {
-			qq[item.Id] = &item
+			qq[item.ID] = &item
 		}
 	}
 
 	for i := range a.AddInfo {
 		item := a.AddInfo[i]
-		if item.Type == ReplyAddInfoType && item.LinkId != nil {
-			delete(qq, *item.LinkId)
+		if item.Type == ReplyAddInfoType && item.LinkID != nil {
+			delete(qq, *item.LinkID)
 		}
 	}
 
 	var latest *AdditionalInfo
+
 	for _, q := range qq {
 		if latest == nil || q.CreatedAt.After(latest.CreatedAt) {
 			latest = q
 		}
 	}
+
 	return latest
 }
 
 func (a *ApproverData) findAddInfoLogEntry(linkID string) *AdditionalInfo {
 	for i := range a.AddInfo {
 		item := a.AddInfo[i]
-		if item.Id == linkID {
+		if item.ID == linkID {
 			return &item
 		}
 	}
+
 	return nil
 }
 
 func (a *ApproverData) addInfoLogEntryHasResponse(linkID string) bool {
 	for i := range a.AddInfo {
 		item := a.AddInfo[i]
-		if item.LinkId != nil && *item.LinkId == linkID {
+		if item.LinkID != nil && *item.LinkID == linkID {
 			return true
 		}
 	}
+
 	return false
 }

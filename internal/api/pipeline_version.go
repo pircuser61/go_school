@@ -27,6 +27,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
@@ -45,13 +46,13 @@ func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request
 
 	log := logger.GetLogger(ctx)
 
+	errorHandler := newHttpErrorHandler(log, w)
+
 	b, err := io.ReadAll(req.Body)
 	defer req.Body.Close()
 
 	if err != nil {
-		e := RequestReadError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(RequestReadError, err)
 
 		return
 	}
@@ -60,20 +61,17 @@ func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request
 
 	err = json.Unmarshal(b, &p)
 	if err != nil {
-		e := PipelineParseError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(PipelineParseError, err)
 
 		return
 	}
 
 	oldVersionID := p.VersionID
 	p.VersionID = uuid.New()
+
 	p.ID, err = uuid.Parse(pipelineID)
 	if err != nil {
-		e := VersionCreateError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(VersionCreateError, err)
 
 		return
 	}
@@ -88,7 +86,6 @@ func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request
 		}
 
 		p.Pipeline.ChangeOutput(keyOutputs)
-
 	}
 
 	if p.Pipeline.Entrypoint == "" {
@@ -102,9 +99,7 @@ func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request
 
 	updated, err := json.Marshal(p)
 	if err != nil {
-		e := PipelineParseError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(PipelineParseError, err)
 
 		return
 	}
@@ -112,6 +107,7 @@ func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request
 	txStorage, transactionErr := ae.DB.StartTransaction(ctx)
 	if transactionErr != nil {
 		log.WithError(transactionErr).Error("couldn't create pipeline version")
+
 		return
 	}
 
@@ -120,6 +116,7 @@ func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request
 			log = log.WithField("funcName", "CreatePipelineVersion").
 				WithField("panic handle", true)
 			log.Error(r)
+
 			if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
 				log.WithError(errors.New("couldn't rollback tx")).
 					Error(txErr)
@@ -129,28 +126,16 @@ func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request
 
 	executableFunctionIDs, err := p.Pipeline.Blocks.GetExecutableFunctionIDs()
 	if err != nil {
-		e := GetExecutableFunctionIDsError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(GetExecutableFunctionIDsError, err)
 
 		return
 	}
 
-	hasPrivateFunction := false
-	for _, id := range executableFunctionIDs {
-		function, getFunctionErr := ae.FunctionStore.GetFunction(ctx, id)
-		if getFunctionErr != nil {
-			e := GetFunctionError
-			log.Error(e.errorMessage(getFunctionErr))
-			_ = e.sendError(w)
+	hasPrivateFunction, err := ae.hasPrivateFunction(ctx, executableFunctionIDs)
+	if err != nil {
+		errorHandler.handleError(GetFunctionError, err)
 
-			return
-		}
-
-		hasPrivateFunction = function.Options.Private
-		if hasPrivateFunction {
-			break
-		}
+		return
 	}
 
 	err = ae.DB.CreateVersion(ctx, &p, ui.Username, updated, oldVersionID, hasPrivateFunction)
@@ -160,45 +145,58 @@ func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request
 				WithError(errors.New("couldn't rollback tx")).
 				Error(txErr)
 		}
-		e := PipelineWriteError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+
+		errorHandler.handleError(PipelineWriteError, err)
 
 		return
 	}
 
 	if commitErr := txStorage.CommitTransaction(ctx); commitErr != nil {
 		log.WithError(commitErr).Error("couldn't create pipeline version")
+
 		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
 			log.Error(txErr)
 		}
-		e := PipelineReadError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+
+		errorHandler.handleError(PipelineReadError, err)
 
 		return
 	}
 
 	created, err := ae.DB.GetPipelineVersion(ctx, p.VersionID, true)
 	if err != nil {
-		e := PipelineReadError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(PipelineReadError, err)
 
 		return
 	}
 
 	if err = sendResponse(w, http.StatusOK, created); err != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(UnknownError, err)
 
 		return
 	}
 }
 
-func (ae *APIEnv) getExternalSystem(ctx c.Context, storage db.Database, clientID, versionID string) (
-	*entity.ExternalSystem, error) {
+func (ae *APIEnv) hasPrivateFunction(ctx c.Context, executableFunctionIDs []string) (bool, error) {
+	for _, id := range executableFunctionIDs {
+		function, getFunctionErr := ae.FunctionStore.GetFunction(ctx, id)
+		if getFunctionErr != nil {
+			return false, getFunctionErr
+		}
+
+		if function.Options.Private {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
+func (ae *APIEnv) getExternalSystem(
+	ctx c.Context,
+	storage db.Database,
+	clientID, versionID string,
+) (*entity.ExternalSystem, error) {
 	system, err := ae.Integrations.RpcIntCli.GetIntegrationByClientId(ctx, &integration_v1.GetIntegrationByClientIdRequest{
 		ClientId: clientID,
 	})
@@ -223,7 +221,8 @@ func (ae *APIEnv) getExternalSystem(ctx c.Context, storage db.Database, clientID
 }
 
 func (ae *APIEnv) processMappings(externalSystem *entity.ExternalSystem,
-	version *entity.EriusScenario, applicationBody orderedmap.OrderedMap) (orderedmap.OrderedMap, error) {
+	version *entity.EriusScenario, applicationBody orderedmap.OrderedMap,
+) (orderedmap.OrderedMap, error) {
 	if externalSystem == nil {
 		return applicationBody, nil
 	}
@@ -254,12 +253,14 @@ func (ae *APIEnv) processMappings(externalSystem *entity.ExternalSystem,
 	}
 
 	var mappedApplicationBody orderedmap.OrderedMap
+
 	if externalSystem.InputMapping == nil || inputSchemaString == startSchemaString {
 		// mapping is not needed
 		return applicationBody, nil
 	} else {
 		// need mapping
 		var mappedData map[string]interface{}
+
 		appBody, errMap := script.OrderedMapToMap(applicationBody)
 		if errMap != nil {
 			return orderedmap.OrderedMap{}, err
@@ -293,21 +294,18 @@ func (ae *APIEnv) DeleteVersion(w http.ResponseWriter, req *http.Request, versio
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
+	errorHandler := newHttpErrorHandler(log, w)
 
 	vID, err := uuid.Parse(versionID)
 	if err != nil {
-		e := UUIDParsingError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(UUIDParsingError, err)
 
 		return
 	}
 
 	p, err := ae.DB.GetPipelineVersion(ctx, vID, true)
 	if err != nil {
-		e := PipelineDeleteError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(PipelineDeleteError, err)
 
 		return
 	}
@@ -315,9 +313,7 @@ func (ae *APIEnv) DeleteVersion(w http.ResponseWriter, req *http.Request, versio
 	if p.Status == db.StatusDraft {
 		err = ae.DeleteDraftPipeline(ctx, w, p)
 		if err != nil {
-			e := PipelineDeleteError
-			log.Error(e.errorMessage(err))
-			_ = e.sendError(w)
+			errorHandler.handleError(PipelineDeleteError, err)
 
 			return
 		}
@@ -325,18 +321,14 @@ func (ae *APIEnv) DeleteVersion(w http.ResponseWriter, req *http.Request, versio
 
 	err = ae.DB.DeleteVersion(ctx, vID)
 	if err != nil {
-		e := PipelineDeleteError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(PipelineDeleteError, err)
 
 		return
 	}
 
 	err = sendResponse(w, http.StatusOK, nil)
 	if err != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(UnknownError, err)
 
 		return
 	}
@@ -348,38 +340,31 @@ func (ae *APIEnv) GetPipelineVersion(w http.ResponseWriter, req *http.Request, v
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
+	errorHandler := newHttpErrorHandler(log, w)
 
 	versionUUID, err := uuid.Parse(versionID)
 	if err != nil {
-		e := UUIDParsingError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(UUIDParsingError, err)
 
 		return
 	}
 
 	p, err := ae.DB.GetPipelineVersion(ctx, versionUUID, true)
 	if err != nil {
-		e := GetVersionError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(GetVersionError, err)
 
 		return
 	}
 
 	err = p.FillEntryPointOutput()
 	if err != nil {
-		e := GetEntryPointOutputError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(GetEntryPointOutputError, err)
 
 		return
 	}
 
 	if err = sendResponse(w, http.StatusOK, p); err != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(UnknownError, err)
 
 		return
 	}
@@ -390,14 +375,13 @@ func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
+	errorHandler := newHttpErrorHandler(log, w)
 
 	b, err := io.ReadAll(req.Body)
 	defer req.Body.Close()
 
 	if err != nil {
-		e := RequestReadError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(RequestReadError, err)
 
 		return
 	}
@@ -406,9 +390,7 @@ func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 
 	err = json.Unmarshal(b, &p)
 	if err != nil {
-		e := PipelineParseError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(PipelineParseError, err)
 
 		return
 	}
@@ -431,50 +413,33 @@ func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 
 	updated, err := json.Marshal(p)
 	if err != nil {
-		e := PipelineParseError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(PipelineParseError, err)
 
 		return
 	}
+
 	ok, valErr := p.Pipeline.Blocks.Validate(ctx, ae.ServiceDesc)
 	if p.Status == db.StatusApproved && !ok {
-		var e Err
+		e := validateBlockTypeErrText(valErr)
+		errorHandler.handleError(e, errors.New(valErr))
 
-		switch valErr {
-		case ValidateParallelNodeReturnCycle:
-			e = ParallelNodeReturnCycle
-		case ValidateParallelNodeExitsNotConnected:
-			e = ParallelNodeExitsNotConnected
-		case ValidateOutOfParallelNodesConnection:
-			e = OutOfParallelNodesConnection
-		case ValidateParallelOutOfStartInsert:
-			e = ParallelOutOfStartInsert
-		case ValidateParallelPathIntersected:
-			e = ParallelPathIntersected
-		default:
-			e = PipelineValidateError
-		}
-		log.Error(e.errorMessage(errors.New(valErr)))
-		_ = e.sendError(w)
 		return
 	}
+
 	groups := make([]*entity.NodeGroup, 0)
+
 	if p.Status == db.StatusApproved {
 		groups, err = p.Pipeline.Blocks.GetGroups()
 		if err != nil {
-			e := UnknownError
-			log.Error(e.errorMessage(err))
-			_ = e.sendError(w)
+			errorHandler.handleError(UnknownError, err)
 
 			return
 		}
 	}
+
 	canEdit, err := ae.DB.VersionEditable(ctx, p.VersionID)
 	if err != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(UnknownError, err)
 
 		return
 	}
@@ -482,18 +447,14 @@ func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 	if !canEdit {
 		err = ae.DB.RollbackVersion(ctx, p.ID, p.VersionID)
 		if err != nil {
-			e := ApproveError
-			log.Error(e.errorMessage(err))
-			_ = e.sendError(w)
+			errorHandler.handleError(ApproveError, err)
 
 			return
 		}
 
 		err = sendResponse(w, http.StatusOK, nil)
 		if err != nil {
-			e := UnknownError
-			log.Error(e.errorMessage(err))
-			_ = e.sendError(w)
+			errorHandler.handleError(UnknownError, err)
 
 			return
 		}
@@ -503,20 +464,17 @@ func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 
 	executableFunctionIDs, err := p.Pipeline.Blocks.GetExecutableFunctionIDs()
 	if err != nil {
-		e := GetExecutableFunctionIDsError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(GetExecutableFunctionIDsError, err)
 
 		return
 	}
 
 	hasPrivateFunction := false
+
 	for _, id := range executableFunctionIDs {
 		function, getFunctionErr := ae.FunctionStore.GetFunction(ctx, id)
 		if getFunctionErr != nil {
-			e := GetFunctionError
-			log.Error(e.errorMessage(getFunctionErr))
-			_ = e.sendError(w)
+			errorHandler.handleError(GetFunctionError, err)
 
 			return
 		}
@@ -529,9 +487,7 @@ func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 
 	err = ae.DB.UpdateDraft(ctx, &p, updated, groups, hasPrivateFunction)
 	if err != nil {
-		e := PipelineWriteError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(PipelineWriteError, err)
 
 		return
 	}
@@ -544,9 +500,7 @@ func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 	if p.Status == db.StatusApproved {
 		err = ae.DB.SwitchApproved(ctx, p.ID, p.VersionID, ui.Username)
 		if err != nil {
-			e := ApproveError
-			log.Error(e.errorMessage(err))
-			_ = e.sendError(w)
+			errorHandler.handleError(ApproveError, err)
 
 			return
 		}
@@ -555,9 +509,7 @@ func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 	if p.Status == db.StatusRejected {
 		err = ae.DB.SwitchRejected(ctx, p.VersionID, p.CommentRejected, ui.Username)
 		if err != nil {
-			e := ApproveError
-			log.Error(e.errorMessage(err))
-			_ = e.sendError(w)
+			errorHandler.handleError(ApproveError, err)
 
 			return
 		}
@@ -565,20 +517,33 @@ func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 
 	edited, err := ae.DB.GetPipelineVersion(ctx, p.VersionID, true)
 	if err != nil {
-		e := PipelineReadError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(PipelineReadError, err)
 
 		return
 	}
 
 	err = sendResponse(w, http.StatusOK, edited)
 	if err != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(UnknownError, err)
 
 		return
+	}
+}
+
+func validateBlockTypeErrText(valErrText string) Err {
+	switch valErrText {
+	case ValidateParallelNodeReturnCycle:
+		return ParallelNodeReturnCycle
+	case ValidateParallelNodeExitsNotConnected:
+		return ParallelNodeExitsNotConnected
+	case ValidateOutOfParallelNodesConnection:
+		return OutOfParallelNodesConnection
+	case ValidateParallelOutOfStartInsert:
+		return ParallelOutOfStartInsert
+	case ValidateParallelPathIntersected:
+		return ParallelPathIntersected
+	default:
+		return PipelineValidateError
 	}
 }
 
@@ -597,13 +562,11 @@ type execVersionDTO struct {
 	runCtx           entity.TaskRunContext
 }
 
-// nolint //need big cyclo,need equal string for all usages
 func (ae *APIEnv) execVersion(ctx c.Context, dto *execVersionDTO) (*entity.RunResponse, error) {
 	ctxLocal, s := trace.StartSpan(ctx, "exec_version")
 	defer s.End()
 
 	log := logger.GetLogger(ctxLocal)
-
 	reqID := dto.req.Header.Get(XRequestIDHeader)
 
 	defer dto.req.Body.Close()
@@ -616,17 +579,20 @@ func (ae *APIEnv) execVersion(ctx c.Context, dto *execVersionDTO) (*entity.RunRe
 	if err != nil {
 		e := NoUserInContextError
 		log.Error(e.errorMessage(err))
+
 		return nil, errors.Wrap(err, e.error())
 	}
 
 	// if X-As-Other was used, then we will store the name of the real user here
-	var realAuthor string
+	realAuthor := dto.realAuthor(usr)
+
 	if dto.allowRunAsOthers {
-		realAuthor = usr.Username
 		usr, err = user.GetEffectiveUserInfoFromCtx(ctx)
 		if err != nil {
 			e := NoUserInContextError
+
 			log.Error(e.errorMessage(err))
+
 			return nil, errors.Wrap(err, e.error())
 		}
 	}
@@ -647,11 +613,13 @@ func (ae *APIEnv) execVersion(ctx c.Context, dto *execVersionDTO) (*entity.RunRe
 	executablePipeline, e, err := ae.execVersionInternal(ctxLocal, arg)
 	if err != nil {
 		log.Error(e.errorMessage(err))
+
 		return nil, errors.Wrap(err, e.error())
 	}
 
 	if executablePipeline == nil {
 		log.Error("got no pipeline")
+
 		return nil, errors.New("No pipeline started")
 	}
 
@@ -660,6 +628,14 @@ func (ae *APIEnv) execVersion(ctx c.Context, dto *execVersionDTO) (*entity.RunRe
 		WorkNumber: executablePipeline.WorkNumber,
 		Status:     statusRunned,
 	}, nil
+}
+
+func (dto *execVersionDTO) realAuthor(usr *sso.UserInfo) string {
+	if dto.allowRunAsOthers {
+		return usr.Username
+	}
+
+	return ""
 }
 
 type execVersionInternalDTO struct {
@@ -683,8 +659,7 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 
 	txStorage, transactionErr := dto.storage.StartTransaction(ctx)
 	if transactionErr != nil {
-		e := PipelineRunError
-		return nil, e, transactionErr
+		return nil, PipelineRunError, transactionErr
 	}
 
 	defer func() {
@@ -692,6 +667,7 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 			log = log.WithField("funcName", "execVersionInternal").
 				WithField("panic handle", true)
 			log.Error(r)
+
 			if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
 				log.WithError(errors.New("couldn't rollback tx")).
 					Error(txErr)
@@ -699,32 +675,7 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 		}
 	}()
 
-	ep := pipeline.ExecutablePipeline{}
-	ep.PipelineID = dto.p.ID
-	ep.VersionID = dto.p.VersionID
-	ep.Storage = txStorage
-	ep.EntryPoint = dto.p.Pipeline.Entrypoint
-	ep.FaaS = ae.FaaS
-	ep.PipelineModel = dto.p
-	ep.HTTPClient = ae.HTTPClient
-	ep.Remedy = ae.Remedy
-	ep.ActiveBlocks = map[string]struct{}{}
-	ep.SkippedBlocks = map[string]struct{}{}
-	ep.EntryPoint = pipeline.BlockGoFirstStart
-	ep.Kafka = ae.Kafka
-	ep.Sender = ae.Mail
-	ep.People = ae.People
-	ep.Name = dto.p.Name
-	ep.ServiceDesc = ae.ServiceDesc
-	ep.FunctionStore = ae.FunctionStore
-	ep.HumanTasks = ae.HumanTasks
-	ep.Integrations = ae.Integrations
-	ep.FileRegistry = ae.FileRegistry
-	ep.Scheduler = ae.Scheduler
-
-	if dto.makeNewWork {
-		ep.WorkNumber = dto.workNumber
-	}
+	ep := ae.executablePipeline(dto, txStorage)
 
 	variableStorage := store.NewStore()
 	pipelineVars := dto.vars
@@ -736,26 +687,30 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 				WithError(errors.New("couldn't rollback tx")).
 				Error(txErr)
 		}
-		e := PipelineRunError
-		return nil, e, err
+
+		return nil, PipelineRunError, err
 	}
 
 	// use ctx as we need userinfo
-	if err = ep.CreateTask(ctx, &pipeline.CreateTaskDTO{
-		Author:     dto.authorName,
-		RealAuthor: dto.realAuthorName,
-		IsDebug:    false,
-		Params:     parameters,
-		WorkNumber: dto.workNumber,
-		RunCtx:     dto.runCtx,
-	}); err != nil {
+	err = ep.CreateTask(
+		ctx,
+		&pipeline.CreateTaskDTO{
+			Author:     dto.authorName,
+			RealAuthor: dto.realAuthorName,
+			IsDebug:    false,
+			Params:     parameters,
+			WorkNumber: dto.workNumber,
+			RunCtx:     dto.runCtx,
+		},
+	)
+	if err != nil {
 		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
 			log.WithField("funcName", "CreateTask").
 				WithError(errors.New("couldn't rollback tx")).
 				Error(txErr)
 		}
-		e := PipelineRunError
-		return nil, e, err
+
+		return nil, PipelineRunError, err
 	}
 
 	runCtx := &pipeline.BlockRunContext{
@@ -801,19 +756,51 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 				WithError(errors.New("couldn't rollback tx")).
 				Error(txErr)
 		}
+
 		variableStorage.AddError(err)
-		e := PipelineRunError
-		return nil, e, err
+
+		return nil, PipelineRunError, err
 	}
 
-	if err = txStorage.CommitTransaction(ctx); err != nil {
-		e := PipelineRunError
-		return nil, e, err
+	err = txStorage.CommitTransaction(ctx)
+	if err != nil {
+		return nil, PipelineRunError, err
 	}
 
 	runCtx.NotifyEvents(ctx)
 
-	return &ep, 0, nil
+	return ep, 0, nil
+}
+
+func (ae *APIEnv) executablePipeline(dto *execVersionInternalDTO, txStorage db.Database) *pipeline.ExecutablePipeline {
+	var workNumber string
+	if dto.makeNewWork {
+		workNumber = dto.workNumber
+	}
+
+	return &pipeline.ExecutablePipeline{
+		WorkNumber:    workNumber,
+		PipelineID:    dto.p.ID,
+		VersionID:     dto.p.VersionID,
+		Storage:       txStorage,
+		FaaS:          ae.FaaS,
+		PipelineModel: dto.p,
+		HTTPClient:    ae.HTTPClient,
+		Remedy:        ae.Remedy,
+		ActiveBlocks:  make(map[string]struct{}, 0),
+		SkippedBlocks: make(map[string]struct{}, 0),
+		EntryPoint:    pipeline.BlockGoFirstStart,
+		Kafka:         ae.Kafka,
+		Sender:        ae.Mail,
+		People:        ae.People,
+		Name:          dto.p.Name,
+		ServiceDesc:   ae.ServiceDesc,
+		FunctionStore: ae.FunctionStore,
+		HumanTasks:    ae.HumanTasks,
+		Integrations:  ae.Integrations,
+		FileRegistry:  ae.FileRegistry,
+		Scheduler:     ae.Scheduler,
+	}
 }
 
 func (ae *APIEnv) SearchPipelines(w http.ResponseWriter, req *http.Request, params SearchPipelinesParams) {
@@ -821,31 +808,31 @@ func (ae *APIEnv) SearchPipelines(w http.ResponseWriter, req *http.Request, para
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
+	errorHandler := newHttpErrorHandler(log, w)
 
 	if params.PipelineId == nil && params.PipelineName == nil {
-		e := ValidationPipelineSearchError
-		log.Error(e.errorMessage(errors.New("name and id are empty")))
-		_ = e.sendError(w)
+		errorHandler.handleError(ValidationPipelineSearchError, errors.New("name and id are empty"))
 
 		return
 	}
 
-	items, err := ae.DB.GetPipelinesByNameOrId(ctx, toDBSearchPipelinesParams(&params))
+	items, err := ae.DB.GetPipelinesByNameOrID(ctx, toDBSearchPipelinesParams(&params))
 	if err != nil {
-		e := GetPipelinesSearchError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(GetPipelinesSearchError, err)
 
 		return
 	}
 
-	res := &ResponsePipelineSearch{}
-
+	responseItems := make([]SearchPipelineItem, 0, len(items))
 	for i := range items {
-		res.Items = append(res.Items, SearchPipelineItem{
+		responseItems = append(responseItems, SearchPipelineItem{
 			Name:       &items[i].PipelineName,
-			PipelineId: &items[i].PipelineId,
+			PipelineId: &items[i].PipelineID,
 		})
+	}
+
+	res := &ResponsePipelineSearch{
+		Items: responseItems,
 	}
 
 	if len(items) > 0 {
@@ -854,9 +841,7 @@ func (ae *APIEnv) SearchPipelines(w http.ResponseWriter, req *http.Request, para
 
 	err = sendResponse(w, http.StatusOK, res)
 	if err != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(UnknownError, err)
 
 		return
 	}
@@ -878,7 +863,7 @@ func toDBSearchPipelinesParams(in *SearchPipelinesParams) (out *db.SearchPipelin
 
 	return &db.SearchPipelineRequest{
 		PipelineName: in.PipelineName,
-		PipelineId:   in.PipelineId,
+		PipelineID:   in.PipelineId,
 		Limit:        *in.PerPage,
 		Offset:       (*in.Page * *in.PerPage) - *in.PerPage,
 	}
@@ -892,6 +877,7 @@ func (mc azpClaims) Valid() error {
 	if mc.AZP != "" {
 		return nil
 	}
+
 	return &PipelinerError{GetClientIDError}
 }
 

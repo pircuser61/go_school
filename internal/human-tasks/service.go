@@ -29,13 +29,17 @@ func NewService(cfg Config) (*Service, error) {
 	if cfg.URL == "" {
 		return &Service{}, nil
 	}
+
 	opts := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithStatsHandler(&ocgrpc.ClientHandler{})}
+		grpc.WithStatsHandler(&ocgrpc.ClientHandler{}),
+	}
+
 	conn, err := grpc.Dial(cfg.URL, opts...)
 	if err != nil {
 		return nil, err
 	}
+
 	client := d.NewDelegationServiceClient(conn)
 
 	return &Service{
@@ -60,9 +64,11 @@ func (s *Service) getDelegationsInternal(ctx c.Context, req *d.GetDelegationsReq
 			return nil, parseFromDateErr
 		}
 
-		var toDate = time.Time{}
+		toDate := time.Time{}
+
 		if delegation.ToDate != "" {
 			var parseToDateErr error
+
 			toDate, parseToDateErr = time.Parse("02/01/2006", delegation.ToDate)
 			if parseToDateErr != nil {
 				return nil, parseToDateErr
@@ -84,7 +90,7 @@ func (s *Service) getDelegationsInternal(ctx c.Context, req *d.GetDelegationsReq
 }
 
 func (s *Service) GetDelegationsFromLogin(ctx c.Context, login string) (ds Delegations, err error) {
-	var req = &d.GetDelegationsRequest{
+	req := &d.GetDelegationsRequest{
 		FilterBy:  FromLoginFilter,
 		FromLogin: login,
 	}
@@ -98,7 +104,7 @@ func (s *Service) GetDelegationsFromLogin(ctx c.Context, login string) (ds Deleg
 }
 
 func (s *Service) GetDelegationsToLogin(ctx c.Context, login string) (ds Delegations, err error) {
-	var req = &d.GetDelegationsRequest{
+	req := &d.GetDelegationsRequest{
 		FilterBy: ToLoginFilter,
 		ToLogin:  login,
 	}
@@ -122,7 +128,7 @@ func (s *Service) GetDelegationsToLogins(ctx c.Context, logins []string) (ds Del
 		}
 	}
 
-	var req = &d.GetDelegationsRequest{
+	req := &d.GetDelegationsRequest{
 		FilterBy: ToLoginsFilter,
 		ToLogins: sb.String(),
 	}
@@ -146,7 +152,7 @@ func (s *Service) GetDelegationsByLogins(ctx c.Context, logins []string) (ds Del
 		}
 	}
 
-	var req = &d.GetDelegationsRequest{
+	req := &d.GetDelegationsRequest{
 		FilterBy:   FromLoginsFilter,
 		FromLogins: sb.String(),
 	}

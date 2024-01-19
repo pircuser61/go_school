@@ -19,7 +19,6 @@ func (s *Service) GetEmployeeByLogin(ctx context.Context, username string) (*Emp
 	response, err := s.Cli.GetEmployeesWithResponse(ctx, &GetEmployeesParams{
 		Logins: &[]string{username},
 	})
-
 	if err != nil {
 		return nil, err
 	}
@@ -27,6 +26,7 @@ func (s *Service) GetEmployeeByLogin(ctx context.Context, username string) (*Emp
 	if response.StatusCode() != http.StatusOK {
 		return nil, fmt.Errorf("invalid response code on gettings employee by login: %d", response.StatusCode())
 	}
+
 	if len(*response.JSON200) == 0 {
 		return nil, fmt.Errorf("cant get employee by login")
 	}

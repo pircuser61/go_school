@@ -24,7 +24,7 @@ import (
 )
 
 const (
-	getFileById         = "/api/fileregistry/v1/file/"
+	getFileByID         = "/api/fileregistry/v1/file/"
 	saveFile            = "/api/fileregistry/v1/file/upload"
 	dispositionHeader   = "Content-Disposition"
 	authorizationHeader = "Authorization"
@@ -41,11 +41,14 @@ type Service struct {
 func NewService(cfg Config) (*Service, error) {
 	opts := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithStatsHandler(&ocgrpc.ClientHandler{})}
+		grpc.WithStatsHandler(&ocgrpc.ClientHandler{}),
+	}
+
 	conn, err := grpc.Dial(cfg.GRPC, opts...)
 	if err != nil {
 		return nil, err
 	}
+
 	client := fileregistry.NewFileServiceClient(conn)
 
 	return &Service{
@@ -67,28 +70,28 @@ func (s *Service) GetAttachmentLink(ctx context.Context, attachments []AttachInf
 		if err != nil {
 			return nil, err
 		}
+
 		attachments[k].ExternalLink = link.Url
 	}
 
 	return attachments, nil
 }
 
-func (s *Service) getAttachmentInfo(ctx context.Context, fileId string) (FileInfo, error) {
+func (s *Service) getAttachmentInfo(ctx context.Context, fileID string) (FileInfo, error) {
 	_, span := trace.StartSpan(ctx, "get_attachment_info")
 	defer span.End()
 
 	res, err := s.grpcCLi.GetFileInfoById(ctx,
 		&fileregistry.GetFileInfoRequest{
-			FileId: fileId,
+			FileId: fileID,
 		},
 	)
-
 	if err != nil {
 		return FileInfo{}, err
 	}
 
 	return FileInfo{
-		FileId:    res.FileId,
+		FileID:    res.FileId,
 		Name:      res.Name,
 		CreatedAt: res.CreatedAt,
 		Size:      res.Size,
@@ -104,23 +107,27 @@ func (s *Service) GetAttachmentsInfo(ctx context.Context, attachments map[string
 	for k := range attachments {
 		aa := attachments[k]
 		filesInfo := make([]FileInfo, 0, len(aa))
+
 		for _, a := range aa {
 			fileInfo, err := s.getAttachmentInfo(ctxLocal, a.FileID)
 			if err != nil {
 				return nil, err
 			}
+
 			filesInfo = append(filesInfo, fileInfo)
 		}
+
 		res[k] = filesInfo
 	}
+
 	return res, nil
 }
 
-func (s *Service) getAttachment(ctx context.Context, fileId string) (email.Attachment, error) {
+func (s *Service) getAttachment(ctx context.Context, fileID string) (email.Attachment, error) {
 	ctxLocal, span := trace.StartSpan(ctx, "get_attachment")
 	defer span.End()
 
-	reqURL := s.restURL + getFileById + fileId
+	reqURL := s.restURL + getFileByID + fileID
 
 	req, err := http.NewRequestWithContext(ctxLocal, http.MethodGet, reqURL, http.NoBody)
 	if err != nil {
@@ -144,6 +151,7 @@ func (s *Service) getAttachment(ctx context.Context, fileId string) (email.Attac
 
 	// temp decision
 	name := regexp.MustCompile(`^attachment; filename=`).ReplaceAllString(resp.Header.Get(dispositionHeader), "")
+
 	return email.Attachment{
 		Name:    name,
 		Content: data,
@@ -159,21 +167,25 @@ func (s *Service) GetAttachments(ctx context.Context, attachments []entity.Attac
 
 	for i := range attachments {
 		a := attachments[i]
+
 		file, err := s.getAttachment(ctxLocal, a.FileID)
 		if err != nil {
 			return nil, err
 		}
+
 		res = append(res, file)
 	}
+
 	return res, nil
 }
 
-func (s *Service) SaveFile(ctx context.Context, token string, name string, file []byte) (string, error) {
+func (s *Service) SaveFile(ctx context.Context, token, name string, file []byte) (string, error) {
 	ctx, span := trace.StartSpan(ctx, "save_file")
 	defer span.End()
 
 	buf := new(bytes.Buffer)
 	writer := multipart.NewWriter(buf)
+
 	filePart, err := writer.CreateFormFile("file", name)
 	if err != nil {
 		return "", err
@@ -190,6 +202,7 @@ func (s *Service) SaveFile(ctx context.Context, token string, name string, file 
 	}
 
 	reqURL := s.restURL + saveFile
+
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, reqURL, buf)
 	if err != nil {
 		return "", err
@@ -197,10 +210,12 @@ func (s *Service) SaveFile(ctx context.Context, token string, name string, file 
 
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 	req.Header.Set(authorizationHeader, token)
+
 	resp, err := s.restCli.Do(req)
 	if err != nil {
 		return "", err
 	}
+
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
@@ -208,6 +223,7 @@ func (s *Service) SaveFile(ctx context.Context, token string, name string, file 
 	}
 
 	id := fileID{}
+
 	err = json.NewDecoder(resp.Body).Decode(&id)
 	if err != nil {
 		return "", err

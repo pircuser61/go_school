@@ -59,7 +59,7 @@ type ProcessSettingsWithExternalSystems struct {
 }
 
 type ProcessSettings struct {
-	Id                 string             `json:"version_id"`
+	ID                 string             `json:"version_id"`
 	StartSchema        *script.JSONSchema `json:"start_schema"`
 	EndSchema          *script.JSONSchema `json:"end_schema"`
 	ResubmissionPeriod int                `json:"resubmission_period"`
@@ -73,7 +73,7 @@ type ProcessSettings struct {
 
 func (ps *ProcessSettings) UnmarshalJSON(bytes []byte) error {
 	temp := struct {
-		Id                 string           `json:"version_id"`
+		ID                 string           `json:"version_id"`
 		StartSchema        *json.RawMessage `json:"start_schema"`
 		EndSchema          *json.RawMessage `json:"end_schema"`
 		ResubmissionPeriod int              `json:"resubmission_period"`
@@ -86,7 +86,7 @@ func (ps *ProcessSettings) UnmarshalJSON(bytes []byte) error {
 		return err
 	}
 
-	ps.Id = temp.Id
+	ps.ID = temp.ID
 	ps.ResubmissionPeriod = temp.ResubmissionPeriod
 	ps.Name = temp.Name
 	ps.SLA = temp.SLA
@@ -95,9 +95,11 @@ func (ps *ProcessSettings) UnmarshalJSON(bytes []byte) error {
 	if temp.StartSchema != nil {
 		ps.StartSchemaRaw = *temp.StartSchema
 	}
+
 	if temp.EndSchema != nil {
 		ps.EndSchemaRaw = *temp.EndSchema
 	}
+
 	return nil
 }
 
@@ -105,6 +107,7 @@ func (ps *ProcessSettings) ValidateSLA() bool {
 	if (ps.WorkType == "8/5" || ps.WorkType == "24/7" || ps.WorkType == "12/5") && ps.SLA > 0 {
 		return true
 	}
+
 	return false
 }
 
@@ -128,10 +131,10 @@ type EndSystemSettings struct {
 	MicroserviceId string `json:"microservice_id"`
 }
 
-type SlaVersionSettings struct {
+type SLAVersionSettings struct {
 	Author   string `json:"author"`
 	WorkType string `json:"work_type"`
-	Sla      int    `json:"sla"`
+	SLA      int    `json:"sla"`
 }
 
 type EndProcessData struct {
@@ -142,7 +145,7 @@ type EndProcessData struct {
 	Status     string `json:"status"`
 }
 
-func (ps ProcessSettings) Validate() error {
+func (ps *ProcessSettings) Validate() error {
 	err := ps.StartSchema.Validate()
 	if err != nil {
 		return err

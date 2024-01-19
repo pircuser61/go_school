@@ -13,7 +13,6 @@ func (s *Service) GetOrganizationById(ctx context.Context, organizationId string
 	defer span.End()
 
 	response, err := s.Cli.GetOrganizationsIdWithResponse(ctx, UUIDPathObjectID(organizationId))
-
 	if err != nil {
 		return nil, err
 	}

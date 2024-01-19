@@ -511,10 +511,12 @@ func TestValidation_SdBlueprintFilled(t *testing.T) {
 			WantValid: false,
 		},
 	}
+
 	sdApi := &servicedesc.Service{
 		Cli:   httpmock.Client(&mockResponse),
 		SdURL: "https://dev.servicedesk.mts.ru",
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
 			if tt.Ef.Pipeline.Blocks.IsSdBlueprintFilled(context.Background(), sdApi) != tt.WantValid {
@@ -823,11 +825,14 @@ func unmarshalFromTestFile(t *testing.T, in string) *entity.EriusScenario {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	var result entity.EriusScenario
+
 	err = json.Unmarshal(bytes, &result)
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	return &result
 }
 
@@ -836,11 +841,14 @@ func unmarshalGroupsFromTestFile(t *testing.T, in string) []*entity.NodeGroup {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	var result []*entity.NodeGroup
+
 	err = json.Unmarshal(bytes, &result)
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	return result
 }
 
@@ -890,8 +898,10 @@ func checkEqualityOfGroups(g1, g2 []*entity.NodeGroup) bool {
 	if len(g1) != len(g2) {
 		return false
 	}
+
 	gm1 := groupSliceToMap(g1)
 	gm2 := groupSliceToMap(g2)
+
 	return cmp.Equal(gm1, gm2)
 }
 
@@ -899,7 +909,9 @@ func groupSliceToMap(g []*entity.NodeGroup) map[string]NodeGroupMap {
 	if g == nil {
 		return nil
 	}
+
 	gmap := map[string]NodeGroupMap{}
+
 	for i := range g {
 		gmap[g[i].StartNode] = NodeGroupMap{
 			EndNode:   g[i].EndNode,
@@ -908,5 +920,6 @@ func groupSliceToMap(g []*entity.NodeGroup) map[string]NodeGroupMap {
 			StartNode: g[i].StartNode,
 		}
 	}
+
 	return gmap
 }

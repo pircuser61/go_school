@@ -16,8 +16,9 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
-func (ae *APIEnv) handleBreachSlA(ctx c.Context, item db.StepBreachedSLA) {
+func (ae *APIEnv) handleBreachSlA(ctx c.Context, item *db.StepBreachedSLA) {
 	log := logger.GetLogger(ctx)
+
 	txStorage, transactionErr := ae.DB.StartTransaction(ctx)
 	if transactionErr != nil {
 		log.WithError(transactionErr).Error("couldn't set SLA breach")
@@ -29,6 +30,7 @@ func (ae *APIEnv) handleBreachSlA(ctx c.Context, item db.StepBreachedSLA) {
 			log = log.WithField("funcName", "handleBreachSlA").
 				WithField("panic handle", true)
 			log.Error(r)
+
 			if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
 				log.WithError(errors.New("couldn't rollback tx")).
 					Error(txErr)
@@ -36,7 +38,6 @@ func (ae *APIEnv) handleBreachSlA(ctx c.Context, item db.StepBreachedSLA) {
 		}
 	}()
 
-	// goroutines?
 	runCtx := &pipeline.BlockRunContext{
 		TaskID:     item.TaskID,
 		WorkNumber: item.WorkNumber,
@@ -75,15 +76,19 @@ func (ae *APIEnv) handleBreachSlA(ctx c.Context, item db.StepBreachedSLA) {
 	blockErr := pipeline.ProcessBlockWithEndMapping(ctx, item.StepName, item.BlockData, runCtx, true)
 	if blockErr != nil {
 		log.WithError(blockErr).Error("couldn't set SLA breach")
+
 		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
 			log.WithField("funcName", "handleBreachSlA").
 				WithError(errors.New("couldn't rollback tx")).
 				Error(txErr)
 		}
+
 		return
 	}
+
 	if commitErr := txStorage.CommitTransaction(ctx); commitErr != nil {
 		log.WithError(commitErr).Error("couldn't set SLA breach")
+
 		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
 			log.Error(txErr)
 		}
@@ -92,24 +97,26 @@ func (ae *APIEnv) handleBreachSlA(ctx c.Context, item db.StepBreachedSLA) {
 	runCtx.NotifyEvents(ctx)
 }
 
-//nolint:gocyclo,staticcheck //its ok here
 func (ae *APIEnv) CheckBreachSLA(w http.ResponseWriter, r *http.Request) {
 	ctx, span := trace.StartSpan(r.Context(), "check_breach_sla")
 	defer span.End()
 
 	log := logger.GetLogger(ctx).WithField("mainFuncName", "CheckBreachSLA")
+	errorhandler := newHttpErrorHandler(log, w)
 
 	steps, err := ae.DB.GetBlocksBreachedSLA(ctx)
 	if err != nil {
-		e := UpdateBlockError
-		log.Error(e.errorMessage(errors.New("couldn't get steps")))
-		_ = e.sendError(w)
+		err := errors.New("couldn't get steps")
+		errorhandler.handleError(UpdateBlockError, err)
 
 		return
 	}
 
 	spCtx := span.SpanContext()
+
+	//nolint // так надо и без этого нельзя
 	routineCtx := c.WithValue(c.Background(), XRequestIDHeader, ctx.Value(XRequestIDHeader))
+
 	routineCtx = logger.WithLogger(routineCtx, log)
 	processCtx, fakeSpan := trace.StartSpanWithRemoteParent(routineCtx, "start_check_breach_sla", spCtx)
 	fakeSpan.End()
@@ -119,6 +126,7 @@ func (ae *APIEnv) CheckBreachSLA(w http.ResponseWriter, r *http.Request) {
 			"taskID":   item.TaskID,
 			"stepName": item.StepName,
 		})
-		ae.handleBreachSlA(logger.WithLogger(processCtx, log), item)
+
+		ae.handleBreachSlA(logger.WithLogger(processCtx, log), &item)
 	}
 }

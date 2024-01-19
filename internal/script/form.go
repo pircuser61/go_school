@@ -25,7 +25,7 @@ type FormParams struct {
 	CheckSLA                  bool                 `json:"check_sla"`
 	Executor                  string               `json:"executor"`
 	FormExecutorType          FormExecutorType     `json:"form_executor_type"`
-	FormGroupId               string               `json:"form_group_id"`
+	FormGroupID               string               `json:"form_group_id"`
 	FormGroupIDPath           *string              `json:"form_group_id_path,omitempty"`
 	FormsAccessibility        []FormAccessibility  `json:"forms_accessibility"`
 	HideExecutorFromInitiator bool                 `json:"hide_executor_from_initiator"`
@@ -53,6 +53,7 @@ func (a *FormParams) Validate() error {
 			return fmt.Errorf("invalid reEnterSettings.FormExecutorType")
 		}
 	}
+
 	return nil
 }
 

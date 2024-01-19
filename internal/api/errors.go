@@ -124,7 +124,14 @@ const (
 	GetFunctionError
 )
 
-//nolint:dupl //its not duplicate
+/*
+	по хорошему эту штуку надо бы разбить на структуры с нужными методами Error(), Wrap(), Description(), HttpCode()
+	и отдельную структуру для записи данной ошибки в http.ResponseWriter
+	из плюсов этой штуки то что всё компактектненько и незапарно
+	из минусов то что при добавлении новой ошибки надо не забыть добавить это в 3 разных места
+	ну и читаемость кода для просмотра конкретной ошибки низкая (тяжело в кучке три раза подряд искать нужную ошибку)
+*/
+//nolint:gochecknoglobals,dupl // ну либо так либо никак
 var errorText = map[Err]string{
 	UnknownError:                        "unknown error",
 	GetAllApprovedError:                 "can't get approved versions",
@@ -228,9 +235,14 @@ var errorText = map[Err]string{
 	GetFunctionError:                    "error when getting function from function store",
 }
 
-// JOKE.
-//
-//nolint:dupl //its not duplicate
+/*
+	по хорошему эту штуку надо бы разбить на структуры с нужными методами Error(), Wrap(), Description(), HttpCode()
+	и отдельную структуру для записи данной ошибки в http.ResponseWriter
+	из плюсов этой штуки то что всё компактектненько и незапарно
+	из минусов то что при добавлении новой ошибки надо не забыть добавить это в 3 разных места
+	ну и читаемость кода для просмотра конкретной ошибки низкая (тяжело в кучке три раза подряд искать нужную ошибку)
+*/
+//nolint // ну либо так либо никак
 var errorDescription = map[Err]string{
 	UnknownError:                        "Сохраняйте спокойствие, что-то произошло непонятное",
 	GetAllApprovedError:                 "Невозможно получить список согласованных сценариев",
@@ -322,18 +334,25 @@ var errorDescription = map[Err]string{
 	StopTaskParsingError:                "Не удалось распарсить запрос",
 	ParallelNodeReturnCycle:             "Линии блоков внутри параллельности должны быть изолированы",
 	ParallelNodeExitsNotConnected:       "Процесс не опубликован. Соедините все ноды в процессе",
-	// nolint
-	OutOfParallelNodesConnection:  "Процесс не опубликован. Есть ноды, которые не располагаются внутри параллельности или не проходят через начало/конец шлюза, но связаны с блоками внутри параллельности.",
-	ParallelOutOfStartInsert:      "Процесс не опубликован. Есть ноды, которые соеденены с нодой конец параллельности, но не проходят через ноду начало параллельности",
-	GetDecisionsError:             "Не удалось получить список решений нод",
-	GetBlockStateError:            "can't get block state",
-	ParallelPathIntersected:       "Процесс не опубликован. Внутри параллельности один из сокетов ведет на другую ветвь внутри параллельности",
-	ForbiddenError:                "У вас нет прав на просмотр содержимого",
-	CheckForHiddenError:           "Ошибка при проверке на hidden",
-	GetExecutableFunctionIDsError: "Ошибка при получении id у executable functions",
-	GetFunctionError:              "Ошибка при получении функции",
+	OutOfParallelNodesConnection:        "Процесс не опубликован. Есть ноды, которые не располагаются внутри параллельности или не проходят через начало/конец шлюза, но связаны с блоками внутри параллельности.",
+	ParallelOutOfStartInsert:            "Процесс не опубликован. Есть ноды, которые соеденены с нодой конец параллельности, но не проходят через ноду начало параллельности",
+	GetDecisionsError:                   "Не удалось получить список решений нод",
+	GetBlockStateError:                  "can't get block state",
+	ParallelPathIntersected:             "Процесс не опубликован. Внутри параллельности один из сокетов ведет на другую ветвь внутри параллельности",
+	ForbiddenError:                      "У вас нет прав на просмотр содержимого",
+	CheckForHiddenError:                 "Ошибка при проверке на hidden",
+	GetExecutableFunctionIDsError:       "Ошибка при получении id у executable functions",
+	GetFunctionError:                    "Ошибка при получении функции",
 }
 
+/*
+	по хорошему эту штуку надо бы разбить на структуры с нужными методами Error(), Wrap(), Description(), HttpCode()
+	и отдельную структуру для записи данной ошибки в http.ResponseWriter
+	из плюсов этой штуки то что всё компактектненько и незапарно
+	из минусов то что при добавлении новой ошибки надо не забыть добавить это в 3 разных места
+	ну и читаемость кода для просмотра конкретной ошибки низкая (тяжело в кучке три раза подряд искать нужную ошибку)
+*/
+//nolint:gochecknoglobals // ну либо так либо никак
 var errorStatus = map[Err]int{
 	Teapot:                        http.StatusTeapot,
 	UnauthError:                   http.StatusUnauthorized,

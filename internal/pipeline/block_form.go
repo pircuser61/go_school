@@ -110,6 +110,7 @@ func (gb *GoFormBlock) isFormUserActed(login string) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -120,13 +121,15 @@ func (gb *GoFormBlock) formActions() []MemberAction {
 
 	if !gb.State.IsTakenInWork {
 		action := MemberAction{
-			Id:   formStartWorkAction,
+			ID:   formStartWorkAction,
 			Type: ActionTypePrimary,
 		}
+
 		return []MemberAction{action}
 	}
 
 	formNames := []string{gb.Name}
+
 	for _, v := range gb.State.FormsAccessibility {
 		if _, ok := gb.RunContext.VarStore.State[v.NodeId]; !ok {
 			continue
@@ -143,7 +146,7 @@ func (gb *GoFormBlock) formActions() []MemberAction {
 
 	actions := []MemberAction{
 		{
-			Id:   formFillFormAction,
+			ID:   formFillFormAction,
 			Type: ActionTypeCustom,
 			Params: map[string]interface{}{
 				formName: formNames,
@@ -162,9 +165,11 @@ func (gb *GoFormBlock) Deadlines(ctx c.Context) ([]Deadline, error) {
 	deadlines := make([]Deadline, 0, 2)
 
 	if gb.State.CheckSLA {
-		slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
-			TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.CurrBlockStartTime,
-				FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100)}},
+		slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDTO{
+			TaskCompletionIntervals: []entity.TaskCompletionInterval{{
+				StartedAt:  gb.RunContext.CurrBlockStartTime,
+				FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100),
+			}},
 			WorkType: sla.WorkHourType(gb.State.WorkType),
 		})
 
@@ -174,9 +179,10 @@ func (gb *GoFormBlock) Deadlines(ctx c.Context) ([]Deadline, error) {
 
 		if !gb.State.SLAChecked {
 			deadlines = append(deadlines,
-				Deadline{Deadline: gb.RunContext.Services.SLAService.ComputeMaxDate(gb.RunContext.CurrBlockStartTime,
-					float32(gb.State.SLA),
-					slaInfoPtr),
+				Deadline{
+					Deadline: gb.RunContext.Services.SLAService.ComputeMaxDate(gb.RunContext.CurrBlockStartTime,
+						float32(gb.State.SLA),
+						slaInfoPtr),
 					Action: entity.TaskUpdateActionSLABreach,
 				},
 			)
@@ -184,9 +190,10 @@ func (gb *GoFormBlock) Deadlines(ctx c.Context) ([]Deadline, error) {
 
 		if !gb.State.HalfSLAChecked && gb.State.SLA >= 8 {
 			deadlines = append(deadlines,
-				Deadline{Deadline: gb.RunContext.Services.SLAService.ComputeMaxDate(gb.RunContext.CurrBlockStartTime,
-					float32(gb.State.SLA)/2,
-					slaInfoPtr),
+				Deadline{
+					Deadline: gb.RunContext.Services.SLAService.ComputeMaxDate(gb.RunContext.CurrBlockStartTime,
+						float32(gb.State.SLA)/2,
+						slaInfoPtr),
 					Action: entity.TaskUpdateActionHalfSLABreach,
 				},
 			)
@@ -208,7 +215,7 @@ func (gb *GoFormBlock) GetStatus() Status {
 	return StatusRunning
 }
 
-func (gb *GoFormBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment string, action string) {
+func (gb *GoFormBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment, action string) {
 	if gb.State != nil && gb.State.IsFilled {
 		return StatusDone, "", ""
 	}
@@ -229,6 +236,7 @@ func (gb *GoFormBlock) Next(_ *store.VariableStore) ([]string, bool) {
 	if !ok {
 		return nil, false
 	}
+
 	return nexts, true
 }
 
@@ -312,7 +320,7 @@ func (gb *GoFormBlock) handleNotifications(ctx c.Context) error {
 	executors := getSliceFromMapOfStrings(gb.State.Executors)
 
 	fileNames := make([]string, 0)
-	var emails = make(map[string]mail.Template, 0)
+	emails := make(map[string]mail.Template, 0)
 
 	if !gb.State.IsTakenInWork {
 		fileNames = append(fileNames, vRabotuBtn)
@@ -322,33 +330,40 @@ func (gb *GoFormBlock) handleNotifications(ctx c.Context) error {
 		em, getUserEmailErr := gb.RunContext.Services.People.GetUserEmail(ctx, login)
 		if getUserEmailErr != nil {
 			l.WithField("login", login).WithError(getUserEmailErr).Warning("couldn't get email")
+
 			continue
 		}
 
 		if !gb.State.IsTakenInWork {
-			slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
-				TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.CurrBlockStartTime,
-					FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100)}},
+			slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDTO{
+				TaskCompletionIntervals: []entity.TaskCompletionInterval{{
+					StartedAt:  gb.RunContext.CurrBlockStartTime,
+					FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100),
+				}},
 				WorkType: sla.WorkHourType(gb.State.WorkType),
 			})
-
 			if getSlaInfoErr != nil {
 				return getSlaInfoErr
 			}
-			emails[em] = mail.NewFormExecutionNeedTakeInWorkTpl(&mail.NewFormExecutionNeedTakeInWorkDto{
-				WorkNumber: gb.RunContext.WorkNumber,
-				WorkTitle:  gb.RunContext.NotifName,
-				SdUrl:      gb.RunContext.Services.Sender.SdAddress,
-				Mailto:     gb.RunContext.Services.Sender.FetchEmail,
-				BlockName:  BlockGoFormID,
-				Login:      login,
-				Deadline:   gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(time.Now(), gb.State.SLA, slaInfoPtr),
-			}, gb.State.IsReentry)
-		} else {
 
-			slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
-				TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.CurrBlockStartTime,
-					FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100)}},
+			emails[em] = mail.NewFormExecutionNeedTakeInWorkTpl(
+				&mail.NewFormExecutionNeedTakeInWorkDto{
+					WorkNumber: gb.RunContext.WorkNumber,
+					WorkTitle:  gb.RunContext.NotifName,
+					SdUrl:      gb.RunContext.Services.Sender.SdAddress,
+					Mailto:     gb.RunContext.Services.Sender.FetchEmail,
+					BlockName:  BlockGoFormID,
+					Login:      login,
+					Deadline:   gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(time.Now(), gb.State.SLA, slaInfoPtr),
+				},
+				gb.State.IsReentry,
+			)
+		} else {
+			slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDTO{
+				TaskCompletionIntervals: []entity.TaskCompletionInterval{{
+					StartedAt:  gb.RunContext.CurrBlockStartTime,
+					FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100),
+				}},
 				WorkType: sla.WorkHourType(gb.State.WorkType),
 			})
 			if getSlaInfoErr != nil {
@@ -372,8 +387,11 @@ func (gb *GoFormBlock) handleNotifications(ctx c.Context) error {
 	for i := range emails {
 		item := emails[i]
 
-		iconNames := []string{item.Image}
+		iconNames := make([]string, 0, len(fileNames)+1)
+
+		iconNames = append(iconNames, item.Image)
 		iconNames = append(iconNames, fileNames...)
+
 		files, iconErr := gb.RunContext.GetIcons(iconNames)
 		if iconErr != nil {
 			return iconErr
@@ -384,5 +402,6 @@ func (gb *GoFormBlock) handleNotifications(ctx c.Context) error {
 			return sendErr
 		}
 	}
+
 	return nil
 }

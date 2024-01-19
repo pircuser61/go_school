@@ -17,16 +17,16 @@ const (
 
 	BlockGoFormID = "form"
 
-	BlockGoStartId    = "start"
+	BlockGoStartID    = "start"
 	BlockGoFirstStart = "start_0"
 	BlockGoStartTitle = "start"
-	BlockGoEndId      = "end"
+	BlockGoEndID      = "end"
 	BlockGoEndTitle   = "end"
 
-	BlockWaitForAllInputsId      = "wait_for_all_inputs"
+	BlockWaitForAllInputsID      = "wait_for_all_inputs"
 	BlockGoWaitForAllInputsTitle = "wait_for_all_inputs"
 
-	BlockGoBeginParallelTaskId    = "begin_parallel_task"
+	BlockGoBeginParallelTaskID    = "begin_parallel_task"
 	BlockGoBeginParallelTaskTitle = "begin_parallel_task"
 
 	// BlockGoSdApplicationTitle represents id/type of sd block (using in script.FunctionModel)

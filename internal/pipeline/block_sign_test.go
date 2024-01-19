@@ -57,22 +57,25 @@ func TestSignData_SetDecision(t *testing.T) {
 		invalidLogin = "foobar"
 	)
 
-	type fields struct {
-		Signers          map[string]struct{}
-		Decision         SignDecision
-		ActualSigner     string
-		SigningRule      script.SigningRule
-		SignLog          []SignLogEntry
-		SignatureType    script.SignatureType
-		SignatureCarrier script.SignatureCarrier
-	}
-	type args struct {
-		login       string
-		decision    SignDecision
-		comment     string
-		attachments []entity.Attachment
-		signatures  []fileSignature
-	}
+	type (
+		fields struct {
+			Signers          map[string]struct{}
+			Decision         SignDecision
+			ActualSigner     string
+			SigningRule      script.SigningRule
+			SignLog          []SignLogEntry
+			SignatureType    script.SignatureType
+			SignatureCarrier script.SignatureCarrier
+		}
+		args struct {
+			login       string
+			decision    SignDecision
+			comment     string
+			attachments []entity.Attachment
+			signatures  []fileSignature
+		}
+	)
+
 	tests := []struct {
 		name             string
 		fields           fields
@@ -340,6 +343,7 @@ func TestSignData_SetDecision(t *testing.T) {
 			expectedDecision: SignDecisionSigned,
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			a := &SignData{
@@ -384,6 +388,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 		title      = "title"
 		shortTitle = "Нода Подписания"
 	)
+
 	varStore := store.NewStore()
 
 	varStore.SetValue("form_0.user", map[string]interface{}{
@@ -1728,23 +1733,26 @@ func TestGoSignBlock_Update(t *testing.T) {
 		stepName = "sign"
 	)
 
-	type fields struct {
-		Name             string
-		Title            string
-		Input            map[string]string
-		Output           map[string]string
-		NextStep         []script.Socket
-		SignData         *SignData
-		RunContext       *BlockRunContext
-		SigningRule      script.SigningRule
-		SignLog          []SignLogEntry
-		SignatureType    script.SignatureType
-		SignatureCarrier script.SignatureCarrier
-	}
-	type args struct {
-		ctx  c.Context
-		data *script.BlockUpdateData
-	}
+	type (
+		fields struct {
+			Name             string
+			Title            string
+			Input            map[string]string
+			Output           map[string]string
+			NextStep         []script.Socket
+			SignData         *SignData
+			RunContext       *BlockRunContext
+			SigningRule      script.SigningRule
+			SignLog          []SignLogEntry
+			SignatureType    script.SignatureType
+			SignatureCarrier script.SignatureCarrier
+		}
+		args struct {
+			ctx  c.Context
+			data *script.BlockUpdateData
+		}
+	)
+
 	tests := []struct {
 		name             string
 		fields           fields
@@ -2256,6 +2264,7 @@ func TestGoSignBlock_Update(t *testing.T) {
 			wantErr: true,
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			gb := &GoSignBlock{
@@ -2307,23 +2316,25 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 		},
 	}
 
-	type fields struct {
-		Name             string
-		Title            string
-		Input            map[string]string
-		Output           map[string]string
-		NextStep         []script.Socket
-		RunContext       *BlockRunContext
-		SigningRule      script.SigningRule
-		SignLog          []SignLogEntry
-		SignatureType    script.SignatureType
-		SignatureCarrier script.SignatureCarrier
-	}
-	type args struct {
-		name string
-		ef   *entity.EriusFunc
-		ctx  c.Context
-	}
+	type (
+		fields struct {
+			Name             string
+			Title            string
+			Input            map[string]string
+			Output           map[string]string
+			NextStep         []script.Socket
+			RunContext       *BlockRunContext
+			SigningRule      script.SigningRule
+			SignLog          []SignLogEntry
+			SignatureType    script.SignatureType
+			SignatureCarrier script.SignatureCarrier
+		}
+		args struct {
+			name string
+			ef   *entity.EriusFunc
+			ctx  c.Context
+		}
+	)
 
 	tests := []struct {
 		name    string
@@ -4152,24 +4163,27 @@ func TestGoSignBlock_LoadState(t *testing.T) {
 		stepName     = "sign"
 	)
 
-	type fields struct {
-		Name             string
-		Title            string
-		Input            map[string]string
-		Output           map[string]string
-		NextStep         []script.Socket
-		SignData         *SignData
-		RunContext       *BlockRunContext
-		SigningRule      script.SigningRule
-		SignLog          []SignLogEntry
-		SignatureType    script.SignatureType
-		SignatureCarrier script.SignatureCarrier
-	}
-	type args struct {
-		ctx  c.Context
-		data *script.BlockUpdateData
-		raw  json.RawMessage
-	}
+	type (
+		fields struct {
+			Name             string
+			Title            string
+			Input            map[string]string
+			Output           map[string]string
+			NextStep         []script.Socket
+			SignData         *SignData
+			RunContext       *BlockRunContext
+			SigningRule      script.SigningRule
+			SignLog          []SignLogEntry
+			SignatureType    script.SignatureType
+			SignatureCarrier script.SignatureCarrier
+		}
+		args struct {
+			ctx  c.Context
+			data *script.BlockUpdateData
+			raw  json.RawMessage
+		}
+	)
+
 	tests := []struct {
 		name    string
 		fields  fields
@@ -4218,6 +4232,7 @@ func TestGoSignBlock_LoadState(t *testing.T) {
 			wantErr: false,
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			gb := &GoSignBlock{

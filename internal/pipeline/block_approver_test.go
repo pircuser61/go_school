@@ -36,19 +36,22 @@ func TestApproverData_SetDecision(t *testing.T) {
 		invalidLogin                = "foobar"
 	)
 
-	type fields struct {
-		Type           script.ApproverType
-		Approvers      map[string]struct{}
-		Decision       *ApproverAction
-		Comment        *string
-		ActualApprover *string
-	}
-	type args struct {
-		login       string
-		decision    ApproverAction
-		comment     string
-		delegations humanTasks.Delegations
-	}
+	type (
+		fields struct {
+			Type           script.ApproverType
+			Approvers      map[string]struct{}
+			Decision       *ApproverAction
+			Comment        *string
+			ActualApprover *string
+		}
+		args struct {
+			login       string
+			decision    ApproverAction
+			comment     string
+			delegations humanTasks.Delegations
+		}
+	)
+
 	tests := []struct {
 		name    string
 		fields  fields
@@ -169,11 +172,13 @@ func TestApproverData_SetDecisionByAdditionalApprover(t *testing.T) {
 		Decision            *ApproverDecision
 		AdditionalApprovers []AdditionalApprover
 	}
+
 	type args struct {
 		login       string
 		params      additionalApproverUpdateParams
 		delegations humanTasks.Delegations
 	}
+
 	tests := []struct {
 		name                    string
 		fields                  fields
@@ -352,6 +357,7 @@ func Test_createGoApproverBlock(t *testing.T) {
 		ef     *entity.EriusFunc
 		runCtx *BlockRunContext
 	}
+
 	tests := []struct {
 		name    string
 		args    args
@@ -638,6 +644,7 @@ func Test_createGoApproverBlock(t *testing.T) {
 			wantErr: false,
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
@@ -667,10 +674,12 @@ func TestGoApproverBlock_Update(t *testing.T) {
 		RunContext   *BlockRunContext
 		ApproverData *ApproverData
 	}
+
 	type args struct {
 		ctx  context.Context
 		data *script.BlockUpdateData
 	}
+
 	tests := []struct {
 		name    string
 		fields  fields
@@ -1010,6 +1019,7 @@ func TestGoApproverBlock_Update(t *testing.T) {
 			wantErr: false,
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			gb := &GoApproverBlock{

@@ -129,6 +129,7 @@ func (gb *ExecutableFunctionBlock) Next(_ *store.VariableStore) ([]string, bool)
 	if !ok {
 		return nil, false
 	}
+
 	return nexts, true
 }
 
@@ -136,12 +137,12 @@ func (gb *ExecutableFunctionBlock) GetState() interface{} {
 	return gb.State
 }
 
-//nolint:gocyclo //its ok here
 func (gb *ExecutableFunctionBlock) Update(ctx c.Context) (interface{}, error) {
 	log := logger.GetLogger(ctx)
 
 	if gb.RunContext.UpdateData != nil {
 		var updateData FunctionUpdateParams
+
 		updateDataUnmarshalErr := json.Unmarshal(gb.RunContext.UpdateData.Parameters, &updateData)
 		if updateDataUnmarshalErr != nil {
 			return nil, updateDataUnmarshalErr
@@ -212,19 +213,22 @@ func (gb *ExecutableFunctionBlock) Update(ctx c.Context) (interface{}, error) {
 			return nil, err
 		}
 
-		if err = gb.fillMapWithConstants(functionMapping); err != nil {
+		err = gb.fillMapWithConstants(functionMapping)
+		if err != nil {
 			return nil, err
 		}
 
 		if !gb.RunContext.skipProduce {
-			err = gb.RunContext.Services.Kafka.Produce(ctx, kafka.RunnerOutMessage{
-				TaskID:          taskStep.ID,
-				FunctionMapping: functionMapping,
-				Contracts:       gb.State.Contracts,
-				RetryPolicy:     string(SimpleFunctionRetryPolicy),
-				FunctionName:    gb.State.Name,
-				FunctionVersion: gb.State.Version,
-			})
+			err = gb.RunContext.Services.Kafka.Produce(ctx,
+				&kafka.RunnerOutMessage{
+					TaskID:          taskStep.ID,
+					FunctionMapping: functionMapping,
+					Contracts:       gb.State.Contracts,
+					RetryPolicy:     string(SimpleFunctionRetryPolicy),
+					FunctionName:    gb.State.Name,
+					FunctionVersion: gb.State.Version,
+				},
+			)
 
 			if err != nil {
 				return nil, err
@@ -233,6 +237,7 @@ func (gb *ExecutableFunctionBlock) Update(ctx c.Context) (interface{}, error) {
 	}
 
 	var stateBytes []byte
+
 	stateBytes, err := json.Marshal(gb.State)
 	if err != nil {
 		return nil, err
@@ -243,6 +248,7 @@ func (gb *ExecutableFunctionBlock) Update(ctx c.Context) (interface{}, error) {
 	if gb.State.HasResponse || gb.State.TimeExpired {
 		if _, ok := gb.expectedEvents[eventEnd]; ok {
 			status, _, _ := gb.GetTaskHumanStatus()
+
 			event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, MakeNodeEndEventArgs{
 				NodeName:      gb.Name,
 				NodeShortName: gb.ShortName,
@@ -252,6 +258,7 @@ func (gb *ExecutableFunctionBlock) Update(ctx c.Context) (interface{}, error) {
 			if eventErr != nil {
 				return nil, eventErr
 			}
+
 			gb.happenedEvents = append(gb.happenedEvents, event)
 		}
 	}
@@ -267,6 +274,7 @@ func (gb *ExecutableFunctionBlock) fillMapWithConstants(functionMapping map[stri
 		for i, part := range keyParts {
 			if i == len(keyParts)-1 {
 				currMap[part] = value
+
 				break
 			}
 
@@ -324,7 +332,8 @@ func (gb *ExecutableFunctionBlock) UpdateManual() bool {
 
 // nolint:dupl // another block
 func createExecutableFunctionBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext,
-	expectedEvents map[string]struct{}) (*ExecutableFunctionBlock, bool, error) {
+	expectedEvents map[string]struct{},
+) (*ExecutableFunctionBlock, bool, error) {
 	b := &ExecutableFunctionBlock{
 		Name:       name,
 		ShortName:  ef.ShortTitle,
@@ -349,6 +358,7 @@ func createExecutableFunctionBlock(ctx c.Context, name string, ef *entity.EriusF
 	}
 
 	rawState, blockExists := runCtx.VarStore.State[name]
+
 	reEntry := blockExists && runCtx.UpdateData == nil
 	if blockExists && !reEntry {
 		if err := b.loadState(rawState); err != nil {
@@ -382,9 +392,10 @@ func (gb *ExecutableFunctionBlock) loadState(raw json.RawMessage) error {
 	return json.Unmarshal(raw, &gb.State)
 }
 
-//nolint:dupl,gocyclo //its not duplicate
+//nolint:dupl //its not duplicate
 func (gb *ExecutableFunctionBlock) createState(ef *entity.EriusFunc) error {
 	var params script.ExecutableFunctionParams
+
 	err := json.Unmarshal(ef.Params, &params)
 	if err != nil {
 		return errors.Wrap(err, "can not get executable function parameters")
@@ -444,12 +455,13 @@ func (gb *ExecutableFunctionBlock) setStateByResponse(updateData *FunctionUpdate
 
 	if gb.State.HasResponse {
 		var expectedOutput map[string]script.ParamMetadata
+
 		outputUnmarshalErr := json.Unmarshal([]byte(gb.State.Function.Output), &expectedOutput)
 		if outputUnmarshalErr != nil {
 			return outputUnmarshalErr
 		}
 
-		var resultOutput = make(map[string]interface{})
+		resultOutput := make(map[string]interface{})
 
 		for k := range expectedOutput {
 			param, ok := updateData.Mapping[k]
@@ -498,6 +510,7 @@ func (gb *ExecutableFunctionBlock) isFirstStart(ctx c.Context, workId uuid.UUID,
 	for i := range steps {
 		if steps[i].Name == sName {
 			countRunFunc++
+
 			if firstRun == nil {
 				firstRun = steps[i]
 			}

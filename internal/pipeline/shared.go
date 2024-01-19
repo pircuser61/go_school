@@ -41,6 +41,7 @@ const dotSeparator = "."
 
 func (runCtx *BlockRunContext) GetIcons(need []string) ([]e.Attachment, error) {
 	outFiles := make([]e.Attachment, 0)
+
 	for k, v := range need {
 		file, oks := runCtx.Services.Sender.Images[v]
 		if !oks {
@@ -49,13 +50,16 @@ func (runCtx *BlockRunContext) GetIcons(need []string) ([]e.Attachment, error) {
 
 		if k == 0 {
 			outFiles = append(outFiles, e.Attachment{Name: headImg, Content: file, Type: e.EmbeddedAttachment})
+
 			continue
 		}
 
 		outFiles = append(outFiles, e.Attachment{Name: v, Content: file, Type: e.EmbeddedAttachment})
 	}
+
 	return outFiles, nil
 }
+
 func (runCtx *BlockRunContext) GetAttach(filesAttach []file_registry.FileInfo) (*mail.Attachments, error) {
 	req, skip := sortAndFilterAttachments(filesAttach)
 
@@ -117,17 +121,21 @@ func getVariable(variables map[string]interface{}, key string) interface{} {
 				return nil
 			}
 		}
+
 		currK = variableMemberNames[i+1]
 	}
+
 	return newVariables[currK]
 }
 
 func getUsersFromVars(varStore map[string]interface{}, toResolve map[string]struct{}) (map[string]struct{}, error) {
 	res := make(map[string]struct{})
+
 	for varName := range toResolve {
 		if len(strings.Split(varName, dotSeparator)) == 1 {
 			continue
 		}
+
 		varValue := getVariable(varStore, varName)
 
 		if varValue == nil {
@@ -163,18 +171,26 @@ func getUsersFromVars(varStore map[string]interface{}, toResolve map[string]stru
 }
 
 func CastUserForLogin(castData castUser) {
-	if person, castOk := castData.varValue.(map[string]interface{}); castOk {
-		if login, exists := person["username"]; exists {
-			if loginString, castOK := login.(string); castOK {
-				castData.result[loginString] = castData.toResolve[castData.varName]
-			}
-		}
+	person, castOK := castData.varValue.(map[string]interface{})
+	if !castOK {
+		return
 	}
-	return
+
+	login, exists := person["username"]
+	if !exists {
+		return
+	}
+
+	loginString, castOK := login.(string)
+	if !castOK {
+		return
+	}
+
+	castData.result[loginString] = castData.toResolve[castData.varName]
 }
 
 func getSliceFromMapOfStrings(source map[string]struct{}) []string {
-	var result = make([]string, 0)
+	result := make([]string, 0)
 
 	for key := range source {
 		result = append(result, key)
@@ -193,15 +209,24 @@ func getRecipientFromState(applicationBody *orderedmap.OrderedMap) string {
 		return ""
 	}
 
-	var login string
-	if recipientValue, ok := applicationBody.Get("recipient"); ok {
-		if recipient, ok := recipientValue.(orderedmap.OrderedMap); ok {
-			if usernameValue, ok := recipient.Get("username"); ok {
-				if username, ok := usernameValue.(string); ok {
-					login = username
-				}
-			}
-		}
+	recipientValue, ok := applicationBody.Get("recipient")
+	if !ok {
+		return ""
+	}
+
+	recipient, ok := recipientValue.(orderedmap.OrderedMap)
+	if !ok {
+		return ""
+	}
+
+	usernameValue, ok := recipient.Get("username")
+	if !ok {
+		return ""
+	}
+
+	login, ok := usernameValue.(string)
+	if !ok {
+		return ""
 	}
 
 	return login

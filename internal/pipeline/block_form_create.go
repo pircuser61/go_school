@@ -14,7 +14,8 @@ import (
 
 // nolint:dupl // another block
 func createGoFormBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext,
-	expectedEvents map[string]struct{}) (*GoFormBlock, bool, error) {
+	expectedEvents map[string]struct{},
+) (*GoFormBlock, bool, error) {
 	if ef.ShortTitle == "" {
 		return nil, false, errors.New(ef.Title + " block short title is empty")
 	}
@@ -42,8 +43,9 @@ func createGoFormBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx 
 		}
 	}
 
-	rawState, blockExists := runCtx.VarStore.State[name]
 	reEntry := false
+
+	rawState, blockExists := runCtx.VarStore.State[name]
 	if blockExists {
 		if err := b.loadState(rawState); err != nil {
 			return nil, false, err
@@ -55,10 +57,12 @@ func createGoFormBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx 
 			if err := b.reEntry(ctx); err != nil {
 				return nil, false, err
 			}
+
 			b.RunContext.VarStore.AddStep(b.Name)
 
 			if _, ok := b.expectedEvents[eventStart]; ok {
 				status, _, _ := b.GetTaskHumanStatus()
+
 				event, err := runCtx.MakeNodeStartEvent(ctx, MakeNodeStartEventArgs{
 					NodeName:      name,
 					NodeShortName: ef.ShortTitle,
@@ -68,6 +72,7 @@ func createGoFormBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx 
 				if err != nil {
 					return nil, false, err
 				}
+
 				b.happenedEvents = append(b.happenedEvents, event)
 			}
 		}
@@ -122,11 +127,12 @@ func (gb *GoFormBlock) reEntry(ctx c.Context) error {
 				return grabStorageErr
 			}
 
-			groupId := getVariable(variableStorage, *gb.State.ReEnterSettings.GroupPath)
-			if groupId == nil {
+			groupID := getVariable(variableStorage, *gb.State.ReEnterSettings.GroupPath)
+			if groupID == nil {
 				return errors.New("can't find group id in variables")
 			}
-			gb.State.ReEnterSettings.Value = fmt.Sprintf("%v", groupId)
+
+			gb.State.ReEnterSettings.Value = fmt.Sprintf("%v", groupID)
 		}
 
 		setErr := gb.setExecutorsByParams(ctx, &setFormExecutorsByParamsDTO{
@@ -136,8 +142,10 @@ func (gb *GoFormBlock) reEntry(ctx c.Context) error {
 		if setErr != nil {
 			return setErr
 		}
+
 		gb.State.FormExecutorType = gb.State.ReEnterSettings.FormExecutorType
 	}
+
 	return gb.handleNotifications(ctx)
 }
 
@@ -148,6 +156,7 @@ func (gb *GoFormBlock) loadState(raw json.RawMessage) error {
 //nolint:dupl //different logic
 func (gb *GoFormBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 	var params script.FormParams
+
 	err := json.Unmarshal(ef.Params, &params)
 	if err != nil {
 		return errors.Wrap(err, "can not get form parameters")
@@ -177,16 +186,17 @@ func (gb *GoFormBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 			return grabStorageErr
 		}
 
-		groupId := getVariable(variableStorage, *params.FormGroupIDPath)
-		if groupId == nil {
+		groupID := getVariable(variableStorage, *params.FormGroupIDPath)
+		if groupID == nil {
 			return errors.New("can't find group id in variables")
 		}
-		params.FormGroupId = fmt.Sprintf("%v", groupId)
+
+		params.FormGroupID = fmt.Sprintf("%v", groupID)
 	}
 
 	executorValue := params.Executor
 	if params.FormExecutorType == script.FormExecutorTypeGroup {
-		executorValue = params.FormGroupId
+		executorValue = params.FormGroupID
 	}
 
 	if setErr := gb.setExecutorsByParams(ctx, &setFormExecutorsByParamsDTO{
@@ -204,7 +214,7 @@ func (gb *GoFormBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 			return getVersionErr
 		}
 
-		processSLASettings, getVersionErr := gb.RunContext.Services.Storage.GetSlaVersionSettings(ctx, task.VersionID.String())
+		processSLASettings, getVersionErr := gb.RunContext.Services.Storage.GetSLAVersionSettings(ctx, task.VersionID.String())
 		if getVersionErr != nil {
 			return getVersionErr
 		}
@@ -222,6 +232,7 @@ type setFormExecutorsByParamsDTO struct {
 func (gb *GoFormBlock) setExecutorsByParams(ctx c.Context, dto *setFormExecutorsByParamsDTO) error {
 	const variablesSep = ";"
 
+	// nolint:exhaustive //не хотим обрабатывать остальные случаи
 	switch dto.FormExecutorType {
 	case script.FormExecutorTypeInitiator:
 		gb.State.Executors = map[string]struct{}{
@@ -236,6 +247,7 @@ func (gb *GoFormBlock) setExecutorsByParams(ctx c.Context, dto *setFormExecutors
 
 		executorsFromSchema := make(map[string]struct{})
 		executorVars := strings.Split(dto.Value, variablesSep)
+
 		for i := range executorVars {
 			resolvedEntities, resolveErr := getUsersFromVars(
 				variableStorage,
@@ -246,6 +258,7 @@ func (gb *GoFormBlock) setExecutorsByParams(ctx c.Context, dto *setFormExecutors
 			if resolveErr != nil {
 				return resolveErr
 			}
+
 			for executorLogin := range resolvedEntities {
 				executorsFromSchema[executorLogin] = struct{}{}
 			}
@@ -259,23 +272,26 @@ func (gb *GoFormBlock) setExecutorsByParams(ctx c.Context, dto *setFormExecutors
 		if err := gb.handleAutoFillForm(); err != nil {
 			return err
 		}
+
 		gb.State.IsTakenInWork = true
 	case script.FormExecutorTypeGroup:
 		gb.State.FormGroupId = dto.Value
+
 		workGroup, errGroup := gb.RunContext.Services.ServiceDesc.GetWorkGroup(ctx, dto.Value)
 		if errGroup != nil {
 			return errors.Wrap(errGroup, "can`t get form group with id: "+dto.Value)
 		}
 
 		if len(workGroup.People) == 0 {
-			//nolint:goimports // bugged golint
 			return errors.New("zero form executors in group: " + dto.Value)
 		}
 
-		gb.State.Executors = make(map[string]struct{})
+		gb.State.Executors = make(map[string]struct{}, len(workGroup.People))
+
 		for i := range workGroup.People {
 			gb.State.Executors[workGroup.People[i].Login] = struct{}{}
 		}
+
 		gb.State.FormGroupId = dto.Value
 		gb.State.FormExecutorsGroupName = workGroup.GroupName
 	default:
@@ -285,6 +301,8 @@ func (gb *GoFormBlock) setExecutorsByParams(ctx c.Context, dto *setFormExecutors
 		}
 		gb.State.IsTakenInWork = true
 	}
+
 	gb.State.InitialExecutors = gb.State.Executors
+
 	return nil
 }

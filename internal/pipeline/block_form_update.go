@@ -1,7 +1,7 @@
 package pipeline
 
 import (
-	c "context"
+	"context"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -19,20 +19,20 @@ import (
 type updateFillFormParams struct {
 	Description     string                 `json:"description"`
 	ApplicationBody map[string]interface{} `json:"application_body"`
-	BlockId         string                 `json:"block_id"`
+	BlockID         string                 `json:"block_id"`
 }
 
 func (a *updateFillFormParams) Validate() error {
-	if a.BlockId == "" || a.Description == "" || len(a.ApplicationBody) == 0 {
+	if a.BlockID == "" || a.Description == "" || len(a.ApplicationBody) == 0 {
 		return errors.New("empty form data")
 	}
 
 	return nil
 }
 
-//nolint:gocyclo //ok
-func (gb *GoFormBlock) Update(ctx c.Context) (interface{}, error) {
+func (gb *GoFormBlock) Update(ctx context.Context) (interface{}, error) {
 	updateInOtherBlocks := false
+
 	data := gb.RunContext.UpdateData
 	if data == nil {
 		return nil, errors.New("empty data")
@@ -51,20 +51,24 @@ func (gb *GoFormBlock) Update(ctx c.Context) (interface{}, error) {
 		if !gb.State.IsTakenInWork {
 			return nil, errors.New("is not taken in work")
 		}
+
 		if errFill := gb.handleRequestFillForm(ctx, data); errFill != nil {
 			return nil, errFill
 		}
+
 		updateInOtherBlocks = true
 	case string(entity.TaskUpdateActionFormExecutorStartWork):
 		if gb.State.IsTakenInWork {
 			return nil, errors.New("is already taken in work")
 		}
+
 		if errUpdate := gb.formExecutorStartWork(ctx); errUpdate != nil {
 			return nil, errUpdate
 		}
 	}
 
 	var stateBytes []byte
+
 	stateBytes, err := json.Marshal(gb.State)
 	if err != nil {
 		return nil, err
@@ -75,6 +79,7 @@ func (gb *GoFormBlock) Update(ctx c.Context) (interface{}, error) {
 	if len(gb.State.ApplicationBody) > 0 {
 		if _, ok := gb.expectedEvents[eventEnd]; ok {
 			status, _, _ := gb.GetTaskHumanStatus()
+
 			event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, MakeNodeEndEventArgs{
 				NodeName:      gb.Name,
 				NodeShortName: gb.ShortName,
@@ -84,13 +89,15 @@ func (gb *GoFormBlock) Update(ctx c.Context) (interface{}, error) {
 			if eventErr != nil {
 				return nil, eventErr
 			}
+
 			gb.happenedEvents = append(gb.happenedEvents, event)
 		}
 	}
 
 	if updateInOtherBlocks {
-		taskId := gb.RunContext.TaskID.String()
-		err = gb.RunContext.Services.Storage.UpdateBlockStateInOthers(ctx, gb.Name, taskId, stateBytes)
+		taskID := gb.RunContext.TaskID.String()
+
+		err = gb.RunContext.Services.Storage.UpdateBlockStateInOthers(ctx, gb.Name, taskID, stateBytes)
 		if err != nil {
 			return nil, err
 		}
@@ -103,7 +110,7 @@ func (gb *GoFormBlock) Update(ctx c.Context) (interface{}, error) {
 			gb.Name + ".application_body": body,
 		}
 
-		errBlockVariables := gb.RunContext.Services.Storage.UpdateBlockVariablesInOthers(ctx, taskId, blockValues)
+		errBlockVariables := gb.RunContext.Services.Storage.UpdateBlockVariablesInOthers(ctx, taskID, blockValues)
 		if errBlockVariables != nil {
 			return nil, errBlockVariables
 		}
@@ -112,33 +119,40 @@ func (gb *GoFormBlock) Update(ctx c.Context) (interface{}, error) {
 	return nil, nil
 }
 
-func (gb *GoFormBlock) handleRequestFillForm(ctx c.Context, data *script.BlockUpdateData) error {
+func (gb *GoFormBlock) handleRequestFillForm(ctx context.Context, data *script.BlockUpdateData) error {
 	var updateParams updateFillFormParams
+
 	err := json.Unmarshal(data.Parameters, &updateParams)
 	if err != nil {
 		return errors.New("can't assert provided data")
 	}
 
-	if updateParams.BlockId != gb.Name {
-		return fmt.Errorf("wrong form id: %s, gb.Name: %s", updateParams.BlockId, gb.Name)
+	if updateParams.BlockID != gb.Name {
+		return fmt.Errorf("wrong form id: %s, gb.Name: %s", updateParams.BlockID, gb.Name)
 	}
 
 	if gb.State.IsFilled {
-		isAllowed, checkEditErr := gb.RunContext.Services.Storage.CheckUserCanEditForm(ctx, gb.RunContext.WorkNumber,
-			gb.Name, data.ByLogin)
+		isAllowed, checkEditErr := gb.RunContext.Services.Storage.CheckUserCanEditForm(
+			ctx,
+			gb.RunContext.WorkNumber,
+			gb.Name,
+			data.ByLogin,
+		)
 		if checkEditErr != nil {
 			return checkEditErr
 		}
+
 		if !isAllowed {
 			return NewUserIsNotPartOfProcessErr()
 		}
 
-		if gb.State.ActualExecutor != nil && *gb.State.ActualExecutor == AutoFillUser {
+		isActualUserEqualAutoFillUser := gb.State.ActualExecutor != nil && *gb.State.ActualExecutor == AutoFillUser
+
+		if isActualUserEqualAutoFillUser {
 			gb.State.ActualExecutor = &data.ByLogin
 		}
 	} else {
 		_, executorFound := gb.State.Executors[data.ByLogin]
-
 		if !executorFound {
 			return NewUserIsNotPartOfProcessErr()
 		}
@@ -150,15 +164,17 @@ func (gb *GoFormBlock) handleRequestFillForm(ctx c.Context, data *script.BlockUp
 	gb.State.ApplicationBody = updateParams.ApplicationBody
 	gb.State.Description = updateParams.Description
 
-	gb.State.ChangesLog = append([]ChangesLogItem{
-		{
-			Description:     updateParams.Description,
-			ApplicationBody: updateParams.ApplicationBody,
-			CreatedAt:       time.Now(),
-			Executor:        data.ByLogin,
-			DelegateFor:     "",
+	gb.State.ChangesLog = append(
+		[]ChangesLogItem{
+			{
+				Description:     updateParams.Description,
+				ApplicationBody: updateParams.ApplicationBody,
+				CreatedAt:       time.Now(),
+				Executor:        data.ByLogin,
+			},
 		},
-	}, gb.State.ChangesLog...)
+		gb.State.ChangesLog...,
+	)
 
 	personData, err := gb.RunContext.Services.ServiceDesc.GetSsoPerson(ctx, *gb.State.ActualExecutor)
 	if err != nil {
@@ -172,11 +188,12 @@ func (gb *GoFormBlock) handleRequestFillForm(ctx c.Context, data *script.BlockUp
 }
 
 //nolint:dupl //its not duplicate
-func (gb *GoFormBlock) handleBreachedSLA(ctx c.Context) error {
+func (gb *GoFormBlock) handleBreachedSLA(ctx context.Context) error {
 	const fn = "pipeline.form.handleBreachedSLA"
 
 	if !gb.State.CheckSLA {
 		gb.State.SLAChecked = true
+
 		return nil
 	}
 
@@ -190,8 +207,10 @@ func (gb *GoFormBlock) handleBreachedSLA(ctx c.Context) error {
 			executorEmail, err := gb.RunContext.Services.People.GetUserEmail(ctx, logins[i])
 			if err != nil {
 				log.WithError(err).Warning(fn, fmt.Sprintf("executor login %s not found", logins[i]))
+
 				continue
 			}
+
 			emails = append(emails, executorEmail)
 		}
 
@@ -202,6 +221,7 @@ func (gb *GoFormBlock) handleBreachedSLA(ctx c.Context) error {
 		)
 
 		filesList := []string{tpl.Image}
+
 		files, iconEerr := gb.RunContext.GetIcons(filesList)
 		if iconEerr != nil {
 			return iconEerr
@@ -210,6 +230,7 @@ func (gb *GoFormBlock) handleBreachedSLA(ctx c.Context) error {
 		if len(emails) == 0 {
 			return nil
 		}
+
 		err := gb.RunContext.Services.Sender.SendNotification(
 			ctx,
 			emails,
@@ -228,32 +249,29 @@ func (gb *GoFormBlock) handleBreachedSLA(ctx c.Context) error {
 }
 
 //nolint:dupl //its not duplicate
-func (gb *GoFormBlock) handleHalfSLABreached(ctx c.Context) error {
+func (gb *GoFormBlock) handleHalfSLABreached(ctx context.Context) error {
 	const fn = "pipeline.form.handleHalfSLABreached"
 
 	if gb.State.HalfSLAChecked {
 		return nil
 	}
 
-	log := logger.GetLogger(ctx)
-
 	if gb.State.SLA >= 8 {
-		emails := make([]string, 0, len(gb.State.Executors))
 		logins := getSliceFromMapOfStrings(gb.State.Executors)
+		emails := gb.mapLoginsToEmails(ctx, fn, logins)
 
-		for i := range logins {
-			executorEmail, err := gb.RunContext.Services.People.GetUserEmail(ctx, logins[i])
-			if err != nil {
-				log.WithError(err).Warning(fn, fmt.Sprintf("executor login %s not found", logins[i]))
-				continue
-			}
-			emails = append(emails, executorEmail)
-		}
-		slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
-			TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.CurrBlockStartTime,
-				FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100)}},
-			WorkType: sla.WorkHourType(gb.State.WorkType),
-		})
+		slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(
+			ctx,
+			sla.InfoDTO{
+				TaskCompletionIntervals: []entity.TaskCompletionInterval{
+					{
+						StartedAt:  gb.RunContext.CurrBlockStartTime,
+						FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100),
+					},
+				},
+				WorkType: sla.WorkHourType(gb.State.WorkType),
+			},
+		)
 		if getSlaInfoErr != nil {
 			return getSlaInfoErr
 		}
@@ -262,11 +280,15 @@ func (gb *GoFormBlock) handleHalfSLABreached(ctx c.Context) error {
 			gb.RunContext.WorkNumber,
 			gb.RunContext.NotifName,
 			gb.RunContext.Services.Sender.SdAddress,
-			gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(gb.RunContext.CurrBlockStartTime, gb.State.SLA,
-				slaInfoPtr),
+			gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(
+				gb.RunContext.CurrBlockStartTime,
+				gb.State.SLA,
+				slaInfoPtr,
+			),
 		)
 
 		filesList := []string{tpl.Image}
+
 		files, iconEerr := gb.RunContext.GetIcons(filesList)
 		if iconEerr != nil {
 			return iconEerr
@@ -275,6 +297,7 @@ func (gb *GoFormBlock) handleHalfSLABreached(ctx c.Context) error {
 		if len(emails) == 0 {
 			return nil
 		}
+
 		err := gb.RunContext.Services.Sender.SendNotification(
 			ctx,
 			emails,
@@ -291,8 +314,26 @@ func (gb *GoFormBlock) handleHalfSLABreached(ctx c.Context) error {
 	return nil
 }
 
-func (gb *GoFormBlock) formExecutorStartWork(ctx c.Context) (err error) {
-	var currentLogin = gb.RunContext.UpdateData.ByLogin
+func (gb *GoFormBlock) mapLoginsToEmails(ctx context.Context, fn string, logins []string) []string {
+	log := logger.GetLogger(ctx)
+	emails := make([]string, 0, len(logins))
+
+	for i := range logins {
+		executorEmail, err := gb.RunContext.Services.People.GetUserEmail(ctx, logins[i])
+		if err != nil {
+			log.WithError(err).Warning(fn, fmt.Sprintf("executor login %s not found", logins[i]))
+
+			continue
+		}
+
+		emails = append(emails, executorEmail)
+	}
+
+	return emails
+}
+
+func (gb *GoFormBlock) formExecutorStartWork(ctx context.Context) (err error) {
+	currentLogin := gb.RunContext.UpdateData.ByLogin
 	_, executorFound := gb.State.Executors[currentLogin]
 
 	_, isDelegate := gb.RunContext.Delegations.FindDelegatorFor(currentLogin, getSliceFromMapOfStrings(gb.State.Executors))
@@ -311,20 +352,24 @@ func (gb *GoFormBlock) formExecutorStartWork(ctx c.Context) (err error) {
 
 	gb.State.IsTakenInWork = true
 
-	slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
-		TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.CurrBlockStartTime,
-			FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100)}},
+	slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDTO{
+		TaskCompletionIntervals: []entity.TaskCompletionInterval{{
+			StartedAt:  gb.RunContext.CurrBlockStartTime,
+			FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100),
+		}},
 		WorkType: sla.WorkHourType(gb.State.WorkType),
 	})
 
 	if getSlaInfoErr != nil {
 		return getSlaInfoErr
 	}
+
 	workHours := gb.RunContext.Services.SLAService.GetWorkHoursBetweenDates(
 		gb.RunContext.CurrBlockStartTime,
 		time.Now(),
 		slaInfoPtr,
 	)
+
 	gb.State.IncreaseSLA(workHours)
 
 	if err = gb.emailGroupExecutors(ctx, gb.RunContext.UpdateData.ByLogin, executorLogins); err != nil {
@@ -338,16 +383,18 @@ func (a *FormData) IncreaseSLA(addSla int) {
 	a.SLA += addSla
 }
 
-func (gb *GoFormBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork string, logins map[string]struct{}) (err error) {
+func (gb *GoFormBlock) emailGroupExecutors(ctx context.Context, loginTakenInWork string, logins map[string]struct{}) (err error) {
 	log := logger.GetLogger(ctx)
 	executors := getSliceFromMapOfStrings(logins)
 
 	emails := make([]string, 0, len(executors))
+
 	for _, login := range executors {
 		if login != loginTakenInWork {
 			email, emailErr := gb.RunContext.Services.People.GetUserEmail(ctx, login)
 			if emailErr != nil {
 				log.WithField("login", login).WithError(emailErr).Warning("couldn't get email")
+
 				continue
 			}
 
@@ -394,7 +441,7 @@ func (gb *GoFormBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork strin
 		&mail.ExecutorNotifTemplate{
 			WorkNumber:  gb.RunContext.WorkNumber,
 			Name:        gb.RunContext.NotifName,
-			SdUrl:       gb.RunContext.Services.Sender.SdAddress,
+			SdURL:       gb.RunContext.Services.Sender.SdAddress,
 			Description: description,
 			Executor:    typeExecutor,
 			Initiator:   inititatorInfo,
@@ -402,6 +449,7 @@ func (gb *GoFormBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork strin
 		})
 
 	iconsName := []string{tpl.Image, downloadImg, userImg}
+
 	iconFiles, iconErr := gb.RunContext.GetIcons(iconsName)
 	if iconErr != nil {
 		return err
@@ -418,31 +466,42 @@ func (gb *GoFormBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork strin
 		return emailErr
 	}
 
-	slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
-		TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.CurrBlockStartTime,
-			FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100)}},
+	slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDTO{
+		TaskCompletionIntervals: []entity.TaskCompletionInterval{{
+			StartedAt:  gb.RunContext.CurrBlockStartTime,
+			FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100),
+		}},
 		WorkType: sla.WorkHourType(gb.State.WorkType),
 	})
 
 	if getSlaInfoErr != nil {
 		return getSlaInfoErr
 	}
+
 	tpl = mail.NewFormPersonExecutionNotificationTemplate(gb.RunContext.WorkNumber,
 		gb.RunContext.NotifName,
 		gb.RunContext.Services.Sender.SdAddress,
-		gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(gb.RunContext.CurrBlockStartTime, gb.State.SLA,
-			slaInfoPtr),
+		gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(
+			gb.RunContext.CurrBlockStartTime,
+			gb.State.SLA,
+			slaInfoPtr,
+		),
 	)
 
 	icons := []string{tpl.Image}
+
 	iconFiles, iconErr = gb.RunContext.GetIcons(icons)
 	if iconErr != nil {
 		return iconErr
 	}
+
 	iconFiles = append(iconFiles, attachment.AttachmentsList...)
 
-	if sendErr := gb.RunContext.Services.Sender.SendNotification(ctx, []string{emailTakenInWork}, iconFiles,
-		tpl); sendErr != nil {
+	if sendErr := gb.RunContext.Services.Sender.SendNotification(
+		ctx, []string{emailTakenInWork},
+		iconFiles,
+		tpl,
+	); sendErr != nil {
 		return sendErr
 	}
 

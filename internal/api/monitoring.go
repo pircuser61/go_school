@@ -27,6 +27,7 @@ func (ae *APIEnv) GetTasksForMonitoring(w http.ResponseWriter, r *http.Request, 
 	log := logger.GetLogger(ctx)
 
 	statusFilter := make([]string, 0)
+
 	if params.Status != nil {
 		for i := range *params.Status {
 			statusFilter = append(statusFilter, string((*params.Status)[i]))
@@ -45,16 +46,21 @@ func (ae *APIEnv) GetTasksForMonitoring(w http.ResponseWriter, r *http.Request, 
 	})
 	if err != nil {
 		e := GetTasksForMonitoringError
+
 		log.Error(e.errorMessage(err))
+
 		_ = e.sendError(w)
+
 		return
 	}
 
 	initiatorsFullNameCache := make(map[string]string)
 
 	responseTasks := make([]MonitoringTableTask, 0, len(dbTasks.Tasks))
+
 	for i := range dbTasks.Tasks {
 		t := dbTasks.Tasks[i]
+
 		if _, ok := initiatorsFullNameCache[t.Initiator]; !ok {
 			userLog := log.WithField("username", t.Initiator)
 
@@ -68,15 +74,16 @@ func (ae *APIEnv) GetTasksForMonitoring(w http.ResponseWriter, r *http.Request, 
 		}
 
 		var processName string
+
 		if t.ProcessDeletedAt != nil {
 			const regexpString = "^(.+)(_deleted_at_\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}.+)$"
 
 			regexCompiled := regexp.MustCompile(regexpString)
-
 			processName = regexCompiled.ReplaceAllString(t.ProcessName, "$1")
 		} else {
 			processName = t.ProcessName
 		}
+
 		monitoringTableTask := MonitoringTableTask{
 			Initiator:         t.Initiator,
 			InitiatorFullname: initiatorsFullNameCache[t.Initiator],
@@ -85,9 +92,11 @@ func (ae *APIEnv) GetTasksForMonitoring(w http.ResponseWriter, r *http.Request, 
 			Status:            MonitoringTableTaskStatus(t.Status),
 			WorkNumber:        t.WorkNumber,
 		}
+
 		if t.FinishedAt != nil {
 			monitoringTableTask.FinishedAt = t.FinishedAt.Format(monitoringTimeLayout)
 		}
+
 		responseTasks = append(responseTasks, monitoringTableTask)
 	}
 
@@ -98,6 +107,7 @@ func (ae *APIEnv) GetTasksForMonitoring(w http.ResponseWriter, r *http.Request, 
 		e := UnknownError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
+
 		return
 	}
 }
@@ -125,28 +135,38 @@ func (ae *APIEnv) GetBlockContext(w http.ResponseWriter, r *http.Request, blockI
 	blockIsHidden, err := ae.DB.CheckBlockForHiddenFlag(ctx, blockId)
 	if err != nil {
 		e := CheckForHiddenError
+
 		log.WithField("blockId", blockId).
 			Error(e.errorMessage(err))
+
 		_ = e.sendError(w)
+
 		return
 	}
 
 	if blockIsHidden {
 		e := ForbiddenError
+
 		log.Error(e.error())
+
 		_ = e.sendError(w)
+
 		return
 	}
 
 	blocksOutputs, err := ae.DB.GetBlocksOutputs(ctx, blockId)
 	if err != nil {
 		e := GetBlockContextError
+
 		log.Error(e.errorMessage(err))
+
 		_ = e.sendError(w)
+
 		return
 	}
 
 	blocks := make(map[string]MonitoringBlockOutput, len(blocksOutputs))
+
 	for _, bo := range blocksOutputs {
 		if strings.Contains(bo.Name, bo.StepName) {
 			continue
@@ -156,7 +176,7 @@ func (ae *APIEnv) GetBlockContext(w http.ResponseWriter, r *http.Request, blockI
 			Name:        bo.Name,
 			Value:       bo.Value,
 			Description: "",
-			Type:        utils.GetJsonType(bo.Value),
+			Type:        utils.GetJSONType(bo.Value),
 		}
 	}
 
@@ -164,8 +184,11 @@ func (ae *APIEnv) GetBlockContext(w http.ResponseWriter, r *http.Request, blockI
 		Blocks: &BlockContextResponse_Blocks{blocks},
 	}); err != nil {
 		e := UnknownError
+
 		log.Error(e.errorMessage(err))
+
 		_ = e.sendError(w)
+
 		return
 	}
 }
@@ -175,40 +198,38 @@ func (ae *APIEnv) GetMonitoringTask(w http.ResponseWriter, req *http.Request, wo
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
+	errorHandler := newHttpErrorHandler(log, w)
 
 	if workNumber == "" {
-		e := UUIDParsingError
-		log.Error(e.errorMessage(errors.New("workNumber is empty")))
-		_ = e.sendError(w)
+		err := errors.New("workNumber is empty")
+		errorHandler.handleError(UUIDParsingError, err)
+
 		return
 	}
 
 	taskIsHidden, err := ae.DB.CheckTaskForHiddenFlag(ctx, workNumber)
 	if err != nil {
-		e := CheckForHiddenError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(CheckForHiddenError, err)
+
 		return
 	}
 
 	if taskIsHidden {
-		e := ForbiddenError
-		log.Error(e.error())
-		_ = e.sendError(w)
+		errorHandler.handleError(ForbiddenError, nil)
+
 		return
 	}
 
 	nodes, err := ae.DB.GetTaskForMonitoring(ctx, workNumber)
 	if err != nil {
-		e := GetMonitoringNodesError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(GetMonitoringNodesError, err)
+
 		return
 	}
+
 	if len(nodes) == 0 {
-		e := NoProcessNodesForMonitoringError
-		log.Error(e.errorMessage(errors.New("No process nodes for monitoring")))
-		_ = e.sendError(w)
+		errorHandler.handleError(NoProcessNodesForMonitoringError, errors.New("No process nodes for monitoring"))
+
 		return
 	}
 
@@ -218,27 +239,27 @@ func (ae *APIEnv) GetMonitoringTask(w http.ResponseWriter, req *http.Request, wo
 		CreationTime: nodes[0].CreationTime,
 		ScenarioName: nodes[0].ScenarioName,
 	}
-	res.VersionId = nodes[0].VersionId
+	res.VersionId = nodes[0].VersionID
 	res.WorkNumber = nodes[0].WorkNumber
 
 	for i := range nodes {
 		monitoringHistory := MonitoringHistory{
-			BlockId:  nodes[i].BlockId,
+			BlockId:  nodes[i].BlockID,
 			RealName: nodes[i].RealName,
 			Status:   getMonitoringStatus(nodes[i].Status),
-			NodeId:   nodes[i].NodeId,
+			NodeId:   nodes[i].NodeID,
 		}
 
 		if nodes[i].BlockDateInit != nil {
 			formattedTime := nodes[i].BlockDateInit.Format(monitoringTimeLayout)
 			monitoringHistory.BlockDateInit = &formattedTime
 		}
+
 		res.History = append(res.History, monitoringHistory)
 	}
+
 	if err = sendResponse(w, http.StatusOK, res); err != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(UnknownError, err)
 
 		return
 	}
@@ -258,79 +279,87 @@ func (ae *APIEnv) GetMonitoringTasksBlockBlockIdParams(w http.ResponseWriter, re
 	defer span.End()
 
 	log := logger.GetLogger(ctx)
+	errorHandler := newHttpErrorHandler(log, w)
 
 	blockIdUUID, err := uuid.Parse(blockId)
 	if err != nil {
-		e := UUIDParsingError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(UUIDParsingError, err)
 	}
 
-	taskStep, err := ae.DB.GetTaskStepById(ctx, blockIdUUID)
+	taskStep, err := ae.DB.GetTaskStepByID(ctx, blockIdUUID)
 	if err != nil {
 		e := UnknownError
+
 		log.WithField("blockId", blockId).
 			Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.sendError(e)
 	}
 
 	blockInputs, err := ae.DB.GetBlockInputs(ctx, taskStep.Name, taskStep.WorkNumber)
 	if err != nil {
 		e := GetBlockContextError
+
 		log.WithField("blockId", blockId).
 			WithField("taskStep.Name", taskStep.Name).
 			Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.sendError(e)
+
 		return
 	}
 
 	inputs := make(map[string]MonitoringBlockParam, 0)
+
 	for _, bo := range blockInputs {
 		inputs[bo.Name] = MonitoringBlockParam{
 			Name:  bo.Name,
 			Value: bo.Value,
-			Type:  utils.GetJsonType(bo.Value),
+			Type:  utils.GetJSONType(bo.Value),
 		}
 	}
 
 	blockOutputs, err := ae.DB.GetBlockOutputs(ctx, blockId, taskStep.Name)
 	if err != nil {
 		e := GetBlockContextError
+
 		log.WithField("blockId", blockId).
 			WithField("taskStep.Name", taskStep.Name).
 			Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.sendError(e)
+
 		return
 	}
 
 	blockIsHidden, err := ae.DB.CheckBlockForHiddenFlag(ctx, blockId)
 	if err != nil {
 		e := CheckForHiddenError
+
 		log.WithField("blockId", blockId).
 			WithField("taskStep.Name", taskStep.Name).
 			Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.sendError(e)
+
 		return
 	}
 
 	if blockIsHidden {
-		e := ForbiddenError
-		log.Error(e.error())
-		_ = e.sendError(w)
+		errorHandler.handleError(ForbiddenError, err)
+
 		return
 	}
 
 	outputs := make(map[string]MonitoringBlockParam, 0)
+
 	for _, bo := range blockOutputs {
 		outputs[bo.Name] = MonitoringBlockParam{
 			Name:  bo.Name,
 			Value: bo.Value,
-			Type:  utils.GetJsonType(bo.Value),
+			Type:  utils.GetJSONType(bo.Value),
 		}
 	}
 
 	startedAt := taskStep.Time.String()
 	finishedAt := ""
+
 	if taskStep.Status == string(MonitoringHistoryStatusFinished) && taskStep.UpdatedAt != nil {
 		finishedAt = taskStep.UpdatedAt.String()
 	}
@@ -341,10 +370,7 @@ func (ae *APIEnv) GetMonitoringTasksBlockBlockIdParams(w http.ResponseWriter, re
 		Inputs:     &MonitoringParamsResponse_Inputs{AdditionalProperties: inputs},
 		Outputs:    &MonitoringParamsResponse_Outputs{AdditionalProperties: outputs},
 	}); err != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-		return
+		errorHandler.handleError(UnknownError, err)
 	}
 }
 
@@ -353,36 +379,36 @@ func (ae *APIEnv) GetBlockState(w http.ResponseWriter, r *http.Request, blockId 
 	defer span.End()
 
 	log := logger.GetLogger(ctx)
+	errorHandler := newHttpErrorHandler(log, w)
 
 	id, err := uuid.Parse(blockId)
 	if err != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(UnknownError, err)
+
 		return
 	}
 
 	blockIsHidden, err := ae.DB.CheckBlockForHiddenFlag(ctx, blockId)
 	if err != nil {
 		e := CheckForHiddenError
-		log.WithField("blockId", blockId).
+		log.
+			WithField("blockId", blockId).
 			Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.sendError(e)
+
 		return
 	}
 
 	if blockIsHidden {
-		e := ForbiddenError
-		log.Error(e.error())
-		_ = e.sendError(w)
+		errorHandler.handleError(ForbiddenError, nil)
+
 		return
 	}
 
 	state, err := ae.DB.GetBlockState(ctx, id.String())
 	if err != nil {
-		e := GetBlockStateError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(GetBlockStateError, err)
+
 		return
 	}
 
@@ -391,16 +417,15 @@ func (ae *APIEnv) GetBlockState(w http.ResponseWriter, r *http.Request, blockId 
 		params[bo.Name] = MonitoringBlockState{
 			Name:  bo.Name,
 			Value: bo.Value,
-			Type:  utils.GetJsonType(bo.Value),
+			Type:  utils.GetJSONType(bo.Value),
 		}
 	}
 
 	if err = sendResponse(w, http.StatusOK, BlockStateResponse{
 		State: &BlockStateResponse_State{params},
 	}); err != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(UnknownError, err)
+
 		return
 	}
 }

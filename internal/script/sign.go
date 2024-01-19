@@ -77,6 +77,7 @@ func (s *SignParams) checkSignerTypeUserValid() error {
 	if s.Signer == "" {
 		return errors.New("signer is empty")
 	}
+
 	return nil
 }
 
@@ -84,9 +85,11 @@ func (s *SignParams) checkSignerTypeGroupValid() error {
 	if s.SignerGroupID == "" && s.SignerGroupIDPath == "" {
 		return errors.New("signer group id is empty")
 	}
+
 	if s.SigningRule != "" && s.SigningRule != AllOfSigningRequired && s.SigningRule != AnyOfSigningRequired {
 		return fmt.Errorf("unknown signing rule: %s", s.SigningRule)
 	}
+
 	return nil
 }
 
@@ -94,11 +97,13 @@ func (s *SignParams) checkSignerTypeFromSchemaValid() error {
 	if s.Signer == "" {
 		return errors.New("signer is empty")
 	}
+
 	if len(strings.Split(s.Signer, ";")) > 1 {
 		if s.SigningRule != "" && s.SigningRule != AllOfSigningRequired && s.SigningRule != AnyOfSigningRequired {
 			return fmt.Errorf("unknown signing rule: %s", s.SigningRule)
 		}
 	}
+
 	return nil
 }
 
@@ -108,16 +113,19 @@ func (s *SignParams) checkSignerTypeValid() error {
 		if err := s.checkSignerTypeUserValid(); err != nil {
 			return err
 		}
+
 		return nil
 	case SignerTypeGroup:
 		if err := s.checkSignerTypeGroupValid(); err != nil {
 			return err
 		}
+
 		return nil
 	case SignerTypeFromSchema:
 		if err := s.checkSignerTypeFromSchemaValid(); err != nil {
 			return err
 		}
+
 		return nil
 	default:
 		return fmt.Errorf("unknown signer type: %s", s.Type)
@@ -138,9 +146,11 @@ func (s *SignParams) Validate() error {
 		if err := s.checkSignerTypeValid(); err != nil {
 			return err
 		}
+
 		if s.SignatureCarrier == "" {
 			return errors.New("no signature carrier provided")
 		}
+
 		carrier := s.SignatureCarrier
 		if carrier != SignatureCarrierCloud && carrier != SignatureCarrierToken && carrier != SignatureCarrierAll {
 			return fmt.Errorf("unknown signature carrier: %s", s.SignatureCarrier)
@@ -158,5 +168,6 @@ func (s *SignParams) Validate() error {
 			return errors.New("work type can`t be empty or nil")
 		}
 	}
+
 	return nil
 }

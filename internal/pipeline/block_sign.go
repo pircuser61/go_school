@@ -76,7 +76,9 @@ func (gb *GoSignBlock) GetState() interface{} {
 
 func (gb *GoSignBlock) Next(_ *store.VariableStore) ([]string, bool) {
 	var key string
+
 	if gb.State != nil && gb.State.Decision != nil {
+		//nolint:exhaustive //не хотим обрабатывать остальные случаи
 		switch *gb.State.Decision {
 		case SignDecisionSigned:
 			key = signedSocketID
@@ -91,6 +93,7 @@ func (gb *GoSignBlock) Next(_ *store.VariableStore) ([]string, bool) {
 	if !ok {
 		return nil, false
 	}
+
 	return nexts, true
 }
 
@@ -106,9 +109,11 @@ func (gb *GoSignBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment str
 
 		return StatusSigned, "", ""
 	}
+
 	if gb.State.Reentered {
 		return StatusSigning, reentrySignComment, ""
 	}
+
 	return StatusSigning, "", ""
 }
 
@@ -124,6 +129,7 @@ func (gb *GoSignBlock) GetStatus() Status {
 
 		return StatusFinished
 	}
+
 	return StatusRunning
 }
 
@@ -136,6 +142,7 @@ func (gb *GoSignBlock) isSignerActed(login string) bool {
 		if s.LogType != SignerLogDecision {
 			continue
 		}
+
 		if s.Login == login {
 			return true
 		}
@@ -156,18 +163,18 @@ func (gb *GoSignBlock) signActions(login string) []MemberAction {
 	}
 
 	rejectAction := MemberAction{
-		Id:   signActionReject,
+		ID:   signActionReject,
 		Type: ActionTypeSecondary,
 	}
 
 	addApproversAction := MemberAction{
-		Id:   signActionAddApprovers,
+		ID:   signActionAddApprovers,
 		Type: ActionTypeOther,
 	}
 
 	if gb.State.SignatureType == script.SignatureTypeUKEP {
 		takeInWorkAction := MemberAction{
-			Id:   signActionTakeInWork,
+			ID:   signActionTakeInWork,
 			Type: ActionTypePrimary,
 			Params: map[string]interface{}{
 				signatureTypeActionParamsKey:    gb.State.SignatureType,
@@ -187,7 +194,7 @@ func (gb *GoSignBlock) signActions(login string) []MemberAction {
 	}
 
 	signAction := MemberAction{
-		Id:   signActionSign,
+		ID:   signActionSign,
 		Type: ActionTypePrimary,
 		Params: map[string]interface{}{
 			signatureTypeActionParamsKey: gb.State.SignatureType,
@@ -204,15 +211,15 @@ func (gb *GoSignBlock) signAddActions(a *AdditionalSignApprover) []MemberAction 
 
 	return []MemberAction{
 		{
-			Id:   signActionAdditionalApprovement,
+			ID:   signActionAdditionalApprovement,
 			Type: ActionTypePrimary,
 		},
 		{
-			Id:   signActionAdditionalReject,
+			ID:   signActionAdditionalReject,
 			Type: ActionTypeSecondary,
 		},
 		{
-			Id:   signActionAddApprovers,
+			ID:   signActionAddApprovers,
 			Type: ActionTypeOther,
 		},
 	}
@@ -247,9 +254,11 @@ func (gb *GoSignBlock) Deadlines(ctx c.Context) ([]Deadline, error) {
 	deadlines := make([]Deadline, 0, 2)
 
 	if gb.State.CheckSLA != nil && *gb.State.CheckSLA {
-		slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
-			TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.CurrBlockStartTime,
-				FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100)}},
+		slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDTO{
+			TaskCompletionIntervals: []entity.TaskCompletionInterval{{
+				StartedAt:  gb.RunContext.CurrBlockStartTime,
+				FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100),
+			}},
 			WorkType: sla.WorkHourType(*gb.State.WorkType),
 		})
 
@@ -307,6 +316,7 @@ func (gb *GoSignBlock) setSignersByParams(ctx c.Context, dto *setSignersByParams
 		for i := range workGroup.People {
 			gb.State.Signers[workGroup.People[i].Login] = struct{}{}
 		}
+
 		gb.State.SignerGroupID = dto.GroupID
 		gb.State.SignerGroupName = workGroup.GroupName
 	case script.SignerTypeFromSchema:
@@ -350,10 +360,11 @@ func (gb *GoSignBlock) handleDayBeforeSLANotifications(ctx c.Context) error {
 	}
 
 	gb.State.DayBeforeSLAChecked = true
+
 	return nil
 }
 
-//nolint:dupl,gocyclo // maybe later
+//nolint:dupl // maybe later
 func (gb *GoSignBlock) handleNotifications(ctx c.Context) error {
 	l := logger.GetLogger(ctx)
 
@@ -371,30 +382,36 @@ func (gb *GoSignBlock) handleNotifications(ctx c.Context) error {
 	slaDeadline := ""
 
 	if gb.State.SLA != nil && gb.State.WorkType != nil {
-		slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
-			TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.CurrBlockStartTime,
-				FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100)}},
+		slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDTO{
+			TaskCompletionIntervals: []entity.TaskCompletionInterval{{
+				StartedAt:  gb.RunContext.CurrBlockStartTime,
+				FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100),
+			}},
 			WorkType: sla.WorkHourType(*gb.State.WorkType),
 		})
 		if getSlaInfoErr != nil {
 			return getSlaInfoErr
 		}
+
 		slaDeadline = gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(gb.RunContext.CurrBlockStartTime,
 			*gb.State.SLA, slaInfoPtr)
 	}
 
-	var emails = make(map[string]mail.Template, 0)
+	emails := make(map[string]mail.Template, 0)
+
 	for _, login := range signers {
 		em, getUserEmailErr := gb.RunContext.Services.People.GetUserEmail(ctx, login)
 		if getUserEmailErr != nil {
 			l.WithField("login", login).WithError(getUserEmailErr).Warning("couldn't get email")
+
 			continue
 		}
+
 		emails[em] = mail.NewSignerNotificationTpl(
 			&mail.SignerNotifTemplate{
 				WorkNumber:  gb.RunContext.WorkNumber,
 				Name:        gb.RunContext.NotifName,
-				SdUrl:       gb.RunContext.Services.Sender.SdAddress,
+				SdURL:       gb.RunContext.Services.Sender.SdAddress,
 				Deadline:    slaDeadline,
 				AutoReject:  gb.State.AutoReject != nil && *gb.State.AutoReject,
 				Description: description,
@@ -416,6 +433,7 @@ func (gb *GoSignBlock) handleNotifications(ctx c.Context) error {
 				attachFiles, ok := links.([]file_registry.AttachInfo)
 				if ok && len(attachFiles) != 0 {
 					iconsName = append(iconsName, downloadImg)
+
 					break
 				}
 			}
@@ -442,10 +460,12 @@ func lookForFileIdInObject(object map[string]interface{}) (string, error) {
 	if !ok {
 		return "", errors.New("file_id does not exist in object")
 	}
+
 	fileID, ok := existingFileId.(string)
 	if !ok {
 		return "", errors.New("failed to type assert path to string")
 	}
+
 	return fileID, nil
 }
 
@@ -458,6 +478,7 @@ func ValidateFiles(file interface{}) ([]entity.Attachment, error) {
 		if err != nil {
 			return nil, err
 		}
+
 		resFiles = append(resFiles, entity.Attachment{FileID: fileID})
 	case []interface{}:
 		filesFromInterfaces := make([]entity.Attachment, 0)
@@ -467,16 +488,19 @@ func ValidateFiles(file interface{}) ([]entity.Attachment, error) {
 			if !ok {
 				continue
 			}
+
 			fileID, err := lookForFileIdInObject(object)
 			if err != nil {
 				continue
 			}
+
 			filesFromInterfaces = append(filesFromInterfaces, entity.Attachment{FileID: fileID})
 		}
 
 		if len(filesFromInterfaces) == 0 {
 			return nil, errors.New("did not find file in array")
 		}
+
 		resFiles = append(resFiles, filesFromInterfaces...)
 	default:
 		return nil, errors.New("did not get an object or an array to look for file")
@@ -485,11 +509,12 @@ func ValidateFiles(file interface{}) ([]entity.Attachment, error) {
 	return resFiles, nil
 }
 
-//nolint:dupl,gocyclo //its not duplicate
+//nolint:dupl //its not duplicate
 func (gb *GoSignBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 	l := logger.GetLogger(ctx)
 
 	var params script.SignParams
+
 	err := json.Unmarshal(ef.Params, &params)
 	if err != nil {
 		return errors.Wrap(err, "can not get sign parameters")
@@ -528,6 +553,7 @@ func (gb *GoSignBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 		if groupId == nil {
 			return errors.New("can't find group id in variables")
 		}
+
 		params.SignerGroupID = fmt.Sprintf("%v", groupId)
 	}
 
@@ -535,30 +561,38 @@ func (gb *GoSignBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 		(params.SignatureCarrier == script.SignatureCarrierToken ||
 			params.SignatureCarrier == script.SignatureCarrierAll) {
 		inn := getVariable(variableStorage, params.SigningParamsPaths.INN)
+
 		innString, ok := inn.(string)
 		if !ok {
 			l.Error(errors.New("could not find inn"))
 		}
+
 		gb.State.SigningParams.INN = innString
 
 		snils := getVariable(variableStorage, params.SigningParamsPaths.SNILS)
+
 		snilsString, ok := snils.(string)
 		if !ok {
 			l.Error(errors.New("could not find snils"))
 		}
+
 		gb.State.SigningParams.SNILS = snilsString
 
 		filesForSigningParams := make([]entity.Attachment, 0)
+
 		for _, pathToFiles := range params.SigningParamsPaths.Files {
 			filesInterface := getVariable(variableStorage, pathToFiles)
+
 			files, err := ValidateFiles(filesInterface)
 			if err != nil {
 				l.Error(err)
+
 				continue
 			}
-			filesForSigningParams = append(filesForSigningParams, files...)
 
+			filesForSigningParams = append(filesForSigningParams, files...)
 		}
+
 		gb.State.SigningParams.Files = filesForSigningParams
 	}
 
@@ -572,10 +606,6 @@ func (gb *GoSignBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 	}
 
 	return gb.handleNotifications(ctx)
-}
-
-func (gb *GoSignBlock) checkSLA() bool {
-	return gb.State.CheckSLA != nil && *gb.State.CheckSLA
 }
 
 func (gb *GoSignBlock) Model() script.FunctionModel {
@@ -682,7 +712,8 @@ func (gb *GoSignBlock) loadState(raw json.RawMessage) error {
 
 // nolint:dupl,unparam // another block
 func createGoSignBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext,
-	expectedEvents map[string]struct{}) (*GoSignBlock, bool, error) {
+	expectedEvents map[string]struct{},
+) (*GoSignBlock, bool, error) {
 	if ef.ShortTitle == "" {
 		return nil, false, errors.New(ef.Title + " block short title is empty")
 	}
@@ -711,6 +742,7 @@ func createGoSignBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx 
 	}
 
 	reEntry := runCtx.UpdateData == nil
+
 	rawState, ok := runCtx.VarStore.State[name]
 	if ok && !reEntry {
 		if err := b.loadState(rawState); err != nil {

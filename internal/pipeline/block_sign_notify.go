@@ -11,21 +11,23 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
-func (gb *GoSignBlock) notifyAdditionalApprovers(ctx c.Context, logins []string, attachsId []entity.Attachment) error {
+func (gb *GoSignBlock) notifyAdditionalApprovers(ctx c.Context, logins []string, attachsID []entity.Attachment) error {
 	l := logger.GetLogger(ctx)
 
 	emails := make([]string, 0, len(logins))
+
 	for _, login := range logins {
 		approverEmail, emailErr := gb.RunContext.Services.People.GetUserEmail(ctx, login)
 		if emailErr != nil {
 			l.WithField("login", login).WithError(emailErr).Warning("couldn't get email")
+
 			continue
 		}
 
 		emails = append(emails, approverEmail)
 	}
 
-	files, err := gb.RunContext.Services.FileRegistry.GetAttachments(ctx, attachsId)
+	files, err := gb.RunContext.Services.FileRegistry.GetAttachments(ctx, attachsID)
 	if err != nil {
 		return err
 	}
@@ -33,14 +35,17 @@ func (gb *GoSignBlock) notifyAdditionalApprovers(ctx c.Context, logins []string,
 	emails = utils.UniqueStrings(emails)
 
 	slaDeadline := ""
+
 	if gb.State.SLA != nil && gb.State.WorkType != nil {
-		slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
-			TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.CurrBlockStartTime,
-				FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100)}},
+		slaInfoPtr, getSLAInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDTO{
+			TaskCompletionIntervals: []entity.TaskCompletionInterval{{
+				StartedAt:  gb.RunContext.CurrBlockStartTime,
+				FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100),
+			}},
 			WorkType: sla.WorkHourType(*gb.State.WorkType),
 		})
-		if getSlaInfoErr != nil {
-			return getSlaInfoErr
+		if getSLAInfoErr != nil {
+			return getSLAInfoErr
 		}
 
 		slaDeadline = gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(time.Now(), *gb.State.SLA, slaInfoPtr)
@@ -62,6 +67,7 @@ func (gb *GoSignBlock) notifyAdditionalApprovers(ctx c.Context, logins []string,
 
 	if processSettings.ResubmissionPeriod > 0 {
 		var getWorksErr error
+
 		lastWorksForUser, getWorksErr = gb.RunContext.Services.Storage.GetWorksForUserWithGivenTimeRange(ctx,
 			processSettings.ResubmissionPeriod,
 			login,
@@ -111,10 +117,12 @@ func (gb *GoSignBlock) notifyDecisionMadeByAdditionalApprover(ctx c.Context, log
 	l := logger.GetLogger(ctx)
 
 	emailsToNotify := make([]string, 0, len(logins))
+
 	for _, login := range logins {
 		emailToNotify, emailErr := gb.RunContext.Services.People.GetUserEmail(ctx, login)
 		if emailErr != nil {
 			l.WithField("login", login).WithError(emailErr).Warning("couldn't get email")
+
 			continue
 		}
 
@@ -145,12 +153,12 @@ func (gb *GoSignBlock) notifyDecisionMadeByAdditionalApprover(ctx c.Context, log
 		ctx,
 		latestDecisionLog.Attachments,
 	)
-
 	if err != nil {
 		return err
 	}
 
 	filesList := []string{tpl.Image, userImg}
+
 	iconFiles, iconEerr := gb.RunContext.GetIcons(filesList)
 	if iconEerr != nil {
 		return iconEerr

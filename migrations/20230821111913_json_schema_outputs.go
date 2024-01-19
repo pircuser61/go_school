@@ -60,8 +60,10 @@ func upJsonSchemaOutputs(tx *sql.Tx) error {
 	pipelines := map[uuid.UUID]string{}
 
 	for rows.Next() {
-		var versionID uuid.UUID
-		var pipelineString string
+		var (
+			versionID      uuid.UUID
+			pipelineString string
+		)
 
 		scanErr := rows.Scan(
 			&versionID,
@@ -76,6 +78,7 @@ func upJsonSchemaOutputs(tx *sql.Tx) error {
 
 	for versionID, pipelineString := range pipelines {
 		var pipeline pipelineType
+
 		err := json.Unmarshal([]byte(pipelineString), &pipeline)
 		if err != nil {
 			return err
@@ -90,6 +93,7 @@ func upJsonSchemaOutputs(tx *sql.Tx) error {
 				Type:       "object",
 				Properties: map[string]script.JSONSchemaPropertiesValue{},
 			}
+
 			for _, param := range pipeline.Blocks[blockName].Output {
 				paramValue := script.JSONSchemaPropertiesValue{
 					Type:   param.Type,
@@ -127,6 +131,7 @@ func downJsonSchemaOutputs(tx *sql.Tx) error {
 	if queryErr != nil {
 		return queryErr
 	}
+
 	defer rows.Close()
 
 	if rowsErr := rows.Err(); rowsErr != nil {
@@ -136,13 +141,16 @@ func downJsonSchemaOutputs(tx *sql.Tx) error {
 	pipelines := map[uuid.UUID]string{}
 
 	for rows.Next() {
-		var versionID uuid.UUID
-		var pipelineString string
+		var (
+			versionID      uuid.UUID
+			pipelineString string
+		)
 
 		scanErr := rows.Scan(
 			&versionID,
 			&pipelineString,
 		)
+
 		if scanErr != nil {
 			return scanErr
 		}
@@ -152,6 +160,7 @@ func downJsonSchemaOutputs(tx *sql.Tx) error {
 
 	for versionID, pipelineString := range pipelines {
 		var pipeline entity.PipelineType
+
 		err := json.Unmarshal([]byte(pipelineString), &pipeline)
 		if err != nil {
 			return err
@@ -163,6 +172,7 @@ func downJsonSchemaOutputs(tx *sql.Tx) error {
 			}
 
 			var output []entity.EriusFunctionValue
+
 			for name, param := range pipeline.Blocks[blockName].Output.Properties {
 				output = append(output, entity.EriusFunctionValue{
 					Name:   name,

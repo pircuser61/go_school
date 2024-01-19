@@ -73,6 +73,7 @@ func (gb *TimerBlock) Next(_ *store.VariableStore) ([]string, bool) {
 	if !ok {
 		return nil, false
 	}
+
 	return nexts, true
 }
 
@@ -111,6 +112,7 @@ func (gb *TimerBlock) Update(ctx c.Context) (interface{}, error) {
 	if gb.State.Expired {
 		if _, ok := gb.expectedEvents[eventEnd]; ok {
 			status, _, _ := gb.GetTaskHumanStatus()
+
 			event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, MakeNodeEndEventArgs{
 				NodeName:      gb.Name,
 				NodeShortName: gb.ShortName,
@@ -120,6 +122,7 @@ func (gb *TimerBlock) Update(ctx c.Context) (interface{}, error) {
 			if eventErr != nil {
 				return nil, eventErr
 			}
+
 			gb.happenedEvents = append(gb.happenedEvents, event)
 		}
 	}
@@ -178,7 +181,8 @@ func (gb *TimerBlock) UpdateManual() bool {
 
 // nolint:dupl // another block
 func createTimerBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext,
-	expectedEvents map[string]struct{}) (*TimerBlock, bool, error) {
+	expectedEvents map[string]struct{},
+) (*TimerBlock, bool, error) {
 	b := &TimerBlock{
 		Name:       name,
 		ShortName:  ef.ShortTitle,
@@ -203,6 +207,7 @@ func createTimerBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx *
 	}
 
 	rawState, blockExists := runCtx.VarStore.State[name]
+
 	reEntry := blockExists && runCtx.UpdateData == nil
 	if blockExists && !reEntry {
 		if err := b.loadState(rawState); err != nil {
@@ -236,15 +241,17 @@ func (gb *TimerBlock) loadState(raw json.RawMessage) error {
 	return json.Unmarshal(raw, &gb.State)
 }
 
-//nolint:dupl,gocyclo //its not duplicate
+//nolint:dupl //its not duplicate
 func (gb *TimerBlock) createState(ef *entity.EriusFunc) error {
 	var params TimerParams
+
 	err := json.Unmarshal(ef.Params, &params)
 	if err != nil {
 		return errors.Wrap(err, "can not get timer parameters")
 	}
 
 	var duration time.Duration
+
 	duration, err = time.ParseDuration(params.Duration)
 	if err != nil {
 		return errors.Wrap(err, "can not parse timer duration")

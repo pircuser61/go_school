@@ -1,7 +1,9 @@
 package entity
 
-type UserExecutionType string
-type BlockType string
+type (
+	UserExecutionType string
+	BlockType         string
+)
 
 const (
 	UserExecution       UserExecutionType = "user"

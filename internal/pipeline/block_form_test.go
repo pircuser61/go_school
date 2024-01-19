@@ -55,16 +55,18 @@ func Test_createGoFormBlock(t *testing.T) {
 	ctx := context.Background()
 	databaseMock := dbMocks.NewMockedDatabase(t)
 	vid, _ := uuid.Parse(versionId)
+
 	databaseMock.On("GetVersionByWorkNumber", ctx, workNumber).
 		Return(&entity.EriusScenario{VersionID: vid}, error(nil))
 	databaseMock.On("GetSlaVersionSettings", ctx, vid.String()).
-		Return(entity.SlaVersionSettings{WorkType: workType}, error(nil))
+		Return(entity.SLAVersionSettings{WorkType: workType}, error(nil))
 
 	type args struct {
 		name   string
 		ef     *entity.EriusFunc
 		runCtx *BlockRunContext
 	}
+
 	tests := []struct {
 		name    string
 		args    args
@@ -460,23 +462,25 @@ func TestGoFormBlock_Update(t *testing.T) {
 		mock.MatchedBy(func(map[string]interface{}) bool { return true }),
 	).Return(nil)
 
-	type args struct {
-		Name       string
-		Title      string
-		Input      map[string]string
-		Output     map[string]string
-		Sockets    []script.Socket
-		State      *FormData
-		RunContext *BlockRunContext
-	}
-	type ServiceDeskHttpTransportMockDataStruct struct {
-		Status     string
-		StatusCode int
-		Body       any
-	}
-	type mockDataStruct struct {
-		ServiceDeskHttpTransportMockData *ServiceDeskHttpTransportMockDataStruct
-	}
+	type (
+		args struct {
+			Name       string
+			Title      string
+			Input      map[string]string
+			Output     map[string]string
+			Sockets    []script.Socket
+			State      *FormData
+			RunContext *BlockRunContext
+		}
+		ServiceDeskHttpTransportMockDataStruct struct {
+			Status     string
+			StatusCode int
+			Body       any
+		}
+		mockDataStruct struct {
+			ServiceDeskHttpTransportMockData *ServiceDeskHttpTransportMockDataStruct
+		}
+	)
 
 	tests := []struct {
 		name      string
@@ -515,7 +519,7 @@ func TestGoFormBlock_Update(t *testing.T) {
 						Parameters: json.RawMessage(
 							func() []byte {
 								r, _ := json.Marshal(&updateFillFormParams{
-									BlockId: blockId,
+									BlockID: blockId,
 								})
 
 								return r
@@ -561,7 +565,7 @@ func TestGoFormBlock_Update(t *testing.T) {
 									ApplicationBody: map[string]interface{}{
 										fieldName: fieldValue,
 									},
-									BlockId: blockId,
+									BlockID: blockId,
 								})
 
 								return r
@@ -661,7 +665,7 @@ func TestGoFormBlock_Update(t *testing.T) {
 									ApplicationBody: map[string]interface{}{
 										fieldName: newValue,
 									},
-									BlockId: blockId,
+									BlockID: blockId,
 								})
 
 								return r
@@ -750,7 +754,7 @@ func TestGoFormBlock_Update(t *testing.T) {
 									ApplicationBody: map[string]interface{}{
 										fieldName: newValue,
 									},
-									BlockId: blockId,
+									BlockID: blockId,
 								})
 
 								return r
@@ -793,7 +797,7 @@ func TestGoFormBlock_Update(t *testing.T) {
 									ApplicationBody: map[string]interface{}{
 										fieldName: newValue,
 									},
-									BlockId: blockId,
+									BlockID: blockId,
 								})
 
 								return r

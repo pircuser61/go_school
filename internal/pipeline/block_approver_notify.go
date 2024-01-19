@@ -34,13 +34,13 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 	if getDelegationsErr != nil {
 		return getDelegationsErr
 	}
+
 	delegates = delegates.FilterByType("approvement")
 
 	approvers := getSliceFromMapOfStrings(gb.State.Approvers)
 	loginsToNotify := delegates.GetUserInArrayWithDelegations(approvers)
 
 	description, files, err := gb.RunContext.makeNotificationDescription(gb.Name)
-
 	if err != nil {
 		return err
 	}
@@ -80,6 +80,7 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 
 	if processSettings.ResubmissionPeriod > 0 {
 		var getWorksErr error
+
 		lastWorksForUser, getWorksErr = gb.RunContext.Services.Storage.GetWorksForUserWithGivenTimeRange(
 			ctx,
 			processSettings.ResubmissionPeriod,
@@ -93,22 +94,27 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 	}
 
 	templates := make(map[string]mail.Template, 0)
-	slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
-		TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.CurrBlockStartTime,
-			FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100)}},
+	slaInfoPtr, getSLAInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDTO{
+		TaskCompletionIntervals: []entity.TaskCompletionInterval{{
+			StartedAt:  gb.RunContext.CurrBlockStartTime,
+			FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100),
+		}},
 		WorkType: sla.WorkHourType(gb.State.WorkType),
 	})
 
-	if getSlaInfoErr != nil {
-		return getSlaInfoErr
+	if getSLAInfoErr != nil {
+		return getSLAInfoErr
 	}
 
 	var buttons []mail.Button
+
 	buttonImg := make([]string, 0, 7)
+
 	for _, login = range loginsToNotify {
 		email, getEmailErr := gb.RunContext.Services.People.GetUserEmail(ctx, login)
 		if getEmailErr != nil {
 			l.WithField("login", login).WithError(getEmailErr).Warning("couldn't get email")
+
 			continue
 		}
 
@@ -166,6 +172,7 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 				attachFiles, ok := links.([]file_registry.AttachInfo)
 				if ok && len(attachFiles) != 0 {
 					iconsName = append(iconsName, downloadImg)
+
 					break
 				}
 			}
@@ -175,6 +182,7 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 		if iconsErr != nil {
 			return iconsErr
 		}
+
 		iconsFiles = append(iconsFiles, files...)
 
 		if sendErr := gb.RunContext.Services.Sender.SendNotification(
@@ -187,38 +195,43 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 	return nil
 }
 
-func (gb *GoApproverBlock) notifyAdditionalApprovers(ctx c.Context, logins []string, attachsId []entity.Attachment) error {
+func (gb *GoApproverBlock) notifyAdditionalApprovers(ctx c.Context, logins []string, attachsID []entity.Attachment) error {
 	l := logger.GetLogger(ctx)
 
 	delegates, err := gb.RunContext.Services.HumanTasks.GetDelegationsByLogins(ctx, logins)
 	if err != nil {
 		return err
 	}
+
 	delegates = delegates.FilterByType("approvement")
 
 	loginsToNotify := delegates.GetUserInArrayWithDelegations(logins)
 
 	emails := make([]string, 0, len(loginsToNotify))
+
 	for _, login := range loginsToNotify {
 		approverEmail, emailErr := gb.RunContext.Services.People.GetUserEmail(ctx, login)
 		if emailErr != nil {
 			l.WithField("login", login).WithError(emailErr).Warning("couldn't get email")
+
 			continue
 		}
 
 		emails = append(emails, approverEmail)
 	}
 
-	files, err := gb.RunContext.Services.FileRegistry.GetAttachments(ctx, attachsId)
+	files, err := gb.RunContext.Services.FileRegistry.GetAttachments(ctx, attachsID)
 	if err != nil {
 		return err
 	}
 
 	emails = utils.UniqueStrings(emails)
 
-	slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
-		TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.CurrBlockStartTime,
-			FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100)}},
+	slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDTO{
+		TaskCompletionIntervals: []entity.TaskCompletionInterval{{
+			StartedAt:  gb.RunContext.CurrBlockStartTime,
+			FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100),
+		}},
 		WorkType: sla.WorkHourType(gb.State.WorkType),
 	})
 
@@ -242,6 +255,7 @@ func (gb *GoApproverBlock) notifyAdditionalApprovers(ctx c.Context, logins []str
 
 	if processSettings.ResubmissionPeriod > 0 {
 		var getWorksErr error
+
 		lastWorksForUser, getWorksErr = gb.RunContext.Services.Storage.GetWorksForUserWithGivenTimeRange(ctx,
 			processSettings.ResubmissionPeriod,
 			login,
@@ -295,15 +309,18 @@ func (gb *GoApproverBlock) notifyDecisionMadeByAdditionalApprover(ctx c.Context,
 	if err != nil {
 		return err
 	}
+
 	delegates = delegates.FilterByType("approvement")
 
 	loginsWithDelegates := delegates.GetUserInArrayWithDelegations(logins)
 
 	emailsToNotify := make([]string, 0, len(loginsWithDelegates))
+
 	for _, login := range loginsWithDelegates {
 		emailToNotify, emailErr := gb.RunContext.Services.People.GetUserEmail(ctx, login)
 		if emailErr != nil {
 			l.WithField("login", login).WithError(emailErr).Warning("couldn't get email")
+
 			continue
 		}
 
@@ -335,16 +352,17 @@ func (gb *GoApproverBlock) notifyDecisionMadeByAdditionalApprover(ctx c.Context,
 		ctx,
 		latestDecisonLog.Attachments,
 	)
-
 	if err != nil {
 		return err
 	}
 
 	filesList := []string{tpl.Image, userImg}
+
 	iconFiles, iconEerr := gb.RunContext.GetIcons(filesList)
 	if iconEerr != nil {
 		return iconEerr
 	}
+
 	files = append(files, iconFiles...)
 
 	err = gb.RunContext.Services.Sender.SendNotification(ctx, emailsToNotify, files, tpl)
@@ -366,20 +384,28 @@ func (gb *GoApproverBlock) notifyNeedRework(ctx c.Context) error {
 	loginsToNotify := delegates.GetUserInArrayWithDelegations([]string{gb.RunContext.Initiator})
 
 	var em string
+
 	emails := make([]string, 0, len(loginsToNotify))
+
 	for _, login := range loginsToNotify {
 		em, err = gb.RunContext.Services.People.GetUserEmail(ctx, login)
 		if err != nil {
 			l.WithField("login", login).WithError(err).Warning("couldn't get email")
+
 			continue
 		}
 
 		emails = append(emails, em)
 	}
-	tpl := mail.NewSendToInitiatorEditTpl(gb.RunContext.WorkNumber, gb.RunContext.NotifName,
-		gb.RunContext.Services.Sender.SdAddress)
+
+	tpl := mail.NewSendToInitiatorEditTpl(
+		gb.RunContext.WorkNumber,
+		gb.RunContext.NotifName,
+		gb.RunContext.Services.Sender.SdAddress,
+	)
 
 	filesList := []string{tpl.Image}
+
 	files, iconEerr := gb.RunContext.GetIcons(filesList)
 	if iconEerr != nil {
 		return iconEerr
@@ -410,11 +436,14 @@ func (gb *GoApproverBlock) notifyNewInfoReceived(ctx c.Context, approverLogin st
 	loginsToNotify := delegates.GetUserInArrayWithDelegations(logins)
 
 	var em string
+
 	emails := make([]string, 0, len(loginsToNotify))
+
 	for _, login := range loginsToNotify {
 		em, err = gb.RunContext.Services.People.GetUserEmail(ctx, login)
 		if err != nil {
 			l.WithField("login", login).WithError(err).Warning("couldn't get email")
+
 			continue
 		}
 
@@ -425,6 +454,7 @@ func (gb *GoApproverBlock) notifyNewInfoReceived(ctx c.Context, approverLogin st
 		gb.RunContext.Services.Sender.SdAddress)
 
 	files := []string{tpl.Image}
+
 	iconFiles, err := gb.RunContext.GetIcons(files)
 	if err != nil {
 		return err
@@ -441,6 +471,7 @@ func (gb *GoApproverBlock) notifyNeedMoreInfo(ctx c.Context) error {
 	l := logger.GetLogger(ctx)
 
 	loginsToNotify := []string{gb.RunContext.Initiator}
+
 	for login := range gb.State.Approvers {
 		if login != gb.RunContext.UpdateData.ByLogin {
 			loginsToNotify = append(loginsToNotify, login)
@@ -448,10 +479,12 @@ func (gb *GoApproverBlock) notifyNeedMoreInfo(ctx c.Context) error {
 	}
 
 	emails := make([]string, 0, len(loginsToNotify))
+
 	for _, login := range loginsToNotify {
 		em, err := gb.RunContext.Services.People.GetUserEmail(ctx, login)
 		if err != nil {
 			l.WithField("login", login).WithError(err).Warning("couldn't get email")
+
 			continue
 		}
 
@@ -462,6 +495,7 @@ func (gb *GoApproverBlock) notifyNeedMoreInfo(ctx c.Context) error {
 		gb.RunContext.Services.Sender.SdAddress)
 
 	filesList := []string{tpl.Image}
+
 	files, iconEerr := gb.RunContext.GetIcons(filesList)
 	if iconEerr != nil {
 		return iconEerr

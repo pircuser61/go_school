@@ -32,7 +32,7 @@ func (db *PGCon) GetApproveActionNames(ctx context.Context) ([]entity.ApproveAct
 	for rows.Next() {
 		item := entity.ApproveActionName{}
 
-		if scanErr := rows.Scan(&item.Id, &item.Title); scanErr != nil {
+		if scanErr := rows.Scan(&item.ID, &item.Title); scanErr != nil {
 			return nil, scanErr
 		}
 
@@ -66,7 +66,7 @@ func (db *PGCon) GetApproveStatuses(ctx context.Context) ([]entity.ApproveStatus
 	for rows.Next() {
 		item := entity.ApproveStatus{}
 
-		if scanErr := rows.Scan(&item.Id, &item.Title); scanErr != nil {
+		if scanErr := rows.Scan(&item.ID, &item.Title); scanErr != nil {
 			return nil, scanErr
 		}
 
@@ -96,7 +96,7 @@ func (db *PGCon) GetNodeDecisions(ctx context.Context) ([]entity.NodeDecision, e
 	for rows.Next() {
 		item := entity.NodeDecision{}
 
-		if scanErr := rows.Scan(&item.Id, &item.NodeType, &item.Decision, &item.Title); scanErr != nil {
+		if scanErr := rows.Scan(&item.ID, &item.NodeType, &item.Decision, &item.Title); scanErr != nil {
 			return nil, scanErr
 		}
 

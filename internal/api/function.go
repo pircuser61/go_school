@@ -55,7 +55,7 @@ func (ae *APIEnv) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMes
 		return nil
 	}
 
-	step, err := ae.DB.GetTaskStepById(ctx, message.TaskID)
+	step, err := ae.DB.GetTaskStepByID(ctx, message.TaskID)
 	if err != nil {
 		log.WithField("funcName", "GetTaskStepById").
 			WithError(err).

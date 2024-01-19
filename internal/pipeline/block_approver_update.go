@@ -4,7 +4,6 @@ import (
 	c "context"
 	"encoding/json"
 	"fmt"
-
 	"time"
 
 	"github.com/google/uuid"
@@ -47,13 +46,13 @@ type requestInfoParams struct {
 	Type        AdditionalInfoType  `json:"type"`
 	Comment     string              `json:"comment"`
 	Attachments []entity.Attachment `json:"attachments"`
-	LinkId      *string             `json:"link_id,omitempty"`
+	LinkID      *string             `json:"link_id,omitempty"`
 }
 
 type replyInfoParams struct {
 	Comment     string              `json:"comment"`
 	Attachments []entity.Attachment `json:"attachments"`
-	LinkId      *string             `json:"link_id,omitempty"`
+	LinkID      *string             `json:"link_id,omitempty"`
 }
 
 type addApproversParams struct {
@@ -80,6 +79,7 @@ func (a *additionalApproverUpdateParams) Validate() error {
 
 func (gb *GoApproverBlock) setApproveDecision(ctx c.Context, u *approverUpdateParams) error {
 	byLogin := gb.RunContext.UpdateData.ByLogin
+
 	err := gb.State.SetDecision(byLogin, u.Comment, u.internalDecision, u.Attachments, gb.RunContext.Delegations)
 	if err != nil {
 		return err
@@ -101,13 +101,14 @@ func (gb *GoApproverBlock) setApproveDecision(ctx c.Context, u *approverUpdatePa
 	return nil
 }
 
-//nolint:dupl,gocyclo //its not duplicate
+//nolint:dupl //its not duplicate
 func (gb *GoApproverBlock) handleBreachedSLA(ctx c.Context) error {
 	const fn = "pipeline.approver.handleBreachedSLA"
 
 	if !gb.State.CheckSLA {
 		gb.State.SLAChecked = true
 		gb.State.HalfSLAChecked = true
+
 		return nil
 	}
 
@@ -123,7 +124,9 @@ func (gb *GoApproverBlock) handleBreachedSLA(ctx c.Context) error {
 			if additionalApprover.Decision != nil || seenAdditionalApprovers[additionalApprover.ApproverLogin] {
 				continue
 			}
+
 			seenAdditionalApprovers[additionalApprover.ApproverLogin] = true
+
 			logins = append(logins, additionalApprover.ApproverLogin)
 		}
 
@@ -131,16 +134,20 @@ func (gb *GoApproverBlock) handleBreachedSLA(ctx c.Context) error {
 		if err != nil {
 			log.WithError(err).Info(fn, fmt.Sprintf("approvers %v have no delegates", logins))
 		}
+
 		delegations = delegations.FilterByType("approvement")
 		logins = delegations.GetUserInArrayWithDelegations(logins)
 
 		var approverEmail string
+
 		for i := range logins {
 			approverEmail, err = gb.RunContext.Services.People.GetUserEmail(ctx, logins[i])
 			if err != nil {
 				log.WithError(err).Warning(fn, fmt.Sprintf("approver login %s not found", logins[i]))
+
 				continue
 			}
+
 			emails = append(emails, approverEmail)
 		}
 
@@ -152,6 +159,7 @@ func (gb *GoApproverBlock) handleBreachedSLA(ctx c.Context) error {
 		)
 
 		filesList := []string{tpl.Image}
+
 		files, iconEerr := gb.RunContext.GetIcons(filesList)
 		if iconEerr != nil {
 			return iconEerr
@@ -160,11 +168,13 @@ func (gb *GoApproverBlock) handleBreachedSLA(ctx c.Context) error {
 		if len(emails) == 0 {
 			return nil
 		}
+
 		err = gb.RunContext.Services.Sender.SendNotification(ctx, emails, files, tpl)
 		if err != nil {
 			return err
 		}
 	}
+
 	if gb.State.AutoAction != nil {
 		gb.RunContext.UpdateData.ByLogin = AutoApprover
 		if setErr := gb.setApproveDecision(ctx,
@@ -178,16 +188,18 @@ func (gb *GoApproverBlock) handleBreachedSLA(ctx c.Context) error {
 
 	gb.State.SLAChecked = true
 	gb.State.HalfSLAChecked = true
+
 	return nil
 }
 
-//nolint:dupl,gocyclo //its not duplicate
+//nolint:dupl //its not duplicate
 func (gb *GoApproverBlock) handleHalfBreachedSLA(ctx c.Context) (err error) {
 	const fn = "pipeline.approver.handleHalfBreachedSLA"
 
 	if !gb.State.CheckSLA {
 		gb.State.SLAChecked = true
 		gb.State.HalfSLAChecked = true
+
 		return nil
 	}
 
@@ -203,7 +215,9 @@ func (gb *GoApproverBlock) handleHalfBreachedSLA(ctx c.Context) (err error) {
 			if additionalApprover.Decision != nil || seenAdditionalApprovers[additionalApprover.ApproverLogin] {
 				continue
 			}
+
 			seenAdditionalApprovers[additionalApprover.ApproverLogin] = true
+
 			logins = append(logins, additionalApprover.ApproverLogin)
 		}
 
@@ -211,16 +225,20 @@ func (gb *GoApproverBlock) handleHalfBreachedSLA(ctx c.Context) (err error) {
 		if err != nil {
 			log.WithError(err).Info(fn, fmt.Sprintf("approvers %v have no delegates", logins))
 		}
+
 		delegations = delegations.FilterByType("approvement")
 		logins = delegations.GetUserInArrayWithDelegations(logins)
 
 		var approverEmail string
+
 		for i := range logins {
 			approverEmail, err = gb.RunContext.Services.People.GetUserEmail(ctx, logins[i])
 			if err != nil {
 				log.WithError(err).Warning(fn, fmt.Sprintf("approver login %s not found", logins[i]))
+
 				continue
 			}
+
 			emails = append(emails, approverEmail)
 		}
 
@@ -253,6 +271,7 @@ func (gb *GoApproverBlock) handleHalfBreachedSLA(ctx c.Context) (err error) {
 
 		if processSettings.ResubmissionPeriod > 0 {
 			var getWorksErr error
+
 			_, getWorksErr = gb.RunContext.Services.Storage.GetWorksForUserWithGivenTimeRange(
 				ctx,
 				processSettings.ResubmissionPeriod,
@@ -265,9 +284,11 @@ func (gb *GoApproverBlock) handleHalfBreachedSLA(ctx c.Context) (err error) {
 			}
 		}
 
-		slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
-			TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.CurrBlockStartTime,
-				FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100)}},
+		slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDTO{
+			TaskCompletionIntervals: []entity.TaskCompletionInterval{{
+				StartedAt:  gb.RunContext.CurrBlockStartTime,
+				FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100),
+			}},
 			WorkType: sla.WorkHourType(gb.State.WorkType),
 		})
 		if getSlaInfoErr != nil {
@@ -278,6 +299,7 @@ func (gb *GoApproverBlock) handleHalfBreachedSLA(ctx c.Context) (err error) {
 
 		if processSettings.ResubmissionPeriod > 0 {
 			var getWorksErr error
+
 			lastWorksForUser, getWorksErr = gb.RunContext.Services.Storage.GetWorksForUserWithGivenTimeRange(
 				ctx,
 				processSettings.ResubmissionPeriod,
@@ -318,6 +340,7 @@ func (gb *GoApproverBlock) handleHalfBreachedSLA(ctx c.Context) (err error) {
 	}
 
 	gb.State.HalfSLAChecked = true
+
 	return nil
 }
 
@@ -352,13 +375,18 @@ func (gb *GoApproverBlock) handleReworkSLABreached(ctx c.Context) error {
 
 	loginsToNotify := []string{gb.RunContext.Initiator}
 
-	var em string
-	var err error
+	var (
+		em  string
+		err error
+	)
+
 	emails := make([]string, 0, len(loginsToNotify))
+
 	for _, login := range loginsToNotify {
 		em, err = gb.RunContext.Services.People.GetUserEmail(ctx, login)
 		if err != nil {
 			log.WithError(err).Warning(fn, fmt.Sprintf("login %s not found", login))
+
 			continue
 		}
 
@@ -369,6 +397,7 @@ func (gb *GoApproverBlock) handleReworkSLABreached(ctx c.Context) error {
 		gb.RunContext.Services.Sender.SdAddress, gb.State.ReworkSLA, gb.State.CheckSLA)
 
 	filesList := []string{tpl.Image}
+
 	files, iconEerr := gb.RunContext.GetIcons(filesList)
 	if iconEerr != nil {
 		return iconEerr
@@ -383,11 +412,13 @@ func (gb *GoApproverBlock) handleReworkSLABreached(ctx c.Context) error {
 	if err != nil {
 		return err
 	}
+
 	for _, event := range nodeEvents {
 		// event for this node will spawn later
 		if event.NodeName == gb.Name {
 			continue
 		}
+
 		gb.happenedEvents = append(gb.happenedEvents, event)
 	}
 
@@ -406,20 +437,26 @@ func (gb *GoApproverBlock) handleBreachedDayBeforeSLARequestAddInfo(ctx c.Contex
 	loginsToNotify := []string{gb.RunContext.Initiator}
 
 	emails := make([]string, 0, len(loginsToNotify))
+
 	for _, login := range loginsToNotify {
 		em, err := gb.RunContext.Services.People.GetUserEmail(ctx, login)
 		if err != nil {
 			log.WithError(err).Warning(fn, fmt.Sprintf("login %s not found", login))
+
 			continue
 		}
 
 		emails = append(emails, em)
 	}
 
-	tpl := mail.NewDayBeforeRequestAddInfoSLABreached(gb.RunContext.WorkNumber,
-		gb.RunContext.NotifName, gb.RunContext.Services.Sender.SdAddress)
+	tpl := mail.NewDayBeforeRequestAddInfoSLABreached(
+		gb.RunContext.WorkNumber,
+		gb.RunContext.NotifName,
+		gb.RunContext.Services.Sender.SdAddress,
+	)
 
 	filesList := []string{tpl.Image}
+
 	files, iconEerr := gb.RunContext.GetIcons(filesList)
 	if iconEerr != nil {
 		return iconEerr
@@ -437,8 +474,11 @@ func (gb *GoApproverBlock) handleBreachedDayBeforeSLARequestAddInfo(ctx c.Contex
 
 //nolint:dupl // dont duplicate
 func (gb *GoApproverBlock) HandleBreachedSLARequestAddInfo(ctx c.Context) error {
-	const fn = "pipeline.approver.HandleBreachedSLARequestAddInfo"
-	var comment = "заявка автоматически перенесена в архив по истечении 3 дней"
+	const (
+		fn = "pipeline.approver.HandleBreachedSLARequestAddInfo"
+	)
+
+	comment := "заявка автоматически перенесена в архив по истечении 3 дней"
 
 	log := logger.GetLogger(ctx)
 
@@ -459,31 +499,40 @@ func (gb *GoApproverBlock) HandleBreachedSLARequestAddInfo(ctx c.Context) error 
 	}
 
 	approvers := getSliceFromMapOfStrings(gb.State.Approvers)
+
 	delegates, getDelegationsErr := gb.RunContext.Services.HumanTasks.GetDelegationsByLogins(ctx, approvers)
 	if getDelegationsErr != nil {
 		return getDelegationsErr
 	}
+
 	delegates = delegates.FilterByType("approvement")
 
 	loginsToNotify := delegates.GetUserInArrayWithDelegations(approvers)
 	loginsToNotify = append(loginsToNotify, gb.RunContext.Initiator)
 
-	var em string
-	var err error
+	var (
+		em  string
+		err error
+	)
+
 	emails := make([]string, 0, len(loginsToNotify))
+
 	for _, login := range loginsToNotify {
 		em, err = gb.RunContext.Services.People.GetUserEmail(ctx, login)
 		if err != nil {
 			log.WithError(err).Warning(fn, fmt.Sprintf("login %s not found", login))
+
 			continue
 		}
 
 		emails = append(emails, em)
 	}
+
 	tpl := mail.NewRequestAddInfoSLABreached(gb.RunContext.WorkNumber, gb.RunContext.NotifName,
 		gb.RunContext.Services.Sender.SdAddress, gb.State.ReworkSLA)
 
 	filesList := []string{tpl.Image}
+
 	files, iconEerr := gb.RunContext.GetIcons(filesList)
 	if iconEerr != nil {
 		return iconEerr
@@ -498,11 +547,14 @@ func (gb *GoApproverBlock) HandleBreachedSLARequestAddInfo(ctx c.Context) error 
 	if err != nil {
 		return err
 	}
-	for _, event := range nodeEvents {
+
+	for i := range nodeEvents {
+		event := nodeEvents[i]
 		// event for this node will spawn later
 		if event.NodeName == gb.Name {
 			continue
 		}
+
 		gb.happenedEvents = append(gb.happenedEvents, event)
 	}
 
@@ -567,10 +619,10 @@ func (gb *GoApproverBlock) isNextBlockServiceDesk() bool {
 	return false
 }
 
-//nolint:gocyclo //ok
 func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context) (err error) {
 	var updateParams requestInfoParams
-	var delegations = gb.RunContext.Delegations.FilterByType("approvement")
+
+	delegations := gb.RunContext.Delegations.FilterByType("approvement")
 
 	if err = json.Unmarshal(gb.RunContext.UpdateData.Parameters, &updateParams); err != nil {
 		return errors.New("can't assert provided update requestApproverInfo data")
@@ -582,7 +634,7 @@ func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context) (err error) 
 
 	var (
 		id     = uuid.NewString()
-		linkId *string
+		linkID *string
 	)
 
 	delegateFor, isDelegate := gb.State.userIsDelegate(gb.RunContext.UpdateData.ByLogin, delegations)
@@ -592,7 +644,8 @@ func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context) (err error) 
 			return NewUserIsNotPartOfProcessErr()
 		}
 
-		if err = gb.notifyNeedMoreInfo(ctx); err != nil {
+		err = gb.notifyNeedMoreInfo(ctx)
+		if err != nil {
 			return err
 		}
 
@@ -600,8 +653,10 @@ func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context) (err error) 
 	}
 
 	if updateParams.Type == ReplyAddInfoType {
-		var initiator = gb.RunContext.Initiator
-		var currentLogin = gb.RunContext.UpdateData.ByLogin
+		var (
+			initiator    = gb.RunContext.Initiator
+			currentLogin = gb.RunContext.UpdateData.ByLogin
+		)
 
 		if len(gb.State.AddInfo) == 0 {
 			return errors.New("don't answer after request")
@@ -611,33 +666,35 @@ func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context) (err error) 
 			return NewUserIsNotPartOfProcessErr()
 		}
 
-		if updateParams.LinkId == nil {
+		if updateParams.LinkID == nil {
 			return errors.New("linkId is null when reply")
 		}
 
-		parentEntry := gb.State.findAddInfoLogEntry(*updateParams.LinkId)
+		parentEntry := gb.State.findAddInfoLogEntry(*updateParams.LinkID)
 		if parentEntry == nil || parentEntry.Type == ReplyAddInfoType ||
-			gb.State.addInfoLogEntryHasResponse(*updateParams.LinkId) {
+			gb.State.addInfoLogEntryHasResponse(*updateParams.LinkID) {
 			return errors.New("bad linkId to submit an answer")
 		}
 
-		linkId = updateParams.LinkId
-		approverLogin, linkErr := setLinkIdRequest(id, *updateParams.LinkId, gb.State.AddInfo)
+		linkID = updateParams.LinkID
+
+		approverLogin, linkErr := setLinkIdRequest(id, *updateParams.LinkID, gb.State.AddInfo)
 		if linkErr != nil {
 			return linkErr
 		}
 
-		if err = gb.notifyNewInfoReceived(ctx, approverLogin); err != nil {
+		err = gb.notifyNewInfoReceived(ctx, approverLogin)
+		if err != nil {
 			return err
 		}
 	}
 
 	gb.State.AddInfo = append(gb.State.AddInfo, AdditionalInfo{
-		Id:          id,
+		ID:          id,
 		Type:        updateParams.Type,
 		Comment:     updateParams.Comment,
 		Attachments: updateParams.Attachments,
-		LinkId:      linkId,
+		LinkID:      linkID,
 		Login:       gb.RunContext.UpdateData.ByLogin,
 		CreatedAt:   time.Now(),
 		DelegateFor: delegateFor,
@@ -659,12 +716,11 @@ func (gb *GoApproverBlock) updateReplyApproverInfo(ctx c.Context) (err error) {
 	}
 
 	var (
-		id     = uuid.NewString()
-		linkId *string
+		id           = uuid.NewString()
+		linkID       *string
+		initiator    = gb.RunContext.Initiator
+		currentLogin = gb.RunContext.UpdateData.ByLogin
 	)
-
-	var initiator = gb.RunContext.Initiator
-	var currentLogin = gb.RunContext.UpdateData.ByLogin
 
 	if len(gb.State.AddInfo) == 0 {
 		return errors.New("don't answer after request")
@@ -674,32 +730,34 @@ func (gb *GoApproverBlock) updateReplyApproverInfo(ctx c.Context) (err error) {
 		return NewUserIsNotPartOfProcessErr()
 	}
 
-	if updateParams.LinkId == nil {
+	if updateParams.LinkID == nil {
 		return errors.New("linkId is null when reply")
 	}
 
-	parentEntry := gb.State.findAddInfoLogEntry(*updateParams.LinkId)
+	parentEntry := gb.State.findAddInfoLogEntry(*updateParams.LinkID)
 	if parentEntry == nil || parentEntry.Type == ReplyAddInfoType ||
-		gb.State.addInfoLogEntryHasResponse(*updateParams.LinkId) {
+		gb.State.addInfoLogEntryHasResponse(*updateParams.LinkID) {
 		return errors.New("bad linkId to submit an answer")
 	}
 
-	linkId = updateParams.LinkId
-	approverLogin, linkErr := setLinkIdRequest(id, *updateParams.LinkId, gb.State.AddInfo)
+	linkID = updateParams.LinkID
+
+	approverLogin, linkErr := setLinkIdRequest(id, *updateParams.LinkID, gb.State.AddInfo)
 	if linkErr != nil {
 		return linkErr
 	}
 
-	if err = gb.notifyNewInfoReceived(ctx, approverLogin); err != nil {
+	err = gb.notifyNewInfoReceived(ctx, approverLogin)
+	if err != nil {
 		return err
 	}
 
 	gb.State.AddInfo = append(gb.State.AddInfo, AdditionalInfo{
-		Id:          id,
+		ID:          id,
 		Type:        ReplyAddInfoType,
 		Comment:     updateParams.Comment,
 		Attachments: updateParams.Attachments,
-		LinkId:      linkId,
+		LinkID:      linkID,
 		Login:       gb.RunContext.UpdateData.ByLogin,
 		CreatedAt:   time.Now(),
 		DelegateFor: "",
@@ -710,8 +768,8 @@ func (gb *GoApproverBlock) updateReplyApproverInfo(ctx c.Context) (err error) {
 
 func setLinkIdRequest(replyId, linkId string, addInfo []AdditionalInfo) (string, error) {
 	for i := range addInfo {
-		if addInfo[i].Id == linkId {
-			addInfo[i].LinkId = &replyId
+		if addInfo[i].ID == linkId {
+			addInfo[i].LinkID = &replyId
 			return addInfo[i].Login, nil
 		}
 	}
@@ -725,10 +783,10 @@ func (gb *GoApproverBlock) actionAcceptable(action ApproverAction) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
-//nolint:gocyclo //its ok here
 func (gb *GoApproverBlock) Update(ctx c.Context) (interface{}, error) {
 	data := gb.RunContext.UpdateData
 	if data == nil {
@@ -736,6 +794,7 @@ func (gb *GoApproverBlock) Update(ctx c.Context) (interface{}, error) {
 	}
 
 	gb.RunContext.Delegations = gb.RunContext.Delegations.FilterByType("approvement")
+
 	switch data.Action {
 	case string(entity.TaskUpdateActionSLABreach):
 		if errUpdate := gb.handleBreachedSLA(ctx); errUpdate != nil {
@@ -784,12 +843,12 @@ func (gb *GoApproverBlock) Update(ctx c.Context) (interface{}, error) {
 
 		loginsToNotify, err := gb.State.SetDecisionByAdditionalApprover(gb.RunContext.UpdateData.ByLogin,
 			updateParams, gb.RunContext.Delegations)
-
 		if err != nil {
 			return nil, err
 		}
 
 		loginsToNotify = append(loginsToNotify, gb.RunContext.Initiator)
+
 		err = gb.notifyDecisionMadeByAdditionalApprover(ctx, loginsToNotify)
 		if err != nil {
 			return nil, err
@@ -801,6 +860,7 @@ func (gb *GoApproverBlock) Update(ctx c.Context) (interface{}, error) {
 		if err := json.Unmarshal(data.Parameters, &updateParams); err != nil {
 			return nil, errors.New("can't assert provided data")
 		}
+
 		if errUpdate := gb.toEditApplication(ctx, updateParams); errUpdate != nil {
 			return nil, errUpdate
 		}
@@ -820,6 +880,7 @@ func (gb *GoApproverBlock) Update(ctx c.Context) (interface{}, error) {
 		if err := json.Unmarshal(data.Parameters, &updateParams); err != nil {
 			return nil, errors.New("can't assert provided data")
 		}
+
 		if errUpdate := gb.addApprovers(ctx, updateParams); errUpdate != nil {
 			return nil, errUpdate
 		}
@@ -835,6 +896,7 @@ func (gb *GoApproverBlock) Update(ctx c.Context) (interface{}, error) {
 	}
 
 	var stateBytes []byte
+
 	stateBytes, err := json.Marshal(gb.State)
 	if err != nil {
 		return nil, err
@@ -845,6 +907,7 @@ func (gb *GoApproverBlock) Update(ctx c.Context) (interface{}, error) {
 	if gb.State.Decision != nil {
 		if _, ok := gb.expectedEvents[eventEnd]; ok {
 			status, _, _ := gb.GetTaskHumanStatus()
+
 			event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, MakeNodeEndEventArgs{
 				NodeName:      gb.Name,
 				NodeShortName: gb.ShortName,
@@ -854,6 +917,7 @@ func (gb *GoApproverBlock) Update(ctx c.Context) (interface{}, error) {
 			if eventErr != nil {
 				return nil, eventErr
 			}
+
 			gb.happenedEvents = append(gb.happenedEvents, event)
 		}
 	}
@@ -881,11 +945,13 @@ func (gb *GoApproverBlock) addApprovers(ctx c.Context, u addApproversParams) err
 					Attachments:       u.Attachments,
 					CreatedAt:         crTime,
 				})
+
 			logApprovers = append(logApprovers, u.AdditionalApproversLogins[i])
 		}
 	}
+
 	if len(logApprovers) > 0 {
-		var approverLogEntry = ApproverLogEntry{
+		approverLogEntry := ApproverLogEntry{
 			Login:          gb.RunContext.UpdateData.ByLogin,
 			Decision:       "",
 			Comment:        u.Question,
@@ -895,12 +961,15 @@ func (gb *GoApproverBlock) addApprovers(ctx c.Context, u addApproversParams) err
 			LogType:        ApproverLogAddApprover,
 			DelegateFor:    delegateFor,
 		}
+
 		gb.State.ApproverLog = append(gb.State.ApproverLog, approverLogEntry)
+
 		err := gb.notifyAdditionalApprovers(ctx, logApprovers, u.Attachments)
 		if err != nil {
 			return err
 		}
 	}
+
 	return nil
 }
 
@@ -912,5 +981,6 @@ func (gb *GoApproverBlock) checkAdditionalApproverNotAdded(login string) bool {
 			return false
 		}
 	}
+
 	return true
 }

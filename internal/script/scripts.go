@@ -42,7 +42,6 @@ type FunctionTag struct {
 
 func GetShapes() ([]ShapeEntity, error) {
 	shapes := []ShapeEntity{
-
 		{
 			ID:    shapeFunction,
 			Title: IconFunction,
@@ -85,6 +84,7 @@ func OrderedMapToMap(om orderedmap.OrderedMap) (map[string]interface{}, error) {
 	}
 
 	var m map[string]interface{}
+
 	err = json.Unmarshal(data, &m)
 	if err != nil {
 		return nil, err
@@ -95,6 +95,7 @@ func OrderedMapToMap(om orderedmap.OrderedMap) (map[string]interface{}, error) {
 
 func MapToOrderedMap(m map[string]interface{}) (orderedmap.OrderedMap, error) {
 	om := orderedmap.New()
+
 	data, err := json.Marshal(m)
 	if err != nil {
 		return orderedmap.OrderedMap{}, err

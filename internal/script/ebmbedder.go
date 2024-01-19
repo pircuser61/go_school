@@ -105,6 +105,7 @@ const (
 	funcExecutedSocketTitle = "Выполнено"
 )
 
+//nolint:gochecknoglobals //new common socket
 var (
 	DefaultSocket = Socket{Id: DefaultSocketID, Title: DefaultSocketTitle}
 
@@ -125,11 +126,9 @@ var (
 	NotExecutedSocket = Socket{Id: notExecutedSocketID, Title: notExecutedSocketTitle}
 	ExecutedSocket    = Socket{Id: executedSocketID, Title: executedSocketTitle}
 
-	//nolint:gochecknoglobals //sign node sockets
 	SignedSocket   = Socket{Id: signSocketID, Title: signSocketTitle}
 	RejectedSocket = Socket{Id: rejectedSocketID, Title: rejectedSocketTitle}
 
-	//nolint:gochecknoglobals //new common socket
 	ErrorSocket = Socket{Id: errorSocketID, Title: errorSocketTitle}
 
 	FuncExecutedSocket    = Socket{Id: DefaultSocketID, Title: funcExecutedSocketTitle}

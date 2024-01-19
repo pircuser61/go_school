@@ -9,6 +9,7 @@ func Test_mergeValues(t *testing.T) {
 	type args struct {
 		stepsValues []map[string]interface{}
 	}
+
 	const (
 		workID    = "9612e3d1-20fc-4890-9c0c-122057604ef1"
 		testLogin = "testLogin"

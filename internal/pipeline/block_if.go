@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 
 	//nolint:goimports //cant sort import to not trigger golint
-	"gitlab.services.mts.ru/jocasta/conditions-kit"
+	conditions_kit "gitlab.services.mts.ru/jocasta/conditions-kit"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
@@ -70,12 +70,14 @@ func (gb *IF) Next(_ *store.VariableStore) ([]string, bool) {
 		if !ok {
 			return nil, false
 		}
+
 		return nexts, true
 	} else {
 		nexts, ok := script.GetNexts(gb.Sockets, gb.State.ChosenGroupID)
 		if !ok {
 			return nil, false
 		}
+
 		return nexts, true
 	}
 }
@@ -110,6 +112,7 @@ func (gb *IF) Update(ctx context.Context) (interface{}, error) {
 
 	if _, ok := gb.expectedEvents[eventEnd]; ok {
 		status, _, _ := gb.GetTaskHumanStatus()
+
 		event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, MakeNodeEndEventArgs{
 			NodeName:      gb.Name,
 			NodeShortName: gb.ShortName,
@@ -119,8 +122,10 @@ func (gb *IF) Update(ctx context.Context) (interface{}, error) {
 		if eventErr != nil {
 			return nil, eventErr
 		}
+
 		gb.happenedEvents = append(gb.happenedEvents, event)
 	}
+
 	return nil, nil
 }
 
@@ -143,7 +148,8 @@ func (gb *IF) Model() script.FunctionModel {
 
 //nolint:unparam // its ok
 func createGoIfBlock(ctx context.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext,
-	expectedEvents map[string]struct{}) (block *IF, reEntry bool, err error) {
+	expectedEvents map[string]struct{},
+) (block *IF, reEntry bool, err error) {
 	b := &IF{
 		Name:       name,
 		ShortName:  ef.ShortTitle,
@@ -173,22 +179,26 @@ func createGoIfBlock(ctx context.Context, name string, ef *entity.EriusFunc, run
 
 	if ef.Params != nil {
 		var params conditions_kit.ConditionParams
+
 		err = json.Unmarshal(ef.Params, &params)
 		if err != nil {
 			return nil, reEntry, err
 		}
 
-		if err = params.Validate(); err != nil {
+		err = params.Validate()
+		if err != nil {
 			return nil, reEntry, err
 		}
 
 		b.State.Type = params.Type
 		b.State.ConditionGroups = params.ConditionGroups
 	}
+
 	b.RunContext.VarStore.AddStep(b.Name)
 
 	if _, ok := b.expectedEvents[eventStart]; ok {
 		status, _, _ := b.GetTaskHumanStatus()
+
 		event, err := runCtx.MakeNodeStartEvent(ctx, MakeNodeStartEventArgs{
 			NodeName:      name,
 			NodeShortName: ef.ShortTitle,
@@ -198,6 +208,7 @@ func createGoIfBlock(ctx context.Context, name string, ef *entity.EriusFunc, run
 		if err != nil {
 			return nil, false, err
 		}
+
 		b.happenedEvents = append(b.happenedEvents, event)
 	}
 
@@ -209,5 +220,6 @@ func getVariables(runCtx *store.VariableStore) (result map[string]interface{}, e
 	if err != nil {
 		return nil, err
 	}
+
 	return variables, nil
 }

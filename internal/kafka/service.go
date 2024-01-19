@@ -25,6 +25,7 @@ type Service struct {
 func NewService(log logger.Logger, cfg Config) (*Service, error) {
 	m := metrics.DefaultRegistry
 	m.UnregisterAll()
+
 	saramaCfg := sarama.NewConfig()
 	saramaCfg.MetricRegistry = m
 	saramaCfg.Producer.Return.Successes = true // Producer.Return.Successes must be true to be used in a SyncProducer
@@ -52,7 +53,7 @@ func NewService(log logger.Logger, cfg Config) (*Service, error) {
 	}, nil
 }
 
-func (s *Service) Produce(ctx c.Context, message RunnerOutMessage) error {
+func (s *Service) Produce(ctx c.Context, message *RunnerOutMessage) error {
 	if s == nil {
 		return errors.New("kafka service unavailable")
 	}
