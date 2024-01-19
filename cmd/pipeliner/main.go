@@ -216,6 +216,8 @@ func main() {
 
 	kafkaService.InitMessageHandler(APIEnv.FunctionReturnHandler)
 
+	go kafkaService.StartCheckHealth()
+
 	jr, err := jaeger.NewExporter(jaeger.Options{
 		CollectorEndpoint: cfg.Tracing.URL,
 		Process: jaeger.Process{
