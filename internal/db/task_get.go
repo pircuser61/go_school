@@ -284,11 +284,12 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 		order = *fl.Order
 	}
 
-	if fl.InitiatorLogins != nil && len(*fl.InitiatorLogins) > 0 {
+	switch {
+	case fl.InitiatorLogins != nil && len(*fl.InitiatorLogins) > 0:
 		q = fmt.Sprintf("%s %s", getUniqueActions("initiators", *fl.InitiatorLogins), q)
-	} else if fl.SelectAs != nil {
+	case fl.SelectAs != nil:
 		q = fmt.Sprintf("%s %s", getUniqueActions(*fl.SelectAs, delegations), q)
-	} else {
+	default:
 		q = fmt.Sprintf("%s %s", getUniqueActions("", delegations), q)
 	}
 
@@ -305,8 +306,8 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 	}
 
 	if fl.Name != nil {
-		name := strings.Replace(*fl.Name, "_", "!_", -1)
-		name = strings.Replace(name, "%", "!%", -1)
+		name := strings.ReplaceAll(*fl.Name, "_", "!_")
+		name = strings.ReplaceAll(name, "%", "!%")
 		args = append(args, name)
 		q = fmt.Sprintf(`%s AND ((p.name ILIKE '%%' || $%d || '%%' ESCAPE '!') 
 							OR (w.work_number ILIKE '%%' || $%d || '%%'  ESCAPE '!') 
@@ -1909,8 +1910,8 @@ func getFiltersSearchConditions(filter *string) string {
 		return ""
 	}
 
-	escapeFilter := strings.Replace(*filter, "_", "!_", -1)
-	escapeFilter = strings.Replace(escapeFilter, "%", "!%", -1)
+	escapeFilter := strings.ReplaceAll(*filter, "_", "!_")
+	escapeFilter = strings.ReplaceAll(escapeFilter, "%", "!%")
 
 	return fmt.Sprintf(`
 		(w.work_number ILIKE '%%%s%%' ESCAPE '!' OR

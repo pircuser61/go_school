@@ -279,8 +279,8 @@ LOOP:
 		}
 	}
 
-	pb.Body = strings.Replace(body, "\n", " ", -1)
-	pb.Body = strings.Replace(pb.Body, "\t", "", -1)
+	pb.Body = strings.ReplaceAll(body, "\n", " ")
+	pb.Body = strings.ReplaceAll(pb.Body, "\t", "")
 	pb.Body = strings.TrimSpace(pb.Body)
 
 	return &pb

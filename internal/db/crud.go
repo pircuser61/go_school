@@ -301,8 +301,8 @@ WHERE pp.deleted_at IS NULL
 	}
 
 	if filter != "" {
-		escapeFilter := strings.Replace(filter, "_", "!_", -1)
-		escapeFilter = strings.Replace(escapeFilter, "%", "!%", -1)
+		escapeFilter := strings.ReplaceAll(filter, "_", "!_")
+		escapeFilter = strings.ReplaceAll(escapeFilter, "%", "!%")
 		q = fmt.Sprintf(`%s AND (pp.name ILIKE '%%%s%%' ESCAPE '!')`, q, escapeFilter)
 	}
 
@@ -2210,8 +2210,8 @@ func (db *PGCon) GetPipelinesByNameOrID(ctx context.Context, dto *SearchPipeline
 `
 
 	if dto.PipelineName != nil {
-		pipelineName := strings.Replace(*dto.PipelineName, "_", "!_", -1)
-		pipelineName = strings.Replace(pipelineName, "%", "!%", -1)
+		pipelineName := strings.ReplaceAll(*dto.PipelineName, "_", "!_")
+		pipelineName = strings.ReplaceAll(pipelineName, "%", "!%")
 		q = strings.ReplaceAll(q, "--pipe--", fmt.Sprintf("AND p.name ilike'%%%s%%' ESCAPE '!'", pipelineName))
 	}
 

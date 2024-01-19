@@ -86,14 +86,14 @@ func defineFilter(input string, oneWord bool, filter []string) string {
 	}
 
 	if len(parts) == 2 {
-		q = strings.Replace(twoPartFilter, name1PH, caser.String(parts[0]), -1)
-		q = strings.Replace(q, name2PH, caser.String(parts[1]), -1)
+		q = strings.ReplaceAll(twoPartFilter, name1PH, caser.String(parts[0]))
+		q = strings.ReplaceAll(q, name2PH, caser.String(parts[1]))
 	}
 
 	if len(parts) > 2 {
-		q = strings.Replace(threePartFilter, name1PH, caser.String(parts[0]), -1)
-		q = strings.Replace(q, name2PH, caser.String(parts[1]), -1)
-		q = strings.Replace(q, name3PH, caser.String(parts[2]), -1)
+		q = strings.ReplaceAll(threePartFilter, name1PH, caser.String(parts[0]))
+		q = strings.ReplaceAll(q, name2PH, caser.String(parts[1]))
+		q = strings.ReplaceAll(q, name3PH, caser.String(parts[2]))
 	}
 
 	if len(filter) > 0 {
