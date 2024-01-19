@@ -152,6 +152,7 @@ func (gb *TimerBlock) checkUserIsServiceAccount(ctx c.Context) error {
 		currentUser.Username != ServiceAccountStage &&
 		currentUser.Username != ServiceAccount {
 		err = fmt.Errorf("user %s is not service account", currentUser.Username)
+
 		return err
 	}
 

@@ -44,6 +44,7 @@ func TestIF_Next(t *testing.T) {
 				runCtx: func() *store.VariableStore {
 					res := store.NewStore()
 					res.SetValue("chosenGroup", "")
+
 					return res
 				}(),
 			},
@@ -60,6 +61,7 @@ func TestIF_Next(t *testing.T) {
 				runCtx: func() *store.VariableStore {
 					res := store.NewStore()
 					res.SetValue("chosenGroup", "test-group-1")
+
 					return res
 				}(),
 			},
@@ -134,6 +136,7 @@ func TestIF_DebugRun(t *testing.T) {
 				ctx: context.Background(),
 				runCtx: func() *store.VariableStore {
 					res := store.NewStore()
+
 					return res
 				}(),
 			},
@@ -183,6 +186,7 @@ func TestIF_DebugRun(t *testing.T) {
 				ctx: context.Background(),
 				runCtx: func() *store.VariableStore {
 					res := store.NewStore()
+
 					return res
 				}(),
 			},
@@ -755,6 +759,7 @@ func TestIF_DebugRun(t *testing.T) {
 				ctx: context.Background(),
 				runCtx: func() *store.VariableStore {
 					res := store.NewStore()
+
 					return res
 				}(),
 			},
@@ -804,6 +809,7 @@ func TestIF_DebugRun(t *testing.T) {
 				ctx: context.Background(),
 				runCtx: func() *store.VariableStore {
 					res := store.NewStore()
+
 					return res
 				}(),
 			},
@@ -853,6 +859,7 @@ func TestIF_DebugRun(t *testing.T) {
 				ctx: context.Background(),
 				runCtx: func() *store.VariableStore {
 					res := store.NewStore()
+
 					return res
 				}(),
 			},
@@ -902,6 +909,7 @@ func TestIF_DebugRun(t *testing.T) {
 				ctx: context.Background(),
 				runCtx: func() *store.VariableStore {
 					res := store.NewStore()
+
 					return res
 				}(),
 			},
@@ -951,6 +959,7 @@ func TestIF_DebugRun(t *testing.T) {
 				ctx: context.Background(),
 				runCtx: func() *store.VariableStore {
 					res := store.NewStore()
+
 					return res
 				}(),
 			},
@@ -1000,6 +1009,7 @@ func TestIF_DebugRun(t *testing.T) {
 				ctx: context.Background(),
 				runCtx: func() *store.VariableStore {
 					res := store.NewStore()
+
 					return res
 				}(),
 			},
@@ -1049,6 +1059,7 @@ func TestIF_DebugRun(t *testing.T) {
 				ctx: context.Background(),
 				runCtx: func() *store.VariableStore {
 					res := store.NewStore()
+
 					return res
 				}(),
 			},
@@ -1098,6 +1109,7 @@ func TestIF_DebugRun(t *testing.T) {
 				ctx: context.Background(),
 				runCtx: func() *store.VariableStore {
 					res := store.NewStore()
+
 					return res
 				}(),
 			},
@@ -1147,6 +1159,7 @@ func TestIF_DebugRun(t *testing.T) {
 				ctx: context.Background(),
 				runCtx: func() *store.VariableStore {
 					res := store.NewStore()
+
 					return res
 				}(),
 			},
@@ -1196,6 +1209,7 @@ func TestIF_DebugRun(t *testing.T) {
 				ctx: context.Background(),
 				runCtx: func() *store.VariableStore {
 					res := store.NewStore()
+
 					return res
 				}(),
 			},
@@ -1245,6 +1259,7 @@ func TestIF_DebugRun(t *testing.T) {
 				ctx: context.Background(),
 				runCtx: func() *store.VariableStore {
 					res := store.NewStore()
+
 					return res
 				}(),
 			},
@@ -1294,6 +1309,7 @@ func TestIF_DebugRun(t *testing.T) {
 				ctx: context.Background(),
 				runCtx: func() *store.VariableStore {
 					res := store.NewStore()
+
 					return res
 				}(),
 			},
@@ -1343,6 +1359,7 @@ func TestIF_DebugRun(t *testing.T) {
 				ctx: context.Background(),
 				runCtx: func() *store.VariableStore {
 					res := store.NewStore()
+
 					return res
 				}(),
 			},
@@ -1896,6 +1913,7 @@ func TestIF_DebugRun(t *testing.T) {
 				ctx: context.Background(),
 				runCtx: func() *store.VariableStore {
 					res := store.NewStore()
+
 					return res
 				}(),
 			},
@@ -2197,6 +2215,7 @@ func TestIF_DebugRun(t *testing.T) {
 				ctx: context.Background(),
 				runCtx: func() *store.VariableStore {
 					res := store.NewStore()
+
 					return res
 				}(),
 			},
@@ -2246,6 +2265,7 @@ func TestIF_DebugRun(t *testing.T) {
 				ctx: context.Background(),
 				runCtx: func() *store.VariableStore {
 					res := store.NewStore()
+
 					return res
 				}(),
 			},

@@ -396,11 +396,13 @@ func isUser(v interface{}) bool {
 
 func retMap(v orderedmap.OrderedMap) map[string]interface{} {
 	t := v.Values()
+
 	return t
 }
 
 func hasValue(v orderedmap.OrderedMap) bool {
 	t := v.Values()
+
 	return len(t) != 0
 }
 

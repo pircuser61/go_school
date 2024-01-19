@@ -52,6 +52,7 @@ func upGo(tx *sql.Tx) error {
 		scanErr := rows.Scan(&resultRow.ID, &resultRow.TimeStart, &resultRow.SLA)
 		if scanErr != nil {
 			rows.Close()
+
 			return scanErr
 		}
 
@@ -64,6 +65,7 @@ func upGo(tx *sql.Tx) error {
 
 	if rowsErr := rows.Err(); rowsErr != nil {
 		rows.Close()
+
 		return rowsErr
 	}
 

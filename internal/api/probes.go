@@ -14,6 +14,7 @@ func (ae *Env) Ready(w http.ResponseWriter, r *http.Request) {
 
 	if err := ae.DB.Ping(ctx); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
+
 		return
 	}
 }

@@ -78,6 +78,7 @@ func TestBlockFunction_Update(t *testing.T) {
 								"fullname": "Egor Jopov",
 							},
 						})
+
 						return s
 					}(),
 					Services: RunContextServices{
@@ -138,6 +139,7 @@ func TestBlockFunction_Update(t *testing.T) {
 								"fullname": "Egor Jopov",
 							},
 						})
+
 						return s
 					}(),
 					Services: RunContextServices{
@@ -290,6 +292,7 @@ func TestBlockFunction_Update(t *testing.T) {
 								"fullname": "Egor Jopov",
 							},
 						})
+
 						return s
 					}(),
 					Services: RunContextServices{

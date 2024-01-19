@@ -67,6 +67,7 @@ func TestApproverData_SetDecision(t *testing.T) {
 				},
 				Decision: func() *ApproverAction {
 					res := decision
+
 					return &res
 				}(),
 				Comment:        nil,
@@ -89,14 +90,17 @@ func TestApproverData_SetDecision(t *testing.T) {
 				},
 				Decision: func() *ApproverAction {
 					res := decision
+
 					return &res
 				}(),
 				Comment: func() *string {
 					res := comment
+
 					return &res
 				}(),
 				ActualApprover: func() *string {
 					res := login
+
 					return &res
 				}(),
 			},
@@ -117,6 +121,7 @@ func TestApproverData_SetDecision(t *testing.T) {
 				},
 				Decision: func() *ApproverAction {
 					res := decision
+
 					return &res
 				}(),
 				Comment:        nil,
@@ -747,6 +752,7 @@ func TestGoApproverBlock_Update(t *testing.T) {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
@@ -849,6 +855,7 @@ func TestGoApproverBlock_Update(t *testing.T) {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
@@ -949,6 +956,7 @@ func TestGoApproverBlock_Update(t *testing.T) {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,

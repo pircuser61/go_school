@@ -482,6 +482,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 						s.State = map[string]json.RawMessage{
 							example: r,
 						}
+
 						return s
 					}(),
 				},
@@ -514,6 +515,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -592,6 +594,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 						s.State = map[string]json.RawMessage{
 							example: r,
 						}
+
 						return s
 					}(),
 				},
@@ -624,6 +627,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -708,6 +712,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 						s.State = map[string]json.RawMessage{
 							example: r,
 						}
+
 						return s
 					}(),
 				},
@@ -745,6 +750,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -844,6 +850,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 						s.State = map[string]json.RawMessage{
 							example: r,
 						}
+
 						return s
 					}(),
 				},
@@ -876,6 +883,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -954,6 +962,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 						s.State = map[string]json.RawMessage{
 							example: r,
 						}
+
 						return s
 					}(),
 				},
@@ -986,6 +995,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -1070,6 +1080,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 						s.State = map[string]json.RawMessage{
 							example: r,
 						}
+
 						return s
 					}(),
 				},
@@ -1107,6 +1118,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -1206,6 +1218,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 						s.State = map[string]json.RawMessage{
 							example: r,
 						}
+
 						return s
 					}(),
 				},
@@ -1238,6 +1251,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -1262,6 +1276,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 						s.State = map[string]json.RawMessage{
 							example: r,
 						}
+
 						return s
 					}(),
 				},
@@ -1294,6 +1309,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -1318,6 +1334,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 						s.State = map[string]json.RawMessage{
 							example: r,
 						}
+
 						return s
 					}(),
 				},
@@ -1350,6 +1367,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -1374,6 +1392,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 						s.State = map[string]json.RawMessage{
 							example: r,
 						}
+
 						return s
 					}(),
 				},
@@ -1406,6 +1425,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -1490,6 +1510,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 						s.State = map[string]json.RawMessage{
 							example: r,
 						}
+
 						return s
 					}(),
 				},
@@ -1527,6 +1548,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -1618,6 +1640,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 						s.State = map[string]json.RawMessage{
 							example: r,
 						}
+
 						return s
 					}(),
 				},
@@ -1650,6 +1673,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -2380,6 +2404,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 								b, _ := json.Marshal(people.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
@@ -2428,6 +2453,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -2450,6 +2476,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 								b, _ := json.Marshal(people.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
@@ -2498,6 +2525,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -2520,6 +2548,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 								b, _ := json.Marshal(people.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
@@ -2568,6 +2597,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -2590,6 +2620,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 								b, _ := json.Marshal(people.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
@@ -2638,6 +2669,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -2660,6 +2692,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 								b, _ := json.Marshal(people.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
@@ -2708,6 +2741,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -2730,6 +2764,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 								b, _ := json.Marshal(people.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
@@ -2778,6 +2813,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -2800,6 +2836,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 								b, _ := json.Marshal(people.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
@@ -2848,6 +2885,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -2870,6 +2908,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 								b, _ := json.Marshal(people.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
@@ -2918,6 +2957,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -2940,6 +2980,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 								b, _ := json.Marshal(people.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
@@ -2988,6 +3029,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -3010,6 +3052,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 								b, _ := json.Marshal(people.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
@@ -3045,6 +3088,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -3067,6 +3111,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 								b, _ := json.Marshal(people.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
@@ -3102,6 +3147,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -3124,6 +3170,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 								b, _ := json.Marshal(people.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
@@ -3159,6 +3206,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -3189,6 +3237,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 						s.State = map[string]json.RawMessage{
 							stepName: r,
 						}
+
 						return s
 					}(),
 					Services: RunContextServices{
@@ -3200,6 +3249,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 								b, _ := json.Marshal(people.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
@@ -3240,6 +3290,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -3262,6 +3313,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 								b, _ := json.Marshal(people.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
@@ -3297,6 +3349,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -3319,6 +3372,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 								b, _ := json.Marshal(people.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
@@ -3354,6 +3408,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -3376,6 +3431,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 								b, _ := json.Marshal(people.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
@@ -3411,6 +3467,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -3432,6 +3489,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 								b, _ := json.Marshal(people.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
@@ -3480,6 +3538,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							Signer:             "",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -3502,6 +3561,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 								b, _ := json.Marshal(people.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
@@ -3550,6 +3610,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							Signer:             "",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -3572,6 +3633,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 								b, _ := json.Marshal(people.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
@@ -3620,6 +3682,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							Signer:             "",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -3642,6 +3705,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 								b, _ := json.Marshal(people.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
@@ -3677,6 +3741,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -3699,6 +3764,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 								b, _ := json.Marshal(people.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
@@ -3734,6 +3800,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -3764,6 +3831,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 						s.State = map[string]json.RawMessage{
 							stepName: r,
 						}
+
 						return s
 					}(),
 					Services: RunContextServices{
@@ -3775,6 +3843,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 								b, _ := json.Marshal(people.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
@@ -3815,6 +3884,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -3844,6 +3914,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 						s.State = map[string]json.RawMessage{
 							stepName: r,
 						}
+
 						return s
 					}(),
 					Services: RunContextServices{
@@ -3855,6 +3926,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 								b, _ := json.Marshal(people.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
@@ -3895,6 +3967,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -3924,6 +3997,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 						s.State = map[string]json.RawMessage{
 							stepName: r,
 						}
+
 						return s
 					}(),
 					Services: RunContextServices{
@@ -3935,6 +4009,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 								b, _ := json.Marshal(people.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
@@ -3975,6 +4050,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -4001,6 +4077,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 						s.State = map[string]json.RawMessage{
 							stepName: r,
 						}
+
 						return s
 					}(),
 					Services: RunContextServices{
@@ -4012,6 +4089,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 								b, _ := json.Marshal(people.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
@@ -4052,6 +4130,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -4082,6 +4161,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 						s.State = map[string]json.RawMessage{
 							stepName: r,
 						}
+
 						return s
 					}(),
 					Services: RunContextServices{
@@ -4093,6 +4173,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 								b, _ := json.Marshal(people.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
@@ -4133,6 +4214,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},

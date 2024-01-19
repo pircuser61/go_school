@@ -152,6 +152,7 @@ func Test_createGoNotificationBlock(t *testing.T) {
 							Text:            "",
 							Subject:         "",
 						})
+
 						return r
 					}(),
 					Sockets: next,
@@ -185,6 +186,7 @@ func Test_createGoNotificationBlock(t *testing.T) {
 							Text:            "",
 							Subject:         "",
 						})
+
 						return r
 					}(),
 					Sockets: next,
@@ -218,6 +220,7 @@ func Test_createGoNotificationBlock(t *testing.T) {
 							Text:            text,
 							Subject:         subject,
 						})
+
 						return r
 					}(),
 					Sockets: next,
@@ -251,6 +254,7 @@ func Test_createGoNotificationBlock(t *testing.T) {
 							Text:            text,
 							Subject:         subject,
 						})
+
 						return r
 					}(),
 					Sockets: next,
@@ -299,6 +303,7 @@ func Test_createGoNotificationBlock(t *testing.T) {
 							Text:            text,
 							Subject:         subject,
 						})
+
 						return r
 					}(),
 					Sockets: next,

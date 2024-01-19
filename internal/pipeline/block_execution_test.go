@@ -63,6 +63,7 @@ func TestExecution_Next(t *testing.T) {
 				State: &ExecutionData{
 					Decision: func() *ExecutionDecision {
 						res := ExecutionDecisionExecuted
+
 						return &res
 					}(),
 				},
@@ -79,6 +80,7 @@ func TestExecution_Next(t *testing.T) {
 				State: &ExecutionData{
 					Decision: func() *ExecutionDecision {
 						res := ExecutionDecisionSentEdit
+
 						return &res
 					}(),
 					EditingApp: nil,
@@ -206,6 +208,7 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 						Storage: myStorage,
 						SLAService: func() sla.Service {
 							slaMock := sla.NewSLAService(nil)
+
 							return slaMock
 						}(),
 					},
@@ -239,6 +242,7 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 							WorkType:           &workType,
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -260,6 +264,7 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 						Storage: myStorage,
 						SLAService: func() sla.Service {
 							slaMock := sla.NewSLAService(nil)
+
 							return slaMock
 						}(),
 					},
@@ -290,6 +295,7 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 						Storage: myStorage,
 						SLAService: func() sla.Service {
 							slaMock := sla.NewSLAService(nil)
+
 							return slaMock
 						}(),
 					},
@@ -323,6 +329,7 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 							WorkType:           &workType,
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -344,6 +351,7 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 						Storage: myStorage,
 						SLAService: func() sla.Service {
 							slaMock := sla.NewSLAService(nil)
+
 							return slaMock
 						}(),
 					},
@@ -372,6 +380,7 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 					Services: RunContextServices{
 						SLAService: func() sla.Service {
 							slaMock := sla.NewSLAService(nil)
+
 							return slaMock
 						}(),
 					},
@@ -389,6 +398,7 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 						s.State = map[string]json.RawMessage{
 							example: r,
 						}
+
 						return s
 					}(),
 				},
@@ -421,6 +431,7 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 							WorkType:           &workType,
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -442,6 +453,7 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 					Services: RunContextServices{
 						SLAService: func() sla.Service {
 							slaMock := sla.NewSLAService(nil)
+
 							return slaMock
 						}(),
 					},
@@ -460,6 +472,7 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 							example: r,
 						}
 						s.Steps = []string{example}
+
 						return s
 					}(),
 				},
@@ -666,6 +679,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 					Services: RunContextServices{
 						SLAService: func() sla.Service {
 							slaMock := sla.NewSLAService(nil)
+
 							return slaMock
 						}(),
 						ServiceDesc: func() *servicedesc.Service {
@@ -678,6 +692,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
@@ -732,6 +747,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 					Services: RunContextServices{
 						SLAService: func() sla.Service {
 							slaMock := sla.NewSLAService(nil)
+
 							return slaMock
 						}(),
 						ServiceDesc: func() *servicedesc.Service {
@@ -744,6 +760,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
@@ -797,6 +814,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 					Services: RunContextServices{
 						SLAService: func() sla.Service {
 							slaMock := sla.NewSLAService(nil)
+
 							return slaMock
 						}(),
 						ServiceDesc: func() *servicedesc.Service {
@@ -809,6 +827,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
@@ -863,6 +882,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 					Services: RunContextServices{
 						SLAService: func() sla.Service {
 							slaMock := sla.NewSLAService(nil)
+
 							return slaMock
 						}(),
 						ServiceDesc: func() *servicedesc.Service {
@@ -875,6 +895,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
@@ -929,6 +950,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 					Services: RunContextServices{
 						SLAService: func() sla.Service {
 							slaMock := sla.NewSLAService(nil)
+
 							return slaMock
 						}(),
 						ServiceDesc: func() *servicedesc.Service {
@@ -941,6 +963,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
@@ -995,6 +1018,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 					Services: RunContextServices{
 						SLAService: func() sla.Service {
 							slaMock := sla.NewSLAService(nil)
+
 							return slaMock
 						}(),
 						ServiceDesc: func() *servicedesc.Service {
@@ -1007,6 +1031,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
@@ -1061,6 +1086,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 					Services: RunContextServices{
 						SLAService: func() sla.Service {
 							slaMock := sla.NewSLAService(nil)
+
 							return slaMock
 						}(),
 						ServiceDesc: func() *servicedesc.Service {
@@ -1073,6 +1099,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
@@ -1168,6 +1195,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
@@ -1222,6 +1250,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 					Services: RunContextServices{
 						SLAService: func() sla.Service {
 							slaMock := sla.NewSLAService(nil)
+
 							return slaMock
 						}(),
 						ServiceDesc: func() *servicedesc.Service {
@@ -1234,6 +1263,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
@@ -1323,6 +1353,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 					Services: RunContextServices{
 						SLAService: func() sla.Service {
 							slaMock := sla.NewSLAService(nil)
+
 							return slaMock
 						}(),
 						ServiceDesc: func() *servicedesc.Service {
@@ -1335,6 +1366,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
@@ -1394,6 +1426,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
@@ -1448,6 +1481,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 					Services: RunContextServices{
 						SLAService: func() sla.Service {
 							slaMock := sla.NewSLAService(nil)
+
 							return slaMock
 						}(),
 						ServiceDesc: func() *servicedesc.Service {
@@ -1460,6 +1494,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
@@ -1518,6 +1553,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
@@ -1577,6 +1613,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
@@ -1636,6 +1673,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
@@ -1688,6 +1726,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 					Services: RunContextServices{
 						SLAService: func() sla.Service {
 							slaMock := sla.NewSLAService(nil)
+
 							return slaMock
 						}(),
 						ServiceDesc: func() *servicedesc.Service {
@@ -1700,6 +1739,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
@@ -1759,6 +1799,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
@@ -1812,6 +1853,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 					Services: RunContextServices{
 						SLAService: func() sla.Service {
 							slaMock := sla.NewSLAService(nil)
+
 							return slaMock
 						}(),
 						ServiceDesc: func() *servicedesc.Service {
@@ -1824,6 +1866,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
@@ -1870,6 +1913,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 					},
 					Decision: func() *ExecutionDecision {
 						res := ExecutionDecisionSentEdit
+
 						return &res
 					}(),
 				},
@@ -1887,6 +1931,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
@@ -1959,6 +2004,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 					Services: RunContextServices{
 						SLAService: func() sla.Service {
 							slaMock := sla.NewSLAService(nil)
+
 							return slaMock
 						}(),
 						People: func() *people.Service {
@@ -1974,6 +2020,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
@@ -2027,6 +2074,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 					Services: RunContextServices{
 						SLAService: func() sla.Service {
 							slaMock := sla.NewSLAService(nil)
+
 							return slaMock
 						}(),
 						ServiceDesc: func() *servicedesc.Service {
@@ -2039,6 +2087,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,

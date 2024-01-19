@@ -211,6 +211,7 @@ func (ae *Env) updateStepInternal(ctx c.Context, data *updateStepData) bool {
 	txStorage, transactionErr := ae.DB.StartTransaction(ctx)
 	if transactionErr != nil {
 		log.WithError(transactionErr).Error("couldn't set update step")
+
 		return false
 	}
 

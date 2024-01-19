@@ -770,6 +770,7 @@ func setLinkIDRequest(replyID, linkID string, addInfo []AdditionalInfo) (string,
 	for i := range addInfo {
 		if addInfo[i].ID == linkID {
 			addInfo[i].LinkID = &replyID
+
 			return addInfo[i].Login, nil
 		}
 	}

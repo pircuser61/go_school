@@ -731,6 +731,7 @@ func (runCtx *BlockRunContext) handleInitiatorNotify(ctx c.Context, params handl
 		email, err = runCtx.Services.People.GetUserEmail(ctx, login)
 		if err != nil {
 			log.WithField("login", login).WithError(err).Warning("couldn't get email")
+
 			return nil
 		}
 
@@ -797,6 +798,7 @@ func ProcessBlockWithEndMapping(ctx c.Context, name string, bl *entity.EriusFunc
 	intStatus, stringStatus, err := runCtx.Services.Storage.GetTaskStatusWithReadableString(ctx, runCtx.TaskID)
 	if err != nil {
 		log.WithError(err).Error("couldn't get task status")
+
 		return nil
 	}
 

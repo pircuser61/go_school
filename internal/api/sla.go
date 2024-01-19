@@ -22,6 +22,7 @@ func (ae *Env) handleBreachSlA(ctx c.Context, item *db.StepBreachedSLA) {
 	txStorage, transactionErr := ae.DB.StartTransaction(ctx)
 	if transactionErr != nil {
 		log.WithError(transactionErr).Error("couldn't set SLA breach")
+
 		return
 	}
 

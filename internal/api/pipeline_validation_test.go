@@ -483,6 +483,7 @@ func TestValidation_SdBlueprintFilled(t *testing.T) {
 								r, _ := json.Marshal(&script.SdApplicationParams{
 									BlueprintID: "59d1a7e6-011d-11ed-b7f9-baa4bc97ef20",
 								})
+
 								return r
 							}(),
 						},
@@ -502,6 +503,7 @@ func TestValidation_SdBlueprintFilled(t *testing.T) {
 								r, _ := json.Marshal(&script.SdApplicationParams{
 									BlueprintID: "",
 								})
+
 								return r
 							}(),
 						},

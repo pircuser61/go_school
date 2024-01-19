@@ -268,6 +268,7 @@ func TestProcessBlock(t *testing.T) {
 								mock.MatchedBy(func(ctx context.Context) bool { return true }),
 								uuid.Nil,
 							).Return(false, nil)
+
 							return res
 						}(),
 						ServiceDesc: func() *servicedesc.Service {
@@ -280,6 +281,7 @@ func TestProcessBlock(t *testing.T) {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
@@ -489,6 +491,7 @@ func TestProcessBlock(t *testing.T) {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
@@ -506,10 +509,12 @@ func TestProcessBlock(t *testing.T) {
 						}(),
 						SLAService: func() sla.Service {
 							slaMock := sla.NewSLAService(nil)
+
 							return slaMock
 						}(),
 						HumanTasks: func() *human_tasks.Service {
 							service, _ := human_tasks.NewService(human_tasks.Config{})
+
 							return service
 						}(),
 					},

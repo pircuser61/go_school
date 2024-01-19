@@ -213,6 +213,7 @@ func (gb *GoNotificationBlock) Update(ctx context.Context) (interface{}, error) 
 	err = gb.RunContext.Services.Sender.SendNotification(ctx, emails, files, tpl)
 	if err != nil {
 		log.Println(err)
+
 		return nil, err
 	}
 

@@ -42,6 +42,7 @@ func TestAPIEnv_getClientIDFromToken(t *testing.T) {
 			got, err := ae.getClientIDFromToken(tt.token)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("getClientIDFromToken() error = %v, wantErr %v", err, tt.wantErr)
+
 				return
 			}
 			if got != tt.want {

@@ -369,6 +369,7 @@ func (gb *GoApproverBlock) setEditingAppLogFromPreviousBlock(ctx c.Context) {
 	data, ok := parentStep.State[gb.Name]
 	if !ok {
 		l.Error(funcName, "step state is not found: "+gb.Name)
+
 		return
 	}
 
@@ -376,6 +377,7 @@ func (gb *GoApproverBlock) setEditingAppLogFromPreviousBlock(ctx c.Context) {
 
 	if err = json.Unmarshal(data, &parentState); err != nil {
 		l.Error(funcName, "invalid format of go-approver-block state")
+
 		return
 	}
 
@@ -475,18 +477,21 @@ func (gb *GoApproverBlock) setPreviousApprovers(ctx c.Context) {
 	parentStep, err = gb.RunContext.Services.Storage.GetParentTaskStepByName(ctx, gb.RunContext.TaskID, gb.Name)
 	if err != nil || parentStep == nil {
 		l.Error(err)
+
 		return
 	}
 
 	data, ok := parentStep.State[gb.Name]
 	if !ok {
 		l.Error(funcName, "parent step state is not found: "+gb.Name)
+
 		return
 	}
 
 	var parentState ApproverData
 	if err = json.Unmarshal(data, &parentState); err != nil {
 		l.Error(funcName, "invalid format of go-approver-block state")
+
 		return
 	}
 

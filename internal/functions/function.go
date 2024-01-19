@@ -74,6 +74,7 @@ func convertToParamMetadata(source string) (result map[string]ParamMetadata, err
 	unmarshalErr := json.Unmarshal([]byte(source), &result)
 	if unmarshalErr != nil {
 		err = unmarshalErr
+
 		return nil, err
 	}
 

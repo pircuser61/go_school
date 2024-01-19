@@ -56,7 +56,7 @@ type CountTasks struct {
 }
 
 type TaskAction struct {
-	ID                  string                 `json:"id"`
+	ID                 string                 `json:"id"`
 	Title              string                 `json:"title"`
 	ButtonType         string                 `json:"button_type"`
 	NodeType           string                 `json:"node_type"`
@@ -245,6 +245,7 @@ func (t *TaskUpdate) Validate() error {
 
 func (t *TaskUpdate) IsApplicationAction() bool {
 	_, ok := checkTaskUpdateAppMap[t.Action]
+
 	return ok
 }
 

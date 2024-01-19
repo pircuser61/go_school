@@ -214,6 +214,7 @@ func Test_createGoFormBlock(t *testing.T) {
 					VarStore: func() *store.VariableStore {
 						s := store.NewStore()
 						s.SetValue("form.executor", executor)
+
 						return s
 					}(),
 				},
@@ -306,6 +307,7 @@ func Test_createGoFormBlock(t *testing.T) {
 							"a": float64(100),
 							"b": float64(200),
 						})
+
 						return s
 					}(),
 				},
@@ -584,6 +586,7 @@ func TestGoFormBlock_Update(t *testing.T) {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
@@ -617,6 +620,7 @@ func TestGoFormBlock_Update(t *testing.T) {
 				IsFilled: true,
 				ActualExecutor: func() *string {
 					l := login
+
 					return &l
 				}(),
 				ChangesLog: []ChangesLogItem{
@@ -683,6 +687,7 @@ func TestGoFormBlock_Update(t *testing.T) {
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
@@ -716,6 +721,7 @@ func TestGoFormBlock_Update(t *testing.T) {
 				IsFilled: true,
 				ActualExecutor: func() *string {
 					l := login
+
 					return &l
 				}(),
 				ChangesLog: []ChangesLogItem{

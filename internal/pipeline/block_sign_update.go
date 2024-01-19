@@ -273,6 +273,7 @@ func (gb *GoSignBlock) checkAdditionalApproverNotAdded(login string) bool {
 func (gb *GoSignBlock) handleBreachedSLA(ctx c.Context) error {
 	if gb.State.CheckSLA == nil || !*gb.State.CheckSLA {
 		gb.State.SLAChecked = true
+
 		return nil
 	}
 
@@ -391,6 +392,7 @@ func (gb *GoSignBlock) handleChangeWorkStatus(ctx c.Context, login string) error
 			})
 		if err != nil {
 			log.WithError(err).Error("cannot delete signChangeWorkStatus timer")
+
 			return err
 		}
 
@@ -408,6 +410,7 @@ func (gb *GoSignBlock) handleChangeWorkStatus(ctx c.Context, login string) error
 	})
 	if err != nil {
 		log.WithError(err).Error("cannot create signChangeWorkStatus timer")
+
 		return err
 	}
 
