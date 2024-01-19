@@ -12,7 +12,7 @@ import (
 	"gitlab.services.mts.ru/abp/myosotis/observability"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
-	file_registry "gitlab.services.mts.ru/jocasta/pipeliner/internal/file-registry"
+	file_registry "gitlab.services.mts.ru/jocasta/pipeliner/internal/fileregistry"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/forms"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/functions"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/hrgate"
@@ -30,7 +30,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/statistic"
 )
 
-type APIEnv struct {
+type Env struct {
 	Log                     logger.Logger
 	Metrics                 metrics.Metrics
 	DB                      db.Database
@@ -55,7 +55,7 @@ type APIEnv struct {
 }
 
 type ServerParam struct {
-	APIEnv            *APIEnv
+	APIEnv            *Env
 	SSOService        *sso.Service
 	PeopleService     *people.Service
 	TimeoutMiddleware time.Duration

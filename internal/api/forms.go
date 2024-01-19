@@ -19,21 +19,21 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
-func (ae *APIEnv) GetFormsChangelog(w http.ResponseWriter, r *http.Request, params GetFormsChangelogParams) {
+func (ae *Env) GetFormsChangelog(w http.ResponseWriter, r *http.Request, params GetFormsChangelogParams) {
 	ctx, s := trace.StartSpan(r.Context(), "get_forms_changelog")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
-	errorHandler := newHttpErrorHandler(log, w)
+	errorHandler := newHTTPErrorHandler(log, w)
 
-	currentUi, err := user.GetEffectiveUserInfoFromCtx(ctx)
+	currentUI, err := user.GetEffectiveUserInfoFromCtx(ctx)
 	if err != nil {
 		errorHandler.handleError(NoUserInContextError, err)
 
 		return
 	}
 
-	delegations, err := ae.HumanTasks.GetDelegationsToLogin(ctx, currentUi.Username)
+	delegations, err := ae.HumanTasks.GetDelegationsToLogin(ctx, currentUI.Username)
 	if err != nil {
 		errorHandler.handleError(GetDelegationsError, err)
 
@@ -44,9 +44,9 @@ func (ae *APIEnv) GetFormsChangelog(w http.ResponseWriter, r *http.Request, para
 	delegationsByExecution := delegations.FilterByType("execution")
 
 	dbTask, err := ae.DB.GetTask(ctx,
-		delegationsByApprovement.GetUserInArrayWithDelegators([]string{currentUi.Username}),
-		delegationsByExecution.GetUserInArrayWithDelegators([]string{currentUi.Username}),
-		currentUi.Username,
+		delegationsByApprovement.GetUserInArrayWithDelegators([]string{currentUI.Username}),
+		delegationsByExecution.GetUserInArrayWithDelegators([]string{currentUI.Username}),
+		currentUI.Username,
 		params.WorkNumber)
 	if err != nil {
 		errorHandler.handleError(GetTaskError, err)
@@ -87,15 +87,15 @@ func (ae *APIEnv) GetFormsChangelog(w http.ResponseWriter, r *http.Request, para
 		)
 
 		result[i] = FormChangelogItem{
-			SchemaId:        &formData.SchemaId,
+			SchemaId:        &formData.SchemaID,
 			CreatedAt:       &createdAtString,
 			Description:     &changelog.Description,
 			ApplicationBody: &changelog.ApplicationBody,
 			Executor:        &changelog.Executor,
 		}
 
-		if !slices.Contains([]string{changelog.Executor}, currentUi.Username) &&
-			currentUi.Username == dbTask.Author && formData.HideExecutorFromInitiator {
+		if !slices.Contains([]string{changelog.Executor}, currentUI.Username) &&
+			currentUI.Username == dbTask.Author && formData.HideExecutorFromInitiator {
 			result[i].Executor = utils.GetAddressOfValue(hiddenUserLogin)
 		}
 	}

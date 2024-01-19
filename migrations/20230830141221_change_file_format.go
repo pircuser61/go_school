@@ -36,7 +36,7 @@ type approverState struct {
 	ApproversGroupID   json.RawMessage `json:"approvers_group_id"`
 	ApproversGroupName json.RawMessage `json:"approvers_group_name"`
 
-	ApproversGroupIdPath json.RawMessage `json:"approvers_group_id_path,omitempty"`
+	ApproversGroupIDPath json.RawMessage `json:"approvers_group_id_path,omitempty"`
 
 	AddInfo ArrAdditionalInfo `json:"additional_info,omitempty"`
 
@@ -231,11 +231,11 @@ func (at *ApproverEditingApp) UnmarshalJSON(b []byte) error {
 }
 
 type AdditionalInfo struct {
-	Id          json.RawMessage     `json:"id"`
+	ID          json.RawMessage     `json:"id"`
 	Login       json.RawMessage     `json:"login"`
 	Comment     json.RawMessage     `json:"comment"`
 	Attachments []entity.Attachment `json:"attachments"`
-	LinkId      json.RawMessage     `json:"link_id,omitempty"`
+	LinkID      json.RawMessage     `json:"link_id,omitempty"`
 	Type        json.RawMessage     `json:"type"`
 	CreatedAt   json.RawMessage     `json:"created_at"`
 	DelegateFor json.RawMessage     `json:"delegate_for"`
@@ -283,11 +283,11 @@ func (at *ArrAdditionalInfo) UnmarshalJSON(b []byte) error {
 
 func (at *AdditionalInfo) UnmarshalJSON(b []byte) error {
 	var atTemp struct {
-		Id          json.RawMessage     `json:"id"`
+		ID          json.RawMessage     `json:"id"`
 		Login       json.RawMessage     `json:"login"`
 		Comment     json.RawMessage     `json:"comment"`
 		Attachments []entity.Attachment `json:"attachments"`
-		LinkId      json.RawMessage     `json:"link_id,omitempty"`
+		LinkID      json.RawMessage     `json:"link_id,omitempty"`
 		Type        json.RawMessage     `json:"type"`
 		CreatedAt   json.RawMessage     `json:"created_at"`
 		DelegateFor json.RawMessage     `json:"delegate_for"`
@@ -421,7 +421,7 @@ type ExecutionData struct {
 	ExecutorsGroupID   json.RawMessage `json:"executors_group_id"`
 	ExecutorsGroupName json.RawMessage `json:"executors_group_name"`
 
-	ExecutorsGroupIdPath json.RawMessage `json:"executors_group_id_path,omitempty"`
+	ExecutorsGroupIDPath json.RawMessage `json:"executors_group_id_path,omitempty"`
 
 	IsTakenInWork               json.RawMessage `json:"is_taken_in_work"`
 	IsExecutorVariablesResolved json.RawMessage `json:"is_executor_variables_resolved"`
@@ -816,11 +816,11 @@ func upChangeFileFormat(tx *sql.Tx) error {
 
 		var (
 			state string
-			Id    string
+			ID    string
 		)
 
 		scanErr := rows.Scan(
-			&Id,
+			&ID,
 			&state,
 		)
 		if scanErr != nil {
@@ -847,17 +847,17 @@ func upChangeFileFormat(tx *sql.Tx) error {
 			if data != nil {
 				err := json.Unmarshal(val, &data)
 				if err != nil {
-					fmt.Println(Id)
+					fmt.Println(ID)
 
 					return err
 				}
 
-				resJson, mErr := json.Marshal(data)
+				resJSON, mErr := json.Marshal(data)
 				if mErr != nil {
 					return mErr
 				}
 
-				resultMap[key] = resJson
+				resultMap[key] = resJSON
 			} else {
 				resultMap[key] = val
 			}
@@ -865,7 +865,7 @@ func upChangeFileFormat(tx *sql.Tx) error {
 
 		result = append(result, resultStruct{
 			resultMap: resultMap,
-			id:        Id,
+			id:        ID,
 		})
 	}
 
@@ -881,7 +881,7 @@ func upChangeFileFormat(tx *sql.Tx) error {
 	return nil
 }
 
-func downChangeFileFormat(tx *sql.Tx) error {
+func downChangeFileFormat(_ *sql.Tx) error {
 	// This code is executed when the migration is rolled back.
 	return nil
 }

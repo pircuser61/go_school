@@ -39,7 +39,7 @@ type TaskStorager interface {
 	GetPipelineTasks(ctx c.Context, pipelineID uuid.UUID) (*e.EriusTasks, error)
 	GetTask(ctx c.Context, delegationsApprover, delegationsExecution []string, currentUser, workNumber string) (*e.EriusTask, error)
 	GetTaskSteps(ctx c.Context, id uuid.UUID) (e.TaskSteps, error)
-	GetUnfinishedTaskStepsByWorkIdAndStepType(ctx c.Context, id uuid.UUID, stepType string, in *e.TaskUpdate) (e.TaskSteps, error)
+	GetUnfinishedTaskStepsByWorkIDAndStepType(ctx c.Context, id uuid.UUID, stepType string, in *e.TaskUpdate) (e.TaskSteps, error)
 	GetTaskStepByID(ctx c.Context, id uuid.UUID) (*e.Step, error)
 	GetParentTaskStepByName(ctx c.Context, workID uuid.UUID, stepName string) (*e.Step, error)
 	GetTaskStepByName(ctx c.Context, workID uuid.UUID, stepName string) (*e.Step, error)
@@ -86,7 +86,7 @@ type UpdateTaskRate struct {
 }
 
 type MemberAction struct {
-	Id     string
+	ID     string
 	Type   string
 	Params map[string]interface{}
 }
@@ -125,7 +125,7 @@ type SaveStepRequest struct {
 }
 
 type UpdateStepRequest struct {
-	Id          uuid.UUID
+	ID          uuid.UUID
 	StepName    string
 	Content     []byte
 	BreakPoints []string

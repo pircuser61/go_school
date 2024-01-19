@@ -125,7 +125,7 @@ func (t *TransportForPeople) RoundTrip(req *http.Request) (*http.Response, error
 }
 
 type Service struct {
-	SearchUrl string
+	SearchURL string
 
 	Cli *http.Client
 	Sso *sso.Service
@@ -149,12 +149,12 @@ func NewService(c Config, ssoS *sso.Service) (*Service, error) {
 		Sso: ssoS,
 	}
 
-	search, err := s.pathBuilder(c.Url, searchPath)
+	search, err := s.pathBuilder(c.URL, searchPath)
 	if err != nil {
 		return nil, err
 	}
 
-	s.SearchUrl = search
+	s.SearchURL = search
 
 	return s, nil
 }
@@ -252,7 +252,7 @@ func (s *Service) getUser(ctx context.Context, search string, onlyEnabled bool) 
 		err error
 	)
 
-	req, err = http.NewRequestWithContext(ctxLocal, http.MethodGet, s.SearchUrl, http.NoBody)
+	req, err = http.NewRequestWithContext(ctxLocal, http.MethodGet, s.SearchURL, http.NoBody)
 	if err != nil {
 		return nil, err
 	}
@@ -304,7 +304,7 @@ func (s *Service) getUsers(ctx context.Context, search string, limit int, filter
 		err error
 	)
 
-	req, err = http.NewRequestWithContext(ctxLocal, http.MethodGet, s.SearchUrl, http.NoBody)
+	req, err = http.NewRequestWithContext(ctxLocal, http.MethodGet, s.SearchURL, http.NoBody)
 	if err != nil {
 		return nil, err
 	}

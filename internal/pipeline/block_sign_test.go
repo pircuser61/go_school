@@ -402,12 +402,12 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 
 	next := []entity.Socket{
 		{
-			Id:           DefaultSocketID,
+			ID:           DefaultSocketID,
 			Title:        script.DefaultSocketTitle,
 			NextBlockIds: []string{"next_0"},
 		},
 		{
-			Id:           rejectedSocketID,
+			ID:           rejectedSocketID,
 			Title:        script.RejectSocketTitle,
 			NextBlockIds: []string{"next_1"},
 		},
@@ -2305,12 +2305,12 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 
 	next := []entity.Socket{
 		{
-			Id:           DefaultSocketID,
+			ID:           DefaultSocketID,
 			Title:        script.DefaultSocketTitle,
 			NextBlockIds: []string{"next_0"},
 		},
 		{
-			Id:           rejectedSocketID,
+			ID:           rejectedSocketID,
 			Title:        script.RejectSocketTitle,
 			NextBlockIds: []string{"next_1"},
 		},
@@ -2386,10 +2386,10 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							plMock.Cli = httpClient
 
@@ -2456,10 +2456,10 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							plMock.Cli = httpClient
 
@@ -2526,10 +2526,10 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							plMock.Cli = httpClient
 
@@ -2596,10 +2596,10 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							plMock.Cli = httpClient
 
@@ -2666,10 +2666,10 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							plMock.Cli = httpClient
 
@@ -2736,10 +2736,10 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							plMock.Cli = httpClient
 
@@ -2806,10 +2806,10 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							plMock.Cli = httpClient
 
@@ -2876,10 +2876,10 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							plMock.Cli = httpClient
 
@@ -2946,10 +2946,10 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							plMock.Cli = httpClient
 
@@ -3016,10 +3016,10 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							plMock.Cli = httpClient
 
@@ -3073,10 +3073,10 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							plMock.Cli = httpClient
 
@@ -3130,10 +3130,10 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							plMock.Cli = httpClient
 
@@ -3206,10 +3206,10 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							plMock.Cli = httpClient
 
@@ -3268,10 +3268,10 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							plMock.Cli = httpClient
 
@@ -3325,10 +3325,10 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							plMock.Cli = httpClient
 
@@ -3382,10 +3382,10 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							plMock.Cli = httpClient
 
@@ -3438,10 +3438,10 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							plMock.Cli = httpClient
 
@@ -3508,10 +3508,10 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							plMock.Cli = httpClient
 
@@ -3578,10 +3578,10 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							plMock.Cli = httpClient
 
@@ -3648,10 +3648,10 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							plMock.Cli = httpClient
 
@@ -3705,10 +3705,10 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							plMock.Cli = httpClient
 
@@ -3781,10 +3781,10 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							plMock.Cli = httpClient
 
@@ -3861,10 +3861,10 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							plMock.Cli = httpClient
 
@@ -3941,10 +3941,10 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							plMock.Cli = httpClient
 
@@ -4018,10 +4018,10 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							plMock.Cli = httpClient
 
@@ -4099,10 +4099,10 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							plMock.Cli = httpClient
 

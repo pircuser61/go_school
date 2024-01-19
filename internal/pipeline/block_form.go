@@ -39,10 +39,10 @@ type ChangesLogItem struct {
 
 type FormData struct {
 	FormExecutorType       script.FormExecutorType `json:"form_executor_type"`
-	FormGroupId            string                  `json:"form_group_id"`
+	FormGroupID            string                  `json:"form_group_id"`
 	FormExecutorsGroupName string                  `json:"form_executors_group_name"`
-	FormGroupIdPath        *string                 `json:"form_group_id_path,omitempty"`
-	SchemaId               string                  `json:"schema_id"`
+	FormGroupIDPath        *string                 `json:"form_group_id_path,omitempty"`
+	SchemaID               string                  `json:"schema_id"`
 	Executors              map[string]struct{}     `json:"executors"`
 	InitialExecutors       map[string]struct{}     `json:"initial_executors"`
 	Description            string                  `json:"description"`
@@ -165,7 +165,7 @@ func (gb *GoFormBlock) Deadlines(ctx c.Context) ([]Deadline, error) {
 	deadlines := make([]Deadline, 0, 2)
 
 	if gb.State.CheckSLA {
-		slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDTO{
+		slaInfoPtr, getSLAInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDTO{
 			TaskCompletionIntervals: []entity.TaskCompletionInterval{{
 				StartedAt:  gb.RunContext.CurrBlockStartTime,
 				FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100),
@@ -173,8 +173,8 @@ func (gb *GoFormBlock) Deadlines(ctx c.Context) ([]Deadline, error) {
 			WorkType: sla.WorkHourType(gb.State.WorkType),
 		})
 
-		if getSlaInfoErr != nil {
-			return nil, getSlaInfoErr
+		if getSLAInfoErr != nil {
+			return nil, getSLAInfoErr
 		}
 
 		if !gb.State.SLAChecked {
@@ -335,22 +335,22 @@ func (gb *GoFormBlock) handleNotifications(ctx c.Context) error {
 		}
 
 		if !gb.State.IsTakenInWork {
-			slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDTO{
+			slaInfoPtr, getSLAInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDTO{
 				TaskCompletionIntervals: []entity.TaskCompletionInterval{{
 					StartedAt:  gb.RunContext.CurrBlockStartTime,
 					FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100),
 				}},
 				WorkType: sla.WorkHourType(gb.State.WorkType),
 			})
-			if getSlaInfoErr != nil {
-				return getSlaInfoErr
+			if getSLAInfoErr != nil {
+				return getSLAInfoErr
 			}
 
 			emails[em] = mail.NewFormExecutionNeedTakeInWorkTpl(
 				&mail.NewFormExecutionNeedTakeInWorkDto{
 					WorkNumber: gb.RunContext.WorkNumber,
 					WorkTitle:  gb.RunContext.NotifName,
-					SdUrl:      gb.RunContext.Services.Sender.SdAddress,
+					SdURL:      gb.RunContext.Services.Sender.SdAddress,
 					Mailto:     gb.RunContext.Services.Sender.FetchEmail,
 					BlockName:  BlockGoFormID,
 					Login:      login,
@@ -359,15 +359,15 @@ func (gb *GoFormBlock) handleNotifications(ctx c.Context) error {
 				gb.State.IsReentry,
 			)
 		} else {
-			slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDTO{
+			slaInfoPtr, getSLAInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDTO{
 				TaskCompletionIntervals: []entity.TaskCompletionInterval{{
 					StartedAt:  gb.RunContext.CurrBlockStartTime,
 					FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100),
 				}},
 				WorkType: sla.WorkHourType(gb.State.WorkType),
 			})
-			if getSlaInfoErr != nil {
-				return getSlaInfoErr
+			if getSLAInfoErr != nil {
+				return getSLAInfoErr
 			}
 
 			emails[em] = mail.NewRequestFormExecutionInfoTpl(

@@ -10,10 +10,12 @@ func init() {
 	goose.AddMigration(upMembers__, downMembers__)
 }
 
-func upMembers__(tx *sql.Tx) error {
+//nolint:revive //функция upMembers уже сущестует
+func upMembers__(_ *sql.Tx) error {
 	return nil
 }
 
-func downMembers__(tx *sql.Tx) error {
+//nolint:revive //функция downMembers уже сущестует
+func downMembers__(_ *sql.Tx) error {
 	return nil
 }

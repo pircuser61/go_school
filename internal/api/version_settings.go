@@ -21,7 +21,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 )
 
-func (ae *APIEnv) convertProcessSettingsToFlat(ctx c.Context, ps *e.ProcessSettings) error {
+func (ae *Env) convertProcessSettingsToFlat(ctx c.Context, ps *e.ProcessSettings) error {
 	if ps.StartSchemaRaw != nil {
 		start, err := ae.Forms.MakeFlatSchema(ctx, ps.StartSchemaRaw)
 		if err != nil {
@@ -43,7 +43,7 @@ func (ae *APIEnv) convertProcessSettingsToFlat(ctx c.Context, ps *e.ProcessSetti
 	return nil
 }
 
-func (ae *APIEnv) SaveVersionTaskSubscriptionSettings(w http.ResponseWriter, req *http.Request, versionID string) {
+func (ae *Env) SaveVersionTaskSubscriptionSettings(w http.ResponseWriter, req *http.Request, versionID string) {
 	ctx, s := trace.StartSpan(req.Context(), "save_version_task_subscription_settings")
 	defer s.End()
 
@@ -138,12 +138,12 @@ func (ae *APIEnv) SaveVersionTaskSubscriptionSettings(w http.ResponseWriter, req
 	}
 }
 
-func (ae *APIEnv) GetVersionSettings(w http.ResponseWriter, req *http.Request, versionID string) {
+func (ae *Env) GetVersionSettings(w http.ResponseWriter, req *http.Request, versionID string) {
 	ctx, s := trace.StartSpan(req.Context(), "get_version_settings")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
-	errorHandler := newHttpErrorHandler(log, w)
+	errorHandler := newHTTPErrorHandler(log, w)
 
 	processSettings, err := ae.DB.GetVersionSettings(ctx, versionID)
 	if err != nil {
@@ -154,7 +154,7 @@ func (ae *APIEnv) GetVersionSettings(w http.ResponseWriter, req *http.Request, v
 
 	slaSettings, err := ae.DB.GetSLAVersionSettings(ctx, versionID)
 	if err != nil {
-		errorHandler.handleError(GetProcessSlaSettingsError, err)
+		errorHandler.handleError(GetProcessSLASettingsError, err)
 
 		return
 	}
@@ -192,7 +192,7 @@ func (ae *APIEnv) GetVersionSettings(w http.ResponseWriter, req *http.Request, v
 		externalSystems = append(
 			externalSystems,
 			e.ExternalSystem{
-				Id:               id.String(),
+				ID:               id.String(),
 				Name:             systemsNames[id.String()],
 				AllowRunAsOthers: externalSystemSettings.AllowRunAsOthers,
 				OutputSettings:   externalSystemSettings.OutputSettings,
@@ -233,12 +233,12 @@ func (ae *APIEnv) GetVersionSettings(w http.ResponseWriter, req *http.Request, v
 }
 
 //nolint:dupl //its not duplicate
-func (ae *APIEnv) SaveVersionSettings(w http.ResponseWriter, req *http.Request, versionID string, params SaveVersionSettingsParams) {
+func (ae *Env) SaveVersionSettings(w http.ResponseWriter, req *http.Request, versionID string, params SaveVersionSettingsParams) {
 	ctx, s := trace.StartSpan(req.Context(), "save_version_settings")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
-	errorHandler := newHttpErrorHandler(log, w)
+	errorHandler := newHTTPErrorHandler(log, w)
 
 	b, err := io.ReadAll(req.Body)
 	defer req.Body.Close()
@@ -287,14 +287,14 @@ func (ae *APIEnv) SaveVersionSettings(w http.ResponseWriter, req *http.Request, 
 }
 
 //nolint:dupl //its not duplicate
-func (ae *APIEnv) SaveExternalSystemSettings(
+func (ae *Env) SaveExternalSystemSettings(
 	w http.ResponseWriter, req *http.Request, versionID, systemID string, params SaveExternalSystemSettingsParams,
 ) {
 	ctx, s := trace.StartSpan(req.Context(), "save_external_system_settings")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
-	errorHandler := newHttpErrorHandler(log, w)
+	errorHandler := newHTTPErrorHandler(log, w)
 
 	b, err := io.ReadAll(req.Body)
 	defer req.Body.Close()
@@ -314,7 +314,7 @@ func (ae *APIEnv) SaveExternalSystemSettings(
 		return
 	}
 
-	externalSystem.Id = systemID
+	externalSystem.ID = systemID
 
 	err = externalSystem.ValidateSchemas()
 	if err != nil {
@@ -337,12 +337,12 @@ func (ae *APIEnv) SaveExternalSystemSettings(
 	}
 }
 
-func (ae *APIEnv) RemoveExternalSystem(w http.ResponseWriter, req *http.Request, versionID, systemID string) {
+func (ae *Env) RemoveExternalSystem(w http.ResponseWriter, req *http.Request, versionID, systemID string) {
 	ctx, s := trace.StartSpan(req.Context(), "remove_external_system")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
-	errorHandler := newHttpErrorHandler(log, w)
+	errorHandler := newHTTPErrorHandler(log, w)
 
 	txStorage, transactionErr := ae.DB.StartTransaction(ctx)
 	if transactionErr != nil {
@@ -400,12 +400,12 @@ func (ae *APIEnv) RemoveExternalSystem(w http.ResponseWriter, req *http.Request,
 	}
 }
 
-func (ae *APIEnv) GetExternalSystemSettings(w http.ResponseWriter, req *http.Request, versionID, systemID string) {
+func (ae *Env) GetExternalSystemSettings(w http.ResponseWriter, req *http.Request, versionID, systemID string) {
 	ctx, s := trace.StartSpan(req.Context(), "get_external_system_settings")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
-	errorHandler := newHttpErrorHandler(log, w)
+	errorHandler := newHTTPErrorHandler(log, w)
 
 	externalSystemSettings, err := ae.DB.GetExternalSystemSettings(ctx, versionID, systemID)
 	if err != nil {
@@ -423,12 +423,12 @@ func (ae *APIEnv) GetExternalSystemSettings(w http.ResponseWriter, req *http.Req
 	}
 }
 
-func (ae *APIEnv) AddExternalSystemToVersion(w http.ResponseWriter, req *http.Request, versionID string) {
+func (ae *Env) AddExternalSystemToVersion(w http.ResponseWriter, req *http.Request, versionID string) {
 	ctx, s := trace.StartSpan(req.Context(), "add_external_system_to_version")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
-	errorHandler := newHttpErrorHandler(log, w)
+	errorHandler := newHTTPErrorHandler(log, w)
 
 	b, err := io.ReadAll(req.Body)
 	defer req.Body.Close()
@@ -463,12 +463,12 @@ func (ae *APIEnv) AddExternalSystemToVersion(w http.ResponseWriter, req *http.Re
 	}
 }
 
-func (ae *APIEnv) SaveVersionMainSettings(w http.ResponseWriter, req *http.Request, versionID string) {
+func (ae *Env) SaveVersionMainSettings(w http.ResponseWriter, req *http.Request, versionID string) {
 	ctx, s := trace.StartSpan(req.Context(), "save_version_main_settings")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
-	errorHandler := newHttpErrorHandler(log, w)
+	errorHandler := newHTTPErrorHandler(log, w)
 
 	b, err := io.ReadAll(req.Body)
 	if err != nil {
@@ -525,7 +525,7 @@ func (ae *APIEnv) SaveVersionMainSettings(w http.ResponseWriter, req *http.Reque
 
 	isValid := processSettings.ValidateSLA()
 	if !isValid {
-		er := ValidationSlaProcessSettingsError
+		er := ValidationSLAProcessSettingsError
 
 		log.Error(er.errorMessage(errors.New("Error while validating SlaSettings")))
 		errorHandler.sendError(er)
@@ -591,12 +591,12 @@ func (ae *APIEnv) SaveVersionMainSettings(w http.ResponseWriter, req *http.Reque
 	}
 }
 
-func (ae *APIEnv) SaveExternalSystemEndSettings(w http.ResponseWriter, r *http.Request, versionID, systemID string) {
+func (ae *Env) SaveExternalSystemEndSettings(w http.ResponseWriter, r *http.Request, versionID, systemID string) {
 	ctx, s := trace.StartSpan(r.Context(), "save_system_ending_settings")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
-	errorHandler := newHttpErrorHandler(log, w)
+	errorHandler := newHTTPErrorHandler(log, w)
 
 	b, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -632,7 +632,7 @@ func (ae *APIEnv) SaveExternalSystemEndSettings(w http.ResponseWriter, r *http.R
 		e.EndSystemSettings{
 			URL:            systemSettings.URL,
 			Method:         string(systemSettings.Method),
-			MicroserviceId: systemSettings.MicroserviceId,
+			MicroserviceID: systemSettings.MicroserviceId,
 		},
 	)
 	if err != nil {
@@ -642,7 +642,7 @@ func (ae *APIEnv) SaveExternalSystemEndSettings(w http.ResponseWriter, r *http.R
 	}
 }
 
-func (ae *APIEnv) DeleteExternalSystemEndSettings(w http.ResponseWriter, r *http.Request, versionID, systemID string) {
+func (ae *Env) DeleteExternalSystemEndSettings(w http.ResponseWriter, r *http.Request, versionID, systemID string) {
 	ctx, s := trace.StartSpan(r.Context(), "delete_system_ending_settings")
 	defer s.End()
 
@@ -659,19 +659,19 @@ func (ae *APIEnv) DeleteExternalSystemEndSettings(w http.ResponseWriter, r *http
 }
 
 func validateEndingSettings(s *e.ExternalSystem) {
-	if s.OutputSettings.MicroserviceId == "" ||
+	if s.OutputSettings.MicroserviceID == "" ||
 		s.OutputSettings.URL == "" ||
 		s.OutputSettings.Method == "" {
 		s.OutputSettings = nil
 	}
 }
 
-func (ae *APIEnv) AllowRunAsOthers(w http.ResponseWriter, r *http.Request, versionID, systemID string) {
+func (ae *Env) AllowRunAsOthers(w http.ResponseWriter, r *http.Request, versionID, systemID string) {
 	ctx, s := trace.StartSpan(r.Context(), "allow_run_as_others")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
-	errorHandler := newHttpErrorHandler(log, w)
+	errorHandler := newHTTPErrorHandler(log, w)
 
 	b, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -699,12 +699,12 @@ func (ae *APIEnv) AllowRunAsOthers(w http.ResponseWriter, r *http.Request, versi
 	}
 }
 
-func (ae *APIEnv) RemoveApprovalListSettings(w http.ResponseWriter, r *http.Request, versionID, listID string) {
+func (ae *Env) RemoveApprovalListSettings(w http.ResponseWriter, r *http.Request, _, listID string) {
 	ctx, s := trace.StartSpan(r.Context(), "remove_approval_list_settings")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
-	errorHandler := newHttpErrorHandler(log, w)
+	errorHandler := newHTTPErrorHandler(log, w)
 
 	if err := ae.DB.RemoveApprovalListSettings(ctx, listID); err != nil {
 		errorHandler.handleError(UpdateEndingSystemSettingsError, err)
@@ -713,12 +713,12 @@ func (ae *APIEnv) RemoveApprovalListSettings(w http.ResponseWriter, r *http.Requ
 	}
 }
 
-func (ae *APIEnv) UpdateApprovalListSettings(w http.ResponseWriter, r *http.Request, versionID, listID string) {
+func (ae *Env) UpdateApprovalListSettings(w http.ResponseWriter, r *http.Request, _, listID string) {
 	ctx, s := trace.StartSpan(r.Context(), "update_approval_list_settings")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
-	errorHandler := newHttpErrorHandler(log, w)
+	errorHandler := newHTTPErrorHandler(log, w)
 
 	b, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -751,7 +751,7 @@ func (ae *APIEnv) UpdateApprovalListSettings(w http.ResponseWriter, r *http.Requ
 	}
 }
 
-func (ae *APIEnv) SaveApprovalListSettings(w http.ResponseWriter, r *http.Request, versionID string) {
+func (ae *Env) SaveApprovalListSettings(w http.ResponseWriter, r *http.Request, versionID string) {
 	ctx, s := trace.StartSpan(r.Context(), "save_approval_list_settings")
 	defer s.End()
 
@@ -780,7 +780,7 @@ func (ae *APIEnv) SaveApprovalListSettings(w http.ResponseWriter, r *http.Reques
 	}
 
 	id, err := ae.DB.SaveApprovalListSettings(ctx, e.SaveApprovalListSettings{
-		VersionId:      versionID,
+		VersionID:      versionID,
 		Name:           req.Name,
 		Steps:          req.Steps,
 		ContextMapping: req.ContextMapping,
@@ -805,7 +805,7 @@ func (ae *APIEnv) SaveApprovalListSettings(w http.ResponseWriter, r *http.Reques
 	}
 }
 
-func (ae *APIEnv) GetApprovalListSetting(w http.ResponseWriter, r *http.Request, workNumber, listID string) {
+func (ae *Env) GetApprovalListSetting(w http.ResponseWriter, r *http.Request, workNumber, listID string) {
 	ctx, s := trace.StartSpan(r.Context(), "get_approval_list_settings")
 	defer s.End()
 
@@ -953,7 +953,7 @@ func toResponseApprovalListSettings(dto *toResponseApprovalListSettingsDTO) (
 	}, nil
 }
 
-func (ae *APIEnv) GetApprovalListsSettings(w http.ResponseWriter, r *http.Request, versionID string) {
+func (ae *Env) GetApprovalListsSettings(w http.ResponseWriter, r *http.Request, versionID string) {
 	ctx, s := trace.StartSpan(r.Context(), "get_approval_lists_settings")
 	defer s.End()
 
@@ -979,7 +979,8 @@ func (ae *APIEnv) GetApprovalListsSettings(w http.ResponseWriter, r *http.Reques
 	}
 }
 
-func (ae *APIEnv) GetApprovalListSettingById(w http.ResponseWriter, r *http.Request, versionID, listID string) {
+//nolint:revive //need to implement interface in api.go
+func (ae *Env) GetApprovalListSettingById(w http.ResponseWriter, r *http.Request, versionID, listID string) {
 	ctx, s := trace.StartSpan(r.Context(), "get_approval_list_setting_by_id")
 	defer s.End()
 

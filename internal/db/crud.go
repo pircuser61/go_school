@@ -78,6 +78,7 @@ func (db *PGCon) Release(ctx context.Context) error {
 		Release()
 	}); ok {
 		releaseConn.Release()
+
 		return nil
 	}
 
@@ -1258,7 +1259,7 @@ func (db *PGCon) UpdateStepContext(ctx context.Context, dto *UpdateStepRequest) 
 		id = $1
 `
 	args := []interface{}{
-		dto.Id, dto.BreakPoints, dto.HasError, dto.Status, dto.Content,
+		dto.ID, dto.BreakPoints, dto.HasError, dto.Status, dto.Content,
 	}
 
 	_, err := db.Connection.Exec(
@@ -1282,18 +1283,18 @@ func (db *PGCon) UpdateStepContext(ctx context.Context, dto *UpdateStepRequest) 
 	_, err = db.Connection.Exec(
 		ctx,
 		qMembersDelete,
-		dto.Id,
+		dto.ID,
 	)
 	if err != nil {
 		return err
 	}
 
-	err = db.insertIntoMembers(ctx, dto.Members, dto.Id)
+	err = db.insertIntoMembers(ctx, dto.Members, dto.ID)
 	if err != nil {
 		return err
 	}
 
-	err = db.deleteAndInsertIntoDeadlines(ctx, dto.Deadlines, dto.Id)
+	err = db.deleteAndInsertIntoDeadlines(ctx, dto.Deadlines, dto.ID)
 	if err != nil {
 		return err
 	}
@@ -1334,10 +1335,10 @@ func (db *PGCon) insertIntoMembers(ctx context.Context, members []Member, id uui
 		params := make(map[string]map[string]interface{})
 
 		for _, act := range val.Actions {
-			actions = append(actions, act.Id+":"+act.Type)
+			actions = append(actions, act.ID+":"+act.Type)
 
 			if len(act.Params) != 0 {
-				params[act.Id] = act.Params
+				params[act.ID] = act.Params
 			}
 		}
 
@@ -1588,7 +1589,7 @@ func (db *PGCon) GetExecutableByName(c context.Context, name string) (*entity.Er
 	return nil, nil
 }
 
-func (db *PGCon) GetUnfinishedTaskStepsByWorkIdAndStepType(
+func (db *PGCon) GetUnfinishedTaskStepsByWorkIDAndStepType(
 	ctx context.Context,
 	id uuid.UUID,
 	stepType string,

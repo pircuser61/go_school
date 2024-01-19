@@ -224,7 +224,7 @@ func TestProcessBlock(t *testing.T) {
 									ShortTitle: shortTitle,
 									Sockets: []entity.Socket{
 										{
-											Id:           DefaultSocketID,
+											ID:           DefaultSocketID,
 											NextBlockIds: []string{"servicedesk_application_0"},
 										},
 									},
@@ -243,7 +243,7 @@ func TestProcessBlock(t *testing.T) {
 									ShortTitle: shortTitle,
 									Sockets: []entity.Socket{
 										{
-											Id:           DefaultSocketID,
+											ID:           DefaultSocketID,
 											NextBlockIds: []string{"end_0"},
 										},
 									},
@@ -286,10 +286,10 @@ func TestProcessBlock(t *testing.T) {
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							sdMock.Cli = httpClient
 
@@ -356,7 +356,7 @@ func TestProcessBlock(t *testing.T) {
 									ShortTitle: shortTitle,
 									Sockets: []entity.Socket{
 										{
-											Id:           DefaultSocketID,
+											ID:           DefaultSocketID,
 											NextBlockIds: []string{"servicedesk_application_0"},
 										},
 									},
@@ -375,7 +375,7 @@ func TestProcessBlock(t *testing.T) {
 									ShortTitle: shortTitle,
 									Sockets: []entity.Socket{
 										{
-											Id:           DefaultSocketID,
+											ID:           DefaultSocketID,
 											NextBlockIds: []string{"start_parallel_0"},
 										},
 									},
@@ -395,7 +395,7 @@ func TestProcessBlock(t *testing.T) {
 									ShortTitle: shortTitle,
 									Sockets: []entity.Socket{
 										{
-											Id:           DefaultSocketID,
+											ID:           DefaultSocketID,
 											NextBlockIds: []string{"approver_0", "execution_0"},
 										},
 									},
@@ -413,7 +413,7 @@ func TestProcessBlock(t *testing.T) {
 									BlockType:  script.TypeGo,
 									Sockets: []entity.Socket{
 										{
-											Id:           "approve",
+											ID:           "approve",
 											NextBlockIds: []string{"end_parallel_0"},
 										},
 									},
@@ -432,7 +432,7 @@ func TestProcessBlock(t *testing.T) {
 									BlockType:  script.TypeGo,
 									Sockets: []entity.Socket{
 										{
-											Id:           executedSocketID,
+											ID:           executedSocketID,
 											NextBlockIds: []string{"end_parallel_0"},
 										},
 									},
@@ -452,7 +452,7 @@ func TestProcessBlock(t *testing.T) {
 									Title:      BlockGoWaitForAllInputsTitle,
 									Sockets: []entity.Socket{
 										{
-											Id:           DefaultSocketID,
+											ID:           DefaultSocketID,
 											NextBlockIds: []string{"end_0"},
 										},
 									},
@@ -495,10 +495,10 @@ func TestProcessBlock(t *testing.T) {
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							sdMock.Cli = httpClient
 

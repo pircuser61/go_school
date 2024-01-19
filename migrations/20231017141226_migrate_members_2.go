@@ -17,8 +17,8 @@ func init() {
 }
 
 type member struct {
-	Id       string
-	WorkId   string
+	ID       string
+	WorkID   string
 	StepName string
 	Login    string
 	Finished bool
@@ -31,12 +31,12 @@ type membersFormData struct {
 	ActualExecutor *string             `json:"actual_executor,omitempty"`
 }
 
-func (m *membersFormData) getMembers(wId, sName string) (res []member) {
+func (m *membersFormData) getMembers(wID, sName string) (res []member) {
 	if m.IsFilled {
 		for login := range m.Executors {
 			res = append(res, member{
-				Id:       uuid.New().String(),
-				WorkId:   wId,
+				ID:       uuid.New().String(),
+				WorkID:   wID,
 				StepName: sName,
 				Login:    login,
 				Finished: true,
@@ -46,8 +46,8 @@ func (m *membersFormData) getMembers(wId, sName string) (res []member) {
 
 		if m.ActualExecutor != nil {
 			res = append(res, member{
-				Id:       uuid.New().String(),
-				WorkId:   wId,
+				ID:       uuid.New().String(),
+				WorkID:   wID,
 				StepName: sName,
 				Login:    *m.ActualExecutor,
 				Finished: true,
@@ -137,11 +137,11 @@ func (at *signLogEntry) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-func (m *membersSignData) getMembers(wId, sName string) (res []member) {
+func (m *membersSignData) getMembers(wID, sName string) (res []member) {
 	for i := range m.SignLog {
 		res = append(res, member{
-			Id:       uuid.New().String(),
-			WorkId:   wId,
+			ID:       uuid.New().String(),
+			WorkID:   wID,
 			StepName: sName,
 			Login:    m.SignLog[i].Login,
 			Finished: true,
@@ -386,11 +386,11 @@ type changeExecutorsLogs struct {
 	NewLogin string `json:"new_login"`
 }
 
-func (m *membersExecutionData) getMembers(wId, sName string) (res []member) {
+func (m *membersExecutionData) getMembers(wID, sName string) (res []member) {
 	for login := range m.Executors {
 		res = append(res, member{
-			Id:       uuid.New().String(),
-			WorkId:   wId,
+			ID:       uuid.New().String(),
+			WorkID:   wID,
 			StepName: sName,
 			Login:    login,
 			Finished: true,
@@ -401,8 +401,8 @@ func (m *membersExecutionData) getMembers(wId, sName string) (res []member) {
 	for i := range m.RequestExecutionInfoLogs {
 		if m.RequestExecutionInfoLogs[i].ReqType == "question" {
 			res = append(res, member{
-				Id:       uuid.New().String(),
-				WorkId:   wId,
+				ID:       uuid.New().String(),
+				WorkID:   wID,
 				StepName: sName,
 				Login:    m.RequestExecutionInfoLogs[i].Login,
 				Finished: true,
@@ -413,8 +413,8 @@ func (m *membersExecutionData) getMembers(wId, sName string) (res []member) {
 
 	for i := range m.ChangedExecutorsLogs {
 		res = append(res, member{
-			Id:       uuid.New().String(),
-			WorkId:   wId,
+			ID:       uuid.New().String(),
+			WorkID:   wID,
 			StepName: sName,
 			Login:    m.ChangedExecutorsLogs[i].OldLogin,
 			Finished: true,
@@ -585,11 +585,11 @@ func (at *additionalApprover) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-func (m *membersApproverData) getMembers(wId, sName string) (res []member) {
+func (m *membersApproverData) getMembers(wID, sName string) (res []member) {
 	for login := range m.Approvers {
 		res = append(res, member{
-			Id:       uuid.New().String(),
-			WorkId:   wId,
+			ID:       uuid.New().String(),
+			WorkID:   wID,
 			StepName: sName,
 			Login:    login,
 			Finished: true,
@@ -603,8 +603,8 @@ func (m *membersApproverData) getMembers(wId, sName string) (res []member) {
 		}
 
 		res = append(res, member{
-			Id:       uuid.New().String(),
-			WorkId:   wId,
+			ID:       uuid.New().String(),
+			WorkID:   wID,
 			StepName: sName,
 			Login:    m.ApproverLog[i].Login,
 			Finished: true,
@@ -619,8 +619,8 @@ func (m *membersApproverData) getMembers(wId, sName string) (res []member) {
 		}
 
 		res = append(res, member{
-			Id:       uuid.New().String(),
-			WorkId:   wId,
+			ID:       uuid.New().String(),
+			WorkID:   wID,
 			StepName: sName,
 			Login:    m.AdditionalApprovers[i].ApproverLogin,
 			Finished: true,
@@ -628,8 +628,8 @@ func (m *membersApproverData) getMembers(wId, sName string) (res []member) {
 		})
 
 		res = append(res, member{
-			Id:       uuid.New().String(),
-			WorkId:   wId,
+			ID:       uuid.New().String(),
+			WorkID:   wID,
 			StepName: sName,
 			Login:    m.AdditionalApprovers[i].BaseApproverLogin,
 			Finished: true,
@@ -641,7 +641,7 @@ func (m *membersApproverData) getMembers(wId, sName string) (res []member) {
 }
 
 type memberExtractor interface {
-	getMembers(wId, sName string) (res []member)
+	getMembers(wID, sName string) (res []member)
 }
 
 func upMembers(tx *sql.Tx) error {
@@ -704,6 +704,7 @@ func upMembers(tx *sql.Tx) error {
 			if data != nil {
 				if err := json.Unmarshal(val, &data); err != nil {
 					fmt.Println("json.Unmarshal error, work id:", workID)
+
 					return err
 				}
 
@@ -723,8 +724,8 @@ func upMembers(tx *sql.Tx) error {
 
 	for i := range members {
 		values = append(values, fmt.Sprintf("('%s', (select vs.id from variable_storage vs where vs.work_id = '%s' and vs.step_name = '%s' limit 1), '%s', true, true)",
-			members[i].Id,
-			members[i].WorkId,
+			members[i].ID,
+			members[i].WorkID,
 			members[i].StepName,
 			members[i].Login,
 		))
@@ -748,15 +749,15 @@ func uniqMembers(in []member) (out []member) {
 	mapMembers := make(map[string]interface{})
 
 	for i := range in {
-		if _, exists := mapMembers[in[i].WorkId+in[i].StepName+in[i].Login]; !exists {
+		if _, exists := mapMembers[in[i].WorkID+in[i].StepName+in[i].Login]; !exists {
 			out = append(out, in[i])
-			mapMembers[in[i].WorkId+in[i].StepName+in[i].Login] = true
+			mapMembers[in[i].WorkID+in[i].StepName+in[i].Login] = true
 		}
 	}
 
 	return out
 }
 
-func downMembers(tx *sql.Tx) error {
+func downMembers(_ *sql.Tx) error {
 	return nil
 }

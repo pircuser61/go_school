@@ -32,12 +32,12 @@ const (
 	ValidateParallelPathIntersected       = "ParallelPathIntersected"
 )
 
-func (ae *APIEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
+func (ae *Env) CreatePipeline(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "create_pipeline")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
-	errorHandler := newHttpErrorHandler(log, w)
+	errorHandler := newHTTPErrorHandler(log, w)
 
 	b, err := io.ReadAll(req.Body)
 
@@ -130,12 +130,12 @@ func (ae *APIEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
 }
 
 //nolint:dupl // different logic (temporary saving old for compatibility)
-func (ae *APIEnv) CopyPipeline(w http.ResponseWriter, req *http.Request) {
+func (ae *Env) CopyPipeline(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "create_pipeline")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
-	errorHandler := newHttpErrorHandler(log, w)
+	errorHandler := newHTTPErrorHandler(log, w)
 
 	b, err := io.ReadAll(req.Body)
 	defer req.Body.Close()
@@ -223,12 +223,12 @@ func (ae *APIEnv) CopyPipeline(w http.ResponseWriter, req *http.Request) {
 }
 
 //nolint:dupl //its not duplicate
-func (ae *APIEnv) GetPipeline(w http.ResponseWriter, req *http.Request, pipelineID string) {
+func (ae *Env) GetPipeline(w http.ResponseWriter, req *http.Request, pipelineID string) {
 	ctx, s := trace.StartSpan(req.Context(), "get_pipeline")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
-	errorHandler := newHttpErrorHandler(log, w)
+	errorHandler := newHTTPErrorHandler(log, w)
 
 	id, err := uuid.Parse(pipelineID)
 	if err != nil {
@@ -251,12 +251,12 @@ func (ae *APIEnv) GetPipeline(w http.ResponseWriter, req *http.Request, pipeline
 	}
 }
 
-func (ae *APIEnv) ListPipelines(w http.ResponseWriter, req *http.Request, params ListPipelinesParams) {
+func (ae *Env) ListPipelines(w http.ResponseWriter, req *http.Request, params ListPipelinesParams) {
 	ctx, s := trace.StartSpan(req.Context(), "list_pipelines")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
-	errorHandler := newHttpErrorHandler(log, w)
+	errorHandler := newHTTPErrorHandler(log, w)
 
 	myPipelines := params.My != nil && *params.My
 	publishedPipelines := params.IsPublished != nil && *params.IsPublished
@@ -290,12 +290,12 @@ func (ae *APIEnv) ListPipelines(w http.ResponseWriter, req *http.Request, params
 	}
 }
 
-func (ae *APIEnv) DeletePipeline(w http.ResponseWriter, req *http.Request, pipelineID string) {
+func (ae *Env) DeletePipeline(w http.ResponseWriter, req *http.Request, pipelineID string) {
 	ctx, s := trace.StartSpan(req.Context(), "delete_pipeline")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
-	errorHandler := newHttpErrorHandler(log, w)
+	errorHandler := newHTTPErrorHandler(log, w)
 
 	id, err := uuid.Parse(pipelineID)
 	if err != nil {
@@ -318,12 +318,12 @@ func (ae *APIEnv) DeletePipeline(w http.ResponseWriter, req *http.Request, pipel
 	}
 }
 
-func (ae *APIEnv) DeleteDraftPipeline(ctx context.Context, w http.ResponseWriter, p *entity.EriusScenario) error {
+func (ae *Env) DeleteDraftPipeline(ctx context.Context, w http.ResponseWriter, p *entity.EriusScenario) error {
 	ctx, s := trace.StartSpan(ctx, "delete_draft_pipeline")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
-	errorHandler := newHttpErrorHandler(log, w)
+	errorHandler := newHTTPErrorHandler(log, w)
 
 	canDelete, err := ae.DB.PipelineRemovable(ctx, p.ID)
 	if err != nil {
@@ -343,12 +343,12 @@ func (ae *APIEnv) DeleteDraftPipeline(ctx context.Context, w http.ResponseWriter
 	return nil
 }
 
-func (ae *APIEnv) GetPipelineVersions(w http.ResponseWriter, req *http.Request, pipelineID string) {
+func (ae *Env) GetPipelineVersions(w http.ResponseWriter, req *http.Request, pipelineID string) {
 	ctx, span := trace.StartSpan(req.Context(), "get_pipeline_versions")
 	defer span.End()
 
 	log := logger.GetLogger(ctx)
-	errorHandler := newHttpErrorHandler(log, w)
+	errorHandler := newHTTPErrorHandler(log, w)
 
 	id, err := uuid.Parse(pipelineID)
 	if err != nil {
@@ -376,7 +376,7 @@ func (ae *APIEnv) GetPipelineVersions(w http.ResponseWriter, req *http.Request, 
 // разрешенные для данного пользователя
 //
 //nolint:dupl //diff logic
-func (ae *APIEnv) listPipelines(ctx context.Context,
+func (ae *Env) listPipelines(ctx context.Context,
 	myPipelines,
 	publishedPipelines bool,
 	page, perPage int,
@@ -404,12 +404,12 @@ func (ae *APIEnv) listPipelines(ctx context.Context,
 	return drafts, nil
 }
 
-func (ae *APIEnv) PipelineNameExists(w http.ResponseWriter, r *http.Request, params PipelineNameExistsParams) {
+func (ae *Env) PipelineNameExists(w http.ResponseWriter, r *http.Request, params PipelineNameExistsParams) {
 	ctx, span := trace.StartSpan(r.Context(), "pipeline_name_exists")
 	defer span.End()
 
 	log := logger.GetLogger(ctx)
-	errorHandler := newHttpErrorHandler(log, w)
+	errorHandler := newHTTPErrorHandler(log, w)
 
 	nameExists, checkNameExistsErr := ae.DB.CheckPipelineNameExists(ctx, params.Name, params.CheckNotDeleted)
 

@@ -77,7 +77,7 @@ func upGo(tx *sql.Tx) error {
 	return nil
 }
 
-func downGo(tx *sql.Tx) error {
+func downGo(_ *sql.Tx) error {
 	// This code is executed when the migration is rolled back.
 	return nil
 }

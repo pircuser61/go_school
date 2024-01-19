@@ -126,6 +126,7 @@ func (delegations *Delegations) FindDelegatorFor(login string, entries []string)
 		for _, delegator := range delegations.GetDelegators(login) {
 			if delegator == entry {
 				result = delegator
+
 				return result, true
 			}
 		}

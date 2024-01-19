@@ -234,7 +234,7 @@ func (db *PGCon) UpdateBlockStateInOthers(ctx c.Context, blockName, taskID strin
 	return err
 }
 
-func (db *PGCon) UpdateBlockVariablesInOthers(ctx c.Context, taskId string, values map[string]interface{}) error {
+func (db *PGCon) UpdateBlockVariablesInOthers(ctx c.Context, taskID string, values map[string]interface{}) error {
 	ctx, span := trace.StartSpan(ctx, "update_block_variables_in_others")
 	defer span.End()
 
@@ -244,7 +244,7 @@ func (db *PGCon) UpdateBlockVariablesInOthers(ctx c.Context, taskId string, valu
 		SET content = jsonb_set(content, array['Values', $1]::varchar[], $2::jsonb, false)
 		WHERE work_id = $3`
 
-		_, err := db.Connection.Exec(ctx, q, varName, values[varName], taskId)
+		_, err := db.Connection.Exec(ctx, q, varName, values[varName], taskID)
 		if err != nil {
 			return err
 		}

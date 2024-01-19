@@ -20,7 +20,7 @@ const (
 	monitoringTimeLayout = "2006-01-02T15:04:05-0700"
 )
 
-func (ae *APIEnv) GetTasksForMonitoring(w http.ResponseWriter, r *http.Request, params GetTasksForMonitoringParams) {
+func (ae *Env) GetTasksForMonitoring(w http.ResponseWriter, r *http.Request, params GetTasksForMonitoringParams) {
 	ctx, span := trace.StartSpan(r.Context(), "start get tasks for monitoring")
 	defer span.End()
 
@@ -112,7 +112,7 @@ func (ae *APIEnv) GetTasksForMonitoring(w http.ResponseWriter, r *http.Request, 
 	}
 }
 
-func (ae *APIEnv) getUserFullName(ctx context.Context, username string) (string, error) {
+func (ae *Env) getUserFullName(ctx context.Context, username string) (string, error) {
 	initiatorUserInfo, getUserErr := ae.People.GetUser(ctx, username)
 	if getUserErr != nil {
 		return "", getUserErr
@@ -126,17 +126,17 @@ func (ae *APIEnv) getUserFullName(ctx context.Context, username string) (string,
 	return initiatorSSOUser.GetFullName(), nil
 }
 
-func (ae *APIEnv) GetBlockContext(w http.ResponseWriter, r *http.Request, blockId string) {
+func (ae *Env) GetBlockContext(w http.ResponseWriter, r *http.Request, blockID string) {
 	ctx, span := trace.StartSpan(r.Context(), "start get block context")
 	defer span.End()
 
 	log := logger.GetLogger(ctx)
 
-	blockIsHidden, err := ae.DB.CheckBlockForHiddenFlag(ctx, blockId)
+	blockIsHidden, err := ae.DB.CheckBlockForHiddenFlag(ctx, blockID)
 	if err != nil {
 		e := CheckForHiddenError
 
-		log.WithField("blockId", blockId).
+		log.WithField("blockId", blockID).
 			Error(e.errorMessage(err))
 
 		_ = e.sendError(w)
@@ -154,7 +154,7 @@ func (ae *APIEnv) GetBlockContext(w http.ResponseWriter, r *http.Request, blockI
 		return
 	}
 
-	blocksOutputs, err := ae.DB.GetBlocksOutputs(ctx, blockId)
+	blocksOutputs, err := ae.DB.GetBlocksOutputs(ctx, blockID)
 	if err != nil {
 		e := GetBlockContextError
 
@@ -193,12 +193,12 @@ func (ae *APIEnv) GetBlockContext(w http.ResponseWriter, r *http.Request, blockI
 	}
 }
 
-func (ae *APIEnv) GetMonitoringTask(w http.ResponseWriter, req *http.Request, workNumber string) {
+func (ae *Env) GetMonitoringTask(w http.ResponseWriter, req *http.Request, workNumber string) {
 	ctx, s := trace.StartSpan(req.Context(), "get_task_for_monitoring")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
-	errorHandler := newHttpErrorHandler(log, w)
+	errorHandler := newHTTPErrorHandler(log, w)
 
 	if workNumber == "" {
 		err := errors.New("workNumber is empty")
@@ -274,23 +274,24 @@ func getMonitoringStatus(status string) MonitoringHistoryStatus {
 	}
 }
 
-func (ae *APIEnv) GetMonitoringTasksBlockBlockIdParams(w http.ResponseWriter, req *http.Request, blockId string) {
+//nolint:revive //need to implement interface in api.go
+func (ae *Env) GetMonitoringTasksBlockBlockIdParams(w http.ResponseWriter, req *http.Request, blockID string) {
 	ctx, span := trace.StartSpan(req.Context(), "get_monitoring_tasks_block_blockId_params")
 	defer span.End()
 
 	log := logger.GetLogger(ctx)
-	errorHandler := newHttpErrorHandler(log, w)
+	errorHandler := newHTTPErrorHandler(log, w)
 
-	blockIdUUID, err := uuid.Parse(blockId)
+	blockIDUUID, err := uuid.Parse(blockID)
 	if err != nil {
 		errorHandler.handleError(UUIDParsingError, err)
 	}
 
-	taskStep, err := ae.DB.GetTaskStepByID(ctx, blockIdUUID)
+	taskStep, err := ae.DB.GetTaskStepByID(ctx, blockIDUUID)
 	if err != nil {
 		e := UnknownError
 
-		log.WithField("blockId", blockId).
+		log.WithField("blockId", blockID).
 			Error(e.errorMessage(err))
 		errorHandler.sendError(e)
 	}
@@ -299,7 +300,7 @@ func (ae *APIEnv) GetMonitoringTasksBlockBlockIdParams(w http.ResponseWriter, re
 	if err != nil {
 		e := GetBlockContextError
 
-		log.WithField("blockId", blockId).
+		log.WithField("blockId", blockID).
 			WithField("taskStep.Name", taskStep.Name).
 			Error(e.errorMessage(err))
 		errorHandler.sendError(e)
@@ -317,11 +318,11 @@ func (ae *APIEnv) GetMonitoringTasksBlockBlockIdParams(w http.ResponseWriter, re
 		}
 	}
 
-	blockOutputs, err := ae.DB.GetBlockOutputs(ctx, blockId, taskStep.Name)
+	blockOutputs, err := ae.DB.GetBlockOutputs(ctx, blockID, taskStep.Name)
 	if err != nil {
 		e := GetBlockContextError
 
-		log.WithField("blockId", blockId).
+		log.WithField("blockId", blockID).
 			WithField("taskStep.Name", taskStep.Name).
 			Error(e.errorMessage(err))
 		errorHandler.sendError(e)
@@ -329,11 +330,11 @@ func (ae *APIEnv) GetMonitoringTasksBlockBlockIdParams(w http.ResponseWriter, re
 		return
 	}
 
-	blockIsHidden, err := ae.DB.CheckBlockForHiddenFlag(ctx, blockId)
+	blockIsHidden, err := ae.DB.CheckBlockForHiddenFlag(ctx, blockID)
 	if err != nil {
 		e := CheckForHiddenError
 
-		log.WithField("blockId", blockId).
+		log.WithField("blockId", blockID).
 			WithField("taskStep.Name", taskStep.Name).
 			Error(e.errorMessage(err))
 		errorHandler.sendError(e)
@@ -374,25 +375,25 @@ func (ae *APIEnv) GetMonitoringTasksBlockBlockIdParams(w http.ResponseWriter, re
 	}
 }
 
-func (ae *APIEnv) GetBlockState(w http.ResponseWriter, r *http.Request, blockId string) {
+func (ae *Env) GetBlockState(w http.ResponseWriter, r *http.Request, blockID string) {
 	ctx, span := trace.StartSpan(r.Context(), "start get block state")
 	defer span.End()
 
 	log := logger.GetLogger(ctx)
-	errorHandler := newHttpErrorHandler(log, w)
+	errorHandler := newHTTPErrorHandler(log, w)
 
-	id, err := uuid.Parse(blockId)
+	id, err := uuid.Parse(blockID)
 	if err != nil {
 		errorHandler.handleError(UnknownError, err)
 
 		return
 	}
 
-	blockIsHidden, err := ae.DB.CheckBlockForHiddenFlag(ctx, blockId)
+	blockIsHidden, err := ae.DB.CheckBlockForHiddenFlag(ctx, blockID)
 	if err != nil {
 		e := CheckForHiddenError
 		log.
-			WithField("blockId", blockId).
+			WithField("blockId", blockID).
 			Error(e.errorMessage(err))
 		errorHandler.sendError(e)
 

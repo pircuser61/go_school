@@ -178,7 +178,7 @@ func (gb *GoApproverBlock) createState(ctx c.Context, ef *entity.EriusFunc) erro
 
 	for _, socket := range ef.Sockets {
 		actions = append(actions, Action{
-			Id:    socket.Id,
+			ID:    socket.ID,
 			Title: socket.Title,
 			Type:  socket.ActionType,
 		})
@@ -204,7 +204,7 @@ func (gb *GoApproverBlock) createState(ctx c.Context, ef *entity.EriusFunc) erro
 		autoActionValid := false
 
 		for _, a := range actions {
-			if a.Id == string(*gb.State.AutoAction) {
+			if a.ID == string(*gb.State.AutoAction) {
 				autoActionValid = true
 
 				break

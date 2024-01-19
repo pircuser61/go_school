@@ -12,7 +12,7 @@ import (
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
-	file_registry "gitlab.services.mts.ru/jocasta/pipeliner/internal/file-registry"
+	file_registry "gitlab.services.mts.ru/jocasta/pipeliner/internal/fileregistry"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
@@ -254,7 +254,7 @@ func (gb *GoSignBlock) Deadlines(ctx c.Context) ([]Deadline, error) {
 	deadlines := make([]Deadline, 0, 2)
 
 	if gb.State.CheckSLA != nil && *gb.State.CheckSLA {
-		slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDTO{
+		slaInfoPtr, getSLAInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDTO{
 			TaskCompletionIntervals: []entity.TaskCompletionInterval{{
 				StartedAt:  gb.RunContext.CurrBlockStartTime,
 				FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100),
@@ -262,8 +262,8 @@ func (gb *GoSignBlock) Deadlines(ctx c.Context) ([]Deadline, error) {
 			WorkType: sla.WorkHourType(*gb.State.WorkType),
 		})
 
-		if getSlaInfoErr != nil {
-			return nil, getSlaInfoErr
+		if getSLAInfoErr != nil {
+			return nil, getSLAInfoErr
 		}
 
 		deadline := gb.RunContext.Services.SLAService.ComputeMaxDate(gb.RunContext.CurrBlockStartTime, float32(*gb.State.SLA), slaInfoPtr)
@@ -382,15 +382,15 @@ func (gb *GoSignBlock) handleNotifications(ctx c.Context) error {
 	slaDeadline := ""
 
 	if gb.State.SLA != nil && gb.State.WorkType != nil {
-		slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDTO{
+		slaInfoPtr, getSLAInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDTO{
 			TaskCompletionIntervals: []entity.TaskCompletionInterval{{
 				StartedAt:  gb.RunContext.CurrBlockStartTime,
 				FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100),
 			}},
 			WorkType: sla.WorkHourType(*gb.State.WorkType),
 		})
-		if getSlaInfoErr != nil {
-			return getSlaInfoErr
+		if getSLAInfoErr != nil {
+			return getSLAInfoErr
 		}
 
 		slaDeadline = gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(gb.RunContext.CurrBlockStartTime,
@@ -455,13 +455,13 @@ func (gb *GoSignBlock) handleNotifications(ctx c.Context) error {
 	return nil
 }
 
-func lookForFileIdInObject(object map[string]interface{}) (string, error) {
-	existingFileId, ok := object["file_id"]
+func lookForFileIDInObject(object map[string]interface{}) (string, error) {
+	existingFileID, ok := object["file_id"]
 	if !ok {
 		return "", errors.New("file_id does not exist in object")
 	}
 
-	fileID, ok := existingFileId.(string)
+	fileID, ok := existingFileID.(string)
 	if !ok {
 		return "", errors.New("failed to type assert path to string")
 	}
@@ -474,7 +474,7 @@ func ValidateFiles(file interface{}) ([]entity.Attachment, error) {
 
 	switch f := file.(type) {
 	case map[string]interface{}:
-		fileID, err := lookForFileIdInObject(f)
+		fileID, err := lookForFileIDInObject(f)
 		if err != nil {
 			return nil, err
 		}
@@ -489,7 +489,7 @@ func ValidateFiles(file interface{}) ([]entity.Attachment, error) {
 				continue
 			}
 
-			fileID, err := lookForFileIdInObject(object)
+			fileID, err := lookForFileIDInObject(object)
 			if err != nil {
 				continue
 			}
@@ -549,12 +549,12 @@ func (gb *GoSignBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 	}
 
 	if params.Type == script.SignerTypeGroup && params.SignerGroupIDPath != "" {
-		groupId := getVariable(variableStorage, params.SignerGroupIDPath)
-		if groupId == nil {
+		groupID := getVariable(variableStorage, params.SignerGroupIDPath)
+		if groupID == nil {
 			return errors.New("can't find group id in variables")
 		}
 
-		params.SignerGroupID = fmt.Sprintf("%v", groupId)
+		params.SignerGroupID = fmt.Sprintf("%v", groupID)
 	}
 
 	if params.SignatureType == script.SignatureTypeUKEP &&

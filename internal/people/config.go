@@ -1,5 +1,5 @@
 package people
 
 type Config struct {
-	Url string `yaml:"url"`
+	URL string `yaml:"url"`
 }

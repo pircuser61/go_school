@@ -239,7 +239,7 @@ func (db *PGCon) SaveExternalSystemSettings(ctx context.Context, vID string, sys
 
 	const thrisArgPostFix = " = $3"
 
-	args := []interface{}{vID, system.Id}
+	args := []interface{}{vID, system.ID}
 
 	var schemasForUpdate string
 
@@ -302,14 +302,14 @@ func (db *PGCon) GetExternalSystemSettings(ctx context.Context, versionID, syste
 
 	row := db.Connection.QueryRow(ctx, query, versionID, systemID)
 
-	res := e.ExternalSystem{Id: systemID, OutputSettings: &e.EndSystemSettings{}}
+	res := e.ExternalSystem{ID: systemID, OutputSettings: &e.EndSystemSettings{}}
 
 	err := row.Scan(
 		&res.InputSchema,
 		&res.OutputSchema,
 		&res.InputMapping,
 		&res.OutputMapping,
-		&res.OutputSettings.MicroserviceId,
+		&res.OutputSettings.MicroserviceID,
 		&res.OutputSettings.URL,
 		&res.OutputSettings.Method,
 		&res.AllowRunAsOthers,
@@ -332,7 +332,7 @@ func (db *PGCon) UpdateEndingSystemSettings(ctx context.Context, versionID, syst
 		SET (microservice_id, ending_url, sending_method) = ($1, $2, $3)
 	WHERE version_id = $4 AND system_id = $5`
 
-	_, err = db.Connection.Exec(ctx, query, s.MicroserviceId, s.URL, s.Method, versionID, systemID)
+	_, err = db.Connection.Exec(ctx, query, s.MicroserviceID, s.URL, s.Method, versionID, systemID)
 	if err != nil {
 		return err
 	}
@@ -473,7 +473,7 @@ func (db *PGCon) SaveApprovalListSettings(ctx context.Context, in e.SaveApproval
 		ctx,
 		query,
 		listID,
-		in.VersionId,
+		in.VersionID,
 		in.Name,
 		in.Steps,
 		in.ContextMapping,

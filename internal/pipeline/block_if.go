@@ -72,14 +72,14 @@ func (gb *IF) Next(_ *store.VariableStore) ([]string, bool) {
 		}
 
 		return nexts, true
-	} else {
-		nexts, ok := script.GetNexts(gb.Sockets, gb.State.ChosenGroupID)
-		if !ok {
-			return nil, false
-		}
-
-		return nexts, true
 	}
+
+	nexts, ok := script.GetNexts(gb.Sockets, gb.State.ChosenGroupID)
+	if !ok {
+		return nil, false
+	}
+
+	return nexts, true
 }
 
 func (gb *IF) GetState() interface{} {

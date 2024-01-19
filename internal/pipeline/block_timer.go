@@ -55,17 +55,17 @@ func (gb *TimerBlock) Deadlines(_ c.Context) ([]Deadline, error) {
 func (gb *TimerBlock) GetStatus() Status {
 	if gb.State.Expired {
 		return StatusFinished
-	} else {
-		return StatusIdle
 	}
+
+	return StatusIdle
 }
 
 func (gb *TimerBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment string, action string) {
 	if gb.State.Expired {
 		return StatusDone, "", ""
-	} else {
-		return StatusExecution, "", ""
 	}
+
+	return StatusExecution, "", ""
 }
 
 func (gb *TimerBlock) Next(_ *store.VariableStore) ([]string, bool) {

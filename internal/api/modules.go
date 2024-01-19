@@ -21,12 +21,12 @@ const (
 	BeginParallelTask    = "begin_parallel_task"
 )
 
-func (ae *APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
+func (ae *Env) GetModules(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "list_modules")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
-	errorHandler := newHttpErrorHandler(log, w)
+	errorHandler := newHTTPErrorHandler(log, w)
 
 	eriusFunctions := eriusFunctions()
 
@@ -76,7 +76,7 @@ func eriusFunctions() []script.FunctionModel {
 }
 
 //nolint:goconst // common constants not needed
-func (ae *APIEnv) eriusFunctionTitle(id, currentTitle string) string {
+func (ae *Env) eriusFunctionTitle(id, currentTitle string) string {
 	switch id {
 	case IfBase:
 		return IfBase

@@ -17,7 +17,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/configs"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db/mocks"
-	file_registry "gitlab.services.mts.ru/jocasta/pipeliner/internal/file-registry"
+	file_registry "gitlab.services.mts.ru/jocasta/pipeliner/internal/fileregistry"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/forms"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/functions"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/hrgate"
@@ -187,7 +187,7 @@ func main() {
 
 	includePlaceholderBlock := cfg.IncludePlaceholderBlock
 
-	APIEnv := &api.APIEnv{
+	APIEnv := &api.Env{
 		Log:                     log,
 		Metrics:                 m,
 		DB:                      &dbConn,

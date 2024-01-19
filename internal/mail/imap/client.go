@@ -174,6 +174,7 @@ func (s *Client) SelectUnread(ctx context.Context) (messages chan *imap.Message,
 
 	if mailBox.Messages == 0 {
 		log.Info("mailbox is empty")
+
 		return nil, nil, nil
 	}
 

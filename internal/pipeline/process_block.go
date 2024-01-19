@@ -22,7 +22,7 @@ import (
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
-	file_registry "gitlab.services.mts.ru/jocasta/pipeliner/internal/file-registry"
+	file_registry "gitlab.services.mts.ru/jocasta/pipeliner/internal/fileregistry"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/functions"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/hrgate"
 	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
@@ -409,7 +409,7 @@ func (runCtx *BlockRunContext) saveStepInDB(ctx c.Context, name, stepType, statu
 
 		for _, act := range pl[i].Actions {
 			actions = append(actions, db.MemberAction{
-				Id:     act.ID,
+				ID:     act.ID,
 				Type:   act.Type,
 				Params: act.Params,
 			})
@@ -465,7 +465,7 @@ func (runCtx *BlockRunContext) updateStepInDB(
 		actions := make([]db.MemberAction, 0, len(pl[i].Actions))
 		for _, act := range pl[i].Actions {
 			actions = append(actions, db.MemberAction{
-				Id:     act.ID,
+				ID:     act.ID,
 				Type:   act.Type,
 				Params: act.Params,
 			})
@@ -487,7 +487,7 @@ func (runCtx *BlockRunContext) updateStepInDB(
 	}
 
 	return runCtx.Services.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
-		Id:          id,
+		ID:          id,
 		StepName:    name,
 		Content:     storageData,
 		BreakPoints: []string{},
@@ -557,12 +557,12 @@ func (runCtx *BlockRunContext) makeNotificationAttachment() ([]file_registry.Fil
 			for _, vv := range data {
 				fileMap := vv.(orderedmap.OrderedMap)
 
-				fileId, oks := fileMap.Get("file_id")
+				fileID, oks := fileMap.Get("file_id")
 				if !oks {
 					continue
 				}
 
-				attachments = append(attachments, entity.Attachment{FileID: fileId.(string)})
+				attachments = append(attachments, entity.Attachment{FileID: fileID.(string)})
 			}
 		}
 	}
@@ -862,7 +862,7 @@ func processBlockEnd(ctx c.Context, status string, runCtx *BlockRunContext) (err
 
 		if systemSettings.OutputSettings.Method == "" ||
 			systemSettings.OutputSettings.URL == "" ||
-			systemSettings.OutputSettings.MicroserviceId == "" {
+			systemSettings.OutputSettings.MicroserviceID == "" {
 			log.Info(fmt.Sprintf("no output settings for clientID %s", context.ClientID))
 
 			return nil
@@ -874,8 +874,8 @@ func processBlockEnd(ctx c.Context, status string, runCtx *BlockRunContext) (err
 		}
 
 		sendingErr := sendEndingMapping(ctx, &entity.EndProcessData{
-			Id:         runCtx.TaskID.String(),
-			VersionId:  version.VersionID.String(),
+			ID:         runCtx.TaskID.String(),
+			VersionID:  version.VersionID.String(),
 			StartedAt:  taskTime.StartedAt.String(),
 			FinishedAt: taskTime.FinishedAt.String(),
 			Status:     status,
@@ -900,7 +900,7 @@ func sendEndingMapping(
 	runCtx *BlockRunContext,
 	settings *entity.EndSystemSettings,
 ) (err error) {
-	secretsHumanKey, secretsErr := runCtx.Services.Integrations.GetMicroserviceHumanKey(ctx, settings.MicroserviceId)
+	secretsHumanKey, secretsErr := runCtx.Services.Integrations.GetMicroserviceHumanKey(ctx, settings.MicroserviceID)
 	if secretsErr != nil {
 		return secretsErr
 	}

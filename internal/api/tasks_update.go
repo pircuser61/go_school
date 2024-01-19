@@ -29,14 +29,14 @@ import (
 
 const headImg = "header.png"
 
-func (ae *APIEnv) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
+func (ae *Env) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 	const funcName = "update_tasks_by_mails"
 
 	ctx, s := trace.StartSpan(req.Context(), funcName)
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
-	errorHandler := newHttpErrorHandler(log, w)
+	errorHandler := newHTTPErrorHandler(log, w)
 
 	log.Info(funcName, ", started")
 
@@ -126,7 +126,7 @@ func (ae *APIEnv) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumber string) {
+func (ae *Env) UpdateTask(w http.ResponseWriter, req *http.Request, workNumber string) {
 	ctx, s := trace.StartSpan(req.Context(), "update_task")
 	defer s.End()
 
@@ -205,7 +205,7 @@ type updateStepData struct {
 	login       string
 }
 
-func (ae *APIEnv) updateStepInternal(ctx c.Context, data *updateStepData) bool {
+func (ae *Env) updateStepInternal(ctx c.Context, data *updateStepData) bool {
 	log := logger.GetLogger(ctx)
 
 	txStorage, transactionErr := ae.DB.StartTransaction(ctx)
@@ -317,7 +317,7 @@ func (ae *APIEnv) updateStepInternal(ctx c.Context, data *updateStepData) bool {
 	return true
 }
 
-func (ae *APIEnv) updateTaskBlockInternal(ctx c.Context, workNumber, userLogin string, in *entity.TaskUpdate) (err error) {
+func (ae *Env) updateTaskBlockInternal(ctx c.Context, workNumber, userLogin string, in *entity.TaskUpdate) (err error) {
 	ctxLocal, span := trace.StartSpan(ctx, "update_task_internal")
 	defer span.End()
 
@@ -366,7 +366,7 @@ func (ae *APIEnv) updateTaskBlockInternal(ctx c.Context, workNumber, userLogin s
 	var steps entity.TaskSteps
 
 	for _, blockType := range blockTypes {
-		stepsByBlock, stepErr := ae.DB.GetUnfinishedTaskStepsByWorkIdAndStepType(ctxLocal, dbTask.ID, blockType, in)
+		stepsByBlock, stepErr := ae.DB.GetUnfinishedTaskStepsByWorkIDAndStepType(ctxLocal, dbTask.ID, blockType, in)
 		if stepErr != nil {
 			e := GetTaskError
 
@@ -411,7 +411,7 @@ func (ae *APIEnv) updateTaskBlockInternal(ctx c.Context, workNumber, userLogin s
 	return nil
 }
 
-func (ae *APIEnv) getAuthorAndMembersToNotify(ctx c.Context, workNumber, userLogin string) ([]string, error) {
+func (ae *Env) getAuthorAndMembersToNotify(ctx c.Context, workNumber, userLogin string) ([]string, error) {
 	taskMembers, err := ae.DB.GetTaskMembers(ctx, workNumber, true)
 	if err != nil {
 		return nil, err
@@ -474,7 +474,7 @@ func (ae *APIEnv) getAuthorAndMembersToNotify(ctx c.Context, workNumber, userLog
 	return res, nil
 }
 
-func (ae *APIEnv) updateTaskInternal(ctx c.Context, workNumber, userLogin string, in *entity.TaskUpdate) (err error) {
+func (ae *Env) updateTaskInternal(ctx c.Context, workNumber, userLogin string, in *entity.TaskUpdate) (err error) {
 	ctxLocal, span := trace.StartSpan(ctx, "update_application_internal")
 	defer span.End()
 
@@ -589,7 +589,7 @@ func (ae *APIEnv) updateTaskInternal(ctx c.Context, workNumber, userLogin string
 	return nil
 }
 
-func (ae *APIEnv) updateTasks(
+func (ae *Env) updateTasks(
 	ctx c.Context,
 	dbTask *entity.EriusTask,
 	txStorage db.Database,
@@ -634,12 +634,12 @@ func (ae *APIEnv) updateTasks(
 	return nil
 }
 
-func (ae *APIEnv) RateApplication(w http.ResponseWriter, r *http.Request, workNumber string) {
+func (ae *Env) RateApplication(w http.ResponseWriter, r *http.Request, workNumber string) {
 	ctx, s := trace.StartSpan(r.Context(), "rate_application")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
-	errorHandler := newHttpErrorHandler(log, w)
+	errorHandler := newHTTPErrorHandler(log, w)
 
 	b, err := io.ReadAll(r.Body)
 	defer r.Body.Close()
@@ -692,12 +692,12 @@ type stoppedTask struct {
 	ID         uuid.UUID `json:"-"`
 }
 
-func (ae *APIEnv) StopTasks(w http.ResponseWriter, r *http.Request) {
+func (ae *Env) StopTasks(w http.ResponseWriter, r *http.Request) {
 	ctx, s := trace.StartSpan(r.Context(), "stop_tasks")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
-	errorHandler := newHttpErrorHandler(log, w)
+	errorHandler := newHTTPErrorHandler(log, w)
 
 	b, err := io.ReadAll(r.Body)
 	if err != nil {

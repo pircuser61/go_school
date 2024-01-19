@@ -199,7 +199,7 @@ type ApproverData struct {
 }
 
 type Action struct {
-	Id    string `json:"id"`
+	ID    string `json:"id"`
 	Type  string `json:"type"`
 	Title string `json:"title"`
 }

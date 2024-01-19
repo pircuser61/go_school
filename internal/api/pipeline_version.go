@@ -40,13 +40,13 @@ const (
 	startEntrypoint = "start_0"
 )
 
-func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request, pipelineID string) {
+func (ae *Env) CreatePipelineVersion(w http.ResponseWriter, req *http.Request, pipelineID string) {
 	ctx, s := trace.StartSpan(req.Context(), "create_pipeline_version")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
 
-	errorHandler := newHttpErrorHandler(log, w)
+	errorHandler := newHTTPErrorHandler(log, w)
 
 	b, err := io.ReadAll(req.Body)
 	defer req.Body.Close()
@@ -177,7 +177,7 @@ func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request
 	}
 }
 
-func (ae *APIEnv) hasPrivateFunction(ctx c.Context, executableFunctionIDs []string) (bool, error) {
+func (ae *Env) hasPrivateFunction(ctx c.Context, executableFunctionIDs []string) (bool, error) {
 	for _, id := range executableFunctionIDs {
 		function, getFunctionErr := ae.FunctionStore.GetFunction(ctx, id)
 		if getFunctionErr != nil {
@@ -192,7 +192,7 @@ func (ae *APIEnv) hasPrivateFunction(ctx c.Context, executableFunctionIDs []stri
 	return false, nil
 }
 
-func (ae *APIEnv) getExternalSystem(
+func (ae *Env) getExternalSystem(
 	ctx c.Context,
 	storage db.Database,
 	clientID, versionID string,
@@ -220,7 +220,7 @@ func (ae *APIEnv) getExternalSystem(
 	return &externalSystem, nil
 }
 
-func (ae *APIEnv) processMappings(externalSystem *entity.ExternalSystem,
+func (ae *Env) processMappings(externalSystem *entity.ExternalSystem,
 	version *entity.EriusScenario, applicationBody orderedmap.OrderedMap,
 ) (orderedmap.OrderedMap, error) {
 	if externalSystem == nil {
@@ -257,28 +257,27 @@ func (ae *APIEnv) processMappings(externalSystem *entity.ExternalSystem,
 	if externalSystem.InputMapping == nil || inputSchemaString == startSchemaString {
 		// mapping is not needed
 		return applicationBody, nil
-	} else {
-		// need mapping
-		var mappedData map[string]interface{}
+	}
+	// need mapping
+	var mappedData map[string]interface{}
 
-		appBody, errMap := script.OrderedMapToMap(applicationBody)
-		if errMap != nil {
-			return orderedmap.OrderedMap{}, err
-		}
+	appBody, errMap := script.OrderedMapToMap(applicationBody)
+	if errMap != nil {
+		return orderedmap.OrderedMap{}, err
+	}
 
-		mappedData, err = script.MapData(
-			externalSystem.InputMapping.Properties,
-			appBody,
-			externalSystem.InputMapping.Required,
-		)
-		if err != nil {
-			return orderedmap.OrderedMap{}, err
-		}
+	mappedData, err = script.MapData(
+		externalSystem.InputMapping.Properties,
+		appBody,
+		externalSystem.InputMapping.Required,
+	)
+	if err != nil {
+		return orderedmap.OrderedMap{}, err
+	}
 
-		mappedApplicationBody, err = script.MapToOrderedMap(mappedData)
-		if err != nil {
-			return orderedmap.OrderedMap{}, err
-		}
+	mappedApplicationBody, err = script.MapToOrderedMap(mappedData)
+	if err != nil {
+		return orderedmap.OrderedMap{}, err
 	}
 
 	err = validateApplicationBody(mappedApplicationBody, startSchemaString)
@@ -289,12 +288,12 @@ func (ae *APIEnv) processMappings(externalSystem *entity.ExternalSystem,
 	return mappedApplicationBody, nil
 }
 
-func (ae *APIEnv) DeleteVersion(w http.ResponseWriter, req *http.Request, versionID string) {
+func (ae *Env) DeleteVersion(w http.ResponseWriter, req *http.Request, versionID string) {
 	ctx, s := trace.StartSpan(req.Context(), "delete_version")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
-	errorHandler := newHttpErrorHandler(log, w)
+	errorHandler := newHTTPErrorHandler(log, w)
 
 	vID, err := uuid.Parse(versionID)
 	if err != nil {
@@ -335,12 +334,12 @@ func (ae *APIEnv) DeleteVersion(w http.ResponseWriter, req *http.Request, versio
 }
 
 //nolint:dupl //its not duplicate
-func (ae *APIEnv) GetPipelineVersion(w http.ResponseWriter, req *http.Request, versionID string) {
+func (ae *Env) GetPipelineVersion(w http.ResponseWriter, req *http.Request, versionID string) {
 	ctx, s := trace.StartSpan(req.Context(), "get_pipeline_version")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
-	errorHandler := newHttpErrorHandler(log, w)
+	errorHandler := newHTTPErrorHandler(log, w)
 
 	versionUUID, err := uuid.Parse(versionID)
 	if err != nil {
@@ -370,12 +369,12 @@ func (ae *APIEnv) GetPipelineVersion(w http.ResponseWriter, req *http.Request, v
 	}
 }
 
-func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
+func (ae *Env) EditVersion(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "edit_draft")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
-	errorHandler := newHttpErrorHandler(log, w)
+	errorHandler := newHTTPErrorHandler(log, w)
 
 	b, err := io.ReadAll(req.Body)
 	defer req.Body.Close()
@@ -562,7 +561,7 @@ type execVersionDTO struct {
 	runCtx           entity.TaskRunContext
 }
 
-func (ae *APIEnv) execVersion(ctx c.Context, dto *execVersionDTO) (*entity.RunResponse, error) {
+func (ae *Env) execVersion(ctx c.Context, dto *execVersionDTO) (*entity.RunResponse, error) {
 	ctxLocal, s := trace.StartSpan(ctx, "exec_version")
 	defer s.End()
 
@@ -651,7 +650,7 @@ type execVersionInternalDTO struct {
 	runCtx         entity.TaskRunContext
 }
 
-func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO) (*pipeline.ExecutablePipeline, Err, error) {
+func (ae *Env) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO) (*pipeline.ExecutablePipeline, Err, error) {
 	ctx, span := trace.StartSpan(ctx, "exec_version_internal")
 	defer span.End()
 
@@ -772,7 +771,7 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 	return ep, 0, nil
 }
 
-func (ae *APIEnv) executablePipeline(dto *execVersionInternalDTO, txStorage db.Database) *pipeline.ExecutablePipeline {
+func (ae *Env) executablePipeline(dto *execVersionInternalDTO, txStorage db.Database) *pipeline.ExecutablePipeline {
 	var workNumber string
 	if dto.makeNewWork {
 		workNumber = dto.workNumber
@@ -803,12 +802,12 @@ func (ae *APIEnv) executablePipeline(dto *execVersionInternalDTO, txStorage db.D
 	}
 }
 
-func (ae *APIEnv) SearchPipelines(w http.ResponseWriter, req *http.Request, params SearchPipelinesParams) {
+func (ae *Env) SearchPipelines(w http.ResponseWriter, req *http.Request, params SearchPipelinesParams) {
 	ctx, s := trace.StartSpan(req.Context(), "search_pipelines")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
-	errorHandler := newHttpErrorHandler(log, w)
+	errorHandler := newHTTPErrorHandler(log, w)
 
 	if params.PipelineId == nil && params.PipelineName == nil {
 		errorHandler.handleError(ValidationPipelineSearchError, errors.New("name and id are empty"))
@@ -881,7 +880,7 @@ func (mc azpClaims) Valid() error {
 	return &PipelinerError{GetClientIDError}
 }
 
-func (ae *APIEnv) getClientIDFromToken(token string) (string, error) {
+func (ae *Env) getClientIDFromToken(token string) (string, error) {
 	claims := &azpClaims{}
 	parsed, _ := jwt.ParseWithClaims(strings.TrimPrefix(token, "Bearer "), claims, func(token *jwt.Token) (interface{}, error) {
 		return []byte(""), nil

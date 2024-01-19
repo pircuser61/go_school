@@ -63,7 +63,7 @@ type ExecutionData struct {
 	ExecutorsGroupID   string `json:"executors_group_id"`
 	ExecutorsGroupName string `json:"executors_group_name"`
 
-	ExecutorsGroupIdPath *string `json:"executors_group_id_path,omitempty"`
+	ExecutorsGroupIDPath *string `json:"executors_group_id_path,omitempty"`
 
 	IsTakenInWork               bool `json:"is_taken_in_work"`
 	IsExecutorVariablesResolved bool `json:"is_executor_variables_resolved"`
@@ -88,8 +88,8 @@ func (a *ExecutionData) GetDecision() *ExecutionDecision {
 	return a.Decision
 }
 
-func (a *ExecutionData) IncreaseSLA(addSla int) {
-	a.SLA += addSla
+func (a *ExecutionData) IncreaseSLA(addSLA int) {
+	a.SLA += addSLA
 }
 
 func (a *ExecutionData) GetRepeatPrevDecision() bool {

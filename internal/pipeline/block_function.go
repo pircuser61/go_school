@@ -493,10 +493,10 @@ func isTimeToWaitAnswer(createdAt time.Time, waitInDays int) bool {
 	return time.Now().Before(createdAt.AddDate(0, 0, waitInDays))
 }
 
-func (gb *ExecutableFunctionBlock) isFirstStart(ctx c.Context, workId uuid.UUID, sName string) (bool, *entity.Step, error) {
+func (gb *ExecutableFunctionBlock) isFirstStart(ctx c.Context, workID uuid.UUID, sName string) (bool, *entity.Step, error) {
 	countRunFunc := 0
 
-	steps, err := gb.RunContext.Services.Storage.GetTaskSteps(ctx, workId)
+	steps, err := gb.RunContext.Services.Storage.GetTaskSteps(ctx, workID)
 	if err != nil {
 		return false, nil, err
 	}

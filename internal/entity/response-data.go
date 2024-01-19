@@ -136,7 +136,7 @@ func (bt *BlocksType) IsSocketsFilled() (valid bool, textErr string) {
 		}
 
 		for _, s := range b.Sockets {
-			if !nextNames[s.Id] {
+			if !nextNames[s.ID] {
 				return false, ""
 			}
 		}
@@ -479,7 +479,7 @@ func (bt *BlocksType) addDefaultStartNode() {
 		},
 		Sockets: []Socket{
 			{
-				Id:         "default",
+				ID:         "default",
 				Title:      "Выход по умолчанию",
 				ActionType: "",
 			},
@@ -631,7 +631,7 @@ type EriusFunc struct {
 }
 
 type Socket struct {
-	Id           string   `json:"id"`
+	ID           string   `json:"id"`
 	Title        string   `json:"title"`
 	NextBlockIds []string `json:"nextBlockIds,omitempty"`
 	ActionType   string   `json:"actionType"`
@@ -693,7 +693,7 @@ func ConvertSocket(sockets []Socket) []script.Socket {
 
 	for _, socket := range sockets {
 		result = append(result, script.Socket{
-			Id:           socket.Id,
+			Id:           socket.ID,
 			Title:        socket.Title,
 			NextBlockIds: socket.NextBlockIds,
 		})

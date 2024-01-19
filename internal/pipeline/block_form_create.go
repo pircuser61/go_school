@@ -167,7 +167,7 @@ func (gb *GoFormBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 	}
 
 	gb.State = &FormData{
-		SchemaId:                  params.SchemaId,
+		SchemaID:                  params.SchemaId,
 		CheckSLA:                  params.CheckSLA,
 		SLA:                       params.SLA,
 		ChangesLog:                make([]ChangesLogItem, 0),
@@ -275,7 +275,7 @@ func (gb *GoFormBlock) setExecutorsByParams(ctx c.Context, dto *setFormExecutors
 
 		gb.State.IsTakenInWork = true
 	case script.FormExecutorTypeGroup:
-		gb.State.FormGroupId = dto.Value
+		gb.State.FormGroupID = dto.Value
 
 		workGroup, errGroup := gb.RunContext.Services.ServiceDesc.GetWorkGroup(ctx, dto.Value)
 		if errGroup != nil {
@@ -292,7 +292,7 @@ func (gb *GoFormBlock) setExecutorsByParams(ctx c.Context, dto *setFormExecutors
 			gb.State.Executors[workGroup.People[i].Login] = struct{}{}
 		}
 
-		gb.State.FormGroupId = dto.Value
+		gb.State.FormGroupID = dto.Value
 		gb.State.FormExecutorsGroupName = workGroup.GroupName
 	default:
 		gb.State.FormExecutorType = script.FormExecutorTypeUser

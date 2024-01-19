@@ -12,7 +12,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
-func (ae *APIEnv) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessage) error {
+func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessage) error {
 	log := ae.Log
 	log.WithField("funcName", "FunctionReturnHandler").
 		WithField("message", message).

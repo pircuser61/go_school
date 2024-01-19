@@ -1,4 +1,4 @@
-package file_registry
+package fileregistry
 
 import (
 	"bytes"

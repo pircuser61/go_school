@@ -2074,12 +2074,12 @@ func (_m *MockedDatabase) GetTasksForMonitoring(ctx context.Context, filters *en
 	return r0, r1
 }
 
-// GetUnfinishedTaskStepsByWorkIdAndStepType provides a mock function with given fields: ctx, id, stepType, in
-func (_m *MockedDatabase) GetUnfinishedTaskStepsByWorkIdAndStepType(ctx context.Context, id uuid.UUID, stepType string, in *entity.TaskUpdate) (entity.TaskSteps, error) {
+// GetUnfinishedTaskStepsByWorkIDAndStepType provides a mock function with given fields: ctx, id, stepType, in
+func (_m *MockedDatabase) GetUnfinishedTaskStepsByWorkIDAndStepType(ctx context.Context, id uuid.UUID, stepType string, in *entity.TaskUpdate) (entity.TaskSteps, error) {
 	ret := _m.Called(ctx, id, stepType, in)
 
 	if len(ret) == 0 {
-		panic("no return value specified for GetUnfinishedTaskStepsByWorkIdAndStepType")
+		panic("no return value specified for GetUnfinishedTaskStepsByWorkIDAndStepType")
 	}
 
 	var r0 entity.TaskSteps

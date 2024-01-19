@@ -14,7 +14,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	file_registry "gitlab.services.mts.ru/jocasta/pipeliner/internal/file-registry"
+	file_registry "gitlab.services.mts.ru/jocasta/pipeliner/internal/fileregistry"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
@@ -26,7 +26,7 @@ const (
 )
 
 type UpdateData struct {
-	Id   uuid.UUID
+	ID   uuid.UUID
 	Data interface{}
 }
 

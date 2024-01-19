@@ -12,7 +12,7 @@ import (
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
-	file_registry "gitlab.services.mts.ru/jocasta/pipeliner/internal/file-registry"
+	file_registry "gitlab.services.mts.ru/jocasta/pipeliner/internal/fileregistry"
 	hs "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
@@ -963,7 +963,7 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx context.Context, loginTakenI
 		return emailErr
 	}
 
-	slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDTO{
+	slaInfoPtr, getSLAInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDTO{
 		TaskCompletionIntervals: []entity.TaskCompletionInterval{{
 			StartedAt:  gb.RunContext.CurrBlockStartTime,
 			FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100),
@@ -971,8 +971,8 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx context.Context, loginTakenI
 		WorkType: sla.WorkHourType(gb.State.WorkType),
 	})
 
-	if getSlaInfoErr != nil {
-		return getSlaInfoErr
+	if getSLAInfoErr != nil {
+		return getSLAInfoErr
 	}
 
 	author1, getUserErr := gb.RunContext.Services.People.GetUser(ctx, gb.RunContext.Initiator)
@@ -994,7 +994,7 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx context.Context, loginTakenI
 			Action:      statusToTaskAction[StatusExecution],
 			DeadLine:    gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(time.Now(), gb.State.SLA, slaInfoPtr),
 			Description: description,
-			SdUrl:       gb.RunContext.Services.Sender.SdAddress,
+			SdURL:       gb.RunContext.Services.Sender.SdAddress,
 			Mailto:      gb.RunContext.Services.Sender.FetchEmail,
 			Login:       loginTakenInWork,
 			IsEditable:  gb.State.GetIsEditable(),

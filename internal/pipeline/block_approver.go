@@ -203,7 +203,7 @@ func (gb *GoApproverBlock) approvementBaseActions(login string) []MemberAction {
 
 	for i := range gb.State.ActionList {
 		actions = append(actions, MemberAction{
-			ID:   gb.State.ActionList[i].Id,
+			ID:   gb.State.ActionList[i].ID,
 			Type: gb.State.ActionList[i].Type,
 		})
 	}
@@ -332,7 +332,7 @@ func (gb *GoApproverBlock) Deadlines(ctx context.Context) ([]Deadline, error) {
 	}
 
 	if gb.State.CheckSLA && latestUnansweredRequest == nil {
-		slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDTO{
+		slaInfoPtr, getSLAInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDTO{
 			TaskCompletionIntervals: []entity.TaskCompletionInterval{{
 				StartedAt:  gb.RunContext.CurrBlockStartTime,
 				FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100),
@@ -340,8 +340,8 @@ func (gb *GoApproverBlock) Deadlines(ctx context.Context) ([]Deadline, error) {
 			WorkType: sla.WorkHourType(gb.State.WorkType),
 		})
 
-		if getSlaInfoErr != nil {
-			return nil, getSlaInfoErr
+		if getSLAInfoErr != nil {
+			return nil, getSLAInfoErr
 		}
 
 		if !gb.State.SLAChecked {

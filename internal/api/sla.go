@@ -16,7 +16,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
-func (ae *APIEnv) handleBreachSlA(ctx c.Context, item *db.StepBreachedSLA) {
+func (ae *Env) handleBreachSlA(ctx c.Context, item *db.StepBreachedSLA) {
 	log := logger.GetLogger(ctx)
 
 	txStorage, transactionErr := ae.DB.StartTransaction(ctx)
@@ -97,12 +97,12 @@ func (ae *APIEnv) handleBreachSlA(ctx c.Context, item *db.StepBreachedSLA) {
 	runCtx.NotifyEvents(ctx)
 }
 
-func (ae *APIEnv) CheckBreachSLA(w http.ResponseWriter, r *http.Request) {
+func (ae *Env) CheckBreachSLA(w http.ResponseWriter, r *http.Request) {
 	ctx, span := trace.StartSpan(r.Context(), "check_breach_sla")
 	defer span.End()
 
 	log := logger.GetLogger(ctx).WithField("mainFuncName", "CheckBreachSLA")
-	errorhandler := newHttpErrorHandler(log, w)
+	errorhandler := newHTTPErrorHandler(log, w)
 
 	steps, err := ae.DB.GetBlocksBreachedSLA(ctx)
 	if err != nil {

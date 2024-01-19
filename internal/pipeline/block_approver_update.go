@@ -284,15 +284,15 @@ func (gb *GoApproverBlock) handleHalfBreachedSLA(ctx c.Context) (err error) {
 			}
 		}
 
-		slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDTO{
+		slaInfoPtr, getSLAInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDTO{
 			TaskCompletionIntervals: []entity.TaskCompletionInterval{{
 				StartedAt:  gb.RunContext.CurrBlockStartTime,
 				FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100),
 			}},
 			WorkType: sla.WorkHourType(gb.State.WorkType),
 		})
-		if getSlaInfoErr != nil {
-			return getSlaInfoErr
+		if getSLAInfoErr != nil {
+			return getSLAInfoErr
 		}
 
 		lastWorksForUser := make([]*entity.EriusTask, 0)
@@ -678,7 +678,7 @@ func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context) (err error) 
 
 		linkID = updateParams.LinkID
 
-		approverLogin, linkErr := setLinkIdRequest(id, *updateParams.LinkID, gb.State.AddInfo)
+		approverLogin, linkErr := setLinkIDRequest(id, *updateParams.LinkID, gb.State.AddInfo)
 		if linkErr != nil {
 			return linkErr
 		}
@@ -742,7 +742,7 @@ func (gb *GoApproverBlock) updateReplyApproverInfo(ctx c.Context) (err error) {
 
 	linkID = updateParams.LinkID
 
-	approverLogin, linkErr := setLinkIdRequest(id, *updateParams.LinkID, gb.State.AddInfo)
+	approverLogin, linkErr := setLinkIDRequest(id, *updateParams.LinkID, gb.State.AddInfo)
 	if linkErr != nil {
 		return linkErr
 	}
@@ -766,10 +766,10 @@ func (gb *GoApproverBlock) updateReplyApproverInfo(ctx c.Context) (err error) {
 	return nil
 }
 
-func setLinkIdRequest(replyId, linkId string, addInfo []AdditionalInfo) (string, error) {
+func setLinkIDRequest(replyID, linkID string, addInfo []AdditionalInfo) (string, error) {
 	for i := range addInfo {
-		if addInfo[i].ID == linkId {
-			addInfo[i].LinkID = &replyId
+		if addInfo[i].ID == linkID {
+			addInfo[i].LinkID = &replyID
 			return addInfo[i].Login, nil
 		}
 	}
@@ -779,7 +779,7 @@ func setLinkIdRequest(replyId, linkId string, addInfo []AdditionalInfo) (string,
 
 func (gb *GoApproverBlock) actionAcceptable(action ApproverAction) bool {
 	for _, a := range gb.State.ActionList {
-		if a.Id == string(action) {
+		if a.ID == string(action) {
 			return true
 		}
 	}

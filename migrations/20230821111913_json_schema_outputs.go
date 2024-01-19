@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"strings"
 
+	//nolint:revive //need to connect to db
 	_ "github.com/lib/pq"
 
 	"github.com/google/uuid"
@@ -43,10 +44,10 @@ type pipelineType struct {
 }
 
 func init() {
-	goose.AddMigration(upJsonSchemaOutputs, downJsonSchemaOutputs)
+	goose.AddMigration(upJSONSchemaOutputs, downJSONSchemaOutputs)
 }
 
-func upJsonSchemaOutputs(tx *sql.Tx) error {
+func upJSONSchemaOutputs(tx *sql.Tx) error {
 	rows, queryErr := tx.Query(selectQ)
 	if queryErr != nil {
 		return queryErr
@@ -125,7 +126,7 @@ func upJsonSchemaOutputs(tx *sql.Tx) error {
 	return nil
 }
 
-func downJsonSchemaOutputs(tx *sql.Tx) error {
+func downJSONSchemaOutputs(tx *sql.Tx) error {
 	// This code is executed when the migration is rolled back.
 	rows, queryErr := tx.Query(selectQ)
 	if queryErr != nil {

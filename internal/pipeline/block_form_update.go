@@ -260,7 +260,7 @@ func (gb *GoFormBlock) handleHalfSLABreached(ctx context.Context) error {
 		logins := getSliceFromMapOfStrings(gb.State.Executors)
 		emails := gb.mapLoginsToEmails(ctx, fn, logins)
 
-		slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(
+		slaInfoPtr, getSLAInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(
 			ctx,
 			sla.InfoDTO{
 				TaskCompletionIntervals: []entity.TaskCompletionInterval{
@@ -272,8 +272,8 @@ func (gb *GoFormBlock) handleHalfSLABreached(ctx context.Context) error {
 				WorkType: sla.WorkHourType(gb.State.WorkType),
 			},
 		)
-		if getSlaInfoErr != nil {
-			return getSlaInfoErr
+		if getSLAInfoErr != nil {
+			return getSLAInfoErr
 		}
 
 		tpl := mail.NewFormDayHalfSLATpl(
@@ -352,7 +352,7 @@ func (gb *GoFormBlock) formExecutorStartWork(ctx context.Context) (err error) {
 
 	gb.State.IsTakenInWork = true
 
-	slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDTO{
+	slaInfoPtr, getSLAInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDTO{
 		TaskCompletionIntervals: []entity.TaskCompletionInterval{{
 			StartedAt:  gb.RunContext.CurrBlockStartTime,
 			FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100),
@@ -360,8 +360,8 @@ func (gb *GoFormBlock) formExecutorStartWork(ctx context.Context) (err error) {
 		WorkType: sla.WorkHourType(gb.State.WorkType),
 	})
 
-	if getSlaInfoErr != nil {
-		return getSlaInfoErr
+	if getSLAInfoErr != nil {
+		return getSLAInfoErr
 	}
 
 	workHours := gb.RunContext.Services.SLAService.GetWorkHoursBetweenDates(
@@ -379,8 +379,8 @@ func (gb *GoFormBlock) formExecutorStartWork(ctx context.Context) (err error) {
 	return nil
 }
 
-func (a *FormData) IncreaseSLA(addSla int) {
-	a.SLA += addSla
+func (a *FormData) IncreaseSLA(addSLA int) {
+	a.SLA += addSLA
 }
 
 func (gb *GoFormBlock) emailGroupExecutors(ctx context.Context, loginTakenInWork string, logins map[string]struct{}) (err error) {
@@ -466,7 +466,7 @@ func (gb *GoFormBlock) emailGroupExecutors(ctx context.Context, loginTakenInWork
 		return emailErr
 	}
 
-	slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDTO{
+	slaInfoPtr, getSLAInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDTO{
 		TaskCompletionIntervals: []entity.TaskCompletionInterval{{
 			StartedAt:  gb.RunContext.CurrBlockStartTime,
 			FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100),
@@ -474,8 +474,8 @@ func (gb *GoFormBlock) emailGroupExecutors(ctx context.Context, loginTakenInWork
 		WorkType: sla.WorkHourType(gb.State.WorkType),
 	})
 
-	if getSlaInfoErr != nil {
-		return getSlaInfoErr
+	if getSLAInfoErr != nil {
+		return getSLAInfoErr
 	}
 
 	tpl = mail.NewFormPersonExecutionNotificationTemplate(gb.RunContext.WorkNumber,

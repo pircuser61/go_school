@@ -6,9 +6,9 @@ import (
 	"time"
 )
 
-func (ae *APIEnv) Alive(_ http.ResponseWriter, _ *http.Request) {}
+func (ae *Env) Alive(_ http.ResponseWriter, _ *http.Request) {}
 
-func (ae *APIEnv) Ready(w http.ResponseWriter, r *http.Request) {
+func (ae *Env) Ready(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithDeadline(r.Context(), time.Now().Add(2*time.Second))
 	defer cancel()
 

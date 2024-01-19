@@ -74,7 +74,7 @@ type step struct {
 }
 
 type action struct {
-	Id                 string                 `json:"id"`
+	ID                 string                 `json:"id"`
 	ButtonType         string                 `json:"button_type"`
 	NodeType           string                 `json:"node_type"`
 	Title              string                 `json:"title"`
@@ -119,7 +119,7 @@ func (taskResp) toResponse(in *taskToResponseDTO) *taskResp {
 
 	for _, a := range in.task.Actions {
 		actions = append(actions, action{
-			Id:                 a.Id,
+			ID:                 a.ID,
 			ButtonType:         a.ButtonType,
 			NodeType:           a.NodeType,
 			Title:              a.Title,
@@ -187,12 +187,12 @@ func groupsToResponse(groups []*entity.NodeGroup) []NodeGroup {
 	return resp
 }
 
-func (ae *APIEnv) GetTaskFormSchema(w http.ResponseWriter, req *http.Request, workNumber, formID string) {
+func (ae *Env) GetTaskFormSchema(w http.ResponseWriter, req *http.Request, workNumber, formID string) {
 	ctx, s := trace.StartSpan(req.Context(), "get_task_form_schema")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
-	errorHandler := newHttpErrorHandler(log, w)
+	errorHandler := newHTTPErrorHandler(log, w)
 
 	id, err := ae.DB.GetTaskFormSchemaID(workNumber, formID)
 	if err != nil {
@@ -208,12 +208,12 @@ func (ae *APIEnv) GetTaskFormSchema(w http.ResponseWriter, req *http.Request, wo
 	}
 }
 
-func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request, workNumber string) {
+func (ae *Env) GetTask(w http.ResponseWriter, req *http.Request, workNumber string) {
 	ctx, s := trace.StartSpan(req.Context(), "get_task")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
-	errorHandler := newHttpErrorHandler(log, w)
+	errorHandler := newHTTPErrorHandler(log, w)
 
 	if workNumber == "" {
 		errorHandler.handleError(UUIDParsingError, errors.New("workNumber is empty"))
@@ -322,9 +322,9 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request, workNumber s
 		}
 	}
 
-	versionSettings, errSla := ae.DB.GetSLAVersionSettings(ctx, dbTask.VersionID.String())
-	if errSla != nil {
-		errorHandler.handleError(GetProcessSlaSettingsError, errSla)
+	versionSettings, errSLA := ae.DB.GetSLAVersionSettings(ctx, dbTask.VersionID.String())
+	if errSLA != nil {
+		errorHandler.handleError(GetProcessSLASettingsError, errSLA)
 
 		return
 	}
@@ -339,12 +339,12 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request, workNumber s
 		WorkType: sla.WorkHourType(versionSettings.WorkType),
 	}
 
-	slaInfoPtr, getSlaInfoErr := ae.SLAService.GetSLAInfoPtr(
+	slaInfoPtr, getSLAInfoErr := ae.SLAService.GetSLAInfoPtr(
 		ctx,
 		slaInfoDTO,
 	)
-	if getSlaInfoErr != nil {
-		errorHandler.handleError(UnknownError, getSlaInfoErr)
+	if getSLAInfoErr != nil {
+		errorHandler.handleError(UnknownError, getSLAInfoErr)
 
 		return
 	}
@@ -374,7 +374,7 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request, workNumber s
 	}
 }
 
-func (ae *APIEnv) handleZeroTaskNodeGroup(ctx context.Context, dbTask *entity.EriusTask) error {
+func (ae *Env) handleZeroTaskNodeGroup(ctx context.Context, dbTask *entity.EriusTask) error {
 	scenario, getVersionErr := ae.DB.GetVersionByWorkNumber(ctx, dbTask.WorkNumber)
 	if getVersionErr != nil {
 		return getVersionErr
@@ -408,7 +408,7 @@ type additionalApprover struct {
 	ApproverLogin string `json:"approver_login"`
 }
 
-func (ae *APIEnv) getAccessibleForms(
+func (ae *Env) getAccessibleForms(
 	currentUser string,
 	steps *entity.TaskSteps,
 	delegates *ht.Delegations,
@@ -525,7 +525,7 @@ func (ae *APIEnv) getAccessibleForms(
 	return accessibleForms, nil
 }
 
-func (ae *APIEnv) getCurrentUserInDelegatesForSteps(
+func (ae *Env) getCurrentUserInDelegatesForSteps(
 	currentUser string,
 	steps *entity.TaskSteps,
 	delegates *ht.Delegations,
@@ -603,12 +603,12 @@ func isDelegate(currentUser, login string, delegations *ht.Delegations) bool {
 }
 
 //nolint:dupl //its not duplicate
-func (ae *APIEnv) GetTasks(w http.ResponseWriter, req *http.Request, params GetTasksParams) {
+func (ae *Env) GetTasks(w http.ResponseWriter, req *http.Request, params GetTasksParams) {
 	ctx, s := trace.StartSpan(req.Context(), "get_tasks")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
-	errorHandler := newHttpErrorHandler(log, w)
+	errorHandler := newHTTPErrorHandler(log, w)
 
 	filters, err := params.toEntity(req)
 	if err != nil {
@@ -680,9 +680,9 @@ func (ae *APIEnv) GetTasks(w http.ResponseWriter, req *http.Request, params GetT
 
 	for i := range resp.Tasks {
 		if _, exists := versionsSLA[resp.Tasks[i].VersionID.String()]; !exists {
-			versionSettings, errSla := ae.DB.GetSLAVersionSettings(ctx, resp.Tasks[i].VersionID.String())
-			if errSla != nil {
-				errorHandler.handleError(GetProcessSlaSettingsError, err)
+			versionSettings, errSLA := ae.DB.GetSLAVersionSettings(ctx, resp.Tasks[i].VersionID.String())
+			if errSLA != nil {
+				errorHandler.handleError(GetProcessSLASettingsError, err)
 
 				return
 			}
@@ -690,7 +690,7 @@ func (ae *APIEnv) GetTasks(w http.ResponseWriter, req *http.Request, params GetT
 			versionsSLA[resp.Tasks[i].VersionID.String()] = &versionSettings
 		}
 
-		slaInfoPtr, getSlaInfoErr := ae.SLAService.GetSLAInfoPtr(ctx, sla.InfoDTO{
+		slaInfoPtr, getSLAInfoErr := ae.SLAService.GetSLAInfoPtr(ctx, sla.InfoDTO{
 			TaskCompletionIntervals: []entity.TaskCompletionInterval{
 				{
 					StartedAt:  resp.Tasks[i].StartedAt,
@@ -699,7 +699,7 @@ func (ae *APIEnv) GetTasks(w http.ResponseWriter, req *http.Request, params GetT
 			},
 			WorkType: sla.WorkHourType(versionsSLA[resp.Tasks[i].VersionID.String()].WorkType),
 		})
-		if getSlaInfoErr != nil {
+		if getSLAInfoErr != nil {
 			errorHandler.handleError(UnknownError, err)
 
 			return
@@ -870,7 +870,7 @@ func statusToEntity(status *[]string) *string {
 	return &qStatus
 }
 
-func (ae *APIEnv) GetTasksCount(w http.ResponseWriter, req *http.Request) {
+func (ae *Env) GetTasksCount(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "get_tasks_count")
 	defer s.End()
 
@@ -995,13 +995,13 @@ func getTaskStepNameByAction(action entity.TaskUpdateAction) []string {
 	return []string{}
 }
 
-func (ae *APIEnv) GetTaskMeanSolveTime(w http.ResponseWriter, req *http.Request, pipelineId string) {
+func (ae *Env) GetTaskMeanSolveTime(w http.ResponseWriter, req *http.Request, pipelineID string) {
 	ctx, s := trace.StartSpan(req.Context(), "get_task_mean_solve_time")
 	defer s.End()
 
-	log := logger.GetLogger(ctx).WithField("pipelineId", pipelineId)
+	log := logger.GetLogger(ctx).WithField("pipelineId", pipelineID)
 
-	taskTimeIntervals, intervalsErr := ae.DB.GetMeanTaskSolveTime(ctx, pipelineId) // it returns ordered by created_at
+	taskTimeIntervals, intervalsErr := ae.DB.GetMeanTaskSolveTime(ctx, pipelineID) // it returns ordered by created_at
 	if intervalsErr != nil {
 		e := GetTaskError
 		log.Error(e.errorMessage(intervalsErr))
@@ -1040,7 +1040,7 @@ func (ae *APIEnv) GetTaskMeanSolveTime(w http.ResponseWriter, req *http.Request,
 	}
 }
 
-func (ae *APIEnv) removeForms(dbTask *entity.EriusTask, accessibleForms map[string]struct{}) {
+func (ae *Env) removeForms(dbTask *entity.EriusTask, accessibleForms map[string]struct{}) {
 	actualSteps := make([]*entity.Step, 0, len(dbTask.Steps))
 
 	for _, step := range dbTask.Steps {
@@ -1085,7 +1085,7 @@ func (ae *APIEnv) removeForms(dbTask *entity.EriusTask, accessibleForms map[stri
 	dbTask.Steps = actualSteps
 }
 
-func (ae *APIEnv) hideExecutors(ctx context.Context, dbTask *entity.EriusTask, requesterLogin string, stepDelegates map[string]bool) error {
+func (ae *Env) hideExecutors(ctx context.Context, dbTask *entity.EriusTask, requesterLogin string, stepDelegates map[string]bool) error {
 	dbMembers, membErr := ae.DB.GetTaskMembers(ctx, dbTask.WorkNumber, false)
 	if membErr != nil {
 		return membErr

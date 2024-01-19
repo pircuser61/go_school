@@ -132,12 +132,12 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 
 	next := []entity.Socket{
 		{
-			Id:           DefaultSocketID,
+			ID:           DefaultSocketID,
 			Title:        script.DefaultSocketTitle,
 			NextBlockIds: []string{"next_0"},
 		},
 		{
-			Id:           rejectedSocketID,
+			ID:           rejectedSocketID,
 			Title:        script.RejectSocketTitle,
 			NextBlockIds: []string{"next_1"},
 		},
@@ -492,7 +492,7 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 }
 
 func TestGoExecutionBlock_Update(t *testing.T) {
-	stepId := uuid.New()
+	stepID := uuid.New()
 
 	const (
 		exampleExecutor       = "example"
@@ -684,10 +684,10 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							sdMock.Cli = httpClient
 
@@ -750,10 +750,10 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							sdMock.Cli = httpClient
 
@@ -815,10 +815,10 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							sdMock.Cli = httpClient
 
@@ -881,10 +881,10 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							sdMock.Cli = httpClient
 
@@ -947,10 +947,10 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							sdMock.Cli = httpClient
 
@@ -1013,10 +1013,10 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							sdMock.Cli = httpClient
 
@@ -1079,10 +1079,10 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							sdMock.Cli = httpClient
 
@@ -1093,7 +1093,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 
 							res.On("GetTaskStepById",
 								mock.MatchedBy(func(ctx context.Context) bool { return true }),
-								stepId,
+								stepID,
 							).Return(
 								&entity.Step{
 									Time: time.Time{},
@@ -1174,10 +1174,10 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							sdMock.Cli = httpClient
 
@@ -1240,10 +1240,10 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							sdMock.Cli = httpClient
 
@@ -1254,7 +1254,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 
 							res.On("GetTaskStepById",
 								mock.MatchedBy(func(ctx context.Context) bool { return true }),
-								stepId,
+								stepID,
 							).Return(
 								&entity.Step{
 									Time: time.Time{},
@@ -1341,10 +1341,10 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							sdMock.Cli = httpClient
 
@@ -1400,10 +1400,10 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							sdMock.Cli = httpClient
 
@@ -1466,10 +1466,10 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							sdMock.Cli = httpClient
 
@@ -1524,10 +1524,10 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							sdMock.Cli = httpClient
 
@@ -1583,10 +1583,10 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							sdMock.Cli = httpClient
 
@@ -1642,10 +1642,10 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							sdMock.Cli = httpClient
 
@@ -1706,10 +1706,10 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							sdMock.Cli = httpClient
 
@@ -1765,10 +1765,10 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							sdMock.Cli = httpClient
 
@@ -1830,10 +1830,10 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							sdMock.Cli = httpClient
 
@@ -1893,10 +1893,10 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							sdMock.Cli = httpClient
 
@@ -1980,10 +1980,10 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							sdMock.Cli = httpClient
 
@@ -2045,10 +2045,10 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							sdMock.Cli = httpClient
 
@@ -2059,7 +2059,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 
 							res.On("GetTaskStepById",
 								mock.MatchedBy(func(ctx context.Context) bool { return true }),
-								stepId,
+								stepID,
 							).Return(
 								&entity.Step{
 									Time: time.Time{},

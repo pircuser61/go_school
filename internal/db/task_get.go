@@ -1203,9 +1203,9 @@ func (db *PGCon) computeActions(
 
 	for _, blockActions := range actions {
 		for _, action := range blockActions.Actions {
-			compositeActionId := strings.Split(action, ":")
-			if len(compositeActionId) > 1 {
-				id := compositeActionId[0]
+			compositeActionID := strings.Split(action, ":")
+			if len(compositeActionID) > 1 {
+				id := compositeActionID[0]
 
 				if _, ok := metActions[id]; ok && !utils.IsContainsInSlice(id, canBeRepeated) {
 					continue
@@ -1213,12 +1213,12 @@ func (db *PGCon) computeActions(
 
 				metActions[id] = struct{}{}
 
-				priority := compositeActionId[1]
+				priority := compositeActionID[1]
 				actionWithPreferences := allActions[id]
 				actionParams := blockActions.Params[id]
 
 				computedAction := entity.TaskAction{
-					Id:                 id,
+					ID:                 id,
 					ButtonType:         priority,
 					NodeType:           actionWithPreferences.NodeType,
 					Title:              actionWithPreferences.Title,
@@ -1229,7 +1229,7 @@ func (db *PGCon) computeActions(
 				}
 
 				computedActions = append(computedActions, computedAction)
-				computedActionIds = append(computedActionIds, computedAction.Id)
+				computedActionIds = append(computedActionIds, computedAction.ID)
 			}
 		}
 	}
@@ -1244,7 +1244,7 @@ func (db *PGCon) computeActions(
 		}
 
 		for _, actionRule := range actionsToIgnore {
-			if a.Id == actionRule.IgnoreActionID && slices.Contains(computedActionIds, actionRule.ExistingActionID) {
+			if a.ID == actionRule.IgnoreActionID && slices.Contains(computedActionIds, actionRule.ExistingActionID) {
 				ignoreAction = true
 
 				break
@@ -1265,7 +1265,7 @@ func (db *PGCon) computeActions(
 
 	if isInitiator {
 		cancelAppAction := entity.TaskAction{
-			Id:                 CancelAppID,
+			ID:                 CancelAppID,
 			ButtonType:         CancelAppPriority,
 			NodeType:           CancelAppNodeType,
 			Title:              CancelAppTitle,
@@ -1274,7 +1274,7 @@ func (db *PGCon) computeActions(
 		}
 
 		repeatAppAction := entity.TaskAction{
-			Id:                 RepeatAppID,
+			ID:                 RepeatAppID,
 			ButtonType:         RepeatAppPriority,
 			NodeType:           RepeatAppNodeType,
 			Title:              RepeatAppTitle,
@@ -1645,7 +1645,7 @@ func (db *PGCon) getActionsMap(ctx c.Context) (actions map[string]entity.TaskAct
 		ta := entity.TaskAction{}
 
 		if err := rows.Scan(
-			&ta.Id,
+			&ta.ID,
 			&ta.Title,
 			&ta.IsPublic,
 			&ta.CommentEnabled,
@@ -1655,7 +1655,7 @@ func (db *PGCon) getActionsMap(ctx c.Context) (actions map[string]entity.TaskAct
 			return nil, err
 		}
 
-		result[ta.Id] = ta
+		result[ta.ID] = ta
 	}
 
 	if rowsErr := rows.Err(); rowsErr != nil {
@@ -2028,7 +2028,7 @@ func (db *PGCon) GetBlockState(ctx c.Context, blockID string) (entity.BlockState
 	return state, nil
 }
 
-func (db *PGCon) CheckBlockForHiddenFlag(ctx c.Context, blockId string) (bool, error) {
+func (db *PGCon) CheckBlockForHiddenFlag(ctx c.Context, blockID string) (bool, error) {
 	ctx, span := trace.StartSpan(ctx, "check_task_node_for_hidden_flag_monitoring")
 	defer span.End()
 
@@ -2042,7 +2042,7 @@ func (db *PGCon) CheckBlockForHiddenFlag(ctx c.Context, blockId string) (bool, e
 		where vs.id = $1`
 
 	var res bool
-	if err := db.Connection.QueryRow(ctx, q, blockId).Scan(&res); err != nil {
+	if err := db.Connection.QueryRow(ctx, q, blockID).Scan(&res); err != nil {
 		return false, err
 	}
 

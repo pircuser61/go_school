@@ -27,7 +27,7 @@ type ApprovalListSettings struct {
 }
 
 type SaveApprovalListSettings struct {
-	VersionId string   `json:"version_id"`
+	VersionID string   `json:"version_id"`
 	Name      string   `json:"name"`
 	Steps     []string `json:"steps"`
 
@@ -112,7 +112,7 @@ func (ps *ProcessSettings) ValidateSLA() bool {
 }
 
 type ExternalSystem struct {
-	Id   string `json:"system_id"`
+	ID   string `json:"system_id"`
 	Name string `json:"name,omitempty"`
 
 	InputSchema   *script.JSONSchema `json:"input_schema,omitempty"`
@@ -128,7 +128,7 @@ type ExternalSystem struct {
 type EndSystemSettings struct {
 	URL            string `json:"URL"`
 	Method         string `json:"method"`
-	MicroserviceId string `json:"microservice_id"`
+	MicroserviceID string `json:"microservice_id"`
 }
 
 type SLAVersionSettings struct {
@@ -138,8 +138,8 @@ type SLAVersionSettings struct {
 }
 
 type EndProcessData struct {
-	Id         string `json:"id"`
-	VersionId  string `json:"version_id"`
+	ID         string `json:"id"`
+	VersionID  string `json:"version_id"`
 	StartedAt  string `json:"started_at"`
 	FinishedAt string `json:"finished_at"`
 	Status     string `json:"status"`

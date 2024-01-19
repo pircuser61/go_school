@@ -26,12 +26,12 @@ type runNewVersionsByPrevVersionRequest struct {
 	Keys             map[string]string     `json:"keys"`
 }
 
-func (ae *APIEnv) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Request) {
+func (ae *Env) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Request) {
 	ctx, s := trace.StartSpan(r.Context(), "run_new_version_by_prev_version")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
-	errorHandler := newHttpErrorHandler(log, w)
+	errorHandler := newHTTPErrorHandler(log, w)
 
 	body, err := io.ReadAll(r.Body)
 	defer r.Body.Close()
@@ -103,14 +103,15 @@ func (ae *APIEnv) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Requ
 type runVersionByPipelineIDRequest struct {
 	ApplicationBody   orderedmap.OrderedMap `json:"application_body"`
 	Description       string                `json:"description"`
-	PipelineId        string                `json:"pipeline_id"`
+	PipelineID        string                `json:"pipeline_id"`
 	AttachmentFields  []string              `json:"attachment_fields"`
 	Keys              map[string]string     `json:"keys"`
 	IsTestApplication bool                  `json:"is_test_application"`
 	CustomTitle       string                `json:"custom_title"`
 }
 
-func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
+//nolint:revive //need to implement interface in api.go
+func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
 	ctx, s := trace.StartSpan(r.Context(), "run_version_by_pipeline_id")
 
@@ -125,7 +126,7 @@ func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request
 	}()
 
 	log := logger.GetLogger(ctx)
-	errorHandler := newHttpErrorHandler(log, w)
+	errorHandler := newHTTPErrorHandler(log, w)
 
 	body, err := io.ReadAll(r.Body)
 	defer r.Body.Close()
@@ -150,9 +151,9 @@ func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	requestInfo.PipelineID = req.PipelineId
+	requestInfo.PipelineID = req.PipelineID
 
-	if req.PipelineId == "" {
+	if req.PipelineID == "" {
 		e := ValidationError
 		requestInfo.Status = e.Status()
 
@@ -174,9 +175,9 @@ func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request
 	//nolint:errcheck // нецелесообразно отслеживать подобные ошибки в defer
 	defer storage.Release(ctx)
 
-	version, err := storage.GetVersionByPipelineID(ctx, req.PipelineId)
+	version, err := storage.GetVersionByPipelineID(ctx, req.PipelineID)
 	if err != nil {
-		e := GetVersionsByBlueprintIdError
+		e := GetVersionsByBlueprintIDError
 		requestInfo.Status = e.Status()
 
 		errorHandler.handleError(e, err)

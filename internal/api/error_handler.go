@@ -11,7 +11,7 @@ type httpErrorHandler struct {
 	w   http.ResponseWriter
 }
 
-func newHttpErrorHandler(log logger.Logger, w http.ResponseWriter) httpErrorHandler {
+func newHTTPErrorHandler(log logger.Logger, w http.ResponseWriter) httpErrorHandler {
 	return httpErrorHandler{log: log, w: w}
 }
 

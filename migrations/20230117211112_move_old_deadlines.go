@@ -19,8 +19,8 @@ func init() {
 func upMoveOldDeadlines(tx *sql.Tx) error {
 	type ResultRowStruct struct {
 		BlockID         uuid.UUID
-		HalfSlaDeadline *time.Time
-		SlaDeadline     *time.Time
+		HalfSLADeadline *time.Time
+		SLADeadline     *time.Time
 		CheckHalfSLA    bool
 		CheckSLA        bool
 	}
@@ -52,8 +52,8 @@ func upMoveOldDeadlines(tx *sql.Tx) error {
 
 		scanErr := rows.Scan(
 			&resultRow.BlockID,
-			&resultRow.HalfSlaDeadline,
-			&resultRow.SlaDeadline,
+			&resultRow.HalfSLADeadline,
+			&resultRow.SLADeadline,
 			&resultRow.CheckHalfSLA,
 			&resultRow.CheckSLA,
 		)
@@ -63,18 +63,18 @@ func upMoveOldDeadlines(tx *sql.Tx) error {
 			return scanErr
 		}
 
-		if resultRow.CheckHalfSLA && resultRow.HalfSlaDeadline != nil {
+		if resultRow.CheckHalfSLA && resultRow.HalfSLADeadline != nil {
 			resultRows = append(resultRows, UpdateStruct{
 				BlockID:  resultRow.BlockID,
-				Deadline: *resultRow.HalfSlaDeadline,
+				Deadline: *resultRow.HalfSLADeadline,
 				Action:   entity.TaskUpdateActionHalfSLABreach,
 			})
 		}
 
-		if resultRow.CheckSLA && resultRow.SlaDeadline != nil {
+		if resultRow.CheckSLA && resultRow.SLADeadline != nil {
 			resultRows = append(resultRows, UpdateStruct{
 				BlockID:  resultRow.BlockID,
-				Deadline: *resultRow.SlaDeadline,
+				Deadline: *resultRow.SLADeadline,
 				Action:   entity.TaskUpdateActionSLABreach,
 			})
 		}
@@ -102,15 +102,15 @@ func upMoveOldDeadlines(tx *sql.Tx) error {
 
 func downMoveOldDeadlines(tx *sql.Tx) error {
 	type ResultRowStruct struct {
-		Id       uuid.UUID
+		ID       uuid.UUID
 		Deadline time.Time
 		Action   entity.TaskUpdateAction
 	}
 
 	type UpdateStruct struct {
-		Id              uuid.UUID
-		HalfSlaDeadline *time.Time
-		SlaDeadline     *time.Time
+		ID              uuid.UUID
+		HalfSLADeadline *time.Time
+		SLADeadline     *time.Time
 	}
 
 	var (
@@ -131,7 +131,7 @@ func downMoveOldDeadlines(tx *sql.Tx) error {
 			updateRow UpdateStruct
 		)
 
-		scanErr := rows.Scan(&resultRow.Id, &resultRow.Deadline, &resultRow.Action)
+		scanErr := rows.Scan(&resultRow.ID, &resultRow.Deadline, &resultRow.Action)
 
 		if scanErr != nil {
 			rows.Close()
@@ -140,12 +140,12 @@ func downMoveOldDeadlines(tx *sql.Tx) error {
 		}
 
 		if resultRow.Action == entity.TaskUpdateActionHalfSLABreach {
-			updateRow.HalfSlaDeadline = &resultRow.Deadline
+			updateRow.HalfSLADeadline = &resultRow.Deadline
 		} else {
-			updateRow.SlaDeadline = &resultRow.Deadline
+			updateRow.SLADeadline = &resultRow.Deadline
 		}
 
-		updateRow.Id = resultRow.Id
+		updateRow.ID = resultRow.ID
 		resultRows = append(resultRows, updateRow)
 	}
 
@@ -158,17 +158,17 @@ func downMoveOldDeadlines(tx *sql.Tx) error {
 	rows.Close()
 
 	for _, row := range resultRows {
-		if row.HalfSlaDeadline != nil {
+		if row.HalfSLADeadline != nil {
 			query = "update variable_storage set half_sla_deadline = $1, check_half_sla = True where id = $2"
 
-			_, queryErr := tx.Exec(query, row.HalfSlaDeadline, row.Id)
+			_, queryErr := tx.Exec(query, row.HalfSLADeadline, row.ID)
 			if queryErr != nil {
 				return queryErr
 			}
 		} else {
 			query = "update variable_storage set sla_deadline = $1, check_sla = True where id = $2"
 
-			_, queryErr := tx.Exec(query, row.SlaDeadline, row.Id)
+			_, queryErr := tx.Exec(query, row.SLADeadline, row.ID)
 			if queryErr != nil {
 				return queryErr
 			}

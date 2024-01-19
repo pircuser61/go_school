@@ -7,7 +7,7 @@ import (
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
-	file_registry "gitlab.services.mts.ru/jocasta/pipeliner/internal/file-registry"
+	file_registry "gitlab.services.mts.ru/jocasta/pipeliner/internal/fileregistry"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 )
@@ -147,7 +147,7 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 					Action:      statusToTaskAction[StatusExecution],
 					DeadLine:    gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(time.Now(), gb.State.SLA, slaInfoPtr),
 					Description: description,
-					SdUrl:       gb.RunContext.Services.Sender.SdAddress,
+					SdURL:       gb.RunContext.Services.Sender.SdAddress,
 					Mailto:      gb.RunContext.Services.Sender.FetchEmail,
 					Login:       login,
 					IsEditable:  gb.State.GetIsEditable(),

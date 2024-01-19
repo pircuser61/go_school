@@ -101,7 +101,7 @@ func (s *Service) FillDefaultUnitID(ctx context.Context) error {
 		return fmt.Errorf("cant get organization id by login: %s", defaultLogin)
 	}
 
-	organization, err := s.GetOrganizationById(ctx, *employee.OrganizationId)
+	organization, err := s.GetOrganizationByID(ctx, *employee.OrganizationId)
 	if err != nil {
 		return err
 	}

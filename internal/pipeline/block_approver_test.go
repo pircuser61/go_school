@@ -319,7 +319,7 @@ func Test_createGoApproverBlock(t *testing.T) {
 		shortTitle               = "Нода Согласование"
 		approversFromSchema      = "a.var1;b.var2;var3"
 		approversFromSchemaSlice = "sd_app_0.application_body.users"
-		approverGroupId          = "uuid13456"
+		approverGroupID          = "uuid13456"
 		loginFromSlice0          = "pilzner1"
 		loginFromSlice1          = "pupok_na_jope"
 	)
@@ -341,12 +341,12 @@ func Test_createGoApproverBlock(t *testing.T) {
 
 	next := []entity.Socket{
 		{
-			Id:           DefaultSocketID,
+			ID:           DefaultSocketID,
 			Title:        script.DefaultSocketTitle,
 			NextBlockIds: []string{"next_0"},
 		},
 		{
-			Id:           rejectedSocketID,
+			ID:           rejectedSocketID,
 			Title:        script.RejectSocketTitle,
 			NextBlockIds: []string{"next_1"},
 		},
@@ -465,7 +465,7 @@ func Test_createGoApproverBlock(t *testing.T) {
 					Params: func() []byte {
 						r, _ := json.Marshal(&script.ApproverParams{
 							Type:             script.ApproverTypeGroup,
-							ApproversGroupID: approverGroupId,
+							ApproversGroupID: approverGroupID,
 							SLA:              1,
 							ApprovementRule:  "",
 						})
@@ -547,11 +547,11 @@ func Test_createGoApproverBlock(t *testing.T) {
 					FormsAccessibility: make([]script.FormAccessibility, 0),
 					ActionList: []Action{
 						{
-							Id:    DefaultSocketID,
+							ID:    DefaultSocketID,
 							Title: script.DefaultSocketTitle,
 						},
 						{
-							Id:    rejectedSocketID,
+							ID:    rejectedSocketID,
 							Title: script.RejectSocketTitle,
 						},
 					},
@@ -629,11 +629,11 @@ func Test_createGoApproverBlock(t *testing.T) {
 					FormsAccessibility: make([]script.FormAccessibility, 0),
 					ActionList: []Action{
 						{
-							Id:    DefaultSocketID,
+							ID:    DefaultSocketID,
 							Title: script.DefaultSocketTitle,
 						},
 						{
-							Id:    rejectedSocketID,
+							ID:    rejectedSocketID,
 							Title: script.RejectSocketTitle,
 						},
 					},
@@ -660,7 +660,7 @@ func Test_createGoApproverBlock(t *testing.T) {
 }
 
 func TestGoApproverBlock_Update(t *testing.T) {
-	stepId := uuid.New()
+	stepID := uuid.New()
 	exampleApprover := "example"
 	secondExampleApprover := "example2"
 	stepName := "appr"
@@ -700,7 +700,7 @@ func TestGoApproverBlock_Update(t *testing.T) {
 
 							res.On("GetTaskStepById",
 								mock.MatchedBy(func(ctx context.Context) bool { return true }),
-								stepId,
+								stepID,
 							).Return(
 								nil, errors.New("unknown error"),
 							)
@@ -729,7 +729,7 @@ func TestGoApproverBlock_Update(t *testing.T) {
 					ApprovementRule: script.AnyOfApprovementRequired,
 					ActionList: []Action{
 						{
-							Id: ApproverActionApprove,
+							ID: ApproverActionApprove,
 						},
 					},
 				},
@@ -753,10 +753,10 @@ func TestGoApproverBlock_Update(t *testing.T) {
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							sdMock.Cli = httpClient
 
@@ -767,7 +767,7 @@ func TestGoApproverBlock_Update(t *testing.T) {
 
 							res.On("GetTaskStepById",
 								mock.MatchedBy(func(ctx context.Context) bool { return true }),
-								stepId,
+								stepID,
 							).Return(
 								&entity.Step{
 									Time: time.Time{},
@@ -831,7 +831,7 @@ func TestGoApproverBlock_Update(t *testing.T) {
 					ApprovementRule: script.AnyOfApprovementRequired,
 					ActionList: []Action{
 						{
-							Id: ApproverActionApprove,
+							ID: ApproverActionApprove,
 						},
 					},
 				},
@@ -855,10 +855,10 @@ func TestGoApproverBlock_Update(t *testing.T) {
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							sdMock.Cli = httpClient
 
@@ -869,7 +869,7 @@ func TestGoApproverBlock_Update(t *testing.T) {
 
 							res.On("GetTaskStepById",
 								mock.MatchedBy(func(ctx context.Context) bool { return true }),
-								stepId,
+								stepID,
 							).Return(
 								&entity.Step{
 									Time: time.Time{},
@@ -931,7 +931,7 @@ func TestGoApproverBlock_Update(t *testing.T) {
 					},
 					ActionList: []Action{
 						{
-							Id: ApproverActionApprove,
+							ID: ApproverActionApprove,
 						},
 					},
 				},
@@ -955,10 +955,10 @@ func TestGoApproverBlock_Update(t *testing.T) {
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							sdMock.Cli = httpClient
 
@@ -969,7 +969,7 @@ func TestGoApproverBlock_Update(t *testing.T) {
 
 							res.On("GetTaskStepById",
 								mock.MatchedBy(func(ctx context.Context) bool { return true }),
-								stepId,
+								stepID,
 							).Return(
 								&entity.Step{
 									Time: time.Time{},

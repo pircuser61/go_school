@@ -7,7 +7,7 @@ import (
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
-	file_registry "gitlab.services.mts.ru/jocasta/pipeliner/internal/file-registry"
+	file_registry "gitlab.services.mts.ru/jocasta/pipeliner/internal/fileregistry"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
@@ -48,7 +48,7 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 	actionsList := make([]mail.Action, 0, len(gb.State.ActionList))
 	for i := range gb.State.ActionList {
 		actionsList = append(actionsList, mail.Action{
-			InternalActionName: gb.State.ActionList[i].Id,
+			InternalActionName: gb.State.ActionList[i].ID,
 			Title:              gb.State.ActionList[i].Title,
 		})
 	}
@@ -136,7 +136,7 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 			DeadLine: gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(
 				time.Now(), gb.State.SLA, slaInfoPtr,
 			),
-			SdUrl:                     gb.RunContext.Services.Sender.SdAddress,
+			SdURL:                     gb.RunContext.Services.Sender.SdAddress,
 			Mailto:                    gb.RunContext.Services.Sender.FetchEmail,
 			Login:                     login,
 			IsEditable:                gb.State.GetIsEditable(),
@@ -227,7 +227,7 @@ func (gb *GoApproverBlock) notifyAdditionalApprovers(ctx c.Context, logins []str
 
 	emails = utils.UniqueStrings(emails)
 
-	slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDTO{
+	slaInfoPtr, getSLAInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDTO{
 		TaskCompletionIntervals: []entity.TaskCompletionInterval{{
 			StartedAt:  gb.RunContext.CurrBlockStartTime,
 			FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100),
@@ -235,8 +235,8 @@ func (gb *GoApproverBlock) notifyAdditionalApprovers(ctx c.Context, logins []str
 		WorkType: sla.WorkHourType(gb.State.WorkType),
 	})
 
-	if getSlaInfoErr != nil {
-		return getSlaInfoErr
+	if getSLAInfoErr != nil {
+		return getSLAInfoErr
 	}
 
 	lastWorksForUser := make([]*entity.EriusTask, 0)

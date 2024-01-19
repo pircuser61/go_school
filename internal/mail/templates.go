@@ -12,7 +12,7 @@ import (
 	"gitlab.services.mts.ru/abp/mail/pkg/email"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
-	file_registry "gitlab.services.mts.ru/jocasta/pipeliner/internal/file-registry"
+	file_registry "gitlab.services.mts.ru/jocasta/pipeliner/internal/fileregistry"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
@@ -102,12 +102,12 @@ func NewApprovementSLATpl(id, name, sdURL, status string) Template {
 		Template: "internal/mail/template/13approvalHasExpired-template.html",
 		Image:    "13_isteklo_sogl.png",
 		Variables: struct {
-			Id     string `json:"id"`
+			ID     string `json:"id"`
 			Name   string `json:"name"`
 			Action string `json:"action"`
 			Link   string `json:"link"`
 		}{
-			Id:     id,
+			ID:     id,
 			Name:   name,
 			Action: actionName,
 			Link:   fmt.Sprintf(TaskURLTemplate, sdURL, id),
@@ -126,14 +126,14 @@ func NewApprovementHalfSLATpl(id, name, sdURL, status, deadline string, lastWork
 		Template: "internal/mail/template/14approvalExpires-template.html",
 		Image:    "14_istekaet_sogl.png",
 		Variables: struct {
-			Id         string    `json:"id"`
+			ID         string    `json:"id"`
 			Name       string    `json:"name"`
 			Link       string    `json:"link"`
 			Deadline   string    `json:"deadline"`
 			LastWorks  LastWorks `json:"last_works"`
 			ActionName string    `json:"action_name"`
 		}{
-			Id:         id,
+			ID:         id,
 			Name:       name,
 			Link:       fmt.Sprintf(TaskURLTemplate, sdURL, id),
 			Deadline:   deadline,
@@ -149,11 +149,11 @@ func NewExecutionSLATpl(id, name, sdURL string) Template {
 		Template: "internal/mail/template/19executionExpired-template.html",
 		Image:    "19_isteklo_isp.png",
 		Variables: struct {
-			Id   string `json:"id"`
+			ID   string `json:"id"`
 			Name string `json:"name"`
 			Link string `json:"link"`
 		}{
-			Id:   id,
+			ID:   id,
 			Name: name,
 			Link: fmt.Sprintf(TaskURLTemplate, sdURL, id),
 		},
@@ -166,19 +166,19 @@ func NewFormSLATpl(id, name, sdURL string) Template {
 		Template: "internal/mail/template/32dopInfoIsteklo-template.html",
 		Image:    "32_vremja_isteklo.png",
 		Variables: struct {
-			Id   string `json:"id"`
+			ID   string `json:"id"`
 			Name string `json:"name"`
 			Link string `json:"link"`
 		}{
-			Id:   id,
+			ID:   id,
 			Name: name,
 			Link: fmt.Sprintf(TaskURLTemplate, sdURL, id),
 		},
 	}
 }
 
-func NewExecutiontHalfSLATpl(id, name, sdUrl, deadline string, lastWorks []*entity.EriusTask) Template {
-	lastWorksTemplate := getLastWorksForTemplate(lastWorks, sdUrl)
+func NewExecutiontHalfSLATpl(id, name, sdURL, deadline string, lastWorks []*entity.EriusTask) Template {
+	lastWorksTemplate := getLastWorksForTemplate(lastWorks, sdURL)
 
 	return Template{
 		Subject:  fmt.Sprintf("По заявке № %s %s истекает время выполнения", id, name),
@@ -193,66 +193,66 @@ func NewExecutiontHalfSLATpl(id, name, sdUrl, deadline string, lastWorks []*enti
 		}{
 			ID:        id,
 			Name:      name,
-			Link:      fmt.Sprintf(TaskURLTemplate, sdUrl, id),
+			Link:      fmt.Sprintf(TaskURLTemplate, sdURL, id),
 			Deadline:  deadline,
 			LastWorks: lastWorksTemplate,
 		},
 	}
 }
 
-func NewFormDayHalfSLATpl(id, name, sdUrl, deadline string) Template {
+func NewFormDayHalfSLATpl(id, name, sdURL, deadline string) Template {
 	return Template{
 		Subject:  fmt.Sprintf("По заявке № %s %s истекает время предоставления информации", id, name),
 		Template: "internal/mail/template/33dopInfoIstekaet-template.html",
 		Image:    "33_vremja_istekaet.png",
 		Variables: struct {
 			Name     string `json:"name"`
-			Id       string `json:"id"`
+			ID       string `json:"id"`
 			Link     string `json:"link"`
 			Deadline string `json:"deadline"`
 		}{
 			Name:     name,
-			Id:       id,
-			Link:     fmt.Sprintf(TaskURLTemplate, sdUrl, id),
+			ID:       id,
+			Link:     fmt.Sprintf(TaskURLTemplate, sdURL, id),
 			Deadline: deadline,
 		},
 	}
 }
 
-func NewReworkSLATpl(id, name, sdUrl string, reworkSla int, checkSla bool) Template {
+func NewReworkSLATpl(id, name, sdURL string, reworkSLA int, checkSLA bool) Template {
 	return Template{
 		Subject:  fmt.Sprintf("Заявка № %s %s автоматически перенесена в архив", id, name),
 		Template: "internal/mail/template/34rejectToarchive-template.html",
 		Image:    "34_istjok_srok_ojidaniya_dorabotok.png",
 		Variables: struct {
-			Id       string `json:"id"`
+			ID       string `json:"id"`
 			Name     string `json:"name"`
 			Duration string `json:"duration"`
 			Link     string `json:"link"`
 			CheckSLA bool   `json:"checkSLA"`
 		}{
-			Id:       id,
+			ID:       id,
 			Name:     name,
-			Duration: strconv.Itoa(reworkSla / 8),
-			Link:     fmt.Sprintf(TaskURLTemplate, sdUrl, id),
-			CheckSLA: checkSla,
+			Duration: strconv.Itoa(reworkSLA / 8),
+			Link:     fmt.Sprintf(TaskURLTemplate, sdURL, id),
+			CheckSLA: checkSLA,
 		},
 	}
 }
 
-func NewRequestExecutionInfoTpl(id, name, sdUrl string) Template {
+func NewRequestExecutionInfoTpl(id, name, sdURL string) Template {
 	return Template{
 		Subject:  fmt.Sprintf("Заявка № %s %s запрос дополнительной информации", id, name),
 		Template: "internal/mail/template/15moreInfoRequired-template.html",
 		Image:    "15_dop_info_trebuetsya.png",
 		Variables: struct {
-			Id   string `json:"id"`
+			ID   string `json:"id"`
 			Name string `json:"name"`
 			Link string `json:"link"`
 		}{
-			Id:   id,
+			ID:   id,
 			Name: name,
-			Link: fmt.Sprintf(TaskURLTemplate, sdUrl, id),
+			Link: fmt.Sprintf(TaskURLTemplate, sdURL, id),
 		},
 	}
 }
@@ -288,7 +288,7 @@ func NewRequestFormExecutionInfoTpl(id, name, sdURL, deadline string, isReentry 
 type NewFormExecutionNeedTakeInWorkDto struct {
 	WorkNumber string
 	WorkTitle  string
-	SdUrl      string
+	SdURL      string
 	Mailto     string
 	BlockName  string
 	Login      string
@@ -309,16 +309,16 @@ func NewFormExecutionNeedTakeInWorkTpl(dto *NewFormExecutionNeedTakeInWorkDto, i
 		Template: "internal/mail/template/39takeInWork-template.html",
 		Image:    "39_neobhodimo_info.png",
 		Variables: struct {
-			Id        string
+			ID        string
 			Name      string
 			Link      string
 			Deadline  string
 			ActionBtn Button
 			RetryStr  string
 		}{
-			Id:        dto.WorkNumber,
+			ID:        dto.WorkNumber,
 			Name:      dto.WorkTitle,
-			Link:      fmt.Sprintf(TaskURLTemplate, dto.SdUrl, dto.WorkNumber),
+			Link:      fmt.Sprintf(TaskURLTemplate, dto.SdURL, dto.WorkNumber),
 			Deadline:  dto.Deadline,
 			ActionBtn: *actionBtn,
 			RetryStr:  retryStr,
@@ -326,53 +326,53 @@ func NewFormExecutionNeedTakeInWorkTpl(dto *NewFormExecutionNeedTakeInWorkDto, i
 	}
 }
 
-func NewRequestApproverInfoTpl(id, name, sdUrl string) Template {
+func NewRequestApproverInfoTpl(id, name, sdURL string) Template {
 	return Template{
 		Subject:  fmt.Sprintf("Заявка № %s %s запрос дополнительной информации", id, name),
 		Template: "internal/mail/template/15moreInfoRequired-template.html",
 		Image:    "15_dop_info_trebuetsya.png",
 		Variables: struct {
-			Id   string `json:"id"`
+			ID   string `json:"id"`
 			Name string `json:"name"`
 			Link string `json:"link"`
 		}{
-			Id:   id,
+			ID:   id,
 			Name: name,
-			Link: fmt.Sprintf(TaskURLTemplate, sdUrl, id),
+			Link: fmt.Sprintf(TaskURLTemplate, sdURL, id),
 		},
 	}
 }
 
-func NewAnswerApproverInfoTpl(id, name, sdUrl string) Template {
+func NewAnswerApproverInfoTpl(id, name, sdURL string) Template {
 	return Template{
 		Subject:  fmt.Sprintf("Заявка № %s %s запрос дополнительной информации", id, name),
 		Template: "internal/mail/template/15moreInfoRequired-template.html",
 		Image:    "15_dop_info_trebuetsya.png",
 		Variables: struct {
-			Id   string `json:"id"`
+			ID   string `json:"id"`
 			Name string `json:"name"`
 			Link string `json:"link"`
 		}{
-			Id:   id,
+			ID:   id,
 			Name: name,
-			Link: fmt.Sprintf(TaskURLTemplate, sdUrl, id),
+			Link: fmt.Sprintf(TaskURLTemplate, sdURL, id),
 		},
 	}
 }
 
-func NewAnswerExecutionInfoTpl(id, name, sdUrl string) Template {
+func NewAnswerExecutionInfoTpl(id, name, sdURL string) Template {
 	return Template{
 		Subject:  fmt.Sprintf("Заявка № %s %s получена дополнительная информация", id, name),
 		Template: "internal/mail/template/16additionalInfoReceived-template.html",
 		Image:    "16_dop_info_polucheno.png",
 		Variables: struct {
-			Id   string `json:"id"`
+			ID   string `json:"id"`
 			Name string `json:"name"`
 			Link string `json:"link"`
 		}{
-			Id:   id,
+			ID:   id,
 			Name: name,
-			Link: fmt.Sprintf(TaskURLTemplate, sdUrl, id),
+			Link: fmt.Sprintf(TaskURLTemplate, sdURL, id),
 		},
 	}
 }
@@ -583,7 +583,7 @@ type NewAppPersonStatusTpl struct {
 	Action      string
 	DeadLine    string
 	Description []orderedmap.OrderedMap
-	SdUrl       string
+	SdURL       string
 	Mailto      string
 	Login       string
 	Initiator   *sso.UserInfo
@@ -612,14 +612,14 @@ func NewSignerNotificationTpl(dto *SignerNotifTemplate) Template {
 		Template: "internal/mail/template/26applicationIsAwaitingSignature-template.html",
 		Image:    "26_zayavka_ojidaet_podpis.png",
 		Variables: struct {
-			Id          string
+			ID          string
 			Name        string
 			Link        string
 			Description []orderedmap.OrderedMap
 			Deadline    string
 			AutoReject  bool
 		}{
-			Id:          dto.WorkNumber,
+			ID:          dto.WorkNumber,
 			Name:        dto.Name,
 			Link:        fmt.Sprintf(TaskURLTemplate, dto.SdURL, dto.WorkNumber),
 			Deadline:    dto.Deadline,
@@ -657,7 +657,7 @@ func NewAppPersonStatusNotificationTpl(in *NewAppPersonStatusTpl) (Template, []B
 		template = "internal/mail/template/11receivedForApproval-template.html"
 	}
 
-	lastWorksTemplate := getLastWorksForTemplate(in.LastWorks, in.SdUrl)
+	lastWorksTemplate := getLastWorksForTemplate(in.LastWorks, in.SdURL)
 	in.Description = CheckGroup(in.Description)
 
 	return Template{
@@ -665,7 +665,7 @@ func NewAppPersonStatusNotificationTpl(in *NewAppPersonStatusTpl) (Template, []B
 		Template: template,
 		Image:    "11_postupila_na_sogl.png",
 		Variables: struct {
-			Id          string
+			ID          string
 			Name        string
 			Link        string
 			Action      string
@@ -676,9 +676,9 @@ func NewAppPersonStatusNotificationTpl(in *NewAppPersonStatusTpl) (Template, []B
 			JobTitle    string
 			LastWorks   LastWorks
 		}{
-			Id:          in.WorkNumber,
+			ID:          in.WorkNumber,
 			Name:        in.Name,
-			Link:        fmt.Sprintf(TaskURLTemplate, in.SdUrl, in.WorkNumber),
+			Link:        fmt.Sprintf(TaskURLTemplate, in.SdURL, in.WorkNumber),
 			Action:      actionName,
 			Description: in.Description,
 			Deadline:    in.DeadLine,
@@ -689,19 +689,19 @@ func NewAppPersonStatusNotificationTpl(in *NewAppPersonStatusTpl) (Template, []B
 	}, buttons
 }
 
-func NewSendToInitiatorEditTpl(id, name, sdUrl string) Template {
+func NewSendToInitiatorEditTpl(id, name, sdURL string) Template {
 	return Template{
 		Subject:  fmt.Sprintf("Заявка № %s %s требует доработки", id, name),
 		Template: "internal/mail/template/17needsImprovement-template.html",
 		Image:    "17_nujna_dorabotka.png",
 		Variables: struct {
-			Id   string `json:"id"`
+			ID   string `json:"id"`
 			Name string `json:"name"`
 			Link string `json:"link"`
 		}{
-			Id:   id,
+			ID:   id,
 			Name: name,
-			Link: fmt.Sprintf(TaskURLTemplate, sdUrl, id),
+			Link: fmt.Sprintf(TaskURLTemplate, sdURL, id),
 		},
 	}
 }
@@ -727,7 +727,7 @@ func NewExecutionNeedTakeInWorkTpl(dto *ExecutorNotifTemplate) Template {
 		Template: "internal/mail/template/27reassignment-template.html",
 		Image:    "27_zayavka_ojidaet_isp.png",
 		Variables: struct {
-			Id          string
+			ID          string
 			Name        string
 			Link        string
 			Description []orderedmap.OrderedMap
@@ -736,7 +736,7 @@ func NewExecutionNeedTakeInWorkTpl(dto *ExecutorNotifTemplate) Template {
 			ActionBtn   Button
 			LastWorks   LastWorks
 		}{
-			Id:          dto.WorkNumber,
+			ID:          dto.WorkNumber,
 			Name:        dto.Name,
 			Link:        fmt.Sprintf(TaskURLTemplate, dto.SdURL, dto.WorkNumber),
 			Description: dto.Description,
@@ -757,7 +757,7 @@ func NewExecutionTakenInWorkTpl(dto *ExecutorNotifTemplate) Template {
 		Template: "internal/mail/template/05applicationAccepted-template.html",
 		Image:    "05_zayavka_vzyata_v_rabotu.png",
 		Variables: struct {
-			Id          string
+			ID          string
 			Name        string
 			Link        string
 			Executor    *sso.UserInfo
@@ -765,7 +765,7 @@ func NewExecutionTakenInWorkTpl(dto *ExecutorNotifTemplate) Template {
 			Description []orderedmap.OrderedMap
 			LastWorks   LastWorks
 		}{
-			Id:          dto.WorkNumber,
+			ID:          dto.WorkNumber,
 			Name:        dto.Name,
 			Link:        fmt.Sprintf(TaskURLTemplate, dto.SdURL, dto.WorkNumber),
 			Executor:    dto.Executor,
@@ -776,8 +776,8 @@ func NewExecutionTakenInWorkTpl(dto *ExecutorNotifTemplate) Template {
 	}
 }
 
-func NewAddApproversTpl(id, name, sdUrl, status, deadline string, lastWorks []*entity.EriusTask) Template {
-	lastWorksTemplate := getLastWorksForTemplate(lastWorks, sdUrl)
+func NewAddApproversTpl(id, name, sdURL, status, deadline string, lastWorks []*entity.EriusTask) Template {
+	lastWorksTemplate := getLastWorksForTemplate(lastWorks, sdURL)
 	actionName := getApprovementActionNameByStatus(status, defaultApprovementActionName)
 
 	return Template{
@@ -785,16 +785,16 @@ func NewAddApproversTpl(id, name, sdUrl, status, deadline string, lastWorks []*e
 		Template: "internal/mail/template/42receivedForApproval-template.html",
 		Image:    "42_zayavka_ojidaet_sogl.png",
 		Variables: struct {
-			Id        string    `json:"id"`
+			ID        string    `json:"id"`
 			Name      string    `json:"name"`
 			Link      string    `json:"link"`
 			Deadline  string    `json:"deadline"`
 			Action    string    `json:"action"`
 			LastWorks LastWorks `json:"last_works"`
 		}{
-			Id:        id,
+			ID:        id,
 			Name:      name,
-			Link:      fmt.Sprintf(TaskURLTemplate, sdUrl, id),
+			Link:      fmt.Sprintf(TaskURLTemplate, sdURL, id),
 			Action:    actionName,
 			Deadline:  deadline,
 			LastWorks: lastWorksTemplate,
@@ -802,42 +802,42 @@ func NewAddApproversTpl(id, name, sdUrl, status, deadline string, lastWorks []*e
 	}
 }
 
-func NewDecisionMadeByAdditionalApprover(id, name, decision, comment, sdUrl string, author *sso.UserInfo) Template {
+func NewDecisionMadeByAdditionalApprover(id, name, decision, comment, sdURL string, author *sso.UserInfo) Template {
 	return Template{
 		Subject:  fmt.Sprintf("Получена рецензия по Заявке № %s %s", id, name),
 		Template: "internal/mail/template/18reviewReceived-template.html",
 		Image:    "18_poluchena_recenziya.png",
 		Variables: struct {
-			Id       string `json:"id"`
+			ID       string `json:"id"`
 			Name     string `json:"name"`
 			Link     string `json:"link"`
 			Decision string `json:"decision"`
 			Comment  string `json:"comment"`
 			Author   *sso.UserInfo
 		}{
-			Id:       id,
+			ID:       id,
 			Name:     name,
 			Decision: decision,
 			Comment:  comment,
-			Link:     fmt.Sprintf(TaskURLTemplate, sdUrl, id),
+			Link:     fmt.Sprintf(TaskURLTemplate, sdURL, id),
 			Author:   author,
 		},
 	}
 }
 
-func NewDayBeforeRequestAddInfoSLABreached(id, name, sdUrl string) Template {
+func NewDayBeforeRequestAddInfoSLABreached(id, name, sdURL string) Template {
 	return Template{
 		Subject:  fmt.Sprintf("По заявке № %s %s требуется дополнительная информация", id, name),
 		Template: "internal/mail/template/41infoWithinOneBusinessDay-template.html",
 		Image:    "41_neobhodimo_dop_info.png",
 		Variables: struct {
-			Id   string `json:"id"`
+			ID   string `json:"id"`
 			Name string `json:"name"`
 			Link string `json:"link"`
 		}{
-			Id:   id,
+			ID:   id,
 			Name: name,
-			Link: fmt.Sprintf(TaskURLTemplate, sdUrl, id),
+			Link: fmt.Sprintf(TaskURLTemplate, sdURL, id),
 		},
 	}
 }
@@ -859,19 +859,19 @@ func NewRequestAddInfoSLABreached(id, name, sdURL string, _ int) Template {
 	}
 }
 
-func NewInvalidFunctionResp(id, name, sdUrl string) Template {
+func NewInvalidFunctionResp(id, name, sdURL string) Template {
 	return Template{
 		Subject:  fmt.Sprintf("По заявке № %s %s не удалось получить обратную связь от внешней системы", id, name),
 		Template: "internal/mail/template/35errorRespOtherSystem-template.html",
 		Image:    "35_ne_poluchili_obr_svyaz'.png",
 		Variables: struct {
-			Id   string
+			ID   string
 			Name string
 			Link string
 		}{
-			Id:   id,
+			ID:   id,
 			Name: name,
-			Link: fmt.Sprintf(TaskURLTemplate, sdUrl, id),
+			Link: fmt.Sprintf(TaskURLTemplate, sdURL, id),
 		},
 	}
 }
@@ -884,7 +884,7 @@ func NewFormExecutionTakenInWorkTpl(dto *ExecutorNotifTemplate) Template {
 		Template: "internal/mail/template/05applicationAccepted-template.html",
 		Image:    "05_zayavka_vzyata_v_rabotu.png",
 		Variables: struct {
-			Id          string `json:"id"`
+			ID          string `json:"id"`
 			Name        string `json:"name"`
 			Link        string `json:"link"`
 			Executor    *sso.UserInfo
@@ -892,7 +892,7 @@ func NewFormExecutionTakenInWorkTpl(dto *ExecutorNotifTemplate) Template {
 			Description []orderedmap.OrderedMap `json:"description"`
 			LastWorks   LastWorks               `json:"last_works"`
 		}{
-			Id:          dto.WorkNumber,
+			ID:          dto.WorkNumber,
 			Name:        dto.Name,
 			Link:        fmt.Sprintf(TaskURLTemplate, dto.SdURL, dto.WorkNumber),
 			Executor:    dto.Executor,
@@ -903,55 +903,55 @@ func NewFormExecutionTakenInWorkTpl(dto *ExecutorNotifTemplate) Template {
 	}
 }
 
-func NewFormPersonExecutionNotificationTemplate(workNumber, workTitle, sdUrl, deadline string) Template {
+func NewFormPersonExecutionNotificationTemplate(workNumber, workTitle, sdURL, deadline string) Template {
 	return Template{
 		Subject:  fmt.Sprintf("Заявка № %s %s - Необходимо предоставить информацию", workNumber, workTitle),
 		Template: "internal/mail/template/29form-template.html",
 		Image:    "29_neobhodimo_predostavit'_info.png",
 		Variables: struct {
-			Id       string
+			ID       string
 			Name     string
 			Link     string
 			Deadline string
 		}{
-			Id:       workNumber,
+			ID:       workNumber,
 			Name:     workTitle,
-			Link:     fmt.Sprintf(TaskURLTemplate, sdUrl, workNumber),
+			Link:     fmt.Sprintf(TaskURLTemplate, sdURL, workNumber),
 			Deadline: deadline,
 		},
 	}
 }
 
-func NewRejectPipelineGroupTemplate(workNumber, workTitle, sdUrl string) Template {
+func NewRejectPipelineGroupTemplate(workNumber, workTitle, sdURL string) Template {
 	return Template{
 		Subject:  fmt.Sprintf("Заявка № %s %s - отозвана", workNumber, workTitle),
 		Template: "internal/mail/template/24applicationWithdrawn-template.html",
 		Image:    "24_zayavka_otozvana_inic.png",
 		Variables: struct {
-			Id   string `json:"id"`
+			ID   string `json:"id"`
 			Name string `json:"name"`
 			Link string `json:"link"`
 		}{
-			Id:   workNumber,
+			ID:   workNumber,
 			Name: workTitle,
-			Link: fmt.Sprintf(TaskURLTemplate, sdUrl, workNumber),
+			Link: fmt.Sprintf(TaskURLTemplate, sdURL, workNumber),
 		},
 	}
 }
 
-func NewSignSLAExpiredTemplate(workNumber, workTitle, sdUrl string) Template {
+func NewSignSLAExpiredTemplate(workNumber, workTitle, sdURL string) Template {
 	return Template{
 		Subject:  fmt.Sprintf("По заявке № %s %s- истекло время подписания", workNumber, workTitle),
 		Template: "internal/mail/template/37SignIsteklo-template.html",
 		Image:    "37_isteklo_vremja_podpisanija.png",
 		Variables: struct {
-			Id   string `json:"id"`
+			ID   string `json:"id"`
 			Name string `json:"name"`
 			Link string `json:"link"`
 		}{
-			Id:   workNumber,
+			ID:   workNumber,
 			Name: workTitle,
-			Link: fmt.Sprintf(TaskURLTemplate, sdUrl, workNumber),
+			Link: fmt.Sprintf(TaskURLTemplate, sdURL, workNumber),
 		},
 	}
 }
@@ -975,19 +975,19 @@ func getApprovementActionNameByStatus(status, defaultActionName string) (res str
 	}
 }
 
-func NewSignErrorTemplate(workNumber, name, sdUrl string) Template {
+func NewSignErrorTemplate(workNumber, name, sdURL string) Template {
 	return Template{
 		Subject:  fmt.Sprintf("По заявке № %s - возникла ошибка подписания", workNumber),
 		Template: "internal/mail/template/31signingError-template.html",
 		Image:    "31_oshibka_podpisaniya.png",
 		Variables: struct {
-			Id   string `json:"id"`
+			ID   string `json:"id"`
 			Name string `json:"name"`
 			Link string `json:"link"`
 		}{
-			Id:   workNumber,
+			ID:   workNumber,
 			Name: name,
-			Link: fmt.Sprintf(TaskURLTemplate, sdUrl, workNumber),
+			Link: fmt.Sprintf(TaskURLTemplate, sdURL, workNumber),
 		},
 	}
 }
@@ -1021,7 +1021,7 @@ const (
 	actionApproverSignUkep      = "sign_ukep"
 )
 
-func getApproverButtons(workNumber, mailto, blockId, login string, actions []Action, isEditable bool) []Button {
+func getApproverButtons(workNumber, mailto, blockID, login string, actions []Action, isEditable bool) []Button {
 	buttons := make([]Button, 0, len(actions))
 
 	for i := range actions {
@@ -1035,7 +1035,7 @@ func getApproverButtons(workNumber, mailto, blockId, login string, actions []Act
 
 		subject := fmt.Sprintf(
 			subjectTpl,
-			blockId,
+			blockID,
 			actions[i].InternalActionName,
 			workNumber,
 			taskUpdateActionApprovement,
@@ -1063,7 +1063,7 @@ func getApproverButtons(workNumber, mailto, blockId, login string, actions []Act
 	}
 
 	if isEditable {
-		sendEditAppSubject := fmt.Sprintf(subjectTpl, blockId, "", workNumber, actionApproverSendEditApp, login)
+		sendEditAppSubject := fmt.Sprintf(subjectTpl, blockID, "", workNumber, actionApproverSendEditApp, login)
 		sendEditAppBtn := getButton(mailto, sendEditAppSubject, "vernut.png")
 		buttons = append(buttons, *sendEditAppBtn)
 	}
@@ -1092,7 +1092,7 @@ func getExecutionButtons(workNumber, mailto, blockID, executed, rejected, login 
 	return buttons
 }
 
-func getLastWorksForTemplate(lastWorks []*entity.EriusTask, sdUrl string) LastWorks {
+func getLastWorksForTemplate(lastWorks []*entity.EriusTask, sdURL string) LastWorks {
 	lastWorksTemplate := make(LastWorks, 0, len(lastWorks))
 
 	for _, task := range lastWorks {
@@ -1100,7 +1100,7 @@ func getLastWorksForTemplate(lastWorks []*entity.EriusTask, sdUrl string) LastWo
 			WorkNumber: task.WorkNumber,
 			Name:       task.Name,
 			DaysAgo:    int(math.Round(utils.GetDateUnitNumBetweenDates(task.StartedAt, time.Now(), utils.Day))),
-			Link:       fmt.Sprintf(TaskURLTemplate, sdUrl, task.WorkNumber),
+			Link:       fmt.Sprintf(TaskURLTemplate, sdURL, task.WorkNumber),
 		})
 	}
 

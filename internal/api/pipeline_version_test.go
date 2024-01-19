@@ -38,7 +38,7 @@ func TestAPIEnv_getClientIDFromToken(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ae := &APIEnv{}
+			ae := &Env{}
 			got, err := ae.getClientIDFromToken(tt.token)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("getClientIDFromToken() error = %v, wantErr %v", err, tt.wantErr)
