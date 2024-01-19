@@ -38,7 +38,16 @@ func TestMakeTaskTitle(t *testing.T) {
 				customTitle:  "custom title",
 				isTest:       true,
 			},
-			wantRes: "version name - custom title (ТЕСТОВАЯ ЗАЯВКА)",
+			wantRes: "custom title (ТЕСТОВАЯ ЗАЯВКА)",
+		},
+		{
+			name: "is test work with custom title",
+			args: args{
+				versionTitle: "version name",
+				customTitle:  "custom title",
+				isTest:       false,
+			},
+			wantRes: "custom title",
 		},
 	}
 	for _, tt := range tests {
