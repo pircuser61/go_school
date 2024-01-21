@@ -116,6 +116,7 @@ func (gb *GoFormBlock) reEntry(ctx c.Context) error {
 				FormExecutorType: gb.State.FormExecutorType,
 				Value:            gb.State.InitialExecutorsSchema,
 			})
+
 			if setErr != nil {
 				return setErr
 			}
