@@ -111,8 +111,18 @@ func (gb *GoFormBlock) reEntry(ctx c.Context) error {
 	gb.State.ActualExecutor = nil
 
 	if !isAutofill && gb.State.FormExecutorType != script.FormExecutorTypeAutoFillUser {
-		gb.State.Executors = gb.State.InitialExecutors
-		gb.State.IsTakenInWork = len(gb.State.InitialExecutors) == 1
+		if gb.State.FormExecutorType == script.FormExecutorTypeFromSchema && gb.State.InitialExecutorsSchema != "" {
+			setErr := gb.setExecutorsByParams(ctx, &setFormExecutorsByParamsDTO{
+				FormExecutorType: gb.State.FormExecutorType,
+				Value:            gb.State.InitialExecutorsSchema,
+			})
+			if setErr != nil {
+				return setErr
+			}
+		} else {
+			gb.State.Executors = gb.State.InitialExecutors
+			gb.State.IsTakenInWork = len(gb.State.InitialExecutors) == 1
+		}
 	}
 
 	if gb.State.FormExecutorType == script.FormExecutorTypeAutoFillUser && gb.State.ReEnterSettings != nil {
@@ -252,6 +262,7 @@ func (gb *GoFormBlock) setExecutorsByParams(ctx c.Context, dto *setFormExecutors
 		}
 
 		gb.State.Executors = executorsFromSchema
+		gb.State.InitialExecutorsSchema = dto.Value
 		if len(gb.State.Executors) == 1 {
 			gb.State.IsTakenInWork = true
 		}
