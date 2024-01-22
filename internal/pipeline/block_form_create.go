@@ -52,7 +52,7 @@ func createGoFormBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx 
 		reEntry = runCtx.UpdateData == nil
 
 		if reEntry {
-			if err := b.reEntry(ctx); err != nil {
+			if err := b.reEntry(ctx, ef); err != nil {
 				return nil, false, err
 			}
 			b.RunContext.VarStore.AddStep(b.Name)
@@ -95,7 +95,7 @@ func createGoFormBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx 
 	return b, reEntry, nil
 }
 
-func (gb *GoFormBlock) reEntry(ctx c.Context) error {
+func (gb *GoFormBlock) reEntry(ctx c.Context, ef *entity.EriusFunc) error {
 	if gb.State.IsEditable == nil || !*gb.State.IsEditable {
 		return nil
 	}
@@ -111,10 +111,16 @@ func (gb *GoFormBlock) reEntry(ctx c.Context) error {
 	gb.State.ActualExecutor = nil
 
 	if !isAutofill && gb.State.FormExecutorType != script.FormExecutorTypeAutoFillUser {
-		if gb.State.FormExecutorType == script.FormExecutorTypeFromSchema && gb.State.InitialExecutorsSchema != "" {
+		if gb.State.FormExecutorType == script.FormExecutorTypeFromSchema {
+			var params script.FormParams
+			err := json.Unmarshal(ef.Params, &params)
+			if err != nil {
+				return errors.Wrap(err, "can not get form parameters")
+			}
+
 			setErr := gb.setExecutorsByParams(ctx, &setFormExecutorsByParamsDTO{
 				FormExecutorType: gb.State.FormExecutorType,
-				Value:            gb.State.InitialExecutorsSchema,
+				Value:            params.Executor,
 			})
 
 			if setErr != nil {
@@ -263,7 +269,6 @@ func (gb *GoFormBlock) setExecutorsByParams(ctx c.Context, dto *setFormExecutors
 		}
 
 		gb.State.Executors = executorsFromSchema
-		gb.State.InitialExecutorsSchema = dto.Value
 		if len(gb.State.Executors) == 1 {
 			gb.State.IsTakenInWork = true
 		}

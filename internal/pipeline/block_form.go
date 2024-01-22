@@ -45,7 +45,6 @@ type FormData struct {
 	SchemaId               string                  `json:"schema_id"`
 	Executors              map[string]struct{}     `json:"executors"`
 	InitialExecutors       map[string]struct{}     `json:"initial_executors"`
-	InitialExecutorsSchema string                  `json:"initial_executors_schema"`
 	Description            string                  `json:"description"`
 	ApplicationBody        map[string]interface{}  `json:"application_body"`
 	IsFilled               bool                    `json:"is_filled"`
