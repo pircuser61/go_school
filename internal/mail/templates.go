@@ -590,6 +590,7 @@ type NewAppPersonStatusTpl struct {
 	AttachFields []string                   `json:"attachFields"`
 
 	// actions for approver
+	Approvers          map[string]struct{}
 	ApproverActions    []Action
 	AdditionalApprover []string
 
@@ -777,16 +778,10 @@ func NewAddApproversTpl(in *NewAppPersonStatusTpl, recipientEmail string) (Templ
 
 	in.Description = CheckGroup(in.Description)
 
-	for _, v := range in.AdditionalApprover {
-		emails := strings.Split(recipientEmail, "@")
-		if v != emails[0] {
-			continue
-		}
-
+	emails := strings.Split(recipientEmail, "@")
+	if _, ok := in.Approvers[emails[0]]; !ok {
 		actions := []Action{{InternalActionName: "approve"}, {InternalActionName: "reject"}}
-		buttons = getApproverButtons(in.WorkNumber, in.Mailto, in.BlockID, emails[0], actions, in.IsEditable)
-		
-		break
+		buttons = getApproverButtons(in.WorkNumber, in.Mailto, in.BlockID, emails[0], actions, false)
 	}
 
 	return Template{
