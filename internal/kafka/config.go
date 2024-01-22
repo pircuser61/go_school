@@ -7,4 +7,6 @@ type Config struct {
 
 	ConsumerGroup string `yaml:"consumer_group"`
 	ConsumerTopic string `yaml:"consumer_topic"`
+
+	HealthCheckTimeout int `yaml:"health_check_timeout"`
 }
