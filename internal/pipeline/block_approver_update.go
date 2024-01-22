@@ -479,6 +479,7 @@ func (gb *GoApproverBlock) HandleBreachedSLARequestAddInfo(ctx c.Context) error 
 		fn = "pipeline.approver.HandleBreachedSLARequestAddInfo"
 	)
 
+	//nolint:goconst //не хочу внедрять миллион констант под каждую строку в проекте
 	comment := "заявка автоматически перенесена в архив по истечении 3 дней"
 
 	log := logger.GetLogger(ctx)

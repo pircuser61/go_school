@@ -42,6 +42,7 @@ func (runCtx BlockRunContext) addAuthHeader(ctx c.Context, r *http.Request) erro
 			return tokenErr
 		}
 
+		//nolint:goconst //не хочу внедрять миллион констант под каждую строку в проекте
 		r.Header.Add("Authorization", "Bearer "+token)
 	case microservice_v1.AuthType_basicAuth.String():
 		basicSecret := microservice_v1.BasicAuth{}

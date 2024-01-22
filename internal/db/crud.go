@@ -297,7 +297,7 @@ WHERE pp.deleted_at IS NULL
 `
 
 	if authorLogin != "" {
-		//nolint:gocritic //я не одобряю такие шайтан фокусы с sql но трогать работающий код не очень хочется
+		//nolint:gocritic,goconst //я не одобряю такие шайтан фокусы с sql но трогать работающий код не очень хочется
 		q = strings.ReplaceAll(q, "---author---", "AND pv.author='"+authorLogin+"'")
 	}
 
@@ -1421,7 +1421,6 @@ func (db *PGCon) deleteDeadlines(ctx context.Context, id uuid.UUID) error {
 		queryDeadlines,
 		id,
 	)
-
 	if err != nil {
 		return err
 	}

@@ -14,7 +14,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
 
-//nolint:dupl //another block
+//nolint:dupl,goconst //another block // не нужно здесь чекать константы
 func createGoApproverBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext,
 	expectedEvents map[string]struct{},
 ) (*GoApproverBlock, bool, error) {
@@ -105,9 +105,7 @@ func createGoApproverBlock(ctx c.Context, name string, ef *entity.EriusFunc, run
 		// TODO: выпилить когда сделаем циклы
 		// это для возврата на доработку при которой мы создаем новый процесс
 		// и пытаемся взять решение из прошлого процесса
-		if err := b.setPrevDecision(ctx); err != nil {
-			return nil, false, err
-		}
+		b.setPrevDecision(ctx)
 	}
 
 	return b, reEntry, nil
@@ -327,7 +325,7 @@ func (gb *GoApproverBlock) setApproversByParams(ctx c.Context, dto *setApprovers
 	return nil
 }
 
-func (gb *GoApproverBlock) setPrevDecision(ctx c.Context) error {
+func (gb *GoApproverBlock) setPrevDecision(ctx c.Context) {
 	decision := gb.State.GetDecision()
 
 	if decision == nil && len(gb.State.EditingAppLog) == 0 && gb.State.GetIsEditable() {
@@ -335,18 +333,14 @@ func (gb *GoApproverBlock) setPrevDecision(ctx c.Context) error {
 	}
 
 	if !gb.State.RepeatPrevDecision {
-		return nil
+		return
 	}
 
 	gb.setPreviousApprovers(ctx)
 
 	if decision == nil {
-		if gb.trySetPreviousDecision(ctx) {
-			return nil
-		}
+		gb.trySetPreviousDecision(ctx)
 	}
-
-	return nil
 }
 
 //nolint:dupl //its not duplicate
@@ -368,6 +362,7 @@ func (gb *GoApproverBlock) setEditingAppLogFromPreviousBlock(ctx c.Context) {
 	// get state from step.State
 	data, ok := parentStep.State[gb.Name]
 	if !ok {
+		//nolint:goconst //не хочу внедрять миллион констант под каждую строку в проекте
 		l.Error(funcName, "step state is not found: "+gb.Name)
 
 		return
@@ -405,6 +400,7 @@ func (gb *GoApproverBlock) trySetPreviousDecision(ctx c.Context) (isPrevDecision
 
 	data, ok := parentStep.State[gb.Name]
 	if !ok {
+		//nolint:goconst // не нужно здесь константы чекать
 		l.Error(funcName, "parent step state is not found: "+gb.Name)
 
 		return false
@@ -430,6 +426,7 @@ func (gb *GoApproverBlock) trySetPreviousDecision(ctx c.Context) (isPrevDecision
 
 		person, personErr := gb.RunContext.Services.ServiceDesc.GetSsoPerson(ctx, actualApprover)
 		if personErr != nil {
+			//nolint:goconst //не хочу внедрять миллион констант под каждую строку в проекте
 			l.Error(funcName, "service couldn't get person by login: "+actualApprover)
 
 			return false

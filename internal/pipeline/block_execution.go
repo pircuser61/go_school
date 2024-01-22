@@ -274,7 +274,7 @@ func (gb *GoExecutionBlock) executionActions() []MemberAction {
 			continue
 		}
 
-		if v.AccessType == "ReadWrite" {
+		if v.AccessType == readWriteAccessType {
 			memAction := MemberAction{
 				ID:   formFillFormAction,
 				Type: ActionTypeCustom,

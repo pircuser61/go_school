@@ -817,8 +817,9 @@ func TestGoApproverBlock_Update(t *testing.T) {
 			args: args{
 				ctx: context.Background(),
 				data: &script.BlockUpdateData{
-					ByLogin:    exampleApprover,
-					Action:     string(entity.TaskUpdateActionApprovement),
+					ByLogin: exampleApprover,
+					Action:  string(entity.TaskUpdateActionApprovement),
+					//nolint:goconst // не нужно здесь константы чекать
 					Parameters: []byte(`{"decision":"` + ApproverActionApprove + `"}`),
 				},
 			},

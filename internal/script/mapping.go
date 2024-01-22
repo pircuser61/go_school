@@ -51,6 +51,8 @@ func MapData(
 					return nil, err
 				}
 
+				paramMapping := paramMapping
+
 				err = validateParam(variable, &paramMapping)
 				if err != nil {
 					return nil, err

@@ -464,13 +464,15 @@ func getStepTypeBySelectForFilter(selectFor string) string {
 }
 
 func getActorsNameByStepType(stepName string) string {
+	const executorsString = "executors"
+
 	switch stepName {
 	case "execution":
-		return "executors"
+		return executorsString
 	case "approver":
 		return "approvers"
 	case "form":
-		return "executors"
+		return executorsString
 	}
 
 	return ""

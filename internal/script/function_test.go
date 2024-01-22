@@ -330,6 +330,7 @@ func TestJSONSchemaProperties_Validate1(t *testing.T) {
 	}
 }
 
+//nolint:goconst //не нужно здесь нам чекать константы
 func Test_functionTime_UnmarshalJSON(t *testing.T) {
 	const (
 		date1 = "2023-06-21 06:26:10.447720 +0000 UTC"

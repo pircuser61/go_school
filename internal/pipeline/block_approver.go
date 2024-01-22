@@ -23,6 +23,8 @@ const (
 	approverRequestAddInfoAction        = "request_add_info"
 	approverAdditionalApprovementAction = "additional_approvement"
 	approverAdditionalRejectAction      = "additional_reject"
+
+	readWriteAccessType = "ReadWrite"
 )
 
 type GoApproverBlock struct {
@@ -213,7 +215,7 @@ func (gb *GoApproverBlock) approvementBaseActions(login string) []MemberAction {
 			continue
 		}
 
-		if v.AccessType == "ReadWrite" {
+		if v.AccessType == readWriteAccessType {
 			memAction := MemberAction{
 				ID:   formFillFormAction,
 				Type: ActionTypeCustom,
@@ -431,6 +433,7 @@ func (gb *GoApproverBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment
 		}
 
 		if *gb.State.Decision == ApproverDecisionSentToEdit {
+			//nolint:goconst //не хочу внедрять миллион констант под каждую строку в проекте
 			return StatusApprovementRejected, "", "отправлена на доработку"
 		}
 

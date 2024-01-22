@@ -119,7 +119,7 @@ func (bt *BlocksType) IsPipelineComplete() bool {
 	return len(nodesIds) == relatedNodesNum
 }
 
-//nolint:gocritic //пишу этот комент чисто чтобы он не ругался
+//nolint:gocritic //пишу этот комент чисто чтобы он не
 func (bt *BlocksType) IsSocketsFilled() (valid bool, textErr string) {
 	for _, b := range *bt {
 		if len(b.Next) != len(b.Sockets) {
@@ -182,81 +182,81 @@ func (bt *BlocksType) IsSdBlueprintFilled(ctx context.Context, sd *servicedesc.S
 func (bt *BlocksType) IsParallelNodesCorrect() (valid bool, textErr string) {
 	return true, ""
 	// TODO return Validation
-	// parallelStartNodes := bt.getNodesByType(BlockParallelStartName)
-	// if len(parallelStartNodes) == 0 {
-	// 	return true, ""
-	// }
-	// var parallelExitsAsBlock = make(map[string]string, 0)
-	// for idx := range parallelStartNodes {
-	// 	parallelNode := parallelStartNodes[idx]
-	// 	var foundNode *string
+	parallelStartNodes := bt.getNodesByType(BlockParallelStartName)
+	if len(parallelStartNodes) == 0 {
+		return true, ""
+	}
+	var parallelExitsAsBlock = make(map[string]string, 0)
+	for idx := range parallelStartNodes {
+		parallelNode := parallelStartNodes[idx]
+		var foundNode *string
 
-	// 	nodes := make(map[string]*EriusFunc, 0)
-	// 	visitedParallelNodes := make(map[string]EriusFunc, 0)
-	// 	visitedParallelNodes[idx] = parallelNode
+		nodes := make(map[string]*EriusFunc, 0)
+		visitedParallelNodes := make(map[string]EriusFunc, 0)
+		visitedParallelNodes[idx] = parallelNode
 
-	// 	for _, socketOutNodes := range parallelNode.Next {
-	// 		for _, socketOutNode := range socketOutNodes {
-	// 			socketNode, ok := (*bt)[socketOutNode]
-	// 			if !ok {
-	// 				continue
-	// 			}
-	// 			nodes[socketOutNode] = &socketNode
-	// 		}
-	// 	}
+		for _, socketOutNodes := range parallelNode.Next {
+			for _, socketOutNode := range socketOutNodes {
+				socketNode, ok := (*bt)[socketOutNode]
+				if !ok {
+					continue
+				}
+				nodes[socketOutNode] = &socketNode
+			}
+		}
 
-	// 	for {
-	// 		nodeKeys := maps.Keys(nodes)
-	// 		if len(nodeKeys) == 0 {
-	// 			break
-	// 		}
+		for {
+			nodeKeys := maps.Keys(nodes)
+			if len(nodeKeys) == 0 {
+				break
+			}
 
-	// 		nodeKey, node := nodeKeys[0], nodes[nodeKeys[0]]
-	// 		delete(nodes, nodeKey)
-	// 		if _, ok := visitedParallelNodes[nodeKey]; ok {
-	// 			continue
-	// 		}
+			nodeKey, node := nodeKeys[0], nodes[nodeKeys[0]]
+			delete(nodes, nodeKey)
+			if _, ok := visitedParallelNodes[nodeKey]; ok {
+				continue
+			}
 
-	// 		visitedParallelNodes[nodeKey] = *node
-	// 		if node.TypeID == BlockParallelEndName {
-	// 			if foundNode != nil && nodeKey != *foundNode {
-	// 				return false, PipelineValidateError
-	// 			}
-	// 			foundNode = &nodeKey
-	// 		} else if node.TypeID == BlockParallelStartName {
-	// 			continue
-	// 		} else {
-	// 			for _, socketOutNodes := range node.Next {
-	// 				for _, socketOutNode := range socketOutNodes {
-	// 					socketNode, ok := (*bt)[socketOutNode]
-	// 					if !ok {
-	// 						continue
-	// 					}
-	// 					if socketOutNode == idx {
-	// 						return false, ParallelNodeReturnCycle
-	// 					}
-	// 					nodes[socketOutNode] = &socketNode
-	// 				}
-	// 			}
-	// 		}
-	// 	}
-	// 	if foundNode == nil {
-	// 		return false, ""
-	// 	}
-	// 	afterEndOk, visitedEndNodes := bt.validateAfterEndParallelNodes(foundNode, &idx, visitedParallelNodes)
-	// 	if !afterEndOk {
-	// 		return false, OutOfParallelNodesConnection
-	// 	}
-	// 	if beforeStartOk, textStartErr := bt.validateBeforeStartParallelNodes(StartBlock0, idx, *foundNode, visitedParallelNodes, visitedEndNodes); !beforeStartOk {
-	// 		return false, textStartErr
-	// 	}
-	// 	parallelExitsAsBlock[idx] = *foundNode
-	// }
-	// intersectOk := bt.validateIntersectingPathParallelNodes(parallelStartNodes, parallelExitsAsBlock)
-	// if !intersectOk {
-	// 	return false, ParallelPathIntersected
-	// }
-	// return true, ""
+			visitedParallelNodes[nodeKey] = *node
+			if node.TypeID == BlockParallelEndName {
+				if foundNode != nil && nodeKey != *foundNode {
+					return false, PipelineValidateError
+				}
+				foundNode = &nodeKey
+			} else if node.TypeID == BlockParallelStartName {
+				continue
+			} else {
+				for _, socketOutNodes := range node.Next {
+					for _, socketOutNode := range socketOutNodes {
+						socketNode, ok := (*bt)[socketOutNode]
+						if !ok {
+							continue
+						}
+						if socketOutNode == idx {
+							return false, ParallelNodeReturnCycle
+						}
+						nodes[socketOutNode] = &socketNode
+					}
+				}
+			}
+		}
+		if foundNode == nil {
+			return false, ""
+		}
+		afterEndOk, visitedEndNodes := bt.validateAfterEndParallelNodes(foundNode, &idx, visitedParallelNodes)
+		if !afterEndOk {
+			return false, OutOfParallelNodesConnection
+		}
+		if beforeStartOk, textStartErr := bt.validateBeforeStartParallelNodes(StartBlock0, idx, *foundNode, visitedParallelNodes, visitedEndNodes); !beforeStartOk {
+			return false, textStartErr
+		}
+		parallelExitsAsBlock[idx] = *foundNode
+	}
+	intersectOk := bt.validateIntersectingPathParallelNodes(parallelStartNodes, parallelExitsAsBlock)
+	if !intersectOk {
+		return false, ParallelPathIntersected
+	}
+	return true, ""
 }
 
 // nolint

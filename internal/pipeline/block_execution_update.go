@@ -282,7 +282,7 @@ func (gb *GoExecutionBlock) handleHalfSLABreached(ctx context.Context) {
 	log := logger.GetLogger(ctx)
 
 	if gb.State.SLA >= 8 {
-		gb.sendNotification(ctx, log, fn)
+		_ = gb.sendNotification(ctx, log, fn)
 	}
 
 	gb.State.HalfSLAChecked = true

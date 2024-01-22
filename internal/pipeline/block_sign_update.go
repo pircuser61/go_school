@@ -87,7 +87,8 @@ func (gb *GoSignBlock) handleSignature(ctx c.Context, login string) error {
 		gb.State.Signatures = append(gb.State.Signatures, newPair)
 	}
 
-	if gb.State.SignatureType == script.SignatureTypeUKEP && updateParams.Decision != SignDecisionRejected {
+	if gb.State.SignatureType == script.SignatureTypeUKEP &&
+		updateParams.Decision != SignDecisionRejected {
 		if !gb.State.IsTakenInWork {
 			if updateParams.Username == "" {
 				return errors.New("is not taken in work")
