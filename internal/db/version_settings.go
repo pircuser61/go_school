@@ -151,7 +151,7 @@ func (db *PGCon) GetVersionSettings(ctx context.Context, versionID string) (e.Pr
 	return ps, nil
 }
 
-//nolint:gocrititc //нужно для реализации интерфейса Database
+//nolint:gocritic //нужно для реализации интерфейса Database
 func (db *PGCon) SaveVersionSettings(ctx context.Context, settings e.ProcessSettings, schemaFlag *string) error {
 	ctx, span := trace.StartSpan(ctx, "pg_save_version_settings")
 	defer span.End()
@@ -213,7 +213,7 @@ func (db *PGCon) SaveVersionSettings(ctx context.Context, settings e.ProcessSett
 	return nil
 }
 
-//nolint:gocrititc //нужно для реализации интерфейса Database
+//nolint:gocritic //нужно для реализации интерфейса Database
 func (db *PGCon) SaveVersionMainSettings(ctx context.Context, params e.ProcessSettings) error {
 	ctx, span := trace.StartSpan(ctx, "pg_save_version_main_settings")
 	defer span.End()
@@ -373,7 +373,9 @@ func (db *PGCon) GetSLAVersionSettings(ctx context.Context, versionID string) (s
 	row := db.Connection.QueryRow(ctx, query, versionID)
 
 	slaSettings := e.SLAVersionSettings{}
-	if err = row.Scan(&slaSettings.Author, &slaSettings.WorkType, &slaSettings.SLA); err != nil {
+
+	err = row.Scan(&slaSettings.Author, &slaSettings.WorkType, &slaSettings.SLA)
+	if err != nil {
 		return e.SLAVersionSettings{}, err
 	}
 

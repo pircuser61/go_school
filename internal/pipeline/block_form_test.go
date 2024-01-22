@@ -19,8 +19,8 @@ import (
 
 	dbMocks "gitlab.services.mts.ru/jocasta/pipeliner/internal/db/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
-	humanTasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks/mocks"
+	humanTasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 	serviceDeskMocks "gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc/mocks"
@@ -145,7 +145,7 @@ func Test_createGoFormBlock(t *testing.T) {
 					},
 					Params: func() []byte {
 						r, _ := json.Marshal(&script.FormParams{
-							SchemaId:         schemaID,
+							SchemaID:         schemaID,
 							Executor:         executor,
 							FormExecutorType: script.FormExecutorTypeFromSchema,
 						})
@@ -196,7 +196,7 @@ func Test_createGoFormBlock(t *testing.T) {
 					},
 					Params: func() []byte {
 						r, _ := json.Marshal(&script.FormParams{
-							SchemaId:         schemaID,
+							SchemaID:         schemaID,
 							Executor:         "form.executor",
 							FormExecutorType: script.FormExecutorTypeFromSchema,
 						})
@@ -279,7 +279,7 @@ func Test_createGoFormBlock(t *testing.T) {
 					},
 					Params: func() []byte {
 						r, _ := json.Marshal(&script.FormParams{
-							SchemaId:         schemaID,
+							SchemaID:         schemaID,
 							Executor:         executor,
 							FormExecutorType: script.FormExecutorTypeAutoFillUser,
 							Mapping: script.JSONSchemaProperties{
@@ -919,7 +919,7 @@ func TestGoFormBlock_Next(t *testing.T) {
 			args: args{
 				Sockets: []script.Socket{
 					{
-						Id:           DefaultSocketID,
+						ID:           DefaultSocketID,
 						Title:        script.DefaultSocketTitle,
 						NextBlockIds: []string{blockID},
 					},

@@ -25,7 +25,7 @@ import (
 	file_registry "gitlab.services.mts.ru/jocasta/pipeliner/internal/fileregistry"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/functions"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/hrgate"
-	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
+	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/integrations"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/kafka"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
@@ -204,7 +204,9 @@ func processBlock(ctx c.Context, name string, its int, bl *entity.EriusFunc, run
 		}
 
 		ctxCopy := runCtx.Copy()
-		if err = processBlock(ctx, b, its, blockData, ctxCopy, false); err != nil {
+
+		err = processBlock(ctx, b, its, blockData, ctxCopy, false)
+		if err != nil {
 			return err
 		}
 
@@ -283,7 +285,8 @@ func CreateBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *Block
 		}
 
 		if bl.Output != nil {
-			for propertyName, v := range bl.Output.Properties {
+			for propertyName := range bl.Output.Properties {
+				v := bl.Output.Properties[propertyName]
 				epi.Output[propertyName] = v.Global
 			}
 		}

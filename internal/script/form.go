@@ -20,7 +20,7 @@ const (
 )
 
 type FormParams struct {
-	SchemaId                  string               `json:"schema_id"`
+	SchemaID                  string               `json:"schema_id"`
 	SLA                       int                  `json:"sla"`
 	CheckSLA                  bool                 `json:"check_sla"`
 	Executor                  string               `json:"executor"`
@@ -36,7 +36,7 @@ type FormParams struct {
 }
 
 func (a *FormParams) Validate() error {
-	if a.SchemaId == "" || (a.FormExecutorType == FormExecutorTypeUser && a.Executor == "") {
+	if a.SchemaID == "" || (a.FormExecutorType == FormExecutorTypeUser && a.Executor == "") {
 		return errors.New("got no form name, id or executor")
 	}
 

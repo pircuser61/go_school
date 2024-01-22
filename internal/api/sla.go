@@ -122,6 +122,7 @@ func (ae *Env) CheckBreachSLA(w http.ResponseWriter, r *http.Request) {
 	processCtx, fakeSpan := trace.StartSpanWithRemoteParent(routineCtx, "start_check_breach_sla", spCtx)
 	fakeSpan.End()
 
+	//nolint:gocritic //глобальная тема, лучше не трогать
 	for _, item := range steps {
 		log = log.WithFields(map[string]interface{}{
 			"taskID":   item.TaskID,

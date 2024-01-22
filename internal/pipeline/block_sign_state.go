@@ -171,6 +171,7 @@ func (s *SignData) handleAllOfDecision(login string, params *signSignatureParams
 	default:
 		var decisionCount int
 
+		//nolint:gocritic //в этом проекте не принято использовать поинтеры в коллекциях
 		for _, log := range s.SignLog {
 			if log.LogType == SignerLogDecision {
 				decisionCount++

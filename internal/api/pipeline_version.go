@@ -197,7 +197,7 @@ func (ae *Env) getExternalSystem(
 	storage db.Database,
 	clientID, versionID string,
 ) (*entity.ExternalSystem, error) {
-	system, err := ae.Integrations.RpcIntCli.GetIntegrationByClientId(ctx, &integration_v1.GetIntegrationByClientIdRequest{
+	system, err := ae.Integrations.RPCIntCli.GetIntegrationByClientId(ctx, &integration_v1.GetIntegrationByClientIdRequest{
 		ClientId: clientID,
 	})
 	if err != nil {

@@ -43,7 +43,7 @@ func (gb *GoEndBlock) UpdateManual() bool {
 	return false
 }
 
-func (gb *GoEndBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment string, action string) {
+func (gb *GoEndBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment, action string) {
 	// should not change status returned by worker nodes like approvement, execution, etc.
 	return "", "", ""
 }
@@ -70,6 +70,7 @@ func (gb *GoEndBlock) Update(ctx c.Context) (interface{}, error) {
 		return nil, err
 	}
 
+	//nolint:gocritic //в этом проекте не принято использовать поинтеры в коллекциях
 	for _, event := range nodeEvents {
 		// event for this node will spawn later
 		if event.NodeName == gb.Name {

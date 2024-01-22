@@ -22,7 +22,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
-	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
+	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	peopleMocks "gitlab.services.mts.ru/jocasta/pipeliner/internal/people/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
@@ -528,13 +528,13 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 				Output:    map[string]string{"foo": "bar"},
 				Sockets: []script.Socket{
 					{
-						Id:           "default",
+						ID:           "default",
 						Title:        "Выход по умолчанию",
 						NextBlockIds: []string{"next_0"},
 						ActionType:   "",
 					},
 					{
-						Id:           "rejected",
+						ID:           "rejected",
 						Title:        "Отклонить",
 						NextBlockIds: []string{"next_1"},
 						ActionType:   "",
@@ -640,13 +640,13 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 				Output:    map[string]string{"foo": "bar"},
 				Sockets: []script.Socket{
 					{
-						Id:           "default",
+						ID:           "default",
 						Title:        "Выход по умолчанию",
 						NextBlockIds: []string{"next_0"},
 						ActionType:   "",
 					},
 					{
-						Id:           "rejected",
+						ID:           "rejected",
 						Title:        "Отклонить",
 						NextBlockIds: []string{"next_1"},
 						ActionType:   "",
@@ -763,13 +763,13 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 				Output:    map[string]string{"foo": "bar"},
 				Sockets: []script.Socket{
 					{
-						Id:           "default",
+						ID:           "default",
 						Title:        "Выход по умолчанию",
 						NextBlockIds: []string{"next_0"},
 						ActionType:   "",
 					},
 					{
-						Id:           "rejected",
+						ID:           "rejected",
 						Title:        "Отклонить",
 						NextBlockIds: []string{"next_1"},
 						ActionType:   "",
@@ -896,13 +896,13 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 				Output:    map[string]string{"foo": "bar"},
 				Sockets: []script.Socket{
 					{
-						Id:           "default",
+						ID:           "default",
 						Title:        "Выход по умолчанию",
 						NextBlockIds: []string{"next_0"},
 						ActionType:   "",
 					},
 					{
-						Id:           "rejected",
+						ID:           "rejected",
 						Title:        "Отклонить",
 						NextBlockIds: []string{"next_1"},
 						ActionType:   "",
@@ -1008,13 +1008,13 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 				Output:    map[string]string{"foo": "bar"},
 				Sockets: []script.Socket{
 					{
-						Id:           "default",
+						ID:           "default",
 						Title:        "Выход по умолчанию",
 						NextBlockIds: []string{"next_0"},
 						ActionType:   "",
 					},
 					{
-						Id:           "rejected",
+						ID:           "rejected",
 						Title:        "Отклонить",
 						NextBlockIds: []string{"next_1"},
 						ActionType:   "",
@@ -1131,13 +1131,13 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 				Output:    map[string]string{"foo": "bar"},
 				Sockets: []script.Socket{
 					{
-						Id:           "default",
+						ID:           "default",
 						Title:        "Выход по умолчанию",
 						NextBlockIds: []string{"next_0"},
 						ActionType:   "",
 					},
 					{
-						Id:           "rejected",
+						ID:           "rejected",
 						Title:        "Отклонить",
 						NextBlockIds: []string{"next_1"},
 						ActionType:   "",
@@ -1438,13 +1438,13 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 				Output:    map[string]string{"foo": "bar"},
 				Sockets: []script.Socket{
 					{
-						Id:           "default",
+						ID:           "default",
 						Title:        "Выход по умолчанию",
 						NextBlockIds: []string{"next_0"},
 						ActionType:   "",
 					},
 					{
-						Id:           "rejected",
+						ID:           "rejected",
 						Title:        "Отклонить",
 						NextBlockIds: []string{"next_1"},
 						ActionType:   "",
@@ -1561,13 +1561,13 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 				Output:    map[string]string{"foo": "bar"},
 				Sockets: []script.Socket{
 					{
-						Id:           "default",
+						ID:           "default",
 						Title:        "Выход по умолчанию",
 						NextBlockIds: []string{"next_0"},
 						ActionType:   "",
 					},
 					{
-						Id:           "rejected",
+						ID:           "rejected",
 						Title:        "Отклонить",
 						NextBlockIds: []string{"next_1"},
 						ActionType:   "",
@@ -1686,13 +1686,13 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 				Output:    map[string]string{"foo": "bar"},
 				Sockets: []script.Socket{
 					{
-						Id:           "default",
+						ID:           "default",
 						Title:        "Выход по умолчанию",
 						NextBlockIds: []string{"next_0"},
 						ActionType:   "",
 					},
 					{
-						Id:           "rejected",
+						ID:           "rejected",
 						Title:        "Отклонить",
 						NextBlockIds: []string{"next_1"},
 						ActionType:   "",

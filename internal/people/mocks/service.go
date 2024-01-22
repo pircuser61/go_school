@@ -43,10 +43,10 @@ type mockConstructorTestingTNewRoundTripper interface {
 It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
 */
 func NewRoundTripper(t mockConstructorTestingTNewRoundTripper) *RoundTripper {
-	mock := &RoundTripper{}
-	mock.Mock.Test(t)
+	mck := &RoundTripper{}
+	mck.Mock.Test(t)
 
-	t.Cleanup(func() { mock.AssertExpectations(t) })
+	t.Cleanup(func() { mck.AssertExpectations(t) })
 
-	return mock
+	return mck
 }

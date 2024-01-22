@@ -131,16 +131,16 @@ func (gb *GoFormBlock) formActions() []MemberAction {
 	formNames := []string{gb.Name}
 
 	for _, v := range gb.State.FormsAccessibility {
-		if _, ok := gb.RunContext.VarStore.State[v.NodeId]; !ok {
+		if _, ok := gb.RunContext.VarStore.State[v.NodeID]; !ok {
 			continue
 		}
 
-		if gb.Name == v.NodeId {
+		if gb.Name == v.NodeID {
 			continue
 		}
 
 		if v.AccessType == "ReadWrite" {
-			formNames = append(formNames, v.NodeId)
+			formNames = append(formNames, v.NodeID)
 		}
 	}
 

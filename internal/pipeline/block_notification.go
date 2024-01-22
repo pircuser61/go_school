@@ -64,7 +64,7 @@ func (gb *GoNotificationBlock) GetStatus() Status {
 	return StatusFinished
 }
 
-func (gb *GoNotificationBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment string, action string) {
+func (gb *GoNotificationBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment, action string) {
 	return "", "", ""
 }
 
@@ -282,6 +282,7 @@ func createGoNotificationBlock(ctx context.Context, name string, ef *entity.Eriu
 	}
 
 	if ef.Output != nil {
+		//nolint:gocritic //в этом проекте не принято использовать поинтеры в коллекциях
 		for propertyName, v := range ef.Output.Properties {
 			b.Output[propertyName] = v.Global
 		}

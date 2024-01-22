@@ -274,7 +274,7 @@ func getMonitoringStatus(status string) MonitoringHistoryStatus {
 	}
 }
 
-//nolint:revive //need to implement interface in api.go
+//nolint:revive,stylecheck //need to implement interface in api.go
 func (ae *Env) GetMonitoringTasksBlockBlockIdParams(w http.ResponseWriter, req *http.Request, blockID string) {
 	ctx, span := trace.StartSpan(req.Context(), "get_monitoring_tasks_block_blockId_params")
 	defer span.End()

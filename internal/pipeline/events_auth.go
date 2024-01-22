@@ -15,6 +15,7 @@ type SSOToken struct {
 	RefreshExpiresIn int    `json:"refresh_expires_in"`
 }
 
+//nolint:gocritic //поинтер изначально не был предусмотрен
 func (runCtx BlockRunContext) addAuthHeader(ctx c.Context, r *http.Request) error {
 	jsonbody, err := json.Marshal(runCtx.TaskSubscriptionData.MicroserviceSecrets)
 	if err != nil {

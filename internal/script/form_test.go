@@ -43,7 +43,7 @@ func TestFormParams_Validate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			a := &FormParams{
 				FormExecutorType: tt.fields.FormExecutorType,
-				SchemaId:         tt.fields.SchemaId,
+				SchemaID:         tt.fields.SchemaId,
 				SLA:              tt.fields.SLA,
 				CheckSLA:         tt.fields.CheckSLA,
 			}

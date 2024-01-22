@@ -110,7 +110,7 @@ type runVersionByPipelineIDRequest struct {
 	CustomTitle       string                `json:"custom_title"`
 }
 
-//nolint:revive //need to implement interface in api.go
+//nolint:revive,stylecheck //need to implement interface in api.go
 func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
 	ctx, s := trace.StartSpan(r.Context(), "run_version_by_pipeline_id")

@@ -41,6 +41,7 @@ func createGoExecutionBlock(ctx c.Context, name string, ef *entity.EriusFunc, ru
 	}
 
 	if ef.Output != nil {
+		//nolint:gocritic //в этом проекте не принято использовать поинтеры в коллекциях
 		for propertyName, v := range ef.Output.Properties {
 			b.Output[propertyName] = v.Global
 		}

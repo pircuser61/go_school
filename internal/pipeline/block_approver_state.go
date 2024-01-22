@@ -9,7 +9,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 
-	ht "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
+	ht "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks"
 )
 
 type ApproverAction string
@@ -358,6 +358,7 @@ func (a *ApproverData) SetDecision(login, comment string, ds ApproverDecision, a
 		a.ActualApprover = &login
 		a.DecisionAttachments = []entity.Attachment{}
 
+		//nolint:gocritic //в этом проекте не принято использовать поинтеры в коллекциях
 		for _, l := range a.ApproverLog {
 			if l.LogType == ApproverLogDecision {
 				a.DecisionAttachments = append(a.DecisionAttachments, l.Attachments...)

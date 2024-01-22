@@ -13,7 +13,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	file_registry "gitlab.services.mts.ru/jocasta/pipeliner/internal/fileregistry"
-	hs "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
+	hs "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
@@ -479,6 +479,7 @@ func (gb *GoExecutionBlock) handleReworkSLABreached(ctx context.Context) error {
 		return err
 	}
 
+	//nolint:gocritic //в этом проекте не принято использовать поинтеры в коллекциях
 	for _, event := range nodeEvents {
 		// event for this node will spawn later
 		if event.NodeName == gb.Name {
@@ -609,6 +610,7 @@ func (gb *GoExecutionBlock) HandleBreachedSLARequestAddInfo(ctx context.Context)
 		return err
 	}
 
+	//nolint:gocritic //в этом проекте не принято использовать поинтеры в коллекциях
 	for _, event := range nodeEvents {
 		// event for this node will spawn later
 		if event.NodeName == gb.Name {
@@ -1102,7 +1104,7 @@ func (gb *GoExecutionBlock) toEditApplication(ctx context.Context) (err error) {
 
 func (gb *GoExecutionBlock) isNextBlockServiceDesk() bool {
 	for i := range gb.Sockets {
-		if gb.Sockets[i].Id == executionEditAppSocketID &&
+		if gb.Sockets[i].ID == executionEditAppSocketID &&
 			utils.IsContainsInSlice("servicedesk_application_0", gb.Sockets[i].NextBlockIds) {
 			return true
 		}

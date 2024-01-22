@@ -103,7 +103,7 @@ func (gb *ExecutableFunctionBlock) GetStatus() Status {
 	return StatusRunning
 }
 
-func (gb *ExecutableFunctionBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment string, action string) {
+func (gb *ExecutableFunctionBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment, action string) {
 	if gb.State.TimeExpired {
 		return StatusDone, "", ""
 	}
@@ -352,6 +352,7 @@ func createExecutableFunctionBlock(ctx c.Context, name string, ef *entity.EriusF
 	}
 
 	if ef.Output != nil {
+		//nolint:gocritic //в этом проекте не принято использовать поинтеры в коллекциях
 		for propertyName, v := range ef.Output.Properties {
 			b.Output[propertyName] = v.Global
 		}
@@ -405,7 +406,7 @@ func (gb *ExecutableFunctionBlock) createState(ef *entity.EriusFunc) error {
 		return errors.Wrap(err, "invalid executable function parameters")
 	}
 
-	function, err := gb.RunContext.Services.FunctionStore.GetFunction(c.Background(), params.Function.FunctionId)
+	function, err := gb.RunContext.Services.FunctionStore.GetFunction(c.Background(), params.Function.FunctionID)
 	if err != nil {
 		return err
 	}

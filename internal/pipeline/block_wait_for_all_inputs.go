@@ -54,7 +54,7 @@ func (gb *GoWaitForAllInputsBlock) GetStatus() Status {
 	return StatusRunning
 }
 
-func (gb *GoWaitForAllInputsBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment string, action string) {
+func (gb *GoWaitForAllInputsBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment, action string) {
 	if gb.State.Done {
 		return StatusDone, "", ""
 	}
@@ -155,7 +155,10 @@ func createGoWaitForAllInputsBlock(ctx context.Context, name string, ef *entity.
 	}
 
 	if ef.Output != nil {
-		for propertyName, v := range ef.Output.Properties {
+		for propertyName := range ef.Output.Properties {
+			// по сути в этой записи нет смысла, но линтер не ругается
+			v := ef.Output.Properties[propertyName]
+
 			b.Output[propertyName] = v.Global
 		}
 	}

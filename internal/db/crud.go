@@ -2174,7 +2174,8 @@ func (db *PGCon) GetVersionByPipelineID(c context.Context, pipelineID string) (*
 		return nil, err
 	}
 
-	if err = json.Unmarshal([]byte(content), res); err != nil {
+	err = json.Unmarshal([]byte(content), res)
+	if err != nil {
 		return nil, err
 	}
 
@@ -2484,7 +2485,8 @@ func (db *PGCon) GetVariableStorage(ctx context.Context, workNumber string) (*st
 		states = append(states, storage.Values)
 	}
 
-	if err = rows.Err(); err != nil {
+	err = rows.Err()
+	if err != nil {
 		return nil, err
 	}
 

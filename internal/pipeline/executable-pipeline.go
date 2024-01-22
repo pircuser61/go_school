@@ -12,7 +12,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	file_registry "gitlab.services.mts.ru/jocasta/pipeliner/internal/fileregistry"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/functions"
-	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
+	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/integrations"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/kafka"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
@@ -100,7 +100,7 @@ func (gb *ExecutablePipeline) ReadyToStart() bool {
 	return len(gb.ActiveBlocks) == 0 && gb.EntryPoint == BlockGoFirstStart
 }
 
-func (gb *ExecutablePipeline) GetTaskHumanStatus() (status TaskHumanStatus, comment string, action string) {
+func (gb *ExecutablePipeline) GetTaskHumanStatus() (status TaskHumanStatus, comment, action string) {
 	// TODO: проверять, что нет ошибок (потому что только тогда мы Done)
 	if len(gb.ActiveBlocks) == 0 {
 		return StatusDone, "", ""

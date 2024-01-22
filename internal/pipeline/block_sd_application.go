@@ -71,7 +71,7 @@ func (gb *GoSdApplicationBlock) GetStatus() Status {
 	return StatusRunning
 }
 
-func (gb *GoSdApplicationBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment string, action string) {
+func (gb *GoSdApplicationBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment, action string) {
 	return "", "", ""
 }
 
@@ -212,6 +212,7 @@ func createGoSdApplicationBlock(ctx context.Context, name string, ef *entity.Eri
 	}
 
 	if ef.Output != nil {
+		//nolint:gocritic //в этом проекте не принято использовать поинтеры в коллекциях
 		for propertyName, v := range ef.Output.Properties {
 			b.Output[propertyName] = v.Global
 		}

@@ -62,17 +62,17 @@ type FunctionValueModel struct {
 }
 
 type Socket struct {
-	Id           string   `json:"id"`
+	ID           string   `json:"id"`
 	Title        string   `json:"title"`
 	NextBlockIds []string `json:"nextBlockIds"`
 	ActionType   string   `json:"actionType"`
 }
 
 const (
-	approveSocketId    = "approve"
+	approveSocketID    = "approve"
 	approveSocketTitle = "Согласовать"
 
-	rejectSocketId    = "reject"
+	rejectSocketID    = "reject"
 	RejectSocketTitle = "Отклонить"
 
 	approverEditAppSocketID    = "approver_send_edit_app"
@@ -107,46 +107,46 @@ const (
 
 //nolint:gochecknoglobals //new common socket
 var (
-	DefaultSocket = Socket{Id: DefaultSocketID, Title: DefaultSocketTitle}
+	DefaultSocket = Socket{ID: DefaultSocketID, Title: DefaultSocketTitle}
 
 	ApproveSocket = Socket{
-		Id:         approveSocketId,
+		ID:         approveSocketID,
 		Title:      approveSocketTitle,
 		ActionType: "primary",
 	}
 	RejectSocket = Socket{
-		Id:         rejectSocketId,
+		ID:         rejectSocketID,
 		Title:      RejectSocketTitle,
 		ActionType: "secondary",
 	}
 
-	ApproverEditAppSocket = Socket{Id: approverEditAppSocketID, Title: approverEditAppSocketTitle}
-	ExecutorEditAppSocket = Socket{Id: executorEditAppSocketID, Title: executorEditAppSocketTitle}
+	ApproverEditAppSocket = Socket{ID: approverEditAppSocketID, Title: approverEditAppSocketTitle}
+	ExecutorEditAppSocket = Socket{ID: executorEditAppSocketID, Title: executorEditAppSocketTitle}
 
-	NotExecutedSocket = Socket{Id: notExecutedSocketID, Title: notExecutedSocketTitle}
-	ExecutedSocket    = Socket{Id: executedSocketID, Title: executedSocketTitle}
+	NotExecutedSocket = Socket{ID: notExecutedSocketID, Title: notExecutedSocketTitle}
+	ExecutedSocket    = Socket{ID: executedSocketID, Title: executedSocketTitle}
 
-	SignedSocket   = Socket{Id: signSocketID, Title: signSocketTitle}
-	RejectedSocket = Socket{Id: rejectedSocketID, Title: rejectedSocketTitle}
+	SignedSocket   = Socket{ID: signSocketID, Title: signSocketTitle}
+	RejectedSocket = Socket{ID: rejectedSocketID, Title: rejectedSocketTitle}
 
-	ErrorSocket = Socket{Id: errorSocketID, Title: errorSocketTitle}
+	ErrorSocket = Socket{ID: errorSocketID, Title: errorSocketTitle}
 
-	FuncExecutedSocket    = Socket{Id: DefaultSocketID, Title: funcExecutedSocketTitle}
-	FuncTimeExpiredSocket = Socket{Id: funcSLAExpiredSocketID, Title: funcSLAExpiredSocketTitle}
+	FuncExecutedSocket    = Socket{ID: DefaultSocketID, Title: funcExecutedSocketTitle}
+	FuncTimeExpiredSocket = Socket{ID: funcSLAExpiredSocketID, Title: funcSLAExpiredSocketTitle}
 
 	DelegationsCollection = "delegations_collection"
 )
 
 func NewSocket(id string, nexts []string) Socket {
 	return Socket{
-		Id:           id,
+		ID:           id,
 		NextBlockIds: nexts,
 	}
 }
 
-func GetNexts(from []Socket, socketId string) ([]string, bool) {
+func GetNexts(from []Socket, socketID string) ([]string, bool) {
 	for _, socket := range from {
-		if socket.Id == socketId {
+		if socket.ID == socketID {
 			return socket.NextBlockIds, true
 		}
 	}

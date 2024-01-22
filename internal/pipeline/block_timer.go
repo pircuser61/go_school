@@ -60,7 +60,7 @@ func (gb *TimerBlock) GetStatus() Status {
 	return StatusIdle
 }
 
-func (gb *TimerBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment string, action string) {
+func (gb *TimerBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment, action string) {
 	if gb.State.Expired {
 		return StatusDone, "", ""
 	}
@@ -202,6 +202,7 @@ func createTimerBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx *
 	}
 
 	if ef.Output != nil {
+		//nolint:gocritic //в этом проекте не принято использовать поинтеры в коллекциях
 		for propertyName, v := range ef.Output.Properties {
 			b.Output[propertyName] = v.Global
 		}

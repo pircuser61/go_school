@@ -413,6 +413,7 @@ func (gb *GoApproverBlock) handleReworkSLABreached(ctx c.Context) error {
 		return err
 	}
 
+	//nolint:gocritic //в этом проекте не принято использовать поинтеры в коллекциях
 	for _, event := range nodeEvents {
 		// event for this node will spawn later
 		if event.NodeName == gb.Name {
@@ -610,7 +611,7 @@ func (gb *GoApproverBlock) toEditApplication(ctx c.Context, updateParams approve
 
 func (gb *GoApproverBlock) isNextBlockServiceDesk() bool {
 	for i := range gb.Sockets {
-		if gb.Sockets[i].Id == approverEditAppSocketID &&
+		if gb.Sockets[i].ID == approverEditAppSocketID &&
 			utils.IsContainsInSlice("servicedesk_application_0", gb.Sockets[i].NextBlockIds) {
 			return true
 		}

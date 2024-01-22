@@ -97,7 +97,7 @@ func (gb *GoSignBlock) Next(_ *store.VariableStore) ([]string, bool) {
 	return nexts, true
 }
 
-func (gb *GoSignBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment string, action string) {
+func (gb *GoSignBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment, action string) {
 	if gb.State != nil && gb.State.Decision != nil {
 		if *gb.State.Decision == SignDecisionRejected {
 			return StatusRejected, "", ""
@@ -138,6 +138,7 @@ func (gb *GoSignBlock) UpdateManual() bool {
 }
 
 func (gb *GoSignBlock) isSignerActed(login string) bool {
+	//nolint:gocritic //в этом проекте не принято использовать поинтеры в коллекциях
 	for _, s := range gb.State.SignLog {
 		if s.LogType != SignerLogDecision {
 			continue
@@ -156,6 +157,7 @@ func (gb *GoSignBlock) signActions(login string) []MemberAction {
 		return []MemberAction{}
 	}
 
+	//nolint:gocritic //в этом проекте не принято использовать поинтеры в коллекциях
 	for _, s := range gb.State.SignLog {
 		if s.Login == login && s.LogType == SignerLogDecision {
 			return []MemberAction{}
@@ -736,6 +738,7 @@ func createGoSignBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx 
 	}
 
 	if ef.Output != nil {
+		//nolint:gocritic //в этом проекте не принято использовать поинтеры в коллекциях
 		for propertyName, v := range ef.Output.Properties {
 			b.Output[propertyName] = v.Global
 		}

@@ -233,6 +233,7 @@ func getUniqueActions(selectFilter string, logins []string) string {
 	}
 }
 
+//nolint:gocritic //изначально было без поинтера
 func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string, args []interface{}) {
 	// nolint:gocritic
 	// language=PostgreSQL
@@ -584,6 +585,7 @@ WHERE w.work_number = $1
 	return descr, nil
 }
 
+//nolint:gocritic //в этом проекте не принято использовать поинтеры
 func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter, delegations []string) (*entity.EriusTasksPage, error) {
 	ctx, span := trace.StartSpan(ctx, "db.pg_get_tasks")
 	defer span.End()
@@ -600,6 +602,8 @@ func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter, delegations 
 	}
 
 	taskIDs := make([]string, 0, len(tasks.Tasks))
+
+	//nolint:gocritic //в этом проекте не принято использовать поинтеры в коллекциях
 	for i, task := range tasks.Tasks {
 		taskIDs = append(taskIDs, task.ID.String())
 
@@ -1477,8 +1481,14 @@ func (db *PGCon) GetTaskSteps(ctx c.Context, id uuid.UUID) (entity.TaskSteps, er
 	return el, nil
 }
 
-func (db *PGCon) GetFilteredStates(ctx c.Context, steps []string, wNumber string) (
-	map[string]map[string]interface{}, map[string]map[string]*time.Time, error,
+func (db *PGCon) GetFilteredStates(
+	ctx c.Context,
+	steps []string,
+	wNumber string,
+) (
+	filteredStates map[string]map[string]interface{},
+	filtereDates map[string]map[string]*time.Time,
+	err error,
 ) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_filtered_states")
 	defer span.End()
@@ -1595,7 +1605,7 @@ func (db *PGCon) GetTaskStatus(ctx c.Context, taskID uuid.UUID) (int, error) {
 	return status, nil
 }
 
-func (db *PGCon) GetTaskStatusWithReadableString(ctx c.Context, taskID uuid.UUID) (int, string, error) {
+func (db *PGCon) GetTaskStatusWithReadableString(ctx c.Context, taskID uuid.UUID) (status int, s string, err error) {
 	ctx, span := trace.StartSpan(ctx, "get_task_status")
 	defer span.End()
 

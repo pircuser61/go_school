@@ -51,11 +51,11 @@ const (
 	mainSsoURL = "https://isso%s.mts.ru"
 )
 
-func (s *Service) GetToken(ctx context.Context, scopes []string, clientSecret, clientId, stand string) (token string, err error) {
+func (s *Service) GetToken(ctx context.Context, scopes []string, clientSecret, clientID, stand string) (token string, err error) {
 	ctxLocal, span := trace.StartSpan(ctx, "getToken")
 	defer span.End()
 
-	initedScopes := s.initScopes(scopes, clientSecret, clientId)
+	initedScopes := s.initScopes(scopes, clientSecret, clientID)
 	path := mainSsoURL + tokensPath
 
 	switch stand {
@@ -94,19 +94,19 @@ func (s *Service) GetToken(ctx context.Context, scopes []string, clientSecret, c
 	return res.AccessToken, nil
 }
 
-func (s *Service) initScopes(scopes []string, clientSecret, clientId string) *scope {
+func (s *Service) initScopes(scopes []string, clientSecret, clientID string) *scope {
 	return &scope{
 		getTokensFormData: url.Values{
 			secretKey:    []string{clientSecret},
 			grantTypeKey: []string{grantTypeGetValue},
-			clientIDKey:  []string{clientId},
+			clientIDKey:  []string{clientID},
 			scopeKey:     []string{strings.Join(scopes, " ")},
 		},
 	}
 }
 
 func (s *Service) FillAuth(ctx context.Context, key string) (result *Auth, err error) {
-	res, GRPCerr := s.RpcMicrCli.GetCredentialsByKey(ctx,
+	res, GRPCerr := s.RPCMicrCli.GetCredentialsByKey(ctx,
 		&microservice_v1.GetCredentialsByKeyRequest{HumanReadableKey: key},
 	)
 	if GRPCerr != nil {

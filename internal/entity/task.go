@@ -198,7 +198,7 @@ const (
 )
 
 var (
-	// nolint: gochecknoglobals // система проектировалась без этого линтера поэтому gg
+	//nolint:gochecknoglobals //система проектировалась без этого линтера поэтому gg
 	checkTaskUpdateMap = map[TaskUpdateAction]struct{}{
 		TaskUpdateActionApprovement:           {},
 		TaskUpdateActionAdditionalApprovement: {},

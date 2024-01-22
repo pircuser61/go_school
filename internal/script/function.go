@@ -96,8 +96,8 @@ type ExecutableFunctionParams struct {
 type FunctionParam struct {
 	Name        string       `json:"name"`
 	Description string       `json:"description"`
-	FunctionId  string       `json:"functionId"`
-	VersionId   string       `json:"versionId"`
+	FunctionID  string       `json:"functionId"`
+	VersionID   string       `json:"versionId"`
 	Version     string       `json:"version"`
 	CreatedAt   functionTime `json:"createdAt"`
 	DeletedAt   functionTime `json:"deletedAt"`
@@ -204,6 +204,7 @@ func (properties JSONSchemaProperties) Validate() error {
 	return nil
 }
 
+//nolint:gocritic //в этом проекте не принято использовать поинтеры в коллекциях
 func (properties JSONSchemaProperties) checkInnerFieldsHasMapping() bool {
 	for _, property := range properties {
 		if property.Value != "" {
@@ -227,22 +228,22 @@ func (ai ArrayItems) Validate() error {
 	if ai.Type == "array" {
 		if ai.Items == nil {
 			return errors.New("items is required")
-		} else {
-			err := ai.Items.Validate()
-			if err != nil {
-				return err
-			}
+		}
+
+		err := ai.Items.Validate()
+		if err != nil {
+			return err
 		}
 	}
 
 	if ai.Type == object {
 		if ai.Properties == nil {
 			return errors.New("properties is required")
-		} else {
-			err := ai.Properties.Validate()
-			if err != nil {
-				return err
-			}
+		}
+
+		err := ai.Properties.Validate()
+		if err != nil {
+			return err
 		}
 	}
 

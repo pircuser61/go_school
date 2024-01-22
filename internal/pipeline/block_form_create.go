@@ -38,6 +38,7 @@ func createGoFormBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx 
 	}
 
 	if ef.Output != nil {
+		//nolint:gocritic //в этом проекте не принято использовать поинтеры в коллекциях
 		for propertyName, v := range ef.Output.Properties {
 			b.Output[propertyName] = v.Global
 		}
@@ -167,7 +168,7 @@ func (gb *GoFormBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 	}
 
 	gb.State = &FormData{
-		SchemaID:                  params.SchemaId,
+		SchemaID:                  params.SchemaID,
 		CheckSLA:                  params.CheckSLA,
 		SLA:                       params.SLA,
 		ChangesLog:                make([]ChangesLogItem, 0),

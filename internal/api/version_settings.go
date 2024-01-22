@@ -979,7 +979,7 @@ func (ae *Env) GetApprovalListsSettings(w http.ResponseWriter, r *http.Request, 
 	}
 }
 
-//nolint:revive //need to implement interface in api.go
+//nolint:revive,stylecheck //need to implement interface in api.go
 func (ae *Env) GetApprovalListSettingById(w http.ResponseWriter, r *http.Request, versionID, listID string) {
 	ctx, s := trace.StartSpan(r.Context(), "get_approval_list_setting_by_id")
 	defer s.End()

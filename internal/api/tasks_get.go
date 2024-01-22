@@ -18,7 +18,7 @@ import (
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
-	ht "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
+	ht "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
@@ -463,7 +463,7 @@ func (ae *Env) getAccessibleForms(
 
 			for _, form := range approver.FormsAccessibility {
 				if form.AccessType != TypeAccessFormNone {
-					accessibleForms[form.NodeId] = struct{}{}
+					accessibleForms[form.NodeID] = struct{}{}
 				}
 			}
 		case FormBlockType:
@@ -490,7 +490,7 @@ func (ae *Env) getAccessibleForms(
 
 			for _, form := range form.FormsAccessibility {
 				if form.AccessType != TypeAccessFormNone {
-					accessibleForms[form.NodeId] = struct{}{}
+					accessibleForms[form.NodeID] = struct{}{}
 				}
 			}
 		case ExecutionBlockType:
@@ -516,7 +516,7 @@ func (ae *Env) getAccessibleForms(
 
 			for _, form := range execution.FormsAccessibility {
 				if form.AccessType != TypeAccessFormNone {
-					accessibleForms[form.NodeId] = struct{}{}
+					accessibleForms[form.NodeID] = struct{}{}
 				}
 			}
 		}

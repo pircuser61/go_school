@@ -209,7 +209,7 @@ func (gb *GoApproverBlock) approvementBaseActions(login string) []MemberAction {
 	}
 
 	for _, v := range gb.State.FormsAccessibility {
-		if _, ok := gb.RunContext.VarStore.State[v.NodeId]; !ok {
+		if _, ok := gb.RunContext.VarStore.State[v.NodeID]; !ok {
 			continue
 		}
 
@@ -218,7 +218,7 @@ func (gb *GoApproverBlock) approvementBaseActions(login string) []MemberAction {
 				ID:   formFillFormAction,
 				Type: ActionTypeCustom,
 				Params: map[string]interface{}{
-					formName: v.NodeId,
+					formName: v.NodeID,
 				},
 			}
 			actions = append(actions, memAction)

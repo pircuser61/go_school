@@ -61,7 +61,7 @@ func (runCtx *BlockRunContext) MakeNodeStartEvent(ctx c.Context, args MakeNodeSt
 	}, nil
 }
 
-func (runCtx BlockRunContext) MakeNodeEndEvent(ctx c.Context, args MakeNodeEndEventArgs) (entity.NodeEvent, error) {
+func (runCtx *BlockRunContext) MakeNodeEndEvent(ctx c.Context, args MakeNodeEndEventArgs) (entity.NodeEvent, error) {
 	if args.HumanStatus == "" {
 		hStatus, err := runCtx.Services.Storage.GetTaskHumanStatus(ctx, runCtx.TaskID)
 		if err != nil {
@@ -228,7 +228,7 @@ func (runCtx *BlockRunContext) SetTaskEvents(ctx c.Context) {
 		return
 	}
 
-	sResp, err := runCtx.Services.Integrations.RpcIntCli.GetIntegrationByClientId(
+	sResp, err := runCtx.Services.Integrations.RPCIntCli.GetIntegrationByClientId(
 		ctx,
 		&integration_v1.GetIntegrationByClientIdRequest{ClientId: taskRunCtx.ClientID},
 	)
@@ -250,7 +250,7 @@ func (runCtx *BlockRunContext) SetTaskEvents(ctx c.Context) {
 		return
 	}
 
-	resp, err := runCtx.Services.Integrations.RpcMicrCli.GetMicroservice(ctx,
+	resp, err := runCtx.Services.Integrations.RPCMicrCli.GetMicroservice(ctx,
 		&microservice_v1.GetMicroserviceRequest{MicroserviceId: expectedEvents.MicroserviceID})
 	if err != nil {
 		return

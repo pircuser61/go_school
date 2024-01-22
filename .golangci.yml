@@ -17,21 +17,6 @@ linters-settings:
     locale: US
   lll:
     line-length: 140
-  # gci:
-  #   sections:
-  #   # все дефолтные 
-  #     - standard
-  #   # _ "github.com/lib/lib"
-  #     - blank
-  #   # third party
-  #     - default
-  #   # все от мтс
-  #     - prefix(gitlab.services.mts.ru)
-  #   # специально для functions runner
-  #     - prefix(gitlab.services.mts.ru/functions-runner)
-  #   # jocasta
-  #     - prefix(gitlab.services.mts.ru/jocasta)
-  #   custom-order: true
   gocritic:
     enabled-tags:
       - performance

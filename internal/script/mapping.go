@@ -35,6 +35,7 @@ func RestoreMapStructure(variables map[string]interface{}) map[string]interface{
 	return result
 }
 
+//nolint:gocritic //в этом проекте не принято использовать поинтеры в коллекциях
 func MapData(
 	mapping JSONSchemaProperties,
 	input map[string]interface{},

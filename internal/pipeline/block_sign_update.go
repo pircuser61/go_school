@@ -435,6 +435,7 @@ func (gb *GoSignBlock) setSignerDecision(u *signSignatureParams) error {
 
 		resAttachments := make([]entity.Attachment, 0)
 
+		//nolint:gocritic //в этом проекте не принято использовать поинтеры в коллекциях
 		for _, l := range gb.State.SignLog {
 			if l.LogType != SignerLogDecision {
 				continue

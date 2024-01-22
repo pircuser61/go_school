@@ -1,4 +1,4 @@
-package human_tasks
+package humantasks
 
 import (
 	c "context"
