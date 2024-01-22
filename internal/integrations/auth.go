@@ -39,7 +39,7 @@ const (
 	scopeKey     = "scope"
 
 	// header keys for tokens management
-	contentTypeHeader = "RawContent-Type"
+	contentTypeHeader = "Content-Type"
 
 	// header values for tokens management
 	contentTypeFormValue = "application/x-www-form-urlencoded"

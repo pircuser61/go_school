@@ -26,7 +26,7 @@ import (
 const (
 	getFileById         = "/api/fileregistry/v1/file/"
 	saveFile            = "/api/fileregistry/v1/file/upload"
-	dispositionHeader   = "RawContent-Disposition"
+	dispositionHeader   = "Content-Disposition"
 	authorizationHeader = "Authorization"
 )
 
