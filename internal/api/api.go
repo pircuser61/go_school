@@ -616,7 +616,7 @@ type ApproverParams struct {
 	// Approver type:
 	//
 	//   * user - Single user
-	//   * group - Approver group ID
+	//   * group - Approver group PipelineID
 	//   * head - Receiver's head
 	//   * FromSchema - Selected by initiator
 	Type ApproverType `json:"type"`
@@ -628,7 +628,7 @@ type ApproverParams struct {
 // Approver type:
 //
 //   - user - Single user
-//   - group - Approver group ID
+//   - group - Approver group PipelineID
 //   - head - Receiver's head
 //   - FromSchema - Selected by initiator
 type ApproverType string
@@ -1007,7 +1007,7 @@ type ExecutionParams struct {
 	// Execution type:
 	//
 	//  * user - Single user
-	//  * group - Execution group ID
+	//  * group - Execution group PipelineID
 	//  * from_schema - Selected by initiator
 	Type ExecutionParamsType `json:"type"`
 
@@ -1021,7 +1021,7 @@ type ExecutionParams struct {
 // Execution type:
 //
 //   - user - Single user
-//   - group - Execution group ID
+//   - group - Execution group PipelineID
 //   - from_schema - Selected by initiator
 type ExecutionParamsType string
 
@@ -1078,7 +1078,7 @@ type ExternalSystemSubscriptionParams struct {
 	// Какой http метод использовать
 	Method ExternalSystemSubscriptionParamsMethod `json:"method"`
 
-	// ID микросервиса
+	// PipelineID микросервиса
 	MicroserviceId string `json:"microservice_id"`
 
 	// Ноды и ивенты, на которые нужна подписка
@@ -1088,7 +1088,7 @@ type ExternalSystemSubscriptionParams struct {
 	// Путь, по которому надо присылать ивенты
 	Path string `json:"path"`
 
-	// ID системы
+	// PipelineID системы
 	SystemId string `json:"system_id"`
 }
 
@@ -1130,7 +1130,7 @@ type FormChangelogItem struct {
 // Form executor type:
 //
 //   - User - Single user
-//   - group - Form group ID
+//   - group - Form group PipelineID
 //   - Initiator - Process initiator
 //   - From_schema - Selected by initiator
 //   - Auto_Fill - Auto Fill form by system
@@ -1150,7 +1150,7 @@ type FormParams struct {
 	// Form executor type:
 	//
 	//   * User - Single user
-	//   * group - Form group ID
+	//   * group - Form group PipelineID
 	//   * Initiator - Process initiator
 	//   * From_schema - Selected by initiator
 	//   * Auto_Fill - Auto Fill form by system
@@ -1192,7 +1192,7 @@ type FormReEnterSettings struct {
 	// Form executor type:
 	//
 	//   * User - Single user
-	//   * group - Form group ID
+	//   * group - Form group PipelineID
 	//   * Initiator - Process initiator
 	//   * From_schema - Selected by initiator
 	//   * Auto_Fill - Auto Fill form by system
@@ -1216,7 +1216,7 @@ type FormsAccessibility struct {
 	// Form name
 	Name string `json:"name"`
 
-	// Form node ID
+	// Form node PipelineID
 	NodeId string `json:"node_id"`
 }
 
@@ -1491,7 +1491,7 @@ type NodeGroup struct {
 type NodeSubscriptionEvents struct {
 	Events *[]NodeEvent `json:"events,omitempty"`
 
-	// ID ноды в процессе
+	// PipelineID ноды в процессе
 	NodeId string `json:"node_id"`
 
 	// Нужно ли уведомлять о событиях по ноде
@@ -1681,7 +1681,7 @@ type ScenarioVersionInfoList []EriusVersionInfo
 
 // SD Application params
 type SdApplicationParams struct {
-	// Template application ID
+	// Template application PipelineID
 	BlueprintId string `json:"blueprint_id"`
 }
 
@@ -1690,7 +1690,7 @@ type SearchPipelineItem struct {
 	// Имя пайплайна
 	Name *string `json:"name,omitempty"`
 
-	// ID пайплайна
+	// PipelineID пайплайна
 	PipelineId *string `json:"pipeline_id,omitempty"`
 }
 
@@ -1729,7 +1729,7 @@ type SignParams struct {
 	// Signer type:
 	//
 	//   * user - Single user
-	//   * group - Group ID
+	//   * group - Group PipelineID
 	//   * FromSchema - Selected by initiator
 	SignerType    SignerType     `json:"signerType"`
 	SigningParams *SigningParams `json:"signingParams,omitempty"`
@@ -1777,7 +1777,7 @@ type SignatureType string
 // Signer type:
 //
 //   - user - Single user
-//   - group - Group ID
+//   - group - Group PipelineID
 //   - FromSchema - Selected by initiator
 type SignerType string
 
@@ -1992,7 +1992,7 @@ type EriusTaskResponse struct {
 	// Доступные действия
 	AvailableActions *[]Action `json:"available_actions,omitempty"`
 
-	// ID шаблона SD, на основании которого запускалась заявка
+	// PipelineID шаблона SD, на основании которого запускалась заявка
 	BlueprintId string `json:"blueprint_id"`
 
 	// Запускалась ли заявка в режиме отладки
@@ -2007,7 +2007,7 @@ type EriusTaskResponse struct {
 	// Task human readable status
 	HumanStatus TaskHumanStatus `json:"human_status"`
 
-	// ID заявки
+	// PipelineID заявки
 	Id string `json:"id"`
 
 	// Время последнего изменения
@@ -3148,13 +3148,13 @@ type ServerInterface interface {
 	// (PUT /pipelines/version)
 	EditVersion(w http.ResponseWriter, r *http.Request)
 	// Delete Version
-	// (DELETE /pipelines/version/{ID})
+	// (DELETE /pipelines/version/{PipelineID})
 	DeleteVersion(w http.ResponseWriter, r *http.Request, iD string)
 	// Get pipeline version
-	// (GET /pipelines/version/{ID})
+	// (GET /pipelines/version/{PipelineID})
 	GetPipelineVersion(w http.ResponseWriter, r *http.Request, iD string)
 	// Create pipeline version
-	// (POST /pipelines/version/{ID})
+	// (POST /pipelines/version/{PipelineID})
 	CreatePipelineVersion(w http.ResponseWriter, r *http.Request, iD string)
 	// Get process settings with a list of external systems
 	// (GET /pipelines/version/{versionID}/settings)
@@ -3894,12 +3894,12 @@ func (siw *ServerInterfaceWrapper) DeleteVersion(w http.ResponseWriter, r *http.
 
 	var err error
 
-	// ------------- Path parameter "ID" -------------
+	// ------------- Path parameter "PipelineID" -------------
 	var iD string
 
-	err = runtime.BindStyledParameter("simple", false, "ID", chi.URLParam(r, "ID"), &iD)
+	err = runtime.BindStyledParameter("simple", false, "PipelineID", chi.URLParam(r, "PipelineID"), &iD)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "ID", Err: err})
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "PipelineID", Err: err})
 		return
 	}
 
@@ -3920,12 +3920,12 @@ func (siw *ServerInterfaceWrapper) GetPipelineVersion(w http.ResponseWriter, r *
 
 	var err error
 
-	// ------------- Path parameter "ID" -------------
+	// ------------- Path parameter "PipelineID" -------------
 	var iD string
 
-	err = runtime.BindStyledParameter("simple", false, "ID", chi.URLParam(r, "ID"), &iD)
+	err = runtime.BindStyledParameter("simple", false, "PipelineID", chi.URLParam(r, "PipelineID"), &iD)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "ID", Err: err})
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "PipelineID", Err: err})
 		return
 	}
 
@@ -3946,12 +3946,12 @@ func (siw *ServerInterfaceWrapper) CreatePipelineVersion(w http.ResponseWriter, 
 
 	var err error
 
-	// ------------- Path parameter "ID" -------------
+	// ------------- Path parameter "PipelineID" -------------
 	var iD string
 
-	err = runtime.BindStyledParameter("simple", false, "ID", chi.URLParam(r, "ID"), &iD)
+	err = runtime.BindStyledParameter("simple", false, "PipelineID", chi.URLParam(r, "PipelineID"), &iD)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "ID", Err: err})
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "PipelineID", Err: err})
 		return
 	}
 
@@ -5161,13 +5161,13 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Put(options.BaseURL+"/pipelines/version", wrapper.EditVersion)
 	})
 	r.Group(func(r chi.Router) {
-		r.Delete(options.BaseURL+"/pipelines/version/{ID}", wrapper.DeleteVersion)
+		r.Delete(options.BaseURL+"/pipelines/version/{PipelineID}", wrapper.DeleteVersion)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/pipelines/version/{ID}", wrapper.GetPipelineVersion)
+		r.Get(options.BaseURL+"/pipelines/version/{PipelineID}", wrapper.GetPipelineVersion)
 	})
 	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/pipelines/version/{ID}", wrapper.CreatePipelineVersion)
+		r.Post(options.BaseURL+"/pipelines/version/{PipelineID}", wrapper.CreatePipelineVersion)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/pipelines/version/{versionID}/settings", wrapper.GetVersionSettings)

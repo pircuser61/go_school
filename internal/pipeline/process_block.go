@@ -241,7 +241,7 @@ func CreateBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *Block
 		}
 
 		epi := ExecutablePipeline{}
-		epi.PipelineID = p.ID
+		epi.PipelineID = p.PipelineID
 		epi.VersionID = p.VersionID
 		epi.Storage = runCtx.Services.Storage
 		epi.EntryPoint = p.Pipeline.Entrypoint

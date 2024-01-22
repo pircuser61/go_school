@@ -294,6 +294,12 @@ func (runCtx *BlockRunContext) excludeHiddenFields(ctx c.Context, desc []om.Orde
 
 	hiddenFields = append(hiddenFields, taskRunContext.InitialApplication.HiddenFields...)
 
+	for i := range desc {
+		for field := range hiddenFields {
+			desc[i].Delete(hiddenFields[field])
+		}
+	}
+
 	return desc, nil
 }
 
