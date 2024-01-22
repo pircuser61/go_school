@@ -119,7 +119,7 @@ func (bt *BlocksType) IsPipelineComplete() bool {
 	return len(nodesIds) == relatedNodesNum
 }
 
-//nolint:gocritic //пишу этот комент чисто чтобы он не
+//nolint:gocritic //
 func (bt *BlocksType) IsSocketsFilled() (valid bool, textErr string) {
 	for _, b := range *bt {
 		if len(b.Next) != len(b.Sockets) {

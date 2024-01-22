@@ -276,15 +276,7 @@ func (ae *Env) GetTask(w http.ResponseWriter, req *http.Request, workNumber stri
 		return
 	}
 
-	shortNameMap := make(map[string]string, len(parsedContent.Pipeline.Blocks.AdditionalProperties))
-
-	for key, val := range parsedContent.Pipeline.Blocks.AdditionalProperties {
-		if val.ShortTitle != nil {
-			shortNameMap[key] = *val.ShortTitle
-		} else {
-			shortNameMap[key] = ""
-		}
-	}
+	shortNameMap := shortNameMap(parsedContent.Pipeline.Blocks.AdditionalProperties)
 
 	dbTask.Steps = steps
 
@@ -372,6 +364,20 @@ func (ae *Env) GetTask(w http.ResponseWriter, req *http.Request, workNumber stri
 	if err != nil {
 		errorHandler.handleError(UnknownError, err)
 	}
+}
+
+func shortNameMap(additionalProperties map[string]EriusFunc) map[string]string {
+	shortNameMap := make(map[string]string, len(additionalProperties))
+
+	for key, val := range additionalProperties {
+		if val.ShortTitle != nil {
+			shortNameMap[key] = *val.ShortTitle
+		} else {
+			shortNameMap[key] = ""
+		}
+	}
+
+	return shortNameMap
 }
 
 func (ae *Env) handleZeroTaskNodeGroup(ctx context.Context, dbTask *entity.EriusTask) error {

@@ -285,93 +285,165 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 		order = *fl.Order
 	}
 
-	switch {
-	case fl.InitiatorLogins != nil && len(*fl.InitiatorLogins) > 0:
-		q = fmt.Sprintf("%s %s", getUniqueActions("initiators", *fl.InitiatorLogins), q)
-	case fl.SelectAs != nil:
-		q = fmt.Sprintf("%s %s", getUniqueActions(*fl.SelectAs, delegations), q)
-	default:
-		q = fmt.Sprintf("%s %s", getUniqueActions("", delegations), q)
-	}
+	var queryMaker compileGetTaskQueryMaker
 
-	if fl.SignatureCarrier != nil && *fl.SelectAs == entity.SelectAsValSignerJur {
-		q = strings.Replace(q, "--unique-actions-filter--",
+	return queryMaker.MakeQuery(fl, q, delegations, args, order)
+}
+
+type compileGetTaskQueryMaker struct {
+	fl          entity.TaskFilter
+	q           string
+	delegations []string
+	args        []any
+}
+
+func (cq *compileGetTaskQueryMaker) init() {
+	switch {
+	case cq.fl.InitiatorLogins != nil && len(*cq.fl.InitiatorLogins) > 0:
+		cq.q = fmt.Sprintf("%s %s", getUniqueActions("initiators", *cq.fl.InitiatorLogins), cq.q)
+	case cq.fl.SelectAs != nil:
+		cq.q = fmt.Sprintf("%s %s", getUniqueActions(*cq.fl.SelectAs, cq.delegations), cq.q)
+	default:
+		cq.q = fmt.Sprintf("%s %s", getUniqueActions("", cq.delegations), cq.q)
+	}
+}
+
+func (cq *compileGetTaskQueryMaker) replaceUniqueActionsFilter() {
+	if cq.fl.SignatureCarrier != nil && *cq.fl.SelectAs == entity.SelectAsValSignerJur {
+		cq.q = strings.Replace(cq.q, "--unique-actions-filter--",
 			fmt.Sprintf("AND vs.content -> 'State' -> vs.step_name ->> 'signature_carrier' = '%s' --unique-actions-filter--",
-				*fl.SignatureCarrier),
+				*cq.fl.SignatureCarrier),
 			1)
 	}
+}
 
-	if fl.TaskIDs != nil {
-		args = append(args, fl.TaskIDs)
-		q = fmt.Sprintf("%s AND w.work_number = ANY($%d)", q, len(args))
+func (cq *compileGetTaskQueryMaker) addTaskID() {
+	if cq.fl.TaskIDs != nil {
+		cq.args = append(cq.args, cq.fl.TaskIDs)
+		cq.q = fmt.Sprintf("%s AND w.work_number = ANY($%d)", cq.q, len(cq.args))
 	}
+}
 
-	if fl.Name != nil {
-		name := strings.ReplaceAll(*fl.Name, "_", "!_")
+func (cq *compileGetTaskQueryMaker) addName() {
+	if cq.fl.Name != nil {
+		name := strings.ReplaceAll(*cq.fl.Name, "_", "!_")
 		name = strings.ReplaceAll(name, "%", "!%")
-		args = append(args, name)
-		q = fmt.Sprintf(`%s AND ((p.name ILIKE '%%' || $%d || '%%' ESCAPE '!') 
+		cq.args = append(cq.args, name)
+		cq.q = fmt.Sprintf(`%s AND ((p.name ILIKE '%%' || $%d || '%%' ESCAPE '!') 
 							OR (w.work_number ILIKE '%%' || $%d || '%%'  ESCAPE '!') 
 							OR (w.run_context -> 'initial_application' ->> 'custom_title' ILIKE '%%' || $%d || '%%'  ESCAPE '!') )`,
-			q, len(args), len(args), len(args))
+			cq.q, len(cq.args), len(cq.args), len(cq.args))
 	}
+}
 
-	if fl.Created != nil {
-		args = append(args, time.Unix(int64(fl.Created.Start), 0).UTC(), time.Unix(int64(fl.Created.End), 0).UTC())
-		q = fmt.Sprintf("%s AND w.started_at BETWEEN $%d AND $%d", q, len(args)-1, len(args))
+func (cq *compileGetTaskQueryMaker) addCreated() {
+	if cq.fl.Created != nil {
+		cq.args = append(cq.args, time.Unix(int64(cq.fl.Created.Start), 0).UTC(), time.Unix(int64(cq.fl.Created.End), 0).UTC())
+		cq.q = fmt.Sprintf("%s AND w.started_at BETWEEN $%d AND $%d", cq.q, len(cq.args)-1, len(cq.args))
 	}
+}
 
-	if fl.Archived != nil {
-		switch *fl.Archived {
+func (cq *compileGetTaskQueryMaker) addArchived() {
+	if cq.fl.Archived != nil {
+		switch *cq.fl.Archived {
 		case true:
-			q = fmt.Sprintf("%s AND (w.archived = true OR (now()::TIMESTAMP - w.finished_at::TIMESTAMP) > '3 days')", q)
+			cq.q = fmt.Sprintf("%s AND (w.archived = true OR (now()::TIMESTAMP - w.finished_at::TIMESTAMP) > '3 days')", cq.q)
 		case false:
-			q = fmt.Sprintf(`%s AND (w.finished_at IS NULL 
-							OR (w.archived = false AND (now()::TIMESTAMP - w.finished_at::TIMESTAMP) < '3 days'))`, q)
+			cq.q = fmt.Sprintf(`%s AND (w.finished_at IS NULL 
+							OR (w.archived = false AND (now()::TIMESTAMP - w.finished_at::TIMESTAMP) < '3 days'))`, cq.q)
 		}
 	}
+}
 
-	if fl.ForCarousel != nil && *fl.ForCarousel {
-		q = fmt.Sprintf("%s AND ((w.human_status='done' AND (now()::TIMESTAMP - w.finished_at::TIMESTAMP) < '3 days')", q)
-		q = fmt.Sprintf("%s OR w.human_status = 'wait')", q)
+func (cq *compileGetTaskQueryMaker) addForCorousel() {
+	if cq.fl.ForCarousel != nil && *cq.fl.ForCarousel {
+		cq.q = fmt.Sprintf("%s AND ((w.human_status='done' AND (now()::TIMESTAMP - w.finished_at::TIMESTAMP) < '3 days')", cq.q)
+		cq.q = fmt.Sprintf("%s OR w.human_status = 'wait')", cq.q)
 	}
+}
 
-	if fl.Status != nil {
-		q = fmt.Sprintf("%s AND (w.human_status IN (%s))", q, *fl.Status)
+func (cq *compileGetTaskQueryMaker) addStatus() {
+	if cq.fl.Status != nil {
+		cq.q = fmt.Sprintf("%s AND (w.human_status IN (%s))", cq.q, *cq.fl.Status)
 	}
+}
 
-	if fl.Receiver != nil {
-		args = append(args, *fl.Receiver)
-		q = fmt.Sprintf("%s AND w.author=$%d ", q, len(args))
+func (cq *compileGetTaskQueryMaker) addReceiver() {
+	if cq.fl.Receiver != nil {
+		cq.args = append(cq.args, *cq.fl.Receiver)
+		cq.q = fmt.Sprintf("%s AND w.author=$%d ", cq.q, len(cq.args))
 	}
+}
 
-	if fl.Initiator != nil {
-		q = fmt.Sprintf("%s AND w.author IN %s", q, buildInExpression(*fl.Initiator))
+func (cq *compileGetTaskQueryMaker) addInitiator() {
+	if cq.fl.Initiator != nil {
+		cq.q = fmt.Sprintf("%s AND w.author IN %s", cq.q, buildInExpression(*cq.fl.Initiator))
 	}
+}
 
-	if (fl.ProcessingLogins != nil || fl.ProcessingGroupIds != nil) ||
-		fl.ExecutorTypeAssigned != nil {
-		q = getProcessingSteps(q, &fl)
+func (cq *compileGetTaskQueryMaker) addProcessingSteps() {
+	if (cq.fl.ProcessingLogins != nil || cq.fl.ProcessingGroupIds != nil) ||
+		cq.fl.ExecutorTypeAssigned != nil {
+		cq.q = getProcessingSteps(cq.q, &cq.fl)
 	}
+}
 
+func (cq *compileGetTaskQueryMaker) addOrder(order string) {
 	if order != "" {
-		q = fmt.Sprintf("%s\n ORDER BY w.started_at %s", q, order)
+		cq.q = fmt.Sprintf("%s\n ORDER BY w.started_at %s", cq.q, order)
 	}
+}
 
-	if fl.Offset != nil {
-		args = append(args, *fl.Offset)
-		q = fmt.Sprintf("%s\n OFFSET $%d", q, len(args))
+func (cq *compileGetTaskQueryMaker) addOffset() {
+	if cq.fl.Offset != nil {
+		cq.args = append(cq.args, *cq.fl.Offset)
+		cq.q = fmt.Sprintf("%s\n OFFSET $%d", cq.q, len(cq.args))
 	}
+}
 
-	if fl.Limit != nil {
-		args = append(args, *fl.Limit)
-		q = fmt.Sprintf("%s\n LIMIT $%d", q, len(args))
+func (cq *compileGetTaskQueryMaker) addLimit() {
+	if cq.fl.Limit != nil {
+		cq.args = append(cq.args, *cq.fl.Limit)
+		cq.q = fmt.Sprintf("%s\n LIMIT $%d", cq.q, len(cq.args))
 	}
+}
 
+func (cq *compileGetTaskQueryMaker) MakeQuery(
+	fl entity.TaskFilter,
+	q string,
+	delegations []string,
+	args []any,
+	order string,
+) (string, []any) {
+	cq.fl = fl
+	cq.q = q
+	cq.delegations = delegations
+
+	cq.init()
+	cq.replaceUniqueActionsFilter()
+	cq.addTaskID()
+	cq.addName()
+	cq.addCreated()
+	cq.addArchived()
+	cq.addForCorousel()
+	cq.addStatus()
+	cq.addReceiver()
+	cq.addInitiator()
+	cq.addProcessingSteps()
+	cq.addOrder(order)
+	cq.addOffset()
+	cq.addLimit()
+
+	cq.q = replaceStorageVariable(q)
+
+	return cq.q, cq.args
+}
+
+func replaceStorageVariable(q string) string {
 	q = strings.Replace(q, "[with_variable_storage]", "", 1)
 	q = strings.Replace(q, "[join_variable_storage]", "", 1)
 
-	return q, args
+	return q
 }
 
 func getProcessingSteps(q string, fl *entity.TaskFilter) string {
