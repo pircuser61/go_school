@@ -52,7 +52,10 @@ func (runCtx *BlockRunContext) handleInitiatorNotify(ctx c.Context, params handl
 		return nil
 	}
 
-	if params.status == StatusDone && (params.stepType == FormStepType || params.stepType == FunctionStepType || params.stepType == TimerStepType) {
+	st := params.stepType
+
+	if params.status == StatusDone &&
+		(st == FormStepType || st == FunctionStepType || st == TimerStepType) {
 		return nil
 	}
 

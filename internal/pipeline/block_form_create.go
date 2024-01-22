@@ -4,10 +4,11 @@ import (
 	c "context"
 	"encoding/json"
 	"fmt"
-	"gitlab.services.mts.ru/jocasta/forms/pkg/jsonschema"
 	"strings"
 
 	"github.com/pkg/errors"
+
+	"gitlab.services.mts.ru/jocasta/forms/pkg/jsonschema"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
@@ -97,7 +98,7 @@ func createGoFormBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx 
 }
 
 func (gb *GoFormBlock) getHiddenFields(ctx c.Context, schemaID string) (res []string, err error) {
-	schema := jsonschema.Schema{}
+	var schema jsonschema.Schema
 	schema, err = gb.RunContext.Services.ServiceDesc.GetSchemaByID(ctx, schemaID)
 	if err != nil {
 		return nil, err
