@@ -22,11 +22,13 @@ import (
 const runByPipelineIDPath = "/run/versions/pipeline_id"
 
 type runNewVersionsByPrevVersionRequest struct {
-	ApplicationBody  orderedmap.OrderedMap `json:"application_body"`
-	Description      string                `json:"description"`
-	WorkNumber       string                `json:"work_number"`
-	AttachmentFields []string              `json:"attachment_fields"`
-	Keys             map[string]string     `json:"keys"`
+	ApplicationBody   orderedmap.OrderedMap `json:"application_body"`
+	Description       string                `json:"description"`
+	WorkNumber        string                `json:"work_number"`
+	AttachmentFields  []string              `json:"attachment_fields"`
+	Keys              map[string]string     `json:"keys"`
+	CustomTitle       string                `json:"custom_title"`
+	IsTestApplication bool                  `json:"is_test_application"`
 }
 
 func (ae *APIEnv) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Request) {
@@ -73,6 +75,11 @@ func (ae *APIEnv) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	hiddenFields, err := ae.getHiddenFields(ctx, version.VersionID.String())
+	if err != nil {
+		return
+	}
+
 	started, execErr := ae.execVersion(ctx, &execVersionDTO{
 		storage:     ae.DB,
 		version:     version,
@@ -83,10 +90,14 @@ func (ae *APIEnv) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Requ
 		workNumber:  req.WorkNumber,
 		runCtx: entity.TaskRunContext{
 			InitialApplication: entity.InitialApplication{
-				Description:      req.Description,
-				ApplicationBody:  req.ApplicationBody,
-				AttachmentFields: req.AttachmentFields,
-				Keys:             req.Keys,
+				Description:               req.Description,
+				ApplicationBody:           req.ApplicationBody,
+				AttachmentFields:          req.AttachmentFields,
+				Keys:                      req.Keys,
+				ApplicationBodyFromSystem: req.ApplicationBody,
+				CustomTitle:               req.CustomTitle,
+				IsTestApplication:         req.IsTestApplication,
+				HiddenFields:              hiddenFields,
 			},
 		},
 	})

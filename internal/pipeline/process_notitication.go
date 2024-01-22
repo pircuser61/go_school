@@ -2,7 +2,9 @@ package pipeline
 
 import (
 	c "context"
+	"encoding/json"
 	"strconv"
+	"strings"
 
 	om "github.com/iancoleman/orderedmap"
 
@@ -272,7 +274,26 @@ func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) ([]o
 }
 
 func (runCtx *BlockRunContext) excludeHiddenFields(ctx c.Context, desc []om.OrderedMap) ([]om.OrderedMap, error) {
-	
+	hiddenFields := make([]string, 0)
+	for stepName := range runCtx.VarStore.State {
+		if strings.Contains(stepName, "form_") {
+			var state FormData
+			err := json.Unmarshal(runCtx.VarStore.State[stepName], &state)
+			if err != nil {
+				return nil, err
+			}
+
+			hiddenFields = append(hiddenFields, state.HiddenFields...)
+		}
+	}
+
+	taskRunContext, getDataErr := runCtx.Services.Storage.GetTaskRunContext(ctx, runCtx.WorkNumber)
+	if getDataErr != nil {
+		return nil, getDataErr
+	}
+
+	hiddenFields = append(hiddenFields, taskRunContext.InitialApplication.HiddenFields...)
+
 	return desc, nil
 }
 
