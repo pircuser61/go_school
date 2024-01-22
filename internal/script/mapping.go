@@ -68,6 +68,7 @@ func MapData(
 			}
 
 			if paramMapping.Default != nil {
+				paramMapping := paramMapping
 				err := validateParam(paramMapping.Default, &paramMapping)
 				if err != nil {
 					return nil, err
@@ -87,6 +88,7 @@ func MapData(
 		}
 
 		if variable != nil {
+			paramMapping := paramMapping
 			err = validateParam(variable, &paramMapping)
 			if err != nil {
 				return nil, err
@@ -102,6 +104,7 @@ func MapData(
 		}
 
 		if paramMapping.Default != nil {
+			paramMapping := paramMapping
 			err = validateParam(paramMapping.Default, &paramMapping)
 			if err != nil {
 				return nil, err

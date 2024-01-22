@@ -123,7 +123,8 @@ func (ae *Env) CheckBreachSLA(w http.ResponseWriter, r *http.Request) {
 	fakeSpan.End()
 
 	//nolint:gocritic //глобальная тема, лучше не трогать
-	for _, item := range steps {
+	for i := range steps {
+		item := steps[i]
 		log = log.WithFields(map[string]interface{}{
 			"taskID":   item.TaskID,
 			"stepName": item.StepName,
