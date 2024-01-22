@@ -32,7 +32,7 @@ require (
 	gitlab.services.mts.ru/abp/myosotis v1.4.4
 	gitlab.services.mts.ru/jocasta/conditions-kit v1.0.10
 	gitlab.services.mts.ru/jocasta/file-registry v1.4.0
-	gitlab.services.mts.ru/jocasta/forms v1.0.0-alpha.1
+	gitlab.services.mts.ru/jocasta/forms v1.3.0-alpha.1
 	gitlab.services.mts.ru/jocasta/functions v1.5.0-alpha.2
 	gitlab.services.mts.ru/jocasta/human-tasks v1.0.0-alpha.3
 	gitlab.services.mts.ru/jocasta/integrations v1.9.0
@@ -40,7 +40,7 @@ require (
 	gitlab.services.mts.ru/jocasta/scheduler v1.5.0-rc.1
 	gitlab.services.mts.ru/prodboard/infra v0.3.0
 	go.opencensus.io v0.24.0
-	golang.org/x/exp v0.0.0-20230206171751-46f607a40771
+	golang.org/x/exp v0.0.0-20240112132812-db7319d0e0e3
 	golang.org/x/net v0.14.0
 	google.golang.org/grpc v1.57.0
 	gopkg.in/square/go-jose.v2 v2.6.0

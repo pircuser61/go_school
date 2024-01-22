@@ -52,6 +52,7 @@ type FormData struct {
 	IsReentry              bool                    `json:"is_reentry"`
 	ActualExecutor         *string                 `json:"actual_executor,omitempty"`
 	ChangesLog             []ChangesLogItem        `json:"changes_log"`
+	HiddenFields           []string                `json:"hidden_fields"`
 
 	FormsAccessibility []script.FormAccessibility `json:"forms_accessibility,omitempty"`
 

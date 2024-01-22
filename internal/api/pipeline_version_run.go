@@ -1,6 +1,7 @@
 package api
 
 import (
+	c "context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -11,6 +12,8 @@ import (
 	"go.opencensus.io/trace"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
+
+	"gitlab.services.mts.ru/jocasta/forms/pkg/jsonschema"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
@@ -241,6 +244,11 @@ func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	hiddenFields, err := ae.getHiddenFields(ctx, version.VersionID.String())
+	if err != nil {
+		return
+	}
+
 	v, execErr := ae.execVersion(ctx, &execVersionDTO{
 		storage:          storage,
 		version:          version,
@@ -258,6 +266,7 @@ func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request
 				IsTestApplication:         req.IsTestApplication,
 				ApplicationBodyFromSystem: req.ApplicationBody,
 				CustomTitle:               req.CustomTitle,
+				HiddenFields:              hiddenFields,
 			},
 		},
 	})
@@ -290,4 +299,29 @@ func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request
 
 		return
 	}
+}
+
+func (ae *APIEnv) getHiddenFields(ctx c.Context, versionID string) ([]string, error) {
+	settings, err := ae.DB.GetVersionSettings(ctx, versionID)
+	if err != nil {
+		return nil, err
+	}
+
+	hiddenFields := make([]string, 0)
+
+	schemaRaw := settings.StartSchemaRaw
+	schema := &jsonschema.Schema{}
+	if len(schemaRaw) > 0 {
+		if err = json.Unmarshal(schemaRaw, schema); err != nil {
+			return nil, err
+		}
+
+		if hiddenFields, err = schema.GetHiddenFields(); err != nil {
+			return nil, err
+		}
+	} else {
+
+	}
+
+	return hiddenFields, nil
 }
