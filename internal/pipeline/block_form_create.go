@@ -115,7 +115,7 @@ func (gb *GoFormBlock) reEntry(ctx c.Context, ef *entity.EriusFunc) error {
 			var params script.FormParams
 			err := json.Unmarshal(ef.Params, &params)
 			if err != nil {
-				return errors.Wrap(err, "can not get form parameters")
+				return errors.Wrap(err, "can not get form parameters in reentry")
 			}
 
 			setErr := gb.setExecutorsByParams(ctx, &setFormExecutorsByParamsDTO{
