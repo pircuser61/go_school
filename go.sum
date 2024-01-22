@@ -611,8 +611,12 @@ gitlab.services.mts.ru/jocasta/file-registry v1.4.0 h1:DoUWZmVSwkKTJ/1eMcuAatEOY
 gitlab.services.mts.ru/jocasta/file-registry v1.4.0/go.mod h1:nKSDD0s9LOFfnYjgY1CJnCs8AA0Pa76P3h3WpJIH0/s=
 gitlab.services.mts.ru/jocasta/forms v1.0.0-alpha.1 h1:TnRdahGzSxmTysW065+Rd0ZKfd84CUCziCf2dPZZM7Y=
 gitlab.services.mts.ru/jocasta/forms v1.0.0-alpha.1/go.mod h1:PIbWjThxX2EFcLjWmeJ2LRNKK3BUakWvTZbT0aB2UhU=
+gitlab.services.mts.ru/jocasta/forms v1.2.0-alpha.1 h1:68x7u5pFDiy/E6xdiJWj0Osd7e1CS+CO1mJQbUPS8JA=
+gitlab.services.mts.ru/jocasta/forms v1.2.0-alpha.1/go.mod h1:VMbvktZvCE7WHLJ1v/kNjaafUf/DHhtuoloLVH3p4w8=
 gitlab.services.mts.ru/jocasta/forms v1.3.0-alpha.1 h1:l+LTO6SlDe/MgcPJaZlNEHIwDJhOa4DtyknJ/xu9F+4=
 gitlab.services.mts.ru/jocasta/forms v1.3.0-alpha.1/go.mod h1:DDTKu3r8l1o9xsYNOsxascHW9mZ+kmeLRVag/8NHg94=
+gitlab.services.mts.ru/jocasta/forms v1.4.0-alpha.1 h1:QfScftFMXhk0ywHwQF8XSfdeeWwcY4dvnoKP7w5mLYw=
+gitlab.services.mts.ru/jocasta/forms v1.4.0-alpha.1/go.mod h1:tnMe8H/g7knbPt2ZMi6/41gSJQdX5sBWJJDO5feta1M=
 gitlab.services.mts.ru/jocasta/functions v1.5.0-alpha.2 h1:pYrpp2rBRmSYz+yKxj0U/lyqa+CrStWUJ4nAd5H5j4w=
 gitlab.services.mts.ru/jocasta/functions v1.5.0-alpha.2/go.mod h1:ANtPfoYQBM4QcDLHXkOZL+NJwQ3mKm3MF3M3KnwFIPs=
 gitlab.services.mts.ru/jocasta/human-tasks v1.0.0-alpha.3 h1:5pW66koPEYP8/ZUilXUjJYRgJO4doHbs+ZVOEvKUgIE=
