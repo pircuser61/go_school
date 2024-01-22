@@ -277,6 +277,11 @@ func (gb *GoApproverBlock) notifyAdditionalApprovers(ctx c.Context, logins []str
 	}
 
 	buttonList := make([]string, 0)
+	additionalApproveLogin := make([]string, 0)
+
+	for _, email := range gb.State.AdditionalApprovers {
+		additionalApproveLogin = append(additionalApproveLogin, email.ApproverLogin)
+	}
 
 	for i := range emails {
 		tpl, buttons := mail.NewAddApproversTpl(
@@ -287,15 +292,16 @@ func (gb *GoApproverBlock) notifyAdditionalApprovers(ctx c.Context, logins []str
 				Action:     script.SettingStatusApprovement,
 				DeadLine: gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(
 					time.Now(), gb.State.SLA, slaInfoPtr),
-				LastWorks:       lastWorksForUser,
-				Description:     description,
-				Mailto:          gb.RunContext.Services.Sender.FetchEmail,
-				Login:           login,
-				IsEditable:      gb.State.GetIsEditable(),
-				ApproverActions: actionsList,
-				BlockID:         BlockGoApproverID,
-				Initiator:       initiatorInfo,
-			},
+				LastWorks:          lastWorksForUser,
+				Description:        description,
+				Mailto:             gb.RunContext.Services.Sender.FetchEmail,
+				Login:              login,
+				IsEditable:         gb.State.GetIsEditable(),
+				ApproverActions:    actionsList,
+				BlockID:            BlockGoApproverID,
+				Initiator:          initiatorInfo,
+				AdditionalApprover: additionalApproveLogin,
+			}, emails[i],
 		)
 
 		for _, v := range buttons {

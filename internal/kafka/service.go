@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/Shopify/sarama"
 	"github.com/rcrowley/go-metrics"
@@ -19,10 +20,24 @@ type Service struct {
 	producer *msgkit.Producer
 	consumer *msgkit.Consumer
 
+	brokers       []string
+	topics        []string
+	serviceConfig Config
+
 	MessageHandler *msgkit.MessageHandler[RunnerInMessage]
 }
 
 func NewService(log logger.Logger, cfg Config) (*Service, error) {
+	topics := []string{cfg.ProducerTopic, cfg.ConsumerTopic}
+
+	if len(cfg.Brokers) == 0 || len(topics) == 0 {
+		return nil, errors.New("brokers or topics is empty")
+	}
+
+	if cfg.HealthCheckTimeout == 0 {
+		return nil, errors.New("field health_check is empty")
+	}
+
 	m := metrics.DefaultRegistry
 	m.UnregisterAll()
 	saramaCfg := sarama.NewConfig()
@@ -46,6 +61,10 @@ func NewService(log logger.Logger, cfg Config) (*Service, error) {
 
 	return &Service{
 		log: log,
+
+		topics:        topics,
+		brokers:       cfg.Brokers,
+		serviceConfig: cfg,
 
 		producer: producer,
 		consumer: consumer,
@@ -88,4 +107,71 @@ func (s *Service) StartConsumer(ctx c.Context) {
 			os.Exit(-4)
 		}
 	}()
+}
+
+// nolint:gocognit //its ok here
+func (s *Service) StartCheckHealth() {
+	for {
+		to := time.After(time.Duration(s.serviceConfig.HealthCheckTimeout) * time.Second)
+		select {
+		case <-to:
+			m := metrics.DefaultRegistry
+			m.UnregisterAll()
+
+			saramaCfg := sarama.NewConfig()
+			saramaCfg.MetricRegistry = m
+			saramaCfg.Producer.Return.Successes = true // Producer.Return.Successes must be true to be used in a SyncProducer
+
+			admin, err := sarama.NewClusterAdmin(s.brokers, saramaCfg)
+			if err != nil {
+				s.log.WithError(err).Error("couldn't connect to kafka! Trying to reconnect")
+
+				msg := s.MessageHandler
+
+				newService, reconnectErr := NewService(s.log, s.serviceConfig)
+				if reconnectErr != nil {
+					s.log.WithError(reconnectErr).Error("failed to reconnect to kafka")
+
+					continue
+				}
+
+				*s = *newService
+
+				s.MessageHandler = msg
+
+				s.log.Info("the reconnection to kafka was successful")
+				continue
+			}
+
+			topics, topicErr := admin.DescribeTopics(s.topics)
+			if topicErr != nil {
+				s.log.WithError(topicErr).Error("error describe topics")
+
+				adminErr := admin.Close()
+				if adminErr != nil {
+					s.log.WithError(adminErr).Error("couldn't close admin client connection")
+				}
+
+				continue
+			}
+
+			for _, v := range topics {
+				if v.Err == 0 {
+					continue
+				}
+
+				s.log.WithError(err).Error(fmt.Sprintf("topic %s exists error", v.Name))
+
+				adminErr := admin.Close()
+				if adminErr != nil {
+					s.log.WithError(adminErr).Error("couldn't close admin client connection")
+				}
+			}
+
+			adminErr := admin.Close()
+			if adminErr != nil {
+				s.log.WithError(adminErr).Error("couldn't close admin client connection")
+			}
+		}
+	}
 }
