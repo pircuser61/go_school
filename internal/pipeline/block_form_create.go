@@ -54,7 +54,7 @@ func createGoFormBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx 
 		reEntry = runCtx.UpdateData == nil
 
 		if reEntry {
-			if err := b.reEntry(ctx); err != nil {
+			if err := b.reEntry(ctx, ef); err != nil {
 				return nil, false, err
 			}
 			b.RunContext.VarStore.AddStep(b.Name)
@@ -111,7 +111,7 @@ func (gb *GoFormBlock) getHiddenFields(ctx c.Context, schemaID string) (res []st
 	return res, nil
 }
 
-func (gb *GoFormBlock) reEntry(ctx c.Context) error {
+func (gb *GoFormBlock) reEntry(ctx c.Context, ef *entity.EriusFunc) error {
 	if gb.State.IsEditable == nil || !*gb.State.IsEditable {
 		return nil
 	}
@@ -127,8 +127,25 @@ func (gb *GoFormBlock) reEntry(ctx c.Context) error {
 	gb.State.ActualExecutor = nil
 
 	if !isAutofill && gb.State.FormExecutorType != script.FormExecutorTypeAutoFillUser {
-		gb.State.Executors = gb.State.InitialExecutors
-		gb.State.IsTakenInWork = len(gb.State.InitialExecutors) == 1
+		if gb.State.FormExecutorType == script.FormExecutorTypeFromSchema {
+			var params script.FormParams
+			err := json.Unmarshal(ef.Params, &params)
+			if err != nil {
+				return errors.Wrap(err, "can not get form parameters in reentry")
+			}
+
+			setErr := gb.setExecutorsByParams(ctx, &setFormExecutorsByParamsDTO{
+				FormExecutorType: gb.State.FormExecutorType,
+				Value:            params.Executor,
+			})
+
+			if setErr != nil {
+				return setErr
+			}
+		} else {
+			gb.State.Executors = gb.State.InitialExecutors
+			gb.State.IsTakenInWork = len(gb.State.InitialExecutors) == 1
+		}
 	}
 
 	if gb.State.FormExecutorType == script.FormExecutorTypeAutoFillUser && gb.State.ReEnterSettings != nil {
@@ -152,7 +169,6 @@ func (gb *GoFormBlock) reEntry(ctx c.Context) error {
 		if setErr != nil {
 			return setErr
 		}
-		gb.State.FormExecutorType = gb.State.ReEnterSettings.FormExecutorType
 	}
 	return gb.handleNotifications(ctx)
 }
