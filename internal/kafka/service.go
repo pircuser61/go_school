@@ -112,7 +112,7 @@ func (s *Service) StartConsumer(ctx c.Context) {
 // nolint:gocognit //its ok here
 func (s *Service) StartCheckHealth() {
 	for {
-		to := time.After(s.serviceConfig.HealthCheckTimeout * time.Second)
+		to := time.After(time.Duration(s.serviceConfig.HealthCheckTimeout) * time.Second)
 		select {
 		case <-to:
 			m := metrics.DefaultRegistry
