@@ -58,7 +58,7 @@ func Test_createGoFormBlock(t *testing.T) {
 
 	databaseMock.On("GetVersionByWorkNumber", ctx, workNumber).
 		Return(&entity.EriusScenario{VersionID: vid}, error(nil))
-	databaseMock.On("GetSlaVersionSettings", ctx, vid.String()).
+	databaseMock.On("GetSLAVersionSettings", ctx, vid.String()).
 		Return(entity.SLAVersionSettings{WorkType: workType}, error(nil))
 
 	type args struct {

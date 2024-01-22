@@ -163,7 +163,7 @@ type StepBreachedSLA struct {
 	CustomTitle string
 }
 
-//go:generate mockery --name=Database --structname=MockedDatabase
+//go:generate mockery --name=Database --structname=MockedDatabase --with-expecter
 type Database interface {
 	PipelineStorager
 	TaskStorager

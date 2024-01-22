@@ -14,7 +14,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
 
-// nolint:dupl // another block
+//nolint:dupl //another block
 func createGoApproverBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext,
 	expectedEvents map[string]struct{},
 ) (*GoApproverBlock, bool, error) {
@@ -253,8 +253,7 @@ func (gb *GoApproverBlock) createState(ctx c.Context, ef *entity.EriusFunc) erro
 			return getVersionErr
 		}
 
-		processSLASettings, getVersionErr := gb.RunContext.Services.Storage.GetSLAVersionSettings(
-			ctx, task.VersionID.String())
+		processSLASettings, getVersionErr := gb.RunContext.Services.Storage.GetSLAVersionSettings(ctx, task.VersionID.String())
 		if getVersionErr != nil {
 			return getVersionErr
 		}

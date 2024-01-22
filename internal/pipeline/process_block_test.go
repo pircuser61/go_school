@@ -91,14 +91,16 @@ func makeStorage() *mocks.MockedDatabase {
 		mock.MatchedBy(func(workNumber string) bool { return true }),
 	).Return(&entity.EriusScenario{}, nil)
 
-	res.On("GetSlaVersionSettings",
+	res.On("GetSLAVersionSettings",
 		mock.MatchedBy(func(ctx context.Context) bool { return true }),
 		mock.MatchedBy(func(versionId string) bool { return true }),
-	).Return(entity.SLAVersionSettings{
-		Author:   "voronin",
-		WorkType: "8/5",
-		SLA:      8,
-	}, nil)
+	).Return(
+		entity.SLAVersionSettings{
+			Author:   "voronin",
+			WorkType: "8/5",
+			SLA:      8,
+		}, nil,
+	)
 
 	res.On("GetCanceledTaskSteps",
 		mock.MatchedBy(func(ctx context.Context) bool { return true }),
