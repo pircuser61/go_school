@@ -74,6 +74,7 @@ monitoring:
   timeout: '5s'
 
 prometheus:
+  stand: 'dev'
   push:
     url: 'http://openfaas-prometheus-pushgateway.openfaas:9091'
     job: 'pipeliner'
