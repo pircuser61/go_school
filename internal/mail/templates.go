@@ -788,7 +788,7 @@ func NewAddApproversTpl(in *NewAppPersonStatusTpl, recipientEmail string) (Templ
 	emails := strings.Split(recipientEmail, "@")
 	if _, ok := additionalApprovers[emails[0]]; ok {
 		actions := []Action{{InternalActionName: "approve"}, {InternalActionName: "reject"}}
-		buttons = getApproverButtons(in.WorkNumber, in.Mailto, in.BlockID, emails[0], actions, in.IsEditable)
+		buttons = getApproverButtons(in.WorkNumber, in.Mailto, in.BlockID, emails[0], actions, false)
 	}
 
 	return Template{
