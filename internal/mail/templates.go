@@ -647,7 +647,7 @@ func NewAppPersonStatusNotificationTpl(in *NewAppPersonStatusTpl) (Template, []B
 		template = "internal/mail/template/12applicationIsAwaitingExecution-template.html"
 	case script.SettingStatusApprovement, script.SettingStatusApproveConfirm, script.SettingStatusApproveView,
 		script.SettingStatusApproveInform, script.SettingStatusApproveSign, script.SettingStatusApproveSignUkep:
-		buttons = getApproverButtons(in.WorkNumber, in.Mailto, in.BlockID, in.Login, in.ApproverActions, in.IsEditable)
+		buttons = getApproverButtons(in.WorkNumber, in.Mailto, in.BlockID, in.Login, in.ApproverActions, in.IsEditable, false)
 		template = "internal/mail/template/11receivedForApproval-template.html"
 	}
 	lastWorksTemplate := getLastWorksForTemplate(in.LastWorks, in.SdUrl)
@@ -773,23 +773,12 @@ func NewExecutionTakenInWorkTpl(dto *ExecutorNotifTemplate) Template {
 func NewAddApproversTpl(in *NewAppPersonStatusTpl, recipientEmail string) (Template, []Button) {
 	lastWorksTemplate := getLastWorksForTemplate(in.LastWorks, in.SdUrl)
 	actionName := getApprovementActionNameByStatus(in.Status, defaultApprovementActionName)
-	buttons := getApproverButtons(in.WorkNumber, in.Mailto, in.BlockID, in.Login, in.ApproverActions, in.IsEditable)
 
 	in.Description = CheckGroup(in.Description)
 
-	additionalApprovers := make(map[string]struct{}, 0)
-
-	for _, v := range in.AdditionalApprover {
-		if _, ok := additionalApprovers[v]; !ok {
-			additionalApprovers[v] = struct{}{}
-		}
-	}
-
 	emails := strings.Split(recipientEmail, "@")
-	if _, ok := additionalApprovers[emails[0]]; ok {
-		actions := []Action{{InternalActionName: "approve"}, {InternalActionName: "reject"}}
-		buttons = getApproverButtons(in.WorkNumber, in.Mailto, in.BlockID, emails[0], actions, false)
-	}
+	actions := []Action{{InternalActionName: "approved"}, {InternalActionName: "rejected"}}
+	buttons := getApproverButtons(in.WorkNumber, in.Mailto, in.BlockID, emails[0], actions, false, true)
 
 	return Template{
 		Subject:  fmt.Sprintf("Заявка № %s %s ожидает %s", in.WorkNumber, in.Name, actionName),
@@ -1029,16 +1018,17 @@ func getButton(to, subject, image string) *Button {
 const (
 	subjectTpl = "step_name=%s|decision=%s|work_number=%s|action_name=%s|login=%s"
 
-	actionApproverSendEditApp   = "approver_send_edit_app"
-	actionExecutorSendEditApp   = "executor_send_edit_app"
-	taskUpdateActionExecution   = "execution"
-	taskUpdateActionApprovement = "approvement"
-	executionStartWorkAction    = "executor_start_work"
-	formExecutorStartWorkAction = "form_executor_start_work"
-	actionApproverSignUkep      = "sign_ukep"
+	actionApproverSendEditApp           = "approver_send_edit_app"
+	actionExecutorSendEditApp           = "executor_send_edit_app"
+	taskUpdateActionExecution           = "execution"
+	taskUpdateActionApprovement         = "approvement"
+	taskUpdateActionAdditionApprovement = "additional_approvement"
+	executionStartWorkAction            = "executor_start_work"
+	formExecutorStartWorkAction         = "form_executor_start_work"
+	actionApproverSignUkep              = "sign_ukep"
 )
 
-func getApproverButtons(workNumber, mailto, blockId, login string, actions []Action, isEditable bool) []Button {
+func getApproverButtons(workNumber, mailto, blockId, login string, actions []Action, isEditable, isAdditionalApprover bool) []Button {
 	buttons := make([]Button, 0, len(actions))
 	for i := range actions {
 		if actions[i].InternalActionName == actionApproverSignUkep {
@@ -1048,21 +1038,18 @@ func getApproverButtons(workNumber, mailto, blockId, login string, actions []Act
 		if actions[i].InternalActionName == actionApproverSendEditApp {
 			continue
 		}
+		action := taskUpdateActionApprovement
 
-		subject := fmt.Sprintf(
-			subjectTpl,
-			blockId,
-			actions[i].InternalActionName,
-			workNumber,
-			taskUpdateActionApprovement,
-			login,
-		)
+		if isAdditionalApprover {
+			action = taskUpdateActionAdditionApprovement
+		}
+
 		var img string
 
 		switch actions[i].InternalActionName {
-		case "approve":
+		case "approved", "approve":
 			img = "soglas.png"
-		case "reject":
+		case "rejected", "reject":
 			img = "otklon.png"
 		case "informed":
 			img = "proinform.png"
@@ -1073,6 +1060,14 @@ func getApproverButtons(workNumber, mailto, blockId, login string, actions []Act
 		case "viewed":
 			img = "oznakomlen.png"
 		}
+		subject := fmt.Sprintf(
+			subjectTpl,
+			blockId,
+			actions[i].InternalActionName,
+			workNumber,
+			action,
+			login,
+		)
 
 		buttons = append(buttons, *getButton(mailto, subject, img))
 	}

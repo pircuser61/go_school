@@ -95,8 +95,9 @@ func (gb *GoSignBlock) notifyAdditionalApprovers(ctx c.Context, logins []string,
 		additionalApproveLogin = append(additionalApproveLogin, email.ApproverLogin)
 	}
 
+	buttonList := make([]string, 0)
 	for i := range emails {
-		tpl, _ := mail.NewAddApproversTpl(
+		tpl, buttons := mail.NewAddApproversTpl(
 			&mail.NewAppPersonStatusTpl{
 				WorkNumber:         gb.RunContext.WorkNumber,
 				Name:               gb.RunContext.NotifName,
@@ -115,11 +116,17 @@ func (gb *GoSignBlock) notifyAdditionalApprovers(ctx c.Context, logins []string,
 			}, emails[i],
 		)
 
+		for _, v := range buttons {
+			buttonList = append(buttonList, v.Img)
+		}
+
 		filesList := []string{tpl.Image}
 
 		if len(lastWorksForUser) != 0 {
-			filesList = append(filesList, warningImg)
+			filesList = append(filesList, userImg, warningImg)
 		}
+
+		filesList = append(filesList, buttonList...)
 
 		iconFiles, iconErr := gb.RunContext.GetIcons(filesList)
 		if iconErr != nil {
