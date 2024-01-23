@@ -777,16 +777,18 @@ func NewAddApproversTpl(in *NewAppPersonStatusTpl, recipientEmail string) (Templ
 
 	in.Description = CheckGroup(in.Description)
 
-	for _, v := range in.AdditionalApprover {
-		emails := strings.Split(recipientEmail, "@")
-		if v != emails[0] {
-			continue
-		}
+	additionalApprovers := make(map[string]struct{}, 0)
 
+	for _, v := range in.AdditionalApprover {
+		if _, ok := additionalApprovers[v]; !ok {
+			additionalApprovers[v] = struct{}{}
+		}
+	}
+
+	emails := strings.Split(recipientEmail, "@")
+	if _, ok := additionalApprovers[emails[0]]; ok {
 		actions := []Action{{InternalActionName: "approve"}, {InternalActionName: "reject"}}
-		buttons = getApproverButtons(in.WorkNumber, in.Mailto, in.BlockID, emails[0], actions, in.IsEditable)
-		
-		break
+		buttons = getApproverButtons(in.WorkNumber, in.Mailto, in.BlockID, emails[0], actions, false)
 	}
 
 	return Template{
