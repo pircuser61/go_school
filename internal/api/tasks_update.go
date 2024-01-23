@@ -3,6 +3,7 @@ package api
 import (
 	c "context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -12,7 +13,7 @@ import (
 
 	"go.opencensus.io/trace"
 
-	"github.com/pkg/errors"
+	"errors"
 
 	"gitlab.services.mts.ru/abp/mail/pkg/email"
 	"gitlab.services.mts.ru/abp/myosotis/logger"
@@ -533,8 +534,14 @@ func (ae *Env) updateTaskInternal(ctx c.Context, workNumber, userLogin string, i
 		}
 	}()
 
-	err = ae.updateTasks(ctx, dbTask, txStorage, cancelAppParams, userLogin)
+	err = ae.updateTasks(ctx, dbTask, cancelAppParams, userLogin)
 	if err != nil {
+		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
+			log.WithField("funcName", "Env.updateTasks").
+				WithError(errors.New("couldn't rollback tx")).
+				Error(txErr)
+		}
+
 		return err
 	}
 
@@ -593,43 +600,22 @@ func (ae *Env) updateTaskInternal(ctx c.Context, workNumber, userLogin string, i
 func (ae *Env) updateTasks(
 	ctx c.Context,
 	dbTask *entity.EriusTask,
-	txStorage db.Database,
 	cancelAppParams entity.CancelAppParams,
 	userLogin string,
 ) error {
-	log := logger.GetLogger(ctx)
-
 	err := ae.DB.StopTaskBlocks(ctx, dbTask.ID)
 	if err != nil {
-		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
-			log.WithField("funcName", "StopTaskBlocks").
-				WithError(errors.New("couldn't rollback tx")).
-				Error(txErr)
-		}
-
-		return err
+		return fmt.Errorf("failed StopTasksBlocks, err: %w", err)
 	}
 
 	err = ae.DB.UpdateTaskStatus(ctx, dbTask.ID, db.RunStatusFinished, cancelAppParams.Comment, userLogin)
 	if err != nil {
-		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
-			log.WithField("funcName", "UpdateTaskStatus").
-				WithError(errors.New("couldn't rollback tx")).
-				Error(txErr)
-		}
-
-		return err
+		return fmt.Errorf("failed UpdateTaskStatus, err: %w", err)
 	}
 
 	_, err = ae.DB.UpdateTaskHumanStatus(ctx, dbTask.ID, string(pipeline.StatusRevoke), "")
 	if err != nil {
-		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
-			log.WithField("funcName", "UpdateTaskHumanStatus").
-				WithError(errors.New("couldn't rollback tx")).
-				Error(txErr)
-		}
-
-		return err
+		return fmt.Errorf("failed UpdateTaskHumanStatus, err: %w", err)
 	}
 
 	return nil

@@ -68,7 +68,6 @@ func (gb *GoNotificationBlock) GetTaskHumanStatus() (status TaskHumanStatus, com
 	return "", "", ""
 }
 
-// nolint // это легаси в нескольких сервисах есть, тут надо целую функцию вырезать
 func (gb *GoNotificationBlock) compileText(ctx context.Context) (*mail.Notif, []email.Attachment, error) {
 	author, err := gb.RunContext.Services.People.GetUser(ctx, gb.RunContext.Initiator)
 	if err != nil {
@@ -80,17 +79,10 @@ func (gb *GoNotificationBlock) compileText(ctx context.Context) (*mail.Notif, []
 		return nil, nil, err
 	}
 
-	// body, err := gb.RunContext.Services.Storage.GetTaskRunContext(ctx, gb.RunContext.WorkNumber)
-	// if err != nil {
-	// 	return nil, nil, err
-	// }
-
 	description, files, err := gb.RunContext.makeNotificationDescription(gb.Name)
 	if err != nil {
 		return nil, nil, err
 	}
-
-	//descr := mail.MakeDescription(body.InitialApplication.ApplicationBody)
 
 	tpl := &mail.Notif{
 		Title:       gb.State.Subject,
@@ -100,19 +92,6 @@ func (gb *GoNotificationBlock) compileText(ctx context.Context) (*mail.Notif, []
 		Initiator:   typedAuthor,
 	}
 
-	// aa := mail.GetAttachmentsFromBody(body.InitialApplication.ApplicationBody)
-
-	// attachmentsInfo, err := gb.RunContext.Services.FileRegistry.GetAttachmentsInfo(ctx, aa)
-	// if err != nil {
-	// 	return nil, nil, err
-	// }
-
-	// filesInfo := make([]file_registry.FileInfo, 0)
-	// for k := range attachmentsInfo {
-	// 	filesInfo = append(filesInfo, attachmentsInfo[k]...)
-	// }
-
-	//text = mail.AddStyles(text)
 	return tpl, files, nil
 }
 
