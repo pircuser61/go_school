@@ -301,7 +301,6 @@ func (gb *GoApproverBlock) notifyAdditionalApprovers(ctx c.Context, logins []str
 				BlockID:            BlockGoApproverID,
 				Initiator:          initiatorInfo,
 				AdditionalApprover: additionalApproveLogin,
-				Approvers:          gb.State.Approvers,
 			}, emails[i],
 		)
 
