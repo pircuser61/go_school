@@ -153,7 +153,6 @@ func (gb *GoFormBlock) reEntry(ctx c.Context, ef *entity.EriusFunc) error {
 		if setErr != nil {
 			return setErr
 		}
-		gb.State.FormExecutorType = gb.State.ReEnterSettings.FormExecutorType
 	}
 	return gb.handleNotifications(ctx)
 }
