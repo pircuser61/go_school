@@ -3,8 +3,9 @@ package pipeline
 import (
 	c "context"
 	"encoding/json"
-	om "github.com/iancoleman/orderedmap"
 	"strconv"
+
+	om "github.com/iancoleman/orderedmap"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
