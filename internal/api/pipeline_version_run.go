@@ -1,29 +1,36 @@
 package api
 
 import (
+	c "context"
 	"encoding/json"
 	"io"
 	"net/http"
 	"time"
 
-	"github.com/iancoleman/orderedmap"
 	"github.com/pkg/errors"
 	"go.opencensus.io/trace"
 
+	om "github.com/iancoleman/orderedmap"
+
 	"gitlab.services.mts.ru/abp/myosotis/logger"
+
+	"gitlab.services.mts.ru/jocasta/forms/pkg/jsonschema"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 )
 
 const runByPipelineIDPath = "/run/versions/pipeline_id"
 
 type runNewVersionsByPrevVersionRequest struct {
-	ApplicationBody  orderedmap.OrderedMap `json:"application_body"`
-	Description      string                `json:"description"`
-	WorkNumber       string                `json:"work_number"`
-	AttachmentFields []string              `json:"attachment_fields"`
-	Keys             map[string]string     `json:"keys"`
+	ApplicationBody   om.OrderedMap     `json:"application_body"`
+	Description       string            `json:"description"`
+	WorkNumber        string            `json:"work_number"`
+	AttachmentFields  []string          `json:"attachment_fields"`
+	Keys              map[string]string `json:"keys"`
+	CustomTitle       string            `json:"custom_title"`
+	IsTestApplication bool              `json:"is_test_application"`
 }
 
 func (ae *APIEnv) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Request) {
@@ -70,6 +77,12 @@ func (ae *APIEnv) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	hiddenFields, err := ae.getHiddenFields(ctx, version.PipelineID.String(), version.VersionID.String())
+	if err != nil {
+		e := GetHiddenFieldsError
+		log.Error(e.errorMessage(err))
+	}
+
 	started, execErr := ae.execVersion(ctx, &execVersionDTO{
 		storage:     ae.DB,
 		version:     version,
@@ -80,10 +93,14 @@ func (ae *APIEnv) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Requ
 		workNumber:  req.WorkNumber,
 		runCtx: entity.TaskRunContext{
 			InitialApplication: entity.InitialApplication{
-				Description:      req.Description,
-				ApplicationBody:  req.ApplicationBody,
-				AttachmentFields: req.AttachmentFields,
-				Keys:             req.Keys,
+				Description:               req.Description,
+				ApplicationBody:           req.ApplicationBody,
+				AttachmentFields:          req.AttachmentFields,
+				Keys:                      req.Keys,
+				ApplicationBodyFromSystem: req.ApplicationBody,
+				CustomTitle:               req.CustomTitle,
+				IsTestApplication:         req.IsTestApplication,
+				HiddenFields:              hiddenFields,
 			},
 		},
 	})
@@ -111,13 +128,13 @@ func (ae *APIEnv) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Requ
 }
 
 type runVersionByPipelineIDRequest struct {
-	ApplicationBody   orderedmap.OrderedMap `json:"application_body"`
-	Description       string                `json:"description"`
-	PipelineId        string                `json:"pipeline_id"`
-	AttachmentFields  []string              `json:"attachment_fields"`
-	Keys              map[string]string     `json:"keys"`
-	IsTestApplication bool                  `json:"is_test_application"`
-	CustomTitle       string                `json:"custom_title"`
+	ApplicationBody   om.OrderedMap     `json:"application_body"`
+	Description       string            `json:"description"`
+	PipelineId        string            `json:"pipeline_id"`
+	AttachmentFields  []string          `json:"attachment_fields"`
+	Keys              map[string]string `json:"keys"`
+	IsTestApplication bool              `json:"is_test_application"`
+	CustomTitle       string            `json:"custom_title"`
 }
 
 //nolint:gocyclo //its ok here
@@ -221,7 +238,7 @@ func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request
 		allowRunAsOthers = externalSystem.AllowRunAsOthers
 	}
 
-	var mappedApplicationBody orderedmap.OrderedMap
+	var mappedApplicationBody om.OrderedMap
 	mappedApplicationBody, err = ae.processMappings(externalSystem, version, req.ApplicationBody)
 	if err != nil {
 		e := MappingError
@@ -241,6 +258,12 @@ func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	hiddenFields, err := ae.getHiddenFields(ctx, req.PipelineId, version.VersionID.String())
+	if err != nil {
+		e := GetHiddenFieldsError
+		log.Error(e.errorMessage(err))
+	}
+
 	v, execErr := ae.execVersion(ctx, &execVersionDTO{
 		storage:          storage,
 		version:          version,
@@ -258,6 +281,7 @@ func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request
 				IsTestApplication:         req.IsTestApplication,
 				ApplicationBodyFromSystem: req.ApplicationBody,
 				CustomTitle:               req.CustomTitle,
+				HiddenFields:              hiddenFields,
 			},
 		},
 	})
@@ -290,4 +314,60 @@ func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request
 
 		return
 	}
+}
+
+func (ae *APIEnv) getHiddenFields(ctx c.Context, pipelineID, versionID string) ([]string, error) {
+	const sdBlockName = "servicedesk_application_0"
+	hiddenFields := make([]string, 0)
+
+	settings, err := ae.DB.GetVersionSettings(ctx, versionID)
+	if err != nil {
+		return hiddenFields, err
+	}
+
+	startSchemaRaw := settings.StartSchemaRaw
+	schema := jsonschema.Schema{}
+	if string(startSchemaRaw) != "" && string(startSchemaRaw) != "{}" {
+		if err = json.Unmarshal(startSchemaRaw, &schema); err != nil {
+			return hiddenFields, err
+		}
+
+		if hiddenFields, err = schema.GetHiddenFields(); err != nil {
+			return hiddenFields, err
+		}
+
+		return hiddenFields, nil
+	}
+
+	// if there is no scheme for starting the process
+	version, err := ae.DB.GetVersionByPipelineID(ctx, pipelineID)
+	if err != nil {
+		return hiddenFields, err
+	}
+
+	if _, exists := version.Pipeline.Blocks[sdBlockName]; exists {
+		return hiddenFields, errors.New("can`t find hidden fields, block is not found " + sdBlockName)
+	}
+
+	params := pipeline.ApplicationData{}
+	errJson := json.Unmarshal(version.Pipeline.Blocks[sdBlockName].Params, &params)
+	if errJson != nil {
+		return hiddenFields, errJson
+	}
+
+	if params.BlueprintID == "" {
+		return hiddenFields, errors.New("can`t find blueprintID")
+	}
+
+	schema, err = ae.ServiceDesc.GetSchemaByBlueprintID(ctx, params.BlueprintID)
+	if err != nil {
+		return hiddenFields, err
+	}
+
+	hiddenFields, err = schema.GetHiddenFields()
+	if err != nil {
+		return hiddenFields, err
+	}
+
+	return hiddenFields, nil
 }
