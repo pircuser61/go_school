@@ -156,7 +156,9 @@ func processBlock(ctx c.Context, name string, its int, bl *entity.EriusFunc, run
 		return
 	}
 
-	statusBeforeUpdate := block.GetStatus()
+	isStatusFiniteBeforeUpdate := block.GetStatus() == StatusFinished ||
+		block.GetStatus() == StatusNoSuccess ||
+		block.GetStatus() == StatusError
 
 	if (block.UpdateManual() && manual) || !block.UpdateManual() {
 		err = updateBlock(ctx, block, name, id, runCtx)
@@ -182,7 +184,7 @@ func processBlock(ctx c.Context, name string, its int, bl *entity.EriusFunc, run
 	if isArchived || (block.GetStatus() != StatusFinished &&
 		block.GetStatus() != StatusNoSuccess &&
 		block.GetStatus() != StatusError) ||
-		((runCtx.UpdateData != nil) && (statusBeforeUpdate == block.GetStatus())) {
+		((runCtx.UpdateData != nil) && isStatusFiniteBeforeUpdate) {
 		return nil
 	}
 
