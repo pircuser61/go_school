@@ -3,10 +3,8 @@ package pipeline
 import (
 	c "context"
 	"encoding/json"
-	"strconv"
-	"strings"
-
 	om "github.com/iancoleman/orderedmap"
+	"strconv"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
@@ -228,6 +226,11 @@ func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) ([]o
 		apBody.Set("attachList", attachments.AttachmentsList)
 	}
 
+	apBody, err = runCtx.excludeHiddenApplicationFields(apBody)
+	if err != nil {
+		return nil, nil, err
+	}
+
 	descriptions = append(descriptions, apBody)
 
 	additionalForms, err := runCtx.Services.Storage.GetAdditionalDescriptionForms(runCtx.WorkNumber, nodeName)
@@ -264,42 +267,46 @@ func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) ([]o
 		v.Set("attachList", attach.AttachmentsList)
 
 		files = append(files, attach.AttachmentsList...)
-		descriptions = append(descriptions, flatArray(v))
-	}
-
-	descriptions, err = runCtx.excludeHiddenFields(c.Background(), descriptions)
-	if err != nil {
-		return nil, nil, err
+		formDesc, errExclude := runCtx.excludeHiddenFormFields(nodeName, flatArray(v))
+		if errExclude != nil {
+			return nil, nil, errExclude
+		}
+		descriptions = append(descriptions, formDesc)
 	}
 
 	files = append(files, attachments.AttachmentsList...)
 	return descriptions, files, nil
 }
 
-func (runCtx *BlockRunContext) excludeHiddenFields(ctx c.Context, desc []om.OrderedMap) ([]om.OrderedMap, error) {
-	hiddenFields := make([]string, 0)
-	for stepName := range runCtx.VarStore.State {
-		if strings.HasPrefix(stepName, "form_") {
-			var state FormData
-			err := json.Unmarshal(runCtx.VarStore.State[stepName], &state)
-			if err != nil {
-				return nil, err
-			}
+func (runCtx *BlockRunContext) excludeHiddenApplicationFields(desc om.OrderedMap) (om.OrderedMap, error) {
+	taskRunContext, getDataErr := runCtx.Services.Storage.GetTaskRunContext(c.Background(), runCtx.WorkNumber)
+	if getDataErr != nil {
+		return desc, getDataErr
+	}
 
-			hiddenFields = append(hiddenFields, state.HiddenFields...)
+	for i := range desc.Keys() {
+		for j := range taskRunContext.InitialApplication.HiddenFields {
+			if desc.Keys()[i] == taskRunContext.InitialApplication.HiddenFields[j] {
+				desc.Delete(desc.Keys()[i])
+			}
 		}
 	}
 
-	taskRunContext, getDataErr := runCtx.Services.Storage.GetTaskRunContext(ctx, runCtx.WorkNumber)
-	if getDataErr != nil {
-		return nil, getDataErr
+	return desc, nil
+}
+
+func (runCtx *BlockRunContext) excludeHiddenFormFields(formName string, desc om.OrderedMap) (om.OrderedMap, error) {
+	var state FormData
+	err := json.Unmarshal(runCtx.VarStore.State[formName], &state)
+	if err != nil {
+		return desc, err
 	}
 
-	hiddenFields = append(hiddenFields, taskRunContext.InitialApplication.HiddenFields...)
-
-	for i := range desc {
-		for field := range hiddenFields {
-			desc[i].Delete(hiddenFields[field])
+	for i := range desc.Keys() {
+		for j := range state.HiddenFields {
+			if desc.Keys()[i] == state.HiddenFields[j] {
+				desc.Delete(desc.Keys()[i])
+			}
 		}
 	}
 
