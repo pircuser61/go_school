@@ -115,10 +115,10 @@ func (gb *GoSignBlock) notifyAdditionalApprovers(ctx c.Context, logins []string,
 			}, emails[i],
 		)
 
-		filesList := []string{tpl.Image}
+		filesList := []string{tpl.Image, userImg, rejectBtn, approveBtn}
 
 		if len(lastWorksForUser) != 0 {
-			filesList = append(filesList, userImg, warningImg, rejectBtn, approveBtn)
+			filesList = append(filesList, warningImg)
 		}
 
 		iconFiles, iconErr := gb.RunContext.GetIcons(filesList)
