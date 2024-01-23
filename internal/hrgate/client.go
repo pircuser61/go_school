@@ -329,7 +329,7 @@ type Absence struct {
 
 // AbsenceAdditionalAttributes defines model for AbsenceAdditionalAttributes.
 type AbsenceAdditionalAttributes struct {
-	// PipelineID объекта
+	// ID объекта
 	AssignmentID UUID `json:"assignmentID"`
 
 	// Дата приказа на отсутствие
@@ -620,7 +620,7 @@ type BasicObject struct {
 	// Дата удаления объекта
 	DeletedAt *time.Time `json:"deletedAt,omitempty"`
 
-	// PipelineID объекта
+	// ID объекта
 	Id UUID `json:"id"`
 
 	// Дата изменения объекта
@@ -635,7 +635,7 @@ type BasicObjectWithoutRequiredCreatedAtUpdatedAt struct {
 	// Дата удаления объекта
 	DeletedAt *time.Time `json:"deletedAt,omitempty"`
 
-	// PipelineID объекта
+	// ID объекта
 	Id UUID `json:"id"`
 
 	// Дата изменения объекта
@@ -717,14 +717,14 @@ type ChangeableAbsence struct {
 	// Кол-во дней отсутствия
 	Days *int `json:"days,omitempty"`
 
-	// PipelineID объекта
+	// ID объекта
 	EmployeeID               UUID                          `json:"employeeID"`
 	ListAdditionalAttributes []AbsenceAdditionalAttributes `json:"listAdditionalAttributes"`
 
-	// PipelineID объекта
+	// ID объекта
 	ParentAbsenceID *UUID `json:"parentAbsenceID,omitempty"`
 
-	// PipelineID объекта
+	// ID объекта
 	TypeID UUID `json:"typeID"`
 }
 
@@ -766,7 +766,7 @@ type ChangeableAllowance struct {
 	// Буквенный код валюты в соответствии с ISO 4217, заполнено только если kind = cash
 	Currency *string `json:"currency,omitempty"`
 
-	// PipelineID объекта
+	// ID объекта
 	DonorStaffUnitID *UUID                   `json:"donorStaffUnitID,omitempty"`
 	Kind             ChangeableAllowanceKind `json:"kind"`
 
@@ -808,13 +808,13 @@ type ChangeableAssignment struct {
 	// Версия объекта назначения
 	AssignmentObjectVersion *string `json:"assignmentObjectVersion,omitempty"`
 
-	// PipelineID объекта
+	// ID объекта
 	BalanceUnitID *UUID `json:"balanceUnitID,omitempty"`
 
 	// Версия объекта бюджета
 	BudjetObjectVersion *string `json:"budjetObjectVersion,omitempty"`
 
-	// PipelineID объекта
+	// ID объекта
 	CategoryID *UUID `json:"categoryID,omitempty"`
 
 	// Тип совместительства назначения, вычисляется на основе атрибутов assignment category и primary.
@@ -850,7 +850,7 @@ type ChangeableAssignment struct {
 	// признак временного назначения
 	IsTemporary *bool `json:"isTemporary,omitempty"`
 
-	// PipelineID объекта
+	// ID объекта
 	LeavingReasonID *UUID `json:"leavingReasonID,omitempty"`
 
 	// id локации
@@ -859,7 +859,7 @@ type ChangeableAssignment struct {
 	// employeeId руководителя
 	ManagerId *string `json:"managerId,omitempty"`
 
-	// PipelineID объекта
+	// ID объекта
 	PayTypeID *UUID `json:"payTypeID,omitempty"`
 
 	// Данное назначение является основным для сотрудника
@@ -889,10 +889,10 @@ type ChangeableAssignment struct {
 	// PipelineID типа назначения
 	TypeId *string `json:"typeId,omitempty"`
 
-	// PipelineID объекта
+	// ID объекта
 	UnitID *UUID `json:"unitID,omitempty"`
 
-	// PipelineID объекта
+	// ID объекта
 	VirtualBalanceUnitID *UUID `json:"virtualBalanceUnitID,omitempty"`
 }
 
@@ -969,7 +969,7 @@ type ChangeableCalendar struct {
 	// Календарь является основным. Основной пятидневный
 	Primary *bool `json:"primary,omitempty"`
 
-	// PipelineID объекта
+	// ID объекта
 	UnitID UUID `json:"unitID"`
 
 	// Тип рабочей недели
@@ -1007,7 +1007,7 @@ type ChangeableContract struct {
 	// контракт действует по
 	EndDate *openapi_types.Date `json:"endDate,omitempty"`
 
-	// PipelineID объекта
+	// ID объекта
 	LocationID *UUID `json:"locationID,omitempty"`
 
 	// порядковый номер договора
@@ -1091,7 +1091,7 @@ type ChangeableDistWork struct {
 	// период активности объекта
 	Activity *Activity `json:"activity,omitempty"`
 
-	// PipelineID объекта
+	// ID объекта
 	AssignmentID UUID `json:"assignmentID"`
 
 	// дата
@@ -1106,7 +1106,7 @@ type ChangeableDistWork struct {
 	// номер
 	Number *string `json:"number,omitempty"`
 
-	// PipelineID объекта
+	// ID объекта
 	PersonID UUID `json:"personID"`
 
 	// график работы
@@ -1127,7 +1127,7 @@ type ChangeableDocument struct {
 	// Дата рождения
 	DateOfBirth *openapi_types.Date `json:"dateOfBirth,omitempty"`
 
-	// PipelineID объекта
+	// ID объекта
 	DisabilityCategoryID *UUID `json:"disabilityCategoryID,omitempty"`
 
 	// Информация о трудовой книжке
@@ -1229,7 +1229,7 @@ type ChangeableGrade struct {
 	// Название грейда
 	Name string `json:"name"`
 
-	// PipelineID объекта
+	// ID объекта
 	UnitID *UUID `json:"unitID,omitempty"`
 }
 
@@ -1295,7 +1295,7 @@ type ChangeableHourlyRate struct {
 	// Название населенного пункта
 	SettlementName *string `json:"settlementName,omitempty"`
 
-	// PipelineID объекта
+	// ID объекта
 	UnitID UUID `json:"unitID"`
 }
 
@@ -1442,7 +1442,7 @@ type ChangeablePerson struct {
 	// Отчество/дополнительные имена
 	MiddleNames *string `json:"middleNames,omitempty"`
 
-	// PipelineID объекта
+	// ID объекта
 	PictureID *UUID `json:"pictureID,omitempty"`
 
 	// Дата обновления фото
@@ -1496,16 +1496,16 @@ type ChangeablePersonalSchedule struct {
 	// период активности объекта
 	Activity *Activity `json:"activity,omitempty"`
 
-	// PipelineID объекта
+	// ID объекта
 	AssignmentID UUID `json:"assignmentID"`
 
-	// PipelineID объекта
+	// ID объекта
 	EarningPolicyID *UUID `json:"earningPolicyID,omitempty"`
 
 	// Суммированный учет
 	NormDay *bool `json:"normDay,omitempty"`
 
-	// PipelineID объекта
+	// ID объекта
 	ScheduleID UUID `json:"scheduleID"`
 
 	// PipelineID типа рабочего графика, используется только для записи
@@ -1595,19 +1595,19 @@ type ChangeableSchedule struct {
 	// Описание формата и размера перерывов за смену
 	BreakDescription string `json:"breakDescription"`
 
-	// PipelineID объекта
+	// ID объекта
 	CalendarID *UUID `json:"calendarID,omitempty"`
 
 	// Описание расписания
 	Description string `json:"description"`
 
-	// PipelineID объекта
+	// ID объекта
 	ShiftTypeID *UUID `json:"shiftTypeID,omitempty"`
 
 	// Название расписания
 	Title string `json:"title"`
 
-	// PipelineID объекта
+	// ID объекта
 	UnitID *UUID `json:"unitID,omitempty"`
 }
 
@@ -1619,7 +1619,7 @@ type ChangeableScheduleDay struct {
 	// ссылка на рабочие часы указанной даты, в слу
 	HoursID *string `json:"hoursID,omitempty"`
 
-	// PipelineID объекта
+	// ID объекта
 	ScheduleID UUID `json:"scheduleID"`
 }
 
@@ -1777,7 +1777,7 @@ type ChangeableStaffUnit struct {
 	// Идентификатор вакансии в TEAM
 	TeamVacancyCode *string `json:"teamVacancyCode,omitempty"`
 
-	// PipelineID объекта
+	// ID объекта
 	TypeID *UUID `json:"typeID,omitempty"`
 
 	// PipelineID отдела к которому относится штатная единица
@@ -1797,16 +1797,16 @@ type ChangeableStaffWithHistory struct {
 
 // Табельщик. Сущность представляет связь между сотрудником и подразделением/назначением, на который назначен данный сотрудник(timekeeperID)
 type ChangeableTimekeeper struct {
-	// PipelineID объекта
+	// ID объекта
 	AssignmentID *UUID `json:"assignmentID,omitempty"`
 
-	// PipelineID объекта
+	// ID объекта
 	GroupID UUID `json:"groupID"`
 
 	// PipelineID сотрудника (сущность Employee)
 	TimekeeperID string `json:"timekeeperID"`
 
-	// PipelineID объекта
+	// ID объекта
 	UnitID UUID `json:"unitID"`
 }
 
@@ -1824,7 +1824,7 @@ type ChangeableUnit struct {
 	// Наименование подразделения для BPM Eludia. Будет удалено в ближайшей перспективе
 	AltDescription *string `json:"altDescription,omitempty"`
 
-	// PipelineID объекта
+	// ID объекта
 	BalanceUnitID *UUID `json:"balanceUnitID,omitempty"`
 
 	// PipelineID для budman
@@ -1878,7 +1878,7 @@ type ChangeableUnit struct {
 	// PipelineID типа подразделения
 	UnitTypeId *string `json:"unitTypeId,omitempty"`
 
-	// PipelineID объекта
+	// ID объекта
 	VirtualBalanceUnitID *UUID `json:"virtualBalanceUnitID,omitempty"`
 }
 
@@ -1893,7 +1893,7 @@ type ChangeableVHI struct {
 	// период активности объекта
 	Activity Activity `json:"activity"`
 
-	// PipelineID объекта
+	// ID объекта
 	AssignmentID UUID `json:"assignmentID"`
 
 	// категория ДМС - пакет услуг, входящих в полис
@@ -1911,7 +1911,7 @@ type ChangeableVacationBalance struct {
 	// идентификатор типа отсутствия
 	AbsenceTypeID string `json:"absenceTypeID"`
 
-	// PipelineID объекта
+	// ID объекта
 	AssignmentID UUID `json:"assignmentID"`
 
 	// количество оставшихся дней отпуска данного типа в году
@@ -1923,10 +1923,10 @@ type ChangeableVacationBalance struct {
 
 // ChangeableVacationPeriod defines model for ChangeableVacationPeriod.
 type ChangeableVacationPeriod struct {
-	// PipelineID объекта
+	// ID объекта
 	AbsenceID UUID `json:"absenceID"`
 
-	// PipelineID объекта
+	// ID объекта
 	AssignmentID UUID                  `json:"assignmentID"`
 	Periods      []LegalVacationPeriod `json:"periods"`
 }
@@ -1990,7 +1990,7 @@ type ComplexAssignmentV2 struct {
 
 // вычисляемые параметры
 type ComputedUnit struct {
-	// PipelineID объекта
+	// ID объекта
 	UnitManagerId *UUID `json:"unitManagerId,omitempty"`
 }
 
@@ -2190,7 +2190,7 @@ type EmployeePersonalData struct {
 	// Почта сотрудника
 	Email *string `json:"email,omitempty"`
 
-	// PipelineID объекта
+	// ID объекта
 	EmployeeID UUID `json:"employeeID"`
 
 	// Логин сотрудника
@@ -2446,10 +2446,10 @@ type IDsList []string
 
 // Объект для встраивания в сущности на update, чтобы не передавать поля createdAt, updatedAt, которые заполняются на уровне сервиса
 type Identifier struct {
-	// PipelineID объекта
+	// ID объекта
 	Id UUID `json:"id"`
 
-	// PipelineID объекта
+	// ID объекта
 	TaskID *UUID `json:"taskID,omitempty"`
 }
 
@@ -2581,7 +2581,7 @@ type OperationIdentifier struct {
 	// временный PipelineID сущности batch операции для однозначного определения ответа
 	OperationID string `json:"operationID"`
 
-	// PipelineID объекта
+	// ID объекта
 	TaskID *UUID `json:"taskID,omitempty"`
 }
 
@@ -2713,16 +2713,16 @@ type PersonMilitary struct {
 	// Информация о категории годности к службе и типе документа
 	Military MilitaryData `json:"military"`
 
-	// PipelineID объекта
+	// ID объекта
 	PersonID UUID `json:"personID"`
 }
 
 // Объект для картинки у person
 type PersonPictureID struct {
-	// PipelineID объекта
+	// ID объекта
 	PersonID UUID `json:"personID"`
 
-	// PipelineID объекта
+	// ID объекта
 	PictureID UUID `json:"pictureID"`
 
 	// Дата обновления фото
@@ -3165,7 +3165,7 @@ type TaskStatus string
 
 // PipelineID задача в рамках которой были выполнены действия над объектом
 type TaskID struct {
-	// PipelineID объекта
+	// ID объекта
 	TaskID *UUID `json:"taskID,omitempty"`
 }
 
@@ -3177,7 +3177,7 @@ type TaskStatusRespBody struct {
 	// события произошедшие в процессе выполнения задачи
 	Events *[]Event `json:"events,omitempty"`
 
-	// PipelineID объекта
+	// ID объекта
 	Id UUID `json:"id"`
 
 	// произвольное сообщение
@@ -3236,7 +3236,7 @@ type TimekeeperToCreate struct {
 	ChangeableTimekeeper `yaml:",inline"`
 }
 
-// PipelineID объекта
+// ID объекта
 type UUID string
 
 // Unit defines model for Unit.
@@ -3321,7 +3321,7 @@ type VacationBalance struct {
 	// Embedded struct due to allOf(#/components/schemas/ChangeableVacationBalance)
 	ChangeableVacationBalance `yaml:",inline"`
 	// Embedded fields due to inline allOf schema
-	// PipelineID объекта
+	// ID объекта
 	EmployeeID *UUID `json:"employeeID,omitempty"`
 }
 
@@ -3348,7 +3348,7 @@ type VacationPeriod struct {
 	// Embedded struct due to allOf(#/components/schemas/ChangeableVacationPeriod)
 	ChangeableVacationPeriod `yaml:",inline"`
 	// Embedded fields due to inline allOf schema
-	// PipelineID объекта
+	// ID объекта
 	EmployeeID *UUID `json:"employeeID,omitempty"`
 }
 
@@ -3804,7 +3804,7 @@ type PostApplicantsJSONBody struct {
 	// Отчество/дополнительные имена
 	MiddleNames *string `json:"middleNames,omitempty"`
 
-	// PipelineID объекта
+	// ID объекта
 	OfficeID *UUID   `json:"officeID,omitempty"`
 	Phone    *string `json:"phone,omitempty"`
 
@@ -3814,10 +3814,10 @@ type PostApplicantsJSONBody struct {
 	// СНИЛС в формате 00000000000. Без разделителей, пробелов, только 11 чисел
 	Snils *string `json:"snils,omitempty"`
 
-	// PipelineID объекта
+	// ID объекта
 	StaffUnitID *UUID `json:"staffUnitID,omitempty"`
 
-	// PipelineID объекта
+	// ID объекта
 	UnitID UUID `json:"unitID"`
 }
 

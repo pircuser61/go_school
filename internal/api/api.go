@@ -616,7 +616,7 @@ type ApproverParams struct {
 	// Approver type:
 	//
 	//   * user - Single user
-	//   * group - Approver group PipelineID
+	//   * group - Approver group ID
 	//   * head - Receiver's head
 	//   * FromSchema - Selected by initiator
 	Type ApproverType `json:"type"`

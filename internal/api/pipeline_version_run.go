@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -77,9 +76,10 @@ func (ae *APIEnv) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	hiddenFields, err := ae.getHiddenFields(ctx, version.VersionID.String(), version.PipelineID.String())
+	hiddenFields, err := ae.getHiddenFields(ctx, version.PipelineID.String(), version.VersionID.String())
 	if err != nil {
-		return
+		e := GetHiddenFieldsError
+		log.Error(e.errorMessage(err))
 	}
 
 	started, execErr := ae.execVersion(ctx, &execVersionDTO{
@@ -257,9 +257,10 @@ func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	hiddenFields, err := ae.getHiddenFields(ctx, version.VersionID.String(), req.PipelineId)
+	hiddenFields, err := ae.getHiddenFields(ctx, req.PipelineId, version.VersionID.String())
 	if err != nil {
-		return
+		e := GetHiddenFieldsError
+		log.Error(e.errorMessage(err))
 	}
 
 	v, execErr := ae.execVersion(ctx, &execVersionDTO{
@@ -314,23 +315,24 @@ func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request
 	}
 }
 
-func (ae *APIEnv) getHiddenFields(ctx c.Context, versionID, pipelineID string) ([]string, error) {
+func (ae *APIEnv) getHiddenFields(ctx c.Context, pipelineID, versionID string) ([]string, error) {
+	const sdBlockName = "servicedesk_application_0"
+	hiddenFields := make([]string, 0)
+
 	settings, err := ae.DB.GetVersionSettings(ctx, versionID)
 	if err != nil {
-		return nil, err
+		return hiddenFields, err
 	}
-
-	hiddenFields := make([]string, 0)
 
 	startSchemaRaw := settings.StartSchemaRaw
 	schema := jsonschema.Schema{}
-	if len(startSchemaRaw) > 0 {
+	if string(startSchemaRaw) != "" && string(startSchemaRaw) != "{}" {
 		if err = json.Unmarshal(startSchemaRaw, &schema); err != nil {
-			return nil, err
+			return hiddenFields, err
 		}
 
 		if hiddenFields, err = schema.GetHiddenFields(); err != nil {
-			return nil, err
+			return hiddenFields, err
 		}
 
 		return hiddenFields, nil
@@ -339,39 +341,38 @@ func (ae *APIEnv) getHiddenFields(ctx c.Context, versionID, pipelineID string) (
 	// if there is no scheme for starting the process
 	version, err := ae.DB.GetVersionByPipelineID(ctx, pipelineID)
 	if err != nil {
-		return nil, err
+		return hiddenFields, err
+	}
+
+	if _, exists := version.Pipeline.Blocks[sdBlockName]; exists {
+		return hiddenFields, errors.New("can`t find hidden fields, block is not found " + sdBlockName)
 	}
 
 	var blueprintID string
+	params := make(map[string]interface{})
+	errJson := json.Unmarshal(version.Pipeline.Blocks[sdBlockName].Params, &params)
+	if errJson != nil {
+		return hiddenFields, errJson
+	}
 
-	for blockName := range version.Pipeline.Blocks {
-		if strings.Contains(blockName, "servicedesk_application_") {
-			params := make(map[string]interface{})
-			errJson := json.Unmarshal(version.Pipeline.Blocks[blockName].Params, &params)
-			if errJson != nil {
-				return nil, errJson
-			}
-
-			for param := range params {
-				if param == "blueprint_id" {
-					blueprintID = params[param].(string)
-				}
-			}
+	for param := range params {
+		if param == "blueprint_id" {
+			blueprintID = params[param].(string)
 		}
 	}
 
-	if blueprintID != "" {
-		return nil, errors.New("can`t find blueprintID")
+	if blueprintID == "" {
+		return hiddenFields, errors.New("can`t find blueprintID")
 	}
 
 	schema, err = ae.ServiceDesc.GetSchemaByBlueprintID(ctx, blueprintID)
 	if err != nil {
-		return nil, err
+		return hiddenFields, err
 	}
 
 	hiddenFields, err = schema.GetHiddenFields()
 	if err != nil {
-		return nil, err
+		return hiddenFields, err
 	}
 
 	return hiddenFields, nil

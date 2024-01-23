@@ -279,7 +279,7 @@ func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) ([]o
 func (runCtx *BlockRunContext) excludeHiddenFields(ctx c.Context, desc []om.OrderedMap) ([]om.OrderedMap, error) {
 	hiddenFields := make([]string, 0)
 	for stepName := range runCtx.VarStore.State {
-		if strings.Contains(stepName, "form_") {
+		if strings.HasPrefix(stepName, "form_") {
 			var state FormData
 			err := json.Unmarshal(runCtx.VarStore.State[stepName], &state)
 			if err != nil {

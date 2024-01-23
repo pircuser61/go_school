@@ -1035,7 +1035,7 @@ func (db *PGCon) RenamePipeline(c context.Context, id uuid.UUID, name string) er
     UPDATE versions
        SET content = jsonb_set(content, '{name}', to_jsonb((select name from id_values)) , false)
     WHERE versions.id = 
-          (SELECT PipelineID 
+          (SELECT id 
            FROM versions ver 
            WHERE ver.pipeline_id = $2 ORDER BY created_at DESC LIMIT 1) 
     ;`

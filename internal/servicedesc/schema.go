@@ -11,7 +11,7 @@ import (
 
 const (
 	getSchemaByID          = "/api/herald/v1/schema/"
-	getSchemaByBlueprintID = "/api/herald/v1//schema/blueprint/"
+	getSchemaByBlueprintID = "/api/herald/v1/schema/blueprint/"
 )
 
 func (s *Service) GetSchemaByID(ctx context.Context, schemaID string) (map[string]interface{}, error) {
