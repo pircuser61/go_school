@@ -628,7 +628,7 @@ type ApproverParams struct {
 // Approver type:
 //
 //   - user - Single user
-//   - group - Approver group PipelineID
+//   - group - Approver group ID
 //   - head - Receiver's head
 //   - FromSchema - Selected by initiator
 type ApproverType string
@@ -1007,7 +1007,7 @@ type ExecutionParams struct {
 	// Execution type:
 	//
 	//  * user - Single user
-	//  * group - Execution group PipelineID
+	//  * group - Execution group ID
 	//  * from_schema - Selected by initiator
 	Type ExecutionParamsType `json:"type"`
 
@@ -1021,7 +1021,7 @@ type ExecutionParams struct {
 // Execution type:
 //
 //   - user - Single user
-//   - group - Execution group PipelineID
+//   - group - Execution group ID
 //   - from_schema - Selected by initiator
 type ExecutionParamsType string
 
@@ -1130,7 +1130,7 @@ type FormChangelogItem struct {
 // Form executor type:
 //
 //   - User - Single user
-//   - group - Form group PipelineID
+//   - group - Form group ID
 //   - Initiator - Process initiator
 //   - From_schema - Selected by initiator
 //   - Auto_Fill - Auto Fill form by system
@@ -1150,7 +1150,7 @@ type FormParams struct {
 	// Form executor type:
 	//
 	//   * User - Single user
-	//   * group - Form group PipelineID
+	//   * group - Form group ID
 	//   * Initiator - Process initiator
 	//   * From_schema - Selected by initiator
 	//   * Auto_Fill - Auto Fill form by system
@@ -1192,7 +1192,7 @@ type FormReEnterSettings struct {
 	// Form executor type:
 	//
 	//   * User - Single user
-	//   * group - Form group PipelineID
+	//   * group - Form group ID
 	//   * Initiator - Process initiator
 	//   * From_schema - Selected by initiator
 	//   * Auto_Fill - Auto Fill form by system
@@ -1729,7 +1729,7 @@ type SignParams struct {
 	// Signer type:
 	//
 	//   * user - Single user
-	//   * group - Group PipelineID
+	//   * group - Group ID
 	//   * FromSchema - Selected by initiator
 	SignerType    SignerType     `json:"signerType"`
 	SigningParams *SigningParams `json:"signingParams,omitempty"`
@@ -1777,7 +1777,7 @@ type SignatureType string
 // Signer type:
 //
 //   - user - Single user
-//   - group - Group PipelineID
+//   - group - Group ID
 //   - FromSchema - Selected by initiator
 type SignerType string
 
