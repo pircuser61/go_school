@@ -75,7 +75,7 @@ func TestGetAccessibleForms(t *testing.T) {
 		},
 		{
 			Name:       "test accessibleForms step - form_0",
-			CurrentUse: "apmolch1",
+			CurrentUse: "user1",
 			Delegates:  &ht.Delegations{},
 			Steps:      unmarshalStepFromTestFile(t, "testdata/steps_get_accessible_forms_4.json"),
 			WantErr:    false,
@@ -85,7 +85,7 @@ func TestGetAccessibleForms(t *testing.T) {
 		},
 		{
 			Name:       "test accessibleForms step - form_1 (form_0 - ReadWrite)",
-			CurrentUse: "apmolch1",
+			CurrentUse: "user1",
 			Delegates:  &ht.Delegations{},
 			Steps:      unmarshalStepFromTestFile(t, "testdata/steps_get_accessible_forms_5.json"),
 			WantErr:    false,
@@ -95,7 +95,7 @@ func TestGetAccessibleForms(t *testing.T) {
 		},
 		{
 			Name:       "test with accessibleForms step - approve_0 (form_1 - ReadWrite, form_2 - ReadWrite)",
-			CurrentUse: "apmolch1",
+			CurrentUse: "user1",
 			Delegates:  &ht.Delegations{},
 			Steps:      unmarshalStepFromTestFile(t, "testdata/steps_get_accessible_forms_6.json"),
 			WantErr:    false,
