@@ -820,13 +820,13 @@ type ChangeableAssignment struct {
 	// Тип совместительства назначения, вычисляется на основе атрибутов assignment category и primary.
 	CombinationStatus *CombinationStatus `json:"combinationStatus,omitempty"`
 
-	// PipelineID договора
+	// ID договора
 	ContractID *string `json:"contractID,omitempty"`
 
-	// PipelineID центра затрат
+	// ID центра затрат
 	CostCenterId *string `json:"costCenterId,omitempty"`
 
-	// PipelineID сотрудника-руководителя, указывается только для сотрудников на договоре ГПХ
+	// ID сотрудника-руководителя, указывается только для сотрудников на договоре ГПХ
 	DgphSupervisorID *string `json:"dgphSupervisorID,omitempty"`
 
 	// Районный коэффициент
@@ -841,7 +841,7 @@ type ChangeableAssignment struct {
 	// Начало действия электронной подписи документов
 	ESignAllowedStart *openapi_types.Date `json:"eSignAllowedStart,omitempty"`
 
-	// PipelineID сотрудника
+	// ID сотрудника
 	EmployeeId *string `json:"employeeId,omitempty"`
 
 	// Дата найма
@@ -868,7 +868,7 @@ type ChangeableAssignment struct {
 	// Дата окончания испытательного срока
 	ProbationEndDate *openapi_types.Date `json:"probationEndDate,omitempty"`
 
-	// PipelineID продукта
+	// ID продукта
 	ProductID *string `json:"productID,omitempty"`
 
 	// Планируемая дата увольнения
@@ -877,16 +877,16 @@ type ChangeableAssignment struct {
 	// Категория персонала
 	StaffCategory *string `json:"staffCategory,omitempty"`
 
-	// PipelineID штатной единицы
+	// ID штатной единицы
 	StaffUnitId *string `json:"staffUnitId,omitempty"`
 
-	// PipelineID статуса назначения
+	// ID статуса назначения
 	StatusId *string `json:"statusId,omitempty"`
 
 	// Табельный номер
 	TabNum *string `json:"tabNum,omitempty"`
 
-	// PipelineID типа назначения
+	// ID типа назначения
 	TypeId *string `json:"typeId,omitempty"`
 
 	// ID объекта
@@ -978,7 +978,7 @@ type ChangeableCalendar struct {
 
 // ChangeableCalendarDay defines model for ChangeableCalendarDay.
 type ChangeableCalendarDay struct {
-	// PipelineID календаря
+	// ID календаря
 	CalendarID string `json:"calendarID"`
 
 	// Дата
@@ -1001,7 +1001,7 @@ type ChangeableCluster struct {
 
 // ChangeableContract defines model for ChangeableContract.
 type ChangeableContract struct {
-	// PipelineID сотрудника
+	// ID сотрудника
 	EmployeeId *string `json:"employeeId,omitempty"`
 
 	// контракт действует по
@@ -1019,10 +1019,10 @@ type ChangeableContract struct {
 	// контракт действует с
 	StartDate *openapi_types.Date `json:"startDate,omitempty"`
 
-	// PipelineID статуса контракта
+	// ID статуса контракта
 	StatusId *string `json:"statusId,omitempty"`
 
-	// PipelineID типа контракта
+	// ID типа контракта
 	TypeId *string `json:"typeId,omitempty"`
 }
 
@@ -1187,7 +1187,7 @@ type ChangeableEmployee struct {
 	// Табельный номер сотрудника
 	TabNum *string `json:"tabNum,omitempty"`
 
-	// PipelineID типа сотрудника
+	// ID типа сотрудника
 	TypeID *string `json:"typeID,omitempty"`
 }
 
@@ -1244,13 +1244,13 @@ type ChangeableHierarchy struct {
 
 // ChangeableHierarchyLink defines model for ChangeableHierarchyLink.
 type ChangeableHierarchyLink struct {
-	// PipelineID подразделения-наследника, находящегося в иерархическом подчинении у подразделения родителя
+	// ID подразделения-наследника, находящегося в иерархическом подчинении у подразделения родителя
 	ChildID string `json:"childID"`
 
-	// PipelineID иерархии подразделений
+	// ID иерархии подразделений
 	HierarchyID string `json:"hierarchyID"`
 
-	// PipelineID подразделения-родителя, выше стоящего в иерархии
+	// ID подразделения-родителя, выше стоящего в иерархии
 	ParentID *string `json:"parentID,omitempty"`
 }
 
@@ -1379,7 +1379,7 @@ type ChangeableLocation struct {
 
 // Изменяемые параметры офиса
 type ChangeableOffice struct {
-	// PipelineID локации, где находится офис
+	// ID локации, где находится офис
 	LocationID string `json:"locationID"`
 
 	// Наименование офиса
@@ -1388,7 +1388,7 @@ type ChangeableOffice struct {
 
 // ChangeableOrganization defines model for ChangeableOrganization.
 type ChangeableOrganization struct {
-	// PipelineID календаря
+	// ID календаря
 	CalendarId *string `json:"calendarId,omitempty"`
 
 	// ИНН
@@ -1406,7 +1406,7 @@ type ChangeableOrganization struct {
 
 // ChangeablePAOBonusPaymentCategory defines model for ChangeablePAOBonusPaymentCategory.
 type ChangeablePAOBonusPaymentCategory struct {
-	// PipelineID премирования ПАО
+	// ID премирования ПАО
 	Code string `json:"code"`
 
 	// название категории премирования
@@ -1427,7 +1427,7 @@ type ChangeablePerson struct {
 	// Код физлица 1С
 	Code1C *string `json:"code1C,omitempty"`
 
-	// PipelineID физлица, который считается оригинальным в случае дублирования
+	// ID физлица, который считается оригинальным в случае дублирования
 	DeduplicatedID *string `json:"deduplicatedID,omitempty"`
 
 	// Имя
@@ -1508,11 +1508,11 @@ type ChangeablePersonalSchedule struct {
 	// ID объекта
 	ScheduleID UUID `json:"scheduleID"`
 
-	// PipelineID типа рабочего графика, используется только для записи
+	// ID типа рабочего графика, используется только для записи
 	ShiftTypeID *string                             `json:"shiftTypeID,omitempty"`
 	WeekType    *ChangeablePersonalScheduleWeekType `json:"weekType,omitempty"`
 
-	// PipelineID длительность рабочей недели, используется только для записи
+	// ID длительность рабочей недели, используется только для записи
 	WorkWeekHoursID *string `json:"workWeekHoursID,omitempty"`
 }
 
@@ -1657,13 +1657,13 @@ type ChangeableStaffUnit struct {
 		Start *openapi_types.Date `json:"start,omitempty"`
 	} `json:"activity,omitempty"`
 
-	// PipelineID штатной единицы административного руководителя
+	// ID штатной единицы административного руководителя
 	AdministrativeSupervisorID *string `json:"administrativeSupervisorID,omitempty"`
 
-	// PipelineID статуса доступности штатной единицы
+	// ID статуса доступности штатной единицы
 	AvailabilityID *string `json:"availabilityID,omitempty"`
 
-	// PipelineID категории премирования сотрудников бэкофиса
+	// ID категории премирования сотрудников бэкофиса
 	BackBonusPaymentCategoryID *string `json:"backBonusPaymentCategoryID,omitempty"`
 
 	// Бюджет штатной единицы
@@ -1672,10 +1672,10 @@ type ChangeableStaffUnit struct {
 	// Буквенный код валюты бюджета ШЕ в соответствии с ISO 4217
 	BudgetCurrency *string `json:"budgetCurrency,omitempty"`
 
-	// PipelineID для budman
+	// ID для budman
 	BudmanID *string `json:"budmanID,omitempty"`
 
-	// PipelineID календаря
+	// ID календаря
 	CalendarId *string `json:"calendarId,omitempty"`
 
 	// Дата вывода штатной единицы
@@ -1693,13 +1693,13 @@ type ChangeableStaffUnit struct {
 	// Код оборудования
 	EquipmentCategory *string `json:"equipmentCategory,omitempty"`
 
-	// PipelineID функционального блока на ШЕ
+	// ID функционального блока на ШЕ
 	FunctionalBlockID *string `json:"functionalBlockID,omitempty"`
 
-	// PipelineID штатной единицы функционального руководителя
+	// ID штатной единицы функционального руководителя
 	FunctionalSupervisorID *string `json:"functionalSupervisorID,omitempty"`
 
-	// PipelineID грейда
+	// ID грейда
 	GradeId *string `json:"gradeId,omitempty"`
 
 	// код дополнительных выходных за вредные условия труда
@@ -1744,13 +1744,13 @@ type ChangeableStaffUnit struct {
 	// Причина ввода штатной единицы
 	OpenReason *string `json:"openReason,omitempty"`
 
-	// PipelineID категории премирования ПАО
+	// ID категории премирования ПАО
 	PaoBonusPaymentCategoryID *string `json:"paoBonusPaymentCategoryID,omitempty"`
 
-	// PipelineID должности
+	// ID должности
 	PositionId *string `json:"positionId,omitempty"`
 
-	// PipelineID  продукта PPInfo ввода ШЕ
+	// ID  продукта PPInfo ввода ШЕ
 	ProductEntityID *string `json:"productEntityID,omitempty"`
 
 	// Планируемая дата вывода штатной единицы
@@ -1759,7 +1759,7 @@ type ChangeableStaffUnit struct {
 	// Номер штатной единицы
 	StaffCode *string `json:"staffCode,omitempty"`
 
-	// PipelineID ШЕ предшественника
+	// ID ШЕ предшественника
 	StaffPredecessorID *string `json:"staffPredecessorID,omitempty"`
 
 	// Идентификатор роли
@@ -1771,7 +1771,7 @@ type ChangeableStaffUnit struct {
 	// Дата начала доступности ШЕ
 	StaffStartDate *openapi_types.Date `json:"staffStartDate,omitempty"`
 
-	// PipelineID руководящей штатной единицы
+	// ID руководящей штатной единицы
 	SupervisorStaffID *string `json:"supervisorStaffID,omitempty"`
 
 	// Идентификатор вакансии в TEAM
@@ -1780,7 +1780,7 @@ type ChangeableStaffUnit struct {
 	// ID объекта
 	TypeID *UUID `json:"typeID,omitempty"`
 
-	// PipelineID отдела к которому относится штатная единица
+	// ID отдела к которому относится штатная единица
 	UnitId string `json:"unitId"`
 
 	// период активности объекта
@@ -1803,7 +1803,7 @@ type ChangeableTimekeeper struct {
 	// ID объекта
 	GroupID UUID `json:"groupID"`
 
-	// PipelineID сотрудника (сущность Employee)
+	// ID сотрудника (сущность Employee)
 	TimekeeperID string `json:"timekeeperID"`
 
 	// ID объекта
@@ -1827,25 +1827,25 @@ type ChangeableUnit struct {
 	// ID объекта
 	BalanceUnitID *UUID `json:"balanceUnitID,omitempty"`
 
-	// PipelineID для budman
+	// ID для budman
 	BudmanID *string `json:"budmanID,omitempty"`
 
-	// PipelineID кластера посчитанный по основной иерархии
+	// ID кластера посчитанный по основной иерархии
 	CalcClusterID *string `json:"calcClusterID,omitempty"`
 
-	// PipelineID календаря
+	// ID календаря
 	CalendarId *string `json:"calendarId,omitempty"`
 
-	// PipelineID кластера
+	// ID кластера
 	ClusterId *string `json:"clusterId,omitempty"`
 
-	// PipelineID центра затрат
+	// ID центра затрат
 	CostCenterId *string `json:"costCenterId,omitempty"`
 
 	// Описание подразделения/отдела
 	Description *string `json:"description,omitempty"`
 
-	// PipelineID функционального блока
+	// ID функционального блока
 	FunctionalBlockID *string `json:"functionalBlockID,omitempty"`
 
 	// Признак видимости подразделения на портале Пульс
@@ -1857,25 +1857,25 @@ type ChangeableUnit struct {
 	// Code организации
 	OrgCode *string `json:"orgCode,omitempty"`
 
-	// PipelineID организации, в структуре которой находится подразделение
+	// ID организации, в структуре которой находится подразделение
 	OrganizationID *string `json:"organizationID,omitempty"`
 
-	// PipelineID родительского подразделения/отдела
+	// ID родительского подразделения/отдела
 	ParentId *string `json:"parentId,omitempty"`
 
-	// PipelineID продукта
+	// ID продукта
 	ProductID *string `json:"productID,omitempty"`
 
 	// Сокращенное имя организации
 	ShortName *string `json:"shortName,omitempty"`
 
-	// PipelineID **штатной единицы** руководителя
+	// ID **штатной единицы** руководителя
 	SupervisorId *string `json:"supervisorId,omitempty"`
 
 	// Название подразделения/отдела
 	Title *string `json:"title,omitempty"`
 
-	// PipelineID типа подразделения
+	// ID типа подразделения
 	UnitTypeId *string `json:"unitTypeId,omitempty"`
 
 	// ID объекта
@@ -2044,7 +2044,7 @@ type CostCenter struct {
 
 // CreatedItem defines model for CreatedItem.
 type CreatedItem struct {
-	// PipelineID созданного объекта
+	// ID созданного объекта
 	Id string `json:"id"`
 }
 
@@ -2137,7 +2137,7 @@ type Documents struct {
 	// Дата создания записи о документах
 	CreatedAt *time.Time `json:"createdAt,omitempty"`
 
-	// PipelineID человека, к которому относятся документы
+	// ID человека, к которому относятся документы
 	PersonID string `json:"personID"`
 
 	// Дата изменения записи о документах
@@ -2413,7 +2413,7 @@ type HierarchyLinkToUpdate struct {
 
 // HistoryID defines model for HistoryID.
 type HistoryID struct {
-	// PipelineID исторической записи (только с параметром history)
+	// ID исторической записи (только с параметром history)
 	HistoryID *string `json:"historyID,omitempty"`
 }
 
@@ -2578,7 +2578,7 @@ type Offices struct {
 
 // OperationIdentifier defines model for OperationIdentifier.
 type OperationIdentifier struct {
-	// временный PipelineID сущности batch операции для однозначного определения ответа
+	// временный ID сущности batch операции для однозначного определения ответа
 	OperationID string `json:"operationID"`
 
 	// ID объекта
@@ -3163,7 +3163,7 @@ type TaskState string
 // Результат выполнения задачи. Доступно только в Complete состоянии
 type TaskStatus string
 
-// PipelineID задача в рамках которой были выполнены действия над объектом
+// ID задача в рамках которой были выполнены действия над объектом
 type TaskID struct {
 	// ID объекта
 	TaskID *UUID `json:"taskID,omitempty"`
@@ -3251,7 +3251,7 @@ type Unit struct {
 
 // UnitPath defines model for UnitPath.
 type UnitPath struct {
-	// PipelineID подразделения/отдела
+	// ID подразделения/отдела
 	UnitId string `json:"unitId"`
 
 	// Отсортированный массив подразделений от корневого до требуемого
@@ -4764,7 +4764,7 @@ type GetDgphDonorsParams struct {
 	// список id назначений для фильтрации
 	AssIDs *AssignmentIDs `json:"assIDs,omitempty"`
 
-	// список PipelineID физ лиц
+	// список ID физ лиц
 	PersonIDs *PersonIDsParam `json:"personIDs,omitempty"`
 
 	// фильтр по списку идентификаторов организаций /organizations
@@ -4793,7 +4793,7 @@ type GetDistWorkParams struct {
 	// список id назначений для фильтрации
 	AssIDs *AssignmentIDs `json:"assIDs,omitempty"`
 
-	// список PipelineID физ лиц
+	// список ID физ лиц
 	PersonIDs *PersonIDsParam `json:"personIDs,omitempty"`
 
 	// Сгруппированные параметры фильтрации
@@ -4863,7 +4863,7 @@ type GetEmployeesParams struct {
 	// фильтр по списку идентификаторов типов сотрудников
 	EmployeeTypeIDs *EmployeeTypeIdsFilterParam `json:"employeeTypeIDs,omitempty"`
 
-	// список PipelineID физ лиц
+	// список ID физ лиц
 	PersonIDs *PersonIDsParam `json:"personIDs,omitempty"`
 
 	// Сгруппированные параметры фильтрации
@@ -5040,7 +5040,7 @@ type GetOrganizationsParams struct {
 	// Фильтры *from* выдают ответ **включающий** заданную дату, фильтры *to* - **не включая** указанную дату
 	QueryFilters *QueryFilters `json:"queryFilters,omitempty"`
 
-	// Фильтр по PipelineID подразделения
+	// Фильтр по ID подразделения
 	//
 	// Для подразделения из фильтра будет найдено корневое подразделение в переданной в **hierarchyID** иерархии
 	//
@@ -5101,7 +5101,7 @@ type GetPersonEducationParams struct {
 	// Фильтры *from* выдают ответ **включающий** заданную дату, фильтры *to* - **не включая** указанную дату
 	QueryFilters *QueryFilters `json:"queryFilters,omitempty"`
 
-	// список PipelineID физ лиц
+	// список ID физ лиц
 	PersonIDs *PersonIDsParam `json:"personIDs,omitempty"`
 }
 
@@ -5400,10 +5400,10 @@ type GetTimekeepersParams struct {
 	// список id юнитов для фильтрации
 	UnitIDs *UnitIDs `json:"unitIDs,omitempty"`
 
-	// список PipelineID групп табельщиков для фильтрации
+	// список ID групп табельщиков для фильтрации
 	GroupIDs *IDsList `json:"groupIDs,omitempty"`
 
-	// список PipelineID сотрудников(Employee) для фильтрации
+	// список ID сотрудников(Employee) для фильтрации
 	TimekeeperIDs *IDsList `json:"timekeeperIDs,omitempty"`
 
 	// фильтр по списку идентификаторов организаций /organizations
