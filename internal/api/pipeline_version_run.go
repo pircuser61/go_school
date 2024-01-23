@@ -3,6 +3,7 @@ package api
 import (
 	c "context"
 	"encoding/json"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 	"io"
 	"net/http"
 	"time"
@@ -348,24 +349,17 @@ func (ae *APIEnv) getHiddenFields(ctx c.Context, pipelineID, versionID string) (
 		return hiddenFields, errors.New("can`t find hidden fields, block is not found " + sdBlockName)
 	}
 
-	var blueprintID string
-	params := make(map[string]interface{})
+	params := pipeline.ApplicationData{}
 	errJson := json.Unmarshal(version.Pipeline.Blocks[sdBlockName].Params, &params)
 	if errJson != nil {
 		return hiddenFields, errJson
 	}
 
-	for param := range params {
-		if param == "blueprint_id" {
-			blueprintID = params[param].(string)
-		}
-	}
-
-	if blueprintID == "" {
+	if params.BlueprintID == "" {
 		return hiddenFields, errors.New("can`t find blueprintID")
 	}
 
-	schema, err = ae.ServiceDesc.GetSchemaByBlueprintID(ctx, blueprintID)
+	schema, err = ae.ServiceDesc.GetSchemaByBlueprintID(ctx, params.BlueprintID)
 	if err != nil {
 		return hiddenFields, err
 	}
