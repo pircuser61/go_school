@@ -287,11 +287,11 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 
 	var queryMaker compileGetTaskQueryMaker
 
-	return queryMaker.MakeQuery(fl, q, delegations, args, order)
+	return queryMaker.MakeQuery(&fl, q, delegations, args, order)
 }
 
 type compileGetTaskQueryMaker struct {
-	fl          entity.TaskFilter
+	fl          *entity.TaskFilter
 	q           string
 	delegations []string
 	args        []any
@@ -384,7 +384,7 @@ func (cq *compileGetTaskQueryMaker) addInitiator() {
 func (cq *compileGetTaskQueryMaker) addProcessingSteps() {
 	if (cq.fl.ProcessingLogins != nil || cq.fl.ProcessingGroupIds != nil) ||
 		cq.fl.ExecutorTypeAssigned != nil {
-		cq.q = getProcessingSteps(cq.q, &cq.fl)
+		cq.q = getProcessingSteps(cq.q, cq.fl)
 	}
 }
 
@@ -409,15 +409,16 @@ func (cq *compileGetTaskQueryMaker) addLimit() {
 }
 
 func (cq *compileGetTaskQueryMaker) MakeQuery(
-	fl entity.TaskFilter,
+	fl *entity.TaskFilter,
 	q string,
 	delegations []string,
 	args []any,
 	order string,
-) (string, []any) {
+) (query string, resArgs []any) {
 	cq.fl = fl
 	cq.q = q
 	cq.delegations = delegations
+	cq.args = args
 
 	cq.init()
 	cq.replaceUniqueActionsFilter()
