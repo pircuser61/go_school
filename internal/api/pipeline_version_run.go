@@ -3,7 +3,6 @@ package api
 import (
 	c "context"
 	"encoding/json"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 	"io"
 	"net/http"
 	"time"
@@ -19,6 +18,7 @@ import (
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 )
 
 const runByPipelineIDPath = "/run/versions/pipeline_id"
