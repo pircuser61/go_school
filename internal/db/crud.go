@@ -2208,8 +2208,8 @@ where accesses.data::jsonb ->> 'node_id' = $2
 	return count != 0, nil
 }
 
-func (db *PGCon) GetAdditionalDescriptionForms(workNumber, nodeName string) ([]orderedmap.OrderedMap, error) {
-	const q = `
+func (db *PGCon) GetAdditionalDescriptionForms(workNumber, nodeName string) ([]entity.DescriptionForm, error) {
+	const query = `
 	WITH content as (
 		SELECT jsonb_array_elements(content -> 'pipeline' -> 'blocks' -> $2 -> 'params' -> 'forms_accessibility') as rules
 		FROM versions
@@ -2221,7 +2221,7 @@ func (db *PGCon) GetAdditionalDescriptionForms(workNumber, nodeName string) ([]o
 		FROM versions
 			WHERE id = (SELECT version_id FROM works WHERE work_number = $1 AND child_id IS NULL)
 	)
-    SELECT v.content -> 'State' -> v.step_name -> 'application_body'
+    SELECT v.content -> 'State' -> v.step_name -> 'application_body', v.step_name
 	FROM variable_storage v
 	    INNER JOIN  (
 		      SELECT max(time) as mtime, step_name from variable_storage
@@ -2235,27 +2235,33 @@ func (db *PGCon) GetAdditionalDescriptionForms(workNumber, nodeName string) ([]o
 		)
 		AND v.work_id = (SELECT id FROM works WHERE work_number = $1 AND child_id IS NULL)
 	ORDER BY v.time`
-	ff := make([]orderedmap.OrderedMap, 0)
-	rows, err := db.Connection.Query(context.Background(), q, workNumber, nodeName)
+
+	descriptionForms := make([]entity.DescriptionForm, 0)
+
+	rows, err := db.Connection.Query(context.Background(), query, workNumber, nodeName)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return ff, nil
+			return descriptionForms, nil
 		}
 		return nil, err
 	}
 	defer rows.Close()
 
 	for rows.Next() {
+		var formName string
 		var form orderedmap.OrderedMap
-		if scanErr := rows.Scan(&form); scanErr != nil {
-			return nil, scanErr
+		if scanErr := rows.Scan(&form, &formName); scanErr != nil {
+			return descriptionForms, scanErr
 		}
-		ff = append(ff, form)
+		descriptionForms = append(descriptionForms, entity.DescriptionForm{
+			Name:        formName,
+			Description: form,
+		})
 	}
 	if rowsErr := rows.Err(); rowsErr != nil {
-		return nil, rowsErr
+		return descriptionForms, rowsErr
 	}
-	return ff, nil
+	return descriptionForms, nil
 }
 
 func (db *PGCon) GetTaskRunContext(ctx context.Context, workNumber string) (entity.TaskRunContext, error) {
