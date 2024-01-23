@@ -267,6 +267,7 @@ type InitialApplication struct {
 	IsTestApplication         bool                  `json:"is_test_application"`
 	CustomTitle               string                `json:"custom_title"`
 	ApplicationBodyFromSystem orderedmap.OrderedMap `json:"application_body_from_system"`
+	HiddenFields              []string              `json:"hidden_fields"`
 }
 
 type TaskRunContext struct {

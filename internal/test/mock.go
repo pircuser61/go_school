@@ -131,11 +131,11 @@ var (
 	connectorPipelineVersionUUID = uuid.New()
 
 	linearPipeline = entity.EriusScenario{
-		ID:        linearPipelineUUID,
-		VersionID: linearPipelineVersionUUID,
-		Status:    db.StatusApproved,
-		HasDraft:  false,
-		Name:      "LinearPipeline",
+		PipelineID: linearPipelineUUID,
+		VersionID:  linearPipelineVersionUUID,
+		Status:     db.StatusApproved,
+		HasDraft:   false,
+		Name:       "LinearPipeline",
 		Input: []entity.EriusFunctionValue{
 			{
 				Name:   "Output",
@@ -240,11 +240,11 @@ var (
 	}
 
 	ifPipeline = entity.EriusScenario{
-		ID:        ifPipelineUUID,
-		VersionID: ifPipelineVersionUUID,
-		Status:    db.StatusApproved,
-		HasDraft:  false,
-		Name:      "IfPipeline",
+		PipelineID: ifPipelineUUID,
+		VersionID:  ifPipelineVersionUUID,
+		Status:     db.StatusApproved,
+		HasDraft:   false,
+		Name:       "IfPipeline",
 		Input: []entity.EriusFunctionValue{
 			{
 				Name:   "Output",
@@ -341,11 +341,11 @@ var (
 	}
 
 	forPipeline = entity.EriusScenario{
-		ID:        forPipelineUUID,
-		VersionID: forPipelineVersionUUID,
-		Status:    db.StatusApproved,
-		HasDraft:  false,
-		Name:      "ForPipeline",
+		PipelineID: forPipelineUUID,
+		VersionID:  forPipelineVersionUUID,
+		Status:     db.StatusApproved,
+		HasDraft:   false,
+		Name:       "ForPipeline",
 		Input: []entity.EriusFunctionValue{
 			{
 				Name:   "Output",
@@ -445,11 +445,11 @@ var (
 	}
 
 	pipelineWithPipeline = entity.EriusScenario{
-		ID:        pipelineWithPipelineUUID,
-		VersionID: pipelineWithPipelineVersionUUID,
-		Status:    db.StatusApproved,
-		HasDraft:  false,
-		Name:      "PipelineWithPipeline",
+		PipelineID: pipelineWithPipelineUUID,
+		VersionID:  pipelineWithPipelineVersionUUID,
+		Status:     db.StatusApproved,
+		HasDraft:   false,
+		Name:       "PipelineWithPipeline",
 		Input: []entity.EriusFunctionValue{
 			{
 				Name:   "Output",
@@ -552,11 +552,11 @@ var (
 	}
 
 	forInForPipeline = entity.EriusScenario{
-		ID:        forInForPipelineUUID,
-		VersionID: forInForPipelineVersionUUID,
-		Status:    db.StatusApproved,
-		HasDraft:  false,
-		Name:      "ForInForPipeline",
+		PipelineID: forInForPipelineUUID,
+		VersionID:  forInForPipelineVersionUUID,
+		Status:     db.StatusApproved,
+		HasDraft:   false,
+		Name:       "ForInForPipeline",
 		Pipeline: entity.PipelineType{
 			Entrypoint: "MasGen1",
 			Blocks: entity.BlocksType{
@@ -673,13 +673,13 @@ var (
 	}
 
 	stringsEqualPipeline = entity.EriusScenario{
-		ID:        stringsEqualPipelineUUID,
-		VersionID: stringsEqualPipelineVersionUUID,
-		Status:    db.StatusApproved,
-		HasDraft:  false,
-		Name:      "StringsEqualPipeline",
-		Input:     nil,
-		Output:    nil,
+		PipelineID: stringsEqualPipelineUUID,
+		VersionID:  stringsEqualPipelineVersionUUID,
+		Status:     db.StatusApproved,
+		HasDraft:   false,
+		Name:       "StringsEqualPipeline",
+		Input:      nil,
+		Output:     nil,
 		Pipeline: entity.PipelineType{
 			Entrypoint: "Block1",
 			Blocks: entity.BlocksType{
@@ -800,13 +800,13 @@ var (
 	}
 
 	connectorPipeline = entity.EriusScenario{
-		ID:        connectorPipelineUUID,
-		VersionID: connectorPipelineVersionUUID,
-		Status:    db.StatusApproved,
-		HasDraft:  false,
-		Name:      "ConnectorPipeline",
-		Input:     nil,
-		Output:    nil,
+		PipelineID: connectorPipelineUUID,
+		VersionID:  connectorPipelineVersionUUID,
+		Status:     db.StatusApproved,
+		HasDraft:   false,
+		Name:       "ConnectorPipeline",
+		Input:      nil,
+		Output:     nil,
 		Pipeline: entity.PipelineType{
 			Entrypoint: "Block1",
 			Blocks: entity.BlocksType{
@@ -892,13 +892,13 @@ var (
 	ngsaPipelineUUID        = uuid.New()
 	ngsaPipelineVersionUUID = uuid.New()
 	ngsaPipeline            = entity.EriusScenario{
-		ID:        ngsaPipelineUUID,
-		VersionID: ngsaPipelineVersionUUID,
-		Status:    db.StatusApproved,
-		HasDraft:  false,
-		Name:      "ngsa",
-		Input:     nil,
-		Output:    nil,
+		PipelineID: ngsaPipelineUUID,
+		VersionID:  ngsaPipelineVersionUUID,
+		Status:     db.StatusApproved,
+		HasDraft:   false,
+		Name:       "ngsa",
+		Input:      nil,
+		Output:     nil,
 		Pipeline: entity.PipelineType{
 			Entrypoint: "ngsa",
 			Blocks: entity.BlocksType{
@@ -1215,7 +1215,7 @@ func (m *MockDB) GetPipeline(c context.Context, id uuid.UUID) (*entity.EriusScen
 
 func (m *MockDB) GetPipelineVersion(c context.Context, id uuid.UUID, checkNotDeleted bool) (*entity.EriusScenario, error) {
 	for i := range m.pipelines {
-		if m.pipelines[i].ID == id {
+		if m.pipelines[i].PipelineID == id {
 			return &m.pipelines[i], nil
 		}
 	}

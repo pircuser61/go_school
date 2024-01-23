@@ -69,7 +69,7 @@ func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request
 
 	oldVersionID := p.VersionID
 	p.VersionID = uuid.New()
-	p.ID, err = uuid.Parse(pipelineID)
+	p.PipelineID, err = uuid.Parse(pipelineID)
 	if err != nil {
 		e := VersionCreateError
 		log.Error(e.errorMessage(err))
@@ -482,7 +482,7 @@ func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 	}
 
 	if !canEdit {
-		err = ae.DB.RollbackVersion(ctx, p.ID, p.VersionID)
+		err = ae.DB.RollbackVersion(ctx, p.PipelineID, p.VersionID)
 		if err != nil {
 			e := ApproveError
 			log.Error(e.errorMessage(err))
@@ -544,7 +544,7 @@ func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 	}
 
 	if p.Status == db.StatusApproved {
-		err = ae.DB.SwitchApproved(ctx, p.ID, p.VersionID, ui.Username)
+		err = ae.DB.SwitchApproved(ctx, p.PipelineID, p.VersionID, ui.Username)
 		if err != nil {
 			e := ApproveError
 			log.Error(e.errorMessage(err))
@@ -702,7 +702,7 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 	}()
 
 	ep := pipeline.ExecutablePipeline{}
-	ep.PipelineID = dto.p.ID
+	ep.PipelineID = dto.p.PipelineID
 	ep.VersionID = dto.p.VersionID
 	ep.Storage = txStorage
 	ep.EntryPoint = dto.p.Pipeline.Entrypoint

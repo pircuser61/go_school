@@ -532,7 +532,7 @@ func (db *PGCon) GetWorkedVersions(ctx context.Context) ([]entity.EriusScenario,
 		}
 
 		p.VersionID = vID
-		p.ID = pID
+		p.PipelineID = pID
 		p.Status = s
 		p.Name = name
 		pipes = append(pipes, p)
@@ -700,7 +700,7 @@ func (db *PGCon) CreatePipeline(c context.Context,
 		$4
 	)`
 
-	_, err := db.Connection.Exec(c, qNewPipeline, p.ID, p.Name, createdAt, author)
+	_, err := db.Connection.Exec(c, qNewPipeline, p.PipelineID, p.Name, createdAt, author)
 	if err != nil {
 		return err
 	}
@@ -745,7 +745,7 @@ func (db *PGCon) CreateVersion(c context.Context,
 		qNewVersion,
 		p.VersionID,
 		StatusDraft,
-		p.ID,
+		p.PipelineID,
 		createdAt,
 		pipelineData,
 		author,
@@ -924,7 +924,7 @@ func (db *PGCon) GetPipeline(c context.Context, id uuid.UUID) (*entity.EriusScen
 		}
 
 		p.VersionID = vID
-		p.ID = pID
+		p.PipelineID = pID
 		p.Status = s
 		p.Comment = cm
 
@@ -1002,7 +1002,7 @@ func (db *PGCon) GetPipelineVersion(c context.Context, id uuid.UUID, checkNotDel
 		}
 
 		p.VersionID = vID
-		p.ID = pID
+		p.PipelineID = pID
 		p.Status = s
 		p.CommentRejected = cr
 		p.Comment = cm
@@ -1035,7 +1035,7 @@ func (db *PGCon) RenamePipeline(c context.Context, id uuid.UUID, name string) er
     UPDATE versions
        SET content = jsonb_set(content, '{name}', to_jsonb((select name from id_values)) , false)
     WHERE versions.id = 
-          (SELECT ID 
+          (SELECT id 
            FROM versions ver 
            WHERE ver.pipeline_id = $2 ORDER BY created_at DESC LIMIT 1) 
     ;`
@@ -1084,7 +1084,7 @@ func (db *PGCon) UpdateDraft(c context.Context,
 	SET is_actual = FALSE
 	WHERE id != $1
 	AND pipeline_id = $2`
-		_, err = tx.Exec(c, q, p.VersionID, p.ID)
+		_, err = tx.Exec(c, q, p.VersionID, p.PipelineID)
 		if err != nil {
 			return err
 		}
@@ -1459,7 +1459,7 @@ func (db *PGCon) GetExecutableScenarios(c context.Context) ([]entity.EriusScenar
 		}
 
 		p.VersionID = vID
-		p.ID = pID
+		p.PipelineID = pID
 		p.Status = s
 		p.Name = name
 		p.ApprovedAt = &d
@@ -1470,7 +1470,7 @@ func (db *PGCon) GetExecutableScenarios(c context.Context) ([]entity.EriusScenar
 
 	for i := range pipes {
 		version := pipes[i]
-		if finV, ok := vMap[version.ID]; ok {
+		if finV, ok := vMap[version.PipelineID]; ok {
 			t, err := db.findApproveDate(c, version.VersionID)
 			if err != nil {
 				return nil, err
@@ -1481,7 +1481,7 @@ func (db *PGCon) GetExecutableScenarios(c context.Context) ([]entity.EriusScenar
 			}
 		}
 
-		vMap[version.ID] = version
+		vMap[version.PipelineID] = version
 	}
 
 	final := make([]entity.EriusScenario, len(vMap))
@@ -1544,7 +1544,7 @@ func (db *PGCon) GetExecutableByName(c context.Context, name string) (*entity.Er
 		}
 
 		p.VersionID = vID
-		p.ID = pID
+		p.PipelineID = pID
 		p.Status = s
 
 		return &p, nil
@@ -2048,7 +2048,7 @@ func (db *PGCon) GetVersionByWorkNumber(c context.Context, workNumber string) (*
 	}
 
 	res.VersionID = vID
-	res.ID = pID
+	res.PipelineID = pID
 	res.Status = s
 	res.CommentRejected = cr
 	res.Comment = cm
@@ -2109,7 +2109,7 @@ func (db *PGCon) GetVersionByPipelineID(c context.Context, pipelineID string) (*
 	}
 
 	res.VersionID = vID
-	res.ID = pID
+	res.PipelineID = pID
 	res.Status = s
 	res.CommentRejected = cr
 	res.Comment = cm
