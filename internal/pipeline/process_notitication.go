@@ -239,10 +239,10 @@ func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) ([]o
 		return nil, nil, err
 	}
 
-	for _, v := range additionalForms {
+	for _, form := range additionalForms {
 		attachmentFiles := make([]string, 0)
 
-		for _, val := range v.Values() {
+		for _, val := range form.Description.Values() {
 			file, ok := val.(om.OrderedMap)
 			if !ok {
 				continue
@@ -263,12 +263,12 @@ func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) ([]o
 			return nil, nil, err
 		}
 
-		v.Set("attachLinks", attach.AttachLinks)
-		v.Set("attachExist", attach.AttachExists)
-		v.Set("attachList", attach.AttachmentsList)
+		form.Description.Set("attachLinks", attach.AttachLinks)
+		form.Description.Set("attachExist", attach.AttachExists)
+		form.Description.Set("attachList", attach.AttachmentsList)
 
 		files = append(files, attach.AttachmentsList...)
-		formDesc, errExclude := runCtx.excludeHiddenFormFields(nodeName, flatArray(v))
+		formDesc, errExclude := runCtx.excludeHiddenFormFields(form.Name, flatArray(form.Description))
 		if errExclude != nil {
 			return nil, nil, errExclude
 		}

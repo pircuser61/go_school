@@ -17,8 +17,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
-	"github.com/iancoleman/orderedmap"
-
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
@@ -35,7 +33,7 @@ func getTaskRunContext() db.Database {
 	res.On("GetAttach", nil).Return(nil, nil)
 	res.On("GetTaskRunContext", c.Background(), "J001").Return(entity.TaskRunContext{}, nil)
 	res.On("GetApplicationData", "J001").Return("", nil)
-	res.On("GetAdditionalDescriptionForms", "J001", "sign").Return([]orderedmap.OrderedMap{}, nil)
+	res.On("GetAdditionalDescriptionForms", "J001", "sign").Return([]entity.DescriptionForm{}, nil)
 	res.On("UpdateStepContext",
 		mock.MatchedBy(func(ctx c.Context) bool { return true }),
 		mock.AnythingOfType("*db.UpdateStepRequest"),
