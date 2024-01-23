@@ -19,6 +19,9 @@ const (
 	userImg    = "iconUser.png"
 	warningImg = "warning.png"
 	vRabotuBtn = "v_rabotu.png"
+
+	approveBtn = "soglas.png"
+	rejectBtn  = "otklon.png"
 )
 
 //nolint:dupl // maybe later
@@ -276,7 +279,6 @@ func (gb *GoApproverBlock) notifyAdditionalApprovers(ctx c.Context, logins []str
 		})
 	}
 
-	buttonList := make([]string, 0)
 	additionalApproveLogin := make([]string, 0)
 
 	for _, email := range gb.State.AdditionalApprovers {
@@ -284,7 +286,7 @@ func (gb *GoApproverBlock) notifyAdditionalApprovers(ctx c.Context, logins []str
 	}
 
 	for i := range emails {
-		tpl, buttons := mail.NewAddApproversTpl(
+		tpl, _ := mail.NewAddApproversTpl(
 			&mail.NewAppPersonStatusTpl{
 				WorkNumber: gb.RunContext.WorkNumber,
 				Name:       gb.RunContext.NotifName,
@@ -304,11 +306,7 @@ func (gb *GoApproverBlock) notifyAdditionalApprovers(ctx c.Context, logins []str
 			}, emails[i],
 		)
 
-		for _, v := range buttons {
-			buttonList = append(buttonList, v.Img)
-		}
-
-		filesList := []string{tpl.Image, userImg}
+		filesList := []string{tpl.Image, userImg, approveBtn, rejectBtn}
 
 		if len(lastWorksForUser) != 0 {
 			filesList = append(filesList, warningImg)
@@ -324,8 +322,6 @@ func (gb *GoApproverBlock) notifyAdditionalApprovers(ctx c.Context, logins []str
 				}
 			}
 		}
-
-		filesList = append(filesList, buttonList...)
 
 		iconFiles, iconErr := gb.RunContext.GetIcons(filesList)
 		if iconErr != nil {
