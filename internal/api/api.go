@@ -1078,7 +1078,7 @@ type ExternalSystemSubscriptionParams struct {
 	// Какой http метод использовать
 	Method ExternalSystemSubscriptionParamsMethod `json:"method"`
 
-	// PipelineID микросервиса
+	// ID микросервиса
 	MicroserviceId string `json:"microservice_id"`
 
 	// Ноды и ивенты, на которые нужна подписка
@@ -1088,7 +1088,7 @@ type ExternalSystemSubscriptionParams struct {
 	// Путь, по которому надо присылать ивенты
 	Path string `json:"path"`
 
-	// PipelineID системы
+	// ID системы
 	SystemId string `json:"system_id"`
 }
 
@@ -1216,7 +1216,7 @@ type FormsAccessibility struct {
 	// Form name
 	Name string `json:"name"`
 
-	// Form node PipelineID
+	// Form node ID
 	NodeId string `json:"node_id"`
 }
 
@@ -1491,7 +1491,7 @@ type NodeGroup struct {
 type NodeSubscriptionEvents struct {
 	Events *[]NodeEvent `json:"events,omitempty"`
 
-	// PipelineID ноды в процессе
+	// ID ноды в процессе
 	NodeId string `json:"node_id"`
 
 	// Нужно ли уведомлять о событиях по ноде
@@ -1681,7 +1681,7 @@ type ScenarioVersionInfoList []EriusVersionInfo
 
 // SD Application params
 type SdApplicationParams struct {
-	// Template application PipelineID
+	// Template application ID
 	BlueprintId string `json:"blueprint_id"`
 }
 
@@ -1690,7 +1690,7 @@ type SearchPipelineItem struct {
 	// Имя пайплайна
 	Name *string `json:"name,omitempty"`
 
-	// PipelineID пайплайна
+	// ID пайплайна
 	PipelineId *string `json:"pipeline_id,omitempty"`
 }
 
@@ -1992,7 +1992,7 @@ type EriusTaskResponse struct {
 	// Доступные действия
 	AvailableActions *[]Action `json:"available_actions,omitempty"`
 
-	// PipelineID шаблона SD, на основании которого запускалась заявка
+	// ID шаблона SD, на основании которого запускалась заявка
 	BlueprintId string `json:"blueprint_id"`
 
 	// Запускалась ли заявка в режиме отладки
@@ -2007,7 +2007,7 @@ type EriusTaskResponse struct {
 	// Task human readable status
 	HumanStatus TaskHumanStatus `json:"human_status"`
 
-	// PipelineID заявки
+	// ID заявки
 	Id string `json:"id"`
 
 	// Время последнего изменения
@@ -3148,13 +3148,13 @@ type ServerInterface interface {
 	// (PUT /pipelines/version)
 	EditVersion(w http.ResponseWriter, r *http.Request)
 	// Delete Version
-	// (DELETE /pipelines/version/{PipelineID})
+	// (DELETE /pipelines/version/{ID})
 	DeleteVersion(w http.ResponseWriter, r *http.Request, iD string)
 	// Get pipeline version
-	// (GET /pipelines/version/{PipelineID})
+	// (GET /pipelines/version/{ID})
 	GetPipelineVersion(w http.ResponseWriter, r *http.Request, iD string)
 	// Create pipeline version
-	// (POST /pipelines/version/{PipelineID})
+	// (POST /pipelines/version/{ID})
 	CreatePipelineVersion(w http.ResponseWriter, r *http.Request, iD string)
 	// Get process settings with a list of external systems
 	// (GET /pipelines/version/{versionID}/settings)
@@ -3894,12 +3894,12 @@ func (siw *ServerInterfaceWrapper) DeleteVersion(w http.ResponseWriter, r *http.
 
 	var err error
 
-	// ------------- Path parameter "PipelineID" -------------
+	// ------------- Path parameter "ID" -------------
 	var iD string
 
-	err = runtime.BindStyledParameter("simple", false, "PipelineID", chi.URLParam(r, "PipelineID"), &iD)
+	err = runtime.BindStyledParameter("simple", false, "ID", chi.URLParam(r, "ID"), &iD)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "PipelineID", Err: err})
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "ID", Err: err})
 		return
 	}
 
@@ -3920,12 +3920,12 @@ func (siw *ServerInterfaceWrapper) GetPipelineVersion(w http.ResponseWriter, r *
 
 	var err error
 
-	// ------------- Path parameter "PipelineID" -------------
+	// ------------- Path parameter "ID" -------------
 	var iD string
 
-	err = runtime.BindStyledParameter("simple", false, "PipelineID", chi.URLParam(r, "PipelineID"), &iD)
+	err = runtime.BindStyledParameter("simple", false, "ID", chi.URLParam(r, "ID"), &iD)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "PipelineID", Err: err})
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "ID", Err: err})
 		return
 	}
 
@@ -3946,12 +3946,12 @@ func (siw *ServerInterfaceWrapper) CreatePipelineVersion(w http.ResponseWriter, 
 
 	var err error
 
-	// ------------- Path parameter "PipelineID" -------------
+	// ------------- Path parameter "ID" -------------
 	var iD string
 
-	err = runtime.BindStyledParameter("simple", false, "PipelineID", chi.URLParam(r, "PipelineID"), &iD)
+	err = runtime.BindStyledParameter("simple", false, "ID", chi.URLParam(r, "ID"), &iD)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "PipelineID", Err: err})
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "ID", Err: err})
 		return
 	}
 
@@ -5161,13 +5161,13 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Put(options.BaseURL+"/pipelines/version", wrapper.EditVersion)
 	})
 	r.Group(func(r chi.Router) {
-		r.Delete(options.BaseURL+"/pipelines/version/{PipelineID}", wrapper.DeleteVersion)
+		r.Delete(options.BaseURL+"/pipelines/version/{ID}", wrapper.DeleteVersion)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/pipelines/version/{PipelineID}", wrapper.GetPipelineVersion)
+		r.Get(options.BaseURL+"/pipelines/version/{ID}", wrapper.GetPipelineVersion)
 	})
 	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/pipelines/version/{PipelineID}", wrapper.CreatePipelineVersion)
+		r.Post(options.BaseURL+"/pipelines/version/{ID}", wrapper.CreatePipelineVersion)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/pipelines/version/{versionID}/settings", wrapper.GetVersionSettings)
