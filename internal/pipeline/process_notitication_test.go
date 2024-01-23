@@ -3,14 +3,18 @@ package pipeline
 import (
 	"encoding/json"
 	"fmt"
+	"testing"
+	"time"
+
 	"github.com/google/uuid"
+
 	"github.com/iancoleman/orderedmap"
+
 	"github.com/stretchr/testify/assert"
+
 	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
-	"testing"
-	"time"
 )
 
 func TestBlockRunContext_excludeHiddenFormFields(t *testing.T) {
