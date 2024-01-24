@@ -24,6 +24,8 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	peopleMocks "gitlab.services.mts.ru/jocasta/pipeliner/internal/people/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
+	serviceDeskMocks "gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
@@ -1726,6 +1728,8 @@ func TestGoSignBlock_Update(t *testing.T) {
 		stepName = "sign"
 	)
 
+	var logins = "example"
+
 	type fields struct {
 		Name             string
 		Title            string
@@ -1775,13 +1779,40 @@ func TestGoSignBlock_Update(t *testing.T) {
 					Signers: map[string]struct{}{
 						invalidLogin: {},
 					},
+					ActualSigner: &logins,
 				},
 				RunContext: &BlockRunContext{
 					skipNotifications: false,
 					VarStore:          store.NewStore(),
+					Services: RunContextServices{
+						ServiceDesc: func() *servicedesc.Service {
+							sdMock := servicedesc.Service{
+								SdURL: "",
+							}
+							httpClient := http.DefaultClient
+							mockTransport := serviceDeskMocks.RoundTripper{}
+							fResponse := func(*http.Request) *http.Response {
+								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								body := io.NopCloser(bytes.NewReader(b))
+								defer body.Close()
+								return &http.Response{
+									Status:     http.StatusText(http.StatusOK),
+									StatusCode: http.StatusOK,
+									Body:       body,
+								}
+							}
+							f_error := func(*http.Request) error {
+								return nil
+							}
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							httpClient.Transport = &mockTransport
+							sdMock.Cli = httpClient
+
+							return &sdMock
+						}(),
+					},
 				},
 			},
-
 			args: args{
 				ctx: c.Background(),
 				data: &script.BlockUpdateData{
@@ -1802,10 +1833,38 @@ func TestGoSignBlock_Update(t *testing.T) {
 					Signers: map[string]struct{}{
 						invalidLogin: {},
 					},
+					ActualSigner: &logins,
 				},
 				RunContext: &BlockRunContext{
 					skipNotifications: false,
 					VarStore:          store.NewStore(),
+					Services: RunContextServices{
+						ServiceDesc: func() *servicedesc.Service {
+							sdMock := servicedesc.Service{
+								SdURL: "",
+							}
+							httpClient := http.DefaultClient
+							mockTransport := serviceDeskMocks.RoundTripper{}
+							fResponse := func(*http.Request) *http.Response {
+								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								body := io.NopCloser(bytes.NewReader(b))
+								defer body.Close()
+								return &http.Response{
+									Status:     http.StatusText(http.StatusOK),
+									StatusCode: http.StatusOK,
+									Body:       body,
+								}
+							}
+							f_error := func(*http.Request) error {
+								return nil
+							}
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							httpClient.Transport = &mockTransport
+							sdMock.Cli = httpClient
+
+							return &sdMock
+						}(),
+					},
 				},
 			},
 
@@ -1829,13 +1888,40 @@ func TestGoSignBlock_Update(t *testing.T) {
 					Signers: map[string]struct{}{
 						invalidLogin: {},
 					},
+					ActualSigner: &logins,
 				},
 				RunContext: &BlockRunContext{
 					skipNotifications: false,
 					VarStore:          store.NewStore(),
+					Services: RunContextServices{
+						ServiceDesc: func() *servicedesc.Service {
+							sdMock := servicedesc.Service{
+								SdURL: "",
+							}
+							httpClient := http.DefaultClient
+							mockTransport := serviceDeskMocks.RoundTripper{}
+							fResponse := func(*http.Request) *http.Response {
+								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								body := io.NopCloser(bytes.NewReader(b))
+								defer body.Close()
+								return &http.Response{
+									Status:     http.StatusText(http.StatusOK),
+									StatusCode: http.StatusOK,
+									Body:       body,
+								}
+							}
+							f_error := func(*http.Request) error {
+								return nil
+							}
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							httpClient.Transport = &mockTransport
+							sdMock.Cli = httpClient
+
+							return &sdMock
+						}(),
+					},
 				},
 			},
-
 			args: args{
 				ctx: c.Background(),
 				data: &script.BlockUpdateData{
@@ -1857,13 +1943,40 @@ func TestGoSignBlock_Update(t *testing.T) {
 					Signers: map[string]struct{}{
 						invalidLogin: {},
 					},
+					ActualSigner: &logins,
 				},
 				RunContext: &BlockRunContext{
 					skipNotifications: false,
 					VarStore:          store.NewStore(),
+					Services: RunContextServices{
+						ServiceDesc: func() *servicedesc.Service {
+							sdMock := servicedesc.Service{
+								SdURL: "",
+							}
+							httpClient := http.DefaultClient
+							mockTransport := serviceDeskMocks.RoundTripper{}
+							fResponse := func(*http.Request) *http.Response {
+								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								body := io.NopCloser(bytes.NewReader(b))
+								defer body.Close()
+								return &http.Response{
+									Status:     http.StatusText(http.StatusOK),
+									StatusCode: http.StatusOK,
+									Body:       body,
+								}
+							}
+							f_error := func(*http.Request) error {
+								return nil
+							}
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							httpClient.Transport = &mockTransport
+							sdMock.Cli = httpClient
+
+							return &sdMock
+						}(),
+					},
 				},
 			},
-
 			args: args{
 				ctx: c.Background(),
 				data: &script.BlockUpdateData{
@@ -1885,13 +1998,40 @@ func TestGoSignBlock_Update(t *testing.T) {
 					Signers: map[string]struct{}{
 						invalidLogin: {},
 					},
+					ActualSigner: &logins,
 				},
 				RunContext: &BlockRunContext{
 					skipNotifications: false,
 					VarStore:          store.NewStore(),
+					Services: RunContextServices{
+						ServiceDesc: func() *servicedesc.Service {
+							sdMock := servicedesc.Service{
+								SdURL: "",
+							}
+							httpClient := http.DefaultClient
+							mockTransport := serviceDeskMocks.RoundTripper{}
+							fResponse := func(*http.Request) *http.Response {
+								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								body := io.NopCloser(bytes.NewReader(b))
+								defer body.Close()
+								return &http.Response{
+									Status:     http.StatusText(http.StatusOK),
+									StatusCode: http.StatusOK,
+									Body:       body,
+								}
+							}
+							f_error := func(*http.Request) error {
+								return nil
+							}
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							httpClient.Transport = &mockTransport
+							sdMock.Cli = httpClient
+
+							return &sdMock
+						}(),
+					},
 				},
 			},
-
 			args: args{
 				ctx: c.Background(),
 				data: &script.BlockUpdateData{
@@ -1911,13 +2051,40 @@ func TestGoSignBlock_Update(t *testing.T) {
 					Signers: map[string]struct{}{
 						login2: {},
 					},
+					ActualSigner: &logins,
 				},
 				RunContext: &BlockRunContext{
 					skipNotifications: false,
 					VarStore:          store.NewStore(),
+					Services: RunContextServices{
+						ServiceDesc: func() *servicedesc.Service {
+							sdMock := servicedesc.Service{
+								SdURL: "",
+							}
+							httpClient := http.DefaultClient
+							mockTransport := serviceDeskMocks.RoundTripper{}
+							fResponse := func(*http.Request) *http.Response {
+								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								body := io.NopCloser(bytes.NewReader(b))
+								defer body.Close()
+								return &http.Response{
+									Status:     http.StatusText(http.StatusOK),
+									StatusCode: http.StatusOK,
+									Body:       body,
+								}
+							}
+							f_error := func(*http.Request) error {
+								return nil
+							}
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							httpClient.Transport = &mockTransport
+							sdMock.Cli = httpClient
+
+							return &sdMock
+						}(),
+					},
 				},
 			},
-
 			args: args{
 				ctx: c.Background(),
 				data: &script.BlockUpdateData{
@@ -1938,13 +2105,40 @@ func TestGoSignBlock_Update(t *testing.T) {
 					Signers: map[string]struct{}{
 						login2: {},
 					},
+					ActualSigner: &logins,
 				},
 				RunContext: &BlockRunContext{
 					skipNotifications: false,
 					VarStore:          store.NewStore(),
+					Services: RunContextServices{
+						ServiceDesc: func() *servicedesc.Service {
+							sdMock := servicedesc.Service{
+								SdURL: "",
+							}
+							httpClient := http.DefaultClient
+							mockTransport := serviceDeskMocks.RoundTripper{}
+							fResponse := func(*http.Request) *http.Response {
+								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								body := io.NopCloser(bytes.NewReader(b))
+								defer body.Close()
+								return &http.Response{
+									Status:     http.StatusText(http.StatusOK),
+									StatusCode: http.StatusOK,
+									Body:       body,
+								}
+							}
+							f_error := func(*http.Request) error {
+								return nil
+							}
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							httpClient.Transport = &mockTransport
+							sdMock.Cli = httpClient
+
+							return &sdMock
+						}(),
+					},
 				},
 			},
-
 			args: args{
 				ctx: c.Background(),
 				data: &script.BlockUpdateData{
@@ -1965,13 +2159,40 @@ func TestGoSignBlock_Update(t *testing.T) {
 					Signers: map[string]struct{}{
 						login2: {},
 					},
+					ActualSigner: &logins,
 				},
 				RunContext: &BlockRunContext{
 					skipNotifications: false,
 					VarStore:          store.NewStore(),
+					Services: RunContextServices{
+						ServiceDesc: func() *servicedesc.Service {
+							sdMock := servicedesc.Service{
+								SdURL: "",
+							}
+							httpClient := http.DefaultClient
+							mockTransport := serviceDeskMocks.RoundTripper{}
+							fResponse := func(*http.Request) *http.Response {
+								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								body := io.NopCloser(bytes.NewReader(b))
+								defer body.Close()
+								return &http.Response{
+									Status:     http.StatusText(http.StatusOK),
+									StatusCode: http.StatusOK,
+									Body:       body,
+								}
+							}
+							f_error := func(*http.Request) error {
+								return nil
+							}
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							httpClient.Transport = &mockTransport
+							sdMock.Cli = httpClient
+
+							return &sdMock
+						}(),
+					},
 				},
 			},
-
 			args: args{
 				ctx: c.Background(),
 				data: &script.BlockUpdateData{
@@ -1992,13 +2213,40 @@ func TestGoSignBlock_Update(t *testing.T) {
 					Signers: map[string]struct{}{
 						invalidLogin: {},
 					},
+					ActualSigner: &logins,
 				},
 				RunContext: &BlockRunContext{
 					skipNotifications: false,
 					VarStore:          store.NewStore(),
+					Services: RunContextServices{
+						ServiceDesc: func() *servicedesc.Service {
+							sdMock := servicedesc.Service{
+								SdURL: "",
+							}
+							httpClient := http.DefaultClient
+							mockTransport := serviceDeskMocks.RoundTripper{}
+							fResponse := func(*http.Request) *http.Response {
+								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								body := io.NopCloser(bytes.NewReader(b))
+								defer body.Close()
+								return &http.Response{
+									Status:     http.StatusText(http.StatusOK),
+									StatusCode: http.StatusOK,
+									Body:       body,
+								}
+							}
+							f_error := func(*http.Request) error {
+								return nil
+							}
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							httpClient.Transport = &mockTransport
+							sdMock.Cli = httpClient
+
+							return &sdMock
+						}(),
+					},
 				},
 			},
-
 			args: args{
 				ctx: c.Background(),
 				data: &script.BlockUpdateData{
@@ -2019,13 +2267,40 @@ func TestGoSignBlock_Update(t *testing.T) {
 					Signers: map[string]struct{}{
 						invalidLogin: {},
 					},
+					ActualSigner: &logins,
 				},
 				RunContext: &BlockRunContext{
 					skipNotifications: false,
 					VarStore:          store.NewStore(),
+					Services: RunContextServices{
+						ServiceDesc: func() *servicedesc.Service {
+							sdMock := servicedesc.Service{
+								SdURL: "",
+							}
+							httpClient := http.DefaultClient
+							mockTransport := serviceDeskMocks.RoundTripper{}
+							fResponse := func(*http.Request) *http.Response {
+								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								body := io.NopCloser(bytes.NewReader(b))
+								defer body.Close()
+								return &http.Response{
+									Status:     http.StatusText(http.StatusOK),
+									StatusCode: http.StatusOK,
+									Body:       body,
+								}
+							}
+							f_error := func(*http.Request) error {
+								return nil
+							}
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							httpClient.Transport = &mockTransport
+							sdMock.Cli = httpClient
+
+							return &sdMock
+						}(),
+					},
 				},
 			},
-
 			args: args{
 				ctx: c.Background(),
 				data: &script.BlockUpdateData{
@@ -2043,17 +2318,43 @@ func TestGoSignBlock_Update(t *testing.T) {
 				SignData: &SignData{
 					Type:          script.SignerTypeUser,
 					SignatureType: script.SignatureTypePEP,
-
 					Signers: map[string]struct{}{
 						invalidLogin: {},
 					},
+					ActualSigner: &logins,
 				},
 				RunContext: &BlockRunContext{
 					skipNotifications: false,
 					VarStore:          store.NewStore(),
+					Services: RunContextServices{
+						ServiceDesc: func() *servicedesc.Service {
+							sdMock := servicedesc.Service{
+								SdURL: "",
+							}
+							httpClient := http.DefaultClient
+							mockTransport := serviceDeskMocks.RoundTripper{}
+							fResponse := func(*http.Request) *http.Response {
+								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								body := io.NopCloser(bytes.NewReader(b))
+								defer body.Close()
+								return &http.Response{
+									Status:     http.StatusText(http.StatusOK),
+									StatusCode: http.StatusOK,
+									Body:       body,
+								}
+							}
+							f_error := func(*http.Request) error {
+								return nil
+							}
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							httpClient.Transport = &mockTransport
+							sdMock.Cli = httpClient
+
+							return &sdMock
+						}(),
+					},
 				},
 			},
-
 			args: args{
 				ctx: c.Background(),
 				data: &script.BlockUpdateData{
@@ -2074,13 +2375,40 @@ func TestGoSignBlock_Update(t *testing.T) {
 					Signers: map[string]struct{}{
 						ServiceAccount: {},
 					},
+					ActualSigner: &logins,
 				},
 				RunContext: &BlockRunContext{
 					skipNotifications: false,
 					VarStore:          store.NewStore(),
+					Services: RunContextServices{
+						ServiceDesc: func() *servicedesc.Service {
+							sdMock := servicedesc.Service{
+								SdURL: "",
+							}
+							httpClient := http.DefaultClient
+							mockTransport := serviceDeskMocks.RoundTripper{}
+							fResponse := func(*http.Request) *http.Response {
+								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								body := io.NopCloser(bytes.NewReader(b))
+								defer body.Close()
+								return &http.Response{
+									Status:     http.StatusText(http.StatusOK),
+									StatusCode: http.StatusOK,
+									Body:       body,
+								}
+							}
+							f_error := func(*http.Request) error {
+								return nil
+							}
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							httpClient.Transport = &mockTransport
+							sdMock.Cli = httpClient
+
+							return &sdMock
+						}(),
+					},
 				},
 			},
-
 			args: args{
 				ctx: c.Background(),
 				data: &script.BlockUpdateData{
@@ -2101,13 +2429,40 @@ func TestGoSignBlock_Update(t *testing.T) {
 					Signers: map[string]struct{}{
 						ServiceAccount: {},
 					},
+					ActualSigner: &logins,
 				},
 				RunContext: &BlockRunContext{
 					skipNotifications: false,
 					VarStore:          store.NewStore(),
+					Services: RunContextServices{
+						ServiceDesc: func() *servicedesc.Service {
+							sdMock := servicedesc.Service{
+								SdURL: "",
+							}
+							httpClient := http.DefaultClient
+							mockTransport := serviceDeskMocks.RoundTripper{}
+							fResponse := func(*http.Request) *http.Response {
+								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								body := io.NopCloser(bytes.NewReader(b))
+								defer body.Close()
+								return &http.Response{
+									Status:     http.StatusText(http.StatusOK),
+									StatusCode: http.StatusOK,
+									Body:       body,
+								}
+							}
+							f_error := func(*http.Request) error {
+								return nil
+							}
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							httpClient.Transport = &mockTransport
+							sdMock.Cli = httpClient
+
+							return &sdMock
+						}(),
+					},
 				},
 			},
-
 			args: args{
 				ctx: c.Background(),
 				data: &script.BlockUpdateData{
@@ -2128,13 +2483,40 @@ func TestGoSignBlock_Update(t *testing.T) {
 					Signers: map[string]struct{}{
 						ServiceAccount: {},
 					},
+					ActualSigner: &logins,
 				},
 				RunContext: &BlockRunContext{
 					skipNotifications: false,
 					VarStore:          store.NewStore(),
+					Services: RunContextServices{
+						ServiceDesc: func() *servicedesc.Service {
+							sdMock := servicedesc.Service{
+								SdURL: "",
+							}
+							httpClient := http.DefaultClient
+							mockTransport := serviceDeskMocks.RoundTripper{}
+							fResponse := func(*http.Request) *http.Response {
+								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								body := io.NopCloser(bytes.NewReader(b))
+								defer body.Close()
+								return &http.Response{
+									Status:     http.StatusText(http.StatusOK),
+									StatusCode: http.StatusOK,
+									Body:       body,
+								}
+							}
+							f_error := func(*http.Request) error {
+								return nil
+							}
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							httpClient.Transport = &mockTransport
+							sdMock.Cli = httpClient
+
+							return &sdMock
+						}(),
+					},
 				},
 			},
-
 			args: args{
 				ctx: c.Background(),
 				data: &script.BlockUpdateData{
@@ -2157,13 +2539,40 @@ func TestGoSignBlock_Update(t *testing.T) {
 						login:  {},
 						login2: {},
 					},
+					ActualSigner: &logins,
 				},
 				RunContext: &BlockRunContext{
 					skipNotifications: false,
 					VarStore:          store.NewStore(),
+					Services: RunContextServices{
+						ServiceDesc: func() *servicedesc.Service {
+							sdMock := servicedesc.Service{
+								SdURL: "",
+							}
+							httpClient := http.DefaultClient
+							mockTransport := serviceDeskMocks.RoundTripper{}
+							fResponse := func(*http.Request) *http.Response {
+								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								body := io.NopCloser(bytes.NewReader(b))
+								defer body.Close()
+								return &http.Response{
+									Status:     http.StatusText(http.StatusOK),
+									StatusCode: http.StatusOK,
+									Body:       body,
+								}
+							}
+							f_error := func(*http.Request) error {
+								return nil
+							}
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							httpClient.Transport = &mockTransport
+							sdMock.Cli = httpClient
+
+							return &sdMock
+						}(),
+					},
 				},
 			},
-
 			args: args{
 				ctx: c.Background(),
 				data: &script.BlockUpdateData{
@@ -2208,13 +2617,40 @@ func TestGoSignBlock_Update(t *testing.T) {
 					Signers: map[string]struct{}{
 						invalidLogin: {},
 					},
+					ActualSigner: &logins,
 				},
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
 					VarStore:          store.NewStore(),
+					Services: RunContextServices{
+						ServiceDesc: func() *servicedesc.Service {
+							sdMock := servicedesc.Service{
+								SdURL: "",
+							}
+							httpClient := http.DefaultClient
+							mockTransport := serviceDeskMocks.RoundTripper{}
+							fResponse := func(*http.Request) *http.Response {
+								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								body := io.NopCloser(bytes.NewReader(b))
+								defer body.Close()
+								return &http.Response{
+									Status:     http.StatusText(http.StatusOK),
+									StatusCode: http.StatusOK,
+									Body:       body,
+								}
+							}
+							f_error := func(*http.Request) error {
+								return nil
+							}
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							httpClient.Transport = &mockTransport
+							sdMock.Cli = httpClient
+
+							return &sdMock
+						}(),
+					},
 				},
 			},
-
 			args: args{
 				ctx: c.Background(),
 				data: &script.BlockUpdateData{
@@ -2236,13 +2672,40 @@ func TestGoSignBlock_Update(t *testing.T) {
 					Signers: map[string]struct{}{
 						invalidLogin: {},
 					},
+					ActualSigner: &logins,
 				},
 				RunContext: &BlockRunContext{
 					skipNotifications: false,
 					VarStore:          store.NewStore(),
+					Services: RunContextServices{
+						ServiceDesc: func() *servicedesc.Service {
+							sdMock := servicedesc.Service{
+								SdURL: "",
+							}
+							httpClient := http.DefaultClient
+							mockTransport := serviceDeskMocks.RoundTripper{}
+							fResponse := func(*http.Request) *http.Response {
+								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								body := io.NopCloser(bytes.NewReader(b))
+								defer body.Close()
+								return &http.Response{
+									Status:     http.StatusText(http.StatusOK),
+									StatusCode: http.StatusOK,
+									Body:       body,
+								}
+							}
+							f_error := func(*http.Request) error {
+								return nil
+							}
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							httpClient.Transport = &mockTransport
+							sdMock.Cli = httpClient
+
+							return &sdMock
+						}(),
+					},
 				},
 			},
-
 			args: args{
 				ctx: c.Background(),
 				data: &script.BlockUpdateData{
