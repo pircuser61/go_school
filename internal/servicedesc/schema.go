@@ -48,7 +48,7 @@ func (s *Service) GetSchemaByBlueprintID(ctx context.Context, blueprintID string
 	ctxLocal, span := trace.StartSpan(ctx, "get_schema_by_blueprint_id")
 	defer span.End()
 
-	reqURL := fmt.Sprintf("%s%s%s", s.SdURL, getSchemaByBlueprintID, blueprintID)
+	reqURL := fmt.Sprintf("%s%s%s%s", s.SdURL, getSchemaByBlueprintID, blueprintID, "/json")
 
 	req, err := http.NewRequestWithContext(ctxLocal, http.MethodGet, reqURL, http.NoBody)
 	if err != nil {
