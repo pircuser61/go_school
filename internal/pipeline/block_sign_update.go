@@ -103,7 +103,7 @@ func (gb *GoSignBlock) handleSignature(ctx c.Context, login string) error {
 		}
 	}
 
-	if setErr := gb.setSignerDecision(updateParams); setErr != nil {
+	if setErr := gb.setSignerDecision(ctx, updateParams); setErr != nil {
 		return setErr
 	}
 
@@ -272,7 +272,7 @@ func (gb *GoSignBlock) handleBreachedSLA(ctx c.Context) error {
 	if gb.State.AutoReject != nil && *gb.State.AutoReject {
 		gb.RunContext.UpdateData.ByLogin = autoSigner
 		gb.State.ActualSigner = &gb.RunContext.UpdateData.ByLogin
-		if setErr := gb.setSignerDecision(&signSignatureParams{
+		if setErr := gb.setSignerDecision(ctx, &signSignatureParams{
 			Decision: SignDecisionRejected,
 			Comment:  AutoActionComment,
 		}); setErr != nil {
@@ -399,7 +399,7 @@ func (gb *GoSignBlock) handleChangeWorkStatus(ctx c.Context, login string) error
 	return nil
 }
 
-func (gb *GoSignBlock) setSignerDecision(u *signSignatureParams) error {
+func (gb *GoSignBlock) setSignerDecision(ctx c.Context, u *signSignatureParams) error {
 	login := gb.RunContext.UpdateData.ByLogin
 	if u.Username != "" {
 		login = u.Username
@@ -408,8 +408,13 @@ func (gb *GoSignBlock) setSignerDecision(u *signSignatureParams) error {
 		return errUpdate
 	}
 
+	personData, err := gb.RunContext.Services.ServiceDesc.GetSsoPerson(ctx, *gb.State.ActualSigner)
+	if err != nil {
+		return err
+	}
+
 	if gb.State.Decision != nil {
-		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputSigner], gb.State.ActualSigner)
+		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputSigner], personData)
 		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputSignDecision], gb.State.Decision)
 		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputSignComment], gb.State.Comment)
 		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputSignatures], gb.State.Signatures)
