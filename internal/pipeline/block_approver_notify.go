@@ -279,12 +279,6 @@ func (gb *GoApproverBlock) notifyAdditionalApprovers(ctx c.Context, logins []str
 		})
 	}
 
-	additionalApproveLogin := make([]string, 0)
-
-	for _, email := range gb.State.AdditionalApprovers {
-		additionalApproveLogin = append(additionalApproveLogin, email.ApproverLogin)
-	}
-
 	for i := range emails {
 		tpl, _ := mail.NewAddApproversTpl(
 			&mail.NewAppPersonStatusTpl{
@@ -294,15 +288,14 @@ func (gb *GoApproverBlock) notifyAdditionalApprovers(ctx c.Context, logins []str
 				Action:     script.SettingStatusApprovement,
 				DeadLine: gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(
 					time.Now(), gb.State.SLA, slaInfoPtr),
-				LastWorks:          lastWorksForUser,
-				Description:        description,
-				Mailto:             gb.RunContext.Services.Sender.FetchEmail,
-				Login:              login,
-				IsEditable:         gb.State.GetIsEditable(),
-				ApproverActions:    actionsList,
-				BlockID:            BlockGoApproverID,
-				Initiator:          initiatorInfo,
-				AdditionalApprover: additionalApproveLogin,
+				LastWorks:       lastWorksForUser,
+				Description:     description,
+				Mailto:          gb.RunContext.Services.Sender.FetchEmail,
+				Login:           login,
+				IsEditable:      gb.State.GetIsEditable(),
+				ApproverActions: actionsList,
+				BlockID:         BlockGoApproverID,
+				Initiator:       initiatorInfo,
 			}, emails[i],
 		)
 
@@ -328,9 +321,9 @@ func (gb *GoApproverBlock) notifyAdditionalApprovers(ctx c.Context, logins []str
 			return iconErr
 		}
 
-		files = append(files, iconFiles...)
+		iconFiles = append(iconFiles, files...)
 
-		err = gb.RunContext.Services.Sender.SendNotification(ctx, []string{emails[i]}, files, tpl)
+		err = gb.RunContext.Services.Sender.SendNotification(ctx, []string{emails[i]}, iconFiles, tpl)
 		if err != nil {
 			return err
 		}
