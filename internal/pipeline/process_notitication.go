@@ -285,10 +285,10 @@ func (runCtx *BlockRunContext) excludeHiddenApplicationFields(desc om.OrderedMap
 		return desc, getDataErr
 	}
 
-	for i := range desc.Keys() {
+	for _, key := range desc.Keys() {
 		for j := range taskRunContext.InitialApplication.HiddenFields {
-			if desc.Keys()[i] == taskRunContext.InitialApplication.HiddenFields[j] {
-				desc.Delete(desc.Keys()[i])
+			if key == taskRunContext.InitialApplication.HiddenFields[j] {
+				desc.Delete(key)
 			}
 		}
 	}
@@ -303,10 +303,10 @@ func (runCtx *BlockRunContext) excludeHiddenFormFields(formName string, desc om.
 		return desc, err
 	}
 
-	for i := range desc.Keys() {
+	for _, key := range desc.Keys() {
 		for j := range state.HiddenFields {
-			if desc.Keys()[i] == state.HiddenFields[j] {
-				desc.Delete(desc.Keys()[i])
+			if key == state.HiddenFields[j] {
+				desc.Delete(key)
 			}
 		}
 	}
