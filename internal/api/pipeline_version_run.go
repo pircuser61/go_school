@@ -3,6 +3,7 @@ package api
 import (
 	c "context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"time"
@@ -345,6 +346,9 @@ func (ae *APIEnv) getHiddenFields(ctx c.Context, pipelineID, versionID string) (
 		return hiddenFields, err
 	}
 
+	ae.Log.Info("version", fmt.Sprintf("%+v", version))
+	ae.Log.Info("version.Pipeline", fmt.Sprintf("%+v", version.Pipeline))
+
 	if _, exists := version.Pipeline.Blocks[sdBlockName]; exists {
 		return hiddenFields, errors.New("can`t find hidden fields, block is not found " + sdBlockName)
 	}
@@ -355,6 +359,8 @@ func (ae *APIEnv) getHiddenFields(ctx c.Context, pipelineID, versionID string) (
 		return hiddenFields, errJson
 	}
 
+	ae.Log.Info("params", fmt.Sprintf("%+v", params))
+
 	if params.BlueprintID == "" {
 		return hiddenFields, errors.New("can`t find blueprintID")
 	}
@@ -364,10 +370,14 @@ func (ae *APIEnv) getHiddenFields(ctx c.Context, pipelineID, versionID string) (
 		return hiddenFields, err
 	}
 
+	ae.Log.Info("schema", fmt.Sprintf("%+v", schema))
+
 	hiddenFields, err = schema.GetHiddenFields()
 	if err != nil {
 		return hiddenFields, err
 	}
+
+	ae.Log.Info("hiddenFields", fmt.Sprintf("%+v", hiddenFields))
 
 	return hiddenFields, nil
 }
