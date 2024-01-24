@@ -22,13 +22,17 @@ func TestBlockRunContext_excludeHiddenFormFields(t *testing.T) {
 	desc.Set("field_1", "value1")
 	desc.Set("field_2", "value2")
 	desc.Set("field_3", 1)
+	desc.Set("imya", "Eva")
+	desc.Set("snils", "123423123")
+	desc.Set("familiya", "Ebaklan")
 
 	want := orderedmap.New()
 	want.Set("field_1", "value1")
+	want.Set("familiya", "Ebaklan")
 
 	state := make(map[string]json.RawMessage)
 	state["form_0"] = []byte(`
-		{"hidden_fields": ["field_2", "field_3"]}`)
+		{"hidden_fields": ["field_2", "field_3", "imya", "snils"]}`)
 
 	type fields struct {
 		TaskID               uuid.UUID
