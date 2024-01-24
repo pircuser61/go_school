@@ -3,7 +3,6 @@ package pipeline
 import (
 	c "context"
 	"encoding/json"
-	"fmt"
 	"strconv"
 
 	om "github.com/iancoleman/orderedmap"
@@ -15,6 +14,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	fileregistry "gitlab.services.mts.ru/jocasta/pipeliner/internal/file-registry"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
+	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
 type handleInitiatorNotifyParams struct {
@@ -281,37 +281,35 @@ func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) ([]o
 }
 
 func (runCtx *BlockRunContext) excludeHiddenApplicationFields(desc om.OrderedMap, hiddenFields []string) (om.OrderedMap, error) {
+	res := om.New()
 	for _, key := range desc.Keys() {
-		for j := range hiddenFields {
-			if key == hiddenFields[j] {
-				desc.Delete(key)
+		if !utils.IsContainsInSlice(key, hiddenFields) {
+			if val, exists := desc.Get(key); exists {
+				res.Set(key, val)
 			}
 		}
 	}
 
-	return desc, nil
+	return *res, nil
 }
 
 func (runCtx *BlockRunContext) excludeHiddenFormFields(formName string, desc om.OrderedMap) (om.OrderedMap, error) {
+	res := om.New()
 	var state FormData
 	err := json.Unmarshal(runCtx.VarStore.State[formName], &state)
 	if err != nil {
 		return desc, err
 	}
 
-	log := logger.GetLogger(c.Background())
-	log.Info(formName, fmt.Sprintf("%+v", state.HiddenFields))
-	log.Info("desc", fmt.Sprintf("%+v", desc))
-
 	for _, key := range desc.Keys() {
-		for j := range state.HiddenFields {
-			if key == state.HiddenFields[j] {
-				desc.Delete(key)
+		if !utils.IsContainsInSlice(key, state.HiddenFields) {
+			if val, exists := desc.Get(key); exists {
+				res.Set(key, val)
 			}
 		}
 	}
 
-	return desc, nil
+	return *res, nil
 }
 
 func flatArray(v om.OrderedMap) om.OrderedMap {
