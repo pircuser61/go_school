@@ -302,6 +302,7 @@ func (runCtx *BlockRunContext) excludeHiddenFormFields(formName string, desc om.
 	log := logger.GetLogger(c.Background())
 	log.Info(formName, fmt.Sprintf("%+v", state.HiddenFields))
 	log.Info("state", fmt.Sprintf("%+v", runCtx.VarStore.State))
+	log.Info("desc", fmt.Sprintf("%+v", desc))
 
 	for _, key := range desc.Keys() {
 		for j := range state.HiddenFields {
