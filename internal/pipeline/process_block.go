@@ -167,12 +167,14 @@ func processBlock(ctx c.Context, name string, its int, bl *entity.EriusFunc, run
 		}
 	}
 
+	if (runCtx.UpdateData != nil) && isStatusFiniteBeforeUpdate {
+		return nil
+	}
+
 	taskHumanStatus, statusComment, action := block.GetTaskHumanStatus()
-	if !((runCtx.UpdateData != nil) && isStatusFiniteBeforeUpdate) {
-		err = runCtx.updateStatusByStep(ctx, taskHumanStatus, statusComment)
-		if err != nil {
-			return err
-		}
+	err = runCtx.updateStatusByStep(ctx, taskHumanStatus, statusComment)
+	if err != nil {
+		return err
 	}
 
 	newEvents := block.GetNewEvents()
@@ -185,8 +187,7 @@ func processBlock(ctx c.Context, name string, its int, bl *entity.EriusFunc, run
 
 	if isArchived || (block.GetStatus() != StatusFinished &&
 		block.GetStatus() != StatusNoSuccess &&
-		block.GetStatus() != StatusError) ||
-		((runCtx.UpdateData != nil) && isStatusFiniteBeforeUpdate) {
+		block.GetStatus() != StatusError) {
 		return nil
 	}
 
