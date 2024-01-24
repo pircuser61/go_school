@@ -89,29 +89,22 @@ func (gb *GoSignBlock) notifyAdditionalApprovers(ctx c.Context, logins []string,
 		return initialErr
 	}
 
-	additionalApproveLogin := make([]string, 0)
-
-	for _, email := range gb.State.AdditionalApprovers {
-		additionalApproveLogin = append(additionalApproveLogin, email.ApproverLogin)
-	}
-
 	for i := range emails {
 		tpl, _ := mail.NewAddApproversTpl(
 			&mail.NewAppPersonStatusTpl{
-				WorkNumber:         gb.RunContext.WorkNumber,
-				Name:               gb.RunContext.NotifName,
-				SdUrl:              gb.RunContext.Services.Sender.SdAddress,
-				Action:             "",
-				DeadLine:           slaDeadline,
-				LastWorks:          lastWorksForUser,
-				Description:        description,
-				Mailto:             gb.RunContext.Services.Sender.FetchEmail,
-				Login:              login,
-				IsEditable:         false,
-				ApproverActions:    nil,
-				BlockID:            BlockGoSignID,
-				Initiator:          initiatorInfo,
-				AdditionalApprover: additionalApproveLogin,
+				WorkNumber:      gb.RunContext.WorkNumber,
+				Name:            gb.RunContext.NotifName,
+				SdUrl:           gb.RunContext.Services.Sender.SdAddress,
+				Action:          "",
+				DeadLine:        slaDeadline,
+				LastWorks:       lastWorksForUser,
+				Description:     description,
+				Mailto:          gb.RunContext.Services.Sender.FetchEmail,
+				Login:           login,
+				IsEditable:      false,
+				ApproverActions: nil,
+				BlockID:         BlockGoSignID,
+				Initiator:       initiatorInfo,
 			}, emails[i],
 		)
 
@@ -126,7 +119,7 @@ func (gb *GoSignBlock) notifyAdditionalApprovers(ctx c.Context, logins []string,
 			return iconErr
 		}
 
-		files = append(files, iconFiles...)
+		iconFiles = append(iconFiles, files...)
 
 		err = gb.RunContext.Services.Sender.SendNotification(ctx, []string{emails[i]}, files, tpl)
 		if err != nil {
