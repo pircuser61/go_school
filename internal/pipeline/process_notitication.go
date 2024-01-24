@@ -3,6 +3,7 @@ package pipeline
 import (
 	c "context"
 	"encoding/json"
+	"fmt"
 	"strconv"
 
 	om "github.com/iancoleman/orderedmap"
@@ -200,12 +201,12 @@ func (runCtx *BlockRunContext) makeNotificationAttachment() ([]fileregistry.File
 }
 
 func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) ([]om.OrderedMap, []e.Attachment, error) {
-	descr, err := runCtx.Services.Storage.GetTaskRunContext(c.Background(), runCtx.WorkNumber)
+	taskContext, err := runCtx.Services.Storage.GetTaskRunContext(c.Background(), runCtx.WorkNumber)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	apBody := flatArray(descr.InitialApplication.ApplicationBody)
+	apBody := flatArray(taskContext.InitialApplication.ApplicationBody)
 
 	descriptions := make([]om.OrderedMap, 0)
 
@@ -227,7 +228,7 @@ func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) ([]o
 		apBody.Set("attachList", attachments.AttachmentsList)
 	}
 
-	apBody, err = runCtx.excludeHiddenApplicationFields(apBody)
+	apBody, err = runCtx.excludeHiddenApplicationFields(apBody, taskContext.InitialApplication.HiddenFields)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -268,26 +269,21 @@ func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) ([]o
 		form.Description.Set("attachList", attach.AttachmentsList)
 
 		files = append(files, attach.AttachmentsList...)
-		formDesc, errExclude := runCtx.excludeHiddenFormFields(form.Name, flatArray(form.Description))
+		formDesc, errExclude := runCtx.excludeHiddenFormFields(form.Name, form.Description)
 		if errExclude != nil {
 			return nil, nil, errExclude
 		}
-		descriptions = append(descriptions, formDesc)
+		descriptions = append(descriptions, flatArray(formDesc))
 	}
 
 	files = append(files, attachments.AttachmentsList...)
 	return descriptions, files, nil
 }
 
-func (runCtx *BlockRunContext) excludeHiddenApplicationFields(desc om.OrderedMap) (om.OrderedMap, error) {
-	taskRunContext, getDataErr := runCtx.Services.Storage.GetTaskRunContext(c.Background(), runCtx.WorkNumber)
-	if getDataErr != nil {
-		return desc, getDataErr
-	}
-
+func (runCtx *BlockRunContext) excludeHiddenApplicationFields(desc om.OrderedMap, hiddenFields []string) (om.OrderedMap, error) {
 	for _, key := range desc.Keys() {
-		for j := range taskRunContext.InitialApplication.HiddenFields {
-			if key == taskRunContext.InitialApplication.HiddenFields[j] {
+		for j := range hiddenFields {
+			if key == hiddenFields[j] {
 				desc.Delete(key)
 			}
 		}
@@ -302,6 +298,10 @@ func (runCtx *BlockRunContext) excludeHiddenFormFields(formName string, desc om.
 	if err != nil {
 		return desc, err
 	}
+
+	log := logger.GetLogger(c.Background())
+	log.Info(formName, fmt.Sprintf("%+v", state.HiddenFields))
+	log.Info("state", fmt.Sprintf("%+v", runCtx.VarStore.State))
 
 	for _, key := range desc.Keys() {
 		for j := range state.HiddenFields {
