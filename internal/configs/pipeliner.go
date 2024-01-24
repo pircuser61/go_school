@@ -86,7 +86,8 @@ type PushConfig struct {
 }
 
 type PrometheusConfig struct {
-	Push PushConfig `yaml:"push"`
+	Stand string     `json:"stand"`
+	Push  PushConfig `yaml:"push"`
 }
 
 func (d *Database) String() string {

@@ -176,7 +176,7 @@ func main() {
 
 	metrics.InitMetricsAuth(cfg.Prometheus)
 
-	m := metrics.New()
+	m := metrics.New(cfg.Prometheus)
 
 	includePlaceholderBlock := cfg.IncludePlaceholderBlock
 
