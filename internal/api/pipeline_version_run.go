@@ -346,10 +346,7 @@ func (ae *APIEnv) getHiddenFields(ctx c.Context, pipelineID, versionID string) (
 		return hiddenFields, err
 	}
 
-	ae.Log.Info("version", fmt.Sprintf("%+v", version))
-	ae.Log.Info("version.Pipeline", fmt.Sprintf("%+v", version.Pipeline))
-
-	if _, exists := version.Pipeline.Blocks[sdBlockName]; exists {
+	if _, exists := version.Pipeline.Blocks[sdBlockName]; !exists {
 		return hiddenFields, errors.New("can`t find hidden fields, block is not found " + sdBlockName)
 	}
 
