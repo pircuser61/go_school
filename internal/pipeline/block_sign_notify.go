@@ -121,7 +121,7 @@ func (gb *GoSignBlock) notifyAdditionalApprovers(ctx c.Context, logins []string,
 
 		iconFiles = append(iconFiles, files...)
 
-		err = gb.RunContext.Services.Sender.SendNotification(ctx, []string{emails[i]}, files, tpl)
+		err = gb.RunContext.Services.Sender.SendNotification(ctx, []string{emails[i]}, iconFiles, tpl)
 		if err != nil {
 			return err
 		}
