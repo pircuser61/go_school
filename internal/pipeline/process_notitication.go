@@ -3,7 +3,6 @@ package pipeline
 import (
 	c "context"
 	"encoding/json"
-	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 	"strconv"
 
 	om "github.com/iancoleman/orderedmap"
@@ -15,6 +14,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	fileregistry "gitlab.services.mts.ru/jocasta/pipeliner/internal/file-registry"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
+	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
 type handleInitiatorNotifyParams struct {
