@@ -122,6 +122,7 @@ const (
 	CheckForHiddenError
 	GetExecutableFunctionIDsError
 	GetFunctionError
+	GetHiddenFieldsError
 )
 
 //nolint:dupl //its not duplicate
@@ -226,6 +227,7 @@ var errorText = map[Err]string{
 	CheckForHiddenError:                 "error while checking for hidden",
 	GetExecutableFunctionIDsError:       "error while getting executable function ids",
 	GetFunctionError:                    "error when getting function from function store",
+	GetHiddenFieldsError:                "error when getting hidden fields from schema",
 }
 
 // JOKE.
@@ -332,6 +334,7 @@ var errorDescription = map[Err]string{
 	CheckForHiddenError:           "Ошибка при проверке на hidden",
 	GetExecutableFunctionIDsError: "Ошибка при получении id у executable functions",
 	GetFunctionError:              "Ошибка при получении функции",
+	GetHiddenFieldsError:          "Ошибка при получении скрытых полей из схемы",
 }
 
 var errorStatus = map[Err]int{

@@ -1,0 +1,64 @@
+[
+    {
+      "time": "2024-01-22T15:56:13.317554+03:00",
+      "update_time": null,
+      "type": "form",
+      "name": "form_1",
+      "is_delegate_of_any_step_member": false,
+      "state": {
+        "form_1": {
+          "sla": 8,
+          "mapping": {},
+          "check_sla": true,
+          "executors": {
+            "user1": {}
+          },
+          "is_filled": false,
+          "schema_id": "2d36cb4e-961b-42bd-a5ce-b4fdcf3ce883",
+          "work_type": "8/5",
+          "is_reentry": false,
+          "is_revoked": false,
+          "changes_log": [],
+          "description": "",
+          "is_editable": null,
+          "sla_checked": false,
+          "form_group_id": "",
+          "application_body": {},
+          "half_sla_checked": false,
+          "is_taken_in_work": true,
+          "initial_executors": {
+            "user1": {}
+          },
+          "form_executor_type": "user",
+          "form_executors_group_name": "",
+          "hide_executor_from_initiator": false
+        },
+        "start_0": null
+      },
+      "errors": [],
+      "steps": [
+        "start_0",
+        "form_1"
+      ],
+      "has_error": false,
+      "status": "running",
+      "short_title": "a"
+    },
+    {
+      "time": "2024-01-22T15:53:57.132319+03:00",
+      "update_time": "2024-01-22T15:53:59.387197+03:00",
+      "type": "start",
+      "name": "start_0",
+      "is_delegate_of_any_step_member": false,
+      "state": {
+        "start_0": null
+      },
+      "errors": [],
+      "steps": [
+        "start_0"
+      ],
+      "has_error": false,
+      "status": "finished",
+      "short_title": ""
+    }
+]

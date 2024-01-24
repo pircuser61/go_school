@@ -1,0 +1,89 @@
+[
+  {
+    "time": "2024-01-22T15:53:58.715968+03:00",
+    "update_time": null,
+    "type": "form",
+    "name": "form_0",
+    "is_ßdelegate_of_any_step_member": false,
+    "state": {
+      "form_0": {
+        "sla": 8,
+        "mapping": {},
+        "check_sla": true,
+        "executors": {
+          "user1": {}
+        },
+        "is_filled": false,
+        "schema_id": "76a452ee-227e-4ae2-ad43-2162fbc2539a",
+        "work_type": "8/5",
+        "is_reentry": false,
+        "is_revoked": false,
+        "changes_log": [],
+        "description": "",
+        "is_editable": null,
+        "sla_checked": false,
+        "form_group_id": "",
+        "application_body": {},
+        "half_sla_checked": false,
+        "is_taken_in_work": true,
+        "initial_executors": {
+          "user1": {}
+        },
+        "form_executor_type": "user",
+        "form_executors_group_name": "",
+        "hide_executor_from_initiator": false
+      },
+      "start_0": null
+    },
+    "storage": {
+      "start_0.initiator": {
+        "email": "user2@mts.ru",
+        "fullOrgUnit": "ООО \"МТС Диджитал\"&ИТ-кластер \"Корпоративные сервисы\"&Трайб автоматизации бизнес-процессов&Центр Платформа автоматизации",
+        "fullname": "User2",
+        "mobile": "",
+        "phone": "",
+        "position": "Middle Developer (ведущий разработчик)",
+        "tabnum": "",
+        "username": "user2"
+      }
+    },
+    "errors": [],
+    "steps": [
+      "start_0",
+      "form_0"
+    ],
+    "has_error": false,
+    "status": "running",
+    "short_title": "a"
+  },
+  {
+    "time": "2024-01-22T15:53:57.132319+03:00",
+    "update_time": "2024-01-22T15:53:59.387197+03:00",
+    "type": "start",
+    "name": "start_0",
+    "is_delegate_of_any_step_member": false,
+    "state": {
+      "start_0": null
+    },
+    "storage": {
+      "start_0.initiator": {
+        "email": "user2@mts.ru",
+        "fullOrgUnit": "ООО \"МТС Диджитал\"&ИТ-кластер \"Корпоративные сервисы\"&Трайб автоматизации бизнес-процессов&Центр Платформа автоматизации",
+        "fullname": "User2",
+        "mobile": "",
+        "phone": "",
+        "position": "Middle Developer (ведущий разработчик)",
+        "tabnum": "",
+        "username": "user2"
+      },
+      "start_0.workNumber": "J00000000021307"
+    },
+    "errors": [],
+    "steps": [
+      "start_0"
+    ],
+    "has_error": false,
+    "status": "finished",
+    "short_title": ""
+  }
+]

@@ -6,7 +6,7 @@ func MakeTaskTitle(versionTitle, customTitle string, isTest bool) (res string) {
 	res = versionTitle
 
 	if customTitle != "" {
-		res = fmt.Sprintf("%s - %s", res, customTitle)
+		res = customTitle
 	}
 
 	if isTest {

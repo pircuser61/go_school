@@ -65,7 +65,7 @@ func (ae *APIEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
 		log.Error("user failed: ", err.Error())
 	}
 
-	p.ID = uuid.New()
+	p.PipelineID = uuid.New()
 	p.VersionID = uuid.New()
 
 	if len(p.Pipeline.Blocks) == 0 {
@@ -201,7 +201,7 @@ func (ae *APIEnv) CopyPipeline(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	p.ID = uuid.New()
+	p.PipelineID = uuid.New()
 	p.VersionID = uuid.New()
 
 	executableFunctions, err := p.Pipeline.Blocks.GetExecutableFunctions()
@@ -374,7 +374,7 @@ func (ae *APIEnv) DeleteDraftPipeline(ctx context.Context, w http.ResponseWriter
 
 	log := logger.GetLogger(ctx)
 
-	canDelete, err := ae.DB.PipelineRemovable(ctx, p.ID)
+	canDelete, err := ae.DB.PipelineRemovable(ctx, p.PipelineID)
 	if err != nil {
 		e := PipelineIsNotDraft
 		log.Error(e.errorMessage(err))
@@ -384,7 +384,7 @@ func (ae *APIEnv) DeleteDraftPipeline(ctx context.Context, w http.ResponseWriter
 	}
 
 	if canDelete {
-		if err = ae.DB.DeletePipeline(ctx, p.ID); err != nil {
+		if err = ae.DB.DeletePipeline(ctx, p.PipelineID); err != nil {
 			e := PipelineDeleteError
 			log.Error(e.errorMessage(err))
 			_ = e.sendError(w)

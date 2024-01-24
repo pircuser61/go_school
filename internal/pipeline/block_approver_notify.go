@@ -19,6 +19,9 @@ const (
 	userImg    = "iconUser.png"
 	warningImg = "warning.png"
 	vRabotuBtn = "v_rabotu.png"
+
+	approveBtn = "soglas.png"
+	rejectBtn  = "otklon.png"
 )
 
 //nolint:dupl // maybe later
@@ -276,15 +279,8 @@ func (gb *GoApproverBlock) notifyAdditionalApprovers(ctx c.Context, logins []str
 		})
 	}
 
-	buttonList := make([]string, 0)
-	additionalApproveLogin := make([]string, 0)
-
-	for _, email := range gb.State.AdditionalApprovers {
-		additionalApproveLogin = append(additionalApproveLogin, email.ApproverLogin)
-	}
-
 	for i := range emails {
-		tpl, buttons := mail.NewAddApproversTpl(
+		tpl, _ := mail.NewAddApproversTpl(
 			&mail.NewAppPersonStatusTpl{
 				WorkNumber: gb.RunContext.WorkNumber,
 				Name:       gb.RunContext.NotifName,
@@ -292,23 +288,18 @@ func (gb *GoApproverBlock) notifyAdditionalApprovers(ctx c.Context, logins []str
 				Action:     script.SettingStatusApprovement,
 				DeadLine: gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(
 					time.Now(), gb.State.SLA, slaInfoPtr),
-				LastWorks:          lastWorksForUser,
-				Description:        description,
-				Mailto:             gb.RunContext.Services.Sender.FetchEmail,
-				Login:              login,
-				IsEditable:         gb.State.GetIsEditable(),
-				ApproverActions:    actionsList,
-				BlockID:            BlockGoApproverID,
-				Initiator:          initiatorInfo,
-				AdditionalApprover: additionalApproveLogin,
+				LastWorks:       lastWorksForUser,
+				Description:     description,
+				Mailto:          gb.RunContext.Services.Sender.FetchEmail,
+				Login:           login,
+				IsEditable:      gb.State.GetIsEditable(),
+				ApproverActions: actionsList,
+				BlockID:         BlockGoApproverID,
+				Initiator:       initiatorInfo,
 			}, emails[i],
 		)
 
-		for _, v := range buttons {
-			buttonList = append(buttonList, v.Img)
-		}
-
-		filesList := []string{tpl.Image, userImg}
+		filesList := []string{tpl.Image, userImg, approveBtn, rejectBtn}
 
 		if len(lastWorksForUser) != 0 {
 			filesList = append(filesList, warningImg)
@@ -325,16 +316,14 @@ func (gb *GoApproverBlock) notifyAdditionalApprovers(ctx c.Context, logins []str
 			}
 		}
 
-		filesList = append(filesList, buttonList...)
-
 		iconFiles, iconErr := gb.RunContext.GetIcons(filesList)
 		if iconErr != nil {
 			return iconErr
 		}
 
-		files = append(files, iconFiles...)
+		iconFiles = append(iconFiles, files...)
 
-		err = gb.RunContext.Services.Sender.SendNotification(ctx, []string{emails[i]}, files, tpl)
+		err = gb.RunContext.Services.Sender.SendNotification(ctx, []string{emails[i]}, iconFiles, tpl)
 		if err != nil {
 			return err
 		}
