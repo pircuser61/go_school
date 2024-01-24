@@ -81,7 +81,7 @@ func NewServer(ctx context.Context, param *ServerParam) (*http.Server, error) {
 	)
 
 	mux.Mount(baseURL+"/pprof", middleware.Profiler())
-	mux.Handle(baseURL+"/metrics", param.APIEnv.Metrics.ServePrometheus())
+	mux.Handle("/metrics", param.APIEnv.Metrics.ServePrometheus())
 
 	mux.With(middleware.SetHeader("Content-Type", "text/json")).
 		Route(baseURL, func(r chi.Router) {
