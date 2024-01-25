@@ -69,7 +69,7 @@ func (s *Service) getDelegationsInternal(ctx c.Context, req *d.GetDelegationsReq
 			}
 		}
 
-		if time.Now().Before(toDate) || toDate.IsZero() {
+		if (time.Now().Before(toDate) || toDate.IsZero()) && time.Now().After(fromDate) {
 			ds = append(ds, Delegation{
 				FromDate:        fromDate,
 				ToDate:          toDate,
