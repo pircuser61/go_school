@@ -365,7 +365,7 @@ func (gb *GoFormBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork strin
 		return convertErr
 	}
 
-	initiator, err := gb.RunContext.Services.People.GetUser(ctx, loginTakenInWork)
+	initiator, err := gb.RunContext.Services.People.GetUser(ctx, gb.RunContext.Initiator)
 	if err != nil {
 		return getUserErr
 	}

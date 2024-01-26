@@ -811,16 +811,6 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 		return getDataErr
 	}
 
-	initiator, err := gb.RunContext.Services.People.GetUser(ctx, task.Author)
-	if err != nil {
-		return err
-	}
-
-	initiatorInfo, err := initiator.ToUserinfo()
-	if err != nil {
-		return err
-	}
-
 	login := task.Author
 
 	recipient := getRecipientFromState(&taskRunContext.InitialApplication.ApplicationBody)
@@ -842,6 +832,16 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 		if getWorksErr != nil {
 			return getWorksErr
 		}
+	}
+
+	initiator, err := gb.RunContext.Services.People.GetUser(ctx, gb.RunContext.Initiator)
+	if err != nil {
+		return err
+	}
+
+	initiatorInfo, err := initiator.ToUserinfo()
+	if err != nil {
+		return err
 	}
 
 	tpl := mail.NewExecutionTakenInWorkTpl(&mail.ExecutorNotifTemplate{
