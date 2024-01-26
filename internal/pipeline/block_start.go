@@ -73,7 +73,7 @@ func (gb *GoStartBlock) Update(ctx context.Context) (interface{}, error) {
 
 	gb.RunContext.VarStore.SetValue(gb.Output[entity.KeyOutputWorkNumber], gb.RunContext.WorkNumber)
 	gb.RunContext.VarStore.SetValue(gb.Output[entity.KeyOutputApplicationInitiator], personData)
-	gb.RunContext.VarStore.SetValue(gb.Output[entity.KeyOutputApplicationData], data.InitialApplication.ApplicationBody)
+	gb.RunContext.VarStore.SetValue(gb.Output[entity.KeyOutputApplicationBody], data.InitialApplication.ApplicationBody)
 
 	if _, ok := gb.expectedEvents[eventEnd]; ok {
 		status, _, _ := gb.GetTaskHumanStatus()
@@ -111,7 +111,7 @@ func (gb *GoStartBlock) Model() script.FunctionModel {
 					Format:      "SsoPerson",
 					Properties:  people.GetSsoPersonSchemaProperties(),
 				},
-				entity.KeyOutputApplicationData: {
+				entity.KeyOutputApplicationBody: {
 					Type:       "object",
 					Properties: script.JSONSchemaProperties{},
 				},
