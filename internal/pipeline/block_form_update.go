@@ -401,7 +401,7 @@ func (gb *GoFormBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork strin
 			Mailto:      gb.RunContext.Services.Sender.FetchEmail,
 		})
 
-	iconsName := []string{tpl.Image, downloadImg, userImg}
+	iconsName := []string{tpl.Image, userImg}
 	iconFiles, iconErr := gb.RunContext.GetIcons(iconsName)
 	if iconErr != nil {
 		return err
