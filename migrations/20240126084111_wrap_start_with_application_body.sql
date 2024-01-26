@@ -1,8 +1,8 @@
 -- +goose Up
 -- +goose StatementBegin
-CREATE TABLE versions_09012024 AS (SELECT * FROM pipeliner.public.versions);
+CREATE TABLE versions_26012024 AS (SELECT * FROM pipeliner.public.versions);
 
-CREATE TABLE variable_storage_09012024 AS (SELECT * FROM pipeliner.public.variable_storage);
+CREATE TABLE variable_storage_26012024 AS (SELECT * FROM pipeliner.public.variable_storage);
 
 
 
