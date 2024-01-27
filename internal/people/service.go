@@ -127,7 +127,7 @@ func (t *TransportForPeople) RoundTrip(req *http.Request) (*http.Response, error
 type Service struct {
 	SearchURL string
 
-	Cli *http.Client
+	Cli *http.Client `json:"-"`
 	Sso *sso.Service
 }
 

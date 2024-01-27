@@ -51,61 +51,17 @@ func createGoApproverBlock(ctx c.Context, name string, ef *entity.EriusFunc, run
 
 	rawState, blockExists := runCtx.VarStore.State[name]
 	if blockExists {
-		if err := b.loadState(rawState); err != nil {
+		loadReEntry, err := b.load(ctx, rawState, runCtx, name, ef)
+		if err != nil {
 			return nil, false, err
 		}
 
-		reEntry = runCtx.UpdateData == nil
-
-		if reEntry {
-			if err := b.reEntry(ctx, ef); err != nil {
-				return nil, false, err
-			}
-
-			b.RunContext.VarStore.AddStep(b.Name)
-
-			if _, ok := b.expectedEvents[eventStart]; ok {
-				status, _, _ := b.GetTaskHumanStatus()
-
-				event, err := runCtx.MakeNodeStartEvent(ctx, MakeNodeStartEventArgs{
-					NodeName:      name,
-					NodeShortName: ef.ShortTitle,
-					HumanStatus:   status,
-					NodeStatus:    b.GetStatus(),
-				})
-				if err != nil {
-					return nil, false, err
-				}
-
-				b.happenedEvents = append(b.happenedEvents, event)
-			}
-		}
+		reEntry = loadReEntry
 	} else {
-		if err := b.createState(ctx, ef); err != nil {
+		err := b.init(ctx, runCtx, name, ef)
+		if err != nil {
 			return nil, false, err
 		}
-
-		b.RunContext.VarStore.AddStep(b.Name)
-
-		if _, ok := b.expectedEvents[eventStart]; ok {
-			status, _, _ := b.GetTaskHumanStatus()
-			event, err := runCtx.MakeNodeStartEvent(ctx, MakeNodeStartEventArgs{
-				NodeName:      name,
-				NodeShortName: ef.ShortTitle,
-				HumanStatus:   status,
-				NodeStatus:    b.GetStatus(),
-			})
-			if err != nil {
-				return nil, false, err
-			}
-
-			b.happenedEvents = append(b.happenedEvents, event)
-		}
-
-		// TODO: выпилить когда сделаем циклы
-		// это для возврата на доработку при которой мы создаем новый процесс
-		// и пытаемся взять решение из прошлого процесса
-		b.setPrevDecision(ctx)
 	}
 
 	return b, reEntry, nil
@@ -413,48 +369,50 @@ func (gb *GoApproverBlock) trySetPreviousDecision(ctx c.Context) (isPrevDecision
 		return false
 	}
 
-	if parentState.Decision != nil {
-		var actualApprover, comment string
+	if parentState.Decision == nil {
+		return true
+	}
 
-		if parentState.ActualApprover != nil {
-			actualApprover = *parentState.ActualApprover
-		}
+	var actualApprover, comment string
 
-		if parentState.Comment != nil {
-			comment = *parentState.Comment
-		}
+	if parentState.ActualApprover != nil {
+		actualApprover = *parentState.ActualApprover
+	}
 
-		person, personErr := gb.RunContext.Services.ServiceDesc.GetSsoPerson(ctx, actualApprover)
-		if personErr != nil {
-			//nolint:goconst //не хочу внедрять миллион констант под каждую строку в проекте
-			l.Error(funcName, "service couldn't get person by login: "+actualApprover)
+	if parentState.Comment != nil {
+		comment = *parentState.Comment
+	}
 
+	person, personErr := gb.RunContext.Services.ServiceDesc.GetSsoPerson(ctx, actualApprover)
+	if personErr != nil {
+		//nolint:goconst //не хочу внедрять миллион констант под каждую строку в проекте
+		l.Error(funcName, "service couldn't get person by login: "+actualApprover)
+
+		return false
+	}
+
+	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputApprover], person)
+	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputDecision], parentState.Decision.String())
+	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputComment], comment)
+
+	gb.State.ActualApprover = &actualApprover
+	gb.State.Comment = &comment
+	gb.State.Decision = parentState.Decision
+
+	if _, ok = gb.expectedEvents[eventEnd]; ok {
+		status, _, _ := gb.GetTaskHumanStatus()
+		event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, MakeNodeEndEventArgs{
+			NodeName:      gb.Name,
+			NodeShortName: gb.ShortName,
+			HumanStatus:   status,
+			NodeStatus:    gb.GetStatus(),
+		})
+
+		if eventErr != nil {
 			return false
 		}
 
-		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputApprover], person)
-		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputDecision], parentState.Decision.String())
-		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputComment], comment)
-
-		gb.State.ActualApprover = &actualApprover
-		gb.State.Comment = &comment
-		gb.State.Decision = parentState.Decision
-
-		if _, ok = gb.expectedEvents[eventEnd]; ok {
-			status, _, _ := gb.GetTaskHumanStatus()
-			event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, MakeNodeEndEventArgs{
-				NodeName:      gb.Name,
-				NodeShortName: gb.ShortName,
-				HumanStatus:   status,
-				NodeStatus:    gb.GetStatus(),
-			})
-
-			if eventErr != nil {
-				return false
-			}
-
-			gb.happenedEvents = append(gb.happenedEvents, event)
-		}
+		gb.happenedEvents = append(gb.happenedEvents, event)
 	}
 
 	return true

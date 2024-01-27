@@ -100,7 +100,9 @@ func (gb *GoSignBlock) handleSignature(ctx c.Context, login string) error {
 		if !gb.isValidLogin(login) {
 			return NewUserIsNotPartOfProcessErr()
 		}
-	} else if !gb.isValidSigner(login) {
+	}
+
+	if !gb.isValidSigner(login) {
 		return NewUserIsNotPartOfProcessErr()
 	}
 

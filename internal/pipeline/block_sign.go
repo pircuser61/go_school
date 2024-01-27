@@ -747,32 +747,28 @@ func createGoSignBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx 
 	reEntry := runCtx.UpdateData == nil
 
 	rawState, ok := runCtx.VarStore.State[name]
+
 	if ok && !reEntry {
 		if err := b.loadState(rawState); err != nil {
 			return nil, false, err
 		}
-	} else {
-		if err := b.createState(ctx, ef); err != nil {
+
+		return b, reEntry, nil
+	}
+
+	if err := b.createState(ctx, ef); err != nil {
+		return nil, false, err
+	}
+
+	b.RunContext.VarStore.AddStep(b.Name)
+
+	b.State.Reentered = reEntry && ok
+
+	_, ok = b.expectedEvents[eventStart]
+	if ok {
+		err := b.makeExpectedEvents(ctx, runCtx, name, ef)
+		if err != nil {
 			return nil, false, err
-		}
-		b.RunContext.VarStore.AddStep(b.Name)
-
-		if reEntry && ok {
-			b.State.Reentered = true
-		}
-
-		if _, ok := b.expectedEvents[eventStart]; ok {
-			status, _, _ := b.GetTaskHumanStatus()
-			event, err := runCtx.MakeNodeStartEvent(ctx, MakeNodeStartEventArgs{
-				NodeName:      name,
-				NodeShortName: ef.ShortTitle,
-				HumanStatus:   status,
-				NodeStatus:    b.GetStatus(),
-			})
-			if err != nil {
-				return nil, false, err
-			}
-			b.happenedEvents = append(b.happenedEvents, event)
 		}
 	}
 

@@ -81,7 +81,6 @@ func (gb *TimerBlock) GetState() interface{} {
 	return gb.State
 }
 
-//nolint:gocyclo //its ok here
 func (gb *TimerBlock) Update(ctx c.Context) (interface{}, error) {
 	if gb.State.Started {
 		if err := gb.checkUserIsServiceAccount(ctx); err != nil {
@@ -216,23 +215,9 @@ func createTimerBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx *
 			return nil, false, err
 		}
 	} else {
-		if err := b.createState(ef); err != nil {
+		err := b.createExpectedEvents(ctx, runCtx, name, ef)
+		if err != nil {
 			return nil, false, err
-		}
-		b.RunContext.VarStore.AddStep(b.Name)
-
-		if _, ok := b.expectedEvents[eventStart]; ok {
-			status, _, _ := b.GetTaskHumanStatus()
-			event, err := runCtx.MakeNodeStartEvent(ctx, MakeNodeStartEventArgs{
-				NodeName:      name,
-				NodeShortName: ef.ShortTitle,
-				HumanStatus:   status,
-				NodeStatus:    b.GetStatus(),
-			})
-			if err != nil {
-				return nil, false, err
-			}
-			b.happenedEvents = append(b.happenedEvents, event)
 		}
 	}
 

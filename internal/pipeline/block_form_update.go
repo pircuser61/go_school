@@ -131,34 +131,9 @@ func (gb *GoFormBlock) handleRequestFillForm(ctx context.Context, data *script.B
 		return fmt.Errorf("wrong form id: %s, gb.Name: %s", updateParams.BlockID, gb.Name)
 	}
 
-	if gb.State.IsFilled {
-		isAllowed, checkEditErr := gb.RunContext.Services.Storage.CheckUserCanEditForm(
-			ctx,
-			gb.RunContext.WorkNumber,
-			gb.Name,
-			data.ByLogin,
-		)
-		if checkEditErr != nil {
-			return checkEditErr
-		}
-
-		if !isAllowed {
-			return NewUserIsNotPartOfProcessErr()
-		}
-
-		isActualUserEqualAutoFillUser := gb.State.ActualExecutor != nil && *gb.State.ActualExecutor == AutoFillUser
-
-		if isActualUserEqualAutoFillUser {
-			gb.State.ActualExecutor = &data.ByLogin
-		}
-	} else {
-		_, executorFound := gb.State.Executors[data.ByLogin]
-		if !executorFound {
-			return NewUserIsNotPartOfProcessErr()
-		}
-
-		gb.State.ActualExecutor = &data.ByLogin
-		gb.State.IsFilled = true
+	err = gb.handleStateFullness(ctx, data)
+	if err != nil {
+		return err
 	}
 
 	gb.State.ApplicationBody = updateParams.ApplicationBody

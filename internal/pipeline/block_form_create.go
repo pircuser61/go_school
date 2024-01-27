@@ -13,7 +13,11 @@ import (
 )
 
 // nolint:dupl // another block
-func createGoFormBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext,
+func createGoFormBlock(
+	ctx c.Context,
+	name string,
+	ef *entity.EriusFunc,
+	runCtx *BlockRunContext,
 	expectedEvents map[string]struct{},
 ) (*GoFormBlock, bool, error) {
 	if ef.ShortTitle == "" {
@@ -54,48 +58,32 @@ func createGoFormBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx 
 
 		reEntry = runCtx.UpdateData == nil
 
-		if reEntry {
-			if err := b.reEntry(ctx); err != nil {
-				return nil, false, err
-			}
-
-			b.RunContext.VarStore.AddStep(b.Name)
-
-			if _, ok := b.expectedEvents[eventStart]; ok {
-				status, _, _ := b.GetTaskHumanStatus()
-
-				event, err := runCtx.MakeNodeStartEvent(ctx, MakeNodeStartEventArgs{
-					NodeName:      name,
-					NodeShortName: ef.ShortTitle,
-					HumanStatus:   status,
-					NodeStatus:    b.GetStatus(),
-				})
-				if err != nil {
-					return nil, false, err
-				}
-
-				b.happenedEvents = append(b.happenedEvents, event)
-			}
+		err := b.addStepWithReentry(ctx, reEntry)
+		if err != nil {
+			return nil, false, err
 		}
 	} else {
 		if err := b.createState(ctx, ef); err != nil {
 			return nil, false, err
 		}
-		b.RunContext.VarStore.AddStep(b.Name)
 
-		if _, ok := b.expectedEvents[eventStart]; ok {
-			status, _, _ := b.GetTaskHumanStatus()
-			event, err := runCtx.MakeNodeStartEvent(ctx, MakeNodeStartEventArgs{
-				NodeName:      name,
-				NodeShortName: ef.ShortTitle,
-				HumanStatus:   status,
-				NodeStatus:    b.GetStatus(),
-			})
-			if err != nil {
-				return nil, false, err
-			}
-			b.happenedEvents = append(b.happenedEvents, event)
+		b.RunContext.VarStore.AddStep(b.Name)
+	}
+
+	if _, ok := b.expectedEvents[eventStart]; ok {
+		status, _, _ := b.GetTaskHumanStatus()
+
+		event, err := runCtx.MakeNodeStartEvent(ctx, MakeNodeStartEventArgs{
+			NodeName:      name,
+			NodeShortName: ef.ShortTitle,
+			HumanStatus:   status,
+			NodeStatus:    b.GetStatus(),
+		})
+		if err != nil {
+			return nil, false, err
 		}
+
+		b.happenedEvents = append(b.happenedEvents, event)
 	}
 
 	return b, reEntry, nil
@@ -108,7 +96,7 @@ func (gb *GoFormBlock) reEntry(ctx c.Context) error {
 
 	isAutofill := gb.State.FormExecutorType == script.FormExecutorTypeAutoFillUser
 	if isAutofill && gb.State.ReEnterSettings == nil {
-		return fmt.Errorf("autofill with empty reenter settings data")
+		return errors.New("autofill with empty reenter settings data")
 	}
 
 	gb.State.IsFilled = false
@@ -122,29 +110,10 @@ func (gb *GoFormBlock) reEntry(ctx c.Context) error {
 	}
 
 	if gb.State.FormExecutorType == script.FormExecutorTypeAutoFillUser && gb.State.ReEnterSettings != nil {
-		if gb.State.ReEnterSettings.GroupPath != nil && *gb.State.ReEnterSettings.GroupPath != "" {
-			variableStorage, grabStorageErr := gb.RunContext.VarStore.GrabStorage()
-			if grabStorageErr != nil {
-				return grabStorageErr
-			}
-
-			groupID := getVariable(variableStorage, *gb.State.ReEnterSettings.GroupPath)
-			if groupID == nil {
-				return errors.New("can't find group id in variables")
-			}
-
-			gb.State.ReEnterSettings.Value = fmt.Sprintf("%v", groupID)
+		err := gb.setReentryExecutors(ctx)
+		if err != nil {
+			return err
 		}
-
-		setErr := gb.setExecutorsByParams(ctx, &setFormExecutorsByParamsDTO{
-			FormExecutorType: gb.State.ReEnterSettings.FormExecutorType,
-			Value:            gb.State.ReEnterSettings.Value,
-		})
-		if setErr != nil {
-			return setErr
-		}
-
-		gb.State.FormExecutorType = gb.State.ReEnterSettings.FormExecutorType
 	}
 
 	return gb.handleNotifications(ctx)

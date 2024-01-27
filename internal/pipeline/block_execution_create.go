@@ -51,61 +51,17 @@ func createGoExecutionBlock(ctx c.Context, name string, ef *entity.EriusFunc, ru
 	reEntry := false
 
 	if blockExists {
-		if err := b.loadState(rawState); err != nil {
+		loadReEntry, err := b.load(ctx, rawState, runCtx, name, ef)
+		if err != nil {
 			return nil, false, err
 		}
 
-		reEntry = runCtx.UpdateData == nil
-
-		// это для возврата в рамках одного процесса
-		if reEntry {
-			if err := b.reEntry(ctx, ef); err != nil {
-				return nil, false, err
-			}
-
-			b.RunContext.VarStore.AddStep(b.Name)
-
-			if _, ok := b.expectedEvents[eventStart]; ok {
-				status, _, _ := b.GetTaskHumanStatus()
-
-				event, err := runCtx.MakeNodeStartEvent(ctx, MakeNodeStartEventArgs{
-					NodeName:      name,
-					NodeShortName: ef.ShortTitle,
-					HumanStatus:   status,
-					NodeStatus:    b.GetStatus(),
-				})
-				if err != nil {
-					return nil, false, err
-				}
-
-				b.happenedEvents = append(b.happenedEvents, event)
-			}
-		}
+		reEntry = loadReEntry
 	} else {
-		if err := b.createState(ctx, ef); err != nil {
+		err := b.init(ctx, runCtx, name, ef)
+		if err != nil {
 			return nil, false, err
 		}
-
-		b.RunContext.VarStore.AddStep(b.Name)
-
-		if _, ok := b.expectedEvents[eventStart]; ok {
-			status, _, _ := b.GetTaskHumanStatus()
-			event, err := runCtx.MakeNodeStartEvent(ctx, MakeNodeStartEventArgs{
-				NodeName:      name,
-				NodeShortName: ef.ShortTitle,
-				HumanStatus:   status,
-				NodeStatus:    b.GetStatus(),
-			})
-			if err != nil {
-				return nil, false, err
-			}
-
-			b.happenedEvents = append(b.happenedEvents, event)
-		}
-
-		// это для возврата на доработку при которой мы создаем новый процесс
-		// и пытаемся взять решение из прошлого процесса
-		b.setPrevDecision(ctx)
 	}
 
 	return b, reEntry, nil
@@ -135,42 +91,7 @@ func (gb *GoExecutionBlock) reEntry(ctx c.Context, ef *entity.EriusFunc) error {
 	}
 
 	if len(gb.State.Executors) == 0 {
-		var params script.ExecutionParams
-
-		err := json.Unmarshal(ef.Params, &params)
-		if err != nil {
-			return errors.Wrap(err, "can not get execution parameters for block: "+gb.Name)
-		}
-
-		if params.ExecutorsGroupIDPath != nil && *params.ExecutorsGroupIDPath != "" {
-			variableStorage, grabStorageErr := gb.RunContext.VarStore.GrabStorage()
-			if grabStorageErr != nil {
-				return grabStorageErr
-			}
-
-			groupID := getVariable(variableStorage, *params.ExecutorsGroupIDPath)
-			if groupID == nil {
-				return errors.New("can't find group id in variables")
-			}
-
-			params.ExecutorsGroupID = fmt.Sprintf("%v", groupID)
-		}
-
-		if params.WorkType != nil {
-			deadline, deadErr := gb.getDeadline(ctx, *params.WorkType)
-			if deadErr != nil {
-				return deadErr
-			}
-
-			gb.State.Deadline = deadline
-		}
-
-		err = gb.setExecutorsByParams(ctx, &setExecutorsByParamsDTO{
-			Type:     params.Type,
-			GroupID:  params.ExecutorsGroupID,
-			Executor: params.Executors,
-			WorkType: params.WorkType,
-		})
+		err := gb.setExecutors(ctx, ef)
 		if err != nil {
 			return err
 		}
@@ -407,7 +328,7 @@ func (gb *GoExecutionBlock) setEditingAppLogFromPreviousBlock(ctx c.Context) {
 func (gb *GoExecutionBlock) trySetPreviousDecision(ctx c.Context) (isPrevDecisionAssigned bool) {
 	const funcName = "pipeline.execution.trySetPreviousDecision"
 
-	l := logger.GetLogger(ctx)
+	log := logger.GetLogger(ctx)
 
 	var (
 		parentStep *entity.Step
@@ -416,65 +337,29 @@ func (gb *GoExecutionBlock) trySetPreviousDecision(ctx c.Context) (isPrevDecisio
 
 	parentStep, err = gb.RunContext.Services.Storage.GetParentTaskStepByName(ctx, gb.RunContext.TaskID, gb.Name)
 	if err != nil || parentStep == nil {
-		l.Error(err)
+		log.Error(err)
 
 		return false
 	}
 
 	data, ok := parentStep.State[gb.Name]
 	if !ok {
-		l.Error(funcName, "parent step state is not found: "+gb.Name)
+		log.Error(funcName, "parent step state is not found: "+gb.Name)
 
 		return false
 	}
 
 	var parentState ExecutionData
 	if err = json.Unmarshal(data, &parentState); err != nil {
-		l.Error(funcName, "invalid format of go-execution-block state")
+		log.Error(funcName, "invalid format of go-execution-block state")
 
 		return false
 	}
 
 	if parentState.Decision != nil {
-		var actualExecutor, comment string
-
-		if parentState.ActualExecutor != nil {
-			actualExecutor = *parentState.ActualExecutor
-		}
-
-		if parentState.DecisionComment != nil {
-			comment = *parentState.DecisionComment
-		}
-
-		person, personErr := gb.RunContext.Services.ServiceDesc.GetSsoPerson(ctx, actualExecutor)
-		if personErr != nil {
-			l.Error(funcName, "service couldn't get person by login: "+actualExecutor)
-
+		err := gb.handleDecision(ctx, &parentState)
+		if err != nil {
 			return false
-		}
-
-		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputExecutionLogin], person)
-		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputDecision], &parentState.Decision)
-		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputComment], comment)
-
-		gb.State.ActualExecutor = &actualExecutor
-		gb.State.DecisionComment = &comment
-		gb.State.Decision = parentState.Decision
-
-		if _, ok = gb.expectedEvents[eventEnd]; ok {
-			status, _, _ := gb.GetTaskHumanStatus()
-
-			event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, MakeNodeEndEventArgs{
-				NodeName:      gb.Name,
-				NodeShortName: gb.ShortName,
-				HumanStatus:   status,
-				NodeStatus:    gb.GetStatus(),
-			})
-			if eventErr != nil {
-				return false
-			}
-
-			gb.happenedEvents = append(gb.happenedEvents, event)
 		}
 	}
 

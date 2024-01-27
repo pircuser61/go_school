@@ -14,8 +14,6 @@ import (
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/kafka"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/scheduler"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
@@ -141,98 +139,14 @@ func (gb *ExecutableFunctionBlock) Update(ctx c.Context) (interface{}, error) {
 	log := logger.GetLogger(ctx)
 
 	if gb.RunContext.UpdateData != nil {
-		var updateData FunctionUpdateParams
-
-		updateDataUnmarshalErr := json.Unmarshal(gb.RunContext.UpdateData.Parameters, &updateData)
-		if updateDataUnmarshalErr != nil {
-			return nil, updateDataUnmarshalErr
-		}
-
-		log.Info("update function action: " + gb.RunContext.UpdateData.Action)
-
-		switch gb.RunContext.UpdateData.Action {
-		case string(entity.TaskUpdateActionFuncSLAExpired):
-			gb.RunContext.VarStore.SetValue(gb.Output[keyOutputFunctionDecision], TimeoutDecision)
-			gb.State.TimeExpired = true
-		default:
-			if err := gb.setStateByResponse(&updateData); err != nil {
-				return nil, err
-			}
+		err := gb.updateData(log)
+		if err != nil {
+			return nil, err
 		}
 	} else {
-		if gb.State.HasResponse {
-			return nil, nil
-		}
-		taskStep, errTask := gb.RunContext.Services.Storage.GetTaskStepByName(ctx, gb.RunContext.TaskID, gb.Name)
-		if errTask != nil {
-			return nil, errTask
-		}
-
-		if gb.State.Async {
-			isFirstStart, firstStart, errFirstStart := gb.isFirstStart(ctx, gb.RunContext.TaskID, gb.Name)
-			if errFirstStart != nil {
-				return nil, errFirstStart
-			}
-
-			// эта функция уже запускалась и время ожидания корректного ответа закончилось
-			if !isFirstStart && firstStart != nil && !isTimeToWaitAnswer(firstStart.Time, gb.State.WaitCorrectRes) {
-				gb.RunContext.VarStore.SetValue(gb.Output[keyOutputFunctionDecision], TimeoutDecision)
-
-				em, errEmail := gb.RunContext.Services.People.GetUserEmail(ctx, gb.RunContext.Initiator)
-				if errEmail != nil {
-					log.WithField("login", gb.RunContext.Initiator).Error(errEmail)
-				}
-
-				emails := []string{em}
-
-				tpl := mail.NewInvalidFunctionResp(
-					gb.RunContext.WorkNumber, gb.RunContext.NotifName, gb.RunContext.Services.Sender.SdAddress)
-
-				filesList := []string{tpl.Image}
-				files, iconEerr := gb.RunContext.GetIcons(filesList)
-				if iconEerr != nil {
-					return nil, iconEerr
-				}
-
-				errSend := gb.RunContext.Services.Sender.SendNotification(ctx, emails, files, tpl)
-				if errSend != nil {
-					log.WithField("emails", emails).Error(errSend)
-				}
-			}
-		}
-
-		variables, err := getVariables(gb.RunContext.VarStore)
+		err := gb.updateWithNilData(ctx, log)
 		if err != nil {
 			return nil, err
-		}
-
-		variables = script.RestoreMapStructure(variables)
-
-		functionMapping, err := script.MapData(gb.State.Mapping, variables, nil)
-		if err != nil {
-			return nil, err
-		}
-
-		err = gb.fillMapWithConstants(functionMapping)
-		if err != nil {
-			return nil, err
-		}
-
-		if !gb.RunContext.skipProduce {
-			err = gb.RunContext.Services.Kafka.Produce(ctx,
-				&kafka.RunnerOutMessage{
-					TaskID:          taskStep.ID,
-					FunctionMapping: functionMapping,
-					Contracts:       gb.State.Contracts,
-					RetryPolicy:     string(SimpleFunctionRetryPolicy),
-					FunctionName:    gb.State.Name,
-					FunctionVersion: gb.State.Version,
-				},
-			)
-
-			if err != nil {
-				return nil, err
-			}
 		}
 	}
 
@@ -246,21 +160,24 @@ func (gb *ExecutableFunctionBlock) Update(ctx c.Context) (interface{}, error) {
 	gb.RunContext.VarStore.ReplaceState(gb.Name, stateBytes)
 
 	if gb.State.HasResponse || gb.State.TimeExpired {
-		if _, ok := gb.expectedEvents[eventEnd]; ok {
-			status, _, _ := gb.GetTaskHumanStatus()
-
-			event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, MakeNodeEndEventArgs{
-				NodeName:      gb.Name,
-				NodeShortName: gb.ShortName,
-				HumanStatus:   status,
-				NodeStatus:    gb.GetStatus(),
-			})
-			if eventErr != nil {
-				return nil, eventErr
-			}
-
-			gb.happenedEvents = append(gb.happenedEvents, event)
+		_, ok := gb.expectedEvents[eventEnd]
+		if !ok {
+			return nil, nil
 		}
+
+		status, _, _ := gb.GetTaskHumanStatus()
+
+		event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, MakeNodeEndEventArgs{
+			NodeName:      gb.Name,
+			NodeShortName: gb.ShortName,
+			HumanStatus:   status,
+			NodeStatus:    gb.GetStatus(),
+		})
+		if eventErr != nil {
+			return nil, eventErr
+		}
+
+		gb.happenedEvents = append(gb.happenedEvents, event)
 	}
 
 	return nil, nil
@@ -366,23 +283,9 @@ func createExecutableFunctionBlock(ctx c.Context, name string, ef *entity.EriusF
 			return nil, false, err
 		}
 	} else {
-		if err := b.createState(ef); err != nil {
+		err := b.createExpectedEvents(ctx, runCtx, name, ef)
+		if err != nil {
 			return nil, false, err
-		}
-		b.RunContext.VarStore.AddStep(b.Name)
-
-		if _, ok := b.expectedEvents[eventStart]; ok {
-			status, _, _ := b.GetTaskHumanStatus()
-			event, err := runCtx.MakeNodeStartEvent(ctx, MakeNodeStartEventArgs{
-				NodeName:      name,
-				NodeShortName: ef.ShortTitle,
-				HumanStatus:   status,
-				NodeStatus:    b.GetStatus(),
-			})
-			if err != nil {
-				return nil, false, err
-			}
-			b.happenedEvents = append(b.happenedEvents, event)
 		}
 	}
 

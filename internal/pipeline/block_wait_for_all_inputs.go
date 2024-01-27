@@ -131,12 +131,14 @@ func (gb *GoWaitForAllInputsBlock) Model() script.FunctionModel {
 	}
 }
 
-//nolint:unparam // its ok
-func createGoWaitForAllInputsBlock(ctx context.Context, name string, ef *entity.EriusFunc,
-	runCtx *BlockRunContext, expectedEvents map[string]struct{},
-) (*GoWaitForAllInputsBlock, bool, error) {
-	const reEntry = false
-
+//nolint:unparam // reEntry always false // когда-нибудь обязательно дорастёт до true
+func createGoWaitForAllInputsBlock(
+	ctx context.Context,
+	name string,
+	ef *entity.EriusFunc,
+	runCtx *BlockRunContext,
+	expectedEvents map[string]struct{},
+) (block *GoWaitForAllInputsBlock, reEntry bool, err error) {
 	b := &GoWaitForAllInputsBlock{
 		Name:       name,
 		ShortName:  ef.ShortTitle,
@@ -155,10 +157,8 @@ func createGoWaitForAllInputsBlock(ctx context.Context, name string, ef *entity.
 	}
 
 	if ef.Output != nil {
-		for propertyName := range ef.Output.Properties {
-			// по сути в этой записи нет смысла, но линтер не ругается
-			v := ef.Output.Properties[propertyName]
-
+		//nolint:gocritic //не в моих силах поменять коллекцию на поинтеры
+		for propertyName, v := range ef.Output.Properties {
 			b.Output[propertyName] = v.Global
 		}
 	}
@@ -169,26 +169,9 @@ func createGoWaitForAllInputsBlock(ctx context.Context, name string, ef *entity.
 			return nil, reEntry, err
 		}
 	} else {
-		if err := b.createState(ctx); err != nil {
+		err := b.createExpectedEvents(ctx, runCtx, name, ef)
+		if err != nil {
 			return nil, reEntry, err
-		}
-
-		b.RunContext.VarStore.AddStep(b.Name)
-
-		if _, ok := b.expectedEvents[eventStart]; ok {
-			status, _, _ := b.GetTaskHumanStatus()
-
-			event, err := runCtx.MakeNodeStartEvent(ctx, MakeNodeStartEventArgs{
-				NodeName:      name,
-				NodeShortName: ef.ShortTitle,
-				HumanStatus:   status,
-				NodeStatus:    b.GetStatus(),
-			})
-			if err != nil {
-				return nil, false, err
-			}
-
-			b.happenedEvents = append(b.happenedEvents, event)
 		}
 	}
 

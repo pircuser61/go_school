@@ -3,6 +3,7 @@ package api
 import (
 	c "context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -12,8 +13,6 @@ import (
 	"github.com/google/uuid"
 
 	"go.opencensus.io/trace"
-
-	"errors"
 
 	"gitlab.services.mts.ru/abp/mail/pkg/email"
 	"gitlab.services.mts.ru/abp/myosotis/logger"

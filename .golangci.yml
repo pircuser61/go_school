@@ -77,7 +77,6 @@ linters:
     - whitespace
     - wsl
     - depguard
-    # - gci
 
 severity:
   default-severity: error

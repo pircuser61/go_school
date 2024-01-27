@@ -203,8 +203,6 @@ type ExecutionUpdateParams struct {
 
 //nolint:dupl //its not duplicate
 func (gb *GoExecutionBlock) handleBreachedSLA(ctx context.Context) error {
-	const fn = "pipeline.execution.handleBreachedSLA"
-
 	if !gb.State.CheckSLA {
 		gb.State.SLAChecked = true
 		gb.State.HalfSLAChecked = true
@@ -212,51 +210,8 @@ func (gb *GoExecutionBlock) handleBreachedSLA(ctx context.Context) error {
 		return nil
 	}
 
-	log := logger.GetLogger(ctx)
-
 	if gb.State.SLA >= 8 {
-		emails := make([]string, 0, len(gb.State.Executors))
-		logins := getSliceFromMapOfStrings(gb.State.Executors)
-
-		delegations, err := gb.RunContext.Services.HumanTasks.GetDelegationsByLogins(ctx, logins)
-		if err != nil {
-			log.WithError(err).Info(fn, fmt.Sprintf("executors %v have no delegates", logins))
-		}
-
-		delegations = delegations.FilterByType("execution")
-		logins = delegations.GetUserInArrayWithDelegations(logins)
-
-		var executorEmail string
-
-		for i := range logins {
-			executorEmail, err = gb.RunContext.Services.People.GetUserEmail(ctx, logins[i])
-			if err != nil {
-				log.WithError(err).Warning(fn, fmt.Sprintf("executor login %s not found", logins[i]))
-
-				continue
-			}
-
-			emails = append(emails, executorEmail)
-		}
-
-		tpl := mail.NewExecutionSLATpl(
-			gb.RunContext.WorkNumber,
-			gb.RunContext.NotifName,
-			gb.RunContext.Services.Sender.SdAddress,
-		)
-
-		filesList := []string{tpl.Image}
-
-		icons, iconEerr := gb.RunContext.GetIcons(filesList)
-		if iconEerr != nil {
-			return iconEerr
-		}
-
-		if len(emails) == 0 {
-			return nil
-		}
-
-		err = gb.RunContext.Services.Sender.SendNotification(ctx, emails, icons, tpl)
+		err := gb.checkBreachedSLA(ctx)
 		if err != nil {
 			return err
 		}
@@ -1061,25 +1016,17 @@ func (gb *GoExecutionBlock) toEditApplication(ctx context.Context) (err error) {
 	byLogin := gb.RunContext.UpdateData.ByLogin
 	_, executorFound := gb.State.Executors[byLogin]
 
-	delegateFor, isDelegate := gb.RunContext.Delegations.FindDelegatorFor(byLogin,
-		getSliceFromMapOfStrings(gb.State.Executors))
+	delegateFor, isDelegate := gb.RunContext.Delegations.FindDelegatorFor(
+		byLogin,
+		getSliceFromMapOfStrings(gb.State.Executors),
+	)
 	if !(executorFound || isDelegate) {
 		return NewUserIsNotPartOfProcessErr()
 	}
 
 	// возврат на доработку всей заявки инициатору
 	if gb.isNextBlockServiceDesk() {
-		if editErr := gb.State.setEditAppToInitiator(gb.RunContext.UpdateData.ByLogin, delegateFor,
-			updateParams); editErr != nil {
-			return editErr
-		}
-
-		err = gb.notifyNeedRework(ctx)
-		if err != nil {
-			return err
-		}
-
-		err = gb.RunContext.Services.Storage.FinishTaskBlocks(ctx, gb.RunContext.TaskID, []string{gb.Name}, false)
+		err := gb.returnToAdminForRevision(ctx, delegateFor, updateParams)
 		if err != nil {
 			return err
 		}

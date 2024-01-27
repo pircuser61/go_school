@@ -326,7 +326,7 @@ func (gb *GoExecutionBlock) getNewSLADeadline(slaInfoPtr *sla.Info, half bool) t
 	return deadline
 }
 
-//nolint:dupl,gocyclo //Need here
+//nolint:dupl //Need here
 func (gb *GoExecutionBlock) Deadlines(ctx context.Context) ([]Deadline, error) {
 	deadlines := make([]Deadline, 0, 2)
 

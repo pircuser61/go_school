@@ -7,8 +7,6 @@ import (
 	"strings"
 
 	"github.com/xeipuuv/gojsonschema"
-
-	"gitlab.services.mts.ru/jocasta/human-tasks/pkg/utils/slice"
 )
 
 const dotSeparator = "."
@@ -27,6 +25,7 @@ func RestoreMapStructure(variables map[string]interface{}) map[string]interface{
 				if _, ok := current[keyPart]; !ok {
 					current[keyPart] = make(map[string]interface{})
 				}
+
 				current = current[keyPart].(map[string]interface{})
 			}
 		}
@@ -35,89 +34,14 @@ func RestoreMapStructure(variables map[string]interface{}) map[string]interface{
 	return result
 }
 
-//nolint:gocritic //в этом проекте не принято использовать поинтеры в коллекциях
 func MapData(
 	mapping JSONSchemaProperties,
 	input map[string]interface{},
 	required []string,
 ) (map[string]interface{}, error) {
-	mappedData := make(map[string]interface{}, len(input))
+	mappingProperties := MakeMappingProperties(mapping, input, required)
 
-	for paramName, paramMapping := range mapping {
-		if paramMapping.Value == "" {
-			if paramMapping.Type == object {
-				variable, err := MapData(paramMapping.Properties, input, paramMapping.Required)
-				if err != nil {
-					return nil, err
-				}
-
-				paramMapping := paramMapping
-
-				err = validateParam(variable, &paramMapping)
-				if err != nil {
-					return nil, err
-				}
-
-				mappedData[paramName] = variable
-
-				continue
-			}
-
-			if slice.Contains(required, paramName) {
-				return nil, fmt.Errorf("%s is required, but mapping value is empty", paramName)
-			}
-
-			if paramMapping.Default != nil {
-				paramMapping := paramMapping
-
-				err := validateParam(paramMapping.Default, &paramMapping)
-				if err != nil {
-					return nil, err
-				}
-
-				mappedData[paramName] = paramMapping.Default
-			}
-
-			continue
-		}
-
-		path := strings.Split(paramMapping.Value, dotSeparator)
-
-		variable, err := getVariable(input, path)
-		if err != nil {
-			return nil, err
-		}
-
-		if variable != nil {
-			paramMapping := paramMapping
-
-			err = validateParam(variable, &paramMapping)
-			if err != nil {
-				return nil, err
-			}
-
-			mappedData[paramName] = variable
-
-			continue
-		}
-
-		if slice.Contains(required, paramName) {
-			return nil, fmt.Errorf("%s is required, but mapping value is empty", paramName)
-		}
-
-		if paramMapping.Default != nil {
-			paramMapping := paramMapping
-
-			err = validateParam(paramMapping.Default, &paramMapping)
-			if err != nil {
-				return nil, err
-			}
-
-			mappedData[paramName] = paramMapping.Default
-		}
-	}
-
-	return mappedData, nil
+	return mappingProperties.Map()
 }
 
 func getVariable(input map[string]interface{}, path []string) (interface{}, error) {
