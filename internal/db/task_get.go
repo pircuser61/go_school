@@ -14,8 +14,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"golang.org/x/exp/slices"
-
 	"go.opencensus.io/trace"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
@@ -1315,21 +1313,13 @@ func (db *PGCon) computeActions(
 
 	maxPriority := getMaxPriority(computedActions)
 
-	for _, a := range computedActions {
-		ignoreAction := false
-
+	for i := range computedActions {
+		a := computedActions[i]
 		if maxPriority != "" && a.NodeType != maxPriority && (a.ButtonType == ActionTypePrimary || a.ButtonType == ActionTypeSecondary) {
 			a.ButtonType = "other"
 		}
 
-		for _, actionRule := range actionsToIgnore {
-			if a.ID == actionRule.IgnoreActionID && slices.Contains(computedActionIds, actionRule.ExistingActionID) {
-				ignoreAction = true
-
-				break
-			}
-		}
-
+		ignoreAction := db.ignoreAction(&a, actionsToIgnore, computedActionIds)
 		if !ignoreAction {
 			result = append(result, a)
 		}

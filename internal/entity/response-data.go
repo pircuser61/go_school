@@ -178,7 +178,7 @@ func (bt *BlocksType) IsSdBlueprintFilled(ctx context.Context, sd *servicedesc.S
 	return resp.StatusCode == http.StatusOK
 }
 
-// nolint //its ok here // не ок
+//nolint:all //its ok here // не ок
 func (bt *BlocksType) IsParallelNodesCorrect() (valid bool, textErr string) {
 	return true, ""
 	// TODO return Validation
@@ -186,7 +186,7 @@ func (bt *BlocksType) IsParallelNodesCorrect() (valid bool, textErr string) {
 	if len(parallelStartNodes) == 0 {
 		return true, ""
 	}
-	var parallelExitsAsBlock = make(map[string]string, 0)
+	parallelExitsAsBlock := make(map[string]string, 0)
 	for idx := range parallelStartNodes {
 		parallelNode := parallelStartNodes[idx]
 		var foundNode *string
@@ -252,14 +252,16 @@ func (bt *BlocksType) IsParallelNodesCorrect() (valid bool, textErr string) {
 		}
 		parallelExitsAsBlock[idx] = *foundNode
 	}
+
 	intersectOk := bt.validateIntersectingPathParallelNodes(parallelStartNodes, parallelExitsAsBlock)
 	if !intersectOk {
 		return false, ParallelPathIntersected
 	}
+
 	return true, ""
 }
 
-// nolint
+//nolint:all //см TODO выше
 func (bt *BlocksType) validateIntersectingPathParallelNodes(parallelStartNodes map[string]EriusFunc, parallelMap map[string]string) (valid bool) {
 	for idx := range parallelStartNodes {
 		parallelNode := parallelStartNodes[idx]
@@ -275,12 +277,14 @@ func (bt *BlocksType) validateIntersectingPathParallelNodes(parallelStartNodes m
 					return false
 				}
 				socketNode, ok := (*bt)[socketOutNode]
+
 				if !ok {
 					continue
 				}
+
 				nodes[socketOutNode] = &socketNode
 
-				var visitedBranchNodes = make(map[string]EriusFunc, 0)
+				visitedBranchNodes := make(map[string]EriusFunc, 0)
 
 				for {
 					nodeKeys := maps.Keys(nodes)
@@ -290,12 +294,14 @@ func (bt *BlocksType) validateIntersectingPathParallelNodes(parallelStartNodes m
 
 					nodeKey, node := nodeKeys[0], nodes[nodeKeys[0]]
 					delete(nodes, nodeKey)
+
 					if _, ok := visitedParallelNodes[nodeKey]; ok {
 						continue
 					}
 
 					visitedParallelNodes[nodeKey] = *node
 					visitedBranchNodes[nodeKey] = *node
+
 					switch node.TypeID {
 					case BlockParallelEndName:
 						continue
@@ -346,9 +352,11 @@ func (bt *BlocksType) validateIntersectingPathParallelNodes(parallelStartNodes m
 			}
 		}
 	}
+
 	return true
 }
 
+//nolint:all //см TODO выше
 func (bt *BlocksType) validateAfterEndParallelNodes(endNode, idx *string,
 	visitedParallelNodes map[string]EriusFunc,
 ) (valid bool, visitedNodes map[string]EriusFunc) {
@@ -398,6 +406,7 @@ func (bt *BlocksType) validateAfterEndParallelNodes(endNode, idx *string,
 	return true, visitedEndParallelNodes
 }
 
+//nolint:all //см TODO выше
 func (bt *BlocksType) validateBeforeStartParallelNodes(startKey, idx, endNode string,
 	visitedParallelNodes, visitedAfterEndNodes map[string]EriusFunc,
 ) (valid bool, textErr string) {
@@ -816,7 +825,8 @@ func (bt *BlocksType) GetGroups() (nodeGroups []*NodeGroup, err error) {
 
 // nolint
 func (bt *BlocksType) fillPrlGroups(nodeKey, prev string, its int, bl *EriusFunc,
-	visitedNodes map[string]*EriusFunc) (group *NodeGroup, exitIdx string, err error) {
+	visitedNodes map[string]*EriusFunc,
+) (group *NodeGroup, exitIdx string, err error) {
 	its++
 	if its > 5 {
 		return nil, "", errors.New("took too long")

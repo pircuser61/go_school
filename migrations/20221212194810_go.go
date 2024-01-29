@@ -58,6 +58,7 @@ func upGo(tx *sql.Tx) error {
 		}
 
 		halfSLADeadline = slaSrv.ComputeMaxDate(resultRow.TimeStart, float32(resultRow.SLA)/2, nil)
+
 		resultRows = append(resultRows, UpdateStruct{
 			ID:              resultRow.ID,
 			HalfSLADeadline: halfSLADeadline,

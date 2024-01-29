@@ -240,6 +240,7 @@ func (gb *GoSignBlock) Members() []Member {
 
 	for i := 0; i < len(gb.State.AdditionalApprovers); i++ {
 		addApprover := gb.State.AdditionalApprovers[i]
+
 		members = append(members, Member{
 			Login:                addApprover.ApproverLogin,
 			Actions:              gb.signAddActions(&addApprover),
@@ -269,8 +270,10 @@ func (gb *GoSignBlock) Deadlines(ctx c.Context) ([]Deadline, error) {
 		}
 
 		deadline := gb.RunContext.Services.SLAService.ComputeMaxDate(gb.RunContext.CurrBlockStartTime, float32(*gb.State.SLA), slaInfoPtr)
+
 		if !gb.State.SLAChecked {
-			deadlines = append(deadlines,
+			deadlines = append(
+				deadlines,
 				Deadline{
 					Deadline: deadline,
 					Action:   entity.TaskUpdateActionSLABreach,
@@ -280,6 +283,7 @@ func (gb *GoSignBlock) Deadlines(ctx c.Context) ([]Deadline, error) {
 
 		if *gb.State.SLA > 8 && !gb.State.DayBeforeSLAChecked {
 			notifyBeforeDayExpireSLA := deadline.Add(-8 * time.Hour)
+
 			deadlines = append(deadlines,
 				Deadline{
 					Deadline: notifyBeforeDayExpireSLA,

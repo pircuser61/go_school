@@ -67,6 +67,7 @@ func (gb *GoApproverBlock) Members() []Member {
 
 	for i := 0; i < len(gb.State.AdditionalApprovers); i++ {
 		addApprover := gb.State.AdditionalApprovers[i]
+
 		members = append(
 			members,
 			Member{

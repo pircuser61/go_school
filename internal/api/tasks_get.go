@@ -175,6 +175,7 @@ func groupsToResponse(groups []*entity.NodeGroup) []NodeGroup {
 
 	for i := range groups {
 		insideNodes := groupsToResponse(groups[i].Nodes)
+
 		resp = append(resp, NodeGroup{
 			EndNode:   groups[i].EndNode,
 			Nodes:     &insideNodes,

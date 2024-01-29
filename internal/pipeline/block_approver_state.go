@@ -271,7 +271,6 @@ func (a *ApproverData) userIsDelegate(login string, delegations ht.Delegations) 
 	return "", false
 }
 
-//nolint:gocyclo //its ok here
 func (a *ApproverData) SetDecision(login, comment string, ds ApproverDecision, attach []entity.Attachment, d ht.Delegations) error {
 	if ds == "" {
 		return errors.New("missing decision")
@@ -281,19 +280,11 @@ func (a *ApproverData) SetDecision(login, comment string, ds ApproverDecision, a
 		return errors.New("decision already set")
 	}
 
-	_, founded := a.Approvers[login]
-
 	delegators := d.GetDelegators(login)
 
-	delegateFor := make([]string, 0)
+	delegateFor := a.delegateFor(delegators)
 
-	for approver := range a.Approvers {
-		for _, delegator := range delegators {
-			if delegator == approver && !decisionForPersonExists(delegator, &a.ApproverLog) {
-				delegateFor = append(delegateFor, delegator)
-			}
-		}
-	}
+	_, founded := a.Approvers[login]
 
 	if !(founded || len(delegateFor) > 0) && login != AutoApprover {
 		return NewUserIsNotPartOfProcessErr()
@@ -326,14 +317,17 @@ func (a *ApproverData) SetDecision(login, comment string, ds ApproverDecision, a
 		}
 
 		if founded {
-			a.ApproverLog = append(a.ApproverLog, ApproverLogEntry{
-				Login:       login,
-				Decision:    ds,
-				Comment:     comment,
-				Attachments: attach,
-				CreatedAt:   time.Now(),
-				LogType:     ApproverLogDecision,
-			})
+			a.ApproverLog = append(
+				a.ApproverLog,
+				ApproverLogEntry{
+					Login:       login,
+					Decision:    ds,
+					Comment:     comment,
+					Attachments: attach,
+					CreatedAt:   time.Now(),
+					LogType:     ApproverLogDecision,
+				},
+			)
 		}
 
 		for _, dl := range delegateFor {

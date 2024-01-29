@@ -48,6 +48,7 @@ func init() {
 	goose.AddMigration(upJSONSchemaOutputs, downJSONSchemaOutputs)
 }
 
+//nolint:all //функции миграций лучше не трогать
 func upJSONSchemaOutputs(tx *sql.Tx) error {
 	rows, queryErr := tx.Query(selectQ)
 	if queryErr != nil {

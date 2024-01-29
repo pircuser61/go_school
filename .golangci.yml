@@ -17,6 +17,8 @@ linters-settings:
     locale: US
   lll:
     line-length: 140
+  goimports:
+    local-prefixes: github.com/golangci/golangci-lint
   gocritic:
     enabled-tags:
       - performance
@@ -24,16 +26,9 @@ linters-settings:
       - experimental
     disabled-checks:
       - wrapperFunc
-  depguard:
-    rules:
-      main:
-        files: 
-          - $all
-        deny:
-          - pkg: "github.com/labstack/gommon/log"
-            description: используем только gitlab.services.mts.ru/abp/myosotis/logger  
 
 linters:
+  disable-all: true
   enable:
     - asciicheck
     - bodyclose
@@ -66,7 +61,6 @@ linters:
     - noctx
     - prealloc
     - revive
-    - sqlclosecheck
     - staticcheck
     - stylecheck
     - testpackage
@@ -76,17 +70,15 @@ linters:
     - unused
     - whitespace
     - wsl
-    - depguard
 
 severity:
   default-severity: error
 
 run:
   tests: false
+  go: "1.21"
   skip-dirs:
     - swagger-ui
     - configs
     - templates
     - \.go
-  skip-files:
-    - .*-local.*
