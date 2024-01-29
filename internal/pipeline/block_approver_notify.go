@@ -7,7 +7,6 @@ import (
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
-	file_registry "gitlab.services.mts.ru/jocasta/pipeliner/internal/fileregistry"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
@@ -30,7 +29,9 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 	l := logger.GetLogger(ctx)
 
 	delegates, getDelegationsErr := gb.RunContext.Services.HumanTasks.GetDelegationsByLogins(
-		ctx, getSliceFromMapOfStrings(gb.State.Approvers))
+		ctx,
+		getSliceFromMapOfStrings(gb.State.Approvers),
+	)
 	if getDelegationsErr != nil {
 		return getDelegationsErr
 	}
@@ -45,13 +46,7 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 		return err
 	}
 
-	actionsList := make([]mail.Action, 0, len(gb.State.ActionList))
-	for i := range gb.State.ActionList {
-		actionsList = append(actionsList, mail.Action{
-			InternalActionName: gb.State.ActionList[i].ID,
-			Title:              gb.State.ActionList[i].Title,
-		})
-	}
+	actionsList := gb.makeActionList()
 
 	task, getVersionErr := gb.RunContext.Services.Storage.GetVersionByWorkNumber(ctx, gb.RunContext.WorkNumber)
 	if getVersionErr != nil {
@@ -93,18 +88,23 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 		}
 	}
 
-	templates := make(map[string]mail.Template, 0)
-	slaInfoPtr, getSLAInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDTO{
-		TaskCompletionIntervals: []entity.TaskCompletionInterval{{
-			StartedAt:  gb.RunContext.CurrBlockStartTime,
-			FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100),
-		}},
-		WorkType: sla.WorkHourType(gb.State.WorkType),
-	})
-
+	slaInfoPtr, getSLAInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(
+		ctx,
+		sla.InfoDTO{
+			TaskCompletionIntervals: []entity.TaskCompletionInterval{
+				{
+					StartedAt:  gb.RunContext.CurrBlockStartTime,
+					FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100),
+				},
+			},
+			WorkType: sla.WorkHourType(gb.State.WorkType),
+		},
+	)
 	if getSLAInfoErr != nil {
 		return getSLAInfoErr
 	}
+
+	templates := make(map[string]mail.Template, len(loginsToNotify))
 
 	var buttons []mail.Button
 
@@ -129,13 +129,11 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 		}
 
 		tpl := &mail.NewAppPersonStatusTpl{
-			WorkNumber: gb.RunContext.WorkNumber,
-			Name:       gb.RunContext.NotifName,
-			Status:     gb.State.ApproveStatusName,
-			Action:     statusToTaskAction[StatusApprovement],
-			DeadLine: gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(
-				time.Now(), gb.State.SLA, slaInfoPtr,
-			),
+			WorkNumber:                gb.RunContext.WorkNumber,
+			Name:                      gb.RunContext.NotifName,
+			Status:                    gb.State.ApproveStatusName,
+			Action:                    statusToTaskAction[StatusApprovement],
+			DeadLine:                  gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(time.Now(), gb.State.SLA, slaInfoPtr),
 			SdURL:                     gb.RunContext.Services.Sender.SdAddress,
 			Mailto:                    gb.RunContext.Services.Sender.FetchEmail,
 			Login:                     login,
@@ -156,40 +154,9 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 		buttonImg = append(buttonImg, v.Img)
 	}
 
-	for i := range templates {
-		item := templates[i]
-
-		iconsName := []string{item.Image, userImg}
-		iconsName = append(iconsName, buttonImg...)
-
-		if len(lastWorksForUser) != 0 {
-			iconsName = append(iconsName, warningImg)
-		}
-
-		for _, v := range description {
-			links, link := v.Get("attachLinks")
-			if link {
-				attachFiles, ok := links.([]file_registry.AttachInfo)
-				if ok && len(attachFiles) != 0 {
-					iconsName = append(iconsName, downloadImg)
-
-					break
-				}
-			}
-		}
-
-		iconsFiles, iconsErr := gb.RunContext.GetIcons(iconsName)
-		if iconsErr != nil {
-			return iconsErr
-		}
-
-		iconsFiles = append(iconsFiles, files...)
-
-		if sendErr := gb.RunContext.Services.Sender.SendNotification(
-			ctx, []string{i}, iconsFiles, item,
-		); sendErr != nil {
-			return sendErr
-		}
+	err = gb.sendNotifications(ctx, templates, buttonImg, lastWorksForUser, description, files)
+	if err != nil {
+		return err
 	}
 
 	return nil

@@ -107,115 +107,6 @@ func (runCtx *BlockRunContext) Copy() *BlockRunContext {
 	return &runCtxCopy
 }
 
-func processBlock(ctx c.Context, name string, its int, bl *entity.EriusFunc, runCtx *BlockRunContext, manual bool) (err error) {
-	its++
-	if its > 10 {
-		return errors.New("took too long")
-	}
-
-	ctx, s := trace.StartSpan(ctx, "process_block")
-	defer s.End()
-
-	log := logger.GetLogger(ctx).WithField("workNumber", runCtx.WorkNumber)
-
-	defer func() {
-		if err != nil && !errors.Is(err, UserIsNotPartOfProcessErr{}) {
-			log.WithError(err).Error("couldn't process block")
-
-			if changeErr := runCtx.updateTaskStatus(ctx, db.RunStatusError, "", db.SystemLogin); changeErr != nil {
-				log.WithError(changeErr).Error("couldn't change task status")
-			}
-		}
-	}()
-
-	status, getErr := runCtx.Services.Storage.GetTaskStatus(ctx, runCtx.TaskID)
-	if getErr != nil {
-		return getErr
-	}
-
-	switch status {
-	case db.RunStatusCreated:
-		if changeErr := runCtx.updateTaskStatus(ctx, db.RunStatusRunning, "", db.SystemLogin); changeErr != nil {
-			return changeErr
-		}
-	case db.RunStatusRunning:
-	case db.RunStatusCanceled:
-		return errors.New("couldn't process canceled block")
-	default:
-		return nil
-	}
-
-	block, id, initErr := initBlock(ctx, name, bl, runCtx)
-	if initErr != nil {
-		return initErr
-	}
-
-	if (block.UpdateManual() && manual) || !block.UpdateManual() {
-		err = updateBlock(ctx, block, name, id, runCtx)
-		if err != nil {
-			return err
-		}
-	}
-
-	taskHumanStatus, statusComment, action := block.GetTaskHumanStatus()
-
-	err = runCtx.updateStatusByStep(ctx, taskHumanStatus, statusComment)
-	if err != nil {
-		return err
-	}
-
-	newEvents := block.GetNewEvents()
-	runCtx.BlockRunResults.NodeEvents = append(runCtx.BlockRunResults.NodeEvents, newEvents...)
-
-	isArchived, err := runCtx.Services.Storage.CheckIsArchived(ctx, runCtx.TaskID)
-	if err != nil {
-		return err
-	}
-
-	if isArchived || (block.GetStatus() != StatusFinished && block.GetStatus() != StatusNoSuccess &&
-		block.GetStatus() != StatusError) {
-		return nil
-	}
-
-	err = runCtx.handleInitiatorNotify(ctx, handleInitiatorNotifyParams{
-		step:     name,
-		stepType: bl.TypeID,
-		action:   action,
-		status:   taskHumanStatus,
-	})
-	if err != nil {
-		return err
-	}
-
-	activeBlocks, ok := block.Next(runCtx.VarStore)
-	if !ok {
-		err = runCtx.updateStepInDB(ctx, name, id, true, block.GetStatus(), block.Members(), []Deadline{})
-		if err != nil {
-			return err
-		}
-
-		return ErrCantGetNextStep
-	}
-
-	for _, b := range activeBlocks {
-		blockData, blockErr := runCtx.Services.Storage.GetBlockDataFromVersion(ctx, runCtx.WorkNumber, b)
-		if blockErr != nil {
-			return blockErr
-		}
-
-		ctxCopy := runCtx.Copy()
-
-		err = processBlock(ctx, b, its, blockData, ctxCopy, false)
-		if err != nil {
-			return err
-		}
-
-		runCtx.BlockRunResults.NodeEvents = append(runCtx.BlockRunResults.NodeEvents, ctxCopy.BlockRunResults.NodeEvents...)
-	}
-
-	return nil
-}
-
 func CreateBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *BlockRunContext) (Runner, bool, error) {
 	ctx, s := trace.StartSpan(ctx, "create_block")
 	defer s.End()
@@ -784,7 +675,11 @@ func (runCtx *BlockRunContext) handleInitiatorNotify(ctx c.Context, params handl
 	return nil
 }
 
-func ProcessBlockWithEndMapping(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *BlockRunContext,
+func ProcessBlockWithEndMapping(
+	ctx c.Context,
+	name string,
+	bl *entity.EriusFunc,
+	runCtx *BlockRunContext,
 	manual bool,
 ) error {
 	ctx, s := trace.StartSpan(ctx, "process_block_with_end_mapping")
@@ -794,7 +689,9 @@ func ProcessBlockWithEndMapping(ctx c.Context, name string, bl *entity.EriusFunc
 
 	runCtx.BlockRunResults = &BlockRunResults{}
 
-	pErr := processBlock(ctx, name, 0, bl, runCtx, manual)
+	blockProcessor := newBlockProcessor(name, bl, runCtx, manual)
+
+	pErr := blockProcessor.ProcessBlock(ctx, 0)
 	if pErr != nil {
 		return pErr
 	}

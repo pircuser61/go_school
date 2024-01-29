@@ -394,17 +394,7 @@ func (ae *Env) EditVersion(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if len(p.Pipeline.Blocks) == 0 {
-		p.Pipeline.FillEmptyPipeline()
-	} else {
-		keyOutputs := map[string]string{
-			pipeline.BlockGoApproverID:  "approver",
-			pipeline.BlockGoSignID:      "signer",
-			pipeline.BlockGoExecutionID: "login",
-		}
-
-		p.Pipeline.ChangeOutput(keyOutputs)
-	}
+	ae.handlePipelineBlockLenght(&p)
 
 	if p.Pipeline.Entrypoint == "" {
 		p.Pipeline.Entrypoint = startEntrypoint
@@ -468,20 +458,11 @@ func (ae *Env) EditVersion(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	hasPrivateFunction := false
+	hasPrivateFunction, err := ae.hasPrivateFunction(ctx, executableFunctionIDs)
+	if err != nil {
+		errorHandler.handleError(GetFunctionError, err)
 
-	for _, id := range executableFunctionIDs {
-		function, getFunctionErr := ae.FunctionStore.GetFunction(ctx, id)
-		if getFunctionErr != nil {
-			errorHandler.handleError(GetFunctionError, err)
-
-			return
-		}
-
-		hasPrivateFunction = function.Options.Private
-		if hasPrivateFunction {
-			break
-		}
+		return
 	}
 
 	err = ae.DB.UpdateDraft(ctx, &p, updated, groups, hasPrivateFunction)
@@ -494,24 +475,15 @@ func (ae *Env) EditVersion(w http.ResponseWriter, req *http.Request) {
 	ui, err := user.GetUserInfoFromCtx(ctx)
 	if err != nil {
 		log.Error(err.Error())
+		// этого ретурна не было но без него потенциально может возникнуть паника когда ui == nil
+		return
 	}
 
-	if p.Status == db.StatusApproved {
-		err = ae.DB.SwitchApproved(ctx, p.ID, p.VersionID, ui.Username)
-		if err != nil {
-			errorHandler.handleError(ApproveError, err)
+	err = ae.handleScenario(ctx, &p, ui)
+	if err != nil {
+		errorHandler.handleError(ApproveError, err)
 
-			return
-		}
-	}
-
-	if p.Status == db.StatusRejected {
-		err = ae.DB.SwitchRejected(ctx, p.VersionID, p.CommentRejected, ui.Username)
-		if err != nil {
-			errorHandler.handleError(ApproveError, err)
-
-			return
-		}
+		return
 	}
 
 	edited, err := ae.DB.GetPipelineVersion(ctx, p.VersionID, true)

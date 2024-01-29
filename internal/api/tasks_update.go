@@ -678,6 +678,10 @@ type stoppedTask struct {
 	ID         uuid.UUID `json:"-"`
 }
 
+type stoppedTasks struct {
+	Tasks []stoppedTask `json:"tasks"`
+}
+
 func (ae *Env) StopTasks(w http.ResponseWriter, r *http.Request) {
 	ctx, s := trace.StartSpan(r.Context(), "stop_tasks")
 	defer s.End()
@@ -691,6 +695,7 @@ func (ae *Env) StopTasks(w http.ResponseWriter, r *http.Request) {
 
 		return
 	}
+
 	defer r.Body.Close()
 
 	req := &TasksStop{}
@@ -707,9 +712,7 @@ func (ae *Env) StopTasks(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := struct {
-		Tasks []stoppedTask `json:"tasks"`
-	}{
+	resp := stoppedTasks{
 		Tasks: make([]stoppedTask, 0, len(req.Tasks)),
 	}
 
@@ -735,113 +738,16 @@ func (ae *Env) StopTasks(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	for _, workNumber := range req.Tasks {
-		dbTask, getTaskErr := txStorage.GetTask(ctx, []string{ui.Username}, []string{ui.Username}, ui.Username, workNumber)
-		if getTaskErr != nil {
+		updateErr := ae.updateTaskByWorkNumber(ctx, txStorage, ui, workNumber, &resp)
+		if updateErr != nil {
 			if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
-				log.WithField("funcName", "GetTask").
+				log.WithField("funcName", "updateTaskByWorkNumber").
 					WithError(errors.New("couldn't rollback tx")).
 					Error(txErr)
 			}
 
-			log.WithError(getTaskErr).Error("couldn't get task")
-
-			continue
+			log.WithError(updateErr).Error("couldn't update human status")
 		}
-
-		if dbTask.FinishedAt != nil {
-			resp.Tasks = append(resp.Tasks, stoppedTask{
-				FinishedAt: *dbTask.FinishedAt,
-				Status:     dbTask.HumanStatus,
-				WorkNumber: dbTask.WorkNumber,
-				ID:         dbTask.ID,
-			})
-
-			continue
-		}
-
-		err = txStorage.StopTaskBlocks(ctx, dbTask.ID)
-		if err != nil {
-			if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
-				log.WithField("funcName", "StopTasksBlocks").
-					WithError(errors.New("couldn't rollback tx")).
-					Error(txErr)
-			}
-
-			log.WithError(err).Error("couldn't stop task blocks")
-
-			continue
-		}
-
-		err = txStorage.UpdateTaskStatus(ctx, dbTask.ID, db.RunStatusCanceled, db.CommentCanceled, ui.Username)
-		if err != nil {
-			if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
-				log.WithField("funcName", "UpdateTaskStatus").
-					WithError(errors.New("couldn't rollback tx")).
-					Error(txErr)
-			}
-
-			log.WithError(err).Error("couldn't update task status")
-
-			continue
-		}
-
-		updatedTask, updateTaskErr := txStorage.UpdateTaskHumanStatus(ctx, dbTask.ID, string(pipeline.StatusCancel), "")
-		if updateTaskErr != nil {
-			if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
-				log.WithField("funcName", "UpdateTaskHumanStatus").
-					WithError(errors.New("couldn't rollback tx")).
-					Error(txErr)
-			}
-
-			log.WithError(updateTaskErr).Error("couldn't update human status")
-
-			continue
-		}
-
-		logins, loginsErr := ae.getAuthorAndMembersToNotify(ctx, workNumber, ui.Username)
-		if loginsErr != nil {
-			log.WithError(loginsErr).Error("couldn't get logins")
-		}
-
-		emails := make([]string, 0, len(logins))
-
-		for _, login := range logins {
-			userEmail, getUserEmailErr := ae.People.GetUserEmail(ctx, login)
-			if getUserEmailErr != nil {
-				continue
-			}
-
-			emails = append(emails, userEmail)
-		}
-
-		em := mail.NewRejectPipelineGroupTemplate(dbTask.WorkNumber, dbTask.Name, ae.Mail.SdAddress)
-
-		file, ok := ae.Mail.Images[em.Image]
-		if !ok {
-			log.Error("couldn't find images: ", em.Image)
-
-			return
-		}
-
-		files := []email.Attachment{
-			{
-				Name:    headImg,
-				Content: file,
-				Type:    email.EmbeddedAttachment,
-			},
-		}
-
-		sendNotifErr := ae.Mail.SendNotification(ctx, emails, files, em)
-		if sendNotifErr != nil {
-			log.WithError(sendNotifErr).Error("couldn't send notification")
-		}
-
-		resp.Tasks = append(resp.Tasks, stoppedTask{
-			FinishedAt: *updatedTask.FinishedAt,
-			Status:     updatedTask.HumanStatus,
-			WorkNumber: updatedTask.WorkNumber,
-			ID:         dbTask.ID,
-		})
 	}
 
 	if err = txStorage.CommitTransaction(ctx); err != nil {
@@ -851,37 +757,16 @@ func (ae *Env) StopTasks(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	for i := range resp.Tasks {
-		task := resp.Tasks[i]
-		runCtx := pipeline.BlockRunContext{
-			WorkNumber: task.WorkNumber,
-			TaskID:     task.ID,
-			Services: pipeline.RunContextServices{
-				HTTPClient:   ae.HTTPClient,
-				Integrations: ae.Integrations,
-				Storage:      ae.DB,
-			},
-			BlockRunResults: &pipeline.BlockRunResults{},
-		}
+	err = ae.processTasks(ctx, resp.Tasks)
+	if err != nil {
+		log.WithError(err).Error("failed process stopped tasks")
+		errorHandler.sendError(UnknownError)
 
-		runCtx.SetTaskEvents(ctx)
-
-		nodeEvents, eventErr := runCtx.GetCancelledStepsEvents(ctx)
-		if eventErr != nil {
-			log.WithError(eventErr).Error("couldn't get canceled steps events")
-			errorHandler.sendError(UnknownError)
-
-			return
-		}
-
-		runCtx.BlockRunResults.NodeEvents = nodeEvents
-		runCtx.NotifyEvents(ctx)
+		return
 	}
 
 	if err = sendResponse(w, http.StatusOK, resp); err != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(UnknownError, err)
 
 		return
 	}

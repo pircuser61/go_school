@@ -7,7 +7,6 @@ import (
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
-	file_registry "gitlab.services.mts.ru/jocasta/pipeliner/internal/fileregistry"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 )
@@ -21,8 +20,6 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 	if gb.RunContext.skipNotifications {
 		return nil
 	}
-
-	l := logger.GetLogger(ctx)
 
 	executors := getSliceFromMapOfStrings(gb.State.Executors)
 
@@ -60,7 +57,6 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 	login := task.Author
 
 	recipient := getRecipientFromState(&taskRunContext.InitialApplication.ApplicationBody)
-
 	if recipient != "" {
 		login = recipient
 	}
@@ -105,107 +101,16 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 		filesNames = append(filesNames, vRabotuBtn)
 	}
 
-	for _, login = range loginsToNotify {
-		email, getUserEmailErr := gb.RunContext.Services.People.GetUserEmail(ctx, login)
-		if getUserEmailErr != nil {
-			l.WithField("login", login).WithError(getUserEmailErr).Warning("couldn't get email")
-
-			continue
-		}
-
-		if !gb.State.IsTakenInWork {
-			emails[email] = mail.NewExecutionNeedTakeInWorkTpl(
-				&mail.ExecutorNotifTemplate{
-					WorkNumber:  gb.RunContext.WorkNumber,
-					Name:        gb.RunContext.NotifName,
-					SdURL:       gb.RunContext.Services.Sender.SdAddress,
-					BlockID:     BlockGoExecutionID,
-					Description: description,
-					Mailto:      gb.RunContext.Services.Sender.FetchEmail,
-					Login:       login,
-					LastWorks:   lastWorksForUser,
-					IsGroup:     len(gb.State.Executors) > 1,
-					Deadline:    gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(time.Now(), gb.State.SLA, slaInfoPtr),
-				},
-			)
-		} else {
-			author, errAuthor := gb.RunContext.Services.People.GetUser(ctx, gb.RunContext.Initiator)
-			if errAuthor != nil {
-				return err
-			}
-
-			initiatorInfo, errInitiator := author.ToUserinfo()
-			if errInitiator != nil {
-				return err
-			}
-
-			emails[email], _ = mail.NewAppPersonStatusNotificationTpl(
-				&mail.NewAppPersonStatusTpl{
-					WorkNumber:  gb.RunContext.WorkNumber,
-					Name:        gb.RunContext.NotifName,
-					Status:      string(StatusExecution),
-					Action:      statusToTaskAction[StatusExecution],
-					DeadLine:    gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(time.Now(), gb.State.SLA, slaInfoPtr),
-					Description: description,
-					SdURL:       gb.RunContext.Services.Sender.SdAddress,
-					Mailto:      gb.RunContext.Services.Sender.FetchEmail,
-					Login:       login,
-					IsEditable:  gb.State.GetIsEditable(),
-					Initiator:   initiatorInfo,
-
-					BlockID:                   BlockGoExecutionID,
-					ExecutionDecisionExecuted: string(ExecutionDecisionExecuted),
-					ExecutionDecisionRejected: string(ExecutionDecisionRejected),
-					LastWorks:                 lastWorksForUser,
-				})
-
-			if initiatorInfo != nil {
-				filesNames = append(filesNames, userImg)
-			}
-		}
+	fnames, err := gb.setMailTemplates(ctx, loginsToNotify, emails, description, lastWorksForUser, slaInfoPtr)
+	if err != nil {
+		return err
 	}
 
-	for i := range emails {
-		item := emails[i]
+	filesNames = append(filesNames, fnames...)
 
-		iconsName := []string{item.Image}
-		iconsName = append(iconsName, filesNames...)
-
-		if len(lastWorksForUser) != 0 {
-			iconsName = append(iconsName, warningImg)
-		}
-
-		for _, v := range description {
-			links, link := v.Get("attachLinks")
-			if !link {
-				continue
-			}
-
-			attachFiles, ok := links.([]file_registry.AttachInfo)
-
-			if ok && len(attachFiles) != 0 {
-				iconsName = append(iconsName, downloadImg)
-
-				break
-			}
-		}
-
-		iconFiles, errFiles := gb.RunContext.GetIcons(iconsName)
-		if err != nil {
-			return errFiles
-		}
-
-		iconFiles = append(iconFiles, files...)
-
-		sendErr := gb.RunContext.Services.Sender.SendNotification(
-			ctx,
-			[]string{i},
-			iconFiles,
-			emails[i],
-		)
-		if sendErr != nil {
-			return sendErr
-		}
+	err = gb.sendNotifications(ctx, emails, filesNames, lastWorksForUser, description, files)
+	if err != nil {
+		return err
 	}
 
 	return nil

@@ -586,116 +586,14 @@ func (gb *GoApproverBlock) actionAcceptable(action ApproverAction) bool {
 }
 
 func (gb *GoApproverBlock) Update(ctx c.Context) (interface{}, error) {
-	data := gb.RunContext.UpdateData
-	if data == nil {
-		return nil, errors.New("empty data")
-	}
-
-	gb.RunContext.Delegations = gb.RunContext.Delegations.FilterByType("approvement")
-
-	switch data.Action {
-	case string(entity.TaskUpdateActionSLABreach):
-		if errUpdate := gb.handleBreachedSLA(ctx); errUpdate != nil {
-			return nil, errUpdate
-		}
-	case string(entity.TaskUpdateActionHalfSLABreach):
-		if errUpdate := gb.handleHalfBreachedSLA(ctx); errUpdate != nil {
-			return nil, errUpdate
-		}
-	case string(entity.TaskUpdateActionReworkSLABreach):
-		if errUpdate := gb.handleReworkSLABreached(ctx); errUpdate != nil {
-			return nil, errUpdate
-		}
-	case string(entity.TaskUpdateActionApprovement):
-		var updateParams approverUpdateParams
-
-		if err := json.Unmarshal(data.Parameters, &updateParams); err != nil {
-			return nil, errors.New("can't assert provided data")
-		}
-
-		if !gb.actionAcceptable(updateParams.Decision) {
-			return nil, errors.New("unacceptable action")
-		}
-
-		login := gb.RunContext.UpdateData.ByLogin
-		if login == ServiceAccount || login == ServiceAccountStage || login == ServiceAccountDev {
-			gb.RunContext.UpdateData.ByLogin = updateParams.Username
-		}
-
-		updateParams.internalDecision = updateParams.Decision.ToDecision()
-
-		if errUpdate := gb.setApproveDecision(ctx, &updateParams); errUpdate != nil {
-			return nil, errUpdate
-		}
-
-	case string(entity.TaskUpdateActionAdditionalApprovement):
-		var updateParams additionalApproverUpdateParams
-
-		if err := json.Unmarshal(data.Parameters, &updateParams); err != nil {
-			return nil, errors.Errorf("can't assert provided data: %v", err)
-		}
-
-		if err := updateParams.Validate(); err != nil {
-			return nil, err
-		}
-
-		loginsToNotify, err := gb.State.SetDecisionByAdditionalApprover(gb.RunContext.UpdateData.ByLogin,
-			updateParams, gb.RunContext.Delegations)
-		if err != nil {
-			return nil, err
-		}
-
-		loginsToNotify = append(loginsToNotify, gb.RunContext.Initiator)
-
-		err = gb.notifyDecisionMadeByAdditionalApprover(ctx, loginsToNotify)
-		if err != nil {
-			return nil, err
-		}
-
-	case string(entity.TaskUpdateActionApproverSendEditApp):
-		var updateParams approverUpdateEditingParams
-
-		if err := json.Unmarshal(data.Parameters, &updateParams); err != nil {
-			return nil, errors.New("can't assert provided data")
-		}
-
-		if errUpdate := gb.toEditApplication(ctx, updateParams); errUpdate != nil {
-			return nil, errUpdate
-		}
-
-	case string(entity.TaskUpdateActionRequestApproveInfo):
-		if errUpdate := gb.updateRequestApproverInfo(ctx); errUpdate != nil {
-			return nil, errUpdate
-		}
-
-	case string(entity.TaskUpdateActionReplyApproverInfo):
-		if errUpdate := gb.updateReplyApproverInfo(ctx); errUpdate != nil {
-			return nil, errUpdate
-		}
-
-	case string(entity.TaskUpdateActionAddApprovers):
-		var updateParams addApproversParams
-		if err := json.Unmarshal(data.Parameters, &updateParams); err != nil {
-			return nil, errors.New("can't assert provided data")
-		}
-
-		if errUpdate := gb.addApprovers(ctx, updateParams); errUpdate != nil {
-			return nil, errUpdate
-		}
-
-	case string(entity.TaskUpdateActionDayBeforeSLARequestAddInfo):
-		if errUpdate := gb.handleBreachedDayBeforeSLARequestAddInfo(ctx); errUpdate != nil {
-			return nil, errUpdate
-		}
-	case string(entity.TaskUpdateActionSLABreachRequestAddInfo):
-		if errUpdate := gb.HandleBreachedSLARequestAddInfo(ctx); errUpdate != nil {
-			return nil, errUpdate
-		}
+	err := gb.handleTaskUpdateAction(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	var stateBytes []byte
 
-	stateBytes, err := json.Marshal(gb.State)
+	stateBytes, err = json.Marshal(gb.State)
 	if err != nil {
 		return nil, err
 	}

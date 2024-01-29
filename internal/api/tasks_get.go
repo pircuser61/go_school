@@ -23,7 +23,6 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
-	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
 const (
@@ -418,9 +417,7 @@ func (ae *Env) getAccessibleForms(
 	currentUser string,
 	steps *entity.TaskSteps,
 	delegates *ht.Delegations,
-) (
-	accessibleForms map[string]struct{}, err error,
-) {
+) (accessibleForms map[string]struct{}, err error) {
 	const (
 		ApproverBlockType  = "approver"
 		ExecutionBlockType = "execution"
@@ -429,103 +426,24 @@ func (ae *Env) getAccessibleForms(
 
 	accessibleForms = make(map[string]struct{}, 0)
 
-	for _, s := range *steps {
-		var userHasAccess bool
+	stepHandler := NewMultipleTypesStepHandler()
 
-		if s.State == nil || (s.Status != "running" && s.Status != "idle") {
-			continue
-		}
+	stepHandler.RegisterStepTypeHandler(
+		ApproverBlockType,
+		NewAccessibleFormsApproverBlockTypeStepHandler(currentUser, accessibleForms, *delegates),
+	)
+	stepHandler.RegisterStepTypeHandler(
+		ExecutionBlockType,
+		NewAccessibleFormsExecutionBlockTypeHandler(currentUser, accessibleForms, *delegates),
+	)
+	stepHandler.RegisterStepTypeHandler(
+		FormBlockType,
+		NewAccessibleFormsFormBlockTypeStepHandler(currentUser, accessibleForms),
+	)
 
-		switch s.Type {
-		case ApproverBlockType:
-			var approver pipeline.ApproverData
-
-			unmarshalErr := json.Unmarshal(s.State[s.Name], &approver)
-			if unmarshalErr != nil {
-				return nil, unmarshalErr
-			}
-
-			delegate := delegates.FilterByType("approvement")
-
-			for member := range approver.Approvers {
-				if currentUser == member || isDelegate(currentUser, member, &delegate) {
-					userHasAccess = true
-
-					break
-				}
-			}
-
-			for _, member := range approver.AdditionalApprovers {
-				if currentUser == member.ApproverLogin || isDelegate(currentUser, member.ApproverLogin, &delegate) {
-					userHasAccess = true
-
-					break
-				}
-			}
-
-			if !userHasAccess {
-				continue
-			}
-
-			for _, form := range approver.FormsAccessibility {
-				if form.AccessType != TypeAccessFormNone {
-					accessibleForms[form.NodeID] = struct{}{}
-				}
-			}
-		case FormBlockType:
-			var form pipeline.FormData
-
-			unmarshalErr := json.Unmarshal(s.State[s.Name], &form)
-			if unmarshalErr != nil {
-				return nil, unmarshalErr
-			}
-
-			for member := range form.Executors {
-				if currentUser == member {
-					userHasAccess = true
-
-					break
-				}
-			}
-
-			if !userHasAccess {
-				continue
-			}
-
-			accessibleForms[s.Name] = struct{}{}
-
-			for _, form := range form.FormsAccessibility {
-				if form.AccessType != TypeAccessFormNone {
-					accessibleForms[form.NodeID] = struct{}{}
-				}
-			}
-		case ExecutionBlockType:
-			var execution pipeline.ExecutionData
-
-			unmarshalErr := json.Unmarshal(s.State[s.Name], &execution)
-			if unmarshalErr != nil {
-				return nil, unmarshalErr
-			}
-
-			for member := range execution.Executors {
-				delegate := delegates.FilterByType("execution")
-				if member == currentUser || isDelegate(currentUser, member, &delegate) {
-					userHasAccess = true
-
-					break
-				}
-			}
-
-			if !userHasAccess {
-				continue
-			}
-
-			for _, form := range execution.FormsAccessibility {
-				if form.AccessType != TypeAccessFormNone {
-					accessibleForms[form.NodeID] = struct{}{}
-				}
-			}
-		}
+	err = stepHandler.HandleSteps(*steps)
+	if err != nil {
+		return nil, err
 	}
 
 	return accessibleForms, nil
@@ -535,71 +453,33 @@ func (ae *Env) getCurrentUserInDelegatesForSteps(
 	currentUser string,
 	steps *entity.TaskSteps,
 	delegates *ht.Delegations,
-) (res map[string]bool, err error) {
+) (userInDelegates map[string]bool, err error) {
 	const (
 		ApproverBlockType  = "approver"
 		ExecutionBlockType = "execution"
 		FormBlockType      = "form"
 	)
 
-	res = make(map[string]bool, 0)
+	userInDelegates = make(map[string]bool, 0)
 
-	for _, s := range *steps {
-		isDelegateAnyPersonOfStep := false
+	stepHandler := NewMultipleTypesStepHandler()
 
-		if s.State == nil {
-			continue
-		}
+	stepHandler.RegisterStepTypeHandler(
+		ApproverBlockType,
+		NewUserInDelegatesApproverBlockTypeStepHandler(currentUser, *delegates, userInDelegates),
+	)
 
-		switch s.Type {
-		case ApproverBlockType:
-			var approver approverBlock
+	executionFormBlockTypeStepHandler := NewUserInDelegatesExecutionFromBlockTypesStepHandler(currentUser, *delegates, userInDelegates)
 
-			unmarshalErr := json.Unmarshal(s.State[s.Name], &approver)
-			if unmarshalErr != nil {
-				return nil, unmarshalErr
-			}
+	stepHandler.RegisterStepTypeHandler(ExecutionBlockType, executionFormBlockTypeStepHandler)
+	stepHandler.RegisterStepTypeHandler(FormBlockType, executionFormBlockTypeStepHandler)
 
-			delegate := delegates.FilterByType("approvement")
-
-			for member := range approver.Approvers {
-				if isDelegate(currentUser, member, &delegate) {
-					isDelegateAnyPersonOfStep = true
-
-					break
-				}
-			}
-
-			for _, member := range approver.AdditionalApprovers {
-				if isDelegate(currentUser, member.ApproverLogin, &delegate) {
-					isDelegateAnyPersonOfStep = true
-
-					break
-				}
-			}
-		case ExecutionBlockType, FormBlockType:
-			var execution executionBlock
-
-			unmarshalErr := json.Unmarshal(s.State[s.Name], &execution)
-			if unmarshalErr != nil {
-				return nil, unmarshalErr
-			}
-
-			delegate := delegates.FilterByType("execution")
-
-			for member := range execution.Executors {
-				if isDelegate(currentUser, member, &delegate) {
-					isDelegateAnyPersonOfStep = true
-
-					break
-				}
-			}
-		}
-
-		res[s.Name] = isDelegateAnyPersonOfStep
+	err = stepHandler.HandleSteps(*steps)
+	if err != nil {
+		return nil, err
 	}
 
-	return res, nil
+	return userInDelegates, nil
 }
 
 func isDelegate(currentUser, login string, delegations *ht.Delegations) bool {
@@ -608,7 +488,7 @@ func isDelegate(currentUser, login string, delegations *ht.Delegations) bool {
 	return slices.Contains(delegates, currentUser)
 }
 
-//nolint:dupl //its not duplicate
+//nolint:dupl,gocritic //its not duplicate // params без поинтера нужен для интерфейса
 func (ae *Env) GetTasks(w http.ResponseWriter, req *http.Request, params GetTasksParams) {
 	ctx, s := trace.StartSpan(req.Context(), "get_tasks")
 	defer s.End()
@@ -646,33 +526,7 @@ func (ae *Env) GetTasks(w http.ResponseWriter, req *http.Request, params GetTask
 	users := delegations.GetUserInArrayWithDelegators([]string{filters.CurrentUser})
 
 	if filters.Status != nil {
-		ss := strings.Split(*filters.Status, ",")
-
-		uniqueS := make(map[pipeline.TaskHumanStatus]struct{})
-		for _, status := range ss {
-			uniqueS[pipeline.TaskHumanStatus(strings.Trim(status, "'"))] = struct{}{}
-		}
-
-		//nolint:exhaustive // раз не надо было обрабатывать остальные случаи значит не надо // правильно, не уважаю этот линтер
-		for status := range uniqueS {
-			switch status {
-			case pipeline.StatusRejected:
-				uniqueS[pipeline.StatusApprovementRejected] = struct{}{}
-			case pipeline.StatusApprovementRejected:
-				uniqueS[pipeline.StatusRejected] = struct{}{}
-			default:
-				continue
-			}
-		}
-
-		newSS := make([]string, 0, len(uniqueS))
-
-		for status := range uniqueS {
-			newSS = append(newSS, "'"+string(status)+"'")
-		}
-
-		newStatuses := strings.Join(newSS, ",")
-		filters.Status = &newStatuses
+		handleFilterStatus(&filters)
 	}
 
 	resp, err := ae.DB.GetTasks(ctx, filters, users)
@@ -1105,104 +959,21 @@ func (ae *Env) hideExecutors(ctx context.Context, dbTask *entity.EriusTask, requ
 		}
 	}
 
-	for stepIndex := range dbTask.Steps {
-		currentStep := dbTask.Steps[stepIndex]
-		if currentStep.State == nil {
-			continue
-		}
+	stepHandler := NewMultipleTypesStepHandler()
 
-		switch currentStep.Type {
-		case pipeline.BlockGoFormID:
-			if stepDelegates[currentStep.Name] {
-				continue
-			}
+	stepHandler.RegisterStepTypeHandler(
+		pipeline.BlockGoFormID,
+		NewHideExecutorsFormBlockStepHandler(stepDelegates, members, requesterLogin),
+	)
 
-			var formBlock pipeline.FormData
+	stepHandler.RegisterStepTypeHandler(
+		pipeline.BlockGoExecutionID,
+		NewHideExecutorsExecutionBlockStepHandler(stepDelegates, members, requesterLogin),
+	)
 
-			unmarshalErr := json.Unmarshal(currentStep.State[currentStep.Name], &formBlock)
-			if unmarshalErr != nil {
-				return unmarshalErr
-			}
-
-			if !formBlock.HideExecutorFromInitiator || slices.Contains(members, requesterLogin) {
-				continue
-			}
-
-			formBlock.Executors = map[string]struct{}{
-				hiddenUserLogin: {},
-			}
-
-			formBlock.ActualExecutor = utils.GetAddressOfValue(hiddenUserLogin)
-
-			for historyIdx := range formBlock.ChangesLog {
-				formBlock.ChangesLog[historyIdx].Executor = hiddenUserLogin
-				formBlock.ChangesLog[historyIdx].DelegateFor = hideDelegator(formBlock.ChangesLog[historyIdx].DelegateFor)
-			}
-
-			data, marshalErr := json.Marshal(formBlock)
-			if marshalErr != nil {
-				return marshalErr
-			}
-
-			currentStep.State[currentStep.Name] = data
-		case pipeline.BlockGoExecutionID:
-			if stepDelegates[currentStep.Name] {
-				continue
-			}
-
-			var execBlock pipeline.ExecutionData
-
-			unmarshalErr := json.Unmarshal(currentStep.State[currentStep.Name], &execBlock)
-			if unmarshalErr != nil {
-				return unmarshalErr
-			}
-
-			if !execBlock.HideExecutor || slices.Contains(members, requesterLogin) {
-				continue
-			}
-
-			execBlock.Executors = map[string]struct{}{
-				hiddenUserLogin: {},
-			}
-
-			execBlock.InitialExecutors = map[string]struct{}{
-				hiddenUserLogin: {},
-			}
-
-			if execBlock.ActualExecutor != nil {
-				execBlock.ActualExecutor = utils.GetAddressOfValue(hiddenUserLogin)
-			}
-
-			for i := range execBlock.ChangedExecutorsLogs {
-				execBlock.ChangedExecutorsLogs[i].OldLogin = hiddenUserLogin
-				execBlock.ChangedExecutorsLogs[i].NewLogin = hiddenUserLogin
-				execBlock.ChangedExecutorsLogs[i].Comment = ""
-			}
-
-			for i := range execBlock.RequestExecutionInfoLogs {
-				if execBlock.RequestExecutionInfoLogs[i].ReqType == pipeline.RequestInfoQuestion {
-					execBlock.RequestExecutionInfoLogs[i].Login = hiddenUserLogin
-					execBlock.RequestExecutionInfoLogs[i].DelegateFor = hideDelegator(execBlock.RequestExecutionInfoLogs[i].DelegateFor)
-				}
-			}
-
-			for i := range execBlock.EditingAppLog {
-				execBlock.EditingAppLog[i].Executor = hiddenUserLogin
-				execBlock.EditingAppLog[i].DelegateFor = hideDelegator(execBlock.EditingAppLog[i].DelegateFor)
-			}
-
-			if execBlock.EditingApp != nil {
-				execBlock.EditingApp.Executor = hiddenUserLogin
-				execBlock.EditingApp.DelegateFor = hideDelegator(execBlock.EditingApp.DelegateFor)
-			}
-
-			data, marshalErr := json.Marshal(execBlock)
-			if marshalErr != nil {
-				return marshalErr
-			}
-
-			currentStep.State[currentStep.Name] = data
-		}
+	err := stepHandler.HandleSteps(dbTask.Steps)
+	if err != nil {
+		return err
 	}
 
 	return nil
