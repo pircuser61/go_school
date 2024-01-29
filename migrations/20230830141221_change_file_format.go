@@ -12,6 +12,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 )
 
+//nolint:gochecknoinits //необходимо для гуся
 func init() {
 	goose.AddMigration(upChangeFileFormat, downChangeFileFormat)
 }
@@ -87,7 +88,7 @@ func (at *ArrApproverLogEntry) UnmarshalJSON(b []byte) error {
 		for i := range stTemp {
 			stTemp[i] = strings.Trim(stTemp[i], "\"")
 
-			var bt = []byte(stTemp[i])
+			bt := []byte(stTemp[i])
 
 			fmt.Println(bt)
 
@@ -546,7 +547,7 @@ func (at *ArrChangeExecutorLog) UnmarshalJSON(b []byte) error {
 		for i := range stTemp {
 			stTemp[i] = strings.Trim(stTemp[i], "\"")
 
-			var bt = []byte(stTemp[i])
+			bt := []byte(stTemp[i])
 
 			fmt.Println(bt)
 

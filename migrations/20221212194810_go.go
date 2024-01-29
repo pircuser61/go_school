@@ -10,6 +10,7 @@ import (
 	"github.com/pressly/goose/v3"
 )
 
+//nolint:gochecknoinits //необходимо для гуся
 func init() {
 	goose.AddMigration(upGo, downGo)
 }

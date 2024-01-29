@@ -12,6 +12,7 @@ import (
 	"github.com/pressly/goose/v3"
 )
 
+//nolint:gochecknoinits //необходимо для гуся
 func init() {
 	goose.AddMigration(upMembers, downMembers)
 }
@@ -161,6 +162,15 @@ type membersExecutionData struct {
 	RequestExecutionInfoLogs arrRequestExecutionInfoLog `json:"request_execution_info_logs,omitempty"`
 }
 
+type executorEditApp struct {
+	Executor string `json:"executor"`
+}
+
+type changeExecutorsLogs struct {
+	OldLogin string `json:"old_login"`
+	NewLogin string `json:"new_login"`
+}
+
 type arrExecutorEditApp []executorEditApp
 
 func (at *arrExecutorEditApp) UnmarshalJSON(b []byte) error {
@@ -247,7 +257,7 @@ func (at *arrChangeExecutorLog) UnmarshalJSON(b []byte) error {
 		for i := range stTemp {
 			stTemp[i] = strings.Trim(stTemp[i], "\"")
 
-			var bt = []byte(stTemp[i])
+			bt := []byte(stTemp[i])
 
 			fmt.Println(bt)
 
@@ -377,15 +387,6 @@ func (at *requestExecutionInfoLog) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-type executorEditApp struct {
-	Executor string `json:"executor"`
-}
-
-type changeExecutorsLogs struct {
-	OldLogin string `json:"old_login"`
-	NewLogin string `json:"new_login"`
-}
-
 func (m *membersExecutionData) getMembers(wID, sName string) (res []member) {
 	for login := range m.Executors {
 		res = append(res, member{
@@ -422,7 +423,7 @@ func (m *membersExecutionData) getMembers(wID, sName string) (res []member) {
 		})
 	}
 
-	return
+	return res
 }
 
 type membersApproverData struct {
@@ -454,7 +455,7 @@ func (at *arrApproverLogEntry) UnmarshalJSON(b []byte) error {
 		for i := range stTemp {
 			stTemp[i] = strings.Trim(stTemp[i], "\"")
 
-			var bt = []byte(stTemp[i])
+			bt := []byte(stTemp[i])
 
 			fmt.Println(bt)
 
@@ -618,26 +619,27 @@ func (m *membersApproverData) getMembers(wID, sName string) (res []member) {
 			continue
 		}
 
-		res = append(res, member{
-			ID:       uuid.New().String(),
-			WorkID:   wID,
-			StepName: sName,
-			Login:    m.AdditionalApprovers[i].ApproverLogin,
-			Finished: true,
-			IsActed:  true,
-		})
-
-		res = append(res, member{
-			ID:       uuid.New().String(),
-			WorkID:   wID,
-			StepName: sName,
-			Login:    m.AdditionalApprovers[i].BaseApproverLogin,
-			Finished: true,
-			IsActed:  true,
-		})
+		res = append(res,
+			member{
+				ID:       uuid.NewString(),
+				WorkID:   wID,
+				StepName: sName,
+				Login:    m.AdditionalApprovers[i].ApproverLogin,
+				Finished: true,
+				IsActed:  true,
+			},
+			member{
+				ID:       uuid.NewString(),
+				WorkID:   wID,
+				StepName: sName,
+				Login:    m.AdditionalApprovers[i].BaseApproverLogin,
+				Finished: true,
+				IsActed:  true,
+			},
+		)
 	}
 
-	return
+	return nil
 }
 
 type memberExtractor interface {
@@ -723,19 +725,25 @@ func upMembers(tx *sql.Tx) error {
 	values := make([]string, 0, len(members))
 
 	for i := range members {
-		values = append(values, fmt.Sprintf("('%s', (select vs.id from variable_storage vs where vs.work_id = '%s' and vs.step_name = '%s' limit 1), '%s', true, true)",
-			members[i].ID,
-			members[i].WorkID,
-			members[i].StepName,
-			members[i].Login,
-		))
+		values = append(values,
+			fmt.Sprintf(
+				"('%s', (select vs.id from variable_storage vs where vs.work_id = '%s' and vs.step_name = '%s' limit 1), '%s', true, true)",
+				members[i].ID,
+				members[i].WorkID,
+				members[i].StepName,
+				members[i].Login,
+			))
 	}
 
 	if len(values) == 0 {
 		return nil
 	}
 
-	qInsert := "insert into members(id, block_id, login, finished, is_acted) values " + strings.Join(values, ",") + " on conflict do nothing"
+	//nolint:gosec //незначительная штука, можно и заигнорить
+	qInsert := fmt.Sprintf(
+		"insert into members(id, block_id, login, finished, is_acted) values %s on conflict do nothing",
+		strings.Join(values, ","),
+	)
 
 	_, execErr := tx.Exec(qInsert)
 	if execErr != nil {

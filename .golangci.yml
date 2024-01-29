@@ -88,6 +88,5 @@ run:
     - configs
     - templates
     - \.go
-    - migrations
   skip-files:
     - .*-local.*

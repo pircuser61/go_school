@@ -2,16 +2,16 @@ package migrations
 
 import (
 	"database/sql"
+	"time"
 
 	"github.com/google/uuid"
 
 	"github.com/pressly/goose/v3"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
-
-	"time"
 )
 
+//nolint:gochecknoinits //необходимо для гуся
 func init() {
 	goose.AddMigration(upMoveOldDeadlines, downMoveOldDeadlines)
 }
@@ -125,6 +125,8 @@ func downMoveOldDeadlines(tx *sql.Tx) error {
 		return queryErr
 	}
 
+	defer rows.Close()
+
 	for rows.Next() {
 		var (
 			resultRow ResultRowStruct
@@ -134,8 +136,6 @@ func downMoveOldDeadlines(tx *sql.Tx) error {
 		scanErr := rows.Scan(&resultRow.ID, &resultRow.Deadline, &resultRow.Action)
 
 		if scanErr != nil {
-			rows.Close()
-
 			return scanErr
 		}
 
@@ -150,12 +150,8 @@ func downMoveOldDeadlines(tx *sql.Tx) error {
 	}
 
 	if rowsErr := rows.Err(); rowsErr != nil {
-		rows.Close()
-
 		return rowsErr
 	}
-
-	rows.Close()
 
 	for _, row := range resultRows {
 		if row.HalfSLADeadline != nil {

@@ -9,6 +9,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 )
 
+//nolint:gochecknoinits //необходимо для гуся
 func init() {
 	goose.AddMigration(upMigrateShortTitles, downMigrateShortTitles)
 }

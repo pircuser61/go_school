@@ -43,6 +43,7 @@ type pipelineType struct {
 	} `json:"blocks"`
 }
 
+//nolint:gochecknoinits //необходимо для гуся
 func init() {
 	goose.AddMigration(upJSONSchemaOutputs, downJSONSchemaOutputs)
 }
@@ -174,6 +175,7 @@ func downJSONSchemaOutputs(tx *sql.Tx) error {
 
 			var output []entity.EriusFunctionValue
 
+			//nolint:gocritic //коллекции на здоровые структуры без поинтера, классика
 			for name, param := range pipeline.Blocks[blockName].Output.Properties {
 				output = append(output, entity.EriusFunctionValue{
 					Name:   name,
