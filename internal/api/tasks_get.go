@@ -428,7 +428,7 @@ func (ae *Env) getAccessibleForms(
 
 	accessibleForms = make(map[string]struct{}, 0)
 
-	//это костыль но он вынужденный потому что в тестах подразумевается что функцию можно вызвать с nil delegates
+	// это костыль но он вынужденный потому что в тестах подразумевается что функцию можно вызвать с nil delegates
 	if delegates == nil {
 		delegates = &ht.Delegations{}
 	}
