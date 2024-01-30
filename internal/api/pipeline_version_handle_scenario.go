@@ -11,7 +11,7 @@ import (
 func (ae *Env) handleScenario(ctx context.Context, p *entity.EriusScenario, ui *sso.UserInfo) (err error) {
 	switch p.Status {
 	case db.StatusApproved:
-		err = ae.DB.SwitchApproved(ctx, p.ID, p.VersionID, ui.Username)
+		err = ae.DB.SwitchApproved(ctx, p.PipelineID, p.VersionID, ui.Username)
 		if err != nil {
 			return err
 		}

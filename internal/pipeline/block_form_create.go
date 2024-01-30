@@ -8,6 +8,8 @@ import (
 
 	"github.com/pkg/errors"
 
+	"gitlab.services.mts.ru/jocasta/forms/pkg/jsonschema"
+
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
@@ -58,9 +60,28 @@ func createGoFormBlock(
 
 		reEntry = runCtx.UpdateData == nil
 
-		err := b.addStepWithReentry(ctx, reEntry)
-		if err != nil {
-			return nil, false, err
+		if reEntry {
+			if err := b.reEntry(ctx, ef); err != nil {
+				return nil, false, err
+			}
+
+			b.RunContext.VarStore.AddStep(b.Name)
+
+			if _, ok := b.expectedEvents[eventStart]; ok {
+				status, _, _ := b.GetTaskHumanStatus()
+
+				event, err := runCtx.MakeNodeStartEvent(ctx, MakeNodeStartEventArgs{
+					NodeName:      name,
+					NodeShortName: ef.ShortTitle,
+					HumanStatus:   status,
+					NodeStatus:    b.GetStatus(),
+				})
+				if err != nil {
+					return nil, false, err
+				}
+
+				b.happenedEvents = append(b.happenedEvents, event)
+			}
 		}
 	} else {
 		if err := b.createState(ctx, ef); err != nil {
@@ -89,7 +110,22 @@ func createGoFormBlock(
 	return b, reEntry, nil
 }
 
-func (gb *GoFormBlock) reEntry(ctx c.Context) error {
+func (gb *GoFormBlock) getHiddenFields(ctx c.Context, schemaID string) (res []string, err error) {
+	var schema jsonschema.Schema
+
+	schema, err = gb.RunContext.Services.ServiceDesc.GetSchemaByID(ctx, schemaID)
+	if err != nil {
+		return nil, err
+	}
+
+	if res, err = schema.GetHiddenFields(); err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+func (gb *GoFormBlock) reEntry(ctx c.Context, ef *entity.EriusFunc) error {
 	if gb.State.IsEditable == nil || !*gb.State.IsEditable {
 		return nil
 	}
@@ -105,8 +141,26 @@ func (gb *GoFormBlock) reEntry(ctx c.Context) error {
 	gb.State.ActualExecutor = nil
 
 	if !isAutofill && gb.State.FormExecutorType != script.FormExecutorTypeAutoFillUser {
-		gb.State.Executors = gb.State.InitialExecutors
-		gb.State.IsTakenInWork = len(gb.State.InitialExecutors) == 1
+		if gb.State.FormExecutorType == script.FormExecutorTypeFromSchema {
+			var params script.FormParams
+
+			err := json.Unmarshal(ef.Params, &params)
+			if err != nil {
+				return errors.Wrap(err, "can not get form parameters in reentry")
+			}
+
+			setErr := gb.setExecutorsByParams(ctx, &setFormExecutorsByParamsDTO{
+				FormExecutorType: gb.State.FormExecutorType,
+				Value:            params.Executor,
+			})
+
+			if setErr != nil {
+				return setErr
+			}
+		} else {
+			gb.State.Executors = gb.State.InitialExecutors
+			gb.State.IsTakenInWork = len(gb.State.InitialExecutors) == 1
+		}
 	}
 
 	if gb.State.FormExecutorType == script.FormExecutorTypeAutoFillUser && gb.State.ReEnterSettings != nil {
@@ -136,6 +190,11 @@ func (gb *GoFormBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 		return errors.Wrap(err, "invalid form parameters")
 	}
 
+	hiddenFields, err := gb.getHiddenFields(ctx, params.SchemaID)
+	if err != nil {
+		return err
+	}
+
 	gb.State = &FormData{
 		SchemaID:                  params.SchemaID,
 		CheckSLA:                  params.CheckSLA,
@@ -148,6 +207,7 @@ func (gb *GoFormBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 		HideExecutorFromInitiator: params.HideExecutorFromInitiator,
 		IsEditable:                params.IsEditable,
 		ReEnterSettings:           params.ReEnterSettings,
+		HiddenFields:              hiddenFields,
 	}
 
 	if params.FormGroupIDPath != nil && *params.FormGroupIDPath != "" {

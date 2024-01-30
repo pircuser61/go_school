@@ -309,7 +309,10 @@ func (gb *ExecutableFunctionBlock) createState(ef *entity.EriusFunc) error {
 		return errors.Wrap(err, "invalid executable function parameters")
 	}
 
-	function, err := gb.RunContext.Services.FunctionStore.GetFunction(c.Background(), params.Function.FunctionID)
+	function, err := gb.RunContext.Services.FunctionStore.GetFunctionVersion(c.Background(),
+		params.Function.FunctionID,
+		params.Function.VersionID,
+	)
 	if err != nil {
 		return err
 	}

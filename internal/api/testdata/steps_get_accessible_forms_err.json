@@ -1,0 +1,40 @@
+[
+  {
+    "time": "2024-01-22T15:53:58.715968+03:00",
+    "update_time": null,
+    "type": "form",
+    "name": "form_0",
+    "is_ßdelegate_of_any_step_member": false,
+    "state": {
+      "form_0": {
+        "is_filled": "asd"
+      },
+      "start_0": null
+    },
+    "errors": [],
+    "steps": [
+      "start_0",
+      "form_0"
+    ],
+    "has_error": false,
+    "status": "running",
+    "short_title": "a"
+  },
+  {
+    "time": "2024-01-22T15:53:57.132319+03:00",
+    "update_time": "2024-01-22T15:53:59.387197+03:00",
+    "type": "start",
+    "name": "start_0",
+    "is_delegate_of_any_step_member": false,
+    "state": {
+      "start_0": null
+    },
+    "errors": [],
+    "steps": [
+      "start_0"
+    ],
+    "has_error": false,
+    "status": "finished",
+    "short_title": ""
+  }
+]

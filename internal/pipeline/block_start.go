@@ -72,9 +72,17 @@ func (gb *GoStartBlock) Update(ctx context.Context) (interface{}, error) {
 		return nil, err
 	}
 
+	for k := range gb.Output {
+		val, ok := data.InitialApplication.ApplicationBody.Get(k)
+		if !ok {
+			continue
+		}
+
+		gb.RunContext.VarStore.SetValue(gb.Output[k], val)
+	}
+
 	gb.RunContext.VarStore.SetValue(gb.Output[entity.KeyOutputWorkNumber], gb.RunContext.WorkNumber)
 	gb.RunContext.VarStore.SetValue(gb.Output[entity.KeyOutputApplicationInitiator], personData)
-	gb.RunContext.VarStore.SetValue(gb.Output[entity.KeyOutputApplicationData], data.InitialApplication.ApplicationBody)
 
 	if _, ok := gb.expectedEvents[eventEnd]; ok {
 		status, _, _ := gb.GetTaskHumanStatus()
@@ -113,10 +121,6 @@ func (gb *GoStartBlock) Model() script.FunctionModel {
 					Description: "person object from sso",
 					Format:      "SsoPerson",
 					Properties:  people.GetSsoPersonSchemaProperties(),
-				},
-				entity.KeyOutputApplicationData: {
-					Type:       "object",
-					Properties: script.JSONSchemaProperties{},
 				},
 			},
 		},

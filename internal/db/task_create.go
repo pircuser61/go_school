@@ -93,7 +93,8 @@ func (db *PGCon) insertTaskWithWorkNumber(c context.Context, dto *CreateTaskDTO)
 			debug, 
 			parameters,
 			work_number,
-			run_context
+			run_context,
+		    version_sla_id
 		)
 		VALUES (
 			$1, 
@@ -104,7 +105,12 @@ func (db *PGCon) insertTaskWithWorkNumber(c context.Context, dto *CreateTaskDTO)
 			$6, 
 			$7,
 			$8,
-			$9
+			$9,
+		    (
+		    	SELECT id FROM version_sla
+            		WHERE version_id = $2
+            	ORDER BY created_at DESC LIMIT 1
+        	)
 		)
 	RETURNING work_number
 `
@@ -145,7 +151,8 @@ func (db *PGCon) insertTask(c context.Context, dto *CreateTaskDTO) (workNumber s
 			debug, 
 			parameters,
 			run_context,
-			real_author
+			real_author,
+			version_sla_id
 		)
 		VALUES (
 			$1, 
@@ -156,7 +163,12 @@ func (db *PGCon) insertTask(c context.Context, dto *CreateTaskDTO) (workNumber s
 			$6, 
 			$7,
 			$8,
-		    $9
+		    $9,
+		    (
+		    	SELECT id FROM version_sla
+            		WHERE version_id = $2
+            	ORDER BY created_at DESC LIMIT 1
+        	)
 		)
 	RETURNING work_number
 `

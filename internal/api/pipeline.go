@@ -63,7 +63,7 @@ func (ae *Env) CreatePipeline(w http.ResponseWriter, req *http.Request) {
 		log.Error("user failed: ", err.Error())
 	}
 
-	p.ID = uuid.New()
+	p.PipelineID = uuid.New()
 	p.VersionID = uuid.New()
 
 	if len(p.Pipeline.Blocks) == 0 {
@@ -80,7 +80,7 @@ func (ae *Env) CreatePipeline(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	executableFunctionIDs, err := p.Pipeline.Blocks.GetExecutableFunctionIDs()
+	executableFunctions, err := p.Pipeline.Blocks.GetExecutableFunctions()
 	if err != nil {
 		errorHandler.handleError(GetExecutableFunctionIDsError, err)
 
@@ -89,8 +89,8 @@ func (ae *Env) CreatePipeline(w http.ResponseWriter, req *http.Request) {
 
 	hasPrivateFunction := false
 
-	for _, id := range executableFunctionIDs {
-		function, getFunctionErr := ae.FunctionStore.GetFunction(ctx, id)
+	for _, fn := range executableFunctions {
+		function, getFunctionErr := ae.FunctionStore.GetFunctionVersion(ctx, fn.FunctionID, fn.VersionID)
 		if getFunctionErr != nil {
 			errorHandler.handleError(GetFunctionError, getFunctionErr)
 
@@ -170,10 +170,10 @@ func (ae *Env) CopyPipeline(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	p.ID = uuid.New()
+	p.PipelineID = uuid.New()
 	p.VersionID = uuid.New()
 
-	executableFunctionIDs, err := p.Pipeline.Blocks.GetExecutableFunctionIDs()
+	executableFunctions, err := p.Pipeline.Blocks.GetExecutableFunctions()
 	if err != nil {
 		errorHandler.handleError(GetExecutableFunctionIDsError, err)
 
@@ -182,8 +182,8 @@ func (ae *Env) CopyPipeline(w http.ResponseWriter, req *http.Request) {
 
 	hasPrivateFunction := false
 
-	for _, id := range executableFunctionIDs {
-		function, getFunctionErr := ae.FunctionStore.GetFunction(ctx, id)
+	for _, fn := range executableFunctions {
+		function, getFunctionErr := ae.FunctionStore.GetFunctionVersion(ctx, fn.FunctionID, fn.VersionID)
 		if getFunctionErr != nil {
 			errorHandler.handleError(GetFunctionError, getFunctionErr)
 
@@ -325,7 +325,7 @@ func (ae *Env) DeleteDraftPipeline(ctx context.Context, w http.ResponseWriter, p
 	log := logger.GetLogger(ctx)
 	errorHandler := newHTTPErrorHandler(log, w)
 
-	canDelete, err := ae.DB.PipelineRemovable(ctx, p.ID)
+	canDelete, err := ae.DB.PipelineRemovable(ctx, p.PipelineID)
 	if err != nil {
 		errorHandler.handleError(PipelineIsNotDraft, err)
 
@@ -333,8 +333,10 @@ func (ae *Env) DeleteDraftPipeline(ctx context.Context, w http.ResponseWriter, p
 	}
 
 	if canDelete {
-		if err = ae.DB.DeletePipeline(ctx, p.ID); err != nil {
-			errorHandler.handleError(PipelineDeleteError, err)
+		if err = ae.DB.DeletePipeline(ctx, p.PipelineID); err != nil {
+			e := PipelineDeleteError
+			log.Error(e.errorMessage(err))
+			_ = e.sendError(w)
 
 			return err
 		}

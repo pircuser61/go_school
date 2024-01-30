@@ -423,28 +423,144 @@ func (ae *Env) getAccessibleForms(
 		ApproverBlockType  = "approver"
 		ExecutionBlockType = "execution"
 		FormBlockType      = "form"
+		SignBlockType      = "sign"
 	)
 
 	accessibleForms = make(map[string]struct{}, 0)
 
-	stepHandler := NewMultipleTypesStepHandler()
+	for _, s := range *steps {
+		var userHasAccess bool
 
-	stepHandler.RegisterStepTypeHandler(
-		ApproverBlockType,
-		NewAccessibleFormsApproverBlockTypeStepHandler(currentUser, accessibleForms, *delegates),
-	)
-	stepHandler.RegisterStepTypeHandler(
-		ExecutionBlockType,
-		NewAccessibleFormsExecutionBlockTypeHandler(currentUser, accessibleForms, *delegates),
-	)
-	stepHandler.RegisterStepTypeHandler(
-		FormBlockType,
-		NewAccessibleFormsFormBlockTypeStepHandler(currentUser, accessibleForms),
-	)
+		if s.State == nil || (s.Status != "running" && s.Status != "idle") {
+			continue
+		}
 
-	err = stepHandler.HandleSteps(*steps)
-	if err != nil {
-		return nil, err
+		switch s.Type {
+		case ApproverBlockType:
+			var approver pipeline.ApproverData
+
+			unmarshalErr := json.Unmarshal(s.State[s.Name], &approver)
+			if unmarshalErr != nil {
+				return nil, unmarshalErr
+			}
+
+			delegate := delegates.FilterByType("approvement")
+
+			for member := range approver.Approvers {
+				if currentUser == member || isDelegate(currentUser, member, &delegate) {
+					userHasAccess = true
+
+					break
+				}
+			}
+
+			for _, member := range approver.AdditionalApprovers {
+				if currentUser == member.ApproverLogin || isDelegate(currentUser, member.ApproverLogin, &delegate) {
+					userHasAccess = true
+
+					break
+				}
+			}
+
+			if !userHasAccess {
+				continue
+			}
+
+			for _, form := range approver.FormsAccessibility {
+				if form.AccessType != TypeAccessFormNone {
+					accessibleForms[form.NodeID] = struct{}{}
+				}
+			}
+
+		case FormBlockType:
+			var form pipeline.FormData
+
+			unmarshalErr := json.Unmarshal(s.State[s.Name], &form)
+			if unmarshalErr != nil {
+				return nil, unmarshalErr
+			}
+
+			for member := range form.Executors {
+				if currentUser == member {
+					userHasAccess = true
+
+					break
+				}
+			}
+
+			if !userHasAccess {
+				continue
+			}
+
+			accessibleForms[s.Name] = struct{}{}
+
+			for _, form := range form.FormsAccessibility {
+				if form.AccessType != TypeAccessFormNone {
+					accessibleForms[form.NodeID] = struct{}{}
+				}
+			}
+
+		case ExecutionBlockType:
+			var execution pipeline.ExecutionData
+
+			unmarshalErr := json.Unmarshal(s.State[s.Name], &execution)
+			if unmarshalErr != nil {
+				return nil, unmarshalErr
+			}
+
+			for member := range execution.Executors {
+				delegate := delegates.FilterByType("execution")
+				if member == currentUser || isDelegate(currentUser, member, &delegate) {
+					userHasAccess = true
+
+					break
+				}
+			}
+
+			if !userHasAccess {
+				continue
+			}
+
+			for _, form := range execution.FormsAccessibility {
+				if form.AccessType != TypeAccessFormNone {
+					accessibleForms[form.NodeID] = struct{}{}
+				}
+			}
+
+		case SignBlockType:
+			var sign pipeline.SignData
+
+			unmarshalErr := json.Unmarshal(s.State[s.Name], &sign)
+			if unmarshalErr != nil {
+				return nil, unmarshalErr
+			}
+
+			for member := range sign.Signers {
+				if member == currentUser {
+					userHasAccess = true
+
+					break
+				}
+			}
+
+			for addMember := range sign.AdditionalApprovers {
+				if sign.AdditionalApprovers[addMember].ApproverLogin == currentUser {
+					userHasAccess = true
+
+					break
+				}
+			}
+
+			if !userHasAccess {
+				continue
+			}
+
+			for _, form := range sign.FormsAccessibility {
+				if form.AccessType != TypeAccessFormNone {
+					accessibleForms[form.NodeID] = struct{}{}
+				}
+			}
+		}
 	}
 
 	return accessibleForms, nil

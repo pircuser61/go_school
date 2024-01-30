@@ -10,8 +10,6 @@ import (
 
 	mock "github.com/stretchr/testify/mock"
 
-	orderedmap "github.com/iancoleman/orderedmap"
-
 	store "gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 
 	time "time"
@@ -828,23 +826,23 @@ func (_c *MockedDatabase_FinishTaskBlocks_Call) RunAndReturn(run func(context.Co
 }
 
 // GetAdditionalDescriptionForms provides a mock function with given fields: workNumber, nodeName
-func (_m *MockedDatabase) GetAdditionalDescriptionForms(workNumber string, nodeName string) ([]orderedmap.OrderedMap, error) {
+func (_m *MockedDatabase) GetAdditionalDescriptionForms(workNumber string, nodeName string) ([]entity.DescriptionForm, error) {
 	ret := _m.Called(workNumber, nodeName)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetAdditionalDescriptionForms")
 	}
 
-	var r0 []orderedmap.OrderedMap
+	var r0 []entity.DescriptionForm
 	var r1 error
-	if rf, ok := ret.Get(0).(func(string, string) ([]orderedmap.OrderedMap, error)); ok {
+	if rf, ok := ret.Get(0).(func(string, string) ([]entity.DescriptionForm, error)); ok {
 		return rf(workNumber, nodeName)
 	}
-	if rf, ok := ret.Get(0).(func(string, string) []orderedmap.OrderedMap); ok {
+	if rf, ok := ret.Get(0).(func(string, string) []entity.DescriptionForm); ok {
 		r0 = rf(workNumber, nodeName)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]orderedmap.OrderedMap)
+			r0 = ret.Get(0).([]entity.DescriptionForm)
 		}
 	}
 
@@ -876,12 +874,12 @@ func (_c *MockedDatabase_GetAdditionalDescriptionForms_Call) Run(run func(workNu
 	return _c
 }
 
-func (_c *MockedDatabase_GetAdditionalDescriptionForms_Call) Return(_a0 []orderedmap.OrderedMap, _a1 error) *MockedDatabase_GetAdditionalDescriptionForms_Call {
+func (_c *MockedDatabase_GetAdditionalDescriptionForms_Call) Return(_a0 []entity.DescriptionForm, _a1 error) *MockedDatabase_GetAdditionalDescriptionForms_Call {
 	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
-func (_c *MockedDatabase_GetAdditionalDescriptionForms_Call) RunAndReturn(run func(string, string) ([]orderedmap.OrderedMap, error)) *MockedDatabase_GetAdditionalDescriptionForms_Call {
+func (_c *MockedDatabase_GetAdditionalDescriptionForms_Call) RunAndReturn(run func(string, string) ([]entity.DescriptionForm, error)) *MockedDatabase_GetAdditionalDescriptionForms_Call {
 	_c.Call.Return(run)
 	return _c
 }

@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
+
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
@@ -79,17 +80,41 @@ func (gb *GoSignBlock) notifyAdditionalApprovers(ctx c.Context, logins []string,
 		}
 	}
 
+	description, files, err := gb.RunContext.makeNotificationDescription(gb.Name)
+	if err != nil {
+		return err
+	}
+
+	author, authorErr := gb.RunContext.Services.People.GetUser(ctx, gb.RunContext.Initiator)
+	if authorErr != nil {
+		return authorErr
+	}
+
+	initiatorInfo, initialErr := author.ToUserinfo()
+	if initialErr != nil {
+		return initialErr
+	}
+
 	for i := range emails {
-		tpl := mail.NewAddApproversTpl(
-			gb.RunContext.WorkNumber,
-			gb.RunContext.NotifName,
-			gb.RunContext.Services.Sender.SdAddress,
-			"",
-			slaDeadline,
-			lastWorksForUser,
+		tpl, _ := mail.NewAddApproversTpl(
+			&mail.NewAppPersonStatusTpl{
+				WorkNumber:      gb.RunContext.WorkNumber,
+				Name:            gb.RunContext.NotifName,
+				SdURL:           gb.RunContext.Services.Sender.SdAddress,
+				Action:          "",
+				DeadLine:        slaDeadline,
+				LastWorks:       lastWorksForUser,
+				Description:     description,
+				Mailto:          gb.RunContext.Services.Sender.FetchEmail,
+				Login:           login,
+				IsEditable:      false,
+				ApproverActions: nil,
+				BlockID:         BlockGoSignID,
+				Initiator:       initiatorInfo,
+			}, emails[i],
 		)
 
-		filesList := []string{tpl.Image}
+		filesList := []string{tpl.Image, userImg, rejectBtn, approveBtn}
 
 		if len(lastWorksForUser) != 0 {
 			filesList = append(filesList, warningImg)
@@ -100,9 +125,9 @@ func (gb *GoSignBlock) notifyAdditionalApprovers(ctx c.Context, logins []string,
 			return iconErr
 		}
 
-		files = append(files, iconFiles...)
+		iconFiles = append(iconFiles, files...)
 
-		err = gb.RunContext.Services.Sender.SendNotification(ctx, []string{emails[i]}, files, tpl)
+		err = gb.RunContext.Services.Sender.SendNotification(ctx, []string{emails[i]}, iconFiles, tpl)
 		if err != nil {
 			return err
 		}

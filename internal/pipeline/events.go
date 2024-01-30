@@ -4,6 +4,7 @@ import (
 	"bytes"
 	c "context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/url"
 	"path"
@@ -141,7 +142,8 @@ func (runCtx BlockRunContext) NotifyEvents(ctx c.Context) {
 		_ = resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
-			log.WithError(respErr).Error("didn't get 200 for request")
+			errMsg := fmt.Sprintf("didn't get 200 for request, got %d", resp.StatusCode)
+			log.Error(errMsg)
 		}
 	}
 }
@@ -228,10 +230,12 @@ func (runCtx *BlockRunContext) SetTaskEvents(ctx c.Context) {
 		return
 	}
 
-	sResp, err := runCtx.Services.Integrations.RPCIntCli.GetIntegrationByClientId(
-		ctx,
-		&integration_v1.GetIntegrationByClientIdRequest{ClientId: taskRunCtx.ClientID},
-	)
+	sResp, err := runCtx.Services.Integrations.RPCIntCli.GetIntegrationByClientId(ctx,
+		&integration_v1.GetIntegrationByClientIdRequest{
+			ClientId:   taskRunCtx.ClientID,
+			PipelineId: runCtx.PipelineID.String(),
+			VersionId:  runCtx.VersionID.String(),
+		})
 	if err != nil {
 		return
 	}
@@ -251,7 +255,13 @@ func (runCtx *BlockRunContext) SetTaskEvents(ctx c.Context) {
 	}
 
 	resp, err := runCtx.Services.Integrations.RPCMicrCli.GetMicroservice(ctx,
-		&microservice_v1.GetMicroserviceRequest{MicroserviceId: expectedEvents.MicroserviceID})
+		&microservice_v1.GetMicroserviceRequest{
+			MicroserviceId: expectedEvents.MicroserviceID,
+			PipelineId:     runCtx.PipelineID.String(),
+			VersionId:      runCtx.VersionID.String(),
+			WorkNumber:     runCtx.WorkNumber,
+			ClientId:       runCtx.ClientID,
+		})
 	if err != nil {
 		return
 	}

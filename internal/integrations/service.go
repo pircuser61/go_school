@@ -80,8 +80,16 @@ func (s *Service) GetSystemsClients(ctx c.Context, systemIDs []uuid.UUID) (map[s
 	return cc, nil
 }
 
-func (s *Service) GetMicroserviceHumanKey(ctx c.Context, microserviceID string) (string, error) {
-	res, err := s.RPCMicrCli.GetMicroservice(ctx, &microservice_v1.GetMicroserviceRequest{MicroserviceId: microserviceID})
+func (s *Service) GetMicroserviceHumanKey(
+	ctx c.Context, microserviceID, pipelineID, versionID, workNumber, clientID string,
+) (string, error) {
+	res, err := s.RPCMicrCli.GetMicroservice(ctx, &microservice_v1.GetMicroserviceRequest{
+		MicroserviceId: microserviceID,
+		PipelineId:     pipelineID,
+		VersionId:      versionID,
+		WorkNumber:     workNumber,
+		ClientId:       clientID,
+	})
 	if err != nil {
 		return "", err
 	}

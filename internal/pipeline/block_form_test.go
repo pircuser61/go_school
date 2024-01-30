@@ -209,6 +209,32 @@ func Test_createGoFormBlock(t *testing.T) {
 					WorkNumber: workNumber,
 					Services: RunContextServices{
 						Storage: databaseMock,
+						ServiceDesc: func() *servicedesc.Service {
+							sdMock := servicedesc.Service{
+								SdURL: "",
+							}
+							httpClient := http.DefaultClient
+							mockTransport := serviceDeskMocks.RoundTripper{}
+							fResponse := func(*http.Request) *http.Response {
+								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								body := io.NopCloser(bytes.NewReader(b))
+								defer body.Close()
+								return &http.Response{
+									Status:     http.StatusText(http.StatusOK),
+									StatusCode: http.StatusOK,
+									Body:       body,
+									Close:      true,
+								}
+							}
+							f_error := func(*http.Request) error {
+								return nil
+							}
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							httpClient.Transport = &mockTransport
+							sdMock.Cli = httpClient
+
+							return &sdMock
+						}(),
 					},
 					skipNotifications: true,
 					VarStore: func() *store.VariableStore {
@@ -244,6 +270,7 @@ func Test_createGoFormBlock(t *testing.T) {
 					WorkType:           workType,
 					IsTakenInWork:      true,
 					InitialExecutors:   map[string]struct{}{executor: {}},
+					HiddenFields:       make([]string, 0),
 				},
 				Sockets: entity.ConvertSocket(next),
 			},
@@ -310,6 +337,34 @@ func Test_createGoFormBlock(t *testing.T) {
 
 						return s
 					}(),
+					Services: RunContextServices{
+						ServiceDesc: func() *servicedesc.Service {
+							sdMock := servicedesc.Service{
+								SdURL: "",
+							}
+							httpClient := http.DefaultClient
+							mockTransport := serviceDeskMocks.RoundTripper{}
+							fResponse := func(*http.Request) *http.Response {
+								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								body := io.NopCloser(bytes.NewReader(b))
+								defer body.Close()
+								return &http.Response{
+									Status:     http.StatusText(http.StatusOK),
+									StatusCode: http.StatusOK,
+									Body:       body,
+									Close:      true,
+								}
+							}
+							f_error := func(*http.Request) error {
+								return nil
+							}
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							httpClient.Transport = &mockTransport
+							sdMock.Cli = httpClient
+
+							return &sdMock
+						}(),
+					},
 				},
 			},
 			want: &GoFormBlock{
@@ -362,6 +417,7 @@ func Test_createGoFormBlock(t *testing.T) {
 					Description:        "",
 					FormsAccessibility: nil,
 					InitialExecutors:   map[string]struct{}{"auto_fill": {}},
+					HiddenFields:       make([]string, 0),
 				},
 				Sockets: entity.ConvertSocket(next),
 			},
@@ -484,6 +540,11 @@ func TestGoFormBlock_Update(t *testing.T) {
 		}
 	)
 
+	serviceDesc := &servicedesc.Service{
+		Cli:   &http.Client{},
+		SdURL: "https://dev.servicedesk.mts.ru",
+	}
+
 	tests := []struct {
 		name      string
 		args      args
@@ -502,6 +563,10 @@ func TestGoFormBlock_Update(t *testing.T) {
 				RunContext: &BlockRunContext{
 					UpdateData: nil,
 					VarStore:   store.NewStore(),
+					Services: RunContextServices{
+						Storage:     mockedDb,
+						ServiceDesc: serviceDesc,
+					},
 				}},
 			want:    nil,
 			wantErr: assert.Error,
@@ -529,6 +594,10 @@ func TestGoFormBlock_Update(t *testing.T) {
 						),
 					},
 					VarStore: store.NewStore(),
+					Services: RunContextServices{
+						Storage:     mockedDb,
+						ServiceDesc: serviceDesc,
+					},
 				},
 			},
 			want:      nil,
@@ -576,6 +645,7 @@ func TestGoFormBlock_Update(t *testing.T) {
 					},
 					VarStore: store.NewStore(),
 					Services: RunContextServices{
+						Storage: mockedDb,
 						ServiceDesc: func() *servicedesc.Service {
 							sdMock := servicedesc.Service{
 								SdURL: "",
@@ -678,6 +748,7 @@ func TestGoFormBlock_Update(t *testing.T) {
 					},
 					VarStore: store.NewStore(),
 					Services: RunContextServices{
+						Storage: mockedDb,
 						ServiceDesc: func() *servicedesc.Service {
 							sdMock := servicedesc.Service{
 								SdURL: "",
@@ -768,6 +839,10 @@ func TestGoFormBlock_Update(t *testing.T) {
 						),
 					},
 					VarStore: store.NewStore(),
+					Services: RunContextServices{
+						Storage:     mockedDb,
+						ServiceDesc: serviceDesc,
+					},
 				},
 			},
 			want:    nil,

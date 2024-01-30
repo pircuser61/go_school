@@ -7,6 +7,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/configs"
 )
 
 const (
@@ -15,6 +16,7 @@ const (
 
 type appMetrics struct {
 	registry *prometheus.Registry
+	stand    string
 
 	incomingRequests *prometheus.SummaryVec
 }
@@ -29,22 +31,24 @@ type RequestInfo struct {
 	Method     string
 	Path       string
 	PipelineID string
+	VersionID  string
 	ClientID   string
 	WorkNumber string
 	Status     int
 	Duration   time.Duration
 }
 
-func New() Metrics {
+func New(config configs.PrometheusConfig) Metrics {
 	registry := prometheus.NewRegistry()
 
 	m := &appMetrics{
 		registry: registry,
+		stand:    config.Stand,
 		incomingRequests: prometheus.NewSummaryVec(prometheus.SummaryOpts{
 			Namespace: "jocasta",
 			Subsystem: "pipeliner",
 			Name:      incomingRequests,
-		}, []string{"method", "path", "pipeline_id", "client_id", "work_number", "status"}),
+		}, []string{"method", "stand", "path", "pipeline_id", "version_id", "client_id", "work_number", "status"}),
 	}
 
 	m.MustRegisterMetrics(registry)
@@ -70,8 +74,10 @@ func (m *appMetrics) MustRegisterMetrics(registry *prometheus.Registry) {
 func (m *appMetrics) RequestsIncrease(label *RequestInfo) {
 	m.incomingRequests.WithLabelValues([]string{
 		label.Method,
+		m.stand,
 		label.Path,
 		label.PipelineID,
+		label.VersionID,
 		label.ClientID,
 		label.WorkNumber,
 		strconv.Itoa(label.Status),

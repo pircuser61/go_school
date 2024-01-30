@@ -565,7 +565,7 @@ func (ae *Env) SaveVersionMainSettings(w http.ResponseWriter, req *http.Request,
 		return
 	}
 
-	renamePipelineErr := transaction.RenamePipeline(ctx, pipeline.ID, processSettings.Name)
+	renamePipelineErr := transaction.RenamePipeline(ctx, pipeline.PipelineID, processSettings.Name)
 	if renamePipelineErr != nil {
 		if db.IsUniqueConstraintError(renamePipelineErr) {
 			errorHandler.handleError(PipelineNameUsed, renamePipelineErr)

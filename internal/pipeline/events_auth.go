@@ -52,8 +52,7 @@ func (runCtx BlockRunContext) addAuthHeader(ctx c.Context, r *http.Request) erro
 			return err
 		}
 
-		r.Header.Add("login", basicSecret.Login)
-		r.Header.Add("password", basicSecret.Pass)
+		r.SetBasicAuth(basicSecret.Login, basicSecret.Pass)
 	case microservice_v1.AuthType_bearerToken.String():
 		bearerSecret := microservice_v1.BearerToken{}
 

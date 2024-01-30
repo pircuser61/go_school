@@ -16,8 +16,8 @@ var errMocked = errors.New("mocked")
 var (
 	Test1 = func() entity.EriusScenario {
 		return entity.EriusScenario{
-			ID:   uuid.MustParse("5238e070-46e0-4f7d-ae3b-1a4eea0d608f"),
-			Name: "test",
+			PipelineID: uuid.MustParse("5238e070-46e0-4f7d-ae3b-1a4eea0d608f"),
+			Name:       "test",
 			Pipeline: entity.PipelineType{
 				Blocks: entity.BlocksType{
 					"block": {
@@ -31,8 +31,8 @@ var (
 
 	Test2 = func() entity.EriusScenario {
 		return entity.EriusScenario{
-			ID:   uuid.MustParse("5238e070-46e0-4f7d-ae3b-1a4eea0d608f"),
-			Name: "test2",
+			PipelineID: uuid.MustParse("5238e070-46e0-4f7d-ae3b-1a4eea0d608f"),
+			Name:       "test2",
 			Pipeline: entity.PipelineType{
 				Blocks: entity.BlocksType{
 					"block": {

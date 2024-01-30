@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/google/uuid"
@@ -14,11 +13,7 @@ import (
 
 	"go.opencensus.io/trace"
 
-	"github.com/iancoleman/orderedmap"
-
 	"gitlab.services.mts.ru/abp/myosotis/logger"
-
-	e "gitlab.services.mts.ru/abp/mail/pkg/email"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
@@ -75,6 +70,9 @@ type BlockRunResults struct {
 type BlockRunContext struct {
 	TaskID      uuid.UUID
 	WorkNumber  string
+	ClientID    string
+	PipelineID  uuid.UUID
+	VersionID   uuid.UUID
 	WorkTitle   string
 	Initiator   string
 	IsTest      bool
@@ -98,6 +96,7 @@ type BlockRunContext struct {
 
 func (runCtx *BlockRunContext) Copy() *BlockRunContext {
 	runCtxCopy := *runCtx
+	//nolint:govet // declare new mutex on next line
 	runCtxCopy.VarStore = runCtx.VarStore.Copy()
 	runCtxCopy.UpdateData = nil
 	runCtxCopy.BlockRunResults = &BlockRunResults{
@@ -135,7 +134,7 @@ func CreateBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *Block
 		}
 
 		epi := ExecutablePipeline{}
-		epi.PipelineID = p.ID
+		epi.PipelineID = p.PipelineID
 		epi.VersionID = p.VersionID
 		epi.Storage = runCtx.Services.Storage
 		epi.EntryPoint = p.Pipeline.Entrypoint
@@ -176,8 +175,7 @@ func CreateBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *Block
 		}
 
 		if bl.Output != nil {
-			for propertyName := range bl.Output.Properties {
-				v := bl.Output.Properties[propertyName]
+			for propertyName, v := range bl.Output.Properties {
 				epi.Output[propertyName] = v.Global
 			}
 		}
@@ -194,8 +192,7 @@ func CreateBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *Block
 }
 
 func createGoBlock(ctx c.Context, ef *entity.EriusFunc, name string, runCtx *BlockRunContext,
-	expectedEvents map[string]struct{},
-) (r Runner, reEntry bool, err error) {
+	expectedEvents map[string]struct{}) (r Runner, reEntry bool, err error) {
 	switch ef.TypeID {
 	case BlockGoIfID:
 		return createGoIfBlock(ctx, name, ef, runCtx, expectedEvents)
@@ -288,8 +285,7 @@ func updateBlock(ctx c.Context, block Runner, name string, id uuid.UUID, runCtx 
 }
 
 func (runCtx *BlockRunContext) saveStepInDB(ctx c.Context, name, stepType, status string,
-	pl []Member, deadlines []Deadline, isReEntered bool,
-) (uuid.UUID, time.Time, error) {
+	pl []Member, deadlines []Deadline, isReEntered bool) (uuid.UUID, time.Time, error) {
 	storageData, errSerialize := json.Marshal(runCtx.VarStore)
 	if errSerialize != nil {
 		return uuid.Nil, time.Time{}, errSerialize
@@ -300,7 +296,6 @@ func (runCtx *BlockRunContext) saveStepInDB(ctx c.Context, name, stepType, statu
 
 	for i := range pl {
 		actions := make([]db.MemberAction, 0, len(pl[i].Actions))
-
 		for _, act := range pl[i].Actions {
 			actions = append(actions, db.MemberAction{
 				ID:     act.ID,
@@ -338,15 +333,8 @@ func (runCtx *BlockRunContext) saveStepInDB(ctx c.Context, name, stepType, statu
 	})
 }
 
-func (runCtx *BlockRunContext) updateStepInDB(
-	ctx c.Context,
-	name string,
-	id uuid.UUID,
-	hasError bool,
-	status Status,
-	pl []Member,
-	deadlines []Deadline,
-) error {
+func (runCtx *BlockRunContext) updateStepInDB(ctx c.Context, name string, id uuid.UUID, hasError bool, status Status,
+	pl []Member, deadlines []Deadline) error {
 	storageData, err := json.Marshal(runCtx.VarStore)
 	if err != nil {
 		return err
@@ -392,296 +380,8 @@ func (runCtx *BlockRunContext) updateStepInDB(
 	})
 }
 
-func (runCtx *BlockRunContext) getFileField() ([]string, error) {
-	task, err := runCtx.Services.Storage.GetTaskRunContext(c.Background(), runCtx.WorkNumber)
-	if err != nil {
-		return nil, err
-	}
-
-	return task.InitialApplication.AttachmentFields, nil
-}
-
-func (runCtx *BlockRunContext) makeNotificationFormAttachment(files []string) ([]file_registry.FileInfo, error) {
-	attachments := make([]entity.Attachment, 0, len(files))
-	mapFiles := make(map[string][]entity.Attachment)
-
-	for _, v := range files {
-		attachments = append(attachments, entity.Attachment{FileID: v})
-	}
-
-	mapFiles["files"] = attachments
-
-	file, err := runCtx.Services.FileRegistry.GetAttachmentsInfo(c.Background(), mapFiles)
-	if err != nil {
-		return nil, err
-	}
-
-	ta := make([]file_registry.FileInfo, 0, len(file["files"]))
-	for _, v := range file["files"] {
-		ta = append(ta, file_registry.FileInfo{FileID: v.FileID, Size: v.Size, Name: v.Name})
-	}
-
-	return ta, nil
-}
-
-func (runCtx *BlockRunContext) makeNotificationAttachment() ([]file_registry.FileInfo, error) {
-	task, err := runCtx.Services.Storage.GetTaskRunContext(c.Background(), runCtx.WorkNumber)
-	if err != nil {
-		return nil, err
-	}
-
-	attachments := make([]entity.Attachment, 0)
-	mapFiles := make(map[string][]entity.Attachment)
-
-	for _, v := range task.InitialApplication.AttachmentFields {
-		filesAttach, ok := task.InitialApplication.ApplicationBody.Get(v)
-		if !ok {
-			continue
-		}
-
-		switch data := filesAttach.(type) {
-		case orderedmap.OrderedMap:
-			fileID, get := data.Get("file_id")
-			if !get {
-				continue
-			}
-
-			attachments = append(attachments, entity.Attachment{FileID: fileID.(string)})
-		case []interface{}:
-			for _, vv := range data {
-				fileMap := vv.(orderedmap.OrderedMap)
-
-				fileID, oks := fileMap.Get("file_id")
-				if !oks {
-					continue
-				}
-
-				attachments = append(attachments, entity.Attachment{FileID: fileID.(string)})
-			}
-		}
-	}
-
-	mapFiles["files"] = attachments
-
-	file, err := runCtx.Services.FileRegistry.GetAttachmentsInfo(c.Background(), mapFiles)
-	if err != nil {
-		return nil, err
-	}
-
-	ta := make([]file_registry.FileInfo, 0, len(file["files"]))
-
-	for _, v := range file["files"] {
-		ta = append(ta, file_registry.FileInfo{FileID: v.FileID, Size: v.Size, Name: v.Name})
-	}
-
-	return ta, nil
-}
-
-func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) ([]orderedmap.OrderedMap, []e.Attachment, error) {
-	descr, err := runCtx.Services.Storage.GetTaskRunContext(c.Background(), runCtx.WorkNumber)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	apBody := flatArray(descr.InitialApplication.ApplicationBody)
-
-	descriptions := make([]orderedmap.OrderedMap, 0)
-
-	filesAttach, err := runCtx.makeNotificationAttachment()
-	if err != nil {
-		return nil, nil, err
-	}
-
-	attachments, err := runCtx.GetAttach(filesAttach)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	files := make([]e.Attachment, 0, len(attachments.AttachmentsList))
-
-	if len(apBody.Values()) != 0 {
-		apBody.Set("attachLinks", attachments.AttachLinks)
-		apBody.Set("attachExist", attachments.AttachExists)
-		apBody.Set("attachList", attachments.AttachmentsList)
-	}
-
-	descriptions = append(descriptions, apBody)
-
-	additionalForms, err := runCtx.Services.Storage.GetAdditionalDescriptionForms(runCtx.WorkNumber, nodeName)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	for _, v := range additionalForms {
-		attachmentFiles := make([]string, 0)
-
-		for _, val := range v.Values() {
-			file, ok := val.(orderedmap.OrderedMap)
-			if !ok {
-				continue
-			}
-
-			if fileID, fileOK := file.Get("file_id"); fileOK {
-				attachmentFiles = append(attachmentFiles, fileID.(string))
-			}
-		}
-
-		fileInfo, fileErr := runCtx.makeNotificationFormAttachment(attachmentFiles)
-		if fileErr != nil {
-			return nil, nil, err
-		}
-
-		attach, attachErr := runCtx.GetAttach(fileInfo)
-		if attachErr != nil {
-			return nil, nil, err
-		}
-
-		v.Set("attachLinks", attach.AttachLinks)
-		v.Set("attachExist", attach.AttachExists)
-		v.Set("attachList", attach.AttachmentsList)
-
-		files = append(files, attach.AttachmentsList...)
-		descriptions = append(descriptions, flatArray(v))
-	}
-
-	files = append(files, attachments.AttachmentsList...)
-
-	return descriptions, files, nil
-}
-
-func flatArray(v orderedmap.OrderedMap) orderedmap.OrderedMap {
-	res := orderedmap.New()
-	keys := v.Keys()
-	values := v.Values()
-
-	for _, k := range keys {
-		vv, ok := values[k].([]interface{})
-		if ok {
-			for i, v := range vv {
-				res.Set(k+"("+strconv.Itoa(i)+")", v)
-			}
-		} else {
-			res.Set(k, values[k])
-		}
-	}
-
-	return *res
-}
-
-type handleInitiatorNotifyParams struct {
-	step     string
-	stepType string
-	action   string
-	status   TaskHumanStatus
-}
-
-func (runCtx *BlockRunContext) handleInitiatorNotify(ctx c.Context, params handleInitiatorNotifyParams) error {
-	const (
-		FormStepType     = "form"
-		TimerStepType    = "timer"
-		FunctionStepType = "executable_function"
-	)
-
-	if runCtx.skipNotifications {
-		return nil
-	}
-
-	//nolint:exhaustive // не надо обрабатывать значит не надо
-	switch params.status {
-	case StatusNew,
-		StatusApproved,
-		StatusApproveViewed,
-		StatusApproveInformed,
-		StatusApproveConfirmed,
-		StatusApprovementRejected,
-		StatusExecution,
-		StatusExecutionRejected,
-		StatusSigned,
-		StatusRejected,
-		StatusProcessingError,
-		StatusDone:
-	default:
-		return nil
-	}
-
-	if params.status == StatusDone &&
-		(params.stepType == FormStepType || params.stepType == FunctionStepType || params.stepType == TimerStepType) {
-		return nil
-	}
-
-	description, files, err := runCtx.makeNotificationDescription(params.step)
-	if err != nil {
-		return err
-	}
-
-	loginsToNotify := []string{runCtx.Initiator}
-
-	log := logger.GetLogger(ctx)
-
-	var email string
-
-	emails := make([]string, 0, len(loginsToNotify))
-
-	for _, login := range loginsToNotify {
-		email, err = runCtx.Services.People.GetUserEmail(ctx, login)
-		if err != nil {
-			log.WithField("login", login).WithError(err).Warning("couldn't get email")
-
-			return nil
-		}
-
-		emails = append(emails, email)
-	}
-
-	if params.action == "" {
-		params.action = statusToTaskState[params.status]
-	}
-
-	tmpl := mail.NewAppInitiatorStatusNotificationTpl(
-		&mail.SignerNotifTemplate{
-			WorkNumber:  runCtx.WorkNumber,
-			Name:        runCtx.NotifName,
-			SdURL:       runCtx.Services.Sender.SdAddress,
-			Description: description,
-			Action:      params.action,
-		})
-
-	iconsName := []string{tmpl.Image}
-
-	for _, v := range description {
-		links, link := v.Get("attachLinks")
-		if link {
-			attachFiles, ok := links.([]file_registry.AttachInfo)
-			if ok && len(attachFiles) != 0 {
-				descIcons := []string{downloadImg}
-				iconsName = append(iconsName, descIcons...)
-
-				break
-			}
-		}
-	}
-
-	iconFiles, iconErr := runCtx.GetIcons(iconsName)
-	if iconErr != nil {
-		return err
-	}
-
-	files = append(files, iconFiles...)
-
-	if sendErr := runCtx.Services.Sender.SendNotification(ctx, emails, files, tmpl); sendErr != nil {
-		return sendErr
-	}
-
-	return nil
-}
-
-func ProcessBlockWithEndMapping(
-	ctx c.Context,
-	name string,
-	bl *entity.EriusFunc,
-	runCtx *BlockRunContext,
-	manual bool,
-) error {
+func ProcessBlockWithEndMapping(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *BlockRunContext,
+	manual bool) error {
 	ctx, s := trace.StartSpan(ctx, "process_block_with_end_mapping")
 	defer s.End()
 
@@ -767,7 +467,6 @@ func processBlockEnd(ctx c.Context, status string, runCtx *BlockRunContext) (err
 			systemSettings.OutputSettings.URL == "" ||
 			systemSettings.OutputSettings.MicroserviceID == "" {
 			log.Info(fmt.Sprintf("no output settings for clientID %s", context.ClientID))
-
 			return nil
 		}
 
@@ -803,12 +502,24 @@ func sendEndingMapping(
 	runCtx *BlockRunContext,
 	settings *entity.EndSystemSettings,
 ) (err error) {
-	secretsHumanKey, secretsErr := runCtx.Services.Integrations.GetMicroserviceHumanKey(ctx, settings.MicroserviceID)
+	secretsHumanKey, secretsErr := runCtx.Services.Integrations.GetMicroserviceHumanKey(
+		ctx,
+		settings.MicroserviceID,
+		runCtx.PipelineID.String(),
+		runCtx.VersionID.String(),
+		runCtx.WorkNumber,
+		runCtx.ClientID)
 	if secretsErr != nil {
 		return secretsErr
 	}
 
-	auth, authErr := runCtx.Services.Integrations.FillAuth(ctx, secretsHumanKey)
+	auth, authErr := runCtx.Services.Integrations.FillAuth(
+		ctx,
+		secretsHumanKey,
+		runCtx.PipelineID.String(),
+		runCtx.VersionID.String(),
+		runCtx.WorkNumber,
+		runCtx.ClientID)
 	if authErr != nil {
 		return authErr
 	}
@@ -818,13 +529,14 @@ func sendEndingMapping(
 		return jsonErr
 	}
 
-	req, reqErr := http.NewRequestWithContext(ctx, settings.Method, settings.URL, bytes.NewBuffer(body))
+	req, reqErr := http.NewRequest(settings.Method, settings.URL, bytes.NewBuffer(body))
 	if reqErr != nil {
 		return reqErr
 	}
 
 	if auth.AuthType == "oAuth" {
 		bearer := "Bearer " + auth.Token
+
 		req.Header.Add("Authorization", bearer)
 
 		resp, err := runCtx.Services.Integrations.Cli.Do(req)

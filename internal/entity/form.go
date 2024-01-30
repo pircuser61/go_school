@@ -1,9 +1,9 @@
 package entity
 
-type (
-	UserExecutionType string
-	BlockType         string
-)
+import "github.com/iancoleman/orderedmap"
+
+type UserExecutionType string
+type BlockType string
 
 const (
 	UserExecution       UserExecutionType = "user"
@@ -19,4 +19,9 @@ type UsersWithFormAccess struct {
 	ExecutionType UserExecutionType `json:"execution_type"`
 	Executor      string            `json:"executor"`
 	BlockType     BlockType         `json:"block_type"`
+}
+
+type DescriptionForm struct {
+	Name        string
+	Description orderedmap.OrderedMap
 }

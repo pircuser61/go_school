@@ -497,8 +497,8 @@ func (bt *BlocksType) addDefaultStartNode() {
 	}
 }
 
-func (bt *BlocksType) GetExecutableFunctionIDs() ([]string, error) {
-	functionIDs := make([]string, 0)
+func (bt *BlocksType) GetExecutableFunctions() ([]script.FunctionParam, error) {
+	functionIDs := make([]script.FunctionParam, 0)
 
 	for key := range *bt {
 		block := (*bt)[key]
@@ -509,7 +509,7 @@ func (bt *BlocksType) GetExecutableFunctionIDs() ([]string, error) {
 			}
 
 			if p.Function.FunctionID != "" {
-				functionIDs = append(functionIDs, p.Function.FunctionID)
+				functionIDs = append(functionIDs, p.Function)
 			}
 		}
 	}
@@ -603,7 +603,7 @@ func (p *PipelineType) ChangeOutput(keyOutputs map[string]string) {
 
 // nolint
 type EriusScenario struct {
-	ID              uuid.UUID            `json:"id" example:"916ad995-8d13-49fb-82ee-edd4f97649e2" format:"uuid"`
+	PipelineID      uuid.UUID            `json:"id" example:"916ad995-8d13-49fb-82ee-edd4f97649e2" format:"uuid"`
 	VersionID       uuid.UUID            `json:"version_id" example:"916ad995-8d13-49fb-82ee-edd4f97649e2" format:"uuid"`
 	Status          int                  `json:"status" enums:"1,2,3,4,5"` // 1 - Draft, 2 - Approved, 3 - Deleted, 4 - Rejected, 5 - On Approve
 	HasDraft        bool                 `json:"hasDraft,omitempty"`
@@ -715,7 +715,6 @@ func ConvertSocket(sockets []Socket) []script.Socket {
 const (
 	KeyOutputWorkNumber           = "workNumber"
 	KeyOutputApplicationInitiator = "initiator"
-	KeyOutputApplicationData      = "application_data"
 )
 
 func (es *EriusScenario) FillEntryPointOutput() (err error) {
@@ -726,10 +725,24 @@ func (es *EriusScenario) FillEntryPointOutput() (err error) {
 	}
 
 	if es.Settings.StartSchema != nil {
-		entryPoint.Output.Properties[KeyOutputApplicationData] = script.JSONSchemaPropertiesValue{
+		for k := range entryPoint.Output.Properties {
+			val, ok := es.Settings.StartSchema.Properties[k]
+			if !ok {
+				continue
+			}
+
+			val.Global = es.Pipeline.Entrypoint + "." + k
+
+			es.Settings.StartSchema.Properties[k] = val
+		}
+
+		entryPoint.Output = es.Settings.StartSchema
+	}
+
+	if entryPoint.Output == nil {
+		entryPoint.Output = &script.JSONSchema{
 			Type:       "object",
-			Global:     es.Pipeline.Entrypoint + "." + "application_data",
-			Properties: es.Settings.StartSchema.Properties,
+			Properties: make(map[string]script.JSONSchemaPropertiesValue),
 		}
 	}
 

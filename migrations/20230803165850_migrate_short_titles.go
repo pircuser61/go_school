@@ -44,7 +44,7 @@ func upMigrateShortTitles(tx *sql.Tx) error {
 		var resultRow entity.EriusScenario
 		var pipeline string
 		scanErr := rows.Scan(
-			&resultRow.ID,
+			&resultRow.PipelineID,
 			&pipeline,
 		)
 		if scanErr != nil {
@@ -85,7 +85,7 @@ func upMigrateShortTitles(tx *sql.Tx) error {
 	}
 
 	for i := range scenarios {
-		_, execErr := tx.Exec(insertQ, scenarios[i].Pipeline, scenarios[i].ID)
+		_, execErr := tx.Exec(insertQ, scenarios[i].Pipeline, scenarios[i].PipelineID)
 		if execErr != nil {
 			return execErr
 		}
@@ -114,7 +114,7 @@ func downMigrateShortTitles(tx *sql.Tx) error {
 		var resultRow entity.EriusScenario
 		var pipeline string
 		scanErr := rows.Scan(
-			&resultRow.ID,
+			&resultRow.PipelineID,
 			&pipeline,
 		)
 		if scanErr != nil {
@@ -156,7 +156,7 @@ func downMigrateShortTitles(tx *sql.Tx) error {
 	}
 
 	for i := range scenarios {
-		_, execErr := tx.Exec(insertQ, scenarios[i].Pipeline, scenarios[i].ID)
+		_, execErr := tx.Exec(insertQ, scenarios[i].Pipeline, scenarios[i].PipelineID)
 		if execErr != nil {
 			return execErr
 		}

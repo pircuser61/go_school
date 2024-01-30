@@ -183,7 +183,7 @@ func main() {
 
 	metrics.InitMetricsAuth(cfg.Prometheus)
 
-	m := metrics.New()
+	m := metrics.New(cfg.Prometheus)
 
 	includePlaceholderBlock := cfg.IncludePlaceholderBlock
 
@@ -222,6 +222,8 @@ func main() {
 	}
 
 	kafkaService.InitMessageHandler(APIEnv.FunctionReturnHandler)
+
+	go kafkaService.StartCheckHealth()
 
 	jr, err := jaeger.NewExporter(jaeger.Options{
 		CollectorEndpoint: cfg.Tracing.URL,

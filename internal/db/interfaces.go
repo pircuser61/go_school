@@ -4,8 +4,6 @@ import (
 	c "context"
 	"time"
 
-	"github.com/iancoleman/orderedmap"
-
 	"github.com/google/uuid"
 
 	e "gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
@@ -30,7 +28,7 @@ type PipelineStorager interface {
 
 type TaskStorager interface {
 	GetTaskFormSchemaID(workNumber, formID string) (string, error)
-	GetAdditionalDescriptionForms(workNumber, nodeName string) ([]orderedmap.OrderedMap, error)
+	GetAdditionalDescriptionForms(workNumber, nodeName string) ([]e.DescriptionForm, error)
 	GetAdditionalForms(workNumber, nodeName string) ([]string, error)
 	GetApplicationData(workNumber string) (string, error)
 	GetDeadline(ctx c.Context, workID string) (time.Time, error)

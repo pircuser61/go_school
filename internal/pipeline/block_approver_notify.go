@@ -7,6 +7,7 @@ import (
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	file_registry "gitlab.services.mts.ru/jocasta/pipeliner/internal/fileregistry"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
@@ -18,6 +19,9 @@ const (
 	userImg    = "iconUser.png"
 	warningImg = "warning.png"
 	vRabotuBtn = "v_rabotu.png"
+
+	approveBtn = "soglas.png"
+	rejectBtn  = "otklon.png"
 )
 
 //nolint:dupl // maybe later
@@ -234,21 +238,64 @@ func (gb *GoApproverBlock) notifyAdditionalApprovers(ctx c.Context, logins []str
 		}
 	}
 
+	description, files, err := gb.RunContext.makeNotificationDescription(gb.Name)
+	if err != nil {
+		return err
+	}
+
+	author, authorErr := gb.RunContext.Services.People.GetUser(ctx, gb.RunContext.Initiator)
+	if authorErr != nil {
+		return authorErr
+	}
+
+	initiatorInfo, initialErr := author.ToUserinfo()
+	if initialErr != nil {
+		return initialErr
+	}
+
+	actionsList := make([]mail.Action, 0, len(gb.State.ActionList))
+	for i := range gb.State.ActionList {
+		actionsList = append(actionsList, mail.Action{
+			InternalActionName: gb.State.ActionList[i].ID,
+			Title:              gb.State.ActionList[i].Title,
+		})
+	}
+
 	for i := range emails {
-		tpl := mail.NewAddApproversTpl(
-			gb.RunContext.WorkNumber,
-			gb.RunContext.NotifName,
-			gb.RunContext.Services.Sender.SdAddress,
-			script.SettingStatusApprovement,
-			gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(
-				time.Now(), gb.State.SLA, slaInfoPtr),
-			lastWorksForUser,
+		tpl, _ := mail.NewAddApproversTpl(
+			&mail.NewAppPersonStatusTpl{
+				WorkNumber: gb.RunContext.WorkNumber,
+				Name:       gb.RunContext.NotifName,
+				SdURL:      gb.RunContext.Services.Sender.SdAddress,
+				Action:     script.SettingStatusApprovement,
+				DeadLine: gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(
+					time.Now(), gb.State.SLA, slaInfoPtr),
+				LastWorks:       lastWorksForUser,
+				Description:     description,
+				Mailto:          gb.RunContext.Services.Sender.FetchEmail,
+				Login:           login,
+				IsEditable:      gb.State.GetIsEditable(),
+				ApproverActions: actionsList,
+				BlockID:         BlockGoApproverID,
+				Initiator:       initiatorInfo,
+			}, emails[i],
 		)
 
-		filesList := []string{tpl.Image}
+		filesList := []string{tpl.Image, userImg, approveBtn, rejectBtn}
 
 		if len(lastWorksForUser) != 0 {
 			filesList = append(filesList, warningImg)
+		}
+
+		for _, v := range description {
+			links, ok := v.Get("attachLinks")
+			if ok {
+				attachFiles, ok := links.([]file_registry.AttachInfo)
+				if ok && len(attachFiles) != 0 {
+					filesList = append(filesList, downloadImg)
+					break
+				}
+			}
 		}
 
 		iconFiles, iconErr := gb.RunContext.GetIcons(filesList)
@@ -256,9 +303,9 @@ func (gb *GoApproverBlock) notifyAdditionalApprovers(ctx c.Context, logins []str
 			return iconErr
 		}
 
-		files = append(files, iconFiles...)
+		iconFiles = append(iconFiles, files...)
 
-		err = gb.RunContext.Services.Sender.SendNotification(ctx, []string{emails[i]}, files, tpl)
+		err = gb.RunContext.Services.Sender.SendNotification(ctx, []string{emails[i]}, iconFiles, tpl)
 		if err != nil {
 			return err
 		}

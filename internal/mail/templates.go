@@ -345,9 +345,9 @@ func NewRequestApproverInfoTpl(id, name, sdURL string) Template {
 
 func NewAnswerApproverInfoTpl(id, name, sdURL string) Template {
 	return Template{
-		Subject:  fmt.Sprintf("Заявка № %s %s запрос дополнительной информации", id, name),
-		Template: "internal/mail/template/15moreInfoRequired-template.html",
-		Image:    "15_dop_info_trebuetsya.png",
+		Subject:  fmt.Sprintf("Заявка № %s %s — Получена дополнительная информация", id, name),
+		Template: "internal/mail/template/16additionalInfoReceived-template.html",
+		Image:    "16_dop_info_polucheno.png",
 		Variables: struct {
 			ID   string `json:"id"`
 			Name string `json:"name"`
@@ -362,7 +362,7 @@ func NewAnswerApproverInfoTpl(id, name, sdURL string) Template {
 
 func NewAnswerExecutionInfoTpl(id, name, sdURL string) Template {
 	return Template{
-		Subject:  fmt.Sprintf("Заявка № %s %s получена дополнительная информация", id, name),
+		Subject:  fmt.Sprintf("Заявка № %s %s — Получена дополнительная информация", id, name),
 		Template: "internal/mail/template/16additionalInfoReceived-template.html",
 		Image:    "16_dop_info_polucheno.png",
 		Variables: struct {
@@ -599,7 +599,8 @@ type NewAppPersonStatusTpl struct {
 	AttachFields []string                   `json:"attachFields"`
 
 	// actions for approver
-	ApproverActions []Action
+	ApproverActions    []Action
+	AdditionalApprover []string
 
 	IsEditable bool
 
@@ -655,7 +656,7 @@ func NewAppPersonStatusNotificationTpl(in *NewAppPersonStatusTpl) (Template, []B
 		template = "internal/mail/template/12applicationIsAwaitingExecution-template.html"
 	case script.SettingStatusApprovement, script.SettingStatusApproveConfirm, script.SettingStatusApproveView,
 		script.SettingStatusApproveInform, script.SettingStatusApproveSign, script.SettingStatusApproveSignUkep:
-		buttons = getApproverButtons(in.WorkNumber, in.Mailto, in.BlockID, in.Login, in.ApproverActions, in.IsEditable)
+		buttons = getApproverButtons(in.WorkNumber, in.Mailto, in.BlockID, in.Login, in.ApproverActions, in.IsEditable, false)
 		template = "internal/mail/template/11receivedForApproval-template.html"
 	}
 
@@ -778,12 +779,18 @@ func NewExecutionTakenInWorkTpl(dto *ExecutorNotifTemplate) Template {
 	}
 }
 
-func NewAddApproversTpl(id, name, sdURL, status, deadline string, lastWorks []*entity.EriusTask) Template {
-	lastWorksTemplate := getLastWorksForTemplate(lastWorks, sdURL)
-	actionName := getApprovementActionNameByStatus(status, defaultApprovementActionName)
+func NewAddApproversTpl(in *NewAppPersonStatusTpl, recipientEmail string) (Template, []Button) {
+	lastWorksTemplate := getLastWorksForTemplate(in.LastWorks, in.SdURL)
+	actionName := getApprovementActionNameByStatus(in.Status, defaultApprovementActionName)
+
+	in.Description = CheckGroup(in.Description)
+
+	emails := strings.Split(recipientEmail, "@")
+	actions := []Action{{InternalActionName: "approved"}, {InternalActionName: "rejected"}}
+	buttons := getApproverButtons(in.WorkNumber, in.Mailto, in.BlockID, emails[0], actions, false, true)
 
 	return Template{
-		Subject:  fmt.Sprintf("Заявка № %s %s ожидает %s", id, name, actionName),
+		Subject:  fmt.Sprintf("Заявка № %s %s ожидает %s", in.WorkNumber, in.Name, actionName),
 		Template: "internal/mail/template/42receivedForApproval-template.html",
 		Image:    "42_zayavka_ojidaet_sogl.png",
 		Variables: struct {
@@ -793,15 +800,23 @@ func NewAddApproversTpl(id, name, sdURL, status, deadline string, lastWorks []*e
 			Deadline  string    `json:"deadline"`
 			Action    string    `json:"action"`
 			LastWorks LastWorks `json:"last_works"`
+
+			Description []orderedmap.OrderedMap
+			ActionBtn   []Button
+			Initiator   *sso.UserInfo
 		}{
-			ID:        id,
-			Name:      name,
-			Link:      fmt.Sprintf(TaskURLTemplate, sdURL, id),
+			ID:        in.WorkNumber,
+			Name:      in.Name,
+			Link:      fmt.Sprintf(TaskURLTemplate, in.SdURL, in.WorkNumber),
 			Action:    actionName,
-			Deadline:  deadline,
+			Deadline:  in.DeadLine,
 			LastWorks: lastWorksTemplate,
+
+			Description: in.Description,
+			ActionBtn:   buttons,
+			Initiator:   in.Initiator,
 		},
-	}
+	}, buttons
 }
 
 func NewDecisionMadeByAdditionalApprover(id, name, decision, comment, sdURL string, author *sso.UserInfo) Template {
@@ -1014,16 +1029,17 @@ func getButton(to, subject, image string) *Button {
 const (
 	subjectTpl = "step_name=%s|decision=%s|work_number=%s|action_name=%s|login=%s"
 
-	actionApproverSendEditApp   = "approver_send_edit_app"
-	actionExecutorSendEditApp   = "executor_send_edit_app"
-	taskUpdateActionExecution   = "execution"
-	taskUpdateActionApprovement = "approvement"
-	executionStartWorkAction    = "executor_start_work"
-	formExecutorStartWorkAction = "form_executor_start_work"
-	actionApproverSignUkep      = "sign_ukep"
+	actionApproverSendEditApp           = "approver_send_edit_app"
+	actionExecutorSendEditApp           = "executor_send_edit_app"
+	taskUpdateActionExecution           = "execution"
+	taskUpdateActionApprovement         = "approvement"
+	taskUpdateActionAdditionApprovement = "additional_approvement"
+	executionStartWorkAction            = "executor_start_work"
+	formExecutorStartWorkAction         = "form_executor_start_work"
+	actionApproverSignUkep              = "sign_ukep"
 )
 
-func getApproverButtons(workNumber, mailto, blockID, login string, actions []Action, isEditable bool) []Button {
+func getApproverButtons(workNumber, mailto, blockID, login string, actions []Action, isEditable, isAdditionalApprover bool) []Button {
 	buttons := make([]Button, 0, len(actions))
 
 	for i := range actions {
@@ -1035,21 +1051,18 @@ func getApproverButtons(workNumber, mailto, blockID, login string, actions []Act
 			continue
 		}
 
-		subject := fmt.Sprintf(
-			subjectTpl,
-			blockID,
-			actions[i].InternalActionName,
-			workNumber,
-			taskUpdateActionApprovement,
-			login,
-		)
+		action := taskUpdateActionApprovement
+
+		if isAdditionalApprover {
+			action = taskUpdateActionAdditionApprovement
+		}
 
 		var img string
 
 		switch actions[i].InternalActionName {
-		case "approve":
+		case "approved", "approve":
 			img = "soglas.png"
-		case "reject":
+		case "rejected", "reject":
 			img = "otklon.png"
 		case "informed":
 			img = "proinform.png"
@@ -1060,6 +1073,15 @@ func getApproverButtons(workNumber, mailto, blockID, login string, actions []Act
 		case "viewed":
 			img = "oznakomlen.png"
 		}
+
+		subject := fmt.Sprintf(
+			subjectTpl,
+			blockID,
+			actions[i].InternalActionName,
+			workNumber,
+			action,
+			login,
+		)
 
 		buttons = append(buttons, *getButton(mailto, subject, img))
 	}
