@@ -2,8 +2,10 @@ package entity
 
 import "github.com/iancoleman/orderedmap"
 
-type UserExecutionType string
-type BlockType string
+type (
+	UserExecutionType string
+	BlockType         string
+)
 
 const (
 	UserExecution       UserExecutionType = "user"

@@ -1,7 +1,7 @@
 package api
 
 import (
-	c "context"
+	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -131,61 +131,56 @@ func (ae *Env) CreatePipelineVersion(w http.ResponseWriter, req *http.Request, p
 		return
 	}
 
-	hasPrivateFunction := false
+	hasPrivateFunction, err := ae.hasPrivateFunction(ctx, executableFunctions)
+	if err != nil {
+		errorHandler.handleError(GetFunctionError, err)
 
-	for _, fn := range executableFunctions {
-		_, getFunctionErr := ae.FunctionStore.GetFunctionVersion(ctx, fn.FunctionID, fn.VersionID)
-		if getFunctionErr != nil {
-			e := GetFunctionError
-			log.Error(e.errorMessage(getFunctionErr))
-			_ = e.sendError(w)
+		return
+	}
 
-			return
+	err = ae.DB.CreateVersion(ctx, &p, ui.Username, updated, oldVersionID, hasPrivateFunction)
+	if err != nil {
+		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
+			log.WithField("funcName", "CreateVersion").
+				WithError(errors.New("couldn't rollback tx")).
+				Error(txErr)
 		}
 
-		err = ae.DB.CreateVersion(ctx, &p, ui.Username, updated, oldVersionID, hasPrivateFunction)
-		if err != nil {
-			if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
-				log.WithField("funcName", "CreateVersion").
-					WithError(errors.New("couldn't rollback tx")).
-					Error(txErr)
-			}
+		errorHandler.handleError(PipelineWriteError, err)
 
-			errorHandler.handleError(PipelineWriteError, err)
+		return
+	}
 
-			return
+	if commitErr := txStorage.CommitTransaction(ctx); commitErr != nil {
+		log.WithError(commitErr).Error("couldn't create pipeline version")
+
+		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
+			log.Error(txErr)
 		}
 
-		if commitErr := txStorage.CommitTransaction(ctx); commitErr != nil {
-			log.WithError(commitErr).Error("couldn't create pipeline version")
+		errorHandler.handleError(PipelineReadError, err)
 
-			if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
-				log.Error(txErr)
-			}
+		return
+	}
 
-			errorHandler.handleError(PipelineReadError, err)
+	created, err := ae.DB.GetPipelineVersion(ctx, p.VersionID, true)
+	if err != nil {
+		errorHandler.handleError(PipelineReadError, err)
 
-			return
-		}
+		return
+	}
 
-		created, err := ae.DB.GetPipelineVersion(ctx, p.VersionID, true)
-		if err != nil {
-			errorHandler.handleError(PipelineReadError, err)
+	if err = sendResponse(w, http.StatusOK, created); err != nil {
+		errorHandler.handleError(UnknownError, err)
 
-			return
-		}
-
-		if err = sendResponse(w, http.StatusOK, created); err != nil {
-			errorHandler.handleError(UnknownError, err)
-
-			return
-		}
+		return
 	}
 }
 
-func (ae *Env) hasPrivateFunction(ctx c.Context, executableFunctionIDs []string) (bool, error) {
-	for _, id := range executableFunctionIDs {
-		function, getFunctionErr := ae.FunctionStore.GetFunction(ctx, id)
+func (ae *Env) hasPrivateFunction(ctx context.Context, executableFunctions []script.FunctionParam) (bool, error) {
+	//nolint:gocritic //коллекция без поинтеров
+	for _, fn := range executableFunctions {
+		function, getFunctionErr := ae.FunctionStore.GetFunctionVersion(ctx, fn.FunctionID, fn.VersionID)
 		if getFunctionErr != nil {
 			return false, getFunctionErr
 		}
@@ -199,7 +194,7 @@ func (ae *Env) hasPrivateFunction(ctx c.Context, executableFunctionIDs []string)
 }
 
 func (ae *Env) getExternalSystem(
-	ctx c.Context,
+	ctx context.Context,
 	storage db.Database,
 	clientID, pipelineID, versionID string,
 ) (*entity.ExternalSystem, error) {
@@ -423,15 +418,11 @@ func (ae *Env) EditVersion(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	groups := make([]*entity.NodeGroup, 0)
+	groups, err := statusGroups(&p)
+	if err != nil {
+		errorHandler.handleError(UnknownError, err)
 
-	if p.Status == db.StatusApproved {
-		groups, err = p.Pipeline.Blocks.GetGroups()
-		if err != nil {
-			errorHandler.handleError(UnknownError, err)
-
-			return
-		}
+		return
 	}
 
 	canEdit, err := ae.DB.VersionEditable(ctx, p.VersionID)
@@ -452,8 +443,6 @@ func (ae *Env) EditVersion(w http.ResponseWriter, req *http.Request) {
 		err = sendResponse(w, http.StatusOK, nil)
 		if err != nil {
 			errorHandler.handleError(UnknownError, err)
-
-			return
 		}
 
 		return
@@ -466,61 +455,53 @@ func (ae *Env) EditVersion(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	hasPrivateFunction := false
+	hasPrivateFunction, err := ae.hasPrivateFunction(ctx, executableFunctions)
+	if err != nil {
+		errorHandler.handleError(GetFunctionError, err)
 
-	for _, fn := range executableFunctions {
-		_, getFunctionErr := ae.FunctionStore.GetFunctionVersion(ctx, fn.FunctionID, fn.VersionID)
-		if getFunctionErr != nil {
-			e := GetFunctionError
-			log.Error(e.errorMessage(getFunctionErr))
-			_ = e.sendError(w)
+		return
+	}
 
-			return
-		}
+	err = ae.DB.UpdateDraft(ctx, &p, updated, groups, hasPrivateFunction)
+	if err != nil {
+		errorHandler.handleError(PipelineWriteError, err)
 
-		err = ae.DB.UpdateDraft(ctx, &p, updated, groups, hasPrivateFunction)
-		if err != nil {
-			errorHandler.handleError(PipelineWriteError, err)
+		return
+	}
 
-			return
-		}
+	ui, err := user.GetUserInfoFromCtx(ctx)
+	if err != nil {
+		log.Error(err.Error())
 
-		ui, err := user.GetUserInfoFromCtx(ctx)
-		if err != nil {
-			log.Error(err.Error())
-		}
+		return
+	}
 
-		if p.Status == db.StatusApproved {
-			err = ae.DB.SwitchApproved(ctx, p.PipelineID, p.VersionID, ui.Username)
-			if err != nil {
-				e := ApproveError
-				log.Error(e.errorMessage(err))
-				_ = e.sendError(w)
+	err = ae.switchScenarioApproved(ctx, &p, ui)
+	if err != nil {
+		errorHandler.handleError(ApproveError, err)
 
-				return
-			}
-		}
+		return
+	}
 
-		err = ae.handleScenario(ctx, &p, ui)
-		if err != nil {
-			errorHandler.handleError(ApproveError, err)
+	err = ae.handleScenario(ctx, &p, ui)
+	if err != nil {
+		errorHandler.handleError(ApproveError, err)
 
-			return
-		}
+		return
+	}
 
-		edited, err := ae.DB.GetPipelineVersion(ctx, p.VersionID, true)
-		if err != nil {
-			errorHandler.handleError(PipelineReadError, err)
+	edited, err := ae.DB.GetPipelineVersion(ctx, p.VersionID, true)
+	if err != nil {
+		errorHandler.handleError(PipelineReadError, err)
 
-			return
-		}
+		return
+	}
 
-		err = sendResponse(w, http.StatusOK, edited)
-		if err != nil {
-			errorHandler.handleError(UnknownError, err)
+	err = sendResponse(w, http.StatusOK, edited)
+	if err != nil {
+		errorHandler.handleError(UnknownError, err)
 
-			return
-		}
+		return
 	}
 }
 
@@ -541,6 +522,30 @@ func validateBlockTypeErrText(valErrText string) Err {
 	}
 }
 
+func statusGroups(p *entity.EriusScenario) (groups []*entity.NodeGroup, err error) {
+	groups = make([]*entity.NodeGroup, 0)
+
+	if p.Status == db.StatusApproved {
+		groups, err = p.Pipeline.Blocks.GetGroups()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return groups, nil
+}
+
+func (ae *Env) switchScenarioApproved(ctx context.Context, p *entity.EriusScenario, ui *sso.UserInfo) error {
+	if p.Status == db.StatusApproved {
+		err := ae.DB.SwitchApproved(ctx, p.PipelineID, p.VersionID, ui.Username)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 type execVersionDTO struct {
 	version  *entity.EriusScenario
 	withStop bool
@@ -556,7 +561,7 @@ type execVersionDTO struct {
 	runCtx           entity.TaskRunContext
 }
 
-func (ae *Env) execVersion(ctx c.Context, dto *execVersionDTO) (*entity.RunResponse, error) {
+func (ae *Env) execVersion(ctx context.Context, dto *execVersionDTO) (*entity.RunResponse, error) {
 	ctxLocal, s := trace.StartSpan(ctx, "exec_version")
 	defer s.End()
 
@@ -645,7 +650,7 @@ type execVersionInternalDTO struct {
 	runCtx         entity.TaskRunContext
 }
 
-func (ae *Env) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO) (*pipeline.ExecutablePipeline, Err, error) {
+func (ae *Env) execVersionInternal(ctx context.Context, dto *execVersionInternalDTO) (*pipeline.ExecutablePipeline, Err, error) {
 	ctx, span := trace.StartSpan(ctx, "exec_version_internal")
 	defer span.End()
 

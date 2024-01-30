@@ -663,7 +663,7 @@ func (gb *GoApproverBlock) addApprovers(ctx c.Context, u addApproversParams) err
 
 		gb.State.ApproverLog = append(gb.State.ApproverLog, approverLogEntry)
 
-		err := gb.notifyAdditionalApprovers(ctx, logApprovers, u.Attachments)
+		err := gb.notifyAdditionalApprovers(ctx, logApprovers)
 		if err != nil {
 			return err
 		}

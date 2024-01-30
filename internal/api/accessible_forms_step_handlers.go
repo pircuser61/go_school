@@ -17,25 +17,25 @@ const (
 	IdleStatus    = "idle"
 )
 
-type AccessibleFormsApproverBlockTypeStepHandler struct {
+type AccessibleFormsApproverBlockStepHandler struct {
 	currentUser            string
 	accessibleForms        map[string]struct{}
 	approvementDelegations humantasks.Delegations
 }
 
-func NewAccessibleFormsApproverBlockTypeStepHandler(
+func NewAccessibleFormsApproverBlockStepHandler(
 	currentUser string,
 	accessibleForms map[string]struct{},
 	delegates humantasks.Delegations,
-) *AccessibleFormsApproverBlockTypeStepHandler {
-	return &AccessibleFormsApproverBlockTypeStepHandler{
+) *AccessibleFormsApproverBlockStepHandler {
+	return &AccessibleFormsApproverBlockStepHandler{
 		accessibleForms:        accessibleForms,
 		approvementDelegations: delegates.FilterByType("approvement"),
 		currentUser:            currentUser,
 	}
 }
 
-func (h *AccessibleFormsApproverBlockTypeStepHandler) HandleStep(step *entity.Step) error {
+func (h *AccessibleFormsApproverBlockStepHandler) HandleStep(step *entity.Step) error {
 	if step.State == nil || (step.Status != RunningStatus && step.Status != IdleStatus) {
 		return nil
 	}
@@ -60,7 +60,7 @@ func (h *AccessibleFormsApproverBlockTypeStepHandler) HandleStep(step *entity.St
 	return nil
 }
 
-func (h *AccessibleFormsApproverBlockTypeStepHandler) userHasAccess(approver *pipeline.ApproverData) bool {
+func (h *AccessibleFormsApproverBlockStepHandler) userHasAccess(approver *pipeline.ApproverData) bool {
 	if h.isApprover(approver) {
 		return true
 	}
@@ -68,7 +68,7 @@ func (h *AccessibleFormsApproverBlockTypeStepHandler) userHasAccess(approver *pi
 	return h.isAdditionalApprover(approver)
 }
 
-func (h *AccessibleFormsApproverBlockTypeStepHandler) isApprover(approver *pipeline.ApproverData) bool {
+func (h *AccessibleFormsApproverBlockStepHandler) isApprover(approver *pipeline.ApproverData) bool {
 	for member := range approver.Approvers {
 		if h.currentUser == member || isDelegate(h.currentUser, member, &h.approvementDelegations) {
 			return true
@@ -78,7 +78,7 @@ func (h *AccessibleFormsApproverBlockTypeStepHandler) isApprover(approver *pipel
 	return false
 }
 
-func (h *AccessibleFormsApproverBlockTypeStepHandler) isAdditionalApprover(approver *pipeline.ApproverData) bool {
+func (h *AccessibleFormsApproverBlockStepHandler) isAdditionalApprover(approver *pipeline.ApproverData) bool {
 	for _, member := range approver.AdditionalApprovers {
 		if h.currentUser == member.ApproverLogin || isDelegate(h.currentUser, member.ApproverLogin, &h.approvementDelegations) {
 			return true
@@ -88,22 +88,22 @@ func (h *AccessibleFormsApproverBlockTypeStepHandler) isAdditionalApprover(appro
 	return false
 }
 
-type AccessibleFormsFormBlockTypeStepHandler struct {
+type AccessibleFormsFormBlockStepHandler struct {
 	currentUser     string
 	accessibleForms map[string]struct{}
 }
 
-func NewAccessibleFormsFormBlockTypeStepHandler(
+func NewAccessibleFormsFormBlockStepHandler(
 	currentUser string,
 	accessibleForms map[string]struct{},
-) *AccessibleFormsFormBlockTypeStepHandler {
-	return &AccessibleFormsFormBlockTypeStepHandler{
+) *AccessibleFormsFormBlockStepHandler {
+	return &AccessibleFormsFormBlockStepHandler{
 		currentUser:     currentUser,
 		accessibleForms: accessibleForms,
 	}
 }
 
-func (h *AccessibleFormsFormBlockTypeStepHandler) HandleStep(step *entity.Step) error {
+func (h *AccessibleFormsFormBlockStepHandler) HandleStep(step *entity.Step) error {
 	if step.State == nil || (step.Status != RunningStatus && step.Status != IdleStatus) {
 		return nil
 	}
@@ -130,7 +130,7 @@ func (h *AccessibleFormsFormBlockTypeStepHandler) HandleStep(step *entity.Step) 
 	return nil
 }
 
-func (h *AccessibleFormsFormBlockTypeStepHandler) userHasAccess(form *pipeline.FormData) bool {
+func (h *AccessibleFormsFormBlockStepHandler) userHasAccess(form *pipeline.FormData) bool {
 	for member := range form.Executors {
 		if h.currentUser == member {
 			return true
@@ -140,25 +140,25 @@ func (h *AccessibleFormsFormBlockTypeStepHandler) userHasAccess(form *pipeline.F
 	return false
 }
 
-type AccessibleFormsExecutionBlockTypeHandler struct {
+type AccessibleFormsExecutionBlockStepHandler struct {
 	currentUser          string
 	accessibleForms      map[string]struct{}
 	executionDelegations humantasks.Delegations
 }
 
-func NewAccessibleFormsExecutionBlockTypeHandler(
+func NewAccessibleFormsExecutionBlockStepHandler(
 	currentUser string,
 	accessibleForms map[string]struct{},
 	delegates humantasks.Delegations,
-) *AccessibleFormsExecutionBlockTypeHandler {
-	return &AccessibleFormsExecutionBlockTypeHandler{
+) *AccessibleFormsExecutionBlockStepHandler {
+	return &AccessibleFormsExecutionBlockStepHandler{
 		currentUser:          currentUser,
 		accessibleForms:      accessibleForms,
 		executionDelegations: delegates.FilterByType("execution"),
 	}
 }
 
-func (h *AccessibleFormsExecutionBlockTypeHandler) HandleStep(step *entity.Step) error {
+func (h *AccessibleFormsExecutionBlockStepHandler) HandleStep(step *entity.Step) error {
 	if step.State == nil || (step.Status != RunningStatus && step.Status != IdleStatus) {
 		return nil
 	}
@@ -183,9 +183,74 @@ func (h *AccessibleFormsExecutionBlockTypeHandler) HandleStep(step *entity.Step)
 	return nil
 }
 
-func (h *AccessibleFormsExecutionBlockTypeHandler) userHasAccess(execution *pipeline.ExecutionData) bool {
+func (h *AccessibleFormsExecutionBlockStepHandler) userHasAccess(execution *pipeline.ExecutionData) bool {
 	for member := range execution.Executors {
 		if member == h.currentUser || isDelegate(h.currentUser, member, &h.executionDelegations) {
+			return true
+		}
+	}
+
+	return false
+}
+
+type AccessibleFormsSignBlockStepHandler struct {
+	currentUser     string
+	accessibleForms map[string]struct{}
+}
+
+func NewAccessibleFormsSignBlockStepHandler(currentUser string, accessibleForms map[string]struct{}) *AccessibleFormsSignBlockStepHandler {
+	return &AccessibleFormsSignBlockStepHandler{
+		currentUser:     currentUser,
+		accessibleForms: accessibleForms,
+	}
+}
+
+func (h *AccessibleFormsSignBlockStepHandler) HandleStep(s *entity.Step) error {
+	if s.State == nil || (s.Status != "running" && s.Status != "idle") {
+		return nil
+	}
+
+	var sign pipeline.SignData
+
+	unmarshalErr := json.Unmarshal(s.State[s.Name], &sign)
+	if unmarshalErr != nil {
+		return unmarshalErr
+	}
+
+	if !h.userHasAccess(&sign) {
+		return nil
+	}
+
+	for _, form := range sign.FormsAccessibility {
+		if form.AccessType != TypeAccessFormNone {
+			h.accessibleForms[form.NodeID] = struct{}{}
+		}
+	}
+
+	return nil
+}
+
+func (h *AccessibleFormsSignBlockStepHandler) userHasAccess(sign *pipeline.SignData) bool {
+	if h.isSigner(sign) {
+		return true
+	}
+
+	return h.isAdditionalApprover(sign)
+}
+
+func (h *AccessibleFormsSignBlockStepHandler) isSigner(sign *pipeline.SignData) bool {
+	for member := range sign.Signers {
+		if member == h.currentUser {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (h *AccessibleFormsSignBlockStepHandler) isAdditionalApprover(sign *pipeline.SignData) bool {
+	for addMember := range sign.AdditionalApprovers {
+		if sign.AdditionalApprovers[addMember].ApproverLogin == h.currentUser {
 			return true
 		}
 	}

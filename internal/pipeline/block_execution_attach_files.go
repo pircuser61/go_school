@@ -23,7 +23,7 @@ func (gb *GoExecutionBlock) attachFiles(
 		iconsName = append(iconsName, warningImg)
 	}
 
-	if gb.downloadImgFromDescription(description) {
+	if isNeedAddDownloadImage(description) {
 		iconsName = append(iconsName, downloadImg)
 	}
 

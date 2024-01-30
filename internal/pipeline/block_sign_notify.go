@@ -12,7 +12,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
-func (gb *GoSignBlock) notifyAdditionalApprovers(ctx c.Context, logins []string, attachsID []entity.Attachment) error {
+func (gb *GoSignBlock) notifyAdditionalApprovers(ctx c.Context, logins []string, _ []entity.Attachment) error {
 	l := logger.GetLogger(ctx)
 
 	emails := make([]string, 0, len(logins))
@@ -26,11 +26,6 @@ func (gb *GoSignBlock) notifyAdditionalApprovers(ctx c.Context, logins []string,
 		}
 
 		emails = append(emails, approverEmail)
-	}
-
-	files, err := gb.RunContext.Services.FileRegistry.GetAttachments(ctx, attachsID)
-	if err != nil {
-		return err
 	}
 
 	emails = utils.UniqueStrings(emails)

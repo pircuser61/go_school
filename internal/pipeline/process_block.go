@@ -175,6 +175,7 @@ func CreateBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *Block
 		}
 
 		if bl.Output != nil {
+			//nolint:gocritic //коллекция без поинтеров
 			for propertyName, v := range bl.Output.Properties {
 				epi.Output[propertyName] = v.Global
 			}
@@ -192,7 +193,8 @@ func CreateBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *Block
 }
 
 func createGoBlock(ctx c.Context, ef *entity.EriusFunc, name string, runCtx *BlockRunContext,
-	expectedEvents map[string]struct{}) (r Runner, reEntry bool, err error) {
+	expectedEvents map[string]struct{},
+) (r Runner, reEntry bool, err error) {
 	switch ef.TypeID {
 	case BlockGoIfID:
 		return createGoIfBlock(ctx, name, ef, runCtx, expectedEvents)
@@ -285,7 +287,8 @@ func updateBlock(ctx c.Context, block Runner, name string, id uuid.UUID, runCtx 
 }
 
 func (runCtx *BlockRunContext) saveStepInDB(ctx c.Context, name, stepType, status string,
-	pl []Member, deadlines []Deadline, isReEntered bool) (uuid.UUID, time.Time, error) {
+	pl []Member, deadlines []Deadline, isReEntered bool,
+) (uuid.UUID, time.Time, error) {
 	storageData, errSerialize := json.Marshal(runCtx.VarStore)
 	if errSerialize != nil {
 		return uuid.Nil, time.Time{}, errSerialize
@@ -334,7 +337,8 @@ func (runCtx *BlockRunContext) saveStepInDB(ctx c.Context, name, stepType, statu
 }
 
 func (runCtx *BlockRunContext) updateStepInDB(ctx c.Context, name string, id uuid.UUID, hasError bool, status Status,
-	pl []Member, deadlines []Deadline) error {
+	pl []Member, deadlines []Deadline,
+) error {
 	storageData, err := json.Marshal(runCtx.VarStore)
 	if err != nil {
 		return err
@@ -381,7 +385,8 @@ func (runCtx *BlockRunContext) updateStepInDB(ctx c.Context, name string, id uui
 }
 
 func ProcessBlockWithEndMapping(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *BlockRunContext,
-	manual bool) error {
+	manual bool,
+) error {
 	ctx, s := trace.StartSpan(ctx, "process_block_with_end_mapping")
 	defer s.End()
 
@@ -467,6 +472,7 @@ func processBlockEnd(ctx c.Context, status string, runCtx *BlockRunContext) (err
 			systemSettings.OutputSettings.URL == "" ||
 			systemSettings.OutputSettings.MicroserviceID == "" {
 			log.Info(fmt.Sprintf("no output settings for clientID %s", context.ClientID))
+
 			return nil
 		}
 
@@ -529,9 +535,9 @@ func sendEndingMapping(
 		return jsonErr
 	}
 
-	req, reqErr := http.NewRequest(settings.Method, settings.URL, bytes.NewBuffer(body))
-	if reqErr != nil {
-		return reqErr
+	req, err := http.NewRequestWithContext(ctx, settings.Method, settings.URL, bytes.NewBuffer(body))
+	if err != nil {
+		return err
 	}
 
 	if auth.AuthType == "oAuth" {

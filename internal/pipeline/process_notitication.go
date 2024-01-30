@@ -35,6 +35,7 @@ func (runCtx *BlockRunContext) handleInitiatorNotify(ctx c.Context, params handl
 		return nil
 	}
 
+	//nolint:exhaustive //нам не нужно обрабатывать остальные случаи
 	switch params.status {
 	case StatusNew,
 		StatusApproved,
@@ -76,6 +77,7 @@ func (runCtx *BlockRunContext) handleInitiatorNotify(ctx c.Context, params handl
 		email, err = runCtx.Services.People.GetUserEmail(ctx, login)
 		if err != nil {
 			log.WithField("login", login).WithError(err).Warning("couldn't get email")
+
 			return nil
 		}
 
@@ -170,12 +172,12 @@ func (runCtx *BlockRunContext) makeNotificationAttachment() ([]fileregistry.File
 		if ok {
 			switch data := filesAttach.(type) {
 			case om.OrderedMap:
-				fileId, get := data.Get("file_id")
+				fileID, get := data.Get("file_id")
 				if !get {
 					continue
 				}
 
-				attachments = append(attachments, entity.Attachment{FileID: fileId.(string)})
+				attachments = append(attachments, entity.Attachment{FileID: fileID.(string)})
 			case []interface{}:
 				for _, vv := range data {
 					fileMap := vv.(om.OrderedMap)
@@ -234,10 +236,7 @@ func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) ([]o
 		apBody.Set("attachList", attachments.AttachmentsList)
 	}
 
-	apBody, err = runCtx.excludeHiddenApplicationFields(apBody, taskContext.InitialApplication.HiddenFields)
-	if err != nil {
-		return nil, nil, err
-	}
+	apBody = runCtx.excludeHiddenApplicationFields(apBody, taskContext.InitialApplication.HiddenFields)
 
 	descriptions = append(descriptions, apBody)
 
@@ -255,8 +254,8 @@ func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) ([]o
 				continue
 			}
 
-			if fileId, fileOk := file.Get("file_id"); fileOk {
-				attachmentFiles = append(attachmentFiles, fileId.(string))
+			if fileID, fileOK := file.Get("file_id"); fileOK {
+				attachmentFiles = append(attachmentFiles, fileID.(string))
 			}
 		}
 
@@ -289,7 +288,7 @@ func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) ([]o
 	return descriptions, files, nil
 }
 
-func (runCtx *BlockRunContext) excludeHiddenApplicationFields(desc om.OrderedMap, hiddenFields []string) (om.OrderedMap, error) {
+func (runCtx *BlockRunContext) excludeHiddenApplicationFields(desc om.OrderedMap, hiddenFields []string) om.OrderedMap {
 	res := om.New()
 
 	for _, key := range desc.Keys() {
@@ -300,7 +299,7 @@ func (runCtx *BlockRunContext) excludeHiddenApplicationFields(desc om.OrderedMap
 		}
 	}
 
-	return *res, nil
+	return *res
 }
 
 func (runCtx *BlockRunContext) excludeHiddenFormFields(formName string, desc om.OrderedMap) (om.OrderedMap, error) {

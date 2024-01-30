@@ -218,7 +218,9 @@ func Test_createGoFormBlock(t *testing.T) {
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
+
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
@@ -226,10 +228,12 @@ func Test_createGoFormBlock(t *testing.T) {
 									Close:      true,
 								}
 							}
-							f_error := func(*http.Request) error {
+
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							sdMock.Cli = httpClient
 
@@ -347,7 +351,9 @@ func Test_createGoFormBlock(t *testing.T) {
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
+
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
@@ -355,10 +361,12 @@ func Test_createGoFormBlock(t *testing.T) {
 									Close:      true,
 								}
 							}
-							f_error := func(*http.Request) error {
+
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							sdMock.Cli = httpClient
 

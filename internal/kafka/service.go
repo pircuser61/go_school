@@ -27,6 +27,7 @@ type Service struct {
 	MessageHandler *msgkit.MessageHandler[RunnerInMessage]
 }
 
+//nolint:gocritic //если тут удобно по значению значит пусть будет по значению
 func NewService(log logger.Logger, cfg Config) (*Service, error) {
 	topics := []string{cfg.ProducerTopic, cfg.ConsumerTopic}
 

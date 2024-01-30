@@ -29,12 +29,12 @@ func (s *Service) GetCalendars(ctx context.Context, params *GetCalendarsParams) 
 	if err != nil || response.StatusCode() != http.StatusOK {
 		for retryCount := 0; retryCount < maxRetries; retryCount++ {
 			retryDelay = time.Duration(fibonacci(retryCount)) * time.Second
-			select {
-			case <-time.After(retryDelay):
-				response, err = s.Cli.GetCalendarsWithResponse(ctx, params)
-				if err == nil && response.StatusCode() == http.StatusOK {
-					break
-				}
+
+			<-time.After(retryDelay)
+
+			response, err = s.Cli.GetCalendarsWithResponse(ctx, params)
+			if err == nil && response.StatusCode() == http.StatusOK {
+				break
 			}
 		}
 	}

@@ -8,12 +8,12 @@ import (
 )
 
 func UniqueStrings(inSlice []string) []string {
-	keys := make(map[string]bool, len(inSlice))
+	keys := make(map[string]struct{}, len(inSlice))
 	list := make([]string, 0, len(inSlice))
 
 	for _, entry := range inSlice {
 		if _, value := keys[entry]; !value {
-			keys[entry] = true
+			keys[entry] = struct{}{}
 
 			list = append(list, entry)
 		}

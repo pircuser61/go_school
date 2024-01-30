@@ -54,57 +54,23 @@ func createGoFormBlock(
 
 	rawState, blockExists := runCtx.VarStore.State[name]
 	if blockExists {
-		if err := b.loadState(rawState); err != nil {
+		loadReEntry, err := b.load(ctx, rawState, runCtx, name, ef)
+		if err != nil {
 			return nil, false, err
 		}
 
-		reEntry = runCtx.UpdateData == nil
-
-		if reEntry {
-			if err := b.reEntry(ctx, ef); err != nil {
-				return nil, false, err
-			}
-
-			b.RunContext.VarStore.AddStep(b.Name)
-
-			if _, ok := b.expectedEvents[eventStart]; ok {
-				status, _, _ := b.GetTaskHumanStatus()
-
-				event, err := runCtx.MakeNodeStartEvent(ctx, MakeNodeStartEventArgs{
-					NodeName:      name,
-					NodeShortName: ef.ShortTitle,
-					HumanStatus:   status,
-					NodeStatus:    b.GetStatus(),
-				})
-				if err != nil {
-					return nil, false, err
-				}
-
-				b.happenedEvents = append(b.happenedEvents, event)
-			}
-		}
+		reEntry = loadReEntry
 	} else {
 		if err := b.createState(ctx, ef); err != nil {
 			return nil, false, err
 		}
 
 		b.RunContext.VarStore.AddStep(b.Name)
-	}
 
-	if _, ok := b.expectedEvents[eventStart]; ok {
-		status, _, _ := b.GetTaskHumanStatus()
-
-		event, err := runCtx.MakeNodeStartEvent(ctx, MakeNodeStartEventArgs{
-			NodeName:      name,
-			NodeShortName: ef.ShortTitle,
-			HumanStatus:   status,
-			NodeStatus:    b.GetStatus(),
-		})
+		err := b.makeNodeStartEventIfExpected(ctx, runCtx, name, ef)
 		if err != nil {
 			return nil, false, err
 		}
-
-		b.happenedEvents = append(b.happenedEvents, event)
 	}
 
 	return b, reEntry, nil
@@ -141,25 +107,9 @@ func (gb *GoFormBlock) reEntry(ctx c.Context, ef *entity.EriusFunc) error {
 	gb.State.ActualExecutor = nil
 
 	if !isAutofill && gb.State.FormExecutorType != script.FormExecutorTypeAutoFillUser {
-		if gb.State.FormExecutorType == script.FormExecutorTypeFromSchema {
-			var params script.FormParams
-
-			err := json.Unmarshal(ef.Params, &params)
-			if err != nil {
-				return errors.Wrap(err, "can not get form parameters in reentry")
-			}
-
-			setErr := gb.setExecutorsByParams(ctx, &setFormExecutorsByParamsDTO{
-				FormExecutorType: gb.State.FormExecutorType,
-				Value:            params.Executor,
-			})
-
-			if setErr != nil {
-				return setErr
-			}
-		} else {
-			gb.State.Executors = gb.State.InitialExecutors
-			gb.State.IsTakenInWork = len(gb.State.InitialExecutors) == 1
+		err := gb.setExecutors(ctx, ef)
+		if err != nil {
+			return err
 		}
 	}
 

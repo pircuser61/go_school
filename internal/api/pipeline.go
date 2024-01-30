@@ -87,20 +87,11 @@ func (ae *Env) CreatePipeline(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	hasPrivateFunction := false
+	hasPrivateFunction, err := ae.hasPrivateFunction(ctx, executableFunctions)
+	if err != nil {
+		errorHandler.handleError(GetFunctionError, err)
 
-	for _, fn := range executableFunctions {
-		function, getFunctionErr := ae.FunctionStore.GetFunctionVersion(ctx, fn.FunctionID, fn.VersionID)
-		if getFunctionErr != nil {
-			errorHandler.handleError(GetFunctionError, getFunctionErr)
-
-			return
-		}
-
-		hasPrivateFunction = function.Options.Private
-		if hasPrivateFunction {
-			break
-		}
+		return
 	}
 
 	err = ae.DB.CreatePipeline(ctx, &p, userFromContext.Username, b, uuid.Nil, hasPrivateFunction)
@@ -180,20 +171,11 @@ func (ae *Env) CopyPipeline(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	hasPrivateFunction := false
+	hasPrivateFunction, err := ae.hasPrivateFunction(ctx, executableFunctions)
+	if err != nil {
+		errorHandler.handleError(GetFunctionError, err)
 
-	for _, fn := range executableFunctions {
-		function, getFunctionErr := ae.FunctionStore.GetFunctionVersion(ctx, fn.FunctionID, fn.VersionID)
-		if getFunctionErr != nil {
-			errorHandler.handleError(GetFunctionError, getFunctionErr)
-
-			return
-		}
-
-		hasPrivateFunction = function.Options.Private
-		if hasPrivateFunction {
-			break
-		}
+		return
 	}
 
 	err = ae.DB.CreatePipeline(ctx, &p, userFromContext.Username, updated, oldVersionID, hasPrivateFunction)

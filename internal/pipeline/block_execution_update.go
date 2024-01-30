@@ -12,7 +12,6 @@ import (
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
-	file_registry "gitlab.services.mts.ru/jocasta/pipeliner/internal/fileregistry"
 	hs "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
@@ -758,28 +757,12 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx context.Context, loginTakenI
 		login = recipient
 	}
 
-	lastWorksForUser := make([]*entity.EriusTask, 0)
-
-	if processSettings.ResubmissionPeriod > 0 {
-		var getWorksErr error
-		lastWorksForUser, getWorksErr = gb.RunContext.Services.Storage.GetWorksForUserWithGivenTimeRange(ctx,
-			processSettings.ResubmissionPeriod,
-			login,
-			task.VersionID.String(),
-			gb.RunContext.WorkNumber,
-		)
-
-		if getWorksErr != nil {
-			return getWorksErr
-		}
-	}
-
-	initiator, err := gb.RunContext.Services.People.GetUser(ctx, gb.RunContext.Initiator)
+	lastWorksForUser, err := gb.lastWorksForUser(ctx, &processSettings, login, task)
 	if err != nil {
 		return err
 	}
 
-	initiatorInfo, err := initiator.ToUserinfo()
+	initiatorInfo, err := gb.initiatorInfo(ctx)
 	if err != nil {
 		return err
 	}
@@ -871,28 +854,7 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx context.Context, loginTakenI
 		},
 	)
 
-	iconsNameNotif := []string{tpl.Image, userImg}
-
-	for _, v := range buttons {
-		iconsNameNotif = append(iconsNameNotif, v.Img)
-	}
-
-	if len(lastWorksForUser) != 0 {
-		iconsNameNotif = append(iconsNameNotif, warningImg)
-	}
-
-	for _, v := range description {
-		links, link := v.Get("attachLinks")
-		if link {
-			attachFiles, ok := links.([]file_registry.AttachInfo)
-			if ok && len(attachFiles) != 0 {
-				iconsNameNotif = append(iconsNameNotif, downloadImg)
-				break
-			}
-		}
-	}
-
-	attachFiles, err := gb.RunContext.GetIcons(iconsNameNotif)
+	attachFiles, err := gb.attachFiles(&tpl, buttons, lastWorksForUser, description)
 	if err != nil {
 		return err
 	}

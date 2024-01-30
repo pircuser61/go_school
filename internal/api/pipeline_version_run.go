@@ -329,16 +329,18 @@ func (ae *Env) getHiddenFields(ctx c.Context, pipelineID, versionID string) ([]s
 
 	schema := jsonschema.Schema{}
 
-	if string(startSchemaRaw) != "" && string(startSchemaRaw) != "{}" {
-		if err = json.Unmarshal(startSchemaRaw, &schema); err != nil {
-			return hiddenFields, err
+	if len(startSchemaRaw) == 0 && string(startSchemaRaw) != "{}" {
+		unmarshalErr := json.Unmarshal(startSchemaRaw, &schema)
+		if unmarshalErr != nil {
+			return hiddenFields, unmarshalErr
 		}
 
-		if hiddenFields, err = schema.GetHiddenFields(); err != nil {
-			return hiddenFields, err
+		hidFields, getErr := schema.GetHiddenFields()
+		if unmarshalErr != nil {
+			return hiddenFields, getErr
 		}
 
-		return hiddenFields, nil
+		return hidFields, nil
 	}
 
 	// if there is no scheme for starting the process
@@ -353,9 +355,9 @@ func (ae *Env) getHiddenFields(ctx c.Context, pipelineID, versionID string) ([]s
 
 	params := pipeline.ApplicationData{}
 
-	errJson := json.Unmarshal(version.Pipeline.Blocks[sdBlockName].Params, &params)
-	if errJson != nil {
-		return hiddenFields, errJson
+	errJSON := json.Unmarshal(version.Pipeline.Blocks[sdBlockName].Params, &params)
+	if errJSON != nil {
+		return hiddenFields, errJSON
 	}
 
 	ae.Log.Info("params", fmt.Sprintf("%+v", params))

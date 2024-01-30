@@ -7,7 +7,6 @@ import (
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
-	file_registry "gitlab.services.mts.ru/jocasta/pipeliner/internal/fileregistry"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
@@ -166,8 +165,8 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 	return nil
 }
 
-func (gb *GoApproverBlock) notifyAdditionalApprovers(ctx c.Context, logins []string, attachsID []entity.Attachment) error {
-	l := logger.GetLogger(ctx)
+func (gb *GoApproverBlock) notifyAdditionalApprovers(ctx c.Context, logins []string) error {
+	log := logger.GetLogger(ctx)
 
 	delegates, err := gb.RunContext.Services.HumanTasks.GetDelegationsByLogins(ctx, logins)
 	if err != nil {
@@ -183,7 +182,7 @@ func (gb *GoApproverBlock) notifyAdditionalApprovers(ctx c.Context, logins []str
 	for _, login := range loginsToNotify {
 		approverEmail, emailErr := gb.RunContext.Services.People.GetUserEmail(ctx, login)
 		if emailErr != nil {
-			l.WithField("login", login).WithError(emailErr).Warning("couldn't get email")
+			log.WithField("login", login).WithError(emailErr).Warning("couldn't get email")
 
 			continue
 		}
@@ -191,18 +190,15 @@ func (gb *GoApproverBlock) notifyAdditionalApprovers(ctx c.Context, logins []str
 		emails = append(emails, approverEmail)
 	}
 
-	files, err := gb.RunContext.Services.FileRegistry.GetAttachments(ctx, attachsID)
-	if err != nil {
-		return err
-	}
-
 	emails = utils.UniqueStrings(emails)
 
 	slaInfoPtr, getSLAInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDTO{
-		TaskCompletionIntervals: []entity.TaskCompletionInterval{{
-			StartedAt:  gb.RunContext.CurrBlockStartTime,
-			FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100),
-		}},
+		TaskCompletionIntervals: []entity.TaskCompletionInterval{
+			{
+				StartedAt:  gb.RunContext.CurrBlockStartTime,
+				FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100),
+			},
+		},
 		WorkType: sla.WorkHourType(gb.State.WorkType),
 	})
 
@@ -287,15 +283,8 @@ func (gb *GoApproverBlock) notifyAdditionalApprovers(ctx c.Context, logins []str
 			filesList = append(filesList, warningImg)
 		}
 
-		for _, v := range description {
-			links, ok := v.Get("attachLinks")
-			if ok {
-				attachFiles, ok := links.([]file_registry.AttachInfo)
-				if ok && len(attachFiles) != 0 {
-					filesList = append(filesList, downloadImg)
-					break
-				}
-			}
+		if isNeedAddDownloadImage(description) {
+			filesList = append(filesList, downloadImg)
 		}
 
 		iconFiles, iconErr := gb.RunContext.GetIcons(filesList)
