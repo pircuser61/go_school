@@ -237,9 +237,9 @@ func (db *PGCon) SaveExternalSystemSettings(ctx context.Context, vID string, sys
 	ctx, span := trace.StartSpan(ctx, "pg_save_external_system_settings")
 	defer span.End()
 
-	const thrisArgPostFix = " = $3"
-
 	args := []interface{}{vID, system.ID}
+
+	thrisArgPostFix := fmt.Sprintf(" = $%d", len(args)+1)
 
 	var schemasForUpdate string
 

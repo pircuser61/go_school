@@ -1,7 +1,7 @@
 package api
 
 import (
-	c "context"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -23,6 +23,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
@@ -117,12 +118,9 @@ func (ae *Env) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 		}
 	}
 
-	if err = sendResponse(w, http.StatusOK, nil); err != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
+	err = sendResponse(w, http.StatusOK, nil)
+	if err != nil {
+		errorHandler.handleError(UnknownError, err)
 	}
 }
 
@@ -131,11 +129,10 @@ func (ae *Env) UpdateTask(w http.ResponseWriter, req *http.Request, workNumber s
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
+	errorHandler := newHTTPErrorHandler(log, w)
 
 	if workNumber == "" {
-		e := WorkNumberParsingError
-		log.Error(e.errorMessage(errors.New("workNumber is empty")))
-		_ = e.sendError(w)
+		errorHandler.handleError(WorkNumberParsingError, errors.New("workNumber is empty"))
 
 		return
 	}
@@ -144,27 +141,22 @@ func (ae *Env) UpdateTask(w http.ResponseWriter, req *http.Request, workNumber s
 	defer req.Body.Close()
 
 	if err != nil {
-		e := RequestReadError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(RequestReadError, err)
 
 		return
 	}
 
 	var updateData entity.TaskUpdate
 	if err = json.Unmarshal(b, &updateData); err != nil {
-		e := UpdateTaskParsingError
-		log.WithField("updateData", string(b)).Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		e := newHTTPErrorHandler(log.WithField("updateData", string(b)), w)
+		e.handleError(UpdateTaskParsingError, err)
 
 		return
 	}
 
 	ui, err := user.GetUserInfoFromCtx(ctx)
 	if err != nil {
-		e := NoUserInContextError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(NoUserInContextError, err)
 
 		return
 	}
@@ -179,17 +171,13 @@ func (ae *Env) UpdateTask(w http.ResponseWriter, req *http.Request, workNumber s
 	}
 
 	if err != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(UnknownError, err)
 
 		return
 	}
 
 	if err = sendResponse(w, http.StatusOK, nil); err != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(UnknownError, err)
 
 		return
 	}
@@ -205,7 +193,7 @@ type updateStepData struct {
 	login       string
 }
 
-func (ae *Env) updateStepInternal(ctx c.Context, data *updateStepData) bool {
+func (ae *Env) updateStepInternal(ctx context.Context, data *updateStepData) bool {
 	log := logger.GetLogger(ctx)
 
 	txStorage, transactionErr := ae.DB.StartTransaction(ctx)
@@ -318,7 +306,7 @@ func (ae *Env) updateStepInternal(ctx c.Context, data *updateStepData) bool {
 	return true
 }
 
-func (ae *Env) updateTaskBlockInternal(ctx c.Context, workNumber, userLogin string, in *entity.TaskUpdate) (err error) {
+func (ae *Env) updateTaskBlockInternal(ctx context.Context, workNumber, userLogin string, in *entity.TaskUpdate) (err error) {
 	ctxLocal, span := trace.StartSpan(ctx, "update_task_internal")
 	defer span.End()
 
@@ -412,7 +400,7 @@ func (ae *Env) updateTaskBlockInternal(ctx c.Context, workNumber, userLogin stri
 	return nil
 }
 
-func (ae *Env) getAuthorAndMembersToNotify(ctx c.Context, workNumber, userLogin string) ([]string, error) {
+func (ae *Env) getAuthorAndMembersToNotify(ctx context.Context, workNumber, userLogin string) ([]string, error) {
 	taskMembers, err := ae.DB.GetTaskMembers(ctx, workNumber, true)
 	if err != nil {
 		return nil, err
@@ -475,7 +463,7 @@ func (ae *Env) getAuthorAndMembersToNotify(ctx c.Context, workNumber, userLogin 
 	return res, nil
 }
 
-func (ae *Env) updateTaskInternal(ctx c.Context, workNumber, userLogin string, in *entity.TaskUpdate) (err error) {
+func (ae *Env) updateTaskInternal(ctx context.Context, workNumber, userLogin string, in *entity.TaskUpdate) (err error) {
 	ctxLocal, span := trace.StartSpan(ctx, "update_application_internal")
 	defer span.End()
 
@@ -533,7 +521,7 @@ func (ae *Env) updateTaskInternal(ctx c.Context, workNumber, userLogin string, i
 		}
 	}()
 
-	err = ae.updateTasks(ctx, dbTask, cancelAppParams, userLogin)
+	err = ae.stopTaskBlocks(ctx, dbTask, cancelAppParams, userLogin)
 	if err != nil {
 		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
 			log.WithField("funcName", "Env.updateTasks").
@@ -596,8 +584,8 @@ func (ae *Env) updateTaskInternal(ctx c.Context, workNumber, userLogin string, i
 	return nil
 }
 
-func (ae *Env) updateTasks(
-	ctx c.Context,
+func (ae *Env) stopTaskBlocks(
+	ctx context.Context,
 	dbTask *entity.EriusTask,
 	cancelAppParams entity.CancelAppParams,
 	userLogin string,
@@ -631,9 +619,7 @@ func (ae *Env) RateApplication(w http.ResponseWriter, r *http.Request, workNumbe
 	defer r.Body.Close()
 
 	if err != nil {
-		e := RequestReadError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(RequestReadError, err)
 
 		return
 	}
@@ -765,9 +751,140 @@ func (ae *Env) StopTasks(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = sendResponse(w, http.StatusOK, resp); err != nil {
+	err = sendResponse(w, http.StatusOK, resp)
+	if err != nil {
 		errorHandler.handleError(UnknownError, err)
 
 		return
 	}
+}
+
+func (ae *Env) updateTaskByWorkNumber(
+	ctx context.Context,
+	txStorage db.Database,
+	ui *sso.UserInfo,
+	workNumber string,
+	tasks *stoppedTasks,
+) error {
+	log := logger.GetLogger(ctx)
+
+	dbTask, getTaskErr := txStorage.GetTask(ctx, []string{ui.Username}, []string{ui.Username}, ui.Username, workNumber)
+	if getTaskErr != nil {
+		log.WithError(getTaskErr).Error("couldn't get task")
+
+		return getTaskErr
+	}
+
+	if dbTask.FinishedAt != nil {
+		tasks.Tasks = append(
+			tasks.Tasks,
+			stoppedTask{
+				FinishedAt: *dbTask.FinishedAt,
+				Status:     dbTask.HumanStatus,
+				WorkNumber: dbTask.WorkNumber,
+				ID:         dbTask.ID,
+			},
+		)
+
+		return nil
+	}
+
+	err := txStorage.StopTaskBlocks(ctx, dbTask.ID)
+	if err != nil {
+		log.WithError(err).Error("couldn't stop task blocks")
+
+		return err
+	}
+
+	err = txStorage.UpdateTaskStatus(ctx, dbTask.ID, db.RunStatusCanceled, db.CommentCanceled, ui.Username)
+	if err != nil {
+		log.WithError(err).Error("couldn't update task status")
+
+		return err
+	}
+
+	updatedTask, updateTaskErr := txStorage.UpdateTaskHumanStatus(ctx, dbTask.ID, string(pipeline.StatusCancel), "")
+	if updateTaskErr != nil {
+		log.WithError(updateTaskErr).Error("couldn't update human status")
+
+		return updateTaskErr
+	}
+
+	logins, loginsErr := ae.getAuthorAndMembersToNotify(ctx, workNumber, ui.Username)
+	if loginsErr != nil {
+		log.WithError(loginsErr).Error("couldn't get logins")
+	}
+
+	emails := make([]string, 0, len(logins))
+
+	for _, login := range logins {
+		userEmail, getUserEmailErr := ae.People.GetUserEmail(ctx, login)
+		if getUserEmailErr != nil {
+			continue
+		}
+
+		emails = append(emails, userEmail)
+	}
+
+	em := mail.NewRejectPipelineGroupTemplate(dbTask.WorkNumber, dbTask.Name, ae.Mail.SdAddress)
+
+	file, ok := ae.Mail.Images[em.Image]
+	if !ok {
+		log.Error("couldn't find images: ", em.Image)
+
+		return fmt.Errorf("couldn't find images: %s", em.Image)
+	}
+
+	files := []email.Attachment{
+		{
+			Name:    headImg,
+			Content: file,
+			Type:    email.EmbeddedAttachment,
+		},
+	}
+
+	sendNotifErr := ae.Mail.SendNotification(ctx, emails, files, em)
+	if sendNotifErr != nil {
+		log.WithError(sendNotifErr).Error("couldn't send notification")
+	}
+
+	tasks.Tasks = append(
+		tasks.Tasks,
+		stoppedTask{
+			FinishedAt: *updatedTask.FinishedAt,
+			Status:     updatedTask.HumanStatus,
+			WorkNumber: updatedTask.WorkNumber,
+			ID:         dbTask.ID,
+		},
+	)
+
+	return nil
+}
+
+func (ae *Env) processTasks(ctx context.Context, stoppedTasks []stoppedTask) error {
+	for i := range stoppedTasks {
+		task := stoppedTasks[i]
+		runCtx := pipeline.BlockRunContext{
+			WorkNumber: task.WorkNumber,
+			TaskID:     task.ID,
+			Services: pipeline.RunContextServices{
+				HTTPClient:   ae.HTTPClient,
+				Integrations: ae.Integrations,
+				Storage:      ae.DB,
+			},
+			BlockRunResults: &pipeline.BlockRunResults{},
+		}
+
+		runCtx.SetTaskEvents(ctx)
+
+		nodeEvents, eventErr := runCtx.GetCancelledStepsEvents(ctx)
+		if eventErr != nil {
+			return eventErr
+		}
+
+		runCtx.BlockRunResults.NodeEvents = nodeEvents
+		runCtx.NotifyEvents(ctx)
+	}
+
+	return nil
 }

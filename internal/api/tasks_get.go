@@ -687,9 +687,39 @@ func (p *GetTasksParams) toEntity(req *http.Request) (entity.TaskFilter, error) 
 	return filters, nil
 }
 
+func handleFilterStatus(filters *entity.TaskFilter) {
+	ss := strings.Split(*filters.Status, ",")
+
+	uniqueS := make(map[pipeline.TaskHumanStatus]struct{})
+	for _, status := range ss {
+		uniqueS[pipeline.TaskHumanStatus(strings.Trim(status, "'"))] = struct{}{}
+	}
+
+	//nolint:exhaustive // раз не надо было обрабатывать остальные случаи значит не надо // правильно, не уважаю этот линтер
+	for status := range uniqueS {
+		switch status {
+		case pipeline.StatusRejected:
+			uniqueS[pipeline.StatusApprovementRejected] = struct{}{}
+		case pipeline.StatusApprovementRejected:
+			uniqueS[pipeline.StatusRejected] = struct{}{}
+		default:
+			continue
+		}
+	}
+
+	newSS := make([]string, 0, len(uniqueS))
+
+	for status := range uniqueS {
+		newSS = append(newSS, "'"+string(status)+"'")
+	}
+
+	newStatuses := strings.Join(newSS, ",")
+	filters.Status = &newStatuses
+}
+
 func selectAsValid(selectAs string) bool {
-	validValuesList := [15]string{
-		entity.SelectAsValApprover,
+	switch selectAs {
+	case entity.SelectAsValApprover,
 		entity.SelectAsValFinishedApprover,
 		entity.SelectAsValExecutor,
 		entity.SelectAsValFinishedExecutor,
@@ -703,12 +733,8 @@ func selectAsValid(selectAs string) bool {
 		entity.SelectAsValGroupExecutor,
 		entity.SelectAsValFinishedGroupExecutor,
 		entity.SelectAsValQueueExecutor,
-		entity.SelectAsValInWorkExecutor,
-	}
-	for _, v := range validValuesList {
-		if selectAs == v {
-			return true
-		}
+		entity.SelectAsValInWorkExecutor:
+		return true
 	}
 
 	return false
@@ -746,21 +772,18 @@ func (ae *Env) GetTasksCount(w http.ResponseWriter, req *http.Request) {
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
+	errorHandler := newHTTPErrorHandler(log, w)
 
 	ui, err := user.GetEffectiveUserInfoFromCtx(req.Context())
 	if err != nil {
-		e := GetUserinfoErr
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(GetUserinfoErr, err)
 
 		return
 	}
 
 	delegations, err := ae.HumanTasks.GetDelegationsToLogin(ctx, ui.Username)
 	if err != nil {
-		e := GetDelegationsError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(GetDelegationsError, err)
 
 		return
 	}
@@ -774,17 +797,14 @@ func (ae *Env) GetTasksCount(w http.ResponseWriter, req *http.Request) {
 		delegationsByApprovement.GetUserInArrayWithDelegators([]string{ui.Username}),
 		delegationsByExecution.GetUserInArrayWithDelegators([]string{ui.Username}))
 	if err != nil {
-		e := GetTasksCountError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(GetTasksCountError, err)
 
 		return
 	}
 
-	if err = sendResponse(w, http.StatusOK, resp); err != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+	err = sendResponse(w, http.StatusOK, resp)
+	if err != nil {
+		errorHandler.handleError(UnknownError, err)
 
 		return
 	}
@@ -871,21 +891,19 @@ func (ae *Env) GetTaskMeanSolveTime(w http.ResponseWriter, req *http.Request, pi
 	defer s.End()
 
 	log := logger.GetLogger(ctx).WithField("pipelineId", pipelineID)
+	errorHandler := newHTTPErrorHandler(log, w)
 
 	taskTimeIntervals, intervalsErr := ae.DB.GetMeanTaskSolveTime(ctx, pipelineID) // it returns ordered by created_at
 	if intervalsErr != nil {
-		e := GetTaskError
-		log.Error(e.errorMessage(intervalsErr))
-		_ = e.sendError(w)
+		errorHandler.handleError(GetTaskError, intervalsErr)
 
 		return
 	}
 
 	if len(taskTimeIntervals) == 0 {
-		if err := sendResponse(w, http.StatusOK, script.TaskSolveTime{MeanWorkHours: 0}); err != nil {
-			e := UnknownError
-			log.Error(e.errorMessage(err))
-			_ = e.sendError(w)
+		err := sendResponse(w, http.StatusOK, script.TaskSolveTime{MeanWorkHours: 0})
+		if err != nil {
+			errorHandler.handleError(UnknownError, err)
 		}
 
 		return
@@ -893,21 +911,16 @@ func (ae *Env) GetTaskMeanSolveTime(w http.ResponseWriter, req *http.Request, pi
 
 	calendarDays, err := ae.HrGate.GetDefaultCalendarDaysForGivenTimeIntervals(ctx, taskTimeIntervals)
 	if err != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(UnknownError, err)
 
 		return
 	}
 
 	mean := ae.SLAService.ComputeMeanTaskCompletionTime(taskTimeIntervals, *calendarDays)
 
-	if err = sendResponse(w, http.StatusOK, script.TaskSolveTime{MeanWorkHours: mean.MeanWorkHours}); err != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
+	err = sendResponse(w, http.StatusOK, script.TaskSolveTime{MeanWorkHours: mean.MeanWorkHours})
+	if err != nil {
+		errorHandler.handleError(UnknownError, err)
 	}
 }
 

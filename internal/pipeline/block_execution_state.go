@@ -11,9 +11,10 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
 
-type RequestInfoType string
-
-type ExecutionDecision string
+type (
+	RequestInfoType   string
+	ExecutionDecision string
+)
 
 func (a ExecutionDecision) String() string {
 	return string(a)

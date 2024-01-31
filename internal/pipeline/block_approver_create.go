@@ -1,7 +1,7 @@
 package pipeline
 
 import (
-	c "context"
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -15,7 +15,7 @@ import (
 )
 
 //nolint:dupl,goconst //another block // не нужно здесь чекать константы
-func createGoApproverBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext,
+func createGoApproverBlock(ctx context.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext,
 	expectedEvents map[string]struct{},
 ) (*GoApproverBlock, bool, error) {
 	if ef.ShortTitle == "" {
@@ -67,7 +67,89 @@ func createGoApproverBlock(ctx c.Context, name string, ef *entity.EriusFunc, run
 	return b, reEntry, nil
 }
 
-func (gb *GoApproverBlock) reEntry(ctx c.Context, ef *entity.EriusFunc) error {
+func (gb *GoApproverBlock) load(
+	ctx context.Context,
+	rawState json.RawMessage,
+	runCtx *BlockRunContext,
+	name string,
+	ef *entity.EriusFunc,
+) (reEntry bool, err error) {
+	if err := gb.loadState(rawState); err != nil {
+		return false, err
+	}
+
+	reEntry = runCtx.UpdateData == nil
+
+	if reEntry {
+		err := gb.reentryMakeExpectedEvents(ctx, runCtx, name, ef)
+		if err != nil {
+			return false, err
+		}
+	}
+
+	return reEntry, nil
+}
+
+func (gb *GoApproverBlock) init(ctx context.Context, runCtx *BlockRunContext, name string, ef *entity.EriusFunc) error {
+	if err := gb.createState(ctx, ef); err != nil {
+		return err
+	}
+
+	gb.RunContext.VarStore.AddStep(gb.Name)
+
+	err := gb.makeExpectedEvents(ctx, runCtx, name, ef)
+	if err != nil {
+		return err
+	}
+	// TODO: выпилить когда сделаем циклы
+	// это для возврата на доработку при которой мы создаем новый процесс
+	// и пытаемся взять решение из прошлого процесса
+	gb.setPrevDecision(ctx)
+
+	return nil
+}
+
+func (gb *GoApproverBlock) reentryMakeExpectedEvents(
+	ctx context.Context,
+	runCtx *BlockRunContext,
+	name string,
+	ef *entity.EriusFunc,
+) error {
+	if err := gb.reEntry(ctx, ef); err != nil {
+		return err
+	}
+
+	gb.RunContext.VarStore.AddStep(gb.Name)
+
+	err := gb.makeExpectedEvents(ctx, runCtx, name, ef)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (gb *GoApproverBlock) makeExpectedEvents(ctx context.Context, runCtx *BlockRunContext, name string, ef *entity.EriusFunc) error {
+	if _, ok := gb.expectedEvents[eventStart]; ok {
+		status, _, _ := gb.GetTaskHumanStatus()
+
+		event, err := runCtx.MakeNodeStartEvent(ctx, MakeNodeStartEventArgs{
+			NodeName:      name,
+			NodeShortName: ef.ShortTitle,
+			HumanStatus:   status,
+			NodeStatus:    gb.GetStatus(),
+		})
+		if err != nil {
+			return err
+		}
+
+		gb.happenedEvents = append(gb.happenedEvents, event)
+	}
+
+	return nil
+}
+
+func (gb *GoApproverBlock) reEntry(ctx context.Context, ef *entity.EriusFunc) error {
 	if gb.State.GetRepeatPrevDecision() {
 		return nil
 	}
@@ -117,7 +199,7 @@ func (gb *GoApproverBlock) loadState(raw json.RawMessage) error {
 }
 
 //nolint:dupl //its not duplicate
-func (gb *GoApproverBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
+func (gb *GoApproverBlock) createState(ctx context.Context, ef *entity.EriusFunc) error {
 	var params script.ApproverParams
 
 	err := json.Unmarshal(ef.Params, &params)
@@ -224,7 +306,7 @@ type setApproversByParamsDTO struct {
 	WorkType *string
 }
 
-func (gb *GoApproverBlock) setApproversByParams(ctx c.Context, dto *setApproversByParamsDTO) error {
+func (gb *GoApproverBlock) setApproversByParams(ctx context.Context, dto *setApproversByParamsDTO) error {
 	switch dto.Type {
 	case script.ApproverTypeUser:
 		gb.State.Approvers = map[string]struct{}{
@@ -281,7 +363,7 @@ func (gb *GoApproverBlock) setApproversByParams(ctx c.Context, dto *setApprovers
 	return nil
 }
 
-func (gb *GoApproverBlock) setPrevDecision(ctx c.Context) {
+func (gb *GoApproverBlock) setPrevDecision(ctx context.Context) {
 	decision := gb.State.GetDecision()
 
 	if decision == nil && len(gb.State.EditingAppLog) == 0 && gb.State.GetIsEditable() {
@@ -300,7 +382,7 @@ func (gb *GoApproverBlock) setPrevDecision(ctx c.Context) {
 }
 
 //nolint:dupl //its not duplicate
-func (gb *GoApproverBlock) setEditingAppLogFromPreviousBlock(ctx c.Context) {
+func (gb *GoApproverBlock) setEditingAppLogFromPreviousBlock(ctx context.Context) {
 	const funcName = "setEditingAppLogFromPreviousBlock"
 
 	l := logger.GetLogger(ctx)
@@ -337,7 +419,7 @@ func (gb *GoApproverBlock) setEditingAppLogFromPreviousBlock(ctx c.Context) {
 	}
 }
 
-func (gb *GoApproverBlock) trySetPreviousDecision(ctx c.Context) (isPrevDecisionAssigned bool) {
+func (gb *GoApproverBlock) trySetPreviousDecision(ctx context.Context) (isPrevDecisionAssigned bool) {
 	const funcName = "pipeline.approver.trySetPreviousDecision"
 
 	l := logger.GetLogger(ctx)
@@ -419,7 +501,7 @@ func (gb *GoApproverBlock) trySetPreviousDecision(ctx c.Context) (isPrevDecision
 }
 
 // nolint:dupl // not dupl
-func (gb *GoApproverBlock) setPreviousApprovers(ctx c.Context) {
+func (gb *GoApproverBlock) setPreviousApprovers(ctx context.Context) {
 	const funcName = "pipeline.approver.setPreviousApprovers"
 
 	l := logger.GetLogger(ctx)

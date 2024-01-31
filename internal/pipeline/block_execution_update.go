@@ -6,15 +6,19 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/iancoleman/orderedmap"
 	"github.com/pkg/errors"
 
+	"gitlab.services.mts.ru/abp/mail/pkg/email"
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	file_registry "gitlab.services.mts.ru/jocasta/pipeliner/internal/fileregistry"
 	hs "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
@@ -57,6 +61,107 @@ func (gb *GoExecutionBlock) Update(ctx context.Context) (interface{}, error) {
 	}
 
 	return nil, nil
+}
+
+func (gb *GoExecutionBlock) handleTaskUpdateAction(ctx context.Context) error {
+	data := gb.RunContext.UpdateData
+	if data == nil {
+		return errors.New("empty data")
+	}
+
+	gb.RunContext.Delegations = gb.RunContext.Delegations.FilterByType("execution")
+
+	err := gb.handleAction(ctx, entity.TaskUpdateAction(data.Action))
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+//nolint:gocognit,gocyclo // вся сложность функции состоит в switch case, под каждым вызывается одна-две функции
+func (gb *GoExecutionBlock) handleAction(ctx context.Context, action entity.TaskUpdateAction) error {
+	//nolint:exhaustive //нам не нужно обрабатывать остальные случаи
+	switch action {
+	case entity.TaskUpdateActionSLABreach:
+		errUpdate := gb.handleBreachedSLA(ctx)
+		if errUpdate != nil {
+			return errUpdate
+		}
+	case entity.TaskUpdateActionHalfSLABreach:
+		gb.handleHalfSLABreached(ctx)
+	case entity.TaskUpdateActionReworkSLABreach:
+		errUpdate := gb.handleReworkSLABreached(ctx)
+		if errUpdate != nil {
+			return errUpdate
+		}
+	case entity.TaskUpdateActionExecution:
+		if !gb.State.IsTakenInWork {
+			return errors.New("is not taken in work")
+		}
+
+		errUpdate := gb.updateDecision(ctx)
+		if errUpdate != nil {
+			return errUpdate
+		}
+	case entity.TaskUpdateActionChangeExecutor:
+		if !gb.State.IsTakenInWork {
+			return errors.New("is not taken in work")
+		}
+
+		errUpdate := gb.changeExecutor(ctx)
+		if errUpdate != nil {
+			return errUpdate
+		}
+	case entity.TaskUpdateActionRequestExecutionInfo:
+		if !gb.State.IsTakenInWork {
+			return errors.New("is not taken in work")
+		}
+
+		errUpdate := gb.updateRequestInfo(ctx)
+		if errUpdate != nil {
+			return errUpdate
+		}
+	case entity.TaskUpdateActionReplyExecutionInfo:
+		if !gb.State.IsTakenInWork {
+			return errors.New("is not taken in work")
+		}
+
+		errUpdate := gb.updateReplyInfo(ctx)
+		if errUpdate != nil {
+			return errUpdate
+		}
+	case entity.TaskUpdateActionExecutorStartWork:
+		if gb.State.IsTakenInWork {
+			return errors.New("is already taken in work")
+		}
+
+		errUpdate := gb.executorStartWork(ctx)
+		if errUpdate != nil {
+			return errUpdate
+		}
+	case entity.TaskUpdateActionExecutorSendEditApp:
+		if !gb.State.IsTakenInWork {
+			return errors.New("is not taken in work")
+		}
+
+		errUpdate := gb.toEditApplication(ctx)
+		if errUpdate != nil {
+			return errUpdate
+		}
+	case entity.TaskUpdateActionDayBeforeSLARequestAddInfo:
+		errUpdate := gb.handleBreachedDayBeforeSLARequestAddInfo(ctx)
+		if errUpdate != nil {
+			return errUpdate
+		}
+	case entity.TaskUpdateActionSLABreachRequestAddInfo:
+		errUpdate := gb.HandleBreachedSLARequestAddInfo(ctx)
+		if errUpdate != nil {
+			return errUpdate
+		}
+	}
+
+	return nil
 }
 
 type ExecutorChangeParams struct {
@@ -147,6 +252,60 @@ func (gb *GoExecutionBlock) handleBreachedSLA(ctx context.Context) error {
 
 	gb.State.SLAChecked = true
 	gb.State.HalfSLAChecked = true
+
+	return nil
+}
+
+func (gb *GoExecutionBlock) checkBreachedSLA(ctx context.Context) error {
+	const fn = "pipeline.execution.checkBreachedSLA"
+
+	log := logger.GetLogger(ctx)
+
+	emails := make([]string, 0, len(gb.State.Executors))
+	logins := getSliceFromMapOfStrings(gb.State.Executors)
+
+	delegations, err := gb.RunContext.Services.HumanTasks.GetDelegationsByLogins(ctx, logins)
+	if err != nil {
+		log.WithError(err).Info(fn, fmt.Sprintf("executors %v have no delegates", logins))
+	}
+
+	delegations = delegations.FilterByType("execution")
+	logins = delegations.GetUserInArrayWithDelegations(logins)
+
+	var executorEmail string
+
+	for i := range logins {
+		executorEmail, err = gb.RunContext.Services.People.GetUserEmail(ctx, logins[i])
+		if err != nil {
+			log.WithError(err).Warning(fn, fmt.Sprintf("executor login %s not found", logins[i]))
+
+			continue
+		}
+
+		emails = append(emails, executorEmail)
+	}
+
+	tpl := mail.NewExecutionSLATpl(
+		gb.RunContext.WorkNumber,
+		gb.RunContext.NotifName,
+		gb.RunContext.Services.Sender.SdAddress,
+	)
+
+	filesList := []string{tpl.Image}
+
+	icons, iconEerr := gb.RunContext.GetIcons(filesList)
+	if iconEerr != nil {
+		return iconEerr
+	}
+
+	if len(emails) == 0 {
+		return nil
+	}
+
+	err = gb.RunContext.Services.Sender.SendNotification(ctx, emails, icons, tpl)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -389,14 +548,14 @@ func (gb *GoExecutionBlock) handleBreachedDayBeforeSLARequestAddInfo(ctx context
 	emails := make([]string, 0, len(loginsToNotify))
 
 	for _, login := range loginsToNotify {
-		email, err := gb.RunContext.Services.People.GetUserEmail(ctx, login)
+		userEmail, err := gb.RunContext.Services.People.GetUserEmail(ctx, login)
 		if err != nil {
 			log.WithError(err).Warning(fn, fmt.Sprintf("login %s not found", login))
 
 			continue
 		}
 
-		emails = append(emails, email)
+		emails = append(emails, userEmail)
 	}
 
 	tpl := mail.NewDayBeforeRequestAddInfoSLABreached(gb.RunContext.WorkNumber, gb.RunContext.NotifName,
@@ -872,6 +1031,120 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx context.Context, loginTakenI
 	return nil
 }
 
+func (gb *GoExecutionBlock) attachFiles(
+	tpl *mail.Template,
+	buttons []mail.Button,
+	lastWorksForUser []*entity.EriusTask,
+	description []orderedmap.OrderedMap,
+) ([]email.Attachment, error) {
+	iconsName := []string{tpl.Image, userImg}
+
+	for _, v := range buttons {
+		iconsName = append(iconsName, v.Img)
+	}
+
+	if len(lastWorksForUser) != 0 {
+		iconsName = append(iconsName, warningImg)
+	}
+
+	if isNeedAddDownloadImage(description) {
+		iconsName = append(iconsName, downloadImg)
+	}
+
+	attachFiles, err := gb.RunContext.GetIcons(iconsName)
+	if err != nil {
+		return nil, err
+	}
+
+	return attachFiles, nil
+}
+
+func (gb *GoExecutionBlock) mapLoginsToEmails(ctx context.Context, loginsToNotify []string, loginTakenInWork string) []string {
+	log := logger.GetLogger(ctx)
+	emails := make([]string, 0)
+
+	for _, login := range loginsToNotify {
+		if login != loginTakenInWork {
+			userEmail, emailErr := gb.RunContext.Services.People.GetUserEmail(ctx, login)
+			if emailErr != nil {
+				log.WithField("login", login).WithError(emailErr).Warning("couldn't get email")
+
+				continue
+			}
+
+			emails = append(emails, userEmail)
+		}
+	}
+
+	return emails
+}
+
+func (gb *GoExecutionBlock) typedAuthor(ctx context.Context) (*sso.UserInfo, error) {
+	author, err := gb.RunContext.Services.People.GetUser(ctx, gb.RunContext.UpdateData.ByLogin)
+	if err != nil {
+		return nil, err
+	}
+
+	typedAuthor, err := author.ToUserinfo()
+	if err != nil {
+		return nil, err
+	}
+
+	return typedAuthor, nil
+}
+
+func (gb *GoExecutionBlock) initiatorInfo(ctx context.Context) (*sso.UserInfo, error) {
+	initiator, err := gb.RunContext.Services.People.GetUser(ctx, gb.RunContext.Initiator)
+	if err != nil {
+		return nil, err
+	}
+
+	initiatorInfo, err := initiator.ToUserinfo()
+	if err != nil {
+		return nil, err
+	}
+
+	return initiatorInfo, nil
+}
+
+func (gb *GoExecutionBlock) downloadImgFromDescription(description []orderedmap.OrderedMap) bool {
+	for _, v := range description {
+		links, link := v.Get("attachLinks")
+		if link {
+			attachFiles, ok := links.([]file_registry.AttachInfo)
+			if ok && len(attachFiles) != 0 {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
+func (gb *GoExecutionBlock) lastWorksForUser(
+	ctx context.Context,
+	processSettings *entity.ProcessSettings,
+	login string,
+	task *entity.EriusScenario,
+) ([]*entity.EriusTask, error) {
+	if processSettings.ResubmissionPeriod > 0 {
+		lastWorksForUser, getWorksErr := gb.RunContext.Services.Storage.GetWorksForUserWithGivenTimeRange(
+			ctx,
+			processSettings.ResubmissionPeriod,
+			login,
+			task.VersionID.String(),
+			gb.RunContext.WorkNumber,
+		)
+		if getWorksErr != nil {
+			return make([]*entity.EriusTask, 0), getWorksErr
+		}
+
+		return lastWorksForUser, nil
+	}
+
+	return make([]*entity.EriusTask, 0), nil
+}
+
 type executorUpdateEditParams struct {
 	Comment     string              `json:"comment"`
 	Attachments []entity.Attachment `json:"attachments"`
@@ -932,4 +1205,31 @@ func (gb *GoExecutionBlock) isNextBlockServiceDesk() bool {
 	}
 
 	return false
+}
+
+func (gb *GoExecutionBlock) returnToAdminForRevision(
+	ctx context.Context,
+	delegateFor string,
+	updateParams executorUpdateEditParams,
+) (err error) {
+	err = gb.State.setEditAppToInitiator(
+		gb.RunContext.UpdateData.ByLogin,
+		delegateFor,
+		updateParams,
+	)
+	if err != nil {
+		return err
+	}
+
+	err = gb.notifyNeedRework(ctx)
+	if err != nil {
+		return err
+	}
+
+	err = gb.RunContext.Services.Storage.FinishTaskBlocks(ctx, gb.RunContext.TaskID, []string{gb.Name}, false)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

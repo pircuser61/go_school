@@ -522,6 +522,37 @@ func validateBlockTypeErrText(valErrText string) Err {
 	}
 }
 
+func (ae *Env) handleScenario(ctx context.Context, p *entity.EriusScenario, ui *sso.UserInfo) (err error) {
+	switch p.Status {
+	case db.StatusApproved:
+		err = ae.DB.SwitchApproved(ctx, p.PipelineID, p.VersionID, ui.Username)
+		if err != nil {
+			return err
+		}
+	case db.StatusRejected:
+		err = ae.DB.SwitchRejected(ctx, p.VersionID, p.CommentRejected, ui.Username)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (ae *Env) handlePipelineBlockLenght(p *entity.EriusScenario) {
+	if len(p.Pipeline.Blocks) == 0 {
+		p.Pipeline.FillEmptyPipeline()
+	} else {
+		keyOutputs := map[string]string{
+			pipeline.BlockGoApproverID:  "approver",
+			pipeline.BlockGoSignID:      "signer",
+			pipeline.BlockGoExecutionID: "login",
+		}
+
+		p.Pipeline.ChangeOutput(keyOutputs)
+	}
+}
+
 func statusGroups(p *entity.EriusScenario) (groups []*entity.NodeGroup, err error) {
 	groups = make([]*entity.NodeGroup, 0)
 
@@ -674,7 +705,7 @@ func (ae *Env) execVersionInternal(ctx context.Context, dto *execVersionInternal
 		}
 	}()
 
-	ep := ae.executablePipeline(dto, txStorage)
+	ep := ae.makeExecutablePipeline(dto, txStorage)
 
 	variableStorage := store.NewStore()
 	pipelineVars := dto.vars
@@ -774,7 +805,7 @@ func (ae *Env) execVersionInternal(ctx context.Context, dto *execVersionInternal
 	return ep, 0, nil
 }
 
-func (ae *Env) executablePipeline(dto *execVersionInternalDTO, txStorage db.Database) *pipeline.ExecutablePipeline {
+func (ae *Env) makeExecutablePipeline(dto *execVersionInternalDTO, txStorage db.Database) *pipeline.ExecutablePipeline {
 	var workNumber string
 	if dto.makeNewWork {
 		workNumber = dto.workNumber

@@ -316,9 +316,7 @@ func (ae *Env) DeleteDraftPipeline(ctx context.Context, w http.ResponseWriter, p
 
 	if canDelete {
 		if err = ae.DB.DeletePipeline(ctx, p.PipelineID); err != nil {
-			e := PipelineDeleteError
-			log.Error(e.errorMessage(err))
-			_ = e.sendError(w)
+			errorHandler.handleError(PipelineDeleteError, err)
 
 			return err
 		}

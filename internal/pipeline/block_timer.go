@@ -1,7 +1,7 @@
 package pipeline
 
 import (
-	c "context"
+	"context"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -48,7 +48,7 @@ func (gb *TimerBlock) Members() []Member {
 	return nil
 }
 
-func (gb *TimerBlock) Deadlines(_ c.Context) ([]Deadline, error) {
+func (gb *TimerBlock) Deadlines(_ context.Context) ([]Deadline, error) {
 	return []Deadline{}, nil
 }
 
@@ -81,7 +81,7 @@ func (gb *TimerBlock) GetState() interface{} {
 	return gb.State
 }
 
-func (gb *TimerBlock) Update(ctx c.Context) (interface{}, error) {
+func (gb *TimerBlock) Update(ctx context.Context) (interface{}, error) {
 	if gb.State.Started {
 		if err := gb.checkUserIsServiceAccount(ctx); err != nil {
 			return nil, err
@@ -129,7 +129,7 @@ func (gb *TimerBlock) Update(ctx c.Context) (interface{}, error) {
 	return nil, nil
 }
 
-func (gb *TimerBlock) startTimer(ctx c.Context) error {
+func (gb *TimerBlock) startTimer(ctx context.Context) error {
 	_, err := gb.RunContext.Services.Scheduler.CreateTask(ctx, &scheduler.CreateTask{
 		WorkNumber:  gb.RunContext.WorkNumber,
 		WorkID:      gb.RunContext.TaskID.String(),
@@ -141,7 +141,7 @@ func (gb *TimerBlock) startTimer(ctx c.Context) error {
 	return err
 }
 
-func (gb *TimerBlock) checkUserIsServiceAccount(ctx c.Context) error {
+func (gb *TimerBlock) checkUserIsServiceAccount(ctx context.Context) error {
 	currentUser, err := user.GetUserInfoFromCtx(ctx)
 	if err != nil {
 		return err
@@ -180,7 +180,11 @@ func (gb *TimerBlock) UpdateManual() bool {
 }
 
 // nolint:dupl // another block
-func createTimerBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext,
+func createTimerBlock(
+	ctx context.Context,
+	name string,
+	ef *entity.EriusFunc,
+	runCtx *BlockRunContext,
 	expectedEvents map[string]struct{},
 ) (*TimerBlock, bool, error) {
 	b := &TimerBlock{
@@ -226,6 +230,38 @@ func createTimerBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx *
 
 func (gb *TimerBlock) loadState(raw json.RawMessage) error {
 	return json.Unmarshal(raw, &gb.State)
+}
+
+//nolint:dupl //another block
+func (gb *TimerBlock) createExpectedEvents(
+	ctx context.Context,
+	runCtx *BlockRunContext,
+	name string,
+	ef *entity.EriusFunc,
+) error {
+	if err := gb.createState(ef); err != nil {
+		return err
+	}
+
+	gb.RunContext.VarStore.AddStep(gb.Name)
+
+	if _, ok := gb.expectedEvents[eventStart]; ok {
+		status, _, _ := gb.GetTaskHumanStatus()
+
+		event, err := runCtx.MakeNodeStartEvent(ctx, MakeNodeStartEventArgs{
+			NodeName:      name,
+			NodeShortName: ef.ShortTitle,
+			HumanStatus:   status,
+			NodeStatus:    gb.GetStatus(),
+		})
+		if err != nil {
+			return err
+		}
+
+		gb.happenedEvents = append(gb.happenedEvents, event)
+	}
+
+	return nil
 }
 
 //nolint:dupl //its not duplicate

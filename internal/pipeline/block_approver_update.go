@@ -1,7 +1,7 @@
 package pipeline
 
 import (
-	c "context"
+	"context"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -15,6 +15,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
@@ -76,7 +77,7 @@ func (a *additionalApproverUpdateParams) Validate() error {
 	return nil
 }
 
-func (gb *GoApproverBlock) setApproveDecision(ctx c.Context, u *approverUpdateParams) error {
+func (gb *GoApproverBlock) setApproveDecision(ctx context.Context, u *approverUpdateParams) error {
 	byLogin := gb.RunContext.UpdateData.ByLogin
 
 	err := gb.State.SetDecision(byLogin, u.Comment, u.internalDecision, u.Attachments, gb.RunContext.Delegations)
@@ -101,7 +102,7 @@ func (gb *GoApproverBlock) setApproveDecision(ctx c.Context, u *approverUpdatePa
 }
 
 //nolint:dupl //its not duplicate
-func (gb *GoApproverBlock) handleBreachedSLA(ctx c.Context) error {
+func (gb *GoApproverBlock) handleBreachedSLA(ctx context.Context) error {
 	if !gb.State.CheckSLA {
 		gb.State.SLAChecked = true
 		gb.State.HalfSLAChecked = true
@@ -136,8 +137,151 @@ func (gb *GoApproverBlock) handleBreachedSLA(ctx c.Context) error {
 	return nil
 }
 
+func (gb *GoApproverBlock) checkBreachedSLA(ctx context.Context) error {
+	const fn = "pipeline.approver.checkSLA"
+
+	log := logger.GetLogger(ctx)
+
+	seenAdditionalApprovers := map[string]bool{}
+	emails := make([]string, 0, len(gb.State.Approvers)+len(gb.State.AdditionalApprovers))
+	logins := getSliceFromMapOfStrings(gb.State.Approvers)
+
+	for _, additionalApprover := range gb.State.AdditionalApprovers {
+		// check if approver has not decisioned, and we did not see approver before
+		if additionalApprover.Decision != nil || seenAdditionalApprovers[additionalApprover.ApproverLogin] {
+			continue
+		}
+
+		seenAdditionalApprovers[additionalApprover.ApproverLogin] = true
+
+		logins = append(logins, additionalApprover.ApproverLogin)
+	}
+
+	delegations, err := gb.RunContext.Services.HumanTasks.GetDelegationsByLogins(ctx, logins)
+	if err != nil {
+		log.WithError(err).Info(fn, fmt.Sprintf("approvers %v have no delegates", logins))
+	}
+
+	delegations = delegations.FilterByType("approvement")
+	logins = delegations.GetUserInArrayWithDelegations(logins)
+
+	var approverEmail string
+
+	for i := range logins {
+		approverEmail, err = gb.RunContext.Services.People.GetUserEmail(ctx, logins[i])
+		if err != nil {
+			log.WithError(err).Warning(fn, fmt.Sprintf("approver login %s not found", logins[i]))
+
+			continue
+		}
+
+		emails = append(emails, approverEmail)
+	}
+
+	if len(emails) == 0 {
+		return nil
+	}
+
+	task, getVersionErr := gb.RunContext.Services.Storage.GetVersionByWorkNumber(ctx, gb.RunContext.WorkNumber)
+	if getVersionErr != nil {
+		return getVersionErr
+	}
+
+	processSettings, getVersionErr := gb.RunContext.Services.Storage.GetVersionSettings(ctx, task.VersionID.String())
+	if getVersionErr != nil {
+		return getVersionErr
+	}
+
+	taskRunContext, getDataErr := gb.RunContext.Services.Storage.GetTaskRunContext(ctx, gb.RunContext.WorkNumber)
+	if getDataErr != nil {
+		return getDataErr
+	}
+
+	login := task.Author
+
+	recipient := getRecipientFromState(&taskRunContext.InitialApplication.ApplicationBody)
+
+	if recipient != "" {
+		login = recipient
+	}
+
+	if processSettings.ResubmissionPeriod > 0 {
+		var getWorksErr error
+
+		_, getWorksErr = gb.RunContext.Services.Storage.GetWorksForUserWithGivenTimeRange(
+			ctx,
+			processSettings.ResubmissionPeriod,
+			login,
+			task.VersionID.String(),
+			gb.RunContext.WorkNumber,
+		)
+		if getWorksErr != nil {
+			return getWorksErr
+		}
+	}
+
+	slaInfoPtr, getSLAInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDTO{
+		TaskCompletionIntervals: []entity.TaskCompletionInterval{{
+			StartedAt:  gb.RunContext.CurrBlockStartTime,
+			FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100),
+		}},
+		WorkType: sla.WorkHourType(gb.State.WorkType),
+	})
+	if getSLAInfoErr != nil {
+		return getSLAInfoErr
+	}
+
+	lastWorksForUser := make([]*entity.EriusTask, 0)
+
+	if processSettings.ResubmissionPeriod > 0 {
+		var getWorksErr error
+
+		lastWorksForUser, getWorksErr = gb.RunContext.Services.Storage.GetWorksForUserWithGivenTimeRange(
+			ctx,
+			processSettings.ResubmissionPeriod,
+			login,
+			task.VersionID.String(),
+			gb.RunContext.WorkNumber,
+		)
+		if getWorksErr != nil {
+			return getWorksErr
+		}
+	}
+
+	tpl := mail.NewApprovementHalfSLATpl(
+		gb.RunContext.WorkNumber,
+		gb.RunContext.NotifName,
+		gb.RunContext.Services.Sender.SdAddress,
+		gb.State.ApproveStatusName,
+		gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(
+			gb.RunContext.CurrBlockStartTime,
+			gb.State.SLA,
+			slaInfoPtr,
+		),
+		lastWorksForUser,
+	)
+
+	files := []string{tpl.Image}
+
+	if len(lastWorksForUser) != 0 {
+		files = append(files, warningImg)
+	}
+
+	iconFiles, iconErr := gb.RunContext.GetIcons(files)
+	if iconErr != nil {
+		return err
+	}
+
+	errSend := gb.RunContext.Services.Sender.SendNotification(ctx, emails, iconFiles, tpl)
+	if errSend != nil {
+		return errSend
+	}
+
+	return nil
+}
+
 //nolint:dupl //its not duplicate
-func (gb *GoApproverBlock) handleHalfBreachedSLA(ctx c.Context) (err error) {
+func (gb *GoApproverBlock) handleHalfBreachedSLA(ctx context.Context) (err error) {
 	if !gb.State.CheckSLA {
 		gb.State.SLAChecked = true
 		gb.State.HalfSLAChecked = true
@@ -158,7 +302,7 @@ func (gb *GoApproverBlock) handleHalfBreachedSLA(ctx c.Context) (err error) {
 }
 
 // nolint:dupl // another action
-func (gb *GoApproverBlock) handleReworkSLABreached(ctx c.Context) error {
+func (gb *GoApproverBlock) handleReworkSLABreached(ctx context.Context) error {
 	const fn = "pipeline.approver.handleReworkSLABreached"
 
 	if !gb.State.CheckReworkSLA {
@@ -244,7 +388,7 @@ func (gb *GoApproverBlock) handleReworkSLABreached(ctx c.Context) error {
 	return nil
 }
 
-func (gb *GoApproverBlock) handleBreachedDayBeforeSLARequestAddInfo(ctx c.Context) error {
+func (gb *GoApproverBlock) handleBreachedDayBeforeSLARequestAddInfo(ctx context.Context) error {
 	const fn = "pipeline.approver.handleBreachedDayBeforeSLARequestAddInfo"
 
 	if !gb.State.CheckDayBeforeSLARequestInfo {
@@ -292,7 +436,7 @@ func (gb *GoApproverBlock) handleBreachedDayBeforeSLARequestAddInfo(ctx c.Contex
 }
 
 //nolint:dupl // dont duplicate
-func (gb *GoApproverBlock) HandleBreachedSLARequestAddInfo(ctx c.Context) error {
+func (gb *GoApproverBlock) HandleBreachedSLARequestAddInfo(ctx context.Context) error {
 	const (
 		fn = "pipeline.approver.HandleBreachedSLARequestAddInfo"
 	)
@@ -381,7 +525,7 @@ func (gb *GoApproverBlock) HandleBreachedSLARequestAddInfo(ctx c.Context) error 
 	return nil
 }
 
-func (gb *GoApproverBlock) toEditApplication(ctx c.Context, updateParams approverUpdateEditingParams) error {
+func (gb *GoApproverBlock) toEditApplication(ctx context.Context, updateParams approverUpdateEditingParams) error {
 	if gb.State.Decision != nil {
 		return errors.New("decision already set")
 	}
@@ -445,7 +589,7 @@ func (gb *GoApproverBlock) isNextBlockServiceDesk() bool {
 	return false
 }
 
-func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context) (err error) {
+func (gb *GoApproverBlock) updateRequestApproverInfo(ctx context.Context) (err error) {
 	var updateParams requestInfoParams
 
 	delegations := gb.RunContext.Delegations.FilterByType("approvement")
@@ -501,7 +645,44 @@ func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context) (err error) 
 	return nil
 }
 
-func (gb *GoApproverBlock) updateReplyApproverInfo(ctx c.Context) (err error) {
+func (gb *GoApproverBlock) replyAddInfo(ctx context.Context, id string, updateParams *requestInfoParams) (string, error) {
+	var (
+		initiator    = gb.RunContext.Initiator
+		currentLogin = gb.RunContext.UpdateData.ByLogin
+	)
+
+	if len(gb.State.AddInfo) == 0 {
+		return "", errors.New("don't answer after request")
+	}
+
+	if currentLogin != initiator {
+		return "", NewUserIsNotPartOfProcessErr()
+	}
+
+	if updateParams.LinkID == nil {
+		return "", errors.New("linkId is null when reply")
+	}
+
+	parentEntry := gb.State.findAddInfoLogEntry(*updateParams.LinkID)
+	if parentEntry == nil || parentEntry.Type == ReplyAddInfoType ||
+		gb.State.addInfoLogEntryHasResponse(*updateParams.LinkID) {
+		return "", errors.New("bad linkId to submit an answer")
+	}
+
+	approverLogin, linkErr := setLinkIDRequest(id, *updateParams.LinkID, gb.State.AddInfo)
+	if linkErr != nil {
+		return "", linkErr
+	}
+
+	err := gb.notifyNewInfoReceived(ctx, approverLogin)
+	if err != nil {
+		return "", err
+	}
+
+	return *updateParams.LinkID, nil
+}
+
+func (gb *GoApproverBlock) updateReplyApproverInfo(ctx context.Context) (err error) {
 	var updateParams replyInfoParams
 
 	if err = json.Unmarshal(gb.RunContext.UpdateData.Parameters, &updateParams); err != nil {
@@ -585,7 +766,7 @@ func (gb *GoApproverBlock) actionAcceptable(action ApproverAction) bool {
 	return false
 }
 
-func (gb *GoApproverBlock) Update(ctx c.Context) (interface{}, error) {
+func (gb *GoApproverBlock) Update(ctx context.Context) (interface{}, error) {
 	err := gb.handleTaskUpdateAction(ctx)
 	if err != nil {
 		return nil, err
@@ -624,7 +805,120 @@ func (gb *GoApproverBlock) Update(ctx c.Context) (interface{}, error) {
 	return nil, nil
 }
 
-func (gb *GoApproverBlock) addApprovers(ctx c.Context, u addApproversParams) error {
+//nolint:gocognit,gocyclo //тут большой switch case, где нибудь но он должен быть
+func (gb *GoApproverBlock) handleTaskUpdateAction(ctx context.Context) error {
+	data := gb.RunContext.UpdateData
+	if data == nil {
+		return errors.New("empty data")
+	}
+
+	gb.RunContext.Delegations = gb.RunContext.Delegations.FilterByType("approvement")
+
+	//nolint:exhaustive //нам не нужна обработка всех возможных TaskUpdateAction
+	switch entity.TaskUpdateAction(data.Action) {
+	case entity.TaskUpdateActionSLABreach:
+		if errUpdate := gb.handleBreachedSLA(ctx); errUpdate != nil {
+			return errUpdate
+		}
+	case entity.TaskUpdateActionHalfSLABreach:
+		if errUpdate := gb.handleHalfBreachedSLA(ctx); errUpdate != nil {
+			return errUpdate
+		}
+	case entity.TaskUpdateActionReworkSLABreach:
+		if errUpdate := gb.handleReworkSLABreached(ctx); errUpdate != nil {
+			return errUpdate
+		}
+	case entity.TaskUpdateActionApprovement:
+		var updateParams approverUpdateParams
+
+		if err := json.Unmarshal(data.Parameters, &updateParams); err != nil {
+			return errors.New("can't assert provided data")
+		}
+
+		if !gb.actionAcceptable(updateParams.Decision) {
+			return errors.New("unacceptable action")
+		}
+
+		login := gb.RunContext.UpdateData.ByLogin
+		if login == ServiceAccount || login == ServiceAccountStage || login == ServiceAccountDev {
+			gb.RunContext.UpdateData.ByLogin = updateParams.Username
+		}
+
+		updateParams.internalDecision = updateParams.Decision.ToDecision()
+
+		if errUpdate := gb.setApproveDecision(ctx, &updateParams); errUpdate != nil {
+			return errUpdate
+		}
+
+	case entity.TaskUpdateActionAdditionalApprovement:
+		var updateParams additionalApproverUpdateParams
+
+		if err := json.Unmarshal(data.Parameters, &updateParams); err != nil {
+			return fmt.Errorf("can't assert provided data: %v", err)
+		}
+
+		if err := updateParams.Validate(); err != nil {
+			return err
+		}
+
+		loginsToNotify, err := gb.State.SetDecisionByAdditionalApprover(gb.RunContext.UpdateData.ByLogin,
+			updateParams, gb.RunContext.Delegations)
+		if err != nil {
+			return err
+		}
+
+		loginsToNotify = append(loginsToNotify, gb.RunContext.Initiator)
+
+		err = gb.notifyDecisionMadeByAdditionalApprover(ctx, loginsToNotify)
+		if err != nil {
+			return err
+		}
+
+	case entity.TaskUpdateActionApproverSendEditApp:
+		var updateParams approverUpdateEditingParams
+
+		if err := json.Unmarshal(data.Parameters, &updateParams); err != nil {
+			return errors.New("can't assert provided data")
+		}
+
+		if errUpdate := gb.toEditApplication(ctx, updateParams); errUpdate != nil {
+			return errUpdate
+		}
+
+	case entity.TaskUpdateActionRequestApproveInfo:
+		if errUpdate := gb.updateRequestApproverInfo(ctx); errUpdate != nil {
+			return errUpdate
+		}
+
+	case entity.TaskUpdateActionReplyApproverInfo:
+		if errUpdate := gb.updateReplyApproverInfo(ctx); errUpdate != nil {
+			return errUpdate
+		}
+
+	case entity.TaskUpdateActionAddApprovers:
+		var updateParams addApproversParams
+		if err := json.Unmarshal(data.Parameters, &updateParams); err != nil {
+			return errors.New("can't assert provided data")
+		}
+
+		if errUpdate := gb.addApprovers(ctx, updateParams); errUpdate != nil {
+			return errUpdate
+		}
+
+	case entity.TaskUpdateActionDayBeforeSLARequestAddInfo:
+		if errUpdate := gb.handleBreachedDayBeforeSLARequestAddInfo(ctx); errUpdate != nil {
+			return errUpdate
+		}
+	case entity.TaskUpdateActionSLABreachRequestAddInfo:
+		if errUpdate := gb.HandleBreachedSLARequestAddInfo(ctx); errUpdate != nil {
+			return errUpdate
+		}
+	}
+
+	return nil
+}
+
+func (gb *GoApproverBlock) addApprovers(ctx context.Context, u addApproversParams) error {
 	logApprovers := []string{}
 	delegateFor, isDelegate := gb.State.userIsDelegate(gb.RunContext.UpdateData.ByLogin, gb.RunContext.Delegations)
 

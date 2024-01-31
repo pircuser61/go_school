@@ -25,6 +25,7 @@ func (ae *Env) GetTasksForMonitoring(w http.ResponseWriter, r *http.Request, par
 	defer span.End()
 
 	log := logger.GetLogger(ctx)
+	errorHandler := newHTTPErrorHandler(log, w)
 
 	statusFilter := make([]string, 0)
 
@@ -45,11 +46,7 @@ func (ae *Env) GetTasksForMonitoring(w http.ResponseWriter, r *http.Request, par
 		StatusFilter: statusFilter,
 	})
 	if err != nil {
-		e := GetTasksForMonitoringError
-
-		log.Error(e.errorMessage(err))
-
-		_ = e.sendError(w)
+		errorHandler.handleError(GetTasksForMonitoringError, err)
 
 		return
 	}
@@ -100,15 +97,12 @@ func (ae *Env) GetTasksForMonitoring(w http.ResponseWriter, r *http.Request, par
 		responseTasks = append(responseTasks, monitoringTableTask)
 	}
 
-	if err = sendResponse(w, http.StatusOK, MonitoringTasksPage{
+	err = sendResponse(w, http.StatusOK, MonitoringTasksPage{
 		Tasks: responseTasks,
 		Total: dbTasks.Total,
-	}); err != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
+	})
+	if err != nil {
+		errorHandler.handleError(UnknownError, err)
 	}
 }
 
@@ -131,36 +125,25 @@ func (ae *Env) GetBlockContext(w http.ResponseWriter, r *http.Request, blockID s
 	defer span.End()
 
 	log := logger.GetLogger(ctx)
+	errorHandler := newHTTPErrorHandler(log, w)
 
 	blockIsHidden, err := ae.DB.CheckBlockForHiddenFlag(ctx, blockID)
 	if err != nil {
-		e := CheckForHiddenError
-
-		log.WithField("blockId", blockID).
-			Error(e.errorMessage(err))
-
-		_ = e.sendError(w)
+		e := newHTTPErrorHandler(log.WithField("blockId", blockID), w)
+		e.handleError(CheckForHiddenError, err)
 
 		return
 	}
 
 	if blockIsHidden {
-		e := ForbiddenError
-
-		log.Error(e.error())
-
-		_ = e.sendError(w)
+		errorHandler.handleError(ForbiddenError, nil)
 
 		return
 	}
 
 	blocksOutputs, err := ae.DB.GetBlocksOutputs(ctx, blockID)
 	if err != nil {
-		e := GetBlockContextError
-
-		log.Error(e.errorMessage(err))
-
-		_ = e.sendError(w)
+		errorHandler.handleError(GetBlockContextError, err)
 
 		return
 	}
@@ -180,16 +163,11 @@ func (ae *Env) GetBlockContext(w http.ResponseWriter, r *http.Request, blockID s
 		}
 	}
 
-	if err = sendResponse(w, http.StatusOK, BlockContextResponse{
+	err = sendResponse(w, http.StatusOK, BlockContextResponse{
 		Blocks: &BlockContextResponse_Blocks{blocks},
-	}); err != nil {
-		e := UnknownError
-
-		log.Error(e.errorMessage(err))
-
-		_ = e.sendError(w)
-
-		return
+	})
+	if err != nil {
+		errorHandler.handleError(UnknownError, err)
 	}
 }
 

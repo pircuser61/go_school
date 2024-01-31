@@ -363,6 +363,20 @@ func (a *ApproverData) SetDecision(login, comment string, ds ApproverDecision, a
 	return nil
 }
 
+func (a *ApproverData) delegateFor(delegators []string) []string {
+	delegateFor := make([]string, 0)
+
+	for approver := range a.Approvers {
+		for _, delegator := range delegators {
+			if delegator == approver && !decisionForPersonExists(delegator, &a.ApproverLog) {
+				delegateFor = append(delegateFor, delegator)
+			}
+		}
+	}
+
+	return delegateFor
+}
+
 func (a *ApproverData) getFinalGroupDecision(ds ApproverDecision) (res ApproverDecision, isFinal bool) {
 	if ds == ApproverDecisionRejected {
 		return ApproverDecisionRejected, true

@@ -1,12 +1,15 @@
 package pipeline
 
 import (
-	c "context"
+	"context"
 	"time"
 
+	"github.com/iancoleman/orderedmap"
+	"gitlab.services.mts.ru/abp/mail/pkg/email"
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	file_registry "gitlab.services.mts.ru/jocasta/pipeliner/internal/fileregistry"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
@@ -24,7 +27,7 @@ const (
 )
 
 //nolint:dupl // maybe later
-func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
+func (gb *GoApproverBlock) handleNotifications(ctx context.Context) error {
 	if gb.RunContext.skipNotifications {
 		return nil
 	}
@@ -114,7 +117,7 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 	buttonImg := make([]string, 0, 7)
 
 	for _, login = range loginsToNotify {
-		email, getEmailErr := gb.RunContext.Services.People.GetUserEmail(ctx, login)
+		userEmail, getEmailErr := gb.RunContext.Services.People.GetUserEmail(ctx, login)
 		if getEmailErr != nil {
 			l.WithField("login", login).WithError(getEmailErr).Warning("couldn't get email")
 
@@ -150,7 +153,7 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 			Initiator:                 initiatorInfo,
 		}
 
-		templates[email], buttons = mail.NewAppPersonStatusNotificationTpl(tpl)
+		templates[userEmail], buttons = mail.NewAppPersonStatusNotificationTpl(tpl)
 	}
 
 	for _, v := range buttons {
@@ -165,7 +168,64 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 	return nil
 }
 
-func (gb *GoApproverBlock) notifyAdditionalApprovers(ctx c.Context, logins []string) error {
+func (gb *GoApproverBlock) makeActionList() []mail.Action {
+	actionsList := make([]mail.Action, 0, len(gb.State.ActionList))
+
+	for i := range gb.State.ActionList {
+		actionsList = append(actionsList, mail.Action{
+			InternalActionName: gb.State.ActionList[i].ID,
+			Title:              gb.State.ActionList[i].Title,
+		})
+	}
+
+	return actionsList
+}
+
+func (gb *GoApproverBlock) sendNotifications(
+	ctx context.Context,
+	templates map[string]mail.Template,
+	buttonImg []string,
+	lastWorksForUser []*entity.EriusTask,
+	description []orderedmap.OrderedMap,
+	files []email.Attachment,
+) error {
+	for login, mailTemplate := range templates {
+		iconsName := []string{mailTemplate.Image, userImg}
+		iconsName = append(iconsName, buttonImg...)
+
+		if len(lastWorksForUser) != 0 {
+			iconsName = append(iconsName, warningImg)
+		}
+
+		for _, v := range description {
+			links, link := v.Get("attachLinks")
+			if link {
+				attachFiles, ok := links.([]file_registry.AttachInfo)
+				if ok && len(attachFiles) != 0 {
+					iconsName = append(iconsName, downloadImg)
+
+					break
+				}
+			}
+		}
+
+		iconsFiles, iconsErr := gb.RunContext.GetIcons(iconsName)
+		if iconsErr != nil {
+			return iconsErr
+		}
+
+		iconsFiles = append(iconsFiles, files...)
+
+		sendErr := gb.RunContext.Services.Sender.SendNotification(ctx, []string{login}, iconsFiles, mailTemplate)
+		if sendErr != nil {
+			return sendErr
+		}
+	}
+
+	return nil
+}
+
+func (gb *GoApproverBlock) notifyAdditionalApprovers(ctx context.Context, logins []string) error {
 	log := logger.GetLogger(ctx)
 
 	delegates, err := gb.RunContext.Services.HumanTasks.GetDelegationsByLogins(ctx, logins)
@@ -303,9 +363,23 @@ func (gb *GoApproverBlock) notifyAdditionalApprovers(ctx c.Context, logins []str
 	return nil
 }
 
+func isNeedAddDownloadImage(description []orderedmap.OrderedMap) bool {
+	for _, v := range description {
+		links, ok := v.Get("attachLinks")
+		if ok {
+			attachFiles, ok := links.([]file_registry.AttachInfo)
+			if ok && len(attachFiles) != 0 {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
 // notifyDecisionMadeByAdditionalApprover notifies requesting approvers
 // and the task initiator that an additional approver has left a review
-func (gb *GoApproverBlock) notifyDecisionMadeByAdditionalApprover(ctx c.Context, logins []string) error {
+func (gb *GoApproverBlock) notifyDecisionMadeByAdditionalApprover(ctx context.Context, logins []string) error {
 	l := logger.GetLogger(ctx)
 
 	delegates, err := gb.RunContext.Services.HumanTasks.GetDelegationsByLogins(ctx, logins)
@@ -376,7 +450,7 @@ func (gb *GoApproverBlock) notifyDecisionMadeByAdditionalApprover(ctx c.Context,
 	return nil
 }
 
-func (gb *GoApproverBlock) notifyNeedRework(ctx c.Context) error {
+func (gb *GoApproverBlock) notifyNeedRework(ctx context.Context) error {
 	l := logger.GetLogger(ctx)
 
 	delegates, err := gb.RunContext.Services.HumanTasks.GetDelegationsFromLogin(ctx, gb.RunContext.Initiator)
@@ -422,7 +496,7 @@ func (gb *GoApproverBlock) notifyNeedRework(ctx c.Context) error {
 	return nil
 }
 
-func (gb *GoApproverBlock) notifyNewInfoReceived(ctx c.Context, approverLogin string) error {
+func (gb *GoApproverBlock) notifyNewInfoReceived(ctx context.Context, approverLogin string) error {
 	l := logger.GetLogger(ctx)
 
 	logins := []string{approverLogin}
@@ -470,7 +544,7 @@ func (gb *GoApproverBlock) notifyNewInfoReceived(ctx c.Context, approverLogin st
 	return nil
 }
 
-func (gb *GoApproverBlock) notifyNeedMoreInfo(ctx c.Context) error {
+func (gb *GoApproverBlock) notifyNeedMoreInfo(ctx context.Context) error {
 	l := logger.GetLogger(ctx)
 
 	loginsToNotify := []string{gb.RunContext.Initiator}

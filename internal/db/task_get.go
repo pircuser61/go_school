@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v4"
+	"golang.org/x/exp/slices"
 
 	"github.com/google/uuid"
 
@@ -1355,6 +1356,16 @@ func (db *PGCon) computeActions(
 	}
 
 	return result, nil
+}
+
+func (db *PGCon) ignoreAction(a *entity.TaskAction, actionsToIgnore []IgnoreActionRule, computedActionIds []string) bool {
+	for _, actionRule := range actionsToIgnore {
+		if a.ID == actionRule.IgnoreActionID && slices.Contains(computedActionIds, actionRule.ExistingActionID) {
+			return true
+		}
+	}
+
+	return false
 }
 
 type tasksCounter struct {

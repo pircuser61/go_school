@@ -1,7 +1,7 @@
 package pipeline
 
 import (
-	c "context"
+	"context"
 	"encoding/json"
 	"sort"
 	"strings"
@@ -81,7 +81,7 @@ func (gb *ExecutableFunctionBlock) Members() []Member {
 	return nil
 }
 
-func (gb *ExecutableFunctionBlock) Deadlines(_ c.Context) ([]Deadline, error) {
+func (gb *ExecutableFunctionBlock) Deadlines(_ context.Context) ([]Deadline, error) {
 	return []Deadline{}, nil
 }
 
@@ -135,7 +135,7 @@ func (gb *ExecutableFunctionBlock) GetState() interface{} {
 	return gb.State
 }
 
-func (gb *ExecutableFunctionBlock) Update(ctx c.Context) (interface{}, error) {
+func (gb *ExecutableFunctionBlock) Update(ctx context.Context) (interface{}, error) {
 	log := logger.GetLogger(ctx)
 
 	if gb.RunContext.UpdateData != nil {
@@ -248,7 +248,7 @@ func (gb *ExecutableFunctionBlock) UpdateManual() bool {
 }
 
 // nolint:dupl // another block
-func createExecutableFunctionBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext,
+func createExecutableFunctionBlock(ctx context.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext,
 	expectedEvents map[string]struct{},
 ) (*ExecutableFunctionBlock, bool, error) {
 	b := &ExecutableFunctionBlock{
@@ -309,7 +309,8 @@ func (gb *ExecutableFunctionBlock) createState(ef *entity.EriusFunc) error {
 		return errors.Wrap(err, "invalid executable function parameters")
 	}
 
-	function, err := gb.RunContext.Services.FunctionStore.GetFunctionVersion(c.Background(),
+	function, err := gb.RunContext.Services.FunctionStore.GetFunctionVersion(
+		context.Background(),
 		params.Function.FunctionID,
 		params.Function.VersionID,
 	)
@@ -338,7 +339,7 @@ func (gb *ExecutableFunctionBlock) createState(ef *entity.EriusFunc) error {
 	}
 
 	if gb.State.CheckSLA {
-		_, err = gb.RunContext.Services.Scheduler.CreateTask(c.Background(), &scheduler.CreateTask{
+		_, err = gb.RunContext.Services.Scheduler.CreateTask(context.Background(), &scheduler.CreateTask{
 			WorkNumber:  gb.RunContext.WorkNumber,
 			WorkID:      gb.RunContext.TaskID.String(),
 			ActionName:  string(entity.TaskUpdateActionFuncSLAExpired),
@@ -348,6 +349,37 @@ func (gb *ExecutableFunctionBlock) createState(ef *entity.EriusFunc) error {
 		if err != nil {
 			return err
 		}
+	}
+
+	return nil
+}
+
+func (gb *ExecutableFunctionBlock) createExpectedEvents(
+	ctx context.Context,
+	runCtx *BlockRunContext,
+	name string,
+	ef *entity.EriusFunc,
+) error {
+	if err := gb.createState(ef); err != nil {
+		return err
+	}
+
+	gb.RunContext.VarStore.AddStep(gb.Name)
+
+	if _, ok := gb.expectedEvents[eventStart]; ok {
+		status, _, _ := gb.GetTaskHumanStatus()
+
+		event, err := runCtx.MakeNodeStartEvent(ctx, MakeNodeStartEventArgs{
+			NodeName:      name,
+			NodeShortName: ef.ShortTitle,
+			HumanStatus:   status,
+			NodeStatus:    gb.GetStatus(),
+		})
+		if err != nil {
+			return err
+		}
+
+		gb.happenedEvents = append(gb.happenedEvents, event)
 	}
 
 	return nil
@@ -400,7 +432,7 @@ func isTimeToWaitAnswer(createdAt time.Time, waitInDays int) bool {
 	return time.Now().Before(createdAt.AddDate(0, 0, waitInDays))
 }
 
-func (gb *ExecutableFunctionBlock) isFirstStart(ctx c.Context, workID uuid.UUID, sName string) (bool, *entity.Step, error) {
+func (gb *ExecutableFunctionBlock) isFirstStart(ctx context.Context, workID uuid.UUID, sName string) (bool, *entity.Step, error) {
 	countRunFunc := 0
 
 	steps, err := gb.RunContext.Services.Storage.GetTaskSteps(ctx, workID)

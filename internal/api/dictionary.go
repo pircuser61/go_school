@@ -20,6 +20,7 @@ func (ae *Env) GetTaskEventSchema(w http.ResponseWriter, r *http.Request) {
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
+	errorHandler := newHTTPErrorHandler(log, w)
 
 	type eventSchemaProperties struct {
 		TaskID        script.JSONSchemaPropertiesValue `json:"task_id"`
@@ -85,9 +86,7 @@ func (ae *Env) GetTaskEventSchema(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := sendResponse(w, http.StatusOK, schema); err != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(UnknownError, err)
 
 		return
 	}
@@ -117,9 +116,7 @@ func (ae *Env) GetApproveActionNames(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err = sendResponse(w, http.StatusOK, res); err != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(UnknownError, err)
 
 		return
 	}
@@ -166,6 +163,7 @@ func (ae *Env) GetNodeDecisions(w http.ResponseWriter, r *http.Request) {
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
+	errorHandler := newHTTPErrorHandler(log, w)
 
 	data, err := ae.DB.GetNodeDecisions(ctx)
 	if err != nil {
@@ -187,9 +185,7 @@ func (ae *Env) GetNodeDecisions(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err = sendResponse(w, http.StatusOK, res); err != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(UnknownError, err)
 
 		return
 	}

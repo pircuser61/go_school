@@ -1,12 +1,15 @@
 package pipeline
 
 import (
-	c "context"
+	"context"
 	"time"
 
+	"github.com/iancoleman/orderedmap"
+	"gitlab.services.mts.ru/abp/mail/pkg/email"
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	file_registry "gitlab.services.mts.ru/jocasta/pipeliner/internal/fileregistry"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 )
@@ -16,7 +19,7 @@ const (
 )
 
 //nolint:dupl // maybe later
-func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
+func (gb *GoExecutionBlock) handleNotifications(ctx context.Context) error {
 	if gb.RunContext.skipNotifications {
 		return nil
 	}
@@ -116,7 +119,59 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 	return nil
 }
 
-func (gb *GoExecutionBlock) notifyNeedRework(ctx c.Context) error {
+func (gb *GoExecutionBlock) sendNotifications(
+	ctx context.Context,
+	emails map[string]mail.Template,
+	filesNames []string,
+	lastWorksForUser []*entity.EriusTask,
+	description []orderedmap.OrderedMap,
+	files []email.Attachment,
+) error {
+	for i, item := range emails {
+		iconsName := []string{item.Image}
+		iconsName = append(iconsName, filesNames...)
+
+		if len(lastWorksForUser) != 0 {
+			iconsName = append(iconsName, warningImg)
+		}
+
+		for _, v := range description {
+			links, link := v.Get("attachLinks")
+			if !link {
+				continue
+			}
+
+			attachFiles, ok := links.([]file_registry.AttachInfo)
+
+			if ok && len(attachFiles) != 0 {
+				iconsName = append(iconsName, downloadImg)
+
+				break
+			}
+		}
+
+		iconFiles, errFiles := gb.RunContext.GetIcons(iconsName)
+		if errFiles != nil {
+			return errFiles
+		}
+
+		iconFiles = append(iconFiles, files...)
+
+		sendErr := gb.RunContext.Services.Sender.SendNotification(
+			ctx,
+			[]string{i},
+			iconFiles,
+			emails[i],
+		)
+		if sendErr != nil {
+			return sendErr
+		}
+	}
+
+	return nil
+}
+
+func (gb *GoExecutionBlock) notifyNeedRework(ctx context.Context) error {
 	l := logger.GetLogger(ctx)
 
 	delegates, err := gb.RunContext.Services.HumanTasks.GetDelegationsFromLogin(ctx, gb.RunContext.Initiator)
@@ -158,8 +213,82 @@ func (gb *GoExecutionBlock) notifyNeedRework(ctx c.Context) error {
 	return nil
 }
 
+func (gb *GoExecutionBlock) setMailTemplates(
+	ctx context.Context,
+	loginsToNotify []string,
+	mailTemplates map[string]mail.Template,
+	description []orderedmap.OrderedMap,
+	lastWorksForUser []*entity.EriusTask,
+	slaInfoPtr *sla.Info,
+) ([]string, error) {
+	log := logger.GetLogger(ctx)
+	filesNames := make([]string, 0)
+
+	for _, login := range loginsToNotify {
+		userEmail, getUserEmailErr := gb.RunContext.Services.People.GetUserEmail(ctx, login)
+		if getUserEmailErr != nil {
+			log.WithField("login", login).WithError(getUserEmailErr).Warning("couldn't get email")
+
+			continue
+		}
+
+		if !gb.State.IsTakenInWork {
+			mailTemplates[userEmail] = mail.NewExecutionNeedTakeInWorkTpl(
+				&mail.ExecutorNotifTemplate{
+					WorkNumber:  gb.RunContext.WorkNumber,
+					Name:        gb.RunContext.NotifName,
+					SdURL:       gb.RunContext.Services.Sender.SdAddress,
+					BlockID:     BlockGoExecutionID,
+					Description: description,
+					Mailto:      gb.RunContext.Services.Sender.FetchEmail,
+					Login:       login,
+					LastWorks:   lastWorksForUser,
+					IsGroup:     len(gb.State.Executors) > 1,
+					Deadline:    gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(time.Now(), gb.State.SLA, slaInfoPtr),
+				},
+			)
+		} else {
+			author, errAuthor := gb.RunContext.Services.People.GetUser(ctx, gb.RunContext.Initiator)
+			if errAuthor != nil {
+				return nil, errAuthor
+			}
+
+			initiatorInfo, errInitiator := author.ToUserinfo()
+			if errInitiator != nil {
+				return nil, errInitiator
+			}
+
+			mailTemplates[userEmail], _ = mail.NewAppPersonStatusNotificationTpl(
+				&mail.NewAppPersonStatusTpl{
+					WorkNumber:  gb.RunContext.WorkNumber,
+					Name:        gb.RunContext.NotifName,
+					Status:      string(StatusExecution),
+					Action:      statusToTaskAction[StatusExecution],
+					DeadLine:    gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(time.Now(), gb.State.SLA, slaInfoPtr),
+					Description: description,
+					SdURL:       gb.RunContext.Services.Sender.SdAddress,
+					Mailto:      gb.RunContext.Services.Sender.FetchEmail,
+					Login:       login,
+					IsEditable:  gb.State.GetIsEditable(),
+					Initiator:   initiatorInfo,
+
+					BlockID:                   BlockGoExecutionID,
+					ExecutionDecisionExecuted: string(ExecutionDecisionExecuted),
+					ExecutionDecisionRejected: string(ExecutionDecisionRejected),
+					LastWorks:                 lastWorksForUser,
+				})
+
+			if initiatorInfo != nil {
+				filesNames = append(filesNames, userImg)
+			}
+		}
+	}
+
+	return filesNames, nil
+}
+
 // 22 (Soglasovanie analogichno)
-func (gb *GoExecutionBlock) notifyNeedMoreInfo(ctx c.Context) error {
+func (gb *GoExecutionBlock) notifyNeedMoreInfo(ctx context.Context) error {
 	l := logger.GetLogger(ctx)
 
 	loginsToNotify := []string{gb.RunContext.Initiator}
@@ -167,14 +296,14 @@ func (gb *GoExecutionBlock) notifyNeedMoreInfo(ctx c.Context) error {
 	emails := make([]string, 0, len(loginsToNotify))
 
 	for _, login := range loginsToNotify {
-		email, err := gb.RunContext.Services.People.GetUserEmail(ctx, login)
+		userEmail, err := gb.RunContext.Services.People.GetUserEmail(ctx, login)
 		if err != nil {
 			l.WithField("login", login).WithError(err).Warning("couldn't get email")
 
 			return nil
 		}
 
-		emails = append(emails, email)
+		emails = append(emails, userEmail)
 	}
 
 	tpl := mail.NewRequestExecutionInfoTpl(
@@ -197,7 +326,7 @@ func (gb *GoExecutionBlock) notifyNeedMoreInfo(ctx c.Context) error {
 	return nil
 }
 
-func (gb *GoExecutionBlock) notifyNewInfoReceived(ctx c.Context) error {
+func (gb *GoExecutionBlock) notifyNewInfoReceived(ctx context.Context) error {
 	l := logger.GetLogger(ctx)
 
 	delegates, err := gb.RunContext.Services.HumanTasks.GetDelegationsByLogins(ctx,
@@ -208,19 +337,19 @@ func (gb *GoExecutionBlock) notifyNewInfoReceived(ctx c.Context) error {
 
 	loginsToNotify := delegates.GetUserInArrayWithDelegations(getSliceFromMapOfStrings(gb.State.Executors))
 
-	var email string
+	var userEmail string
 
 	emails := make([]string, 0, len(loginsToNotify))
 
 	for _, login := range loginsToNotify {
-		email, err = gb.RunContext.Services.People.GetUserEmail(ctx, login)
+		userEmail, err = gb.RunContext.Services.People.GetUserEmail(ctx, login)
 		if err != nil {
 			l.WithField("login", login).WithError(err).Warning("couldn't get email")
 
 			continue
 		}
 
-		emails = append(emails, email)
+		emails = append(emails, userEmail)
 	}
 
 	tpl := mail.NewAnswerExecutionInfoTpl(

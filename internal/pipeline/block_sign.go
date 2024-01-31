@@ -1,7 +1,7 @@
 package pipeline
 
 import (
-	c "context"
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -253,7 +253,7 @@ func (gb *GoSignBlock) Members() []Member {
 }
 
 //nolint:dupl,gocyclo //Need here
-func (gb *GoSignBlock) Deadlines(ctx c.Context) ([]Deadline, error) {
+func (gb *GoSignBlock) Deadlines(ctx context.Context) ([]Deadline, error) {
 	deadlines := make([]Deadline, 0, 2)
 
 	if gb.State.CheckSLA != nil && *gb.State.CheckSLA {
@@ -302,7 +302,7 @@ type setSignersByParamsDTO struct {
 	Signer  string
 }
 
-func (gb *GoSignBlock) setSignersByParams(ctx c.Context, dto *setSignersByParamsDTO) error {
+func (gb *GoSignBlock) setSignersByParams(ctx context.Context, dto *setSignersByParamsDTO) error {
 	switch dto.Type {
 	case script.SignerTypeUser:
 		gb.State.Signers = map[string]struct{}{
@@ -356,7 +356,7 @@ func (gb *GoSignBlock) setSignersByParams(ctx c.Context, dto *setSignersByParams
 	return nil
 }
 
-func (gb *GoSignBlock) handleDayBeforeSLANotifications(ctx c.Context) error {
+func (gb *GoSignBlock) handleDayBeforeSLANotifications(ctx context.Context) error {
 	if gb.State.DayBeforeSLAChecked {
 		return nil
 	}
@@ -371,7 +371,7 @@ func (gb *GoSignBlock) handleDayBeforeSLANotifications(ctx c.Context) error {
 }
 
 //nolint:dupl // maybe later
-func (gb *GoSignBlock) handleNotifications(ctx c.Context) error {
+func (gb *GoSignBlock) handleNotifications(ctx context.Context) error {
 	l := logger.GetLogger(ctx)
 
 	if gb.RunContext.skipNotifications {
@@ -516,7 +516,7 @@ func ValidateFiles(file interface{}) ([]entity.Attachment, error) {
 }
 
 //nolint:dupl //its not duplicate
-func (gb *GoSignBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
+func (gb *GoSignBlock) createState(ctx context.Context, ef *entity.EriusFunc) error {
 	l := logger.GetLogger(ctx)
 
 	var params script.SignParams
@@ -717,7 +717,7 @@ func (gb *GoSignBlock) loadState(raw json.RawMessage) error {
 }
 
 // nolint:dupl,unparam // another block
-func createGoSignBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext,
+func createGoSignBlock(ctx context.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext,
 	expectedEvents map[string]struct{},
 ) (*GoSignBlock, bool, error) {
 	if ef.ShortTitle == "" {
@@ -777,4 +777,25 @@ func createGoSignBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx 
 	}
 
 	return b, reEntry, nil
+}
+
+func (gb *GoSignBlock) makeExpectedEvents(ctx context.Context, runCtx *BlockRunContext, name string, ef *entity.EriusFunc) error {
+	status, _, _ := gb.GetTaskHumanStatus()
+
+	event, err := runCtx.MakeNodeStartEvent(
+		ctx,
+		MakeNodeStartEventArgs{
+			NodeName:      name,
+			NodeShortName: ef.ShortTitle,
+			HumanStatus:   status,
+			NodeStatus:    gb.GetStatus(),
+		},
+	)
+	if err != nil {
+		return err
+	}
+
+	gb.happenedEvents = append(gb.happenedEvents, event)
+
+	return nil
 }

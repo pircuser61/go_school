@@ -307,9 +307,9 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 
 	if err = sendResponse(w, http.StatusOK, []*entity.RunResponse{v}); err != nil {
 		e := UnknownError
-		log.Error(e.errorMessage(err))
 		requestInfo.Status = e.Status()
-		_ = e.sendError(w)
+
+		errorHandler.handleError(e, err)
 
 		return
 	}

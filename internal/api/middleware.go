@@ -66,11 +66,11 @@ func WithUserInfo(ssoS *sso.Service, log logger.Logger) func(next http.Handler) 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
 
+			errorHandler := newHTTPErrorHandler(log, w)
+
 			ui, err := ssoS.GetUserinfo(ctx, r)
 			if err != nil {
-				e := GetUserinfoErr
-				log.Error(e.errorMessage(err))
-				_ = e.sendError(w)
+				errorHandler.handleError(GetUserinfoErr, err)
 
 				return
 			}
@@ -88,22 +88,20 @@ func WithAsOtherUserInfo(ps *people.Service, log logger.Logger) func(next http.H
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
 
+			errorHandler := newHTTPErrorHandler(log, w)
 			username := r.Header.Get(AsOtherHeader)
 
 			if username != "" {
 				u, err := ps.GetUser(ctx, strings.ToLower(username))
 				if err != nil {
-					e := GetUserinfoErr
-					log.Error(e.errorMessage(err))
-					_ = e.sendError(w)
+					errorHandler.handleError(GetUserinfoErr, err)
 
 					return
 				}
+
 				ui, err := u.ToUserinfo()
 				if err != nil {
-					e := GetUserinfoErr
-					log.Error(e.errorMessage(err))
-					_ = e.sendError(w)
+					errorHandler.handleError(GetUserinfoErr, err)
 
 					return
 				}
