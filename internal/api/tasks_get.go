@@ -1077,7 +1077,6 @@ func (ae *APIEnv) removeForms(dbTask *entity.EriusTask, accessibleForms map[stri
 }
 
 func (ae *APIEnv) hideExecutors(ctx context.Context, dbTask *entity.EriusTask, requesterLogin string, stepDelegates map[string]bool) error {
-
 	dbMembers, membErr := ae.DB.GetTaskMembers(ctx, dbTask.WorkNumber, false)
 	if membErr != nil {
 		return membErr
@@ -1085,9 +1084,7 @@ func (ae *APIEnv) hideExecutors(ctx context.Context, dbTask *entity.EriusTask, r
 
 	members := make([]string, 0)
 	for i := range dbMembers {
-		if dbMembers[i].Login != dbTask.Author {
-			members = append(members, dbMembers[i].Login)
-		}
+		members = append(members, dbMembers[i].Login)
 	}
 
 	for stepIndex := range dbTask.Steps {
