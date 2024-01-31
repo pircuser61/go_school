@@ -1,7 +1,9 @@
 package api
 
 import (
+	"bytes"
 	c "context"
+	"encoding/gob"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -255,6 +257,18 @@ func (ae *APIEnv) SaveVersionSettings(w http.ResponseWriter, req *http.Request, 
 		_ = er.sendError(w)
 
 		return
+	}
+
+	if params.SchemaFlag == nil {
+		var network bytes.Buffer
+		enc := gob.NewEncoder(&network)
+
+		encodeErr := enc.Encode(processSettings.StartSchema)
+		if encodeErr != nil {
+			log.Fatal("encode error:", err)
+		}
+
+		processSettings.StartSchemaRaw = network.Bytes()
 	}
 
 	if convErr := ae.convertProcessSettingsToFlat(ctx, processSettings); convErr != nil {
