@@ -978,9 +978,7 @@ func (ae *Env) hideExecutors(ctx context.Context, dbTask *entity.EriusTask, requ
 	members := make([]string, 0)
 
 	for i := range dbMembers {
-		if dbMembers[i].Login != dbTask.Author {
-			members = append(members, dbMembers[i].Login)
-		}
+		members = append(members, dbMembers[i].Login)
 	}
 
 	stepHandler := NewMultipleTypesStepHandler()
