@@ -6,10 +6,8 @@ import (
 	"strconv"
 
 	om "github.com/iancoleman/orderedmap"
-
-	"gitlab.services.mts.ru/abp/myosotis/logger"
-
 	e "gitlab.services.mts.ru/abp/mail/pkg/email"
+	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	fileregistry "gitlab.services.mts.ru/jocasta/pipeliner/internal/file-registry"
@@ -208,6 +206,16 @@ func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) ([]o
 
 	apBody := flatArray(taskContext.InitialApplication.ApplicationBody)
 
+	for k, v := range apBody.Values() {
+		key, ok := taskContext.InitialApplication.Keys[k]
+		if !ok {
+			continue
+		}
+
+		apBody.Delete(k)
+		apBody.Set(key, v)
+	}
+
 	descriptions := make([]om.OrderedMap, 0)
 
 	filesAttach, err := runCtx.makeNotificationAttachment()
@@ -243,8 +251,19 @@ func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) ([]o
 	for _, form := range additionalForms {
 		attachmentFiles := make([]string, 0)
 
-		for _, val := range form.Description.Values() {
-			file, ok := val.(om.OrderedMap)
+		var from FormData
+		if marshalErr := json.Unmarshal(runCtx.VarStore.State[form.Name], &from); marshalErr != nil {
+			return nil, nil, marshalErr
+		}
+
+		for k, v := range form.Description.Values() {
+			val, ok := from.Keys[k]
+			if ok {
+				form.Description.Delete(k)
+				form.Description.Set(val, v)
+			}
+
+			file, ok := v.(om.OrderedMap)
 			if !ok {
 				continue
 			}

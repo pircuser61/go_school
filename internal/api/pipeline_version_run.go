@@ -265,6 +265,29 @@ func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request
 		log.Error(e.errorMessage(err))
 	}
 
+	if len(req.Keys) == 0 && len(version.Settings.StartSchemaRaw) != 0 {
+		var schemaJson jsonschema.Schema
+		if unmarshalErr := json.Unmarshal(version.Settings.StartSchemaRaw, &schemaJson); unmarshalErr != nil {
+			return
+		}
+
+		res, _, getErr := schemaJson.GetAllFields()
+		if getErr != nil {
+			e := GetEntryPointOutputError
+			log.Error(e.errorMessage(getErr))
+			requestInfo.Status = e.Status()
+			_ = e.sendError(w)
+
+			return
+		}
+
+		req.Keys = res
+
+		if len(req.AttachmentFields) == 0 {
+			req.AttachmentFields = schemaJson.GetAttachmentFields()
+		}
+	}
+
 	v, execErr := ae.execVersion(ctx, &execVersionDTO{
 		storage:          storage,
 		version:          version,

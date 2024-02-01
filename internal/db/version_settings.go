@@ -3,6 +3,7 @@ package db
 import (
 	c "context"
 	"fmt"
+
 	"golang.org/x/net/context"
 
 	"github.com/google/uuid"
@@ -131,7 +132,7 @@ func (db *PGCon) GetVersionSettings(ctx c.Context, versionID string) (e.ProcessS
 	// nolint:gocritic,lll
 	// language=PostgreSQL
 	const query = `
-	SELECT start_schema, end_schema, resubmission_period,
+	SELECT start_schema, end_schema, resubmission_period, raw_start_schema,
 	    (select p.name from pipelines p where p.id = 
 	       (select pipeline_id from versions v where v.id = 
 	       	(select version_id from version_settings vs where vs.id = version_settings.id)
@@ -143,7 +144,8 @@ func (db *PGCon) GetVersionSettings(ctx c.Context, versionID string) (e.ProcessS
 	row := db.Connection.QueryRow(ctx, query, versionID)
 
 	ps := e.ProcessSettings{Id: versionID}
-	err := row.Scan(&ps.StartSchema, &ps.EndSchema, &ps.ResubmissionPeriod, &ps.Name)
+
+	err := row.Scan(&ps.StartSchema, &ps.EndSchema, &ps.ResubmissionPeriod, &ps.StartSchemaRaw, &ps.Name)
 	if err != nil && err != pgx.ErrNoRows {
 		return ps, err
 	}
@@ -162,17 +164,19 @@ func (db *PGCon) SaveVersionSettings(ctx c.Context, settings e.ProcessSettings, 
 		// nolint:gocritic
 		// language=PostgreSQL
 		query := `
-		INSERT INTO version_settings (id, version_id, start_schema, end_schema) 
-		VALUES ($1, $2, $3, $4)
+		INSERT INTO version_settings (id, version_id, start_schema, end_schema, raw_start_schema) 
+		VALUES ($1, $2, $3, $4, $5)
 		ON CONFLICT (version_id) DO UPDATE 
 			SET start_schema = excluded.start_schema, 
-				end_schema = excluded.end_schema`
+				end_schema = excluded.end_schema,
+				raw_start_schema = excluded.raw_start_schema`
 		commandTag, err = db.Connection.Exec(ctx,
 			query,
 			uuid.New(),
 			settings.Id,
 			settings.StartSchema,
 			settings.EndSchema,
+			settings.StartSchemaRaw,
 		)
 		if err != nil {
 			return err
@@ -190,12 +194,13 @@ func (db *PGCon) SaveVersionSettings(ctx c.Context, settings e.ProcessSettings, 
 
 		// nolint:gocritic
 		// language=PostgreSQL
-		query := fmt.Sprintf(`INSERT INTO version_settings (id, version_id, %[1]s) 
-			VALUES ($1, $2, $3)
+		query := fmt.Sprintf(`INSERT INTO version_settings (id, version_id, %[1]s, raw_start_schema) 
+			VALUES ($1, $2, $3, $4)
 			ON CONFLICT (version_id) DO UPDATE 
-				SET %[1]s = excluded.%[1]s`, *schemaFlag)
+				SET %[1]s = excluded.%[1]s,
+			    raw_start_schema = excluded.raw_start_schema`, *schemaFlag)
 
-		commandTag, err = db.Connection.Exec(ctx, query, uuid.New(), settings.Id, jsonSchema)
+		commandTag, err = db.Connection.Exec(ctx, query, uuid.New(), settings.Id, jsonSchema, settings.StartSchemaRaw)
 		if err != nil {
 			return err
 		}

@@ -67,7 +67,7 @@ type ProcessSettings struct {
 	SLA                int                `json:"sla"`
 	WorkType           string             `json:"work_type"`
 
-	StartSchemaRaw []byte `json:"-"`
+	StartSchemaRaw []byte `json:"raw_start_schema"`
 	EndSchemaRaw   []byte `json:"-"`
 }
 

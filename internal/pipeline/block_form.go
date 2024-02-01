@@ -68,6 +68,9 @@ type FormData struct {
 
 	Mapping script.JSONSchemaProperties `json:"mapping"`
 
+	AttachmentFields []string          `json:"attachment_fields"`
+	Keys             map[string]string `json:"keys"`
+
 	IsEditable      *bool                       `json:"is_editable"`
 	ReEnterSettings *script.FormReEnterSettings `json:"form_re_enter_settings,omitempty"`
 }
