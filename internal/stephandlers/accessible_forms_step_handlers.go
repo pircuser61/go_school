@@ -16,7 +16,7 @@ const (
 	RunningStatus = "running"
 	IdleStatus    = "idle"
 
-	TypeAccessFormNone = ""
+	TypeAccessFormNone = "None"
 )
 
 type AccessibleFormsApproverBlockStepHandler struct {

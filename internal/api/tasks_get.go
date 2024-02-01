@@ -25,8 +25,7 @@ import (
 )
 
 const (
-	hiddenUserLogin                      = "hidden_user"
-	TypeAccessFormNone script.AccessType = "None"
+	hiddenUserLogin = "hidden_user"
 )
 
 type taskResp struct {
