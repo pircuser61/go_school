@@ -1,4 +1,4 @@
-package api
+package stephandlers
 
 import (
 	"encoding/json"
@@ -15,6 +15,8 @@ const (
 
 	RunningStatus = "running"
 	IdleStatus    = "idle"
+
+	TypeAccessFormNone = ""
 )
 
 type AccessibleFormsApproverBlockStepHandler struct {

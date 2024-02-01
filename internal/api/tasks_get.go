@@ -11,8 +11,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"golang.org/x/exp/slices"
-
 	"go.opencensus.io/trace"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
@@ -22,6 +20,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/stephandlers"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 )
 
@@ -401,19 +400,6 @@ func (ae *Env) handleZeroTaskNodeGroup(ctx context.Context, dbTask *entity.Erius
 	return nil
 }
 
-type approverBlock struct {
-	Approvers           map[string]struct{}  `json:"approvers"`
-	AdditionalApprovers []additionalApprover `json:"additional_approvers"`
-}
-
-type executionBlock struct {
-	Executors map[string]struct{}
-}
-
-type additionalApprover struct {
-	ApproverLogin string `json:"approver_login"`
-}
-
 func (ae *Env) getAccessibleForms(
 	currentUser string,
 	steps *entity.TaskSteps,
@@ -433,23 +419,23 @@ func (ae *Env) getAccessibleForms(
 		delegates = &ht.Delegations{}
 	}
 
-	stepHandler := NewMultipleTypesStepHandler()
+	stepHandler := stephandlers.NewMultipleTypesStepHandler()
 
 	stepHandler.RegisterStepTypeHandler(
 		ApproverBlockType,
-		NewAccessibleFormsApproverBlockStepHandler(currentUser, accessibleForms, *delegates),
+		stephandlers.NewAccessibleFormsApproverBlockStepHandler(currentUser, accessibleForms, *delegates),
 	)
 	stepHandler.RegisterStepTypeHandler(
 		FormBlockType,
-		NewAccessibleFormsFormBlockStepHandler(currentUser, accessibleForms),
+		stephandlers.NewAccessibleFormsFormBlockStepHandler(currentUser, accessibleForms),
 	)
 	stepHandler.RegisterStepTypeHandler(
 		ExecutionBlockType,
-		NewAccessibleFormsExecutionBlockStepHandler(currentUser, accessibleForms, *delegates),
+		stephandlers.NewAccessibleFormsExecutionBlockStepHandler(currentUser, accessibleForms, *delegates),
 	)
 	stepHandler.RegisterStepTypeHandler(
 		SignBlockType,
-		NewAccessibleFormsSignBlockStepHandler(currentUser, accessibleForms),
+		stephandlers.NewAccessibleFormsSignBlockStepHandler(currentUser, accessibleForms),
 	)
 
 	err = stepHandler.HandleSteps(*steps)
@@ -473,14 +459,18 @@ func (ae *Env) getCurrentUserInDelegatesForSteps(
 
 	userInDelegates = make(map[string]bool, 0)
 
-	stepHandler := NewMultipleTypesStepHandler()
+	stepHandler := stephandlers.NewMultipleTypesStepHandler()
 
 	stepHandler.RegisterStepTypeHandler(
 		ApproverBlockType,
-		NewUserInDelegatesApproverBlockTypeStepHandler(currentUser, *delegates, userInDelegates),
+		stephandlers.NewUserInDelegatesApproverBlockTypeStepHandler(currentUser, *delegates, userInDelegates),
 	)
 
-	executionFormBlockTypeStepHandler := NewUserInDelegatesExecutionFromBlockTypesStepHandler(currentUser, *delegates, userInDelegates)
+	executionFormBlockTypeStepHandler := stephandlers.NewUserInDelegatesExecutionFromBlockTypesStepHandler(
+		currentUser,
+		*delegates,
+		userInDelegates,
+	)
 
 	stepHandler.RegisterStepTypeHandler(ExecutionBlockType, executionFormBlockTypeStepHandler)
 	stepHandler.RegisterStepTypeHandler(FormBlockType, executionFormBlockTypeStepHandler)
@@ -491,12 +481,6 @@ func (ae *Env) getCurrentUserInDelegatesForSteps(
 	}
 
 	return userInDelegates, nil
-}
-
-func isDelegate(currentUser, login string, delegations *ht.Delegations) bool {
-	delegates := delegations.GetDelegates(login)
-
-	return slices.Contains(delegates, currentUser)
 }
 
 //nolint:dupl,gocritic //its not duplicate // params без поинтера нужен для интерфейса
@@ -981,16 +965,16 @@ func (ae *Env) hideExecutors(ctx context.Context, dbTask *entity.EriusTask, requ
 		members = append(members, dbMembers[i].Login)
 	}
 
-	stepHandler := NewMultipleTypesStepHandler()
+	stepHandler := stephandlers.NewMultipleTypesStepHandler()
 
 	stepHandler.RegisterStepTypeHandler(
 		pipeline.BlockGoFormID,
-		NewHideExecutorsFormBlockStepHandler(stepDelegates, members, requesterLogin),
+		stephandlers.NewHideExecutorsFormBlockStepHandler(stepDelegates, members, requesterLogin),
 	)
 
 	stepHandler.RegisterStepTypeHandler(
 		pipeline.BlockGoExecutionID,
-		NewHideExecutorsExecutionBlockStepHandler(stepDelegates, members, requesterLogin),
+		stephandlers.NewHideExecutorsExecutionBlockStepHandler(stepDelegates, members, requesterLogin),
 	)
 
 	err := stepHandler.HandleSteps(dbTask.Steps)
@@ -999,12 +983,4 @@ func (ae *Env) hideExecutors(ctx context.Context, dbTask *entity.EriusTask, requ
 	}
 
 	return nil
-}
-
-func hideDelegator(delegate string) string {
-	if delegate == "" {
-		return ""
-	}
-
-	return hiddenUserLogin
 }

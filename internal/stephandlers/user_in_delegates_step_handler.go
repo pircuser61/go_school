@@ -1,4 +1,4 @@
-package api
+package stephandlers
 
 import (
 	"encoding/json"
@@ -113,4 +113,17 @@ func (h *UserInDelegatesExecutionFromBlockTypesStepHandler) isDelegateAnyPersonO
 	}
 
 	return false
+}
+
+type approverBlock struct {
+	Approvers           map[string]struct{}  `json:"approvers"`
+	AdditionalApprovers []additionalApprover `json:"additional_approvers"`
+}
+
+type additionalApprover struct {
+	ApproverLogin string `json:"approver_login"`
+}
+
+type executionBlock struct {
+	Executors map[string]struct{}
 }

@@ -1,4 +1,4 @@
-package api
+package stephandlers
 
 import "gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 

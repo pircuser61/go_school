@@ -1,4 +1,4 @@
-package api
+package stephandlers
 
 import (
 	"encoding/json"
@@ -8,6 +8,8 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 	"golang.org/x/exp/slices"
 )
+
+const hiddenUserLogin = "hidden_user"
 
 type HideExecutorsFormBlockStepHandler struct {
 	stepDelegates  map[string]bool
