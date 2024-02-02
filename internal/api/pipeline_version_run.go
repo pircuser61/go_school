@@ -86,7 +86,7 @@ func (ae *APIEnv) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	reqParams := &requestStartParams{pipelineID: version.PipelineID.String(), version: version, keys: req.Keys, attachmentFields: req.AttachmentFields}
+	reqParams := &requestStartParams{version.PipelineID.String(), version, req.Keys, req.AttachmentFields, nil}
 
 	err = ae.handleStartApplicationParams(ctx, reqParams)
 	if err != nil {
@@ -269,7 +269,7 @@ func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	reqParams := &requestStartParams{pipelineID: req.PipelineId, version: version, keys: req.Keys, attachmentFields: req.AttachmentFields}
+	reqParams := &requestStartParams{req.PipelineId, version, req.Keys, req.AttachmentFields, nil}
 
 	paramsErr := ae.handleStartApplicationParams(ctx, reqParams)
 	if paramsErr != nil {
@@ -392,8 +392,11 @@ func (ae *APIEnv) getHiddenFields(ctx c.Context, version *entity.EriusScenario) 
 		return hiddenFields, errors.New("can`t find blueprintID")
 	}
 
-	schema := jsonschema.Schema{}
-	var err error
+	var (
+		schema jsonschema.Schema
+		err    error
+	)
+
 	schema, err = ae.ServiceDesc.GetSchemaByBlueprintID(ctx, params.BlueprintID)
 	if err != nil {
 		return hiddenFields, err
