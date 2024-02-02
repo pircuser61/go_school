@@ -263,13 +263,17 @@ func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) ([]o
 				form.Description.Set(val, v)
 			}
 
-			file, ok := v.(om.OrderedMap)
-			if !ok {
-				continue
-			}
+			for _, attachVal := range from.AttachmentFields {
+				if attachVal == k {
+					file, attachOk := v.(om.OrderedMap)
+					if !attachOk {
+						continue
+					}
 
-			if fileId, fileOk := file.Get("file_id"); fileOk {
-				attachmentFiles = append(attachmentFiles, fileId.(string))
+					if fileId, fileOk := file.Get("file_id"); fileOk {
+						attachmentFiles = append(attachmentFiles, fileId.(string))
+					}
+				}
 			}
 		}
 

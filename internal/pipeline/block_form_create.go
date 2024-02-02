@@ -200,22 +200,22 @@ func (gb *GoFormBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 	}
 
 	prop, ok := schema["properties"]
-	if !ok {
-		return errors.New("can't get properties")
-	}
+	if ok {
+		propMap, ok := prop.(map[string]interface{})
+		if !ok {
+			return errors.New("properties is not map")
+		}
 
-	propMap, ok := prop.(map[string]interface{})
-	if !ok {
-		return errors.New("properties is not map")
-	}
+		var schemaJson jsonschema.Schema = propMap
+		res, _, getAllFieldsErr := schemaJson.GetAllFields()
+		if getAllFieldsErr != nil {
+			return getAllFieldsErr
+		}
 
-	var schemaJson jsonschema.Schema = propMap
-	res, _, err := schemaJson.GetAllFields()
-	if err != nil {
-		return err
-	}
+		params.Keys = res
 
-	attach := schemaJson.GetAttachmentFields()
+		params.AttachmentFields = schemaJson.GetAttachmentFields()
+	}
 
 	gb.State = &FormData{
 		SchemaId:                  params.SchemaId,
@@ -230,8 +230,8 @@ func (gb *GoFormBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 		IsEditable:                params.IsEditable,
 		ReEnterSettings:           params.ReEnterSettings,
 		HiddenFields:              hiddenFields,
-		Keys:                      res,
-		AttachmentFields:          attach,
+		Keys:                      params.Keys,
+		AttachmentFields:          params.AttachmentFields,
 	}
 
 	if params.FormGroupIDPath != nil && *params.FormGroupIDPath != "" {

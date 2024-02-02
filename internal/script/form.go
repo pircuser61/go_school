@@ -33,6 +33,8 @@ type FormParams struct {
 	WorkType                  *string              `json:"work_type"`
 	IsEditable                *bool                `json:"is_editable"`
 	ReEnterSettings           *FormReEnterSettings `json:"form_re_enter_settings,omitempty"`
+	AttachmentFields          []string             `json:"attachment_fields"`
+	Keys                      map[string]string    `json:"keys"`
 }
 
 func (a *FormParams) Validate() error {

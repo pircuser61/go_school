@@ -10,10 +10,9 @@ import (
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
 
-	e "gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
-
 	"go.opencensus.io/trace"
+
+	e "gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 )
 
 func (db *PGCon) copyProcessSettingsFromOldVersion(c c.Context, newVersionID, oldVersionID uuid.UUID) error {
@@ -182,27 +181,33 @@ func (db *PGCon) SaveVersionSettings(ctx c.Context, settings e.ProcessSettings, 
 			return err
 		}
 	} else {
-		var jsonSchema *script.JSONSchema
-		switch *schemaFlag {
-		case startSchema:
-			jsonSchema = settings.StartSchema
-		case endSchema:
-			jsonSchema = settings.EndSchema
-		default:
-			return errUnkonwnSchemaFlag
-		}
-
-		// nolint:gocritic
-		// language=PostgreSQL
-		query := fmt.Sprintf(`INSERT INTO version_settings (id, version_id, %[1]s, raw_start_schema) 
+		if *schemaFlag == startSchema {
+			// nolint:gocritic
+			// language=PostgreSQL
+			query := `INSERT INTO version_settings (id,version_id,start_schema, raw_start_schema) 
 			VALUES ($1, $2, $3, $4)
 			ON CONFLICT (version_id) DO UPDATE 
-				SET %[1]s = excluded.%[1]s,
-			    raw_start_schema = excluded.raw_start_schema`, *schemaFlag)
+				SET start_schema = excluded.start_schema,
+			    raw_start_schema = excluded.raw_start_schema`
 
-		commandTag, err = db.Connection.Exec(ctx, query, uuid.New(), settings.Id, jsonSchema, settings.StartSchemaRaw)
-		if err != nil {
-			return err
+			commandTag, err = db.Connection.Exec(ctx, query, uuid.New(), settings.Id, settings.StartSchema, settings.StartSchemaRaw)
+			if err != nil {
+				return err
+			}
+		} else if *schemaFlag == endSchema {
+			// nolint:gocritic
+			// language=PostgreSQL
+			query := `INSERT INTO version_settings (id, version_id, end_schema) 
+			VALUES ($1, $2, $3)
+			ON CONFLICT (version_id) DO UPDATE 
+				SET end_schema = excluded.end_schema`
+
+			commandTag, err = db.Connection.Exec(ctx, query, uuid.New(), settings.Id, settings.EndSchema)
+			if err != nil {
+				return err
+			}
+		} else {
+			return errUnkonwnSchemaFlag
 		}
 	}
 
