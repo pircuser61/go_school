@@ -206,7 +206,9 @@ func (gb *GoFormBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 			return errors.New("properties is not map")
 		}
 
-		var schemaJson jsonschema.Schema = propMap
+		var schemaJson jsonschema.Schema
+		schemaJson = propMap
+
 		res, _, getAllFieldsErr := schemaJson.GetAllFields()
 		if getAllFieldsErr != nil {
 			return getAllFieldsErr
