@@ -181,7 +181,8 @@ func (db *PGCon) SaveVersionSettings(ctx c.Context, settings e.ProcessSettings, 
 			return err
 		}
 	} else {
-		if *schemaFlag == startSchema {
+		switch *schemaFlag {
+		case startSchema:
 			// nolint:gocritic
 			// language=PostgreSQL
 			query := `INSERT INTO version_settings (id,version_id,start_schema, raw_start_schema) 
@@ -194,7 +195,7 @@ func (db *PGCon) SaveVersionSettings(ctx c.Context, settings e.ProcessSettings, 
 			if err != nil {
 				return err
 			}
-		} else if *schemaFlag == endSchema {
+		case endSchema:
 			// nolint:gocritic
 			// language=PostgreSQL
 			query := `INSERT INTO version_settings (id, version_id, end_schema) 
@@ -206,7 +207,7 @@ func (db *PGCon) SaveVersionSettings(ctx c.Context, settings e.ProcessSettings, 
 			if err != nil {
 				return err
 			}
-		} else {
+		default:
 			return errUnkonwnSchemaFlag
 		}
 	}

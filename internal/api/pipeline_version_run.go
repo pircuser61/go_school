@@ -34,11 +34,6 @@ type runNewVersionsByPrevVersionRequest struct {
 	CustomTitle       string            `json:"custom_title"`
 	IsTestApplication bool              `json:"is_test_application"`
 }
-type startApplicationParams struct {
-	Keys             map[string]string
-	AttachmentFields []string
-	HiddenFields     []string
-}
 
 type requestStartParams struct {
 	pipelineID       string
