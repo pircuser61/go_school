@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/labstack/gommon/log"
 	"github.com/pkg/errors"
 	"go.opencensus.io/trace"
 
@@ -38,9 +37,9 @@ type runNewVersionsByPrevVersionRequest struct {
 type requestStartParams struct {
 	pipelineID       string
 	version          *entity.EriusScenario
-	Keys             map[string]string
-	AttachmentFields []string
-	HiddenFields     []string
+	keys             map[string]string
+	attachmentFields []string
+	hiddenFields     []string
 }
 
 func (ae *APIEnv) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Request) {
@@ -87,11 +86,7 @@ func (ae *APIEnv) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	reqParams := &requestStartParams{
-		pipelineID: version.PipelineID.String(),
-		version:    version, Keys: req.Keys,
-		AttachmentFields: req.AttachmentFields,
-	}
+	reqParams := &requestStartParams{pipelineID: version.PipelineID.String(), version: version, keys: req.Keys, attachmentFields: req.AttachmentFields}
 
 	err = ae.handleStartApplicationParams(ctx, reqParams)
 	if err != nil {
@@ -111,12 +106,12 @@ func (ae *APIEnv) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Requ
 			InitialApplication: entity.InitialApplication{
 				Description:               req.Description,
 				ApplicationBody:           req.ApplicationBody,
-				AttachmentFields:          reqParams.AttachmentFields,
-				Keys:                      reqParams.Keys,
+				AttachmentFields:          reqParams.attachmentFields,
+				Keys:                      reqParams.keys,
 				ApplicationBodyFromSystem: req.ApplicationBody,
 				CustomTitle:               req.CustomTitle,
 				IsTestApplication:         req.IsTestApplication,
-				HiddenFields:              reqParams.HiddenFields,
+				HiddenFields:              reqParams.hiddenFields,
 			},
 		},
 	})
@@ -274,11 +269,7 @@ func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	reqParams := &requestStartParams{
-		pipelineID: req.PipelineId,
-		version:    version, Keys: req.Keys,
-		AttachmentFields: req.AttachmentFields,
-	}
+	reqParams := &requestStartParams{pipelineID: req.PipelineId, version: version, keys: req.Keys, attachmentFields: req.AttachmentFields}
 
 	paramsErr := ae.handleStartApplicationParams(ctx, reqParams)
 	if paramsErr != nil {
@@ -298,12 +289,12 @@ func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request
 			InitialApplication: entity.InitialApplication{
 				Description:               req.Description,
 				ApplicationBody:           mappedApplicationBody,
-				Keys:                      reqParams.Keys,
-				AttachmentFields:          reqParams.AttachmentFields,
+				Keys:                      reqParams.keys,
+				AttachmentFields:          reqParams.attachmentFields,
 				IsTestApplication:         req.IsTestApplication,
 				ApplicationBodyFromSystem: req.ApplicationBody,
 				CustomTitle:               req.CustomTitle,
-				HiddenFields:              reqParams.HiddenFields,
+				HiddenFields:              reqParams.hiddenFields,
 			},
 		},
 	})
@@ -348,23 +339,23 @@ func (ae *APIEnv) handleStartApplicationParams(ctx c.Context, dto *requestStartP
 		return errors.New("schema is empty")
 	}
 
-	if len(dto.Keys) == 0 {
+	if len(dto.keys) == 0 {
 		res, _, getErr := schemaJson.GetAllFields()
 		if getErr != nil {
 			return getErr
 		}
 
-		dto.Keys = res
+		dto.keys = res
 	}
 
-	if len(dto.AttachmentFields) == 0 {
-		dto.AttachmentFields = schemaJson.GetAttachmentFields()
+	if len(dto.attachmentFields) == 0 {
+		dto.attachmentFields = schemaJson.GetAttachmentFields()
 	}
 
-	hiddenFields, err := ae.getHiddenFields(ctx, dto.pipelineID, dto.version.VersionID.String())
+	hiddenFields, err := ae.getHiddenFields(ctx, dto.version)
 	if err != nil {
 		e := GetHiddenFieldsError
-		log.Error(e.errorMessage(err))
+		ae.Log.Error(e.errorMessage(err))
 	}
 
 	if len(hiddenFields) == 0 {
@@ -373,42 +364,17 @@ func (ae *APIEnv) handleStartApplicationParams(ctx c.Context, dto *requestStartP
 			return err
 		}
 
-		dto.HiddenFields = hiddenFieldsSchema
+		dto.hiddenFields = hiddenFieldsSchema
 	}
 
-	dto.HiddenFields = hiddenFields
+	dto.hiddenFields = hiddenFields
 
 	return nil
 }
 
-func (ae *APIEnv) getHiddenFields(ctx c.Context, pipelineID, versionID string) ([]string, error) {
+func (ae *APIEnv) getHiddenFields(ctx c.Context, version *entity.EriusScenario) ([]string, error) {
 	const sdBlockName = "servicedesk_application_0"
 	hiddenFields := make([]string, 0)
-
-	settings, err := ae.DB.GetVersionSettings(ctx, versionID)
-	if err != nil {
-		return hiddenFields, err
-	}
-
-	startSchemaRaw := settings.StartSchemaRaw
-	schema := jsonschema.Schema{}
-	if string(startSchemaRaw) != "" && string(startSchemaRaw) != "{}" {
-		if err = json.Unmarshal(startSchemaRaw, &schema); err != nil {
-			return hiddenFields, err
-		}
-
-		if hiddenFields, err = schema.GetHiddenFields(); err != nil {
-			return hiddenFields, err
-		}
-
-		return hiddenFields, nil
-	}
-
-	// if there is no scheme for starting the process
-	version, err := ae.DB.GetVersionByPipelineID(ctx, pipelineID)
-	if err != nil {
-		return hiddenFields, err
-	}
 
 	if _, exists := version.Pipeline.Blocks[sdBlockName]; !exists {
 		return hiddenFields, errors.New("can`t find hidden fields, block is not found " + sdBlockName)
@@ -426,6 +392,8 @@ func (ae *APIEnv) getHiddenFields(ctx c.Context, pipelineID, versionID string) (
 		return hiddenFields, errors.New("can`t find blueprintID")
 	}
 
+	schema := jsonschema.Schema{}
+	var err error
 	schema, err = ae.ServiceDesc.GetSchemaByBlueprintID(ctx, params.BlueprintID)
 	if err != nil {
 		return hiddenFields, err

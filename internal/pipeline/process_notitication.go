@@ -251,19 +251,19 @@ func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) ([]o
 	for _, form := range additionalForms {
 		attachmentFiles := make([]string, 0)
 
-		var from FormData
-		if marshalErr := json.Unmarshal(runCtx.VarStore.State[form.Name], &from); marshalErr != nil {
+		var formBlock FormData
+		if marshalErr := json.Unmarshal(runCtx.VarStore.State[form.Name], &formBlock); marshalErr != nil {
 			return nil, nil, marshalErr
 		}
 
 		for k, v := range form.Description.Values() {
-			val, ok := from.Keys[k]
+			val, ok := formBlock.Keys[k]
 			if ok {
 				form.Description.Delete(k)
 				form.Description.Set(val, v)
 			}
 
-			for _, attachVal := range from.AttachmentFields {
+			for _, attachVal := range formBlock.AttachmentFields {
 				if attachVal == k {
 					file, attachOk := v.(om.OrderedMap)
 					if !attachOk {
