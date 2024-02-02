@@ -35,7 +35,6 @@ type runNewVersionsByPrevVersionRequest struct {
 }
 
 type requestStartParams struct {
-	pipelineID       string
 	version          *entity.EriusScenario
 	keys             map[string]string
 	attachmentFields []string
@@ -86,7 +85,11 @@ func (ae *APIEnv) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	reqParams := &requestStartParams{version.PipelineID.String(), version, req.Keys, req.AttachmentFields, nil}
+	reqParams := &requestStartParams{
+		version:          version,
+		keys:             req.Keys,
+		attachmentFields: req.AttachmentFields,
+	}
 
 	err = ae.handleStartApplicationParams(ctx, reqParams)
 	if err != nil {
@@ -269,7 +272,11 @@ func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	reqParams := &requestStartParams{req.PipelineId, version, req.Keys, req.AttachmentFields, nil}
+	reqParams := &requestStartParams{
+		version:          version,
+		keys:             req.Keys,
+		attachmentFields: req.AttachmentFields,
+	}
 
 	paramsErr := ae.handleStartApplicationParams(ctx, reqParams)
 	if paramsErr != nil {
@@ -330,44 +337,42 @@ func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request
 }
 
 func (ae *APIEnv) handleStartApplicationParams(ctx c.Context, dto *requestStartParams) error {
-	var schemaJson *jsonschema.Schema
-	if unmarshalErr := json.Unmarshal(dto.version.Settings.StartSchemaRaw, &schemaJson); unmarshalErr != nil {
-		return unmarshalErr
-	}
-
-	if schemaJson == nil {
-		return errors.New("schema is empty")
-	}
-
-	if len(dto.keys) == 0 {
-		res, _, getErr := schemaJson.GetAllFields()
-		if getErr != nil {
-			return getErr
-		}
-
-		dto.keys = res
-	}
-
-	if len(dto.attachmentFields) == 0 {
-		dto.attachmentFields = schemaJson.GetAttachmentFields()
-	}
-
 	hiddenFields, err := ae.getHiddenFields(ctx, dto.version)
 	if err != nil {
 		e := GetHiddenFieldsError
 		ae.Log.Error(e.errorMessage(err))
 	}
 
-	if len(hiddenFields) == 0 {
-		hiddenFieldsSchema, getHiddenFieldsErr := schemaJson.GetHiddenFields()
-		if getHiddenFieldsErr != nil {
-			return err
-		}
+	dto.hiddenFields = hiddenFields
 
-		dto.hiddenFields = hiddenFieldsSchema
+	if len(dto.keys) != 0 && len(dto.attachmentFields) != 0 {
+		return nil
 	}
 
-	dto.hiddenFields = hiddenFields
+	var schemaJson jsonschema.Schema
+	if unmarshalErr := json.Unmarshal(dto.version.Settings.StartSchemaRaw, &schemaJson); unmarshalErr != nil {
+		return unmarshalErr
+	}
+
+	if schemaJson == nil || len(schemaJson) == 0 {
+		return errors.New("schema is empty")
+	}
+
+	if len(dto.hiddenFields) == 0 {
+		if hiddenFields, err = schemaJson.GetHiddenFields(); err == nil {
+			dto.hiddenFields = hiddenFields
+		}
+	}
+
+	if len(dto.keys) == 0 {
+		if res, _, getErr := schemaJson.GetAllFields(); getErr == nil {
+			dto.keys = res
+		}
+	}
+
+	if len(dto.attachmentFields) == 0 {
+		dto.attachmentFields = schemaJson.GetAttachmentFields()
+	}
 
 	return nil
 }
@@ -377,7 +382,7 @@ func (ae *APIEnv) getHiddenFields(ctx c.Context, version *entity.EriusScenario) 
 	hiddenFields := make([]string, 0)
 
 	if _, exists := version.Pipeline.Blocks[sdBlockName]; !exists {
-		return hiddenFields, errors.New("can`t find hidden fields, block is not found " + sdBlockName)
+		return hiddenFields, nil
 	}
 
 	params := pipeline.ApplicationData{}
