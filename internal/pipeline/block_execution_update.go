@@ -185,6 +185,10 @@ func (gb *GoExecutionBlock) changeExecutor(ctx context.Context) (err error) {
 		return errors.New("can't assert provided update data")
 	}
 
+	if executorFound {
+		delegateFor = ""
+	}
+
 	if err = gb.State.SetChangeExecutor(gb.RunContext.UpdateData.ByLogin, delegateFor, &updateParams); err != nil {
 		return errors.New("can't assert provided change executor data")
 	}
@@ -802,6 +806,10 @@ func (a *ExecutionData) SetRequestExecutionInfo(
 		return fmt.Errorf("request info type is not valid")
 	}
 
+	if executorFound {
+		delegateFor = ""
+	}
+
 	a.RequestExecutionInfoLogs = append(a.RequestExecutionInfoLogs, RequestExecutionInfoLog{
 		Login:       login,
 		Comment:     in.Comment,
@@ -833,6 +841,10 @@ func (gb *GoExecutionBlock) executorStartWork(ctx context.Context) (err error) {
 
 	gb.State.Executors = map[string]struct{}{
 		gb.RunContext.UpdateData.ByLogin: {},
+	}
+
+	if executorFound {
+		delegateFor = ""
 	}
 
 	gb.State.IsTakenInWork = true
@@ -1176,6 +1188,10 @@ func (gb *GoExecutionBlock) toEditApplication(ctx context.Context) (err error) {
 	)
 	if !(executorFound || isDelegate) {
 		return NewUserIsNotPartOfProcessErr()
+	}
+
+	if executorFound {
+		delegateFor = ""
 	}
 
 	// возврат на доработку всей заявки инициатору

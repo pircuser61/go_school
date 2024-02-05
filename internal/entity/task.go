@@ -318,7 +318,7 @@ type NodeEvent struct {
 	NodeOutput    map[string]interface{} `json:"node_output"`
 }
 
-func (ne *NodeEvent) ToMap() map[string]interface{} {
+func (ne NodeEvent) ToMap() map[string]interface{} {
 	if ne.NodeOutput == nil {
 		ne.NodeOutput = make(map[string]interface{})
 	}
