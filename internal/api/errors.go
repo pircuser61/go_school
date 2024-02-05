@@ -86,7 +86,7 @@ const (
 	UpdateNotRunningTaskError
 	UpdateBlockError
 	BlockNotFoundError
-	GetVersionsByBlueprintIdError
+	GetVersionsByBlueprintIDError
 	BodyParseError
 	ValidationError
 	GetVersionsByWorkNumberError
@@ -106,8 +106,8 @@ const (
 	UpdateRunAsOthersSettingsError
 	ValidationEndingSystemSettingsError
 	SearchingForPipelinesUsageError
-	ValidationSlaProcessSettingsError
-	GetProcessSlaSettingsError
+	ValidationSLAProcessSettingsError
+	GetProcessSLASettingsError
 	PipelineValidateError
 	StopTaskParsingError
 	ParallelNodeReturnCycle
@@ -125,7 +125,14 @@ const (
 	GetHiddenFieldsError
 )
 
-//nolint:dupl //its not duplicate
+/*
+	по хорошему эту штуку надо бы разбить на структуры с нужными методами Error(), Wrap(), Description(), HttpCode()
+	и отдельную структуру для записи данной ошибки в http.ResponseWriter
+	из плюсов этой штуки то что всё компактектненько и незапарно
+	из минусов то что при добавлении новой ошибки надо не забыть добавить это в 3 разных места
+	ну и читаемость кода для просмотра конкретной ошибки низкая (тяжело в кучке три раза подряд искать нужную ошибку)
+*/
+//nolint:gochecknoglobals,dupl // ну либо так либо никак
 var errorText = map[Err]string{
 	UnknownError:                        "unknown error",
 	GetAllApprovedError:                 "can't get approved versions",
@@ -193,7 +200,7 @@ var errorText = map[Err]string{
 	UpdateNotRunningTaskError:           "can't update not running work",
 	UpdateBlockError:                    "can't update block",
 	BlockNotFoundError:                  "can't find block",
-	GetVersionsByBlueprintIdError:       "can't get get versions by blueprintId",
+	GetVersionsByBlueprintIDError:       "can't get get versions by blueprintId",
 	BodyParseError:                      "can't parse body to struct",
 	ValidationError:                     "run version by blueprint id request is invalid",
 	GetVersionsByWorkNumberError:        "can`t find version by work id",
@@ -211,8 +218,8 @@ var errorText = map[Err]string{
 	UpdateRunAsOthersSettingsError:      "failed to update settings for requests from a 3rd party",
 	ValidationEndingSystemSettingsError: "not enough data to update ending settings",
 	SearchingForPipelinesUsageError:     "can't find usages of pipeline",
-	ValidationSlaProcessSettingsError:   "wrong data for version SLA settings",
-	GetProcessSlaSettingsError:          "can't get sla settings for process",
+	ValidationSLAProcessSettingsError:   "wrong data for version SLA settings",
+	GetProcessSLASettingsError:          "can't get sla settings for process",
 	PipelineValidateError:               "invalid pipeline schema",
 	StopTaskParsingError:                "can't parse stop task request",
 	ParallelNodeReturnCycle:             "invalid pipeline schema: returning back from parallel",
@@ -230,9 +237,14 @@ var errorText = map[Err]string{
 	GetHiddenFieldsError:                "error when getting hidden fields from schema",
 }
 
-// JOKE.
-//
-//nolint:dupl //its not duplicate
+/*
+	по хорошему эту штуку надо бы разбить на структуры с нужными методами Error(), Wrap(), Description(), HttpCode()
+	и отдельную структуру для записи данной ошибки в http.ResponseWriter
+	из плюсов этой штуки то что всё компактектненько и незапарно
+	из минусов то что при добавлении новой ошибки надо не забыть добавить это в 3 разных места
+	ну и читаемость кода для просмотра конкретной ошибки низкая (тяжело в кучке три раза подряд искать нужную ошибку)
+*/
+//nolint // ну либо так либо никак
 var errorDescription = map[Err]string{
 	UnknownError:                        "Сохраняйте спокойствие, что-то произошло непонятное",
 	GetAllApprovedError:                 "Невозможно получить список согласованных сценариев",
@@ -300,7 +312,7 @@ var errorDescription = map[Err]string{
 	UpdateNotRunningTaskError:           "Невозможно обновить незапущенную задачу",
 	UpdateBlockError:                    "Не удалось обновить блок задачи",
 	BlockNotFoundError:                  "Не удалось получить блок задачи",
-	GetVersionsByBlueprintIdError:       "Ошибка при получении версий по id шаблона",
+	GetVersionsByBlueprintIDError:       "Ошибка при получении версий по id шаблона",
 	BodyParseError:                      "Ошибка при разборе тела запроса",
 	ValidationError:                     "Ошибка при валидации запроса",
 	GetVersionsByWorkNumberError:        "Ошибка при получении сценария по id процесса",
@@ -318,8 +330,8 @@ var errorDescription = map[Err]string{
 	UpdateRunAsOthersSettingsError:      "Не удалось обновить настройки запуска заявки от третьего лица",
 	ValidationEndingSystemSettingsError: "Ошибка при валидации параметров для обновления настроек системы",
 	SearchingForPipelinesUsageError:     "Ошибка при поиске использования пайплайна",
-	ValidationSlaProcessSettingsError:   "Ошибка при валидации параметров SLA процесса",
-	GetProcessSlaSettingsError:          "Ошибка при получении параметров SLA процесса",
+	ValidationSLAProcessSettingsError:   "Ошибка при валидации параметров SLA процесса",
+	GetProcessSLASettingsError:          "Ошибка при получении параметров SLA процесса",
 	PipelineValidateError:               "Невалидная схема пайплайна",
 	StopTaskParsingError:                "Не удалось распарсить запрос",
 	ParallelNodeReturnCycle:             "Линии блоков внутри параллельности должны быть изолированы",
@@ -337,6 +349,14 @@ var errorDescription = map[Err]string{
 	GetHiddenFieldsError:          "Ошибка при получении скрытых полей из схемы",
 }
 
+/*
+	по хорошему эту штуку надо бы разбить на структуры с нужными методами Error(), Wrap(), Description(), HttpCode()
+	и отдельную структуру для записи данной ошибки в http.ResponseWriter
+	из плюсов этой штуки то что всё компактектненько и незапарно
+	из минусов то что при добавлении новой ошибки надо не забыть добавить это в 3 разных места
+	ну и читаемость кода для просмотра конкретной ошибки низкая (тяжело в кучке три раза подряд искать нужную ошибку)
+*/
+//nolint:gochecknoglobals // ну либо так либо никак
 var errorStatus = map[Err]int{
 	Teapot:                        http.StatusTeapot,
 	UnauthError:                   http.StatusUnauthorized,

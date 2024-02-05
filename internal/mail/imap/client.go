@@ -61,6 +61,7 @@ func (s *Client) connect() error {
 	if err = c.Login(s.imapUserName, s.imapPassword); err != nil {
 		return errors.Wrap(err, "IMAP client login")
 	}
+
 	s.imapClient = c
 
 	return nil
@@ -173,6 +174,7 @@ func (s *Client) SelectUnread(ctx context.Context) (messages chan *imap.Message,
 
 	if mailBox.Messages == 0 {
 		log.Info("mailbox is empty")
+
 		return nil, nil, nil
 	}
 
@@ -182,12 +184,15 @@ func (s *Client) SelectUnread(ctx context.Context) (messages chan *imap.Message,
 	if err != nil {
 		return nil, nil, err
 	}
+
 	if len(ids) == 0 {
 		log.Info("no unseen messages to process")
+
 		return nil, nil, nil
 	}
 
 	log.Info(fmt.Sprintf("Found %d unseen messages to process", len(ids)))
+
 	seqSet := new(imap.SeqSet)
 	seqSet.AddNum(ids...)
 
@@ -201,11 +206,13 @@ func (s *Client) SelectUnread(ctx context.Context) (messages chan *imap.Message,
 	}
 
 	messages = make(chan *imap.Message, len(ids))
+
 	err = s.Fetch(ctx, seqSet, items, messages)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	log.Info("SelectUnread completed successfully")
+
 	return messages, section, nil
 }

@@ -10,8 +10,10 @@ func parseLimitOffsetWithDefault(limit, offset *int) (lim, off int) {
 	if limit != nil {
 		lim = *limit
 	}
+
 	if offset != nil {
 		off = *offset
 	}
+
 	return lim, off
 }

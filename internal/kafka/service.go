@@ -27,6 +27,7 @@ type Service struct {
 	MessageHandler *msgkit.MessageHandler[RunnerInMessage]
 }
 
+//nolint:gocritic //если тут удобно по значению значит пусть будет по значению
 func NewService(log logger.Logger, cfg Config) (*Service, error) {
 	topics := []string{cfg.ProducerTopic, cfg.ConsumerTopic}
 
@@ -40,6 +41,7 @@ func NewService(log logger.Logger, cfg Config) (*Service, error) {
 
 	m := metrics.DefaultRegistry
 	m.UnregisterAll()
+
 	saramaCfg := sarama.NewConfig()
 	saramaCfg.MetricRegistry = m
 	saramaCfg.Producer.Return.Successes = true // Producer.Return.Successes must be true to be used in a SyncProducer
@@ -71,7 +73,7 @@ func NewService(log logger.Logger, cfg Config) (*Service, error) {
 	}, nil
 }
 
-func (s *Service) Produce(ctx c.Context, message RunnerOutMessage) error {
+func (s *Service) Produce(ctx c.Context, message *RunnerOutMessage) error {
 	if s == nil {
 		return errors.New("kafka service unavailable")
 	}
@@ -113,65 +115,69 @@ func (s *Service) StartConsumer(ctx c.Context) {
 func (s *Service) StartCheckHealth() {
 	for {
 		to := time.After(time.Duration(s.serviceConfig.HealthCheckTimeout) * time.Second)
-		select {
-		case <-to:
-			m := metrics.DefaultRegistry
-			m.UnregisterAll()
-
-			saramaCfg := sarama.NewConfig()
-			saramaCfg.MetricRegistry = m
-			saramaCfg.Producer.Return.Successes = true // Producer.Return.Successes must be true to be used in a SyncProducer
-
-			admin, err := sarama.NewClusterAdmin(s.brokers, saramaCfg)
-			if err != nil {
-				s.log.WithError(err).Error("couldn't connect to kafka! Trying to reconnect")
-
-				msg := s.MessageHandler
-
-				newService, reconnectErr := NewService(s.log, s.serviceConfig)
-				if reconnectErr != nil {
-					s.log.WithError(reconnectErr).Error("failed to reconnect to kafka")
-
-					continue
-				}
-
-				*s = *newService
-
-				s.MessageHandler = msg
-
-				s.log.Info("the reconnection to kafka was successful")
-				continue
-			}
-
-			topics, topicErr := admin.DescribeTopics(s.topics)
-			if topicErr != nil {
-				s.log.WithError(topicErr).Error("error describe topics")
-
-				adminErr := admin.Close()
-				if adminErr != nil {
-					s.log.WithError(adminErr).Error("couldn't close admin client connection")
-				}
-
-				continue
-			}
-
-			for _, v := range topics {
-				if v.Err == 0 {
-					continue
-				}
-
-				s.log.WithError(err).Error(fmt.Sprintf("topic %s exists error", v.Name))
-
-				adminErr := admin.Close()
-				if adminErr != nil {
-					s.log.WithError(adminErr).Error("couldn't close admin client connection")
-				}
-			}
-
-			adminErr := admin.Close()
-			if adminErr != nil {
-				s.log.WithError(adminErr).Error("couldn't close admin client connection")
-			}
+		for range to {
+			s.checkHealth()
 		}
+	}
+}
+
+func (s *Service) checkHealth() {
+	m := metrics.DefaultRegistry
+	m.UnregisterAll()
+
+	saramaCfg := sarama.NewConfig()
+	saramaCfg.MetricRegistry = m
+	saramaCfg.Producer.Return.Successes = true // Producer.Return.Successes must be true to be used in a SyncProducer
+
+	admin, err := sarama.NewClusterAdmin(s.brokers, saramaCfg)
+	if err != nil {
+		s.log.WithError(err).Error("couldn't connect to kafka! Trying to reconnect")
+
+		msg := s.MessageHandler
+
+		newService, reconnectErr := NewService(s.log, s.serviceConfig)
+		if reconnectErr != nil {
+			s.log.WithError(reconnectErr).Error("failed to reconnect to kafka")
+
+			return
+		}
+
+		*s = *newService
+
+		s.MessageHandler = msg
+
+		s.log.Info("the reconnection to kafka was successful")
+
+		return
+	}
+
+	topics, topicErr := admin.DescribeTopics(s.topics)
+	if topicErr != nil {
+		s.log.WithError(topicErr).Error("error describe topics")
+
+		adminErr := admin.Close()
+		if adminErr != nil {
+			s.log.WithError(adminErr).Error("couldn't close admin client connection")
+		}
+
+		return
+	}
+
+	for _, v := range topics {
+		if v.Err == 0 {
+			continue
+		}
+
+		s.log.WithError(err).Error(fmt.Sprintf("topic %s exists error", v.Name))
+
+		adminErr := admin.Close()
+		if adminErr != nil {
+			s.log.WithError(adminErr).Error("couldn't close admin client connection")
+		}
+	}
+
+	adminErr := admin.Close()
+	if adminErr != nil {
+		s.log.WithError(adminErr).Error("couldn't close admin client connection")
 	}
 }

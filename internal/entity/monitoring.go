@@ -6,14 +6,14 @@ import (
 
 type MonitoringTaskNode struct {
 	WorkNumber    string     `json:"work_number"`
-	VersionId     string     `json:"version_id"`
+	VersionID     string     `json:"version_id"`
 	Author        string     `json:"author"`
 	CreationTime  string     `json:"creation_time"`
 	ScenarioName  string     `json:"scenario_name"`
-	BlockId       string     `json:"block_id"`
+	BlockID       string     `json:"block_id"`
 	RealName      string     `json:"real_name"`
 	Status        string     `json:"status"`
-	NodeId        string     `json:"node_id"`
+	NodeID        string     `json:"node_id"`
 	BlockDateInit *time.Time `json:"block_date_init"`
 }
 

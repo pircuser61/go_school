@@ -31,14 +31,14 @@ type TaskStorager interface {
 	GetAdditionalDescriptionForms(workNumber, nodeName string) ([]e.DescriptionForm, error)
 	GetAdditionalForms(workNumber, nodeName string) ([]string, error)
 	GetApplicationData(workNumber string) (string, error)
-	GetDeadline(ctx c.Context, workId string) (time.Time, error)
+	GetDeadline(ctx c.Context, workID string) (time.Time, error)
 	GetTasks(ctx c.Context, filters e.TaskFilter, delegations []string) (*e.EriusTasksPage, error)
 	GetTasksCount(ctx c.Context, currentUser string, delegationsByApprovement, delegationsByExecution []string) (*e.CountTasks, error)
 	GetPipelineTasks(ctx c.Context, pipelineID uuid.UUID) (*e.EriusTasks, error)
 	GetTask(ctx c.Context, delegationsApprover, delegationsExecution []string, currentUser, workNumber string) (*e.EriusTask, error)
 	GetTaskSteps(ctx c.Context, id uuid.UUID) (e.TaskSteps, error)
-	GetUnfinishedTaskStepsByWorkIdAndStepType(ctx c.Context, id uuid.UUID, stepType string, in *e.TaskUpdate) (e.TaskSteps, error)
-	GetTaskStepById(ctx c.Context, id uuid.UUID) (*e.Step, error)
+	GetUnfinishedTaskStepsByWorkIDAndStepType(ctx c.Context, id uuid.UUID, stepType string, in *e.TaskUpdate) (e.TaskSteps, error)
+	GetTaskStepByID(ctx c.Context, id uuid.UUID) (*e.Step, error)
 	GetParentTaskStepByName(ctx c.Context, workID uuid.UUID, stepName string) (*e.Step, error)
 	GetTaskStepByName(ctx c.Context, workID uuid.UUID, stepName string) (*e.Step, error)
 	GetCanceledTaskSteps(ctx c.Context, taskID uuid.UUID) ([]e.Step, error)
@@ -53,7 +53,7 @@ type TaskStorager interface {
 	GetVariableStorageForStep(ctx c.Context, taskID uuid.UUID, stepType string) (*store.VariableStore, error)
 	GetVariableStorage(ctx c.Context, workNumber string) (*store.VariableStore, error)
 	GetBlocksBreachedSLA(ctx c.Context) ([]StepBreachedSLA, error)
-	GetMeanTaskSolveTime(ctx c.Context, pipelineId string) ([]e.TaskCompletionInterval, error)
+	GetMeanTaskSolveTime(ctx c.Context, pipelineID string) ([]e.TaskCompletionInterval, error)
 	GetTaskInWorkTime(ctx c.Context, workNumber string) (*e.TaskCompletionInterval, error)
 	GetExecutorsFromPrevExecutionBlockRun(ctx c.Context, taskID uuid.UUID, name string) (exec map[string]struct{}, err error)
 	GetExecutorsFromPrevWorkVersionExecutionBlockRun(ctx c.Context, workNumber, name string) (exec map[string]struct{}, err error)
@@ -72,8 +72,8 @@ type TaskStorager interface {
 	UpdateTaskRate(ctx c.Context, req *UpdateTaskRate) error
 	UpdateTaskHumanStatus(ctx c.Context, taskID uuid.UUID, status, comment string) (*e.EriusTask, error)
 	UpdateTaskStatus(ctx c.Context, taskID uuid.UUID, status int, comment, author string) error
-	UpdateBlockStateInOthers(ctx c.Context, blockName, taskId string, blockState []byte) error
-	UpdateBlockVariablesInOthers(ctx c.Context, taskId string, values map[string]interface{}) error
+	UpdateBlockStateInOthers(ctx c.Context, blockName, taskID string, blockState []byte) error
+	UpdateBlockVariablesInOthers(ctx c.Context, taskID string, values map[string]interface{}) error
 }
 
 type UpdateTaskRate struct {
@@ -83,28 +83,28 @@ type UpdateTaskRate struct {
 	Rate       *int
 }
 
-type DbMemberAction struct {
-	Id     string
+type MemberAction struct {
+	ID     string
 	Type   string
 	Params map[string]interface{}
 }
 
-type DbTaskAction struct {
+type TaskAction struct {
 	BlockID     string                            `json:"block_id"`
 	Actions     []string                          `json:"actions"`
 	Params      map[string]map[string]interface{} `json:"params"`
 	IsInitiator bool                              `json:"is_initiator"`
 }
 
-type DbMember struct {
+type Member struct {
 	Login                string
-	Actions              []DbMemberAction
+	Actions              []MemberAction
 	Type                 string
 	IsActed              bool
 	ExecutionGroupMember bool
 }
 
-type DbDeadline struct {
+type Deadline struct {
 	Deadline time.Time
 	Action   string
 }
@@ -117,24 +117,24 @@ type SaveStepRequest struct {
 	BreakPoints []string
 	HasError    bool
 	Status      string
-	Members     []DbMember
-	Deadlines   []DbDeadline
+	Members     []Member
+	Deadlines   []Deadline
 	IsReEntry   bool
 }
 
 type UpdateStepRequest struct {
-	Id          uuid.UUID
+	ID          uuid.UUID
 	StepName    string
 	Content     []byte
 	BreakPoints []string
 	HasError    bool
 	Status      string
-	Members     []DbMember
-	Deadlines   []DbDeadline
+	Members     []Member
+	Deadlines   []Deadline
 }
 
 type UpdateTaskBlocksDataRequest struct {
-	Id                     uuid.UUID
+	ID                     uuid.UUID
 	ActiveBlocks           map[string]struct{}
 	SkippedBlocks          map[string]struct{}
 	NotifiedBlocks         map[string][]string
@@ -142,7 +142,7 @@ type UpdateTaskBlocksDataRequest struct {
 }
 
 type SearchPipelineRequest struct {
-	PipelineId   *string
+	PipelineID   *string
 	PipelineName *string
 	Limit        int
 	Offset       int
@@ -161,7 +161,7 @@ type StepBreachedSLA struct {
 	CustomTitle string
 }
 
-//go:generate mockery --name=Database --structname=MockedDatabase
+//go:generate mockery --name=Database --structname=MockedDatabase --with-expecter
 type Database interface {
 	PipelineStorager
 	TaskStorager
@@ -176,14 +176,27 @@ type Database interface {
 	CommitTransaction(ctx c.Context) error
 	RollbackTransaction(ctx c.Context) error
 
-	GetPipelinesWithLatestVersion(ctx c.Context, authorLogin string, published bool, page, perPage *int, filter string) ([]e.EriusScenarioInfo, error)
+	GetPipelinesWithLatestVersion(
+		ctx c.Context,
+		authorLogin string,
+		published bool,
+		page, perPage *int,
+		filter string,
+	) ([]e.EriusScenarioInfo, error)
 	GetApprovedVersions(ctx c.Context) ([]e.EriusScenarioInfo, error)
 	GetVersionsByStatus(ctx c.Context, status int, author string) ([]e.EriusScenarioInfo, error)
 	GetDraftVersions(ctx c.Context, author string) ([]e.EriusScenarioInfo, error)
 	GetOnApproveVersions(ctx c.Context) ([]e.EriusScenarioInfo, error)
 	SwitchApproved(ctx c.Context, pipelineID, versionID uuid.UUID, author string) error
 	VersionEditable(ctx c.Context, versionID uuid.UUID) (bool, error)
-	CreateVersion(ctx c.Context, p *e.EriusScenario, author string, pipelineData []byte, oldVersionID uuid.UUID, hasPrivateFunction bool) error
+	CreateVersion(
+		ctx c.Context,
+		p *e.EriusScenario,
+		author string,
+		pipelineData []byte,
+		oldVersionID uuid.UUID,
+		hasPrivateFunction bool,
+	) error
 	DeleteVersion(ctx c.Context, versionID uuid.UUID) error
 	GetPipelineVersion(ctx c.Context, id uuid.UUID, checkNotDeleted bool) (*e.EriusScenario, error)
 	GetPipelineVersions(ctx c.Context, id uuid.UUID) ([]e.EriusVersionInfo, error)
@@ -199,18 +212,18 @@ type Database interface {
 	SwitchRejected(ctx c.Context, versionID uuid.UUID, comment, author string) error
 	GetRejectedVersions(ctx c.Context) ([]e.EriusScenarioInfo, error)
 	RollbackVersion(ctx c.Context, pipelineID, versionID uuid.UUID) error
-	GetVersionByPipelineID(ctx c.Context, pipelineId string) (*e.EriusScenario, error)
+	GetVersionByPipelineID(ctx c.Context, pipelineID string) (*e.EriusScenario, error)
 	GetVersionByWorkNumber(ctx c.Context, workNumber string) (*e.EriusScenario, error)
-	GetPipelinesByNameOrId(ctx c.Context, dto *SearchPipelineRequest) ([]e.SearchPipeline, error)
+	GetPipelinesByNameOrID(ctx c.Context, dto *SearchPipelineRequest) ([]e.SearchPipeline, error)
 
-	GetBlocksOutputs(ctx c.Context, blockId string) (e.BlockOutputs, error)
-	GetBlockOutputs(ctx c.Context, blockId, blockName string) (e.BlockOutputs, error)
+	GetBlocksOutputs(ctx c.Context, blockID string) (e.BlockOutputs, error)
+	GetBlockOutputs(ctx c.Context, blockID, blockName string) (e.BlockOutputs, error)
 	GetBlockInputs(ctx c.Context, blockName, workNumber string) (e.BlockInputs, error)
-	CheckBlockForHiddenFlag(ctx c.Context, blockId string) (bool, error)
-	GetMergedVariableStorage(ctx c.Context, workId uuid.UUID, blockIds []string) (*store.VariableStore, error)
+	CheckBlockForHiddenFlag(ctx c.Context, blockID string) (bool, error)
+	GetMergedVariableStorage(ctx c.Context, workID uuid.UUID, blockIds []string) (*store.VariableStore, error)
 	CheckTaskForHiddenFlag(ctx c.Context, workNumber string) (bool, error)
 	GetTasksForMonitoring(ctx c.Context, filters *e.TasksForMonitoringFilters) (*e.TasksForMonitoring, error)
-	GetBlockState(ctx c.Context, blockId string) (e.BlockState, error)
+	GetBlockState(ctx c.Context, blockID string) (e.BlockState, error)
 
 	SaveVersionSettings(ctx c.Context, settings e.ProcessSettings, schemaFlag *string) error
 	SaveVersionMainSettings(ctx c.Context, settings e.ProcessSettings) error
@@ -229,9 +242,9 @@ type Database interface {
 	CheckPipelineNameExists(c.Context, string, bool) (*bool, error)
 	UpdateEndingSystemSettings(ctx c.Context, versionID, systemID string, settings e.EndSystemSettings) (err error)
 	AllowRunAsOthers(ctx c.Context, versionID, systemID string, allowRunAsOthers bool) error
-	SaveSlaVersionSettings(ctx c.Context, versionID string, s e.SlaVersionSettings) (err error)
-	GetSlaVersionSettings(ctx c.Context, versionID string) (s e.SlaVersionSettings, err error)
-	GetTaskMembers(ctx c.Context, workNumber string, fromActiveNodes bool) ([]DbMember, error)
+	SaveSLAVersionSettings(ctx c.Context, versionID string, s e.SLAVersionSettings) (err error)
+	GetSLAVersionSettings(ctx c.Context, versionID string) (s e.SLAVersionSettings, err error)
+	GetTaskMembers(ctx c.Context, workNumber string, fromActiveNodes bool) ([]Member, error)
 	UpdateGroupsForEmptyVersions(ctx c.Context, versionID string, groups []*e.NodeGroup) error
 	GetApprovalListSettings(ctx c.Context, listID string) (*e.ApprovalListSettings, error)
 	GetApprovalListsSettings(ctx c.Context, versionID string) ([]e.ApprovalListSettings, error)
@@ -239,5 +252,8 @@ type Database interface {
 	UpdateApprovalListSettings(ctx c.Context, in e.UpdateApprovalListSettings) error
 	RemoveApprovalListSettings(ctx c.Context, listID string) error
 	GetFilteredStates(ctx c.Context, steps []string, wNumber string) (
-		map[string]map[string]interface{}, map[string]map[string]*time.Time, error)
+		map[string]map[string]interface{},
+		map[string]map[string]*time.Time,
+		error,
+	)
 }

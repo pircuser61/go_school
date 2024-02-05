@@ -43,7 +43,7 @@ func (gb *GoBeginParallelTaskBlock) GetStatus() Status {
 	return StatusFinished
 }
 
-func (gb *GoBeginParallelTaskBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment string, action string) {
+func (gb *GoBeginParallelTaskBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment, action string) {
 	return StatusExecution, "", ""
 }
 
@@ -52,6 +52,7 @@ func (gb *GoBeginParallelTaskBlock) Next(_ *store.VariableStore) ([]string, bool
 	if !ok {
 		return nil, false
 	}
+
 	return nexts, true
 }
 
@@ -62,6 +63,7 @@ func (gb *GoBeginParallelTaskBlock) GetState() interface{} {
 func (gb *GoBeginParallelTaskBlock) Update(ctx context.Context) (interface{}, error) {
 	if _, ok := gb.expectedEvents[eventEnd]; ok {
 		status, _, _ := gb.GetTaskHumanStatus()
+
 		event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, MakeNodeEndEventArgs{
 			NodeName:      gb.Name,
 			NodeShortName: gb.ShortName,
@@ -71,6 +73,7 @@ func (gb *GoBeginParallelTaskBlock) Update(ctx context.Context) (interface{}, er
 		if eventErr != nil {
 			return nil, eventErr
 		}
+
 		gb.happenedEvents = append(gb.happenedEvents, event)
 	}
 
@@ -79,7 +82,7 @@ func (gb *GoBeginParallelTaskBlock) Update(ctx context.Context) (interface{}, er
 
 func (gb *GoBeginParallelTaskBlock) Model() script.FunctionModel {
 	return script.FunctionModel{
-		ID:        BlockGoBeginParallelTaskId,
+		ID:        BlockGoBeginParallelTaskID,
 		BlockType: script.TypeGo,
 		Title:     BlockGoBeginParallelTaskTitle,
 		Inputs:    nil,
@@ -92,7 +95,8 @@ func (gb *GoBeginParallelTaskBlock) Model() script.FunctionModel {
 
 //nolint:dupl,unparam //its not duplicate
 func createGoStartParallelBlock(ctx context.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext,
-	expectedEvents map[string]struct{}) (*GoBeginParallelTaskBlock, bool, error) {
+	expectedEvents map[string]struct{},
+) (*GoBeginParallelTaskBlock, bool, error) {
 	const reEntry = false
 
 	b := &GoBeginParallelTaskBlock{
@@ -113,6 +117,7 @@ func createGoStartParallelBlock(ctx context.Context, name string, ef *entity.Eri
 	}
 
 	if ef.Output != nil {
+		//nolint:gocritic //в этом проекте не принято использовать поинтеры в коллекциях
 		for propertyName, v := range ef.Output.Properties {
 			b.Output[propertyName] = v.Global
 		}
@@ -122,6 +127,7 @@ func createGoStartParallelBlock(ctx context.Context, name string, ef *entity.Eri
 
 	if _, ok := b.expectedEvents[eventStart]; ok {
 		status, _, _ := b.GetTaskHumanStatus()
+
 		event, err := runCtx.MakeNodeStartEvent(ctx, MakeNodeStartEventArgs{
 			NodeName:      name,
 			NodeShortName: ef.ShortTitle,
@@ -131,7 +137,9 @@ func createGoStartParallelBlock(ctx context.Context, name string, ef *entity.Eri
 		if err != nil {
 			return nil, false, err
 		}
+
 		b.happenedEvents = append(b.happenedEvents, event)
 	}
+
 	return b, reEntry, nil
 }

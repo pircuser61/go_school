@@ -17,11 +17,14 @@ type Service struct {
 func NewService(cfg Config) (*Service, error) {
 	opts := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithStatsHandler(&ocgrpc.ClientHandler{})}
+		grpc.WithStatsHandler(&ocgrpc.ClientHandler{}),
+	}
+
 	conn, err := grpc.Dial(cfg.URL, opts...)
 	if err != nil {
 		return nil, err
 	}
+
 	client := function_v1.NewFunctionServiceClient(conn)
 
 	return &Service{

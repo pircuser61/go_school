@@ -23,6 +23,8 @@ const (
 	approverRequestAddInfoAction        = "request_add_info"
 	approverAdditionalApprovementAction = "additional_approvement"
 	approverAdditionalRejectAction      = "additional_reject"
+
+	readWriteAccessType = "ReadWrite"
 )
 
 type GoApproverBlock struct {
@@ -45,28 +47,37 @@ func (gb *GoApproverBlock) GetNewEvents() []entity.NodeEvent {
 }
 
 func (gb *GoApproverBlock) Members() []Member {
-	members := make([]Member, 0)
-	addedMembers := make(map[string]struct{}, 0)
+	capacity := len(gb.State.Approvers) + len(gb.State.AdditionalApprovers)
+	members := make([]Member, 0, capacity)
+	addedMembers := make(map[string]struct{}, capacity)
+
 	for login := range gb.State.Approvers {
-		members = append(members, Member{
-			Login:                login,
-			Actions:              gb.approvementBaseActions(login),
-			IsActed:              gb.isApprovementActed(login),
-			ExecutionGroupMember: false,
-			IsInitiator:          false,
-		})
+		members = append(
+			members,
+			Member{
+				Login:                login,
+				Actions:              gb.approvementBaseActions(login),
+				IsActed:              gb.isApprovementActed(login),
+				ExecutionGroupMember: false,
+				IsInitiator:          false,
+			},
+		)
 		addedMembers[login] = struct{}{}
 	}
 
 	for i := 0; i < len(gb.State.AdditionalApprovers); i++ {
 		addApprover := gb.State.AdditionalApprovers[i]
-		members = append(members, Member{
-			Login:                addApprover.ApproverLogin,
-			Actions:              gb.approvementAddActions(&addApprover),
-			IsActed:              gb.isApprovementActed(addApprover.ApproverLogin),
-			ExecutionGroupMember: false,
-			IsInitiator:          false,
-		})
+
+		members = append(
+			members,
+			Member{
+				Login:                addApprover.ApproverLogin,
+				Actions:              gb.approvementAddActions(&addApprover),
+				IsActed:              gb.isApprovementActed(addApprover.ApproverLogin),
+				ExecutionGroupMember: false,
+				IsInitiator:          false,
+			},
+		)
 		addedMembers[addApprover.ApproverLogin] = struct{}{}
 	}
 
@@ -75,6 +86,7 @@ func (gb *GoApproverBlock) Members() []Member {
 		if _, ok := addedMembers[log.Login]; ok {
 			continue
 		}
+
 		members = append(members, Member{
 			Login:                log.Login,
 			Actions:              []MemberAction{},
@@ -82,6 +94,7 @@ func (gb *GoApproverBlock) Members() []Member {
 			ExecutionGroupMember: false,
 			IsInitiator:          false,
 		})
+
 		addedMembers[log.Login] = struct{}{}
 	}
 
@@ -90,6 +103,7 @@ func (gb *GoApproverBlock) Members() []Member {
 		if _, ok := addedMembers[log.Approver]; ok {
 			continue
 		}
+
 		members = append(members, Member{
 			Login:                log.Approver,
 			Actions:              []MemberAction{},
@@ -97,6 +111,7 @@ func (gb *GoApproverBlock) Members() []Member {
 			ExecutionGroupMember: false,
 			IsInitiator:          false,
 		})
+
 		addedMembers[log.Approver] = struct{}{}
 	}
 
@@ -105,6 +120,7 @@ func (gb *GoApproverBlock) Members() []Member {
 		if _, ok := addedMembers[log.Login]; ok {
 			continue
 		}
+
 		if log.Type == RequestAddInfoType {
 			members = append(members, Member{
 				Login:                log.Login,
@@ -113,17 +129,18 @@ func (gb *GoApproverBlock) Members() []Member {
 				ExecutionGroupMember: false,
 				IsInitiator:          false,
 			})
+
 			addedMembers[log.Login] = struct{}{}
 
-			if !isQuestionAnswered(log.LinkId, gb.State.AddInfo) {
+			if !isQuestionAnswered(log.LinkID, gb.State.AddInfo) {
 				members = append(members, Member{
 					Login: gb.RunContext.Initiator,
 					Actions: []MemberAction{
 						{
-							Id:   string(entity.TaskUpdateActionReplyApproverInfo),
+							ID:   string(entity.TaskUpdateActionReplyApproverInfo),
 							Type: ActionTypeCustom,
 							Params: map[string]interface{}{
-								"link_id": log.LinkId,
+								"link_id": log.LinkID,
 							},
 						},
 					},
@@ -134,15 +151,17 @@ func (gb *GoApproverBlock) Members() []Member {
 			}
 		}
 	}
+
 	return members
 }
 
 func isQuestionAnswered(questionLinkID *string, logReply []AdditionalInfo) bool {
 	for i := range logReply {
-		if logReply[i].Type == ReplyAddInfoType && logReply[i].LinkId == questionLinkID {
+		if logReply[i].Type == ReplyAddInfoType && logReply[i].LinkID == questionLinkID {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -167,6 +186,7 @@ func (gb *GoApproverBlock) isApprovementActed(login string) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -174,31 +194,34 @@ func (gb *GoApproverBlock) approvementBaseActions(login string) []MemberAction {
 	if gb.State.Decision != nil || gb.State.EditingApp != nil {
 		return []MemberAction{}
 	}
+
 	for i := 0; i < len(gb.State.ApproverLog); i++ {
 		log := gb.State.ApproverLog[i]
 		if (log.Login == login || log.DelegateFor == login) && log.LogType == ApproverLogDecision {
 			return []MemberAction{}
 		}
 	}
-	actions := make([]MemberAction, 0)
+
+	actions := make([]MemberAction, 0, len(gb.State.ActionList))
+
 	for i := range gb.State.ActionList {
 		actions = append(actions, MemberAction{
-			Id:   gb.State.ActionList[i].Id,
+			ID:   gb.State.ActionList[i].ID,
 			Type: gb.State.ActionList[i].Type,
 		})
 	}
 
 	for _, v := range gb.State.FormsAccessibility {
-		if _, ok := gb.RunContext.VarStore.State[v.NodeId]; !ok {
+		if _, ok := gb.RunContext.VarStore.State[v.NodeID]; !ok {
 			continue
 		}
 
-		if v.AccessType == "ReadWrite" {
+		if v.AccessType == readWriteAccessType {
 			memAction := MemberAction{
-				Id:   formFillFormAction,
+				ID:   formFillFormAction,
 				Type: ActionTypeCustom,
 				Params: map[string]interface{}{
-					formName: v.NodeId,
+					formName: v.NodeID,
 				},
 			}
 			actions = append(actions, memAction)
@@ -206,10 +229,10 @@ func (gb *GoApproverBlock) approvementBaseActions(login string) []MemberAction {
 	}
 
 	return append(actions, MemberAction{
-		Id:   approverAddApproversAction,
+		ID:   approverAddApproversAction,
 		Type: ActionTypeOther,
 	}, MemberAction{
-		Id:   approverRequestAddInfoAction,
+		ID:   approverRequestAddInfoAction,
 		Type: ActionTypeOther,
 	})
 }
@@ -218,21 +241,22 @@ func (gb *GoApproverBlock) approvementAddActions(a *AdditionalApprover) []Member
 	if gb.State.Decision != nil || a.Decision != nil || gb.State.EditingApp != nil {
 		return []MemberAction{}
 	}
+
 	return []MemberAction{
 		{
-			Id:   approverAdditionalApprovementAction,
+			ID:   approverAdditionalApprovementAction,
 			Type: ActionTypePrimary,
 		},
 		{
-			Id:   approverAdditionalRejectAction,
+			ID:   approverAdditionalRejectAction,
 			Type: ActionTypeSecondary,
 		},
 		{
-			Id:   approverAddApproversAction,
+			ID:   approverAddApproversAction,
 			Type: ActionTypeOther,
 		},
 		{
-			Id:   approverRequestAddInfoAction,
+			ID:   approverRequestAddInfoAction,
 			Type: ActionTypeOther,
 		},
 	}
@@ -243,23 +267,27 @@ type qna struct {
 	aCrAt *time.Time
 }
 
-func (gb *GoApproverBlock) getNewSLADeadline(slaInfoPtr *sla.SLAInfo, half bool) time.Time {
+func (gb *GoApproverBlock) getNewSLADeadline(slaInfoPtr *sla.Info, half bool) time.Time {
 	qq := make(map[string]qna)
+
 	for i := range gb.State.AddInfo {
 		item := gb.State.AddInfo[i]
 		if item.Type == RequestAddInfoType {
-			qq[item.Id] = qna{qCrAt: item.CreatedAt}
+			qq[item.ID] = qna{qCrAt: item.CreatedAt}
 		}
 	}
+
 	for i := range gb.State.AddInfo {
 		item := gb.State.AddInfo[i]
-		if item.Type == ReplyAddInfoType && item.LinkId != nil {
-			data, ok := qq[*item.LinkId]
+		if item.Type == ReplyAddInfoType && item.LinkID != nil {
+			data, ok := qq[*item.LinkID]
 			if !ok {
 				continue
 			}
+
 			data.aCrAt = &item.CreatedAt
-			qq[*item.LinkId] = data
+
+			qq[*item.LinkID] = data
 		}
 	}
 
@@ -269,13 +297,16 @@ func (gb *GoApproverBlock) getNewSLADeadline(slaInfoPtr *sla.SLAInfo, half bool)
 	}
 
 	deadline := gb.RunContext.Services.SLAService.ComputeMaxDate(gb.RunContext.CurrBlockStartTime, float32(newSLA), slaInfoPtr)
+
 	for _, q := range qq {
 		if q.aCrAt == nil {
 			continue
 		}
+
 		additionalHours := gb.RunContext.Services.SLAService.GetWorkHoursBetweenDates(q.qCrAt, *q.aCrAt, nil)
 		deadline = gb.RunContext.Services.SLAService.ComputeMaxDate(deadline, float32(additionalHours), nil)
 	}
+
 	return deadline
 }
 
@@ -304,15 +335,18 @@ func (gb *GoApproverBlock) Deadlines(ctx context.Context) ([]Deadline, error) {
 	}
 
 	if gb.State.CheckSLA && latestUnansweredRequest == nil {
-		slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
-			TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.CurrBlockStartTime,
-				FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100)}},
+		slaInfoPtr, getSLAInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDTO{
+			TaskCompletionIntervals: []entity.TaskCompletionInterval{{
+				StartedAt:  gb.RunContext.CurrBlockStartTime,
+				FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100),
+			}},
 			WorkType: sla.WorkHourType(gb.State.WorkType),
 		})
 
-		if getSlaInfoErr != nil {
-			return nil, getSlaInfoErr
+		if getSLAInfoErr != nil {
+			return nil, getSLAInfoErr
 		}
+
 		if !gb.State.SLAChecked {
 			deadlines = append(deadlines, Deadline{
 				Deadline: gb.getNewSLADeadline(slaInfoPtr, false),
@@ -332,8 +366,9 @@ func (gb *GoApproverBlock) Deadlines(ctx context.Context) ([]Deadline, error) {
 
 	if gb.State.IsEditable && gb.State.CheckReworkSLA && gb.State.EditingApp != nil {
 		deadlines = append(deadlines,
-			Deadline{Deadline: gb.RunContext.Services.SLAService.ComputeMaxDate(
-				gb.State.EditingApp.CreatedAt, float32(gb.State.ReworkSLA), nil),
+			Deadline{
+				Deadline: gb.RunContext.Services.SLAService.ComputeMaxDate(
+					gb.State.EditingApp.CreatedAt, float32(gb.State.ReworkSLA), nil),
 				Action: entity.TaskUpdateActionReworkSLABreach,
 			},
 		)
@@ -380,7 +415,7 @@ func (gb *GoApproverBlock) GetStatus() Status {
 	}
 
 	if len(gb.State.AddInfo) != 0 {
-		if gb.State.checkEmptyLinkIdAddInfo() {
+		if gb.State.checkEmptyLinkIDAddInfo() {
 			return StatusIdle
 		}
 	}
@@ -388,7 +423,7 @@ func (gb *GoApproverBlock) GetStatus() Status {
 	return StatusRunning
 }
 
-func (gb *GoApproverBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment string, action string) {
+func (gb *GoApproverBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment, action string) {
 	if gb.State != nil && gb.State.EditingApp != nil {
 		return StatusWait, "", ""
 	}
@@ -399,6 +434,7 @@ func (gb *GoApproverBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment
 		}
 
 		if *gb.State.Decision == ApproverDecisionSentToEdit {
+			//nolint:goconst //не хочу внедрять миллион констант под каждую строку в проекте
 			return StatusApprovementRejected, "", "отправлена на доработку"
 		}
 
@@ -406,13 +442,14 @@ func (gb *GoApproverBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment
 	}
 
 	if gb.State != nil && len(gb.State.AddInfo) != 0 {
-		if gb.State.checkEmptyLinkIdAddInfo() {
+		if gb.State.checkEmptyLinkIDAddInfo() {
 			return StatusWait, "", ""
 		}
+
 		return getPositiveProcessingStatus(gb.State.ApproveStatusName), "", ""
 	}
 
-	var lastIdx = len(gb.State.AddInfo) - 1
+	lastIdx := len(gb.State.AddInfo) - 1
 	if len(gb.State.AddInfo) > 0 && gb.State.AddInfo[lastIdx].Type == RequestAddInfoType {
 		return StatusWait, "", ""
 	}
@@ -491,7 +528,6 @@ func (gb *GoApproverBlock) Model() script.FunctionModel {
 	}
 }
 
-//nolint:gocyclo //its ok here
 func getPositiveProcessingStatus(decision string) (status TaskHumanStatus) {
 	switch decision {
 	case script.SettingStatusApprovement:
@@ -511,8 +547,8 @@ func getPositiveProcessingStatus(decision string) (status TaskHumanStatus) {
 	}
 }
 
-//nolint:gocyclo //its ok here
 func getPositiveFinishStatus(decision ApproverDecision) (status TaskHumanStatus) {
+	// nolint:exhaustive //не хотим обрабатывать остальные случаи
 	switch decision {
 	case ApproverDecisionApproved:
 		return StatusApproved

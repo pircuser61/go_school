@@ -61,14 +61,17 @@ func (s *Service) userinfoFromCache(username string) *UserInfo {
 	s.userInfoMutex.RLock()
 	res, ok := s.userInfoCache[username]
 	s.userInfoMutex.RUnlock()
+
 	if ok {
 		if time.Now().UTC().Before(res.till) {
 			return res.u
 		}
+
 		s.userInfoMutex.Lock()
 		delete(s.userInfoCache, username)
 		s.userInfoMutex.Unlock()
 	}
+
 	return nil
 }
 
@@ -96,7 +99,7 @@ func (s *Service) getUserinfo(ctx context.Context, r *http.Request) (*UserInfo, 
 		return userinfo, nil
 	}
 
-	req, err := http.NewRequestWithContext(ctxLocal, http.MethodGet, s.userinfoUrl, http.NoBody)
+	req, err := http.NewRequestWithContext(ctxLocal, http.MethodGet, s.userinfoURL, http.NoBody)
 	if err != nil {
 		return nil, err
 	}
@@ -107,7 +110,9 @@ func (s *Service) getUserinfo(ctx context.Context, r *http.Request) (*UserInfo, 
 	if err != nil {
 		return nil, err
 	}
+
 	defer resp.Body.Close()
+
 	switch resp.StatusCode {
 	case http.StatusUnauthorized:
 		return nil, errors.New("got no access token to make request")
@@ -115,6 +120,7 @@ func (s *Service) getUserinfo(ctx context.Context, r *http.Request) (*UserInfo, 
 	default:
 		return nil, errors.Errorf("got bad status code %d", resp.StatusCode)
 	}
+
 	var user *UserInfo
 	if unmErr := json.NewDecoder(resp.Body).Decode(&user); unmErr != nil {
 		return nil, unmErr

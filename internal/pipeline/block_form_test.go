@@ -19,8 +19,8 @@ import (
 
 	dbMocks "gitlab.services.mts.ru/jocasta/pipeliner/internal/db/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
-	humanTasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks/mocks"
+	humanTasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 	serviceDeskMocks "gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc/mocks"
@@ -35,8 +35,8 @@ func Test_createGoFormBlock(t *testing.T) {
 		shortTitle = "Нода Форма"
 		global1    = "form_0.executor"
 		global2    = "form_0.application_body"
-		schemaId   = "c77be97a-f978-46d3-aa03-ab72663f2b74"
-		versionId  = "d77be97a-f978-46d3-aa03-ab72663f2b74"
+		schemaID   = "c77be97a-f978-46d3-aa03-ab72663f2b74"
+		versionID  = "d77be97a-f978-46d3-aa03-ab72663f2b74"
 		executor   = "executor"
 		workNumber = "J0000001"
 		workType   = "8/5"
@@ -46,7 +46,7 @@ func Test_createGoFormBlock(t *testing.T) {
 
 	next := []entity.Socket{
 		{
-			Id:           DefaultSocketID,
+			ID:           DefaultSocketID,
 			Title:        script.DefaultSocketTitle,
 			NextBlockIds: []string{"next"},
 		},
@@ -54,17 +54,19 @@ func Test_createGoFormBlock(t *testing.T) {
 
 	ctx := context.Background()
 	databaseMock := dbMocks.NewMockedDatabase(t)
-	vid, _ := uuid.Parse(versionId)
+	vid, _ := uuid.Parse(versionID)
+
 	databaseMock.On("GetVersionByWorkNumber", ctx, workNumber).
 		Return(&entity.EriusScenario{VersionID: vid}, error(nil))
-	databaseMock.On("GetSlaVersionSettings", ctx, vid.String()).
-		Return(entity.SlaVersionSettings{WorkType: workType}, error(nil))
+	databaseMock.On("GetSLAVersionSettings", ctx, vid.String()).
+		Return(entity.SLAVersionSettings{WorkType: workType}, error(nil))
 
 	type args struct {
 		name   string
 		ef     *entity.EriusFunc
 		runCtx *BlockRunContext
 	}
+
 	tests := []struct {
 		name    string
 		args    args
@@ -143,7 +145,7 @@ func Test_createGoFormBlock(t *testing.T) {
 					},
 					Params: func() []byte {
 						r, _ := json.Marshal(&script.FormParams{
-							SchemaId:         schemaId,
+							SchemaID:         schemaID,
 							Executor:         executor,
 							FormExecutorType: script.FormExecutorTypeFromSchema,
 						})
@@ -194,7 +196,7 @@ func Test_createGoFormBlock(t *testing.T) {
 					},
 					Params: func() []byte {
 						r, _ := json.Marshal(&script.FormParams{
-							SchemaId:         schemaId,
+							SchemaID:         schemaID,
 							Executor:         "form.executor",
 							FormExecutorType: script.FormExecutorTypeFromSchema,
 						})
@@ -216,7 +218,9 @@ func Test_createGoFormBlock(t *testing.T) {
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
+
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
@@ -224,10 +228,12 @@ func Test_createGoFormBlock(t *testing.T) {
 									Close:      true,
 								}
 							}
-							f_error := func(*http.Request) error {
+
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							sdMock.Cli = httpClient
 
@@ -238,6 +244,7 @@ func Test_createGoFormBlock(t *testing.T) {
 					VarStore: func() *store.VariableStore {
 						s := store.NewStore()
 						s.SetValue("form.executor", executor)
+
 						return s
 					}(),
 				},
@@ -256,7 +263,7 @@ func Test_createGoFormBlock(t *testing.T) {
 				happenedEvents: make([]entity.NodeEvent, 0),
 				State: &FormData{
 					FormExecutorType:   script.FormExecutorTypeFromSchema,
-					SchemaId:           schemaId,
+					SchemaID:           schemaID,
 					Executors:          map[string]struct{}{executor: {}},
 					ApplicationBody:    map[string]interface{}{},
 					IsFilled:           false,
@@ -303,7 +310,7 @@ func Test_createGoFormBlock(t *testing.T) {
 					},
 					Params: func() []byte {
 						r, _ := json.Marshal(&script.FormParams{
-							SchemaId:         schemaId,
+							SchemaID:         schemaID,
 							Executor:         executor,
 							FormExecutorType: script.FormExecutorTypeAutoFillUser,
 							Mapping: script.JSONSchemaProperties{
@@ -331,6 +338,7 @@ func Test_createGoFormBlock(t *testing.T) {
 							"a": float64(100),
 							"b": float64(200),
 						})
+
 						return s
 					}(),
 					Services: RunContextServices{
@@ -343,7 +351,9 @@ func Test_createGoFormBlock(t *testing.T) {
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
+
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
@@ -351,10 +361,12 @@ func Test_createGoFormBlock(t *testing.T) {
 									Close:      true,
 								}
 							}
-							f_error := func(*http.Request) error {
+
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							sdMock.Cli = httpClient
 
@@ -377,7 +389,7 @@ func Test_createGoFormBlock(t *testing.T) {
 				happenedEvents: make([]entity.NodeEvent, 0),
 				State: &FormData{
 					FormExecutorType: script.FormExecutorTypeAutoFillUser,
-					SchemaId:         schemaId,
+					SchemaID:         schemaID,
 					Executors:        map[string]struct{}{"auto_fill": {}},
 					ApplicationBody: map[string]interface{}{
 						"a": float64(100),
@@ -456,11 +468,11 @@ func TestGoFormBlock_Update(t *testing.T) {
 		title       = "Форма"
 		global1     = "form_0.executor"
 		global2     = "form_0.application_body"
-		schemaId    = "c77be97a-f978-46d3-aa03-ab72663f2b74"
+		schemaID    = "c77be97a-f978-46d3-aa03-ab72663f2b74"
 		login       = "login"
 		login2      = "login2"
 		login3      = "login3"
-		blockId     = "form_0"
+		blockID     = "form_0"
 		description = "description"
 		fieldName   = "field1"
 		fieldValue  = "some text"
@@ -468,11 +480,11 @@ func TestGoFormBlock_Update(t *testing.T) {
 	)
 
 	timeNow := time.Now()
-	taskId1 := uuid.New()
+	taskID1 := uuid.New()
 
 	next := []entity.Socket{
 		{
-			Id:           DefaultSocketID,
+			ID:           DefaultSocketID,
 			Title:        script.DefaultSocketTitle,
 			NextBlockIds: []string{"next"},
 		},
@@ -516,23 +528,25 @@ func TestGoFormBlock_Update(t *testing.T) {
 		mock.MatchedBy(func(map[string]interface{}) bool { return true }),
 	).Return(nil)
 
-	type args struct {
-		Name       string
-		Title      string
-		Input      map[string]string
-		Output     map[string]string
-		Sockets    []script.Socket
-		State      *FormData
-		RunContext *BlockRunContext
-	}
-	type ServiceDeskHttpTransportMockDataStruct struct {
-		Status     string
-		StatusCode int
-		Body       any
-	}
-	type mockDataStruct struct {
-		ServiceDeskHttpTransportMockData *ServiceDeskHttpTransportMockDataStruct
-	}
+	type (
+		args struct {
+			Name       string
+			Title      string
+			Input      map[string]string
+			Output     map[string]string
+			Sockets    []script.Socket
+			State      *FormData
+			RunContext *BlockRunContext
+		}
+		ServiceDeskHTTPTransportMockDataStruct struct {
+			Status     string
+			StatusCode int
+			Body       any
+		}
+		mockDataStruct struct {
+			ServiceDeskHTTPTransportMockData *ServiceDeskHTTPTransportMockDataStruct
+		}
+	)
 
 	serviceDesc := &servicedesc.Service{
 		Cli:   &http.Client{},
@@ -580,7 +594,7 @@ func TestGoFormBlock_Update(t *testing.T) {
 						Parameters: json.RawMessage(
 							func() []byte {
 								r, _ := json.Marshal(&updateFillFormParams{
-									BlockId: blockId,
+									BlockID: blockID,
 								})
 
 								return r
@@ -611,7 +625,7 @@ func TestGoFormBlock_Update(t *testing.T) {
 				Sockets: entity.ConvertSocket(next),
 				State: &FormData{
 					FormExecutorType: script.FormExecutorTypeFromSchema,
-					SchemaId:         schemaId,
+					SchemaID:         schemaID,
 					Executors:        map[string]struct{}{login: {}},
 					ApplicationBody:  map[string]interface{}{},
 					IsFilled:         false,
@@ -630,7 +644,7 @@ func TestGoFormBlock_Update(t *testing.T) {
 									ApplicationBody: map[string]interface{}{
 										fieldName: fieldValue,
 									},
-									BlockId: blockId,
+									BlockID: blockID,
 								})
 
 								return r
@@ -650,6 +664,7 @@ func TestGoFormBlock_Update(t *testing.T) {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
@@ -657,10 +672,10 @@ func TestGoFormBlock_Update(t *testing.T) {
 									Close:      true,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							sdMock.Cli = httpClient
 
@@ -673,7 +688,7 @@ func TestGoFormBlock_Update(t *testing.T) {
 			wantErr: assert.NoError,
 			wantState: &FormData{
 				FormExecutorType: script.FormExecutorTypeFromSchema,
-				SchemaId:         schemaId,
+				SchemaID:         schemaID,
 				Executors:        map[string]struct{}{login: {}},
 				Description:      description,
 				IsTakenInWork:    true,
@@ -683,6 +698,7 @@ func TestGoFormBlock_Update(t *testing.T) {
 				IsFilled: true,
 				ActualExecutor: func() *string {
 					l := login
+
 					return &l
 				}(),
 				ChangesLog: []ChangesLogItem{
@@ -710,7 +726,7 @@ func TestGoFormBlock_Update(t *testing.T) {
 				Sockets: entity.ConvertSocket(next),
 				State: &FormData{
 					FormExecutorType: script.FormExecutorTypeFromSchema,
-					SchemaId:         schemaId,
+					SchemaID:         schemaID,
 					Executors:        map[string]struct{}{login: {}},
 					ApplicationBody: map[string]interface{}{
 						fieldName: fieldValue,
@@ -731,7 +747,7 @@ func TestGoFormBlock_Update(t *testing.T) {
 									ApplicationBody: map[string]interface{}{
 										fieldName: newValue,
 									},
-									BlockId: blockId,
+									BlockID: blockID,
 								})
 
 								return r
@@ -750,6 +766,7 @@ func TestGoFormBlock_Update(t *testing.T) {
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
@@ -757,10 +774,10 @@ func TestGoFormBlock_Update(t *testing.T) {
 									Close:      true,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							sdMock.Cli = httpClient
 
@@ -773,7 +790,7 @@ func TestGoFormBlock_Update(t *testing.T) {
 			wantErr: assert.NoError,
 			wantState: &FormData{
 				FormExecutorType: script.FormExecutorTypeFromSchema,
-				SchemaId:         schemaId,
+				SchemaID:         schemaID,
 				IsTakenInWork:    true,
 				Executors:        map[string]struct{}{login: {}},
 				Description:      description,
@@ -783,6 +800,7 @@ func TestGoFormBlock_Update(t *testing.T) {
 				IsFilled: true,
 				ActualExecutor: func() *string {
 					l := login
+
 					return &l
 				}(),
 				ChangesLog: []ChangesLogItem{
@@ -821,7 +839,7 @@ func TestGoFormBlock_Update(t *testing.T) {
 									ApplicationBody: map[string]interface{}{
 										fieldName: newValue,
 									},
-									BlockId: blockId,
+									BlockID: blockID,
 								})
 
 								return r
@@ -868,7 +886,7 @@ func TestGoFormBlock_Update(t *testing.T) {
 									ApplicationBody: map[string]interface{}{
 										fieldName: newValue,
 									},
-									BlockId: blockId,
+									BlockID: blockID,
 								})
 
 								return r
@@ -900,7 +918,7 @@ func TestGoFormBlock_Update(t *testing.T) {
 				Sockets: entity.ConvertSocket(next),
 				State: &FormData{
 					FormExecutorType: script.FormExecutorTypeFromSchema,
-					SchemaId:         schemaId,
+					SchemaID:         schemaID,
 					Executors:        map[string]struct{}{login: {}},
 					ApplicationBody:  map[string]interface{}{},
 					IsFilled:         false,
@@ -913,14 +931,14 @@ func TestGoFormBlock_Update(t *testing.T) {
 						Parameters: json.RawMessage{},
 					},
 					VarStore: store.NewStore(),
-					TaskID:   taskId1,
+					TaskID:   taskID1,
 				},
 			},
 			want:    nil,
 			wantErr: assert.NoError,
 			wantState: &FormData{
 				FormExecutorType: script.FormExecutorTypeFromSchema,
-				SchemaId:         schemaId,
+				SchemaID:         schemaID,
 				Executors:        map[string]struct{}{login: {}},
 				ApplicationBody:  map[string]interface{}{},
 				ChangesLog:       []ChangesLogItem{},
@@ -959,7 +977,7 @@ func TestGoFormBlock_Update(t *testing.T) {
 }
 
 func TestGoFormBlock_Next(t *testing.T) {
-	const blockId = "approver_0"
+	const blockID = "approver_0"
 
 	type args struct {
 		Sockets []script.Socket
@@ -969,7 +987,7 @@ func TestGoFormBlock_Next(t *testing.T) {
 		name   string
 		args   args
 		want   []string
-		wantOk bool
+		wantOK bool
 	}{
 		{
 			name: "next block not found",
@@ -977,22 +995,22 @@ func TestGoFormBlock_Next(t *testing.T) {
 				Sockets: nil,
 			},
 			want:   nil,
-			wantOk: false,
+			wantOK: false,
 		},
 		{
 			name: "acceptance test",
 			args: args{
 				Sockets: []script.Socket{
 					{
-						Id:           DefaultSocketID,
+						ID:           DefaultSocketID,
 						Title:        script.DefaultSocketTitle,
-						NextBlockIds: []string{blockId},
+						NextBlockIds: []string{blockID},
 					},
 					script.DefaultSocket,
 				},
 			},
-			want:   []string{blockId},
-			wantOk: true,
+			want:   []string{blockID},
+			wantOK: true,
 		},
 	}
 	for _, tt := range tests {
@@ -1002,7 +1020,7 @@ func TestGoFormBlock_Next(t *testing.T) {
 			}
 			got, ok := gb.Next(&store.VariableStore{})
 			assert.Equalf(t, tt.want, got, "Update() method. Expect %v, got %v", tt.want, got)
-			assert.Equalf(t, tt.wantOk, ok, "Update() method. Expect Ok %v, got %v", tt.wantOk, ok)
+			assert.Equalf(t, tt.wantOK, ok, "Update() method. Expect Ok %v, got %v", tt.wantOK, ok)
 		})
 	}
 }

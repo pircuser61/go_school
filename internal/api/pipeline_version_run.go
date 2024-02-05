@@ -11,7 +11,7 @@ import (
 	"github.com/pkg/errors"
 	"go.opencensus.io/trace"
 
-	om "github.com/iancoleman/orderedmap"
+	"github.com/iancoleman/orderedmap"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
@@ -25,15 +25,16 @@ import (
 const runByPipelineIDPath = "/run/versions/pipeline_id"
 
 type runNewVersionsByPrevVersionRequest struct {
-	ApplicationBody   om.OrderedMap     `json:"application_body"`
-	Description       string            `json:"description"`
-	WorkNumber        string            `json:"work_number"`
-	AttachmentFields  []string          `json:"attachment_fields"`
-	Keys              map[string]string `json:"keys"`
-	CustomTitle       string            `json:"custom_title"`
-	IsTestApplication bool              `json:"is_test_application"`
+	ApplicationBody   orderedmap.OrderedMap `json:"application_body"`
+	Description       string                `json:"description"`
+	WorkNumber        string                `json:"work_number"`
+	AttachmentFields  []string              `json:"attachment_fields"`
+	Keys              map[string]string     `json:"keys"`
+	CustomTitle       string                `json:"custom_title"`
+	IsTestApplication bool                  `json:"is_test_application"`
 }
 
+func (ae *Env) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Request) {
 type requestStartParams struct {
 	version          *entity.EriusScenario
 	keys             map[string]string
@@ -46,14 +47,13 @@ func (ae *APIEnv) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Requ
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
+	errorHandler := newHTTPErrorHandler(log, w)
 
 	body, err := io.ReadAll(r.Body)
 	defer r.Body.Close()
 
 	if err != nil {
-		e := RequestReadError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(RequestReadError, err)
 
 		return
 	}
@@ -61,26 +61,20 @@ func (ae *APIEnv) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Requ
 	req := &runNewVersionsByPrevVersionRequest{}
 
 	if err = json.Unmarshal(body, req); err != nil {
-		e := BodyParseError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(BodyParseError, err)
 
 		return
 	}
 
 	if req.WorkNumber == "" {
-		e := ValidationError
-		log.Error(e.errorMessage(errors.New("workNumber is empty")))
-		_ = e.sendError(w)
+		errorHandler.handleError(ValidationError, errors.New("workNumber is empty"))
 
 		return
 	}
 
 	version, err := ae.DB.GetVersionByWorkNumber(ctx, req.WorkNumber)
 	if err != nil {
-		e := GetVersionsByWorkNumberError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(GetVersionsByWorkNumberError, err)
 
 		return
 	}
@@ -100,7 +94,6 @@ func (ae *APIEnv) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Requ
 	started, execErr := ae.execVersion(ctx, &execVersionDTO{
 		storage:     ae.DB,
 		version:     version,
-		withStop:    false,
 		w:           w,
 		req:         r,
 		makeNewWork: true,
@@ -118,61 +111,63 @@ func (ae *APIEnv) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Requ
 			},
 		},
 	})
+
 	if execErr != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(execErr))
-		_ = e.sendError(w)
+		errorHandler.handleError(UnknownError, execErr)
+
 		return
 	}
 
 	if started == nil {
-		e := UnknownError
-		log.Error(e.errorMessage(errors.New("no one version was started")))
-		_ = e.sendError(w)
+		errorHandler.handleError(UnknownError, errors.New("no one version was started"))
+
 		return
 	}
 
 	err = sendResponse(w, http.StatusOK, started)
 	if err != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(UnknownError, err)
+
 		return
 	}
 }
 
 type runVersionByPipelineIDRequest struct {
-	ApplicationBody   om.OrderedMap     `json:"application_body"`
-	Description       string            `json:"description"`
-	PipelineId        string            `json:"pipeline_id"`
-	AttachmentFields  []string          `json:"attachment_fields"`
-	Keys              map[string]string `json:"keys"`
-	IsTestApplication bool              `json:"is_test_application"`
-	CustomTitle       string            `json:"custom_title"`
+	ApplicationBody   orderedmap.OrderedMap `json:"application_body"`
+	Description       string                `json:"description"`
+	PipelineID        string                `json:"pipeline_id"`
+	AttachmentFields  []string              `json:"attachment_fields"`
+	Keys              map[string]string     `json:"keys"`
+	IsTestApplication bool                  `json:"is_test_application"`
+	CustomTitle       string                `json:"custom_title"`
 }
 
-//nolint:gocyclo //its ok here
-func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
+//nolint:revive,stylecheck //need to implement interface in api.go
+func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
 	ctx, s := trace.StartSpan(r.Context(), "run_version_by_pipeline_id")
 
 	requestInfo := &metrics.RequestInfo{Method: http.MethodGet, Path: runByPipelineIDPath}
+
 	defer func() {
 		s.End()
+
 		requestInfo.Duration = time.Since(start)
+
 		ae.Metrics.RequestsIncrease(requestInfo)
 	}()
 
 	log := logger.GetLogger(ctx)
+	errorHandler := newHTTPErrorHandler(log, w)
 
 	body, err := io.ReadAll(r.Body)
 	defer r.Body.Close()
 
 	if err != nil {
 		e := RequestReadError
-		log.Error(e.errorMessage(err))
 		requestInfo.Status = e.Status()
-		_ = e.sendError(w)
+
+		errorHandler.handleError(e, err)
 
 		return
 	}
@@ -181,20 +176,20 @@ func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request
 
 	if err = json.Unmarshal(body, req); err != nil {
 		e := BodyParseError
-		log.Error(e.errorMessage(err))
 		requestInfo.Status = e.Status()
-		_ = e.sendError(w)
+
+		errorHandler.handleError(BodyParseError, err)
 
 		return
 	}
 
-	requestInfo.PipelineID = req.PipelineId
+	requestInfo.PipelineID = req.PipelineID
 
-	if req.PipelineId == "" {
+	if req.PipelineID == "" {
 		e := ValidationError
-		log.Error(e.errorMessage(errors.New("pipelineID is empty")))
 		requestInfo.Status = e.Status()
-		_ = e.sendError(w)
+
+		errorHandler.handleError(e, errors.New("pipelineID is empty"))
 
 		return
 	}
@@ -202,21 +197,22 @@ func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request
 	storage, acquireErr := ae.DB.Acquire(ctx)
 	if acquireErr != nil {
 		e := PipelineExecutionError
-		log.Error(e.errorMessage(acquireErr))
 		requestInfo.Status = e.Status()
-		_ = e.sendError(w)
+
+		errorHandler.handleError(PipelineExecutionError, acquireErr)
 
 		return
 	}
 
+	//nolint:errcheck // нецелесообразно отслеживать подобные ошибки в defer
 	defer storage.Release(ctx)
 
-	version, err := storage.GetVersionByPipelineID(ctx, req.PipelineId)
+	version, err := storage.GetVersionByPipelineID(ctx, req.PipelineID)
 	if err != nil {
-		e := GetVersionsByBlueprintIdError
-		log.Error(e.errorMessage(err))
+		e := GetVersionsByBlueprintIDError
 		requestInfo.Status = e.Status()
-		_ = e.sendError(w)
+
+		errorHandler.handleError(e, err)
 
 		return
 	}
@@ -224,12 +220,13 @@ func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request
 	requestInfo.VersionID = version.VersionID.String()
 
 	var clientID string
+
 	clientID, err = ae.getClientIDFromToken(r.Header.Get(AuthorizationHeader))
 	if err != nil {
 		e := GetClientIDError
-		log.Error(e.errorMessage(err))
 		requestInfo.Status = e.Status()
-		_ = e.sendError(w)
+
+		errorHandler.handleError(e, err)
 
 		return
 	}
@@ -237,12 +234,13 @@ func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request
 	requestInfo.ClientID = clientID
 
 	var externalSystem *entity.ExternalSystem
-	externalSystem, err = ae.getExternalSystem(ctx, storage, clientID, req.PipelineId, version.VersionID.String())
+
+	externalSystem, err = ae.getExternalSystem(ctx, storage, clientID, req.PipelineID, version.VersionID.String())
 	if err != nil {
 		e := GetExternalSystemsError
-		log.Error(e.errorMessage(err))
 		requestInfo.Status = e.Status()
-		_ = e.sendError(w)
+
+		errorHandler.handleError(e, err)
 
 		return
 	}
@@ -252,22 +250,23 @@ func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request
 		allowRunAsOthers = externalSystem.AllowRunAsOthers
 	}
 
-	var mappedApplicationBody om.OrderedMap
+	var mappedApplicationBody orderedmap.OrderedMap
+
 	mappedApplicationBody, err = ae.processMappings(externalSystem, version, req.ApplicationBody)
 	if err != nil {
 		e := MappingError
-		log.Error(e.errorMessage(err))
 		requestInfo.Status = e.Status()
-		_ = e.sendError(w)
+
+		errorHandler.handleError(e, err)
 
 		return
 	}
 
 	if err = version.FillEntryPointOutput(); err != nil {
 		e := GetEntryPointOutputError
-		log.Error(e.errorMessage(err))
 		requestInfo.Status = e.Status()
-		_ = e.sendError(w)
+
+		errorHandler.handleError(e, err)
 
 		return
 	}
@@ -307,18 +306,18 @@ func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request
 	})
 	if execErr != nil {
 		e := PipelineExecutionError
-		log.Error(e.errorMessage(execErr))
 		requestInfo.Status = e.Status()
-		_ = e.sendError(w)
+
+		errorHandler.handleError(e, execErr)
 
 		return
 	}
 
 	if v == nil {
 		e := PipelineExecutionError
-		log.Error(e.errorMessage(errors.New("run_version_by_pipeline_id execution error")))
 		requestInfo.Status = e.Status()
-		_ = e.sendError(w)
+
+		errorHandler.handleError(e, errors.New("run_version_by_pipeline_id execution error"))
 
 		return
 	}
@@ -328,9 +327,9 @@ func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request
 
 	if err = sendResponse(w, http.StatusOK, []*entity.RunResponse{v}); err != nil {
 		e := UnknownError
-		log.Error(e.errorMessage(err))
 		requestInfo.Status = e.Status()
-		_ = e.sendError(w)
+
+		errorHandler.handleError(e, err)
 
 		return
 	}
@@ -386,9 +385,10 @@ func (ae *APIEnv) getHiddenFields(ctx c.Context, version *entity.EriusScenario) 
 	}
 
 	params := pipeline.ApplicationData{}
-	errJson := json.Unmarshal(version.Pipeline.Blocks[sdBlockName].Params, &params)
-	if errJson != nil {
-		return hiddenFields, errJson
+
+	errJSON := json.Unmarshal(version.Pipeline.Blocks[sdBlockName].Params, &params)
+	if errJSON != nil {
+		return hiddenFields, errJSON
 	}
 
 	ae.Log.Info("params", fmt.Sprintf("%+v", params))

@@ -67,10 +67,11 @@ func (gb *GoSdApplicationBlock) GetStatus() Status {
 	if gb.State.ApplicationBody != nil {
 		return StatusFinished
 	}
+
 	return StatusRunning
 }
 
-func (gb *GoSdApplicationBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment string, action string) {
+func (gb *GoSdApplicationBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment, action string) {
 	return "", "", ""
 }
 
@@ -79,6 +80,7 @@ func (gb *GoSdApplicationBlock) Next(_ *store.VariableStore) ([]string, bool) {
 	if !ok {
 		return nil, false
 	}
+
 	return nexts, true
 }
 
@@ -93,10 +95,12 @@ func (gb *GoSdApplicationBlock) Update(ctx context.Context) (interface{}, error)
 	}
 
 	var appBody map[string]interface{}
+
 	bytes, err := data.InitialApplication.ApplicationBody.MarshalJSON()
 	if err != nil {
 		return nil, err
 	}
+
 	if unmErr := json.Unmarshal(bytes, &appBody); unmErr != nil {
 		return nil, unmErr
 	}
@@ -115,6 +119,7 @@ func (gb *GoSdApplicationBlock) Update(ctx context.Context) (interface{}, error)
 	gb.State.Description = data.InitialApplication.Description
 
 	var stateBytes []byte
+
 	stateBytes, err = json.Marshal(gb.State)
 	if err != nil {
 		return nil, err
@@ -124,6 +129,7 @@ func (gb *GoSdApplicationBlock) Update(ctx context.Context) (interface{}, error)
 
 	if _, ok := gb.expectedEvents[eventEnd]; ok {
 		status, _, _ := gb.GetTaskHumanStatus()
+
 		event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, MakeNodeEndEventArgs{
 			NodeName:      gb.Name,
 			NodeShortName: gb.ShortName,
@@ -133,6 +139,7 @@ func (gb *GoSdApplicationBlock) Update(ctx context.Context) (interface{}, error)
 		if eventErr != nil {
 			return nil, eventErr
 		}
+
 		gb.happenedEvents = append(gb.happenedEvents, event)
 	}
 
@@ -180,7 +187,8 @@ func (gb *GoSdApplicationBlock) Model() script.FunctionModel {
 
 //nolint:unparam // its ok
 func createGoSdApplicationBlock(ctx context.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext,
-	expectedEvents map[string]struct{}) (*GoSdApplicationBlock, bool, error) {
+	expectedEvents map[string]struct{},
+) (*GoSdApplicationBlock, bool, error) {
 	log := logger.CreateLogger(nil)
 	log.WithField("params", string(ef.Params)).Info("sd_application parameters")
 
@@ -204,12 +212,14 @@ func createGoSdApplicationBlock(ctx context.Context, name string, ef *entity.Eri
 	}
 
 	if ef.Output != nil {
+		//nolint:gocritic //в этом проекте не принято использовать поинтеры в коллекциях
 		for propertyName, v := range ef.Output.Properties {
 			b.Output[propertyName] = v.Global
 		}
 	}
 
 	var params script.SdApplicationParams
+
 	err := json.Unmarshal(ef.Params, &params)
 	if err != nil {
 		return nil, reEntry, errors.Wrap(err, "can not get sd_application parameters")
@@ -227,6 +237,7 @@ func createGoSdApplicationBlock(ctx context.Context, name string, ef *entity.Eri
 
 	if _, ok := b.expectedEvents[eventStart]; ok {
 		status, _, _ := b.GetTaskHumanStatus()
+
 		event, err := runCtx.MakeNodeStartEvent(ctx, MakeNodeStartEventArgs{
 			NodeName:      name,
 			NodeShortName: ef.ShortTitle,
@@ -236,6 +247,7 @@ func createGoSdApplicationBlock(ctx context.Context, name string, ef *entity.Eri
 		if err != nil {
 			return nil, false, err
 		}
+
 		b.happenedEvents = append(b.happenedEvents, event)
 	}
 

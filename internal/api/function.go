@@ -12,7 +12,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
-func (ae *APIEnv) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessage) error {
+func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessage) error {
 	log := ae.Log
 	log.WithField("funcName", "FunctionReturnHandler").
 		WithField("message", message).
@@ -55,7 +55,7 @@ func (ae *APIEnv) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMes
 		return nil
 	}
 
-	step, err := ae.DB.GetTaskStepById(ctx, message.TaskID)
+	step, err := ae.DB.GetTaskStepByID(ctx, message.TaskID)
 	if err != nil {
 		log.WithField("funcName", "GetTaskStepById").
 			WithError(err).

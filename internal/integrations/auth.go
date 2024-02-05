@@ -48,15 +48,16 @@ const (
 	// //nolint:gosec // just a path
 	tokensPath = "/auth/realms/mts/protocol/openid-connect/token"
 
-	mainSsoUrl = "https://isso%s.mts.ru"
+	mainSsoURL = "https://isso%s.mts.ru"
 )
 
-func (s *Service) GetToken(ctx context.Context, scopes []string, clientSecret, clientId, stand string) (token string, err error) {
+func (s *Service) GetToken(ctx context.Context, scopes []string, clientSecret, clientID, stand string) (token string, err error) {
 	ctxLocal, span := trace.StartSpan(ctx, "getToken")
 	defer span.End()
 
-	initedScopes := s.initScopes(scopes, clientSecret, clientId)
-	path := mainSsoUrl + tokensPath
+	initedScopes := s.initScopes(scopes, clientSecret, clientID)
+	path := mainSsoURL + tokensPath
+
 	switch stand {
 	case "dev", "stage":
 		path = fmt.Sprintf(path, "-dev")
@@ -65,21 +66,27 @@ func (s *Service) GetToken(ctx context.Context, scopes []string, clientSecret, c
 	default:
 		return "", errors.New("wrong stand name")
 	}
+
 	req, err := http.NewRequestWithContext(ctxLocal, http.MethodPost, path, strings.NewReader(initedScopes.getTokensFormData.Encode()))
 	if err != nil {
 		return "", err
 	}
+
 	req.Header.Add(contentTypeHeader, contentTypeFormValue)
 
 	resp, err := s.Cli.Do(req)
 	if err != nil {
 		return "", err
 	}
+
 	defer resp.Body.Close()
+
 	if resp.StatusCode != http.StatusOK {
 		return "", errors.New("got bad status code")
 	}
+
 	var res SSOToken
+
 	if unmErr := json.NewDecoder(resp.Body).Decode(&res); unmErr != nil {
 		return "", unmErr
 	}
@@ -87,20 +94,21 @@ func (s *Service) GetToken(ctx context.Context, scopes []string, clientSecret, c
 	return res.AccessToken, nil
 }
 
-func (s *Service) initScopes(scopes []string, clientSecret, clientId string) *scope {
+func (s *Service) initScopes(scopes []string, clientSecret, clientID string) *scope {
 	return &scope{
 		getTokensFormData: url.Values{
 			secretKey:    []string{clientSecret},
 			grantTypeKey: []string{grantTypeGetValue},
-			clientIDKey:  []string{clientId},
+			clientIDKey:  []string{clientID},
 			scopeKey:     []string{strings.Join(scopes, " ")},
 		},
 	}
 }
 
 func (s *Service) FillAuth(
-	ctx context.Context, key string, pipelineID, versionID, workNumber, clientID string) (result *Auth, err error) {
-	res, GRPCerr := s.RpcMicrCli.GetCredentialsByKey(ctx,
+	ctx context.Context, key string, pipelineID, versionID, workNumber, clientID string,
+) (result *Auth, err error) {
+	res, GRPCerr := s.RPCMicrCli.GetCredentialsByKey(ctx,
 		&microservice_v1.GetCredentialsByKeyRequest{
 			HumanReadableKey: key,
 			PipelineId:       pipelineID,
@@ -112,6 +120,7 @@ func (s *Service) FillAuth(
 	if GRPCerr != nil {
 		return nil, GRPCerr
 	}
+
 	switch res.Auth.Type {
 	case microservice_v1.AuthType_basicAuth:
 		result = &Auth{
@@ -122,10 +131,12 @@ func (s *Service) FillAuth(
 		}
 	case microservice_v1.AuthType_oAuth2:
 		oauthGrpc := res.Auth.GetOAuth2()
+
 		token, tokenErr := s.GetToken(ctx, oauthGrpc.Scopes, oauthGrpc.ClientSecret, oauthGrpc.ClientId, oauthGrpc.SSOStand)
 		if tokenErr != nil {
 			return nil, tokenErr
 		}
+
 		result = &Auth{
 			AuthType: "oAuth",
 			Token:    token,

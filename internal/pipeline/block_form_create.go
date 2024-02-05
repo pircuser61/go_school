@@ -1,7 +1,7 @@
 package pipeline
 
 import (
-	c "context"
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -15,8 +15,13 @@ import (
 )
 
 // nolint:dupl // another block
-func createGoFormBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext,
-	expectedEvents map[string]struct{}) (*GoFormBlock, bool, error) {
+func createGoFormBlock(
+	ctx context.Context,
+	name string,
+	ef *entity.EriusFunc,
+	runCtx *BlockRunContext,
+	expectedEvents map[string]struct{},
+) (*GoFormBlock, bool, error) {
 	if ef.ShortTitle == "" {
 		return nil, false, errors.New(ef.Title + " block short title is empty")
 	}
@@ -39,66 +44,41 @@ func createGoFormBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx 
 	}
 
 	if ef.Output != nil {
+		//nolint:gocritic //в этом проекте не принято использовать поинтеры в коллекциях
 		for propertyName, v := range ef.Output.Properties {
 			b.Output[propertyName] = v.Global
 		}
 	}
 
-	rawState, blockExists := runCtx.VarStore.State[name]
 	reEntry := false
+
+	rawState, blockExists := runCtx.VarStore.State[name]
 	if blockExists {
-		if err := b.loadState(rawState); err != nil {
+		loadReEntry, err := b.load(ctx, rawState, runCtx, name, ef)
+		if err != nil {
 			return nil, false, err
 		}
 
-		reEntry = runCtx.UpdateData == nil
-
-		if reEntry {
-			if err := b.reEntry(ctx, ef); err != nil {
-				return nil, false, err
-			}
-			b.RunContext.VarStore.AddStep(b.Name)
-
-			if _, ok := b.expectedEvents[eventStart]; ok {
-				status, _, _ := b.GetTaskHumanStatus()
-				event, err := runCtx.MakeNodeStartEvent(ctx, MakeNodeStartEventArgs{
-					NodeName:      name,
-					NodeShortName: ef.ShortTitle,
-					HumanStatus:   status,
-					NodeStatus:    b.GetStatus(),
-				})
-				if err != nil {
-					return nil, false, err
-				}
-				b.happenedEvents = append(b.happenedEvents, event)
-			}
-		}
+		reEntry = loadReEntry
 	} else {
 		if err := b.createState(ctx, ef); err != nil {
 			return nil, false, err
 		}
+
 		b.RunContext.VarStore.AddStep(b.Name)
 
-		if _, ok := b.expectedEvents[eventStart]; ok {
-			status, _, _ := b.GetTaskHumanStatus()
-			event, err := runCtx.MakeNodeStartEvent(ctx, MakeNodeStartEventArgs{
-				NodeName:      name,
-				NodeShortName: ef.ShortTitle,
-				HumanStatus:   status,
-				NodeStatus:    b.GetStatus(),
-			})
-			if err != nil {
-				return nil, false, err
-			}
-			b.happenedEvents = append(b.happenedEvents, event)
+		err := b.makeNodeStartEventIfExpected(ctx, runCtx, name, ef)
+		if err != nil {
+			return nil, false, err
 		}
 	}
 
 	return b, reEntry, nil
 }
 
-func (gb *GoFormBlock) getHiddenFields(ctx c.Context, schemaID string) (res []string, err error) {
+func (gb *GoFormBlock) getHiddenFields(ctx context.Context, schemaID string) (res []string, err error) {
 	var schema jsonschema.Schema
+
 	schema, err = gb.RunContext.Services.ServiceDesc.GetSchemaByID(ctx, schemaID)
 	if err != nil {
 		return nil, err
@@ -111,14 +91,88 @@ func (gb *GoFormBlock) getHiddenFields(ctx c.Context, schemaID string) (res []st
 	return res, nil
 }
 
-func (gb *GoFormBlock) reEntry(ctx c.Context, ef *entity.EriusFunc) error {
+func (gb *GoFormBlock) load(
+	ctx context.Context,
+	rawState json.RawMessage,
+	runCtx *BlockRunContext,
+	name string,
+	ef *entity.EriusFunc,
+) (reEntry bool, err error) {
+	err = gb.loadState(rawState)
+	if err != nil {
+		return false, err
+	}
+
+	reEntry = runCtx.UpdateData == nil
+
+	err = gb.makeNodeStartEventWithReentry(ctx, reEntry, runCtx, name, ef)
+	if err != nil {
+		return false, err
+	}
+
+	return reEntry, nil
+}
+
+func (gb *GoFormBlock) makeNodeStartEventWithReentry(
+	ctx context.Context,
+	reEntry bool,
+	runCtx *BlockRunContext,
+	name string,
+	ef *entity.EriusFunc,
+) error {
+	if reEntry {
+		if err := gb.reEntry(ctx, ef); err != nil {
+			return err
+		}
+
+		gb.RunContext.VarStore.AddStep(gb.Name)
+
+		err := gb.makeNodeStartEventIfExpected(ctx, runCtx, name, ef)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (gb *GoFormBlock) makeNodeStartEventIfExpected(ctx context.Context, runCtx *BlockRunContext, name string, ef *entity.EriusFunc) error {
+	if _, ok := gb.expectedEvents[eventStart]; ok {
+		err := gb.makeNodeStartEvent(ctx, runCtx, name, ef)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (gb *GoFormBlock) makeNodeStartEvent(ctx context.Context, runCtx *BlockRunContext, name string, ef *entity.EriusFunc) error {
+	status, _, _ := gb.GetTaskHumanStatus()
+
+	event, err := runCtx.MakeNodeStartEvent(ctx, MakeNodeStartEventArgs{
+		NodeName:      name,
+		NodeShortName: ef.ShortTitle,
+		HumanStatus:   status,
+		NodeStatus:    gb.GetStatus(),
+	})
+	if err != nil {
+		return err
+	}
+
+	gb.happenedEvents = append(gb.happenedEvents, event)
+
+	return err
+}
+
+func (gb *GoFormBlock) reEntry(ctx context.Context, ef *entity.EriusFunc) error {
 	if gb.State.IsEditable == nil || !*gb.State.IsEditable {
 		return nil
 	}
 
 	isAutofill := gb.State.FormExecutorType == script.FormExecutorTypeAutoFillUser
 	if isAutofill && gb.State.ReEnterSettings == nil {
-		return fmt.Errorf("autofill with empty reenter settings data")
+		return errors.New("autofill with empty reenter settings data")
 	}
 
 	gb.State.IsFilled = false
@@ -127,50 +181,75 @@ func (gb *GoFormBlock) reEntry(ctx c.Context, ef *entity.EriusFunc) error {
 	gb.State.ActualExecutor = nil
 
 	if !isAutofill && gb.State.FormExecutorType != script.FormExecutorTypeAutoFillUser {
-		if gb.State.FormExecutorType == script.FormExecutorTypeFromSchema {
-			var params script.FormParams
-			err := json.Unmarshal(ef.Params, &params)
-			if err != nil {
-				return errors.Wrap(err, "can not get form parameters in reentry")
-			}
-
-			setErr := gb.setExecutorsByParams(ctx, &setFormExecutorsByParamsDTO{
-				FormExecutorType: gb.State.FormExecutorType,
-				Value:            params.Executor,
-			})
-
-			if setErr != nil {
-				return setErr
-			}
-		} else {
-			gb.State.Executors = gb.State.InitialExecutors
-			gb.State.IsTakenInWork = len(gb.State.InitialExecutors) == 1
+		err := gb.setExecutors(ctx, ef)
+		if err != nil {
+			return err
 		}
 	}
 
 	if gb.State.FormExecutorType == script.FormExecutorTypeAutoFillUser && gb.State.ReEnterSettings != nil {
-		if gb.State.ReEnterSettings.GroupPath != nil && *gb.State.ReEnterSettings.GroupPath != "" {
-			variableStorage, grabStorageErr := gb.RunContext.VarStore.GrabStorage()
-			if grabStorageErr != nil {
-				return grabStorageErr
-			}
+		err := gb.setReentryExecutors(ctx)
+		if err != nil {
+			return err
+		}
+	}
 
-			groupId := getVariable(variableStorage, *gb.State.ReEnterSettings.GroupPath)
-			if groupId == nil {
-				return errors.New("can't find group id in variables")
-			}
-			gb.State.ReEnterSettings.Value = fmt.Sprintf("%v", groupId)
+	return gb.handleNotifications(ctx)
+}
+
+func (gb *GoFormBlock) setExecutors(ctx context.Context, ef *entity.EriusFunc) error {
+	if gb.State.FormExecutorType == script.FormExecutorTypeFromSchema {
+		var params script.FormParams
+
+		err := json.Unmarshal(ef.Params, &params)
+		if err != nil {
+			return errors.Wrap(err, "can not get form parameters in reentry")
 		}
 
 		setErr := gb.setExecutorsByParams(ctx, &setFormExecutorsByParamsDTO{
-			FormExecutorType: gb.State.ReEnterSettings.FormExecutorType,
-			Value:            gb.State.ReEnterSettings.Value,
+			FormExecutorType: gb.State.FormExecutorType,
+			Value:            params.Executor,
 		})
 		if setErr != nil {
 			return setErr
 		}
+	} else {
+		gb.State.Executors = gb.State.InitialExecutors
+		gb.State.IsTakenInWork = len(gb.State.InitialExecutors) == 1
 	}
-	return gb.handleNotifications(ctx)
+
+	return nil
+}
+
+func (gb *GoFormBlock) setReentryExecutors(ctx context.Context) error {
+	if gb.State.ReEnterSettings.GroupPath != nil && *gb.State.ReEnterSettings.GroupPath != "" {
+		variableStorage, grabStorageErr := gb.RunContext.VarStore.GrabStorage()
+		if grabStorageErr != nil {
+			return grabStorageErr
+		}
+
+		groupID := getVariable(variableStorage, *gb.State.ReEnterSettings.GroupPath)
+		if groupID == nil {
+			return errors.New("can't find group id in variables")
+		}
+
+		gb.State.ReEnterSettings.Value = fmt.Sprintf("%v", groupID)
+	}
+
+	setErr := gb.setExecutorsByParams(
+		ctx,
+		&setFormExecutorsByParamsDTO{
+			FormExecutorType: gb.State.ReEnterSettings.FormExecutorType,
+			Value:            gb.State.ReEnterSettings.Value,
+		},
+	)
+	if setErr != nil {
+		return setErr
+	}
+
+	gb.State.FormExecutorType = gb.State.ReEnterSettings.FormExecutorType
+
+	return nil
 }
 
 func (gb *GoFormBlock) loadState(raw json.RawMessage) error {
@@ -178,8 +257,9 @@ func (gb *GoFormBlock) loadState(raw json.RawMessage) error {
 }
 
 //nolint:dupl //different logic
-func (gb *GoFormBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
+func (gb *GoFormBlock) createState(ctx context.Context, ef *entity.EriusFunc) error {
 	var params script.FormParams
+
 	err := json.Unmarshal(ef.Params, &params)
 	if err != nil {
 		return errors.Wrap(err, "can not get form parameters")
@@ -189,7 +269,7 @@ func (gb *GoFormBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 		return errors.Wrap(err, "invalid form parameters")
 	}
 
-	hiddenFields, err := gb.getHiddenFields(ctx, params.SchemaId)
+	hiddenFields, err := gb.getHiddenFields(ctx, params.SchemaID)
 	if err != nil {
 		return err
 	}
@@ -220,7 +300,7 @@ func (gb *GoFormBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 	}
 
 	gb.State = &FormData{
-		SchemaId:                  params.SchemaId,
+		SchemaID:                  params.SchemaID,
 		CheckSLA:                  params.CheckSLA,
 		SLA:                       params.SLA,
 		ChangesLog:                make([]ChangesLogItem, 0),
@@ -242,16 +322,17 @@ func (gb *GoFormBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 			return grabStorageErr
 		}
 
-		groupId := getVariable(variableStorage, *params.FormGroupIDPath)
-		if groupId == nil {
+		groupID := getVariable(variableStorage, *params.FormGroupIDPath)
+		if groupID == nil {
 			return errors.New("can't find group id in variables")
 		}
-		params.FormGroupId = fmt.Sprintf("%v", groupId)
+
+		params.FormGroupID = fmt.Sprintf("%v", groupID)
 	}
 
 	executorValue := params.Executor
 	if params.FormExecutorType == script.FormExecutorTypeGroup {
-		executorValue = params.FormGroupId
+		executorValue = params.FormGroupID
 	}
 
 	if setErr := gb.setExecutorsByParams(ctx, &setFormExecutorsByParamsDTO{
@@ -269,7 +350,7 @@ func (gb *GoFormBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 			return getVersionErr
 		}
 
-		processSLASettings, getVersionErr := gb.RunContext.Services.Storage.GetSlaVersionSettings(ctx, task.VersionID.String())
+		processSLASettings, getVersionErr := gb.RunContext.Services.Storage.GetSLAVersionSettings(ctx, task.VersionID.String())
 		if getVersionErr != nil {
 			return getVersionErr
 		}
@@ -284,9 +365,10 @@ type setFormExecutorsByParamsDTO struct {
 	Value            string
 }
 
-func (gb *GoFormBlock) setExecutorsByParams(ctx c.Context, dto *setFormExecutorsByParamsDTO) error {
+func (gb *GoFormBlock) setExecutorsByParams(ctx context.Context, dto *setFormExecutorsByParamsDTO) error {
 	const variablesSep = ";"
 
+	// nolint:exhaustive //не хотим обрабатывать остальные случаи
 	switch dto.FormExecutorType {
 	case script.FormExecutorTypeInitiator:
 		gb.State.Executors = map[string]struct{}{
@@ -301,6 +383,7 @@ func (gb *GoFormBlock) setExecutorsByParams(ctx c.Context, dto *setFormExecutors
 
 		executorsFromSchema := make(map[string]struct{})
 		executorVars := strings.Split(dto.Value, variablesSep)
+
 		for i := range executorVars {
 			resolvedEntities, resolveErr := getUsersFromVars(
 				variableStorage,
@@ -311,6 +394,7 @@ func (gb *GoFormBlock) setExecutorsByParams(ctx c.Context, dto *setFormExecutors
 			if resolveErr != nil {
 				return resolveErr
 			}
+
 			for executorLogin := range resolvedEntities {
 				executorsFromSchema[executorLogin] = struct{}{}
 			}
@@ -324,24 +408,27 @@ func (gb *GoFormBlock) setExecutorsByParams(ctx c.Context, dto *setFormExecutors
 		if err := gb.handleAutoFillForm(); err != nil {
 			return err
 		}
+
 		gb.State.IsTakenInWork = true
 	case script.FormExecutorTypeGroup:
-		gb.State.FormGroupId = dto.Value
+		gb.State.FormGroupID = dto.Value
+
 		workGroup, errGroup := gb.RunContext.Services.ServiceDesc.GetWorkGroup(ctx, dto.Value)
 		if errGroup != nil {
 			return errors.Wrap(errGroup, "can`t get form group with id: "+dto.Value)
 		}
 
 		if len(workGroup.People) == 0 {
-			//nolint:goimports // bugged golint
 			return errors.New("zero form executors in group: " + dto.Value)
 		}
 
-		gb.State.Executors = make(map[string]struct{})
+		gb.State.Executors = make(map[string]struct{}, len(workGroup.People))
+
 		for i := range workGroup.People {
 			gb.State.Executors[workGroup.People[i].Login] = struct{}{}
 		}
-		gb.State.FormGroupId = dto.Value
+
+		gb.State.FormGroupID = dto.Value
 		gb.State.FormExecutorsGroupName = workGroup.GroupName
 	default:
 		gb.State.FormExecutorType = script.FormExecutorTypeUser
@@ -350,6 +437,8 @@ func (gb *GoFormBlock) setExecutorsByParams(ctx c.Context, dto *setFormExecutors
 		}
 		gb.State.IsTakenInWork = true
 	}
+
 	gb.State.InitialExecutors = gb.State.Executors
+
 	return nil
 }

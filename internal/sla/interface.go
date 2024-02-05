@@ -10,10 +10,10 @@ import (
 )
 
 type Service interface {
-	GetSLAInfoPtr(ctx context.Context, GetSLAInfoDTO InfoDto) (*SLAInfo, error)
-	ComputeMaxDate(start time.Time, sla float32, slaInfoPtr *SLAInfo) time.Time
-	ComputeMaxDateFormatted(start time.Time, sla int, slaInfoPtr *SLAInfo) string
-	CheckBreachSLA(start, current time.Time, sla int, slaInfoPtr *SLAInfo) bool
+	GetSLAInfoPtr(ctx context.Context, GetSLAInfoDTO InfoDTO) (*Info, error)
+	ComputeMaxDate(start time.Time, sla float32, slaInfoPtr *Info) time.Time
+	ComputeMaxDateFormatted(start time.Time, sla int, slaInfoPtr *Info) string
+	CheckBreachSLA(start, current time.Time, sla int, slaInfoPtr *Info) bool
 	ComputeMeanTaskCompletionTime(intervals []entity.TaskCompletionInterval, days hrgate.CalendarDays) s.TaskSolveTime
-	GetWorkHoursBetweenDates(from, to time.Time, slaInfoPtr *SLAInfo) (workHours int)
+	GetWorkHoursBetweenDates(from, to time.Time, slaInfoPtr *Info) (workHours int)
 }

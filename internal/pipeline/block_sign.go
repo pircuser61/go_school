@@ -1,7 +1,7 @@
 package pipeline
 
 import (
-	c "context"
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -12,7 +12,7 @@ import (
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
-	file_registry "gitlab.services.mts.ru/jocasta/pipeliner/internal/file-registry"
+	file_registry "gitlab.services.mts.ru/jocasta/pipeliner/internal/fileregistry"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
@@ -76,7 +76,9 @@ func (gb *GoSignBlock) GetState() interface{} {
 
 func (gb *GoSignBlock) Next(_ *store.VariableStore) ([]string, bool) {
 	var key string
+
 	if gb.State != nil && gb.State.Decision != nil {
+		//nolint:exhaustive //не хотим обрабатывать остальные случаи
 		switch *gb.State.Decision {
 		case SignDecisionSigned:
 			key = signedSocketID
@@ -91,10 +93,11 @@ func (gb *GoSignBlock) Next(_ *store.VariableStore) ([]string, bool) {
 	if !ok {
 		return nil, false
 	}
+
 	return nexts, true
 }
 
-func (gb *GoSignBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment string, action string) {
+func (gb *GoSignBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment, action string) {
 	if gb.State != nil && gb.State.Decision != nil {
 		if *gb.State.Decision == SignDecisionRejected {
 			return StatusRejected, "", ""
@@ -106,9 +109,11 @@ func (gb *GoSignBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment str
 
 		return StatusSigned, "", ""
 	}
+
 	if gb.State.Reentered {
 		return StatusSigning, reentrySignComment, ""
 	}
+
 	return StatusSigning, "", ""
 }
 
@@ -124,6 +129,7 @@ func (gb *GoSignBlock) GetStatus() Status {
 
 		return StatusFinished
 	}
+
 	return StatusRunning
 }
 
@@ -132,10 +138,12 @@ func (gb *GoSignBlock) UpdateManual() bool {
 }
 
 func (gb *GoSignBlock) isSignerActed(login string) bool {
+	//nolint:gocritic //в этом проекте не принято использовать поинтеры в коллекциях
 	for _, s := range gb.State.SignLog {
 		if s.LogType != SignerLogDecision {
 			continue
 		}
+
 		if s.Login == login {
 			return true
 		}
@@ -149,6 +157,7 @@ func (gb *GoSignBlock) signActions(login string) []MemberAction {
 		return []MemberAction{}
 	}
 
+	//nolint:gocritic //в этом проекте не принято использовать поинтеры в коллекциях
 	for _, s := range gb.State.SignLog {
 		if s.Login == login && s.LogType == SignerLogDecision {
 			return []MemberAction{}
@@ -156,18 +165,18 @@ func (gb *GoSignBlock) signActions(login string) []MemberAction {
 	}
 
 	rejectAction := MemberAction{
-		Id:   signActionReject,
+		ID:   signActionReject,
 		Type: ActionTypeSecondary,
 	}
 
 	addApproversAction := MemberAction{
-		Id:   signActionAddApprovers,
+		ID:   signActionAddApprovers,
 		Type: ActionTypeOther,
 	}
 
 	if gb.State.SignatureType == script.SignatureTypeUKEP {
 		takeInWorkAction := MemberAction{
-			Id:   signActionTakeInWork,
+			ID:   signActionTakeInWork,
 			Type: ActionTypePrimary,
 			Params: map[string]interface{}{
 				signatureTypeActionParamsKey:    gb.State.SignatureType,
@@ -187,7 +196,7 @@ func (gb *GoSignBlock) signActions(login string) []MemberAction {
 	}
 
 	signAction := MemberAction{
-		Id:   signActionSign,
+		ID:   signActionSign,
 		Type: ActionTypePrimary,
 		Params: map[string]interface{}{
 			signatureTypeActionParamsKey: gb.State.SignatureType,
@@ -204,15 +213,15 @@ func (gb *GoSignBlock) signAddActions(a *AdditionalSignApprover) []MemberAction 
 
 	return []MemberAction{
 		{
-			Id:   signActionAdditionalApprovement,
+			ID:   signActionAdditionalApprovement,
 			Type: ActionTypePrimary,
 		},
 		{
-			Id:   signActionAdditionalReject,
+			ID:   signActionAdditionalReject,
 			Type: ActionTypeSecondary,
 		},
 		{
-			Id:   signActionAddApprovers,
+			ID:   signActionAddApprovers,
 			Type: ActionTypeOther,
 		},
 	}
@@ -231,6 +240,7 @@ func (gb *GoSignBlock) Members() []Member {
 
 	for i := 0; i < len(gb.State.AdditionalApprovers); i++ {
 		addApprover := gb.State.AdditionalApprovers[i]
+
 		members = append(members, Member{
 			Login:                addApprover.ApproverLogin,
 			Actions:              gb.signAddActions(&addApprover),
@@ -243,23 +253,27 @@ func (gb *GoSignBlock) Members() []Member {
 }
 
 //nolint:dupl,gocyclo //Need here
-func (gb *GoSignBlock) Deadlines(ctx c.Context) ([]Deadline, error) {
+func (gb *GoSignBlock) Deadlines(ctx context.Context) ([]Deadline, error) {
 	deadlines := make([]Deadline, 0, 2)
 
 	if gb.State.CheckSLA != nil && *gb.State.CheckSLA {
-		slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
-			TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.CurrBlockStartTime,
-				FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100)}},
+		slaInfoPtr, getSLAInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDTO{
+			TaskCompletionIntervals: []entity.TaskCompletionInterval{{
+				StartedAt:  gb.RunContext.CurrBlockStartTime,
+				FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100),
+			}},
 			WorkType: sla.WorkHourType(*gb.State.WorkType),
 		})
 
-		if getSlaInfoErr != nil {
-			return nil, getSlaInfoErr
+		if getSLAInfoErr != nil {
+			return nil, getSLAInfoErr
 		}
 
 		deadline := gb.RunContext.Services.SLAService.ComputeMaxDate(gb.RunContext.CurrBlockStartTime, float32(*gb.State.SLA), slaInfoPtr)
+
 		if !gb.State.SLAChecked {
-			deadlines = append(deadlines,
+			deadlines = append(
+				deadlines,
 				Deadline{
 					Deadline: deadline,
 					Action:   entity.TaskUpdateActionSLABreach,
@@ -269,6 +283,7 @@ func (gb *GoSignBlock) Deadlines(ctx c.Context) ([]Deadline, error) {
 
 		if *gb.State.SLA > 8 && !gb.State.DayBeforeSLAChecked {
 			notifyBeforeDayExpireSLA := deadline.Add(-8 * time.Hour)
+
 			deadlines = append(deadlines,
 				Deadline{
 					Deadline: notifyBeforeDayExpireSLA,
@@ -287,7 +302,7 @@ type setSignersByParamsDTO struct {
 	Signer  string
 }
 
-func (gb *GoSignBlock) setSignersByParams(ctx c.Context, dto *setSignersByParamsDTO) error {
+func (gb *GoSignBlock) setSignersByParams(ctx context.Context, dto *setSignersByParamsDTO) error {
 	switch dto.Type {
 	case script.SignerTypeUser:
 		gb.State.Signers = map[string]struct{}{
@@ -307,6 +322,7 @@ func (gb *GoSignBlock) setSignersByParams(ctx c.Context, dto *setSignersByParams
 		for i := range workGroup.People {
 			gb.State.Signers[workGroup.People[i].Login] = struct{}{}
 		}
+
 		gb.State.SignerGroupID = dto.GroupID
 		gb.State.SignerGroupName = workGroup.GroupName
 	case script.SignerTypeFromSchema:
@@ -340,7 +356,7 @@ func (gb *GoSignBlock) setSignersByParams(ctx c.Context, dto *setSignersByParams
 	return nil
 }
 
-func (gb *GoSignBlock) handleDayBeforeSLANotifications(ctx c.Context) error {
+func (gb *GoSignBlock) handleDayBeforeSLANotifications(ctx context.Context) error {
 	if gb.State.DayBeforeSLAChecked {
 		return nil
 	}
@@ -350,11 +366,12 @@ func (gb *GoSignBlock) handleDayBeforeSLANotifications(ctx c.Context) error {
 	}
 
 	gb.State.DayBeforeSLAChecked = true
+
 	return nil
 }
 
-//nolint:dupl,gocyclo // maybe later
-func (gb *GoSignBlock) handleNotifications(ctx c.Context) error {
+//nolint:dupl // maybe later
+func (gb *GoSignBlock) handleNotifications(ctx context.Context) error {
 	l := logger.GetLogger(ctx)
 
 	if gb.RunContext.skipNotifications {
@@ -371,30 +388,36 @@ func (gb *GoSignBlock) handleNotifications(ctx c.Context) error {
 	slaDeadline := ""
 
 	if gb.State.SLA != nil && gb.State.WorkType != nil {
-		slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
-			TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.CurrBlockStartTime,
-				FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100)}},
+		slaInfoPtr, getSLAInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDTO{
+			TaskCompletionIntervals: []entity.TaskCompletionInterval{{
+				StartedAt:  gb.RunContext.CurrBlockStartTime,
+				FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100),
+			}},
 			WorkType: sla.WorkHourType(*gb.State.WorkType),
 		})
-		if getSlaInfoErr != nil {
-			return getSlaInfoErr
+		if getSLAInfoErr != nil {
+			return getSLAInfoErr
 		}
+
 		slaDeadline = gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(gb.RunContext.CurrBlockStartTime,
 			*gb.State.SLA, slaInfoPtr)
 	}
 
-	var emails = make(map[string]mail.Template, 0)
+	emails := make(map[string]mail.Template, 0)
+
 	for _, login := range signers {
 		em, getUserEmailErr := gb.RunContext.Services.People.GetUserEmail(ctx, login)
 		if getUserEmailErr != nil {
 			l.WithField("login", login).WithError(getUserEmailErr).Warning("couldn't get email")
+
 			continue
 		}
+
 		emails[em] = mail.NewSignerNotificationTpl(
 			&mail.SignerNotifTemplate{
 				WorkNumber:  gb.RunContext.WorkNumber,
 				Name:        gb.RunContext.NotifName,
-				SdUrl:       gb.RunContext.Services.Sender.SdAddress,
+				SdURL:       gb.RunContext.Services.Sender.SdAddress,
 				Deadline:    slaDeadline,
 				AutoReject:  gb.State.AutoReject != nil && *gb.State.AutoReject,
 				Description: description,
@@ -416,6 +439,7 @@ func (gb *GoSignBlock) handleNotifications(ctx c.Context) error {
 				attachFiles, ok := links.([]file_registry.AttachInfo)
 				if ok && len(attachFiles) != 0 {
 					iconsName = append(iconsName, downloadImg)
+
 					break
 				}
 			}
@@ -437,15 +461,17 @@ func (gb *GoSignBlock) handleNotifications(ctx c.Context) error {
 	return nil
 }
 
-func lookForFileIdInObject(object map[string]interface{}) (string, error) {
-	existingFileId, ok := object["file_id"]
+func lookForFileIDInObject(object map[string]interface{}) (string, error) {
+	existingFileID, ok := object["file_id"]
 	if !ok {
 		return "", errors.New("file_id does not exist in object")
 	}
-	fileID, ok := existingFileId.(string)
+
+	fileID, ok := existingFileID.(string)
 	if !ok {
 		return "", errors.New("failed to type assert path to string")
 	}
+
 	return fileID, nil
 }
 
@@ -454,10 +480,11 @@ func ValidateFiles(file interface{}) ([]entity.Attachment, error) {
 
 	switch f := file.(type) {
 	case map[string]interface{}:
-		fileID, err := lookForFileIdInObject(f)
+		fileID, err := lookForFileIDInObject(f)
 		if err != nil {
 			return nil, err
 		}
+
 		resFiles = append(resFiles, entity.Attachment{FileID: fileID})
 	case []interface{}:
 		filesFromInterfaces := make([]entity.Attachment, 0)
@@ -467,16 +494,19 @@ func ValidateFiles(file interface{}) ([]entity.Attachment, error) {
 			if !ok {
 				continue
 			}
-			fileID, err := lookForFileIdInObject(object)
+
+			fileID, err := lookForFileIDInObject(object)
 			if err != nil {
 				continue
 			}
+
 			filesFromInterfaces = append(filesFromInterfaces, entity.Attachment{FileID: fileID})
 		}
 
 		if len(filesFromInterfaces) == 0 {
 			return nil, errors.New("did not find file in array")
 		}
+
 		resFiles = append(resFiles, filesFromInterfaces...)
 	default:
 		return nil, errors.New("did not get an object or an array to look for file")
@@ -485,11 +515,12 @@ func ValidateFiles(file interface{}) ([]entity.Attachment, error) {
 	return resFiles, nil
 }
 
-//nolint:dupl,gocyclo //its not duplicate
-func (gb *GoSignBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
+//nolint:dupl //its not duplicate
+func (gb *GoSignBlock) createState(ctx context.Context, ef *entity.EriusFunc) error {
 	l := logger.GetLogger(ctx)
 
 	var params script.SignParams
+
 	err := json.Unmarshal(ef.Params, &params)
 	if err != nil {
 		return errors.Wrap(err, "can not get sign parameters")
@@ -524,41 +555,50 @@ func (gb *GoSignBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 	}
 
 	if params.Type == script.SignerTypeGroup && params.SignerGroupIDPath != "" {
-		groupId := getVariable(variableStorage, params.SignerGroupIDPath)
-		if groupId == nil {
+		groupID := getVariable(variableStorage, params.SignerGroupIDPath)
+		if groupID == nil {
 			return errors.New("can't find group id in variables")
 		}
-		params.SignerGroupID = fmt.Sprintf("%v", groupId)
+
+		params.SignerGroupID = fmt.Sprintf("%v", groupID)
 	}
 
 	if params.SignatureType == script.SignatureTypeUKEP &&
 		(params.SignatureCarrier == script.SignatureCarrierToken ||
 			params.SignatureCarrier == script.SignatureCarrierAll) {
 		inn := getVariable(variableStorage, params.SigningParamsPaths.INN)
+
 		innString, ok := inn.(string)
 		if !ok {
 			l.Error(errors.New("could not find inn"))
 		}
+
 		gb.State.SigningParams.INN = innString
 
 		snils := getVariable(variableStorage, params.SigningParamsPaths.SNILS)
+
 		snilsString, ok := snils.(string)
 		if !ok {
 			l.Error(errors.New("could not find snils"))
 		}
+
 		gb.State.SigningParams.SNILS = snilsString
 
 		filesForSigningParams := make([]entity.Attachment, 0)
+
 		for _, pathToFiles := range params.SigningParamsPaths.Files {
 			filesInterface := getVariable(variableStorage, pathToFiles)
+
 			files, err := ValidateFiles(filesInterface)
 			if err != nil {
 				l.Error(err)
+
 				continue
 			}
-			filesForSigningParams = append(filesForSigningParams, files...)
 
+			filesForSigningParams = append(filesForSigningParams, files...)
 		}
+
 		gb.State.SigningParams.Files = filesForSigningParams
 	}
 
@@ -572,10 +612,6 @@ func (gb *GoSignBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 	}
 
 	return gb.handleNotifications(ctx)
-}
-
-func (gb *GoSignBlock) checkSLA() bool {
-	return gb.State.CheckSLA != nil && *gb.State.CheckSLA
 }
 
 func (gb *GoSignBlock) Model() script.FunctionModel {
@@ -681,8 +717,9 @@ func (gb *GoSignBlock) loadState(raw json.RawMessage) error {
 }
 
 // nolint:dupl,unparam // another block
-func createGoSignBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext,
-	expectedEvents map[string]struct{}) (*GoSignBlock, bool, error) {
+func createGoSignBlock(ctx context.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext,
+	expectedEvents map[string]struct{},
+) (*GoSignBlock, bool, error) {
 	if ef.ShortTitle == "" {
 		return nil, false, errors.New(ef.Title + " block short title is empty")
 	}
@@ -705,41 +742,60 @@ func createGoSignBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx 
 	}
 
 	if ef.Output != nil {
+		//nolint:gocritic //в этом проекте не принято использовать поинтеры в коллекциях
 		for propertyName, v := range ef.Output.Properties {
 			b.Output[propertyName] = v.Global
 		}
 	}
 
 	reEntry := runCtx.UpdateData == nil
+
 	rawState, ok := runCtx.VarStore.State[name]
+
 	if ok && !reEntry {
 		if err := b.loadState(rawState); err != nil {
 			return nil, false, err
 		}
-	} else {
-		if err := b.createState(ctx, ef); err != nil {
+
+		return b, reEntry, nil
+	}
+
+	if err := b.createState(ctx, ef); err != nil {
+		return nil, false, err
+	}
+
+	b.RunContext.VarStore.AddStep(b.Name)
+
+	b.State.Reentered = reEntry && ok
+
+	_, ok = b.expectedEvents[eventStart]
+	if ok {
+		err := b.makeExpectedEvents(ctx, runCtx, name, ef)
+		if err != nil {
 			return nil, false, err
-		}
-		b.RunContext.VarStore.AddStep(b.Name)
-
-		if reEntry && ok {
-			b.State.Reentered = true
-		}
-
-		if _, ok := b.expectedEvents[eventStart]; ok {
-			status, _, _ := b.GetTaskHumanStatus()
-			event, err := runCtx.MakeNodeStartEvent(ctx, MakeNodeStartEventArgs{
-				NodeName:      name,
-				NodeShortName: ef.ShortTitle,
-				HumanStatus:   status,
-				NodeStatus:    b.GetStatus(),
-			})
-			if err != nil {
-				return nil, false, err
-			}
-			b.happenedEvents = append(b.happenedEvents, event)
 		}
 	}
 
 	return b, reEntry, nil
+}
+
+func (gb *GoSignBlock) makeExpectedEvents(ctx context.Context, runCtx *BlockRunContext, name string, ef *entity.EriusFunc) error {
+	status, _, _ := gb.GetTaskHumanStatus()
+
+	event, err := runCtx.MakeNodeStartEvent(
+		ctx,
+		MakeNodeStartEventArgs{
+			NodeName:      name,
+			NodeShortName: ef.ShortTitle,
+			HumanStatus:   status,
+			NodeStatus:    gb.GetStatus(),
+		},
+	)
+	if err != nil {
+		return err
+	}
+
+	gb.happenedEvents = append(gb.happenedEvents, event)
+
+	return nil
 }

@@ -20,7 +20,6 @@ func (p ParamMetadata) GetProperties() map[string]interface{} {
 }
 
 func TestSimpleTypeHandler(t *testing.T) {
-
 	tests := []struct {
 		Name          string
 		variable      interface{}

@@ -20,12 +20,12 @@ const (
 )
 
 type FormParams struct {
-	SchemaId                  string               `json:"schema_id"`
+	SchemaID                  string               `json:"schema_id"`
 	SLA                       int                  `json:"sla"`
 	CheckSLA                  bool                 `json:"check_sla"`
 	Executor                  string               `json:"executor"`
 	FormExecutorType          FormExecutorType     `json:"form_executor_type"`
-	FormGroupId               string               `json:"form_group_id"`
+	FormGroupID               string               `json:"form_group_id"`
 	FormGroupIDPath           *string              `json:"form_group_id_path,omitempty"`
 	FormsAccessibility        []FormAccessibility  `json:"forms_accessibility"`
 	HideExecutorFromInitiator bool                 `json:"hide_executor_from_initiator"`
@@ -38,7 +38,7 @@ type FormParams struct {
 }
 
 func (a *FormParams) Validate() error {
-	if a.SchemaId == "" || (a.FormExecutorType == FormExecutorTypeUser && a.Executor == "") {
+	if a.SchemaID == "" || (a.FormExecutorType == FormExecutorTypeUser && a.Executor == "") {
 		return errors.New("got no form name, id or executor")
 	}
 
@@ -55,6 +55,7 @@ func (a *FormParams) Validate() error {
 			return fmt.Errorf("invalid reEnterSettings.FormExecutorType")
 		}
 	}
+
 	return nil
 }
 

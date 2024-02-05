@@ -16,24 +16,25 @@ type service struct {
 	HrGate *hrgate.Service
 }
 
-func NewSlaService(hrGate *hrgate.Service) Service {
+func NewSLAService(hrGate *hrgate.Service) Service {
 	return &service{
 		HrGate: hrGate,
 	}
 }
 
-func (s *service) GetSLAInfoPtr(ctx context.Context, dto InfoDto) (*SLAInfo, error) {
+func (s *service) GetSLAInfoPtr(ctx context.Context, dto InfoDTO) (*Info, error) {
 	startWorkHour, endWorkHour, getWorkingHoursErr := dto.WorkType.GetWorkingHours()
 	if getWorkingHoursErr != nil {
 		return nil, getWorkingHoursErr
 	}
+
 	weekends, getWeekendsErr := dto.WorkType.GetWeekends()
 	if getWeekendsErr != nil {
 		return nil, getWeekendsErr
 	}
 
 	if s.HrGate == nil {
-		return &SLAInfo{
+		return &Info{
 			CalendarDays:     &hrgate.CalendarDays{CalendarMap: map[int64]hrgate.CalendarDayType{}},
 			StartWorkHourPtr: &startWorkHour,
 			EndWorkHourPtr:   &endWorkHour,
@@ -46,8 +47,11 @@ func (s *service) GetSLAInfoPtr(ctx context.Context, dto InfoDto) (*SLAInfo, err
 		return nil, getNotUseErr
 	}
 
-	var calendarDays *hrgate.CalendarDays
-	var getCalendarDaysErr error
+	var (
+		calendarDays       *hrgate.CalendarDays
+		getCalendarDaysErr error
+	)
+
 	if !notUseCalendarDays {
 		calendarDays, getCalendarDaysErr = s.HrGate.GetDefaultCalendarDaysForGivenTimeIntervals(ctx,
 			dto.TaskCompletionIntervals,
@@ -61,12 +65,13 @@ func (s *service) GetSLAInfoPtr(ctx context.Context, dto InfoDto) (*SLAInfo, err
 	if getWorkingHoursErr != nil {
 		return nil, getWorkingHoursErr
 	}
+
 	weekends, getWeekendsErr = dto.WorkType.GetWeekends()
 	if getWeekendsErr != nil {
 		return nil, getWeekendsErr
 	}
 
-	return &SLAInfo{
+	return &Info{
 		CalendarDays:     calendarDays,
 		StartWorkHourPtr: &startWorkHour,
 		EndWorkHourPtr:   &endWorkHour,
@@ -74,7 +79,7 @@ func (s *service) GetSLAInfoPtr(ctx context.Context, dto InfoDto) (*SLAInfo, err
 	}, nil
 }
 
-func (s *service) ComputeMaxDate(start time.Time, sla float32, slaInfoPtr *SLAInfo) time.Time {
+func (s *service) ComputeMaxDate(start time.Time, sla float32, slaInfoPtr *Info) time.Time {
 	// SLA in hours
 	// Convert to minutes
 	deadline := start.UTC()
@@ -92,11 +97,14 @@ func (s *service) ComputeMaxDate(start time.Time, sla float32, slaInfoPtr *SLAIn
 			if beforeWorkingHours(deadline, startWorkHour) { // but in case it's now early in the morning...
 				datesDay = deadline
 			}
+
 			deadline = time.Date(datesDay.Year(), datesDay.Month(), datesDay.Day(), startWorkHour, 0, 0, 0, time.UTC)
+
 			continue
 		}
 
 		maxPossibleTime := time.Date(deadline.Year(), deadline.Month(), deadline.Day(), endWorkHour, 0, 0, 0, time.UTC)
+
 		diff := maxPossibleTime.Sub(deadline)
 		if diff < slaDur {
 			deadline = deadline.Add(diff)
@@ -110,23 +118,24 @@ func (s *service) ComputeMaxDate(start time.Time, sla float32, slaInfoPtr *SLAIn
 	return deadline
 }
 
-func (s *service) CheckBreachSLA(start, current time.Time, sla int, slaInfoPtr *SLAInfo) bool {
+func (s *service) CheckBreachSLA(start, current time.Time, sla int, slaInfoPtr *Info) bool {
 	deadline := s.ComputeMaxDate(start, float32(sla), slaInfoPtr)
 
 	return current.UTC().After(deadline)
 }
 
-func (s *service) ComputeMaxDateFormatted(start time.Time, sla int, slaInfoPtr *SLAInfo) string {
+func (s *service) ComputeMaxDateFormatted(start time.Time, sla int, slaInfoPtr *Info) string {
 	return s.ComputeMaxDate(start, float32(sla), slaInfoPtr).Format(ddmmyyFormat)
 }
 
 func (s *service) ComputeMeanTaskCompletionTime(intervals []entity.TaskCompletionInterval, calendarDays hrgate.CalendarDays) (
-	result script.TaskSolveTime) {
-	var taskIntervalsCnt = len(intervals)
+	result script.TaskSolveTime,
+) {
+	taskIntervalsCnt := len(intervals)
 
-	var totalHours = 0
+	totalHours := 0
 	for _, interval := range intervals {
-		totalHours += s.GetWorkHoursBetweenDates(interval.StartedAt, interval.FinishedAt, &SLAInfo{
+		totalHours += s.GetWorkHoursBetweenDates(interval.StartedAt, interval.FinishedAt, &Info{
 			CalendarDays: &calendarDays,
 		})
 	}
@@ -136,7 +145,7 @@ func (s *service) ComputeMeanTaskCompletionTime(intervals []entity.TaskCompletio
 	}
 }
 
-func (s *service) GetWorkHoursBetweenDates(from, to time.Time, slaInfoPtr *SLAInfo) (workHours int) {
+func (s *service) GetWorkHoursBetweenDates(from, to time.Time, slaInfoPtr *Info) (workHours int) {
 	from = from.UTC()
 	to = to.UTC()
 
@@ -171,6 +180,7 @@ func notWorkingHours(t time.Time, calendarDays *hrgate.CalendarDays, startWorkHo
 	if slices.Contains(weekends, t.Weekday()) {
 		return true
 	}
+
 	workDayType := calendarDays.GetDayType(t)
 
 	if workDayType == hrgate.CalendarDayTypeHoliday {
@@ -180,5 +190,6 @@ func notWorkingHours(t time.Time, calendarDays *hrgate.CalendarDays, startWorkHo
 	if beforeWorkingHours(t, startWorkHour) || afterWorkingHours(t, endWorkHour) {
 		return true
 	}
+
 	return false
 }

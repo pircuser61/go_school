@@ -8,11 +8,13 @@ import (
 )
 
 func UniqueStrings(inSlice []string) []string {
-	keys := make(map[string]bool)
+	keys := make(map[string]struct{}, len(inSlice))
 	list := make([]string, 0, len(inSlice))
+
 	for _, entry := range inSlice {
 		if _, value := keys[entry]; !value {
-			keys[entry] = true
+			keys[entry] = struct{}{}
+
 			list = append(list, entry)
 		}
 	}
@@ -34,9 +36,13 @@ func FindMin[arrEl any, K []arrEl](arr K, less func(a, b arrEl) bool) (min arrEl
 	if len(arr) == 0 {
 		return min, fmt.Errorf("length of array is %d", len(arr))
 	}
+
 	sortedSlice := make(K, len(arr))
+
 	copy(sortedSlice, arr)
+
 	slices.SortFunc(sortedSlice, less)
+
 	return sortedSlice[0], nil
 }
 
@@ -46,7 +52,10 @@ func FindMax[arrEl any, K []arrEl](arr K, less func(a, b arrEl) bool) (max arrEl
 	}
 
 	sortedSlice := make(K, len(arr))
+
 	copy(sortedSlice, arr)
+
 	slices.SortFunc(sortedSlice, less)
+
 	return sortedSlice[len(sortedSlice)-1], nil
 }

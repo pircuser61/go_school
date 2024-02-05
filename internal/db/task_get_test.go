@@ -9,6 +9,7 @@ func Test_mergeStates(t *testing.T) {
 	type args struct {
 		in []map[string]map[string]interface{}
 	}
+
 	tests := []struct {
 		name    string
 		args    args
@@ -26,6 +27,7 @@ func Test_mergeStates(t *testing.T) {
 			},
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if gotRes := mergeStates(tt.args.in, []string{"approver_0"}); !reflect.DeepEqual(gotRes, tt.wantRes) {

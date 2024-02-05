@@ -41,8 +41,10 @@ func (db *PGCon) CreateTask(c context.Context, dto *CreateTaskDTO) (*entity.Eriu
 	c, span := trace.StartSpan(c, "pg_create_task")
 	defer span.End()
 
-	var workNumber string
-	var err error
+	var (
+		workNumber string
+		err        error
+	)
 
 	if dto.WorkNumber == "" {
 		workNumber, err = db.insertTask(c, dto)
@@ -50,23 +52,32 @@ func (db *PGCon) CreateTask(c context.Context, dto *CreateTaskDTO) (*entity.Eriu
 			return nil, err
 		}
 	} else {
-		err = db.setTaskChild(c, dto.WorkNumber, dto.TaskID)
-		if err != nil {
-			return nil, err
-		}
-
-		workNumber, err = db.insertTaskWithWorkNumber(c, dto)
-		if err != nil {
-			return nil, err
-		}
-
-		err = db.FinishTaskBlocks(c, dto.TaskID, nil, true)
+		workNumber, err = db.createTaskWithWorkNumber(c, dto)
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	return db.GetTask(c, []string{dto.Author}, []string{dto.Author}, dto.Author, workNumber)
+}
+
+func (db *PGCon) createTaskWithWorkNumber(ctx context.Context, dto *CreateTaskDTO) (string, error) {
+	err := db.setTaskChild(ctx, dto.WorkNumber, dto.TaskID)
+	if err != nil {
+		return "", err
+	}
+
+	workNumber, err := db.insertTaskWithWorkNumber(ctx, dto)
+	if err != nil {
+		return "", err
+	}
+
+	err = db.FinishTaskBlocks(ctx, dto.TaskID, nil, true)
+	if err != nil {
+		return "", err
+	}
+
+	return workNumber, nil
 }
 
 func (db *PGCon) insertTaskWithWorkNumber(c context.Context, dto *CreateTaskDTO) (string, error) {

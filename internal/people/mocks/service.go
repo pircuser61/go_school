@@ -18,10 +18,8 @@ func (_m *RoundTripper) RoundTrip(_a0 *http.Request) (*http.Response, error) {
 	var r0 *http.Response
 	if rf, ok := ret.Get(0).(func(*http.Request) *http.Response); ok {
 		r0 = rf(_a0)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*http.Response)
-		}
+	} else if ret.Get(0) != nil {
+		r0 = ret.Get(0).(*http.Response)
 	}
 
 	var r1 error
@@ -39,12 +37,16 @@ type mockConstructorTestingTNewRoundTripper interface {
 	Cleanup(func())
 }
 
-// NewRoundTripper creates a new instance of RoundTripper. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
+/*
+	NewRoundTripper creates a new instance of RoundTripper.
+
+It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
+*/
 func NewRoundTripper(t mockConstructorTestingTNewRoundTripper) *RoundTripper {
-	mock := &RoundTripper{}
-	mock.Mock.Test(t)
+	mck := &RoundTripper{}
+	mck.Mock.Test(t)
 
-	t.Cleanup(func() { mock.AssertExpectations(t) })
+	t.Cleanup(func() { mck.AssertExpectations(t) })
 
-	return mock
+	return mck
 }
