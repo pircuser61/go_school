@@ -6,10 +6,8 @@ import (
 	"strconv"
 
 	om "github.com/iancoleman/orderedmap"
-
-	"gitlab.services.mts.ru/abp/myosotis/logger"
-
 	e "gitlab.services.mts.ru/abp/mail/pkg/email"
+	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	fileregistry "gitlab.services.mts.ru/jocasta/pipeliner/internal/fileregistry"
@@ -208,6 +206,7 @@ func (runCtx *BlockRunContext) makeNotificationAttachment() ([]fileregistry.File
 	return ta, nil
 }
 
+//nolint:gocognit // данный нейминг хорошо описывает механику метода
 func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) ([]om.OrderedMap, []e.Attachment, error) {
 	taskContext, err := runCtx.Services.Storage.GetTaskRunContext(c.Background(), runCtx.WorkNumber)
 	if err != nil {
@@ -215,6 +214,16 @@ func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) ([]o
 	}
 
 	apBody := flatArray(taskContext.InitialApplication.ApplicationBody)
+
+	for k, v := range apBody.Values() {
+		key, ok := taskContext.InitialApplication.Keys[k]
+		if !ok {
+			continue
+		}
+
+		apBody.Delete(k)
+		apBody.Set(key, v)
+	}
 
 	descriptions := make([]om.OrderedMap, 0)
 
@@ -248,14 +257,29 @@ func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) ([]o
 	for _, form := range additionalForms {
 		attachmentFiles := make([]string, 0)
 
-		for _, val := range form.Description.Values() {
-			file, ok := val.(om.OrderedMap)
-			if !ok {
-				continue
+		var formBlock FormData
+		if marshalErr := json.Unmarshal(runCtx.VarStore.State[form.Name], &formBlock); marshalErr != nil {
+			return nil, nil, marshalErr
+		}
+
+		for k, v := range form.Description.Values() {
+			val, ok := formBlock.Keys[k]
+			if ok {
+				form.Description.Delete(k)
+				form.Description.Set(val, v)
 			}
 
-			if fileID, fileOK := file.Get("file_id"); fileOK {
-				attachmentFiles = append(attachmentFiles, fileID.(string))
+			for _, attachVal := range formBlock.AttachmentFields {
+				if attachVal == k {
+					file, attachOk := v.(om.OrderedMap)
+					if !attachOk {
+						continue
+					}
+
+					if fileID, fileOK := file.Get("file_id"); fileOK {
+						attachmentFiles = append(attachmentFiles, fileID.(string))
+					}
+				}
 			}
 		}
 

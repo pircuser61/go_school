@@ -8,10 +8,9 @@ import (
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
 
-	e "gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
-
 	"go.opencensus.io/trace"
+
+	e "gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 )
 
 func (db *PGCon) copyProcessSettingsFromOldVersion(c context.Context, newVersionID, oldVersionID uuid.UUID) error {
@@ -130,7 +129,7 @@ func (db *PGCon) GetVersionSettings(ctx context.Context, versionID string) (e.Pr
 	// nolint:gocritic,lll
 	// language=PostgreSQL
 	const query = `
-	SELECT start_schema, end_schema, resubmission_period,
+	SELECT start_schema, end_schema, resubmission_period, raw_start_schema,
 	    (select p.name from pipelines p where p.id = 
 	       (select pipeline_id from versions v where v.id = 
 	       	(select version_id from version_settings vs where vs.id = version_settings.id)
@@ -143,7 +142,7 @@ func (db *PGCon) GetVersionSettings(ctx context.Context, versionID string) (e.Pr
 
 	ps := e.ProcessSettings{ID: versionID}
 
-	err := row.Scan(&ps.StartSchema, &ps.EndSchema, &ps.ResubmissionPeriod, &ps.Name)
+	err := row.Scan(&ps.StartSchema, &ps.EndSchema, &ps.ResubmissionPeriod, &ps.StartSchemaRaw, &ps.Name)
 	if err != nil && err != pgx.ErrNoRows {
 		return ps, err
 	}
@@ -165,44 +164,53 @@ func (db *PGCon) SaveVersionSettings(ctx context.Context, settings e.ProcessSett
 		// nolint:gocritic
 		// language=PostgreSQL
 		query := `
-		INSERT INTO version_settings (id, version_id, start_schema, end_schema) 
-		VALUES ($1, $2, $3, $4)
+		INSERT INTO version_settings (id, version_id, start_schema, end_schema, raw_start_schema) 
+		VALUES ($1, $2, $3, $4, $5)
 		ON CONFLICT (version_id) DO UPDATE 
 			SET start_schema = excluded.start_schema, 
-				end_schema = excluded.end_schema`
-
+				end_schema = excluded.end_schema,
+				raw_start_schema = excluded.raw_start_schema`
 		commandTag, err = db.Connection.Exec(ctx,
 			query,
 			uuid.New(),
 			settings.ID,
 			settings.StartSchema,
 			settings.EndSchema,
+			settings.StartSchemaRaw,
 		)
+
 		if err != nil {
 			return err
 		}
 	} else {
-		var jsonSchema *script.JSONSchema
-
 		switch *schemaFlag {
 		case startSchema:
-			jsonSchema = settings.StartSchema
-		case endSchema:
-			jsonSchema = settings.EndSchema
-		default:
-			return errUnkonwnSchemaFlag
-		}
+			// nolint:gocritic
+			// language=PostgreSQL
+			query := `INSERT INTO version_settings (id,version_id,start_schema, raw_start_schema) 
+			VALUES ($1, $2, $3, $4)
+			ON CONFLICT (version_id) DO UPDATE 
+				SET start_schema = excluded.start_schema,
+			    raw_start_schema = excluded.raw_start_schema`
 
-		// nolint:gocritic
-		// language=PostgreSQL
-		query := fmt.Sprintf(`INSERT INTO version_settings (id, version_id, %[1]s) 
+			commandTag, err = db.Connection.Exec(ctx, query, uuid.New(), settings.ID, settings.StartSchema, settings.StartSchemaRaw)
+			if err != nil {
+				return err
+			}
+		case endSchema:
+			// nolint:gocritic
+			// language=PostgreSQL
+			query := `INSERT INTO version_settings (id, version_id, end_schema) 
 			VALUES ($1, $2, $3)
 			ON CONFLICT (version_id) DO UPDATE 
-				SET %[1]s = excluded.%[1]s`, *schemaFlag)
+				SET end_schema = excluded.end_schema`
 
-		commandTag, err = db.Connection.Exec(ctx, query, uuid.New(), settings.ID, jsonSchema)
-		if err != nil {
-			return err
+			commandTag, err = db.Connection.Exec(ctx, query, uuid.New(), settings.ID, settings.EndSchema)
+			if err != nil {
+				return err
+			}
+		default:
+			return errUnkonwnSchemaFlag
 		}
 	}
 
