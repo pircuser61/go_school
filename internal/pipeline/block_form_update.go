@@ -365,7 +365,7 @@ func (gb *GoFormBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork strin
 		return convertErr
 	}
 
-	initiator, err := gb.RunContext.Services.People.GetUser(ctx, loginTakenInWork)
+	initiator, err := gb.RunContext.Services.People.GetUser(ctx, gb.RunContext.Initiator)
 	if err != nil {
 		return getUserErr
 	}
@@ -401,7 +401,7 @@ func (gb *GoFormBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork strin
 			Mailto:      gb.RunContext.Services.Sender.FetchEmail,
 		})
 
-	iconsName := []string{tpl.Image, downloadImg, userImg}
+	iconsName := []string{tpl.Image, userImg}
 	iconFiles, iconErr := gb.RunContext.GetIcons(iconsName)
 	if iconErr != nil {
 		return err

@@ -796,16 +796,6 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 		return err
 	}
 
-	initiator, err := gb.RunContext.Services.People.GetUser(ctx, gb.RunContext.Initiator)
-	if err != nil {
-		return err
-	}
-
-	initiatorInfo, err := initiator.ToUserinfo()
-	if err != nil {
-		return err
-	}
-
 	task, getVersionErr := gb.RunContext.Services.Storage.GetVersionByWorkNumber(ctx, gb.RunContext.WorkNumber)
 	if getVersionErr != nil {
 		return getVersionErr
@@ -844,6 +834,16 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 		}
 	}
 
+	initiator, err := gb.RunContext.Services.People.GetUser(ctx, gb.RunContext.Initiator)
+	if err != nil {
+		return err
+	}
+
+	initiatorInfo, err := initiator.ToUserinfo()
+	if err != nil {
+		return err
+	}
+
 	tpl := mail.NewExecutionTakenInWorkTpl(&mail.ExecutorNotifTemplate{
 		WorkNumber:  gb.RunContext.WorkNumber,
 		Name:        gb.RunContext.NotifName,
@@ -877,9 +877,9 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 	if err != nil {
 		return err
 	}
-	files = append(files, iconFiles...)
+	iconFiles = append(iconFiles, files...)
 
-	if errSend := gb.RunContext.Services.Sender.SendNotification(ctx, emails, files, tpl); errSend != nil {
+	if errSend := gb.RunContext.Services.Sender.SendNotification(ctx, emails, iconFiles, tpl); errSend != nil {
 		return errSend
 	}
 
@@ -929,14 +929,14 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 			LastWorks:                 lastWorksForUser,
 		})
 
-	iconsName = []string{tpl.Image, userImg}
+	iconsNameNotif := []string{tpl.Image, userImg}
 
 	for _, v := range buttons {
-		iconsName = append(iconsName, v.Img)
+		iconsNameNotif = append(iconsNameNotif, v.Img)
 	}
 
 	if len(lastWorksForUser) != 0 {
-		iconsName = append(iconsName, warningImg)
+		iconsNameNotif = append(iconsNameNotif, warningImg)
 	}
 
 	for _, v := range description {
@@ -944,13 +944,13 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 		if link {
 			attachFiles, ok := links.([]file_registry.AttachInfo)
 			if ok && len(attachFiles) != 0 {
-				iconsName = append(iconsName, downloadImg)
+				iconsNameNotif = append(iconsNameNotif, downloadImg)
 				break
 			}
 		}
 	}
 
-	attachFiles, err := gb.RunContext.GetIcons(iconsName)
+	attachFiles, err := gb.RunContext.GetIcons(iconsNameNotif)
 	if err != nil {
 		return err
 	}
