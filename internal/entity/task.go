@@ -56,7 +56,7 @@ type CountTasks struct {
 }
 
 type TaskAction struct {
-	Id                 string                 `json:"id"`
+	ID                 string                 `json:"id"`
 	Title              string                 `json:"title"`
 	ButtonType         string                 `json:"button_type"`
 	NodeType           string                 `json:"node_type"`
@@ -198,6 +198,7 @@ const (
 )
 
 var (
+	//nolint:gochecknoglobals //система проектировалась без этого линтера поэтому gg
 	checkTaskUpdateMap = map[TaskUpdateAction]struct{}{
 		TaskUpdateActionApprovement:           {},
 		TaskUpdateActionAdditionalApprovement: {},
@@ -218,9 +219,7 @@ var (
 		TaskUpdateActionReplyExecutionInfo:    {},
 		TaskUpdateActionReplyApproverInfo:     {},
 	}
-)
-
-var (
+	// nolint:gochecknoglobals //система проектировалась без этого линтера поэтому gg
 	checkTaskUpdateAppMap = map[TaskUpdateAction]struct{}{
 		TaskUpdateActionCancelApp: {},
 	}
@@ -245,10 +244,9 @@ func (t *TaskUpdate) Validate() error {
 }
 
 func (t *TaskUpdate) IsApplicationAction() bool {
-	if _, ok := checkTaskUpdateAppMap[t.Action]; ok {
-		return true
-	}
-	return false
+	_, ok := checkTaskUpdateAppMap[t.Action]
+
+	return ok
 }
 
 type NeededNotif struct {
@@ -291,15 +289,20 @@ func (at *Attachment) UnmarshalJSON(b []byte) error {
 		if errStr := json.Unmarshal(b, &stTemp); errStr != nil {
 			return err
 		}
+
 		_, errParse := uuid.Parse(stTemp)
 		if errParse != nil {
 			return errParse
 		}
+
 		at.FileID = stTemp
+
 		return nil
 	}
+
 	at.FileID = atTemp.FileID
 	at.ExternalLink = atTemp.ExternalLink
+
 	return nil
 }
 
@@ -315,19 +318,24 @@ type NodeEvent struct {
 	NodeOutput    map[string]interface{} `json:"node_output"`
 }
 
-func (ne NodeEvent) ToMap() map[string]interface{} {
+func (ne *NodeEvent) ToMap() map[string]interface{} {
 	if ne.NodeOutput == nil {
 		ne.NodeOutput = make(map[string]interface{})
 	}
+
 	res := make(map[string]interface{})
+
 	for i := 0; i < reflect.TypeOf(ne).NumField(); i++ {
 		f := reflect.TypeOf(ne).Field(i)
 		k := f.Tag.Get("json")
+
 		if k == "" {
 			continue
 		}
+
 		val := reflect.ValueOf(ne).Field(i).Interface()
 		res[k] = val
 	}
+
 	return res
 }

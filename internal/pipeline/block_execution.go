@@ -53,21 +53,24 @@ func (gb *GoExecutionBlock) GetNewEvents() []entity.NodeEvent {
 }
 
 func (gb *GoExecutionBlock) getDeadline(ctx context.Context, workType string) (time.Time, error) {
-	slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
-		TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.CurrBlockStartTime,
-			FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100)}},
+	slaInfoPtr, getSLAInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDTO{
+		TaskCompletionIntervals: []entity.TaskCompletionInterval{{
+			StartedAt:  gb.RunContext.CurrBlockStartTime,
+			FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100),
+		}},
 		WorkType: sla.WorkHourType(workType),
 	})
-	if getSlaInfoErr != nil {
-		return time.Time{}, errors.Wrap(getSlaInfoErr, "can not get slaInfo")
+	if getSLAInfoErr != nil {
+		return time.Time{}, errors.Wrap(getSLAInfoErr, "can not get slaInfo")
 	}
 
 	return gb.getNewSLADeadline(slaInfoPtr, false), nil
 }
 
 func (gb *GoExecutionBlock) Members() []Member {
-	members := []Member{}
-	addedMembers := make(map[string]struct{}, 0)
+	members := make([]Member, 0, len(gb.State.Executors))
+	addedMembers := make(map[string]struct{}, len(gb.State.Executors))
+
 	for login := range gb.State.Executors {
 		members = append(members, Member{
 			Login:                login,
@@ -75,19 +78,23 @@ func (gb *GoExecutionBlock) Members() []Member {
 			IsActed:              gb.isExecutionActed(login),
 			ExecutionGroupMember: gb.isPartOfExecutionGroup(login),
 		})
+
 		addedMembers[login] = struct{}{}
 	}
+
 	for i := 0; i < len(gb.State.EditingAppLog); i++ {
 		log := gb.State.EditingAppLog[i]
 		if _, ok := addedMembers[log.Executor]; !ok {
 			continue
 		}
+
 		members = append(members, Member{
 			Login:                log.Executor,
 			Actions:              []MemberAction{},
 			IsActed:              true,
 			ExecutionGroupMember: gb.isPartOfExecutionGroup(log.Executor),
 		})
+
 		addedMembers[log.Executor] = struct{}{}
 	}
 
@@ -96,6 +103,7 @@ func (gb *GoExecutionBlock) Members() []Member {
 		if _, ok := addedMembers[log.Login]; !ok {
 			continue
 		}
+
 		if log.ReqType == RequestInfoQuestion {
 			members = append(members, Member{
 				Login:                log.Login,
@@ -103,6 +111,7 @@ func (gb *GoExecutionBlock) Members() []Member {
 				IsActed:              true,
 				ExecutionGroupMember: gb.isPartOfExecutionGroup(log.Login),
 			})
+
 			addedMembers[log.Login] = struct{}{}
 		}
 	}
@@ -115,7 +124,7 @@ func (gb *GoExecutionBlock) Members() []Member {
 			Login: gb.RunContext.Initiator,
 			Actions: []MemberAction{
 				{
-					Id:     string(entity.TaskUpdateActionReplyExecutionInfo),
+					ID:     string(entity.TaskUpdateActionReplyExecutionInfo),
 					Type:   ActionTypeCustom,
 					Params: map[string]interface{}{},
 				},
@@ -123,19 +132,22 @@ func (gb *GoExecutionBlock) Members() []Member {
 			IsActed:              false,
 			ExecutionGroupMember: false,
 			IsInitiator:          true,
-		})
+		},
+		)
 	}
 
 	for i := range gb.State.ChangedExecutorsLogs {
 		if _, ok := addedMembers[gb.State.ChangedExecutorsLogs[i].OldLogin]; !ok {
 			continue
 		}
+
 		members = append(members, Member{
 			Login:                gb.State.ChangedExecutorsLogs[i].OldLogin,
 			Actions:              []MemberAction{},
 			IsActed:              true,
 			ExecutionGroupMember: gb.isPartOfExecutionGroup(gb.State.ChangedExecutorsLogs[i].OldLogin),
 		})
+
 		addedMembers[gb.State.ChangedExecutorsLogs[i].OldLogin] = struct{}{}
 	}
 
@@ -147,6 +159,7 @@ func (gb *GoExecutionBlock) Members() []Member {
 				IsActed:              true,
 				ExecutionGroupMember: gb.isPartOfExecutionGroup(*gb.State.ActualExecutor),
 			})
+
 			addedMembers[*gb.State.ActualExecutor] = struct{}{}
 		}
 	}
@@ -155,6 +168,7 @@ func (gb *GoExecutionBlock) Members() []Member {
 		if _, ok := addedMembers[key]; ok {
 			continue
 		}
+
 		members = append(members, Member{
 			Login:                key,
 			Actions:              []MemberAction{},
@@ -163,11 +177,11 @@ func (gb *GoExecutionBlock) Members() []Member {
 		})
 		addedMembers[key] = struct{}{}
 	}
+
 	return members
 }
 
 func (gb *GoExecutionBlock) isExecutionActed(login string) bool {
-
 	if (gb.State.ActualExecutor != nil && *gb.State.ActualExecutor == login) && gb.State.Decision != nil {
 		return true
 	}
@@ -178,6 +192,7 @@ func (gb *GoExecutionBlock) isExecutionActed(login string) bool {
 			return true
 		}
 	}
+
 	for i := 0; i < len(gb.State.ChangedExecutorsLogs); i++ {
 		log := gb.State.ChangedExecutorsLogs[i]
 		if log.OldLogin == login {
@@ -191,13 +206,12 @@ func (gb *GoExecutionBlock) isExecutionActed(login string) bool {
 			return true
 		}
 	}
-	if gb.State.IsTakenInWork {
-		return true
-	}
-	return false
+
+	return gb.State.IsTakenInWork
 }
 
 func (gb *GoExecutionBlock) isPartOfExecutionGroup(login string) bool {
+	// nolint:exhaustive //не хотим обрабатывать остальные случаи
 	switch gb.State.ExecutionType {
 	case script.ExecutionTypeGroup:
 		if _, ok := gb.State.InitialExecutors[login]; ok {
@@ -212,6 +226,7 @@ func (gb *GoExecutionBlock) isPartOfExecutionGroup(login string) bool {
 	default:
 		return false
 	}
+
 	return false
 }
 
@@ -222,48 +237,49 @@ func (gb *GoExecutionBlock) executionActions() []MemberAction {
 
 	if !gb.State.IsTakenInWork {
 		action := MemberAction{
-			Id:   executionStartWorkAction,
+			ID:   executionStartWorkAction,
 			Type: ActionTypePrimary,
 		}
+
 		return []MemberAction{action}
 	}
 
 	actions := []MemberAction{
 		{
-			Id:   executionExecuteAction,
+			ID:   executionExecuteAction,
 			Type: ActionTypePrimary,
 		},
 		{
-			Id:   executionDeclineAction,
+			ID:   executionDeclineAction,
 			Type: ActionTypeSecondary,
 		},
 		{
-			Id:   executionChangeExecutorAction,
+			ID:   executionChangeExecutorAction,
 			Type: ActionTypeOther,
 		},
 		{
-			Id:   executionRequestExecutionInfoAction,
+			ID:   executionRequestExecutionInfoAction,
 			Type: ActionTypeOther,
 		},
 	}
 	if gb.State.IsEditable {
 		actions = append(actions, MemberAction{
-			Id:   executionSendEditAppAction,
+			ID:   executionSendEditAppAction,
 			Type: ActionTypeOther,
 		})
 	}
 
 	for _, v := range gb.State.FormsAccessibility {
-		if _, ok := gb.RunContext.VarStore.State[v.NodeId]; !ok {
+		if _, ok := gb.RunContext.VarStore.State[v.NodeID]; !ok {
 			continue
 		}
 
-		if v.AccessType == "ReadWrite" {
+		if v.AccessType == readWriteAccessType {
 			memAction := MemberAction{
-				Id:   formFillFormAction,
+				ID:   formFillFormAction,
 				Type: ActionTypeCustom,
 				Params: map[string]interface{}{
-					formName: v.NodeId,
+					formName: v.NodeID,
 				},
 			}
 			actions = append(actions, memAction)
@@ -273,11 +289,12 @@ func (gb *GoExecutionBlock) executionActions() []MemberAction {
 	return actions
 }
 
-func (gb *GoExecutionBlock) getNewSLADeadline(slaInfoPtr *sla.SLAInfo, half bool) time.Time {
+func (gb *GoExecutionBlock) getNewSLADeadline(slaInfoPtr *sla.Info, half bool) time.Time {
 	newSLA := gb.State.SLA
 	if half {
 		newSLA /= 2
 	}
+
 	deadline := gb.RunContext.Services.SLAService.ComputeMaxDate(gb.RunContext.CurrBlockStartTime, float32(newSLA), slaInfoPtr)
 
 	var qTime time.Time
@@ -286,8 +303,10 @@ func (gb *GoExecutionBlock) getNewSLADeadline(slaInfoPtr *sla.SLAInfo, half bool
 		if item.CreatedAt.Before(gb.RunContext.CurrBlockStartTime) {
 			continue
 		}
+
 		if qTime.IsZero() {
 			qTime = item.CreatedAt
+
 			continue
 		}
 	}
@@ -295,6 +314,7 @@ func (gb *GoExecutionBlock) getNewSLADeadline(slaInfoPtr *sla.SLAInfo, half bool
 	for _, item := range gb.State.RequestExecutionInfoLogs {
 		if qTime.IsZero() {
 			qTime = item.CreatedAt
+
 			continue
 		}
 
@@ -302,10 +322,11 @@ func (gb *GoExecutionBlock) getNewSLADeadline(slaInfoPtr *sla.SLAInfo, half bool
 		deadline = gb.RunContext.Services.SLAService.ComputeMaxDate(deadline, float32(additionalHours), nil)
 		qTime = time.Time{}
 	}
+
 	return deadline
 }
 
-//nolint:dupl,gocyclo //Need here
+//nolint:dupl //Need here
 func (gb *GoExecutionBlock) Deadlines(ctx context.Context) ([]Deadline, error) {
 	deadlines := make([]Deadline, 0, 2)
 
@@ -330,30 +351,34 @@ func (gb *GoExecutionBlock) Deadlines(ctx context.Context) ([]Deadline, error) {
 	}
 
 	if gb.State.CheckSLA && (latestInfoRequest == nil || latestInfoRequest.ReqType == RequestInfoAnswer) {
-		slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
-			TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.CurrBlockStartTime,
-				FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100)}},
+		slaInfoPtr, getSLAInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDTO{
+			TaskCompletionIntervals: []entity.TaskCompletionInterval{{
+				StartedAt:  gb.RunContext.CurrBlockStartTime,
+				FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100),
+			}},
 			WorkType: sla.WorkHourType(gb.State.WorkType),
 		})
 
-		if getSlaInfoErr != nil {
-			return nil, getSlaInfoErr
+		if getSLAInfoErr != nil {
+			return nil, getSLAInfoErr
 		}
 
 		gb.State.Deadline = gb.getNewSLADeadline(slaInfoPtr, false)
 
 		if !gb.State.SLAChecked {
 			deadlines = append(deadlines,
-				Deadline{Deadline: gb.getNewSLADeadline(slaInfoPtr, false),
-					Action: entity.TaskUpdateActionSLABreach,
+				Deadline{
+					Deadline: gb.getNewSLADeadline(slaInfoPtr, false),
+					Action:   entity.TaskUpdateActionSLABreach,
 				},
 			)
 		}
 
 		if !gb.State.HalfSLAChecked {
 			deadlines = append(deadlines,
-				Deadline{Deadline: gb.getNewSLADeadline(slaInfoPtr, true),
-					Action: entity.TaskUpdateActionHalfSLABreach,
+				Deadline{
+					Deadline: gb.getNewSLADeadline(slaInfoPtr, true),
+					Action:   entity.TaskUpdateActionHalfSLABreach,
 				},
 			)
 		}
@@ -361,8 +386,9 @@ func (gb *GoExecutionBlock) Deadlines(ctx context.Context) ([]Deadline, error) {
 
 	if gb.State.IsEditable && gb.State.CheckReworkSLA && gb.State.EditingApp != nil {
 		deadlines = append(deadlines,
-			Deadline{Deadline: gb.RunContext.Services.SLAService.ComputeMaxDate(
-				gb.State.EditingApp.CreatedAt, float32(gb.State.ReworkSLA), nil),
+			Deadline{
+				Deadline: gb.RunContext.Services.SLAService.ComputeMaxDate(
+					gb.State.EditingApp.CreatedAt, float32(gb.State.ReworkSLA), nil),
 				Action: entity.TaskUpdateActionReworkSLABreach,
 			},
 		)
@@ -392,7 +418,7 @@ func (gb *GoExecutionBlock) UpdateManual() bool {
 }
 
 // nolint:dupl // another block
-func (gb *GoExecutionBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment string, action string) {
+func (gb *GoExecutionBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment, action string) {
 	if gb.State != nil && gb.State.Decision != nil {
 		switch *gb.State.Decision {
 		case ExecutionDecisionExecuted:
@@ -463,6 +489,7 @@ func (gb *GoExecutionBlock) Next(_ *store.VariableStore) ([]string, bool) {
 	if !ok {
 		return nil, false
 	}
+
 	return nexts, true
 }
 

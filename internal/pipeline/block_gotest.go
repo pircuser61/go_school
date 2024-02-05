@@ -44,7 +44,7 @@ func (gb *GoTestBlock) GetStatus() Status {
 	return StatusFinished
 }
 
-func (gb *GoTestBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment string, action string) {
+func (gb *GoTestBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment, action string) {
 	return "", "", ""
 }
 
@@ -64,8 +64,7 @@ func (gb *GoTestBlock) IsScenario() bool {
 	return false
 }
 
-type stepCtx struct {
-}
+type stepCtx struct{}
 
 // nolint:dupl // not dupl?
 func (gb *GoTestBlock) DebugRun(ctx context.Context, _ *stepCtx, runCtx *store.VariableStore) error {
@@ -98,6 +97,7 @@ func (gb *GoTestBlock) Next(_ *store.VariableStore) ([]string, bool) {
 	if !ok {
 		return nil, false
 	}
+
 	return nexts, true
 }
 
@@ -112,6 +112,7 @@ func (gb *GoTestBlock) GetState() interface{} {
 func (gb *GoTestBlock) Update(ctx context.Context) (interface{}, error) {
 	if _, ok := gb.expectedEvents[eventEnd]; ok {
 		status, _, _ := gb.GetTaskHumanStatus()
+
 		event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, MakeNodeEndEventArgs{
 			NodeName:      gb.Name,
 			NodeShortName: gb.ShortName,
@@ -121,14 +122,21 @@ func (gb *GoTestBlock) Update(ctx context.Context) (interface{}, error) {
 		if eventErr != nil {
 			return nil, eventErr
 		}
+
 		gb.happenedEvents = append(gb.happenedEvents, event)
 	}
+
 	return nil, nil
 }
 
-//nolint:unparam // its ok
-func createGoTestBlock(ctx context.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext,
-	expectedEvents map[string]struct{}) (b *GoTestBlock, reEntry bool, err error) {
+//nolint:unparam // reEntry всегда false, но так надо
+func createGoTestBlock(
+	ctx context.Context,
+	name string,
+	ef *entity.EriusFunc,
+	runCtx *BlockRunContext,
+	expectedEvents map[string]struct{},
+) (b *GoTestBlock, reEntry bool, err error) {
 	b = &GoTestBlock{
 		Name:       name,
 		ShortName:  ef.ShortTitle,
@@ -147,6 +155,7 @@ func createGoTestBlock(ctx context.Context, name string, ef *entity.EriusFunc, r
 	}
 
 	if ef.Output != nil {
+		//nolint:gocritic //в этом проекте не принято использовать поинтеры в коллекциях
 		for propertyName, v := range ef.Output.Properties {
 			b.Output[propertyName] = v.Global
 		}
@@ -154,6 +163,7 @@ func createGoTestBlock(ctx context.Context, name string, ef *entity.EriusFunc, r
 
 	if _, ok := b.expectedEvents[eventStart]; ok {
 		status, _, _ := b.GetTaskHumanStatus()
+
 		event, err := runCtx.MakeNodeStartEvent(ctx, MakeNodeStartEventArgs{
 			NodeName:      name,
 			NodeShortName: ef.ShortTitle,
@@ -163,6 +173,7 @@ func createGoTestBlock(ctx context.Context, name string, ef *entity.EriusFunc, r
 		if err != nil {
 			return nil, false, err
 		}
+
 		b.happenedEvents = append(b.happenedEvents, event)
 	}
 

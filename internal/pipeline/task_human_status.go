@@ -26,6 +26,7 @@ const (
 	StatusProcessingError     TaskHumanStatus = "error"
 )
 
+//nolint:gochecknoglobals // тут слишком много завязано на глобальных переменных
 var statusToTaskState = map[TaskHumanStatus]string{
 	StatusNew:                 "успешно создана",
 	StatusApproved:            "согласована",
@@ -44,6 +45,7 @@ var statusToTaskState = map[TaskHumanStatus]string{
 	StatusProcessingError:     "обработана с ошибкой",
 }
 
+//nolint:gochecknoglobals // тут слишком много завязано на глобальных переменных
 var statusToTaskAction = map[TaskHumanStatus]string{
 	StatusApprovement: "согласования",
 	StatusExecution:   "исполнения",

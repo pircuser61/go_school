@@ -20,7 +20,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
-	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
+	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	peopleMocks "gitlab.services.mts.ru/jocasta/pipeliner/internal/people/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
@@ -57,22 +57,25 @@ func TestSignData_SetDecision(t *testing.T) {
 		invalidLogin = "foobar"
 	)
 
-	type fields struct {
-		Signers          map[string]struct{}
-		Decision         SignDecision
-		ActualSigner     string
-		SigningRule      script.SigningRule
-		SignLog          []SignLogEntry
-		SignatureType    script.SignatureType
-		SignatureCarrier script.SignatureCarrier
-	}
-	type args struct {
-		login       string
-		decision    SignDecision
-		comment     string
-		attachments []entity.Attachment
-		signatures  []fileSignature
-	}
+	type (
+		fields struct {
+			Signers          map[string]struct{}
+			Decision         SignDecision
+			ActualSigner     string
+			SigningRule      script.SigningRule
+			SignLog          []SignLogEntry
+			SignatureType    script.SignatureType
+			SignatureCarrier script.SignatureCarrier
+		}
+		args struct {
+			login       string
+			decision    SignDecision
+			comment     string
+			attachments []entity.Attachment
+			signatures  []fileSignature
+		}
+	)
+
 	tests := []struct {
 		name             string
 		fields           fields
@@ -340,6 +343,7 @@ func TestSignData_SetDecision(t *testing.T) {
 			expectedDecision: SignDecisionSigned,
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			a := &SignData{
@@ -384,6 +388,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 		title      = "title"
 		shortTitle = "Нода Подписания"
 	)
+
 	varStore := store.NewStore()
 
 	varStore.SetValue("form_0.user", map[string]interface{}{
@@ -397,12 +402,12 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 
 	next := []entity.Socket{
 		{
-			Id:           DefaultSocketID,
+			ID:           DefaultSocketID,
 			Title:        script.DefaultSocketTitle,
 			NextBlockIds: []string{"next_0"},
 		},
 		{
-			Id:           rejectedSocketID,
+			ID:           rejectedSocketID,
 			Title:        script.RejectSocketTitle,
 			NextBlockIds: []string{"next_1"},
 		},
@@ -477,6 +482,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 						s.State = map[string]json.RawMessage{
 							example: r,
 						}
+
 						return s
 					}(),
 				},
@@ -509,6 +515,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -521,13 +528,13 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 				Output:    map[string]string{"foo": "bar"},
 				Sockets: []script.Socket{
 					{
-						Id:           "default",
+						ID:           "default",
 						Title:        "Выход по умолчанию",
 						NextBlockIds: []string{"next_0"},
 						ActionType:   "",
 					},
 					{
-						Id:           "rejected",
+						ID:           "rejected",
 						Title:        "Отклонить",
 						NextBlockIds: []string{"next_1"},
 						ActionType:   "",
@@ -587,6 +594,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 						s.State = map[string]json.RawMessage{
 							example: r,
 						}
+
 						return s
 					}(),
 				},
@@ -619,6 +627,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -631,13 +640,13 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 				Output:    map[string]string{"foo": "bar"},
 				Sockets: []script.Socket{
 					{
-						Id:           "default",
+						ID:           "default",
 						Title:        "Выход по умолчанию",
 						NextBlockIds: []string{"next_0"},
 						ActionType:   "",
 					},
 					{
-						Id:           "rejected",
+						ID:           "rejected",
 						Title:        "Отклонить",
 						NextBlockIds: []string{"next_1"},
 						ActionType:   "",
@@ -703,6 +712,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 						s.State = map[string]json.RawMessage{
 							example: r,
 						}
+
 						return s
 					}(),
 				},
@@ -740,6 +750,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -752,13 +763,13 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 				Output:    map[string]string{"foo": "bar"},
 				Sockets: []script.Socket{
 					{
-						Id:           "default",
+						ID:           "default",
 						Title:        "Выход по умолчанию",
 						NextBlockIds: []string{"next_0"},
 						ActionType:   "",
 					},
 					{
-						Id:           "rejected",
+						ID:           "rejected",
 						Title:        "Отклонить",
 						NextBlockIds: []string{"next_1"},
 						ActionType:   "",
@@ -839,6 +850,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 						s.State = map[string]json.RawMessage{
 							example: r,
 						}
+
 						return s
 					}(),
 				},
@@ -871,6 +883,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -883,13 +896,13 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 				Output:    map[string]string{"foo": "bar"},
 				Sockets: []script.Socket{
 					{
-						Id:           "default",
+						ID:           "default",
 						Title:        "Выход по умолчанию",
 						NextBlockIds: []string{"next_0"},
 						ActionType:   "",
 					},
 					{
-						Id:           "rejected",
+						ID:           "rejected",
 						Title:        "Отклонить",
 						NextBlockIds: []string{"next_1"},
 						ActionType:   "",
@@ -949,6 +962,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 						s.State = map[string]json.RawMessage{
 							example: r,
 						}
+
 						return s
 					}(),
 				},
@@ -981,6 +995,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -993,13 +1008,13 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 				Output:    map[string]string{"foo": "bar"},
 				Sockets: []script.Socket{
 					{
-						Id:           "default",
+						ID:           "default",
 						Title:        "Выход по умолчанию",
 						NextBlockIds: []string{"next_0"},
 						ActionType:   "",
 					},
 					{
-						Id:           "rejected",
+						ID:           "rejected",
 						Title:        "Отклонить",
 						NextBlockIds: []string{"next_1"},
 						ActionType:   "",
@@ -1065,6 +1080,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 						s.State = map[string]json.RawMessage{
 							example: r,
 						}
+
 						return s
 					}(),
 				},
@@ -1102,6 +1118,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -1114,13 +1131,13 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 				Output:    map[string]string{"foo": "bar"},
 				Sockets: []script.Socket{
 					{
-						Id:           "default",
+						ID:           "default",
 						Title:        "Выход по умолчанию",
 						NextBlockIds: []string{"next_0"},
 						ActionType:   "",
 					},
 					{
-						Id:           "rejected",
+						ID:           "rejected",
 						Title:        "Отклонить",
 						NextBlockIds: []string{"next_1"},
 						ActionType:   "",
@@ -1201,6 +1218,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 						s.State = map[string]json.RawMessage{
 							example: r,
 						}
+
 						return s
 					}(),
 				},
@@ -1233,6 +1251,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -1257,6 +1276,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 						s.State = map[string]json.RawMessage{
 							example: r,
 						}
+
 						return s
 					}(),
 				},
@@ -1289,6 +1309,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -1313,6 +1334,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 						s.State = map[string]json.RawMessage{
 							example: r,
 						}
+
 						return s
 					}(),
 				},
@@ -1345,6 +1367,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -1369,6 +1392,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 						s.State = map[string]json.RawMessage{
 							example: r,
 						}
+
 						return s
 					}(),
 				},
@@ -1401,6 +1425,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -1413,13 +1438,13 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 				Output:    map[string]string{"foo": "bar"},
 				Sockets: []script.Socket{
 					{
-						Id:           "default",
+						ID:           "default",
 						Title:        "Выход по умолчанию",
 						NextBlockIds: []string{"next_0"},
 						ActionType:   "",
 					},
 					{
-						Id:           "rejected",
+						ID:           "rejected",
 						Title:        "Отклонить",
 						NextBlockIds: []string{"next_1"},
 						ActionType:   "",
@@ -1485,6 +1510,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 						s.State = map[string]json.RawMessage{
 							example: r,
 						}
+
 						return s
 					}(),
 				},
@@ -1522,6 +1548,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -1534,13 +1561,13 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 				Output:    map[string]string{"foo": "bar"},
 				Sockets: []script.Socket{
 					{
-						Id:           "default",
+						ID:           "default",
 						Title:        "Выход по умолчанию",
 						NextBlockIds: []string{"next_0"},
 						ActionType:   "",
 					},
 					{
-						Id:           "rejected",
+						ID:           "rejected",
 						Title:        "Отклонить",
 						NextBlockIds: []string{"next_1"},
 						ActionType:   "",
@@ -1613,6 +1640,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 						s.State = map[string]json.RawMessage{
 							example: r,
 						}
+
 						return s
 					}(),
 				},
@@ -1645,6 +1673,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -1657,13 +1686,13 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 				Output:    map[string]string{"foo": "bar"},
 				Sockets: []script.Socket{
 					{
-						Id:           "default",
+						ID:           "default",
 						Title:        "Выход по умолчанию",
 						NextBlockIds: []string{"next_0"},
 						ActionType:   "",
 					},
 					{
-						Id:           "rejected",
+						ID:           "rejected",
 						Title:        "Отклонить",
 						NextBlockIds: []string{"next_1"},
 						ActionType:   "",
@@ -1730,23 +1759,26 @@ func TestGoSignBlock_Update(t *testing.T) {
 
 	var logins = "example"
 
-	type fields struct {
-		Name             string
-		Title            string
-		Input            map[string]string
-		Output           map[string]string
-		NextStep         []script.Socket
-		SignData         *SignData
-		RunContext       *BlockRunContext
-		SigningRule      script.SigningRule
-		SignLog          []SignLogEntry
-		SignatureType    script.SignatureType
-		SignatureCarrier script.SignatureCarrier
-	}
-	type args struct {
-		ctx  c.Context
-		data *script.BlockUpdateData
-	}
+	type (
+		fields struct {
+			Name             string
+			Title            string
+			Input            map[string]string
+			Output           map[string]string
+			NextStep         []script.Socket
+			SignData         *SignData
+			RunContext       *BlockRunContext
+			SigningRule      script.SigningRule
+			SignLog          []SignLogEntry
+			SignatureType    script.SignatureType
+			SignatureCarrier script.SignatureCarrier
+		}
+		args struct {
+			ctx  c.Context
+			data *script.BlockUpdateData
+		}
+	)
+
 	tests := []struct {
 		name             string
 		fields           fields
@@ -1794,17 +1826,21 @@ func TestGoSignBlock_Update(t *testing.T) {
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
+
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							sdMock.Cli = httpClient
 
@@ -1848,17 +1884,21 @@ func TestGoSignBlock_Update(t *testing.T) {
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
+
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							sdMock.Cli = httpClient
 
@@ -1903,17 +1943,21 @@ func TestGoSignBlock_Update(t *testing.T) {
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
+
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							sdMock.Cli = httpClient
 
@@ -1958,17 +2002,21 @@ func TestGoSignBlock_Update(t *testing.T) {
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
+
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							sdMock.Cli = httpClient
 
@@ -2013,17 +2061,20 @@ func TestGoSignBlock_Update(t *testing.T) {
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
+
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							sdMock.Cli = httpClient
 
@@ -2066,17 +2117,21 @@ func TestGoSignBlock_Update(t *testing.T) {
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
+
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							sdMock.Cli = httpClient
 
@@ -2120,17 +2175,20 @@ func TestGoSignBlock_Update(t *testing.T) {
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
+
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							sdMock.Cli = httpClient
 
@@ -2174,17 +2232,20 @@ func TestGoSignBlock_Update(t *testing.T) {
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
+
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							sdMock.Cli = httpClient
 
@@ -2228,17 +2289,20 @@ func TestGoSignBlock_Update(t *testing.T) {
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
+
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							sdMock.Cli = httpClient
 
@@ -2282,17 +2346,20 @@ func TestGoSignBlock_Update(t *testing.T) {
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
+
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							sdMock.Cli = httpClient
 
@@ -2336,17 +2403,20 @@ func TestGoSignBlock_Update(t *testing.T) {
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
+
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							sdMock.Cli = httpClient
 
@@ -2390,17 +2460,21 @@ func TestGoSignBlock_Update(t *testing.T) {
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
+
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							sdMock.Cli = httpClient
 
@@ -2444,17 +2518,21 @@ func TestGoSignBlock_Update(t *testing.T) {
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
+
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							sdMock.Cli = httpClient
 
@@ -2498,17 +2576,21 @@ func TestGoSignBlock_Update(t *testing.T) {
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
+
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							sdMock.Cli = httpClient
 
@@ -2554,17 +2636,21 @@ func TestGoSignBlock_Update(t *testing.T) {
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
+
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							sdMock.Cli = httpClient
 
@@ -2632,17 +2718,21 @@ func TestGoSignBlock_Update(t *testing.T) {
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
+
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							sdMock.Cli = httpClient
 
@@ -2687,17 +2777,19 @@ func TestGoSignBlock_Update(t *testing.T) {
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
+
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							sdMock.Cli = httpClient
 
@@ -2717,6 +2809,7 @@ func TestGoSignBlock_Update(t *testing.T) {
 			wantErr: true,
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			gb := &GoSignBlock{
@@ -2757,34 +2850,36 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 
 	next := []entity.Socket{
 		{
-			Id:           DefaultSocketID,
+			ID:           DefaultSocketID,
 			Title:        script.DefaultSocketTitle,
 			NextBlockIds: []string{"next_0"},
 		},
 		{
-			Id:           rejectedSocketID,
+			ID:           rejectedSocketID,
 			Title:        script.RejectSocketTitle,
 			NextBlockIds: []string{"next_1"},
 		},
 	}
 
-	type fields struct {
-		Name             string
-		Title            string
-		Input            map[string]string
-		Output           map[string]string
-		NextStep         []script.Socket
-		RunContext       *BlockRunContext
-		SigningRule      script.SigningRule
-		SignLog          []SignLogEntry
-		SignatureType    script.SignatureType
-		SignatureCarrier script.SignatureCarrier
-	}
-	type args struct {
-		name string
-		ef   *entity.EriusFunc
-		ctx  c.Context
-	}
+	type (
+		fields struct {
+			Name             string
+			Title            string
+			Input            map[string]string
+			Output           map[string]string
+			NextStep         []script.Socket
+			RunContext       *BlockRunContext
+			SigningRule      script.SigningRule
+			SignLog          []SignLogEntry
+			SignatureType    script.SignatureType
+			SignatureCarrier script.SignatureCarrier
+		}
+		args struct {
+			name string
+			ef   *entity.EriusFunc
+			ctx  c.Context
+		}
+	)
 
 	tests := []struct {
 		name    string
@@ -2830,16 +2925,17 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 								b, _ := json.Marshal(people.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							plMock.Cli = httpClient
 
@@ -2878,6 +2974,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -2900,16 +2997,17 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 								b, _ := json.Marshal(people.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							plMock.Cli = httpClient
 
@@ -2948,6 +3046,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -2970,16 +3069,17 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 								b, _ := json.Marshal(people.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							plMock.Cli = httpClient
 
@@ -3018,6 +3118,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -3040,16 +3141,17 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 								b, _ := json.Marshal(people.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							plMock.Cli = httpClient
 
@@ -3088,6 +3190,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -3110,16 +3213,17 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 								b, _ := json.Marshal(people.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							plMock.Cli = httpClient
 
@@ -3158,6 +3262,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -3180,16 +3285,17 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 								b, _ := json.Marshal(people.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							plMock.Cli = httpClient
 
@@ -3228,6 +3334,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -3250,16 +3357,17 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 								b, _ := json.Marshal(people.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							plMock.Cli = httpClient
 
@@ -3298,6 +3406,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -3320,16 +3429,17 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 								b, _ := json.Marshal(people.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							plMock.Cli = httpClient
 
@@ -3368,6 +3478,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -3390,16 +3501,17 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 								b, _ := json.Marshal(people.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							plMock.Cli = httpClient
 
@@ -3438,6 +3550,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -3460,16 +3573,17 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 								b, _ := json.Marshal(people.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							plMock.Cli = httpClient
 
@@ -3495,6 +3609,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -3517,16 +3632,17 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 								b, _ := json.Marshal(people.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							plMock.Cli = httpClient
 
@@ -3552,6 +3668,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -3574,16 +3691,17 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 								b, _ := json.Marshal(people.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							plMock.Cli = httpClient
 
@@ -3609,6 +3727,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -3639,6 +3758,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 						s.State = map[string]json.RawMessage{
 							stepName: r,
 						}
+
 						return s
 					}(),
 					Services: RunContextServices{
@@ -3650,16 +3770,17 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 								b, _ := json.Marshal(people.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							plMock.Cli = httpClient
 
@@ -3690,6 +3811,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -3712,16 +3834,17 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 								b, _ := json.Marshal(people.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							plMock.Cli = httpClient
 
@@ -3747,6 +3870,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -3769,16 +3893,17 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 								b, _ := json.Marshal(people.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							plMock.Cli = httpClient
 
@@ -3804,6 +3929,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -3826,16 +3952,17 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 								b, _ := json.Marshal(people.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							plMock.Cli = httpClient
 
@@ -3861,6 +3988,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -3882,16 +4010,17 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 								b, _ := json.Marshal(people.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							plMock.Cli = httpClient
 
@@ -3930,6 +4059,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							Signer:             "",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -3952,16 +4082,17 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 								b, _ := json.Marshal(people.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							plMock.Cli = httpClient
 
@@ -4000,6 +4131,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							Signer:             "",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -4022,16 +4154,17 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 								b, _ := json.Marshal(people.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							plMock.Cli = httpClient
 
@@ -4070,6 +4203,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							Signer:             "",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -4092,16 +4226,17 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 								b, _ := json.Marshal(people.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							plMock.Cli = httpClient
 
@@ -4127,6 +4262,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -4149,16 +4285,17 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 								b, _ := json.Marshal(people.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							plMock.Cli = httpClient
 
@@ -4184,6 +4321,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -4214,6 +4352,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 						s.State = map[string]json.RawMessage{
 							stepName: r,
 						}
+
 						return s
 					}(),
 					Services: RunContextServices{
@@ -4225,16 +4364,17 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 								b, _ := json.Marshal(people.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							plMock.Cli = httpClient
 
@@ -4265,6 +4405,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -4294,6 +4435,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 						s.State = map[string]json.RawMessage{
 							stepName: r,
 						}
+
 						return s
 					}(),
 					Services: RunContextServices{
@@ -4305,16 +4447,17 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 								b, _ := json.Marshal(people.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							plMock.Cli = httpClient
 
@@ -4345,6 +4488,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -4374,6 +4518,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 						s.State = map[string]json.RawMessage{
 							stepName: r,
 						}
+
 						return s
 					}(),
 					Services: RunContextServices{
@@ -4385,16 +4530,17 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 								b, _ := json.Marshal(people.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							plMock.Cli = httpClient
 
@@ -4425,6 +4571,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -4451,6 +4598,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 						s.State = map[string]json.RawMessage{
 							stepName: r,
 						}
+
 						return s
 					}(),
 					Services: RunContextServices{
@@ -4462,16 +4610,17 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 								b, _ := json.Marshal(people.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							plMock.Cli = httpClient
 
@@ -4502,6 +4651,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -4532,6 +4682,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 						s.State = map[string]json.RawMessage{
 							stepName: r,
 						}
+
 						return s
 					}(),
 					Services: RunContextServices{
@@ -4543,16 +4694,17 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 								b, _ := json.Marshal(people.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							plMock.Cli = httpClient
 
@@ -4583,6 +4735,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
+
 						return r
 					}(),
 				},
@@ -4613,24 +4766,27 @@ func TestGoSignBlock_LoadState(t *testing.T) {
 		stepName     = "sign"
 	)
 
-	type fields struct {
-		Name             string
-		Title            string
-		Input            map[string]string
-		Output           map[string]string
-		NextStep         []script.Socket
-		SignData         *SignData
-		RunContext       *BlockRunContext
-		SigningRule      script.SigningRule
-		SignLog          []SignLogEntry
-		SignatureType    script.SignatureType
-		SignatureCarrier script.SignatureCarrier
-	}
-	type args struct {
-		ctx  c.Context
-		data *script.BlockUpdateData
-		raw  json.RawMessage
-	}
+	type (
+		fields struct {
+			Name             string
+			Title            string
+			Input            map[string]string
+			Output           map[string]string
+			NextStep         []script.Socket
+			SignData         *SignData
+			RunContext       *BlockRunContext
+			SigningRule      script.SigningRule
+			SignLog          []SignLogEntry
+			SignatureType    script.SignatureType
+			SignatureCarrier script.SignatureCarrier
+		}
+		args struct {
+			ctx  c.Context
+			data *script.BlockUpdateData
+			raw  json.RawMessage
+		}
+	)
+
 	tests := []struct {
 		name    string
 		fields  fields
@@ -4679,6 +4835,7 @@ func TestGoSignBlock_LoadState(t *testing.T) {
 			wantErr: false,
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			gb := &GoSignBlock{

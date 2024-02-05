@@ -21,11 +21,14 @@ type Service struct {
 func NewService(cfg Config) (*Service, error) {
 	opts := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithStatsHandler(&ocgrpc.ClientHandler{})}
+		grpc.WithStatsHandler(&ocgrpc.ClientHandler{}),
+	}
+
 	conn, err := grpc.Dial(cfg.URL, opts...)
 	if err != nil {
 		return nil, err
 	}
+
 	client := forms_v1.NewFormsServiceClient(conn)
 
 	return &Service{
@@ -45,6 +48,7 @@ func (s *Service) MakeFlatSchema(ctx c.Context, schema []byte) (*script.JSONSche
 		if unmErr := json.Unmarshal(res.Schema, &newSchema); unmErr != nil {
 			return nil, unmErr
 		}
+
 		return newSchema, nil
 	}
 

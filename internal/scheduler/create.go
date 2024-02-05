@@ -18,7 +18,6 @@ func (s *Service) CreateTask(ctx c.Context, task *CreateTask) (id string, err er
 			WaitSeconds: int32(task.WaitSeconds),
 		},
 	)
-
 	if err != nil {
 		return id, err
 	}
@@ -33,7 +32,6 @@ func (s *Service) DeleteTask(ctx c.Context, task *DeleteTask) error {
 			StepName: task.StepName,
 		},
 	)
-
 	if err != nil {
 		return err
 	}

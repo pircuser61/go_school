@@ -35,10 +35,6 @@ type PGCon struct {
 	Connection Connector
 }
 
-var (
-	NullUuid = [16]byte{}
-)
-
 type Connector interface {
 	Exec(ctx context.Context, sql string, arguments ...interface{}) (pgconn.CommandTag, error)
 	Query(ctx context.Context, sql string, optionsAndArgs ...interface{}) (pgx.Rows, error)
@@ -52,6 +48,7 @@ func (db *PGCon) Ping(ctx context.Context) error {
 	}); ok {
 		return pingConn.Ping(ctx)
 	}
+
 	return errors.New("can't ping dn")
 }
 
@@ -66,8 +63,10 @@ func (db *PGCon) Acquire(ctx context.Context) (Database, error) {
 		if err != nil {
 			return nil, err
 		}
+
 		return &PGCon{Connection: ac}, nil
 	}
+
 	return nil, errors.New("can't acquire connection")
 }
 
@@ -79,8 +78,10 @@ func (db *PGCon) Release(ctx context.Context) error {
 		Release()
 	}); ok {
 		releaseConn.Release()
+
 		return nil
 	}
+
 	return errors.New("can't release connection")
 }
 
@@ -92,6 +93,7 @@ func (db *PGCon) StartTransaction(ctx context.Context) (Database, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return &PGCon{Connection: tx}, nil
 }
 
@@ -112,6 +114,7 @@ func (db *PGCon) RollbackTransaction(ctx context.Context) error {
 	if !ok {
 		return nil
 	}
+
 	return tx.Rollback(ctx) // nolint:errcheck // rollback err
 }
 
@@ -177,7 +180,6 @@ const (
 
 var (
 	errCantFindPipelineVersion = errors.New("can't find pipeline version")
-	errCantFindTag             = errors.New("can't find tag")
 	errCantFindExternalSystem  = errors.New("can't find external system settings")
 	errUnkonwnSchemaFlag       = errors.New("unknown schema flag")
 )
@@ -256,11 +258,13 @@ func parseRowsVersionHistoryList(c context.Context, rows pgx.Rows) ([]entity.Eri
 	return versionHistoryList, nil
 }
 
-func (db *PGCon) GetPipelinesWithLatestVersion(c context.Context,
+func (db *PGCon) GetPipelinesWithLatestVersion(
+	c context.Context,
 	authorLogin string,
 	publishedPipelines bool,
 	page, perPage *int,
-	filter string) ([]entity.EriusScenarioInfo, error) {
+	filter string,
+) ([]entity.EriusScenarioInfo, error) {
 	c, span := trace.StartSpan(c, "pg_get_pipelines_with_latest_version")
 	defer span.End()
 
@@ -293,12 +297,13 @@ WHERE pp.deleted_at IS NULL
 `
 
 	if authorLogin != "" {
+		//nolint:gocritic,goconst //я не одобряю такие шайтан фокусы с sql но трогать работающий код не очень хочется
 		q = strings.ReplaceAll(q, "---author---", "AND pv.author='"+authorLogin+"'")
 	}
 
 	if filter != "" {
-		escapeFilter := strings.Replace(filter, "_", "!_", -1)
-		escapeFilter = strings.Replace(escapeFilter, "%", "!%", -1)
+		escapeFilter := strings.ReplaceAll(filter, "_", "!_")
+		escapeFilter = strings.ReplaceAll(escapeFilter, "%", "!%")
 		q = fmt.Sprintf(`%s AND (pp.name ILIKE '%%%s%%' ESCAPE '!')`, q, escapeFilter)
 	}
 
@@ -551,6 +556,7 @@ func (db *PGCon) SwitchApproved(c context.Context, pipelineID, versionID uuid.UU
 	if err != nil {
 		return err
 	}
+
 	defer tx.Rollback(c) // nolint:errcheck // rollback err
 
 	id := uuid.New()
@@ -678,7 +684,8 @@ func (db *PGCon) PipelineRemovable(c context.Context, id uuid.UUID) (bool, error
 }
 
 func (db *PGCon) CreatePipeline(c context.Context,
-	p *entity.EriusScenario, author string, pipelineData []byte, oldVersionID uuid.UUID, hasPrivateFunction bool) error {
+	p *entity.EriusScenario, author string, pipelineData []byte, oldVersionID uuid.UUID, hasPrivateFunction bool,
+) error {
 	c, span := trace.StartSpan(c, "pg_create_pipeline")
 	defer span.End()
 
@@ -709,7 +716,8 @@ func (db *PGCon) CreatePipeline(c context.Context,
 }
 
 func (db *PGCon) CreateVersion(c context.Context,
-	p *entity.EriusScenario, author string, pipelineData []byte, oldVersionID uuid.UUID, isHidden bool) error {
+	p *entity.EriusScenario, author string, pipelineData []byte, oldVersionID uuid.UUID, isHidden bool,
+) error {
 	c, span := trace.StartSpan(c, "pg_create_version")
 	defer span.End()
 
@@ -762,14 +770,14 @@ func (db *PGCon) CreateVersion(c context.Context,
 			return err
 		}
 	} else {
-		err = db.SaveVersionSettings(c, entity.ProcessSettings{Id: p.VersionID.String(), ResubmissionPeriod: 0}, nil)
+		err = db.SaveVersionSettings(c, entity.ProcessSettings{ID: p.VersionID.String(), ResubmissionPeriod: 0}, nil)
 		if err != nil {
 			return err
 		}
-		err = db.SaveSlaVersionSettings(c, p.VersionID.String(), entity.SlaVersionSettings{
+		err = db.SaveSLAVersionSettings(c, p.VersionID.String(), entity.SLAVersionSettings{
 			Author:   author,
 			WorkType: "8/5",
-			Sla:      40,
+			SLA:      40,
 		})
 		if err != nil {
 			return err
@@ -831,7 +839,9 @@ func (db *PGCon) DeletePipeline(c context.Context, id uuid.UUID) error {
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback(c) // nolint:errcheck // rollback err
+
+	//nolint:errcheck // tx.Rollback() error ignored, невкусно обрабатывать эту ошибку
+	defer tx.Rollback(c)
 
 	t := time.Now()
 
@@ -1048,8 +1058,13 @@ func (db *PGCon) RenamePipeline(c context.Context, id uuid.UUID, name string) er
 	return nil
 }
 
-func (db *PGCon) UpdateDraft(c context.Context,
-	p *entity.EriusScenario, pipelineData []byte, groups []*entity.NodeGroup, isHidden bool) error {
+func (db *PGCon) UpdateDraft(
+	c context.Context,
+	p *entity.EriusScenario,
+	pipelineData []byte,
+	groups []*entity.NodeGroup,
+	isHidden bool,
+) error {
 	c, span := trace.StartSpan(c, "pg_update_draft")
 	defer span.End()
 
@@ -1057,7 +1072,9 @@ func (db *PGCon) UpdateDraft(c context.Context,
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback(c) // nolint:errcheck // rollback err
+
+	//nolint:errcheck // tx.Rollback() error ignored, невкусно обрабатывать эту ошибку
+	defer tx.Rollback(c)
 
 	// nolint:gocritic
 	// language=PostgreSQL
@@ -1084,6 +1101,7 @@ func (db *PGCon) UpdateDraft(c context.Context,
 	SET is_actual = FALSE
 	WHERE id != $1
 	AND pipeline_id = $2`
+
 		_, err = tx.Exec(c, q, p.VersionID, p.PipelineID)
 		if err != nil {
 			return err
@@ -1093,8 +1111,11 @@ func (db *PGCon) UpdateDraft(c context.Context,
 	return tx.Commit(c)
 }
 
-func (db *PGCon) UpdateGroupsForEmptyVersions(c context.Context,
-	versionID string, groups []*entity.NodeGroup) error {
+func (db *PGCon) UpdateGroupsForEmptyVersions(
+	c context.Context,
+	versionID string,
+	groups []*entity.NodeGroup,
+) error {
 	c, span := trace.StartSpan(c, "pg_update_groups_for_empty_versions")
 	defer span.End()
 
@@ -1119,8 +1140,11 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 	defer span.End()
 
 	if !dto.IsReEntry {
-		var id uuid.UUID
-		var t time.Time
+		var (
+			id uuid.UUID
+			t  time.Time
+		)
+
 		const q = `
 		SELECT id, time
 			FROM variable_storage
@@ -1137,10 +1161,10 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 
 		if scanErr := db.Connection.QueryRow(ctx, q, dto.WorkID, dto.StepName).
 			Scan(&id, &t); scanErr != nil && !errors.Is(scanErr, pgx.ErrNoRows) {
-			return NullUuid, time.Time{}, scanErr
+			return uuid.Nil, time.Time{}, scanErr
 		}
 
-		if id != NullUuid {
+		if id != uuid.Nil {
 			return id, t, nil
 		}
 	}
@@ -1201,17 +1225,17 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 		args...,
 	)
 	if err != nil {
-		return NullUuid, time.Time{}, err
+		return uuid.Nil, time.Time{}, err
 	}
 
 	err = db.insertIntoMembers(ctx, dto.Members, id)
 	if err != nil {
-		return NullUuid, time.Time{}, err
+		return uuid.Nil, time.Time{}, err
 	}
 
 	err = db.deleteAndInsertIntoDeadlines(ctx, dto.Deadlines, id)
 	if err != nil {
-		return NullUuid, time.Time{}, err
+		return uuid.Nil, time.Time{}, err
 	}
 
 	return id, timestamp, nil
@@ -1235,7 +1259,7 @@ func (db *PGCon) UpdateStepContext(ctx context.Context, dto *UpdateStepRequest) 
 		id = $1
 `
 	args := []interface{}{
-		dto.Id, dto.BreakPoints, dto.HasError, dto.Status, dto.Content,
+		dto.ID, dto.BreakPoints, dto.HasError, dto.Status, dto.Content,
 	}
 
 	_, err := db.Connection.Exec(
@@ -1255,21 +1279,22 @@ func (db *PGCon) UpdateStepContext(ctx context.Context, dto *UpdateStepRequest) 
 	const qMembersDelete = `
 		DELETE FROM members 
 		WHERE block_id = $1`
+
 	_, err = db.Connection.Exec(
 		ctx,
 		qMembersDelete,
-		dto.Id,
+		dto.ID,
 	)
 	if err != nil {
 		return err
 	}
 
-	err = db.insertIntoMembers(ctx, dto.Members, dto.Id)
+	err = db.insertIntoMembers(ctx, dto.Members, dto.ID)
 	if err != nil {
 		return err
 	}
 
-	err = db.deleteAndInsertIntoDeadlines(ctx, dto.Deadlines, dto.Id)
+	err = db.deleteAndInsertIntoDeadlines(ctx, dto.Deadlines, dto.ID)
 	if err != nil {
 		return err
 	}
@@ -1277,7 +1302,7 @@ func (db *PGCon) UpdateStepContext(ctx context.Context, dto *UpdateStepRequest) 
 	return nil
 }
 
-func (db *PGCon) insertIntoMembers(ctx context.Context, members []DbMember, id uuid.UUID) error {
+func (db *PGCon) insertIntoMembers(ctx context.Context, members []Member, id uuid.UUID) error {
 	_, span := trace.StartSpan(ctx, "pg_insert_into_members")
 	defer span.End()
 
@@ -1303,24 +1328,29 @@ func (db *PGCon) insertIntoMembers(ctx context.Context, members []DbMember, id u
 		    $7
 		)
 `
+
 	for _, val := range members {
-		membersId := uuid.New()
+		membersID := uuid.New()
 		actions := make(pq.StringArray, 0, len(val.Actions))
 		params := make(map[string]map[string]interface{})
+
 		for _, act := range val.Actions {
-			actions = append(actions, act.Id+":"+act.Type)
+			actions = append(actions, act.ID+":"+act.Type)
+
 			if len(act.Params) != 0 {
-				params[act.Id] = act.Params
+				params[act.ID] = act.Params
 			}
 		}
+
 		paramsData, mErr := json.Marshal(params)
 		if mErr != nil {
 			return mErr
 		}
+
 		_, err := db.Connection.Exec(
 			ctx,
 			queryMembers,
-			membersId,
+			membersID,
 			id,
 			val.Login,
 			actions,
@@ -1332,10 +1362,11 @@ func (db *PGCon) insertIntoMembers(ctx context.Context, members []DbMember, id u
 			return err
 		}
 	}
+
 	return nil
 }
 
-func (db *PGCon) insertIntoDeadlines(ctx context.Context, deadlines []DbDeadline, id uuid.UUID) error {
+func (db *PGCon) insertIntoDeadlines(ctx context.Context, deadlines []Deadline, id uuid.UUID) error {
 	_, span := trace.StartSpan(ctx, "pg_create_block_deadlines")
 	defer span.End()
 
@@ -1355,12 +1386,14 @@ func (db *PGCon) insertIntoDeadlines(ctx context.Context, deadlines []DbDeadline
 		    $4
 		)
 `
+
 	for _, val := range deadlines {
-		deadlineId := uuid.New()
+		deadlineID := uuid.New()
+
 		_, err := db.Connection.Exec(
 			ctx,
 			queryDeadlines,
-			deadlineId,
+			deadlineID,
 			id,
 			val.Deadline,
 			val.Action,
@@ -1369,6 +1402,7 @@ func (db *PGCon) insertIntoDeadlines(ctx context.Context, deadlines []DbDeadline
 			return err
 		}
 	}
+
 	return nil
 }
 
@@ -1381,6 +1415,7 @@ func (db *PGCon) deleteDeadlines(ctx context.Context, id uuid.UUID) error {
 	const queryDeadlines = `
 		DELETE from deadlines where block_id = $1
 `
+
 	_, err := db.Connection.Exec(
 		ctx,
 		queryDeadlines,
@@ -1393,7 +1428,7 @@ func (db *PGCon) deleteDeadlines(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
-func (db *PGCon) deleteAndInsertIntoDeadlines(ctx context.Context, deadlines []DbDeadline, id uuid.UUID) error {
+func (db *PGCon) deleteAndInsertIntoDeadlines(ctx context.Context, deadlines []Deadline, id uuid.UUID) error {
 	deleteErr := db.deleteDeadlines(ctx, id)
 	if deleteErr != nil {
 		return deleteErr
@@ -1553,8 +1588,12 @@ func (db *PGCon) GetExecutableByName(c context.Context, name string) (*entity.Er
 	return nil, nil
 }
 
-func (db *PGCon) GetUnfinishedTaskStepsByWorkIdAndStepType(ctx context.Context, id uuid.UUID, stepType string,
-	in *entity.TaskUpdate) (entity.TaskSteps, error) {
+func (db *PGCon) GetUnfinishedTaskStepsByWorkIDAndStepType(
+	ctx context.Context,
+	id uuid.UUID,
+	stepType string,
+	in *entity.TaskUpdate,
+) (entity.TaskSteps, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_unfinished_task_steps_by_work_id_and_step_type")
 	defer span.End()
 
@@ -1565,7 +1604,8 @@ func (db *PGCon) GetUnfinishedTaskStepsByWorkIdAndStepType(ctx context.Context, 
 	isAddInfoReq := slices.Contains([]entity.TaskUpdateAction{
 		entity.TaskUpdateActionRequestApproveInfo,
 		entity.TaskUpdateActionSLABreachRequestAddInfo,
-		entity.TaskUpdateActionDayBeforeSLARequestAddInfo}, in.Action)
+		entity.TaskUpdateActionDayBeforeSLARequestAddInfo,
+	}, in.Action)
 
 	// nolint:gocritic,goconst
 	if stepType == "form" {
@@ -1583,8 +1623,10 @@ func (db *PGCon) GetUnfinishedTaskStepsByWorkIdAndStepType(ctx context.Context, 
 	}
 
 	var stepNamesQ string
+
 	if len(in.StepNames) > 0 {
 		stepNamesQ = "vs.step_name = ANY($4) AND"
+
 		args = append(args, in.StepNames)
 	}
 
@@ -1607,21 +1649,27 @@ func (db *PGCon) GetUnfinishedTaskStepsByWorkIdAndStepType(ctx context.Context, 
 	    NOT status = ANY($3) AND 
 		%s
 	    vs.time = (SELECT max(time) FROM variable_storage WHERE work_id = $1 AND step_name = vs.step_name)
-	    ORDER BY vs.time ASC`, stepNamesQ)
+	    ORDER BY vs.time ASC`,
+		stepNamesQ,
+	)
 
 	rows, err := db.Connection.Query(ctx, q, args...)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil
 		}
+
 		return nil, err
 	}
+
 	defer rows.Close()
 
 	//nolint:dupl //scan
 	for rows.Next() {
-		s := entity.Step{}
-		var content string
+		var (
+			s       entity.Step
+			content string
+		)
 
 		err = rows.Scan(
 			&s.ID,
@@ -1633,6 +1681,7 @@ func (db *PGCon) GetUnfinishedTaskStepsByWorkIdAndStepType(ctx context.Context, 
 			&s.HasError,
 			&s.Status,
 		)
+
 		if err != nil {
 			return nil, err
 		}
@@ -1648,6 +1697,7 @@ func (db *PGCon) GetUnfinishedTaskStepsByWorkIdAndStepType(ctx context.Context, 
 		s.Steps = storage.Steps
 		s.Errors = storage.Errors
 		s.Storage = storage.Values
+
 		el = append(el, &s)
 	}
 
@@ -1670,6 +1720,7 @@ FROM blocks
 WHERE value ? $2`
 
 	var blocks []string
+
 	rows, err := db.Connection.Query(ctx, q, workNumber, blockName)
 	if err != nil {
 		return nil, err
@@ -1682,11 +1733,14 @@ WHERE value ? $2`
 		if scanErr := rows.Scan(&b); scanErr != nil {
 			return nil, scanErr
 		}
+
 		blocks = append(blocks, b)
 	}
+
 	if rowsErr := rows.Err(); rowsErr != nil {
 		return nil, rowsErr
 	}
+
 	return blocks, nil
 }
 
@@ -1741,8 +1795,8 @@ func (db *PGCon) ParallelIsFinished(ctx context.Context, workNumber, blockName s
         where w.work_number=$1 and w.child_id is null and ign.out_node like 'begin_parallel_task_%'
 	) as created_all_branches`
 
-	var parallelIsFinished bool
-	var createdAllBranches bool
+	var parallelIsFinished, createdAllBranches bool
+
 	row := db.Connection.QueryRow(ctx, q, workNumber, blockName)
 
 	if err := row.Scan(&parallelIsFinished, &createdAllBranches); err != nil {
@@ -1752,7 +1806,7 @@ func (db *PGCon) ParallelIsFinished(ctx context.Context, workNumber, blockName s
 	return parallelIsFinished && createdAllBranches, nil
 }
 
-func (db *PGCon) GetTaskStepById(ctx context.Context, id uuid.UUID) (*entity.Step, error) {
+func (db *PGCon) GetTaskStepByID(ctx context.Context, id uuid.UUID) (*entity.Step, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_task_step_by_id")
 	defer span.End()
 
@@ -1778,8 +1832,11 @@ func (db *PGCon) GetTaskStepById(ctx context.Context, id uuid.UUID) (*entity.Ste
 		WHERE vs.id = $1
 	LIMIT 1`
 
-	var s entity.Step
-	var content string
+	var (
+		s       entity.Step
+		content string
+	)
+
 	err := db.Connection.QueryRow(ctx, q, id).Scan(
 		&s.ID,
 		&s.WorkID,
@@ -1816,7 +1873,8 @@ func (db *PGCon) GetTaskStepById(ctx context.Context, id uuid.UUID) (*entity.Ste
 
 //nolint:dupl //its not duplicate
 func (db *PGCon) GetParentTaskStepByName(ctx context.Context,
-	workID uuid.UUID, stepName string) (*entity.Step, error) {
+	workID uuid.UUID, stepName string,
+) (*entity.Step, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_parent_task_step_by_name")
 	defer span.End()
 
@@ -1839,8 +1897,11 @@ func (db *PGCon) GetParentTaskStepByName(ctx context.Context,
 		LIMIT 1
 `
 
-	var s entity.Step
-	var content string
+	var (
+		s       entity.Step
+		content string
+	)
+
 	queryErr := db.Connection.QueryRow(ctx, query, workID, stepName).Scan(
 		&s.ID,
 		&s.Type,
@@ -1870,7 +1931,7 @@ func (db *PGCon) GetParentTaskStepByName(ctx context.Context,
 }
 
 func (db *PGCon) GetCanceledTaskSteps(ctx context.Context, taskID uuid.UUID) ([]entity.Step, error) {
-	ctx, span := trace.StartSpan(ctx, "pg_get_cancelled_task_steps")
+	ctx, span := trace.StartSpan(ctx, "pg_get_canceled_task_steps")
 	defer span.End()
 
 	// nolint:gocritic
@@ -1886,20 +1947,24 @@ func (db *PGCon) GetCanceledTaskSteps(ctx context.Context, taskID uuid.UUID) ([]
 	if err != nil {
 		return nil, err
 	}
+
 	defer rows.Close()
 
 	res := make([]entity.Step, 0)
+
 	for rows.Next() {
 		s := entity.Step{}
 		if scanErr := rows.Scan(&s.Name, &s.Time); scanErr != nil {
 			return nil, scanErr
 		}
+
 		res = append(res, s)
 	}
 
 	if rows.Err() != nil {
 		return nil, rows.Err()
 	}
+
 	return res, nil
 }
 
@@ -1926,8 +1991,11 @@ func (db *PGCon) GetTaskStepByName(ctx context.Context, workID uuid.UUID, stepNa
 		LIMIT 1
 `
 
-	var s entity.Step
-	var content string
+	var (
+		s       entity.Step
+		content string
+	)
+
 	err := db.Connection.QueryRow(ctx, query, workID, stepName).Scan(
 		&s.ID,
 		&s.Type,
@@ -2085,6 +2153,7 @@ func (db *PGCon) GetVersionByPipelineID(c context.Context, pipelineID string) (*
 	  AND pv.pipeline_id = $1
 	  AND p.deleted_at IS NULL
 `
+
 	res := &entity.EriusScenario{}
 
 	var (
@@ -2104,7 +2173,8 @@ func (db *PGCon) GetVersionByPipelineID(c context.Context, pipelineID string) (*
 		return nil, err
 	}
 
-	if err = json.Unmarshal([]byte(content), res); err != nil {
+	err = json.Unmarshal([]byte(content), res)
+	if err != nil {
 		return nil, err
 	}
 
@@ -2122,7 +2192,7 @@ func (db *PGCon) GetVersionByPipelineID(c context.Context, pipelineID string) (*
 	return res, nil
 }
 
-func (db *PGCon) GetPipelinesByNameOrId(ctx context.Context, dto *SearchPipelineRequest) ([]entity.SearchPipeline, error) {
+func (db *PGCon) GetPipelinesByNameOrID(ctx context.Context, dto *SearchPipelineRequest) ([]entity.SearchPipeline, error) {
 	c, span := trace.StartSpan(ctx, "pg_get_pipelines_by_name_or_id")
 	defer span.End()
 
@@ -2130,7 +2200,7 @@ func (db *PGCon) GetPipelinesByNameOrId(ctx context.Context, dto *SearchPipeline
 
 	// nolint:gocritic
 	// language=PostgreSQL
-	var q = `
+	q := `
 		SELECT
 			p.id,
 			p.name,
@@ -2141,13 +2211,13 @@ func (db *PGCon) GetPipelinesByNameOrId(ctx context.Context, dto *SearchPipeline
 `
 
 	if dto.PipelineName != nil {
-		pipelineName := strings.Replace(*dto.PipelineName, "_", "!_", -1)
-		pipelineName = strings.Replace(pipelineName, "%", "!%", -1)
+		pipelineName := strings.ReplaceAll(*dto.PipelineName, "_", "!_")
+		pipelineName = strings.ReplaceAll(pipelineName, "%", "!%")
 		q = strings.ReplaceAll(q, "--pipe--", fmt.Sprintf("AND p.name ilike'%%%s%%' ESCAPE '!'", pipelineName))
 	}
 
-	if dto.PipelineId != nil {
-		q = strings.ReplaceAll(q, "--pipe--", fmt.Sprintf("AND p.id='%s'", *dto.PipelineId))
+	if dto.PipelineID != nil {
+		q = strings.ReplaceAll(q, "--pipe--", fmt.Sprintf("AND p.id='%s'", *dto.PipelineID))
 	}
 
 	rows, err := db.Connection.Query(c, q, dto.Limit, dto.Offset)
@@ -2160,8 +2230,9 @@ func (db *PGCon) GetPipelinesByNameOrId(ctx context.Context, dto *SearchPipeline
 	//nolint:dupl //scan
 	for rows.Next() {
 		s := entity.SearchPipeline{}
+
 		err = rows.Scan(
-			&s.PipelineId,
+			&s.PipelineID,
 			&s.PipelineName,
 			&s.Total,
 		)
@@ -2181,7 +2252,7 @@ func (db *PGCon) CheckUserCanEditForm(ctx context.Context, workNumber, stepName,
 
 	// nolint:gocritic
 	// language=PostgreSQL
-	var q = `
+	q := `
 			with accesses as (
     select jsonb_array_elements(content -> 'State' -> step_name -> 'forms_accessibility') as data
     from variable_storage
@@ -2200,7 +2271,9 @@ from accesses
 where accesses.data::jsonb ->> 'node_id' = $2
   and accesses.data::jsonb ->> 'accessType' = 'ReadWrite'
 `
+
 	var count int
+
 	if scanErr := db.Connection.QueryRow(ctx, q, workNumber, stepName, login).Scan(&count); scanErr != nil {
 		return false, scanErr
 	}
@@ -2243,24 +2316,32 @@ func (db *PGCon) GetAdditionalDescriptionForms(workNumber, nodeName string) ([]e
 		if errors.Is(err, sql.ErrNoRows) {
 			return descriptionForms, nil
 		}
+
 		return nil, err
 	}
+
 	defer rows.Close()
 
 	for rows.Next() {
-		var formName string
-		var form orderedmap.OrderedMap
+		var (
+			formName string
+			form     orderedmap.OrderedMap
+		)
+
 		if scanErr := rows.Scan(&form, &formName); scanErr != nil {
 			return descriptionForms, scanErr
 		}
+
 		descriptionForms = append(descriptionForms, entity.DescriptionForm{
 			Name:        formName,
 			Description: form,
 		})
 	}
+
 	if rowsErr := rows.Err(); rowsErr != nil {
 		return descriptionForms, rowsErr
 	}
+
 	return descriptionForms, nil
 }
 
@@ -2280,6 +2361,7 @@ func (db *PGCon) GetTaskRunContext(ctx context.Context, workNumber string) (enti
 	if scanErr := db.Connection.QueryRow(ctx, q, workNumber).Scan(&runCtx); scanErr != nil {
 		return runCtx, scanErr
 	}
+
 	return runCtx, nil
 }
 
@@ -2301,6 +2383,7 @@ func (db *PGCon) GetBlockDataFromVersion(ctx context.Context, workNumber, blockN
 	if f == nil {
 		return nil, errors.New("couldn't find block data")
 	}
+
 	return f, nil
 }
 
@@ -2314,6 +2397,7 @@ func (db *PGCon) StopTaskBlocks(ctx context.Context, taskID uuid.UUID) error {
 		WHERE work_id = $1 AND status IN ('ready', 'idle', 'running')`
 
 	_, err := db.Connection.Exec(ctx, q, taskID)
+
 	return err
 }
 
@@ -2353,13 +2437,17 @@ func (db *PGCon) GetVariableStorageForStep(ctx context.Context, taskID uuid.UUID
 		ORDER BY time DESC LIMIT 1`
 
 	var content []byte
+
 	if err := db.Connection.QueryRow(ctx, q, taskID, stepType).Scan(&content); err != nil {
 		return nil, err
 	}
+
 	storage := store.NewStore()
+
 	if err := json.Unmarshal(content, &storage); err != nil {
 		return nil, err
 	}
+
 	return storage, nil
 }
 
@@ -2375,6 +2463,7 @@ func (db *PGCon) GetVariableStorage(ctx context.Context, workNumber string) (*st
 			vs.time = (SELECT max(time) FROM variable_storage WHERE work_id = vs.work_id AND step_name = vs.step_name)`
 
 	states := make([]map[string]interface{}, 0)
+
 	rows, err := db.Connection.Query(ctx, q, workNumber)
 	if err != nil {
 		return nil, err
@@ -2383,8 +2472,10 @@ func (db *PGCon) GetVariableStorage(ctx context.Context, workNumber string) (*st
 	defer rows.Close()
 
 	for rows.Next() {
-		var stepName string
-		var content []byte
+		var (
+			stepName string
+			content  []byte
+		)
 
 		if scanErr := rows.Scan(&stepName, &content); scanErr != nil {
 			return nil, scanErr
@@ -2396,10 +2487,12 @@ func (db *PGCon) GetVariableStorage(ctx context.Context, workNumber string) (*st
 		}
 
 		storage.Values[stepNameVariable] = stepName
+
 		states = append(states, storage.Values)
 	}
 
-	if err = rows.Err(); err != nil {
+	err = rows.Err()
+	if err != nil {
 		return nil, err
 	}
 
@@ -2420,6 +2513,7 @@ func mergeValues(stepsValues []map[string]interface{}) map[string]interface{} {
 		if !ok {
 			continue
 		}
+
 		for varName := range stepsValues[i] {
 			if _, exists := res[varName]; !exists &&
 				varName != stepNameVariable &&
@@ -2466,15 +2560,21 @@ func (db *PGCon) GetBlocksBreachedSLA(ctx context.Context) ([]StepBreachedSLA, e
 			)
 			AND w.child_id IS NULL
 			AND d.deadline < NOW()`
+
 	rows, err := db.Connection.Query(ctx, q)
 	if err != nil {
 		return nil, err
 	}
+
 	defer rows.Close()
+
 	res := make([]StepBreachedSLA, 0)
+
 	for rows.Next() {
 		var content []byte
+
 		item := StepBreachedSLA{}
+
 		if scanErr := rows.Scan(
 			&item.TaskID,
 			&item.WorkNumber,
@@ -2489,17 +2589,21 @@ func (db *PGCon) GetBlocksBreachedSLA(ctx context.Context) ([]StepBreachedSLA, e
 		); scanErr != nil {
 			return nil, scanErr
 		}
+
 		storage := store.NewStore()
 		if unmErr := json.Unmarshal(content, &storage); unmErr != nil {
 			return nil, unmErr
 		}
+
 		item.VarStore = storage
 
 		res = append(res, item)
 	}
+
 	if rowsErr := rows.Err(); rowsErr != nil {
 		return nil, rowsErr
 	}
+
 	return res, nil
 }
 
@@ -2531,19 +2635,22 @@ func (db *PGCon) GetTaskForMonitoring(ctx context.Context, workNumber string) ([
 	if err != nil {
 		return nil, err
 	}
+
 	defer rows.Close()
+
 	res := make([]entity.MonitoringTaskNode, 0)
+
 	for rows.Next() {
 		item := entity.MonitoringTaskNode{}
 		if scanErr := rows.Scan(
 			&item.WorkNumber,
-			&item.VersionId,
+			&item.VersionID,
 			&item.Author,
 			&item.CreationTime,
 			&item.ScenarioName,
-			&item.NodeId,
+			&item.NodeID,
 			&item.Status,
-			&item.BlockId,
+			&item.BlockID,
 			&item.RealName,
 			&item.BlockDateInit,
 		); scanErr != nil {
@@ -2556,6 +2663,7 @@ func (db *PGCon) GetTaskForMonitoring(ctx context.Context, workNumber string) ([
 	if rowsErr := rows.Err(); rowsErr != nil {
 		return nil, rowsErr
 	}
+
 	return res, nil
 }
 
@@ -2589,6 +2697,7 @@ func (db *PGCon) GetExternalSystemsIDs(ctx context.Context, versionID string) ([
 	row := db.Connection.QueryRow(ctx, query, versionID)
 
 	var systemIDs []uuid.UUID
+
 	err := row.Scan(&systemIDs)
 	if err != nil {
 		return nil, err
@@ -2598,7 +2707,8 @@ func (db *PGCon) GetExternalSystemsIDs(ctx context.Context, versionID string) ([
 }
 
 func (db *PGCon) GetTaskEventsParamsByWorkNumber(ctx context.Context, workNumber,
-	systemID string) (entity.ExternalSystemSubscriptionParams, error) {
+	systemID string,
+) (entity.ExternalSystemSubscriptionParams, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_task_events_params_by_work_number")
 	defer span.End()
 
@@ -2617,6 +2727,7 @@ func (db *PGCon) GetTaskEventsParamsByWorkNumber(ctx context.Context, workNumber
 		Mapping:            script.JSONSchemaProperties{},
 		Nodes:              make([]entity.NodeSubscriptionEvents, 0),
 	}
+
 	err := row.Scan(
 		&params.SystemID,
 		&params.MicroserviceID,
@@ -2630,6 +2741,7 @@ func (db *PGCon) GetTaskEventsParamsByWorkNumber(ctx context.Context, workNumber
 		if errors.Is(err, pgx.ErrNoRows) {
 			return entity.ExternalSystemSubscriptionParams{}, nil
 		}
+
 		return params, err
 	}
 
@@ -2637,7 +2749,8 @@ func (db *PGCon) GetTaskEventsParamsByWorkNumber(ctx context.Context, workNumber
 }
 
 func (db *PGCon) GetExternalSystemTaskSubscriptions(ctx context.Context, versionID,
-	systemID string) (entity.ExternalSystemSubscriptionParams, error) {
+	systemID string,
+) (entity.ExternalSystemSubscriptionParams, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_external_system_task_subscriptions")
 	defer span.End()
 
@@ -2656,6 +2769,7 @@ func (db *PGCon) GetExternalSystemTaskSubscriptions(ctx context.Context, version
 		Mapping:            script.JSONSchemaProperties{},
 		Nodes:              make([]entity.NodeSubscriptionEvents, 0),
 	}
+
 	err := row.Scan(
 		&params.SystemID,
 		&params.MicroserviceID,
@@ -2669,6 +2783,7 @@ func (db *PGCon) GetExternalSystemTaskSubscriptions(ctx context.Context, version
 		if errors.Is(err, pgx.ErrNoRows) {
 			return entity.ExternalSystemSubscriptionParams{}, nil
 		}
+
 		return params, err
 	}
 
@@ -2676,7 +2791,8 @@ func (db *PGCon) GetExternalSystemTaskSubscriptions(ctx context.Context, version
 }
 
 func (db *PGCon) SaveExternalSystemSubscriptionParams(ctx context.Context, versionID string,
-	params *entity.ExternalSystemSubscriptionParams) error {
+	params *entity.ExternalSystemSubscriptionParams,
+) error {
 	ctx, span := trace.StartSpan(ctx, "pg_save_external_system_subscription_params")
 	defer span.End()
 
@@ -2692,6 +2808,7 @@ func (db *PGCon) SaveExternalSystemSubscriptionParams(ctx context.Context, versi
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -2703,8 +2820,10 @@ func (db *PGCon) RemoveExternalSystemTaskSubscriptions(ctx context.Context, vers
 	// language=PostgreSQL
 	query := `DELETE FROM external_system_task_subscriptions WHERE version_id = $1`
 	args := []interface{}{versionID}
+
 	if systemID != "" {
 		query += " AND system_id = $2"
+
 		args = append(args, systemID)
 	}
 
@@ -2755,7 +2874,8 @@ func (db *PGCon) GetWorksForUserWithGivenTimeRange(
 	hours int,
 	login,
 	versionID,
-	excludeWorkNumber string) ([]*entity.EriusTask, error) {
+	excludeWorkNumber string,
+) ([]*entity.EriusTask, error) {
 	ctx, span := trace.StartSpan(ctx, "get_works_for_user_with_given_time_range")
 	defer span.End()
 
@@ -2781,6 +2901,7 @@ func (db *PGCon) GetWorksForUserWithGivenTimeRange(
 	if queryErr != nil {
 		return nil, queryErr
 	}
+
 	defer rows.Close()
 
 	works := make([]*entity.EriusTask, 0)
@@ -2797,6 +2918,7 @@ func (db *PGCon) GetWorksForUserWithGivenTimeRange(
 		if scanErr != nil {
 			return nil, scanErr
 		}
+
 		works = append(works, &work)
 	}
 
@@ -2872,6 +2994,7 @@ func (db *PGCon) GetTaskInWorkTime(ctx context.Context, workNumber string) (*ent
 	row := db.Connection.QueryRow(ctx, query, workNumber)
 
 	interval := entity.TaskCompletionInterval{}
+
 	err := row.Scan(
 		&interval.StartedAt,
 		&interval.FinishedAt,

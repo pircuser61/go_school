@@ -2,8 +2,10 @@ package entity
 
 import "github.com/iancoleman/orderedmap"
 
-type UserExecutionType string
-type BlockType string
+type (
+	UserExecutionType string
+	BlockType         string
+)
 
 const (
 	UserExecution       UserExecutionType = "user"
@@ -15,7 +17,7 @@ const (
 )
 
 type UsersWithFormAccess struct {
-	GroupId       *string           `json:"executors_group_id"`
+	GroupID       *string           `json:"executors_group_id"`
 	ExecutionType UserExecutionType `json:"execution_type"`
 	Executor      string            `json:"executor"`
 	BlockType     BlockType         `json:"block_type"`

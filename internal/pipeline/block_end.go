@@ -43,7 +43,7 @@ func (gb *GoEndBlock) UpdateManual() bool {
 	return false
 }
 
-func (gb *GoEndBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment string, action string) {
+func (gb *GoEndBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment, action string) {
 	// should not change status returned by worker nodes like approvement, execution, etc.
 	return "", "", ""
 }
@@ -60,6 +60,7 @@ func (gb *GoEndBlock) Update(ctx c.Context) (interface{}, error) {
 	if err := gb.RunContext.Services.Storage.StopTaskBlocks(ctx, gb.RunContext.TaskID); err != nil {
 		return nil, err
 	}
+
 	if err := gb.RunContext.updateTaskStatus(ctx, db.RunStatusFinished, "", db.SystemLogin); err != nil {
 		return nil, err
 	}
@@ -68,16 +69,20 @@ func (gb *GoEndBlock) Update(ctx c.Context) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	//nolint:gocritic //в этом проекте не принято использовать поинтеры в коллекциях
 	for _, event := range nodeEvents {
 		// event for this node will spawn later
 		if event.NodeName == gb.Name {
 			continue
 		}
+
 		gb.happenedEvents = append(gb.happenedEvents, event)
 	}
 
 	if _, ok := gb.expectedEvents[eventEnd]; ok {
 		status, _, _ := gb.GetTaskHumanStatus()
+
 		event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, MakeNodeEndEventArgs{
 			NodeName:      gb.Name,
 			NodeShortName: gb.ShortName,
@@ -87,6 +92,7 @@ func (gb *GoEndBlock) Update(ctx c.Context) (interface{}, error) {
 		if eventErr != nil {
 			return nil, eventErr
 		}
+
 		gb.happenedEvents = append(gb.happenedEvents, event)
 	}
 
@@ -95,7 +101,7 @@ func (gb *GoEndBlock) Update(ctx c.Context) (interface{}, error) {
 
 func (gb *GoEndBlock) Model() script.FunctionModel {
 	return script.FunctionModel{
-		ID:        BlockGoEndId,
+		ID:        BlockGoEndID,
 		BlockType: script.TypeGo,
 		Title:     BlockGoEndTitle,
 		Inputs:    nil,
@@ -105,8 +111,13 @@ func (gb *GoEndBlock) Model() script.FunctionModel {
 }
 
 //nolint:dupl,unparam //its not duplicate
-func createGoEndBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext,
-	expectedEvents map[string]struct{}) (*GoEndBlock, bool, error) {
+func createGoEndBlock(
+	ctx c.Context,
+	name string,
+	ef *entity.EriusFunc,
+	runCtx *BlockRunContext,
+	expectedEvents map[string]struct{},
+) (*GoEndBlock, bool, error) {
 	const reEntry = false
 
 	b := &GoEndBlock{
@@ -125,7 +136,9 @@ func createGoEndBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx *
 	for _, v := range ef.Input {
 		b.Input[v.Name] = v.Global
 	}
+
 	if ef.Output != nil {
+		//nolint:gocritic // глобальная проблема неиспользования указателей в коллекциях
 		for propertyName, v := range ef.Output.Properties {
 			b.Output[propertyName] = v.Global
 		}
@@ -135,6 +148,7 @@ func createGoEndBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx *
 
 	if _, ok := b.expectedEvents[eventStart]; ok {
 		status, _, _ := b.GetTaskHumanStatus()
+
 		event, err := runCtx.MakeNodeStartEvent(ctx, MakeNodeStartEventArgs{
 			NodeName:      name,
 			NodeShortName: ef.ShortTitle,
@@ -144,6 +158,7 @@ func createGoEndBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx *
 		if err != nil {
 			return nil, false, err
 		}
+
 		b.happenedEvents = append(b.happenedEvents, event)
 	}
 

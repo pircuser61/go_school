@@ -3,8 +3,9 @@ package script
 import (
 	"errors"
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 const versionExample = "916ad995-8d13-49fb-82ee-edd4f97649e2"
@@ -15,6 +16,7 @@ func TestExecutableFunctionParams_Validate(t *testing.T) {
 		Version string
 		Mapping JSONSchemaProperties
 	}
+
 	tests := []struct {
 		name    string
 		fields  fields
@@ -170,6 +172,7 @@ func TestExecutableFunctionParams_Validate(t *testing.T) {
 			wantErr: errors.New("got no function name or version"),
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			a := &ExecutableFunctionParams{
@@ -191,6 +194,7 @@ func TestJSONSchema_Validate(t *testing.T) {
 		Properties JSONSchemaProperties
 		Required   []string
 	}
+
 	tests := []struct {
 		name    string
 		fields  fields
@@ -239,6 +243,7 @@ func TestJSONSchema_Validate(t *testing.T) {
 			wantErr: assert.Error,
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			js := &JSONSchema{
@@ -246,7 +251,7 @@ func TestJSONSchema_Validate(t *testing.T) {
 				Properties: tt.fields.Properties,
 				Required:   tt.fields.Required,
 			}
-			tt.wantErr(t, js.Validate(), fmt.Sprintf("ValidateSchemas()"))
+			tt.wantErr(t, js.Validate(), "ValidateSchemas()")
 		})
 	}
 }
@@ -320,11 +325,12 @@ func TestJSONSchemaProperties_Validate1(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tt.wantErr(t, tt.properties.Validate(), fmt.Sprintf("ValidateSchemas()"))
+			tt.wantErr(t, tt.properties.Validate(), "ValidateSchemas()")
 		})
 	}
 }
 
+//nolint:goconst //не нужно здесь нам чекать константы
 func Test_functionTime_UnmarshalJSON(t *testing.T) {
 	const (
 		date1 = "2023-06-21 06:26:10.447720 +0000 UTC"
@@ -335,6 +341,7 @@ func Test_functionTime_UnmarshalJSON(t *testing.T) {
 	type args struct {
 		b []byte
 	}
+
 	tests := []struct {
 		name    string
 		ft      functionTime
@@ -374,6 +381,7 @@ func Test_functionTime_UnmarshalJSON(t *testing.T) {
 			wantErr: assert.Error,
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.wantErr(t, tt.ft.UnmarshalJSON(tt.args.b), fmt.Sprintf("UnmarshalJSON(%v)", tt.args.b))

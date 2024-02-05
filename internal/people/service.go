@@ -13,6 +13,9 @@ import (
 
 	"github.com/pkg/errors"
 
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
+
 	"go.opencensus.io/plugin/ochttp"
 	"go.opencensus.io/trace"
 
@@ -33,9 +36,11 @@ const (
 	name2PH    = "--!name-2!--"
 	name3PH    = "--!name-3!--"
 
-	sortByVal = "lastName,firstName"
+	sortByVal           = "lastName,firstName"
+	companyFilterOption = `(attributes.OrgUnit co "%s")`
 )
 
+//nolint:gochecknoglobals // в данном проекте было бы проще отключить этот линтер
 var (
 	englishCheck = regexp.MustCompile(`[^а-яё]`)
 	newStringRm  = regexp.MustCompile(`(\s\s+)|(\n)`)
@@ -64,36 +69,44 @@ var (
 		name3PH, name1PH, name2PH,
 		name3PH, name2PH, name1PH,
 	)
-	companyFilterOption = `(attributes.OrgUnit co "%s")`
 )
 
 // nolint:staticcheck // Cant use cases.Title
 func defineFilter(input string, oneWord bool, filter []string) string {
 	parts := strings.Split(strings.ToLower(input), " ")
+	caser := cases.Title(language.Tag{})
+
 	var q string
+
 	if len(parts) == 1 || oneWord {
 		if englishCheck.FindString(strings.ToLower(parts[0])) != "" {
 			q = strings.Replace(usernameFilter, usernamePH, parts[0], 1)
 		} else {
-			q = strings.Replace(onePartFilter, name1PH, strings.Title(parts[0]), 1)
+			q = strings.Replace(onePartFilter, name1PH, caser.String(parts[0]), 1)
 		}
 	}
+
 	if len(parts) == 2 {
-		q = strings.Replace(twoPartFilter, name1PH, strings.Title(parts[0]), -1)
-		q = strings.Replace(q, name2PH, strings.Title(parts[1]), -1)
+		q = strings.ReplaceAll(twoPartFilter, name1PH, caser.String(parts[0]))
+		q = strings.ReplaceAll(q, name2PH, caser.String(parts[1]))
 	}
+
 	if len(parts) > 2 {
-		q = strings.Replace(threePartFilter, name1PH, strings.Title(parts[0]), -1)
-		q = strings.Replace(q, name2PH, strings.Title(parts[1]), -1)
-		q = strings.Replace(q, name3PH, strings.Title(parts[2]), -1)
+		q = strings.ReplaceAll(threePartFilter, name1PH, caser.String(parts[0]))
+		q = strings.ReplaceAll(q, name2PH, caser.String(parts[1]))
+		q = strings.ReplaceAll(q, name3PH, caser.String(parts[2]))
 	}
+
 	if len(filter) > 0 {
-		var companyOptions []string
+		companyOptions := make([]string, 0, len(filter))
+
 		for _, f := range filter {
 			companyOptions = append(companyOptions, fmt.Sprintf(companyFilterOption, f))
 		}
+
 		q += fmt.Sprintf(" and (%s)", strings.Join(companyOptions, " or "))
 	}
+
 	return newStringRm.ReplaceAllString(q, " ")
 }
 
@@ -113,9 +126,9 @@ func (t *TransportForPeople) RoundTrip(req *http.Request) (*http.Response, error
 }
 
 type Service struct {
-	SearchUrl string
+	SearchURL string
 
-	Cli *http.Client
+	Cli *http.Client `json:"-"`
 	Sso *sso.Service
 }
 
@@ -137,11 +150,12 @@ func NewService(c Config, ssoS *sso.Service) (*Service, error) {
 		Sso: ssoS,
 	}
 
-	search, err := s.pathBuilder(c.Url, searchPath)
+	search, err := s.pathBuilder(c.URL, searchPath)
 	if err != nil {
 		return nil, err
 	}
-	s.SearchUrl = search
+
+	s.SearchURL = search
 
 	return s, nil
 }
@@ -151,7 +165,9 @@ func (s *Service) pathBuilder(mainpath, subpath string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	mu.Path = path.Join(mu.Path, subpath)
+
 	return mu.String(), nil
 }
 
@@ -169,14 +185,17 @@ func (s *Service) GetUserEmail(ctx context.Context, username string) (string, er
 		if !ok {
 			return "", errors.New("couldn't find user")
 		}
+
 		if uname == username {
 			typed, err := u.ToSSOUserTyped()
 			if err != nil {
 				return "", errors.Wrap(err, "couldn't convert user")
 			}
+
 			return typed.Email, nil
 		}
 	}
+
 	return "", errors.New("couldn't find user")
 }
 
@@ -194,10 +213,12 @@ func (s *Service) GetUser(ctx context.Context, username string) (SSOUser, error)
 		if !ok {
 			return nil, errors.New("couldn't find user")
 		}
+
 		if uname == username {
 			return u, nil
 		}
 	}
+
 	return nil, errors.New("couldn't find user")
 }
 
@@ -209,6 +230,7 @@ func (s *Service) GetUsers(ctx context.Context, username string, limit *int, fil
 	if limit != nil {
 		maxLimit = *limit
 	}
+
 	users, err := s.getUsers(ctxLocal, username, maxLimit, filter)
 	if err != nil {
 		return nil, err
@@ -226,10 +248,12 @@ func (s *Service) getUser(ctx context.Context, search string, onlyEnabled bool) 
 	ctxLocal, span := trace.StartSpan(ctx, "getUser")
 	defer span.End()
 
-	var req *http.Request
-	var err error
+	var (
+		req *http.Request
+		err error
+	)
 
-	req, err = http.NewRequestWithContext(ctxLocal, http.MethodGet, s.SearchUrl, http.NoBody)
+	req, err = http.NewRequestWithContext(ctxLocal, http.MethodGet, s.SearchURL, http.NoBody)
 	if err != nil {
 		return nil, err
 	}
@@ -251,11 +275,15 @@ func (s *Service) getUser(ctx context.Context, search string, onlyEnabled bool) 
 	if err != nil {
 		return nil, err
 	}
+
 	defer resp.Body.Close()
+
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("got bad status code: %d for login: %s", resp.StatusCode, search)
 	}
+
 	var res SearchUsersResp
+
 	if unmErr := json.NewDecoder(resp.Body).Decode(&res); unmErr != nil {
 		return nil, unmErr
 	}
@@ -272,19 +300,26 @@ func (s *Service) getUsers(ctx context.Context, search string, limit int, filter
 	ctxLocal, span := trace.StartSpan(ctx, "getUsers")
 	defer span.End()
 
-	var req *http.Request
-	var err error
+	var (
+		req *http.Request
+		err error
+	)
 
-	req, err = http.NewRequestWithContext(ctxLocal, http.MethodGet, s.SearchUrl, http.NoBody)
+	req, err = http.NewRequestWithContext(ctxLocal, http.MethodGet, s.SearchURL, http.NoBody)
 	if err != nil {
 		return nil, err
 	}
 
+	const maxLimit = 100
+
 	query := req.URL.Query()
-	if limit > 100 {
-		limit = 100
+
+	if limit > maxLimit {
+		limit = maxLimit
 	}
+
 	f := defineFilter(search, false, filter)
+
 	query.Add(filterParam, f)
 	query.Add(limitParam, strconv.Itoa(limit))
 	query.Add(sortByParam, sortByVal)
@@ -295,13 +330,17 @@ func (s *Service) getUsers(ctx context.Context, search string, limit int, filter
 	if err != nil {
 		return nil, err
 	}
+
 	defer resp.Body.Close()
+
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("got bad status code: %d for login: %s", resp.StatusCode, search)
 	}
+
 	var res SearchUsersResp
 	if unmErr := json.NewDecoder(resp.Body).Decode(&res); unmErr != nil {
 		return nil, unmErr
 	}
+
 	return res.Resources, nil
 }

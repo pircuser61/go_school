@@ -17,14 +17,14 @@ const (
 
 type WorkHourType string
 
-type SLAInfo struct {
+type Info struct {
 	CalendarDays     *hrgate.CalendarDays `json:"calendar_days"`
 	StartWorkHourPtr *int                 `json:"start_work_hour"`
 	EndWorkHourPtr   *int                 `json:"end_work_hour"`
 	Weekends         []time.Weekday       `json:"weekends"`
 }
 
-type InfoDto struct {
+type InfoDTO struct {
 	TaskCompletionIntervals []entity.TaskCompletionInterval
 	WorkType                WorkHourType
 }
@@ -37,7 +37,7 @@ const (
 	WorkTypeN85 WorkHourType = "8/5"
 )
 
-func (slaInfo *SLAInfo) GetCalendarDays() *hrgate.CalendarDays {
+func (slaInfo *Info) GetCalendarDays() *hrgate.CalendarDays {
 	if slaInfo == nil || slaInfo.CalendarDays == nil {
 		return &hrgate.CalendarDays{CalendarMap: map[int64]hrgate.CalendarDayType{}}
 	}
@@ -45,7 +45,7 @@ func (slaInfo *SLAInfo) GetCalendarDays() *hrgate.CalendarDays {
 	return slaInfo.CalendarDays
 }
 
-func (slaInfo *SLAInfo) GetStartWorkHour() int {
+func (slaInfo *Info) GetStartWorkHour() int {
 	if slaInfo == nil || slaInfo.StartWorkHourPtr == nil {
 		return workingHoursStart
 	}
@@ -53,13 +53,14 @@ func (slaInfo *SLAInfo) GetStartWorkHour() int {
 	return *slaInfo.StartWorkHourPtr
 }
 
-func (slaInfo *SLAInfo) GetEndWorkHour(t time.Time) int {
+func (slaInfo *Info) GetEndWorkHour(t time.Time) int {
 	workDayType := slaInfo.GetCalendarDays().GetDayType(t)
 
 	if slaInfo == nil || slaInfo.EndWorkHourPtr == nil {
 		if workDayType == hrgate.CalendarDayTypePreHoliday {
 			return workingHoursEnd - 1
 		}
+
 		return workingHoursEnd
 	}
 
@@ -70,7 +71,7 @@ func (slaInfo *SLAInfo) GetEndWorkHour(t time.Time) int {
 	return *slaInfo.EndWorkHourPtr
 }
 
-func (slaInfo *SLAInfo) GetWeekends() []time.Weekday {
+func (slaInfo *Info) GetWeekends() []time.Weekday {
 	if slaInfo == nil || slaInfo.Weekends == nil {
 		return []time.Weekday{time.Saturday, time.Sunday}
 	}
@@ -144,14 +145,4 @@ func (t *WorkHourType) GetTotalWorkHourPerDay() (int, error) {
 	default:
 		return 0, fmt.Errorf("unknown work hour type: %s", string(*t))
 	}
-}
-
-func (t *WorkHourType) getTotalSLAInHours(slaInDays int) (int, error) {
-	totalWorkHour, getTotalWorkHourErr := t.GetTotalWorkHourPerDay()
-
-	if getTotalWorkHourErr != nil {
-		return 0, getTotalWorkHourErr
-	}
-
-	return totalWorkHour * slaInDays, nil
 }

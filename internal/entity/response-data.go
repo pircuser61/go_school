@@ -91,6 +91,7 @@ func (bt *BlocksType) Validate(ctx context.Context, sd *servicedesc.Service) (va
 	if !bt.IsSdBlueprintFilled(ctx, sd) {
 		return false, PipelineValidateError
 	}
+
 	ok, parallErr := bt.IsParallelNodesCorrect()
 	if !ok {
 		return false, parallErr
@@ -109,6 +110,7 @@ func (bt *BlocksType) IsPipelineComplete() bool {
 	if len(startNodes) == 0 {
 		return false
 	}
+
 	startNode := startNodes[maps.Keys(startNodes)[0]]
 
 	nodesIds := bt.getNodesIds()
@@ -117,6 +119,7 @@ func (bt *BlocksType) IsPipelineComplete() bool {
 	return len(nodesIds) == relatedNodesNum
 }
 
+//nolint:gocritic //
 func (bt *BlocksType) IsSocketsFilled() (valid bool, textErr string) {
 	for _, b := range *bt {
 		if len(b.Next) != len(b.Sockets) {
@@ -124,19 +127,22 @@ func (bt *BlocksType) IsSocketsFilled() (valid bool, textErr string) {
 		}
 
 		nextNames := make(map[string]bool)
+
 		for n, v := range b.Next {
 			if len(v) == 0 {
 				continue
 			}
+
 			nextNames[n] = true
 		}
 
 		for _, s := range b.Sockets {
-			if !nextNames[s.Id] {
+			if !nextNames[s.ID] {
 				return false, ""
 			}
 		}
 	}
+
 	return true, ""
 }
 
@@ -145,27 +151,34 @@ func (bt *BlocksType) IsSdBlueprintFilled(ctx context.Context, sd *servicedesc.S
 	if len(sdNodes) == 0 {
 		return true
 	}
+
 	sdNode := sdNodes[maps.Keys(sdNodes)[0]]
 
 	var params script.SdApplicationParams
+
 	err := json.Unmarshal(sdNode.Params, &params)
 	if err != nil {
 		return false
 	}
-	checkUrl := sd.SdURL + checkSdBlueprint + params.BlueprintID
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, checkUrl, http.NoBody)
+
+	checkURL := sd.SdURL + checkSdBlueprint + params.BlueprintID
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, checkURL, http.NoBody)
 	if err != nil {
 		return false
 	}
+
 	resp, err := sd.Cli.Do(req)
 	if err != nil {
 		return false
 	}
-	defer resp.Body.Close()
+
+	resp.Body.Close()
+
 	return resp.StatusCode == http.StatusOK
 }
 
-// nolint:gocognit //its ok here
+//nolint:all //its ok here // не ок
 func (bt *BlocksType) IsParallelNodesCorrect() (valid bool, textErr string) {
 	return true, ""
 	// TODO return Validation
@@ -173,7 +186,7 @@ func (bt *BlocksType) IsParallelNodesCorrect() (valid bool, textErr string) {
 	if len(parallelStartNodes) == 0 {
 		return true, ""
 	}
-	var parallelExitsAsBlock = make(map[string]string, 0)
+	parallelExitsAsBlock := make(map[string]string, 0)
 	for idx := range parallelStartNodes {
 		parallelNode := parallelStartNodes[idx]
 		var foundNode *string
@@ -239,14 +252,16 @@ func (bt *BlocksType) IsParallelNodesCorrect() (valid bool, textErr string) {
 		}
 		parallelExitsAsBlock[idx] = *foundNode
 	}
+
 	intersectOk := bt.validateIntersectingPathParallelNodes(parallelStartNodes, parallelExitsAsBlock)
 	if !intersectOk {
 		return false, ParallelPathIntersected
 	}
+
 	return true, ""
 }
 
-// nolint
+//nolint:all //см TODO выше
 func (bt *BlocksType) validateIntersectingPathParallelNodes(parallelStartNodes map[string]EriusFunc, parallelMap map[string]string) (valid bool) {
 	for idx := range parallelStartNodes {
 		parallelNode := parallelStartNodes[idx]
@@ -262,12 +277,14 @@ func (bt *BlocksType) validateIntersectingPathParallelNodes(parallelStartNodes m
 					return false
 				}
 				socketNode, ok := (*bt)[socketOutNode]
+
 				if !ok {
 					continue
 				}
+
 				nodes[socketOutNode] = &socketNode
 
-				var visitedBranchNodes = make(map[string]EriusFunc, 0)
+				visitedBranchNodes := make(map[string]EriusFunc, 0)
 
 				for {
 					nodeKeys := maps.Keys(nodes)
@@ -277,12 +294,14 @@ func (bt *BlocksType) validateIntersectingPathParallelNodes(parallelStartNodes m
 
 					nodeKey, node := nodeKeys[0], nodes[nodeKeys[0]]
 					delete(nodes, nodeKey)
+
 					if _, ok := visitedParallelNodes[nodeKey]; ok {
 						continue
 					}
 
 					visitedParallelNodes[nodeKey] = *node
 					visitedBranchNodes[nodeKey] = *node
+
 					switch node.TypeID {
 					case BlockParallelEndName:
 						continue
@@ -333,11 +352,14 @@ func (bt *BlocksType) validateIntersectingPathParallelNodes(parallelStartNodes m
 			}
 		}
 	}
+
 	return true
 }
 
+//nolint:all //см TODO выше
 func (bt *BlocksType) validateAfterEndParallelNodes(endNode, idx *string,
-	visitedParallelNodes map[string]EriusFunc) (valid bool, visitedNodes map[string]EriusFunc) {
+	visitedParallelNodes map[string]EriusFunc,
+) (valid bool, visitedNodes map[string]EriusFunc) {
 	parallelEndNode := (*bt)[*endNode]
 	afterEndNodes := map[string]*EriusFunc{
 		*endNode: &parallelEndNode,
@@ -349,11 +371,15 @@ func (bt *BlocksType) validateAfterEndParallelNodes(endNode, idx *string,
 		if len(endNodeKeys) == 0 {
 			break
 		}
+
 		nodeKey, node := endNodeKeys[0], afterEndNodes[endNodeKeys[0]]
+
 		delete(afterEndNodes, nodeKey)
+
 		if _, ok := visitedEndParallelNodes[nodeKey]; ok {
 			continue
 		}
+
 		visitedEndParallelNodes[nodeKey] = *node
 
 		for _, socketOutNodes := range node.Next {
@@ -361,23 +387,29 @@ func (bt *BlocksType) validateAfterEndParallelNodes(endNode, idx *string,
 				if socketOutNode == *idx {
 					continue
 				}
+
 				_, ok := visitedParallelNodes[socketOutNode]
 				if ok {
 					return false, nil
 				}
+
 				socketNode, ok := (*bt)[socketOutNode]
 				if !ok {
 					continue
 				}
+
 				afterEndNodes[socketOutNode] = &socketNode
 			}
 		}
 	}
+
 	return true, visitedEndParallelNodes
 }
 
+//nolint:all //см TODO выше
 func (bt *BlocksType) validateBeforeStartParallelNodes(startKey, idx, endNode string,
-	visitedParallelNodes, visitedAfterEndNodes map[string]EriusFunc) (valid bool, textErr string) {
+	visitedParallelNodes, visitedAfterEndNodes map[string]EriusFunc,
+) (valid bool, textErr string) {
 	parallelStartNode := (*bt)[startKey]
 	BeforeStartNodes := map[string]*EriusFunc{
 		startKey: &parallelStartNode,
@@ -389,11 +421,15 @@ func (bt *BlocksType) validateBeforeStartParallelNodes(startKey, idx, endNode st
 		if len(startNodeKeys) == 0 {
 			break
 		}
+
 		nodeKey, node := startNodeKeys[0], BeforeStartNodes[startNodeKeys[0]]
+
 		delete(BeforeStartNodes, nodeKey)
+
 		if _, ok := visitedBeforStartParallelNodes[nodeKey]; ok {
 			continue
 		}
+
 		visitedBeforStartParallelNodes[nodeKey] = *node
 
 		for _, socketOutNodes := range node.Next {
@@ -401,25 +437,31 @@ func (bt *BlocksType) validateBeforeStartParallelNodes(startKey, idx, endNode st
 				if socketOutNode == idx {
 					continue
 				}
+
 				if socketOutNode == endNode {
 					return false, ParallelOutOfStartInsert
 				}
+
 				_, ok := visitedParallelNodes[socketOutNode]
 				if ok {
 					return false, OutOfParallelNodesConnection
 				}
+
 				_, alreadyVisited := visitedAfterEndNodes[socketOutNode]
 				if alreadyVisited {
 					continue
 				}
+
 				socketNode, ok := (*bt)[socketOutNode]
 				if !ok {
 					continue
 				}
+
 				BeforeStartNodes[socketOutNode] = &socketNode
 			}
 		}
 	}
+
 	return true, ""
 }
 
@@ -447,7 +489,7 @@ func (bt *BlocksType) addDefaultStartNode() {
 		},
 		Sockets: []Socket{
 			{
-				Id:         "default",
+				ID:         "default",
 				Title:      "Выход по умолчанию",
 				ActionType: "",
 			},
@@ -457,6 +499,7 @@ func (bt *BlocksType) addDefaultStartNode() {
 
 func (bt *BlocksType) GetExecutableFunctions() ([]script.FunctionParam, error) {
 	functionIDs := make([]script.FunctionParam, 0)
+
 	for key := range *bt {
 		block := (*bt)[key]
 		if block.TypeID == "executable_function" {
@@ -465,7 +508,7 @@ func (bt *BlocksType) GetExecutableFunctions() ([]script.FunctionParam, error) {
 				return nil, err
 			}
 
-			if p.Function.FunctionId != "" {
+			if p.Function.FunctionID != "" {
 				functionIDs = append(functionIDs, p.Function)
 			}
 		}
@@ -480,30 +523,22 @@ func (bt *BlocksType) blockTypeExists(blockType string) bool {
 
 func (bt *BlocksType) getNodesByType(blockType string) map[string]EriusFunc {
 	blocks := make(map[string]EriusFunc, 0)
+
 	for id := range *bt {
 		b := (*bt)[id]
 		if b.TypeID == blockType {
 			blocks[id] = b
 		}
 	}
+
 	return blocks
-}
-
-func (bt *BlocksType) getNodeByID(blockId string) *EriusFunc {
-	for blockKey, _ := range *bt {
-		if blockKey == blockId {
-			block := (*bt)[blockKey]
-
-			return &block
-		}
-	}
-	return nil
 }
 
 func (bt *BlocksType) getNodesIds() (res []string) {
 	for k := range *bt {
 		res = append(res, k)
 	}
+
 	return res
 }
 
@@ -516,12 +551,14 @@ func (bt *BlocksType) countRelatedNodesIds(startNode *EriusFunc) (res int) {
 
 	for {
 		for _, s := range currentNode.Sockets {
-			for _, blockId := range s.NextBlockIds {
-				socketNode := (*bt)[blockId]
+			for _, blockID := range s.NextBlockIds {
+				socketNode := (*bt)[blockID]
 
-				if !visited[blockId] {
-					visited[blockId] = true
+				if !visited[blockID] {
+					visited[blockID] = true
+
 					nodes = append(nodes, &socketNode)
+
 					res++
 				}
 			}
@@ -604,7 +641,7 @@ type EriusFunc struct {
 }
 
 type Socket struct {
-	Id           string   `json:"id"`
+	ID           string   `json:"id"`
 	Title        string   `json:"title"`
 	NextBlockIds []string `json:"nextBlockIds,omitempty"`
 	ActionType   string   `json:"actionType"`
@@ -657,16 +694,16 @@ type DebugResult struct {
 
 type SearchPipeline struct {
 	PipelineName string
-	PipelineId   string
+	PipelineID   string
 	Total        int
 }
 
 func ConvertSocket(sockets []Socket) []script.Socket {
-	var result = make([]script.Socket, 0)
+	result := make([]script.Socket, 0)
 
 	for _, socket := range sockets {
 		result = append(result, script.Socket{
-			Id:           socket.Id,
+			ID:           socket.ID,
 			Title:        socket.Title,
 			NextBlockIds: socket.NextBlockIds,
 		})
@@ -681,7 +718,7 @@ const (
 	KeyOutputApplicationBody      = "application_body"
 )
 
-func (es EriusScenario) FillEntryPointOutput() (err error) {
+func (es *EriusScenario) FillEntryPointOutput() (err error) {
 	entryPoint := es.Pipeline.Blocks[es.Pipeline.Entrypoint]
 
 	if entryPoint.Output == nil || entryPoint.Output.Properties == nil {
@@ -788,7 +825,8 @@ func (bt *BlocksType) GetGroups() (nodeGroups []*NodeGroup, err error) {
 
 // nolint
 func (bt *BlocksType) fillPrlGroups(nodeKey, prev string, its int, bl *EriusFunc,
-	visitedNodes map[string]*EriusFunc) (group *NodeGroup, exitIdx string, err error) {
+	visitedNodes map[string]*EriusFunc,
+) (group *NodeGroup, exitIdx string, err error) {
 	its++
 	if its > 5 {
 		return nil, "", errors.New("took too long")

@@ -11,24 +11,21 @@ import (
 
 	"github.com/pkg/errors"
 
-	"golang.org/x/exp/slices"
-
 	"go.opencensus.io/trace"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
-	ht "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
+	ht "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/stephandlers"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
-	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
 const (
-	hiddenUserLogin                      = "hidden_user"
-	TypeAccessFormNone script.AccessType = "None"
+	hiddenUserLogin = "hidden_user"
 )
 
 type taskResp struct {
@@ -74,7 +71,7 @@ type step struct {
 }
 
 type action struct {
-	Id                 string                 `json:"id"`
+	ID                 string                 `json:"id"`
 	ButtonType         string                 `json:"button_type"`
 	NodeType           string                 `json:"node_type"`
 	Title              string                 `json:"title"`
@@ -83,8 +80,10 @@ type action struct {
 	Params             map[string]interface{} `json:"params,omitempty"`
 }
 
-type taskActions []action
-type taskSteps []step
+type (
+	taskActions []action
+	taskSteps   []step
+)
 
 type taskToResponseDTO struct {
 	task         *entity.EriusTask
@@ -97,6 +96,7 @@ type taskToResponseDTO struct {
 func (taskResp) toResponse(in *taskToResponseDTO) *taskResp {
 	steps := make([]step, 0, len(in.task.Steps))
 	actions := make([]action, 0, len(in.task.Actions))
+
 	for i := range in.task.Steps {
 		steps = append(steps, step{
 			Time:                      in.task.Steps[i].Time,
@@ -116,7 +116,7 @@ func (taskResp) toResponse(in *taskToResponseDTO) *taskResp {
 
 	for _, a := range in.task.Actions {
 		actions = append(actions, action{
-			Id:                 a.Id,
+			ID:                 a.ID,
 			ButtonType:         a.ButtonType,
 			NodeType:           a.NodeType,
 			Title:              a.Title,
@@ -168,9 +168,12 @@ func groupsToResponse(groups []*entity.NodeGroup) []NodeGroup {
 	if groups == nil {
 		return nil
 	}
-	var resp []NodeGroup
+
+	resp := make([]NodeGroup, 0, len(groups))
+
 	for i := range groups {
 		insideNodes := groupsToResponse(groups[i].Nodes)
+
 		resp = append(resp, NodeGroup{
 			EndNode:   groups[i].EndNode,
 			Nodes:     &insideNodes,
@@ -178,139 +181,107 @@ func groupsToResponse(groups []*entity.NodeGroup) []NodeGroup {
 			StartNode: groups[i].StartNode,
 		})
 	}
+
 	return resp
 }
 
-func (ae *APIEnv) GetTaskFormSchema(w http.ResponseWriter, req *http.Request, workNumber, formID string) {
+func (ae *Env) GetTaskFormSchema(w http.ResponseWriter, req *http.Request, workNumber, formID string) {
 	ctx, s := trace.StartSpan(req.Context(), "get_task_form_schema")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
+	errorHandler := newHTTPErrorHandler(log, w)
 
 	id, err := ae.DB.GetTaskFormSchemaID(workNumber, formID)
 	if err != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(UnknownError, err)
+
 		return
 	}
+
 	if err = sendResponse(w, http.StatusOK, id); err != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(UnknownError, err)
 
 		return
 	}
 }
 
-func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request, workNumber string) {
+func (ae *Env) GetTask(w http.ResponseWriter, req *http.Request, workNumber string) {
 	ctx, s := trace.StartSpan(req.Context(), "get_task")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
+	errorHandler := newHTTPErrorHandler(log, w)
 
 	if workNumber == "" {
-		e := UUIDParsingError
-		log.Error(e.errorMessage(errors.New("workNumber is empty")))
-		_ = e.sendError(w)
+		errorHandler.handleError(UUIDParsingError, errors.New("workNumber is empty"))
 
 		return
 	}
 
 	ui, err := user.GetEffectiveUserInfoFromCtx(ctx)
 	if err != nil {
-		e := NoUserInContextError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(NoUserInContextError, err)
+
 		return
 	}
 
 	delegations, err := ae.HumanTasks.GetDelegationsToLogin(ctx, ui.Username)
 	if err != nil {
-		e := GetDelegationsError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(GetDelegationsError, err)
+
 		return
 	}
 
 	delegationsByApprovement := delegations.FilterByType("approvement")
 	delegationsByExecution := delegations.FilterByType("execution")
 
-	dbTask, err := ae.DB.GetTask(ctx,
+	dbTask, err := ae.DB.GetTask(
+		ctx,
 		delegationsByApprovement.GetUserInArrayWithDelegators([]string{ui.Username}),
 		delegationsByExecution.GetUserInArrayWithDelegators([]string{ui.Username}),
 		ui.Username,
-		workNumber)
+		workNumber,
+	)
 	if err != nil {
-		e := GetTaskError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(GetTaskError, err)
+
 		return
 	}
 
 	var parsedContent EriusScenario
+
 	err = json.Unmarshal([]byte(dbTask.VersionContent), &parsedContent)
 	if err != nil {
-		e := PipelineParseError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(PipelineParseError, err)
+
 		return
 	}
 
 	if len(dbTask.NodeGroup) == 0 {
-		scenario, getVersionErr := ae.DB.GetVersionByWorkNumber(ctx, dbTask.WorkNumber)
-		if getVersionErr != nil {
-			e := UnknownError
-			log.Error(e.errorMessage(getVersionErr))
-			_ = e.sendError(w)
-
-			return
-		}
-		groups, groupsErr := scenario.Pipeline.Blocks.GetGroups()
+		err = ae.handleZeroTaskNodeGroup(ctx, dbTask)
 		if err != nil {
-			e := UnknownError
-			log.Error(e.errorMessage(groupsErr))
-			_ = e.sendError(w)
+			errorHandler.handleError(UnknownError, err)
 
 			return
 		}
-		updateGroupsErr := ae.DB.UpdateGroupsForEmptyVersions(ctx, scenario.VersionID.String(), groups)
-		if updateGroupsErr != nil {
-			e := UnknownError
-			log.Error(e.errorMessage(updateGroupsErr))
-			_ = e.sendError(w)
-
-			return
-		}
-
-		dbTask.NodeGroup = groups
 	}
 
 	steps, err := ae.DB.GetTaskSteps(ctx, dbTask.ID)
 	if err != nil {
-		e := GetTaskError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(GetTaskError, err)
 
 		return
 	}
 
-	shortNameMap := map[string]string{}
-	for key, val := range parsedContent.Pipeline.Blocks.AdditionalProperties {
-		if val.ShortTitle != nil {
-			shortNameMap[key] = *val.ShortTitle
-		} else {
-			shortNameMap[key] = ""
-		}
-	}
+	shortNameMap := shortNameMap(parsedContent.Pipeline.Blocks.AdditionalProperties)
+
 	dbTask.Steps = steps
 
 	if ui.Username != dbTask.Author {
 		accessibleForms, ttErr := ae.getAccessibleForms(ui.Username, &steps, &delegations)
 		if ttErr != nil {
-			e := GetDelegationsError
-			log.Error(e.errorMessage(ttErr))
-			_ = e.sendError(w)
+			errorHandler.handleError(GetDelegationsError, ttErr)
 
 			return
 		}
@@ -320,17 +291,14 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request, workNumber s
 
 	currentUserDelegateSteps, tErr := ae.getCurrentUserInDelegatesForSteps(ui.Username, &steps, &delegations)
 	if tErr != nil {
-		e := GetDelegationsError
-		log.Error(e.errorMessage(tErr))
-		_ = e.sendError(w)
+		errorHandler.handleError(GetDelegationsError, tErr)
 
 		return
 	}
+
 	scenario, getVersionErr := ae.DB.GetVersionByWorkNumber(ctx, dbTask.WorkNumber)
 	if getVersionErr != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(getVersionErr))
-		_ = e.sendError(w)
+		errorHandler.handleError(UnknownError, getVersionErr)
 
 		return
 	}
@@ -338,24 +306,20 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request, workNumber s
 	if ui.Username != scenario.Author {
 		hideErr := ae.hideExecutors(ctx, dbTask, ui.Username, currentUserDelegateSteps)
 		if hideErr != nil {
-			e := UnknownError
-			log.Error(e.errorMessage(hideErr))
-			_ = e.sendError(w)
+			errorHandler.handleError(UnknownError, hideErr)
 
 			return
 		}
 	}
 
-	versionSettings, errSla := ae.DB.GetSlaVersionSettings(ctx, dbTask.VersionID.String())
-	if errSla != nil {
-		e := GetProcessSlaSettingsError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+	versionSettings, errSLA := ae.DB.GetSLAVersionSettings(ctx, dbTask.VersionID.String())
+	if errSLA != nil {
+		errorHandler.handleError(GetProcessSLASettingsError, errSLA)
 
 		return
 	}
 
-	slaInfoPtr, getSlaInfoErr := ae.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
+	slaInfoDTO := sla.InfoDTO{
 		TaskCompletionIntervals: []entity.TaskCompletionInterval{
 			{
 				StartedAt:  dbTask.StartedAt,
@@ -363,22 +327,23 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request, workNumber s
 			},
 		},
 		WorkType: sla.WorkHourType(versionSettings.WorkType),
-	})
-	if getSlaInfoErr != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(getSlaInfoErr))
-		_ = e.sendError(w)
+	}
+
+	slaInfoPtr, getSLAInfoErr := ae.SLAService.GetSLAInfoPtr(
+		ctx,
+		slaInfoDTO,
+	)
+	if getSLAInfoErr != nil {
+		errorHandler.handleError(UnknownError, getSLAInfoErr)
 
 		return
 	}
 
-	deadline := ae.SLAService.ComputeMaxDate(dbTask.StartedAt, float32(versionSettings.Sla), slaInfoPtr)
+	deadline := ae.SLAService.ComputeMaxDate(dbTask.StartedAt, float32(versionSettings.SLA), slaInfoPtr)
 
 	approvalLists, err := ae.DB.GetApprovalListsSettings(ctx, dbTask.VersionID.String())
 	if err != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(UnknownError, err)
 
 		return
 	}
@@ -393,31 +358,52 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request, workNumber s
 		approvalList: approvalLists,
 	}
 
-	if err = sendResponse(w, http.StatusOK, resp.toResponse(toResponse)); err != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
+	err = sendResponse(w, http.StatusOK, resp.toResponse(toResponse))
+	if err != nil {
+		errorHandler.handleError(UnknownError, err)
 	}
 }
 
-type approverBlock struct {
-	Approvers           map[string]struct{}  `json:"approvers"`
-	AdditionalApprovers []additionalApprover `json:"additional_approvers"`
+func shortNameMap(additionalProperties map[string]EriusFunc) map[string]string {
+	shortNameMap := make(map[string]string, len(additionalProperties))
+
+	for key, val := range additionalProperties {
+		if val.ShortTitle != nil {
+			shortNameMap[key] = *val.ShortTitle
+		} else {
+			shortNameMap[key] = ""
+		}
+	}
+
+	return shortNameMap
 }
 
-type executionBlock struct {
-	Executors map[string]struct{}
+func (ae *Env) handleZeroTaskNodeGroup(ctx context.Context, dbTask *entity.EriusTask) error {
+	scenario, getVersionErr := ae.DB.GetVersionByWorkNumber(ctx, dbTask.WorkNumber)
+	if getVersionErr != nil {
+		return getVersionErr
+	}
+
+	groups, groupsErr := scenario.Pipeline.Blocks.GetGroups()
+	if groupsErr != nil {
+		return groupsErr
+	}
+
+	updateGroupsErr := ae.DB.UpdateGroupsForEmptyVersions(ctx, scenario.VersionID.String(), groups)
+	if updateGroupsErr != nil {
+		return updateGroupsErr
+	}
+
+	dbTask.NodeGroup = groups
+
+	return nil
 }
 
-type additionalApprover struct {
-	ApproverLogin string `json:"approver_login"`
-}
-
-// nolint:gocognit //its ok here
-func (ae *APIEnv) getAccessibleForms(currentUser string, steps *entity.TaskSteps, delegates *ht.Delegations) (
-	accessibleForms map[string]struct{}, err error) {
+func (ae *Env) getAccessibleForms(
+	currentUser string,
+	steps *entity.TaskSteps,
+	delegates *ht.Delegations,
+) (accessibleForms map[string]struct{}, err error) {
 	const (
 		ApproverBlockType  = "approver"
 		ExecutionBlockType = "execution"
@@ -426,222 +412,95 @@ func (ae *APIEnv) getAccessibleForms(currentUser string, steps *entity.TaskSteps
 	)
 
 	accessibleForms = make(map[string]struct{}, 0)
-	for _, s := range *steps {
-		var userHasAccess bool
 
-		if s.State == nil || (s.Status != "running" && s.Status != "idle") {
-			continue
-		}
+	// это костыль но он вынужденный потому что в тестах подразумевается что функцию можно вызвать с nil delegates
+	if delegates == nil {
+		delegates = &ht.Delegations{}
+	}
 
-		switch s.Type {
-		case ApproverBlockType:
-			var approver pipeline.ApproverData
-			unmarshalErr := json.Unmarshal(s.State[s.Name], &approver)
-			if unmarshalErr != nil {
-				return nil, unmarshalErr
-			}
+	stepHandler := stephandlers.NewMultipleTypesStepHandler()
 
-			delegate := delegates.FilterByType("approvement")
+	stepHandler.RegisterStepTypeHandler(
+		ApproverBlockType,
+		stephandlers.NewAccessibleFormsApproverBlockStepHandler(currentUser, accessibleForms, *delegates),
+	)
+	stepHandler.RegisterStepTypeHandler(
+		FormBlockType,
+		stephandlers.NewAccessibleFormsFormBlockStepHandler(currentUser, accessibleForms),
+	)
+	stepHandler.RegisterStepTypeHandler(
+		ExecutionBlockType,
+		stephandlers.NewAccessibleFormsExecutionBlockStepHandler(currentUser, accessibleForms, *delegates),
+	)
+	stepHandler.RegisterStepTypeHandler(
+		SignBlockType,
+		stephandlers.NewAccessibleFormsSignBlockStepHandler(currentUser, accessibleForms),
+	)
 
-			for member := range approver.Approvers {
-				if currentUser == member || isDelegate(currentUser, member, &delegate) {
-					userHasAccess = true
-					break
-				}
-			}
-
-			for _, member := range approver.AdditionalApprovers {
-				if currentUser == member.ApproverLogin || isDelegate(currentUser, member.ApproverLogin, &delegate) {
-					userHasAccess = true
-					break
-				}
-			}
-
-			if !userHasAccess {
-				continue
-			}
-
-			for _, form := range approver.FormsAccessibility {
-
-				if form.AccessType != TypeAccessFormNone {
-					accessibleForms[form.NodeId] = struct{}{}
-				}
-			}
-
-		case FormBlockType:
-			var form pipeline.FormData
-			unmarshalErr := json.Unmarshal(s.State[s.Name], &form)
-			if unmarshalErr != nil {
-				return nil, unmarshalErr
-			}
-
-			for member := range form.Executors {
-				if currentUser == member {
-					userHasAccess = true
-					break
-				}
-			}
-
-			if !userHasAccess {
-				continue
-			}
-
-			accessibleForms[s.Name] = struct{}{}
-
-			for _, form := range form.FormsAccessibility {
-				if form.AccessType != TypeAccessFormNone {
-					accessibleForms[form.NodeId] = struct{}{}
-				}
-			}
-
-		case ExecutionBlockType:
-			var execution pipeline.ExecutionData
-			unmarshalErr := json.Unmarshal(s.State[s.Name], &execution)
-			if unmarshalErr != nil {
-				return nil, unmarshalErr
-			}
-
-			for member := range execution.Executors {
-				delegate := delegates.FilterByType("execution")
-				if member == currentUser || isDelegate(currentUser, member, &delegate) {
-					userHasAccess = true
-					break
-				}
-			}
-
-			if !userHasAccess {
-				continue
-			}
-
-			for _, form := range execution.FormsAccessibility {
-				if form.AccessType != TypeAccessFormNone {
-					accessibleForms[form.NodeId] = struct{}{}
-				}
-			}
-
-		case SignBlockType:
-			var sign pipeline.SignData
-			unmarshalErr := json.Unmarshal(s.State[s.Name], &sign)
-			if unmarshalErr != nil {
-				return nil, unmarshalErr
-			}
-
-			for member := range sign.Signers {
-				if member == currentUser {
-					userHasAccess = true
-					break
-				}
-			}
-
-			for addMember := range sign.AdditionalApprovers {
-				if sign.AdditionalApprovers[addMember].ApproverLogin == currentUser {
-					userHasAccess = true
-					break
-				}
-			}
-
-			if !userHasAccess {
-				continue
-			}
-			for _, form := range sign.FormsAccessibility {
-				if form.AccessType != TypeAccessFormNone {
-					accessibleForms[form.NodeId] = struct{}{}
-				}
-			}
-		}
+	err = stepHandler.HandleSteps(*steps)
+	if err != nil {
+		return nil, err
 	}
 
 	return accessibleForms, nil
 }
 
-func (ae *APIEnv) getCurrentUserInDelegatesForSteps(currentUser string, steps *entity.TaskSteps, delegates *ht.Delegations) (
-	res map[string]bool, err error) {
+func (ae *Env) getCurrentUserInDelegatesForSteps(
+	currentUser string,
+	steps *entity.TaskSteps,
+	delegates *ht.Delegations,
+) (userInDelegates map[string]bool, err error) {
 	const (
 		ApproverBlockType  = "approver"
 		ExecutionBlockType = "execution"
 		FormBlockType      = "form"
 	)
 
-	res = make(map[string]bool, 0)
-	for _, s := range *steps {
-		var isDelegateAnyPersonOfStep = false
+	userInDelegates = make(map[string]bool, 0)
 
-		if s.State == nil {
-			continue
-		}
+	stepHandler := stephandlers.NewMultipleTypesStepHandler()
 
-		switch s.Type {
-		case ApproverBlockType:
-			var approver approverBlock
-			unmarshalErr := json.Unmarshal(s.State[s.Name], &approver)
-			if unmarshalErr != nil {
-				return nil, unmarshalErr
-			}
+	stepHandler.RegisterStepTypeHandler(
+		ApproverBlockType,
+		stephandlers.NewUserInDelegatesApproverBlockTypeStepHandler(currentUser, *delegates, userInDelegates),
+	)
 
-			delegate := delegates.FilterByType("approvement")
+	executionFormBlockTypeStepHandler := stephandlers.NewUserInDelegatesExecutionFromBlockTypesStepHandler(
+		currentUser,
+		*delegates,
+		userInDelegates,
+	)
 
-			for member := range approver.Approvers {
-				if isDelegate(currentUser, member, &delegate) {
-					isDelegateAnyPersonOfStep = true
-					break
-				}
-			}
+	stepHandler.RegisterStepTypeHandler(ExecutionBlockType, executionFormBlockTypeStepHandler)
+	stepHandler.RegisterStepTypeHandler(FormBlockType, executionFormBlockTypeStepHandler)
 
-			for _, member := range approver.AdditionalApprovers {
-				if isDelegate(currentUser, member.ApproverLogin, &delegate) {
-					isDelegateAnyPersonOfStep = true
-					break
-				}
-			}
-		case ExecutionBlockType, FormBlockType:
-			var execution executionBlock
-			unmarshalErr := json.Unmarshal(s.State[s.Name], &execution)
-			if unmarshalErr != nil {
-				return nil, unmarshalErr
-			}
-
-			delegate := delegates.FilterByType("execution")
-
-			for member := range execution.Executors {
-				if isDelegate(currentUser, member, &delegate) {
-					isDelegateAnyPersonOfStep = true
-					break
-				}
-			}
-		}
-
-		res[s.Name] = isDelegateAnyPersonOfStep
+	err = stepHandler.HandleSteps(*steps)
+	if err != nil {
+		return nil, err
 	}
 
-	return res, nil
+	return userInDelegates, nil
 }
 
-func isDelegate(currentUser, login string, delegations *ht.Delegations) bool {
-	var delegates = delegations.GetDelegates(login)
-	return slices.Contains(delegates, currentUser)
-}
-
-//nolint:dupl,gocritic //its not duplicate
-func (ae *APIEnv) GetTasks(w http.ResponseWriter, req *http.Request, params GetTasksParams) {
+//nolint:dupl,gocritic //its not duplicate // params без поинтера нужен для интерфейса
+func (ae *Env) GetTasks(w http.ResponseWriter, req *http.Request, params GetTasksParams) {
 	ctx, s := trace.StartSpan(req.Context(), "get_tasks")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
+	errorHandler := newHTTPErrorHandler(log, w)
 
 	filters, err := params.toEntity(req)
 	if err != nil {
-		e := BadFiltersError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(BadFiltersError, err)
 
 		return
 	}
 
 	delegations, err := ae.HumanTasks.GetDelegationsToLogin(ctx, filters.CurrentUser)
 	if err != nil {
-		e := GetDelegationsError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(GetDelegationsError, err)
+
 		return
 	}
 
@@ -661,47 +520,23 @@ func (ae *APIEnv) GetTasks(w http.ResponseWriter, req *http.Request, params GetT
 	users := delegations.GetUserInArrayWithDelegators([]string{filters.CurrentUser})
 
 	if filters.Status != nil {
-		ss := strings.Split(*filters.Status, ",")
-		uniqueS := make(map[pipeline.TaskHumanStatus]struct{})
-		for _, status := range ss {
-			uniqueS[pipeline.TaskHumanStatus(strings.Trim(status, "'"))] = struct{}{}
-		}
-		for status := range uniqueS {
-			switch status {
-			case pipeline.StatusRejected:
-				uniqueS[pipeline.StatusApprovementRejected] = struct{}{}
-			case pipeline.StatusApprovementRejected:
-				uniqueS[pipeline.StatusRejected] = struct{}{}
-			default:
-				continue
-			}
-		}
-		newSS := make([]string, 0, len(uniqueS))
-		for status := range uniqueS {
-			newSS = append(newSS, "'"+string(status)+"'")
-		}
-		newStatuses := strings.Join(newSS, ",")
-		filters.Status = &newStatuses
+		handleFilterStatus(&filters)
 	}
 
 	resp, err := ae.DB.GetTasks(ctx, filters, users)
 	if err != nil {
-		e := GetTasksError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(GetTasksError, err)
 
 		return
 	}
 
-	versionsSLA := make(map[string]*entity.SlaVersionSettings)
+	versionsSLA := make(map[string]*entity.SLAVersionSettings)
 
 	for i := range resp.Tasks {
 		if _, exists := versionsSLA[resp.Tasks[i].VersionID.String()]; !exists {
-			versionSettings, errSla := ae.DB.GetSlaVersionSettings(ctx, resp.Tasks[i].VersionID.String())
-			if errSla != nil {
-				e := GetProcessSlaSettingsError
-				log.Error(e.errorMessage(err))
-				_ = e.sendError(w)
+			versionSettings, errSLA := ae.DB.GetSLAVersionSettings(ctx, resp.Tasks[i].VersionID.String())
+			if errSLA != nil {
+				errorHandler.handleError(GetProcessSLASettingsError, err)
 
 				return
 			}
@@ -709,7 +544,7 @@ func (ae *APIEnv) GetTasks(w http.ResponseWriter, req *http.Request, params GetT
 			versionsSLA[resp.Tasks[i].VersionID.String()] = &versionSettings
 		}
 
-		slaInfoPtr, getSlaInfoErr := ae.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
+		slaInfoPtr, getSLAInfoErr := ae.SLAService.GetSLAInfoPtr(ctx, sla.InfoDTO{
 			TaskCompletionIntervals: []entity.TaskCompletionInterval{
 				{
 					StartedAt:  resp.Tasks[i].StartedAt,
@@ -718,34 +553,28 @@ func (ae *APIEnv) GetTasks(w http.ResponseWriter, req *http.Request, params GetT
 			},
 			WorkType: sla.WorkHourType(versionsSLA[resp.Tasks[i].VersionID.String()].WorkType),
 		})
-		if getSlaInfoErr != nil {
-			e := UnknownError
-			log.Error(e.errorMessage(getSlaInfoErr))
-			_ = e.sendError(w)
+		if getSLAInfoErr != nil {
+			errorHandler.handleError(UnknownError, err)
 
 			return
 		}
 
 		deadline, deadlineErr := ae.DB.GetDeadline(ctx, resp.Tasks[i].WorkNumber)
 		if deadlineErr != nil {
-			e := GetDeadlineError
-			log.Error(e.errorMessage(deadlineErr))
-			_ = e.sendError(w)
+			errorHandler.handleError(GetDeadlineError, err)
 
 			return
 		}
 
 		if deadline.IsZero() {
-			deadline = ae.SLAService.ComputeMaxDate(resp.Tasks[i].StartedAt, float32(versionsSLA[resp.Tasks[i].VersionID.String()].Sla), slaInfoPtr)
+			deadline = ae.SLAService.ComputeMaxDate(resp.Tasks[i].StartedAt, float32(versionsSLA[resp.Tasks[i].VersionID.String()].SLA), slaInfoPtr)
 		}
 
 		resp.Tasks[i].ProcessDeadline = deadline
 
 		approvalLists, errGetSettings := ae.DB.GetApprovalListsSettings(ctx, resp.Tasks[i].VersionID.String())
 		if errGetSettings != nil {
-			e := UnknownError
-			log.Error(e.errorMessage(errGetSettings))
-			_ = e.sendError(w)
+			errorHandler.handleError(UnknownError, err)
 
 			return
 		}
@@ -761,9 +590,7 @@ func (ae *APIEnv) GetTasks(w http.ResponseWriter, req *http.Request, params GetT
 	}
 
 	if err = sendResponse(w, http.StatusOK, resp); err != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(UnknownError, err)
 
 		return
 	}
@@ -773,16 +600,21 @@ func (p *GetTasksParams) toEntity(req *http.Request) (entity.TaskFilter, error) 
 	var filters entity.TaskFilter
 
 	var typeAssigned *string
+
 	if p.ExecutorTypeAssigned != nil {
 		at := string(*p.ExecutorTypeAssigned)
+
 		typeAssigned = &at
 		if *typeAssigned != entity.AssignedToMe && *typeAssigned != entity.AssignedByMe {
 			return filters, errors.New("invalid value in typeAssigned filter")
 		}
 	}
+
 	var signatureCarrier *string
+
 	if p.SignatureCarrier != nil {
 		at := string(*p.SignatureCarrier)
+
 		signatureCarrier = &at
 		if *signatureCarrier != entity.SignatureCarrierCloud &&
 			*signatureCarrier != entity.SignatureCarrierToken &&
@@ -791,25 +623,13 @@ func (p *GetTasksParams) toEntity(req *http.Request) (entity.TaskFilter, error) 
 		}
 	}
 
-	var selectAs *string
+	var selectAs string
+
 	if p.SelectAs != nil {
-		at := string(*p.SelectAs)
-		selectAs = &at
-		if *selectAs != entity.SelectAsValApprover &&
-			*selectAs != entity.SelectAsValFinishedApprover &&
-			*selectAs != entity.SelectAsValExecutor &&
-			*selectAs != entity.SelectAsValFinishedExecutor &&
-			*selectAs != entity.SelectAsValFormExecutor &&
-			*selectAs != entity.SelectAsValFinishedFormExecutor &&
-			*selectAs != entity.SelectAsValSignerPhys &&
-			*selectAs != entity.SelectAsValFinishedSignerPhys &&
-			*selectAs != entity.SelectAsValSignerJur &&
-			*selectAs != entity.SelectAsValFinishedSignerJur &&
-			*selectAs != entity.SelectAsValInitiators &&
-			*selectAs != entity.SelectAsValGroupExecutor &&
-			*selectAs != entity.SelectAsValFinishedGroupExecutor &&
-			*selectAs != entity.SelectAsValQueueExecutor &&
-			*selectAs != entity.SelectAsValInWorkExecutor {
+		selectAs = string(*p.SelectAs)
+
+		valid := selectAsValid(selectAs)
+		if !valid {
 			return filters, errors.New("invalid value in SelectAs filter")
 		}
 	}
@@ -820,6 +640,7 @@ func (p *GetTasksParams) toEntity(req *http.Request) (entity.TaskFilter, error) 
 	}
 
 	filters.CurrentUser = ui.Username
+
 	limit, offset := parseLimitOffsetWithDefault(p.Limit, p.Offset)
 	if limit > 1000 {
 		limit = 1000
@@ -832,7 +653,7 @@ func (p *GetTasksParams) toEntity(req *http.Request) (entity.TaskFilter, error) 
 		Limit:                &limit,
 		Offset:               &offset,
 		TaskIDs:              p.TaskIDs,
-		SelectAs:             selectAs,
+		SelectAs:             &selectAs,
 		Archived:             p.Archived,
 		ForCarousel:          p.ForCarousel,
 		Status:               statusToEntity(p.Status),
@@ -849,14 +670,69 @@ func (p *GetTasksParams) toEntity(req *http.Request) (entity.TaskFilter, error) 
 	return filters, nil
 }
 
+func handleFilterStatus(filters *entity.TaskFilter) {
+	ss := strings.Split(*filters.Status, ",")
+
+	uniqueS := make(map[pipeline.TaskHumanStatus]struct{})
+	for _, status := range ss {
+		uniqueS[pipeline.TaskHumanStatus(strings.Trim(status, "'"))] = struct{}{}
+	}
+
+	//nolint:exhaustive // раз не надо было обрабатывать остальные случаи значит не надо // правильно, не уважаю этот линтер
+	for status := range uniqueS {
+		switch status {
+		case pipeline.StatusRejected:
+			uniqueS[pipeline.StatusApprovementRejected] = struct{}{}
+		case pipeline.StatusApprovementRejected:
+			uniqueS[pipeline.StatusRejected] = struct{}{}
+		default:
+			continue
+		}
+	}
+
+	newSS := make([]string, 0, len(uniqueS))
+
+	for status := range uniqueS {
+		newSS = append(newSS, "'"+string(status)+"'")
+	}
+
+	newStatuses := strings.Join(newSS, ",")
+	filters.Status = &newStatuses
+}
+
+func selectAsValid(selectAs string) bool {
+	switch selectAs {
+	case entity.SelectAsValApprover,
+		entity.SelectAsValFinishedApprover,
+		entity.SelectAsValExecutor,
+		entity.SelectAsValFinishedExecutor,
+		entity.SelectAsValFormExecutor,
+		entity.SelectAsValFinishedFormExecutor,
+		entity.SelectAsValSignerPhys,
+		entity.SelectAsValFinishedSignerPhys,
+		entity.SelectAsValSignerJur,
+		entity.SelectAsValFinishedSignerJur,
+		entity.SelectAsValInitiators,
+		entity.SelectAsValGroupExecutor,
+		entity.SelectAsValFinishedGroupExecutor,
+		entity.SelectAsValQueueExecutor,
+		entity.SelectAsValInWorkExecutor:
+		return true
+	}
+
+	return false
+}
+
 func (cr *Created) toEntity() *entity.TimePeriod {
 	var timePeriod *entity.TimePeriod
+
 	if cr != nil {
 		timePeriod = &entity.TimePeriod{
 			Start: cr.Start,
 			End:   cr.End,
 		}
 	}
+
 	return timePeriod
 }
 
@@ -864,32 +740,34 @@ func statusToEntity(status *[]string) *string {
 	if status == nil {
 		return nil
 	}
+
 	for i := range *status {
 		(*status)[i] = "'" + (*status)[i] + "'"
 	}
+
 	qStatus := strings.Join(*status, ",")
+
 	return &qStatus
 }
 
-func (ae *APIEnv) GetTasksCount(w http.ResponseWriter, req *http.Request) {
+func (ae *Env) GetTasksCount(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "get_tasks_count")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
+	errorHandler := newHTTPErrorHandler(log, w)
 
 	ui, err := user.GetEffectiveUserInfoFromCtx(req.Context())
 	if err != nil {
-		e := GetUserinfoErr
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(GetUserinfoErr, err)
+
 		return
 	}
 
 	delegations, err := ae.HumanTasks.GetDelegationsToLogin(ctx, ui.Username)
 	if err != nil {
-		e := GetDelegationsError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(GetDelegationsError, err)
+
 		return
 	}
 
@@ -901,19 +779,15 @@ func (ae *APIEnv) GetTasksCount(w http.ResponseWriter, req *http.Request) {
 		ui.Username,
 		delegationsByApprovement.GetUserInArrayWithDelegators([]string{ui.Username}),
 		delegationsByExecution.GetUserInArrayWithDelegators([]string{ui.Username}))
-
 	if err != nil {
-		e := GetTasksCountError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(GetTasksCountError, err)
 
 		return
 	}
 
-	if err = sendResponse(w, http.StatusOK, resp); err != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+	err = sendResponse(w, http.StatusOK, resp)
+	if err != nil {
+		errorHandler.handleError(UnknownError, err)
 
 		return
 	}
@@ -995,48 +869,45 @@ func getTaskStepNameByAction(action entity.TaskUpdateAction) []string {
 	return []string{}
 }
 
-func (ae *APIEnv) GetTaskMeanSolveTime(w http.ResponseWriter, req *http.Request, pipelineId string) {
+func (ae *Env) GetTaskMeanSolveTime(w http.ResponseWriter, req *http.Request, pipelineID string) {
 	ctx, s := trace.StartSpan(req.Context(), "get_task_mean_solve_time")
 	defer s.End()
 
-	log := logger.GetLogger(ctx).WithField("pipelineId", pipelineId)
+	log := logger.GetLogger(ctx).WithField("pipelineId", pipelineID)
+	errorHandler := newHTTPErrorHandler(log, w)
 
-	taskTimeIntervals, intervalsErr := ae.DB.GetMeanTaskSolveTime(ctx, pipelineId) // it returns ordered by created_at
+	taskTimeIntervals, intervalsErr := ae.DB.GetMeanTaskSolveTime(ctx, pipelineID) // it returns ordered by created_at
 	if intervalsErr != nil {
-		e := GetTaskError
-		log.Error(e.errorMessage(intervalsErr))
-		_ = e.sendError(w)
+		errorHandler.handleError(GetTaskError, intervalsErr)
+
 		return
 	}
+
 	if len(taskTimeIntervals) == 0 {
-		if err := sendResponse(w, http.StatusOK, script.TaskSolveTime{MeanWorkHours: 0}); err != nil {
-			e := UnknownError
-			log.Error(e.errorMessage(err))
-			_ = e.sendError(w)
+		err := sendResponse(w, http.StatusOK, script.TaskSolveTime{MeanWorkHours: 0})
+		if err != nil {
+			errorHandler.handleError(UnknownError, err)
 		}
+
 		return
 	}
 
 	calendarDays, err := ae.HrGate.GetDefaultCalendarDaysForGivenTimeIntervals(ctx, taskTimeIntervals)
 	if err != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(UnknownError, err)
+
 		return
 	}
 
-	var mean = ae.SLAService.ComputeMeanTaskCompletionTime(taskTimeIntervals, *calendarDays)
+	mean := ae.SLAService.ComputeMeanTaskCompletionTime(taskTimeIntervals, *calendarDays)
 
-	if err = sendResponse(w, http.StatusOK, script.TaskSolveTime{MeanWorkHours: mean.MeanWorkHours}); err != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
+	err = sendResponse(w, http.StatusOK, script.TaskSolveTime{MeanWorkHours: mean.MeanWorkHours})
+	if err != nil {
+		errorHandler.handleError(UnknownError, err)
 	}
 }
 
-func (ae *APIEnv) removeForms(dbTask *entity.EriusTask, accessibleForms map[string]struct{}) {
+func (ae *Env) removeForms(dbTask *entity.EriusTask, accessibleForms map[string]struct{}) {
 	actualSteps := make([]*entity.Step, 0, len(dbTask.Steps))
 
 	for _, step := range dbTask.Steps {
@@ -1045,25 +916,30 @@ func (ae *APIEnv) removeForms(dbTask *entity.EriusTask, accessibleForms map[stri
 		}
 
 		newSteps := make([]string, 0, len(step.Steps))
+
 		for _, s := range step.Steps {
 			if _, ok := accessibleForms[s]; !ok && strings.HasPrefix(s, "form") {
 				continue
 			}
+
 			newSteps = append(newSteps, s)
 		}
 
 		step.Steps = newSteps
 
 		newStates := make(map[string]json.RawMessage, len(step.State))
+
 		for k, v := range step.State {
 			if _, ok := accessibleForms[k]; !ok && strings.HasPrefix(k, "form") {
 				continue
 			}
+
 			newStates[k] = v
 		}
 
 		for k := range step.Storage {
 			key := strings.Split(k, ".")
+
 			if _, ok := accessibleForms[key[0]]; !ok && strings.HasPrefix(k, "form") {
 				delete(step.Storage, k)
 			}
@@ -1076,111 +952,34 @@ func (ae *APIEnv) removeForms(dbTask *entity.EriusTask, accessibleForms map[stri
 	dbTask.Steps = actualSteps
 }
 
-func (ae *APIEnv) hideExecutors(ctx context.Context, dbTask *entity.EriusTask, requesterLogin string, stepDelegates map[string]bool) error {
+func (ae *Env) hideExecutors(ctx context.Context, dbTask *entity.EriusTask, requesterLogin string, stepDelegates map[string]bool) error {
 	dbMembers, membErr := ae.DB.GetTaskMembers(ctx, dbTask.WorkNumber, false)
 	if membErr != nil {
 		return membErr
 	}
 
 	members := make([]string, 0)
+
 	for i := range dbMembers {
 		members = append(members, dbMembers[i].Login)
 	}
 
-	for stepIndex := range dbTask.Steps {
-		currentStep := dbTask.Steps[stepIndex]
-		if currentStep.State == nil {
-			continue
-		}
+	stepHandler := stephandlers.NewMultipleTypesStepHandler()
 
-		switch currentStep.Type {
-		case pipeline.BlockGoFormID:
-			if stepDelegates[currentStep.Name] {
-				continue
-			}
-			var formBlock pipeline.FormData
-			unmarshalErr := json.Unmarshal(currentStep.State[currentStep.Name], &formBlock)
-			if unmarshalErr != nil {
-				return unmarshalErr
-			}
+	stepHandler.RegisterStepTypeHandler(
+		pipeline.BlockGoFormID,
+		stephandlers.NewHideExecutorsFormBlockStepHandler(stepDelegates, members, requesterLogin),
+	)
 
-			if !formBlock.HideExecutorFromInitiator || slices.Contains(members, requesterLogin) {
-				continue
-			}
-			formBlock.Executors = map[string]struct{}{
-				hiddenUserLogin: {},
-			}
-			formBlock.ActualExecutor = utils.GetAddressOfValue(hiddenUserLogin)
+	stepHandler.RegisterStepTypeHandler(
+		pipeline.BlockGoExecutionID,
+		stephandlers.NewHideExecutorsExecutionBlockStepHandler(stepDelegates, members, requesterLogin),
+	)
 
-			for historyIdx := range formBlock.ChangesLog {
-				formBlock.ChangesLog[historyIdx].Executor = hiddenUserLogin
-				formBlock.ChangesLog[historyIdx].DelegateFor = hideDelegator(formBlock.ChangesLog[historyIdx].DelegateFor)
-			}
-			data, marshalErr := json.Marshal(formBlock)
-			if marshalErr != nil {
-				return marshalErr
-			}
-			currentStep.State[currentStep.Name] = data
-
-		case pipeline.BlockGoExecutionID:
-			if stepDelegates[currentStep.Name] {
-				continue
-			}
-			var execBlock pipeline.ExecutionData
-			unmarshalErr := json.Unmarshal(currentStep.State[currentStep.Name], &execBlock)
-			if unmarshalErr != nil {
-				return unmarshalErr
-			}
-			if !execBlock.HideExecutor || slices.Contains(members, requesterLogin) {
-				continue
-			}
-			execBlock.Executors = map[string]struct{}{
-				hiddenUserLogin: {},
-			}
-
-			execBlock.InitialExecutors = map[string]struct{}{
-				hiddenUserLogin: {},
-			}
-
-			if execBlock.ActualExecutor != nil {
-				execBlock.ActualExecutor = utils.GetAddressOfValue(hiddenUserLogin)
-			}
-
-			for i := range execBlock.ChangedExecutorsLogs {
-				execBlock.ChangedExecutorsLogs[i].OldLogin = hiddenUserLogin
-				execBlock.ChangedExecutorsLogs[i].NewLogin = hiddenUserLogin
-				execBlock.ChangedExecutorsLogs[i].Comment = ""
-			}
-
-			for i := range execBlock.RequestExecutionInfoLogs {
-				if execBlock.RequestExecutionInfoLogs[i].ReqType == pipeline.RequestInfoQuestion {
-					execBlock.RequestExecutionInfoLogs[i].Login = hiddenUserLogin
-					execBlock.RequestExecutionInfoLogs[i].DelegateFor = hideDelegator(execBlock.RequestExecutionInfoLogs[i].DelegateFor)
-				}
-			}
-
-			for i := range execBlock.EditingAppLog {
-				execBlock.EditingAppLog[i].Executor = hiddenUserLogin
-				execBlock.EditingAppLog[i].DelegateFor = hideDelegator(execBlock.EditingAppLog[i].DelegateFor)
-			}
-
-			if execBlock.EditingApp != nil {
-				execBlock.EditingApp.Executor = hiddenUserLogin
-				execBlock.EditingApp.DelegateFor = hideDelegator(execBlock.EditingApp.DelegateFor)
-			}
-			data, marshalErr := json.Marshal(execBlock)
-			if marshalErr != nil {
-				return marshalErr
-			}
-			currentStep.State[currentStep.Name] = data
-		}
+	err := stepHandler.HandleSteps(dbTask.Steps)
+	if err != nil {
+		return err
 	}
+
 	return nil
-}
-
-func hideDelegator(delegate string) string {
-	if delegate == "" {
-		return ""
-	}
-	return hiddenUserLogin
 }
