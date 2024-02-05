@@ -17,7 +17,7 @@ people:
 database:
   kind: postgres
   host: localhost
-  port: 5434
+  port: 5432
   user_env_key: "DB_USER"
   pass_env_key: "DB_PASS"
   dbname: 'pipeliner'
@@ -34,7 +34,7 @@ sso:
 mail:
   broker: "redis"
   host: "localhost"
-  port: 6380
+  port: 6379
   queue: "mail"
   database: "0"
   from:
@@ -93,13 +93,13 @@ servicedesc:
   scope: 'servicedesk-develop-aud'
 
 function_store:
-  url: 'functions:8001'
+  url: 'functions:90'
 
 scheduler_tasks:
-  url: 'scheduler:8003'
+  url: 'scheduler:90'
 
 human_tasks:
-  url: 'localhost:8002'
+  url: 'localhost:90'
 
 imap:
   imap_connection: "mail.inside.mts.ru:993"
@@ -108,7 +108,7 @@ imap:
   imap_mail_box: "Inbox"
 
 integrations:
-  url: 'localhost:8004'
+  url: 'localhost:90'
 
 forms:
   url: 'forms:90'
