@@ -325,15 +325,15 @@ func (ne *NodeEvent) ToMap() map[string]interface{} {
 
 	res := make(map[string]interface{})
 
-	for i := 0; i < reflect.TypeOf(ne).NumField(); i++ {
-		f := reflect.TypeOf(ne).Field(i)
+	for i := 0; i < reflect.TypeOf(*ne).NumField(); i++ {
+		f := reflect.TypeOf(*ne).Field(i)
 		k := f.Tag.Get("json")
 
 		if k == "" {
 			continue
 		}
 
-		val := reflect.ValueOf(ne).Field(i).Interface()
+		val := reflect.ValueOf(*ne).Field(i).Interface()
 		res[k] = val
 	}
 

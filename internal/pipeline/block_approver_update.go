@@ -597,6 +597,10 @@ func (gb *GoApproverBlock) toEditApplication(ctx context.Context, updateParams a
 	}
 
 	if gb.isNextBlockServiceDesk() {
+		if approverFound {
+			delegateFor = ""
+		}
+
 		err := gb.State.setEditAppToInitiator(gb.RunContext.UpdateData.ByLogin, delegateFor, updateParams)
 		if err != nil {
 			return err
@@ -687,6 +691,10 @@ func (gb *GoApproverBlock) updateRequestApproverInfo(ctx context.Context) (err e
 		}
 
 		linkID = &lid
+	}
+
+	if gb.State.userIsAnyApprover(gb.RunContext.UpdateData.ByLogin) {
+		delegateFor = ""
 	}
 
 	gb.State.AddInfo = append(gb.State.AddInfo, AdditionalInfo{
@@ -999,6 +1007,10 @@ func (gb *GoApproverBlock) addApprovers(ctx context.Context, u addApproversParam
 
 			logApprovers = append(logApprovers, u.AdditionalApproversLogins[i])
 		}
+	}
+
+	if gb.State.userIsAnyApprover(gb.RunContext.UpdateData.ByLogin) {
+		delegateFor = ""
 	}
 
 	if len(logApprovers) > 0 {
