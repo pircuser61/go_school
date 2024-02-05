@@ -597,7 +597,6 @@ func (gb *GoApproverBlock) toEditApplication(ctx context.Context, updateParams a
 	}
 
 	if gb.isNextBlockServiceDesk() {
-
 		if approverFound {
 			delegateFor = ""
 		}
