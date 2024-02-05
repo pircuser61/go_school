@@ -101,8 +101,10 @@ func (gb *GoApproverBlock) setApproveDecision(ctx context.Context, u *approverUp
 	return nil
 }
 
-//nolint:dupl //its not duplicate
+//nolint:dupl,gocyclo //its not duplicate
 func (gb *GoApproverBlock) handleBreachedSLA(ctx context.Context) error {
+	const fn = "pipeline.approver.handleBreachedSLA"
+
 	if !gb.State.CheckSLA {
 		gb.State.SLAChecked = true
 		gb.State.HalfSLAChecked = true
@@ -110,8 +112,67 @@ func (gb *GoApproverBlock) handleBreachedSLA(ctx context.Context) error {
 		return nil
 	}
 
+	log := logger.GetLogger(ctx)
+
+	//nolint:nestif //it's ok
 	if gb.State.SLA >= 8 {
-		err := gb.checkBreachedSLA(ctx)
+		seenAdditionalApprovers := map[string]bool{}
+
+		logins := getSliceFromMapOfStrings(gb.State.Approvers)
+
+		for _, additionalApprover := range gb.State.AdditionalApprovers {
+			// check if approver has not decisioned, and we did not see approver before
+			if additionalApprover.Decision != nil || seenAdditionalApprovers[additionalApprover.ApproverLogin] {
+				continue
+			}
+
+			logins = append(logins, additionalApprover.ApproverLogin)
+
+			seenAdditionalApprovers[additionalApprover.ApproverLogin] = true
+		}
+
+		delegations, err := gb.RunContext.Services.HumanTasks.GetDelegationsByLogins(ctx, logins)
+		if err != nil {
+			log.WithError(err).Info(fn, fmt.Sprintf("approvers %v have no delegates", logins))
+		}
+
+		delegations = delegations.FilterByType("approvement")
+		logins = delegations.GetUserInArrayWithDelegations(logins)
+
+		emails := make([]string, 0, len(gb.State.Approvers)+len(gb.State.AdditionalApprovers))
+
+		var approverEmail string
+
+		for i := range logins {
+			approverEmail, err = gb.RunContext.Services.People.GetUserEmail(ctx, logins[i])
+			if err != nil {
+				log.WithError(err).Warning(fn, fmt.Sprintf("approver login %s not found", logins[i]))
+
+				continue
+			}
+
+			emails = append(emails, approverEmail)
+		}
+
+		tpl := mail.NewApprovementSLATpl(
+			gb.RunContext.WorkNumber,
+			gb.RunContext.NotifName,
+			gb.RunContext.Services.Sender.SdAddress,
+			gb.State.ApproveStatusName,
+		)
+
+		filesList := []string{tpl.Image}
+
+		files, iconEerr := gb.RunContext.GetIcons(filesList)
+		if iconEerr != nil {
+			return iconEerr
+		}
+
+		if len(emails) == 0 {
+			return nil
+		}
+
+		err = gb.RunContext.Services.Sender.SendNotification(ctx, emails, files, tpl)
 		if err != nil {
 			return err
 		}
@@ -119,14 +180,11 @@ func (gb *GoApproverBlock) handleBreachedSLA(ctx context.Context) error {
 
 	if gb.State.AutoAction != nil {
 		gb.RunContext.UpdateData.ByLogin = AutoApprover
-
-		setErr := gb.setApproveDecision(ctx,
+		if setErr := gb.setApproveDecision(ctx,
 			&approverUpdateParams{
 				internalDecision: gb.State.AutoAction.ToDecision(),
 				Comment:          AutoActionComment,
-			},
-		)
-		if setErr != nil {
+			}); setErr != nil {
 			return setErr
 		}
 	}

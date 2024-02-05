@@ -2144,6 +2144,7 @@ func (db *PGCon) GetVersionByPipelineID(c context.Context, pipelineID string) (*
        pv.author,
        vs.start_schema,
        vs.end_schema,
+       vs.raw_start_schema,
        (SELECT MAX(date) FROM pipeline_history WHERE pipeline_id = pv.pipeline_id) AS last_approve
 	FROM versions pv
 			 LEFT JOIN pipelines p ON pv.pipeline_id = p.id
@@ -2165,10 +2166,11 @@ func (db *PGCon) GetVersionByPipelineID(c context.Context, pipelineID string) (*
 		d        *time.Time
 		ca       *time.Time
 		ss, es   *script.JSONSchema
+		rss      []byte
 		a        string
 	)
 
-	err := db.Connection.QueryRow(c, query, pipelineID).Scan(&vID, &s, &pID, &ca, &content, &cr, &cm, &a, &ss, &es, &d)
+	err := db.Connection.QueryRow(c, query, pipelineID).Scan(&vID, &s, &pID, &ca, &content, &cr, &cm, &a, &ss, &es, &rss, &d)
 	if err != nil {
 		return nil, err
 	}
@@ -2187,6 +2189,7 @@ func (db *PGCon) GetVersionByPipelineID(c context.Context, pipelineID string) (*
 	res.CreatedAt = ca
 	res.Settings.StartSchema = ss
 	res.Settings.EndSchema = es
+	res.Settings.StartSchemaRaw = rss
 	res.Author = a
 
 	return res, nil
