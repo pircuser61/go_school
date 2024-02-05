@@ -20,10 +20,12 @@ const (
 	objectType  = "object"
 )
 
-func GetJsonType(value interface{}) string {
+func GetJSONType(value interface{}) string {
 	if value == nil {
 		return ""
 	}
+
+	//nolint:exhaustive //нам не нужно обрабатывать остальные случаи
 	switch reflect.TypeOf(value).Kind() {
 	case reflect.Int:
 		return integerType
@@ -42,6 +44,7 @@ func GetJsonType(value interface{}) string {
 	}
 }
 
+//nolint:gocritic //так надо, так что линтер - не выпендривайся
 func CheckVariableType(variable *interface{}, originalValue TypeValue) error {
 	tHandler, ok := typesHandlersMapping[originalValue.GetType()]
 	if !ok {
@@ -51,6 +54,7 @@ func CheckVariableType(variable *interface{}, originalValue TypeValue) error {
 	return tHandler(variable, originalValue)
 }
 
+//nolint:gochecknoglobals // GOOGLE дал нам глобальные переменные в go, так почему мы должны отказываться от этого божественного дара
 var typesHandlersMapping = map[string]typeHandler{
 	integerType: simpleTypeHandler,
 	stringType:  simpleTypeHandler,
@@ -63,12 +67,15 @@ var typesHandlersMapping = map[string]typeHandler{
 
 type typeHandler func(variable *interface{}, originalValue TypeValue) error
 
+//nolint:gochecknoglobals // GOOGLE дал нам глобальные переменные в go, так почему мы должны отказываться от этого божественного дара
 var nestedTypesMapping = map[string]reflect.Kind{
 	objectType: reflect.Map,
 }
 
+//nolint:gocritic //так надо, так что линтер - не выпендривайся
 func nestedTypeHandler(variable *interface{}, originalValue TypeValue) error {
 	nestedType := nestedTypesMapping[originalValue.GetType()]
+
 	variableType := reflect.TypeOf(*variable)
 	if variableType.Kind() != nestedType {
 		return fmt.Errorf("unexpected type of variable %v %T", *variable, *variable)
@@ -90,7 +97,9 @@ func handleMap(variable interface{}, originalValue TypeValue) error {
 		if _, ok := variableObject[k]; !ok {
 			return fmt.Errorf("%v key not found in variable %v", k, variable)
 		}
+
 		object := variableObject[k]
+
 		err := simpleTypeHandler(&object, v.(TypeValue))
 		if err != nil {
 			return err
@@ -100,6 +109,7 @@ func handleMap(variable interface{}, originalValue TypeValue) error {
 	return nil
 }
 
+//nolint:gochecknoglobals // этот линтер тут случайно
 var simpleTypesMapping = map[string]reflect.Kind{
 	integerType: reflect.Int,
 	stringType:  reflect.String,
@@ -109,6 +119,8 @@ var simpleTypesMapping = map[string]reflect.Kind{
 
 // We're using pointer because we sometimes need to change type inside interface
 // from float to integer
+//
+//nolint:gocritic //так надо, так что линтер - не выпендривайся
 func simpleTypeHandler(variable *interface{}, originalValue TypeValue) (err error) {
 	simpleType, ok := simpleTypesMapping[originalValue.GetType()]
 	if !ok {
@@ -116,12 +128,15 @@ func simpleTypeHandler(variable *interface{}, originalValue TypeValue) (err erro
 	}
 
 	varKind := reflect.TypeOf(*variable).Kind()
+
 	if simpleType == reflect.Int && varKind == reflect.Float64 {
 		var intVariable int64
+
 		s := fmt.Sprintf("%v", *variable)
 		if intVariable, err = strconv.ParseInt(s, 10, 64); err != nil {
 			return fmt.Errorf("can not convert variable to int %v %T", *variable, *variable)
 		}
+
 		*variable = int(intVariable)
 	}
 

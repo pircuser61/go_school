@@ -29,12 +29,12 @@ func (s *Service) GetCalendars(ctx context.Context, params *GetCalendarsParams) 
 	if err != nil || response.StatusCode() != http.StatusOK {
 		for retryCount := 0; retryCount < maxRetries; retryCount++ {
 			retryDelay = time.Duration(fibonacci(retryCount)) * time.Second
-			select {
-			case <-time.After(retryDelay):
-				response, err = s.Cli.GetCalendarsWithResponse(ctx, params)
-				if err == nil && response.StatusCode() == http.StatusOK {
-					break
-				}
+
+			<-time.After(retryDelay)
+
+			response, err = s.Cli.GetCalendarsWithResponse(ctx, params)
+			if err == nil && response.StatusCode() == http.StatusOK {
+				break
 			}
 		}
 	}
@@ -87,6 +87,7 @@ func (s *Service) GetCalendarDays(ctx context.Context, params *GetCalendarDaysPa
 	if err != nil {
 		return nil, err
 	}
+
 	if resp.StatusCode() != http.StatusOK {
 		return nil, fmt.Errorf("invalid code on getting calendar days: %d", resp.StatusCode())
 	}
@@ -103,9 +104,10 @@ func (s *Service) GetCalendarDays(ctx context.Context, params *GetCalendarDaysPa
 	return &res, nil
 }
 
-func (s *Service) FillDefaultUnitId(ctx context.Context) error {
+func (s *Service) FillDefaultUnitID(ctx context.Context) error {
 	ctx, span := trace.StartSpan(ctx, "hrgate.fill_default_unit_id")
 	defer span.End()
+
 	employee, err := s.GetEmployeeByLogin(ctx, defaultLogin)
 	if err != nil {
 		return err
@@ -115,7 +117,7 @@ func (s *Service) FillDefaultUnitId(ctx context.Context) error {
 		return fmt.Errorf("cant get organization id by login: %s", defaultLogin)
 	}
 
-	organization, err := s.GetOrganizationById(ctx, *employee.OrganizationId)
+	organization, err := s.GetOrganizationByID(ctx, *employee.OrganizationId)
 	if err != nil {
 		return err
 	}
@@ -124,24 +126,24 @@ func (s *Service) FillDefaultUnitId(ctx context.Context) error {
 		return fmt.Errorf("cant get ogranization unit id by login: %s", defaultLogin)
 	}
 
-	s.DefaultCalendarUnitId = (*string)(&organization.Unit.Id)
+	s.DefaultCalendarUnitID = (*string)(&organization.Unit.Id)
 
 	return nil
 }
 
-func (s *Service) GetDefaultUnitId() string {
-	return *s.DefaultCalendarUnitId
+func (s *Service) GetDefaultUnitID() string {
+	return *s.DefaultCalendarUnitID
 }
 
 func (s *Service) GetDefaultCalendar(ctx context.Context) (*Calendar, error) {
 	ctx, span := trace.StartSpan(ctx, "hrgate.get_default_calendar")
 	defer span.End()
 
-	unitId := s.GetDefaultUnitId()
+	unitID := s.GetDefaultUnitID()
 
 	calendars, getCalendarsErr := s.GetCalendars(ctx, &GetCalendarsParams{
 		QueryFilters: nil,
-		UnitIDs:      &UnitIDs{unitId},
+		UnitIDs:      &UnitIDs{unitID},
 	})
 
 	if getCalendarsErr != nil {
@@ -153,14 +155,15 @@ func (s *Service) GetDefaultCalendar(ctx context.Context) (*Calendar, error) {
 
 func (s *Service) GetDefaultCalendarDaysForGivenTimeIntervals(
 	ctx context.Context,
-	taskTimeIntervals []entity.TaskCompletionInterval) (*CalendarDays, error) {
+	taskTimeIntervals []entity.TaskCompletionInterval,
+) (*CalendarDays, error) {
 	ctx, span := trace.StartSpan(ctx, "hrgate.get_default_calendar_days_for_given_time_intervals")
 	defer span.End()
 
-	unitId := s.GetDefaultUnitId()
+	unitID := s.GetDefaultUnitID()
 
 	calendar, getCalendarsErr := s.GetPrimaryRussianFederationCalendarOrFirst(ctx, &GetCalendarsParams{
-		UnitIDs: &UnitIDs{unitId},
+		UnitIDs: &UnitIDs{unitID},
 	})
 
 	if getCalendarsErr != nil {
@@ -207,5 +210,6 @@ func fibonacci(n int) int {
 	if n <= 1 {
 		return n
 	}
+
 	return fibonacci(n-1) + fibonacci(n-2)
 }

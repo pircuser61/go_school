@@ -9,12 +9,11 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v4"
+	"golang.org/x/exp/slices"
 
 	"github.com/google/uuid"
 
 	"github.com/pkg/errors"
-
-	"golang.org/x/exp/slices"
 
 	"go.opencensus.io/trace"
 
@@ -31,10 +30,13 @@ const (
 
 func uniqueActionsByRole(loginsIn, stepType string, finished, acted bool) string {
 	statuses := "('running', 'idle', 'ready')"
+
 	if finished {
 		statuses = "('finished', 'cancel', 'no_success', 'error')"
 	}
+
 	memberActed := ""
+
 	if acted {
 		memberActed = "AND m.is_acted = true"
 	}
@@ -72,8 +74,10 @@ func uniqueActionsByRole(loginsIn, stepType string, finished, acted bool) string
 }
 
 func uniqueActiveActions(approverLogins, executionLogins []string, currentUser, workNumber string) string {
-	var approverLoginsIn = buildInExpression(approverLogins)
-	var executionLoginsIn = buildInExpression(executionLogins)
+	var (
+		approverLoginsIn  = buildInExpression(approverLogins)
+		executionLoginsIn = buildInExpression(executionLogins)
+	)
 
 	return fmt.Sprintf(`WITH actions AS (
     SELECT vs.work_id AS work_id
@@ -114,6 +118,7 @@ func buildInExpression(items []string) string {
 	var sb strings.Builder
 
 	sb.WriteString(OpenParentheses)
+
 	for idx, item := range items {
 		sb.WriteString(SingleQuote)
 		sb.WriteString(item)
@@ -123,13 +128,16 @@ func buildInExpression(items []string) string {
 			sb.WriteString(Separator)
 		}
 	}
+
 	sb.WriteString(ClosedParentheses)
 
 	return sb.String()
 }
 
 func getUniqueActions(selectFilter string, logins []string) string {
-	var loginsIn = buildInExpression(logins)
+	const replaceCount = 1
+
+	loginsIn := buildInExpression(logins)
 
 	switch selectFilter {
 	case entity.SelectAsValApprover:
@@ -146,42 +154,75 @@ func getUniqueActions(selectFilter string, logins []string) string {
 		return uniqueActionsByRole(loginsIn, "form", true, true)
 	case entity.SelectAsValQueueExecutor:
 		q := uniqueActionsByRole(loginsIn, "execution", false, false)
-		q = strings.Replace(q, "--unique-actions-filter--",
-			"AND vs.content -> 'State' -> vs.step_name ->> 'is_taken_in_work' = 'false' --unique-actions-filter--", 1)
+		q = strings.Replace(q,
+			"--unique-actions-filter--",
+			"AND vs.content -> 'State' -> vs.step_name ->> 'is_taken_in_work' = 'false' --unique-actions-filter--",
+			replaceCount,
+		)
+
 		return q
 	case entity.SelectAsValInWorkExecutor:
 		q := uniqueActionsByRole(loginsIn, "execution", false, false)
-		q = strings.Replace(q, "--unique-actions-filter--",
-			"AND vs.content -> 'State' -> vs.step_name ->> 'is_taken_in_work' = 'true' --unique-actions-filter--", 1)
+		q = strings.Replace(q,
+			"--unique-actions-filter--",
+			"AND vs.content -> 'State' -> vs.step_name ->> 'is_taken_in_work' = 'true' --unique-actions-filter--",
+			replaceCount,
+		)
+
 		return q
 	case entity.SelectAsValSignerPhys:
 		q := uniqueActionsByRole(loginsIn, "sign", false, false)
-		q = strings.Replace(q, "--unique-actions-filter--", "AND vs.content -> 'State' -> vs.step_name ->> 'signature_type' in ('pep', 'unep') --unique-actions-filter--", 1)
+		q = strings.Replace(q,
+			"--unique-actions-filter--",
+			"AND vs.content -> 'State' -> vs.step_name ->> 'signature_type' in ('pep', 'unep') --unique-actions-filter--",
+			replaceCount,
+		)
+
 		return q
 	case entity.SelectAsValFinishedSignerPhys:
 		q := uniqueActionsByRole(loginsIn, "sign", true, true)
-		q = strings.Replace(q, "--unique-actions-filter--", "AND vs.content -> 'State' -> vs.step_name ->> 'signature_type' in ('pep', 'unep') --unique-actions-filter--", 1)
+		q = strings.Replace(q,
+			"--unique-actions-filter--",
+			"AND vs.content -> 'State' -> vs.step_name ->> 'signature_type' in ('pep', 'unep') --unique-actions-filter--",
+			replaceCount,
+		)
+
 		return q
 	case entity.SelectAsValSignerJur:
 		q := uniqueActionsByRole(loginsIn, "sign", false, false)
-		q = strings.Replace(q, "--unique-actions-filter--", "AND vs.content -> 'State' -> vs.step_name ->> 'signature_type' = 'ukep' --unique-actions-filter--", 1)
+		q = strings.Replace(q,
+			"--unique-actions-filter--",
+			"AND vs.content -> 'State' -> vs.step_name ->> 'signature_type' = 'ukep' --unique-actions-filter--",
+			replaceCount,
+		)
+
 		return q
 	case entity.SelectAsValFinishedSignerJur:
 		q := uniqueActionsByRole(loginsIn, "sign", true, true)
-		q = strings.Replace(q, "--unique-actions-filter--", "AND vs.content -> 'State' -> vs.step_name ->> 'signature_type' = 'ukep' --unique-actions-filter--", 1)
+		q = strings.Replace(q,
+			"--unique-actions-filter--",
+			"AND vs.content -> 'State' -> vs.step_name ->> 'signature_type' = 'ukep' --unique-actions-filter--",
+			replaceCount,
+		)
+
 		return q
 	case entity.SelectAsValInitiators:
-		return fmt.Sprintf(`WITH unique_actions AS (
+		return fmt.Sprintf(
+			`WITH unique_actions AS (
 			SELECT id AS work_id, '[]' AS actions
 			FROM works
 			WHERE status = 1 AND author IN %s AND child_id IS NULL
-		)`, loginsIn)
+			)`,
+			loginsIn,
+		)
 	case entity.SelectAsValGroupExecutor:
 		q := uniqueActionsByRole(loginsIn, "execution", false, false)
-		return strings.Replace(q, "--unique-actions-filter--", "AND m.execution_group_member = true", 1)
+
+		return strings.Replace(q, "--unique-actions-filter--", "AND m.execution_group_member = true", replaceCount)
 	case entity.SelectAsValFinishedGroupExecutor:
 		q := uniqueActionsByRole(loginsIn, "execution", true, false)
-		return strings.Replace(q, "--unique-actions-filter--", "AND m.execution_group_member = true", 1)
+
+		return strings.Replace(q, "--unique-actions-filter--", "AND m.execution_group_member = true", replaceCount)
 	default:
 		return fmt.Sprintf(`WITH unique_actions AS (
     SELECT id AS work_id, '[]' AS actions
@@ -191,7 +232,7 @@ func getUniqueActions(selectFilter string, logins []string) string {
 	}
 }
 
-//nolint:gocritic,gocyclo //filters
+//nolint:gocritic //изначально было без поинтера
 func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string, args []interface{}) {
 	// nolint:gocritic
 	// language=PostgreSQL
@@ -243,91 +284,166 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 		order = *fl.Order
 	}
 
-	if fl.InitiatorLogins != nil && len(*fl.InitiatorLogins) > 0 {
-		q = fmt.Sprintf("%s %s", getUniqueActions("initiators", *fl.InitiatorLogins), q)
-	} else if fl.SelectAs != nil {
-		q = fmt.Sprintf("%s %s", getUniqueActions(*fl.SelectAs, delegations), q)
-	} else {
-		q = fmt.Sprintf("%s %s", getUniqueActions("", delegations), q)
-	}
+	var queryMaker compileGetTaskQueryMaker
 
-	if fl.SignatureCarrier != nil && *fl.SelectAs == entity.SelectAsValSignerJur {
-		q = strings.Replace(q, "--unique-actions-filter--",
+	return queryMaker.MakeQuery(&fl, q, delegations, args, order)
+}
+
+type compileGetTaskQueryMaker struct {
+	fl          *entity.TaskFilter
+	q           string
+	delegations []string
+	args        []any
+}
+
+func (cq *compileGetTaskQueryMaker) init() {
+	switch {
+	case cq.fl.InitiatorLogins != nil && len(*cq.fl.InitiatorLogins) > 0:
+		cq.q = fmt.Sprintf("%s %s", getUniqueActions("initiators", *cq.fl.InitiatorLogins), cq.q)
+	case cq.fl.SelectAs != nil:
+		cq.q = fmt.Sprintf("%s %s", getUniqueActions(*cq.fl.SelectAs, cq.delegations), cq.q)
+	default:
+		cq.q = fmt.Sprintf("%s %s", getUniqueActions("", cq.delegations), cq.q)
+	}
+}
+
+func (cq *compileGetTaskQueryMaker) replaceUniqueActionsFilter() {
+	if cq.fl.SignatureCarrier != nil && *cq.fl.SelectAs == entity.SelectAsValSignerJur {
+		cq.q = strings.Replace(cq.q, "--unique-actions-filter--",
 			fmt.Sprintf("AND vs.content -> 'State' -> vs.step_name ->> 'signature_carrier' = '%s' --unique-actions-filter--",
-				*fl.SignatureCarrier),
+				*cq.fl.SignatureCarrier),
 			1)
 	}
+}
 
-	if fl.TaskIDs != nil {
-		args = append(args, fl.TaskIDs)
-		q = fmt.Sprintf("%s AND w.work_number = ANY($%d)", q, len(args))
+func (cq *compileGetTaskQueryMaker) addTaskID() {
+	if cq.fl.TaskIDs != nil {
+		cq.args = append(cq.args, cq.fl.TaskIDs)
+		cq.q = fmt.Sprintf("%s AND w.work_number = ANY($%d)", cq.q, len(cq.args))
 	}
+}
 
-	if fl.Name != nil {
-		name := strings.Replace(*fl.Name, "_", "!_", -1)
-		name = strings.Replace(name, "%", "!%", -1)
-		args = append(args, name)
-		q = fmt.Sprintf(`%s AND ((p.name ILIKE '%%' || $%d || '%%' ESCAPE '!') 
+func (cq *compileGetTaskQueryMaker) addName() {
+	if cq.fl.Name != nil {
+		name := strings.ReplaceAll(*cq.fl.Name, "_", "!_")
+		name = strings.ReplaceAll(name, "%", "!%")
+		cq.args = append(cq.args, name)
+		cq.q = fmt.Sprintf(`%s AND ((p.name ILIKE '%%' || $%d || '%%' ESCAPE '!') 
 							OR (w.work_number ILIKE '%%' || $%d || '%%'  ESCAPE '!') 
 							OR (w.run_context -> 'initial_application' ->> 'custom_title' ILIKE '%%' || $%d || '%%'  ESCAPE '!') )`,
-			q, len(args), len(args), len(args))
+			cq.q, len(cq.args), len(cq.args), len(cq.args))
 	}
-	if fl.Created != nil {
-		args = append(args, time.Unix(int64(fl.Created.Start), 0).UTC(), time.Unix(int64(fl.Created.End), 0).UTC())
-		q = fmt.Sprintf("%s AND w.started_at BETWEEN $%d AND $%d", q, len(args)-1, len(args))
-	}
+}
 
-	if fl.Archived != nil {
-		switch *fl.Archived {
+func (cq *compileGetTaskQueryMaker) addCreated() {
+	if cq.fl.Created != nil {
+		cq.args = append(cq.args, time.Unix(int64(cq.fl.Created.Start), 0).UTC(), time.Unix(int64(cq.fl.Created.End), 0).UTC())
+		cq.q = fmt.Sprintf("%s AND w.started_at BETWEEN $%d AND $%d", cq.q, len(cq.args)-1, len(cq.args))
+	}
+}
+
+func (cq *compileGetTaskQueryMaker) addArchived() {
+	if cq.fl.Archived != nil {
+		switch *cq.fl.Archived {
 		case true:
-			q = fmt.Sprintf("%s AND (w.archived = true OR (now()::TIMESTAMP - w.finished_at::TIMESTAMP) > '3 days')", q)
+			cq.q = fmt.Sprintf("%s AND (w.archived = true OR (now()::TIMESTAMP - w.finished_at::TIMESTAMP) > '3 days')", cq.q)
 		case false:
-			q = fmt.Sprintf(`%s AND (w.finished_at IS NULL 
-							OR (w.archived = false AND (now()::TIMESTAMP - w.finished_at::TIMESTAMP) < '3 days'))`, q)
+			cq.q = fmt.Sprintf(`%s AND (w.finished_at IS NULL 
+							OR (w.archived = false AND (now()::TIMESTAMP - w.finished_at::TIMESTAMP) < '3 days'))`, cq.q)
 		}
 	}
+}
 
-	if fl.ForCarousel != nil && *fl.ForCarousel {
-		q = fmt.Sprintf("%s AND ((w.human_status='done' AND (now()::TIMESTAMP - w.finished_at::TIMESTAMP) < '3 days')", q)
-		q = fmt.Sprintf("%s OR w.human_status = 'wait')", q)
+func (cq *compileGetTaskQueryMaker) addForCorousel() {
+	if cq.fl.ForCarousel != nil && *cq.fl.ForCarousel {
+		cq.q = fmt.Sprintf("%s AND ((w.human_status='done' AND (now()::TIMESTAMP - w.finished_at::TIMESTAMP) < '3 days')", cq.q)
+		cq.q = fmt.Sprintf("%s OR w.human_status = 'wait')", cq.q)
 	}
+}
 
-	if fl.Status != nil {
-		q = fmt.Sprintf("%s AND (w.human_status IN (%s))", q, *fl.Status)
+func (cq *compileGetTaskQueryMaker) addStatus() {
+	if cq.fl.Status != nil {
+		cq.q = fmt.Sprintf("%s AND (w.human_status IN (%s))", cq.q, *cq.fl.Status)
 	}
+}
 
-	if fl.Receiver != nil {
-		args = append(args, *fl.Receiver)
-		q = fmt.Sprintf("%s AND w.author=$%d ", q, len(args))
+func (cq *compileGetTaskQueryMaker) addReceiver() {
+	if cq.fl.Receiver != nil {
+		cq.args = append(cq.args, *cq.fl.Receiver)
+		cq.q = fmt.Sprintf("%s AND w.author=$%d ", cq.q, len(cq.args))
 	}
+}
 
-	if fl.Initiator != nil {
-		q = fmt.Sprintf("%s AND w.author IN %s", q, buildInExpression(*fl.Initiator))
+func (cq *compileGetTaskQueryMaker) addInitiator() {
+	if cq.fl.Initiator != nil {
+		cq.q = fmt.Sprintf("%s AND w.author IN %s", cq.q, buildInExpression(*cq.fl.Initiator))
 	}
+}
 
-	if (fl.ProcessingLogins != nil || fl.ProcessingGroupIds != nil) ||
-		fl.ExecutorTypeAssigned != nil {
-		q = getProcessingSteps(q, &fl)
+func (cq *compileGetTaskQueryMaker) addProcessingSteps() {
+	if (cq.fl.ProcessingLogins != nil || cq.fl.ProcessingGroupIds != nil) ||
+		cq.fl.ExecutorTypeAssigned != nil {
+		cq.q = getProcessingSteps(cq.q, cq.fl)
 	}
+}
 
+func (cq *compileGetTaskQueryMaker) addOrder(order string) {
 	if order != "" {
-		q = fmt.Sprintf("%s\n ORDER BY w.started_at %s", q, order)
+		cq.q = fmt.Sprintf("%s\n ORDER BY w.started_at %s", cq.q, order)
 	}
+}
 
-	if fl.Offset != nil {
-		args = append(args, *fl.Offset)
-		q = fmt.Sprintf("%s\n OFFSET $%d", q, len(args))
+func (cq *compileGetTaskQueryMaker) addOffset() {
+	if cq.fl.Offset != nil {
+		cq.args = append(cq.args, *cq.fl.Offset)
+		cq.q = fmt.Sprintf("%s\n OFFSET $%d", cq.q, len(cq.args))
 	}
+}
 
-	if fl.Limit != nil {
-		args = append(args, *fl.Limit)
-		q = fmt.Sprintf("%s\n LIMIT $%d", q, len(args))
+func (cq *compileGetTaskQueryMaker) addLimit() {
+	if cq.fl.Limit != nil {
+		cq.args = append(cq.args, *cq.fl.Limit)
+		cq.q = fmt.Sprintf("%s\n LIMIT $%d", cq.q, len(cq.args))
 	}
+}
 
+func (cq *compileGetTaskQueryMaker) MakeQuery(
+	fl *entity.TaskFilter,
+	q string,
+	delegations []string,
+	args []any,
+	order string,
+) (query string, resArgs []any) {
+	cq.fl = fl
+	cq.q = q
+	cq.delegations = delegations
+	cq.args = args
+
+	cq.init()
+	cq.replaceUniqueActionsFilter()
+	cq.addTaskID()
+	cq.addName()
+	cq.addCreated()
+	cq.addArchived()
+	cq.addForCorousel()
+	cq.addStatus()
+	cq.addReceiver()
+	cq.addInitiator()
+	cq.addProcessingSteps()
+	cq.addOrder(order)
+	cq.addOffset()
+	cq.addLimit()
+
+	cq.q = replaceStorageVariable(q)
+
+	return cq.q, cq.args
+}
+
+func replaceStorageVariable(q string) string {
 	q = strings.Replace(q, "[with_variable_storage]", "", 1)
 	q = strings.Replace(q, "[join_variable_storage]", "", 1)
 
-	return q, args
+	return q
 }
 
 func getProcessingSteps(q string, fl *entity.TaskFilter) string {
@@ -415,18 +531,22 @@ func getStepTypeBySelectForFilter(selectFor string) string {
 	case "queue_executor", "in_work_executor", "finished_executor", "group_executor", "finished_group_executor":
 		return "execution"
 	}
+
 	return ""
 }
 
 func getActorsNameByStepType(stepName string) string {
+	const executorsString = "executors"
+
 	switch stepName {
 	case "execution":
-		return "executors"
+		return executorsString
 	case "approver":
 		return "approvers"
 	case "form":
-		return "executors"
+		return executorsString
 	}
+
 	return ""
 }
 
@@ -437,6 +557,7 @@ func getGroupActorsNameByStepType(stepName string) string {
 	case "approver":
 		return "approvers_group_id"
 	}
+
 	return ""
 }
 
@@ -477,30 +598,38 @@ func (db *PGCon) GetAdditionalForms(workNumber, nodeName string) ([]string, erro
 		WHERE vs1.work_id = (SELECT id from actual_work_id) 
 			AND vs1.step_name in (SELECT rule FROM actual_step_name)
 		ORDER BY time;`
+
 	ff := make([]string, 0)
+
 	rows, err := db.Connection.Query(c.Background(), q, workNumber, nodeName)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return ff, nil
 		}
+
 		return nil, err
 	}
+
 	defer rows.Close()
+
 	for rows.Next() {
 		var form string
 		if scanErr := rows.Scan(&form); scanErr != nil {
 			return nil, scanErr
 		}
+
 		ff = append(ff, form)
 	}
+
 	if rowsErr := rows.Err(); rowsErr != nil {
 		return nil, rowsErr
 	}
+
 	return ff, nil
 }
 
 func (db *PGCon) GetTaskFormSchemaID(workNumber, formID string) (string, error) {
-	q := `SELECT content #> '{pipeline,blocks}' -> $1 #>> '{params,schema_id}'
+	const q = `SELECT content #> '{pipeline,blocks}' -> $1 #>> '{params,schema_id}'
 FROM versions
 WHERE id = (SELECT version_id FROM works WHERE work_number = $2 AND child_id IS NULL)`
 
@@ -508,6 +637,7 @@ WHERE id = (SELECT version_id FROM works WHERE work_number = $2 AND child_id IS 
 	if err := db.Connection.QueryRow(c.Background(), q, formID, workNumber).Scan(&id); err != nil {
 		return "", err
 	}
+
 	return id, nil
 }
 
@@ -525,10 +655,11 @@ WHERE w.work_number = $1
 	if err := db.Connection.QueryRow(c.Background(), q, workNumber).Scan(&descr); err != nil {
 		return "", err
 	}
+
 	return descr, nil
 }
 
-//nolint:gocritic //filters
+//nolint:gocritic //в этом проекте не принято использовать поинтеры
 func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter, delegations []string) (*entity.EriusTasksPage, error) {
 	ctx, span := trace.StartSpan(ctx, "db.pg_get_tasks")
 	defer span.End()
@@ -545,6 +676,8 @@ func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter, delegations 
 	}
 
 	taskIDs := make([]string, 0, len(tasks.Tasks))
+
+	//nolint:gocritic //в этом проекте не принято использовать поинтеры в коллекциях
 	for i, task := range tasks.Tasks {
 		taskIDs = append(taskIDs, task.ID.String())
 
@@ -552,6 +685,7 @@ func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter, delegations 
 		if getTaskErr != nil {
 			return nil, getTaskErr
 		}
+
 		tasks.Tasks[i].Steps = steps
 	}
 
@@ -617,6 +751,7 @@ func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter, delegations 
 	if err != nil {
 		return nil, err
 	}
+
 	defer rows.Close()
 
 	var (
@@ -634,7 +769,8 @@ func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter, delegations 
 		attachmentsToTasks[taskID] = attachmentsCount
 	}
 
-	if err = rows.Err(); err != nil {
+	err = rows.Err()
+	if err != nil {
 		return nil, err
 	}
 
@@ -657,7 +793,12 @@ func (db *PGCon) GetDeadline(ctx c.Context, workNumber string) (time.Time, error
 	// language=PostgreSQL
 	q := `
     WITH blocks AS (
-    	SELECT  content->'State'->step_name AS block FROM variable_storage vs WHERE work_id = (SELECT id from works WHERE work_number = $1 and child_id is null) and step_type = 'execution' and status = 'running'
+    	SELECT  content->'State'->step_name AS block 
+		FROM variable_storage vs 
+		WHERE work_id = (
+			SELECT id from works WHERE work_number = $1 and child_id is null
+		) 
+		AND step_type = 'execution' AND status = 'running'
 	)
 	SELECT coalesce(min(block ->> 'deadline'),'') FROM blocks;
   `
@@ -665,6 +806,7 @@ func (db *PGCon) GetDeadline(ctx c.Context, workNumber string) (time.Time, error
 	row := db.Connection.QueryRow(ctx, q, workNumber)
 
 	var deadline string
+
 	err := row.Scan(&deadline)
 	if err != nil {
 		return time.Time{}, err
@@ -672,6 +814,7 @@ func (db *PGCon) GetDeadline(ctx c.Context, workNumber string) (time.Time, error
 
 	if deadline != "" {
 		loc, _ := time.LoadLocation("Europe/Moscow")
+
 		deadlines, deadErr := time.ParseInLocation(time.RFC3339, deadline, loc)
 		if deadErr != nil {
 			return time.Time{}, deadErr
@@ -687,7 +830,8 @@ func (db *PGCon) GetTasksCount(
 	ctx c.Context,
 	currentUser string,
 	delegationsByApprovement,
-	delegationsByExecution []string) (*entity.CountTasks, error) {
+	delegationsByExecution []string,
+) (*entity.CountTasks, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_tasks_count")
 	defer span.End()
 	// nolint:gocritic
@@ -878,7 +1022,8 @@ func (db *PGCon) GetTask(
 	ctx c.Context,
 	delegationsApprover,
 	delegationsExecution []string,
-	currentUser, workNumber string) (*entity.EriusTask, error) {
+	currentUser, workNumber string,
+) (*entity.EriusTask, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_task")
 	defer span.End()
 
@@ -933,6 +1078,7 @@ func (db *PGCon) GetTask(
 		WHERE w.work_number = $1 
 			AND w.child_id IS NULL
 `
+
 	return db.getTask(ctx, []string{currentUser}, q, workNumber)
 }
 
@@ -947,9 +1093,11 @@ func (db *PGCon) getTask(ctx c.Context, delegators []string, q, workNumber strin
 
 	et := entity.EriusTask{}
 
-	var nullStringParameters sql.NullString
-	var actionData []byte
-	var nodeGroups string
+	var (
+		nullStringParameters sql.NullString
+		actionData           []byte
+		nodeGroups           string
+	)
 
 	row := db.Connection.QueryRow(ctx, q, workNumber)
 
@@ -985,7 +1133,7 @@ func (db *PGCon) getTask(ctx c.Context, delegators []string, q, workNumber strin
 
 	et.Name = utils.MakeTaskTitle(et.Name, et.CustomTitle, et.IsTest)
 
-	var actions []DbTaskAction
+	var actions []TaskAction
 	if actionData != nil {
 		if unmErr := json.Unmarshal(actionData, &actions); unmErr != nil {
 			return nil, unmErr
@@ -1005,68 +1153,71 @@ func (db *PGCon) getTask(ctx c.Context, delegators []string, q, workNumber strin
 			return nil, err
 		}
 	}
+
 	et.NodeGroup = make([]*entity.NodeGroup, 0)
+
 	err = json.Unmarshal([]byte(nodeGroups), &et.NodeGroup)
 	if err != nil {
 		return nil, err
 	}
+
 	return &et, nil
 }
 
 type IgnoreActionRule struct {
-	IgnoreActionId   string
-	ExistingActionId string
+	IgnoreActionID   string
+	ExistingActionID string
 }
 
 func getActionsToIgnoreIfOtherExist() []IgnoreActionRule {
 	return []IgnoreActionRule{
 		{
-			IgnoreActionId:   "additional_approvement",
-			ExistingActionId: "approve",
+			IgnoreActionID:   "additional_approvement",
+			ExistingActionID: "approve",
 		},
 		{
-			IgnoreActionId:   "additional_approvement",
-			ExistingActionId: "informed",
+			IgnoreActionID:   "additional_approvement",
+			ExistingActionID: "informed",
 		},
 		{
-			IgnoreActionId:   "additional_approvement",
-			ExistingActionId: "confirm",
+			IgnoreActionID:   "additional_approvement",
+			ExistingActionID: "confirm",
 		},
 		{
-			IgnoreActionId:   "additional_approvement",
-			ExistingActionId: "sign",
+			IgnoreActionID:   "additional_approvement",
+			ExistingActionID: "sign",
 		},
 		{
-			IgnoreActionId:   "additional_approvement",
-			ExistingActionId: "viewed",
+			IgnoreActionID:   "additional_approvement",
+			ExistingActionID: "viewed",
 		},
 		{
-			IgnoreActionId:   "additional_reject",
-			ExistingActionId: "approve",
+			IgnoreActionID:   "additional_reject",
+			ExistingActionID: "approve",
 		},
 		{
-			IgnoreActionId:   "additional_reject",
-			ExistingActionId: "informed",
+			IgnoreActionID:   "additional_reject",
+			ExistingActionID: "informed",
 		},
 		{
-			IgnoreActionId:   "additional_reject",
-			ExistingActionId: "confirm",
+			IgnoreActionID:   "additional_reject",
+			ExistingActionID: "confirm",
 		},
 		{
-			IgnoreActionId:   "additional_reject",
-			ExistingActionId: "sign",
+			IgnoreActionID:   "additional_reject",
+			ExistingActionID: "sign",
 		},
 		{
-			IgnoreActionId:   "additional_reject",
-			ExistingActionId: "viewed",
+			IgnoreActionID:   "additional_reject",
+			ExistingActionID: "viewed",
 		},
 		{
-			IgnoreActionId:   "additional_reject",
-			ExistingActionId: "reject",
+			IgnoreActionID:   "additional_reject",
+			ExistingActionID: "reject",
 		},
 		{
-			IgnoreActionId:   "additional_approvement",
-			ExistingActionId: "reject",
+			IgnoreActionID:   "additional_approvement",
+			ExistingActionID: "reject",
 		},
 	}
 }
@@ -1080,6 +1231,7 @@ func getMaxPriority(existingPriorities []entity.TaskAction) string {
 	}
 
 	result := ""
+
 	for _, v := range existingPriorities {
 		if v.ButtonType != ActionTypePrimary && v.ButtonType != ActionTypeSecondary {
 			continue
@@ -1093,23 +1245,30 @@ func getMaxPriority(existingPriorities []entity.TaskAction) string {
 	return result
 }
 
-func (db *PGCon) computeActions(ctx c.Context, currentUserDelegators []string, actions []DbTaskAction,
-	allActions map[string]entity.TaskAction, author string) (result []entity.TaskAction, err error) {
+func (db *PGCon) computeActions(
+	ctx c.Context,
+	_ []string,
+	actions []TaskAction,
+	allActions map[string]entity.TaskAction,
+	author string,
+) (result []entity.TaskAction, err error) {
 	const (
-		CancelAppId       = "cancel_app"
+		CancelAppID       = "cancel_app"
 		CancelAppPriority = "other"
 		CancelAppTitle    = "Отозвать"
 		CancelAppNodeType = "common"
 
-		RepeatAppId       = "repeat_app"
+		RepeatAppID       = "repeat_app"
 		RepeatAppPriority = "other"
 		RepeatAppTitle    = "Повторить"
 		RepeatAppNodeType = "common"
 	)
 
-	var computedActions = make([]entity.TaskAction, 0)
-	var computedActionIds = make([]string, 0)
-	var actionsToIgnore = getActionsToIgnoreIfOtherExist()
+	var (
+		computedActions   = make([]entity.TaskAction, 0)
+		computedActionIds = make([]string, 0)
+		actionsToIgnore   = getActionsToIgnoreIfOtherExist()
+	)
 
 	result = make([]entity.TaskAction, 0)
 
@@ -1122,9 +1281,9 @@ func (db *PGCon) computeActions(ctx c.Context, currentUserDelegators []string, a
 
 	for _, blockActions := range actions {
 		for _, action := range blockActions.Actions {
-			var compositeActionId = strings.Split(action, ":")
-			if len(compositeActionId) > 1 {
-				id := compositeActionId[0]
+			compositeActionID := strings.Split(action, ":")
+			if len(compositeActionID) > 1 {
+				id := compositeActionID[0]
 
 				if _, ok := metActions[id]; ok && !utils.IsContainsInSlice(id, canBeRepeated) {
 					continue
@@ -1132,12 +1291,12 @@ func (db *PGCon) computeActions(ctx c.Context, currentUserDelegators []string, a
 
 				metActions[id] = struct{}{}
 
-				priority := compositeActionId[1]
+				priority := compositeActionID[1]
 				actionWithPreferences := allActions[id]
-				actionParams, _ := blockActions.Params[id]
+				actionParams := blockActions.Params[id]
 
-				var computedAction = entity.TaskAction{
-					Id:                 id,
+				computedAction := entity.TaskAction{
+					ID:                 id,
 					ButtonType:         priority,
 					NodeType:           actionWithPreferences.NodeType,
 					Title:              actionWithPreferences.Title,
@@ -1148,27 +1307,20 @@ func (db *PGCon) computeActions(ctx c.Context, currentUserDelegators []string, a
 				}
 
 				computedActions = append(computedActions, computedAction)
-				computedActionIds = append(computedActionIds, computedAction.Id)
+				computedActionIds = append(computedActionIds, computedAction.ID)
 			}
 		}
 	}
 
 	maxPriority := getMaxPriority(computedActions)
 
-	for _, a := range computedActions {
-		var ignoreAction = false
-
+	for i := range computedActions {
+		a := computedActions[i]
 		if maxPriority != "" && a.NodeType != maxPriority && (a.ButtonType == ActionTypePrimary || a.ButtonType == ActionTypeSecondary) {
 			a.ButtonType = "other"
 		}
 
-		for _, actionRule := range actionsToIgnore {
-			if a.Id == actionRule.IgnoreActionId && slices.Contains(computedActionIds, actionRule.ExistingActionId) {
-				ignoreAction = true
-				break
-			}
-		}
-
+		ignoreAction := db.ignoreAction(&a, actionsToIgnore, computedActionIds)
 		if !ignoreAction {
 			result = append(result, a)
 		}
@@ -1182,8 +1334,8 @@ func (db *PGCon) computeActions(ctx c.Context, currentUserDelegators []string, a
 	isInitiator := ui.Username == author
 
 	if isInitiator {
-		var cancelAppAction = entity.TaskAction{
-			Id:                 CancelAppId,
+		cancelAppAction := entity.TaskAction{
+			ID:                 CancelAppID,
 			ButtonType:         CancelAppPriority,
 			NodeType:           CancelAppNodeType,
 			Title:              CancelAppTitle,
@@ -1191,8 +1343,8 @@ func (db *PGCon) computeActions(ctx c.Context, currentUserDelegators []string, a
 			AttachmentsEnabled: false,
 		}
 
-		var repeatAppAction = entity.TaskAction{
-			Id:                 RepeatAppId,
+		repeatAppAction := entity.TaskAction{
+			ID:                 RepeatAppID,
 			ButtonType:         RepeatAppPriority,
 			NodeType:           RepeatAppNodeType,
 			Title:              RepeatAppTitle,
@@ -1206,6 +1358,16 @@ func (db *PGCon) computeActions(ctx c.Context, currentUserDelegators []string, a
 	return result, nil
 }
 
+func (db *PGCon) ignoreAction(a *entity.TaskAction, actionsToIgnore []IgnoreActionRule, computedActionIds []string) bool {
+	for _, actionRule := range actionsToIgnore {
+		if a.ID == actionRule.IgnoreActionID && slices.Contains(computedActionIds, actionRule.ExistingActionID) {
+			return true
+		}
+	}
+
+	return false
+}
+
 type tasksCounter struct {
 	totalActive       int
 	totalExecutor     int
@@ -1217,7 +1379,8 @@ type tasksCounter struct {
 func (db *PGCon) getTasksCount(
 	ctx c.Context,
 	q, currentUser string,
-	usernamesByApprovement, usernamesByExecution []string) (*tasksCounter, error) {
+	usernamesByApprovement, usernamesByExecution []string,
+) (*tasksCounter, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_tasks_count")
 	defer span.End()
 
@@ -1239,7 +1402,8 @@ func (db *PGCon) getTasksCount(
 
 //nolint:gocyclo //its ok here
 func (db *PGCon) getTasks(ctx c.Context, filters *entity.TaskFilter,
-	delegatorsWithUser []string, q string, args []interface{}) (*entity.EriusTasks, error) {
+	delegatorsWithUser []string, q string, args []interface{},
+) (*entity.EriusTasks, error) {
 	ctx, span := trace.StartSpan(ctx, "db.pg_get_tasks")
 	defer span.End()
 
@@ -1260,8 +1424,11 @@ func (db *PGCon) getTasks(ctx c.Context, filters *entity.TaskFilter,
 
 	for rows.Next() {
 		et := entity.EriusTask{}
-		var nullStringParameters sql.NullString
-		var actionData []byte
+
+		var (
+			nullStringParameters sql.NullString
+			actionData           []byte
+		)
 
 		err = rows.Scan(
 			&et.ID,
@@ -1298,7 +1465,7 @@ func (db *PGCon) getTasks(ctx c.Context, filters *entity.TaskFilter,
 			}
 		}
 
-		var actions []DbTaskAction
+		var actions []TaskAction
 		if actionData != nil {
 			if unmErr := json.Unmarshal(actionData, &actions); unmErr != nil {
 				return nil, unmErr
@@ -1355,6 +1522,7 @@ func (db *PGCon) GetTaskSteps(ctx c.Context, id uuid.UUID) (entity.TaskSteps, er
 	//nolint:dupl //scan
 	for rows.Next() {
 		s := entity.Step{}
+
 		var content string
 
 		err = rows.Scan(
@@ -1389,8 +1557,15 @@ func (db *PGCon) GetTaskSteps(ctx c.Context, id uuid.UUID) (entity.TaskSteps, er
 	return el, nil
 }
 
-func (db *PGCon) GetFilteredStates(ctx c.Context, steps []string, wNumber string) (
-	map[string]map[string]interface{}, map[string]map[string]*time.Time, error) {
+func (db *PGCon) GetFilteredStates(
+	ctx c.Context,
+	steps []string,
+	wNumber string,
+) (
+	filteredStates map[string]map[string]interface{},
+	filtereDates map[string]map[string]*time.Time,
+	err error,
+) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_filtered_states")
 	defer span.End()
 
@@ -1412,6 +1587,7 @@ func (db *PGCon) GetFilteredStates(ctx c.Context, steps []string, wNumber string
 	}
 
 	res := make([]map[string]map[string]interface{}, 0)
+
 	rows, err := db.Connection.Query(ctx, query, wNumber)
 	if err != nil {
 		return nil, nil, err
@@ -1423,9 +1599,14 @@ func (db *PGCon) GetFilteredStates(ctx c.Context, steps []string, wNumber string
 
 	for rows.Next() {
 		stepName := ""
+
 		states := make(map[string]map[string]interface{})
-		var createdAt *time.Time
-		var updatedAt *time.Time
+
+		var (
+			createdAt *time.Time
+			updatedAt *time.Time
+		)
+
 		if scanErr := rows.Scan(&stepName, &states, &createdAt, &updatedAt); scanErr != nil {
 			return nil, nil, scanErr
 		}
@@ -1434,10 +1615,12 @@ func (db *PGCon) GetFilteredStates(ctx c.Context, steps []string, wNumber string
 			"createdAt": createdAt,
 			"updatedAt": updatedAt,
 		}
+
 		res = append(res, states)
 	}
 
-	if err = rows.Err(); err != nil {
+	err = rows.Err()
+	if err != nil {
 		return nil, nil, err
 	}
 
@@ -1446,11 +1629,13 @@ func (db *PGCon) GetFilteredStates(ctx c.Context, steps []string, wNumber string
 
 func mergeStates(in []map[string]map[string]interface{}, steps []string) (res map[string]map[string]interface{}) {
 	res = make(map[string]map[string]interface{})
+
 	for i := range in {
 		for stepName := range in[i] {
 			if !utils.IsContainsInSlice(stepName, steps) {
 				continue
 			}
+
 			if _, exists := res[stepName]; !exists {
 				res[stepName] = in[i][stepName]
 			}
@@ -1474,6 +1659,7 @@ func (db *PGCon) GetTaskHumanStatus(ctx c.Context, taskID uuid.UUID) (string, er
 	if err := db.Connection.QueryRow(ctx, q, taskID).Scan(&status); err != nil {
 		return "", err
 	}
+
 	return status, nil
 }
 
@@ -1491,10 +1677,11 @@ func (db *PGCon) GetTaskStatus(ctx c.Context, taskID uuid.UUID) (int, error) {
 	if err := db.Connection.QueryRow(ctx, q, taskID).Scan(&status); err != nil {
 		return -1, err
 	}
+
 	return status, nil
 }
 
-func (db *PGCon) GetTaskStatusWithReadableString(ctx c.Context, taskID uuid.UUID) (int, string, error) {
+func (db *PGCon) GetTaskStatusWithReadableString(ctx c.Context, taskID uuid.UUID) (status int, s string, err error) {
 	ctx, span := trace.StartSpan(ctx, "get_task_status")
 	defer span.End()
 
@@ -1504,11 +1691,15 @@ func (db *PGCon) GetTaskStatusWithReadableString(ctx c.Context, taskID uuid.UUID
 		FROM works w join work_status ws on w.status =ws.id
 		WHERE w.id = $1`
 
-	var intStatus int
-	var stringStatus string
+	var (
+		intStatus    int
+		stringStatus string
+	)
+
 	if err := db.Connection.QueryRow(ctx, q, taskID).Scan(&intStatus, &stringStatus); err != nil {
 		return -1, "", err
 	}
+
 	return intStatus, stringStatus, nil
 }
 
@@ -1524,20 +1715,23 @@ func (db *PGCon) getActionsMap(ctx c.Context) (actions map[string]entity.TaskAct
 		FROM dict_actions`
 
 	result := make(map[string]entity.TaskAction, 0)
+
 	rows, err := db.Connection.Query(ctx, q)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return result, nil
 		}
+
 		return nil, err
 	}
+
 	defer rows.Close()
 
 	for rows.Next() {
 		ta := entity.TaskAction{}
 
 		if err := rows.Scan(
-			&ta.Id,
+			&ta.ID,
 			&ta.Title,
 			&ta.IsPublic,
 			&ta.CommentEnabled,
@@ -1547,28 +1741,20 @@ func (db *PGCon) getActionsMap(ctx c.Context) (actions map[string]entity.TaskAct
 			return nil, err
 		}
 
-		result[ta.Id] = ta
+		result[ta.ID] = ta
 	}
 
 	if rowsErr := rows.Err(); rowsErr != nil {
 		return nil, rowsErr
 	}
+
 	return result, nil
 }
 
-func (db *PGCon) actionsToStrings(nullStringActions []sql.NullString) []string {
-	actions := make([]string, 0, len(nullStringActions))
-	for _, action := range nullStringActions {
-		if action.Valid {
-			actions = append(actions, action.String)
-		}
-	}
-
-	return actions
-}
-
-func (db *PGCon) GetMeanTaskSolveTime(ctx c.Context, pipelineId string) (
-	result []entity.TaskCompletionInterval, err error) {
+func (db *PGCon) GetMeanTaskSolveTime(
+	ctx c.Context,
+	pipelineID string,
+) (result []entity.TaskCompletionInterval, err error) {
 	const q = `
 	WITH cte AS (
 	SELECT
@@ -1590,13 +1776,15 @@ func (db *PGCon) GetMeanTaskSolveTime(ctx c.Context, pipelineId string) (
 
 	result = make([]entity.TaskCompletionInterval, 0)
 
-	rows, err := db.Connection.Query(ctx, q, pipelineId)
+	rows, err := db.Connection.Query(ctx, q, pipelineID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return result, nil
 		}
+
 		return nil, err
 	}
+
 	defer rows.Close()
 
 	for rows.Next() {
@@ -1636,7 +1824,7 @@ func (db *PGCon) CheckIsArchived(ctx c.Context, taskID uuid.UUID) (bool, error) 
 	return isArchived, nil
 }
 
-func (db *PGCon) GetBlocksOutputs(ctx c.Context, blockId string) (entity.BlockOutputs, error) {
+func (db *PGCon) GetBlocksOutputs(ctx c.Context, blockID string) (entity.BlockOutputs, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_block_content")
 	defer span.End()
 
@@ -1651,7 +1839,7 @@ func (db *PGCon) GetBlocksOutputs(ctx c.Context, blockId string) (entity.BlockOu
 		VariableStorage map[string]interface{}
 	}{}
 
-	if err := db.Connection.QueryRow(ctx, q, blockId).Scan(&blockData.StepName, &blockData.VariableStorage); err != nil {
+	if err := db.Connection.QueryRow(ctx, q, blockID).Scan(&blockData.StepName, &blockData.VariableStorage); err != nil {
 		return nil, err
 	}
 
@@ -1667,7 +1855,7 @@ func (db *PGCon) GetBlocksOutputs(ctx c.Context, blockId string) (entity.BlockOu
 	return blockOutputs, nil
 }
 
-func (db *PGCon) GetMergedVariableStorage(ctx c.Context, workId uuid.UUID, blockIds []string) (*store.VariableStore, error) {
+func (db *PGCon) GetMergedVariableStorage(ctx c.Context, workID uuid.UUID, blockIds []string) (*store.VariableStore, error) {
 	ctx, span := trace.StartSpan(ctx, "get_merged_variable_storage")
 	defer span.End()
 
@@ -1677,7 +1865,7 @@ func (db *PGCon) GetMergedVariableStorage(ctx c.Context, workId uuid.UUID, block
     	WHERE work_id = '%s' AND step_name IN %s AND
     	  vs.time = (SELECT max(time) FROM variable_storage WHERE work_id = vs.work_id AND step_name = vs.step_name)`
 
-	query := fmt.Sprintf(q, workId, buildInExpression(blockIds))
+	query := fmt.Sprintf(q, workID, buildInExpression(blockIds))
 
 	var content []byte
 	if err := db.Connection.QueryRow(ctx, query).Scan(&content); err != nil {
@@ -1743,6 +1931,7 @@ func getWorksStatusQuery(statusFilter []string) *string {
 	for i := range statusFilter {
 		statusQueryFilter = append(statusQueryFilter, "'"+statusFilter[i]+"'")
 	}
+
 	v := "(" + strings.Join(statusQueryFilter, ",") + ")"
 
 	statusQuery = fmt.Sprintf(statusQuery, v)
@@ -1806,8 +1995,10 @@ func getFiltersSearchConditions(filter *string) string {
 	if filter == nil {
 		return ""
 	}
-	escapeFilter := strings.Replace(*filter, "_", "!_", -1)
-	escapeFilter = strings.Replace(escapeFilter, "%", "!%", -1)
+
+	escapeFilter := strings.ReplaceAll(*filter, "_", "!_")
+	escapeFilter = strings.ReplaceAll(escapeFilter, "%", "!%")
+
 	return fmt.Sprintf(`
 		(w.work_number ILIKE '%%%s%%' ESCAPE '!' OR
 		 p.name ILIKE '%%%s%%' ESCAPE '!' OR
@@ -1851,6 +2042,7 @@ func (db *PGCon) GetBlockInputs(ctx c.Context, blockName, workNumber string) (en
 		if errors.Is(err, pgx.ErrNoRows) {
 			return blockInputs, nil
 		}
+
 		return nil, err
 	}
 
@@ -1864,16 +2056,18 @@ func (db *PGCon) GetBlockInputs(ctx c.Context, blockName, workNumber string) (en
 	return blockInputs, nil
 }
 
-func (db *PGCon) GetBlockOutputs(ctx c.Context, blockId, blockName string) (entity.BlockOutputs, error) {
+func (db *PGCon) GetBlockOutputs(ctx c.Context, blockID, blockName string) (entity.BlockOutputs, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_block_outputs")
 	defer span.End()
 
 	blockOutputs := make(entity.BlockOutputs, 0)
-	blocksOutputs, err := db.GetBlocksOutputs(ctx, blockId)
+
+	blocksOutputs, err := db.GetBlocksOutputs(ctx, blockID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return blockOutputs, nil
 		}
+
 		return nil, err
 	}
 
@@ -1889,7 +2083,7 @@ func (db *PGCon) GetBlockOutputs(ctx c.Context, blockId, blockName string) (enti
 	return blockOutputs, nil
 }
 
-func (db *PGCon) GetBlockState(ctx c.Context, blockId string) (entity.BlockState, error) {
+func (db *PGCon) GetBlockState(ctx c.Context, blockID string) (entity.BlockState, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_block_state")
 	defer span.End()
 
@@ -1902,10 +2096,11 @@ func (db *PGCon) GetBlockState(ctx c.Context, blockId string) (entity.BlockState
 		WHERE id = $1;
 	`
 
-	if err := db.Connection.QueryRow(ctx, q, blockId).Scan(&params); err != nil {
+	if err := db.Connection.QueryRow(ctx, q, blockID).Scan(&params); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return state, nil
 		}
+
 		return nil, err
 	}
 
@@ -1919,7 +2114,7 @@ func (db *PGCon) GetBlockState(ctx c.Context, blockId string) (entity.BlockState
 	return state, nil
 }
 
-func (db *PGCon) CheckBlockForHiddenFlag(ctx c.Context, blockId string) (bool, error) {
+func (db *PGCon) CheckBlockForHiddenFlag(ctx c.Context, blockID string) (bool, error) {
 	ctx, span := trace.StartSpan(ctx, "check_task_node_for_hidden_flag_monitoring")
 	defer span.End()
 
@@ -1933,7 +2128,7 @@ func (db *PGCon) CheckBlockForHiddenFlag(ctx c.Context, blockId string) (bool, e
 		where vs.id = $1`
 
 	var res bool
-	if err := db.Connection.QueryRow(ctx, q, blockId).Scan(&res); err != nil {
+	if err := db.Connection.QueryRow(ctx, q, blockID).Scan(&res); err != nil {
 		return false, err
 	}
 
@@ -1960,7 +2155,7 @@ func (db *PGCon) CheckTaskForHiddenFlag(ctx c.Context, workNumber string) (bool,
 	return res, nil
 }
 
-func (db *PGCon) GetTaskMembers(ctx c.Context, workNumber string, fromActiveNodes bool) ([]DbMember, error) {
+func (db *PGCon) GetTaskMembers(ctx c.Context, workNumber string, fromActiveNodes bool) ([]Member, error) {
 	q := `SELECT m.login, vs.step_type FROM works
     		JOIN variable_storage vs ON works.id = vs.work_id
     		JOIN members m ON vs.id = m.block_id
@@ -1970,7 +2165,7 @@ func (db *PGCon) GetTaskMembers(ctx c.Context, workNumber string, fromActiveNode
 		q += `AND vs.status IN ('running', 'idle');`
 	}
 
-	members := make([]DbMember, 0)
+	members := make([]Member, 0)
 
 	rows, err := db.Connection.Query(ctx, q, workNumber)
 	if err != nil {
@@ -1981,7 +2176,7 @@ func (db *PGCon) GetTaskMembers(ctx c.Context, workNumber string, fromActiveNode
 	met := make(map[string]struct{})
 
 	for rows.Next() {
-		m := DbMember{}
+		m := Member{}
 
 		if scanErr := rows.Scan(
 			&m.Login, &m.Type,
@@ -1993,6 +2188,7 @@ func (db *PGCon) GetTaskMembers(ctx c.Context, workNumber string, fromActiveNode
 		if _, ok := met[key]; ok {
 			continue
 		}
+
 		met[key] = struct{}{}
 
 		members = append(members, m)
@@ -2024,8 +2220,11 @@ func (db *PGCon) GetTaskCustomProps(ctx c.Context, taskID uuid.UUID) (*TaskCusto
 		FROM works
 		WHERE id = $1`
 
-	var isTest bool
-	var customTitle string
+	var (
+		isTest      bool
+		customTitle string
+	)
+
 	if err := db.Connection.QueryRow(ctx, q, taskID).Scan(&isTest, &customTitle); err != nil {
 		return nil, err
 	}
@@ -2035,8 +2234,10 @@ func (db *PGCon) GetTaskCustomProps(ctx c.Context, taskID uuid.UUID) (*TaskCusto
 		CustomTitle: customTitle,
 	}, nil
 }
+
 func (db *PGCon) GetExecutorsFromPrevExecutionBlockRun(ctx c.Context, taskID uuid.UUID, name string) (
-	exec map[string]struct{}, err error) {
+	exec map[string]struct{}, err error,
+) {
 	ctx, span := trace.StartSpan(ctx, "get_executor_from_prev_block")
 	defer span.End()
 
@@ -2050,6 +2251,7 @@ func (db *PGCon) GetExecutorsFromPrevExecutionBlockRun(ctx c.Context, taskID uui
 		if errors.Is(err, pgx.ErrNoRows) {
 			return map[string]struct{}{}, nil
 		}
+
 		return map[string]struct{}{}, err
 	}
 
@@ -2057,11 +2259,13 @@ func (db *PGCon) GetExecutorsFromPrevExecutionBlockRun(ctx c.Context, taskID uui
 }
 
 func (db *PGCon) GetExecutorsFromPrevWorkVersionExecutionBlockRun(ctx c.Context, workNumber, name string) (
-	exec map[string]struct{}, err error) {
+	exec map[string]struct{}, err error,
+) {
 	ctx, span := trace.StartSpan(ctx, "get_executor_from_prev_block")
 	defer span.End()
 
 	var executors map[string]struct{}
+
 	q := `
 		SELECT  content-> 'State' -> step_name -> 'executors'
 		FROM variable_storage
@@ -2072,7 +2276,9 @@ func (db *PGCon) GetExecutorsFromPrevWorkVersionExecutionBlockRun(ctx c.Context,
 		if errors.Is(err, pgx.ErrNoRows) {
 			return map[string]struct{}{}, nil
 		}
+
 		return map[string]struct{}{}, err
 	}
+
 	return executors, nil
 }

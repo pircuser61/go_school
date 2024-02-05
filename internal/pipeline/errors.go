@@ -12,5 +12,6 @@ func (e UserIsNotPartOfProcessErr) Error() string {
 
 func (e UserIsNotPartOfProcessErr) Is(err error) bool {
 	_, ok := err.(UserIsNotPartOfProcessErr)
+
 	return ok
 }

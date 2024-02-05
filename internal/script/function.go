@@ -43,8 +43,10 @@ type JSONSchemaPropertiesValue struct {
 	Value string `json:"value,omitempty"`
 }
 
+// nolint:gocritic // need for json marshaling only struct
 func (jspv JSONSchemaPropertiesValue) MarshalJSON() ([]byte, error) {
 	dataToMarshal := make(map[string]interface{})
+
 	for i := 0; i < reflect.ValueOf(jspv).NumField(); i++ {
 		field := reflect.TypeOf(jspv).Field(i)
 		value := reflect.ValueOf(jspv).Field(i)
@@ -52,9 +54,10 @@ func (jspv JSONSchemaPropertiesValue) MarshalJSON() ([]byte, error) {
 		if strings.HasSuffix(field.Tag.Get("json"), "omitempty") && value.IsZero() {
 			continue
 		}
-		dataToMarshal[strings.Replace(field.Tag.Get("json"), ",omitempty", "", 1)] =
-			value.Interface()
+
+		dataToMarshal[strings.Replace(field.Tag.Get("json"), ",omitempty", "", 1)] = value.Interface()
 	}
+
 	return json.Marshal(dataToMarshal)
 }
 
@@ -75,6 +78,7 @@ func (jspv *JSONSchemaPropertiesValue) GetProperties() map[string]interface{} {
 	for k := range jspv.Properties {
 		properties[k] = jspv.Properties[k]
 	}
+
 	return properties
 }
 
@@ -86,14 +90,14 @@ type ExecutableFunctionParams struct {
 	WaitCorrectRes int                    `json:"waitCorrectRes"`
 	Constants      map[string]interface{} `json:"constants"`
 	CheckSLA       bool                   `json:"check_sla"`
-	SLA            int                    `json:"sla"` //seconds
+	SLA            int                    `json:"sla"` // seconds
 }
 
 type FunctionParam struct {
 	Name        string       `json:"name"`
 	Description string       `json:"description"`
-	FunctionId  string       `json:"functionId"`
-	VersionId   string       `json:"versionId"`
+	FunctionID  string       `json:"functionId"`
+	VersionID   string       `json:"versionId"`
 	Version     string       `json:"version"`
 	CreatedAt   functionTime `json:"createdAt"`
 	DeletedAt   functionTime `json:"deletedAt"`
@@ -117,10 +121,11 @@ func (p ParamMetadata) GetType() string {
 }
 
 func (p ParamMetadata) GetProperties() map[string]interface{} {
-	properties := make(map[string]interface{})
+	properties := make(map[string]interface{}, len(p.Properties))
 	for k, v := range p.Properties {
 		properties[k] = v
 	}
+
 	return properties
 }
 
@@ -162,7 +167,9 @@ func (js *JSONSchema) Validate() error {
 }
 
 func (properties JSONSchemaProperties) Validate() error {
-	for name, property := range properties {
+	for name := range properties {
+		property := properties[name]
+
 		if property.Type == "" {
 			return errors.New("type is required")
 		}
@@ -197,6 +204,7 @@ func (properties JSONSchemaProperties) Validate() error {
 	return nil
 }
 
+//nolint:gocritic //в этом проекте не принято использовать поинтеры в коллекциях
 func (properties JSONSchemaProperties) checkInnerFieldsHasMapping() bool {
 	for _, property := range properties {
 		if property.Value != "" {
@@ -220,22 +228,22 @@ func (ai ArrayItems) Validate() error {
 	if ai.Type == "array" {
 		if ai.Items == nil {
 			return errors.New("items is required")
-		} else {
-			err := ai.Items.Validate()
-			if err != nil {
-				return err
-			}
+		}
+
+		err := ai.Items.Validate()
+		if err != nil {
+			return err
 		}
 	}
 
 	if ai.Type == object {
 		if ai.Properties == nil {
 			return errors.New("properties is required")
-		} else {
-			err := ai.Properties.Validate()
-			if err != nil {
-				return err
-			}
+		}
+
+		err := ai.Properties.Validate()
+		if err != nil {
+			return err
 		}
 	}
 
@@ -261,25 +269,29 @@ func (ft *functionTime) UnmarshalJSON(b []byte) error {
 		return nil
 	}
 
-	if parsedTime, err = time.Parse(timeLayout2, string(b)); err == nil {
+	parsedTime, err = time.Parse(timeLayout2, string(b))
+	if err == nil {
 		*ft = functionTime(parsedTime)
 
 		return nil
 	}
 
-	if parsedTime, err = time.Parse(timeLayout3, string(b)); err == nil {
+	parsedTime, err = time.Parse(timeLayout3, string(b))
+	if err == nil {
 		*ft = functionTime(parsedTime)
 
 		return nil
 	}
 
-	if parsedTime, err = time.Parse(timeLayout4, string(b)); err == nil {
+	parsedTime, err = time.Parse(timeLayout4, string(b))
+	if err == nil {
 		*ft = functionTime(parsedTime)
 
 		return nil
 	}
 
-	if err = json.Unmarshal(b, &parsedTime); err != nil {
+	err = json.Unmarshal(b, &parsedTime)
+	if err != nil {
 		return err
 	}
 

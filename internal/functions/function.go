@@ -15,7 +15,7 @@ func (s *Service) GetFunctionVersion(ctx context.Context, functionID, versionID 
 	}
 
 	for index := range function.Versions {
-		if function.Versions[index].VersionId != versionID {
+		if function.Versions[index].VersionID != versionID {
 			continue
 		}
 
@@ -30,6 +30,7 @@ func (s *Service) GetFunctionVersion(ctx context.Context, functionID, versionID 
 		}
 
 		var options Options
+
 		optionsUnmarshalErr := json.Unmarshal([]byte(function.Versions[index].Options), &options)
 		if err != nil {
 			return Function{}, optionsUnmarshalErr
@@ -37,8 +38,8 @@ func (s *Service) GetFunctionVersion(ctx context.Context, functionID, versionID 
 
 		return Function{
 			Name:        function.Name,
-			FunctionId:  function.Versions[index].FunctionId,
-			VersionId:   function.Versions[index].VersionId,
+			FunctionID:  function.Versions[index].FunctionID,
+			VersionID:   function.Versions[index].VersionID,
 			Description: function.Versions[index].Description,
 			Version:     function.Versions[index].Version,
 			Uses:        function.Uses,
@@ -62,7 +63,6 @@ func (s *Service) GetFunction(ctx context.Context, id string) (result Function, 
 			FunctionId: id,
 		},
 	)
-
 	if err != nil {
 		return Function{}, err
 	}
@@ -78,6 +78,7 @@ func (s *Service) GetFunction(ctx context.Context, id string) (result Function, 
 	}
 
 	var options Options
+
 	optionsUnmarshalErr := json.Unmarshal([]byte(res.Function.Options), &options)
 	if err != nil {
 		return Function{}, optionsUnmarshalErr
@@ -87,8 +88,8 @@ func (s *Service) GetFunction(ctx context.Context, id string) (result Function, 
 
 	for _, v := range res.Function.Versions {
 		versions = append(versions, Version{
-			FunctionId:  v.FunctionId,
-			VersionId:   v.VersionId,
+			FunctionID:  v.FunctionId,
+			VersionID:   v.VersionId,
 			Description: v.Description,
 			Version:     v.Version,
 			Input:       v.Input,
@@ -102,8 +103,8 @@ func (s *Service) GetFunction(ctx context.Context, id string) (result Function, 
 	}
 
 	return Function{
-		FunctionId:  res.Function.FunctionId,
-		VersionId:   res.Function.VersionId,
+		FunctionID:  res.Function.FunctionId,
+		VersionID:   res.Function.VersionId,
 		Name:        res.Function.Name,
 		Description: res.Function.Description,
 		Version:     res.Function.Version,
@@ -123,6 +124,7 @@ func convertToParamMetadata(source string) (result map[string]ParamMetadata, err
 	unmarshalErr := json.Unmarshal([]byte(source), &result)
 	if unmarshalErr != nil {
 		err = unmarshalErr
+
 		return nil, err
 	}
 

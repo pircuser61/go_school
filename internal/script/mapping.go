@@ -7,14 +7,13 @@ import (
 	"strings"
 
 	"github.com/xeipuuv/gojsonschema"
-
-	"gitlab.services.mts.ru/jocasta/human-tasks/pkg/utils/slice"
 )
 
 const dotSeparator = "."
 
 func RestoreMapStructure(variables map[string]interface{}) map[string]interface{} {
 	result := make(map[string]interface{})
+
 	for name, variable := range variables {
 		keyParts := strings.Split(name, ".")
 		current := result
@@ -26,6 +25,7 @@ func RestoreMapStructure(variables map[string]interface{}) map[string]interface{
 				if _, ok := current[keyPart]; !ok {
 					current[keyPart] = make(map[string]interface{})
 				}
+
 				current = current[keyPart].(map[string]interface{})
 			}
 		}
@@ -34,76 +34,14 @@ func RestoreMapStructure(variables map[string]interface{}) map[string]interface{
 	return result
 }
 
-//nolint:gocyclo // ok here
-func MapData(mapping JSONSchemaProperties, input map[string]interface{}, required []string,
+func MapData(
+	mapping JSONSchemaProperties,
+	input map[string]interface{},
+	required []string,
 ) (map[string]interface{}, error) {
-	mappedData := make(map[string]interface{}, len(input))
+	mappingProperties := MakeMappingProperties(mapping, input, required)
 
-	for paramName, paramMapping := range mapping {
-		if len(paramMapping.Value) == 0 {
-			if paramMapping.Type == object {
-				variable, err := MapData(paramMapping.Properties, input, paramMapping.Required)
-				if err != nil {
-					return nil, err
-				}
-
-				err = validateParam(variable, paramMapping)
-				if err != nil {
-					return nil, err
-				}
-
-				mappedData[paramName] = variable
-				continue
-			}
-
-			if slice.Contains(required, paramName) {
-				return nil, fmt.Errorf("%s is required, but mapping value is empty", paramName)
-			}
-
-			if paramMapping.Default != nil {
-				err := validateParam(paramMapping.Default, paramMapping)
-				if err != nil {
-					return nil, err
-				}
-
-				mappedData[paramName] = paramMapping.Default
-			}
-
-			continue
-		}
-
-		path := strings.Split(paramMapping.Value, dotSeparator)
-
-		variable, err := getVariable(input, path)
-		if err != nil {
-			return nil, err
-		}
-
-		if variable != nil {
-			err = validateParam(variable, paramMapping)
-			if err != nil {
-				return nil, err
-			}
-
-			mappedData[paramName] = variable
-			continue
-		}
-
-		if slice.Contains(required, paramName) {
-			return nil, fmt.Errorf("%s is required, but mapping value is empty", paramName)
-		}
-
-		if paramMapping.Default != nil {
-			err = validateParam(paramMapping.Default, paramMapping)
-			if err != nil {
-				return nil, err
-			}
-
-			mappedData[paramName] = paramMapping.Default
-		}
-	}
-
-	return mappedData, nil
+	return mappingProperties.Map()
 }
 
 func getVariable(input map[string]interface{}, path []string) (interface{}, error) {
@@ -135,7 +73,7 @@ func getVariable(input map[string]interface{}, path []string) (interface{}, erro
 	return variable, nil
 }
 
-func validateParam(param interface{}, paramJSONSchema JSONSchemaPropertiesValue) error {
+func validateParam(param interface{}, paramJSONSchema *JSONSchemaPropertiesValue) error {
 	marshaledParam, err := json.Marshal(param)
 	if err != nil {
 		return err
@@ -154,14 +92,16 @@ func validateParam(param interface{}, paramJSONSchema JSONSchemaPropertiesValue)
 	return nil
 }
 
-func ValidateJSONByJSONSchema(jsonString string, jsonSchema string) error {
+func ValidateJSONByJSONSchema(jsonString, jsonSchema string) error {
 	loader := gojsonschema.NewStringLoader(jsonSchema)
+
 	schema, err := gojsonschema.NewSchema(loader)
 	if err != nil {
 		return err
 	}
 
 	documentLoader := gojsonschema.NewStringLoader(jsonString)
+
 	result, err := schema.Validate(documentLoader)
 	if err != nil {
 		return err
@@ -172,6 +112,7 @@ func ValidateJSONByJSONSchema(jsonString string, jsonSchema string) error {
 		for _, resultError := range result.Errors() {
 			errorMsg += resultError.String() + "; "
 		}
+
 		return errors.New(errorMsg)
 	}
 

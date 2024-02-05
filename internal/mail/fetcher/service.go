@@ -64,16 +64,19 @@ func (s *service) FetchEmails(ctx c.Context) (actions []ParsedEmail, err error) 
 		action, errProcess := s.processMessage(ctx, msg, section)
 		if errProcess != nil {
 			log.Error(fmt.Sprintf("processMessage err: %s", errProcess.Error()))
+
 			continue
 		}
 
 		if action == nil {
 			log.Warning("processMessage action is nil")
+
 			continue
 		}
 
 		actions = append(actions, *action)
 	}
+
 	return actions, nil
 }
 

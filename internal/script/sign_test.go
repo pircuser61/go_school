@@ -23,6 +23,7 @@ func TestSignParams_Validate(t *testing.T) {
 		WorkType          *string
 		AutoReject        *bool
 	}
+
 	tests := []struct {
 		name    string
 		fields  fields
@@ -373,6 +374,7 @@ func TestSignParams_Validate(t *testing.T) {
 			wantErr: true,
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			a := &SignParams{

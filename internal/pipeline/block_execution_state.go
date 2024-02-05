@@ -7,13 +7,14 @@ import (
 	"github.com/pkg/errors"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
-	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
+	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
 
-type RequestInfoType string
-
-type ExecutionDecision string
+type (
+	RequestInfoType   string
+	ExecutionDecision string
+)
 
 func (a ExecutionDecision) String() string {
 	return string(a)
@@ -42,6 +43,13 @@ type ChangeExecutorLog struct {
 	Comment     string              `json:"comment"`
 	Attachments []entity.Attachment `json:"attachments"`
 	CreatedAt   time.Time           `json:"created_at"`
+	DelegateFor string              `json:"delegate_for"`
+}
+
+type StartWorkLog struct {
+	Executor    string    `json:"executor"`
+	CreatedAt   time.Time `json:"created_at"`
+	DelegateFor string    `json:"delegate_for"`
 }
 
 type ExecutionData struct {
@@ -63,10 +71,11 @@ type ExecutionData struct {
 	ExecutorsGroupID   string `json:"executors_group_id"`
 	ExecutorsGroupName string `json:"executors_group_name"`
 
-	ExecutorsGroupIdPath *string `json:"executors_group_id_path,omitempty"`
+	ExecutorsGroupIDPath *string `json:"executors_group_id_path,omitempty"`
 
-	IsTakenInWork               bool `json:"is_taken_in_work"`
-	IsExecutorVariablesResolved bool `json:"is_executor_variables_resolved"`
+	IsTakenInWork               bool           `json:"is_taken_in_work"`
+	TakenInWorkLog              []StartWorkLog `json:"taken_in_work_log"`
+	IsExecutorVariablesResolved bool           `json:"is_executor_variables_resolved"`
 
 	IsEditable         bool `json:"is_editable"`
 	RepeatPrevDecision bool `json:"repeat_prev_decision"`
@@ -88,8 +97,8 @@ func (a *ExecutionData) GetDecision() *ExecutionDecision {
 	return a.Decision
 }
 
-func (a *ExecutionData) IncreaseSLA(addSla int) {
-	a.SLA += addSla
+func (a *ExecutionData) IncreaseSLA(addSLA int) {
+	a.SLA += addSLA
 }
 
 func (a *ExecutionData) GetRepeatPrevDecision() bool {
@@ -138,7 +147,7 @@ func (a *ExecutionData) SetDecision(login string, in *ExecutionUpdateParams, del
 }
 
 //nolint:dupl //its not duplicate
-func (a *ExecutionData) setEditToNextBlock(executor string, delegateFor string, params executorUpdateEditParams) error {
+func (a *ExecutionData) setEditToNextBlock(executor, delegateFor string, params executorUpdateEditParams) error {
 	rejected := ExecutionDecisionSentEdit
 	a.ActualExecutor = &executor
 	a.Decision = &rejected

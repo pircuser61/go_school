@@ -79,7 +79,7 @@ func TestValidation_IsolationNode(t *testing.T) {
 							TypeID: "start",
 							Sockets: []entity.Socket{
 								{
-									Id:           script.DefaultSocketID,
+									ID:           script.DefaultSocketID,
 									Title:        script.DefaultSocketTitle,
 									NextBlockIds: []string{"end_0"},
 								},
@@ -89,7 +89,7 @@ func TestValidation_IsolationNode(t *testing.T) {
 							TypeID: "end",
 							Sockets: []entity.Socket{
 								{
-									Id:           script.DefaultSocketID,
+									ID:           script.DefaultSocketID,
 									Title:        script.DefaultSocketTitle,
 									NextBlockIds: []string{},
 								},
@@ -109,7 +109,7 @@ func TestValidation_IsolationNode(t *testing.T) {
 							TypeID: "start",
 							Sockets: []entity.Socket{
 								{
-									Id:           script.DefaultSocketID,
+									ID:           script.DefaultSocketID,
 									Title:        script.DefaultSocketTitle,
 									NextBlockIds: []string{},
 								},
@@ -119,7 +119,7 @@ func TestValidation_IsolationNode(t *testing.T) {
 							TypeID: "approver",
 							Sockets: []entity.Socket{
 								{
-									Id:           script.DefaultSocketID,
+									ID:           script.DefaultSocketID,
 									Title:        script.DefaultSocketTitle,
 									NextBlockIds: []string{"end_0"},
 								},
@@ -129,7 +129,7 @@ func TestValidation_IsolationNode(t *testing.T) {
 							TypeID: "end",
 							Sockets: []entity.Socket{
 								{
-									Id:           script.DefaultSocketID,
+									ID:           script.DefaultSocketID,
 									Title:        script.DefaultSocketTitle,
 									NextBlockIds: []string{},
 								},
@@ -149,7 +149,7 @@ func TestValidation_IsolationNode(t *testing.T) {
 							TypeID: "start",
 							Sockets: []entity.Socket{
 								{
-									Id:           script.DefaultSocketID,
+									ID:           script.DefaultSocketID,
 									Title:        script.DefaultSocketTitle,
 									NextBlockIds: []string{"approver_0"},
 								},
@@ -159,7 +159,7 @@ func TestValidation_IsolationNode(t *testing.T) {
 							TypeID: "approver",
 							Sockets: []entity.Socket{
 								{
-									Id:           script.DefaultSocketID,
+									ID:           script.DefaultSocketID,
 									Title:        script.DefaultSocketTitle,
 									NextBlockIds: []string{},
 								},
@@ -169,7 +169,7 @@ func TestValidation_IsolationNode(t *testing.T) {
 							TypeID: "end",
 							Sockets: []entity.Socket{
 								{
-									Id:           script.DefaultSocketID,
+									ID:           script.DefaultSocketID,
 									Title:        script.DefaultSocketTitle,
 									NextBlockIds: []string{},
 								},
@@ -189,7 +189,7 @@ func TestValidation_IsolationNode(t *testing.T) {
 							TypeID: "start",
 							Sockets: []entity.Socket{
 								{
-									Id:           script.DefaultSocketID,
+									ID:           script.DefaultSocketID,
 									Title:        script.DefaultSocketTitle,
 									NextBlockIds: []string{},
 								},
@@ -199,7 +199,7 @@ func TestValidation_IsolationNode(t *testing.T) {
 							TypeID: "approver",
 							Sockets: []entity.Socket{
 								{
-									Id:           script.DefaultSocketID,
+									ID:           script.DefaultSocketID,
 									Title:        script.DefaultSocketTitle,
 									NextBlockIds: []string{},
 								},
@@ -209,7 +209,7 @@ func TestValidation_IsolationNode(t *testing.T) {
 							TypeID: "end",
 							Sockets: []entity.Socket{
 								{
-									Id:           script.DefaultSocketID,
+									ID:           script.DefaultSocketID,
 									Title:        script.DefaultSocketTitle,
 									NextBlockIds: []string{},
 								},
@@ -229,7 +229,7 @@ func TestValidation_IsolationNode(t *testing.T) {
 							TypeID: "start",
 							Sockets: []entity.Socket{
 								{
-									Id:           script.DefaultSocketID,
+									ID:           script.DefaultSocketID,
 									Title:        script.DefaultSocketTitle,
 									NextBlockIds: []string{"form_0"},
 								},
@@ -239,7 +239,7 @@ func TestValidation_IsolationNode(t *testing.T) {
 							TypeID: "form",
 							Sockets: []entity.Socket{
 								{
-									Id:           script.DefaultSocketID,
+									ID:           script.DefaultSocketID,
 									Title:        script.DefaultSocketTitle,
 									NextBlockIds: []string{"approver_0"},
 								},
@@ -249,7 +249,7 @@ func TestValidation_IsolationNode(t *testing.T) {
 							TypeID: "approver",
 							Sockets: []entity.Socket{
 								{
-									Id:           script.DefaultSocketID,
+									ID:           script.DefaultSocketID,
 									Title:        script.DefaultSocketTitle,
 									NextBlockIds: []string{"form_0"},
 								},
@@ -259,7 +259,7 @@ func TestValidation_IsolationNode(t *testing.T) {
 							TypeID: "end",
 							Sockets: []entity.Socket{
 								{
-									Id:           script.DefaultSocketID,
+									ID:           script.DefaultSocketID,
 									Title:        script.DefaultSocketTitle,
 									NextBlockIds: []string{},
 								},
@@ -269,7 +269,7 @@ func TestValidation_IsolationNode(t *testing.T) {
 							TypeID: "approver",
 							Sockets: []entity.Socket{
 								{
-									Id:           script.DefaultSocketID,
+									ID:           script.DefaultSocketID,
 									Title:        script.DefaultSocketTitle,
 									NextBlockIds: []string{"end_1"},
 								},
@@ -279,7 +279,7 @@ func TestValidation_IsolationNode(t *testing.T) {
 							TypeID: "end",
 							Sockets: []entity.Socket{
 								{
-									Id:           script.DefaultSocketID,
+									ID:           script.DefaultSocketID,
 									Title:        script.DefaultSocketTitle,
 									NextBlockIds: []string{},
 								},
@@ -316,7 +316,7 @@ func TestValidation_SocketFilled(t *testing.T) {
 							TypeID: "start",
 							Sockets: []entity.Socket{
 								{
-									Id: "approved",
+									ID: "approved",
 								},
 							},
 							Next: map[string][]string{
@@ -340,10 +340,10 @@ func TestValidation_SocketFilled(t *testing.T) {
 							TypeID: "start",
 							Sockets: []entity.Socket{
 								{
-									Id: "approved",
+									ID: "approved",
 								},
 								{
-									Id: "rejected",
+									ID: "rejected",
 								},
 							},
 							Next: map[string][]string{
@@ -367,7 +367,7 @@ func TestValidation_SocketFilled(t *testing.T) {
 							TypeID: "start",
 							Sockets: []entity.Socket{
 								{
-									Id: "approved",
+									ID: "approved",
 								},
 							},
 							Next: map[string][]string{
@@ -392,7 +392,7 @@ func TestValidation_SocketFilled(t *testing.T) {
 							TypeID: "start",
 							Sockets: []entity.Socket{
 								{
-									Id: "approved",
+									ID: "approved",
 								},
 							},
 							Next: map[string][]string{
@@ -416,7 +416,7 @@ func TestValidation_SocketFilled(t *testing.T) {
 							TypeID: "start",
 							Sockets: []entity.Socket{
 								{
-									Id: "approved",
+									ID: "approved",
 								},
 							},
 							Next: map[string][]string{},
@@ -483,6 +483,7 @@ func TestValidation_SdBlueprintFilled(t *testing.T) {
 								r, _ := json.Marshal(&script.SdApplicationParams{
 									BlueprintID: "59d1a7e6-011d-11ed-b7f9-baa4bc97ef20",
 								})
+
 								return r
 							}(),
 						},
@@ -502,6 +503,7 @@ func TestValidation_SdBlueprintFilled(t *testing.T) {
 								r, _ := json.Marshal(&script.SdApplicationParams{
 									BlueprintID: "",
 								})
+
 								return r
 							}(),
 						},
@@ -511,13 +513,15 @@ func TestValidation_SdBlueprintFilled(t *testing.T) {
 			WantValid: false,
 		},
 	}
-	sdApi := &servicedesc.Service{
+
+	sdAPI := &servicedesc.Service{
 		Cli:   httpmock.Client(&mockResponse),
 		SdURL: "https://dev.servicedesk.mts.ru",
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			if tt.Ef.Pipeline.Blocks.IsSdBlueprintFilled(context.Background(), sdApi) != tt.WantValid {
+			if tt.Ef.Pipeline.Blocks.IsSdBlueprintFilled(context.Background(), sdAPI) != tt.WantValid {
 				t.Errorf("unexpected invalid %+v", tt.Ef.Pipeline.Blocks)
 			}
 		})
@@ -540,7 +544,7 @@ func TestValidation_ParallelNodes(t *testing.T) {
 							Next:   map[string][]string{"default": {"begin_parallel_task_0"}},
 							Sockets: []entity.Socket{
 								{
-									Id:           script.DefaultSocketID,
+									ID:           script.DefaultSocketID,
 									Title:        script.DefaultSocketTitle,
 									NextBlockIds: []string{"begin_parallel_task_0"},
 								},
@@ -551,7 +555,7 @@ func TestValidation_ParallelNodes(t *testing.T) {
 							Next:   map[string][]string{"default": {"approver_1", "approver_2"}},
 							Sockets: []entity.Socket{
 								{
-									Id:           script.DefaultSocketID,
+									ID:           script.DefaultSocketID,
 									Title:        script.DefaultSocketTitle,
 									NextBlockIds: []string{"approver_1", "approver_2"},
 								},
@@ -565,12 +569,12 @@ func TestValidation_ParallelNodes(t *testing.T) {
 							},
 							Sockets: []entity.Socket{
 								{
-									Id:           "approve",
+									ID:           "approve",
 									Title:        "Согласовать",
 									NextBlockIds: []string{"wait_for_all_inputs_0"},
 								},
 								{
-									Id:           "reject",
+									ID:           "reject",
 									Title:        "Отклонить",
 									NextBlockIds: []string{"wait_for_all_inputs_0"},
 								},
@@ -584,12 +588,12 @@ func TestValidation_ParallelNodes(t *testing.T) {
 							},
 							Sockets: []entity.Socket{
 								{
-									Id:           "approve",
+									ID:           "approve",
 									Title:        "Согласовать",
 									NextBlockIds: []string{"approver_3"},
 								},
 								{
-									Id:           "reject",
+									ID:           "reject",
 									Title:        "Отклонить",
 									NextBlockIds: []string{"approver_3"},
 								},
@@ -603,12 +607,12 @@ func TestValidation_ParallelNodes(t *testing.T) {
 							},
 							Sockets: []entity.Socket{
 								{
-									Id:           "approve",
+									ID:           "approve",
 									Title:        "Согласовать",
 									NextBlockIds: []string{"approver_2"},
 								},
 								{
-									Id:           "reject",
+									ID:           "reject",
 									Title:        "Отклонить",
 									NextBlockIds: []string{"wait_for_all_inputs_0"},
 								},
@@ -619,7 +623,7 @@ func TestValidation_ParallelNodes(t *testing.T) {
 							Next:   map[string][]string{"default": {"end_0"}},
 							Sockets: []entity.Socket{
 								{
-									Id:           script.DefaultSocketID,
+									ID:           script.DefaultSocketID,
 									Title:        script.DefaultSocketTitle,
 									NextBlockIds: []string{"end_0"},
 								},
@@ -629,7 +633,7 @@ func TestValidation_ParallelNodes(t *testing.T) {
 							TypeID: "end",
 							Sockets: []entity.Socket{
 								{
-									Id:           script.DefaultSocketID,
+									ID:           script.DefaultSocketID,
 									Title:        script.DefaultSocketTitle,
 									NextBlockIds: []string{},
 								},
@@ -650,7 +654,7 @@ func TestValidation_ParallelNodes(t *testing.T) {
 							Next:   map[string][]string{"default": {"begin_parallel_task_0"}},
 							Sockets: []entity.Socket{
 								{
-									Id:           script.DefaultSocketID,
+									ID:           script.DefaultSocketID,
 									Title:        script.DefaultSocketTitle,
 									NextBlockIds: []string{"begin_parallel_task_0"},
 								},
@@ -661,7 +665,7 @@ func TestValidation_ParallelNodes(t *testing.T) {
 							Next:   map[string][]string{"default": {"approver_1", "approver_2"}},
 							Sockets: []entity.Socket{
 								{
-									Id:           script.DefaultSocketID,
+									ID:           script.DefaultSocketID,
 									Title:        script.DefaultSocketTitle,
 									NextBlockIds: []string{"approver_1", "approver_2"},
 								},
@@ -675,12 +679,12 @@ func TestValidation_ParallelNodes(t *testing.T) {
 							},
 							Sockets: []entity.Socket{
 								{
-									Id:           "approve",
+									ID:           "approve",
 									Title:        "Согласовать",
 									NextBlockIds: []string{"wait_for_all_inputs_0"},
 								},
 								{
-									Id:           "reject",
+									ID:           "reject",
 									Title:        "Отклонить",
 									NextBlockIds: []string{"wait_for_all_inputs_1"},
 								},
@@ -694,12 +698,12 @@ func TestValidation_ParallelNodes(t *testing.T) {
 							},
 							Sockets: []entity.Socket{
 								{
-									Id:           "approve",
+									ID:           "approve",
 									Title:        "Согласовать",
 									NextBlockIds: []string{"approver_3"},
 								},
 								{
-									Id:           "reject",
+									ID:           "reject",
 									Title:        "Отклонить",
 									NextBlockIds: []string{"approver_3"},
 								},
@@ -713,12 +717,12 @@ func TestValidation_ParallelNodes(t *testing.T) {
 							},
 							Sockets: []entity.Socket{
 								{
-									Id:           "approve",
+									ID:           "approve",
 									Title:        "Согласовать",
 									NextBlockIds: []string{"approver_2"},
 								},
 								{
-									Id:           "reject",
+									ID:           "reject",
 									Title:        "Отклонить",
 									NextBlockIds: []string{"wait_for_all_inputs_0"},
 								},
@@ -729,7 +733,7 @@ func TestValidation_ParallelNodes(t *testing.T) {
 							Next:   map[string][]string{"default": {"end_0"}},
 							Sockets: []entity.Socket{
 								{
-									Id:           script.DefaultSocketID,
+									ID:           script.DefaultSocketID,
 									Title:        script.DefaultSocketTitle,
 									NextBlockIds: []string{"end_0"},
 								},
@@ -740,7 +744,7 @@ func TestValidation_ParallelNodes(t *testing.T) {
 							Next:   map[string][]string{"default": {"end_0"}},
 							Sockets: []entity.Socket{
 								{
-									Id:           script.DefaultSocketID,
+									ID:           script.DefaultSocketID,
 									Title:        script.DefaultSocketTitle,
 									NextBlockIds: []string{"end_0"},
 								},
@@ -750,7 +754,7 @@ func TestValidation_ParallelNodes(t *testing.T) {
 							TypeID: "end",
 							Sockets: []entity.Socket{
 								{
-									Id:           script.DefaultSocketID,
+									ID:           script.DefaultSocketID,
 									Title:        script.DefaultSocketTitle,
 									NextBlockIds: []string{},
 								},
@@ -823,11 +827,14 @@ func unmarshalFromTestFile(t *testing.T, in string) *entity.EriusScenario {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	var result entity.EriusScenario
+
 	err = json.Unmarshal(bytes, &result)
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	return &result
 }
 
@@ -836,11 +843,14 @@ func unmarshalGroupsFromTestFile(t *testing.T, in string) []*entity.NodeGroup {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	var result []*entity.NodeGroup
+
 	err = json.Unmarshal(bytes, &result)
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	return result
 }
 
@@ -890,8 +900,10 @@ func checkEqualityOfGroups(g1, g2 []*entity.NodeGroup) bool {
 	if len(g1) != len(g2) {
 		return false
 	}
+
 	gm1 := groupSliceToMap(g1)
 	gm2 := groupSliceToMap(g2)
+
 	return cmp.Equal(gm1, gm2)
 }
 
@@ -899,7 +911,9 @@ func groupSliceToMap(g []*entity.NodeGroup) map[string]NodeGroupMap {
 	if g == nil {
 		return nil
 	}
+
 	gmap := map[string]NodeGroupMap{}
+
 	for i := range g {
 		gmap[g[i].StartNode] = NodeGroupMap{
 			EndNode:   g[i].EndNode,
@@ -908,5 +922,6 @@ func groupSliceToMap(g []*entity.NodeGroup) map[string]NodeGroupMap {
 			StartNode: g[i].StartNode,
 		}
 	}
+
 	return gmap
 }

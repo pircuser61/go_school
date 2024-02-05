@@ -3,8 +3,8 @@ package functions
 import "errors"
 
 type Function struct {
-	FunctionId  string
-	VersionId   string
+	FunctionID  string
+	VersionID   string
 	Name        string
 	Description string
 	Version     string
@@ -20,8 +20,8 @@ type Function struct {
 }
 
 type Version struct {
-	VersionId   string
-	FunctionId  string
+	VersionID   string
+	FunctionID  string
 	Description string
 	Version     string
 	Input       string
