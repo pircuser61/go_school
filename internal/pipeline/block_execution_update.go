@@ -9,8 +9,9 @@ import (
 	"github.com/iancoleman/orderedmap"
 	"github.com/pkg/errors"
 
-	"gitlab.services.mts.ru/abp/mail/pkg/email"
 	"gitlab.services.mts.ru/abp/myosotis/logger"
+
+	"gitlab.services.mts.ru/abp/mail/pkg/email"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
@@ -174,7 +175,7 @@ func (gb *GoExecutionBlock) changeExecutor(ctx context.Context) (err error) {
 	currentLogin := gb.RunContext.UpdateData.ByLogin
 	_, executorFound := gb.State.Executors[currentLogin]
 
-	_, isDelegate := gb.RunContext.Delegations.FindDelegatorFor(currentLogin, getSliceFromMapOfStrings(gb.State.Executors))
+	delegateFor, isDelegate := gb.RunContext.Delegations.FindDelegatorFor(currentLogin, getSliceFromMapOfStrings(gb.State.Executors))
 	if !(executorFound || isDelegate) {
 		return NewUserIsNotPartOfProcessErr()
 	}
@@ -184,7 +185,7 @@ func (gb *GoExecutionBlock) changeExecutor(ctx context.Context) (err error) {
 		return errors.New("can't assert provided update data")
 	}
 
-	if err = gb.State.SetChangeExecutor(gb.RunContext.UpdateData.ByLogin, &updateParams); err != nil {
+	if err = gb.State.SetChangeExecutor(gb.RunContext.UpdateData.ByLogin, delegateFor, &updateParams); err != nil {
 		return errors.New("can't assert provided change executor data")
 	}
 
@@ -211,7 +212,7 @@ func (gb *GoExecutionBlock) changeExecutor(ctx context.Context) (err error) {
 	return nil
 }
 
-func (a *ExecutionData) SetChangeExecutor(oldLogin string, in *ExecutorChangeParams) error {
+func (a *ExecutionData) SetChangeExecutor(oldLogin, delegateFor string, in *ExecutorChangeParams) error {
 	_, ok := a.Executors[oldLogin]
 	if !ok {
 		return fmt.Errorf("%s not found in executors", oldLogin)
@@ -223,6 +224,7 @@ func (a *ExecutionData) SetChangeExecutor(oldLogin string, in *ExecutorChangePar
 		Comment:     in.Comment,
 		Attachments: in.Attachments,
 		CreatedAt:   time.Now(),
+		DelegateFor: delegateFor,
 	})
 
 	return nil
@@ -816,7 +818,7 @@ func (gb *GoExecutionBlock) executorStartWork(ctx context.Context) (err error) {
 	currentLogin := gb.RunContext.UpdateData.ByLogin
 	_, executorFound := gb.State.Executors[currentLogin]
 
-	_, isDelegate := gb.RunContext.Delegations.FindDelegatorFor(
+	delegateFor, isDelegate := gb.RunContext.Delegations.FindDelegatorFor(
 		currentLogin,
 		getSliceFromMapOfStrings(gb.State.Executors),
 	)
@@ -834,6 +836,11 @@ func (gb *GoExecutionBlock) executorStartWork(ctx context.Context) (err error) {
 	}
 
 	gb.State.IsTakenInWork = true
+	gb.State.TakenInWorkLog = append(gb.State.TakenInWorkLog, StartWorkLog{
+		Executor:    gb.RunContext.UpdateData.ByLogin,
+		CreatedAt:   time.Now(),
+		DelegateFor: delegateFor,
+	})
 
 	slaInfoPtr, getSLAInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDTO{
 		TaskCompletionIntervals: []entity.TaskCompletionInterval{{

@@ -43,6 +43,13 @@ type ChangeExecutorLog struct {
 	Comment     string              `json:"comment"`
 	Attachments []entity.Attachment `json:"attachments"`
 	CreatedAt   time.Time           `json:"created_at"`
+	DelegateFor string              `json:"delegate_for"`
+}
+
+type StartWorkLog struct {
+	Executor    string    `json:"executor"`
+	CreatedAt   time.Time `json:"created_at"`
+	DelegateFor string    `json:"delegate_for"`
 }
 
 type ExecutionData struct {
@@ -66,8 +73,9 @@ type ExecutionData struct {
 
 	ExecutorsGroupIDPath *string `json:"executors_group_id_path,omitempty"`
 
-	IsTakenInWork               bool `json:"is_taken_in_work"`
-	IsExecutorVariablesResolved bool `json:"is_executor_variables_resolved"`
+	IsTakenInWork               bool           `json:"is_taken_in_work"`
+	TakenInWorkLog              []StartWorkLog `json:"taken_in_work_log"`
+	IsExecutorVariablesResolved bool           `json:"is_executor_variables_resolved"`
 
 	IsEditable         bool `json:"is_editable"`
 	RepeatPrevDecision bool `json:"repeat_prev_decision"`
