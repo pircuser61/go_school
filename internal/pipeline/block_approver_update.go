@@ -597,9 +597,11 @@ func (gb *GoApproverBlock) toEditApplication(ctx context.Context, updateParams a
 	}
 
 	if gb.isNextBlockServiceDesk() {
+
 		if approverFound {
 			delegateFor = ""
 		}
+
 		err := gb.State.setEditAppToInitiator(gb.RunContext.UpdateData.ByLogin, delegateFor, updateParams)
 		if err != nil {
 			return err
