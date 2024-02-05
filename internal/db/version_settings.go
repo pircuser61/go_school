@@ -3,6 +3,7 @@ package db
 import (
 	c "context"
 	"fmt"
+
 	"golang.org/x/net/context"
 
 	"github.com/google/uuid"
@@ -17,8 +18,8 @@ import (
 
 func (db *PGCon) copyProcessSettingsFromOldVersion(c c.Context, newVersionID, oldVersionID uuid.UUID) error {
 	const qCopyPrevSettings = `
-	INSERT INTO version_settings (id, version_id, start_schema, end_schema, resubmission_period) 
-		SELECT uuid_generate_v4(), $1, start_schema, end_schema, resubmission_period
+	INSERT INTO version_settings (id, version_id, start_schema, end_schema, raw_start_schema, resubmission_period) 
+		SELECT uuid_generate_v4(), $1, start_schema, end_schema, raw_start_schema, resubmission_period
 		FROM version_settings 
 		WHERE version_id = $2`
 
