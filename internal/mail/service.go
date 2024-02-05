@@ -13,16 +13,17 @@ import (
 
 	"go.opencensus.io/trace"
 
-	"github.com/labstack/gommon/log"
-
 	"gitlab.services.mts.ru/abp/mail/pkg/broker"
 	"gitlab.services.mts.ru/abp/mail/pkg/email"
 	"gitlab.services.mts.ru/abp/mail/pkg/mailclient"
+	"gitlab.services.mts.ru/abp/myosotis/logger"
 )
 
-const imageMimeTypePrefix = "image"
-const headTemp = "internal/mail/template/00header-template.html"
-const imagePath = "./internal/mail/img/"
+const (
+	imageMimeTypePrefix = "image"
+	headTemp            = "internal/mail/template/00header-template.html"
+	imagePath           = "./internal/mail/img/"
+)
 
 type Service struct {
 	cli *mailclient.Client
@@ -55,6 +56,7 @@ func NewService(c Config) (*Service, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	s := Service{
 		cli: client,
 		from: &mail.Address{
@@ -65,11 +67,12 @@ func NewService(c Config) (*Service, error) {
 		SdAddress:  c.SdAddress,
 		FetchEmail: c.FetchEmail,
 	}
+
 	return &s, nil
 }
 
 func (s *Service) GetApplicationLink(applicationID string) string {
-	return fmt.Sprintf(TaskUrlTemplate, s.SdAddress, applicationID)
+	return fmt.Sprintf(TaskURLTemplate, s.SdAddress, applicationID)
 }
 
 func (s *Service) SendNotification(ctx context.Context, to []string, files []email.Attachment, tmpl Template) error {
@@ -86,10 +89,12 @@ func (s *Service) SendNotification(ctx context.Context, to []string, files []ema
 		if strings.HasPrefix(http.DetectContentType(f.Content), imageMimeTypePrefix) {
 			f.Type = email.PlainAttachment
 		}
+
 		msg.Attachments = append(msg.Attachments, f)
 	}
 
 	personMail := make(map[string]struct{})
+
 	for _, person := range to {
 		if !regexp.MustCompile(`.+@.+`).MatchString(person) {
 			continue
@@ -108,7 +113,7 @@ func (s *Service) SendNotification(ctx context.Context, to []string, files []ema
 		"isFile":   isFile,
 		"checkKey": checkKey,
 		"hasValue": hasValue,
-		"toMbyte": toMbyte,
+		"toMbyte":  toMbyte,
 	}).ParseFiles(headTemp, tmpl.Template)
 	if err != nil {
 		return err
@@ -124,23 +129,32 @@ func (s *Service) SendNotification(ctx context.Context, to []string, files []ema
 	if sendErr := s.cli.Send(msg); sendErr != nil {
 		return sendErr
 	}
+
 	return nil
 }
 
 func getImages(path string) (map[string][]byte, error) {
+	log := logger.GetLogger(context.Background())
+
 	files, err := os.ReadDir(path)
 	if err != nil {
-		log.Errorf("error read directory path: %v error: %v", path, err)
+		msg := fmt.Sprintf("error read directory path: %v error: %v", path, err)
+		log.Error(msg)
+
 		return nil, err
 	}
 
 	photos := make(map[string][]byte)
+
 	for _, v := range files {
 		data, readErr := os.ReadFile(path + v.Name())
 		if readErr != nil {
-			log.Error("error read file ", v.Name(), err)
+			msg := fmt.Sprintf("error read file %s, %s", v.Name(), err)
+			log.Error(msg)
+
 			return nil, readErr
 		}
+
 		photos[v.Name()] = data
 	}
 

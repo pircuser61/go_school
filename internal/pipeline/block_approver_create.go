@@ -1,7 +1,7 @@
 package pipeline
 
 import (
-	c "context"
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -14,9 +14,10 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
 
-// nolint:dupl // another block
-func createGoApproverBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext,
-	expectedEvents map[string]struct{}) (*GoApproverBlock, bool, error) {
+//nolint:dupl,goconst //another block // не нужно здесь чекать константы
+func createGoApproverBlock(ctx context.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext,
+	expectedEvents map[string]struct{},
+) (*GoApproverBlock, bool, error) {
 	if ef.ShortTitle == "" {
 		return nil, false, errors.New(ef.Title + " block short title is empty")
 	}
@@ -40,64 +41,25 @@ func createGoApproverBlock(ctx c.Context, name string, ef *entity.EriusFunc, run
 
 	// TODO: check existence of keyApproverDecision in Output
 	if ef.Output != nil {
+		//nolint:gocritic //в этом проекте не принято использовать поинтеры в коллекциях
 		for propertyName, v := range ef.Output.Properties {
 			b.Output[propertyName] = v.Global
 		}
 	}
 
-	rawState, blockExists := runCtx.VarStore.State[name]
 	reEntry := false
+
+	rawState, blockExists := runCtx.VarStore.State[name]
 	if blockExists {
-		if err := b.loadState(rawState); err != nil {
+		loadReEntry, err := b.load(ctx, rawState, runCtx, name, ef)
+		if err != nil {
 			return nil, false, err
 		}
 
-		reEntry = runCtx.UpdateData == nil
-
-		if reEntry {
-			if err := b.reEntry(ctx, ef); err != nil {
-				return nil, false, err
-			}
-			b.RunContext.VarStore.AddStep(b.Name)
-
-			if _, ok := b.expectedEvents[eventStart]; ok {
-				status, _, _ := b.GetTaskHumanStatus()
-				event, err := runCtx.MakeNodeStartEvent(ctx, MakeNodeStartEventArgs{
-					NodeName:      name,
-					NodeShortName: ef.ShortTitle,
-					HumanStatus:   status,
-					NodeStatus:    b.GetStatus(),
-				})
-				if err != nil {
-					return nil, false, err
-				}
-				b.happenedEvents = append(b.happenedEvents, event)
-			}
-		}
+		reEntry = loadReEntry
 	} else {
-		if err := b.createState(ctx, ef); err != nil {
-			return nil, false, err
-		}
-		b.RunContext.VarStore.AddStep(b.Name)
-
-		if _, ok := b.expectedEvents[eventStart]; ok {
-			status, _, _ := b.GetTaskHumanStatus()
-			event, err := runCtx.MakeNodeStartEvent(ctx, MakeNodeStartEventArgs{
-				NodeName:      name,
-				NodeShortName: ef.ShortTitle,
-				HumanStatus:   status,
-				NodeStatus:    b.GetStatus(),
-			})
-			if err != nil {
-				return nil, false, err
-			}
-			b.happenedEvents = append(b.happenedEvents, event)
-		}
-
-		// TODO: выпилить когда сделаем циклы
-		// это для возврата на доработку при которой мы создаем новый процесс
-		// и пытаемся взять решение из прошлого процесса
-		if err := b.setPrevDecision(ctx); err != nil {
+		err := b.init(ctx, runCtx, name, ef)
+		if err != nil {
 			return nil, false, err
 		}
 	}
@@ -105,7 +67,89 @@ func createGoApproverBlock(ctx c.Context, name string, ef *entity.EriusFunc, run
 	return b, reEntry, nil
 }
 
-func (gb *GoApproverBlock) reEntry(ctx c.Context, ef *entity.EriusFunc) error {
+func (gb *GoApproverBlock) load(
+	ctx context.Context,
+	rawState json.RawMessage,
+	runCtx *BlockRunContext,
+	name string,
+	ef *entity.EriusFunc,
+) (reEntry bool, err error) {
+	if err := gb.loadState(rawState); err != nil {
+		return false, err
+	}
+
+	reEntry = runCtx.UpdateData == nil
+
+	if reEntry {
+		err := gb.reentryMakeExpectedEvents(ctx, runCtx, name, ef)
+		if err != nil {
+			return false, err
+		}
+	}
+
+	return reEntry, nil
+}
+
+func (gb *GoApproverBlock) init(ctx context.Context, runCtx *BlockRunContext, name string, ef *entity.EriusFunc) error {
+	if err := gb.createState(ctx, ef); err != nil {
+		return err
+	}
+
+	gb.RunContext.VarStore.AddStep(gb.Name)
+
+	err := gb.makeExpectedEvents(ctx, runCtx, name, ef)
+	if err != nil {
+		return err
+	}
+	// TODO: выпилить когда сделаем циклы
+	// это для возврата на доработку при которой мы создаем новый процесс
+	// и пытаемся взять решение из прошлого процесса
+	gb.setPrevDecision(ctx)
+
+	return nil
+}
+
+func (gb *GoApproverBlock) reentryMakeExpectedEvents(
+	ctx context.Context,
+	runCtx *BlockRunContext,
+	name string,
+	ef *entity.EriusFunc,
+) error {
+	if err := gb.reEntry(ctx, ef); err != nil {
+		return err
+	}
+
+	gb.RunContext.VarStore.AddStep(gb.Name)
+
+	err := gb.makeExpectedEvents(ctx, runCtx, name, ef)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (gb *GoApproverBlock) makeExpectedEvents(ctx context.Context, runCtx *BlockRunContext, name string, ef *entity.EriusFunc) error {
+	if _, ok := gb.expectedEvents[eventStart]; ok {
+		status, _, _ := gb.GetTaskHumanStatus()
+
+		event, err := runCtx.MakeNodeStartEvent(ctx, MakeNodeStartEventArgs{
+			NodeName:      name,
+			NodeShortName: ef.ShortTitle,
+			HumanStatus:   status,
+			NodeStatus:    gb.GetStatus(),
+		})
+		if err != nil {
+			return err
+		}
+
+		gb.happenedEvents = append(gb.happenedEvents, event)
+	}
+
+	return nil
+}
+
+func (gb *GoApproverBlock) reEntry(ctx context.Context, ef *entity.EriusFunc) error {
 	if gb.State.GetRepeatPrevDecision() {
 		return nil
 	}
@@ -117,6 +161,7 @@ func (gb *GoApproverBlock) reEntry(ctx c.Context, ef *entity.EriusFunc) error {
 	gb.State.ApproverLog = make([]ApproverLogEntry, 0)
 
 	var params script.ApproverParams
+
 	err := json.Unmarshal(ef.Params, &params)
 	if err != nil {
 		return errors.Wrap(err, "can not get approver parameters for block: "+gb.Name)
@@ -128,11 +173,12 @@ func (gb *GoApproverBlock) reEntry(ctx c.Context, ef *entity.EriusFunc) error {
 			return grabStorageErr
 		}
 
-		groupId := getVariable(variableStorage, *params.ApproversGroupIDPath)
-		if groupId == nil {
+		groupID := getVariable(variableStorage, *params.ApproversGroupIDPath)
+		if groupID == nil {
 			return errors.New("can't find group id in variables")
 		}
-		params.ApproversGroupID = fmt.Sprintf("%v", groupId)
+
+		params.ApproversGroupID = fmt.Sprintf("%v", groupID)
 	}
 
 	err = gb.setApproversByParams(ctx, &setApproversByParamsDTO{
@@ -152,9 +198,10 @@ func (gb *GoApproverBlock) loadState(raw json.RawMessage) error {
 	return json.Unmarshal(raw, &gb.State)
 }
 
-//nolint:dupl,gocyclo //its not duplicate
-func (gb *GoApproverBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
+//nolint:dupl //its not duplicate
+func (gb *GoApproverBlock) createState(ctx context.Context, ef *entity.EriusFunc) error {
 	var params script.ApproverParams
+
 	err := json.Unmarshal(ef.Params, &params)
 	if err != nil {
 		return errors.Wrap(err, "can not get approver parameters")
@@ -168,7 +215,7 @@ func (gb *GoApproverBlock) createState(ctx c.Context, ef *entity.EriusFunc) erro
 
 	for _, socket := range ef.Sockets {
 		actions = append(actions, Action{
-			Id:    socket.Id,
+			ID:    socket.ID,
 			Title: socket.Title,
 			Type:  socket.ActionType,
 		})
@@ -192,12 +239,15 @@ func (gb *GoApproverBlock) createState(ctx c.Context, ef *entity.EriusFunc) erro
 
 	if gb.State.AutoAction != nil {
 		autoActionValid := false
+
 		for _, a := range actions {
-			if a.Id == string(*gb.State.AutoAction) {
+			if a.ID == string(*gb.State.AutoAction) {
 				autoActionValid = true
+
 				break
 			}
 		}
+
 		if !autoActionValid {
 			return errors.New("bad auto action")
 		}
@@ -213,11 +263,12 @@ func (gb *GoApproverBlock) createState(ctx c.Context, ef *entity.EriusFunc) erro
 			return grabStorageErr
 		}
 
-		groupId := getVariable(variableStorage, *params.ApproversGroupIDPath)
-		if groupId == nil {
+		groupID := getVariable(variableStorage, *params.ApproversGroupIDPath)
+		if groupID == nil {
 			return errors.New("can't find group id in variables")
 		}
-		params.ApproversGroupID = fmt.Sprintf("%v", groupId)
+
+		params.ApproversGroupID = fmt.Sprintf("%v", groupID)
 	}
 
 	setErr := gb.setApproversByParams(ctx, &setApproversByParamsDTO{
@@ -238,8 +289,7 @@ func (gb *GoApproverBlock) createState(ctx c.Context, ef *entity.EriusFunc) erro
 			return getVersionErr
 		}
 
-		processSLASettings, getVersionErr := gb.RunContext.Services.Storage.GetSlaVersionSettings(
-			ctx, task.VersionID.String())
+		processSLASettings, getVersionErr := gb.RunContext.Services.Storage.GetSLAVersionSettings(ctx, task.VersionID.String())
 		if getVersionErr != nil {
 			return getVersionErr
 		}
@@ -256,7 +306,7 @@ type setApproversByParamsDTO struct {
 	WorkType *string
 }
 
-func (gb *GoApproverBlock) setApproversByParams(ctx c.Context, dto *setApproversByParamsDTO) error {
+func (gb *GoApproverBlock) setApproversByParams(ctx context.Context, dto *setApproversByParamsDTO) error {
 	switch dto.Type {
 	case script.ApproverTypeUser:
 		gb.State.Approvers = map[string]struct{}{
@@ -273,10 +323,12 @@ func (gb *GoApproverBlock) setApproversByParams(ctx c.Context, dto *setApprovers
 			return errors.New("zero approvers in group: " + dto.GroupID)
 		}
 
-		gb.State.Approvers = make(map[string]struct{})
+		gb.State.Approvers = make(map[string]struct{}, len(workGroup.People))
+
 		for i := range workGroup.People {
 			gb.State.Approvers[workGroup.People[i].Login] = struct{}{}
 		}
+
 		gb.State.ApproversGroupID = dto.GroupID
 		gb.State.ApproversGroupName = workGroup.GroupName
 	case script.ApproverTypeFromSchema:
@@ -288,6 +340,7 @@ func (gb *GoApproverBlock) setApproversByParams(ctx c.Context, dto *setApprovers
 		approversFromSchema := make(map[string]struct{})
 
 		approversVars := strings.Split(dto.Approver, ";")
+
 		for i := range approversVars {
 			resolvedEntities, resolveErr := getUsersFromVars(
 				variableStorage,
@@ -310,8 +363,7 @@ func (gb *GoApproverBlock) setApproversByParams(ctx c.Context, dto *setApprovers
 	return nil
 }
 
-//nolint:unparam // Need here
-func (gb *GoApproverBlock) setPrevDecision(ctx c.Context) error {
+func (gb *GoApproverBlock) setPrevDecision(ctx context.Context) {
 	decision := gb.State.GetDecision()
 
 	if decision == nil && len(gb.State.EditingAppLog) == 0 && gb.State.GetIsEditable() {
@@ -319,26 +371,26 @@ func (gb *GoApproverBlock) setPrevDecision(ctx c.Context) error {
 	}
 
 	if !gb.State.RepeatPrevDecision {
-		return nil
+		return
 	}
 
 	gb.setPreviousApprovers(ctx)
 
 	if decision == nil {
-		if gb.trySetPreviousDecision(ctx) {
-			return nil
-		}
+		gb.trySetPreviousDecision(ctx)
 	}
-	return nil
 }
 
 //nolint:dupl //its not duplicate
-func (gb *GoApproverBlock) setEditingAppLogFromPreviousBlock(ctx c.Context) {
+func (gb *GoApproverBlock) setEditingAppLogFromPreviousBlock(ctx context.Context) {
 	const funcName = "setEditingAppLogFromPreviousBlock"
+
 	l := logger.GetLogger(ctx)
 
-	var parentStep *entity.Step
-	var err error
+	var (
+		parentStep *entity.Step
+		err        error
+	)
 
 	parentStep, err = gb.RunContext.Services.Storage.GetParentTaskStepByName(ctx, gb.RunContext.TaskID, gb.Name)
 	if err != nil || parentStep == nil {
@@ -348,7 +400,9 @@ func (gb *GoApproverBlock) setEditingAppLogFromPreviousBlock(ctx c.Context) {
 	// get state from step.State
 	data, ok := parentStep.State[gb.Name]
 	if !ok {
+		//nolint:goconst //не хочу внедрять миллион констант под каждую строку в проекте
 		l.Error(funcName, "step state is not found: "+gb.Name)
+
 		return
 	}
 
@@ -356,6 +410,7 @@ func (gb *GoApproverBlock) setEditingAppLogFromPreviousBlock(ctx c.Context) {
 
 	if err = json.Unmarshal(data, &parentState); err != nil {
 		l.Error(funcName, "invalid format of go-approver-block state")
+
 		return
 	}
 
@@ -364,97 +419,116 @@ func (gb *GoApproverBlock) setEditingAppLogFromPreviousBlock(ctx c.Context) {
 	}
 }
 
-func (gb *GoApproverBlock) trySetPreviousDecision(ctx c.Context) (isPrevDecisionAssigned bool) {
+func (gb *GoApproverBlock) trySetPreviousDecision(ctx context.Context) (isPrevDecisionAssigned bool) {
 	const funcName = "pipeline.approver.trySetPreviousDecision"
+
 	l := logger.GetLogger(ctx)
 
-	var parentStep *entity.Step
-	var err error
+	var (
+		parentStep *entity.Step
+		err        error
+	)
 
 	parentStep, err = gb.RunContext.Services.Storage.GetParentTaskStepByName(ctx, gb.RunContext.TaskID, gb.Name)
 	if err != nil || parentStep == nil {
 		l.Error(err)
+
 		return false
 	}
 
 	data, ok := parentStep.State[gb.Name]
 	if !ok {
+		//nolint:goconst // не нужно здесь константы чекать
 		l.Error(funcName, "parent step state is not found: "+gb.Name)
+
 		return false
 	}
 
 	var parentState ApproverData
 	if err = json.Unmarshal(data, &parentState); err != nil {
 		l.Error(funcName, "invalid format of go-approver-block state")
+
 		return false
 	}
 
-	if parentState.Decision != nil {
-		var actualApprover, comment string
+	if parentState.Decision == nil {
+		return true
+	}
 
-		if parentState.ActualApprover != nil {
-			actualApprover = *parentState.ActualApprover
-		}
+	var actualApprover, comment string
 
-		if parentState.Comment != nil {
-			comment = *parentState.Comment
-		}
+	if parentState.ActualApprover != nil {
+		actualApprover = *parentState.ActualApprover
+	}
 
-		person, personErr := gb.RunContext.Services.ServiceDesc.GetSsoPerson(ctx, actualApprover)
-		if personErr != nil {
-			l.Error(funcName, "service couldn't get person by login: "+actualApprover)
+	if parentState.Comment != nil {
+		comment = *parentState.Comment
+	}
+
+	person, personErr := gb.RunContext.Services.ServiceDesc.GetSsoPerson(ctx, actualApprover)
+	if personErr != nil {
+		//nolint:goconst //не хочу внедрять миллион констант под каждую строку в проекте
+		l.Error(funcName, "service couldn't get person by login: "+actualApprover)
+
+		return false
+	}
+
+	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputApprover], person)
+	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputDecision], parentState.Decision.String())
+	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputComment], comment)
+
+	gb.State.ActualApprover = &actualApprover
+	gb.State.Comment = &comment
+	gb.State.Decision = parentState.Decision
+
+	if _, ok = gb.expectedEvents[eventEnd]; ok {
+		status, _, _ := gb.GetTaskHumanStatus()
+		event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, MakeNodeEndEventArgs{
+			NodeName:      gb.Name,
+			NodeShortName: gb.ShortName,
+			HumanStatus:   status,
+			NodeStatus:    gb.GetStatus(),
+		})
+
+		if eventErr != nil {
 			return false
 		}
 
-		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputApprover], person)
-		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputDecision], parentState.Decision.String())
-		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputComment], comment)
-
-		gb.State.ActualApprover = &actualApprover
-		gb.State.Comment = &comment
-		gb.State.Decision = parentState.Decision
-
-		if _, ok = gb.expectedEvents[eventEnd]; ok {
-			status, _, _ := gb.GetTaskHumanStatus()
-			event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, MakeNodeEndEventArgs{
-				NodeName:      gb.Name,
-				NodeShortName: gb.ShortName,
-				HumanStatus:   status,
-				NodeStatus:    gb.GetStatus(),
-			})
-			if eventErr != nil {
-				return false
-			}
-			gb.happenedEvents = append(gb.happenedEvents, event)
-		}
+		gb.happenedEvents = append(gb.happenedEvents, event)
 	}
 
 	return true
 }
 
 // nolint:dupl // not dupl
-func (gb *GoApproverBlock) setPreviousApprovers(ctx c.Context) {
+func (gb *GoApproverBlock) setPreviousApprovers(ctx context.Context) {
 	const funcName = "pipeline.approver.setPreviousApprovers"
+
 	l := logger.GetLogger(ctx)
 
-	var parentStep *entity.Step
-	var err error
+	var (
+		parentStep *entity.Step
+		err        error
+	)
 
 	parentStep, err = gb.RunContext.Services.Storage.GetParentTaskStepByName(ctx, gb.RunContext.TaskID, gb.Name)
 	if err != nil || parentStep == nil {
 		l.Error(err)
+
 		return
 	}
 
 	data, ok := parentStep.State[gb.Name]
 	if !ok {
 		l.Error(funcName, "parent step state is not found: "+gb.Name)
+
 		return
 	}
 
 	var parentState ApproverData
 	if err = json.Unmarshal(data, &parentState); err != nil {
 		l.Error(funcName, "invalid format of go-approver-block state")
+
 		return
 	}
 

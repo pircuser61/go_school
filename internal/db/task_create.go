@@ -41,8 +41,10 @@ func (db *PGCon) CreateTask(c context.Context, dto *CreateTaskDTO) (*entity.Eriu
 	c, span := trace.StartSpan(c, "pg_create_task")
 	defer span.End()
 
-	var workNumber string
-	var err error
+	var (
+		workNumber string
+		err        error
+	)
 
 	if dto.WorkNumber == "" {
 		workNumber, err = db.insertTask(c, dto)
@@ -50,23 +52,32 @@ func (db *PGCon) CreateTask(c context.Context, dto *CreateTaskDTO) (*entity.Eriu
 			return nil, err
 		}
 	} else {
-		err = db.setTaskChild(c, dto.WorkNumber, dto.TaskID)
-		if err != nil {
-			return nil, err
-		}
-
-		workNumber, err = db.insertTaskWithWorkNumber(c, dto)
-		if err != nil {
-			return nil, err
-		}
-
-		err = db.FinishTaskBlocks(c, dto.TaskID, nil, true)
+		workNumber, err = db.createTaskWithWorkNumber(c, dto)
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	return db.GetTask(c, []string{dto.Author}, []string{dto.Author}, dto.Author, workNumber)
+}
+
+func (db *PGCon) createTaskWithWorkNumber(ctx context.Context, dto *CreateTaskDTO) (string, error) {
+	err := db.setTaskChild(ctx, dto.WorkNumber, dto.TaskID)
+	if err != nil {
+		return "", err
+	}
+
+	workNumber, err := db.insertTaskWithWorkNumber(ctx, dto)
+	if err != nil {
+		return "", err
+	}
+
+	err = db.FinishTaskBlocks(ctx, dto.TaskID, nil, true)
+	if err != nil {
+		return "", err
+	}
+
+	return workNumber, nil
 }
 
 func (db *PGCon) insertTaskWithWorkNumber(c context.Context, dto *CreateTaskDTO) (string, error) {
@@ -82,7 +93,8 @@ func (db *PGCon) insertTaskWithWorkNumber(c context.Context, dto *CreateTaskDTO)
 			debug, 
 			parameters,
 			work_number,
-			run_context
+			run_context,
+		    version_sla_id
 		)
 		VALUES (
 			$1, 
@@ -93,7 +105,12 @@ func (db *PGCon) insertTaskWithWorkNumber(c context.Context, dto *CreateTaskDTO)
 			$6, 
 			$7,
 			$8,
-			$9
+			$9,
+		    (
+		    	SELECT id FROM version_sla
+            		WHERE version_id = $2
+            	ORDER BY created_at DESC LIMIT 1
+        	)
 		)
 	RETURNING work_number
 `
@@ -134,7 +151,8 @@ func (db *PGCon) insertTask(c context.Context, dto *CreateTaskDTO) (workNumber s
 			debug, 
 			parameters,
 			run_context,
-			real_author
+			real_author,
+			version_sla_id
 		)
 		VALUES (
 			$1, 
@@ -145,7 +163,12 @@ func (db *PGCon) insertTask(c context.Context, dto *CreateTaskDTO) (workNumber s
 			$6, 
 			$7,
 			$8,
-		    $9
+		    $9,
+		    (
+		    	SELECT id FROM version_sla
+            		WHERE version_id = $2
+            	ORDER BY created_at DESC LIMIT 1
+        	)
 		)
 	RETURNING work_number
 `

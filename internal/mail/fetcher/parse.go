@@ -43,11 +43,13 @@ type ParsedEmail struct {
 
 func (s *service) processMessage(ctx c.Context, msg *imap.Message, section *imap.BodySectionName) (*ParsedEmail, error) {
 	const fn = "mail.fetcher.processMessage"
+
 	ctx, span := trace.StartSpan(ctx, fn)
 	defer span.End()
 
 	if msg == nil {
 		err := errors.Wrap(errors.New("server didn't return message"), "no messages")
+
 		return nil, err
 	}
 
@@ -57,15 +59,18 @@ func (s *service) processMessage(ctx c.Context, msg *imap.Message, section *imap
 	for k, v := range msg.Body {
 		msgBodyMap[k] = v
 	}
+
 	msgBody := msg.GetBody(section)
 	if msgBody == nil {
 		err := errors.Wrap(errors.New("server didn't return message"), "no messages")
+
 		return nil, err
 	}
 
 	msgReader, err := mail.CreateReader(msgBody)
 	if err != nil {
 		err = errors.Wrap(err, "can't create reader")
+
 		return nil, err
 	}
 
@@ -74,6 +79,7 @@ func (s *service) processMessage(ctx c.Context, msg *imap.Message, section *imap
 	processedEmail, err := s.parseEmail(ctx, msgReader, msgBodyMap)
 	if err != nil {
 		err = errors.Wrap(err, "parse email")
+
 		return nil, err
 	}
 
@@ -84,10 +90,11 @@ func (s *service) processMessage(ctx c.Context, msg *imap.Message, section *imap
 	return processedEmail, nil
 }
 
-//nolint:gocyclo //its ok here
 func (s *service) parseEmail(ctx c.Context, r *mail.Reader, sn map[*imap.BodySectionName]imap.Literal) (pe *ParsedEmail, err error) {
-	const funcName = "mail.fetcher.parseEmail"
-	const rejected = "Отклонено"
+	const (
+		funcName = "mail.fetcher.parseEmail"
+		rejected = "Отклонено"
+	)
 
 	log := logger.GetLogger(ctx)
 
@@ -125,6 +132,7 @@ func (s *service) parseEmail(ctx c.Context, r *mail.Reader, sn map[*imap.BodySec
 		if comment != nil {
 			action.Comment = comment.Body
 			action.Attachments, err = s.getAttachments(ctx, sn)
+
 			if err != nil {
 				log.WithError(err).Error("can't parse message body: " + action.WorkNumber)
 			}
@@ -190,6 +198,7 @@ func parseEmailHeaders(header mail.Header) (headers *parsedHeaders, err error) {
 
 func parseSubject(fields []string) (action *ActionPayload, err error) {
 	action = &ActionPayload{}
+
 	for i := range fields {
 		keyValue := strings.Split(fields[i], fieldsKeyValueDelimiter)
 		if len(keyValue) != 2 {
@@ -215,6 +224,7 @@ func parseSubject(fields []string) (action *ActionPayload, err error) {
 
 func addressListToStrList(addrs []*mail.Address) (res []string) {
 	res = make([]string, 0)
+
 	for i := range addrs {
 		if addrs[i] != nil && len(addrs[i].Address) > 0 {
 			res = append(res, addrs[i].Address)
@@ -241,9 +251,11 @@ LOOP:
 		part, err := r.NextPart()
 		if err != nil && err == io.EOF {
 			log.Info("readPart EOF")
+
 			break
 		} else if err != nil {
 			log.Error(errors.Wrap(err, "can`t next part"))
+
 			break
 		}
 
@@ -255,17 +267,20 @@ LOOP:
 					log.
 						WithField("text", string(b)).
 						Error(errors.Wrap(errRead, "can`t read body"))
+
 					break LOOP
 				}
+
 				body += regexp.MustCompile(`(\[.+\])`).ReplaceAllString(string(b), "")
 				body = regexp.MustCompile(`(\*{3}.+\*{3})`).ReplaceAllString(body, "")
 			}
+
 			break LOOP
 		}
 	}
 
-	pb.Body = strings.Replace(body, "\n", " ", -1)
-	pb.Body = strings.Replace(pb.Body, "\t", "", -1)
+	pb.Body = strings.ReplaceAll(body, "\n", " ")
+	pb.Body = strings.ReplaceAll(pb.Body, "\t", "")
 	pb.Body = strings.TrimSpace(pb.Body)
 
 	return &pb
@@ -280,17 +295,20 @@ func (s *service) getAttachments(ctx c.Context, mb map[*imap.BodySectionName]ima
 		messageEntity, err := message.Read(r)
 		if err != nil {
 			log.Error(errors.Wrap(err, "can`t read attachments"))
+
 			continue
 		}
 
 		if messageEntity == nil {
 			log.Error(errors.Wrap(err, "can`t read attachments messageEntity is nil"))
+
 			continue
 		}
 
 		multiPartReader := messageEntity.MultipartReader()
 		if multiPartReader == nil {
 			log.Error(errors.Wrap(err, "can`t read attachments multiPartReader is nil"))
+
 			continue
 		}
 
@@ -298,6 +316,7 @@ func (s *service) getAttachments(ctx c.Context, mb map[*imap.BodySectionName]ima
 			_, params, cErr := part.Header.ContentType()
 			if cErr != nil {
 				log.Error(errors.Wrap(cErr, "can`t read attachment"))
+
 				return nil, cErr
 			}
 
@@ -310,6 +329,7 @@ func (s *service) getAttachments(ctx c.Context, mb map[*imap.BodySectionName]ima
 			fileBytes, rErr := io.ReadAll(part.Body)
 			if rErr != nil {
 				log.Error(errors.Wrap(rErr, "can`t read part mail body"))
+
 				return nil, rErr
 			}
 

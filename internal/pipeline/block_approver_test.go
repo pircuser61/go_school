@@ -20,7 +20,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
-	humanTasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
+	humanTasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 	serviceDeskMocks "gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc/mocks"
@@ -36,19 +36,22 @@ func TestApproverData_SetDecision(t *testing.T) {
 		invalidLogin                = "foobar"
 	)
 
-	type fields struct {
-		Type           script.ApproverType
-		Approvers      map[string]struct{}
-		Decision       *ApproverAction
-		Comment        *string
-		ActualApprover *string
-	}
-	type args struct {
-		login       string
-		decision    ApproverAction
-		comment     string
-		delegations humanTasks.Delegations
-	}
+	type (
+		fields struct {
+			Type           script.ApproverType
+			Approvers      map[string]struct{}
+			Decision       *ApproverAction
+			Comment        *string
+			ActualApprover *string
+		}
+		args struct {
+			login       string
+			decision    ApproverAction
+			comment     string
+			delegations humanTasks.Delegations
+		}
+	)
+
 	tests := []struct {
 		name    string
 		fields  fields
@@ -64,6 +67,7 @@ func TestApproverData_SetDecision(t *testing.T) {
 				},
 				Decision: func() *ApproverAction {
 					res := decision
+
 					return &res
 				}(),
 				Comment:        nil,
@@ -86,14 +90,17 @@ func TestApproverData_SetDecision(t *testing.T) {
 				},
 				Decision: func() *ApproverAction {
 					res := decision
+
 					return &res
 				}(),
 				Comment: func() *string {
 					res := comment
+
 					return &res
 				}(),
 				ActualApprover: func() *string {
 					res := login
+
 					return &res
 				}(),
 			},
@@ -114,6 +121,7 @@ func TestApproverData_SetDecision(t *testing.T) {
 				},
 				Decision: func() *ApproverAction {
 					res := decision
+
 					return &res
 				}(),
 				Comment:        nil,
@@ -169,11 +177,13 @@ func TestApproverData_SetDecisionByAdditionalApprover(t *testing.T) {
 		Decision            *ApproverDecision
 		AdditionalApprovers []AdditionalApprover
 	}
+
 	type args struct {
 		login       string
 		params      additionalApproverUpdateParams
 		delegations humanTasks.Delegations
 	}
+
 	tests := []struct {
 		name                    string
 		fields                  fields
@@ -314,7 +324,7 @@ func Test_createGoApproverBlock(t *testing.T) {
 		shortTitle               = "Нода Согласование"
 		approversFromSchema      = "a.var1;b.var2;var3"
 		approversFromSchemaSlice = "sd_app_0.application_body.users"
-		approverGroupId          = "uuid13456"
+		approverGroupID          = "uuid13456"
 		loginFromSlice0          = "pilzner1"
 		loginFromSlice1          = "pupok_na_jope"
 	)
@@ -336,12 +346,12 @@ func Test_createGoApproverBlock(t *testing.T) {
 
 	next := []entity.Socket{
 		{
-			Id:           DefaultSocketID,
+			ID:           DefaultSocketID,
 			Title:        script.DefaultSocketTitle,
 			NextBlockIds: []string{"next_0"},
 		},
 		{
-			Id:           rejectedSocketID,
+			ID:           rejectedSocketID,
 			Title:        script.RejectSocketTitle,
 			NextBlockIds: []string{"next_1"},
 		},
@@ -352,6 +362,7 @@ func Test_createGoApproverBlock(t *testing.T) {
 		ef     *entity.EriusFunc
 		runCtx *BlockRunContext
 	}
+
 	tests := []struct {
 		name    string
 		args    args
@@ -459,7 +470,7 @@ func Test_createGoApproverBlock(t *testing.T) {
 					Params: func() []byte {
 						r, _ := json.Marshal(&script.ApproverParams{
 							Type:             script.ApproverTypeGroup,
-							ApproversGroupID: approverGroupId,
+							ApproversGroupID: approverGroupID,
 							SLA:              1,
 							ApprovementRule:  "",
 						})
@@ -541,11 +552,11 @@ func Test_createGoApproverBlock(t *testing.T) {
 					FormsAccessibility: make([]script.FormAccessibility, 0),
 					ActionList: []Action{
 						{
-							Id:    DefaultSocketID,
+							ID:    DefaultSocketID,
 							Title: script.DefaultSocketTitle,
 						},
 						{
-							Id:    rejectedSocketID,
+							ID:    rejectedSocketID,
 							Title: script.RejectSocketTitle,
 						},
 					},
@@ -623,11 +634,11 @@ func Test_createGoApproverBlock(t *testing.T) {
 					FormsAccessibility: make([]script.FormAccessibility, 0),
 					ActionList: []Action{
 						{
-							Id:    DefaultSocketID,
+							ID:    DefaultSocketID,
 							Title: script.DefaultSocketTitle,
 						},
 						{
-							Id:    rejectedSocketID,
+							ID:    rejectedSocketID,
 							Title: script.RejectSocketTitle,
 						},
 					},
@@ -638,6 +649,7 @@ func Test_createGoApproverBlock(t *testing.T) {
 			wantErr: false,
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
@@ -653,7 +665,7 @@ func Test_createGoApproverBlock(t *testing.T) {
 }
 
 func TestGoApproverBlock_Update(t *testing.T) {
-	stepId := uuid.New()
+	stepID := uuid.New()
 	exampleApprover := "example"
 	secondExampleApprover := "example2"
 	stepName := "appr"
@@ -667,10 +679,12 @@ func TestGoApproverBlock_Update(t *testing.T) {
 		RunContext   *BlockRunContext
 		ApproverData *ApproverData
 	}
+
 	type args struct {
 		ctx  context.Context
 		data *script.BlockUpdateData
 	}
+
 	tests := []struct {
 		name    string
 		fields  fields
@@ -691,7 +705,7 @@ func TestGoApproverBlock_Update(t *testing.T) {
 
 							res.On("GetTaskStepById",
 								mock.MatchedBy(func(ctx context.Context) bool { return true }),
-								stepId,
+								stepID,
 							).Return(
 								nil, errors.New("unknown error"),
 							)
@@ -720,7 +734,7 @@ func TestGoApproverBlock_Update(t *testing.T) {
 					ApprovementRule: script.AnyOfApprovementRequired,
 					ActionList: []Action{
 						{
-							Id: ApproverActionApprove,
+							ID: ApproverActionApprove,
 						},
 					},
 				},
@@ -738,16 +752,17 @@ func TestGoApproverBlock_Update(t *testing.T) {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							sdMock.Cli = httpClient
 
@@ -758,7 +773,7 @@ func TestGoApproverBlock_Update(t *testing.T) {
 
 							res.On("GetTaskStepById",
 								mock.MatchedBy(func(ctx context.Context) bool { return true }),
-								stepId,
+								stepID,
 							).Return(
 								&entity.Step{
 									Time: time.Time{},
@@ -802,8 +817,9 @@ func TestGoApproverBlock_Update(t *testing.T) {
 			args: args{
 				ctx: context.Background(),
 				data: &script.BlockUpdateData{
-					ByLogin:    exampleApprover,
-					Action:     string(entity.TaskUpdateActionApprovement),
+					ByLogin: exampleApprover,
+					Action:  string(entity.TaskUpdateActionApprovement),
+					//nolint:goconst // не нужно здесь константы чекать
 					Parameters: []byte(`{"decision":"` + ApproverActionApprove + `"}`),
 				},
 			},
@@ -822,7 +838,7 @@ func TestGoApproverBlock_Update(t *testing.T) {
 					ApprovementRule: script.AnyOfApprovementRequired,
 					ActionList: []Action{
 						{
-							Id: ApproverActionApprove,
+							ID: ApproverActionApprove,
 						},
 					},
 				},
@@ -840,16 +856,17 @@ func TestGoApproverBlock_Update(t *testing.T) {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							sdMock.Cli = httpClient
 
@@ -860,7 +877,7 @@ func TestGoApproverBlock_Update(t *testing.T) {
 
 							res.On("GetTaskStepById",
 								mock.MatchedBy(func(ctx context.Context) bool { return true }),
-								stepId,
+								stepID,
 							).Return(
 								&entity.Step{
 									Time: time.Time{},
@@ -922,7 +939,7 @@ func TestGoApproverBlock_Update(t *testing.T) {
 					},
 					ActionList: []Action{
 						{
-							Id: ApproverActionApprove,
+							ID: ApproverActionApprove,
 						},
 					},
 				},
@@ -940,16 +957,17 @@ func TestGoApproverBlock_Update(t *testing.T) {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							sdMock.Cli = httpClient
 
@@ -960,7 +978,7 @@ func TestGoApproverBlock_Update(t *testing.T) {
 
 							res.On("GetTaskStepById",
 								mock.MatchedBy(func(ctx context.Context) bool { return true }),
-								stepId,
+								stepID,
 							).Return(
 								&entity.Step{
 									Time: time.Time{},
@@ -1010,6 +1028,7 @@ func TestGoApproverBlock_Update(t *testing.T) {
 			wantErr: false,
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			gb := &GoApproverBlock{

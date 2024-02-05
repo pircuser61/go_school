@@ -65,12 +65,12 @@ type scope struct {
 }
 
 type Service struct {
-	mainUrl     string
-	tokensUrl   string
-	userinfoUrl string
+	mainURL     string
+	tokensURL   string
+	userinfoURL string
 
 	clientSecret string
-	clientId     string
+	clientID     string
 
 	accessTokenCookieName string
 
@@ -93,10 +93,10 @@ func NewService(c Config, cli *http.Client) (*Service, error) {
 
 	s := &Service{
 		scopes:                make(map[string]*scope),
-		mainUrl:               c.Address,
+		mainURL:               c.Address,
 		realm:                 c.Realm,
 		clientSecret:          os.Getenv(c.ClientSecretEnvKey),
-		clientId:              c.ClientID,
+		clientID:              c.ClientID,
 		accessTokenCookieName: c.AccessTokenCookieName,
 		cli:                   cli,
 		refreshTokensFormData: refreshFD,
@@ -113,18 +113,18 @@ func NewService(c Config, cli *http.Client) (*Service, error) {
 }
 
 func (s *Service) buildAllPaths() error {
-	tp, err := s.pathBuilder(s.mainUrl, tokensPath)
+	tp, err := s.pathBuilder(s.mainURL, tokensPath)
 	if err != nil {
 		return err
 	}
 
-	uip, err := s.pathBuilder(s.mainUrl, userinfoPath)
+	uip, err := s.pathBuilder(s.mainURL, userinfoPath)
 	if err != nil {
 		return err
 	}
 
-	s.tokensUrl = tp
-	s.userinfoUrl = uip
+	s.tokensURL = tp
+	s.userinfoURL = uip
 
 	return nil
 }
@@ -134,9 +134,11 @@ func (s *Service) pathBuilder(mainpath, subpath string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	subpath = fmt.Sprintf(subpath, s.realm)
 
 	mu.Path = path.Join(mu.Path, subpath)
+
 	return mu.String(), nil
 }
 
@@ -145,13 +147,16 @@ func getUsername(token string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	cl := custClaims{}
 	if err := parsed.UnsafeClaimsWithoutVerification(&cl); err != nil {
 		return "", err
 	}
+
 	if cl.Username == "" {
 		return cl.PrefName, nil
 	}
+
 	return cl.Username, nil
 }
 
@@ -177,5 +182,6 @@ func (s *Service) BindAuthHeader(ctx context.Context, req *http.Request, scopeNa
 	s.scopesMutex.RLock()
 	req.Header.Add(authHeader, fmt.Sprintf(authBearerValue, s.scopes[scopeName].accessToken))
 	s.scopesMutex.RUnlock()
+
 	return nil
 }

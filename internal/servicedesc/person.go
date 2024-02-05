@@ -50,7 +50,9 @@ func (s *Service) GetSsoPerson(ctx context.Context, username string) (*SsoPerson
 	if err != nil {
 		return nil, err
 	}
+
 	defer resp.Body.Close()
+
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("bad status code from sso: %d, username: %s", resp.StatusCode, username)
 	}

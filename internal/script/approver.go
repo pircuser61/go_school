@@ -58,7 +58,6 @@ type ApproverParams struct {
 	WorkType             *string `json:"work_type"`
 }
 
-// nolint:gocyclo // its ok here
 func (a *ApproverParams) Validate() error {
 	if a.Approver == "" && a.Type == ApproverTypeUser {
 		return errors.New("approver is empty")
@@ -70,11 +69,9 @@ func (a *ApproverParams) Validate() error {
 
 	typeApprove := ApproverType(a.Type.String())
 
-	if typeApprove != ApproverTypeUser &&
-		typeApprove != ApproverTypeGroup &&
-		typeApprove != ApproverTypeHead &&
-		typeApprove != ApproverTypeFromSchema {
-		return fmt.Errorf("unknown approver type: %s", a.Type)
+	err := a.validateApproverType(typeApprove)
+	if err != nil {
+		return err
 	}
 
 	if a.Type == ApproverTypeFromSchema &&
@@ -93,6 +90,17 @@ func (a *ApproverParams) Validate() error {
 
 	if a.IsEditable && a.CheckReworkSLA && a.ReworkSLA < 16 {
 		return fmt.Errorf("invalid rework SLA: %d", a.SLA)
+	}
+
+	return nil
+}
+
+func (a *ApproverParams) validateApproverType(typeApprove ApproverType) error {
+	if typeApprove != ApproverTypeUser &&
+		typeApprove != ApproverTypeGroup &&
+		typeApprove != ApproverTypeHead &&
+		typeApprove != ApproverTypeFromSchema {
+		return fmt.Errorf("unknown approver type: %s", a.Type)
 	}
 
 	return nil

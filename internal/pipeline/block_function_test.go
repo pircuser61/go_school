@@ -18,7 +18,7 @@ import (
 
 func TestBlockFunction_Update(t *testing.T) {
 	var (
-		workId   = uuid.New()
+		workID   = uuid.New()
 		stepName = "test_step"
 	)
 
@@ -66,7 +66,7 @@ func TestBlockFunction_Update(t *testing.T) {
 					},
 				},
 				RunContext: &BlockRunContext{
-					TaskID:            workId,
+					TaskID:            workID,
 					skipNotifications: true,
 					skipProduce:       true,
 					VarStore: func() *store.VariableStore {
@@ -78,6 +78,7 @@ func TestBlockFunction_Update(t *testing.T) {
 								"fullname": "Egor Jopov",
 							},
 						})
+
 						return s
 					}(),
 					Services: RunContextServices{
@@ -86,7 +87,7 @@ func TestBlockFunction_Update(t *testing.T) {
 
 							res.On("GetTaskStepByName",
 								mock.MatchedBy(func(ctx context.Context) bool { return true }),
-								workId,
+								workID,
 								stepName,
 							).Return(
 								&entity.Step{
@@ -126,7 +127,7 @@ func TestBlockFunction_Update(t *testing.T) {
 					},
 				},
 				RunContext: &BlockRunContext{
-					TaskID:            workId,
+					TaskID:            workID,
 					skipNotifications: true,
 					skipProduce:       true,
 					VarStore: func() *store.VariableStore {
@@ -138,6 +139,7 @@ func TestBlockFunction_Update(t *testing.T) {
 								"fullname": "Egor Jopov",
 							},
 						})
+
 						return s
 					}(),
 					Services: RunContextServices{
@@ -146,7 +148,7 @@ func TestBlockFunction_Update(t *testing.T) {
 
 							res.On("GetTaskStepByName",
 								mock.MatchedBy(func(ctx context.Context) bool { return true }),
-								workId,
+								workID,
 								stepName,
 							).Return(
 								&entity.Step{
@@ -169,7 +171,7 @@ func TestBlockFunction_Update(t *testing.T) {
 			name: "test with update data",
 			fields: fields{
 				RunContext: &BlockRunContext{
-					TaskID:            workId,
+					TaskID:            workID,
 					skipNotifications: true,
 					skipProduce:       true,
 					VarStore:          store.NewStore(),
@@ -200,7 +202,7 @@ func TestBlockFunction_Update(t *testing.T) {
 			name: "test with update data type error",
 			fields: fields{
 				RunContext: &BlockRunContext{
-					TaskID:            workId,
+					TaskID:            workID,
 					skipNotifications: true,
 					skipProduce:       true,
 					VarStore:          store.NewStore(),
@@ -231,7 +233,7 @@ func TestBlockFunction_Update(t *testing.T) {
 			name: "test with update data missing key",
 			fields: fields{
 				RunContext: &BlockRunContext{
-					TaskID:            workId,
+					TaskID:            workID,
 					skipNotifications: true,
 					skipProduce:       true,
 					VarStore:          store.NewStore(),
@@ -279,7 +281,7 @@ func TestBlockFunction_Update(t *testing.T) {
 					},
 				},
 				RunContext: &BlockRunContext{
-					TaskID:            workId,
+					TaskID:            workID,
 					skipNotifications: true,
 					skipProduce:       true,
 					VarStore: func() *store.VariableStore {
@@ -290,6 +292,7 @@ func TestBlockFunction_Update(t *testing.T) {
 								"fullname": "Egor Jopov",
 							},
 						})
+
 						return s
 					}(),
 					Services: RunContextServices{
@@ -298,7 +301,7 @@ func TestBlockFunction_Update(t *testing.T) {
 
 							res.On("GetTaskStepByName",
 								mock.MatchedBy(func(ctx context.Context) bool { return true }),
-								workId,
+								workID,
 								stepName,
 							).Return(
 								&entity.Step{

@@ -7,8 +7,10 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 )
 
-type userInfoCtx struct{}
-type asOtherUserInfoCtx struct{}
+type (
+	userInfoCtx        struct{}
+	asOtherUserInfoCtx struct{}
+)
 
 func GetUserInfoFromCtx(ctx context.Context) (*sso.UserInfo, error) {
 	uii := ctx.Value(userInfoCtx{})
@@ -32,6 +34,7 @@ func GetEffectiveUserInfoFromCtx(ctx context.Context) (*sso.UserInfo, error) {
 		if !ok {
 			return nil, errors.New("not userinfo in context")
 		}
+
 		return ui, nil
 	}
 

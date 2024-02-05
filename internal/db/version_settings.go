@@ -1,22 +1,19 @@
 package db
 
 import (
-	c "context"
+	"context"
 	"fmt"
-
-	"golang.org/x/net/context"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
 
-	e "gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
-
 	"go.opencensus.io/trace"
+
+	e "gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 )
 
-func (db *PGCon) copyProcessSettingsFromOldVersion(c c.Context, newVersionID, oldVersionID uuid.UUID) error {
+func (db *PGCon) copyProcessSettingsFromOldVersion(c context.Context, newVersionID, oldVersionID uuid.UUID) error {
 	const qCopyPrevSettings = `
 	INSERT INTO version_settings (id, version_id, start_schema, end_schema, raw_start_schema, resubmission_period) 
 		SELECT uuid_generate_v4(), $1, start_schema, end_schema, raw_start_schema, resubmission_period
@@ -62,7 +59,7 @@ func (db *PGCon) copyProcessSettingsFromOldVersion(c c.Context, newVersionID, ol
 
 	// nolint:gocritic
 	// language=PostgreSQL
-	const qCopyPrevSlaSettings = `
+	const qCopyPrevSLASettings = `
 	INSERT INTO version_sla (id, version_id, author,created_at,work_type,sla) 
 		SELECT uuid_generate_v4(), $1, author, now(), work_type, sla
 			FROM version_sla 
@@ -70,7 +67,7 @@ func (db *PGCon) copyProcessSettingsFromOldVersion(c c.Context, newVersionID, ol
 		ORDER BY created_at DESC LIMIT 1;
 	`
 
-	_, err = db.Connection.Exec(c, qCopyPrevSlaSettings, newVersionID, oldVersionID)
+	_, err = db.Connection.Exec(c, qCopyPrevSLASettings, newVersionID, oldVersionID)
 	if err != nil {
 		return err
 	}
@@ -125,14 +122,14 @@ func (db *PGCon) copyProcessSettingsFromOldVersion(c c.Context, newVersionID, ol
 	return nil
 }
 
-func (db *PGCon) GetVersionSettings(ctx c.Context, versionID string) (e.ProcessSettings, error) {
+func (db *PGCon) GetVersionSettings(ctx context.Context, versionID string) (e.ProcessSettings, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_version_settings")
 	defer span.End()
 
 	// nolint:gocritic,lll
 	// language=PostgreSQL
 	const query = `
-	SELECT start_schema, end_schema, resubmission_period,
+	SELECT start_schema, end_schema, resubmission_period, raw_start_schema,
 	    (select p.name from pipelines p where p.id = 
 	       (select pipeline_id from versions v where v.id = 
 	       	(select version_id from version_settings vs where vs.id = version_settings.id)
@@ -143,8 +140,9 @@ func (db *PGCon) GetVersionSettings(ctx c.Context, versionID string) (e.ProcessS
 
 	row := db.Connection.QueryRow(ctx, query, versionID)
 
-	ps := e.ProcessSettings{Id: versionID}
-	err := row.Scan(&ps.StartSchema, &ps.EndSchema, &ps.ResubmissionPeriod, &ps.Name)
+	ps := e.ProcessSettings{ID: versionID}
+
+	err := row.Scan(&ps.StartSchema, &ps.EndSchema, &ps.ResubmissionPeriod, &ps.StartSchemaRaw, &ps.Name)
 	if err != nil && err != pgx.ErrNoRows {
 		return ps, err
 	}
@@ -152,64 +150,79 @@ func (db *PGCon) GetVersionSettings(ctx c.Context, versionID string) (e.ProcessS
 	return ps, nil
 }
 
-func (db *PGCon) SaveVersionSettings(ctx c.Context, settings e.ProcessSettings, schemaFlag *string) error {
+//nolint:gocritic //нужно для реализации интерфейса Database
+func (db *PGCon) SaveVersionSettings(ctx context.Context, settings e.ProcessSettings, schemaFlag *string) error {
 	ctx, span := trace.StartSpan(ctx, "pg_save_version_settings")
 	defer span.End()
 
-	var err error
-	var commandTag pgconn.CommandTag
+	var (
+		err        error
+		commandTag pgconn.CommandTag
+	)
 
 	if schemaFlag == nil {
 		// nolint:gocritic
 		// language=PostgreSQL
 		query := `
-		INSERT INTO version_settings (id, version_id, start_schema, end_schema) 
-		VALUES ($1, $2, $3, $4)
+		INSERT INTO version_settings (id, version_id, start_schema, end_schema, raw_start_schema) 
+		VALUES ($1, $2, $3, $4, $5)
 		ON CONFLICT (version_id) DO UPDATE 
 			SET start_schema = excluded.start_schema, 
-				end_schema = excluded.end_schema`
+				end_schema = excluded.end_schema,
+				raw_start_schema = excluded.raw_start_schema`
 		commandTag, err = db.Connection.Exec(ctx,
 			query,
 			uuid.New(),
-			settings.Id,
+			settings.ID,
 			settings.StartSchema,
 			settings.EndSchema,
+			settings.StartSchemaRaw,
 		)
+
 		if err != nil {
 			return err
 		}
 	} else {
-		var jsonSchema *script.JSONSchema
 		switch *schemaFlag {
 		case startSchema:
-			jsonSchema = settings.StartSchema
-		case endSchema:
-			jsonSchema = settings.EndSchema
-		default:
-			return errUnkonwnSchemaFlag
-		}
+			// nolint:gocritic
+			// language=PostgreSQL
+			query := `INSERT INTO version_settings (id,version_id,start_schema, raw_start_schema) 
+			VALUES ($1, $2, $3, $4)
+			ON CONFLICT (version_id) DO UPDATE 
+				SET start_schema = excluded.start_schema,
+			    raw_start_schema = excluded.raw_start_schema`
 
-		// nolint:gocritic
-		// language=PostgreSQL
-		query := fmt.Sprintf(`INSERT INTO version_settings (id, version_id, %[1]s) 
+			commandTag, err = db.Connection.Exec(ctx, query, uuid.New(), settings.ID, settings.StartSchema, settings.StartSchemaRaw)
+			if err != nil {
+				return err
+			}
+		case endSchema:
+			// nolint:gocritic
+			// language=PostgreSQL
+			query := `INSERT INTO version_settings (id, version_id, end_schema) 
 			VALUES ($1, $2, $3)
 			ON CONFLICT (version_id) DO UPDATE 
-				SET %[1]s = excluded.%[1]s`, *schemaFlag)
+				SET end_schema = excluded.end_schema`
 
-		commandTag, err = db.Connection.Exec(ctx, query, uuid.New(), settings.Id, jsonSchema)
-		if err != nil {
-			return err
+			commandTag, err = db.Connection.Exec(ctx, query, uuid.New(), settings.ID, settings.EndSchema)
+			if err != nil {
+				return err
+			}
+		default:
+			return errUnkonwnSchemaFlag
 		}
 	}
 
 	if commandTag.RowsAffected() != 0 {
-		_ = db.RemoveObsoleteMapping(ctx, settings.Id)
+		_ = db.RemoveObsoleteMapping(ctx, settings.ID)
 	}
 
 	return nil
 }
 
-func (db *PGCon) SaveVersionMainSettings(ctx c.Context, params e.ProcessSettings) error {
+//nolint:gocritic //нужно для реализации интерфейса Database
+func (db *PGCon) SaveVersionMainSettings(ctx context.Context, params e.ProcessSettings) error {
 	ctx, span := trace.StartSpan(ctx, "pg_save_version_main_settings")
 	defer span.End()
 
@@ -220,7 +233,7 @@ func (db *PGCon) SaveVersionMainSettings(ctx c.Context, params e.ProcessSettings
 			ON CONFLICT (version_id) DO UPDATE 
 			SET resubmission_period = excluded.resubmission_period`
 
-	_, err := db.Connection.Exec(ctx, query, uuid.New(), params.Id, params.ResubmissionPeriod)
+	_, err := db.Connection.Exec(ctx, query, uuid.New(), params.ID, params.ResubmissionPeriod)
 	if err != nil {
 		return err
 	}
@@ -228,31 +241,40 @@ func (db *PGCon) SaveVersionMainSettings(ctx c.Context, params e.ProcessSettings
 	return nil
 }
 
-func (db *PGCon) SaveExternalSystemSettings(ctx c.Context, vID string, system e.ExternalSystem, schemaFlag *string) error {
+func (db *PGCon) SaveExternalSystemSettings(ctx context.Context, vID string, system e.ExternalSystem, schemaFlag *string) error {
 	ctx, span := trace.StartSpan(ctx, "pg_save_external_system_settings")
 	defer span.End()
 
-	args := []interface{}{vID, system.Id}
+	args := []interface{}{vID, system.ID}
+
+	thrisArgPostFix := fmt.Sprintf(" = $%d", len(args)+1)
+
 	var schemasForUpdate string
+
 	if schemaFlag != nil {
 		switch *schemaFlag {
 		case inputSchema:
-			schemasForUpdate = inputSchema + " = $3"
+			schemasForUpdate = inputSchema + thrisArgPostFix
+
 			args = append(args, system.InputSchema)
 		case outputSchema:
-			schemasForUpdate = outputSchema + " = $3"
+			schemasForUpdate = outputSchema + thrisArgPostFix
+
 			args = append(args, system.OutputSchema)
 		case inputMapping:
-			schemasForUpdate = inputMapping + " = $3"
+			schemasForUpdate = inputMapping + thrisArgPostFix
+
 			args = append(args, system.InputMapping)
 		case outputMapping:
-			schemasForUpdate = outputMapping + " = $3"
+			schemasForUpdate = outputMapping + thrisArgPostFix
+
 			args = append(args, system.OutputMapping)
 		default:
 			return errUnkonwnSchemaFlag
 		}
 	} else {
 		schemasForUpdate = "input_schema = $3, output_schema = $4, input_mapping = $5, output_mapping = $6"
+
 		args = append(args, system.InputSchema, system.OutputSchema, system.InputMapping, system.OutputMapping)
 	}
 
@@ -288,13 +310,14 @@ func (db *PGCon) GetExternalSystemSettings(ctx context.Context, versionID, syste
 
 	row := db.Connection.QueryRow(ctx, query, versionID, systemID)
 
-	res := e.ExternalSystem{Id: systemID, OutputSettings: &e.EndSystemSettings{}}
+	res := e.ExternalSystem{ID: systemID, OutputSettings: &e.EndSystemSettings{}}
+
 	err := row.Scan(
 		&res.InputSchema,
 		&res.OutputSchema,
 		&res.InputMapping,
 		&res.OutputMapping,
-		&res.OutputSettings.MicroserviceId,
+		&res.OutputSettings.MicroserviceID,
 		&res.OutputSettings.URL,
 		&res.OutputSettings.Method,
 		&res.AllowRunAsOthers,
@@ -317,7 +340,7 @@ func (db *PGCon) UpdateEndingSystemSettings(ctx context.Context, versionID, syst
 		SET (microservice_id, ending_url, sending_method) = ($1, $2, $3)
 	WHERE version_id = $4 AND system_id = $5`
 
-	_, err = db.Connection.Exec(ctx, query, s.MicroserviceId, s.URL, s.Method, versionID, systemID)
+	_, err = db.Connection.Exec(ctx, query, s.MicroserviceID, s.URL, s.Method, versionID, systemID)
 	if err != nil {
 		return err
 	}
@@ -325,7 +348,7 @@ func (db *PGCon) UpdateEndingSystemSettings(ctx context.Context, versionID, syst
 	return nil
 }
 
-func (db *PGCon) SaveSlaVersionSettings(ctx context.Context, versionID string, s e.SlaVersionSettings) (err error) {
+func (db *PGCon) SaveSLAVersionSettings(ctx context.Context, versionID string, s e.SLAVersionSettings) (err error) {
 	ctx, span := trace.StartSpan(ctx, "pg_save_sla_version_settings")
 	defer span.End()
 
@@ -335,7 +358,7 @@ func (db *PGCon) SaveSlaVersionSettings(ctx context.Context, versionID string, s
 	INSERT INTO version_sla (id, version_id, author, created_at, work_type, sla)
 	VALUES ( $1, $2, $3, now(), $4, $5)`
 
-	_, err = db.Connection.Exec(ctx, query, uuid.New(), versionID, s.Author, s.WorkType, s.Sla)
+	_, err = db.Connection.Exec(ctx, query, uuid.New(), versionID, s.Author, s.WorkType, s.SLA)
 	if err != nil {
 		return err
 	}
@@ -343,7 +366,7 @@ func (db *PGCon) SaveSlaVersionSettings(ctx context.Context, versionID string, s
 	return nil
 }
 
-func (db *PGCon) GetSlaVersionSettings(ctx context.Context, versionID string) (s e.SlaVersionSettings, err error) {
+func (db *PGCon) GetSLAVersionSettings(ctx context.Context, versionID string) (s e.SLAVersionSettings, err error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_sla_version_settings")
 	defer span.End()
 
@@ -356,14 +379,18 @@ func (db *PGCon) GetSlaVersionSettings(ctx context.Context, versionID string) (s
 	ORDER BY created_at DESC`
 
 	row := db.Connection.QueryRow(ctx, query, versionID)
-	slaSettings := e.SlaVersionSettings{}
-	if err = row.Scan(&slaSettings.Author, &slaSettings.WorkType, &slaSettings.Sla); err != nil {
-		return e.SlaVersionSettings{}, err
+
+	slaSettings := e.SLAVersionSettings{}
+
+	err = row.Scan(&slaSettings.Author, &slaSettings.WorkType, &slaSettings.SLA)
+	if err != nil {
+		return e.SLAVersionSettings{}, err
 	}
+
 	return slaSettings, nil
 }
 
-func (db *PGCon) GetApprovalListSettings(ctx c.Context, listID string) (*e.ApprovalListSettings, error) {
+func (db *PGCon) GetApprovalListSettings(ctx context.Context, listID string) (*e.ApprovalListSettings, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_approval_list_settings")
 	defer span.End()
 
@@ -377,6 +404,7 @@ func (db *PGCon) GetApprovalListSettings(ctx c.Context, listID string) (*e.Appro
 	row := db.Connection.QueryRow(ctx, query, listID)
 
 	res := e.ApprovalListSettings{}
+
 	err := row.Scan(
 		&res.ID,
 		&res.Name,
@@ -392,7 +420,7 @@ func (db *PGCon) GetApprovalListSettings(ctx c.Context, listID string) (*e.Appro
 	return &res, nil
 }
 
-func (db *PGCon) GetApprovalListsSettings(ctx c.Context, versionID string) ([]e.ApprovalListSettings, error) {
+func (db *PGCon) GetApprovalListsSettings(ctx context.Context, versionID string) ([]e.ApprovalListSettings, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_approval_lists_settings")
 	defer span.End()
 
@@ -432,7 +460,7 @@ func (db *PGCon) GetApprovalListsSettings(ctx c.Context, versionID string) ([]e.
 	return res, nil
 }
 
-func (db *PGCon) SaveApprovalListSettings(ctx c.Context, in e.SaveApprovalListSettings) (id string, err error) {
+func (db *PGCon) SaveApprovalListSettings(ctx context.Context, in e.SaveApprovalListSettings) (id string, err error) {
 	ctx, span := trace.StartSpan(ctx, "pg_save_approval_list_settings")
 	defer span.End()
 
@@ -455,7 +483,7 @@ func (db *PGCon) SaveApprovalListSettings(ctx c.Context, in e.SaveApprovalListSe
 		ctx,
 		query,
 		listID,
-		in.VersionId,
+		in.VersionID,
 		in.Name,
 		in.Steps,
 		in.ContextMapping,
@@ -467,7 +495,7 @@ func (db *PGCon) SaveApprovalListSettings(ctx c.Context, in e.SaveApprovalListSe
 	return listID, nil
 }
 
-func (db *PGCon) UpdateApprovalListSettings(ctx c.Context, in e.UpdateApprovalListSettings) error {
+func (db *PGCon) UpdateApprovalListSettings(ctx context.Context, in e.UpdateApprovalListSettings) error {
 	ctx, span := trace.StartSpan(ctx, "pg_update_approval_list_settings")
 	defer span.End()
 
@@ -489,10 +517,11 @@ func (db *PGCon) UpdateApprovalListSettings(ctx c.Context, in e.UpdateApprovalLi
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
-func (db *PGCon) RemoveApprovalListSettings(ctx c.Context, listID string) error {
+func (db *PGCon) RemoveApprovalListSettings(ctx context.Context, listID string) error {
 	ctx, span := trace.StartSpan(ctx, "pg_remove_approval_list_settings")
 	defer span.End()
 

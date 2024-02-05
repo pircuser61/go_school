@@ -49,6 +49,7 @@ func TestAttachment_UnmarshalJSON(t *testing.T) {
 			err := json.Unmarshal(tt.json, &got)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Attachment_UnmarshalJSON() error = %v, wantErr %v", err, tt.wantErr)
+
 				return
 			}
 			if got != tt.want {

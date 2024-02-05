@@ -60,7 +60,7 @@ func (gb *GoPlaceholderBlock) GetStatus() Status {
 	return StatusFinished
 }
 
-func (gb *GoPlaceholderBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment string, action string) {
+func (gb *GoPlaceholderBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment, action string) {
 	return "", "", ""
 }
 
@@ -85,6 +85,7 @@ func (gb *GoPlaceholderBlock) Next(_ *store.VariableStore) ([]string, bool) {
 	if !ok {
 		return nil, false
 	}
+
 	return nexts, true
 }
 
@@ -99,6 +100,7 @@ func (gb *GoPlaceholderBlock) GetState() interface{} {
 func (gb *GoPlaceholderBlock) Update(ctx context.Context) (interface{}, error) {
 	if _, ok := gb.expectedEvents[eventEnd]; ok {
 		status, _, _ := gb.GetTaskHumanStatus()
+
 		event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, MakeNodeEndEventArgs{
 			NodeName:      gb.Name,
 			NodeShortName: gb.ShortName,
@@ -108,14 +110,21 @@ func (gb *GoPlaceholderBlock) Update(ctx context.Context) (interface{}, error) {
 		if eventErr != nil {
 			return nil, eventErr
 		}
+
 		gb.happenedEvents = append(gb.happenedEvents, event)
 	}
+
 	return nil, nil
 }
 
-//nolint:unparam // its ok
-func createGoPlaceholderBlock(ctx context.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext,
-	expectedEvents map[string]struct{}) (*GoPlaceholderBlock, bool, error) {
+// nolint:dupl,unparam // its ok // зачастую unparam линтер лучше не трогать
+func createGoPlaceholderBlock(
+	ctx context.Context,
+	name string,
+	ef *entity.EriusFunc,
+	runCtx *BlockRunContext,
+	expectedEvents map[string]struct{},
+) (*GoPlaceholderBlock, bool, error) {
 	const reEntry = false
 
 	b := &GoPlaceholderBlock{
@@ -136,6 +145,7 @@ func createGoPlaceholderBlock(ctx context.Context, name string, ef *entity.Erius
 	}
 
 	if ef.Output != nil {
+		//nolint:gocritic //в этом проекте не принято использовать поинтеры в коллекциях
 		for propertyName, v := range ef.Output.Properties {
 			b.Output[propertyName] = v.Global
 		}
@@ -145,6 +155,7 @@ func createGoPlaceholderBlock(ctx context.Context, name string, ef *entity.Erius
 
 	if _, ok := b.expectedEvents[eventStart]; ok {
 		status, _, _ := b.GetTaskHumanStatus()
+
 		event, err := runCtx.MakeNodeStartEvent(ctx, MakeNodeStartEventArgs{
 			NodeName:      name,
 			NodeShortName: ef.ShortTitle,
@@ -154,6 +165,7 @@ func createGoPlaceholderBlock(ctx context.Context, name string, ef *entity.Erius
 		if err != nil {
 			return nil, false, err
 		}
+
 		b.happenedEvents = append(b.happenedEvents, event)
 	}
 

@@ -12,7 +12,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
+	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
@@ -34,31 +34,34 @@ func TestBlockRunContext_excludeHiddenFormFields(t *testing.T) {
 	state["form_0"] = []byte(`
 		{"hidden_fields": ["field_2", "field_3", "imya", "snils"]}`)
 
-	type fields struct {
-		TaskID               uuid.UUID
-		WorkNumber           string
-		ClientID             string
-		PipelineID           uuid.UUID
-		VersionID            uuid.UUID
-		WorkTitle            string
-		Initiator            string
-		IsTest               bool
-		CustomTitle          string
-		NotifName            string
-		Delegations          human_tasks.Delegations
-		VarStore             *store.VariableStore
-		UpdateData           *script.BlockUpdateData
-		CurrBlockStartTime   time.Time
-		skipNotifications    bool
-		skipProduce          bool
-		Services             RunContextServices
-		BlockRunResults      *BlockRunResults
-		TaskSubscriptionData TaskSubscriptionData
-	}
-	type args struct {
-		formName string
-		desc     orderedmap.OrderedMap
-	}
+	type (
+		fields struct {
+			TaskID               uuid.UUID
+			WorkNumber           string
+			ClientID             string
+			PipelineID           uuid.UUID
+			VersionID            uuid.UUID
+			WorkTitle            string
+			Initiator            string
+			IsTest               bool
+			CustomTitle          string
+			NotifName            string
+			Delegations          human_tasks.Delegations
+			VarStore             *store.VariableStore
+			UpdateData           *script.BlockUpdateData
+			CurrBlockStartTime   time.Time
+			skipNotifications    bool
+			skipProduce          bool
+			Services             RunContextServices
+			BlockRunResults      *BlockRunResults
+			TaskSubscriptionData TaskSubscriptionData
+		}
+		args struct {
+			formName string
+			desc     orderedmap.OrderedMap
+		}
+	)
+
 	tests := []struct {
 		name    string
 		fields  fields

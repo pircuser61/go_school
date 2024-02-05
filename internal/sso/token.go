@@ -13,7 +13,7 @@ import (
 	"go.opencensus.io/trace"
 )
 
-type SSOTokens struct {
+type Tokens struct {
 	AccessToken      string `json:"access_token"`
 	ExpiresIn        int    `json:"expires_in"`
 	RefreshToken     string `json:"refresh_token"`
@@ -27,21 +27,26 @@ func (s *Service) registerScope(scopeName string) {
 	}
 
 	s.scopesMutex.RLock()
+
 	if _, ok := s.scopes[scopeName]; ok {
 		s.scopesMutex.RUnlock()
+
 		return
 	}
+
 	s.scopesMutex.RUnlock()
 
 	s.scopesMutex.Lock()
+
 	s.scopes[scopeName] = &scope{
 		getTokensFormData: url.Values{
 			secretKey:    []string{s.clientSecret},
 			grantTypeKey: []string{grantTypeGetValue},
-			clientIDKey:  []string{s.clientId},
+			clientIDKey:  []string{s.clientID},
 			scopeKey:     scopes,
 		},
 	}
+
 	s.scopesMutex.Unlock()
 }
 
@@ -50,6 +55,7 @@ func getTokenInCookie(req *http.Request, name string) (string, error) {
 	if err != nil {
 		return "", errors.New("can't find user session")
 	}
+
 	return c.Value, nil
 }
 
@@ -67,6 +73,7 @@ func getTokenInBearer(req *http.Request) (string, error) {
 	if items[0] != authType {
 		return "", errors.New("can't find user session")
 	}
+
 	return items[1], nil
 }
 
@@ -77,8 +84,10 @@ func (s *Service) GetAccessToken(req *http.Request) (string, error) {
 		if err != nil {
 			return "", err
 		}
+
 		return token, nil
 	}
+
 	return token, nil
 }
 
@@ -89,15 +98,19 @@ func (s *Service) updateTokens(ctx context.Context, scopeName string) error {
 	currTime := time.Now()
 
 	s.scopesMutex.RLock()
+
 	if _, ok := s.scopes[scopeName]; !ok {
 		s.scopesMutex.RUnlock()
 		s.registerScope(scopeName)
 		s.scopesMutex.RLock()
 	}
+
 	s.scopesMutex.RUnlock()
 
 	s.scopesMutex.RLock()
+
 	sc := s.scopes[scopeName]
+
 	s.scopesMutex.RUnlock()
 
 	if currTime.Before(sc.atExp) {
@@ -127,24 +140,30 @@ func (s *Service) getTokens(ctx context.Context, scopeName string) error {
 	sc := s.scopes[scopeName]
 	s.scopesMutex.RUnlock()
 
-	req, err := http.NewRequestWithContext(ctxLocal, http.MethodPost, s.tokensUrl, strings.NewReader(sc.getTokensFormData.Encode()))
+	req, err := http.NewRequestWithContext(ctxLocal, http.MethodPost, s.tokensURL, strings.NewReader(sc.getTokensFormData.Encode()))
 	if err != nil {
 		return err
 	}
+
 	req.Header.Add(contentTypeHeader, contentTypeFormValue)
 
 	resp, err := s.cli.Do(req)
 	if err != nil {
 		return err
 	}
+
 	defer resp.Body.Close()
+
 	if resp.StatusCode != http.StatusOK {
 		return errors.New("got bad status code")
 	}
-	var res SSOTokens
+
+	var res Tokens
+
 	if unmErr := json.NewDecoder(resp.Body).Decode(&res); unmErr != nil {
 		return unmErr
 	}
+
 	sc.accessToken = res.AccessToken
 	sc.refreshToken = res.RefreshToken
 	sc.atExp = time.Now().Add(time.Duration(res.ExpiresIn-expirationThreshold) * time.Second)
@@ -162,11 +181,13 @@ func (s *Service) refreshTokens(ctx context.Context, scopeName string) error {
 	defer span.End()
 
 	s.scopesMutex.RLock()
+
 	if _, ok := s.scopes[scopeName]; !ok {
 		s.scopesMutex.RUnlock()
 		s.registerScope(scopeName)
 		s.scopesMutex.RLock()
 	}
+
 	s.scopesMutex.RUnlock()
 
 	s.scopesMutex.RLock()
@@ -176,24 +197,30 @@ func (s *Service) refreshTokens(ctx context.Context, scopeName string) error {
 	formData := s.refreshTokensFormData
 	formData.Add(refreshTokenKey, sc.refreshToken)
 
-	req, err := http.NewRequestWithContext(ctxLocal, http.MethodPost, s.tokensUrl, strings.NewReader(sc.getTokensFormData.Encode()))
+	req, err := http.NewRequestWithContext(ctxLocal, http.MethodPost, s.tokensURL, strings.NewReader(sc.getTokensFormData.Encode()))
 	if err != nil {
 		return err
 	}
+
 	req.Header.Add(contentTypeHeader, contentTypeFormValue)
 
 	resp, err := s.cli.Do(req)
 	if err != nil {
 		return err
 	}
+
 	defer resp.Body.Close()
+
 	if resp.StatusCode != http.StatusOK {
 		return errors.New("got bad status code")
 	}
-	var res SSOTokens
+
+	var res Tokens
+
 	if unmErr := json.NewDecoder(resp.Body).Decode(&res); unmErr != nil {
 		return unmErr
 	}
+
 	sc.accessToken = res.AccessToken
 	sc.refreshToken = res.RefreshToken
 	sc.atExp = time.Now().Add(time.Duration(res.ExpiresIn-expirationThreshold) * time.Second)
@@ -202,5 +229,6 @@ func (s *Service) refreshTokens(ctx context.Context, scopeName string) error {
 	s.scopesMutex.Lock()
 	s.scopes[scopeName] = sc
 	s.scopesMutex.Unlock()
+
 	return nil
 }

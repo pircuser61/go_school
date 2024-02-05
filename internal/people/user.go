@@ -30,6 +30,7 @@ func zeroOrDefault(ss []string) string {
 	if len(ss) == 0 {
 		return ""
 	}
+
 	return ss[0]
 }
 
@@ -124,6 +125,7 @@ func (u SSOUser) ToUserinfo() (*sso.UserInfo, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return &sso.UserInfo{
 		Email:          typed.Email,
 		EmployeeID:     typed.Attributes.EmployeeID,

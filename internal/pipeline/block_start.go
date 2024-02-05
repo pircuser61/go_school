@@ -44,7 +44,7 @@ func (gb *GoStartBlock) GetStatus() Status {
 	return StatusFinished
 }
 
-func (gb *GoStartBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment string, action string) {
+func (gb *GoStartBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment, action string) {
 	return StatusNew, "", ""
 }
 
@@ -53,6 +53,7 @@ func (gb *GoStartBlock) Next(_ *store.VariableStore) ([]string, bool) {
 	if !ok {
 		return nil, false
 	}
+
 	return nexts, true
 }
 
@@ -71,19 +72,13 @@ func (gb *GoStartBlock) Update(ctx context.Context) (interface{}, error) {
 		return nil, err
 	}
 
-	for k := range gb.Output {
-		val, ok := data.InitialApplication.ApplicationBody.Get(k)
-		if !ok {
-			continue
-		}
-		gb.RunContext.VarStore.SetValue(gb.Output[k], val)
-	}
-
 	gb.RunContext.VarStore.SetValue(gb.Output[entity.KeyOutputWorkNumber], gb.RunContext.WorkNumber)
 	gb.RunContext.VarStore.SetValue(gb.Output[entity.KeyOutputApplicationInitiator], personData)
+	gb.RunContext.VarStore.SetValue(gb.Output[entity.KeyOutputApplicationBody], data.InitialApplication.ApplicationBody)
 
 	if _, ok := gb.expectedEvents[eventEnd]; ok {
 		status, _, _ := gb.GetTaskHumanStatus()
+
 		event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, MakeNodeEndEventArgs{
 			NodeName:      gb.Name,
 			NodeShortName: gb.ShortName,
@@ -93,6 +88,7 @@ func (gb *GoStartBlock) Update(ctx context.Context) (interface{}, error) {
 		if eventErr != nil {
 			return nil, eventErr
 		}
+
 		gb.happenedEvents = append(gb.happenedEvents, event)
 	}
 
@@ -101,7 +97,7 @@ func (gb *GoStartBlock) Update(ctx context.Context) (interface{}, error) {
 
 func (gb *GoStartBlock) Model() script.FunctionModel {
 	return script.FunctionModel{
-		ID:        BlockGoStartId,
+		ID:        BlockGoStartID,
 		BlockType: script.TypeGo,
 		Title:     BlockGoStartTitle,
 		Inputs:    nil,
@@ -118,6 +114,10 @@ func (gb *GoStartBlock) Model() script.FunctionModel {
 					Format:      "SsoPerson",
 					Properties:  people.GetSsoPersonSchemaProperties(),
 				},
+				entity.KeyOutputApplicationBody: {
+					Type:       "object",
+					Properties: script.JSONSchemaProperties{},
+				},
 			},
 		},
 		Sockets: []script.Socket{script.DefaultSocket},
@@ -126,7 +126,8 @@ func (gb *GoStartBlock) Model() script.FunctionModel {
 
 //nolint:dupl,unparam //its not duplicate
 func createGoStartBlock(ctx context.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext,
-	expectedEvents map[string]struct{}) (*GoStartBlock, bool, error) {
+	expectedEvents map[string]struct{},
+) (*GoStartBlock, bool, error) {
 	b := &GoStartBlock{
 		Name:       name,
 		ShortName:  ef.ShortTitle,
@@ -145,6 +146,7 @@ func createGoStartBlock(ctx context.Context, name string, ef *entity.EriusFunc, 
 	}
 
 	if ef.Output != nil {
+		//nolint:gocritic //в этом проекте не принято использовать поинтеры в коллекциях
 		for propertyName, v := range ef.Output.Properties {
 			b.Output[propertyName] = v.Global
 		}
@@ -154,6 +156,7 @@ func createGoStartBlock(ctx context.Context, name string, ef *entity.EriusFunc, 
 
 	if _, ok := b.expectedEvents[eventStart]; ok {
 		status, _, _ := b.GetTaskHumanStatus()
+
 		event, err := runCtx.MakeNodeStartEvent(ctx, MakeNodeStartEventArgs{
 			NodeName:      name,
 			NodeShortName: ef.ShortTitle,
@@ -163,6 +166,7 @@ func createGoStartBlock(ctx context.Context, name string, ef *entity.EriusFunc, 
 		if err != nil {
 			return nil, false, err
 		}
+
 		b.happenedEvents = append(b.happenedEvents, event)
 	}
 

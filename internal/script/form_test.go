@@ -11,6 +11,7 @@ func TestFormParams_Validate(t *testing.T) {
 		CheckSLA         bool
 		SLA              int
 	}
+
 	tests := []struct {
 		name    string
 		fields  fields
@@ -37,11 +38,12 @@ func TestFormParams_Validate(t *testing.T) {
 			wantErr: true,
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			a := &FormParams{
 				FormExecutorType: tt.fields.FormExecutorType,
-				SchemaId:         tt.fields.SchemaId,
+				SchemaID:         tt.fields.SchemaId,
 				SLA:              tt.fields.SLA,
 				CheckSLA:         tt.fields.CheckSLA,
 			}

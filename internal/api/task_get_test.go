@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
-	ht "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
+	ht "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks"
 )
 
 func TestGetAccessibleForms(t *testing.T) {
@@ -108,7 +108,7 @@ func TestGetAccessibleForms(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			ae := &APIEnv{}
+			ae := &Env{}
 			accessibleForms, ttErr := ae.getAccessibleForms(tt.CurrentUse, tt.Steps, tt.Delegates)
 
 			assert.Equalf(t, tt.WantErr, ttErr != nil, "getAccessibleForms(%v, %v, %v)", tt.CurrentUse, tt.Steps, tt.Delegates)
@@ -122,7 +122,9 @@ func unmarshalStepFromTestFile(t *testing.T, in string) *entity.TaskSteps {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	var result entity.TaskSteps
+
 	err = json.Unmarshal(bytes, &result)
 	if err != nil {
 		t.Fatal(err)

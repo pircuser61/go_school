@@ -11,6 +11,7 @@ func TestApproverParams_Validate(t *testing.T) {
 		SLA           int
 		AutoAction    string
 	}
+
 	tests := []struct {
 		name    string
 		fields  fields
@@ -54,6 +55,7 @@ func TestApproverParams_Validate(t *testing.T) {
 			wantErr: false,
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			a := &ApproverParams{

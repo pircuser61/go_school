@@ -6,11 +6,11 @@ import (
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
-	file_registry "gitlab.services.mts.ru/jocasta/pipeliner/internal/file-registry"
+	file_registry "gitlab.services.mts.ru/jocasta/pipeliner/internal/fileregistry"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/forms"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/functions"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/hrgate"
-	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
+	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/integrations"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/kafka"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"

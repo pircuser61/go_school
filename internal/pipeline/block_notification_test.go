@@ -56,12 +56,12 @@ func Test_createGoNotificationBlock(t *testing.T) {
 
 	next := []entity.Socket{
 		{
-			Id:           DefaultSocketID,
+			ID:           DefaultSocketID,
 			Title:        script.DefaultSocketTitle,
 			NextBlockIds: []string{"next_0"},
 		},
 		{
-			Id:           rejectedSocketID,
+			ID:           rejectedSocketID,
 			Title:        script.RejectSocketTitle,
 			NextBlockIds: []string{"next_1"},
 		},
@@ -72,6 +72,7 @@ func Test_createGoNotificationBlock(t *testing.T) {
 		ef     *entity.EriusFunc
 		runCtx *BlockRunContext
 	}
+
 	tests := []struct {
 		name    string
 		args    args
@@ -151,6 +152,7 @@ func Test_createGoNotificationBlock(t *testing.T) {
 							Text:            "",
 							Subject:         "",
 						})
+
 						return r
 					}(),
 					Sockets: next,
@@ -184,6 +186,7 @@ func Test_createGoNotificationBlock(t *testing.T) {
 							Text:            "",
 							Subject:         "",
 						})
+
 						return r
 					}(),
 					Sockets: next,
@@ -217,6 +220,7 @@ func Test_createGoNotificationBlock(t *testing.T) {
 							Text:            text,
 							Subject:         subject,
 						})
+
 						return r
 					}(),
 					Sockets: next,
@@ -250,6 +254,7 @@ func Test_createGoNotificationBlock(t *testing.T) {
 							Text:            text,
 							Subject:         subject,
 						})
+
 						return r
 					}(),
 					Sockets: next,
@@ -298,6 +303,7 @@ func Test_createGoNotificationBlock(t *testing.T) {
 							Text:            text,
 							Subject:         subject,
 						})
+
 						return r
 					}(),
 					Sockets: next,

@@ -6,24 +6,27 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"gitlab.services.mts.ru/jocasta/conditions-kit"
+	conditions_kit "gitlab.services.mts.ru/jocasta/conditions-kit"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
 func TestIF_Next(t *testing.T) {
-	type fields struct {
-		Name          string
-		FunctionName  string
-		FunctionInput map[string]string
-		Result        bool
-		Nexts         []script.Socket
-		State         *ConditionsData
-	}
-	type args struct {
-		runCtx *store.VariableStore
-	}
+	type (
+		fields struct {
+			Name          string
+			FunctionName  string
+			FunctionInput map[string]string
+			Result        bool
+			Nexts         []script.Socket
+			State         *ConditionsData
+		}
+		args struct {
+			runCtx *store.VariableStore
+		}
+	)
+
 	tests := []struct {
 		name   string
 		fields fields
@@ -41,6 +44,7 @@ func TestIF_Next(t *testing.T) {
 				runCtx: func() *store.VariableStore {
 					res := store.NewStore()
 					res.SetValue("chosenGroup", "")
+
 					return res
 				}(),
 			},
@@ -57,6 +61,7 @@ func TestIF_Next(t *testing.T) {
 				runCtx: func() *store.VariableStore {
 					res := store.NewStore()
 					res.SetValue("chosenGroup", "test-group-1")
+
 					return res
 				}(),
 			},
@@ -64,6 +69,7 @@ func TestIF_Next(t *testing.T) {
 			want: []string{"test-next"},
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			e := &IF{
@@ -86,27 +92,30 @@ func TestIF_DebugRun(t *testing.T) {
 		title   = "title"
 	)
 
-	type TestOperand struct {
-		OperandType string      `json:"operandType"`
-		Value       interface{} `json:"value"`
-		VariableRef string      `json:"variableRef"`
-		conditions_kit.OperandBase
-	}
+	type (
+		TestOperand struct {
+			OperandType string      `json:"operandType"`
+			Value       interface{} `json:"value"`
+			VariableRef string      `json:"variableRef"`
+			conditions_kit.OperandBase
+		}
 
-	type fields struct {
-		Name          string
-		FunctionName  string
-		FunctionInput map[string]string
-		Result        bool
-		Nexts         map[string][]string
-		State         *ConditionsData
-	}
-	type args struct {
-		name   string
-		ef     *entity.EriusFunc
-		ctx    context.Context
-		runCtx *store.VariableStore
-	}
+		fields struct {
+			Name          string
+			FunctionName  string
+			FunctionInput map[string]string
+			Result        bool
+			Nexts         map[string][]string
+			State         *ConditionsData
+		}
+		args struct {
+			name   string
+			ef     *entity.EriusFunc
+			ctx    context.Context
+			runCtx *store.VariableStore
+		}
+	)
+
 	tests := []struct {
 		name          string
 		fields        fields
@@ -127,6 +136,7 @@ func TestIF_DebugRun(t *testing.T) {
 				ctx: context.Background(),
 				runCtx: func() *store.VariableStore {
 					res := store.NewStore()
+
 					return res
 				}(),
 			},
@@ -176,6 +186,7 @@ func TestIF_DebugRun(t *testing.T) {
 				ctx: context.Background(),
 				runCtx: func() *store.VariableStore {
 					res := store.NewStore()
+
 					return res
 				}(),
 			},
@@ -748,6 +759,7 @@ func TestIF_DebugRun(t *testing.T) {
 				ctx: context.Background(),
 				runCtx: func() *store.VariableStore {
 					res := store.NewStore()
+
 					return res
 				}(),
 			},
@@ -797,6 +809,7 @@ func TestIF_DebugRun(t *testing.T) {
 				ctx: context.Background(),
 				runCtx: func() *store.VariableStore {
 					res := store.NewStore()
+
 					return res
 				}(),
 			},
@@ -846,6 +859,7 @@ func TestIF_DebugRun(t *testing.T) {
 				ctx: context.Background(),
 				runCtx: func() *store.VariableStore {
 					res := store.NewStore()
+
 					return res
 				}(),
 			},
@@ -895,6 +909,7 @@ func TestIF_DebugRun(t *testing.T) {
 				ctx: context.Background(),
 				runCtx: func() *store.VariableStore {
 					res := store.NewStore()
+
 					return res
 				}(),
 			},
@@ -944,6 +959,7 @@ func TestIF_DebugRun(t *testing.T) {
 				ctx: context.Background(),
 				runCtx: func() *store.VariableStore {
 					res := store.NewStore()
+
 					return res
 				}(),
 			},
@@ -993,6 +1009,7 @@ func TestIF_DebugRun(t *testing.T) {
 				ctx: context.Background(),
 				runCtx: func() *store.VariableStore {
 					res := store.NewStore()
+
 					return res
 				}(),
 			},
@@ -1042,6 +1059,7 @@ func TestIF_DebugRun(t *testing.T) {
 				ctx: context.Background(),
 				runCtx: func() *store.VariableStore {
 					res := store.NewStore()
+
 					return res
 				}(),
 			},
@@ -1091,6 +1109,7 @@ func TestIF_DebugRun(t *testing.T) {
 				ctx: context.Background(),
 				runCtx: func() *store.VariableStore {
 					res := store.NewStore()
+
 					return res
 				}(),
 			},
@@ -1140,6 +1159,7 @@ func TestIF_DebugRun(t *testing.T) {
 				ctx: context.Background(),
 				runCtx: func() *store.VariableStore {
 					res := store.NewStore()
+
 					return res
 				}(),
 			},
@@ -1189,6 +1209,7 @@ func TestIF_DebugRun(t *testing.T) {
 				ctx: context.Background(),
 				runCtx: func() *store.VariableStore {
 					res := store.NewStore()
+
 					return res
 				}(),
 			},
@@ -1238,6 +1259,7 @@ func TestIF_DebugRun(t *testing.T) {
 				ctx: context.Background(),
 				runCtx: func() *store.VariableStore {
 					res := store.NewStore()
+
 					return res
 				}(),
 			},
@@ -1287,6 +1309,7 @@ func TestIF_DebugRun(t *testing.T) {
 				ctx: context.Background(),
 				runCtx: func() *store.VariableStore {
 					res := store.NewStore()
+
 					return res
 				}(),
 			},
@@ -1336,6 +1359,7 @@ func TestIF_DebugRun(t *testing.T) {
 				ctx: context.Background(),
 				runCtx: func() *store.VariableStore {
 					res := store.NewStore()
+
 					return res
 				}(),
 			},
@@ -1889,6 +1913,7 @@ func TestIF_DebugRun(t *testing.T) {
 				ctx: context.Background(),
 				runCtx: func() *store.VariableStore {
 					res := store.NewStore()
+
 					return res
 				}(),
 			},
@@ -2190,6 +2215,7 @@ func TestIF_DebugRun(t *testing.T) {
 				ctx: context.Background(),
 				runCtx: func() *store.VariableStore {
 					res := store.NewStore()
+
 					return res
 				}(),
 			},
@@ -2239,6 +2265,7 @@ func TestIF_DebugRun(t *testing.T) {
 				ctx: context.Background(),
 				runCtx: func() *store.VariableStore {
 					res := store.NewStore()
+
 					return res
 				}(),
 			},
@@ -2388,6 +2415,7 @@ func TestIF_DebugRun(t *testing.T) {
 			},
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			goBlock, _, err := createGoIfBlock(context.Background(), tt.args.name, tt.args.ef,

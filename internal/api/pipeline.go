@@ -8,7 +8,7 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
-	"github.com/labstack/gommon/log"
+	"github.com/pkg/errors"
 
 	"go.opencensus.io/trace"
 
@@ -19,8 +19,10 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 )
 
-const statusRunned = "runned"
-const copyPostfix = "копия"
+const (
+	statusRunned = "runned"
+	copyPostfix  = "копия"
+)
 
 const (
 	ValidateParallelNodeReturnCycle       = "ParallelNodeReturnCycle"
@@ -30,21 +32,19 @@ const (
 	ValidateParallelPathIntersected       = "ParallelPathIntersected"
 )
 
-func (ae *APIEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
+func (ae *Env) CreatePipeline(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "create_pipeline")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
+	errorHandler := newHTTPErrorHandler(log, w)
 
 	b, err := io.ReadAll(req.Body)
-	defer func() {
-		_ = req.Body.Close()
-	}()
+
+	defer req.Body.Close()
 
 	if err != nil {
-		e := RequestReadError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(RequestReadError, err)
 
 		return
 	}
@@ -53,9 +53,7 @@ func (ae *APIEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
 
 	err = json.Unmarshal(b, &p)
 	if err != nil {
-		e := PipelineParseError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(PipelineParseError, err)
 
 		return
 	}
@@ -72,102 +70,69 @@ func (ae *APIEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
 		p.Pipeline.FillEmptyPipeline()
 		b, _ = json.Marshal(&p) // nolint // already unmarshalling that struct
 	}
+
 	ok, valErr := p.Pipeline.Blocks.Validate(ctx, ae.ServiceDesc)
 	if p.Status == db.StatusApproved && !ok {
-		var e Err
+		e := validateBlockTypeErrText(valErr)
 
-		switch valErr {
-		case ValidateParallelNodeReturnCycle:
-			e = ParallelNodeReturnCycle
-		case ValidateParallelNodeExitsNotConnected:
-			e = ParallelNodeExitsNotConnected
-		case ValidateOutOfParallelNodesConnection:
-			e = OutOfParallelNodesConnection
-		case ValidateParallelOutOfStartInsert:
-			e = ParallelOutOfStartInsert
-		case ValidateParallelPathIntersected:
-			e = ParallelPathIntersected
-		default:
-			e = PipelineValidateError
-		}
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(e, errors.New(valErr))
+
 		return
 	}
 
 	executableFunctions, err := p.Pipeline.Blocks.GetExecutableFunctions()
 	if err != nil {
-		e := GetExecutableFunctionIDsError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(GetExecutableFunctionIDsError, err)
 
 		return
 	}
 
-	hasPrivateFunction := false
-	for _, fn := range executableFunctions {
-		function, getFunctionErr := ae.FunctionStore.GetFunctionVersion(ctx, fn.FunctionId, fn.VersionId)
-		if getFunctionErr != nil {
-			e := GetFunctionError
-			log.Error(e.errorMessage(getFunctionErr))
-			_ = e.sendError(w)
+	hasPrivateFunction, err := ae.hasPrivateFunction(ctx, executableFunctions)
+	if err != nil {
+		errorHandler.handleError(GetFunctionError, err)
 
-			return
-		}
-
-		hasPrivateFunction = function.Options.Private
-		if hasPrivateFunction {
-			break
-		}
+		return
 	}
 
 	err = ae.DB.CreatePipeline(ctx, &p, userFromContext.Username, b, uuid.Nil, hasPrivateFunction)
 	if err != nil {
-		e := PipelineCreateError
 		if db.IsUniqueConstraintError(err) {
-			e = PipelineNameUsed
+			errorHandler.handleError(PipelineNameUsed, err)
 		}
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+
+		errorHandler.handleError(PipelineCreateError, err)
 
 		return
 	}
 
 	created, err := ae.DB.GetPipelineVersion(ctx, p.VersionID, true)
 	if err != nil {
-		e := PipelineReadError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(PipelineReadError, err)
 
 		return
 	}
 
 	err = sendResponse(w, http.StatusOK, created)
 	if err != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(UnknownError, err)
 
 		return
 	}
 }
 
 //nolint:dupl // different logic (temporary saving old for compatibility)
-func (ae *APIEnv) CopyPipeline(w http.ResponseWriter, req *http.Request) {
+func (ae *Env) CopyPipeline(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "create_pipeline")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
+	errorHandler := newHTTPErrorHandler(log, w)
 
 	b, err := io.ReadAll(req.Body)
-	defer func() {
-		_ = req.Body.Close()
-	}()
+	defer req.Body.Close()
 
 	if err != nil {
-		e := RequestReadError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(RequestReadError, err)
 
 		return
 	}
@@ -176,9 +141,7 @@ func (ae *APIEnv) CopyPipeline(w http.ResponseWriter, req *http.Request) {
 
 	err = json.Unmarshal(b, &p)
 	if err != nil {
-		e := PipelineParseError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(PipelineParseError, err)
 
 		return
 	}
@@ -189,14 +152,11 @@ func (ae *APIEnv) CopyPipeline(w http.ResponseWriter, req *http.Request) {
 	}
 
 	oldVersionID := p.VersionID
-
 	p.Name = fmt.Sprintf("%s - %s", p.Name, copyPostfix)
 
 	updated, err := json.Marshal(p)
 	if err != nil {
-		e := PipelineParseError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(PipelineParseError, err)
 
 		return
 	}
@@ -206,105 +166,84 @@ func (ae *APIEnv) CopyPipeline(w http.ResponseWriter, req *http.Request) {
 
 	executableFunctions, err := p.Pipeline.Blocks.GetExecutableFunctions()
 	if err != nil {
-		e := GetExecutableFunctionIDsError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(GetExecutableFunctionIDsError, err)
 
 		return
 	}
 
-	hasPrivateFunction := false
-	for _, fn := range executableFunctions {
-		function, getFunctionErr := ae.FunctionStore.GetFunctionVersion(ctx, fn.FunctionId, fn.VersionId)
-		if getFunctionErr != nil {
-			e := GetFunctionError
-			log.Error(e.errorMessage(getFunctionErr))
-			_ = e.sendError(w)
+	hasPrivateFunction, err := ae.hasPrivateFunction(ctx, executableFunctions)
+	if err != nil {
+		errorHandler.handleError(GetFunctionError, err)
 
-			return
-		}
-
-		hasPrivateFunction = function.Options.Private
-		if hasPrivateFunction {
-			break
-		}
+		return
 	}
 
 	err = ae.DB.CreatePipeline(ctx, &p, userFromContext.Username, updated, oldVersionID, hasPrivateFunction)
 	if err != nil {
-		e := PipelineCreateError
 		if db.IsUniqueConstraintError(err) {
-			e = PipelineNameUsed
+			errorHandler.handleError(PipelineNameUsed, err)
 		}
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+
+		errorHandler.handleError(PipelineCreateError, err)
 
 		return
 	}
 
 	created, err := ae.DB.GetPipelineVersion(ctx, p.VersionID, true)
 	if err != nil {
-		e := PipelineReadError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(PipelineReadError, err)
 
 		return
 	}
 
 	err = sendResponse(w, http.StatusOK, created)
 	if err != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(UnknownError, err)
 
 		return
 	}
 }
 
 //nolint:dupl //its not duplicate
-func (ae *APIEnv) GetPipeline(w http.ResponseWriter, req *http.Request, pipelineID string) {
+func (ae *Env) GetPipeline(w http.ResponseWriter, req *http.Request, pipelineID string) {
 	ctx, s := trace.StartSpan(req.Context(), "get_pipeline")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
+	errorHandler := newHTTPErrorHandler(log, w)
 
 	id, err := uuid.Parse(pipelineID)
 	if err != nil {
-		e := UUIDParsingError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(UUIDParsingError, err)
 
 		return
 	}
 
 	p, err := ae.DB.GetPipeline(ctx, id)
 	if err != nil {
-		e := GetPipelineError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(GetPipelineError, err)
 
 		return
 	}
 
 	if err = sendResponse(w, http.StatusOK, p); err != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(UnknownError, err)
 
 		return
 	}
 }
 
-func (ae *APIEnv) ListPipelines(w http.ResponseWriter, req *http.Request, params ListPipelinesParams) {
+func (ae *Env) ListPipelines(w http.ResponseWriter, req *http.Request, params ListPipelinesParams) {
 	ctx, s := trace.StartSpan(req.Context(), "list_pipelines")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
+	errorHandler := newHTTPErrorHandler(log, w)
 
 	myPipelines := params.My != nil && *params.My
 	publishedPipelines := params.IsPublished != nil && *params.IsPublished
-	page := 1
-	perPage := 10
+	page := defaultPage
+	perPage := defaultPerPage
 	filter := ""
 
 	if params.Page != nil && *params.Page > 0 {
@@ -321,73 +260,63 @@ func (ae *APIEnv) ListPipelines(w http.ResponseWriter, req *http.Request, params
 
 	pipelines, err := ae.listPipelines(ctx, myPipelines, publishedPipelines, page, perPage, filter)
 	if err != nil {
-		_ = err.sendError(w)
+		errorHandler.sendError(err.Err)
 
 		return
 	}
 
 	if err := sendResponse(w, http.StatusOK, pipelines); err != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(UnknownError, err)
 
 		return
 	}
 }
 
-func (ae *APIEnv) DeletePipeline(w http.ResponseWriter, req *http.Request, pipelineID string) {
+func (ae *Env) DeletePipeline(w http.ResponseWriter, req *http.Request, pipelineID string) {
 	ctx, s := trace.StartSpan(req.Context(), "delete_pipeline")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
+	errorHandler := newHTTPErrorHandler(log, w)
 
 	id, err := uuid.Parse(pipelineID)
 	if err != nil {
-		e := UUIDParsingError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(UUIDParsingError, err)
 
 		return
 	}
 
 	if err = ae.DB.DeletePipeline(ctx, id); err != nil {
-		e := PipelineDeleteError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(PipelineDeleteError, err)
 
 		return
 	}
 
 	err = sendResponse(w, http.StatusOK, id)
 	if err != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(UnknownError, err)
 
 		return
 	}
 }
 
-func (ae *APIEnv) DeleteDraftPipeline(ctx context.Context, w http.ResponseWriter, p *entity.EriusScenario) error {
+func (ae *Env) DeleteDraftPipeline(ctx context.Context, w http.ResponseWriter, p *entity.EriusScenario) error {
 	ctx, s := trace.StartSpan(ctx, "delete_draft_pipeline")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
+	errorHandler := newHTTPErrorHandler(log, w)
 
 	canDelete, err := ae.DB.PipelineRemovable(ctx, p.PipelineID)
 	if err != nil {
-		e := PipelineIsNotDraft
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(PipelineIsNotDraft, err)
 
 		return err
 	}
 
 	if canDelete {
 		if err = ae.DB.DeletePipeline(ctx, p.PipelineID); err != nil {
-			e := PipelineDeleteError
-			log.Error(e.errorMessage(err))
-			_ = e.sendError(w)
+			errorHandler.handleError(PipelineDeleteError, err)
 
 			return err
 		}
@@ -396,34 +325,30 @@ func (ae *APIEnv) DeleteDraftPipeline(ctx context.Context, w http.ResponseWriter
 	return nil
 }
 
-func (ae *APIEnv) GetPipelineVersions(w http.ResponseWriter, req *http.Request, pipelineID string) {
+func (ae *Env) GetPipelineVersions(w http.ResponseWriter, req *http.Request, pipelineID string) {
 	ctx, span := trace.StartSpan(req.Context(), "get_pipeline_versions")
 	defer span.End()
 
 	log := logger.GetLogger(ctx)
+	errorHandler := newHTTPErrorHandler(log, w)
 
 	id, err := uuid.Parse(pipelineID)
 	if err != nil {
-		e := UUIDParsingError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(UUIDParsingError, err)
 
 		return
 	}
 
 	vv, err := ae.DB.GetPipelineVersions(ctx, id)
 	if err != nil {
-		e := GetPipelineVersionsError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(GetPipelineVersionsError, err)
 
 		return
 	}
+
 	err = sendResponse(w, http.StatusOK, vv)
 	if err != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		errorHandler.handleError(UnknownError, err)
 
 		return
 	}
@@ -433,11 +358,12 @@ func (ae *APIEnv) GetPipelineVersions(w http.ResponseWriter, req *http.Request, 
 // разрешенные для данного пользователя
 //
 //nolint:dupl //diff logic
-func (ae *APIEnv) listPipelines(ctx context.Context,
+func (ae *Env) listPipelines(ctx context.Context,
 	myPipelines,
 	publishedPipelines bool,
 	page, perPage int,
-	filter string) ([]entity.EriusScenarioInfo, *PipelinerError) {
+	filter string,
+) ([]entity.EriusScenarioInfo, *PipelinerError) {
 	ctx, s := trace.StartSpan(ctx, "list_drafts")
 	defer s.End()
 
@@ -460,16 +386,17 @@ func (ae *APIEnv) listPipelines(ctx context.Context,
 	return drafts, nil
 }
 
-func (ae *APIEnv) PipelineNameExists(w http.ResponseWriter, r *http.Request, params PipelineNameExistsParams) {
+func (ae *Env) PipelineNameExists(w http.ResponseWriter, r *http.Request, params PipelineNameExistsParams) {
 	ctx, span := trace.StartSpan(r.Context(), "pipeline_name_exists")
 	defer span.End()
+
+	log := logger.GetLogger(ctx)
+	errorHandler := newHTTPErrorHandler(log, w)
 
 	nameExists, checkNameExistsErr := ae.DB.CheckPipelineNameExists(ctx, params.Name, params.CheckNotDeleted)
 
 	if checkNameExistsErr != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(checkNameExistsErr))
-		_ = e.sendError(w)
+		errorHandler.handleError(UnknownError, checkNameExistsErr)
 
 		return
 	}
@@ -478,9 +405,7 @@ func (ae *APIEnv) PipelineNameExists(w http.ResponseWriter, r *http.Request, par
 		Exists: *nameExists,
 	})
 	if sendResponseErr != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(sendResponseErr))
-		_ = e.sendError(w)
+		errorHandler.handleError(UnknownError, sendResponseErr)
 
 		return
 	}

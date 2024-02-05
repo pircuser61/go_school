@@ -20,7 +20,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
-	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
+	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	serviceDeskMocks "gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
@@ -91,14 +91,16 @@ func makeStorage() *mocks.MockedDatabase {
 		mock.MatchedBy(func(workNumber string) bool { return true }),
 	).Return(&entity.EriusScenario{}, nil)
 
-	res.On("GetSlaVersionSettings",
+	res.On("GetSLAVersionSettings",
 		mock.MatchedBy(func(ctx context.Context) bool { return true }),
 		mock.MatchedBy(func(versionId string) bool { return true }),
-	).Return(entity.SlaVersionSettings{
-		Author:   "voronin",
-		WorkType: "8/5",
-		Sla:      8,
-	}, nil)
+	).Return(
+		entity.SLAVersionSettings{
+			Author:   "voronin",
+			WorkType: "8/5",
+			SLA:      8,
+		}, nil,
+	)
 
 	res.On("GetCanceledTaskSteps",
 		mock.MatchedBy(func(ctx context.Context) bool { return true }),
@@ -117,15 +119,18 @@ func makeStorage() *mocks.MockedDatabase {
 func didMeetBlocks(src, dest []string) bool {
 	for _, b1 := range src {
 		var found bool
+
 		for _, b2 := range dest {
 			if b1 == b2 {
 				found = true
 			}
 		}
+
 		if !found {
 			return false
 		}
 	}
+
 	return true
 }
 
@@ -142,6 +147,7 @@ func TestProcessBlock(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	approveParams, err := json.Marshal(script.ApproverParams{
 		Type:     script.ApproverTypeUser,
 		SLA:      1,
@@ -162,12 +168,14 @@ func TestProcessBlock(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	approveUpdParams, err := json.Marshal(approverUpdateParams{
 		Decision: ApproverActionApprove,
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	executeUpdParams, err := json.Marshal(ExecutionUpdateParams{
 		Decision: ExecutionDecisionExecuted,
 	})
@@ -175,8 +183,10 @@ func TestProcessBlock(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	var metBlocks []string
-	var latestBlock string
+	var (
+		metBlocks   []string
+		latestBlock string
+	)
 
 	tests := []struct {
 		name   string
@@ -210,13 +220,13 @@ func TestProcessBlock(t *testing.T) {
 								"start_0",
 							).Return(
 								&entity.EriusFunc{
-									TypeID:     BlockGoStartId,
+									TypeID:     BlockGoStartID,
 									BlockType:  script.TypeGo,
 									Title:      BlockGoStartTitle,
 									ShortTitle: shortTitle,
 									Sockets: []entity.Socket{
 										{
-											Id:           DefaultSocketID,
+											ID:           DefaultSocketID,
 											NextBlockIds: []string{"servicedesk_application_0"},
 										},
 									},
@@ -235,7 +245,7 @@ func TestProcessBlock(t *testing.T) {
 									ShortTitle: shortTitle,
 									Sockets: []entity.Socket{
 										{
-											Id:           DefaultSocketID,
+											ID:           DefaultSocketID,
 											NextBlockIds: []string{"end_0"},
 										},
 									},
@@ -249,7 +259,7 @@ func TestProcessBlock(t *testing.T) {
 								"end_0",
 							).Return(
 								&entity.EriusFunc{
-									TypeID:     BlockGoEndId,
+									TypeID:     BlockGoEndID,
 									BlockType:  script.TypeGo,
 									Title:      BlockGoEndTitle,
 									ShortTitle: shortTitle,
@@ -260,6 +270,7 @@ func TestProcessBlock(t *testing.T) {
 								mock.MatchedBy(func(ctx context.Context) bool { return true }),
 								uuid.Nil,
 							).Return(false, nil)
+
 							return res
 						}(),
 						ServiceDesc: func() *servicedesc.Service {
@@ -272,16 +283,17 @@ func TestProcessBlock(t *testing.T) {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							sdMock.Cli = httpClient
 
@@ -342,13 +354,13 @@ func TestProcessBlock(t *testing.T) {
 								"start_0",
 							).Return(
 								&entity.EriusFunc{
-									TypeID:     BlockGoStartId,
+									TypeID:     BlockGoStartID,
 									BlockType:  script.TypeGo,
 									Title:      BlockGoStartTitle,
 									ShortTitle: shortTitle,
 									Sockets: []entity.Socket{
 										{
-											Id:           DefaultSocketID,
+											ID:           DefaultSocketID,
 											NextBlockIds: []string{"servicedesk_application_0"},
 										},
 									},
@@ -367,7 +379,7 @@ func TestProcessBlock(t *testing.T) {
 									ShortTitle: shortTitle,
 									Sockets: []entity.Socket{
 										{
-											Id:           DefaultSocketID,
+											ID:           DefaultSocketID,
 											NextBlockIds: []string{"start_parallel_0"},
 										},
 									},
@@ -381,13 +393,13 @@ func TestProcessBlock(t *testing.T) {
 								"start_parallel_0",
 							).Return(
 								&entity.EriusFunc{
-									TypeID:     BlockGoBeginParallelTaskId,
+									TypeID:     BlockGoBeginParallelTaskID,
 									BlockType:  script.TypeGo,
 									Title:      BlockGoBeginParallelTaskTitle,
 									ShortTitle: shortTitle,
 									Sockets: []entity.Socket{
 										{
-											Id:           DefaultSocketID,
+											ID:           DefaultSocketID,
 											NextBlockIds: []string{"approver_0", "execution_0"},
 										},
 									},
@@ -405,7 +417,7 @@ func TestProcessBlock(t *testing.T) {
 									BlockType:  script.TypeGo,
 									Sockets: []entity.Socket{
 										{
-											Id:           "approve",
+											ID:           "approve",
 											NextBlockIds: []string{"end_parallel_0"},
 										},
 									},
@@ -424,7 +436,7 @@ func TestProcessBlock(t *testing.T) {
 									BlockType:  script.TypeGo,
 									Sockets: []entity.Socket{
 										{
-											Id:           executedSocketID,
+											ID:           executedSocketID,
 											NextBlockIds: []string{"end_parallel_0"},
 										},
 									},
@@ -438,13 +450,13 @@ func TestProcessBlock(t *testing.T) {
 								"end_parallel_0",
 							).Return(
 								&entity.EriusFunc{
-									TypeID:     BlockWaitForAllInputsId,
+									TypeID:     BlockWaitForAllInputsID,
 									ShortTitle: shortTitle,
 									BlockType:  script.TypeGo,
 									Title:      BlockGoWaitForAllInputsTitle,
 									Sockets: []entity.Socket{
 										{
-											Id:           DefaultSocketID,
+											ID:           DefaultSocketID,
 											NextBlockIds: []string{"end_0"},
 										},
 									},
@@ -457,7 +469,7 @@ func TestProcessBlock(t *testing.T) {
 								"end_0",
 							).Return(
 								&entity.EriusFunc{
-									TypeID:     BlockGoEndId,
+									TypeID:     BlockGoEndID,
 									ShortTitle: shortTitle,
 									BlockType:  script.TypeGo,
 									Title:      BlockGoEndTitle,
@@ -481,27 +493,30 @@ func TestProcessBlock(t *testing.T) {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
+
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
 									Body:       body,
 								}
 							}
-							f_error := func(*http.Request) error {
+							fError := func(*http.Request) error {
 								return nil
 							}
-							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 							sdMock.Cli = httpClient
 
 							return &sdMock
 						}(),
 						SLAService: func() sla.Service {
-							slaMock := sla.NewSlaService(nil)
+							slaMock := sla.NewSLAService(nil)
+
 							return slaMock
 						}(),
 						HumanTasks: func() *human_tasks.Service {
 							service, _ := human_tasks.NewService(human_tasks.Config{})
+
 							return service
 						}(),
 					},
@@ -541,6 +556,7 @@ func TestProcessBlock(t *testing.T) {
 	for _, tt := range tests {
 		metBlocks = metBlocks[:0]
 		latestBlock = ""
+
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
 			entrypointData, blockErr := tt.fields.RunContext.Services.Storage.GetBlockDataFromVersion(
@@ -548,21 +564,30 @@ func TestProcessBlock(t *testing.T) {
 			if blockErr != nil {
 				t.Fatal(blockErr)
 			}
-			if procErr := ProcessBlockWithEndMapping(context.Background(), tt.fields.Entrypoint, entrypointData,
-				tt.fields.RunContext, false); procErr != nil {
+
+			if procErr := ProcessBlockWithEndMapping(
+				context.Background(),
+				tt.fields.Entrypoint,
+				entrypointData,
+				tt.fields.RunContext,
+				false,
+			); procErr != nil {
 				t.Fatal(procErr)
 			}
-			for i, _ := range tt.fields.Updates {
+
+			for i := range tt.fields.Updates {
 				blockData, updateErr := tt.fields.RunContext.Services.Storage.GetBlockDataFromVersion(ctx, "", tt.fields.Updates[i].BlockName)
 				if updateErr != nil {
 					t.Fatal(updateErr)
 				}
+
 				tt.fields.RunContext.UpdateData = &tt.fields.Updates[i].UpdateParams
 				if procErr := ProcessBlockWithEndMapping(context.Background(), tt.fields.Updates[i].BlockName, blockData,
 					tt.fields.RunContext, true); procErr != nil {
 					t.Fatal(procErr)
 				}
 			}
+
 			if latestBlock != "end_0" {
 				t.Fatalf("Didn't reach the end, reached %s instead", latestBlock)
 			}

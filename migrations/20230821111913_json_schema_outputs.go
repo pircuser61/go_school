@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"strings"
 
+	//nolint:revive //need to connect to db
 	_ "github.com/lib/pq"
 
 	"github.com/google/uuid"
@@ -42,11 +43,13 @@ type pipelineType struct {
 	} `json:"blocks"`
 }
 
+//nolint:gochecknoinits //необходимо для гуся
 func init() {
-	goose.AddMigration(upJsonSchemaOutputs, downJsonSchemaOutputs)
+	goose.AddMigration(upJSONSchemaOutputs, downJSONSchemaOutputs)
 }
 
-func upJsonSchemaOutputs(tx *sql.Tx) error {
+//nolint:all //функции миграций лучше не трогать
+func upJSONSchemaOutputs(tx *sql.Tx) error {
 	rows, queryErr := tx.Query(selectQ)
 	if queryErr != nil {
 		return queryErr
@@ -60,8 +63,10 @@ func upJsonSchemaOutputs(tx *sql.Tx) error {
 	pipelines := map[uuid.UUID]string{}
 
 	for rows.Next() {
-		var versionID uuid.UUID
-		var pipelineString string
+		var (
+			versionID      uuid.UUID
+			pipelineString string
+		)
 
 		scanErr := rows.Scan(
 			&versionID,
@@ -76,6 +81,7 @@ func upJsonSchemaOutputs(tx *sql.Tx) error {
 
 	for versionID, pipelineString := range pipelines {
 		var pipeline pipelineType
+
 		err := json.Unmarshal([]byte(pipelineString), &pipeline)
 		if err != nil {
 			return err
@@ -90,6 +96,7 @@ func upJsonSchemaOutputs(tx *sql.Tx) error {
 				Type:       "object",
 				Properties: map[string]script.JSONSchemaPropertiesValue{},
 			}
+
 			for _, param := range pipeline.Blocks[blockName].Output {
 				paramValue := script.JSONSchemaPropertiesValue{
 					Type:   param.Type,
@@ -121,12 +128,13 @@ func upJsonSchemaOutputs(tx *sql.Tx) error {
 	return nil
 }
 
-func downJsonSchemaOutputs(tx *sql.Tx) error {
+func downJSONSchemaOutputs(tx *sql.Tx) error {
 	// This code is executed when the migration is rolled back.
 	rows, queryErr := tx.Query(selectQ)
 	if queryErr != nil {
 		return queryErr
 	}
+
 	defer rows.Close()
 
 	if rowsErr := rows.Err(); rowsErr != nil {
@@ -136,13 +144,16 @@ func downJsonSchemaOutputs(tx *sql.Tx) error {
 	pipelines := map[uuid.UUID]string{}
 
 	for rows.Next() {
-		var versionID uuid.UUID
-		var pipelineString string
+		var (
+			versionID      uuid.UUID
+			pipelineString string
+		)
 
 		scanErr := rows.Scan(
 			&versionID,
 			&pipelineString,
 		)
+
 		if scanErr != nil {
 			return scanErr
 		}
@@ -152,6 +163,7 @@ func downJsonSchemaOutputs(tx *sql.Tx) error {
 
 	for versionID, pipelineString := range pipelines {
 		var pipeline entity.PipelineType
+
 		err := json.Unmarshal([]byte(pipelineString), &pipeline)
 		if err != nil {
 			return err
@@ -163,6 +175,8 @@ func downJsonSchemaOutputs(tx *sql.Tx) error {
 			}
 
 			var output []entity.EriusFunctionValue
+
+			//nolint:gocritic //коллекции на здоровые структуры без поинтера, классика
 			for name, param := range pipeline.Blocks[blockName].Output.Properties {
 				output = append(output, entity.EriusFunctionValue{
 					Name:   name,

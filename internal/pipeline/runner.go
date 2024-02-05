@@ -18,7 +18,7 @@ const (
 )
 
 type MemberAction struct {
-	Id     string
+	ID     string
 	Type   string
 	Params map[string]interface{}
 }
@@ -35,8 +35,7 @@ type Deadline struct {
 	Action   entity.TaskUpdateAction
 }
 
-var (
-	//nolint:gochecknoglobals //block statuses
+const (
 	StatusIdle      Status = "idle"
 	StatusReady     Status = "ready"
 	StatusRunning   Status = "running"

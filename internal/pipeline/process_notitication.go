@@ -6,13 +6,11 @@ import (
 	"strconv"
 
 	om "github.com/iancoleman/orderedmap"
-
+	e "gitlab.services.mts.ru/abp/mail/pkg/email"
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
-	e "gitlab.services.mts.ru/abp/mail/pkg/email"
-
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
-	fileregistry "gitlab.services.mts.ru/jocasta/pipeliner/internal/file-registry"
+	fileregistry "gitlab.services.mts.ru/jocasta/pipeliner/internal/fileregistry"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
@@ -35,6 +33,7 @@ func (runCtx *BlockRunContext) handleInitiatorNotify(ctx c.Context, params handl
 		return nil
 	}
 
+	//nolint:exhaustive //нам не нужно обрабатывать остальные случаи
 	switch params.status {
 	case StatusNew,
 		StatusApproved,
@@ -69,11 +68,14 @@ func (runCtx *BlockRunContext) handleInitiatorNotify(ctx c.Context, params handl
 	log := logger.GetLogger(ctx)
 
 	var email string
+
 	emails := make([]string, 0, len(loginsToNotify))
+
 	for _, login := range loginsToNotify {
 		email, err = runCtx.Services.People.GetUserEmail(ctx, login)
 		if err != nil {
 			log.WithField("login", login).WithError(err).Warning("couldn't get email")
+
 			return nil
 		}
 
@@ -88,7 +90,7 @@ func (runCtx *BlockRunContext) handleInitiatorNotify(ctx c.Context, params handl
 		&mail.SignerNotifTemplate{
 			WorkNumber:  runCtx.WorkNumber,
 			Name:        runCtx.NotifName,
-			SdUrl:       runCtx.Services.Sender.SdAddress,
+			SdURL:       runCtx.Services.Sender.SdAddress,
 			Description: description,
 			Action:      params.action,
 		})
@@ -102,6 +104,7 @@ func (runCtx *BlockRunContext) handleInitiatorNotify(ctx c.Context, params handl
 			if ok && len(attachFiles) != 0 {
 				descIcons := []string{downloadImg}
 				iconsName = append(iconsName, descIcons...)
+
 				break
 			}
 		}
@@ -133,6 +136,7 @@ func (runCtx *BlockRunContext) getFileField() ([]string, error) {
 func (runCtx *BlockRunContext) makeNotificationFormAttachment(files []string) ([]fileregistry.FileInfo, error) {
 	attachments := make([]entity.Attachment, 0)
 	mapFiles := make(map[string][]entity.Attachment)
+
 	for _, v := range files {
 		attachments = append(attachments, entity.Attachment{FileID: v})
 	}
@@ -146,7 +150,7 @@ func (runCtx *BlockRunContext) makeNotificationFormAttachment(files []string) ([
 
 	ta := make([]fileregistry.FileInfo, 0)
 	for _, v := range file["files"] {
-		ta = append(ta, fileregistry.FileInfo{FileId: v.FileId, Size: v.Size, Name: v.Name})
+		ta = append(ta, fileregistry.FileInfo{FileID: v.FileID, Size: v.Size, Name: v.Name})
 	}
 
 	return ta, nil
@@ -160,26 +164,28 @@ func (runCtx *BlockRunContext) makeNotificationAttachment() ([]fileregistry.File
 
 	attachments := make([]entity.Attachment, 0)
 	mapFiles := make(map[string][]entity.Attachment)
+
 	for _, v := range task.InitialApplication.AttachmentFields {
 		filesAttach, ok := task.InitialApplication.ApplicationBody.Get(v)
 		if ok {
 			switch data := filesAttach.(type) {
 			case om.OrderedMap:
-				fileId, get := data.Get("file_id")
+				fileID, get := data.Get("file_id")
 				if !get {
 					continue
 				}
 
-				attachments = append(attachments, entity.Attachment{FileID: fileId.(string)})
+				attachments = append(attachments, entity.Attachment{FileID: fileID.(string)})
 			case []interface{}:
 				for _, vv := range data {
 					fileMap := vv.(om.OrderedMap)
-					fileId, oks := fileMap.Get("file_id")
+
+					fileID, oks := fileMap.Get("file_id")
 					if !oks {
 						continue
 					}
 
-					attachments = append(attachments, entity.Attachment{FileID: fileId.(string)})
+					attachments = append(attachments, entity.Attachment{FileID: fileID.(string)})
 				}
 			}
 		}
@@ -194,12 +200,13 @@ func (runCtx *BlockRunContext) makeNotificationAttachment() ([]fileregistry.File
 
 	ta := make([]fileregistry.FileInfo, 0)
 	for _, v := range file["files"] {
-		ta = append(ta, fileregistry.FileInfo{FileId: v.FileId, Size: v.Size, Name: v.Name})
+		ta = append(ta, fileregistry.FileInfo{FileID: v.FileID, Size: v.Size, Name: v.Name})
 	}
 
 	return ta, nil
 }
 
+//nolint:gocognit // данный нейминг хорошо описывает механику метода
 func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) ([]om.OrderedMap, []e.Attachment, error) {
 	taskContext, err := runCtx.Services.Storage.GetTaskRunContext(c.Background(), runCtx.WorkNumber)
 	if err != nil {
@@ -207,6 +214,16 @@ func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) ([]o
 	}
 
 	apBody := flatArray(taskContext.InitialApplication.ApplicationBody)
+
+	for k, v := range apBody.Values() {
+		key, ok := taskContext.InitialApplication.Keys[k]
+		if !ok {
+			continue
+		}
+
+		apBody.Delete(k)
+		apBody.Set(key, v)
+	}
 
 	descriptions := make([]om.OrderedMap, 0)
 
@@ -228,10 +245,7 @@ func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) ([]o
 		apBody.Set("attachList", attachments.AttachmentsList)
 	}
 
-	apBody, err = runCtx.excludeHiddenApplicationFields(apBody, taskContext.InitialApplication.HiddenFields)
-	if err != nil {
-		return nil, nil, err
-	}
+	apBody = runCtx.excludeHiddenApplicationFields(apBody, taskContext.InitialApplication.HiddenFields)
 
 	descriptions = append(descriptions, apBody)
 
@@ -243,14 +257,29 @@ func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) ([]o
 	for _, form := range additionalForms {
 		attachmentFiles := make([]string, 0)
 
-		for _, val := range form.Description.Values() {
-			file, ok := val.(om.OrderedMap)
-			if !ok {
-				continue
+		var formBlock FormData
+		if marshalErr := json.Unmarshal(runCtx.VarStore.State[form.Name], &formBlock); marshalErr != nil {
+			return nil, nil, marshalErr
+		}
+
+		for k, v := range form.Description.Values() {
+			val, ok := formBlock.Keys[k]
+			if ok {
+				form.Description.Delete(k)
+				form.Description.Set(val, v)
 			}
 
-			if fileId, fileOk := file.Get("file_id"); fileOk {
-				attachmentFiles = append(attachmentFiles, fileId.(string))
+			for _, attachVal := range formBlock.AttachmentFields {
+				if attachVal == k {
+					file, attachOk := v.(om.OrderedMap)
+					if !attachOk {
+						continue
+					}
+
+					if fileID, fileOK := file.Get("file_id"); fileOK {
+						attachmentFiles = append(attachmentFiles, fileID.(string))
+					}
+				}
 			}
 		}
 
@@ -269,19 +298,23 @@ func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) ([]o
 		form.Description.Set("attachList", attach.AttachmentsList)
 
 		files = append(files, attach.AttachmentsList...)
+
 		formDesc, errExclude := runCtx.excludeHiddenFormFields(form.Name, form.Description)
 		if errExclude != nil {
 			return nil, nil, errExclude
 		}
+
 		descriptions = append(descriptions, flatArray(formDesc))
 	}
 
 	files = append(files, attachments.AttachmentsList...)
+
 	return descriptions, files, nil
 }
 
-func (runCtx *BlockRunContext) excludeHiddenApplicationFields(desc om.OrderedMap, hiddenFields []string) (om.OrderedMap, error) {
+func (runCtx *BlockRunContext) excludeHiddenApplicationFields(desc om.OrderedMap, hiddenFields []string) om.OrderedMap {
 	res := om.New()
+
 	for _, key := range desc.Keys() {
 		if !utils.IsContainsInSlice(key, hiddenFields) {
 			if val, exists := desc.Get(key); exists {
@@ -290,12 +323,14 @@ func (runCtx *BlockRunContext) excludeHiddenApplicationFields(desc om.OrderedMap
 		}
 	}
 
-	return *res, nil
+	return *res
 }
 
 func (runCtx *BlockRunContext) excludeHiddenFormFields(formName string, desc om.OrderedMap) (om.OrderedMap, error) {
 	res := om.New()
+
 	var state FormData
+
 	err := json.Unmarshal(runCtx.VarStore.State[formName], &state)
 	if err != nil {
 		return desc, err

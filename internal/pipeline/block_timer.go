@@ -1,7 +1,7 @@
 package pipeline
 
 import (
-	c "context"
+	"context"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -48,24 +48,24 @@ func (gb *TimerBlock) Members() []Member {
 	return nil
 }
 
-func (gb *TimerBlock) Deadlines(_ c.Context) ([]Deadline, error) {
+func (gb *TimerBlock) Deadlines(_ context.Context) ([]Deadline, error) {
 	return []Deadline{}, nil
 }
 
 func (gb *TimerBlock) GetStatus() Status {
 	if gb.State.Expired {
 		return StatusFinished
-	} else {
-		return StatusIdle
 	}
+
+	return StatusIdle
 }
 
-func (gb *TimerBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment string, action string) {
+func (gb *TimerBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment, action string) {
 	if gb.State.Expired {
 		return StatusDone, "", ""
-	} else {
-		return StatusExecution, "", ""
 	}
+
+	return StatusExecution, "", ""
 }
 
 func (gb *TimerBlock) Next(_ *store.VariableStore) ([]string, bool) {
@@ -73,6 +73,7 @@ func (gb *TimerBlock) Next(_ *store.VariableStore) ([]string, bool) {
 	if !ok {
 		return nil, false
 	}
+
 	return nexts, true
 }
 
@@ -80,8 +81,7 @@ func (gb *TimerBlock) GetState() interface{} {
 	return gb.State
 }
 
-//nolint:gocyclo //its ok here
-func (gb *TimerBlock) Update(ctx c.Context) (interface{}, error) {
+func (gb *TimerBlock) Update(ctx context.Context) (interface{}, error) {
 	if gb.State.Started {
 		if err := gb.checkUserIsServiceAccount(ctx); err != nil {
 			return nil, err
@@ -111,6 +111,7 @@ func (gb *TimerBlock) Update(ctx c.Context) (interface{}, error) {
 	if gb.State.Expired {
 		if _, ok := gb.expectedEvents[eventEnd]; ok {
 			status, _, _ := gb.GetTaskHumanStatus()
+
 			event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, MakeNodeEndEventArgs{
 				NodeName:      gb.Name,
 				NodeShortName: gb.ShortName,
@@ -120,6 +121,7 @@ func (gb *TimerBlock) Update(ctx c.Context) (interface{}, error) {
 			if eventErr != nil {
 				return nil, eventErr
 			}
+
 			gb.happenedEvents = append(gb.happenedEvents, event)
 		}
 	}
@@ -127,7 +129,7 @@ func (gb *TimerBlock) Update(ctx c.Context) (interface{}, error) {
 	return nil, nil
 }
 
-func (gb *TimerBlock) startTimer(ctx c.Context) error {
+func (gb *TimerBlock) startTimer(ctx context.Context) error {
 	_, err := gb.RunContext.Services.Scheduler.CreateTask(ctx, &scheduler.CreateTask{
 		WorkNumber:  gb.RunContext.WorkNumber,
 		WorkID:      gb.RunContext.TaskID.String(),
@@ -139,7 +141,7 @@ func (gb *TimerBlock) startTimer(ctx c.Context) error {
 	return err
 }
 
-func (gb *TimerBlock) checkUserIsServiceAccount(ctx c.Context) error {
+func (gb *TimerBlock) checkUserIsServiceAccount(ctx context.Context) error {
 	currentUser, err := user.GetUserInfoFromCtx(ctx)
 	if err != nil {
 		return err
@@ -149,6 +151,7 @@ func (gb *TimerBlock) checkUserIsServiceAccount(ctx c.Context) error {
 		currentUser.Username != ServiceAccountStage &&
 		currentUser.Username != ServiceAccount {
 		err = fmt.Errorf("user %s is not service account", currentUser.Username)
+
 		return err
 	}
 
@@ -177,8 +180,13 @@ func (gb *TimerBlock) UpdateManual() bool {
 }
 
 // nolint:dupl // another block
-func createTimerBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext,
-	expectedEvents map[string]struct{}) (*TimerBlock, bool, error) {
+func createTimerBlock(
+	ctx context.Context,
+	name string,
+	ef *entity.EriusFunc,
+	runCtx *BlockRunContext,
+	expectedEvents map[string]struct{},
+) (*TimerBlock, bool, error) {
 	b := &TimerBlock{
 		Name:       name,
 		ShortName:  ef.ShortTitle,
@@ -197,35 +205,23 @@ func createTimerBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx *
 	}
 
 	if ef.Output != nil {
+		//nolint:gocritic //в этом проекте не принято использовать поинтеры в коллекциях
 		for propertyName, v := range ef.Output.Properties {
 			b.Output[propertyName] = v.Global
 		}
 	}
 
 	rawState, blockExists := runCtx.VarStore.State[name]
+
 	reEntry := blockExists && runCtx.UpdateData == nil
 	if blockExists && !reEntry {
 		if err := b.loadState(rawState); err != nil {
 			return nil, false, err
 		}
 	} else {
-		if err := b.createState(ef); err != nil {
+		err := b.createExpectedEvents(ctx, runCtx, name, ef)
+		if err != nil {
 			return nil, false, err
-		}
-		b.RunContext.VarStore.AddStep(b.Name)
-
-		if _, ok := b.expectedEvents[eventStart]; ok {
-			status, _, _ := b.GetTaskHumanStatus()
-			event, err := runCtx.MakeNodeStartEvent(ctx, MakeNodeStartEventArgs{
-				NodeName:      name,
-				NodeShortName: ef.ShortTitle,
-				HumanStatus:   status,
-				NodeStatus:    b.GetStatus(),
-			})
-			if err != nil {
-				return nil, false, err
-			}
-			b.happenedEvents = append(b.happenedEvents, event)
 		}
 	}
 
@@ -236,15 +232,49 @@ func (gb *TimerBlock) loadState(raw json.RawMessage) error {
 	return json.Unmarshal(raw, &gb.State)
 }
 
-//nolint:dupl,gocyclo //its not duplicate
+//nolint:dupl //another block
+func (gb *TimerBlock) createExpectedEvents(
+	ctx context.Context,
+	runCtx *BlockRunContext,
+	name string,
+	ef *entity.EriusFunc,
+) error {
+	if err := gb.createState(ef); err != nil {
+		return err
+	}
+
+	gb.RunContext.VarStore.AddStep(gb.Name)
+
+	if _, ok := gb.expectedEvents[eventStart]; ok {
+		status, _, _ := gb.GetTaskHumanStatus()
+
+		event, err := runCtx.MakeNodeStartEvent(ctx, MakeNodeStartEventArgs{
+			NodeName:      name,
+			NodeShortName: ef.ShortTitle,
+			HumanStatus:   status,
+			NodeStatus:    gb.GetStatus(),
+		})
+		if err != nil {
+			return err
+		}
+
+		gb.happenedEvents = append(gb.happenedEvents, event)
+	}
+
+	return nil
+}
+
+//nolint:dupl //its not duplicate
 func (gb *TimerBlock) createState(ef *entity.EriusFunc) error {
 	var params TimerParams
+
 	err := json.Unmarshal(ef.Params, &params)
 	if err != nil {
 		return errors.Wrap(err, "can not get timer parameters")
 	}
 
 	var duration time.Duration
+
 	duration, err = time.ParseDuration(params.Duration)
 	if err != nil {
 		return errors.Wrap(err, "can not parse timer duration")

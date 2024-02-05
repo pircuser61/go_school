@@ -82,6 +82,7 @@ func TestMapData(t *testing.T) {
 		input    map[string]interface{}
 		required []string
 	}
+
 	tests := []struct {
 		name    string
 		args    args
@@ -201,6 +202,7 @@ func TestMapData(t *testing.T) {
 			wantErr: assert.Error,
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := MapData(tt.args.mapping, tt.args.input, tt.args.required)

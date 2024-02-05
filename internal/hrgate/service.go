@@ -12,8 +12,8 @@ import (
 )
 
 type Service struct {
-	HrGateUrl             string
-	DefaultCalendarUnitId *string
+	HRGateURL             string
+	DefaultCalendarUnitID *string
 	Location              time.Location
 	Cli                   *ClientWithResponses
 }
@@ -30,7 +30,7 @@ func NewService(cfg Config, ssoS *sso.Service) (*Service, error) {
 	}
 	httpClient.Transport = &tr
 
-	newCli, createClientErr := NewClientWithResponses(cfg.HrGateUrl, WithHTTPClient(httpClient), WithBaseURL(cfg.HrGateUrl))
+	newCli, createClientErr := NewClientWithResponses(cfg.HRGateURL, WithHTTPClient(httpClient), WithBaseURL(cfg.HRGateURL))
 	if createClientErr != nil {
 		return nil, createClientErr
 	}
@@ -42,7 +42,7 @@ func NewService(cfg Config, ssoS *sso.Service) (*Service, error) {
 
 	s := &Service{
 		Cli:       newCli,
-		HrGateUrl: cfg.HrGateUrl,
+		HRGateURL: cfg.HRGateURL,
 		Location:  *location,
 	}
 

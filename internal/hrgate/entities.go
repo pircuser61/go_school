@@ -22,5 +22,6 @@ func (cd *CalendarDays) GetDayType(dayTime time.Time) CalendarDayType {
 	if calendarDayType, ok := cd.CalendarMap[unixTime]; ok {
 		return calendarDayType
 	}
+
 	return CalendarDayTypeWorkday
 }

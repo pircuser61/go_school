@@ -14,7 +14,7 @@ import (
 	"gitlab.services.mts.ru/abp/mail/pkg/email"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
-	file_registry "gitlab.services.mts.ru/jocasta/pipeliner/internal/file-registry"
+	file_registry "gitlab.services.mts.ru/jocasta/pipeliner/internal/fileregistry"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
@@ -64,11 +64,11 @@ func (gb *GoNotificationBlock) GetStatus() Status {
 	return StatusFinished
 }
 
-func (gb *GoNotificationBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment string, action string) {
+func (gb *GoNotificationBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment, action string) {
 	return "", "", ""
 }
 
-func (gb *GoNotificationBlock) compileText(ctx context.Context) (*mail.MailNotif, []email.Attachment, error) {
+func (gb *GoNotificationBlock) compileText(ctx context.Context) (*mail.Notif, []email.Attachment, error) {
 	author, err := gb.RunContext.Services.People.GetUser(ctx, gb.RunContext.Initiator)
 	if err != nil {
 		return nil, nil, err
@@ -79,19 +79,12 @@ func (gb *GoNotificationBlock) compileText(ctx context.Context) (*mail.MailNotif
 		return nil, nil, err
 	}
 
-	body, err := gb.RunContext.Services.Storage.GetTaskRunContext(ctx, gb.RunContext.WorkNumber)
-	if err != nil {
-		return nil, nil, err
-	}
-
 	description, files, err := gb.RunContext.makeNotificationDescription(gb.Name)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	//descr := mail.MakeDescription(body.InitialApplication.ApplicationBody)
-
-	tpl := &mail.MailNotif{
+	tpl := &mail.Notif{
 		Title:       gb.State.Subject,
 		Body:        gb.State.Text,
 		Description: description,
@@ -99,19 +92,6 @@ func (gb *GoNotificationBlock) compileText(ctx context.Context) (*mail.MailNotif
 		Initiator:   typedAuthor,
 	}
 
-	aa := mail.GetAttachmentsFromBody(body.InitialApplication.ApplicationBody)
-
-	attachmentsInfo, err := gb.RunContext.Services.FileRegistry.GetAttachmentsInfo(ctx, aa)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	filesInfo := make([]file_registry.FileInfo, 0)
-	for k := range attachmentsInfo {
-		filesInfo = append(filesInfo, attachmentsInfo[k]...)
-	}
-
-	//text = mail.AddStyles(text)
 	return tpl, files, nil
 }
 
@@ -120,6 +100,7 @@ func (gb *GoNotificationBlock) Next(_ *store.VariableStore) ([]string, bool) {
 	if !ok {
 		return nil, false
 	}
+
 	return nexts, true
 }
 
@@ -131,23 +112,26 @@ func (gb *GoNotificationBlock) Update(ctx context.Context) (interface{}, error) 
 	emails := make([]string, 0, len(gb.State.People)+len(gb.State.Emails))
 
 	for _, person := range gb.State.People {
-		emailAddr := ""
 		emailAddr, err := gb.RunContext.Services.People.GetUserEmail(ctx, person)
 		if err != nil {
 			log.Println("can't get email of user", person)
+
 			continue
 		}
+
 		emails = append(emails, emailAddr)
 	}
+
 	emails = append(emails, gb.State.Emails...)
 
-	for person, _ := range gb.State.UsersFromSchema {
-		emailAddr := ""
+	for person := range gb.State.UsersFromSchema {
 		emailAddr, err := gb.RunContext.Services.People.GetUserEmail(ctx, person)
 		if err != nil {
 			log.Println("can't get email of user", person)
+
 			continue
 		}
+
 		emails = append(emails, emailAddr)
 	}
 
@@ -161,6 +145,7 @@ func (gb *GoNotificationBlock) Update(ctx context.Context) (interface{}, error) 
 	}
 
 	iconsName := make([]string, 0, 1)
+
 	for _, v := range text.Description {
 		links, link := v.Get("attachLinks")
 		if link {
@@ -168,6 +153,7 @@ func (gb *GoNotificationBlock) Update(ctx context.Context) (interface{}, error) 
 			if ok && len(attachFiles) != 0 {
 				descIcons := []string{downloadImg}
 				iconsName = append(iconsName, descIcons...)
+
 				break
 			}
 		}
@@ -206,11 +192,13 @@ func (gb *GoNotificationBlock) Update(ctx context.Context) (interface{}, error) 
 	err = gb.RunContext.Services.Sender.SendNotification(ctx, emails, files, tpl)
 	if err != nil {
 		log.Println(err)
+
 		return nil, err
 	}
 
 	if _, oks := gb.expectedEvents[eventEnd]; oks {
 		status, _, _ := gb.GetTaskHumanStatus()
+
 		event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, MakeNodeEndEventArgs{
 			NodeName:      gb.Name,
 			NodeShortName: gb.ShortName,
@@ -220,8 +208,10 @@ func (gb *GoNotificationBlock) Update(ctx context.Context) (interface{}, error) 
 		if eventErr != nil {
 			return nil, eventErr
 		}
+
 		gb.happenedEvents = append(gb.happenedEvents, event)
 	}
+
 	return nil, err
 }
 
@@ -248,7 +238,8 @@ func (gb *GoNotificationBlock) Model() script.FunctionModel {
 
 // nolint:dupl,unparam // another block
 func createGoNotificationBlock(ctx context.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext,
-	expectedEvents map[string]struct{}) (*GoNotificationBlock, bool, error) {
+	expectedEvents map[string]struct{},
+) (*GoNotificationBlock, bool, error) {
 	const reEntry = false
 
 	b := &GoNotificationBlock{
@@ -270,12 +261,14 @@ func createGoNotificationBlock(ctx context.Context, name string, ef *entity.Eriu
 	}
 
 	if ef.Output != nil {
+		//nolint:gocritic //в этом проекте не принято использовать поинтеры в коллекциях
 		for propertyName, v := range ef.Output.Properties {
 			b.Output[propertyName] = v.Global
 		}
 	}
 
 	var params script.NotificationParams
+
 	err := json.Unmarshal(ef.Params, &params)
 	if err != nil {
 		return nil, reEntry, errors.Wrap(err, "can not get notification parameters")
@@ -322,6 +315,7 @@ func createGoNotificationBlock(ctx context.Context, name string, ef *entity.Eriu
 
 	if _, ok := b.expectedEvents[eventStart]; ok {
 		status, _, _ := b.GetTaskHumanStatus()
+
 		event, err := runCtx.MakeNodeStartEvent(ctx, MakeNodeStartEventArgs{
 			NodeName:      name,
 			NodeShortName: ef.ShortTitle,
@@ -331,6 +325,7 @@ func createGoNotificationBlock(ctx context.Context, name string, ef *entity.Eriu
 		if err != nil {
 			return nil, false, err
 		}
+
 		b.happenedEvents = append(b.happenedEvents, event)
 	}
 
@@ -339,7 +334,9 @@ func createGoNotificationBlock(ctx context.Context, name string, ef *entity.Eriu
 
 func sortAndFilterAttachments(files []file_registry.FileInfo) (requiredFiles []entity.Attachment, skippedFiles []file_registry.AttachInfo) {
 	const attachmentsLimitMB = 20
+
 	var limitCounter float64
+
 	skippedFiles = make([]file_registry.AttachInfo, 0)
 
 	sort.Slice(files, func(i, j int) bool {
@@ -347,12 +344,13 @@ func sortAndFilterAttachments(files []file_registry.FileInfo) (requiredFiles []e
 	})
 
 	requiredFiles = make([]entity.Attachment, 0, len(files))
+
 	for i := range files {
 		limitCounter += float64(files[i].Size) / 1024 / 1024
 		if limitCounter <= attachmentsLimitMB {
-			requiredFiles = append(requiredFiles, entity.Attachment{FileID: files[i].FileId})
+			requiredFiles = append(requiredFiles, entity.Attachment{FileID: files[i].FileID})
 		} else {
-			skippedFiles = append(skippedFiles, file_registry.AttachInfo{FileID: files[i].FileId, Name: files[i].Name, Size: files[i].Size})
+			skippedFiles = append(skippedFiles, file_registry.AttachInfo{FileID: files[i].FileID, Name: files[i].Name, Size: files[i].Size})
 		}
 	}
 

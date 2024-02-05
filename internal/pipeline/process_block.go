@@ -17,10 +17,10 @@ import (
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
-	file_registry "gitlab.services.mts.ru/jocasta/pipeliner/internal/file-registry"
+	file_registry "gitlab.services.mts.ru/jocasta/pipeliner/internal/fileregistry"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/functions"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/hrgate"
-	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
+	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/integrations"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/kafka"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
@@ -102,126 +102,8 @@ func (runCtx *BlockRunContext) Copy() *BlockRunContext {
 	runCtxCopy.BlockRunResults = &BlockRunResults{
 		NodeEvents: make([]entity.NodeEvent, 0),
 	}
+
 	return &runCtxCopy
-}
-
-//nolint:gocyclo //todo: need to decompose
-func processBlock(ctx c.Context, name string, its int, bl *entity.EriusFunc, runCtx *BlockRunContext, manual bool) (err error) {
-	its++
-	if its > 10 {
-		return errors.New("took too long")
-	}
-
-	ctx, s := trace.StartSpan(ctx, "process_block")
-	defer s.End()
-
-	log := logger.GetLogger(ctx).WithField("workNumber", runCtx.WorkNumber)
-
-	defer func() {
-		if err != nil && !errors.Is(err, UserIsNotPartOfProcessErr{}) {
-			log.WithError(err).Error("couldn't process block")
-			if changeErr := runCtx.updateTaskStatus(ctx, db.RunStatusError, "", db.SystemLogin); changeErr != nil {
-				log.WithError(changeErr).Error("couldn't change task status")
-			}
-		}
-	}()
-
-	status, getErr := runCtx.Services.Storage.GetTaskStatus(ctx, runCtx.TaskID)
-	if getErr != nil {
-		err = getErr
-		return
-	}
-
-	switch status {
-	case db.RunStatusCreated:
-		if changeErr := runCtx.updateTaskStatus(ctx, db.RunStatusRunning, "", db.SystemLogin); changeErr != nil {
-			err = changeErr
-			return
-		}
-	case db.RunStatusRunning:
-	case db.RunStatusCanceled:
-		return errors.New("couldn't process canceled block")
-	default:
-		return nil
-	}
-
-	block, id, initErr := initBlock(ctx, name, bl, runCtx)
-	if initErr != nil {
-		err = initErr
-		return
-	}
-
-	isStatusFiniteBeforeUpdate := block.GetStatus() == StatusFinished ||
-		block.GetStatus() == StatusNoSuccess ||
-		block.GetStatus() == StatusError
-
-	if (block.UpdateManual() && manual) || !block.UpdateManual() {
-		err = updateBlock(ctx, block, name, id, runCtx)
-		if err != nil {
-			return
-		}
-	}
-
-	if (runCtx.UpdateData != nil) && isStatusFiniteBeforeUpdate {
-		return nil
-	}
-
-	taskHumanStatus, statusComment, action := block.GetTaskHumanStatus()
-	err = runCtx.updateStatusByStep(ctx, taskHumanStatus, statusComment)
-	if err != nil {
-		return err
-	}
-
-	newEvents := block.GetNewEvents()
-	runCtx.BlockRunResults.NodeEvents = append(runCtx.BlockRunResults.NodeEvents, newEvents...)
-
-	isArchived, err := runCtx.Services.Storage.CheckIsArchived(ctx, runCtx.TaskID)
-	if err != nil {
-		return err
-	}
-
-	if isArchived || (block.GetStatus() != StatusFinished &&
-		block.GetStatus() != StatusNoSuccess &&
-		block.GetStatus() != StatusError) {
-		return nil
-	}
-
-	err = runCtx.handleInitiatorNotify(ctx, handleInitiatorNotifyParams{
-		step:     name,
-		stepType: bl.TypeID,
-		action:   action,
-		status:   taskHumanStatus,
-	})
-	if err != nil {
-		return err
-	}
-
-	activeBlocks, ok := block.Next(runCtx.VarStore)
-	if !ok {
-		err = runCtx.updateStepInDB(ctx, name, id, true, block.GetStatus(), block.Members(), []Deadline{})
-		if err != nil {
-			return
-		}
-		err = ErrCantGetNextStep
-		return
-	}
-
-	for _, b := range activeBlocks {
-		blockData, blockErr := runCtx.Services.Storage.GetBlockDataFromVersion(ctx, runCtx.WorkNumber, b)
-		if blockErr != nil {
-			err = blockErr
-			return
-		}
-
-		ctxCopy := runCtx.Copy()
-		if err = processBlock(ctx, b, its, blockData, ctxCopy, false); err != nil {
-			return
-		}
-
-		runCtx.BlockRunResults.NodeEvents = append(runCtx.BlockRunResults.NodeEvents, ctxCopy.BlockRunResults.NodeEvents...)
-	}
-
-	return nil
 }
 
 func CreateBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *BlockRunContext) (Runner, bool, error) {
@@ -229,11 +111,13 @@ func CreateBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *Block
 	defer s.End()
 
 	expectedEvents := make(map[string]struct{})
+
 	for _, ee := range runCtx.TaskSubscriptionData.ExpectedEvents {
 		if ee.NodeID == name && ee.Notify {
 			for _, event := range ee.Events {
 				expectedEvents[event] = struct{}{}
 			}
+
 			break
 		}
 	}
@@ -291,6 +175,7 @@ func CreateBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *Block
 		}
 
 		if bl.Output != nil {
+			//nolint:gocritic //коллекция без поинтеров
 			for propertyName, v := range bl.Output.Properties {
 				epi.Output[propertyName] = v.Global
 			}
@@ -308,7 +193,8 @@ func CreateBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *Block
 }
 
 func createGoBlock(ctx c.Context, ef *entity.EriusFunc, name string, runCtx *BlockRunContext,
-	expectedEvents map[string]struct{}) (r Runner, reEntry bool, err error) {
+	expectedEvents map[string]struct{},
+) (r Runner, reEntry bool, err error) {
 	switch ef.TypeID {
 	case BlockGoIfID:
 		return createGoIfBlock(ctx, name, ef, runCtx, expectedEvents)
@@ -322,13 +208,13 @@ func createGoBlock(ctx c.Context, ef *entity.EriusFunc, name string, runCtx *Blo
 		return createGoSdApplicationBlock(ctx, name, ef, runCtx, expectedEvents)
 	case BlockGoExecutionID:
 		return createGoExecutionBlock(ctx, name, ef, runCtx, expectedEvents)
-	case BlockGoStartId:
+	case BlockGoStartID:
 		return createGoStartBlock(ctx, name, ef, runCtx, expectedEvents)
-	case BlockGoEndId:
+	case BlockGoEndID:
 		return createGoEndBlock(ctx, name, ef, runCtx, expectedEvents)
-	case BlockWaitForAllInputsId:
+	case BlockWaitForAllInputsID:
 		return createGoWaitForAllInputsBlock(ctx, name, ef, runCtx, expectedEvents)
-	case BlockGoBeginParallelTaskId:
+	case BlockGoBeginParallelTaskID:
 		return createGoStartParallelBlock(ctx, name, ef, runCtx, expectedEvents)
 	case BlockGoNotificationID:
 		return createGoNotificationBlock(ctx, name, ef, runCtx, expectedEvents)
@@ -359,20 +245,25 @@ func initBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *BlockRu
 		if stateErr != nil {
 			return nil, uuid.Nil, stateErr
 		}
+
 		runCtx.VarStore.ReplaceState(name, state)
 	}
 
 	runCtx.CurrBlockStartTime = time.Now() // will be used only for the block creation
+
 	deadlines, deadlinesErr := block.Deadlines(ctx)
 	if deadlinesErr != nil {
 		return nil, uuid.Nil, deadlinesErr
 	}
+
 	id, startTime, err := runCtx.saveStepInDB(ctx, name, bl.TypeID, string(block.GetStatus()),
 		block.Members(), deadlines, isReEntry)
 	if err != nil {
 		return nil, uuid.Nil, err
 	}
+
 	runCtx.CurrBlockStartTime = startTime
+
 	return block, id, nil
 }
 
@@ -381,10 +272,12 @@ func updateBlock(ctx c.Context, block Runner, name string, id uuid.UUID, runCtx 
 	if err != nil {
 		return err
 	}
+
 	deadlines, deadlinesErr := block.Deadlines(ctx)
 	if deadlinesErr != nil {
 		return deadlinesErr
 	}
+
 	err = runCtx.updateStepInDB(ctx, name, id, err != nil, block.GetStatus(), block.Members(), deadlines)
 	if err != nil {
 		return err
@@ -394,23 +287,27 @@ func updateBlock(ctx c.Context, block Runner, name string, id uuid.UUID, runCtx 
 }
 
 func (runCtx *BlockRunContext) saveStepInDB(ctx c.Context, name, stepType, status string,
-	pl []Member, deadlines []Deadline, isReEntered bool) (uuid.UUID, time.Time, error) {
+	pl []Member, deadlines []Deadline, isReEntered bool,
+) (uuid.UUID, time.Time, error) {
 	storageData, errSerialize := json.Marshal(runCtx.VarStore)
 	if errSerialize != nil {
-		return db.NullUuid, time.Time{}, errSerialize
+		return uuid.Nil, time.Time{}, errSerialize
 	}
-	dbPeople := make([]db.DbMember, 0, len(pl))
-	dbDeadlines := make([]db.DbDeadline, 0, len(deadlines))
+
+	dbPeople := make([]db.Member, 0, len(pl))
+	dbDeadlines := make([]db.Deadline, 0, len(deadlines))
+
 	for i := range pl {
-		actions := make([]db.DbMemberAction, 0, len(pl[i].Actions))
+		actions := make([]db.MemberAction, 0, len(pl[i].Actions))
 		for _, act := range pl[i].Actions {
-			actions = append(actions, db.DbMemberAction{
-				Id:     act.Id,
+			actions = append(actions, db.MemberAction{
+				ID:     act.ID,
 				Type:   act.Type,
 				Params: act.Params,
 			})
 		}
-		dbPeople = append(dbPeople, db.DbMember{
+
+		dbPeople = append(dbPeople, db.Member{
 			Login:                pl[i].Login,
 			Actions:              actions,
 			IsActed:              pl[i].IsActed,
@@ -419,11 +316,12 @@ func (runCtx *BlockRunContext) saveStepInDB(ctx c.Context, name, stepType, statu
 	}
 
 	for i := range deadlines {
-		dbDeadlines = append(dbDeadlines, db.DbDeadline{
+		dbDeadlines = append(dbDeadlines, db.Deadline{
 			Action:   string(deadlines[i].Action),
 			Deadline: deadlines[i].Deadline,
 		})
 	}
+
 	return runCtx.Services.Storage.SaveStepContext(ctx, &db.SaveStepRequest{
 		WorkID:      runCtx.TaskID,
 		StepType:    stepType,
@@ -439,37 +337,43 @@ func (runCtx *BlockRunContext) saveStepInDB(ctx c.Context, name, stepType, statu
 }
 
 func (runCtx *BlockRunContext) updateStepInDB(ctx c.Context, name string, id uuid.UUID, hasError bool, status Status,
-	pl []Member, deadlines []Deadline) error {
+	pl []Member, deadlines []Deadline,
+) error {
 	storageData, err := json.Marshal(runCtx.VarStore)
 	if err != nil {
 		return err
 	}
-	dbPeople := make([]db.DbMember, 0, len(pl))
-	dbDeadlines := make([]db.DbDeadline, 0, len(deadlines))
+
+	dbPeople := make([]db.Member, 0, len(pl))
+	dbDeadlines := make([]db.Deadline, 0, len(deadlines))
+
 	for i := range pl {
-		actions := make([]db.DbMemberAction, 0, len(pl[i].Actions))
+		actions := make([]db.MemberAction, 0, len(pl[i].Actions))
 		for _, act := range pl[i].Actions {
-			actions = append(actions, db.DbMemberAction{
-				Id:     act.Id,
+			actions = append(actions, db.MemberAction{
+				ID:     act.ID,
 				Type:   act.Type,
 				Params: act.Params,
 			})
 		}
-		dbPeople = append(dbPeople, db.DbMember{
+
+		dbPeople = append(dbPeople, db.Member{
 			Login:                pl[i].Login,
 			Actions:              actions,
 			IsActed:              pl[i].IsActed,
 			ExecutionGroupMember: pl[i].ExecutionGroupMember,
 		})
 	}
+
 	for i := range deadlines {
-		dbDeadlines = append(dbDeadlines, db.DbDeadline{
+		dbDeadlines = append(dbDeadlines, db.Deadline{
 			Action:   string(deadlines[i].Action),
 			Deadline: deadlines[i].Deadline,
 		})
 	}
+
 	return runCtx.Services.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
-		Id:          id,
+		ID:          id,
 		StepName:    name,
 		Content:     storageData,
 		BreakPoints: []string{},
@@ -481,7 +385,8 @@ func (runCtx *BlockRunContext) updateStepInDB(ctx c.Context, name string, id uui
 }
 
 func ProcessBlockWithEndMapping(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *BlockRunContext,
-	manual bool) error {
+	manual bool,
+) error {
 	ctx, s := trace.StartSpan(ctx, "process_block_with_end_mapping")
 	defer s.End()
 
@@ -489,13 +394,17 @@ func ProcessBlockWithEndMapping(ctx c.Context, name string, bl *entity.EriusFunc
 
 	runCtx.BlockRunResults = &BlockRunResults{}
 
-	pErr := processBlock(ctx, name, 0, bl, runCtx, manual)
+	blockProcessor := newBlockProcessor(name, bl, runCtx, manual)
+
+	pErr := blockProcessor.ProcessBlock(ctx, 0)
 	if pErr != nil {
 		return pErr
 	}
+
 	intStatus, stringStatus, err := runCtx.Services.Storage.GetTaskStatusWithReadableString(ctx, runCtx.TaskID)
 	if err != nil {
 		log.WithError(err).Error("couldn't get task status")
+
 		return nil
 	}
 
@@ -507,6 +416,7 @@ func ProcessBlockWithEndMapping(ctx c.Context, name string, bl *entity.EriusFunc
 	if endErr != nil {
 		log.WithError(endErr).Error("couldn't send process end notification")
 	}
+
 	return nil
 }
 
@@ -520,47 +430,60 @@ func processBlockEnd(ctx c.Context, status string, runCtx *BlockRunContext) (err
 	if versErr != nil {
 		return versErr
 	}
-	systemsIds, sysIdErr := runCtx.Services.Storage.GetExternalSystemsIDs(ctx, version.VersionID.String())
-	if sysIdErr != nil {
-		return sysIdErr
+
+	systemsIds, sysIDErr := runCtx.Services.Storage.GetExternalSystemsIDs(ctx, version.VersionID.String())
+	if sysIDErr != nil {
+		return sysIDErr
 	}
+
 	context, contextErr := runCtx.Services.Storage.GetTaskRunContext(ctx, runCtx.WorkNumber)
 	if contextErr != nil {
 		return contextErr
 	}
+
 	systemsClients, namesErr := runCtx.Services.Integrations.GetSystemsClients(ctx, systemsIds)
 	if namesErr != nil {
 		return namesErr
 	}
+
 	couldSend := false
+
 	for key, cc := range systemsClients {
 		clientFound := false
+
 		for _, cli := range cc {
 			if cli == context.ClientID {
 				clientFound = true
+
 				break
 			}
 		}
+
 		if !clientFound {
 			continue
 		}
+
 		systemSettings, sysErr := runCtx.Services.Storage.GetExternalSystemSettings(ctx, version.VersionID.String(), key)
 		if sysErr != nil {
 			return sysErr
 		}
+
 		if systemSettings.OutputSettings.Method == "" ||
 			systemSettings.OutputSettings.URL == "" ||
-			systemSettings.OutputSettings.MicroserviceId == "" {
+			systemSettings.OutputSettings.MicroserviceID == "" {
 			log.Info(fmt.Sprintf("no output settings for clientID %s", context.ClientID))
+
 			return nil
 		}
+
 		taskTime, timeErr := runCtx.Services.Storage.GetTaskInWorkTime(ctx, runCtx.WorkNumber)
 		if timeErr != nil {
 			return timeErr
 		}
+
 		sendingErr := sendEndingMapping(ctx, &entity.EndProcessData{
-			Id:         runCtx.TaskID.String(),
-			VersionId:  version.VersionID.String(),
+			ID:         runCtx.TaskID.String(),
+			VersionID:  version.VersionID.String(),
 			StartedAt:  taskTime.StartedAt.String(),
 			FinishedAt: taskTime.FinishedAt.String(),
 			Status:     status,
@@ -568,19 +491,26 @@ func processBlockEnd(ctx c.Context, status string, runCtx *BlockRunContext) (err
 		if sendingErr != nil {
 			return sendingErr
 		}
+
 		couldSend = true
 	}
+
 	if !couldSend {
 		log.Info(fmt.Sprintf("found no system for clientID %s to send end process notification", context.ClientID))
 	}
+
 	return nil
 }
 
-func sendEndingMapping(ctx c.Context, data *entity.EndProcessData,
-	runCtx *BlockRunContext, settings *entity.EndSystemSettings) (err error) {
+func sendEndingMapping(
+	ctx c.Context,
+	data *entity.EndProcessData,
+	runCtx *BlockRunContext,
+	settings *entity.EndSystemSettings,
+) (err error) {
 	secretsHumanKey, secretsErr := runCtx.Services.Integrations.GetMicroserviceHumanKey(
 		ctx,
-		settings.MicroserviceId,
+		settings.MicroserviceID,
 		runCtx.PipelineID.String(),
 		runCtx.VersionID.String(),
 		runCtx.WorkNumber,
@@ -599,29 +529,38 @@ func sendEndingMapping(ctx c.Context, data *entity.EndProcessData,
 	if authErr != nil {
 		return authErr
 	}
+
 	body, jsonErr := json.Marshal(data)
 	if jsonErr != nil {
 		return jsonErr
 	}
-	req, reqErr := http.NewRequest(settings.Method, settings.URL, bytes.NewBuffer(body))
-	if reqErr != nil {
-		return reqErr
+
+	req, err := http.NewRequestWithContext(ctx, settings.Method, settings.URL, bytes.NewBuffer(body))
+	if err != nil {
+		return err
 	}
+
 	if auth.AuthType == "oAuth" {
 		bearer := "Bearer " + auth.Token
+
 		req.Header.Add("Authorization", bearer)
+
 		resp, err := runCtx.Services.Integrations.Cli.Do(req)
 		if err != nil {
 			return err
 		}
+
 		resp.Body.Close()
 	} else {
 		req.SetBasicAuth(auth.Login, auth.Password)
+
 		resp, err := runCtx.Services.Integrations.Cli.Do(req)
 		if err != nil {
 			return err
 		}
+
 		resp.Body.Close()
 	}
+
 	return nil
 }

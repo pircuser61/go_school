@@ -50,26 +50,26 @@ type MockPipelinerStorer struct {
 	Get    func() (*entity.EriusScenario, error)
 }
 
-func (m MockPipelinerStorer) GetWorkedVersions(c context.Context) ([]entity.EriusScenario, error) {
+func (m MockPipelinerStorer) GetWorkedVersions(_ context.Context) ([]entity.EriusScenario, error) {
 	return m.Worked()
 }
 
-func (m MockPipelinerStorer) GetPipeline(c context.Context, id uuid.UUID) (*entity.EriusScenario, error) {
+func (m MockPipelinerStorer) GetPipeline(_ context.Context, _ uuid.UUID) (*entity.EriusScenario, error) {
 	return m.Get()
 }
 
-func (m MockPipelinerStorer) CreatePipeline(c context.Context, p *entity.EriusScenario, author string, pipelineData []byte) error {
+func (m MockPipelinerStorer) CreatePipeline(_ context.Context, _ *entity.EriusScenario, _ string, _ []byte) error {
 	return errMocked
 }
 
-func (m MockPipelinerStorer) DeletePipeline(c context.Context, id uuid.UUID) error {
+func (m MockPipelinerStorer) DeletePipeline(_ context.Context, _ uuid.UUID) error {
 	return errMocked
 }
 
-func (m MockPipelinerStorer) PipelineRemovable(c context.Context, id uuid.UUID) (bool, error) {
+func (m MockPipelinerStorer) PipelineRemovable(_ context.Context, _ uuid.UUID) (bool, error) {
 	return false, errMocked
 }
 
-func (m *MockPipelinerStorer) RenamePipeline(c context.Context, id uuid.UUID, name string) error {
+func (m *MockPipelinerStorer) RenamePipeline(_ context.Context, _ uuid.UUID, _ string) error {
 	return errMocked
 }
