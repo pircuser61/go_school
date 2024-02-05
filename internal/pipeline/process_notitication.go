@@ -206,6 +206,7 @@ func (runCtx *BlockRunContext) makeNotificationAttachment() ([]fileregistry.File
 	return ta, nil
 }
 
+//nolint:gocognit // данный нейминг хорошо описывает механику метода
 func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) ([]om.OrderedMap, []e.Attachment, error) {
 	taskContext, err := runCtx.Services.Storage.GetTaskRunContext(c.Background(), runCtx.WorkNumber)
 	if err != nil {
@@ -275,8 +276,10 @@ func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) ([]o
 						continue
 					}
 
-			if fileID, fileOK := file.Get("file_id"); fileOK {
-				attachmentFiles = append(attachmentFiles, fileID.(string))
+					if fileID, fileOK := file.Get("file_id"); fileOK {
+						attachmentFiles = append(attachmentFiles, fileID.(string))
+					}
+				}
 			}
 		}
 

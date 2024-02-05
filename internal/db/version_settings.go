@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"golang.org/x/net/context"
-
 	"github.com/google/uuid"
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
@@ -144,7 +142,7 @@ func (db *PGCon) GetVersionSettings(ctx context.Context, versionID string) (e.Pr
 
 	ps := e.ProcessSettings{ID: versionID}
 
-	err := row.Scan(&ps.StartSchema, &ps.EndSchema, &ps.ResubmissionPeriod, &ps.Name)
+	err := row.Scan(&ps.StartSchema, &ps.EndSchema, &ps.ResubmissionPeriod, &ps.StartSchemaRaw, &ps.Name)
 	if err != nil && err != pgx.ErrNoRows {
 		return ps, err
 	}
@@ -180,12 +178,11 @@ func (db *PGCon) SaveVersionSettings(ctx context.Context, settings e.ProcessSett
 			settings.EndSchema,
 			settings.StartSchemaRaw,
 		)
+
 		if err != nil {
 			return err
 		}
 	} else {
-		var jsonSchema *script.JSONSchema
-
 		switch *schemaFlag {
 		case startSchema:
 			// nolint:gocritic
@@ -196,7 +193,7 @@ func (db *PGCon) SaveVersionSettings(ctx context.Context, settings e.ProcessSett
 				SET start_schema = excluded.start_schema,
 			    raw_start_schema = excluded.raw_start_schema`
 
-			commandTag, err = db.Connection.Exec(ctx, query, uuid.New(), settings.Id, settings.StartSchema, settings.StartSchemaRaw)
+			commandTag, err = db.Connection.Exec(ctx, query, uuid.New(), settings.ID, settings.StartSchema, settings.StartSchemaRaw)
 			if err != nil {
 				return err
 			}
@@ -208,7 +205,7 @@ func (db *PGCon) SaveVersionSettings(ctx context.Context, settings e.ProcessSett
 			ON CONFLICT (version_id) DO UPDATE 
 				SET end_schema = excluded.end_schema`
 
-			commandTag, err = db.Connection.Exec(ctx, query, uuid.New(), settings.Id, settings.EndSchema)
+			commandTag, err = db.Connection.Exec(ctx, query, uuid.New(), settings.ID, settings.EndSchema)
 			if err != nil {
 				return err
 			}

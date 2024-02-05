@@ -34,7 +34,6 @@ type runNewVersionsByPrevVersionRequest struct {
 	IsTestApplication bool                  `json:"is_test_application"`
 }
 
-func (ae *Env) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Request) {
 type requestStartParams struct {
 	version          *entity.EriusScenario
 	keys             map[string]string
@@ -42,7 +41,7 @@ type requestStartParams struct {
 	hiddenFields     []string
 }
 
-func (ae *APIEnv) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Request) {
+func (ae *Env) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Request) {
 	ctx, s := trace.StartSpan(r.Context(), "run_new_version_by_prev_version")
 	defer s.End()
 
@@ -335,7 +334,7 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (ae *APIEnv) handleStartApplicationParams(ctx c.Context, dto *requestStartParams) error {
+func (ae *Env) handleStartApplicationParams(ctx c.Context, dto *requestStartParams) error {
 	hiddenFields, err := ae.getHiddenFields(ctx, dto.version)
 	if err != nil {
 		e := GetHiddenFieldsError
@@ -348,36 +347,37 @@ func (ae *APIEnv) handleStartApplicationParams(ctx c.Context, dto *requestStartP
 		return nil
 	}
 
-	var schemaJson jsonschema.Schema
-	if unmarshalErr := json.Unmarshal(dto.version.Settings.StartSchemaRaw, &schemaJson); unmarshalErr != nil {
+	var schemaJSON jsonschema.Schema
+	if unmarshalErr := json.Unmarshal(dto.version.Settings.StartSchemaRaw, &schemaJSON); unmarshalErr != nil {
 		return unmarshalErr
 	}
 
-	if schemaJson == nil || len(schemaJson) == 0 {
+	if len(schemaJSON) == 0 {
 		return errors.New("schema is empty")
 	}
 
 	if len(dto.hiddenFields) == 0 {
-		if hiddenFields, err = schemaJson.GetHiddenFields(); err == nil {
+		if hiddenFields, err = schemaJSON.GetHiddenFields(); err == nil {
 			dto.hiddenFields = hiddenFields
 		}
 	}
 
 	if len(dto.keys) == 0 {
-		if res, _, getErr := schemaJson.GetAllFields(); getErr == nil {
+		if res, _, getErr := schemaJSON.GetAllFields(); getErr == nil {
 			dto.keys = res
 		}
 	}
 
 	if len(dto.attachmentFields) == 0 {
-		dto.attachmentFields = schemaJson.GetAttachmentFields()
+		dto.attachmentFields = schemaJSON.GetAttachmentFields()
 	}
 
 	return nil
 }
 
-func (ae *APIEnv) getHiddenFields(ctx c.Context, version *entity.EriusScenario) ([]string, error) {
+func (ae *Env) getHiddenFields(ctx c.Context, version *entity.EriusScenario) ([]string, error) {
 	const sdBlockName = "servicedesk_application_0"
+
 	hiddenFields := make([]string, 0)
 
 	if _, exists := version.Pipeline.Blocks[sdBlockName]; !exists {

@@ -274,7 +274,7 @@ func (gb *GoFormBlock) createState(ctx context.Context, ef *entity.EriusFunc) er
 		return err
 	}
 
-	schema, err := gb.RunContext.Services.ServiceDesc.GetSchemaByID(ctx, params.SchemaId)
+	schema, err := gb.RunContext.Services.ServiceDesc.GetSchemaByID(ctx, params.SchemaID)
 	if err != nil {
 		return err
 	}
@@ -286,17 +286,16 @@ func (gb *GoFormBlock) createState(ctx context.Context, ef *entity.EriusFunc) er
 			return errors.New("properties is not map")
 		}
 
-		var schemaJson jsonschema.Schema
-		schemaJson = propMap
+		schemaJSON := jsonschema.Schema(propMap)
 
-		res, _, getAllFieldsErr := schemaJson.GetAllFields()
+		res, _, getAllFieldsErr := schemaJSON.GetAllFields()
 		if getAllFieldsErr != nil {
 			return getAllFieldsErr
 		}
 
 		params.Keys = res
 
-		params.AttachmentFields = schemaJson.GetAttachmentFields()
+		params.AttachmentFields = schemaJSON.GetAttachmentFields()
 	}
 
 	gb.State = &FormData{
