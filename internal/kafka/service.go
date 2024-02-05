@@ -11,6 +11,7 @@ import (
 	"github.com/rcrowley/go-metrics"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
+
 	msgkit "gitlab.services.mts.ru/jocasta/msg-kit"
 )
 
