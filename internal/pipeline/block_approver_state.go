@@ -486,6 +486,10 @@ func (a *ApproverData) SetDecisionByAdditionalApprover(login string,
 			a.AdditionalApprovers[i].DecisionTime = &timeNow
 		}
 
+		if approverFound {
+			delegateFor = ""
+		}
+
 		approverLogEntry := ApproverLogEntry{
 			Login:       login,
 			Decision:    params.Decision,
