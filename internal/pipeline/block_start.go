@@ -77,6 +77,7 @@ func (gb *GoStartBlock) Update(ctx context.Context) (interface{}, error) {
 		if !ok {
 			continue
 		}
+
 		gb.RunContext.VarStore.SetValue(gb.Output[k], val)
 	}
 

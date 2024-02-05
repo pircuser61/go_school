@@ -730,11 +730,15 @@ func (es *EriusScenario) FillEntryPointOutput() (err error) {
 			if !ok {
 				continue
 			}
+
 			val.Global = es.Pipeline.Entrypoint + "." + k
+
 			es.Settings.StartSchema.Properties[k] = val
 		}
+
 		entryPoint.Output = es.Settings.StartSchema
 	}
+
 	if entryPoint.Output == nil {
 		entryPoint.Output = &script.JSONSchema{
 			Type:       "object",
