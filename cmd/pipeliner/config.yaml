@@ -99,7 +99,7 @@ scheduler_tasks:
   url: 'scheduler:90'
 
 human_tasks:
-  url: 'localhost:90'
+  url: 'human-tasks:90'
 
 imap:
   imap_connection: "mail.inside.mts.ru:993"
@@ -108,7 +108,7 @@ imap:
   imap_mail_box: "Inbox"
 
 integrations:
-  url: 'localhost:90'
+  url: 'integrations:90'
 
 forms:
   url: 'forms:90'
