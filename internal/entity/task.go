@@ -197,34 +197,6 @@ const (
 	TaskUpdateActionSignChangeWorkStatus       TaskUpdateAction = "sign_change_work_status"
 )
 
-var (
-	//nolint:gochecknoglobals //система проектировалась без этого линтера поэтому gg
-	checkTaskUpdateMap = map[TaskUpdateAction]struct{}{
-		TaskUpdateActionApprovement:           {},
-		TaskUpdateActionAdditionalApprovement: {},
-		TaskUpdateActionExecution:             {},
-		TaskUpdateActionChangeExecutor:        {},
-		TaskUpdateActionRequestExecutionInfo:  {},
-		TaskUpdateActionExecutorStartWork:     {},
-		TaskUpdateActionApproverSendEditApp:   {},
-		TaskUpdateActionExecutorSendEditApp:   {},
-		TaskUpdateActionRequestApproveInfo:    {},
-		TaskUpdateActionRequestFillForm:       {},
-		TaskUpdateActionAddApprovers:          {},
-		TaskUpdateActionFormExecutorStartWork: {},
-		TaskUpdateActionSign:                  {},
-		TaskUpdateActionFinishTimer:           {},
-		TaskUpdateActionFuncSLAExpired:        {},
-		TaskUpdateActionSignChangeWorkStatus:  {},
-		TaskUpdateActionReplyExecutionInfo:    {},
-		TaskUpdateActionReplyApproverInfo:     {},
-	}
-	// nolint:gochecknoglobals //система проектировалась без этого линтера поэтому gg
-	checkTaskUpdateAppMap = map[TaskUpdateAction]struct{}{
-		TaskUpdateActionCancelApp: {},
-	}
-)
-
 type TaskUpdate struct {
 	Action     TaskUpdateAction `json:"action"`
 	Parameters json.RawMessage  `json:"parameters" swaggertype:"object"`
@@ -235,18 +207,45 @@ type CancelAppParams struct {
 	Comment string `json:"comment"`
 }
 
+func (t *TaskUpdate) IsSchedulerTaskUpdateAction() bool {
+	//nolint:exhaustive //нам нужны только эти три кейса
+	switch t.Action {
+	case TaskUpdateActionFinishTimer, TaskUpdateActionSignChangeWorkStatus, TaskUpdateActionFuncSLAExpired:
+		return true
+	default:
+		return false
+	}
+}
+
 func (t *TaskUpdate) Validate() error {
-	if _, ok := checkTaskUpdateMap[t.Action]; !ok {
+	//nolint:exhaustive //нам нужны только эти кейсы
+	switch t.Action {
+	case TaskUpdateActionApprovement,
+		TaskUpdateActionAdditionalApprovement,
+		TaskUpdateActionExecution,
+		TaskUpdateActionChangeExecutor,
+		TaskUpdateActionRequestExecutionInfo,
+		TaskUpdateActionExecutorStartWork,
+		TaskUpdateActionApproverSendEditApp,
+		TaskUpdateActionExecutorSendEditApp,
+		TaskUpdateActionRequestApproveInfo,
+		TaskUpdateActionRequestFillForm,
+		TaskUpdateActionAddApprovers,
+		TaskUpdateActionFormExecutorStartWork,
+		TaskUpdateActionSign,
+		TaskUpdateActionFinishTimer,
+		TaskUpdateActionFuncSLAExpired,
+		TaskUpdateActionSignChangeWorkStatus,
+		TaskUpdateActionReplyExecutionInfo,
+		TaskUpdateActionReplyApproverInfo:
+		return nil
+	default:
 		return errors.New("unknown action")
 	}
-
-	return nil
 }
 
 func (t *TaskUpdate) IsApplicationAction() bool {
-	_, ok := checkTaskUpdateAppMap[t.Action]
-
-	return ok
+	return t.Action == TaskUpdateActionCancelApp
 }
 
 type NeededNotif struct {

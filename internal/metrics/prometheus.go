@@ -7,6 +7,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/configs"
 )
 

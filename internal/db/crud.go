@@ -11,19 +11,20 @@ import (
 	"strings"
 	"time"
 
-	"go.opencensus.io/trace"
-
-	"golang.org/x/exp/slices"
-
 	"github.com/google/uuid"
-
-	"github.com/lib/pq"
 
 	"github.com/iancoleman/orderedmap"
 
 	"github.com/jackc/pgconn"
+
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
+
+	"github.com/lib/pq"
+
+	"go.opencensus.io/trace"
+
+	"golang.org/x/exp/slices"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/configs"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"

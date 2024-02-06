@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
-	"go.opencensus.io/trace"
-
 	"github.com/google/uuid"
+
+	"go.opencensus.io/trace"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 )

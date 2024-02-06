@@ -4,11 +4,11 @@ import (
 	c "context"
 	"encoding/json"
 
-	"go.opencensus.io/trace"
-
 	"github.com/google/uuid"
 
 	"github.com/pkg/errors"
+
+	"go.opencensus.io/trace"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 )

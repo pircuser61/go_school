@@ -5,7 +5,9 @@ import (
 	"time"
 
 	"github.com/iancoleman/orderedmap"
+
 	"gitlab.services.mts.ru/abp/mail/pkg/email"
+
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"

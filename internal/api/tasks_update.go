@@ -15,6 +15,7 @@ import (
 	"go.opencensus.io/trace"
 
 	"gitlab.services.mts.ru/abp/mail/pkg/email"
+
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
@@ -161,15 +162,16 @@ func (ae *Env) UpdateTask(w http.ResponseWriter, req *http.Request, workNumber s
 		return
 	}
 
-	log.WithField("workNumber", workNumber).WithField("login", ui.Username).
-		WithField("body", string(b)).Info("updating block")
+	log = log.
+		WithField("workNumber", workNumber).
+		WithField("login", ui.Username).
+		WithField("body", string(b))
 
-	if updateData.IsApplicationAction() {
-		err = ae.updateTaskInternal(ctx, workNumber, ui.Username, &updateData)
-	} else {
-		err = ae.updateTaskBlockInternal(ctx, workNumber, ui.Username, &updateData)
-	}
+	log.Info("updating block")
 
+	ctx = logger.WithLogger(ctx, log)
+
+	err = ae.updateTask(ctx, workNumber, ui.Username, &updateData)
 	if err != nil {
 		errorHandler.handleError(UnknownError, err)
 
@@ -181,6 +183,191 @@ func (ae *Env) UpdateTask(w http.ResponseWriter, req *http.Request, workNumber s
 
 		return
 	}
+}
+
+func (ae *Env) updateTask(ctx context.Context, workNumber, userLogin string, updateData *entity.TaskUpdate) (err error) {
+	switch {
+	case pipeline.IsServiceAccount(userLogin) && updateData.IsSchedulerTaskUpdateAction():
+		err = ae.updateTaskBlockBySchedulerRequest(ctx, workNumber, userLogin, updateData)
+	case updateData.IsApplicationAction():
+		err = ae.updateTaskInternal(ctx, workNumber, userLogin, updateData)
+	default:
+		err = ae.updateTaskBlockInternal(ctx, workNumber, userLogin, updateData)
+	}
+
+	return err
+}
+
+func (ae *Env) updateTaskBlockBySchedulerRequest(ctx context.Context, workNumber, userLogin string, in *entity.TaskUpdate) (err error) {
+	ctxLocal, span := trace.StartSpan(ctx, "update_task_block_by_scheduler_request")
+	defer span.End()
+
+	log := logger.GetLogger(ctx)
+
+	delegations, getDelegationsErr := ae.HumanTasks.GetDelegationsToLogin(ctxLocal, userLogin)
+	if getDelegationsErr != nil {
+		return getDelegationsErr
+	}
+
+	if validateErr := in.Validate(); validateErr != nil {
+		return validateErr
+	}
+
+	blockTypes := getTaskStepNameByAction(in.Action)
+	if len(blockTypes) == 0 {
+		return errors.New("blockTypes is empty")
+	}
+
+	delegationsByApprovement := delegations.FilterByType("approvement")
+	delegationsByExecution := delegations.FilterByType("execution")
+
+	dbTask, err := ae.DB.GetTask(
+		ctxLocal,
+		delegationsByApprovement.GetUserInArrayWithDelegators([]string{userLogin}),
+		delegationsByExecution.GetUserInArrayWithDelegators([]string{userLogin}),
+		userLogin,
+		workNumber,
+	)
+	if err != nil {
+		return GetTaskError.Join(err)
+	}
+
+	if !dbTask.IsRun() {
+		log.Info("db task is not running, exit with nil error")
+
+		return nil
+	}
+
+	scenario, err := ae.DB.GetPipelineVersion(ctxLocal, dbTask.VersionID, false)
+	if err != nil {
+		return GetVersionError.Join(err)
+	}
+
+	var steps entity.TaskSteps
+
+	for _, blockType := range blockTypes {
+		stepsByBlock, stepErr := ae.DB.GetUnfinishedTaskStepsByWorkIDAndStepType(ctxLocal, dbTask.ID, blockType, in)
+		if stepErr != nil {
+			return GetTaskError.Join(stepErr)
+		}
+
+		steps = append(steps, stepsByBlock...)
+	}
+
+	if len(steps) == 0 {
+		log.Info("zero length unfinished task steps, exit with nil error")
+
+		return nil
+	}
+
+	couldUpdateOne := false
+
+	for _, item := range steps {
+		success := ae.updateStepInternal(
+			ctxLocal,
+			&updateStepData{
+				scenario:    scenario,
+				task:        dbTask,
+				step:        item,
+				updData:     in,
+				delegations: delegations,
+				workNumber:  workNumber,
+				login:       userLogin,
+			},
+		)
+		if success {
+			couldUpdateOne = true
+		}
+	}
+
+	if !couldUpdateOne {
+		return UpdateBlockError.JoinString("couldn't update work")
+	}
+
+	return nil
+}
+
+func (ae *Env) updateTaskBlockInternal(ctx context.Context, workNumber, userLogin string, in *entity.TaskUpdate) (err error) {
+	ctxLocal, span := trace.StartSpan(ctx, "update_task_block_internal")
+	defer span.End()
+
+	delegations, getDelegationsErr := ae.HumanTasks.GetDelegationsToLogin(ctxLocal, userLogin)
+	if getDelegationsErr != nil {
+		return getDelegationsErr
+	}
+
+	if validateErr := in.Validate(); validateErr != nil {
+		return validateErr
+	}
+
+	blockTypes := getTaskStepNameByAction(in.Action)
+	if len(blockTypes) == 0 {
+		return errors.New("blockTypes is empty")
+	}
+
+	delegationsByApprovement := delegations.FilterByType("approvement")
+	delegationsByExecution := delegations.FilterByType("execution")
+
+	dbTask, err := ae.DB.GetTask(
+		ctxLocal,
+		delegationsByApprovement.GetUserInArrayWithDelegators([]string{userLogin}),
+		delegationsByExecution.GetUserInArrayWithDelegators([]string{userLogin}),
+		userLogin,
+		workNumber,
+	)
+	if err != nil {
+		return GetTaskError.Join(err)
+	}
+
+	if !dbTask.IsRun() {
+		return UpdateNotRunningTaskError.JoinString("task is not running")
+	}
+
+	scenario, err := ae.DB.GetPipelineVersion(ctxLocal, dbTask.VersionID, false)
+	if err != nil {
+		return GetVersionError.Join(err)
+	}
+
+	var steps entity.TaskSteps
+
+	for _, blockType := range blockTypes {
+		stepsByBlock, stepErr := ae.DB.GetUnfinishedTaskStepsByWorkIDAndStepType(ctxLocal, dbTask.ID, blockType, in)
+		if stepErr != nil {
+			return GetTaskError.Join(stepErr)
+		}
+
+		steps = append(steps, stepsByBlock...)
+	}
+
+	if len(steps) == 0 {
+		return GetTaskError.JoinString("zero length task steps")
+	}
+
+	couldUpdateOne := false
+
+	for _, item := range steps {
+		success := ae.updateStepInternal(
+			ctxLocal,
+			&updateStepData{
+				scenario:    scenario,
+				task:        dbTask,
+				step:        item,
+				updData:     in,
+				delegations: delegations,
+				workNumber:  workNumber,
+				login:       userLogin,
+			},
+		)
+		if success {
+			couldUpdateOne = true
+		}
+	}
+
+	if !couldUpdateOne {
+		return UpdateBlockError.JoinString("couldn't update work")
+	}
+
+	return nil
 }
 
 type updateStepData struct {
@@ -306,100 +493,6 @@ func (ae *Env) updateStepInternal(ctx context.Context, data *updateStepData) boo
 	return true
 }
 
-func (ae *Env) updateTaskBlockInternal(ctx context.Context, workNumber, userLogin string, in *entity.TaskUpdate) (err error) {
-	ctxLocal, span := trace.StartSpan(ctx, "update_task_internal")
-	defer span.End()
-
-	delegations, getDelegationsErr := ae.HumanTasks.GetDelegationsToLogin(ctxLocal, userLogin)
-	if getDelegationsErr != nil {
-		return getDelegationsErr
-	}
-
-	if validateErr := in.Validate(); validateErr != nil {
-		return validateErr
-	}
-
-	blockTypes := getTaskStepNameByAction(in.Action)
-	if len(blockTypes) == 0 {
-		return errors.New("blockTypes is empty")
-	}
-
-	delegationsByApprovement := delegations.FilterByType("approvement")
-	delegationsByExecution := delegations.FilterByType("execution")
-
-	dbTask, err := ae.DB.GetTask(ctxLocal,
-		delegationsByApprovement.GetUserInArrayWithDelegators([]string{userLogin}),
-		delegationsByExecution.GetUserInArrayWithDelegators([]string{userLogin}),
-		userLogin,
-		workNumber,
-	)
-	if err != nil {
-		e := GetTaskError
-
-		return errors.New(e.errorMessage(nil))
-	}
-
-	if !dbTask.IsRun() {
-		e := UpdateNotRunningTaskError
-
-		return errors.New(e.errorMessage(nil))
-	}
-
-	scenario, err := ae.DB.GetPipelineVersion(ctxLocal, dbTask.VersionID, false)
-	if err != nil {
-		e := GetVersionError
-
-		return errors.New(e.errorMessage(err))
-	}
-
-	var steps entity.TaskSteps
-
-	for _, blockType := range blockTypes {
-		stepsByBlock, stepErr := ae.DB.GetUnfinishedTaskStepsByWorkIDAndStepType(ctxLocal, dbTask.ID, blockType, in)
-		if stepErr != nil {
-			e := GetTaskError
-
-			return errors.New(e.errorMessage(nil))
-		}
-
-		steps = append(steps, stepsByBlock...)
-	}
-
-	if len(steps) == 0 {
-		e := GetTaskError
-
-		return errors.New(e.errorMessage(nil))
-	}
-
-	couldUpdateOne := false
-
-	for _, item := range steps {
-		success := ae.updateStepInternal(
-			ctxLocal,
-			&updateStepData{
-				scenario:    scenario,
-				task:        dbTask,
-				step:        item,
-				updData:     in,
-				delegations: delegations,
-				workNumber:  workNumber,
-				login:       userLogin,
-			},
-		)
-		if success {
-			couldUpdateOne = true
-		}
-	}
-
-	if !couldUpdateOne {
-		e := UpdateBlockError
-
-		return errors.New(e.errorMessage(errors.New("couldn't update work")))
-	}
-
-	return nil
-}
-
 func (ae *Env) getAuthorAndMembersToNotify(ctx context.Context, workNumber, userLogin string) ([]string, error) {
 	taskMembers, err := ae.DB.GetTaskMembers(ctx, workNumber, true)
 	if err != nil {
@@ -464,7 +557,7 @@ func (ae *Env) getAuthorAndMembersToNotify(ctx context.Context, workNumber, user
 }
 
 func (ae *Env) updateTaskInternal(ctx context.Context, workNumber, userLogin string, in *entity.TaskUpdate) (err error) {
-	ctxLocal, span := trace.StartSpan(ctx, "update_application_internal")
+	ctxLocal, span := trace.StartSpan(ctx, "update_task_internal")
 	defer span.End()
 
 	log := ae.Log.WithField("mainFuncName", "updateTaskInternal")

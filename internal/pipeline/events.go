@@ -12,13 +12,12 @@ import (
 
 	"github.com/fatih/structs"
 
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
-
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	integration_v1 "gitlab.services.mts.ru/jocasta/integrations/pkg/proto/gen/integration/v1"
 	microservice_v1 "gitlab.services.mts.ru/jocasta/integrations/pkg/proto/gen/microservice/v1"
 
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
 

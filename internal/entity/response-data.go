@@ -7,7 +7,9 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
 	"github.com/pkg/errors"
+
 	"golang.org/x/exp/maps"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"

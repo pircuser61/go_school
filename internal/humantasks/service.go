@@ -5,10 +5,10 @@ import (
 	"strings"
 	"time"
 
+	"go.opencensus.io/plugin/ocgrpc"
+
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-
-	"go.opencensus.io/plugin/ocgrpc"
 
 	d "gitlab.services.mts.ru/jocasta/human-tasks/pkg/proto/gen/proto/go/delegation"
 )

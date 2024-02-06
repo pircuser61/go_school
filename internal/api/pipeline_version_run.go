@@ -8,10 +8,11 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/pkg/errors"
-	"go.opencensus.io/trace"
-
 	"github.com/iancoleman/orderedmap"
+
+	"github.com/pkg/errors"
+
+	"go.opencensus.io/trace"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 

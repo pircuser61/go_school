@@ -16,6 +16,7 @@ import (
 	"gitlab.services.mts.ru/abp/mail/pkg/broker"
 	"gitlab.services.mts.ru/abp/mail/pkg/email"
 	"gitlab.services.mts.ru/abp/mail/pkg/mailclient"
+
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 )
 

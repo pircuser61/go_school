@@ -1,12 +1,12 @@
 package scheduler
 
 import (
-	scheduler_v1 "gitlab.services.mts.ru/jocasta/scheduler/pkg/proto/gen/src/task/v1"
-
 	"go.opencensus.io/plugin/ocgrpc"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+
+	scheduler_v1 "gitlab.services.mts.ru/jocasta/scheduler/pkg/proto/gen/src/task/v1"
 )
 
 type Service struct {

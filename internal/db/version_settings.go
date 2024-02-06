@@ -5,7 +5,9 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
+
 	"github.com/jackc/pgconn"
+
 	"github.com/jackc/pgx/v4"
 
 	"go.opencensus.io/trace"

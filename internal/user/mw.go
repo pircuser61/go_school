@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
+
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 )
 
