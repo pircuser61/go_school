@@ -6,15 +6,16 @@ import (
 	"regexp"
 	"strings"
 
-	"gitlab.services.mts.ru/abp/myosotis/logger"
-
 	"github.com/emersion/go-imap"
+
 	"github.com/emersion/go-message"
 	"github.com/emersion/go-message/mail"
 
 	"github.com/pkg/errors"
 
 	"go.opencensus.io/trace"
+
+	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 )

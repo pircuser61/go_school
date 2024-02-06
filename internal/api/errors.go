@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 )
@@ -390,6 +391,14 @@ func (c Err) errorMessage(e error) string {
 	}
 
 	return c.error()
+}
+
+func (c Err) Join(e error) error {
+	return errors.New(c.errorMessage(e))
+}
+
+func (c Err) JoinString(e string) error {
+	return c.Join(errors.New(e))
 }
 
 func (c Err) error() string {

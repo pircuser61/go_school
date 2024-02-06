@@ -7,21 +7,21 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/golang-jwt/jwt/v4"
+
 	"github.com/google/uuid"
+
+	"github.com/iancoleman/orderedmap"
+
+	"github.com/jackc/pgx/v4"
 
 	"github.com/pkg/errors"
 
 	"go.opencensus.io/trace"
 
-	"github.com/iancoleman/orderedmap"
-
-	"github.com/golang-jwt/jwt/v4"
-
-	"github.com/jackc/pgx/v4"
+	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	integration_v1 "gitlab.services.mts.ru/jocasta/integrations/pkg/proto/gen/integration/v1"
-
-	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
@@ -68,10 +68,10 @@ func (ae *Env) CreatePipelineVersion(w http.ResponseWriter, req *http.Request, p
 
 	oldVersionID := p.VersionID
 	p.VersionID = uuid.New()
-	p.PipelineID, err = uuid.Parse(pipelineID)
 
+	p.PipelineID, err = uuid.Parse(pipelineID)
 	if err != nil {
-		errorHandler.handleError(VersionCreateError, err)
+		errorHandler.handleError(UUIDParsingError, err)
 
 		return
 	}

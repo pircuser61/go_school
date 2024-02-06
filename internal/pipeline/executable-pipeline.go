@@ -4,9 +4,9 @@ import (
 	c "context"
 	"net/http"
 
-	"go.opencensus.io/trace"
-
 	"github.com/google/uuid"
+
+	"go.opencensus.io/trace"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"

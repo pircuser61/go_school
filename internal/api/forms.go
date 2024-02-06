@@ -5,11 +5,11 @@ import (
 	"net/http"
 	"time"
 
-	"golang.org/x/exp/slices"
+	"github.com/pkg/errors"
 
 	"go.opencensus.io/trace"
 
-	"github.com/pkg/errors"
+	"golang.org/x/exp/slices"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 

@@ -7,9 +7,8 @@ import (
 	"github.com/pkg/errors"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
-
 	ht "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
 
 type ApproverAction string

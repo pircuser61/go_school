@@ -6,7 +6,9 @@ import (
 	"strconv"
 
 	om "github.com/iancoleman/orderedmap"
+
 	e "gitlab.services.mts.ru/abp/mail/pkg/email"
+
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"

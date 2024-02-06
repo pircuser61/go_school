@@ -3,9 +3,10 @@ package test
 import (
 	"context"
 
+	"github.com/google/uuid"
+
 	"github.com/pkg/errors"
 
-	"github.com/google/uuid"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )

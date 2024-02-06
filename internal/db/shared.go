@@ -2,6 +2,7 @@ package db
 
 import (
 	"github.com/jackc/pgconn"
+
 	"github.com/jackc/pgerrcode"
 )
 

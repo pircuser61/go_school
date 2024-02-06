@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"net/http"
 
-	"gitlab.services.mts.ru/abp/myosotis/logger"
-
 	"go.opencensus.io/trace"
+
+	"gitlab.services.mts.ru/abp/myosotis/logger"
 )
 
 const (
