@@ -434,8 +434,7 @@ func (cq *compileGetTaskQueryMaker) MakeQuery(
 	cq.addOffset()
 	cq.addLimit()
 
-	cq.q = replaceStorageVariable(q)
-
+	cq.q = replaceStorageVariable(cq.q)
 	return cq.q, cq.args
 }
 
