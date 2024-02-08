@@ -27,6 +27,7 @@ type NotificationData struct {
 	UsersFromSchema map[string]struct{} `json:"usersFromSchema"`
 	Subject         string              `json:"subject"`
 	Text            string              `json:"text"`
+	TextSource      script.TextSource   `json:"textSource"`
 }
 
 type GoNotificationBlock struct {
@@ -84,15 +85,43 @@ func (gb *GoNotificationBlock) compileText(ctx context.Context) (*mail.Notif, []
 		return nil, nil, err
 	}
 
+	text, err := gb.notificationBlockText()
+	if err != nil {
+		return nil, nil, err
+	}
+
 	tpl := &mail.Notif{
 		Title:       gb.State.Subject,
-		Body:        gb.State.Text,
+		Body:        text,
 		Description: description,
 		Link:        gb.RunContext.Services.Sender.GetApplicationLink(gb.RunContext.WorkNumber),
 		Initiator:   typedAuthor,
 	}
 
 	return tpl, files, nil
+}
+
+func (gb *GoNotificationBlock) notificationBlockText() (string, error) {
+	switch gb.State.TextSource.Type() {
+	case script.OwnValueSource:
+		return gb.ownValueSourceText(), nil
+	case script.ContextValueSource:
+		return gb.contextValueSourceText()
+	default:
+		return "", script.ErrUnknownTextSourceType
+	}
+}
+
+func (gb *GoNotificationBlock) contextValueSourceText() (string, error) {
+	return gb.RunContext.VarStore.GetString(gb.State.TextSource.RefValue)
+}
+
+func (gb *GoNotificationBlock) ownValueSourceText() string {
+	if gb.State.TextSource.Text != "" {
+		return gb.State.TextSource.Text
+	}
+
+	return gb.State.Text
 }
 
 func (gb *GoNotificationBlock) Next(_ *store.VariableStore) ([]string, bool) {
@@ -230,6 +259,11 @@ func (gb *GoNotificationBlock) Model() script.FunctionModel {
 				UsersFromSchema: "",
 				Subject:         "",
 				Text:            "",
+				TextSource: script.TextSource{
+					SourceType: "",
+					Text:       "",
+					RefValue:   "",
+				},
 			},
 		},
 		Sockets: []script.Socket{script.DefaultSocket},
@@ -237,7 +271,11 @@ func (gb *GoNotificationBlock) Model() script.FunctionModel {
 }
 
 // nolint:dupl,unparam // another block
-func createGoNotificationBlock(ctx context.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext,
+func createGoNotificationBlock(
+	ctx context.Context,
+	name string,
+	ef *entity.EriusFunc,
+	runCtx *BlockRunContext,
 	expectedEvents map[string]struct{},
 ) (*GoNotificationBlock, bool, error) {
 	const reEntry = false
@@ -310,7 +348,9 @@ func createGoNotificationBlock(ctx context.Context, name string, ef *entity.Eriu
 		Text:            params.Text,
 		Subject:         params.Subject,
 		UsersFromSchema: usersFromSchema,
+		TextSource:      params.TextSource,
 	}
+
 	b.RunContext.VarStore.AddStep(b.Name)
 
 	if _, ok := b.expectedEvents[eventStart]; ok {
