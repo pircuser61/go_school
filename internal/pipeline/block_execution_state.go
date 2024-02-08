@@ -44,6 +44,7 @@ type ChangeExecutorLog struct {
 	Attachments []entity.Attachment `json:"attachments"`
 	CreatedAt   time.Time           `json:"created_at"`
 	DelegateFor string              `json:"delegate_for"`
+	ByLogin     string              `json:"by_login"`
 }
 
 type StartWorkLog struct {
