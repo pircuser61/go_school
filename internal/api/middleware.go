@@ -5,10 +5,10 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/google/uuid"
+
 	"go.opencensus.io/plugin/ochttp"
 	"go.opencensus.io/trace"
-
-	"github.com/google/uuid"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 

@@ -6,15 +6,16 @@ import (
 	"os"
 	"sync"
 
+	"github.com/emersion/go-imap"
+	"github.com/emersion/go-imap/client"
+
 	"github.com/pkg/errors"
 
 	"go.opencensus.io/trace"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
-	"gitlab.services.mts.ru/prodboard/infra/tracer"
 
-	"github.com/emersion/go-imap"
-	"github.com/emersion/go-imap/client"
+	"gitlab.services.mts.ru/prodboard/infra/tracer"
 )
 
 const reconnectRetryCount = 3

@@ -10,11 +10,11 @@ import (
 	"net/http"
 	"regexp"
 
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
-
 	"go.opencensus.io/plugin/ocgrpc"
 	"go.opencensus.io/trace"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 
 	"gitlab.services.mts.ru/abp/mail/pkg/email"
 

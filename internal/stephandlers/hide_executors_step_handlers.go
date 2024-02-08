@@ -3,10 +3,11 @@ package stephandlers
 import (
 	"encoding/json"
 
+	"golang.org/x/exp/slices"
+
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
-	"golang.org/x/exp/slices"
 )
 
 const hiddenUserLogin = "hidden_user"

@@ -7,10 +7,10 @@ import (
 
 	"github.com/google/uuid"
 
+	"go.opencensus.io/plugin/ocgrpc"
+
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-
-	"go.opencensus.io/plugin/ocgrpc"
 
 	integration_v1 "gitlab.services.mts.ru/jocasta/integrations/pkg/proto/gen/integration/v1"
 	microservice_v1 "gitlab.services.mts.ru/jocasta/integrations/pkg/proto/gen/microservice/v1"

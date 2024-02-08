@@ -4,12 +4,13 @@ import (
 	c "context"
 	"fmt"
 
+	"go.opencensus.io/trace"
+
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/human-tasks/pkg/utils/tracer"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail/imap"
 
-	"go.opencensus.io/trace"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail/imap"
 )
 
 const (

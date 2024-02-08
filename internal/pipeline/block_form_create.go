@@ -271,12 +271,12 @@ func (gb *GoFormBlock) createState(ctx context.Context, ef *entity.EriusFunc) er
 
 	hiddenFields, err := gb.getHiddenFields(ctx, params.SchemaID)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "can`t get hidden fields")
 	}
 
 	schema, err := gb.RunContext.Services.ServiceDesc.GetSchemaByID(ctx, params.SchemaID)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "can`t get schema by ID")
 	}
 
 	prop, ok := schema["properties"]

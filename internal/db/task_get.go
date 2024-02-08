@@ -8,14 +8,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jackc/pgx/v4"
-	"golang.org/x/exp/slices"
-
 	"github.com/google/uuid"
+
+	"github.com/jackc/pgx/v4"
 
 	"github.com/pkg/errors"
 
 	"go.opencensus.io/trace"
+
+	"golang.org/x/exp/slices"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
@@ -434,7 +435,7 @@ func (cq *compileGetTaskQueryMaker) MakeQuery(
 	cq.addOffset()
 	cq.addLimit()
 
-	cq.q = replaceStorageVariable(q)
+	cq.q = replaceStorageVariable(cq.q)
 
 	return cq.q, cq.args
 }

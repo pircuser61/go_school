@@ -13,11 +13,11 @@ import (
 
 	"github.com/pkg/errors"
 
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
-
 	"go.opencensus.io/plugin/ochttp"
 	"go.opencensus.io/trace"
+
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 
 	"gitlab.services.mts.ru/abp/myosotis/observability"
 

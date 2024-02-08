@@ -9,19 +9,18 @@ import (
 	"testing"
 	"time"
 
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
-
 	"github.com/google/uuid"
 
-	"github.com/stretchr/testify/mock"
-
 	"github.com/iancoleman/orderedmap"
+
+	"github.com/stretchr/testify/mock"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 	serviceDeskMocks "gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"

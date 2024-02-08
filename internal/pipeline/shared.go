@@ -8,11 +8,11 @@ import (
 
 	"github.com/google/uuid"
 
-	e "gitlab.services.mts.ru/abp/mail/pkg/email"
-
 	"github.com/iancoleman/orderedmap"
 
 	"github.com/pkg/errors"
+
+	e "gitlab.services.mts.ru/abp/mail/pkg/email"
 
 	file_registry "gitlab.services.mts.ru/jocasta/pipeliner/internal/fileregistry"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
@@ -268,4 +268,15 @@ func getBlockOutput(varStore *store.VariableStore, node string) map[string]inter
 	}
 
 	return res
+}
+
+func IsServiceAccount(login string) bool {
+	switch login {
+	case ServiceAccountDev,
+		ServiceAccountStage,
+		ServiceAccount:
+		return true
+	}
+
+	return false
 }

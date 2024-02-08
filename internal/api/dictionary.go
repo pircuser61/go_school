@@ -3,9 +3,9 @@ package api
 import (
 	"net/http"
 
-	"gitlab.services.mts.ru/abp/myosotis/logger"
-
 	"go.opencensus.io/trace"
+
+	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
