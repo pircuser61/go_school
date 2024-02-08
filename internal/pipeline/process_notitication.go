@@ -217,6 +217,11 @@ func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) ([]o
 
 	for k, v := range apBody.Values() {
 		key, ok := taskContext.InitialApplication.Keys[k]
+		if k == key {
+			apBody.Delete(k)
+			apBody.Set("\r", v)
+			continue
+		}
 		if !ok {
 			continue
 		}
