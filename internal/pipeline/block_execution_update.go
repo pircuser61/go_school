@@ -187,6 +187,7 @@ func (gb *GoExecutionBlock) changeExecutor(ctx context.Context) (err error) {
 	}
 
 	realOldExecutor := currentLogin
+
 	if executorFound {
 		delegateFor = ""
 	} else {
@@ -196,6 +197,7 @@ func (gb *GoExecutionBlock) changeExecutor(ctx context.Context) (err error) {
 	if err = gb.State.SetChangeExecutor(realOldExecutor, delegateFor, currentLogin, &updateParams); err != nil {
 		return errors.New("can't assert provided change executor data")
 	}
+
 	delete(gb.State.Executors, realOldExecutor)
 	oldExecutors := gb.State.Executors
 
