@@ -3,6 +3,7 @@ package pipeline
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"sort"
 	"strings"
@@ -112,16 +113,40 @@ func (gb *GoNotificationBlock) notificationBlockText() (string, error) {
 	}
 }
 
-func (gb *GoNotificationBlock) contextValueSourceText() (string, error) {
-	return gb.RunContext.VarStore.GetString(gb.State.TextSource.RefValue)
-}
-
 func (gb *GoNotificationBlock) ownValueSourceText() string {
 	if gb.State.TextSource.Text != "" {
 		return gb.State.TextSource.Text
 	}
 
 	return gb.State.Text
+}
+
+func (gb *GoNotificationBlock) contextValueSourceText() (string, error) {
+	value, err := gb.RunContext.VarStore.GetString(gb.State.TextSource.RefValue)
+	if err != nil {
+		return "", err
+	}
+
+	// на фронте значение текст всегда оборачивается тегом p
+	// <p>Hello Text!</p>
+	return wrapWithTag("p", value), nil
+}
+
+func wrapWithTag(tag, text string) string {
+	tagStart, tagEnd := makeTag(tag)
+	if !strings.HasPrefix(text, tagStart) {
+		text = tagStart + text
+	}
+
+	if !strings.HasSuffix(text, tagEnd) {
+		text += tagEnd
+	}
+
+	return text
+}
+
+func makeTag(tag string) (tagStart, tagEnd string) {
+	return fmt.Sprintf("<%s>", tag), fmt.Sprintf("</%s>", tag)
 }
 
 func (gb *GoNotificationBlock) Next(_ *store.VariableStore) ([]string, bool) {
