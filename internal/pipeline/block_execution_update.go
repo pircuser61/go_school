@@ -186,15 +186,19 @@ func (gb *GoExecutionBlock) changeExecutor(ctx context.Context) (err error) {
 		return errors.New("can't assert provided update data")
 	}
 
+	realOldExecutor := currentLogin
+
 	if executorFound {
 		delegateFor = ""
+	} else {
+		realOldExecutor = delegateFor
 	}
 
-	if err = gb.State.SetChangeExecutor(gb.RunContext.UpdateData.ByLogin, delegateFor, &updateParams); err != nil {
+	if err = gb.State.SetChangeExecutor(realOldExecutor, delegateFor, currentLogin, &updateParams); err != nil {
 		return errors.New("can't assert provided change executor data")
 	}
 
-	delete(gb.State.Executors, gb.RunContext.UpdateData.ByLogin)
+	delete(gb.State.Executors, realOldExecutor)
 	oldExecutors := gb.State.Executors
 
 	// add new person to exec anyway
@@ -217,7 +221,7 @@ func (gb *GoExecutionBlock) changeExecutor(ctx context.Context) (err error) {
 	return nil
 }
 
-func (a *ExecutionData) SetChangeExecutor(oldLogin, delegateFor string, in *ExecutorChangeParams) error {
+func (a *ExecutionData) SetChangeExecutor(oldLogin, delegateFor, byLogin string, in *ExecutorChangeParams) error {
 	_, ok := a.Executors[oldLogin]
 	if !ok {
 		return fmt.Errorf("%s not found in executors", oldLogin)
@@ -230,6 +234,7 @@ func (a *ExecutionData) SetChangeExecutor(oldLogin, delegateFor string, in *Exec
 		Attachments: in.Attachments,
 		CreatedAt:   time.Now(),
 		DelegateFor: delegateFor,
+		ByLogin:     byLogin,
 	})
 
 	return nil
