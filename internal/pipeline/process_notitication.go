@@ -208,7 +208,7 @@ func (runCtx *BlockRunContext) makeNotificationAttachment() ([]fileregistry.File
 	return ta, nil
 }
 
-//nolint:gocognit // данный нейминг хорошо описывает механику метода
+//nolint:gocognit,gocyclo // данный нейминг хорошо описывает механику метода
 func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) ([]om.OrderedMap, []e.Attachment, error) {
 	taskContext, err := runCtx.Services.Storage.GetTaskRunContext(c.Background(), runCtx.WorkNumber)
 	if err != nil {
@@ -219,12 +219,14 @@ func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) ([]o
 
 	for k, v := range apBody.Values() {
 		key, ok := taskContext.InitialApplication.Keys[k]
+		if !ok {
+			continue
+		}
+
 		if k == key {
 			apBody.Delete(k)
 			apBody.Set("\r", v)
-			continue
-		}
-		if !ok {
+
 			continue
 		}
 
@@ -270,12 +272,6 @@ func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) ([]o
 		}
 
 		for k, v := range form.Description.Values() {
-			val, ok := formBlock.Keys[k]
-			if ok {
-				form.Description.Delete(k)
-				form.Description.Set(val, v)
-			}
-
 			for _, attachVal := range formBlock.AttachmentFields {
 				if attachVal == k {
 					file, attachOk := v.(om.OrderedMap)
@@ -288,6 +284,21 @@ func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) ([]o
 					}
 				}
 			}
+
+			key, ok := formBlock.Keys[k]
+			if !ok {
+				continue
+			}
+
+			if k == key {
+				form.Description.Delete(k)
+				form.Description.Set("\r", v)
+
+				continue
+			}
+
+			form.Description.Delete(k)
+			form.Description.Set(key, v)
 		}
 
 		fileInfo, fileErr := runCtx.makeNotificationFormAttachment(attachmentFiles)
