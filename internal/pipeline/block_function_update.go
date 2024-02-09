@@ -12,7 +12,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
 
-func (gb *ExecutableFunctionBlock) updateData(log logger.Logger) error {
+func (gb *ExecutableFunctionBlock) updateFunctionResult(log logger.Logger) error {
 	var updateData FunctionUpdateParams
 
 	updateDataUnmarshalErr := json.Unmarshal(gb.RunContext.UpdateData.Parameters, &updateData)
@@ -35,7 +35,7 @@ func (gb *ExecutableFunctionBlock) updateData(log logger.Logger) error {
 	return nil
 }
 
-func (gb *ExecutableFunctionBlock) updateWithNilData(ctx context.Context, log logger.Logger) error {
+func (gb *ExecutableFunctionBlock) runFunction(ctx context.Context, log logger.Logger) error {
 	if gb.State.HasResponse {
 		return nil
 	}
@@ -73,6 +73,10 @@ func (gb *ExecutableFunctionBlock) updateWithNilData(ctx context.Context, log lo
 		err = gb.RunContext.Services.Kafka.Produce(ctx,
 			&kafka.RunnerOutMessage{
 				TaskID:          taskStep.ID,
+				PipelineID:      gb.RunContext.PipelineID,
+				VersionID:       gb.RunContext.VersionID,
+				ClientID:        gb.RunContext.ClientID,
+				WorkNumber:      gb.RunContext.WorkNumber,
 				FunctionMapping: functionMapping,
 				Contracts:       gb.State.Contracts,
 				RetryPolicy:     string(SimpleFunctionRetryPolicy),
