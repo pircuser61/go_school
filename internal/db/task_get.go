@@ -27,6 +27,8 @@ import (
 const (
 	ActionTypePrimary   = "primary"
 	ActionTypeSecondary = "secondary"
+
+	ascOrder = "ASC"
 )
 
 func uniqueActionsByRole(loginsIn, stepType string, finished, acted bool) string {
@@ -280,14 +282,40 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 		) descr ON descr.work_id = w.id
 		WHERE w.child_id IS NULL`
 
-	order := "ASC"
+	order := ascOrder
 	if fl.Order != nil {
 		order = *fl.Order
 	}
 
 	var queryMaker compileGetTaskQueryMaker
 
-	return queryMaker.MakeQuery(&fl, q, delegations, args, order)
+	return queryMaker.MakeQuery(&fl, q, delegations, args, order, true)
+}
+
+//nolint:gocritic //изначально было без поинтера
+func compileGetTasksMetaQuery(fl entity.TaskFilter, delegations []string) (q string, args []interface{}) {
+	// nolint:gocritic
+	// language=PostgreSQL
+	q = `
+		[with_variable_storage]
+		SELECT 
+			w.work_number,
+			v.content->'pipeline'->'blocks'->'servicedesk_application_0'->'params'->>'blueprint_id'
+		FROM works w 
+		JOIN versions v ON v.id = w.version_id
+		JOIN pipelines p ON p.id = v.pipeline_id
+		JOIN unique_actions ua ON ua.work_id = w.id
+		[join_variable_storage]
+		WHERE w.child_id IS NULL`
+
+	order := ascOrder
+	if fl.Order != nil {
+		order = *fl.Order
+	}
+
+	var queryMaker compileGetTaskQueryMaker
+
+	return queryMaker.MakeQuery(&fl, q, delegations, args, order, false)
 }
 
 type compileGetTaskQueryMaker struct {
@@ -414,6 +442,7 @@ func (cq *compileGetTaskQueryMaker) MakeQuery(
 	delegations []string,
 	args []any,
 	order string,
+	useLimitOffset bool,
 ) (query string, resArgs []any) {
 	cq.fl = fl
 	cq.q = q
@@ -432,8 +461,11 @@ func (cq *compileGetTaskQueryMaker) MakeQuery(
 	cq.addInitiator()
 	cq.addProcessingSteps()
 	cq.addOrder(order)
-	cq.addOffset()
-	cq.addLimit()
+
+	if useLimitOffset {
+		cq.addOffset()
+		cq.addLimit()
+	}
 
 	cq.q = replaceStorageVariable(cq.q)
 
@@ -676,6 +708,13 @@ func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter, delegations 
 		return &entity.EriusTasksPage{Tasks: []entity.EriusTask{}}, nil
 	}
 
+	qMeta, argsMeta := compileGetTasksMetaQuery(filters, delegations)
+
+	meta, err := db.getTasksMeta(ctx, qMeta, argsMeta)
+	if err != nil {
+		return nil, err
+	}
+
 	taskIDs := make([]string, 0, len(tasks.Tasks))
 
 	//nolint:gocritic //в этом проекте не принято использовать поинтеры в коллекциях
@@ -781,8 +820,9 @@ func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter, delegations 
 	}
 
 	return &entity.EriusTasksPage{
-		Tasks: tasks.Tasks,
-		Total: tasks.Tasks[0].Total,
+		Tasks:     tasks.Tasks,
+		Total:     tasks.Tasks[0].Total,
+		TasksMeta: *meta,
 	}, nil
 }
 
@@ -1483,7 +1523,66 @@ func (db *PGCon) getTasks(ctx c.Context, filters *entity.TaskFilter,
 		ets.Tasks = append(ets.Tasks, et)
 	}
 
+	rowsErr := rows.Err()
+	if rowsErr != nil {
+		return nil, rowsErr
+	}
+
 	return &ets, nil
+}
+
+//nolint:gocyclo //its ok here
+func (db *PGCon) getTasksMeta(ctx c.Context, q string, args []interface{}) (*entity.TasksMeta, error) {
+	ctx, span := trace.StartSpan(ctx, "db.pg_get_tasks_meta")
+	defer span.End()
+
+	meta := entity.TasksMeta{
+		Blueprints: make(map[string][]string),
+	}
+
+	rows, err := db.Connection.Query(ctx, q, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var (
+		workNumber  string
+		blueprintID sql.NullString
+	)
+
+	for rows.Next() {
+		err = rows.Scan(
+			&workNumber,
+			&blueprintID,
+		)
+
+		if err != nil {
+			return nil, err
+		}
+
+		if !blueprintID.Valid || blueprintID.String == "" {
+			continue
+		}
+
+		ww, ok := meta.Blueprints[blueprintID.String]
+		if !ok {
+			ww = make([]string, 0, 1)
+		}
+
+		if !utils.IsContainsInSlice(workNumber, ww) {
+			ww = append(ww, workNumber)
+		}
+
+		meta.Blueprints[blueprintID.String] = ww
+	}
+
+	rowsErr := rows.Err()
+	if rowsErr != nil {
+		return nil, rowsErr
+	}
+
+	return &meta, nil
 }
 
 func (db *PGCon) GetTaskSteps(ctx c.Context, id uuid.UUID) (entity.TaskSteps, error) {

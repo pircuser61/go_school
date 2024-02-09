@@ -42,9 +42,14 @@ type EriusTasks struct {
 	Tasks []EriusTask `json:"tasks"`
 }
 
+type TasksMeta struct {
+	Blueprints map[string][]string `json:"blueprints"` // SD blueprints: [workNumbers]
+}
+
 type EriusTasksPage struct {
-	Tasks []EriusTask `json:"tasks"`
-	Total int         `json:"total"`
+	Tasks     []EriusTask `json:"tasks"`
+	Total     int         `json:"total"`
+	TasksMeta TasksMeta   `json:"tasks_meta"`
 }
 
 type CountTasks struct {

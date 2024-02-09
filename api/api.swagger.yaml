@@ -3017,6 +3017,19 @@ components:
         - wait
         - revoke
         - cancel
+    TasksMeta:
+      type: object
+      description: Tasks list meta
+      properties:
+        blueprints:
+          type: object
+          description: Blueprints ids
+          additionalProperties:
+            type: array
+            items:
+              type: string
+      required:
+        - blueprints
     EriusTask:
       type: object
       properties:
@@ -3115,9 +3128,12 @@ components:
             $ref: '#/components/schemas/EriusTask'
         total:
           type: integer
+        tasks_meta:
+          $ref: '#/components/schemas/TasksMeta'
       required:
         - tasks
         - total
+        - tasks_meta
     MonitoringTasksPage:
       type: object
       properties:
