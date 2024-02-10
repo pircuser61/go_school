@@ -22,6 +22,11 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
+var (
+	ErrRefValueNotFound  = errors.New("ref value not found")
+	ErrRefValueNotString = errors.New("ref value not string")
+)
+
 type NotificationData struct {
 	People          []string            `json:"people"`
 	Emails          []string            `json:"emails"`
@@ -104,9 +109,9 @@ func (gb *GoNotificationBlock) compileText(ctx context.Context) (*mail.Notif, []
 
 func (gb *GoNotificationBlock) notificationBlockText() (string, error) {
 	switch gb.State.TextSource.Type() {
-	case script.OwnValueSource:
+	case script.TextFieldSource:
 		return gb.ownValueSourceText(), nil
-	case script.ContextValueSource:
+	case script.VarContextSource:
 		return gb.contextValueSourceText()
 	default:
 		return "", script.ErrUnknownTextSourceType
@@ -122,7 +127,7 @@ func (gb *GoNotificationBlock) ownValueSourceText() string {
 }
 
 func (gb *GoNotificationBlock) contextValueSourceText() (string, error) {
-	value, err := gb.RunContext.VarStore.GetString(gb.State.TextSource.RefValue)
+	value, err := gb.textRefValue()
 	if err != nil {
 		return "", err
 	}
@@ -130,6 +135,25 @@ func (gb *GoNotificationBlock) contextValueSourceText() (string, error) {
 	// на фронте значение текст всегда оборачивается тегом p
 	// <p>Hello Text!</p>
 	return wrapWithTag("p", value), nil
+}
+
+func (gb *GoNotificationBlock) textRefValue() (string, error) {
+	grabStorage, err := gb.RunContext.VarStore.GrabStorage()
+	if err != nil {
+		return "", err
+	}
+
+	textValue := getVariable(grabStorage, gb.State.TextSource.Ref)
+	if textValue == nil {
+		return "", ErrRefValueNotFound
+	}
+
+	text, ok := textValue.(string)
+	if !ok {
+		return "", ErrRefValueNotString
+	}
+
+	return text, nil
 }
 
 func wrapWithTag(tag, text string) string {
@@ -195,7 +219,7 @@ func (gb *GoNotificationBlock) Update(ctx context.Context) (interface{}, error) 
 
 	text, files, err := gb.compileText(ctx)
 	if err != nil {
-		return nil, errors.New("couldn't compile notification text")
+		return nil, fmt.Errorf("couldn't compile notification text, %w", err)
 	}
 
 	iconsName := make([]string, 0, 1)
@@ -238,7 +262,7 @@ func (gb *GoNotificationBlock) Update(ctx context.Context) (interface{}, error) 
 
 	filesAttach, err := gb.RunContext.GetIcons(fileNames)
 	if err != nil {
-		return nil, errors.New("couldn't get icons")
+		return nil, fmt.Errorf("couldn't get icons, %w", err)
 	}
 
 	files = append(files, filesAttach...)
@@ -287,7 +311,7 @@ func (gb *GoNotificationBlock) Model() script.FunctionModel {
 				TextSource: script.TextSource{
 					SourceType: "",
 					Text:       "",
-					RefValue:   "",
+					Ref:        "",
 				},
 			},
 		},

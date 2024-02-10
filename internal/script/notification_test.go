@@ -184,7 +184,7 @@ func TestNotificationParams_Validate(t *testing.T) {
 				Subject:         "B",
 				Text:            "C",
 				TextSource: TextSource{
-					SourceType: ContextValueSource,
+					SourceType: VarContextSource,
 				},
 			},
 			wantErr: ErrEmptyTextSourceRefValue,

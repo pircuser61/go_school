@@ -4452,6 +4452,19 @@ components:
         text:
           type: string
           description: Notification body
+        textSource: 
+          type: object
+          properties:
+            sourceType: 
+              type: string
+              enum: [field, context]
+              description: context для переменной из контекста, field для своего значения
+            text: 
+              type: string
+              description: в случае если выбран sourceType field, отсюда будет браться текст
+            ref: 
+              type: string
+              description: в случае если выбран sourceType context, отсюда будет браться название переменной контекста
       required:
         - people
         - emails

@@ -49,9 +49,9 @@ func (a *NotificationParams) validateStringFields() error {
 
 func (a *NotificationParams) validateText() error {
 	switch a.TextSource.Type() {
-	case OwnValueSource:
+	case TextFieldSource:
 		return a.validateOwnValueTextSourceType()
-	case ContextValueSource:
+	case VarContextSource:
 		return a.validateContextValueSourceType()
 	default:
 		return ErrUnknownTextSourceType
@@ -71,7 +71,7 @@ func (a *NotificationParams) validateOwnValueTextSourceType() error {
 }
 
 func (a *NotificationParams) validateContextValueSourceType() error {
-	if a.TextSource.RefValue == "" {
+	if a.TextSource.Ref == "" {
 		return ErrEmptyTextSourceRefValue
 	}
 
@@ -81,19 +81,19 @@ func (a *NotificationParams) validateContextValueSourceType() error {
 type TextSourceType string
 
 const (
-	OwnValueSource     TextSourceType = "own_value"
-	ContextValueSource TextSourceType = "context_value"
+	TextFieldSource  TextSourceType = "field"
+	VarContextSource TextSourceType = "context"
 )
 
 type TextSource struct {
 	SourceType TextSourceType `json:"sourceType"`
 	Text       string         `json:"text"`
-	RefValue   string         `json:"refValue"`
+	Ref        string         `json:"ref"`
 }
 
 func (ts *TextSource) Type() TextSourceType {
 	if ts.SourceType == "" {
-		return OwnValueSource
+		return TextFieldSource
 	}
 
 	return ts.SourceType
