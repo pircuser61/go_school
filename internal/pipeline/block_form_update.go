@@ -213,6 +213,8 @@ func (gb *GoFormBlock) handleRequestFillForm(ctx context.Context, data *script.B
 		return err
 	}
 
+	gb.State.IsExpired = gb.State.Deadline.Before(time.Now())
+
 	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputFormExecutor], personData)
 	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputFormBody], gb.State.ApplicationBody)
 

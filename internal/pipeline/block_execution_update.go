@@ -728,6 +728,8 @@ func (gb *GoExecutionBlock) updateDecision(ctx context.Context) error {
 			return personErr
 		}
 
+		gb.State.IsExpired = gb.State.Deadline.Before(time.Now())
+
 		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputExecutionLogin], person)
 		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputDecision], &gb.State.Decision)
 		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputComment], &gb.State.DecisionComment)
@@ -1230,6 +1232,8 @@ func (gb *GoExecutionBlock) toEditApplication(ctx context.Context) (err error) {
 		if personErr != nil {
 			return personErr
 		}
+
+		gb.State.IsExpired = gb.State.Deadline.Before(time.Now())
 
 		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputExecutionLogin], person)
 		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputDecision], ExecutionDecisionSentEdit)

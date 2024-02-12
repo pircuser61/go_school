@@ -74,6 +74,7 @@ type ExecutionData struct {
 
 	ExecutorsGroupIDPath *string `json:"executors_group_id_path,omitempty"`
 
+	IsExpired                   bool           `json:"is_expired"`
 	IsTakenInWork               bool           `json:"is_taken_in_work"`
 	TakenInWorkLog              []StartWorkLog `json:"taken_in_work_log"`
 	IsExecutorVariablesResolved bool           `json:"is_executor_variables_resolved"`

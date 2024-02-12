@@ -93,6 +93,8 @@ func (gb *GoApproverBlock) setApproveDecision(ctx context.Context, u *approverUp
 		return err
 	}
 
+	gb.State.IsExpired = gb.State.Deadline.Before(time.Now())
+
 	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputApprover], person)
 	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputDecision], gb.State.Decision.String())
 	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputComment], gb.State.Comment)
@@ -631,6 +633,8 @@ func (gb *GoApproverBlock) toEditApplication(ctx context.Context, updateParams a
 	if err != nil {
 		return err
 	}
+
+	gb.State.IsExpired = gb.State.Deadline.Before(time.Now())
 
 	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputApprover], person)
 	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputDecision], ApproverDecisionSentToEdit)

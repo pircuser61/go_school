@@ -478,6 +478,8 @@ func (gb *GoSignBlock) setSignerDecision(ctx c.Context, u *signSignatureParams) 
 			return err
 		}
 
+		gb.State.IsExpired = gb.State.Deadline.Before(time.Now())
+
 		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputSigner], personData)
 		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputSignDecision], gb.State.Decision)
 		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputSignComment], gb.State.Comment)
