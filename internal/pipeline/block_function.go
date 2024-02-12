@@ -139,12 +139,12 @@ func (gb *ExecutableFunctionBlock) Update(ctx context.Context) (interface{}, err
 	log := logger.GetLogger(ctx)
 
 	if gb.RunContext.UpdateData != nil {
-		err := gb.updateData(log)
+		err := gb.updateFunctionResult(log)
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		err := gb.updateWithNilData(ctx, log)
+		err := gb.runFunction(ctx, log)
 		if err != nil {
 			return nil, err
 		}

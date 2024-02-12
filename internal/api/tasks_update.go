@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"golang.org/x/sync/errgroup"
 
 	"go.opencensus.io/trace"
 
@@ -941,6 +942,11 @@ func (ae *Env) updateTaskByWorkNumber(
 		log.WithError(sendNotifErr).Error("couldn't send notification")
 	}
 
+	err = ae.Scheduler.DeleteAllTasksByWorkID(ctx, dbTask.ID)
+	if err != nil {
+		log.WithError(err).Error("failed delete all tasks by work id in scheduler")
+	}
+
 	tasks.Tasks = append(
 		tasks.Tasks,
 		stoppedTask{
@@ -955,29 +961,64 @@ func (ae *Env) updateTaskByWorkNumber(
 }
 
 func (ae *Env) processTasks(ctx context.Context, stoppedTasks []stoppedTask) error {
-	for i := range stoppedTasks {
-		task := stoppedTasks[i]
-		runCtx := pipeline.BlockRunContext{
-			WorkNumber: task.WorkNumber,
-			TaskID:     task.ID,
-			Services: pipeline.RunContextServices{
-				HTTPClient:   ae.HTTPClient,
-				Integrations: ae.Integrations,
-				Storage:      ae.DB,
-			},
-			BlockRunResults: &pipeline.BlockRunResults{},
-		}
-
-		runCtx.SetTaskEvents(ctx)
-
-		nodeEvents, eventErr := runCtx.GetCancelledStepsEvents(ctx)
-		if eventErr != nil {
-			return eventErr
-		}
-
-		runCtx.BlockRunResults.NodeEvents = nodeEvents
-		runCtx.NotifyEvents(ctx)
+	const maxSyncTasksCount = 3
+	if len(stoppedTasks) > maxSyncTasksCount {
+		return ae.processTasksAsync(ctx, stoppedTasks)
 	}
+
+	return ae.processTasksSync(ctx, stoppedTasks)
+}
+
+func (ae *Env) processTasksSync(ctx context.Context, stoppedTasks []stoppedTask) error {
+	for _, task := range stoppedTasks {
+		task := task
+
+		err := ae.processSingleTask(ctx, &task)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (ae *Env) processTasksAsync(ctx context.Context, stoppedTasks []stoppedTask) error {
+	var errgr errgroup.Group
+
+	for _, task := range stoppedTasks {
+		task := task
+
+		errgr.Go(
+			func() error {
+				return ae.processSingleTask(ctx, &task)
+			},
+		)
+	}
+
+	return errgr.Wait()
+}
+
+func (ae *Env) processSingleTask(ctx context.Context, task *stoppedTask) error {
+	runCtx := pipeline.BlockRunContext{
+		WorkNumber: task.WorkNumber,
+		TaskID:     task.ID,
+		Services: pipeline.RunContextServices{
+			HTTPClient:   ae.HTTPClient,
+			Integrations: ae.Integrations,
+			Storage:      ae.DB,
+		},
+		BlockRunResults: &pipeline.BlockRunResults{},
+	}
+
+	runCtx.SetTaskEvents(ctx)
+
+	nodeEvents, eventErr := runCtx.GetCancelledStepsEvents(ctx)
+	if eventErr != nil {
+		return eventErr
+	}
+
+	runCtx.BlockRunResults.NodeEvents = nodeEvents
+	runCtx.NotifyEvents(ctx)
 
 	return nil
 }
