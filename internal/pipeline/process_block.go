@@ -363,6 +363,7 @@ func (runCtx *BlockRunContext) updateStepInDB(ctx c.Context, name string, id uui
 			Actions:              actions,
 			IsActed:              pl[i].IsActed,
 			ExecutionGroupMember: pl[i].ExecutionGroupMember,
+			IsInitiator:          pl[i].IsInitiator,
 		})
 	}
 

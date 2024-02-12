@@ -16,17 +16,20 @@ type HideExecutorsFormBlockStepHandler struct {
 	stepDelegates  map[string]bool
 	members        []string
 	requesterLogin string
+	isInitiator    bool
 }
 
 func NewHideExecutorsFormBlockStepHandler(
 	stepDelegates map[string]bool,
 	members []string,
 	requesterLogin string,
+	isInitiator bool,
 ) *HideExecutorsFormBlockStepHandler {
 	return &HideExecutorsFormBlockStepHandler{
 		stepDelegates:  stepDelegates,
 		members:        members,
 		requesterLogin: requesterLogin,
+		isInitiator:    isInitiator,
 	}
 }
 
@@ -46,7 +49,10 @@ func (h *HideExecutorsFormBlockStepHandler) HandleStep(step *entity.Step) error 
 		return unmarshalErr
 	}
 
-	if !formBlock.HideExecutorFromInitiator || slices.Contains(h.members, h.requesterLogin) {
+	userInMembers := slices.Contains(h.members, h.requesterLogin)
+	userAsValidMember := !h.isInitiator || utils.IsContainsInMap(h.requesterLogin, formBlock.Executors)
+
+	if !formBlock.HideExecutorFromInitiator || (userInMembers && userAsValidMember) {
 		return nil
 	}
 
@@ -75,17 +81,20 @@ type HideExecutorsExecutionBlockStepHandler struct {
 	stepDelegates  map[string]bool
 	members        []string
 	requesterLogin string
+	isInitiator    bool
 }
 
 func NewHideExecutorsExecutionBlockStepHandler(
 	stepDelegates map[string]bool,
 	members []string,
 	requesterLogin string,
+	isInitiator bool,
 ) *HideExecutorsExecutionBlockStepHandler {
 	return &HideExecutorsExecutionBlockStepHandler{
 		stepDelegates:  stepDelegates,
 		members:        members,
 		requesterLogin: requesterLogin,
+		isInitiator:    isInitiator,
 	}
 }
 
@@ -105,7 +114,10 @@ func (h *HideExecutorsExecutionBlockStepHandler) HandleStep(step *entity.Step) e
 		return unmarshalErr
 	}
 
-	if !execBlock.HideExecutor || slices.Contains(h.members, h.requesterLogin) {
+	userInMembers := slices.Contains(h.members, h.requesterLogin)
+	userAsValidMember := !h.isInitiator || utils.IsContainsInMap(h.requesterLogin, execBlock.Executors)
+
+	if !execBlock.HideExecutor || (userInMembers && userAsValidMember) {
 		return nil
 	}
 
@@ -125,6 +137,13 @@ func (h *HideExecutorsExecutionBlockStepHandler) HandleStep(step *entity.Step) e
 		execBlock.ChangedExecutorsLogs[i].OldLogin = hiddenUserLogin
 		execBlock.ChangedExecutorsLogs[i].NewLogin = hiddenUserLogin
 		execBlock.ChangedExecutorsLogs[i].Comment = ""
+		execBlock.ChangedExecutorsLogs[i].ByLogin = hiddenUserLogin
+		execBlock.ChangedExecutorsLogs[i].DelegateFor = hideDelegator(execBlock.ChangedExecutorsLogs[i].DelegateFor)
+	}
+
+	for i := range execBlock.TakenInWorkLog {
+		execBlock.TakenInWorkLog[i].Executor = hiddenUserLogin
+		execBlock.TakenInWorkLog[i].DelegateFor = hideDelegator(execBlock.TakenInWorkLog[i].DelegateFor)
 	}
 
 	for i := range execBlock.RequestExecutionInfoLogs {

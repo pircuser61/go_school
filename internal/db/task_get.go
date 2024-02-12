@@ -2160,7 +2160,7 @@ func (db *PGCon) GetTaskMembers(ctx c.Context, workNumber string, fromActiveNode
 	q := `SELECT m.login, vs.step_type FROM works
     		JOIN variable_storage vs ON works.id = vs.work_id
     		JOIN members m ON vs.id = m.block_id
-		 WHERE work_number = $1 `
+		 WHERE work_number = $1 AND is_initiator = false `
 
 	if fromActiveNodes {
 		q += `AND vs.status IN ('running', 'idle');`

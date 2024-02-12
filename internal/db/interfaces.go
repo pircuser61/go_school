@@ -102,6 +102,7 @@ type Member struct {
 	Type                 string
 	IsActed              bool
 	ExecutionGroupMember bool
+	IsInitiator          bool
 }
 
 type Deadline struct {

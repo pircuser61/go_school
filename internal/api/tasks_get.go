@@ -304,7 +304,7 @@ func (ae *Env) GetTask(w http.ResponseWriter, req *http.Request, workNumber stri
 	}
 
 	if ui.Username != scenario.Author {
-		hideErr := ae.hideExecutors(ctx, dbTask, ui.Username, currentUserDelegateSteps)
+		hideErr := ae.hideExecutors(ctx, dbTask, ui.Username, currentUserDelegateSteps, ui.Username == dbTask.Author)
 		if hideErr != nil {
 			errorHandler.handleError(UnknownError, hideErr)
 
@@ -952,7 +952,8 @@ func (ae *Env) removeForms(dbTask *entity.EriusTask, accessibleForms map[string]
 	dbTask.Steps = actualSteps
 }
 
-func (ae *Env) hideExecutors(ctx context.Context, dbTask *entity.EriusTask, requesterLogin string, stepDelegates map[string]bool) error {
+func (ae *Env) hideExecutors(ctx context.Context, dbTask *entity.EriusTask, requesterLogin string,
+	stepDelegates map[string]bool, isInitiator bool) error {
 	dbMembers, membErr := ae.DB.GetTaskMembers(ctx, dbTask.WorkNumber, false)
 	if membErr != nil {
 		return membErr
@@ -968,12 +969,12 @@ func (ae *Env) hideExecutors(ctx context.Context, dbTask *entity.EriusTask, requ
 
 	stepHandler.RegisterStepTypeHandler(
 		pipeline.BlockGoFormID,
-		stephandlers.NewHideExecutorsFormBlockStepHandler(stepDelegates, members, requesterLogin),
+		stephandlers.NewHideExecutorsFormBlockStepHandler(stepDelegates, members, requesterLogin, isInitiator),
 	)
 
 	stepHandler.RegisterStepTypeHandler(
 		pipeline.BlockGoExecutionID,
-		stephandlers.NewHideExecutorsExecutionBlockStepHandler(stepDelegates, members, requesterLogin),
+		stephandlers.NewHideExecutorsExecutionBlockStepHandler(stepDelegates, members, requesterLogin, isInitiator),
 	)
 
 	err := stepHandler.HandleSteps(dbTask.Steps)
