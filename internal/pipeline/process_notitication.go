@@ -218,6 +218,22 @@ func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) ([]o
 	apBody := flatArray(taskContext.InitialApplication.ApplicationBody)
 
 	for k, v := range apBody.Values() {
+		isHiddenField := false
+
+		for _, hiddenField := range taskContext.InitialApplication.HiddenFields {
+			if hiddenField != k {
+				continue
+			}
+
+			isHiddenField = true
+
+			break
+		}
+
+		if isHiddenField {
+			continue
+		}
+
 		key, ok := taskContext.InitialApplication.Keys[k]
 		if !ok {
 			continue
@@ -283,6 +299,22 @@ func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) ([]o
 						attachmentFiles = append(attachmentFiles, fileID.(string))
 					}
 				}
+			}
+
+			isHiddenFields := false
+
+			for _, hiddenFields := range formBlock.HiddenFields {
+				if k != hiddenFields {
+					continue
+				}
+
+				isHiddenFields = true
+
+				break
+			}
+
+			if isHiddenFields {
+				continue
 			}
 
 			key, ok := formBlock.Keys[k]
