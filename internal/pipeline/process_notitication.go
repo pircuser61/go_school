@@ -304,7 +304,7 @@ func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) ([]o
 			isHiddenFields := false
 
 			for _, hiddenFields := range formBlock.HiddenFields {
-				if k == hiddenFields {
+				if k != hiddenFields {
 					continue
 				}
 
