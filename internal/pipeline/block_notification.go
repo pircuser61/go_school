@@ -132,9 +132,7 @@ func (gb *GoNotificationBlock) contextValueSourceText() (string, error) {
 		return "", err
 	}
 
-	// на фронте значение текст всегда оборачивается тегом p
-	// <p>Hello Text!</p>
-	return wrapWithTag("p", value), nil
+	return value, nil
 }
 
 func (gb *GoNotificationBlock) textRefValue() (string, error) {
@@ -154,23 +152,6 @@ func (gb *GoNotificationBlock) textRefValue() (string, error) {
 	}
 
 	return text, nil
-}
-
-func wrapWithTag(tag, text string) string {
-	tagStart, tagEnd := makeTag(tag)
-	if !strings.HasPrefix(text, tagStart) {
-		text = tagStart + text
-	}
-
-	if !strings.HasSuffix(text, tagEnd) {
-		text += tagEnd
-	}
-
-	return text
-}
-
-func makeTag(tag string) (tagStart, tagEnd string) {
-	return fmt.Sprintf("<%s>", tag), fmt.Sprintf("</%s>", tag)
 }
 
 func (gb *GoNotificationBlock) Next(_ *store.VariableStore) ([]string, bool) {
@@ -277,12 +258,15 @@ func (gb *GoNotificationBlock) Update(ctx context.Context) (interface{}, error) 
 	if _, oks := gb.expectedEvents[eventEnd]; oks {
 		status, _, _ := gb.GetTaskHumanStatus()
 
-		event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, MakeNodeEndEventArgs{
-			NodeName:      gb.Name,
-			NodeShortName: gb.ShortName,
-			HumanStatus:   status,
-			NodeStatus:    gb.GetStatus(),
-		})
+		event, eventErr := gb.RunContext.MakeNodeEndEvent(
+			ctx,
+			MakeNodeEndEventArgs{
+				NodeName:      gb.Name,
+				NodeShortName: gb.ShortName,
+				HumanStatus:   status,
+				NodeStatus:    gb.GetStatus(),
+			},
+		)
 		if eventErr != nil {
 			return nil, eventErr
 		}
@@ -308,7 +292,7 @@ func (gb *GoNotificationBlock) Model() script.FunctionModel {
 				UsersFromSchema: "",
 				Subject:         "",
 				Text:            "",
-				TextSourceType:  "",
+				TextSourceType:  script.TextFieldSource,
 			},
 		},
 		Sockets: []script.Socket{script.DefaultSocket},

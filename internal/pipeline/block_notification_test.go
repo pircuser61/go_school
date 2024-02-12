@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
@@ -347,4 +348,100 @@ func Test_createGoNotificationBlock(t *testing.T) {
 			assert.Equalf(t, tt.want, got, "createGoNotificationBlock(%v, %v, %v)", tt.args.name, tt.args.ef, nil)
 		})
 	}
+}
+
+func Test_GoNotificationBlock_notificationBlockText(t *testing.T) {
+	varStore := store.NewStore()
+
+	varStore.SetValue(
+		"start_0.initiator",
+		map[string]string{
+			"email": "davoro26@mts.ru",
+		},
+	)
+
+	varStore.SetValue("start_0.initiator.email", "davoro26@mts.ru")
+
+	tests := []struct {
+		name                     string
+		block                    *GoNotificationBlock
+		expectedNotificationText string
+		expectedErr              error
+	}{
+		{
+			name: "default text field source notification text",
+			block: &GoNotificationBlock{
+				State: &NotificationData{
+					Text: "aboba",
+				},
+			},
+
+			expectedNotificationText: "aboba",
+		},
+
+		{
+			name: "default text field source notification text",
+			block: &GoNotificationBlock{
+				State: &NotificationData{
+					Text:           "aboba",
+					TextSourceType: script.TextFieldSource,
+				},
+			},
+
+			expectedNotificationText: "aboba",
+		},
+
+		{
+			name: "context value source, context value not exists",
+			block: &GoNotificationBlock{
+				RunContext: &BlockRunContext{
+					VarStore: varStore,
+				},
+				State: &NotificationData{
+					Text:           "undefinedpath",
+					TextSourceType: script.VarContextSource,
+				},
+			},
+
+			expectedErr: ErrRefValueNotFound,
+		},
+
+		{
+			name: "context value source, context value not string",
+			block: &GoNotificationBlock{
+				RunContext: &BlockRunContext{
+					VarStore: varStore,
+				},
+				State: &NotificationData{
+					Text:           "start_0.initiator",
+					TextSourceType: script.VarContextSource,
+				},
+			},
+			expectedErr: ErrRefValueNotString,
+		},
+
+		{
+			name: "context value source, context value exists and string type",
+			block: &GoNotificationBlock{
+				RunContext: &BlockRunContext{
+					VarStore: varStore,
+				},
+				State: &NotificationData{
+					Text:           "start_0.initiator.email",
+					TextSourceType: script.VarContextSource,
+				},
+			},
+			expectedNotificationText: "davoro26@mts.ru",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			text, err := tt.block.notificationBlockText()
+
+			require.ErrorIs(t, err, tt.expectedErr)
+			assert.Equal(t, tt.expectedNotificationText, text)
+		})
+	}
+
 }
