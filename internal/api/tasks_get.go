@@ -952,8 +952,9 @@ func (ae *Env) removeForms(dbTask *entity.EriusTask, accessibleForms map[string]
 	dbTask.Steps = actualSteps
 }
 
-func (ae *Env) hideExecutors(ctx context.Context, dbTask *entity.EriusTask, requesterLogin string,
-	stepDelegates map[string]bool, isInitiator bool) error {
+func (ae *Env) hideExecutors(
+	ctx context.Context, dbTask *entity.EriusTask, requesterLogin string, stepDelegates map[string]bool, isInitiator bool,
+) error {
 	dbMembers, membErr := ae.DB.GetTaskMembers(ctx, dbTask.WorkNumber, false)
 	if membErr != nil {
 		return membErr
