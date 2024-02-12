@@ -3,6 +3,7 @@ package pipeline
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"sort"
 	"strings"
@@ -21,12 +22,26 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
+var (
+	ErrRefValueNotFound  = errors.New("ref value not found")
+	ErrRefValueNotString = errors.New("ref value not string")
+)
+
 type NotificationData struct {
-	People          []string            `json:"people"`
-	Emails          []string            `json:"emails"`
-	UsersFromSchema map[string]struct{} `json:"usersFromSchema"`
-	Subject         string              `json:"subject"`
-	Text            string              `json:"text"`
+	People          []string              `json:"people"`
+	Emails          []string              `json:"emails"`
+	UsersFromSchema map[string]struct{}   `json:"usersFromSchema"`
+	Subject         string                `json:"subject"`
+	Text            string                `json:"text"`
+	TextSourceType  script.TextSourceType `json:"textSourceType"`
+}
+
+func (n *NotificationData) Type() script.TextSourceType {
+	if n.TextSourceType == "" {
+		return script.TextFieldSource
+	}
+
+	return n.TextSourceType
 }
 
 type GoNotificationBlock struct {
@@ -84,15 +99,59 @@ func (gb *GoNotificationBlock) compileText(ctx context.Context) (*mail.Notif, []
 		return nil, nil, err
 	}
 
+	text, err := gb.notificationBlockText()
+	if err != nil {
+		return nil, nil, err
+	}
+
 	tpl := &mail.Notif{
 		Title:       gb.State.Subject,
-		Body:        gb.State.Text,
+		Body:        text,
 		Description: description,
 		Link:        gb.RunContext.Services.Sender.GetApplicationLink(gb.RunContext.WorkNumber),
 		Initiator:   typedAuthor,
 	}
 
 	return tpl, files, nil
+}
+
+func (gb *GoNotificationBlock) notificationBlockText() (string, error) {
+	switch gb.State.Type() {
+	case script.TextFieldSource:
+		return gb.State.Text, nil
+	case script.VarContextSource:
+		return gb.contextValueSourceText()
+	default:
+		return "", script.ErrUnknownTextSourceType
+	}
+}
+
+func (gb *GoNotificationBlock) contextValueSourceText() (string, error) {
+	value, err := gb.textRefValue()
+	if err != nil {
+		return "", err
+	}
+
+	return value, nil
+}
+
+func (gb *GoNotificationBlock) textRefValue() (string, error) {
+	grabStorage, err := gb.RunContext.VarStore.GrabStorage()
+	if err != nil {
+		return "", err
+	}
+
+	textValue := getVariable(grabStorage, gb.State.Text)
+	if textValue == nil {
+		return "", ErrRefValueNotFound
+	}
+
+	text, ok := textValue.(string)
+	if !ok {
+		return "", ErrRefValueNotString
+	}
+
+	return text, nil
 }
 
 func (gb *GoNotificationBlock) Next(_ *store.VariableStore) ([]string, bool) {
@@ -141,7 +200,7 @@ func (gb *GoNotificationBlock) Update(ctx context.Context) (interface{}, error) 
 
 	text, files, err := gb.compileText(ctx)
 	if err != nil {
-		return nil, errors.New("couldn't compile notification text")
+		return nil, fmt.Errorf("couldn't compile notification text, %w", err)
 	}
 
 	iconsName := make([]string, 0, 1)
@@ -184,7 +243,7 @@ func (gb *GoNotificationBlock) Update(ctx context.Context) (interface{}, error) 
 
 	filesAttach, err := gb.RunContext.GetIcons(fileNames)
 	if err != nil {
-		return nil, errors.New("couldn't get icons")
+		return nil, fmt.Errorf("couldn't get icons, %w", err)
 	}
 
 	files = append(files, filesAttach...)
@@ -199,12 +258,15 @@ func (gb *GoNotificationBlock) Update(ctx context.Context) (interface{}, error) 
 	if _, oks := gb.expectedEvents[eventEnd]; oks {
 		status, _, _ := gb.GetTaskHumanStatus()
 
-		event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, MakeNodeEndEventArgs{
-			NodeName:      gb.Name,
-			NodeShortName: gb.ShortName,
-			HumanStatus:   status,
-			NodeStatus:    gb.GetStatus(),
-		})
+		event, eventErr := gb.RunContext.MakeNodeEndEvent(
+			ctx,
+			MakeNodeEndEventArgs{
+				NodeName:      gb.Name,
+				NodeShortName: gb.ShortName,
+				HumanStatus:   status,
+				NodeStatus:    gb.GetStatus(),
+			},
+		)
 		if eventErr != nil {
 			return nil, eventErr
 		}
@@ -230,6 +292,7 @@ func (gb *GoNotificationBlock) Model() script.FunctionModel {
 				UsersFromSchema: "",
 				Subject:         "",
 				Text:            "",
+				TextSourceType:  script.TextFieldSource,
 			},
 		},
 		Sockets: []script.Socket{script.DefaultSocket},
@@ -237,7 +300,11 @@ func (gb *GoNotificationBlock) Model() script.FunctionModel {
 }
 
 // nolint:dupl,unparam // another block
-func createGoNotificationBlock(ctx context.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext,
+func createGoNotificationBlock(
+	ctx context.Context,
+	name string,
+	ef *entity.EriusFunc,
+	runCtx *BlockRunContext,
 	expectedEvents map[string]struct{},
 ) (*GoNotificationBlock, bool, error) {
 	const reEntry = false
@@ -310,7 +377,9 @@ func createGoNotificationBlock(ctx context.Context, name string, ef *entity.Eriu
 		Text:            params.Text,
 		Subject:         params.Subject,
 		UsersFromSchema: usersFromSchema,
+		TextSourceType:  params.TextSourceType,
 	}
+
 	b.RunContext.VarStore.AddStep(b.Name)
 
 	if _, ok := b.expectedEvents[eventStart]; ok {

@@ -4467,7 +4467,12 @@ components:
           description: Notification subject
         text:
           type: string
-          description: Notification body
+          description: либо текст если своё значение либо путь к переменной если textSourceType = context
+        textSourceType: 
+          type: string
+          enum: [field, context]
+          description: context для переменной из контекста, field для своего значения
+          default: field
       required:
         - people
         - emails
