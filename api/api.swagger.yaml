@@ -4451,20 +4451,12 @@ components:
           description: Notification subject
         text:
           type: string
-          description: Notification body
-        textSource: 
-          type: object
-          properties:
-            sourceType: 
-              type: string
-              enum: [field, context]
-              description: context для переменной из контекста, field для своего значения
-            text: 
-              type: string
-              description: в случае если выбран sourceType field, отсюда будет браться текст
-            ref: 
-              type: string
-              description: в случае если выбран sourceType context, отсюда будет браться название переменной контекста
+          description: либо текст если своё значение либо путь к переменной если textSourceType = context
+        textSourceType: 
+          type: string
+          enum: [field, context]
+          description: context для переменной из контекста, field для своего значения
+          default: field
       required:
         - people
         - emails

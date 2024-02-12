@@ -169,25 +169,9 @@ func TestNotificationParams_Validate(t *testing.T) {
 				UsersFromSchema: "A",
 				Subject:         "B",
 				Text:            "C",
-				TextSource: TextSource{
-					SourceType: "dasfk",
-				},
+				TextSourceType:  "asdfasdf",
 			},
 			wantErr: ErrUnknownTextSourceType,
-		},
-		{
-			name: "Context value text source type, empty ref",
-			notificationParams: NotificationParams{
-				People:          []string{"A", "B", "C"},
-				Emails:          []string{"A", "B", "C"},
-				UsersFromSchema: "A",
-				Subject:         "B",
-				Text:            "C",
-				TextSource: TextSource{
-					SourceType: VarContextSource,
-				},
-			},
-			wantErr: ErrEmptyTextSourceRefValue,
 		},
 		{
 			name: "Empty text value with no empty in text source",
@@ -196,10 +180,7 @@ func TestNotificationParams_Validate(t *testing.T) {
 				Emails:          []string{"A", "B", "C"},
 				UsersFromSchema: "A",
 				Subject:         "B",
-				Text:            "",
-				TextSource: TextSource{
-					Text: "Hello World!",
-				},
+				Text:            "Hello World!",
 			},
 			wantErr: nil,
 		},

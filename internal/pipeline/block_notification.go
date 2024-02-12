@@ -28,12 +28,20 @@ var (
 )
 
 type NotificationData struct {
-	People          []string            `json:"people"`
-	Emails          []string            `json:"emails"`
-	UsersFromSchema map[string]struct{} `json:"usersFromSchema"`
-	Subject         string              `json:"subject"`
-	Text            string              `json:"text"`
-	TextSource      script.TextSource   `json:"textSource"`
+	People          []string              `json:"people"`
+	Emails          []string              `json:"emails"`
+	UsersFromSchema map[string]struct{}   `json:"usersFromSchema"`
+	Subject         string                `json:"subject"`
+	Text            string                `json:"text"`
+	TextSourceType  script.TextSourceType `json:"textSourceType"`
+}
+
+func (n *NotificationData) Type() script.TextSourceType {
+	if n.TextSourceType == "" {
+		return script.TextFieldSource
+	}
+
+	return n.TextSourceType
 }
 
 type GoNotificationBlock struct {
@@ -108,22 +116,14 @@ func (gb *GoNotificationBlock) compileText(ctx context.Context) (*mail.Notif, []
 }
 
 func (gb *GoNotificationBlock) notificationBlockText() (string, error) {
-	switch gb.State.TextSource.Type() {
+	switch gb.State.Type() {
 	case script.TextFieldSource:
-		return gb.ownValueSourceText(), nil
+		return gb.State.Text, nil
 	case script.VarContextSource:
 		return gb.contextValueSourceText()
 	default:
 		return "", script.ErrUnknownTextSourceType
 	}
-}
-
-func (gb *GoNotificationBlock) ownValueSourceText() string {
-	if gb.State.TextSource.Text != "" {
-		return gb.State.TextSource.Text
-	}
-
-	return gb.State.Text
 }
 
 func (gb *GoNotificationBlock) contextValueSourceText() (string, error) {
@@ -143,7 +143,7 @@ func (gb *GoNotificationBlock) textRefValue() (string, error) {
 		return "", err
 	}
 
-	textValue := getVariable(grabStorage, gb.State.TextSource.Ref)
+	textValue := getVariable(grabStorage, gb.State.Text)
 	if textValue == nil {
 		return "", ErrRefValueNotFound
 	}
@@ -308,11 +308,7 @@ func (gb *GoNotificationBlock) Model() script.FunctionModel {
 				UsersFromSchema: "",
 				Subject:         "",
 				Text:            "",
-				TextSource: script.TextSource{
-					SourceType: "",
-					Text:       "",
-					Ref:        "",
-				},
+				TextSourceType:  "",
 			},
 		},
 		Sockets: []script.Socket{script.DefaultSocket},
@@ -397,7 +393,7 @@ func createGoNotificationBlock(
 		Text:            params.Text,
 		Subject:         params.Subject,
 		UsersFromSchema: usersFromSchema,
-		TextSource:      params.TextSource,
+		TextSourceType:  params.TextSourceType,
 	}
 
 	b.RunContext.VarStore.AddStep(b.Name)
