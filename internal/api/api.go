@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/deepmap/oapi-codegen/pkg/runtime"
-
 	"github.com/go-chi/chi/v5"
 )
 
@@ -915,7 +914,10 @@ type EriusTask struct {
 // EriusTasksPage defines model for EriusTasksPage.
 type EriusTasksPage struct {
 	Tasks []EriusTask `json:"tasks"`
-	Total int         `json:"total"`
+
+	// Tasks list meta
+	TasksMeta TasksMeta `json:"tasks_meta"`
+	Total     int       `json:"total"`
 }
 
 // EriusVersionInfo defines model for EriusVersionInfo.
@@ -1168,6 +1170,9 @@ type FormParams struct {
 
 	// List of accessibility properties for forms
 	FormsAccessibility *[]FormsAccessibility `json:"forms_accessibility,omitempty"`
+
+	// Object address for object mapping
+	FullFormMapping *string `json:"full_form_mapping,omitempty"`
 
 	// Hide executor from initiator
 	HideExecutorFromInitiator bool `json:"hide_executor_from_initiator"`
@@ -1874,6 +1879,17 @@ type TaskUpdate struct {
 
 // TaskUpdateAction defines model for TaskUpdate.Action.
 type TaskUpdateAction string
+
+// Tasks list meta
+type TasksMeta struct {
+	// Blueprints ids
+	Blueprints TasksMeta_Blueprints `json:"blueprints"`
+}
+
+// Blueprints ids
+type TasksMeta_Blueprints struct {
+	AdditionalProperties map[string][]string `json:"-"`
+}
 
 // TasksStop defines model for TasksStop.
 type TasksStop struct {
@@ -2968,6 +2984,59 @@ func (a *RunVersionsByPipelineIdRequest_Keys) UnmarshalJSON(b []byte) error {
 
 // Override default JSON handling for RunVersionsByPipelineIdRequest_Keys to handle AdditionalProperties
 func (a RunVersionsByPipelineIdRequest_Keys) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for TasksMeta_Blueprints. Returns the specified
+// element and whether it was found
+func (a TasksMeta_Blueprints) Get(fieldName string) (value []string, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for TasksMeta_Blueprints
+func (a *TasksMeta_Blueprints) Set(fieldName string, value []string) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string][]string)
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for TasksMeta_Blueprints to handle AdditionalProperties
+func (a *TasksMeta_Blueprints) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string][]string)
+		for fieldName, fieldBuf := range object {
+			var fieldVal []string
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for TasksMeta_Blueprints to handle AdditionalProperties
+func (a TasksMeta_Blueprints) MarshalJSON() ([]byte, error) {
 	var err error
 	object := make(map[string]json.RawMessage)
 

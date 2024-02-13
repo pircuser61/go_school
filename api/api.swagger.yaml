@@ -4602,6 +4602,9 @@ components:
         form_group_id:
           type: string
           description: Form group id in SD
+        full_form_mapping:
+          type: string
+          description: 'Object address for object mapping'
         form_group_id_path:
           type: string
           description: Path to form group id

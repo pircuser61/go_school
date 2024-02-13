@@ -717,6 +717,7 @@ func ConvertSocket(sockets []Socket) []script.Socket {
 const (
 	KeyOutputWorkNumber           = "workNumber"
 	KeyOutputApplicationInitiator = "initiator"
+	KeyOutputApplicationBody      = "application_body"
 )
 
 func (es *EriusScenario) FillEntryPointOutput() (err error) {
@@ -727,24 +728,10 @@ func (es *EriusScenario) FillEntryPointOutput() (err error) {
 	}
 
 	if es.Settings.StartSchema != nil {
-		for k := range entryPoint.Output.Properties {
-			val, ok := es.Settings.StartSchema.Properties[k]
-			if !ok {
-				continue
-			}
-
-			val.Global = es.Pipeline.Entrypoint + "." + k
-
-			es.Settings.StartSchema.Properties[k] = val
-		}
-
-		entryPoint.Output = es.Settings.StartSchema
-	}
-
-	if entryPoint.Output == nil {
-		entryPoint.Output = &script.JSONSchema{
+		entryPoint.Output.Properties[KeyOutputApplicationBody] = script.JSONSchemaPropertiesValue{
 			Type:       "object",
-			Properties: make(map[string]script.JSONSchemaPropertiesValue),
+			Global:     es.Pipeline.Entrypoint + "." + KeyOutputApplicationBody,
+			Properties: es.Settings.StartSchema.Properties,
 		}
 	}
 
