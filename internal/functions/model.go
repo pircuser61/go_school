@@ -3,34 +3,36 @@ package functions
 import "errors"
 
 type Function struct {
-	FunctionID  string
-	VersionID   string
-	Name        string
-	Description string
-	Version     string
-	Uses        int32
-	Input       map[string]ParamMetadata
-	Output      map[string]ParamMetadata
-	Options     Options
-	Contracts   string
-	CreatedAt   string
-	DeletedAt   string
-	UpdatedAt   string
-	Versions    []Version
+	FunctionID    string
+	VersionID     string
+	Name          string
+	Description   string
+	Version       string
+	Uses          int32
+	Input         map[string]ParamMetadata
+	RequiredInput []string
+	Output        map[string]ParamMetadata
+	Options       Options
+	Contracts     string
+	CreatedAt     string
+	DeletedAt     string
+	UpdatedAt     string
+	Versions      []Version
 }
 
 type Version struct {
-	VersionID   string
-	FunctionID  string
-	Description string
-	Version     string
-	Input       string
-	Output      string
-	Options     string
-	Contracts   string
-	CreatedAt   string
-	UpdatedAt   string
-	DeletedAt   string
+	VersionID     string
+	FunctionID    string
+	Description   string
+	Version       string
+	Input         string
+	RequiredInput []string
+	Output        string
+	Options       string
+	Contracts     string
+	CreatedAt     string
+	UpdatedAt     string
+	DeletedAt     string
 }
 
 type ParamMetadata struct {
