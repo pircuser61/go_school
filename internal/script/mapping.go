@@ -73,7 +73,7 @@ func getVariable(input map[string]interface{}, path []string) (interface{}, erro
 	return variable, nil
 }
 
-func validateParam(param interface{}, paramJSONSchema *JSONSchemaPropertiesValue) error {
+func ValidateParam(param interface{}, paramJSONSchema *JSONSchemaPropertiesValue) error {
 	marshaledParam, err := json.Marshal(param)
 	if err != nil {
 		return err

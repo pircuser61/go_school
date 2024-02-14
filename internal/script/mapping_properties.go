@@ -84,7 +84,7 @@ func (p *MappingProperties) mapEmptyValueParam(param *param) error {
 	}
 
 	if param.mapping.Default != nil {
-		err := validateParam(param.mapping.Default, &param.mapping)
+		err := ValidateParam(param.mapping.Default, &param.mapping)
 		if err != nil {
 			return err
 		}
@@ -103,7 +103,7 @@ func (p *MappingProperties) mapObjectTypeParam(param *param) error {
 		return err
 	}
 
-	err = validateParam(variable, &param.mapping)
+	err = ValidateParam(variable, &param.mapping)
 	if err != nil {
 		return err
 	}
@@ -122,7 +122,7 @@ func (p *MappingProperties) mapNotEmptyValueParam(param *param) error {
 	}
 
 	if variable != nil {
-		err = validateParam(variable, &param.mapping)
+		err = ValidateParam(variable, &param.mapping)
 		if err != nil {
 			return err
 		}
@@ -137,7 +137,7 @@ func (p *MappingProperties) mapNotEmptyValueParam(param *param) error {
 	}
 
 	if param.mapping.Default != nil {
-		err = validateParam(param.mapping.Default, &param.mapping)
+		err = ValidateParam(param.mapping.Default, &param.mapping)
 		if err != nil {
 			return err
 		}
