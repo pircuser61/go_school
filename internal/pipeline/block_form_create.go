@@ -307,6 +307,7 @@ func (gb *GoFormBlock) createState(ctx context.Context, ef *entity.EriusFunc) er
 		ApplicationBody:           map[string]interface{}{},
 		FormsAccessibility:        params.FormsAccessibility,
 		Mapping:                   params.Mapping,
+		FullFormMapping:           params.FullFormMapping,
 		HideExecutorFromInitiator: params.HideExecutorFromInitiator,
 		IsEditable:                params.IsEditable,
 		ReEnterSettings:           params.ReEnterSettings,
