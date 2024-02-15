@@ -46,7 +46,8 @@ END
 $function$;
 
 SELECT wrap_varstore_context(id)
-FROM variable_storage;
+FROM variable_storage
+WHERE content ->> 'Values' IS NOT NULL;
 
 
 
