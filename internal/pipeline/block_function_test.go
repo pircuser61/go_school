@@ -66,6 +66,14 @@ func TestBlockFunction_Update(t *testing.T) {
 							Value: "servicedesk_application_0.application_body.recipient.fullname",
 						},
 					},
+					Function: script.FunctionParam{
+						Input: `{
+								"mktu":{"type":"array", "items":{"type":"string"},"title":"mktu"},
+								"name":{"type":"string","title":"имя"},
+								"username":{"type":"string","title": "username"}
+							}`,
+						RequiredInput: []string{"name", "username", "mktu"},
+					},
 				},
 				RunContext: &BlockRunContext{
 					TaskID:            workID,
@@ -108,6 +116,257 @@ func TestBlockFunction_Update(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "test with required input and required",
+			fields: fields{
+				Name: stepName,
+				State: &ExecutableFunction{
+					Mapping: script.JSONSchemaProperties{
+						"param1": script.JSONSchemaPropertiesValue{
+							Type:        "string",
+							Description: "param1",
+							Value:       "servicedesk_application_0.application_body.params1",
+						},
+						"param2": script.JSONSchemaPropertiesValue{
+							Type:        "boolean",
+							Description: "param2",
+							Value:       "servicedesk_application_0.application_body.params2",
+						},
+						"param3": script.JSONSchemaPropertiesValue{
+							Type:        "number",
+							Description: "param3",
+							Value:       "servicedesk_application_0.application_body.params3",
+						},
+						"param4": script.JSONSchemaPropertiesValue{
+							Type:        "object",
+							Description: "param4",
+							Value:       "servicedesk_application_0.application_body.params4",
+						},
+					},
+					Function: script.FunctionParam{
+						Input: `{
+								"param1":{"type":"string", "title":"param1"},
+								"param2":{"type":"boolean","title":"param2"},
+								"param3":{"type":"number","title": "param3"},
+								"param4":{"type":"object", 
+									"properties":{
+										"param4.1":{"description":"param4.1","type":"string"},
+										"param4.2":{"description":"param4.2","type":"string"}
+									},
+									"required":["param4.1"]
+								}
+							}`,
+						RequiredInput: []string{"param1", "param2", "param3", "param4"},
+					},
+				},
+				RunContext: &BlockRunContext{
+					TaskID:            workID,
+					skipNotifications: true,
+					skipProduce:       true,
+					VarStore: func() *store.VariableStore {
+						s := store.NewStore()
+						s.SetValue("servicedesk_application_0.application_body", map[string]interface{}{
+							"params1": "param-1",
+							"params2": false,
+							"params3": 3,
+							"params4": map[string]interface{}{
+								"param4.1": "param4.1",
+								"param4.2": "param4.2",
+							},
+						})
+
+						return s
+					}(),
+					Services: RunContextServices{
+						Storage: func() db.Database {
+							res := &mocks.MockedDatabase{}
+
+							res.On("GetTaskStepByName",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								workID,
+								stepName,
+							).Return(
+								&entity.Step{
+									ID: uuid.New(),
+								}, nil,
+							)
+
+							return res
+						}(),
+					},
+				},
+			},
+			args: args{
+				ctx:  context.Background(),
+				data: nil,
+			},
+			wantErr: false,
+		},
+		{
+			name: "bad test with required input and required",
+			fields: fields{
+				Name: stepName,
+				State: &ExecutableFunction{
+					Mapping: script.JSONSchemaProperties{
+						"param1": script.JSONSchemaPropertiesValue{
+							Type:        "string",
+							Description: "param1",
+							Value:       "servicedesk_application_0.application_body.params1",
+						},
+						"param3": script.JSONSchemaPropertiesValue{
+							Type:        "number",
+							Description: "param3",
+							Value:       "servicedesk_application_0.application_body.params3",
+						},
+						"param4": script.JSONSchemaPropertiesValue{
+							Type:        "object",
+							Description: "param4",
+							Value:       "servicedesk_application_0.application_body.params4",
+						},
+					},
+					Function: script.FunctionParam{
+						Input: `{
+								"param1":{"type":"string", "title":"param1"},
+								"param3":{"type":"number","title": "param3"},
+								"param4":{"type":"object", 
+									"properties":{
+										"param4.2":{"description":"param4.2","type":"string"}
+									},
+									"required":["param4.1"]
+								}
+							}`,
+						RequiredInput: []string{"param1", "param2", "param3", "param4"},
+					},
+				},
+				RunContext: &BlockRunContext{
+					TaskID:            workID,
+					skipNotifications: true,
+					skipProduce:       true,
+					VarStore: func() *store.VariableStore {
+						s := store.NewStore()
+						s.SetValue("servicedesk_application_0.application_body", map[string]interface{}{
+							"params1": "param-1",
+							"params3": 3,
+							"params4": map[string]interface{}{
+								"param4.1": "param4.1",
+								"param4.2": "param4.2",
+							},
+						})
+
+						return s
+					}(),
+					Services: RunContextServices{
+						Storage: func() db.Database {
+							res := &mocks.MockedDatabase{}
+
+							res.On("GetTaskStepByName",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								workID,
+								stepName,
+							).Return(
+								&entity.Step{
+									ID: uuid.New(),
+								}, nil,
+							)
+
+							return res
+						}(),
+					},
+				},
+			},
+			args: args{
+				ctx:  context.Background(),
+				data: nil,
+			},
+			wantErr: true,
+		},
+		{
+			name: "ok test with required input and required",
+			fields: fields{
+				Name: stepName,
+				State: &ExecutableFunction{
+					Mapping: script.JSONSchemaProperties{
+						"param1": script.JSONSchemaPropertiesValue{
+							Type:        "string",
+							Description: "param1",
+							Value:       "servicedesk_application_0.application_body.params1",
+						},
+						"param2": script.JSONSchemaPropertiesValue{
+							Type:        "boolean",
+							Description: "param2",
+							Value:       "servicedesk_application_0.application_body.params2",
+						},
+						"param3": script.JSONSchemaPropertiesValue{
+							Type:        "number",
+							Description: "param3",
+							Value:       "servicedesk_application_0.application_body.params3",
+						},
+						"param4": script.JSONSchemaPropertiesValue{
+							Type:        "object",
+							Description: "param4",
+							Value:       "servicedesk_application_0.application_body.params4",
+						},
+					},
+					Function: script.FunctionParam{
+						Input: `{
+								"param1":{"type":"string", "title":"param1"},
+								"param2":{"type":"boolean","title":"param2"},
+								"param3":{"type":"number","title": "param3"},
+								"param4":{"type":"object", 
+									"properties":{
+										"param4.1":{"description":"param4.1","type":"string"},
+										"param4.2":{"description":"param4.2","type":"string"}
+									},
+									"required":["param4.1"]
+								}
+							}`,
+						RequiredInput: []string{"param1", "param2", "param4"},
+					},
+				},
+				RunContext: &BlockRunContext{
+					TaskID:            workID,
+					skipNotifications: true,
+					skipProduce:       true,
+					VarStore: func() *store.VariableStore {
+						s := store.NewStore()
+						s.SetValue("servicedesk_application_0.application_body", map[string]interface{}{
+							"params1": "param-1",
+							"params2": false,
+							"params3": 3,
+							"params4": map[string]interface{}{
+								"param4.1": "param4.1",
+								"param4.2": "param4.2",
+							},
+						})
+
+						return s
+					}(),
+					Services: RunContextServices{
+						Storage: func() db.Database {
+							res := &mocks.MockedDatabase{}
+
+							res.On("GetTaskStepByName",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								workID,
+								stepName,
+							).Return(
+								&entity.Step{
+									ID: uuid.New(),
+								}, nil,
+							)
+
+							return res
+						}(),
+					},
+				},
+			},
+			args: args{
+				ctx:  context.Background(),
+				data: nil,
+			},
+			wantErr: false,
+		},
+
 		{
 			name: "test without update data type error",
 			fields: fields{
@@ -280,6 +539,10 @@ func TestBlockFunction_Update(t *testing.T) {
 					},
 					Constants: map[string]interface{}{
 						"mktu.code": "code_from_constant",
+					},
+					Function: script.FunctionParam{
+						Input:         `{"name":{"type":"string","title":"имя"}}`,
+						RequiredInput: []string{"name"},
 					},
 				},
 				RunContext: &BlockRunContext{

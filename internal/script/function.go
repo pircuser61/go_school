@@ -94,17 +94,18 @@ type ExecutableFunctionParams struct {
 }
 
 type FunctionParam struct {
-	Name        string       `json:"name"`
-	Description string       `json:"description"`
-	FunctionID  string       `json:"functionId"`
-	VersionID   string       `json:"versionId"`
-	Version     string       `json:"version"`
-	CreatedAt   functionTime `json:"createdAt"`
-	DeletedAt   functionTime `json:"deletedAt"`
-	Uses        int          `json:"uses"`
-	Input       string       `json:"input"`
-	Output      string       `json:"output"`
-	Options     string       `json:"options"`
+	Name          string       `json:"name"`
+	Description   string       `json:"description"`
+	FunctionID    string       `json:"functionId"`
+	VersionID     string       `json:"versionId"`
+	Version       string       `json:"version"`
+	CreatedAt     functionTime `json:"createdAt"`
+	DeletedAt     functionTime `json:"deletedAt"`
+	Uses          int          `json:"uses"`
+	Input         string       `json:"input"`
+	RequiredInput []string     `json:"requiredInput"`
+	Output        string       `json:"output"`
+	Options       string       `json:"options"`
 }
 
 type functionTime time.Time

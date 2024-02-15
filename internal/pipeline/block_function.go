@@ -3,6 +3,7 @@ package pipeline
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"sort"
 	"strings"
 	"time"
@@ -75,6 +76,15 @@ type ExecutableFunctionBlock struct {
 
 func (gb *ExecutableFunctionBlock) GetNewEvents() []entity.NodeEvent {
 	return gb.happenedEvents
+}
+
+func (gb *ExecutableFunction) GetSchema() string {
+	// Было -> [str1 str2] | Стало -> ["str1" "str2"]
+	required := fmt.Sprintf("%q", gb.Function.RequiredInput)
+	// Было ["str1" "str2"] | Стало -> ["str1","str2"]
+	required = strings.ReplaceAll(required, " ", ",")
+
+	return fmt.Sprintf(`{"type": "object", "properties": %s, "required": %s}`, gb.Function.Input, required)
 }
 
 func (gb *ExecutableFunctionBlock) Members() []Member {

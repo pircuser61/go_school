@@ -3,9 +3,17 @@ package api
 import (
 	c "context"
 	"encoding/json"
+	"time"
+
+	"github.com/google/uuid"
+
+	"github.com/jackc/pgx/v4"
+
+	"github.com/pkg/errors"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/kafka"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
@@ -55,7 +63,7 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 		return nil
 	}
 
-	step, err := ae.DB.GetTaskStepByID(ctx, message.TaskID)
+	step, err := ae.getTaskStepWithRetry(ctx, message.TaskID)
 	if err != nil {
 		log.WithField("funcName", "GetTaskStepById").
 			WithError(err).
@@ -175,4 +183,28 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 		Info("message from kafka successfully handled")
 
 	return nil
+}
+
+const (
+	getTaskStepTimeout    = 2
+	getTaskStepRetryCount = 5
+)
+
+func (ae *Env) getTaskStepWithRetry(ctx c.Context, stepID uuid.UUID) (*entity.Step, error) {
+	for i := 0; i < getTaskStepRetryCount; i++ {
+		<-time.After(getTaskStepTimeout * time.Second)
+
+		step, err := ae.DB.GetTaskStepByID(ctx, stepID)
+		if errors.Is(err, pgx.ErrNoRows) {
+			continue
+		}
+
+		if err != nil {
+			return nil, err
+		}
+
+		return step, nil
+	}
+
+	return nil, errors.New("step by stepId not found")
 }
