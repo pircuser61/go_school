@@ -4,13 +4,12 @@ import (
 	c "context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
+
+	"go.opencensus.io/trace"
 
 	"gitlab.services.mts.ru/abp/mail/pkg/email"
 	"gitlab.services.mts.ru/abp/myosotis/logger"
-	"go.opencensus.io/trace"
-
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/kafka"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
@@ -183,42 +182,19 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 	return nil
 }
 
-func (ae *Env) PostPipelinesNotifyNewFunction(w http.ResponseWriter, r *http.Request) {
-	ctx, s := trace.StartSpan(r.Context(), "get_versions_by_function")
+func (ae *Env) PostPipelinesNotifyNewFunctionVersion(w http.ResponseWriter, r *http.Request) {
+	ctx, s := trace.StartSpan(r.Context(), "post_pipelines_notify_new_function_version")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
 	errorHandler := newHTTPErrorHandler(log, w)
 
-	data, err := io.ReadAll(r.Body)
+	var b PostPipelinesNotifyNewFunctionVersionJSONRequestBody
+	err := json.NewDecoder(r.Body).Decode(&b)
 	if err != nil {
 		errorHandler.handleError(http.StatusInternalServerError, err)
 
 		return
-	}
-
-	var b PostPipelinesNotifyNewFunctionJSONRequestBody
-	err = json.Unmarshal(data, &b)
-
-	if err != nil {
-		errorHandler.handleError(http.StatusInternalServerError, err)
-
-		return
-	}
-
-	versions, err := ae.DB.GetVersionsByFunction(ctx, *b.FunctionId)
-	if err != nil {
-		errorHandler.handleError(http.StatusInternalServerError, err)
-
-		return
-	}
-
-	logins := make(map[string][]script.VersionsByFunction, 0)
-	for index := range versions {
-		logins[versions[index].Author] = append(logins[versions[index].Author], script.VersionsByFunction{
-			Name: versions[index].Name,
-			Link: fmt.Sprintf("https://dev.jocasta.mts-corp.ru/scenarios/%s", versions[index].VersionID.String()),
-		})
 	}
 
 	latestFunction, err := ae.FunctionStore.GetFunction(ctx, *b.FunctionId)
@@ -228,15 +204,38 @@ func (ae *Env) PostPipelinesNotifyNewFunction(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	for login, version := range logins {
+	actualVersions, err := ae.DB.GetVersionsByFunction(ctx, latestFunction.FunctionID, latestFunction.VersionID)
+	if err != nil {
+		errorHandler.handleError(http.StatusInternalServerError, err)
+
+		return
+	}
+
+	hostURL := generateHostURL(ae.Mail.SdAddress)
+	if hostURL == "" {
+		log.Error("empty host url for function notfication")
+		errorHandler.handleError(http.StatusInternalServerError, err)
+
+		return
+	}
+
+	versions := make(map[string][]script.VersionsByFunction, 0)
+	for index := range actualVersions {
+		versions[actualVersions[index].Author] = append(versions[actualVersions[index].Author], script.VersionsByFunction{
+			Name: actualVersions[index].Name,
+			Link: fmt.Sprintf("%s/scenarios/%s", hostURL, actualVersions[index].VersionID.String()),
+		})
+	}
+
+	for login, nameAndLink := range versions {
 		emailToNotify, err := ae.People.GetUserEmail(ctx, login)
 		if err != nil {
-			errorHandler.handleError(http.StatusInternalServerError, err)
+			log.WithField("failed to get mail for this login", login).Error(err)
 
-			return
+			continue
 		}
 
-		em := mail.NewFunctionNotify("https://dev.jocasta.mts-corp.ru/funcs", latestFunction.Name, latestFunction.Version, version)
+		em := mail.NewFunctionNotify(fmt.Sprintf("%s/funcs", hostURL), latestFunction.Name, latestFunction.Version, nameAndLink)
 
 		file, ok := ae.Mail.Images[em.Image]
 		if !ok {
@@ -261,4 +260,17 @@ func (ae *Env) PostPipelinesNotifyNewFunction(w http.ResponseWriter, r *http.Req
 			return
 		}
 	}
+}
+
+func generateHostURL(clientID string) string {
+	switch clientID {
+	case "https://dev.servicedesk.mts.ru":
+		return "https://dev.ap.mts.ru"
+	case "https://stage.servicedesk.mts.ru":
+		return "https://stage.ap.mts.ru"
+	case "https://servicedesk.mts.ru":
+		return "https://ap.mts-corp.ru"
+	}
+
+	return ""
 }

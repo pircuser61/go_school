@@ -4297,25 +4297,25 @@ func (_c *MockedDatabase_GetVersionTasks_Call) RunAndReturn(run func(context.Con
 	return _c
 }
 
-// GetVersionsByFunction provides a mock function with given fields: ctx, functionId
-func (_m *MockedDatabase) GetVersionsByFunction(ctx context.Context, functionId string) ([]entity.EriusScenario, error) {
-	ret := _m.Called(ctx, functionId)
+// GetVersionsByFunction provides a mock function with given fields: ctx, functionID, versionID
+func (_m *MockedDatabase) GetVersionsByFunction(ctx context.Context, functionID string, versionID string) ([]entity.EriusScenario, error) {
+	ret := _m.Called(ctx, functionID, versionID)
 
 	var r0 []entity.EriusScenario
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string) ([]entity.EriusScenario, error)); ok {
-		return rf(ctx, functionId)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) ([]entity.EriusScenario, error)); ok {
+		return rf(ctx, functionID, versionID)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, string) []entity.EriusScenario); ok {
-		r0 = rf(ctx, functionId)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) []entity.EriusScenario); ok {
+		r0 = rf(ctx, functionID, versionID)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]entity.EriusScenario)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = rf(ctx, functionId)
+	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
+		r1 = rf(ctx, functionID, versionID)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -4330,14 +4330,15 @@ type MockedDatabase_GetVersionsByFunction_Call struct {
 
 // GetVersionsByFunction is a helper method to define mock.On call
 //   - ctx context.Context
-//   - functionId string
-func (_e *MockedDatabase_Expecter) GetVersionsByFunction(ctx interface{}, functionId interface{}) *MockedDatabase_GetVersionsByFunction_Call {
-	return &MockedDatabase_GetVersionsByFunction_Call{Call: _e.mock.On("GetVersionsByFunction", ctx, functionId)}
+//   - functionID string
+//   - versionID string
+func (_e *MockedDatabase_Expecter) GetVersionsByFunction(ctx interface{}, functionID interface{}, versionID interface{}) *MockedDatabase_GetVersionsByFunction_Call {
+	return &MockedDatabase_GetVersionsByFunction_Call{Call: _e.mock.On("GetVersionsByFunction", ctx, functionID, versionID)}
 }
 
-func (_c *MockedDatabase_GetVersionsByFunction_Call) Run(run func(ctx context.Context, functionId string)) *MockedDatabase_GetVersionsByFunction_Call {
+func (_c *MockedDatabase_GetVersionsByFunction_Call) Run(run func(ctx context.Context, functionID string, versionID string)) *MockedDatabase_GetVersionsByFunction_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(string))
+		run(args[0].(context.Context), args[1].(string), args[2].(string))
 	})
 	return _c
 }
@@ -4347,7 +4348,7 @@ func (_c *MockedDatabase_GetVersionsByFunction_Call) Return(_a0 []entity.EriusSc
 	return _c
 }
 
-func (_c *MockedDatabase_GetVersionsByFunction_Call) RunAndReturn(run func(context.Context, string) ([]entity.EriusScenario, error)) *MockedDatabase_GetVersionsByFunction_Call {
+func (_c *MockedDatabase_GetVersionsByFunction_Call) RunAndReturn(run func(context.Context, string, string) ([]entity.EriusScenario, error)) *MockedDatabase_GetVersionsByFunction_Call {
 	_c.Call.Return(run)
 	return _c
 }

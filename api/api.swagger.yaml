@@ -1466,14 +1466,13 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
-  /pipelines/notify/new_function:
+  /pipelines/notify/new_function_version:
     post:
       tags:
         - pipeline
       summary: Notify pipeline authors about new function version
       description: Оповестить владельцев сценариев о наличии новой функции
       requestBody:
-        required: true
         content:
           application/json:
             schema:
