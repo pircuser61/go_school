@@ -6,7 +6,9 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
 	"github.com/jackc/pgx/v4"
+
 	"github.com/pkg/errors"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
@@ -183,11 +185,16 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 	return nil
 }
 
-func (ae *Env) getTaskStepWithRetry(ctx c.Context, message uuid.UUID) (*entity.Step, error) {
-	for i := 0; i < 5; i++ {
-		<-time.After(2 * time.Second)
+const (
+	getTaskStepTimeout    = 2
+	getTaskStepRetryCount = 5
+)
 
-		step, err := ae.DB.GetTaskStepByID(ctx, message)
+func (ae *Env) getTaskStepWithRetry(ctx c.Context, taskId uuid.UUID) (*entity.Step, error) {
+	for i := 0; i < getTaskStepRetryCount; i++ {
+		<-time.After(getTaskStepTimeout * time.Second)
+
+		step, err := ae.DB.GetTaskStepByID(ctx, taskId)
 		if errors.Is(err, pgx.ErrNoRows) {
 			continue
 		}
@@ -199,5 +206,5 @@ func (ae *Env) getTaskStepWithRetry(ctx c.Context, message uuid.UUID) (*entity.S
 		return step, nil
 	}
 
-	return nil, errors.New("stepId not found")
+	return nil, errors.New("step by stepId not found")
 }
