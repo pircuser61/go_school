@@ -199,6 +199,7 @@ func (ae *Env) PostPipelinesNotifyNewFunction(w http.ResponseWriter, r *http.Req
 
 	var b PostPipelinesNotifyNewFunctionJSONRequestBody
 	err = json.Unmarshal(data, &b)
+
 	if err != nil {
 		errorHandler.handleError(http.StatusInternalServerError, err)
 
@@ -260,5 +261,4 @@ func (ae *Env) PostPipelinesNotifyNewFunction(w http.ResponseWriter, r *http.Req
 			return
 		}
 	}
-
 }
