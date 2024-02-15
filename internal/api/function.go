@@ -199,6 +199,11 @@ func (ae *Env) PostPipelinesNotifyNewFunction(w http.ResponseWriter, r *http.Req
 
 	var b PostPipelinesNotifyNewFunctionJSONRequestBody
 	err = json.Unmarshal(data, &b)
+	if err != nil {
+		errorHandler.handleError(http.StatusInternalServerError, err)
+
+		return
+	}
 
 	versions, err := ae.DB.GetVersionsByFunction(ctx, *b.FunctionId)
 	if err != nil {
@@ -208,10 +213,10 @@ func (ae *Env) PostPipelinesNotifyNewFunction(w http.ResponseWriter, r *http.Req
 	}
 
 	logins := make(map[string][]script.VersionsByFunction, 0)
-	for _, version := range versions {
-		logins[version.Author] = append(logins[version.Author], script.VersionsByFunction{
-			Name: version.Name,
-			Link: fmt.Sprintf("https://dev.jocasta.mts-corp.ru/scenarios/%s", version.VersionID.String()),
+	for index := range versions {
+		logins[versions[index].Author] = append(logins[versions[index].Author], script.VersionsByFunction{
+			Name: versions[index].Name,
+			Link: fmt.Sprintf("https://dev.jocasta.mts-corp.ru/scenarios/%s", versions[index].VersionID.String()),
 		})
 	}
 
@@ -229,6 +234,7 @@ func (ae *Env) PostPipelinesNotifyNewFunction(w http.ResponseWriter, r *http.Req
 
 			return
 		}
+
 		em := mail.NewFunctionNotify("https://dev.jocasta.mts-corp.ru/funcs", latestFunction.Name, latestFunction.Version, version)
 
 		file, ok := ae.Mail.Images[em.Image]
@@ -255,5 +261,4 @@ func (ae *Env) PostPipelinesNotifyNewFunction(w http.ResponseWriter, r *http.Req
 		}
 	}
 
-	return
 }

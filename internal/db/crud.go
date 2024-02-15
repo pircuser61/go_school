@@ -3013,11 +3013,11 @@ func (db *PGCon) GetTaskInWorkTime(ctx context.Context, workNumber string) (*ent
 	return &interval, nil
 }
 
-func (db *PGCon) GetVersionsByFunction(ctx context.Context, functionId string) ([]entity.EriusScenario, error) {
+func (db *PGCon) GetVersionsByFunction(ctx context.Context, functionID string) ([]entity.EriusScenario, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_versions_by_function")
 	defer span.End()
 
-	queryPlaceholder := fmt.Sprintf("\"functionId\": \"%s\"", functionId)
+	queryPlaceholder := fmt.Sprintf("\"functionId\": %q", functionID)
 
 	// nolint:gocritic
 	// language=PostgreSQL
