@@ -3012,3 +3012,44 @@ func (db *PGCon) GetTaskInWorkTime(ctx context.Context, workNumber string) (*ent
 
 	return &interval, nil
 }
+
+func (db *PGCon) GetVersionsByFunction(ctx context.Context, functionId string) ([]entity.EriusScenario, error) {
+	ctx, span := trace.StartSpan(ctx, "pg_get_versions_by_function")
+	defer span.End()
+
+	queryPlaceholder := fmt.Sprintf("\"functionId\": \"%s\"", functionId)
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	q := `
+	SELECT 
+		p.name,
+		v.id,
+		p.author
+	FROM versions v
+	JOIN pipelines p ON v.pipeline_id = p.id
+	WHERE 
+		v.is_actual=true AND v.content::text LIKE '%' || $1 || '%'`
+
+	rows, err := db.Connection.Query(ctx, q, queryPlaceholder)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	versions := make([]entity.EriusScenario, 0)
+
+	for rows.Next() {
+		version := entity.EriusScenario{}
+
+		err = rows.Scan(&version.Name, &version.VersionID, &version.Author)
+		if err != nil {
+			return nil, err
+		}
+
+		versions = append(versions, version)
+	}
+
+	return versions, nil
+}

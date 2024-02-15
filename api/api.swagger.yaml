@@ -1466,6 +1466,46 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
+  /pipelines/notify/new_function:
+    post:
+      tags:
+        - pipeline
+      summary: Notify pipeline authors about new function version
+      description: Оповестить владельцев сценариев о наличии новой функции
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                functionId:
+                  type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpResponse'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
   /pipelines/search:
     get:
       tags:

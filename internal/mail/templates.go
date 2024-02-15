@@ -956,6 +956,25 @@ func NewRejectPipelineGroupTemplate(workNumber, workTitle, sdURL string) Templat
 	}
 }
 
+func NewFunctionNotify(functionsLink, functionName, functionVersion string, versions []script.VersionsByFunction) Template {
+	return Template{
+		Subject:  fmt.Sprintf("У функции из вашего сценария появилась новая версия"),
+		Template: "internal/mail/template/43notifyNewFunction.html",
+		Image:    "43_notify_new_function.png",
+		Variables: struct {
+			FunctionName    string
+			FunctionVersion string
+			Versions        []script.VersionsByFunction
+			FunctionsLink   string
+		}{
+			FunctionName:    functionName,
+			FunctionVersion: functionVersion,
+			Versions:        versions,
+			FunctionsLink:   functionsLink,
+		},
+	}
+}
+
 func NewSignSLAExpiredTemplate(workNumber, workTitle, sdURL string) Template {
 	return Template{
 		Subject:  fmt.Sprintf("По заявке № %s %s- истекло время подписания", workNumber, workTitle),

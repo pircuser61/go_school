@@ -303,3 +303,8 @@ func (ft *functionTime) UnmarshalJSON(b []byte) error {
 func (ft functionTime) MarshalJSON() ([]byte, error) {
 	return json.Marshal(time.Time(ft))
 }
+
+type VersionsByFunction struct {
+	Name string
+	Link string
+}
