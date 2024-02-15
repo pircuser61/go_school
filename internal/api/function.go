@@ -190,11 +190,11 @@ const (
 	getTaskStepRetryCount = 5
 )
 
-func (ae *Env) getTaskStepWithRetry(ctx c.Context, taskId uuid.UUID) (*entity.Step, error) {
+func (ae *Env) getTaskStepWithRetry(ctx c.Context, stepID uuid.UUID) (*entity.Step, error) {
 	for i := 0; i < getTaskStepRetryCount; i++ {
 		<-time.After(getTaskStepTimeout * time.Second)
 
-		step, err := ae.DB.GetTaskStepByID(ctx, taskId)
+		step, err := ae.DB.GetTaskStepByID(ctx, stepID)
 		if errors.Is(err, pgx.ErrNoRows) {
 			continue
 		}
