@@ -333,7 +333,6 @@ func (a *ApproverData) SetDecision(login, comment string, ds ApproverDecision, a
 
 			overallDecision = ds
 			isFinal = true
-
 		} else {
 			if founded {
 				a.ApproverLog = append(
