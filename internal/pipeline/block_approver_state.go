@@ -310,13 +310,16 @@ func (a *ApproverData) SetDecision(login, comment string, ds ApproverDecision, a
 		a.ApproverLog = append(a.ApproverLog, approverLogEntry)
 	}
 
+	//nolint:nestif //TODO: fix
 	if a.ApprovementRule == script.AllOfApprovementRequired {
 		if a.isUserDecisionSet(login) {
 			return fmt.Errorf("decision of user %s is already set", login)
 		}
 
-		var overallDecision ApproverDecision
-		var isFinal bool
+		var (
+			overallDecision ApproverDecision
+			isFinal         bool
+		)
 
 		if login == AutoApprover {
 			a.ApproverLog = append(
