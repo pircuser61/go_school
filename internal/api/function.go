@@ -190,8 +190,8 @@ func (ae *Env) PostPipelinesNotifyNewFunctionVersion(w http.ResponseWriter, r *h
 	errorHandler := newHTTPErrorHandler(log, w)
 
 	var b PostPipelinesNotifyNewFunctionVersionJSONRequestBody
-	err := json.NewDecoder(r.Body).Decode(&b)
 
+	err := json.NewDecoder(r.Body).Decode(&b)
 	if err != nil {
 		errorHandler.handleError(http.StatusInternalServerError, err)
 
