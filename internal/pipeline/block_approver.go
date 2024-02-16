@@ -334,6 +334,10 @@ func (gb *GoApproverBlock) Deadlines(ctx context.Context) ([]Deadline, error) {
 		return deadlines, nil
 	}
 
+	if gb.State.Decision != nil {
+		return []Deadline{}, nil
+	}
+
 	if gb.State.CheckSLA && latestUnansweredRequest == nil {
 		slaInfoPtr, getSLAInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDTO{
 			TaskCompletionIntervals: []entity.TaskCompletionInterval{{

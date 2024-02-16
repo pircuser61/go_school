@@ -162,7 +162,7 @@ func (gb *GoFormBlock) formActions() []MemberAction {
 }
 
 func (gb *GoFormBlock) Deadlines(ctx c.Context) ([]Deadline, error) {
-	if gb.State.IsRevoked {
+	if gb.State.IsRevoked || gb.State.IsFilled {
 		return []Deadline{}, nil
 	}
 
