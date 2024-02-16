@@ -315,11 +315,14 @@ func (a *ApproverData) SetDecision(login, comment string, ds ApproverDecision, a
 			return fmt.Errorf("decision of user %s is already set", login)
 		}
 
-		if founded {
+		var overallDecision ApproverDecision
+		var isFinal bool
+
+		if login == AutoApprover {
 			a.ApproverLog = append(
 				a.ApproverLog,
 				ApproverLogEntry{
-					Login:       login,
+					Login:       AutoApprover,
 					Decision:    ds,
 					Comment:     comment,
 					Attachments: attach,
@@ -327,21 +330,38 @@ func (a *ApproverData) SetDecision(login, comment string, ds ApproverDecision, a
 					LogType:     ApproverLogDecision,
 				},
 			)
+			overallDecision = ds
+			isFinal = true
+		} else {
+			if founded {
+				a.ApproverLog = append(
+					a.ApproverLog,
+					ApproverLogEntry{
+						Login:       login,
+						Decision:    ds,
+						Comment:     comment,
+						Attachments: attach,
+						CreatedAt:   time.Now(),
+						LogType:     ApproverLogDecision,
+					},
+				)
+			}
+
+			for _, dl := range delegateFor {
+				a.ApproverLog = append(a.ApproverLog, ApproverLogEntry{
+					Login:       login,
+					Decision:    ds,
+					Comment:     comment,
+					Attachments: attach,
+					CreatedAt:   time.Now(),
+					LogType:     ApproverLogDecision,
+					DelegateFor: dl,
+				})
+			}
+
+			overallDecision, isFinal = a.getFinalGroupDecision(ds)
 		}
 
-		for _, dl := range delegateFor {
-			a.ApproverLog = append(a.ApproverLog, ApproverLogEntry{
-				Login:       login,
-				Decision:    ds,
-				Comment:     comment,
-				Attachments: attach,
-				CreatedAt:   time.Now(),
-				LogType:     ApproverLogDecision,
-				DelegateFor: dl,
-			})
-		}
-
-		overallDecision, isFinal := a.getFinalGroupDecision(ds)
 		if !isFinal {
 			return nil
 		}
