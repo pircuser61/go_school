@@ -1298,11 +1298,6 @@ func (db *PGCon) computeActions(
 		CancelAppPriority = "other"
 		CancelAppTitle    = "Отозвать"
 		CancelAppNodeType = "common"
-
-		RepeatAppID       = "repeat_app"
-		RepeatAppPriority = "other"
-		RepeatAppTitle    = "Повторить"
-		RepeatAppNodeType = "common"
 	)
 
 	var (
@@ -1384,16 +1379,7 @@ func (db *PGCon) computeActions(
 			AttachmentsEnabled: false,
 		}
 
-		repeatAppAction := entity.TaskAction{
-			ID:                 RepeatAppID,
-			ButtonType:         RepeatAppPriority,
-			NodeType:           RepeatAppNodeType,
-			Title:              RepeatAppTitle,
-			CommentEnabled:     true,
-			AttachmentsEnabled: false,
-		}
-
-		result = append(result, cancelAppAction, repeatAppAction)
+		result = append(result, cancelAppAction)
 	}
 
 	return result, nil

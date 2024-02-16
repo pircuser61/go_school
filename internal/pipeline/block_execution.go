@@ -119,6 +119,22 @@ func (gb *GoExecutionBlock) Members() []Member {
 	latestInfoRequest := gb.State.latestUnansweredAddInfoLogEntry()
 	isQuestionExist := latestInfoRequest != nil && latestInfoRequest.ReqType == RequestInfoQuestion
 
+	if gb.State.EditingApp != nil {
+		members = append(members, Member{
+			Login: gb.RunContext.Initiator,
+			Actions: []MemberAction{
+				{
+					ID:     string(entity.TaskUpdateActionEditApp),
+					Type:   ActionTypeCustom,
+					Params: map[string]interface{}{},
+				},
+			},
+			IsActed:              false,
+			ExecutionGroupMember: false,
+			IsInitiator:          true,
+		})
+	}
+
 	if isQuestionExist {
 		members = append(members, Member{
 			Login: gb.RunContext.Initiator,
@@ -132,8 +148,7 @@ func (gb *GoExecutionBlock) Members() []Member {
 			IsActed:              false,
 			ExecutionGroupMember: false,
 			IsInitiator:          true,
-		},
-		)
+		})
 	}
 
 	for i := range gb.State.ChangedExecutorsLogs {

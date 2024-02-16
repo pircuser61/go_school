@@ -115,6 +115,22 @@ func (gb *GoApproverBlock) Members() []Member {
 		addedMembers[log.Approver] = struct{}{}
 	}
 
+	if gb.State.EditingApp != nil {
+		members = append(members, Member{
+			Login: gb.RunContext.Initiator,
+			Actions: []MemberAction{
+				{
+					ID:     string(entity.TaskUpdateActionEditApp),
+					Type:   ActionTypeCustom,
+					Params: map[string]interface{}{},
+				},
+			},
+			IsActed:              false,
+			ExecutionGroupMember: false,
+			IsInitiator:          true,
+		})
+	}
+
 	for i := 0; i < len(gb.State.AddInfo); i++ {
 		log := gb.State.AddInfo[i]
 		if _, ok := addedMembers[log.Login]; ok {
@@ -224,6 +240,7 @@ func (gb *GoApproverBlock) approvementBaseActions(login string) []MemberAction {
 					formName: v.NodeID,
 				},
 			}
+
 			actions = append(actions, memAction)
 		}
 	}

@@ -190,6 +190,7 @@ const (
 	TaskUpdateActionExecutorSendEditApp        TaskUpdateAction = "executor_send_edit_app"
 	TaskUpdateActionRequestApproveInfo         TaskUpdateAction = "request_add_info"
 	TaskUpdateActionReplyApproverInfo          TaskUpdateAction = "reply_approver_info"
+	TaskUpdateActionEditApp                    TaskUpdateAction = "edit_app"
 	TaskUpdateActionRequestFillForm            TaskUpdateAction = "fill_form"
 	TaskUpdateActionCancelApp                  TaskUpdateAction = "cancel_app"
 	TaskUpdateActionAddApprovers               TaskUpdateAction = "add_approvers"

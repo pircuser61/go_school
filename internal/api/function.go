@@ -3,13 +3,17 @@ package api
 import (
 	c "context"
 	"encoding/json"
-	"fmt"
-	"net/http"
+	"time"
+
+	"github.com/google/uuid"
+
+	"github.com/jackc/pgx/v4"
+
+	"github.com/pkg/errors"
 
 	"go.opencensus.io/trace"
 
-	"gitlab.services.mts.ru/abp/mail/pkg/email"
-	"gitlab.services.mts.ru/abp/myosotis/logger"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/kafka"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
@@ -60,7 +64,7 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 		return nil
 	}
 
-	step, err := ae.DB.GetTaskStepByID(ctx, message.TaskID)
+	step, err := ae.getTaskStepWithRetry(ctx, message.TaskID)
 	if err != nil {
 		log.WithField("funcName", "GetTaskStepById").
 			WithError(err).
@@ -182,75 +186,26 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 	return nil
 }
 
-func (ae *Env) NotifyNewFunctionVersion(w http.ResponseWriter, r *http.Request) {
-	ctx, s := trace.StartSpan(r.Context(), "notify_new_function_version")
-	defer s.End()
+const (
+	getTaskStepTimeout    = 2
+	getTaskStepRetryCount = 5
+)
 
-	log := logger.GetLogger(ctx)
-	errorHandler := newHTTPErrorHandler(log, w)
+func (ae *Env) getTaskStepWithRetry(ctx c.Context, stepID uuid.UUID) (*entity.Step, error) {
+	for i := 0; i < getTaskStepRetryCount; i++ {
+		<-time.After(getTaskStepTimeout * time.Second)
 
-	var b NotifyNewFunctionVersionJSONRequestBody
-
-	err := json.NewDecoder(r.Body).Decode(&b)
-	if err != nil {
-		errorHandler.handleError(http.StatusInternalServerError, err)
-
-		return
-	}
-
-	latestFunctionVersion, err := ae.FunctionStore.GetFunction(ctx, b.FunctionId)
-	if err != nil {
-		errorHandler.handleError(http.StatusInternalServerError, err)
-
-		return
-	}
-
-	actualVersions, err := ae.DB.GetVersionsByFunction(ctx, b.FunctionId, b.VersionId)
-	if err != nil {
-		errorHandler.handleError(http.StatusInternalServerError, err)
-
-		return
-	}
-
-	versions := make(map[string][]script.VersionsByFunction)
-	for index := range actualVersions {
-		versions[actualVersions[index].Author] = append(versions[actualVersions[index].Author], script.VersionsByFunction{
-			Name: actualVersions[index].Name,
-			Link: fmt.Sprintf("%s/scenarios/%s", ae.HostURL, actualVersions[index].VersionID.String()),
-		})
-	}
-
-	for login, nameAndLink := range versions {
-		emailToNotify, err := ae.People.GetUserEmail(ctx, login)
-		if err != nil {
-			log.WithField("failed to get mail for this login", login).Error(err)
-
+		step, err := ae.DB.GetTaskStepByID(ctx, stepID)
+		if errors.Is(err, pgx.ErrNoRows) {
 			continue
 		}
 
-		em := mail.NewFunctionNotify(latestFunctionVersion.Name, latestFunctionVersion.Version, nameAndLink)
-
-		file, ok := ae.Mail.Images[em.Image]
-		if !ok {
-			log.Error("couldn't find images: ", em.Image)
-			errorHandler.handleError(http.StatusInternalServerError, err)
-
-			return
-		}
-
-		files := []email.Attachment{
-			{
-				Name:    headImg,
-				Content: file,
-				Type:    email.EmbeddedAttachment,
-			},
-		}
-
-		err = ae.Mail.SendNotification(ctx, []string{emailToNotify}, files, em)
 		if err != nil {
-			errorHandler.handleError(http.StatusInternalServerError, err)
-
-			return
+			return nil, err
 		}
+
+		return step, nil
 	}
+
+	return nil, errors.New("step by stepId not found")
 }
