@@ -212,7 +212,7 @@ func (ae *Env) NotifyNewFunctionVersion(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	versions := make(map[string][]script.VersionsByFunction, 0)
+	versions := make(map[string][]script.VersionsByFunction)
 	for index := range actualVersions {
 		versions[actualVersions[index].Author] = append(versions[actualVersions[index].Author], script.VersionsByFunction{
 			Name: actualVersions[index].Name,
