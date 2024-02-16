@@ -1481,8 +1481,11 @@ paths:
               properties:
                 functionId:
                   type: string
+                versionId:
+                    type: string
               required:
                 - functionId
+                - versionId
       responses:
         200:
           description: OK

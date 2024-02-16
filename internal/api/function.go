@@ -205,7 +205,7 @@ func (ae *Env) NotifyNewFunctionVersion(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	actualVersions, err := ae.DB.GetVersionsByFunction(ctx, latestFunctionVersion.FunctionID, latestFunctionVersion.VersionID)
+	actualVersions, err := ae.DB.GetVersionsByFunction(ctx, b.FunctionId, b.VersionId)
 	if err != nil {
 		errorHandler.handleError(http.StatusInternalServerError, err)
 

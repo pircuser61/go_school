@@ -2249,6 +2249,7 @@ type PipelineNameExistsParams struct {
 // NotifyNewFunctionVersionJSONBody defines parameters for NotifyNewFunctionVersion.
 type NotifyNewFunctionVersionJSONBody struct {
 	FunctionId string `json:"functionId"`
+	VersionId  string `json:"versionId"`
 }
 
 // SearchPipelinesParams defines parameters for SearchPipelines.
