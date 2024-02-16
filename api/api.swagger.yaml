@@ -1468,6 +1468,7 @@ paths:
                 $ref: '#/components/schemas/httpError'
   /pipelines/notify/new_function_version:
     post:
+      operationId: notify-new-function-version
       tags:
         - pipeline
       summary: Notify pipeline authors about new function version
@@ -1480,6 +1481,8 @@ paths:
               properties:
                 functionId:
                   type: string
+              required:
+                - functionId
       responses:
         200:
           description: OK

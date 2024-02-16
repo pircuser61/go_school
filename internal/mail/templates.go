@@ -956,7 +956,7 @@ func NewRejectPipelineGroupTemplate(workNumber, workTitle, sdURL string) Templat
 	}
 }
 
-func NewFunctionNotify(functionsLink, functionName, functionVersion string, versions []script.VersionsByFunction) Template {
+func NewFunctionNotify(functionName, functionVersion string, versions []script.VersionsByFunction) Template {
 	return Template{
 		Subject:  "У функции из вашего сценария появилась новая версия",
 		Template: "internal/mail/template/43notifyNewFunction.html",
@@ -965,12 +965,10 @@ func NewFunctionNotify(functionsLink, functionName, functionVersion string, vers
 			FunctionName    string
 			FunctionVersion string
 			Versions        []script.VersionsByFunction
-			FunctionsLink   string
 		}{
 			FunctionName:    functionName,
 			FunctionVersion: functionVersion,
 			Versions:        versions,
-			FunctionsLink:   functionsLink,
 		},
 	}
 }

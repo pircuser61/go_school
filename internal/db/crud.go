@@ -3020,17 +3020,16 @@ func (db *PGCon) GetVersionsByFunction(ctx context.Context, functionID, versionI
 	// nolint:gocritic
 	// language=PostgreSQL
 	q := `
-	SELECT 
-		p.name,
-		v.id,
-		p.author
-	FROM versions v
+	SELECT p.name, v.id, p.author
+    FROM versions v
 	JOIN pipelines p on v.pipeline_id = p.id
     JOIN LATERAL jsonb_each(v.content->'pipeline'->'blocks') as bks on true
 	WHERE is_actual = true
-	AND bks.key LIKE 'executable_function' || '%'
+	AND bks.value ->> 'type_id' = 'executable_function'
     AND bks.value->'params'->'function'->>'functionId' = $1
-    AND bks.value->'params'->'function'->>'versionId' != $2;`
+    AND bks.value->'params'->'function'->>'versionId' != $2
+    GROUP BY p.name, v.id, p.author;
+`
 
 	rows, err := db.Connection.Query(ctx, q, functionID, versionID)
 	if err != nil {

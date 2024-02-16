@@ -209,6 +209,7 @@ func main() {
 		IncludePlaceholderBlock: includePlaceholderBlock,
 		SLAService:              slaService,
 		Forms:                   formsService,
+		HostURL:                 cfg.HostURL,
 	}
 
 	serverParam := api.ServerParam{

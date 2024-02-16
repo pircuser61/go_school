@@ -182,14 +182,14 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 	return nil
 }
 
-func (ae *Env) PostPipelinesNotifyNewFunctionVersion(w http.ResponseWriter, r *http.Request) {
-	ctx, s := trace.StartSpan(r.Context(), "post_pipelines_notify_new_function_version")
+func (ae *Env) NotifyNewFunctionVersion(w http.ResponseWriter, r *http.Request) {
+	ctx, s := trace.StartSpan(r.Context(), "notify_new_function_version")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
 	errorHandler := newHTTPErrorHandler(log, w)
 
-	var b PostPipelinesNotifyNewFunctionVersionJSONRequestBody
+	var b NotifyNewFunctionVersionJSONRequestBody
 
 	err := json.NewDecoder(r.Body).Decode(&b)
 	if err != nil {
@@ -198,23 +198,15 @@ func (ae *Env) PostPipelinesNotifyNewFunctionVersion(w http.ResponseWriter, r *h
 		return
 	}
 
-	latestFunction, err := ae.FunctionStore.GetFunction(ctx, *b.FunctionId)
+	latestFunctionVersion, err := ae.FunctionStore.GetFunction(ctx, b.FunctionId)
 	if err != nil {
 		errorHandler.handleError(http.StatusInternalServerError, err)
 
 		return
 	}
 
-	actualVersions, err := ae.DB.GetVersionsByFunction(ctx, latestFunction.FunctionID, latestFunction.VersionID)
+	actualVersions, err := ae.DB.GetVersionsByFunction(ctx, latestFunctionVersion.FunctionID, latestFunctionVersion.VersionID)
 	if err != nil {
-		errorHandler.handleError(http.StatusInternalServerError, err)
-
-		return
-	}
-
-	hostURL := generateHostURL(ae.Mail.SdAddress)
-	if hostURL == "" {
-		log.Error("empty host url for function notfication")
 		errorHandler.handleError(http.StatusInternalServerError, err)
 
 		return
@@ -224,7 +216,7 @@ func (ae *Env) PostPipelinesNotifyNewFunctionVersion(w http.ResponseWriter, r *h
 	for index := range actualVersions {
 		versions[actualVersions[index].Author] = append(versions[actualVersions[index].Author], script.VersionsByFunction{
 			Name: actualVersions[index].Name,
-			Link: fmt.Sprintf("%s/scenarios/%s", hostURL, actualVersions[index].VersionID.String()),
+			Link: fmt.Sprintf("%s/scenarios/%s", ae.HostURL, actualVersions[index].VersionID.String()),
 		})
 	}
 
@@ -236,7 +228,7 @@ func (ae *Env) PostPipelinesNotifyNewFunctionVersion(w http.ResponseWriter, r *h
 			continue
 		}
 
-		em := mail.NewFunctionNotify(fmt.Sprintf("%s/funcs", hostURL), latestFunction.Name, latestFunction.Version, nameAndLink)
+		em := mail.NewFunctionNotify(latestFunctionVersion.Name, latestFunctionVersion.Version, nameAndLink)
 
 		file, ok := ae.Mail.Images[em.Image]
 		if !ok {
@@ -261,17 +253,4 @@ func (ae *Env) PostPipelinesNotifyNewFunctionVersion(w http.ResponseWriter, r *h
 			return
 		}
 	}
-}
-
-func generateHostURL(clientID string) string {
-	switch clientID {
-	case "https://dev.servicedesk.mts.ru":
-		return "https://dev.ap.mts.ru"
-	case "https://stage.servicedesk.mts.ru":
-		return "https://stage.ap.mts.ru"
-	case "https://servicedesk.mts.ru":
-		return "https://ap.mts-corp.ru"
-	}
-
-	return ""
 }

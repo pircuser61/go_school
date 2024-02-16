@@ -2246,9 +2246,9 @@ type PipelineNameExistsParams struct {
 	CheckNotDeleted bool `json:"checkNotDeleted"`
 }
 
-// PostPipelinesNotifyNewFunctionVersionJSONBody defines parameters for PostPipelinesNotifyNewFunctionVersion.
-type PostPipelinesNotifyNewFunctionVersionJSONBody struct {
-	FunctionId *string `json:"functionId,omitempty"`
+// NotifyNewFunctionVersionJSONBody defines parameters for NotifyNewFunctionVersion.
+type NotifyNewFunctionVersionJSONBody struct {
+	FunctionId string `json:"functionId"`
 }
 
 // SearchPipelinesParams defines parameters for SearchPipelines.
@@ -2398,8 +2398,8 @@ type CreatePipelineJSONRequestBody CreatePipelineJSONBody
 // CopyPipelineJSONRequestBody defines body for CopyPipeline for application/json ContentType.
 type CopyPipelineJSONRequestBody CopyPipelineJSONBody
 
-// PostPipelinesNotifyNewFunctionVersionJSONRequestBody defines body for PostPipelinesNotifyNewFunctionVersion for application/json ContentType.
-type PostPipelinesNotifyNewFunctionVersionJSONRequestBody PostPipelinesNotifyNewFunctionVersionJSONBody
+// NotifyNewFunctionVersionJSONRequestBody defines body for NotifyNewFunctionVersion for application/json ContentType.
+type NotifyNewFunctionVersionJSONRequestBody NotifyNewFunctionVersionJSONBody
 
 // EditVersionJSONRequestBody defines body for EditVersion for application/json ContentType.
 type EditVersionJSONRequestBody EditVersionJSONBody
@@ -3234,7 +3234,7 @@ type ServerInterface interface {
 	PipelineNameExists(w http.ResponseWriter, r *http.Request, params PipelineNameExistsParams)
 	// Notify pipeline authors about new function version
 	// (POST /pipelines/notify/new_function_version)
-	PostPipelinesNotifyNewFunctionVersion(w http.ResponseWriter, r *http.Request)
+	NotifyNewFunctionVersion(w http.ResponseWriter, r *http.Request)
 	// search list of pipelines
 	// (GET /pipelines/search)
 	SearchPipelines(w http.ResponseWriter, r *http.Request, params SearchPipelinesParams)
@@ -3903,12 +3903,12 @@ func (siw *ServerInterfaceWrapper) PipelineNameExists(w http.ResponseWriter, r *
 	handler(w, r.WithContext(ctx))
 }
 
-// PostPipelinesNotifyNewFunctionVersion operation middleware
-func (siw *ServerInterfaceWrapper) PostPipelinesNotifyNewFunctionVersion(w http.ResponseWriter, r *http.Request) {
+// NotifyNewFunctionVersion operation middleware
+func (siw *ServerInterfaceWrapper) NotifyNewFunctionVersion(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	var handler = func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.PostPipelinesNotifyNewFunctionVersion(w, r)
+		siw.Handler.NotifyNewFunctionVersion(w, r)
 	}
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -5264,7 +5264,7 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/pipelines/name-exists", wrapper.PipelineNameExists)
 	})
 	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/pipelines/notify/new_function_version", wrapper.PostPipelinesNotifyNewFunctionVersion)
+		r.Post(options.BaseURL+"/pipelines/notify/new_function_version", wrapper.NotifyNewFunctionVersion)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/pipelines/search", wrapper.SearchPipelines)
