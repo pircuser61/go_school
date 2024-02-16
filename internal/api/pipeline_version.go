@@ -38,6 +38,10 @@ const (
 	defaultPerPage = 10
 
 	startEntrypoint = "start_0"
+
+	keyWorkNumber      = "workNumber"
+	keyInitiator       = "initiator"
+	keyApplicationBody = "application_body"
 )
 
 func (ae *Env) CreatePipelineVersion(w http.ResponseWriter, req *http.Request, pipelineID string) {
@@ -69,27 +73,11 @@ func (ae *Env) CreatePipelineVersion(w http.ResponseWriter, req *http.Request, p
 	oldVersionID := p.VersionID
 	p.VersionID = uuid.New()
 
-	p.PipelineID, err = uuid.Parse(pipelineID)
+	apiErr, err := ae.fillPipeline(&p, pipelineID)
 	if err != nil {
-		errorHandler.handleError(UUIDParsingError, err)
+		errorHandler.handleError(apiErr, err)
 
 		return
-	}
-
-	if len(p.Pipeline.Blocks) == 0 {
-		p.Pipeline.FillEmptyPipeline()
-	} else {
-		keyOutputs := map[string]string{
-			pipeline.BlockGoApproverID:  "approver",
-			pipeline.BlockGoSignID:      "signer",
-			pipeline.BlockGoExecutionID: "login",
-		}
-
-		p.Pipeline.ChangeOutput(keyOutputs)
-	}
-
-	if p.Pipeline.Entrypoint == "" {
-		p.Pipeline.Entrypoint = startEntrypoint
 	}
 
 	ui, err := user.GetUserInfoFromCtx(ctx)
@@ -103,6 +91,8 @@ func (ae *Env) CreatePipelineVersion(w http.ResponseWriter, req *http.Request, p
 
 		return
 	}
+
+	updated = []byte(wrapApplicationBody(string(updated)))
 
 	txStorage, transactionErr := ae.DB.StartTransaction(ctx)
 	if transactionErr != nil {
@@ -372,6 +362,9 @@ func (ae *Env) GetPipelineVersion(w http.ResponseWriter, req *http.Request, vers
 	}
 }
 
+// TODO: Убрать нолинт на нижней строчке 15.04.2024
+
+//nolint:gocyclo // Временная проверка, скоро уберем
 func (ae *Env) EditVersion(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "edit_draft")
 	defer s.End()
@@ -397,10 +390,11 @@ func (ae *Env) EditVersion(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	ae.handlePipelineBlockLenght(&p)
+	apiErr, err := ae.fillPipeline(&p, "")
+	if err != nil {
+		errorHandler.handleError(apiErr, err)
 
-	if p.Pipeline.Entrypoint == "" {
-		p.Pipeline.Entrypoint = startEntrypoint
+		return
 	}
 
 	updated, err := json.Marshal(p)
@@ -409,6 +403,8 @@ func (ae *Env) EditVersion(w http.ResponseWriter, req *http.Request) {
 
 		return
 	}
+
+	updated = []byte(wrapApplicationBody(string(updated)))
 
 	ok, valErr := p.Pipeline.Blocks.Validate(ctx, ae.ServiceDesc)
 	if p.Status == db.StatusApproved && !ok {
@@ -539,7 +535,7 @@ func (ae *Env) handleScenario(ctx context.Context, p *entity.EriusScenario, ui *
 	return nil
 }
 
-func (ae *Env) handlePipelineBlockLenght(p *entity.EriusScenario) {
+func (ae *Env) handlePipelineBlockLength(p *entity.EriusScenario) {
 	if len(p.Pipeline.Blocks) == 0 {
 		p.Pipeline.FillEmptyPipeline()
 	} else {
@@ -939,4 +935,60 @@ func validateApplicationBody(applicationBody orderedmap.OrderedMap, jsonSchema s
 	}
 
 	return nil
+}
+
+func (ae *Env) fillPipeline(p *entity.EriusScenario, pipelineID string) (Err, error) {
+	if pipelineID != "" {
+		pID, err := uuid.Parse(pipelineID)
+		if err != nil {
+			return UUIDParsingError, err
+		}
+
+		p.PipelineID = pID
+	}
+
+	ae.handlePipelineBlockLength(p)
+
+	if p.Pipeline.Entrypoint == "" {
+		p.Pipeline.Entrypoint = startEntrypoint
+	}
+
+	if _, ok := p.Pipeline.Blocks[p.Pipeline.Entrypoint]; !ok {
+		return 0, nil
+	}
+
+	startOutput := p.Pipeline.Blocks[p.Pipeline.Entrypoint].Output.Properties
+
+	if startOutput[keyApplicationBody].Type == "" {
+		startOutput[keyApplicationBody] = script.JSONSchemaPropertiesValue{
+			Type:       "object",
+			Global:     "start_0." + keyApplicationBody,
+			Properties: make(map[string]script.JSONSchemaPropertiesValue),
+		}
+	}
+
+	// TODO: Убрать этот цикл к 15.04.2024
+	for k := range startOutput {
+		switch k {
+		case keyWorkNumber, keyInitiator, keyApplicationBody:
+			break
+		default:
+			v := startOutput[k]
+			v.Global = ""
+
+			startOutput[keyApplicationBody].Properties[k] = v
+			delete(startOutput, k)
+		}
+	}
+
+	return 0, nil
+}
+
+// TODO: Убрать эту функцию к 15.04.2024
+func wrapApplicationBody(objStr string) string {
+	strToMarshal := strings.ReplaceAll(objStr, "start_0.", "start_0.application_body.")
+	strToMarshal = strings.ReplaceAll(strToMarshal, "start_0.application_body.initiator", "start_0.initiator")
+	strToMarshal = strings.ReplaceAll(strToMarshal, "start_0.application_body.workNumber", "start_0.workNumber")
+
+	return strings.ReplaceAll(strToMarshal, "start_0.application_body.application_body", "start_0.application_body")
 }

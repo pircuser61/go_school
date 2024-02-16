@@ -727,6 +727,8 @@ func (es *EriusScenario) FillEntryPointOutput() (err error) {
 		return nil
 	}
 
+	entryPoint.Output.Properties = script.JSONSchemaProperties{}
+
 	if es.Settings.StartSchema != nil {
 		entryPoint.Output.Properties[KeyOutputApplicationBody] = script.JSONSchemaPropertiesValue{
 			Type:       "object",
