@@ -124,19 +124,19 @@ func (gb *GoNotificationBlock) notificationBlockText() (string, error) {
 	case script.TextFieldSource:
 		return gb.State.Text, nil
 	case script.VarContextSource:
-		return gb.contextValueSourceText()
+		return gb.contextValueSourceText(), nil
 	default:
 		return "", script.ErrUnknownTextSourceType
 	}
 }
 
-func (gb *GoNotificationBlock) contextValueSourceText() (string, error) {
+func (gb *GoNotificationBlock) contextValueSourceText() string {
 	value, err := gb.textRefValue()
 	if err != nil {
-		return "", err
+		return ""
 	}
 
-	return value, nil
+	return value
 }
 
 func (gb *GoNotificationBlock) textRefValue() (string, error) {
