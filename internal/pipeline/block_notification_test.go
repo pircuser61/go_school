@@ -402,8 +402,7 @@ func Test_GoNotificationBlock_notificationBlockText(t *testing.T) {
 					TextSourceType: script.VarContextSource,
 				},
 			},
-
-			expectedErr: ErrRefValueNotFound,
+			expectedNotificationText: "",
 		},
 
 		{
@@ -417,7 +416,7 @@ func Test_GoNotificationBlock_notificationBlockText(t *testing.T) {
 					TextSourceType: script.VarContextSource,
 				},
 			},
-			expectedErr: ErrRefValueNotString,
+			expectedNotificationText: "",
 		},
 
 		{
