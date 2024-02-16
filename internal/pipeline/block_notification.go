@@ -116,6 +116,10 @@ func (gb *GoNotificationBlock) compileText(ctx context.Context) (*mail.Notif, []
 }
 
 func (gb *GoNotificationBlock) notificationBlockText() (string, error) {
+	if gb.State.Text == "" {
+		return "", nil
+	}
+
 	switch gb.State.Type() {
 	case script.TextFieldSource:
 		return gb.State.Text, nil

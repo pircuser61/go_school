@@ -54,9 +54,10 @@ func (a *NotificationParams) validateStringFields() error {
 	return nil
 }
 
+//nolint:exhaustive //нам не нужны остальные случаи
 func (a *NotificationParams) validateTextSource() error {
 	switch a.Type() {
-	case TextFieldSource, VarContextSource:
+	case TextFieldSource:
 		return a.validateText()
 	default:
 		return ErrUnknownTextSourceType
