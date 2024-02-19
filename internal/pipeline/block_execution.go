@@ -246,7 +246,7 @@ func (gb *GoExecutionBlock) isPartOfExecutionGroup(login string) bool {
 }
 
 func (gb *GoExecutionBlock) executionActions() []MemberAction {
-	if gb.State.Decision != nil && gb.State.EditingApp != nil {
+	if gb.State.Decision != nil || gb.State.EditingApp != nil {
 		return nil
 	}
 
