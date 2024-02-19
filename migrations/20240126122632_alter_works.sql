@@ -16,6 +16,17 @@ SET version_sla_id = (
     LIMIT 1
 );
 
+-- для тех, что были созданы задолго до того, когда sla был создан, для них просто берем
+UPDATE works
+SET version_sla_id = (
+    SELECT id
+    FROM version_sla
+    WHERE version_id = works.version_id
+    ORDER BY created_at ASC
+    LIMIT 1
+    )
+WHERE version_sla_id is null;
+
 -- +goose StatementEnd
 
 -- +goose Down
