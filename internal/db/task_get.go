@@ -1181,7 +1181,7 @@ func (db *PGCon) getTask(ctx c.Context, delegators []string, q, workNumber strin
 		}
 	}
 
-	computedActions, actionsErr := db.computeActions(ctx, delegators, actions, actionsMap, et.Author)
+	computedActions, actionsErr := db.computeActions(ctx, delegators, actions, actionsMap, et.Author, et.Status)
 	if actionsErr != nil {
 		return nil, actionsErr
 	}
@@ -1292,12 +1292,15 @@ func (db *PGCon) computeActions(
 	actions []TaskAction,
 	allActions map[string]entity.TaskAction,
 	author string,
+	taskStatus string,
 ) (result []entity.TaskAction, err error) {
 	const (
 		CancelAppID       = "cancel_app"
 		CancelAppPriority = "other"
 		CancelAppTitle    = "Отозвать"
 		CancelAppNodeType = "common"
+
+		StatusRunning = "run"
 	)
 
 	var (
@@ -1369,7 +1372,7 @@ func (db *PGCon) computeActions(
 
 	isInitiator := ui.Username == author
 
-	if isInitiator {
+	if isInitiator && taskStatus == StatusRunning {
 		cancelAppAction := entity.TaskAction{
 			ID:                 CancelAppID,
 			ButtonType:         CancelAppPriority,
@@ -1499,7 +1502,7 @@ func (db *PGCon) getTasks(ctx c.Context, filters *entity.TaskFilter,
 			}
 		}
 
-		computedActions, actionsErr := db.computeActions(ctx, delegatorsWithUser, actions, actionsMap, et.Author)
+		computedActions, actionsErr := db.computeActions(ctx, delegatorsWithUser, actions, actionsMap, et.Author, et.Status)
 		if actionsErr != nil {
 			return nil, err
 		}
