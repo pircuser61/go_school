@@ -1299,6 +1299,8 @@ func (db *PGCon) computeActions(
 		CancelAppPriority = "other"
 		CancelAppTitle    = "Отозвать"
 		CancelAppNodeType = "common"
+
+		StatusRunning = "run"
 	)
 
 	var (
@@ -1370,7 +1372,7 @@ func (db *PGCon) computeActions(
 
 	isInitiator := ui.Username == author
 
-	if isInitiator && taskStatus == "run" {
+	if isInitiator && taskStatus == StatusRunning {
 		cancelAppAction := entity.TaskAction{
 			ID:                 CancelAppID,
 			ButtonType:         CancelAppPriority,
