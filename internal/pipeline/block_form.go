@@ -47,6 +47,7 @@ type FormData struct {
 	InitialExecutors       map[string]struct{}     `json:"initial_executors"`
 	Description            string                  `json:"description"`
 	ApplicationBody        map[string]interface{}  `json:"application_body"`
+	Constants              map[string]interface{}  `json:"constants"`
 	IsFilled               bool                    `json:"is_filled"`
 	IsTakenInWork          bool                    `json:"is_taken_in_work"`
 	IsReentry              bool                    `json:"is_reentry"`
@@ -302,12 +303,16 @@ func (gb *GoFormBlock) handleAutoFillForm() error {
 
 		gb.State.ApplicationBody = formMapping
 	case gb.State.Mapping != nil:
-		formMapping, err := script.MapData(gb.State.Mapping, script.RestoreMapStructure(variables), []string{})
-		if err != nil {
-			return err
+		formMapping, mdErr := script.MapData(gb.State.Mapping, script.RestoreMapStructure(variables), []string{})
+		if mdErr != nil {
+			return mdErr
 		}
 
 		gb.State.ApplicationBody = formMapping
+	}
+
+	if constErr := script.FillMapWithConstants(gb.State.Constants, gb.State.ApplicationBody); constErr != nil {
+		return constErr
 	}
 
 	personData := &servicedesc.SsoPerson{

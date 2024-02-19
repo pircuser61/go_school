@@ -193,36 +193,6 @@ func (gb *ExecutableFunctionBlock) Update(ctx context.Context) (interface{}, err
 	return nil, nil
 }
 
-func (gb *ExecutableFunctionBlock) fillMapWithConstants(functionMapping map[string]interface{}) error {
-	for keyName, value := range gb.State.Constants {
-		keyParts := strings.Split(keyName, ".")
-		currMap := functionMapping
-
-		for i, part := range keyParts {
-			if i == len(keyParts)-1 {
-				currMap[part] = value
-
-				break
-			}
-
-			newCurrMap, ok := currMap[part]
-			if !ok {
-				newCurrMap = make(map[string]interface{})
-				currMap[part] = newCurrMap
-			}
-
-			convNewCurrMap, ok := newCurrMap.(map[string]interface{})
-			if !ok {
-				return errors.New("can`t assert newCurrMap to map[string]interface{}")
-			}
-
-			currMap = convNewCurrMap
-		}
-	}
-
-	return nil
-}
-
 func (gb *ExecutableFunctionBlock) Model() script.FunctionModel {
 	return script.FunctionModel{
 		ID:        BlockExecutableFunctionID,

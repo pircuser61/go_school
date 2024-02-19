@@ -20,22 +20,23 @@ const (
 )
 
 type FormParams struct {
-	SchemaID                  string               `json:"schema_id"`
-	SLA                       int                  `json:"sla"`
-	CheckSLA                  bool                 `json:"check_sla"`
-	Executor                  string               `json:"executor"`
-	FormExecutorType          FormExecutorType     `json:"form_executor_type"`
-	FormGroupID               string               `json:"form_group_id"`
-	FormGroupIDPath           *string              `json:"form_group_id_path,omitempty"`
-	FormsAccessibility        []FormAccessibility  `json:"forms_accessibility"`
-	HideExecutorFromInitiator bool                 `json:"hide_executor_from_initiator"`
-	Mapping                   JSONSchemaProperties `json:"mapping"`
-	FullFormMapping           string               `json:"full_form_mapping"`
-	WorkType                  *string              `json:"work_type"`
-	IsEditable                *bool                `json:"is_editable"`
-	ReEnterSettings           *FormReEnterSettings `json:"form_re_enter_settings,omitempty"`
-	AttachmentFields          []string             `json:"attachment_fields"`
-	Keys                      map[string]string    `json:"keys"`
+	SchemaID                  string                 `json:"schema_id"`
+	SLA                       int                    `json:"sla"`
+	CheckSLA                  bool                   `json:"check_sla"`
+	Executor                  string                 `json:"executor"`
+	FormExecutorType          FormExecutorType       `json:"form_executor_type"`
+	FormGroupID               string                 `json:"form_group_id"`
+	FormGroupIDPath           *string                `json:"form_group_id_path,omitempty"`
+	FormsAccessibility        []FormAccessibility    `json:"forms_accessibility"`
+	HideExecutorFromInitiator bool                   `json:"hide_executor_from_initiator"`
+	Mapping                   JSONSchemaProperties   `json:"mapping"`
+	FullFormMapping           string                 `json:"full_form_mapping"`
+	WorkType                  *string                `json:"work_type"`
+	IsEditable                *bool                  `json:"is_editable"`
+	ReEnterSettings           *FormReEnterSettings   `json:"form_re_enter_settings,omitempty"`
+	AttachmentFields          []string               `json:"attachment_fields"`
+	Keys                      map[string]string      `json:"keys"`
+	Constants                 map[string]interface{} `json:"constants"`
 }
 
 func (a *FormParams) Validate() error {

@@ -1152,7 +1152,7 @@ type FormParams struct {
 	CheckSla bool `json:"check_sla"`
 
 	// Constant values for function parameters (key of object is variable name)
-	Constants *map[string]interface{} `json:"constants,omitempty"`
+	Constants map[string]interface{} `json:"constants"`
 
 	// Executor value
 	Executor *string `json:"executor,omitempty"`
