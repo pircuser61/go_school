@@ -365,6 +365,10 @@ func (gb *GoExecutionBlock) Deadlines(ctx context.Context) ([]Deadline, error) {
 		return deadlines, nil
 	}
 
+	if gb.State.Decision != nil {
+		return []Deadline{}, nil
+	}
+
 	if gb.State.CheckSLA && (latestInfoRequest == nil || latestInfoRequest.ReqType == RequestInfoAnswer) {
 		slaInfoPtr, getSLAInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDTO{
 			TaskCompletionIntervals: []entity.TaskCompletionInterval{{
