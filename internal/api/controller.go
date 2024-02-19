@@ -53,6 +53,7 @@ type Env struct {
 	SLAService              sla.Service
 	Forms                   *forms.Service
 	IncludePlaceholderBlock bool
+	HostURL                 string
 }
 
 type ServerParam struct {

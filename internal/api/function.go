@@ -3,6 +3,8 @@ package api
 import (
 	c "context"
 	"encoding/json"
+	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/google/uuid"
@@ -11,10 +13,13 @@ import (
 
 	"github.com/pkg/errors"
 
-	"gitlab.services.mts.ru/abp/myosotis/logger"
+	"go.opencensus.io/trace"
 
+	"gitlab.services.mts.ru/abp/mail/pkg/email"
+	"gitlab.services.mts.ru/abp/myosotis/logger"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/kafka"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
@@ -183,6 +188,79 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 		Info("message from kafka successfully handled")
 
 	return nil
+}
+
+func (ae *Env) NotifyNewFunctionVersion(w http.ResponseWriter, r *http.Request) {
+	ctx, s := trace.StartSpan(r.Context(), "notify_new_function_version")
+	defer s.End()
+
+	log := logger.GetLogger(ctx)
+	errorHandler := newHTTPErrorHandler(log, w)
+
+	var b NotifyNewFunctionVersionJSONRequestBody
+
+	err := json.NewDecoder(r.Body).Decode(&b)
+	if err != nil {
+		errorHandler.handleError(http.StatusInternalServerError, err)
+
+		return
+	}
+
+	latestFunctionVersion, err := ae.FunctionStore.GetFunction(ctx, b.FunctionId)
+	if err != nil {
+		errorHandler.handleError(http.StatusInternalServerError, err)
+
+		return
+	}
+
+	actualVersions, err := ae.DB.GetVersionsByFunction(ctx, b.FunctionId, b.VersionId)
+	if err != nil {
+		errorHandler.handleError(http.StatusInternalServerError, err)
+
+		return
+	}
+
+	versions := make(map[string][]script.VersionsByFunction)
+	for index := range actualVersions {
+		versions[actualVersions[index].Author] = append(versions[actualVersions[index].Author], script.VersionsByFunction{
+			Name: actualVersions[index].Name,
+			Link: fmt.Sprintf("%s/scenarios/%s", ae.HostURL, actualVersions[index].VersionID.String()),
+		})
+	}
+
+	for login, nameAndLink := range versions {
+		emailToNotify, err := ae.People.GetUserEmail(ctx, login)
+		if err != nil {
+			log.WithField("failed to get mail for this login", login).Error(err)
+
+			continue
+		}
+
+		em := mail.NewFunctionNotify(latestFunctionVersion.Name, latestFunctionVersion.Version, nameAndLink)
+
+		file, ok := ae.Mail.Images[em.Image]
+		if !ok {
+			log.Error("couldn't find images: ", em.Image)
+			errorHandler.handleError(http.StatusInternalServerError, err)
+
+			return
+		}
+
+		files := []email.Attachment{
+			{
+				Name:    headImg,
+				Content: file,
+				Type:    email.EmbeddedAttachment,
+			},
+		}
+
+		err = ae.Mail.SendNotification(ctx, []string{emailToNotify}, files, em)
+		if err != nil {
+			errorHandler.handleError(http.StatusInternalServerError, err)
+
+			return
+		}
+	}
 }
 
 const (

@@ -185,6 +185,13 @@ const (
 	NodeEventStart NodeEvent = "start"
 )
 
+// Defines values for NotificationParamsTextSourceType.
+const (
+	NotificationParamsTextSourceTypeContext NotificationParamsTextSourceType = "context"
+
+	NotificationParamsTextSourceTypeField NotificationParamsTextSourceType = "field"
+)
+
 // Defines values for NumberOperandDataType.
 const (
 	NumberOperandDataTypeInteger NumberOperandDataType = "integer"
@@ -1515,12 +1522,18 @@ type NotificationParams struct {
 	// Notification subject
 	Subject string `json:"subject"`
 
-	// Notification body
+	// либо текст если своё значение либо путь к переменной если textSourceType = context
 	Text string `json:"text"`
+
+	// context для переменной из контекста, field для своего значения
+	TextSourceType *NotificationParamsTextSourceType `json:"textSourceType,omitempty"`
 
 	// UsersFromSchema to get notifications
 	UsersFromSchema string `json:"usersFromSchema"`
 }
+
+// context для переменной из контекста, field для своего значения
+type NotificationParamsTextSourceType string
 
 // Basic number operand, can provide working compare types for this type
 type NumberOperand struct {
@@ -2233,6 +2246,12 @@ type PipelineNameExistsParams struct {
 	CheckNotDeleted bool `json:"checkNotDeleted"`
 }
 
+// NotifyNewFunctionVersionJSONBody defines parameters for NotifyNewFunctionVersion.
+type NotifyNewFunctionVersionJSONBody struct {
+	FunctionId string `json:"functionId"`
+	VersionId  string `json:"versionId"`
+}
+
 // SearchPipelinesParams defines parameters for SearchPipelines.
 type SearchPipelinesParams struct {
 	// имя пайплайна
@@ -2379,6 +2398,9 @@ type CreatePipelineJSONRequestBody CreatePipelineJSONBody
 
 // CopyPipelineJSONRequestBody defines body for CopyPipeline for application/json ContentType.
 type CopyPipelineJSONRequestBody CopyPipelineJSONBody
+
+// NotifyNewFunctionVersionJSONRequestBody defines body for NotifyNewFunctionVersion for application/json ContentType.
+type NotifyNewFunctionVersionJSONRequestBody NotifyNewFunctionVersionJSONBody
 
 // EditVersionJSONRequestBody defines body for EditVersion for application/json ContentType.
 type EditVersionJSONRequestBody EditVersionJSONBody
@@ -3211,6 +3233,9 @@ type ServerInterface interface {
 	// Check if name of pipeline exists
 	// (GET /pipelines/name-exists)
 	PipelineNameExists(w http.ResponseWriter, r *http.Request, params PipelineNameExistsParams)
+	// Notify pipeline authors about new function version
+	// (POST /pipelines/notify/new_function_version)
+	NotifyNewFunctionVersion(w http.ResponseWriter, r *http.Request)
 	// search list of pipelines
 	// (GET /pipelines/search)
 	SearchPipelines(w http.ResponseWriter, r *http.Request, params SearchPipelinesParams)
@@ -3870,6 +3895,21 @@ func (siw *ServerInterfaceWrapper) PipelineNameExists(w http.ResponseWriter, r *
 
 	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.PipelineNameExists(w, r, params)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
+// NotifyNewFunctionVersion operation middleware
+func (siw *ServerInterfaceWrapper) NotifyNewFunctionVersion(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.NotifyNewFunctionVersion(w, r)
 	}
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -5223,6 +5263,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/pipelines/name-exists", wrapper.PipelineNameExists)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/pipelines/notify/new_function_version", wrapper.NotifyNewFunctionVersion)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/pipelines/search", wrapper.SearchPipelines)

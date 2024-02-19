@@ -3012,3 +3012,48 @@ func (db *PGCon) GetTaskInWorkTime(ctx context.Context, workNumber string) (*ent
 
 	return &interval, nil
 }
+
+func (db *PGCon) GetVersionsByFunction(ctx context.Context, functionID, versionID string) ([]entity.EriusScenario, error) {
+	ctx, span := trace.StartSpan(ctx, "pg_get_versions_by_function")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	q := `
+	SELECT p.name, v.id, p.author
+    FROM versions v
+	JOIN pipelines p on v.pipeline_id = p.id
+    JOIN LATERAL jsonb_each(v.content->'pipeline'->'blocks') as bks on true
+	WHERE is_actual = true
+	AND bks.value ->> 'type_id' = 'executable_function'
+    AND bks.value->'params'->'function'->>'functionId' = $1
+    AND bks.value->'params'->'function'->>'versionId' != $2
+    GROUP BY p.name, v.id, p.author;
+`
+
+	rows, err := db.Connection.Query(ctx, q, functionID, versionID)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	versions := make([]entity.EriusScenario, 0)
+
+	for rows.Next() {
+		version := entity.EriusScenario{}
+
+		err = rows.Scan(&version.Name, &version.VersionID, &version.Author)
+		if err != nil {
+			return nil, err
+		}
+
+		versions = append(versions, version)
+	}
+
+	if rowsErr := rows.Err(); rowsErr != nil {
+		return nil, rowsErr
+	}
+
+	return versions, nil
+}

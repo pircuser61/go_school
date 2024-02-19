@@ -127,3 +127,5 @@ minio:
 file_registry:
   rest: 'file-registry:8000'
   grpc: 'file-registry:90'
+
+host_url: 'https://dev.ap.mts.ru'

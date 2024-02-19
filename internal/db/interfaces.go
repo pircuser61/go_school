@@ -216,6 +216,7 @@ type Database interface {
 	GetVersionByPipelineID(ctx c.Context, pipelineID string) (*e.EriusScenario, error)
 	GetVersionByWorkNumber(ctx c.Context, workNumber string) (*e.EriusScenario, error)
 	GetPipelinesByNameOrID(ctx c.Context, dto *SearchPipelineRequest) ([]e.SearchPipeline, error)
+	GetVersionsByFunction(ctx c.Context, functionID, versionID string) ([]e.EriusScenario, error)
 
 	GetBlocksOutputs(ctx c.Context, blockID string) (e.BlockOutputs, error)
 	GetBlockOutputs(ctx c.Context, blockID, blockName string) (e.BlockOutputs, error)
