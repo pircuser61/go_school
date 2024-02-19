@@ -222,10 +222,6 @@ func (gb *GoApproverBlock) approvementBaseActions(login string) []MemberAction {
 	actions := make([]MemberAction, 0, len(gb.State.ActionList))
 
 	for i := range gb.State.ActionList {
-		if gb.State.ActionList[i].ID == approverSendEditAppAction && gb.State.EditingApp != nil {
-			continue
-		}
-
 		actions = append(actions, MemberAction{
 			ID:   gb.State.ActionList[i].ID,
 			Type: gb.State.ActionList[i].Type,
