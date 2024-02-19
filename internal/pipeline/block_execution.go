@@ -246,7 +246,7 @@ func (gb *GoExecutionBlock) isPartOfExecutionGroup(login string) bool {
 }
 
 func (gb *GoExecutionBlock) executionActions() []MemberAction {
-	if gb.State.Decision != nil {
+	if gb.State.Decision != nil && gb.State.EditingApp != nil {
 		return nil
 	}
 
@@ -278,7 +278,7 @@ func (gb *GoExecutionBlock) executionActions() []MemberAction {
 		},
 	}
 
-	if gb.State.IsEditable && gb.State.EditingApp == nil {
+	if gb.State.IsEditable {
 		actions = append(actions, MemberAction{
 			ID:   executionSendEditAppAction,
 			Type: ActionTypeOther,
