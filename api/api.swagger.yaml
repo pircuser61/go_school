@@ -4675,6 +4675,7 @@ components:
         - blueprint_name
         - hide_executor_from_initiator
         - is_editable
+        - constants
     FormExecutorType:
       type: string
       enum:

@@ -431,6 +431,160 @@ func Test_createGoFormBlock(t *testing.T) {
 			},
 			wantErr: assert.NoError,
 		},
+		{
+			name: "success_auto_fill_with_constants",
+			args: args{
+				name: name,
+				ef: &entity.EriusFunc{
+					BlockType:  BlockGoFormID,
+					Title:      title,
+					ShortTitle: shortTitle,
+					Input: []entity.EriusFunctionValue{
+						{
+							Name:   "foo",
+							Type:   "string",
+							Global: "bar",
+						},
+					},
+					Output: &script.JSONSchema{
+						Type: "object",
+						Properties: map[string]script.JSONSchemaPropertiesValue{
+							keyOutputFormExecutor: {
+								Type:   "string",
+								Global: global1,
+							},
+							keyOutputFormBody: {
+								Type:   "string",
+								Global: global2,
+							},
+						},
+					},
+					Params: func() []byte {
+						r, _ := json.Marshal(&script.FormParams{
+							SchemaID:         schemaID,
+							Executor:         executor,
+							FormExecutorType: script.FormExecutorTypeAutoFillUser,
+							Mapping: script.JSONSchemaProperties{
+								"a": script.JSONSchemaPropertiesValue{
+									Type:  "number",
+									Value: "sd.form_0.a",
+								},
+								"b": script.JSONSchemaPropertiesValue{
+									Type:  "number",
+									Value: "sd.form_0.b",
+								},
+							},
+							Constants: map[string]interface{}{
+								"a": "a_from_constant",
+							},
+							WorkType: utils.GetAddressOfValue("8/5"),
+						})
+
+						return r
+					}(),
+					Sockets: next,
+				},
+				runCtx: &BlockRunContext{
+					skipNotifications: true,
+					VarStore: func() *store.VariableStore {
+						s := store.NewStore()
+						s.SetValue("sd.form_0", map[string]interface{}{
+							"a": float64(100),
+							"b": float64(200),
+						})
+
+						return s
+					}(),
+					Services: RunContextServices{
+						ServiceDesc: func() *servicedesc.Service {
+							sdMock := servicedesc.Service{
+								SdURL: "",
+							}
+							httpClient := http.DefaultClient
+							mockTransport := serviceDeskMocks.RoundTripper{}
+							fResponse := func(*http.Request) *http.Response {
+								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								body := io.NopCloser(bytes.NewReader(b))
+
+								defer body.Close()
+
+								return &http.Response{
+									Status:     http.StatusText(http.StatusOK),
+									StatusCode: http.StatusOK,
+									Body:       body,
+									Close:      true,
+								}
+							}
+
+							fError := func(*http.Request) error {
+								return nil
+							}
+
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
+							httpClient.Transport = &mockTransport
+							sdMock.Cli = httpClient
+
+							return &sdMock
+						}(),
+					},
+				},
+			},
+			want: &GoFormBlock{
+				Name:      name,
+				ShortName: shortTitle,
+				Title:     title,
+				Input: map[string]string{
+					"foo": "bar",
+				},
+				Output: map[string]string{
+					keyOutputFormExecutor: global1,
+					keyOutputFormBody:     global2,
+				},
+				happenedEvents: make([]entity.NodeEvent, 0),
+				State: &FormData{
+					FormExecutorType: script.FormExecutorTypeAutoFillUser,
+					SchemaID:         schemaID,
+					Executors:        map[string]struct{}{"auto_fill": {}},
+					ApplicationBody: map[string]interface{}{
+						"a": "a_from_constant",
+						"b": float64(200),
+					},
+					WorkType:      "8/5",
+					IsFilled:      true,
+					IsTakenInWork: true,
+					Mapping: script.JSONSchemaProperties{
+						"a": script.JSONSchemaPropertiesValue{
+							Type:  "number",
+							Value: "sd.form_0.a",
+						},
+						"b": script.JSONSchemaPropertiesValue{
+							Type:  "number",
+							Value: "sd.form_0.b",
+						},
+					},
+					ActualExecutor: func(s string) *string {
+						return &s
+					}("auto_fill"),
+					ChangesLog: []ChangesLogItem{
+						{
+							ApplicationBody: map[string]interface{}{
+								"a": float64(100),
+								"b": float64(200),
+							},
+							CreatedAt:   timeNow,
+							Executor:    "auto_fill",
+							DelegateFor: "",
+						},
+					},
+					Description:        "",
+					FormsAccessibility: nil,
+					InitialExecutors:   map[string]struct{}{"auto_fill": {}},
+					HiddenFields:       make([]string, 0),
+				},
+				Sockets: entity.ConvertSocket(next),
+			},
+			wantErr: assert.NoError,
+		},
 	}
 
 	for _, tt := range tests {
@@ -454,6 +608,13 @@ func Test_createGoFormBlock(t *testing.T) {
 			}
 
 			if !tt.wantErr(t, err, "createGoFormBlock(%v, %v, %v)", tt.args.name, tt.args.ef, nil) {
+				return
+			}
+
+			if tt.name == "success_auto_fill_with_constants" {
+				assert.Equalf(t, tt.want.State.ApplicationBody, got.State.ApplicationBody,
+					"createGoFormBlock(%v, %v, %v)", tt.args.name, tt.args.ef, nil)
+
 				return
 			}
 

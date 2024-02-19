@@ -305,6 +305,7 @@ func (gb *GoFormBlock) createState(ctx context.Context, ef *entity.EriusFunc) er
 		ChangesLog:                make([]ChangesLogItem, 0),
 		FormExecutorType:          params.FormExecutorType,
 		ApplicationBody:           map[string]interface{}{},
+		Constants:                 params.Constants,
 		FormsAccessibility:        params.FormsAccessibility,
 		Mapping:                   params.Mapping,
 		FullFormMapping:           params.FullFormMapping,
