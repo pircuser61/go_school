@@ -277,7 +277,8 @@ func (gb *GoExecutionBlock) executionActions() []MemberAction {
 			Type: ActionTypeOther,
 		},
 	}
-	if gb.State.IsEditable {
+
+	if gb.State.IsEditable && gb.State.EditingApp == nil {
 		actions = append(actions, MemberAction{
 			ID:   executionSendEditAppAction,
 			Type: ActionTypeOther,
