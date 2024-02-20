@@ -268,10 +268,14 @@
                     line-height: 24px;
                     font-weight: 500;
                   "
-                ><strong
-                >заявка № {{.ID}} {{.Name}} ожидает исполнения. {{ if .Group
-                    }} Назначен на группу исполнителей. {{ end }}</strong
-                ></span
+                ><strong>
+                  заявка № {{.ID}} {{.Name}}
+                  {{ if .Group }}
+                    назначена на Группу исполнителей.
+                  {{ else }}
+                    ожидает исполнения.
+                  {{ end }}
+                </strong></span
                 >
                 {{ if .Deadline }} Срок исполнения до {{.Deadline}}. {{ end }}
               </p>
