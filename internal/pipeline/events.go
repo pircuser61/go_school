@@ -124,6 +124,8 @@ func (runCtx BlockRunContext) NotifyEvents(ctx c.Context) {
 			continue
 		}
 
+		req.Header.Set("Content-Type", "application/json")
+
 		headerErr := runCtx.addAuthHeader(ctx, req)
 		if headerErr != nil {
 			log.WithError(reqErr).Error("couldn't add auth Headers")

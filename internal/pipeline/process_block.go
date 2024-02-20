@@ -542,6 +542,8 @@ func sendEndingMapping(
 		return err
 	}
 
+	req.Header.Set("Content-Type", "application/json")
+
 	if auth.AuthType == "oAuth" {
 		bearer := "Bearer " + auth.Token
 
