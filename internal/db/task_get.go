@@ -32,10 +32,10 @@ const (
 )
 
 func uniqueActionsByRole(loginsIn, stepType string, finished, acted bool) string {
-	statuses := "('running', 'idle', 'ready')"
+	statuses := "(vs.status IN ('running', 'idle', 'ready') AND m.finished = false)"
 
 	if finished {
-		statuses = "('finished', 'cancel', 'no_success', 'error')"
+		statuses = "(vs.status IN ('finished', 'cancel', 'no_success', 'error') OR m.finished = true)"
 	}
 
 	memberActed := ""
@@ -60,7 +60,7 @@ func uniqueActionsByRole(loginsIn, stepType string, finished, acted bool) string
                                on ab.mt = vs.time AND ab.step_name = vs.step_name
     WHERE m.login IN %s
       AND vs.step_type = '%s'
-      AND vs.status IN %s
+      AND %s 
       AND w.child_id IS NULL
 		%s
       --unique-actions-filter--
