@@ -3027,7 +3027,7 @@ func (db *PGCon) GetVersionsByFunction(ctx context.Context, functionID, versionI
     FROM versions v
 	JOIN pipelines p on v.pipeline_id = p.id
     JOIN LATERAL jsonb_each(v.content->'pipeline'->'blocks') as bks on true
-	WHERE is_actual = true
+	WHERE (v.status = 1 OR v.status = 2)
 	AND bks.value ->> 'type_id' = 'executable_function'
     AND bks.value->'params'->'function'->>'functionId' = $1
     AND bks.value->'params'->'function'->>'versionId' != $2
