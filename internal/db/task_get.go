@@ -32,10 +32,10 @@ const (
 )
 
 func uniqueActionsByRole(loginsIn, stepType string, finished, acted bool) string {
-	statuses := "('running', 'idle', 'ready')"
+	statuses := "(vs.status IN ('running', 'idle', 'ready') AND m.finished = false)"
 
 	if finished {
-		statuses = "('finished', 'cancel', 'no_success', 'error')"
+		statuses = "(vs.status IN ('finished', 'cancel', 'no_success', 'error') OR m.finished = true)"
 	}
 
 	memberActed := ""
@@ -60,7 +60,7 @@ func uniqueActionsByRole(loginsIn, stepType string, finished, acted bool) string
                                on ab.mt = vs.time AND ab.step_name = vs.step_name
     WHERE m.login IN %s
       AND vs.step_type = '%s'
-      AND vs.status IN %s
+      AND %s 
       AND w.child_id IS NULL
 		%s
       --unique-actions-filter--
@@ -86,8 +86,8 @@ func uniqueActiveActions(approverLogins, executionLogins []string, currentUser, 
     SELECT vs.work_id AS work_id
          , vs.step_name AS block_id
          , m.is_initiator
-         , CASE WHEN vs.status IN ('running', 'idle') AND NOT m.finished THEN m.actions ELSE '{}' END AS action
-         , CASE WHEN vs.status IN ('running', 'idle') AND NOT m.finished THEN m.params ELSE '{}' END  AS params
+         , CASE WHEN vs.status IN ('running', 'idle') THEN m.actions ELSE '{}' END AS action
+         , CASE WHEN vs.status IN ('running', 'idle') THEN m.params ELSE '{}' END  AS params
     FROM members m
              JOIN variable_storage vs on vs.id = m.block_id
              JOIN works w on vs.work_id = w.id

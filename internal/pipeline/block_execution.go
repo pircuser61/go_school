@@ -153,6 +153,15 @@ func (gb *GoExecutionBlock) Members() []Member {
 
 	for i := range gb.State.ChangedExecutorsLogs {
 		if _, ok := addedMembers[gb.State.ChangedExecutorsLogs[i].OldLogin]; !ok {
+			members = append(members, Member{
+				Login:                gb.State.ChangedExecutorsLogs[i].OldLogin,
+				Actions:              []MemberAction{},
+				Finished:             true,
+				IsActed:              true,
+				ExecutionGroupMember: gb.isPartOfExecutionGroup(gb.State.ChangedExecutorsLogs[i].OldLogin),
+			})
+			addedMembers[gb.State.ChangedExecutorsLogs[i].OldLogin] = struct{}{}
+
 			continue
 		}
 

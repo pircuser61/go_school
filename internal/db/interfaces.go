@@ -101,6 +101,7 @@ type Member struct {
 	Actions              []MemberAction
 	Type                 string
 	IsActed              bool
+	Finished             bool
 	ExecutionGroupMember bool
 	IsInitiator          bool
 }

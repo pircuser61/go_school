@@ -312,6 +312,7 @@ func (runCtx *BlockRunContext) saveStepInDB(ctx c.Context, name, stepType, statu
 			Login:                pl[i].Login,
 			Actions:              actions,
 			IsActed:              pl[i].IsActed,
+			Finished:             pl[i].Finished,
 			ExecutionGroupMember: pl[i].ExecutionGroupMember,
 		})
 	}
@@ -362,6 +363,7 @@ func (runCtx *BlockRunContext) updateStepInDB(ctx c.Context, name string, id uui
 			Login:                pl[i].Login,
 			Actions:              actions,
 			IsActed:              pl[i].IsActed,
+			Finished:             pl[i].Finished,
 			ExecutionGroupMember: pl[i].ExecutionGroupMember,
 			IsInitiator:          pl[i].IsInitiator,
 		})
