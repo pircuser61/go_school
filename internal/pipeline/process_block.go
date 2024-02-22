@@ -257,8 +257,15 @@ func initBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *BlockRu
 		return nil, uuid.Nil, deadlinesErr
 	}
 
-	id, startTime, err := runCtx.saveStepInDB(ctx, name, bl.TypeID, string(block.GetStatus()),
-		block.Members(), deadlines, isReEntry)
+	id, startTime, err := runCtx.saveStepInDB(ctx, &saveStepDTO{
+		name:        name,
+		stepType:    bl.TypeID,
+		status:      string(block.GetStatus()),
+		members:     block.Members(),
+		deadlines:   deadlines,
+		isReEntered: isReEntry,
+		attachments: block.BlockAttachments(),
+	})
 	if err != nil {
 		return nil, uuid.Nil, err
 	}
@@ -279,7 +286,15 @@ func updateBlock(ctx c.Context, block Runner, name string, id uuid.UUID, runCtx 
 		return deadlinesErr
 	}
 
-	err = runCtx.updateStepInDB(ctx, name, id, err != nil, block.GetStatus(), block.Members(), deadlines)
+	err = runCtx.updateStepInDB(ctx, &updateStepDTO{
+		id:          id,
+		name:        name,
+		status:      block.GetStatus(),
+		hasError:    err != nil,
+		members:     block.Members(),
+		deadlines:   deadlines,
+		attachments: block.BlockAttachments(),
+	})
 	if err != nil {
 		return err
 	}
@@ -287,20 +302,26 @@ func updateBlock(ctx c.Context, block Runner, name string, id uuid.UUID, runCtx 
 	return nil
 }
 
-func (runCtx *BlockRunContext) saveStepInDB(ctx c.Context, name, stepType, status string,
-	pl []Member, deadlines []Deadline, isReEntered bool,
-) (uuid.UUID, time.Time, error) {
+type saveStepDTO struct {
+	name, stepType, status string
+	members                []Member
+	deadlines              []Deadline
+	attachments            []string
+	isReEntered            bool
+}
+
+func (runCtx *BlockRunContext) saveStepInDB(ctx c.Context, dto *saveStepDTO) (uuid.UUID, time.Time, error) {
 	storageData, errSerialize := json.Marshal(runCtx.VarStore)
 	if errSerialize != nil {
 		return uuid.Nil, time.Time{}, errSerialize
 	}
 
-	dbPeople := make([]db.Member, 0, len(pl))
-	dbDeadlines := make([]db.Deadline, 0, len(deadlines))
+	dbMembers := make([]db.Member, 0, len(dto.members))
+	dbDeadlines := make([]db.Deadline, 0, len(dto.deadlines))
 
-	for i := range pl {
-		actions := make([]db.MemberAction, 0, len(pl[i].Actions))
-		for _, act := range pl[i].Actions {
+	for i := range dto.members {
+		actions := make([]db.MemberAction, 0, len(dto.members[i].Actions))
+		for _, act := range dto.members[i].Actions {
 			actions = append(actions, db.MemberAction{
 				ID:     act.ID,
 				Type:   act.Type,
@@ -308,50 +329,59 @@ func (runCtx *BlockRunContext) saveStepInDB(ctx c.Context, name, stepType, statu
 			})
 		}
 
-		dbPeople = append(dbPeople, db.Member{
-			Login:                pl[i].Login,
+		dbMembers = append(dbMembers, db.Member{
+			Login:                dto.members[i].Login,
 			Actions:              actions,
-			IsActed:              pl[i].IsActed,
-			Finished:             pl[i].Finished,
-			ExecutionGroupMember: pl[i].ExecutionGroupMember,
+			IsActed:              dto.members[i].IsActed,
+			Finished:             dto.members[i].Finished,
+			ExecutionGroupMember: dto.members[i].ExecutionGroupMember,
 		})
 	}
 
-	for i := range deadlines {
+	for i := range dto.deadlines {
 		dbDeadlines = append(dbDeadlines, db.Deadline{
-			Action:   string(deadlines[i].Action),
-			Deadline: deadlines[i].Deadline,
+			Action:   string(dto.deadlines[i].Action),
+			Deadline: dto.deadlines[i].Deadline,
 		})
 	}
 
 	return runCtx.Services.Storage.SaveStepContext(ctx, &db.SaveStepRequest{
 		WorkID:      runCtx.TaskID,
-		StepType:    stepType,
-		StepName:    name,
+		StepType:    dto.stepType,
+		StepName:    dto.name,
 		Content:     storageData,
 		BreakPoints: []string{},
 		HasError:    false,
-		Status:      status,
-		Members:     dbPeople,
+		Status:      dto.status,
+		Members:     dbMembers,
 		Deadlines:   dbDeadlines,
-		IsReEntry:   isReEntered,
+		IsReEntry:   dto.isReEntered,
+		Attachments: len(dto.attachments),
 	})
 }
 
-func (runCtx *BlockRunContext) updateStepInDB(ctx c.Context, name string, id uuid.UUID, hasError bool, status Status,
-	pl []Member, deadlines []Deadline,
-) error {
+type updateStepDTO struct {
+	id          uuid.UUID
+	name        string
+	status      Status
+	hasError    bool
+	members     []Member
+	deadlines   []Deadline
+	attachments []string
+}
+
+func (runCtx *BlockRunContext) updateStepInDB(ctx c.Context, dto *updateStepDTO) error {
 	storageData, err := json.Marshal(runCtx.VarStore)
 	if err != nil {
 		return err
 	}
 
-	dbPeople := make([]db.Member, 0, len(pl))
-	dbDeadlines := make([]db.Deadline, 0, len(deadlines))
+	dbMembers := make([]db.Member, 0, len(dto.members))
+	dbDeadlines := make([]db.Deadline, 0, len(dto.deadlines))
 
-	for i := range pl {
-		actions := make([]db.MemberAction, 0, len(pl[i].Actions))
-		for _, act := range pl[i].Actions {
+	for i := range dto.members {
+		actions := make([]db.MemberAction, 0, len(dto.members[i].Actions))
+		for _, act := range dto.members[i].Actions {
 			actions = append(actions, db.MemberAction{
 				ID:     act.ID,
 				Type:   act.Type,
@@ -359,32 +389,33 @@ func (runCtx *BlockRunContext) updateStepInDB(ctx c.Context, name string, id uui
 			})
 		}
 
-		dbPeople = append(dbPeople, db.Member{
-			Login:                pl[i].Login,
+		dbMembers = append(dbMembers, db.Member{
+			Login:                dto.members[i].Login,
 			Actions:              actions,
-			IsActed:              pl[i].IsActed,
-			Finished:             pl[i].Finished,
-			ExecutionGroupMember: pl[i].ExecutionGroupMember,
-			IsInitiator:          pl[i].IsInitiator,
+			IsActed:              dto.members[i].IsActed,
+			Finished:             dto.members[i].Finished,
+			ExecutionGroupMember: dto.members[i].ExecutionGroupMember,
+			IsInitiator:          dto.members[i].IsInitiator,
 		})
 	}
 
-	for i := range deadlines {
+	for i := range dto.deadlines {
 		dbDeadlines = append(dbDeadlines, db.Deadline{
-			Action:   string(deadlines[i].Action),
-			Deadline: deadlines[i].Deadline,
+			Action:   string(dto.deadlines[i].Action),
+			Deadline: dto.deadlines[i].Deadline,
 		})
 	}
 
 	return runCtx.Services.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
-		ID:          id,
-		StepName:    name,
+		ID:          dto.id,
+		StepName:    dto.name,
 		Content:     storageData,
 		BreakPoints: []string{},
-		HasError:    hasError,
-		Status:      string(status),
-		Members:     dbPeople,
+		HasError:    dto.hasError,
+		Status:      string(dto.status),
+		Members:     dbMembers,
 		Deadlines:   dbDeadlines,
+		Attachments: len(dto.attachments),
 	})
 }
 

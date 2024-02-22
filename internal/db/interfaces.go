@@ -122,6 +122,7 @@ type SaveStepRequest struct {
 	Members     []Member
 	Deadlines   []Deadline
 	IsReEntry   bool
+	Attachments int
 }
 
 type UpdateStepRequest struct {
@@ -133,6 +134,7 @@ type UpdateStepRequest struct {
 	Status      string
 	Members     []Member
 	Deadlines   []Deadline
+	Attachments int
 }
 
 type UpdateTaskBlocksDataRequest struct {

@@ -30,6 +30,7 @@ type Step struct {
 	UpdatedAt   *time.Time                 `json:"updated_at"`
 	IsTest      bool                       `json:"-"`
 	ShortTitle  *string                    `json:"short_title,omitempty"`
+	Attachments int                        `json:"attachments"`
 }
 
 type TaskSteps []*Step

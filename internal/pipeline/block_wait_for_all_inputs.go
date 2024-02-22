@@ -131,6 +131,10 @@ func (gb *GoWaitForAllInputsBlock) Model() script.FunctionModel {
 	}
 }
 
+func (gb *GoWaitForAllInputsBlock) BlockAttachments() (ids []string) {
+	return ids
+}
+
 //nolint:unparam // reEntry always false // когда-нибудь обязательно дорастёт до true
 func createGoWaitForAllInputsBlock(
 	ctx context.Context,

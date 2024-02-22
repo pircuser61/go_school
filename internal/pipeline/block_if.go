@@ -146,6 +146,10 @@ func (gb *IF) Model() script.FunctionModel {
 	}
 }
 
+func (gb *IF) BlockAttachments() (ids []string) {
+	return ids
+}
+
 //nolint:unparam // its ok
 func createGoIfBlock(ctx context.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext,
 	expectedEvents map[string]struct{},

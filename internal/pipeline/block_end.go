@@ -110,6 +110,10 @@ func (gb *GoEndBlock) Model() script.FunctionModel {
 	}
 }
 
+func (gb *GoEndBlock) BlockAttachments() (ids []string) {
+	return ids
+}
+
 //nolint:dupl,unparam //its not duplicate
 func createGoEndBlock(
 	ctx c.Context,

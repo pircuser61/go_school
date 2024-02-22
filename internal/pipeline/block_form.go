@@ -14,6 +14,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
+	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
 const (
@@ -277,6 +278,11 @@ func (gb *GoFormBlock) Model() script.FunctionModel {
 		},
 		Sockets: []script.Socket{script.DefaultSocket},
 	}
+}
+
+func (gb *GoFormBlock) BlockAttachments() (ids []string) {
+
+	return utils.UniqueStrings(ids)
 }
 
 func (gb *GoFormBlock) handleAutoFillForm() error {

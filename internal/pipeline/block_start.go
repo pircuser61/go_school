@@ -124,6 +124,10 @@ func (gb *GoStartBlock) Model() script.FunctionModel {
 	}
 }
 
+func (gb *GoStartBlock) BlockAttachments() (ids []string) {
+	return ids
+}
+
 //nolint:dupl,unparam //its not duplicate
 func createGoStartBlock(ctx context.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext,
 	expectedEvents map[string]struct{},

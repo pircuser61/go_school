@@ -1136,37 +1136,44 @@ func (db *PGCon) UpdateGroupsForEmptyVersions(
 	return nil
 }
 
+func (db *PGCon) isStepExist(ctx context.Context, workID, stepName string) (bool, uuid.UUID, time.Time, error) {
+	var (
+		id uuid.UUID
+		t  time.Time
+	)
+
+	const q = `
+		SELECT id, time
+		FROM variable_storage
+		WHERE work_id = $1 AND
+			step_name = $2 AND
+			(status IN ('idle', 'ready', 'running') OR (
+				step_type = 'form' AND
+				status IN ('idle', 'ready', 'running', 'finished') AND
+				time = (SELECT max(time) FROM variable_storage vs 
+							WHERE vs.work_id = $1 AND step_name = $2)
+			))`
+
+	scanErr := db.Connection.QueryRow(ctx, q, workID, stepName).Scan(&id, &t)
+	if scanErr != nil && !errors.Is(scanErr, pgx.ErrNoRows) {
+		return false, uuid.Nil, time.Time{}, scanErr
+	}
+
+	return id != uuid.Nil, id, t, nil
+}
+
 func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uuid.UUID, time.Time, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_save_step_context")
 	defer span.End()
 
 	if !dto.IsReEntry {
-		var (
-			id uuid.UUID
-			t  time.Time
-		)
-
-		const q = `
-		SELECT id, time
-			FROM variable_storage
-			WHERE work_id = $1 AND
-                step_name = $2 AND
-                (status IN ('idle', 'ready', 'running') OR
-					(
-						step_type = 'form' AND
-						status IN ('idle', 'ready', 'running', 'finished') AND
-			    		time = (SELECT max(time) FROM variable_storage vs WHERE vs.work_id = $1 AND step_name = $2)
-					)
-			    )
-	`
-
-		if scanErr := db.Connection.QueryRow(ctx, q, dto.WorkID, dto.StepName).
-			Scan(&id, &t); scanErr != nil && !errors.Is(scanErr, pgx.ErrNoRows) {
-			return uuid.Nil, time.Time{}, scanErr
+		exists, stepId, createdAt, err := db.isStepExist(ctx, dto.WorkID.String(), dto.StepName)
+		if err != nil {
+			return uuid.Nil, time.Time{}, err
 		}
 
-		if id != uuid.Nil {
-			return id, t, nil
+		if exists {
+			return stepId, createdAt, nil
 		}
 	}
 
@@ -1184,7 +1191,8 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 			time, 
 			break_points, 
 			has_error,
-			status
+			status,
+		    attachments 	                         
 			--update_col--
 		)
 		VALUES (
@@ -1196,7 +1204,8 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 			$6, 
 			$7,
 			$8,
-			$9
+			$9,
+		    $10
 			--update_val--
 		)
 `
@@ -1210,32 +1219,24 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 		dto.BreakPoints,
 		dto.HasError,
 		dto.Status,
+		dto.Attachments,
 	}
 
-	if _, ok := map[string]struct{}{
-		"finished": {}, "no_success": {}, "error": {},
-	}[dto.Status]; ok {
+	if _, ok := map[string]struct{}{"finished": {}, "no_success": {}, "error": {}}[dto.Status]; ok {
 		args = append(args, timestamp)
 		query = strings.Replace(query, "--update_col--", ",updated_at", 1)
 		query = strings.Replace(query, "--update_val--", fmt.Sprintf(",$%d", len(args)), 1)
 	}
 
-	_, err := db.Connection.Exec(
-		ctx,
-		query,
-		args...,
-	)
-	if err != nil {
+	if _, err := db.Connection.Exec(ctx, query, args...); err != nil {
 		return uuid.Nil, time.Time{}, err
 	}
 
-	err = db.insertIntoMembers(ctx, dto.Members, id)
-	if err != nil {
+	if err := db.insertIntoMembers(ctx, dto.Members, id); err != nil {
 		return uuid.Nil, time.Time{}, err
 	}
 
-	err = db.deleteAndInsertIntoDeadlines(ctx, dto.Deadlines, id)
-	if err != nil {
+	if err := db.deleteAndInsertIntoDeadlines(ctx, dto.Deadlines, id); err != nil {
 		return uuid.Nil, time.Time{}, err
 	}
 
@@ -1248,26 +1249,22 @@ func (db *PGCon) UpdateStepContext(ctx context.Context, dto *UpdateStepRequest) 
 
 	// nolint:gocritic
 	// language=PostgreSQL
-	q := `
-	UPDATE variable_storage
-	SET
-		break_points = $2
-		, has_error = $3
-		, status = $4
-		, content = $5
-		, updated_at = NOW()
-	WHERE
-		id = $1
-`
+	const q = `
+		UPDATE variable_storage
+		SET
+			break_points = $2
+			, has_error = $3
+			, status = $4
+			, content = $5
+			, attachments = $6
+			, updated_at = NOW()
+		WHERE id = $1`
+
 	args := []interface{}{
-		dto.ID, dto.BreakPoints, dto.HasError, dto.Status, dto.Content,
+		dto.ID, dto.BreakPoints, dto.HasError, dto.Status, dto.Content, dto.Attachments,
 	}
 
-	_, err := db.Connection.Exec(
-		c,
-		q,
-		args...,
-	)
+	_, err := db.Connection.Exec(c, q, args...)
 	if err != nil {
 		return err
 	}
@@ -1281,22 +1278,15 @@ func (db *PGCon) UpdateStepContext(ctx context.Context, dto *UpdateStepRequest) 
 		DELETE FROM members 
 		WHERE block_id = $1`
 
-	_, err = db.Connection.Exec(
-		ctx,
-		qMembersDelete,
-		dto.ID,
-	)
-	if err != nil {
+	if _, err = db.Connection.Exec(ctx, qMembersDelete, dto.ID); err != nil {
 		return err
 	}
 
-	err = db.insertIntoMembers(ctx, dto.Members, dto.ID)
-	if err != nil {
+	if err = db.insertIntoMembers(ctx, dto.Members, dto.ID); err != nil {
 		return err
 	}
 
-	err = db.deleteAndInsertIntoDeadlines(ctx, dto.Deadlines, dto.ID)
-	if err != nil {
+	if err = db.deleteAndInsertIntoDeadlines(ctx, dto.Deadlines, dto.ID); err != nil {
 		return err
 	}
 

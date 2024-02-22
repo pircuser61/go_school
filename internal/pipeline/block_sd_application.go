@@ -185,6 +185,10 @@ func (gb *GoSdApplicationBlock) Model() script.FunctionModel {
 	}
 }
 
+func (gb *GoSdApplicationBlock) BlockAttachments() (ids []string) {
+	return ids
+}
+
 //nolint:unparam // its ok
 func createGoSdApplicationBlock(ctx context.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext,
 	expectedEvents map[string]struct{},

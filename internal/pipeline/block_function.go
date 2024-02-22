@@ -227,6 +227,11 @@ func (gb *ExecutableFunctionBlock) UpdateManual() bool {
 	return false
 }
 
+func (gb *ExecutableFunctionBlock) BlockAttachments() (ids []string) {
+
+	return ids
+}
+
 // nolint:dupl // another block
 func createExecutableFunctionBlock(ctx context.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext,
 	expectedEvents map[string]struct{},
