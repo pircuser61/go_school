@@ -4857,6 +4857,20 @@ func (_m *MockedDatabase) RemoveObsoleteMapping(ctx context.Context, id string) 
 	return r0
 }
 
+// SetExecDeadline provides a mock function with given fields: ctx, taskID, deadline
+func (_m *MockedDatabase) SetExecDeadline(ctx context.Context, taskID string, deadline time.Time) error {
+	ret := _m.Called(ctx, taskID, deadline)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, time.Time) error); ok {
+		r0 = rf(ctx, taskID, deadline)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // MockedDatabase_RemoveObsoleteMapping_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'RemoveObsoleteMapping'
 type MockedDatabase_RemoveObsoleteMapping_Call struct {
 	*mock.Call

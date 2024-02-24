@@ -34,7 +34,6 @@ type TaskStorager interface {
 	GetDeadline(ctx c.Context, workID string) (time.Time, error)
 	GetTasks(ctx c.Context, filters e.TaskFilter, delegations []string) (*e.EriusTasksPage, error)
 	GetTasksCount(ctx c.Context, currentUser string, delegationsByApprovement, delegationsByExecution []string) (*e.CountTasks, error)
-	GetPipelineTasks(ctx c.Context, pipelineID uuid.UUID) (*e.EriusTasks, error)
 	GetTask(ctx c.Context, delegationsApprover, delegationsExecution []string, currentUser, workNumber string) (*e.EriusTask, error)
 	GetTaskSteps(ctx c.Context, id uuid.UUID) (e.TaskSteps, error)
 	GetUnfinishedTaskStepsByWorkIDAndStepType(ctx c.Context, id uuid.UUID, stepType string, in *e.TaskUpdate) (e.TaskSteps, error)
@@ -42,7 +41,6 @@ type TaskStorager interface {
 	GetParentTaskStepByName(ctx c.Context, workID uuid.UUID, stepName string) (*e.Step, error)
 	GetTaskStepByName(ctx c.Context, workID uuid.UUID, stepName string) (*e.Step, error)
 	GetCanceledTaskSteps(ctx c.Context, taskID uuid.UUID) ([]e.Step, error)
-	GetVersionTasks(ctx c.Context, versionID uuid.UUID) (*e.EriusTasks, error)
 	GetLastDebugTask(ctx c.Context, versionID uuid.UUID, author string) (*e.EriusTask, error)
 	GetTaskStatus(ctx c.Context, taskID uuid.UUID) (int, error)
 	GetTaskHumanStatus(ctx c.Context, taskID uuid.UUID) (string, error)
@@ -206,6 +204,7 @@ type Database interface {
 	SaveStepContext(ctx c.Context, dto *SaveStepRequest) (uuid.UUID, time.Time, error)
 	UpdateStepContext(ctx c.Context, dto *UpdateStepRequest) error
 	UpdateTaskBlocksData(ctx c.Context, dto *UpdateTaskBlocksDataRequest) error
+	SetExecDeadline(ctx c.Context, taskID string, deadline time.Time) error
 
 	GetExecutableScenarios(ctx c.Context) ([]e.EriusScenario, error)
 	GetExecutableByName(ctx c.Context, name string) (*e.EriusScenario, error)

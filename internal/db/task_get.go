@@ -265,7 +265,8 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 			count(*) over() as total,
 			w.rate,
 			w.rate_comment,
-		    ua.actions
+		    ua.actions,
+		    w.exec_deadline
 		FROM works w 
 		JOIN versions v ON v.id = w.version_id
 		JOIN pipelines p ON p.id = v.pipeline_id
@@ -834,7 +835,7 @@ func (db *PGCon) GetDeadline(ctx c.Context, workNumber string) (time.Time, error
 	// language=PostgreSQL
 	q := `
     WITH blocks AS (
-    	SELECT  content->'State'->step_name AS block 
+    	SELECT content->'State'->step_name AS block 
 		FROM variable_storage vs 
 		WHERE work_id = (
 			SELECT id from works WHERE work_number = $1 and child_id is null
@@ -961,59 +962,6 @@ WITH active_counts as (
 		TotalFormExecutor: counter.totalFormExecutor,
 		TotalSign:         counter.totalSign,
 	}, nil
-}
-
-func (db *PGCon) GetPipelineTasks(ctx c.Context, pipelineID uuid.UUID) (*entity.EriusTasks, error) {
-	ctx, span := trace.StartSpan(ctx, "pg_get_pipeline_tasks")
-	defer span.End()
-
-	// nolint:gocritic
-	// language=PostgreSQL
-	q := `SELECT 
-			w.id, 
-			w.started_at, 
-			ws.name, 
-			w.human_status, 
-			w.debug, 
-			w.parameters, 
-			w.author, 
-			w.version_id,
-       		w.work_number
-		FROM works w 
-		JOIN versions v ON v.id = w.version_id
-		JOIN pipelines p ON p.id = v.pipeline_id
-		JOIN work_status ws ON w.status = ws.id
-		WHERE p.id = $1 AND w.child_id IS NULL
-		ORDER BY w.started_at DESC
-		LIMIT 100`
-
-	return db.getTasks(ctx, &entity.TaskFilter{}, []string{}, q, []interface{}{pipelineID})
-}
-
-func (db *PGCon) GetVersionTasks(ctx c.Context, versionID uuid.UUID) (*entity.EriusTasks, error) {
-	ctx, span := trace.StartSpan(ctx, "pg_get_version_tasks")
-	defer span.End()
-
-	// nolint:gocritic
-	// language=PostgreSQL
-	q := `SELECT 
-			w.id, 
-			w.started_at, 
-			ws.name,
-       		w.human_status,
-			w.debug, 
-			w.parameters,
-			w.author, 
-			w.version_id,
-       		w.work_number
-		FROM works w 
-		JOIN versions v ON v.id = w.version_id
-		JOIN work_status ws ON w.status = ws.id
-		WHERE v.id = $1 AND w.child_id IS NULL
-		ORDER BY w.started_at DESC
-		LIMIT 100`
-
-	return db.getTasks(ctx, &entity.TaskFilter{}, []string{}, q, []interface{}{versionID})
 }
 
 func (db *PGCon) GetLastDebugTask(ctx c.Context, id uuid.UUID, author string) (*entity.EriusTask, error) {
@@ -1480,6 +1428,7 @@ func (db *PGCon) getTasks(ctx c.Context, filters *entity.TaskFilter,
 			&et.Rate,
 			&et.RateComment,
 			&actionData,
+			&et.ProcessDeadline,
 		)
 
 		if err != nil {
