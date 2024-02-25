@@ -1281,15 +1281,18 @@ func (db *PGCon) UpdateStepContext(ctx context.Context, dto *UpdateStepRequest) 
 		DELETE FROM members 
 		WHERE block_id = $1`
 
-	if _, err = db.Connection.Exec(ctx, qMembersDelete, dto.ID); err != nil {
+	_, err = db.Connection.Exec(ctx, qMembersDelete, dto.ID)
+	if err != nil {
 		return err
 	}
 
-	if err = db.insertIntoMembers(ctx, dto.Members, dto.ID); err != nil {
+	err = db.insertIntoMembers(ctx, dto.Members, dto.ID)
+	if err != nil {
 		return err
 	}
 
-	if err = db.deleteAndInsertIntoDeadlines(ctx, dto.Deadlines, dto.ID); err != nil {
+	err = db.deleteAndInsertIntoDeadlines(ctx, dto.Deadlines, dto.ID)
+	if err != nil {
 		return err
 	}
 
