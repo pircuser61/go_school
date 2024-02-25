@@ -724,6 +724,11 @@ func (gb *GoSignBlock) BlockAttachments() (ids []string) {
 		ids = append(ids, gb.State.Attachments[i].FileID)
 	}
 
+	latestDecisionLog := gb.State.SignLog[len(gb.State.SignLog)-1]
+	for i := range latestDecisionLog.Attachments {
+		ids = append(ids, latestDecisionLog.Attachments[i].FileID)
+	}
+
 	return utils.UniqueStrings(ids)
 }
 

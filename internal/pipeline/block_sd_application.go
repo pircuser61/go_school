@@ -3,7 +3,7 @@ package pipeline
 import (
 	"context"
 	"encoding/json"
-
+	"fmt"
 	"github.com/pkg/errors"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
@@ -12,6 +12,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
+	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
 const (
@@ -186,7 +187,8 @@ func (gb *GoSdApplicationBlock) Model() script.FunctionModel {
 }
 
 func (gb *GoSdApplicationBlock) BlockAttachments() (ids []string) {
-	return ids
+	ids = utils.GetAttachmentsIds(fmt.Sprintf("%+v", gb.State.ApplicationBody))
+	return utils.UniqueStrings(ids)
 }
 
 //nolint:unparam // its ok

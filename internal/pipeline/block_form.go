@@ -281,7 +281,11 @@ func (gb *GoFormBlock) Model() script.FunctionModel {
 }
 
 func (gb *GoFormBlock) BlockAttachments() (ids []string) {
-
+	for _, fieldName := range gb.State.AttachmentFields {
+		if fileID, exists := gb.State.ApplicationBody[fieldName]; exists {
+			ids = append(ids, fmt.Sprintf("%s", fileID))
+		}
+	}
 	return utils.UniqueStrings(ids)
 }
 
