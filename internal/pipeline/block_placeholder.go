@@ -22,6 +22,10 @@ type GoPlaceholderBlock struct {
 	happenedEvents []entity.NodeEvent
 }
 
+func (gb *GoPlaceholderBlock) CurrentExecutor() string {
+	return ""
+}
+
 func (gb *GoPlaceholderBlock) GetNewEvents() []entity.NodeEvent {
 	return gb.happenedEvents
 }

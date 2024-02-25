@@ -47,6 +47,10 @@ type GoSdApplicationBlock struct {
 	happenedEvents []entity.NodeEvent
 }
 
+func (gb *GoSdApplicationBlock) CurrentExecutor() string {
+	return ""
+}
+
 func (gb *GoSdApplicationBlock) GetNewEvents() []entity.NodeEvent {
 	return gb.happenedEvents
 }

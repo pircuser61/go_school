@@ -94,6 +94,13 @@ type ExecutionData struct {
 	HideExecutor                 bool      `json:"hide_executor"`
 }
 
+func (gb *ExecutionData) getCurrentExec() string {
+	for k := range gb.Executors {
+		return k
+	}
+	return ""
+}
+
 func (a *ExecutionData) GetDecision() *ExecutionDecision {
 	return a.Decision
 }

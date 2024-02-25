@@ -1184,7 +1184,8 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 			time, 
 			break_points, 
 			has_error,
-			status
+			status,
+		    current_executor
 			--update_col--
 		)
 		VALUES (
@@ -1196,7 +1197,8 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 			$6, 
 			$7,
 			$8,
-			$9
+			$9,
+		    $10
 			--update_val--
 		)
 `
@@ -1210,6 +1212,7 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 		dto.BreakPoints,
 		dto.HasError,
 		dto.Status,
+		dto.CurrentExecutor,
 	}
 
 	if _, ok := map[string]struct{}{
@@ -1255,12 +1258,13 @@ func (db *PGCon) UpdateStepContext(ctx context.Context, dto *UpdateStepRequest) 
 		, has_error = $3
 		, status = $4
 		, content = $5
+	    , current_executor = $6
 		, updated_at = NOW()
 	WHERE
 		id = $1
 `
 	args := []interface{}{
-		dto.ID, dto.BreakPoints, dto.HasError, dto.Status, dto.Content,
+		dto.ID, dto.BreakPoints, dto.HasError, dto.Status, dto.Content, dto.CurrentExecutor,
 	}
 
 	_, err := db.Connection.Exec(

@@ -110,27 +110,29 @@ type Deadline struct {
 }
 
 type SaveStepRequest struct {
-	WorkID      uuid.UUID
-	StepType    string
-	StepName    string
-	Content     []byte
-	BreakPoints []string
-	HasError    bool
-	Status      string
-	Members     []Member
-	Deadlines   []Deadline
-	IsReEntry   bool
+	WorkID          uuid.UUID
+	StepType        string
+	StepName        string
+	Content         []byte
+	BreakPoints     []string
+	HasError        bool
+	Status          string
+	Members         []Member
+	Deadlines       []Deadline
+	IsReEntry       bool
+	CurrentExecutor string
 }
 
 type UpdateStepRequest struct {
-	ID          uuid.UUID
-	StepName    string
-	Content     []byte
-	BreakPoints []string
-	HasError    bool
-	Status      string
-	Members     []Member
-	Deadlines   []Deadline
+	ID              uuid.UUID
+	StepName        string
+	Content         []byte
+	BreakPoints     []string
+	HasError        bool
+	Status          string
+	Members         []Member
+	Deadlines       []Deadline
+	CurrentExecutor string
 }
 
 type UpdateTaskBlocksDataRequest struct {

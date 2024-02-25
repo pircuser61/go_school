@@ -117,6 +117,7 @@ type EriusTask struct {
 	ProcessDeadline time.Time         `json:"process_deadline"`
 	NodeGroup       []*NodeGroup      `json:"node_group"`
 	ApprovalList    map[string]string `json:"approval_list"`
+	CurrentExecutor string            `json:"current_executor"`
 }
 
 func (et *EriusTask) IsRun() bool {

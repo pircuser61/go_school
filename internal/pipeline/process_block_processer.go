@@ -101,7 +101,8 @@ func (p *blockProcessor) ProcessBlock(ctx context.Context, its int) error {
 
 	activeBlocks, ok := block.Next(p.runCtx.VarStore)
 	if !ok {
-		err = p.runCtx.updateStepInDB(ctx, p.name, id, true, block.GetStatus(), block.Members(), []Deadline{})
+		err = p.runCtx.updateStepInDB(ctx, p.name, "", id, true, block.GetStatus(), block.Members(),
+			[]Deadline{})
 		if err != nil {
 			return p.handleError(ctx, log, err)
 		}
@@ -194,7 +195,7 @@ func (p *blockProcessor) updateTaskExecDeadline(ctx context.Context) error {
 		slaInfoPtr, getSLAInfoErr := p.runCtx.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDTO{
 			TaskCompletionIntervals: []entity.TaskCompletionInterval{
 				{
-					StartedAt: times.StartedAt,
+					StartedAt:  times.StartedAt,
 					FinishedAt: times.StartedAt.Add(time.Hour * 24 * 100),
 				},
 			},

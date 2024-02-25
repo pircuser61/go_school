@@ -46,10 +46,11 @@ func uniqueActionsByRole(loginsIn, stepType string, finished, acted bool) string
 	// nolint:gocritic
 	// language=PostgreSQL
 	return fmt.Sprintf(`WITH actions AS (
-    SELECT vs.work_id                                                                                 AS work_id
-         , vs.step_name                                                                               AS block_id
-         , CASE WHEN vs.status IN ('running', 'idle','ready') THEN m.actions ELSE '{}' END AS action
-         , CASE WHEN vs.status IN ('running', 'idle','ready') THEN m.params ELSE '{}' END  AS params
+    SELECT vs.work_id                                                                       AS work_id
+         , vs.step_name                                                                     AS block_id
+         , CASE WHEN vs.status IN ('running', 'idle', 'ready') THEN m.actions ELSE '{}' END AS action
+         , CASE WHEN vs.status IN ('running', 'idle', 'ready') THEN m.params ELSE '{}' END  AS params
+         , vs.current_executor                                                              AS current_executor
     FROM members m
              JOIN variable_storage vs on vs.id = m.block_id
              JOIN works w on vs.work_id = w.id
@@ -66,14 +67,14 @@ func uniqueActionsByRole(loginsIn, stepType string, finished, acted bool) string
       --unique-actions-filter--
 )
      , unique_actions AS (
-    SELECT actions.work_id AS work_id, JSONB_AGG(jsonb_actions.actions) AS actions
+    SELECT actions.work_id AS work_id, JSONB_AGG(jsonb_actions.actions) AS actions, actions.current_executor
     FROM actions
              LEFT JOIN LATERAL (SELECT jsonb_build_object(
                                                'block_id', actions.block_id,
                                                'actions', actions.action,
                                                'params', actions.params) as actions) jsonb_actions ON TRUE
-    GROUP BY actions.work_id
-)`, loginsIn, stepType, statuses, memberActed)
+    GROUP BY actions.work_id)
+`, loginsIn, stepType, statuses, memberActed)
 }
 
 func uniqueActiveActions(approverLogins, executionLogins []string, currentUser, workNumber string) string {
@@ -266,7 +267,8 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 			w.rate,
 			w.rate_comment,
 		    ua.actions,
-		    w.exec_deadline
+		    w.exec_deadline,
+		    ua.current_executor
 		FROM works w 
 		JOIN versions v ON v.id = w.version_id
 		JOIN pipelines p ON p.id = v.pipeline_id
@@ -719,15 +721,8 @@ func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter, delegations 
 	taskIDs := make([]string, 0, len(tasks.Tasks))
 
 	//nolint:gocritic //в этом проекте не принято использовать поинтеры в коллекциях
-	for i, task := range tasks.Tasks {
+	for _, task := range tasks.Tasks {
 		taskIDs = append(taskIDs, task.ID.String())
-
-		steps, getTaskErr := db.GetTaskSteps(ctx, tasks.Tasks[i].ID)
-		if getTaskErr != nil {
-			return nil, getTaskErr
-		}
-
-		tasks.Tasks[i].Steps = steps
 	}
 
 	q = `
@@ -1429,6 +1424,7 @@ func (db *PGCon) getTasks(ctx c.Context, filters *entity.TaskFilter,
 			&et.RateComment,
 			&actionData,
 			&et.ProcessDeadline,
+			&et.CurrentExecutor,
 		)
 
 		if err != nil {
