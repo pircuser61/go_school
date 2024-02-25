@@ -228,7 +228,6 @@ func (gb *ExecutableFunctionBlock) UpdateManual() bool {
 }
 
 func (gb *ExecutableFunctionBlock) BlockAttachments() (ids []string) {
-
 	return ids
 }
 

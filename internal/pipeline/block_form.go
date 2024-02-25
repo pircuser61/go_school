@@ -286,6 +286,7 @@ func (gb *GoFormBlock) BlockAttachments() (ids []string) {
 			ids = append(ids, fmt.Sprintf("%s", fileID))
 		}
 	}
+
 	return utils.UniqueStrings(ids)
 }
 

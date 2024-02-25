@@ -715,12 +715,8 @@ func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter, delegations 
 		return nil, err
 	}
 
-	taskIDs := make([]string, 0, len(res.Tasks))
-
 	//nolint:gocritic // в этом проекте не принято использовать поинтеры в коллекциях
-	for i, task := range res.Tasks {
-		taskIDs = append(taskIDs, task.ID.String())
-
+	for i, _ := range res.Tasks {
 		steps, getTaskErr := db.GetTaskSteps(ctx, res.Tasks[i].ID)
 		if getTaskErr != nil {
 			return nil, getTaskErr

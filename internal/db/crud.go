@@ -1167,13 +1167,13 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 	defer span.End()
 
 	if !dto.IsReEntry {
-		exists, stepId, createdAt, err := db.isStepExist(ctx, dto.WorkID.String(), dto.StepName)
+		exists, stepID, createdAt, err := db.isStepExist(ctx, dto.WorkID.String(), dto.StepName)
 		if err != nil {
 			return uuid.Nil, time.Time{}, err
 		}
 
 		if exists {
-			return stepId, createdAt, nil
+			return stepID, createdAt, nil
 		}
 	}
 
@@ -1228,15 +1228,18 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 		query = strings.Replace(query, "--update_val--", fmt.Sprintf(",$%d", len(args)), 1)
 	}
 
-	if _, err := db.Connection.Exec(ctx, query, args...); err != nil {
+	_, err := db.Connection.Exec(ctx, query, args...)
+	if err != nil {
 		return uuid.Nil, time.Time{}, err
 	}
 
-	if err := db.insertIntoMembers(ctx, dto.Members, id); err != nil {
+	err = db.insertIntoMembers(ctx, dto.Members, id)
+	if err != nil {
 		return uuid.Nil, time.Time{}, err
 	}
 
-	if err := db.deleteAndInsertIntoDeadlines(ctx, dto.Deadlines, id); err != nil {
+	err = db.deleteAndInsertIntoDeadlines(ctx, dto.Deadlines, id)
+	if err != nil {
 		return uuid.Nil, time.Time{}, err
 	}
 

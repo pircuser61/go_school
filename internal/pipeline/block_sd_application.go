@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+
 	"github.com/pkg/errors"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
@@ -186,9 +187,8 @@ func (gb *GoSdApplicationBlock) Model() script.FunctionModel {
 	}
 }
 
-func (gb *GoSdApplicationBlock) BlockAttachments() (ids []string) {
-	ids = utils.GetAttachmentsIds(fmt.Sprintf("%+v", gb.State.ApplicationBody))
-	return utils.UniqueStrings(ids)
+func (gb *GoSdApplicationBlock) BlockAttachments() []string {
+	return utils.UniqueStrings(utils.GetAttachmentsIds(fmt.Sprintf("%+v", gb.State.ApplicationBody)))
 }
 
 //nolint:unparam // its ok

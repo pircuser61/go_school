@@ -284,5 +284,5 @@ func (ae *Env) getTaskStepWithRetry(ctx c.Context, stepID uuid.UUID) (*entity.St
 		return step, nil
 	}
 
-	return nil, errors.New("step by stepId not found")
+	return nil, errors.New("step by stepID not found")
 }
