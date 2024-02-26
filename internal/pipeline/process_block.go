@@ -257,7 +257,7 @@ func initBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *BlockRu
 		return nil, uuid.Nil, deadlinesErr
 	}
 
-	id, startTime, err := runCtx.saveStepInDB(ctx, name, bl.TypeID, string(block.GetStatus()),
+	id, startTime, err := runCtx.saveStepInDB(ctx, name, bl.TypeID, string(block.GetStatus()), block.CurrentExecutor(),
 		block.Members(), deadlines, isReEntry)
 	if err != nil {
 		return nil, uuid.Nil, err
@@ -279,7 +279,8 @@ func updateBlock(ctx c.Context, block Runner, name string, id uuid.UUID, runCtx 
 		return deadlinesErr
 	}
 
-	err = runCtx.updateStepInDB(ctx, name, id, err != nil, block.GetStatus(), block.Members(), deadlines)
+	err = runCtx.updateStepInDB(ctx, name, block.CurrentExecutor(), id, err != nil, block.GetStatus(), block.Members(),
+		deadlines)
 	if err != nil {
 		return err
 	}
@@ -287,7 +288,7 @@ func updateBlock(ctx c.Context, block Runner, name string, id uuid.UUID, runCtx 
 	return nil
 }
 
-func (runCtx *BlockRunContext) saveStepInDB(ctx c.Context, name, stepType, status string,
+func (runCtx *BlockRunContext) saveStepInDB(ctx c.Context, name, stepType, status, currentExecutor string,
 	pl []Member, deadlines []Deadline, isReEntered bool,
 ) (uuid.UUID, time.Time, error) {
 	storageData, errSerialize := json.Marshal(runCtx.VarStore)
@@ -325,21 +326,22 @@ func (runCtx *BlockRunContext) saveStepInDB(ctx c.Context, name, stepType, statu
 	}
 
 	return runCtx.Services.Storage.SaveStepContext(ctx, &db.SaveStepRequest{
-		WorkID:      runCtx.TaskID,
-		StepType:    stepType,
-		StepName:    name,
-		Content:     storageData,
-		BreakPoints: []string{},
-		HasError:    false,
-		Status:      status,
-		Members:     dbPeople,
-		Deadlines:   dbDeadlines,
-		IsReEntry:   isReEntered,
+		WorkID:          runCtx.TaskID,
+		StepType:        stepType,
+		StepName:        name,
+		Content:         storageData,
+		BreakPoints:     []string{},
+		HasError:        false,
+		Status:          status,
+		Members:         dbPeople,
+		Deadlines:       dbDeadlines,
+		IsReEntry:       isReEntered,
+		CurrentExecutor: currentExecutor,
 	})
 }
 
-func (runCtx *BlockRunContext) updateStepInDB(ctx c.Context, name string, id uuid.UUID, hasError bool, status Status,
-	pl []Member, deadlines []Deadline,
+func (runCtx *BlockRunContext) updateStepInDB(ctx c.Context, name, currentExecutor string, id uuid.UUID, hasError bool,
+	status Status, pl []Member, deadlines []Deadline,
 ) error {
 	storageData, err := json.Marshal(runCtx.VarStore)
 	if err != nil {
@@ -377,14 +379,15 @@ func (runCtx *BlockRunContext) updateStepInDB(ctx c.Context, name string, id uui
 	}
 
 	return runCtx.Services.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
-		ID:          id,
-		StepName:    name,
-		Content:     storageData,
-		BreakPoints: []string{},
-		HasError:    hasError,
-		Status:      string(status),
-		Members:     dbPeople,
-		Deadlines:   dbDeadlines,
+		ID:              id,
+		StepName:        name,
+		Content:         storageData,
+		BreakPoints:     []string{},
+		HasError:        hasError,
+		Status:          string(status),
+		Members:         dbPeople,
+		Deadlines:       dbDeadlines,
+		CurrentExecutor: currentExecutor,
 	})
 }
 
@@ -403,6 +406,11 @@ func ProcessBlockWithEndMapping(ctx c.Context, name string, bl *entity.EriusFunc
 	pErr := blockProcessor.ProcessBlock(ctx, 0)
 	if pErr != nil {
 		return pErr
+	}
+
+	updDeadlineErr := blockProcessor.updateTaskExecDeadline(ctx)
+	if updDeadlineErr != nil {
+		return updDeadlineErr
 	}
 
 	intStatus, stringStatus, err := runCtx.Services.Storage.GetTaskStatusWithReadableString(ctx, runCtx.TaskID)

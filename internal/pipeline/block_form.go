@@ -92,6 +92,10 @@ type GoFormBlock struct {
 	happenedEvents []entity.NodeEvent
 }
 
+func (gb *GoFormBlock) CurrentExecutor() string {
+	return ""
+}
+
 func (gb *GoFormBlock) GetNewEvents() []entity.NodeEvent {
 	return gb.happenedEvents
 }

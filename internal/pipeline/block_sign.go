@@ -66,6 +66,10 @@ type GoSignBlock struct {
 	happenedEvents []entity.NodeEvent
 }
 
+func (gb *GoSignBlock) CurrentExecutor() string {
+	return ""
+}
+
 func (gb *GoSignBlock) GetNewEvents() []entity.NodeEvent {
 	return gb.happenedEvents
 }

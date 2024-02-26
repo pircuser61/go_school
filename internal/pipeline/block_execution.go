@@ -48,6 +48,22 @@ type GoExecutionBlock struct {
 	happenedEvents []entity.NodeEvent
 }
 
+func (gb *GoExecutionBlock) CurrentExecutor() string {
+	if gb.State.Decision != nil {
+		return ""
+	}
+
+	if gb.State.IsTakenInWork {
+		return gb.State.getAllExec()
+	}
+
+	if gb.State.ExecutorsGroupID != "" {
+		return gb.State.ExecutorsGroupID
+	}
+
+	return gb.State.getAllExec()
+}
+
 func (gb *GoExecutionBlock) GetNewEvents() []entity.NodeEvent {
 	return gb.happenedEvents
 }

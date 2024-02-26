@@ -2,6 +2,8 @@ package pipeline
 
 import (
 	"fmt"
+	"sort"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -92,6 +94,18 @@ type ExecutionData struct {
 	CheckDayBeforeSLARequestInfo bool      `json:"check_day_before_sla_request_info"`
 	WorkType                     string    `json:"work_type"`
 	HideExecutor                 bool      `json:"hide_executor"`
+}
+
+func (a *ExecutionData) getAllExec() string {
+	keys := make([]string, 0, len(a.Executors))
+
+	for k := range a.Executors {
+		keys = append(keys, k)
+	}
+
+	sort.Strings(keys)
+
+	return strings.Join(keys, ",")
 }
 
 func (a *ExecutionData) GetDecision() *ExecutionDecision {

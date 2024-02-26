@@ -899,8 +899,14 @@ type EriusTask struct {
 	Author           string                 `json:"author"`
 	BlueprintId      string                 `json:"blueprint_id"`
 	Comment          *string                `json:"comment,omitempty"`
-	Debug            bool                   `json:"debug"`
-	Description      string                 `json:"description"`
+
+	// Current execution start time (UTC)
+	CurrentExecutionStart *string `json:"current_execution_start,omitempty"`
+
+	// Current executor login/group id/logins
+	CurrentExecutor string `json:"current_executor"`
+	Debug           bool   `json:"debug"`
+	Description     string `json:"description"`
 
 	// Task human readable status
 	HumanStatus        TaskHumanStatus        `json:"human_status"`
