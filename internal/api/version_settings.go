@@ -252,7 +252,22 @@ func (ae *Env) SaveVersionSettings(w http.ResponseWriter, req *http.Request, ver
 		return
 	}
 
-	processSettings.ID = versionID
+	scenario, err := ae.DB.GetPipelineVersion(ctx, uuid.MustParse(versionID), true)
+	if err != nil {
+		errorHandler.handleError(GetVersionError, err)
+
+		return
+	}
+
+	scenario.Settings = *processSettings
+
+	var errCustom Err
+	processSettings.ID, errCustom, err = ae.createOrUpdateVersion(ctx, scenario)
+	if err != nil {
+		errorHandler.handleError(errCustom, err)
+
+		return
+	}
 
 	err = processSettings.Validate()
 	if err != nil {
@@ -263,7 +278,7 @@ func (ae *Env) SaveVersionSettings(w http.ResponseWriter, req *http.Request, ver
 
 	saveVersionErr := ae.DB.SaveVersionSettings(ctx, *processSettings, (*string)(params.SchemaFlag))
 	if saveVersionErr != nil {
-		errorHandler.handleError(ProcessSettingsSaveError, err)
+		errorHandler.handleError(ProcessSettingsSaveError, saveVersionErr)
 
 		return
 	}
@@ -273,6 +288,26 @@ func (ae *Env) SaveVersionSettings(w http.ResponseWriter, req *http.Request, ver
 
 		return
 	}
+}
+
+func (ae *Env) createOrUpdateVersion(ctx c.Context, scenario *e.EriusScenario) (vID string, errCustom Err, err error) {
+	isDraft := scenario.Status == db.StatusDraft
+
+	if isDraft {
+		scenario, errCustom, err = ae.updatePipelineVersion(ctx, scenario)
+		if err != nil {
+			return vID, errCustom, err
+		}
+	}
+
+	if !isDraft {
+		scenario, errCustom, err = ae.createPipelineVersion(ctx, scenario)
+		if err != nil {
+			return vID, errCustom, err
+		}
+	}
+
+	return scenario.VersionID.String(), errCustom, err
 }
 
 //nolint:dupl //its not duplicate
