@@ -4668,7 +4668,7 @@ components:
           description: true - need manual fill when reenter in block
         check_required_fill:
           type: boolean
-          description: true - if you need to set required fill fields in form
+          description: true - if you need to set required fill fields in form (for auto fill)
         form_re_enter_settings:
           $ref: '#/components/schemas/FormReEnterSettings'
       required:
