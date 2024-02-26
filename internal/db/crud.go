@@ -3009,12 +3009,18 @@ func (db *PGCon) GetTaskInWorkTime(ctx context.Context, workNumber string) (*ent
 
 	interval := entity.TaskCompletionInterval{}
 
+	var finishedAt sql.NullTime
+
 	err := row.Scan(
 		&interval.StartedAt,
-		&interval.FinishedAt,
+		&finishedAt,
 	)
 	if err != nil {
 		return &entity.TaskCompletionInterval{}, err
+	}
+
+	if finishedAt.Valid {
+		interval.FinishedAt = finishedAt.Time
 	}
 
 	return &interval, nil

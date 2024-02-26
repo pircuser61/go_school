@@ -176,11 +176,13 @@ func (p *blockProcessor) processActiveBlocks(ctx context.Context, activeBlocks [
 }
 
 func (p *blockProcessor) updateTaskExecDeadline(ctx context.Context) error {
+	// get deadline based on execution blocks
 	deadline, err := p.runCtx.Services.Storage.GetDeadline(ctx, p.runCtx.WorkNumber)
 	if err != nil {
 		return err
 	}
 
+	// compute deadline using sla from process version settings
 	if deadline.IsZero() {
 		versionSettings, errSLA := p.runCtx.Services.Storage.GetSLAVersionSettings(ctx, p.runCtx.VersionID.String())
 		if errSLA != nil {

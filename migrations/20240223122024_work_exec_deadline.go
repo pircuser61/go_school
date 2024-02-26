@@ -68,7 +68,9 @@ func upWorkExecDeadline(tx *sql.Tx) error {
 }
 
 func updateWorksAddColumn(tx *sql.Tx) error {
-	_, alterErr := tx.Exec(`ALTER TABLE works ADD COLUMN exec_deadline timestamp with time zone`)
+	fmt.Println("creating new column")
+
+	_, alterErr := tx.Exec(`ALTER TABLE works ADD COLUMN IF NOT EXISTS exec_deadline timestamp with time zone`)
 	if alterErr != nil {
 		return alterErr
 	}
@@ -86,6 +88,8 @@ type workToAddDeadline struct {
 }
 
 func getWorksToUpdate(tx *sql.Tx) ([]*workToAddDeadline, error) {
+	fmt.Println("getting works to update")
+
 	const q = `
 WITH blocks AS (
     SELECT work_id, min(content -> 'State' -> step_name ->> 'deadline') as time
@@ -143,6 +147,8 @@ FROM pipeliner.public.works w
 }
 
 func computeWorksDeadlines(srv sla.Service, ww []*workToAddDeadline) error {
+	fmt.Println("computing new deadlines")
+
 	for _, w := range ww {
 		if !w.currDeadline.IsZero() {
 			continue
@@ -193,6 +199,8 @@ func insertTempExecDeadline(tx *sql.Tx, ww []*workToAddDeadline) error {
 }
 
 func createAndFillTempExecDeadlineTable(tx *sql.Tx, ww []*workToAddDeadline) error {
+	fmt.Println("filling temp table")
+
 	_, crErr := tx.Exec(`CREATE TABLE temp_exec_deadlines (
     work_id uuid,
     deadline timestamp with time zone
@@ -223,6 +231,8 @@ func createAndFillTempExecDeadlineTable(tx *sql.Tx, ww []*workToAddDeadline) err
 }
 
 func updateWorksDeadlines(tx *sql.Tx) error {
+	fmt.Println("updating deadlines")
+
 	_, updErr := tx.Exec(`
 UPDATE works 
 SET exec_deadline = temp_exec_deadlines.deadline 
@@ -236,6 +246,8 @@ WHERE works.id = temp_exec_deadlines.work_id`)
 }
 
 func dropTempExecDeadlineTable(tx *sql.Tx) error {
+	fmt.Println("deleting temp table")
+
 	_, dropErr := tx.Exec(`DROP TABLE temp_exec_deadlines`)
 	if dropErr != nil {
 		return dropErr
