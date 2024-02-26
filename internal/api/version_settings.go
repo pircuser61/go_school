@@ -21,7 +21,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 )
 
-func (ae *Env) convertProcessSettingsToFlat(ctx c.Context, ps *e.ProcessSettings) error {
+func (ae *Env) toFlatProcessSettings(ctx c.Context, ps *e.ProcessSettings) error {
 	if ps.StartSchemaRaw != nil {
 		start, err := ae.Forms.MakeFlatSchema(ctx, ps.StartSchemaRaw)
 		if err != nil {
@@ -246,8 +246,8 @@ func (ae *Env) SaveVersionSettings(w http.ResponseWriter, req *http.Request, ver
 		return
 	}
 
-	if convErr := ae.convertProcessSettingsToFlat(ctx, processSettings); convErr != nil {
-		errorHandler.handleError(ProcessSettingsConvertError, err)
+	if convErr := ae.toFlatProcessSettings(ctx, processSettings); convErr != nil {
+		errorHandler.handleError(ProcessSettingsConvertError, convErr)
 
 		return
 	}
