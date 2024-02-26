@@ -96,10 +96,10 @@ type ExecutionData struct {
 	HideExecutor                 bool      `json:"hide_executor"`
 }
 
-func (gb *ExecutionData) getAllExec() string {
-	keys := make([]string, 0, len(gb.Executors))
+func (a *ExecutionData) getAllExec() string {
+	keys := make([]string, 0, len(a.Executors))
 
-	for k := range gb.Executors {
+	for k := range a.Executors {
 		keys = append(keys, k)
 	}
 
