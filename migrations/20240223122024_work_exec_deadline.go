@@ -14,6 +14,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 )
 
+//nolint:gochecknoinits //необходимо для гуся
 func init() {
 	goose.AddMigration(upWorkExecDeadline, downWorkExecDeadline)
 }
@@ -22,12 +23,14 @@ func upWorkExecDeadline(tx *sql.Tx) error {
 	err := updateWorksAddColumn(tx)
 	if err != nil {
 		log.Printf("couldn't add column: %v", err)
+
 		return err
 	}
 
 	ww, err := getWorksToUpdate(tx)
 	if err != nil {
 		log.Printf("couldn't get works: %v", err)
+
 		return err
 	}
 
@@ -36,24 +39,28 @@ func upWorkExecDeadline(tx *sql.Tx) error {
 	err = computeWorksDeadlines(srv, ww)
 	if err != nil {
 		log.Printf("couldn't compute deadlines: %v", err)
+
 		return err
 	}
 
 	err = createAndFillTempExecDeadlineTable(tx, ww)
 	if err != nil {
 		log.Printf("couldn't fill temp: %v", err)
+
 		return err
 	}
 
 	err = updateWorksDeadlines(tx)
 	if err != nil {
 		log.Printf("couldn't update works: %v", err)
+
 		return err
 	}
 
 	err = dropTempExecDeadlineTable(tx)
 	if err != nil {
 		log.Printf("couldn't drop temp: %v", err)
+
 		return err
 	}
 
@@ -166,6 +173,7 @@ func computeWorksDeadlines(srv sla.Service, ww []*workToAddDeadline) error {
 func insertTempExecDeadline(tx *sql.Tx, ww []*workToAddDeadline) error {
 	valueStrings := make([]string, 0, len(ww))
 	valueArgs := make([]interface{}, 0, len(ww))
+
 	for _, w := range ww {
 		valueStrings = append(valueStrings, fmt.Sprintf("($%d, $%d)", len(valueArgs)+1, len(valueArgs)+2))
 
@@ -173,8 +181,10 @@ func insertTempExecDeadline(tx *sql.Tx, ww []*workToAddDeadline) error {
 		valueArgs = append(valueArgs, w.currDeadline)
 	}
 
+	//nolint:gosec //insert many lines
 	q := fmt.Sprintf(`INSERT INTO temp_exec_deadlines(work_id, deadline) VALUES %s`, strings.Join(valueStrings, ","))
 	_, insertErr := tx.Exec(q, valueArgs...)
+
 	if insertErr != nil {
 		return fmt.Errorf("couldn't insert data: %w", insertErr)
 	}
@@ -196,9 +206,11 @@ func createAndFillTempExecDeadlineTable(tx *sql.Tx, ww []*workToAddDeadline) err
 	for i := 0; i < (len(ww)/batchSize)+1; i++ {
 		start := i * batchSize
 		end := (i + 1) * batchSize
+
 		if end > len(ww) {
 			end = len(ww)
 		}
+
 		part := ww[start:end]
 
 		insertErr := insertTempExecDeadline(tx, part)
@@ -234,5 +246,6 @@ func dropTempExecDeadlineTable(tx *sql.Tx) error {
 
 func downWorkExecDeadline(tx *sql.Tx) error {
 	_, err := tx.Exec(`ALTER TABLE works DROP COLUMN exec_deadline`)
+
 	return err
 }

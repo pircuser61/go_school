@@ -2,7 +2,6 @@ package pipeline
 
 import (
 	"context"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 	"time"
 
 	"github.com/pkg/errors"
@@ -13,6 +12,7 @@ import (
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 )
 
 var ErrCantGetNextStep = errors.New("can't get next step")

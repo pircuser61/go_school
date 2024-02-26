@@ -108,7 +108,6 @@ func (gb *ExecutionData) getAllExec() string {
 	return strings.Join(keys, ",")
 }
 
-
 func (a *ExecutionData) GetDecision() *ExecutionDecision {
 	return a.Decision
 }

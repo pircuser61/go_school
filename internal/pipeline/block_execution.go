@@ -52,6 +52,7 @@ func (gb *GoExecutionBlock) CurrentExecutor() string {
 	if gb.State.Decision != nil {
 		return ""
 	}
+
 	if gb.State.IsTakenInWork {
 		return gb.State.getAllExec()
 	}

@@ -722,6 +722,7 @@ func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter, delegations 
 			q, args := compileGetTasksQuery(filters, delegations)
 
 			tasks, getTasksErr = db.getTasks(ctx, &filters, delegations, q, args)
+
 			return getTasksErr
 		},
 	)
@@ -731,6 +732,7 @@ func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter, delegations 
 			qMeta, argsMeta := compileGetTasksMetaQuery(filters, delegations)
 
 			meta, metaErr = db.getTasksMeta(ctx, qMeta, argsMeta)
+
 			return metaErr
 		},
 	)

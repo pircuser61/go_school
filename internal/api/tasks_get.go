@@ -3,7 +3,6 @@ package api
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -524,16 +523,13 @@ func (ae *Env) GetTasks(w http.ResponseWriter, req *http.Request, params GetTask
 		handleFilterStatus(&filters)
 	}
 
-	start := time.Now()
 	resp, err := ae.DB.GetTasks(ctx, filters, users)
 	if err != nil {
 		errorHandler.handleError(GetTasksError, err)
 
 		return
 	}
-	fmt.Println(time.Now().Sub(start))
 
-	start = time.Now()
 	for i := range resp.Tasks {
 		approvalLists, errGetSettings := ae.DB.GetApprovalListsSettings(ctx, resp.Tasks[i].VersionID.String())
 		if errGetSettings != nil {
@@ -551,7 +547,6 @@ func (ae *Env) GetTasks(w http.ResponseWriter, req *http.Request, params GetTask
 			resp.Tasks[i].ApprovalList = mapApprovalLists
 		}
 	}
-	fmt.Println(time.Now().Sub(start))
 
 	if err = sendResponse(w, http.StatusOK, resp); err != nil {
 		errorHandler.handleError(UnknownError, err)
