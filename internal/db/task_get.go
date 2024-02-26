@@ -67,7 +67,7 @@ func uniqueActionsByRole(loginsIn, stepType string, finished, acted bool) string
       --unique-actions-filter--
 )
      , unique_actions AS (
-    SELECT actions.work_id AS work_id, JSONB_AGG(jsonb_actions.actions) AS actions, actions.current_executor
+    SELECT actions.work_id AS work_id, JSONB_AGG(jsonb_actions.actions) AS actions, max(actions.current_executor)
     FROM actions
              LEFT JOIN LATERAL (SELECT jsonb_build_object(
                                                'block_id', actions.block_id,

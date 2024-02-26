@@ -12,7 +12,7 @@ WITH blocks AS (
    , exec_data AS (
     SELECT id
          , block_data ->> 'is_taken_in_work' = 'true'                      AS taken_in_work
-         , (array(SELECT jsonb_object_keys(block_data -> 'executors')))[1] AS first_exec
+         , array_to_string(array(SELECT jsonb_object_keys(block_data -> 'executors')),',') AS first_exec
          , block_data ->> 'executors_group_id'                             AS exec_group
     FROM blocks
        WHERE jsonb_typeof(block_data -> 'executors') = 'object'

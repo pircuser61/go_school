@@ -53,14 +53,14 @@ func (gb *GoExecutionBlock) CurrentExecutor() string {
 		return ""
 	}
 	if gb.State.IsTakenInWork {
-		return gb.State.getCurrentExec()
+		return gb.State.getAllExec()
 	}
 
 	if gb.State.ExecutorsGroupID != "" {
 		return gb.State.ExecutorsGroupID
 	}
 
-	return gb.State.getCurrentExec()
+	return gb.State.getAllExec()
 }
 
 func (gb *GoExecutionBlock) GetNewEvents() []entity.NodeEvent {

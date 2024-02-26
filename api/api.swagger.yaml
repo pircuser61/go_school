@@ -3127,7 +3127,7 @@ components:
           description: мапа листов согласований из настроек сценария
         current_executor:
           type: string
-          description: Current executor login/group id
+          description: Current executor login/group id/logins
       required:
         - id
         - version_id
