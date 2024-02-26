@@ -72,6 +72,24 @@ func TestSimpleTypeHandler(t *testing.T) {
 			WantErr:   false,
 			WantValue: "here",
 		},
+		{
+			Name:     "Nil string",
+			variable: nil,
+			originalValue: ParamMetadata{
+				Type: "string",
+			},
+			WantErr:   true,
+			WantValue: "here",
+		},
+		{
+			Name:     "Nil array",
+			variable: nil,
+			originalValue: ParamMetadata{
+				Type: "array",
+			},
+			WantErr:   true,
+			WantValue: "here",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
@@ -79,7 +97,7 @@ func TestSimpleTypeHandler(t *testing.T) {
 			if (err == nil) == tt.WantErr {
 				t.Errorf("unexpected error, %s", tt.Name)
 			}
-			if tt.variable != tt.WantValue {
+			if (err == nil) && (tt.variable != tt.WantValue) {
 				t.Errorf("unexpected type, %s", tt.Name)
 			}
 		})
