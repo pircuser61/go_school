@@ -720,10 +720,6 @@ func (gb *GoSignBlock) Model() script.FunctionModel {
 func (gb *GoSignBlock) BlockAttachments() (ids []string) {
 	ids = make([]string, 0)
 
-	for i := range gb.State.Attachments {
-		ids = append(ids, gb.State.Attachments[i].FileID)
-	}
-
 	latestDecisionLog := gb.State.SignLog[len(gb.State.SignLog)-1]
 	for i := range latestDecisionLog.Attachments {
 		ids = append(ids, latestDecisionLog.Attachments[i].FileID)

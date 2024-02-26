@@ -560,10 +560,6 @@ func (gb *GoApproverBlock) BlockAttachments() (ids []string) {
 		}
 	}
 
-	for i := range gb.State.DecisionAttachments {
-		ids = append(ids, gb.State.DecisionAttachments[i].FileID)
-	}
-
 	for i := range gb.State.ApproverLog {
 		for j := range gb.State.ApproverLog[i].Attachments {
 			ids = append(ids, gb.State.ApproverLog[i].Attachments[j].FileID)

@@ -2371,7 +2371,7 @@ func (db *PGCon) GetTaskRunContext(ctx context.Context, workNumber string) (enti
 	return runCtx, nil
 }
 
-func (db *PGCon) GetBlockDataFromVersion(ctx context.Context, workNumber, blockName string) (*entity.EriusFunc, error) {
+func (db *PGCon) GetBlockDataFromVersion(ctx context.Context, workNumber, stepName string) (*entity.EriusFunc, error) {
 	ctx, span := trace.StartSpan(ctx, "get_block_data_from_version")
 	defer span.End()
 
@@ -2382,7 +2382,7 @@ func (db *PGCon) GetBlockDataFromVersion(ctx context.Context, workNumber, blockN
 
 	var f *entity.EriusFunc
 
-	if scanErr := db.Connection.QueryRow(ctx, q, blockName, workNumber).Scan(&f); scanErr != nil {
+	if scanErr := db.Connection.QueryRow(ctx, q, stepName, workNumber).Scan(&f); scanErr != nil {
 		return nil, scanErr
 	}
 
@@ -2432,7 +2432,7 @@ func (db *PGCon) FinishTaskBlocks(ctx context.Context, taskID uuid.UUID, ignoreS
 	return err
 }
 
-func (db *PGCon) GetVariableStorageForStep(ctx context.Context, taskID uuid.UUID, stepType string) (*store.VariableStore, error) {
+func (db *PGCon) GetVariableStorageForStep(ctx context.Context, taskID uuid.UUID, stepName string) (*store.VariableStore, error) {
 	ctx, span := trace.StartSpan(ctx, "get_variable_storage_for_step")
 	defer span.End()
 
@@ -2444,7 +2444,7 @@ func (db *PGCon) GetVariableStorageForStep(ctx context.Context, taskID uuid.UUID
 
 	var content []byte
 
-	if err := db.Connection.QueryRow(ctx, q, taskID, stepType).Scan(&content); err != nil {
+	if err := db.Connection.QueryRow(ctx, q, taskID, stepName).Scan(&content); err != nil {
 		return nil, err
 	}
 
