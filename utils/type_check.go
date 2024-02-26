@@ -122,6 +122,10 @@ var simpleTypesMapping = map[string]reflect.Kind{
 //
 //nolint:gocritic //так надо, так что линтер - не выпендривайся
 func simpleTypeHandler(variable *interface{}, originalValue TypeValue) (err error) {
+	if *variable == nil {
+		return fmt.Errorf("can not convert nil variable to %s", originalValue.GetType())
+	}
+
 	simpleType, ok := simpleTypesMapping[originalValue.GetType()]
 	if !ok {
 		return nil
