@@ -4666,6 +4666,9 @@ components:
         is_editable:
           type: boolean
           description: true - need manual fill when reenter in block
+        check_required_fill:
+          type: boolean
+          description: true - if you need to set required fill fields in form
         form_re_enter_settings:
           $ref: '#/components/schemas/FormReEnterSettings'
       required:
@@ -4921,11 +4924,12 @@ components:
         - None
         - Read
         - ReadWrite
+        - RequiredFill
       description: Form accessibility preferences for certain node
     FormAccessTypeTranslated:
       type: string
-      enum: ["Скрыть", "Только для чтения", "Чтение и редактирование"]
-      x-enum-varnames: ['None', 'Read', 'ReadWrite']
+      enum: ["Скрыть", "Только для чтения", "Чтение и редактирование", "Обязательное заполнение"]
+      x-enum-varnames: ['None', 'Read', 'ReadWrite', 'RequiredFill']
       description: Form accessibility preferences for certain node (translated)
     ApprovementRule:
       type: string
