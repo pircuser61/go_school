@@ -114,11 +114,17 @@ type EriusTask struct {
 	StatusComment          string              `json:"status_comment"`
 	StatusAuthor           string              `json:"status_author"`
 
-	ProcessDeadline       time.Time         `json:"process_deadline"`
-	NodeGroup             []*NodeGroup      `json:"node_group"`
-	ApprovalList          map[string]string `json:"approval_list"`
-	CurrentExecutor       string            `json:"current_executor"`
-	CurrentExecutionStart *time.Time        `json:"current_execution_start,omitempty"`
+	ProcessDeadline       time.Time           `json:"process_deadline"`
+	NodeGroup             []*NodeGroup        `json:"node_group"`
+	ApprovalList          map[string]string   `json:"approval_list"`
+	CurrentExecutor       CurrentExecutorData `json:"current_executor"`
+	CurrentExecutionStart *time.Time          `json:"current_execution_start,omitempty"`
+}
+
+type CurrentExecutorData struct {
+	People             []string `json:"people"`
+	ExecutionGroupID   string   `json:"execution_group_id,omitempty"`
+	ExecutionGroupName string   `json:"execution_group_name,omitempty"`
 }
 
 func (et *EriusTask) IsRun() bool {

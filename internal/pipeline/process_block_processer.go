@@ -101,8 +101,8 @@ func (p *blockProcessor) ProcessBlock(ctx context.Context, its int) error {
 
 	activeBlocks, ok := block.Next(p.runCtx.VarStore)
 	if !ok {
-		err = p.runCtx.updateStepInDB(ctx, p.name, "", id, true, block.GetStatus(), block.Members(),
-			[]Deadline{})
+		err = p.runCtx.updateStepInDB(ctx, p.name, id, true, block.GetStatus(), block.Members(),
+			[]Deadline{}, CurrentExecutorData{})
 		if err != nil {
 			return p.handleError(ctx, log, err)
 		}

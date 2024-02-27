@@ -74,8 +74,8 @@ type ExecutableFunctionBlock struct {
 	RunContext *BlockRunContext
 }
 
-func (gb *ExecutableFunctionBlock) CurrentExecutor() string {
-	return ""
+func (gb *ExecutableFunctionBlock) CurrentExecutorData() CurrentExecutorData {
+	return CurrentExecutorData{}
 }
 
 func (gb *ExecutableFunctionBlock) GetNewEvents() []entity.NodeEvent {

@@ -54,14 +54,10 @@ func uniqueActionsByRole(loginsIn, stepType string, finished, acted bool) string
          , CASE WHEN vs.status IN ('running', 'idle', 'ready') THEN m.params ELSE '{}' END  AS params
          , vs.current_executor                                                              AS current_executor
          , CASE WHEN vs.step_type = 'execution' THEN vs.time END                            AS exec_start_time
+         , vs.time                                                                          AS node_start
     FROM members m
              JOIN variable_storage vs on vs.id = m.block_id
              JOIN works w on vs.work_id = w.id
-    JOIN lateral (SELECT vs2.step_name, max(vs2.time) mt
-                                        from variable_storage vs2
-                                        where vs2.work_id = w.id
-                                        group by vs2.step_name) ab 
-                               on ab.mt = vs.time AND ab.step_name = vs.step_name
     WHERE m.login IN %s
       AND vs.step_type = '%s'
       AND %s 
@@ -69,12 +65,16 @@ func uniqueActionsByRole(loginsIn, stepType string, finished, acted bool) string
 		%s
       --unique-actions-filter--
 )
-     , unique_actions AS (
-    SELECT actions.work_id                  AS work_id
-         , JSONB_AGG(jsonb_actions.actions) AS actions
-         , max(actions.current_executor)    AS current_executor
-         , min(actions.exec_start_time)     AS exec_start_time
+   , filtered_actions AS (SELECT a.work_id, block_id, max(node_start) AS time
+                          FROM actions a
+                          GROUP BY block_id, a.work_id)
+   , unique_actions AS (
+    SELECT actions.work_id                  	  		 AS work_id
+         , JSONB_AGG(jsonb_actions.actions) 	         AS actions
+         , max(actions.current_executor::text)::jsonb    AS current_executor
+         , min(actions.exec_start_time)     	  		 AS exec_start_time
     FROM actions
+             JOIN filtered_actions fa ON fa.time = actions.node_start AND fa.block_id = actions.block_id
              LEFT JOIN LATERAL (SELECT jsonb_build_object(
                                                'block_id', actions.block_id,
                                                'actions', actions.action,
@@ -269,7 +269,7 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 			COALESCE(w.run_context -> 'initial_application' ->> 'description',
                 COALESCE(descr.description, '')),
 			COALESCE(descr.blueprint_id, ''),
-			count(*) over() as total,
+			count(*) over (),
 			w.rate,
 			w.rate_comment,
 		    ua.actions,
@@ -740,6 +740,10 @@ func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter, delegations 
 	waitErr := eg.Wait()
 	if waitErr != nil {
 		return nil, waitErr
+	}
+
+	if len(tasks.Tasks) == 0 {
+		return &entity.EriusTasksPage{Tasks: []entity.EriusTask{}}, nil
 	}
 
 	return &entity.EriusTasksPage{
@@ -1300,6 +1304,12 @@ func (db *PGCon) getTasksCount(
 	return counter, nil
 }
 
+type executorData struct {
+	People    []string `json:"people"`
+	GroupID   string   `json:"group_id"`
+	GroupName string   `json:"group_name"`
+}
+
 //nolint:gocyclo //its ok here
 func (db *PGCon) getTasks(ctx c.Context, filters *entity.TaskFilter,
 	delegatorsWithUser []string, q string, args []interface{},
@@ -1329,6 +1339,7 @@ func (db *PGCon) getTasks(ctx c.Context, filters *entity.TaskFilter,
 			nullStringParameters sql.NullString
 			nullTime             sql.NullTime
 			actionData           []byte
+			execData             []byte
 		)
 
 		err = rows.Scan(
@@ -1352,7 +1363,7 @@ func (db *PGCon) getTasks(ctx c.Context, filters *entity.TaskFilter,
 			&et.RateComment,
 			&actionData,
 			&et.ProcessDeadline,
-			&et.CurrentExecutor,
+			&execData,
 			&nullTime,
 		)
 
@@ -1377,8 +1388,20 @@ func (db *PGCon) getTasks(ctx c.Context, filters *entity.TaskFilter,
 			et.CurrentExecutionStart = &t
 		}
 
+		var currExecutorData executorData
+
+		if execData != nil && len(execData) != 0 {
+			if unmErr := json.Unmarshal(execData, &currExecutorData); unmErr != nil {
+				return nil, unmErr
+			}
+		}
+
+		et.CurrentExecutor.People = currExecutorData.People
+		et.CurrentExecutor.ExecutionGroupID = currExecutorData.GroupID
+		et.CurrentExecutor.ExecutionGroupName = currExecutorData.GroupName
+
 		var actions []TaskAction
-		if actionData != nil {
+		if actionData != nil && len(actionData) != 0 {
 			if unmErr := json.Unmarshal(actionData, &actions); unmErr != nil {
 				return nil, unmErr
 			}

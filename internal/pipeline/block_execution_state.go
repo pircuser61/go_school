@@ -3,7 +3,6 @@ package pipeline
 import (
 	"fmt"
 	"sort"
-	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -96,7 +95,7 @@ type ExecutionData struct {
 	HideExecutor                 bool      `json:"hide_executor"`
 }
 
-func (a *ExecutionData) getAllExec() string {
+func (a *ExecutionData) getAllExec() []string {
 	keys := make([]string, 0, len(a.Executors))
 
 	for k := range a.Executors {
@@ -105,7 +104,7 @@ func (a *ExecutionData) getAllExec() string {
 
 	sort.Strings(keys)
 
-	return strings.Join(keys, ",")
+	return keys
 }
 
 func (a *ExecutionData) GetDecision() *ExecutionDecision {

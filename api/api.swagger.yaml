@@ -3126,8 +3126,7 @@ components:
           properties: {}
           description: мапа листов согласований из настроек сценария
         current_executor:
-          type: string
-          description: Current executor login/group id/logins
+          $ref: '#/components/schemas/CurrentExecutorData'
         current_execution_start:
           type: string
           description: Current execution start time (UTC)
@@ -3148,6 +3147,25 @@ components:
         - blueprint_id
         - approval_list
         - current_executor
+
+    CurrentExecutorData:
+      type: object
+      description: Current task execution data
+      properties:
+        people:
+          type: array
+          description: Executors logins
+          items:
+            type: string
+        execution_group_id:
+          type: string
+          description: Execution group ID
+        execution_group_name:
+          type: string
+          description: Execution group name
+      required:
+        - people
+
     NodeGroup:
       type: object
       properties:

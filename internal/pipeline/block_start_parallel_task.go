@@ -23,8 +23,8 @@ type GoBeginParallelTaskBlock struct {
 	happenedEvents []entity.NodeEvent
 }
 
-func (gb *GoBeginParallelTaskBlock) CurrentExecutor() string {
-	return ""
+func (gb *GoBeginParallelTaskBlock) CurrentExecutorData() CurrentExecutorData {
+	return CurrentExecutorData{}
 }
 
 func (gb *GoBeginParallelTaskBlock) GetNewEvents() []entity.NodeEvent {
