@@ -44,13 +44,13 @@ const (
 	keyApplicationBody = "application_body"
 )
 
-func (ae *Env) createPipelineVersion(ctx c.Context, in *e.EriusScenario) (*e.EriusScenario, Err, error) {
+func (ae *Env) createPipelineVersion(ctx c.Context, in *e.EriusScenario, pID string) (*e.EriusScenario, Err, error) {
 	oldVersionID := in.VersionID
 	in.VersionID = uuid.New()
 
 	log := logger.GetLogger(ctx)
 
-	apiErr, err := ae.fillPipeline(in, in.PipelineID.String())
+	apiErr, err := ae.fillPipeline(in, pID)
 	if err != nil {
 		return nil, apiErr, err
 	}
@@ -137,7 +137,7 @@ func (ae *Env) CreatePipelineVersion(w http.ResponseWriter, req *http.Request, p
 		}
 	}()
 
-	newVersion, errCustom, errCreate := ae.createPipelineVersion(ctx, params)
+	newVersion, errCustom, errCreate := ae.createPipelineVersion(ctx, params, pipelineID)
 	if errCreate != nil {
 		errorHandler.handleError(errCustom, errCreate)
 

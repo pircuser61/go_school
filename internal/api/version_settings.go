@@ -334,7 +334,7 @@ func (ae *Env) createOrUpdateVersion(ctx c.Context, scenario *e.EriusScenario) (
 		return p.VersionID.String(), 0, nil
 	}
 
-	p, errCustom, err := ae.createPipelineVersion(ctx, scenario)
+	p, errCustom, err := ae.createPipelineVersion(ctx, scenario, scenario.PipelineID.String())
 	if err != nil {
 		return "", errCustom, err
 	}
