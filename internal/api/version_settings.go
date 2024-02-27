@@ -223,12 +223,13 @@ func (ae *Env) GetVersionSettings(w http.ResponseWriter, req *http.Request, vers
 
 //nolint:dupl //its not duplicate
 func (ae *Env) SaveVersionSettings(w http.ResponseWriter, req *http.Request, versionID string, params SaveVersionSettingsParams) {
-	var errCustom Err
 	ctx, s := trace.StartSpan(req.Context(), "save_version_settings")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
 	errorHandler := newHTTPErrorHandler(log, w)
+
+	var errCustom Err
 
 	b, err := io.ReadAll(req.Body)
 	defer req.Body.Close()
