@@ -101,6 +101,8 @@ const (
 	FormAccessTypeRead FormAccessType = "Read"
 
 	FormAccessTypeReadWrite FormAccessType = "ReadWrite"
+
+	FormAccessTypeRequiredFill FormAccessType = "RequiredFill"
 )
 
 // Defines values for FormExecutorType.
@@ -1154,6 +1156,9 @@ type FormExecutorType string
 
 // Form params
 type FormParams struct {
+	// true - if you need to set required fill fields in form (for auto fill)
+	CheckRequiredFill *bool `json:"check_required_fill,omitempty"`
+
 	// Is active SLA
 	CheckSla bool `json:"check_sla"`
 
@@ -1305,6 +1310,7 @@ type JSONSchemaProperties struct {
 
 		// Description of param
 		Description *string `json:"description,omitempty"`
+		FieldHidden *bool   `json:"fieldHidden,omitempty"`
 
 		// Format of param
 		Format *string `json:"format,omitempty"`
@@ -2617,6 +2623,7 @@ func (a JSONSchemaProperties) Get(fieldName string) (value struct {
 
 	// Description of param
 	Description *string `json:"description,omitempty"`
+	FieldHidden *bool   `json:"fieldHidden,omitempty"`
 
 	// Format of param
 	Format *string `json:"format,omitempty"`
@@ -2655,6 +2662,7 @@ func (a *JSONSchemaProperties) Set(fieldName string, value struct {
 
 	// Description of param
 	Description *string `json:"description,omitempty"`
+	FieldHidden *bool   `json:"fieldHidden,omitempty"`
 
 	// Format of param
 	Format *string `json:"format,omitempty"`
@@ -2687,6 +2695,7 @@ func (a *JSONSchemaProperties) Set(fieldName string, value struct {
 
 			// Description of param
 			Description *string `json:"description,omitempty"`
+			FieldHidden *bool   `json:"fieldHidden,omitempty"`
 
 			// Format of param
 			Format *string `json:"format,omitempty"`
@@ -2731,6 +2740,7 @@ func (a *JSONSchemaProperties) UnmarshalJSON(b []byte) error {
 
 			// Description of param
 			Description *string `json:"description,omitempty"`
+			FieldHidden *bool   `json:"fieldHidden,omitempty"`
 
 			// Format of param
 			Format *string `json:"format,omitempty"`
@@ -2763,6 +2773,7 @@ func (a *JSONSchemaProperties) UnmarshalJSON(b []byte) error {
 
 				// Description of param
 				Description *string `json:"description,omitempty"`
+				FieldHidden *bool   `json:"fieldHidden,omitempty"`
 
 				// Format of param
 				Format *string `json:"format,omitempty"`
