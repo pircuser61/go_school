@@ -67,26 +67,6 @@ func (ae *Env) createPipelineVersion(ctx c.Context, in *e.EriusScenario) (*e.Eri
 
 	updated = []byte(wrapApplicationBody(string(updated)))
 
-	txStorage, transactionErr := ae.DB.StartTransaction(ctx)
-	if transactionErr != nil {
-		log.WithError(transactionErr).Error("couldn't create pipeline version")
-
-		return nil, UnknownError, transactionErr
-	}
-
-	defer func() {
-		if r := recover(); r != nil {
-			log = log.WithField("funcName", "createPipelineVersion").
-				WithField("panic handle", true)
-			log.Error(r)
-
-			if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
-				log.WithError(errors.New("couldn't rollback tx")).
-					Error(txErr)
-			}
-		}
-	}()
-
 	executableFunctions, err := in.Pipeline.Blocks.GetExecutableFunctions()
 	if err != nil {
 		return nil, GetExecutableFunctionIDsError, err
@@ -99,23 +79,7 @@ func (ae *Env) createPipelineVersion(ctx c.Context, in *e.EriusScenario) (*e.Eri
 
 	err = ae.DB.CreateVersion(ctx, in, ui.Username, updated, oldVersionID, hasPrivateFunction)
 	if err != nil {
-		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
-			log.WithField("funcName", "CreateVersion").
-				WithError(errors.New("couldn't rollback tx")).
-				Error(txErr)
-		}
-
 		return nil, PipelineWriteError, err
-	}
-
-	if commitErr := txStorage.CommitTransaction(ctx); commitErr != nil {
-		log.WithError(commitErr).Error("couldn't create pipeline version")
-
-		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
-			log.Error(txErr)
-		}
-
-		return nil, PipelineReadError, commitErr
 	}
 
 	res, err := ae.DB.GetPipelineVersion(ctx, in.VersionID, true)
@@ -152,9 +116,48 @@ func (ae *Env) CreatePipelineVersion(w http.ResponseWriter, req *http.Request, p
 		return
 	}
 
+	txStorage, transactionErr := ae.DB.StartTransaction(ctx)
+	if transactionErr != nil {
+		log.WithError(transactionErr).Error("couldn't create pipeline version")
+		errorHandler.handleError(UnknownError, transactionErr)
+
+		return
+	}
+
+	defer func() {
+		if r := recover(); r != nil {
+			log = log.WithField("funcName", "createPipelineVersion").
+				WithField("panic handle", true)
+			log.Error(r)
+
+			if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
+				log.WithError(errors.New("couldn't rollback tx")).
+					Error(txErr)
+			}
+		}
+	}()
+
 	newVersion, errCustom, errCreate := ae.createPipelineVersion(ctx, params)
 	if errCreate != nil {
 		errorHandler.handleError(errCustom, errCreate)
+
+		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
+			log.WithField("funcName", "CreateVersion").
+				WithError(errors.New("couldn't rollback tx")).
+				Error(txErr)
+		}
+
+		return
+	}
+
+	if commitErr := txStorage.CommitTransaction(ctx); commitErr != nil {
+		log.WithError(commitErr).Error("couldn't create pipeline version")
+
+		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
+			log.Error(txErr)
+		}
+
+		errorHandler.handleError(UnknownError, commitErr)
 
 		return
 	}

@@ -142,7 +142,7 @@ func (db *PGCon) GetVersionSettings(ctx context.Context, versionID string) (e.Pr
 
 	row := db.Connection.QueryRow(ctx, query, versionID)
 
-	ps := e.ProcessSettings{ID: versionID}
+	ps := e.ProcessSettings{VersionID: versionID}
 
 	err := row.Scan(&ps.StartSchema, &ps.EndSchema, &ps.ResubmissionPeriod, &ps.StartSchemaRaw, &ps.Name)
 	if err != nil && err != pgx.ErrNoRows {
@@ -175,7 +175,7 @@ func (db *PGCon) SaveVersionSettings(ctx context.Context, settings e.ProcessSett
 		commandTag, err = db.Connection.Exec(ctx,
 			query,
 			uuid.New(),
-			settings.ID,
+			settings.VersionID,
 			settings.StartSchema,
 			settings.EndSchema,
 			settings.StartSchemaRaw,
@@ -195,7 +195,7 @@ func (db *PGCon) SaveVersionSettings(ctx context.Context, settings e.ProcessSett
 				SET start_schema = excluded.start_schema,
 			    raw_start_schema = excluded.raw_start_schema`
 
-			commandTag, err = db.Connection.Exec(ctx, query, uuid.New(), settings.ID, settings.StartSchema, settings.StartSchemaRaw)
+			commandTag, err = db.Connection.Exec(ctx, query, uuid.New(), settings.VersionID, settings.StartSchema, settings.StartSchemaRaw)
 			if err != nil {
 				return err
 			}
@@ -207,7 +207,7 @@ func (db *PGCon) SaveVersionSettings(ctx context.Context, settings e.ProcessSett
 			ON CONFLICT (version_id) DO UPDATE 
 				SET end_schema = excluded.end_schema`
 
-			commandTag, err = db.Connection.Exec(ctx, query, uuid.New(), settings.ID, settings.EndSchema)
+			commandTag, err = db.Connection.Exec(ctx, query, uuid.New(), settings.VersionID, settings.EndSchema)
 			if err != nil {
 				return err
 			}
@@ -217,7 +217,7 @@ func (db *PGCon) SaveVersionSettings(ctx context.Context, settings e.ProcessSett
 	}
 
 	if commandTag.RowsAffected() != 0 {
-		_ = db.RemoveObsoleteMapping(ctx, settings.ID)
+		_ = db.RemoveObsoleteMapping(ctx, settings.VersionID)
 	}
 
 	return nil
@@ -235,7 +235,7 @@ func (db *PGCon) SaveVersionMainSettings(ctx context.Context, params e.ProcessSe
 			ON CONFLICT (version_id) DO UPDATE 
 			SET resubmission_period = excluded.resubmission_period`
 
-	_, err := db.Connection.Exec(ctx, query, uuid.New(), params.ID, params.ResubmissionPeriod)
+	_, err := db.Connection.Exec(ctx, query, uuid.New(), params.VersionID, params.ResubmissionPeriod)
 	if err != nil {
 		return err
 	}

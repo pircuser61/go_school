@@ -59,7 +59,7 @@ type ProcessSettingsWithExternalSystems struct {
 }
 
 type ProcessSettings struct {
-	ID                 string             `json:"version_id"`
+	VersionID          string             `json:"version_id"`
 	StartSchema        *script.JSONSchema `json:"start_schema"`
 	EndSchema          *script.JSONSchema `json:"end_schema"`
 	ResubmissionPeriod int                `json:"resubmission_period"`
@@ -86,7 +86,7 @@ func (ps *ProcessSettings) UnmarshalJSON(bytes []byte) error {
 		return err
 	}
 
-	ps.ID = temp.ID
+	ps.VersionID = temp.ID
 	ps.ResubmissionPeriod = temp.ResubmissionPeriod
 	ps.Name = temp.Name
 	ps.SLA = temp.SLA
