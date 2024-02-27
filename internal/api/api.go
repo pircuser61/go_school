@@ -771,6 +771,18 @@ type Created struct {
 	Start int `json:"start"`
 }
 
+// Current task execution data
+type CurrentExecutorData struct {
+	// Execution group ID
+	ExecutionGroupId *string `json:"execution_group_id,omitempty"`
+
+	// Execution group name
+	ExecutionGroupName *string `json:"execution_group_name,omitempty"`
+
+	// Executors logins
+	People []string `json:"people"`
+}
+
 // Basic date operand, can provide working compare types for this type
 type DateOperand struct {
 	DataType    DateOperandDataType    `json:"dataType"`
@@ -903,10 +915,10 @@ type EriusTask struct {
 	// Current execution start time (UTC)
 	CurrentExecutionStart *string `json:"current_execution_start,omitempty"`
 
-	// Current executor login/group id/logins
-	CurrentExecutor string `json:"current_executor"`
-	Debug           bool   `json:"debug"`
-	Description     string `json:"description"`
+	// Current task execution data
+	CurrentExecutor CurrentExecutorData `json:"current_executor"`
+	Debug           bool                `json:"debug"`
+	Description     string              `json:"description"`
 
 	// Task human readable status
 	HumanStatus        TaskHumanStatus        `json:"human_status"`

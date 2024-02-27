@@ -48,20 +48,20 @@ type GoExecutionBlock struct {
 	happenedEvents []entity.NodeEvent
 }
 
-func (gb *GoExecutionBlock) CurrentExecutor() string {
+func (gb *GoExecutionBlock) CurrentExecutorData() CurrentExecutorData {
 	if gb.State.Decision != nil {
-		return ""
+		return CurrentExecutorData{}
 	}
 
 	if gb.State.IsTakenInWork {
-		return gb.State.getAllExec()
+		return CurrentExecutorData{People: gb.State.getAllExec()}
 	}
 
-	if gb.State.ExecutorsGroupID != "" {
-		return gb.State.ExecutorsGroupID
+	return CurrentExecutorData{
+		GroupID:   gb.State.ExecutorsGroupID,
+		GroupName: gb.State.ExecutorsGroupName,
+		People:    gb.State.getAllExec(),
 	}
-
-	return gb.State.getAllExec()
 }
 
 func (gb *GoExecutionBlock) GetNewEvents() []entity.NodeEvent {

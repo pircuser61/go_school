@@ -24,8 +24,8 @@ type GoStartBlock struct {
 	happenedEvents []entity.NodeEvent
 }
 
-func (gb *GoStartBlock) CurrentExecutor() string {
-	return ""
+func (gb *GoStartBlock) CurrentExecutorData() CurrentExecutorData {
+	return CurrentExecutorData{}
 }
 
 func (gb *GoStartBlock) GetNewEvents() []entity.NodeEvent {

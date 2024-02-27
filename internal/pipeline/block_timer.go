@@ -36,8 +36,8 @@ type TimerBlock struct {
 	happenedEvents []entity.NodeEvent
 }
 
-func (gb *TimerBlock) CurrentExecutor() string {
-	return ""
+func (gb *TimerBlock) CurrentExecutorData() CurrentExecutorData {
+	return CurrentExecutorData{}
 }
 
 func (gb *TimerBlock) GetNewEvents() []entity.NodeEvent {

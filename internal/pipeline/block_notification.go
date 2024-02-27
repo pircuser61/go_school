@@ -59,8 +59,8 @@ type GoNotificationBlock struct {
 	happenedEvents []entity.NodeEvent
 }
 
-func (gb *GoNotificationBlock) CurrentExecutor() string {
-	return ""
+func (gb *GoNotificationBlock) CurrentExecutorData() CurrentExecutorData {
+	return CurrentExecutorData{}
 }
 
 func (gb *GoNotificationBlock) GetNewEvents() []entity.NodeEvent {

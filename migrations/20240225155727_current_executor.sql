@@ -1,7 +1,7 @@
 -- +goose Up
 -- +goose StatementBegin
 ALTER TABLE variable_storage
-    ADD COLUMN current_executor VARCHAR(256) DEFAULT '';
+    ADD COLUMN current_executor jsonb DEFAULT '{}';
 
 WITH blocks AS (
     SELECT id, content -> 'State' -> step_name AS block_data
@@ -11,18 +11,20 @@ WITH blocks AS (
 )
    , exec_data AS (
     SELECT id
-         , block_data ->> 'is_taken_in_work' = 'true'                      AS taken_in_work
-         , array_to_string(array(SELECT jsonb_object_keys(block_data -> 'executors')),',') AS first_exec
-         , block_data ->> 'executors_group_id'                             AS exec_group
+         , block_data ->> 'is_taken_in_work' = 'true'                                       AS taken_in_work
+         , array(SELECT jsonb_object_keys(block_data -> 'executors')) AS people
+         , coalesce(block_data ->> 'executors_group_id', '')                                              AS exec_group_id
+         , coalesce(block_data ->> 'executors_group_name', '')                                            AS exec_group_name
     FROM blocks
-       WHERE jsonb_typeof(block_data -> 'executors') = 'object'
+    WHERE jsonb_typeof(block_data -> 'executors') = 'object'
 )
    , current_executor AS (
     SELECT id,
            CASE
                WHEN taken_in_work
-                   THEN coalesce(first_exec, '')
-               ELSE coalesce(nullif(exec_group, ''), coalesce(first_exec, '')) END AS executor
+                   THEN jsonb_build_object('group_id', '', 'group_name', '', 'people', people)
+               ELSE jsonb_build_object('group_id', exec_group_id, 'group_name', exec_group_name, 'people',
+                                       people) END AS executor
     FROM exec_data
 )
 UPDATE variable_storage

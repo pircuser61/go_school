@@ -94,6 +94,12 @@ type TaskAction struct {
 	IsInitiator bool                              `json:"is_initiator"`
 }
 
+type CurrentExecutorData struct {
+	GroupID   string   `json:"group_id"`
+	GroupName string   `json:"group_name"`
+	People    []string `json:"people"`
+}
+
 type Member struct {
 	Login                string
 	Actions              []MemberAction
@@ -120,7 +126,7 @@ type SaveStepRequest struct {
 	Members         []Member
 	Deadlines       []Deadline
 	IsReEntry       bool
-	CurrentExecutor string
+	CurrentExecutor CurrentExecutorData
 }
 
 type UpdateStepRequest struct {
@@ -132,7 +138,7 @@ type UpdateStepRequest struct {
 	Status          string
 	Members         []Member
 	Deadlines       []Deadline
-	CurrentExecutor string
+	CurrentExecutor CurrentExecutorData
 }
 
 type UpdateTaskBlocksDataRequest struct {
