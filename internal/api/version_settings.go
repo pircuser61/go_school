@@ -261,6 +261,26 @@ func (ae *Env) SaveVersionSettings(w http.ResponseWriter, req *http.Request, ver
 
 	scenario.Settings = *processSettings
 
+	txStorage, transactionErr := ae.DB.StartTransaction(ctx)
+	if transactionErr != nil {
+		log.WithError(transactionErr).Error("couldn't set update version or settings")
+
+		return
+	}
+
+	defer func() {
+		if r := recover(); r != nil {
+			log = log.WithField("funcName", "SaveVersionSettings").
+				WithField("panic handle", true)
+			log.Error(r)
+
+			if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
+				log.WithError(errors.New("couldn't rollback tx")).
+					Error(txErr)
+			}
+		}
+	}()
+
 	var errCustom Err
 	processSettings.ID, errCustom, err = ae.createOrUpdateVersion(ctx, scenario)
 	if err != nil {
@@ -276,9 +296,20 @@ func (ae *Env) SaveVersionSettings(w http.ResponseWriter, req *http.Request, ver
 		return
 	}
 
-	saveVersionErr := ae.DB.SaveVersionSettings(ctx, *processSettings, (*string)(params.SchemaFlag))
-	if saveVersionErr != nil {
-		errorHandler.handleError(ProcessSettingsSaveError, saveVersionErr)
+	err = ae.DB.SaveVersionSettings(ctx, *processSettings, (*string)(params.SchemaFlag))
+	if err != nil {
+		errorHandler.handleError(ProcessSettingsSaveError, err)
+
+		return
+	}
+
+	if commitErr := txStorage.CommitTransaction(ctx); commitErr != nil {
+		log.WithError(commitErr).Error("couldn't update pipeline settings")
+
+		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
+			log.Error(txErr)
+		}
+		errorHandler.handleError(UnknownError, commitErr)
 
 		return
 	}
