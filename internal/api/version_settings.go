@@ -263,6 +263,13 @@ func (ae *Env) SaveVersionSettings(w http.ResponseWriter, req *http.Request, ver
 
 	scenario.Settings = *processSettings
 
+	err = processSettings.Validate()
+	if err != nil {
+		errorHandler.handleError(JSONSchemaValidationError, err)
+
+		return
+	}
+
 	txStorage, transactionErr := ae.DB.StartTransaction(ctx)
 	if transactionErr != nil {
 		log.WithError(transactionErr).Error("couldn't set update version or settings")
@@ -283,16 +290,15 @@ func (ae *Env) SaveVersionSettings(w http.ResponseWriter, req *http.Request, ver
 		}
 	}()
 
-	err = processSettings.Validate()
-	if err != nil {
-		errorHandler.handleError(JSONSchemaValidationError, err)
-
-		return
-	}
-
 	processSettings.VersionID, errCustom, err = ae.createOrUpdateVersion(ctx, scenario)
 	if err != nil {
 		errorHandler.handleError(errCustom, err)
+
+		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
+			log.WithField("funcName", "createOrUpdateVersion").
+				WithError(errors.New("couldn't rollback tx")).
+				Error(txErr)
+		}
 
 		return
 	}
@@ -300,6 +306,12 @@ func (ae *Env) SaveVersionSettings(w http.ResponseWriter, req *http.Request, ver
 	err = ae.DB.SaveVersionSettings(ctx, *processSettings, (*string)(params.SchemaFlag))
 	if err != nil {
 		errorHandler.handleError(ProcessSettingsSaveError, err)
+
+		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
+			log.WithField("funcName", "SaveVersionSettings").
+				WithError(errors.New("couldn't rollback tx")).
+				Error(txErr)
+		}
 
 		return
 	}
