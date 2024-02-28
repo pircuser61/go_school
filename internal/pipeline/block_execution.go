@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"context"
+	"sort"
 	"time"
 
 	"github.com/pkg/errors"
@@ -46,6 +47,38 @@ type GoExecutionBlock struct {
 
 	expectedEvents map[string]struct{}
 	happenedEvents []entity.NodeEvent
+}
+
+func mapToSlice(data map[string]struct{}) []string {
+	keys := make([]string, 0, len(data))
+
+	for k := range data {
+		keys = append(keys, k)
+	}
+
+	sort.Strings(keys)
+
+	return keys
+}
+
+func (gb *GoExecutionBlock) CurrentExecutorData() CurrentExecutorData {
+	if gb.State.Decision != nil {
+		return CurrentExecutorData{}
+	}
+
+	if gb.State.IsTakenInWork {
+		return CurrentExecutorData{
+			People:        mapToSlice(gb.State.Executors),
+			InitialPeople: mapToSlice(gb.State.InitialExecutors),
+		}
+	}
+
+	return CurrentExecutorData{
+		GroupID:       gb.State.ExecutorsGroupID,
+		GroupName:     gb.State.ExecutorsGroupName,
+		People:        mapToSlice(gb.State.Executors),
+		InitialPeople: mapToSlice(gb.State.InitialExecutors),
+	}
 }
 
 func (gb *GoExecutionBlock) GetNewEvents() []entity.NodeEvent {

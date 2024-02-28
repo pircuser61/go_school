@@ -30,6 +30,10 @@ type GoWaitForAllInputsBlock struct {
 	happenedEvents []entity.NodeEvent
 }
 
+func (gb *GoWaitForAllInputsBlock) CurrentExecutorData() CurrentExecutorData {
+	return CurrentExecutorData{}
+}
+
 func (gb *GoWaitForAllInputsBlock) GetNewEvents() []entity.NodeEvent {
 	return gb.happenedEvents
 }

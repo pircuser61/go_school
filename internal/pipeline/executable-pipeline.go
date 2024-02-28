@@ -63,6 +63,10 @@ type ExecutablePipeline struct {
 	happenedEvents []entity.NodeEvent
 }
 
+func (gb *ExecutablePipeline) CurrentExecutorData() CurrentExecutorData {
+	return CurrentExecutorData{}
+}
+
 func (gb *ExecutablePipeline) GetNewEvents() []entity.NodeEvent {
 	return gb.happenedEvents
 }

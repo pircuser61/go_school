@@ -101,6 +101,8 @@ const (
 	FormAccessTypeRead FormAccessType = "Read"
 
 	FormAccessTypeReadWrite FormAccessType = "ReadWrite"
+
+	FormAccessTypeRequiredFill FormAccessType = "RequiredFill"
 )
 
 // Defines values for FormExecutorType.
@@ -771,6 +773,21 @@ type Created struct {
 	Start int `json:"start"`
 }
 
+// Current task execution data
+type CurrentExecutorData struct {
+	// Execution group ID
+	ExecutionGroupId *string `json:"execution_group_id,omitempty"`
+
+	// Execution group name
+	ExecutionGroupName *string `json:"execution_group_name,omitempty"`
+
+	// Initial executors logins
+	InitialPeople []string `json:"initial_people"`
+
+	// Executors logins
+	People []string `json:"people"`
+}
+
 // Basic date operand, can provide working compare types for this type
 type DateOperand struct {
 	DataType    DateOperandDataType    `json:"dataType"`
@@ -899,8 +916,14 @@ type EriusTask struct {
 	Author           string                 `json:"author"`
 	BlueprintId      string                 `json:"blueprint_id"`
 	Comment          *string                `json:"comment,omitempty"`
-	Debug            bool                   `json:"debug"`
-	Description      string                 `json:"description"`
+
+	// Current execution start time (UTC)
+	CurrentExecutionStart *string `json:"current_execution_start,omitempty"`
+
+	// Current task execution data
+	CurrentExecutor CurrentExecutorData `json:"current_executor"`
+	Debug           bool                `json:"debug"`
+	Description     string              `json:"description"`
 
 	// Task human readable status
 	HumanStatus        TaskHumanStatus        `json:"human_status"`
@@ -1148,6 +1171,9 @@ type FormExecutorType string
 
 // Form params
 type FormParams struct {
+	// true - if you need to set required fill fields in form (for auto fill)
+	CheckRequiredFill *bool `json:"check_required_fill,omitempty"`
+
 	// Is active SLA
 	CheckSla bool `json:"check_sla"`
 
@@ -1299,6 +1325,7 @@ type JSONSchemaProperties struct {
 
 		// Description of param
 		Description *string `json:"description,omitempty"`
+		FieldHidden *bool   `json:"fieldHidden,omitempty"`
 
 		// Format of param
 		Format *string `json:"format,omitempty"`
@@ -2611,6 +2638,7 @@ func (a JSONSchemaProperties) Get(fieldName string) (value struct {
 
 	// Description of param
 	Description *string `json:"description,omitempty"`
+	FieldHidden *bool   `json:"fieldHidden,omitempty"`
 
 	// Format of param
 	Format *string `json:"format,omitempty"`
@@ -2649,6 +2677,7 @@ func (a *JSONSchemaProperties) Set(fieldName string, value struct {
 
 	// Description of param
 	Description *string `json:"description,omitempty"`
+	FieldHidden *bool   `json:"fieldHidden,omitempty"`
 
 	// Format of param
 	Format *string `json:"format,omitempty"`
@@ -2681,6 +2710,7 @@ func (a *JSONSchemaProperties) Set(fieldName string, value struct {
 
 			// Description of param
 			Description *string `json:"description,omitempty"`
+			FieldHidden *bool   `json:"fieldHidden,omitempty"`
 
 			// Format of param
 			Format *string `json:"format,omitempty"`
@@ -2725,6 +2755,7 @@ func (a *JSONSchemaProperties) UnmarshalJSON(b []byte) error {
 
 			// Description of param
 			Description *string `json:"description,omitempty"`
+			FieldHidden *bool   `json:"fieldHidden,omitempty"`
 
 			// Format of param
 			Format *string `json:"format,omitempty"`
@@ -2757,6 +2788,7 @@ func (a *JSONSchemaProperties) UnmarshalJSON(b []byte) error {
 
 				// Description of param
 				Description *string `json:"description,omitempty"`
+				FieldHidden *bool   `json:"fieldHidden,omitempty"`
 
 				// Format of param
 				Format *string `json:"format,omitempty"`

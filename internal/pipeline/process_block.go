@@ -258,7 +258,7 @@ func initBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *BlockRu
 	}
 
 	id, startTime, err := runCtx.saveStepInDB(ctx, name, bl.TypeID, string(block.GetStatus()),
-		block.Members(), deadlines, isReEntry)
+		block.Members(), deadlines, isReEntry, block.CurrentExecutorData())
 	if err != nil {
 		return nil, uuid.Nil, err
 	}
@@ -279,7 +279,8 @@ func updateBlock(ctx c.Context, block Runner, name string, id uuid.UUID, runCtx 
 		return deadlinesErr
 	}
 
-	err = runCtx.updateStepInDB(ctx, name, id, err != nil, block.GetStatus(), block.Members(), deadlines)
+	err = runCtx.updateStepInDB(ctx, name, id, err != nil, block.GetStatus(), block.Members(),
+		deadlines, block.CurrentExecutorData())
 	if err != nil {
 		return err
 	}
@@ -288,7 +289,7 @@ func updateBlock(ctx c.Context, block Runner, name string, id uuid.UUID, runCtx 
 }
 
 func (runCtx *BlockRunContext) saveStepInDB(ctx c.Context, name, stepType, status string,
-	pl []Member, deadlines []Deadline, isReEntered bool,
+	pl []Member, deadlines []Deadline, isReEntered bool, currentExecutor CurrentExecutorData,
 ) (uuid.UUID, time.Time, error) {
 	storageData, errSerialize := json.Marshal(runCtx.VarStore)
 	if errSerialize != nil {
@@ -335,11 +336,17 @@ func (runCtx *BlockRunContext) saveStepInDB(ctx c.Context, name, stepType, statu
 		Members:     dbPeople,
 		Deadlines:   dbDeadlines,
 		IsReEntry:   isReEntered,
+		CurrentExecutor: db.CurrentExecutorData{
+			GroupID:       currentExecutor.GroupID,
+			GroupName:     currentExecutor.GroupName,
+			People:        currentExecutor.People,
+			InitialPeople: currentExecutor.InitialPeople,
+		},
 	})
 }
 
 func (runCtx *BlockRunContext) updateStepInDB(ctx c.Context, name string, id uuid.UUID, hasError bool, status Status,
-	pl []Member, deadlines []Deadline,
+	pl []Member, deadlines []Deadline, currentExecutor CurrentExecutorData,
 ) error {
 	storageData, err := json.Marshal(runCtx.VarStore)
 	if err != nil {
@@ -385,6 +392,12 @@ func (runCtx *BlockRunContext) updateStepInDB(ctx c.Context, name string, id uui
 		Status:      string(status),
 		Members:     dbPeople,
 		Deadlines:   dbDeadlines,
+		CurrentExecutor: db.CurrentExecutorData{
+			GroupID:       currentExecutor.GroupID,
+			GroupName:     currentExecutor.GroupName,
+			People:        currentExecutor.People,
+			InitialPeople: currentExecutor.InitialPeople,
+		},
 	})
 }
 
@@ -403,6 +416,11 @@ func ProcessBlockWithEndMapping(ctx c.Context, name string, bl *entity.EriusFunc
 	pErr := blockProcessor.ProcessBlock(ctx, 0)
 	if pErr != nil {
 		return pErr
+	}
+
+	updDeadlineErr := blockProcessor.updateTaskExecDeadline(ctx)
+	if updDeadlineErr != nil {
+		return updDeadlineErr
 	}
 
 	intStatus, stringStatus, err := runCtx.Services.Storage.GetTaskStatusWithReadableString(ctx, runCtx.TaskID)

@@ -1185,6 +1185,7 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 			break_points, 
 			has_error,
 			status,
+		    current_executor,
 			is_active
 			--update_col--
 		)
@@ -1198,6 +1199,7 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 			$7,
 			$8,
 			$9,
+		    $10,
 			true
 			--update_val--
 		)
@@ -1212,6 +1214,7 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 		dto.BreakPoints,
 		dto.HasError,
 		dto.Status,
+		dto.CurrentExecutor,
 	}
 
 	if _, ok := map[string]struct{}{
@@ -1257,12 +1260,13 @@ func (db *PGCon) UpdateStepContext(ctx context.Context, dto *UpdateStepRequest) 
 		, has_error = $3
 		, status = $4
 		, content = $5
+	    , current_executor = $6
 		, updated_at = NOW()
 	WHERE
 		id = $1
 `
 	args := []interface{}{
-		dto.ID, dto.BreakPoints, dto.HasError, dto.Status, dto.Content,
+		dto.ID, dto.BreakPoints, dto.HasError, dto.Status, dto.Content, dto.CurrentExecutor,
 	}
 
 	_, err := db.Connection.Exec(
@@ -3052,12 +3056,18 @@ func (db *PGCon) GetTaskInWorkTime(ctx context.Context, workNumber string) (*ent
 
 	interval := entity.TaskCompletionInterval{}
 
+	var finishedAt sql.NullTime
+
 	err := row.Scan(
 		&interval.StartedAt,
-		&interval.FinishedAt,
+		&finishedAt,
 	)
 	if err != nil {
 		return &entity.TaskCompletionInterval{}, err
+	}
+
+	if finishedAt.Valid {
+		interval.FinishedAt = finishedAt.Time
 	}
 
 	return &interval, nil

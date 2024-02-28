@@ -23,6 +23,10 @@ type GoEndBlock struct {
 	RunContext *BlockRunContext
 }
 
+func (gb *GoEndBlock) CurrentExecutorData() CurrentExecutorData {
+	return CurrentExecutorData{}
+}
+
 func (gb *GoEndBlock) GetNewEvents() []entity.NodeEvent {
 	return gb.happenedEvents
 }

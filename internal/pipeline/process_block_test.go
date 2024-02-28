@@ -112,6 +112,17 @@ func makeStorage() *mocks.MockedDatabase {
 		mock.MatchedBy(func(string) bool { return true }),
 	).Return(&entity.Step{State: map[string]json.RawMessage{}}, nil)
 
+	res.On("GetDeadline",
+		mock.MatchedBy(func(ctx context.Context) bool { return true }),
+		mock.MatchedBy(func(workID string) bool { return true }),
+	).Return(time.Now(), nil)
+
+	res.On("SetExecDeadline",
+		mock.MatchedBy(func(ctx context.Context) bool { return true }),
+		mock.MatchedBy(func(taskID string) bool { return true }),
+		mock.MatchedBy(func(deadline time.Time) bool { return true }),
+	).Return(nil)
+
 	res.On("UnsetIsActive",
 		mock.MatchedBy(func(ctx context.Context) bool { return true }),
 		mock.MatchedBy(func(workNumber string) bool { return true }),

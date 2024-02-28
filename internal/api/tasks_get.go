@@ -530,48 +530,7 @@ func (ae *Env) GetTasks(w http.ResponseWriter, req *http.Request, params GetTask
 		return
 	}
 
-	versionsSLA := make(map[string]*entity.SLAVersionSettings)
-
 	for i := range resp.Tasks {
-		if _, exists := versionsSLA[resp.Tasks[i].VersionID.String()]; !exists {
-			versionSettings, errSLA := ae.DB.GetSLAVersionSettings(ctx, resp.Tasks[i].VersionID.String())
-			if errSLA != nil {
-				errorHandler.handleError(GetProcessSLASettingsError, err)
-
-				return
-			}
-
-			versionsSLA[resp.Tasks[i].VersionID.String()] = &versionSettings
-		}
-
-		slaInfoPtr, getSLAInfoErr := ae.SLAService.GetSLAInfoPtr(ctx, sla.InfoDTO{
-			TaskCompletionIntervals: []entity.TaskCompletionInterval{
-				{
-					StartedAt:  resp.Tasks[i].StartedAt,
-					FinishedAt: resp.Tasks[i].StartedAt.Add(time.Hour * 24 * 100),
-				},
-			},
-			WorkType: sla.WorkHourType(versionsSLA[resp.Tasks[i].VersionID.String()].WorkType),
-		})
-		if getSLAInfoErr != nil {
-			errorHandler.handleError(UnknownError, err)
-
-			return
-		}
-
-		deadline, deadlineErr := ae.DB.GetDeadline(ctx, resp.Tasks[i].WorkNumber)
-		if deadlineErr != nil {
-			errorHandler.handleError(GetDeadlineError, err)
-
-			return
-		}
-
-		if deadline.IsZero() {
-			deadline = ae.SLAService.ComputeMaxDate(resp.Tasks[i].StartedAt, float32(versionsSLA[resp.Tasks[i].VersionID.String()].SLA), slaInfoPtr)
-		}
-
-		resp.Tasks[i].ProcessDeadline = deadline
-
 		approvalLists, errGetSettings := ae.DB.GetApprovalListsSettings(ctx, resp.Tasks[i].VersionID.String())
 		if errGetSettings != nil {
 			errorHandler.handleError(UnknownError, err)
