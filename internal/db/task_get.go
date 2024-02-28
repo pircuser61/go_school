@@ -1305,9 +1305,10 @@ func (db *PGCon) getTasksCount(
 }
 
 type executorData struct {
-	People    []string `json:"people"`
-	GroupID   string   `json:"group_id"`
-	GroupName string   `json:"group_name"`
+	People        []string `json:"people"`
+	InitialPeople []string `json:"initial_people"`
+	GroupID       string   `json:"group_id"`
+	GroupName     string   `json:"group_name"`
 }
 
 //nolint:gocyclo //its ok here
@@ -1397,6 +1398,7 @@ func (db *PGCon) getTasks(ctx c.Context, filters *entity.TaskFilter,
 		}
 
 		et.CurrentExecutor.People = currExecutorData.People
+		et.CurrentExecutor.InitialPeople = currExecutorData.InitialPeople
 		et.CurrentExecutor.ExecutionGroupID = currExecutorData.GroupID
 		et.CurrentExecutor.ExecutionGroupName = currExecutorData.GroupName
 

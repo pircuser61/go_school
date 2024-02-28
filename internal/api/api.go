@@ -101,6 +101,8 @@ const (
 	FormAccessTypeRead FormAccessType = "Read"
 
 	FormAccessTypeReadWrite FormAccessType = "ReadWrite"
+
+	FormAccessTypeRequiredFill FormAccessType = "RequiredFill"
 )
 
 // Defines values for FormExecutorType.
@@ -779,6 +781,9 @@ type CurrentExecutorData struct {
 	// Execution group name
 	ExecutionGroupName *string `json:"execution_group_name,omitempty"`
 
+	// Initial executors logins
+	InitialPeople []string `json:"initial_people"`
+
 	// Executors logins
 	People []string `json:"people"`
 }
@@ -1166,6 +1171,9 @@ type FormExecutorType string
 
 // Form params
 type FormParams struct {
+	// true - if you need to set required fill fields in form (for auto fill)
+	CheckRequiredFill *bool `json:"check_required_fill,omitempty"`
+
 	// Is active SLA
 	CheckSla bool `json:"check_sla"`
 

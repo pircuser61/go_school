@@ -47,9 +47,10 @@ const (
 )
 
 type CurrentExecutorData struct {
-	GroupID   string
-	GroupName string
-	People    []string
+	GroupID       string
+	GroupName     string
+	People        []string
+	InitialPeople []string
 }
 
 type Runner interface {

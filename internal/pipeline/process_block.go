@@ -337,9 +337,10 @@ func (runCtx *BlockRunContext) saveStepInDB(ctx c.Context, name, stepType, statu
 		Deadlines:   dbDeadlines,
 		IsReEntry:   isReEntered,
 		CurrentExecutor: db.CurrentExecutorData{
-			GroupID:   currentExecutor.GroupID,
-			GroupName: currentExecutor.GroupName,
-			People:    currentExecutor.People,
+			GroupID:       currentExecutor.GroupID,
+			GroupName:     currentExecutor.GroupName,
+			People:        currentExecutor.People,
+			InitialPeople: currentExecutor.InitialPeople,
 		},
 	})
 }
@@ -392,9 +393,10 @@ func (runCtx *BlockRunContext) updateStepInDB(ctx c.Context, name string, id uui
 		Members:     dbPeople,
 		Deadlines:   dbDeadlines,
 		CurrentExecutor: db.CurrentExecutorData{
-			GroupID:   currentExecutor.GroupID,
-			GroupName: currentExecutor.GroupName,
-			People:    currentExecutor.People,
+			GroupID:       currentExecutor.GroupID,
+			GroupName:     currentExecutor.GroupName,
+			People:        currentExecutor.People,
+			InitialPeople: currentExecutor.InitialPeople,
 		},
 	})
 }

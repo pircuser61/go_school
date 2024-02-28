@@ -11,20 +11,28 @@ WITH blocks AS (
 )
    , exec_data AS (
     SELECT id
-         , block_data ->> 'is_taken_in_work' = 'true'                                       AS taken_in_work
-         , array(SELECT jsonb_object_keys(block_data -> 'executors')) AS people
-         , coalesce(block_data ->> 'executors_group_id', '')                                              AS exec_group_id
-         , coalesce(block_data ->> 'executors_group_name', '')                                            AS exec_group_name
+         , block_data ->> 'is_taken_in_work' = 'true'                         AS taken_in_work
+         , array(SELECT jsonb_object_keys(block_data -> 'executors'))         AS people
+         , array(SELECT jsonb_object_keys(block_data -> 'initial_executors')) AS initial_people
+         , coalesce(block_data ->> 'executors_group_id', '')                  AS exec_group_id
+         , coalesce(block_data ->> 'executors_group_name', '')                AS exec_group_name
     FROM blocks
-    WHERE jsonb_typeof(block_data -> 'executors') = 'object'
+    WHERE jsonb_typeof(block_data -> 'executors') = 'object' and jsonb_typeof(block_data -> 'initial_executors') = 'object'
 )
    , current_executor AS (
     SELECT id,
            CASE
                WHEN taken_in_work
-                   THEN jsonb_build_object('group_id', '', 'group_name', '', 'people', people)
-               ELSE jsonb_build_object('group_id', exec_group_id, 'group_name', exec_group_name, 'people',
-                                       people) END AS executor
+                   THEN jsonb_build_object(
+                       'group_id', '',
+                       'group_name', '',
+                       'people', people,
+                       'initial_people', initial_people)
+               ELSE jsonb_build_object(
+                       'group_id', exec_group_id,
+                       'group_name', exec_group_name,
+                       'people', people,
+                       'initial_people', initial_people) END AS executor
     FROM exec_data
 )
 UPDATE variable_storage
