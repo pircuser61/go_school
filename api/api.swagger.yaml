@@ -3828,6 +3828,8 @@ components:
             $ref: '#/components/schemas/JSONSchemaProperties'
           items:
             $ref: '#/components/schemas/ArrayItems'
+          fieldHidden:
+            type: boolean
           value:
             type: string
             description: Здесь хранится маппинг переменной, то место, откуда нужно взять значение переменной

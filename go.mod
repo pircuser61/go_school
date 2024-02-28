@@ -31,7 +31,7 @@ require (
 	gitlab.services.mts.ru/abp/myosotis v1.4.4
 	gitlab.services.mts.ru/jocasta/conditions-kit v1.0.10
 	gitlab.services.mts.ru/jocasta/file-registry v1.4.0
-	gitlab.services.mts.ru/jocasta/forms v1.5.0-alpha.1
+	gitlab.services.mts.ru/jocasta/forms v1.7.0-rc.1.0.20240228093138-cfbc068bdf88
 	gitlab.services.mts.ru/jocasta/functions v1.11.0-alpha.1
 	gitlab.services.mts.ru/jocasta/human-tasks v1.0.0-alpha.3
 	gitlab.services.mts.ru/jocasta/integrations v1.9.0

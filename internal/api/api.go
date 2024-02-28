@@ -1325,6 +1325,7 @@ type JSONSchemaProperties struct {
 
 		// Description of param
 		Description *string `json:"description,omitempty"`
+		FieldHidden *bool   `json:"fieldHidden,omitempty"`
 
 		// Format of param
 		Format *string `json:"format,omitempty"`
@@ -2637,6 +2638,7 @@ func (a JSONSchemaProperties) Get(fieldName string) (value struct {
 
 	// Description of param
 	Description *string `json:"description,omitempty"`
+	FieldHidden *bool   `json:"fieldHidden,omitempty"`
 
 	// Format of param
 	Format *string `json:"format,omitempty"`
@@ -2675,6 +2677,7 @@ func (a *JSONSchemaProperties) Set(fieldName string, value struct {
 
 	// Description of param
 	Description *string `json:"description,omitempty"`
+	FieldHidden *bool   `json:"fieldHidden,omitempty"`
 
 	// Format of param
 	Format *string `json:"format,omitempty"`
@@ -2707,6 +2710,7 @@ func (a *JSONSchemaProperties) Set(fieldName string, value struct {
 
 			// Description of param
 			Description *string `json:"description,omitempty"`
+			FieldHidden *bool   `json:"fieldHidden,omitempty"`
 
 			// Format of param
 			Format *string `json:"format,omitempty"`
@@ -2751,6 +2755,7 @@ func (a *JSONSchemaProperties) UnmarshalJSON(b []byte) error {
 
 			// Description of param
 			Description *string `json:"description,omitempty"`
+			FieldHidden *bool   `json:"fieldHidden,omitempty"`
 
 			// Format of param
 			Format *string `json:"format,omitempty"`
@@ -2783,6 +2788,7 @@ func (a *JSONSchemaProperties) UnmarshalJSON(b []byte) error {
 
 				// Description of param
 				Description *string `json:"description,omitempty"`
+				FieldHidden *bool   `json:"fieldHidden,omitempty"`
 
 				// Format of param
 				Format *string `json:"format,omitempty"`

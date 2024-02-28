@@ -34,11 +34,12 @@ type JSONSchemaPropertiesValue struct {
 	Type        string `json:"type"`
 	Global      string `json:"global,omitempty"`
 
-	Format     string               `json:"format,omitempty"`
-	Default    interface{}          `json:"default,omitempty"`
-	Required   []string             `json:"required,omitempty"`
-	Items      *ArrayItems          `json:"items,omitempty"`
-	Properties JSONSchemaProperties `json:"properties,omitempty"`
+	Format      string               `json:"format,omitempty"`
+	Default     interface{}          `json:"default,omitempty"`
+	Required    []string             `json:"required,omitempty"`
+	Items       *ArrayItems          `json:"items,omitempty"`
+	Properties  JSONSchemaProperties `json:"properties,omitempty"`
+	FieldHidden bool                 `json:"fieldHidden,omitempty"`
 
 	Value string `json:"value,omitempty"`
 }

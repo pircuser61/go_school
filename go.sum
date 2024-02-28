@@ -599,6 +599,8 @@ gitlab.services.mts.ru/jocasta/file-registry v1.4.0 h1:DoUWZmVSwkKTJ/1eMcuAatEOY
 gitlab.services.mts.ru/jocasta/file-registry v1.4.0/go.mod h1:nKSDD0s9LOFfnYjgY1CJnCs8AA0Pa76P3h3WpJIH0/s=
 gitlab.services.mts.ru/jocasta/forms v1.5.0-alpha.1 h1:lP9lIugAcG3BxDhJMTApcOVVXDGcibEGv9J8wmhCLaQ=
 gitlab.services.mts.ru/jocasta/forms v1.5.0-alpha.1/go.mod h1:tnMe8H/g7knbPt2ZMi6/41gSJQdX5sBWJJDO5feta1M=
+gitlab.services.mts.ru/jocasta/forms v1.7.0-rc.1.0.20240228093138-cfbc068bdf88 h1:cfDEe74zkHd6v+0CHtPBPSJzJsnMi7gSKRBsY5dBpEk=
+gitlab.services.mts.ru/jocasta/forms v1.7.0-rc.1.0.20240228093138-cfbc068bdf88/go.mod h1:tnMe8H/g7knbPt2ZMi6/41gSJQdX5sBWJJDO5feta1M=
 gitlab.services.mts.ru/jocasta/functions v1.11.0-alpha.1 h1:tbnERBd5I5LlmX6pQW4lzUY4iQhH4eDpo6YAi15J5zs=
 gitlab.services.mts.ru/jocasta/functions v1.11.0-alpha.1/go.mod h1:Ubz3OfokfsWP4+zO3fPXqtEbnuAz2bqFWlmh0hRQkoM=
 gitlab.services.mts.ru/jocasta/human-tasks v1.0.0-alpha.3 h1:5pW66koPEYP8/ZUilXUjJYRgJO4doHbs+ZVOEvKUgIE=
