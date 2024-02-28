@@ -172,6 +172,8 @@ func createGoWaitForAllInputsBlock(
 		if err := b.loadState(rawState); err != nil {
 			return nil, reEntry, err
 		}
+
+		b.State.Done = false
 	} else {
 		err := b.createExpectedEvents(ctx, runCtx, name, ef)
 		if err != nil {

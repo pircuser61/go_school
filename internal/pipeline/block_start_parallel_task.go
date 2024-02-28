@@ -65,6 +65,11 @@ func (gb *GoBeginParallelTaskBlock) GetState() interface{} {
 }
 
 func (gb *GoBeginParallelTaskBlock) Update(ctx context.Context) (interface{}, error) {
+	err := gb.RunContext.Services.Storage.UnsetIsActive(ctx, gb.RunContext.WorkNumber, gb.Name)
+	if err != nil {
+		return nil, err
+	}
+
 	if _, ok := gb.expectedEvents[eventEnd]; ok {
 		status, _, _ := gb.GetTaskHumanStatus()
 
