@@ -112,6 +112,12 @@ func makeStorage() *mocks.MockedDatabase {
 		mock.MatchedBy(func(string) bool { return true }),
 	).Return(&entity.Step{State: map[string]json.RawMessage{}}, nil)
 
+	res.On("UnsetIsActive",
+		mock.MatchedBy(func(ctx context.Context) bool { return true }),
+		mock.MatchedBy(func(workNumber string) bool { return true }),
+		mock.MatchedBy(func(blockName string) bool { return true }),
+	).Return(nil)
+
 	return res
 }
 

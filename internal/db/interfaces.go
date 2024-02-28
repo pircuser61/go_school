@@ -68,6 +68,7 @@ type TaskStorager interface {
 	StopTaskBlocks(ctx c.Context, taskID uuid.UUID) error
 	FinishTaskBlocks(ctx c.Context, workID uuid.UUID, ignoreSteps []string, updateParent bool) error
 	ParallelIsFinished(ctx c.Context, workNumber, blockName string) (bool, error)
+	UnsetIsActive(ctx c.Context, workNumber, blockName string) error
 
 	UpdateTaskRate(ctx c.Context, req *UpdateTaskRate) error
 	UpdateTaskHumanStatus(ctx c.Context, taskID uuid.UUID, status, comment string) (*e.EriusTask, error)
