@@ -247,7 +247,7 @@ func (ae *Env) SaveVersionSettings(w http.ResponseWriter, req *http.Request, ver
 	}
 
 	if convErr := ae.convertProcessSettingsToFlat(ctx, processSettings); convErr != nil {
-		errorHandler.handleError(ProcessSettingsConvertError, err)
+		errorHandler.handleError(ProcessSettingsConvertError, convErr)
 
 		return
 	}
