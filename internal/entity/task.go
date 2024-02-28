@@ -123,6 +123,7 @@ type EriusTask struct {
 
 type CurrentExecutorData struct {
 	People             []string `json:"people"`
+	InitialPeople      []string `json:"initial_people"`
 	ExecutionGroupID   string   `json:"execution_group_id,omitempty"`
 	ExecutionGroupName string   `json:"execution_group_name,omitempty"`
 }

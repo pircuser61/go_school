@@ -95,9 +95,10 @@ type TaskAction struct {
 }
 
 type CurrentExecutorData struct {
-	GroupID   string   `json:"group_id"`
-	GroupName string   `json:"group_name"`
-	People    []string `json:"people"`
+	GroupID       string   `json:"group_id"`
+	GroupName     string   `json:"group_name"`
+	People        []string `json:"people"`
+	InitialPeople []string `json:"initial_people"`
 }
 
 type Member struct {
