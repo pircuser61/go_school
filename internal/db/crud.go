@@ -1758,7 +1758,7 @@ WHERE value ? $2`
 }
 
 func (db *PGCon) UnsetIsActive(ctx context.Context, workNumber, blockName string) error {
-	ctx, span := trace.StartSpan(ctx, "pg_clear_isaction_in_parallel")
+	ctx, span := trace.StartSpan(ctx, "pg_unset_is_active")
 	defer span.End()
 
 	// nolint:gocritic
