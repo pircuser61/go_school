@@ -213,7 +213,7 @@ func (ae *Env) GetTask(w http.ResponseWriter, req *http.Request, workNumber stri
 	start := time.Now()
 	ctx, s := trace.StartSpan(req.Context(), "get_task")
 
-	requestInfo := &metrics.RequestInfo{Method: http.MethodGet, Path: taskPath, Status: http.StatusOK}
+	requestInfo := metrics.NewGetRequestInfo(taskPath)
 
 	defer func() {
 		s.End()
@@ -508,7 +508,7 @@ func (ae *Env) GetTasks(w http.ResponseWriter, req *http.Request, params GetTask
 	start := time.Now()
 	ctx, s := trace.StartSpan(req.Context(), "get_tasks")
 
-	requestInfo := &metrics.RequestInfo{Method: http.MethodGet, Path: getTasksPath, Status: http.StatusOK}
+	requestInfo := metrics.NewGetRequestInfo(getTasksPath)
 
 	defer func() {
 		s.End()

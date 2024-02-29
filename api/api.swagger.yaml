@@ -4070,7 +4070,7 @@ components:
         attachment_fields:
           type: array
           items:
-            $ref: '#/components/schemas/Attachment'
+            type: string
     RunNewVersionByPrevVersionRequest:
       required: [ work_number, description, application_body, keys, attachment_fields ]
       type: object

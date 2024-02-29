@@ -335,7 +335,7 @@ func (ae *Env) GetPipelineVersion(w http.ResponseWriter, req *http.Request, vers
 	start := time.Now()
 	ctx, s := trace.StartSpan(req.Context(), "get_pipeline_version")
 
-	requestInfo := &metrics.RequestInfo{Method: http.MethodGet, Path: getPipelineVersionPath, Status: http.StatusOK}
+	requestInfo := metrics.NewGetRequestInfo(getPipelineVersionPath)
 
 	defer func() {
 		s.End()

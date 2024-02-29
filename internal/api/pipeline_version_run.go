@@ -147,7 +147,7 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
 	ctx, s := trace.StartSpan(r.Context(), "run_version_by_pipeline_id")
 
-	requestInfo := &metrics.RequestInfo{Method: http.MethodPost, Path: runByPipelineIDPath, Status: http.StatusOK}
+	requestInfo := metrics.NewPostRequestInfo(runByPipelineIDPath)
 
 	defer func() {
 		s.End()

@@ -131,7 +131,7 @@ func (ae *Env) UpdateTask(w http.ResponseWriter, req *http.Request, workNumber s
 	start := time.Now()
 	ctx, s := trace.StartSpan(req.Context(), "update_task")
 
-	requestInfo := &metrics.RequestInfo{Method: http.MethodPost, Path: taskPath, Status: http.StatusOK}
+	requestInfo := metrics.NewPostRequestInfo(taskPath)
 
 	defer func() {
 		s.End()
@@ -783,7 +783,7 @@ func (ae *Env) StopTasks(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
 	ctx, s := trace.StartSpan(r.Context(), "stop_tasks")
 
-	requestInfo := &metrics.RequestInfo{Method: http.MethodPost, Path: stopTasksPath, Status: http.StatusOK}
+	requestInfo := metrics.NewPostRequestInfo(stopTasksPath)
 
 	defer func() {
 		s.End()
