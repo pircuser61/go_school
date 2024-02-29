@@ -1,4 +1,3 @@
-
 -- +goose Up
 -- +goose StatementBegin
 ALTER TABLE  variable_storage ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT true;
