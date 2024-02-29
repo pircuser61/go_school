@@ -18,6 +18,8 @@ import (
 
 	"golang.org/x/exp/slices"
 
+	"golang.org/x/sync/errgroup"
+
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
@@ -46,18 +48,16 @@ func uniqueActionsByRole(loginsIn, stepType string, finished, acted bool) string
 	// nolint:gocritic
 	// language=PostgreSQL
 	return fmt.Sprintf(`WITH actions AS (
-    SELECT vs.work_id                                                                                 AS work_id
-         , vs.step_name                                                                               AS block_id
-         , CASE WHEN vs.status IN ('running', 'idle','ready') THEN m.actions ELSE '{}' END AS action
-         , CASE WHEN vs.status IN ('running', 'idle','ready') THEN m.params ELSE '{}' END  AS params
+    SELECT vs.work_id                                                                       AS work_id
+         , vs.step_name                                                                     AS block_id
+         , CASE WHEN vs.status IN ('running', 'idle', 'ready') THEN m.actions ELSE '{}' END AS action
+         , CASE WHEN vs.status IN ('running', 'idle', 'ready') THEN m.params ELSE '{}' END  AS params
+         , vs.current_executor                                                              AS current_executor
+         , CASE WHEN vs.step_type = 'execution' THEN vs.time END                            AS exec_start_time
+         , vs.time                                                                          AS node_start
     FROM members m
              JOIN variable_storage vs on vs.id = m.block_id
              JOIN works w on vs.work_id = w.id
-    JOIN lateral (SELECT vs2.step_name, max(vs2.time) mt
-                                        from variable_storage vs2
-                                        where vs2.work_id = w.id
-                                        group by vs2.step_name) ab 
-                               on ab.mt = vs.time AND ab.step_name = vs.step_name
     WHERE m.login IN %s
       AND vs.step_type = '%s'
       AND %s 
@@ -65,15 +65,22 @@ func uniqueActionsByRole(loginsIn, stepType string, finished, acted bool) string
 		%s
       --unique-actions-filter--
 )
-     , unique_actions AS (
-    SELECT actions.work_id AS work_id, JSONB_AGG(jsonb_actions.actions) AS actions
+   , filtered_actions AS (SELECT a.work_id, block_id, max(node_start) AS time
+                          FROM actions a
+                          GROUP BY block_id, a.work_id)
+   , unique_actions AS (
+    SELECT actions.work_id                  	  		 AS work_id
+         , JSONB_AGG(jsonb_actions.actions) 	         AS actions
+         , max(actions.current_executor::text)::jsonb    AS current_executor
+         , min(actions.exec_start_time)     	  		 AS exec_start_time
     FROM actions
+             JOIN filtered_actions fa ON fa.time = actions.node_start AND fa.block_id = actions.block_id
              LEFT JOIN LATERAL (SELECT jsonb_build_object(
                                                'block_id', actions.block_id,
                                                'actions', actions.action,
                                                'params', actions.params) as actions) jsonb_actions ON TRUE
-    GROUP BY actions.work_id
-)`, loginsIn, stepType, statuses, memberActed)
+    GROUP BY actions.work_id)
+`, loginsIn, stepType, statuses, memberActed)
 }
 
 func uniqueActiveActions(approverLogins, executionLogins []string, currentUser, workNumber string) string {
@@ -228,7 +235,7 @@ func getUniqueActions(selectFilter string, logins []string) string {
 		return strings.Replace(q, "--unique-actions-filter--", "AND m.execution_group_member = true", replaceCount)
 	default:
 		return fmt.Sprintf(`WITH unique_actions AS (
-    SELECT id AS work_id, '[]' AS actions
+    SELECT id AS work_id, '[]' AS actions, '' AS current_executor, null AS exec_start_time
     FROM works
     WHERE author IN %s AND child_id IS NULL
 )`, loginsIn)
@@ -262,10 +269,13 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 			COALESCE(w.run_context -> 'initial_application' ->> 'description',
                 COALESCE(descr.description, '')),
 			COALESCE(descr.blueprint_id, ''),
-			count(*) over() as total,
+			count(*) over (),
 			w.rate,
 			w.rate_comment,
-		    ua.actions
+		    ua.actions,
+		    w.exec_deadline,
+		    ua.current_executor,
+		    ua.exec_start_time
 		FROM works w 
 		JOIN versions v ON v.id = w.version_id
 		JOIN pipelines p ON p.id = v.pipeline_id
@@ -697,48 +707,48 @@ func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter, delegations 
 	ctx, span := trace.StartSpan(ctx, "db.pg_get_tasks")
 	defer span.End()
 
-	q, args := compileGetTasksQuery(filters, delegations)
+	var (
+		eg errgroup.Group
 
-	res, err := db.getTasks(ctx, &filters, delegations, q, args)
-	if err != nil {
-		return nil, err
+		tasks       *entity.EriusTasks
+		getTasksErr error
+
+		meta    *entity.TasksMeta
+		metaErr error
+	)
+
+	eg.Go(
+		func() error {
+			q, args := compileGetTasksQuery(filters, delegations)
+
+			tasks, getTasksErr = db.getTasks(ctx, &filters, delegations, q, args)
+
+			return getTasksErr
+		},
+	)
+
+	eg.Go(
+		func() error {
+			qMeta, argsMeta := compileGetTasksMetaQuery(filters, delegations)
+
+			meta, metaErr = db.getTasksMeta(ctx, qMeta, argsMeta)
+
+			return metaErr
+		},
+	)
+
+	waitErr := eg.Wait()
+	if waitErr != nil {
+		return nil, waitErr
 	}
 
-	if len(res.Tasks) == 0 {
+	if len(tasks.Tasks) == 0 {
 		return &entity.EriusTasksPage{Tasks: []entity.EriusTask{}}, nil
 	}
 
-	qMeta, argsMeta := compileGetTasksMetaQuery(filters, delegations)
-
-	meta, err := db.getTasksMeta(ctx, qMeta, argsMeta)
-	if err != nil {
-		return nil, err
-	}
-
-	//nolint:gocritic // в этом проекте не принято использовать поинтеры в коллекциях
-	for i := range res.Tasks {
-		steps, getTaskErr := db.GetTaskSteps(ctx, res.Tasks[i].ID)
-		if getTaskErr != nil {
-			return nil, getTaskErr
-		}
-
-		attachments := 0
-		for j := range steps {
-			attachments += steps[j].Attachments
-		}
-
-		res.Tasks[i].Steps = steps
-		res.Tasks[i].AttachmentsCount = &attachments
-	}
-
-	total := 0
-	if len(res.Tasks) > 0 {
-		total = res.Tasks[0].Total
-	}
-
 	return &entity.EriusTasksPage{
-		Tasks:     res.Tasks,
-		Total:     total,
+		Tasks:     tasks.Tasks,
+		Total:     tasks.Tasks[0].Total,
 		TasksMeta: *meta,
 	}, nil
 }
@@ -751,7 +761,7 @@ func (db *PGCon) GetDeadline(ctx c.Context, workNumber string) (time.Time, error
 	// language=PostgreSQL
 	q := `
     WITH blocks AS (
-    	SELECT  content->'State'->step_name AS block 
+    	SELECT content->'State'->step_name AS block 
 		FROM variable_storage vs 
 		WHERE work_id = (
 			SELECT id from works WHERE work_number = $1 and child_id is null
@@ -878,59 +888,6 @@ WITH active_counts as (
 		TotalFormExecutor: counter.totalFormExecutor,
 		TotalSign:         counter.totalSign,
 	}, nil
-}
-
-func (db *PGCon) GetPipelineTasks(ctx c.Context, pipelineID uuid.UUID) (*entity.EriusTasks, error) {
-	ctx, span := trace.StartSpan(ctx, "pg_get_pipeline_tasks")
-	defer span.End()
-
-	// nolint:gocritic
-	// language=PostgreSQL
-	q := `SELECT 
-			w.id, 
-			w.started_at, 
-			ws.name, 
-			w.human_status, 
-			w.debug, 
-			w.parameters, 
-			w.author, 
-			w.version_id,
-       		w.work_number
-		FROM works w 
-		JOIN versions v ON v.id = w.version_id
-		JOIN pipelines p ON p.id = v.pipeline_id
-		JOIN work_status ws ON w.status = ws.id
-		WHERE p.id = $1 AND w.child_id IS NULL
-		ORDER BY w.started_at DESC
-		LIMIT 100`
-
-	return db.getTasks(ctx, &entity.TaskFilter{}, []string{}, q, []interface{}{pipelineID})
-}
-
-func (db *PGCon) GetVersionTasks(ctx c.Context, versionID uuid.UUID) (*entity.EriusTasks, error) {
-	ctx, span := trace.StartSpan(ctx, "pg_get_version_tasks")
-	defer span.End()
-
-	// nolint:gocritic
-	// language=PostgreSQL
-	q := `SELECT 
-			w.id, 
-			w.started_at, 
-			ws.name,
-       		w.human_status,
-			w.debug, 
-			w.parameters,
-			w.author, 
-			w.version_id,
-       		w.work_number
-		FROM works w 
-		JOIN versions v ON v.id = w.version_id
-		JOIN work_status ws ON w.status = ws.id
-		WHERE v.id = $1 AND w.child_id IS NULL
-		ORDER BY w.started_at DESC
-		LIMIT 100`
-
-	return db.getTasks(ctx, &entity.TaskFilter{}, []string{}, q, []interface{}{versionID})
 }
 
 func (db *PGCon) GetLastDebugTask(ctx c.Context, id uuid.UUID, author string) (*entity.EriusTask, error) {
@@ -1347,7 +1304,14 @@ func (db *PGCon) getTasksCount(
 	return counter, nil
 }
 
-//nolint:gocyclo //its ok here
+type executorData struct {
+	People        []string `json:"people"`
+	InitialPeople []string `json:"initial_people"`
+	GroupID       string   `json:"group_id"`
+	GroupName     string   `json:"group_name"`
+}
+
+//nolint:gocyclo,goccogint //its ok here
 func (db *PGCon) getTasks(ctx c.Context, filters *entity.TaskFilter,
 	delegatorsWithUser []string, q string, args []interface{},
 ) (*entity.EriusTasks, error) {
@@ -1374,7 +1338,9 @@ func (db *PGCon) getTasks(ctx c.Context, filters *entity.TaskFilter,
 
 		var (
 			nullStringParameters sql.NullString
+			nullTime             sql.NullTime
 			actionData           []byte
+			execData             []byte
 		)
 
 		err = rows.Scan(
@@ -1397,6 +1363,9 @@ func (db *PGCon) getTasks(ctx c.Context, filters *entity.TaskFilter,
 			&et.Rate,
 			&et.RateComment,
 			&actionData,
+			&et.ProcessDeadline,
+			&execData,
+			&nullTime,
 		)
 
 		if err != nil {
@@ -1412,8 +1381,29 @@ func (db *PGCon) getTasks(ctx c.Context, filters *entity.TaskFilter,
 			}
 		}
 
+		et.ProcessDeadline = et.ProcessDeadline.UTC()
+
+		if nullTime.Valid {
+			t := nullTime.Time.UTC()
+
+			et.CurrentExecutionStart = &t
+		}
+
+		var currExecutorData executorData
+
+		if len(execData) != 0 {
+			if unmErr := json.Unmarshal(execData, &currExecutorData); unmErr != nil {
+				return nil, unmErr
+			}
+		}
+
+		et.CurrentExecutor.People = currExecutorData.People
+		et.CurrentExecutor.InitialPeople = currExecutorData.InitialPeople
+		et.CurrentExecutor.ExecutionGroupID = currExecutorData.GroupID
+		et.CurrentExecutor.ExecutionGroupName = currExecutorData.GroupName
+
 		var actions []TaskAction
-		if actionData != nil {
+		if len(actionData) != 0 {
 			if unmErr := json.Unmarshal(actionData, &actions); unmErr != nil {
 				return nil, unmErr
 			}

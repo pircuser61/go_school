@@ -64,6 +64,11 @@ func (gb *ExecutableFunctionBlock) runFunction(ctx context.Context, log logger.L
 		return err
 	}
 
+	err = script.FillMapWithConstants(gb.State.Constants, functionMapping)
+	if err != nil {
+		return err
+	}
+
 	jsonString, err := json.Marshal(functionMapping)
 	if err != nil {
 		return err
@@ -72,11 +77,6 @@ func (gb *ExecutableFunctionBlock) runFunction(ctx context.Context, log logger.L
 	schema := gb.State.GetSchema()
 	if validErr := script.ValidateJSONByJSONSchema(string(jsonString), schema); validErr != nil {
 		return validErr
-	}
-
-	err = script.FillMapWithConstants(gb.State.Constants, functionMapping)
-	if err != nil {
-		return err
 	}
 
 	if !gb.RunContext.skipProduce {

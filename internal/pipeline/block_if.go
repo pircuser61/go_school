@@ -30,6 +30,10 @@ type IF struct {
 	happenedEvents []entity.NodeEvent
 }
 
+func (gb *IF) CurrentExecutorData() CurrentExecutorData {
+	return CurrentExecutorData{}
+}
+
 func (gb *IF) GetNewEvents() []entity.NodeEvent {
 	return gb.happenedEvents
 }

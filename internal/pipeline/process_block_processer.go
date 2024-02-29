@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"context"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -11,6 +12,7 @@ import (
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 )
 
 var ErrCantGetNextStep = errors.New("can't get next step")
@@ -107,6 +109,7 @@ func (p *blockProcessor) ProcessBlock(ctx context.Context, its int) error {
 			members:     block.Members(),
 			deadlines:   []Deadline{},
 			attachments: block.BlockAttachments(),
+			currentExecutor: CurrentExecutorData{},
 		})
 		if err != nil {
 			return p.handleError(ctx, log, err)
@@ -178,6 +181,47 @@ func (p *blockProcessor) processActiveBlocks(ctx context.Context, activeBlocks [
 	}
 
 	return nil
+}
+
+func (p *blockProcessor) updateTaskExecDeadline(ctx context.Context) error {
+	// get deadline based on execution blocks
+	deadline, err := p.runCtx.Services.Storage.GetDeadline(ctx, p.runCtx.WorkNumber)
+	if err != nil {
+		return err
+	}
+
+	// compute deadline using sla from process version settings
+	if deadline.IsZero() {
+		versionSettings, errSLA := p.runCtx.Services.Storage.GetSLAVersionSettings(ctx, p.runCtx.VersionID.String())
+		if errSLA != nil {
+			return err
+		}
+
+		times, timesErr := p.runCtx.Services.Storage.GetTaskInWorkTime(ctx, p.runCtx.WorkNumber)
+		if timesErr != nil {
+			return timesErr
+		}
+
+		slaInfoPtr, getSLAInfoErr := p.runCtx.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDTO{
+			TaskCompletionIntervals: []entity.TaskCompletionInterval{
+				{
+					StartedAt:  times.StartedAt,
+					FinishedAt: times.StartedAt.Add(time.Hour * 24 * 100),
+				},
+			},
+			WorkType: sla.WorkHourType(versionSettings.WorkType),
+		})
+		if getSLAInfoErr != nil {
+			return getSLAInfoErr
+		}
+
+		deadline = p.runCtx.Services.SLAService.ComputeMaxDate(
+			times.StartedAt,
+			float32(versionSettings.SLA),
+			slaInfoPtr)
+	}
+
+	return p.runCtx.Services.Storage.SetExecDeadline(ctx, p.runCtx.TaskID.String(), deadline)
 }
 
 func (p *blockProcessor) handleStatus(ctx context.Context, status int) error {

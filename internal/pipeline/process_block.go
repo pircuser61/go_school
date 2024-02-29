@@ -258,13 +258,14 @@ func initBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *BlockRu
 	}
 
 	id, startTime, err := runCtx.saveStepInDB(ctx, &saveStepDTO{
-		name:        name,
-		stepType:    bl.TypeID,
-		status:      string(block.GetStatus()),
-		members:     block.Members(),
-		deadlines:   deadlines,
-		isReEntered: isReEntry,
-		attachments: block.BlockAttachments(),
+		name:            name,
+		stepType:        bl.TypeID,
+		status:          string(block.GetStatus()),
+		members:         block.Members(),
+		deadlines:       deadlines,
+		isReEntered:     isReEntry,
+		attachments:     block.BlockAttachments(),
+		currentExecutor: block.CurrentExecutorData(),
 	})
 	if err != nil {
 		return nil, uuid.Nil, err
@@ -287,13 +288,14 @@ func updateBlock(ctx c.Context, block Runner, name string, id uuid.UUID, runCtx 
 	}
 
 	err = runCtx.updateStepInDB(ctx, &updateStepDTO{
-		id:          id,
-		name:        name,
-		status:      block.GetStatus(),
-		hasError:    err != nil,
-		members:     block.Members(),
-		deadlines:   deadlines,
-		attachments: block.BlockAttachments(),
+		id:              id,
+		name:            name,
+		status:          block.GetStatus(),
+		hasError:        err != nil,
+		members:         block.Members(),
+		deadlines:       deadlines,
+		attachments:     block.BlockAttachments(),
+		currentExecutor: block.CurrentExecutorData(),
 	})
 	if err != nil {
 		return err
@@ -308,6 +310,7 @@ type saveStepDTO struct {
 	deadlines              []Deadline
 	attachments            []string
 	isReEntered            bool
+	currentExecutor        CurrentExecutorData
 }
 
 func (runCtx *BlockRunContext) saveStepInDB(ctx c.Context, dto *saveStepDTO) (uuid.UUID, time.Time, error) {
@@ -357,17 +360,24 @@ func (runCtx *BlockRunContext) saveStepInDB(ctx c.Context, dto *saveStepDTO) (uu
 		Deadlines:   dbDeadlines,
 		IsReEntry:   dto.isReEntered,
 		Attachments: len(dto.attachments),
+		CurrentExecutor: db.CurrentExecutorData{
+			GroupID:       dto.currentExecutor.GroupID,
+			GroupName:     dto.currentExecutor.GroupName,
+			People:        dto.currentExecutor.People,
+			InitialPeople: dto.currentExecutor.InitialPeople,
+		},
 	})
 }
 
 type updateStepDTO struct {
-	id          uuid.UUID
-	name        string
-	status      Status
-	hasError    bool
-	members     []Member
-	deadlines   []Deadline
-	attachments []string
+	id              uuid.UUID
+	name            string
+	status          Status
+	hasError        bool
+	members         []Member
+	deadlines       []Deadline
+	attachments     []string
+	currentExecutor CurrentExecutorData
 }
 
 func (runCtx *BlockRunContext) updateStepInDB(ctx c.Context, dto *updateStepDTO) error {
@@ -416,6 +426,12 @@ func (runCtx *BlockRunContext) updateStepInDB(ctx c.Context, dto *updateStepDTO)
 		Members:     dbMembers,
 		Deadlines:   dbDeadlines,
 		Attachments: len(dto.attachments),
+		CurrentExecutor: db.CurrentExecutorData{
+			GroupID:       dto.currentExecutor.GroupID,
+			GroupName:     dto.currentExecutor.GroupName,
+			People:        dto.currentExecutor.People,
+			InitialPeople: dto.currentExecutor.InitialPeople,
+		},
 	})
 }
 
@@ -434,6 +450,11 @@ func ProcessBlockWithEndMapping(ctx c.Context, name string, bl *entity.EriusFunc
 	pErr := blockProcessor.ProcessBlock(ctx, 0)
 	if pErr != nil {
 		return pErr
+	}
+
+	updDeadlineErr := blockProcessor.updateTaskExecDeadline(ctx)
+	if updDeadlineErr != nil {
+		return updDeadlineErr
 	}
 
 	intStatus, stringStatus, err := runCtx.Services.Storage.GetTaskStatusWithReadableString(ctx, runCtx.TaskID)

@@ -1,7 +1,7 @@
 package api
 
 import (
-	"context"
+	c "context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -24,7 +24,7 @@ import (
 	integration_v1 "gitlab.services.mts.ru/jocasta/integrations/pkg/proto/gen/integration/v1"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	e "gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
@@ -44,6 +44,52 @@ const (
 	keyApplicationBody = "application_body"
 )
 
+func (ae *Env) createPipelineVersion(ctx c.Context, in *e.EriusScenario, pID string) (*e.EriusScenario, Err, error) {
+	oldVersionID := in.VersionID
+	in.VersionID = uuid.New()
+
+	log := logger.GetLogger(ctx)
+
+	apiErr, err := ae.fillPipeline(in, pID)
+	if err != nil {
+		return nil, apiErr, err
+	}
+
+	ui, err := user.GetUserInfoFromCtx(ctx)
+	if err != nil {
+		log.WithError(err).Error("user failed")
+	}
+
+	updated, err := json.Marshal(in)
+	if err != nil {
+		return nil, PipelineParseError, err
+	}
+
+	updated = []byte(wrapApplicationBody(string(updated)))
+
+	executableFunctions, err := in.Pipeline.Blocks.GetExecutableFunctions()
+	if err != nil {
+		return nil, GetExecutableFunctionIDsError, err
+	}
+
+	hasPrivateFunction, err := ae.hasPrivateFunction(ctx, executableFunctions)
+	if err != nil {
+		return nil, GetFunctionError, err
+	}
+
+	err = ae.DB.CreateVersion(ctx, in, ui.Username, updated, oldVersionID, hasPrivateFunction)
+	if err != nil {
+		return nil, PipelineWriteError, err
+	}
+
+	res, err := ae.DB.GetPipelineVersion(ctx, in.VersionID, true)
+	if err != nil {
+		return nil, PipelineReadError, err
+	}
+
+	return res, 0, nil
+}
+
 func (ae *Env) CreatePipelineVersion(w http.ResponseWriter, req *http.Request, pipelineID string) {
 	ctx, s := trace.StartSpan(req.Context(), "create_pipeline_version")
 	defer s.End()
@@ -61,49 +107,26 @@ func (ae *Env) CreatePipelineVersion(w http.ResponseWriter, req *http.Request, p
 		return
 	}
 
-	p := entity.EriusScenario{}
+	params := &e.EriusScenario{}
 
-	err = json.Unmarshal(b, &p)
+	err = json.Unmarshal(b, params)
 	if err != nil {
 		errorHandler.handleError(PipelineParseError, err)
 
 		return
 	}
-
-	oldVersionID := p.VersionID
-	p.VersionID = uuid.New()
-
-	apiErr, err := ae.fillPipeline(&p, pipelineID)
-	if err != nil {
-		errorHandler.handleError(apiErr, err)
-
-		return
-	}
-
-	ui, err := user.GetUserInfoFromCtx(ctx)
-	if err != nil {
-		log.WithError(err).Error("user failed")
-	}
-
-	updated, err := json.Marshal(p)
-	if err != nil {
-		errorHandler.handleError(PipelineParseError, err)
-
-		return
-	}
-
-	updated = []byte(wrapApplicationBody(string(updated)))
 
 	txStorage, transactionErr := ae.DB.StartTransaction(ctx)
 	if transactionErr != nil {
 		log.WithError(transactionErr).Error("couldn't create pipeline version")
+		errorHandler.handleError(UnknownError, transactionErr)
 
 		return
 	}
 
 	defer func() {
 		if r := recover(); r != nil {
-			log = log.WithField("funcName", "CreatePipelineVersion").
+			log = log.WithField("funcName", "createPipelineVersion").
 				WithField("panic handle", true)
 			log.Error(r)
 
@@ -114,29 +137,15 @@ func (ae *Env) CreatePipelineVersion(w http.ResponseWriter, req *http.Request, p
 		}
 	}()
 
-	executableFunctions, err := p.Pipeline.Blocks.GetExecutableFunctions()
-	if err != nil {
-		errorHandler.handleError(GetExecutableFunctionIDsError, err)
+	newVersion, errCustom, errCreate := ae.createPipelineVersion(ctx, params, pipelineID)
+	if errCreate != nil {
+		errorHandler.handleError(errCustom, errCreate)
 
-		return
-	}
-
-	hasPrivateFunction, err := ae.hasPrivateFunction(ctx, executableFunctions)
-	if err != nil {
-		errorHandler.handleError(GetFunctionError, err)
-
-		return
-	}
-
-	err = ae.DB.CreateVersion(ctx, &p, ui.Username, updated, oldVersionID, hasPrivateFunction)
-	if err != nil {
 		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
 			log.WithField("funcName", "CreateVersion").
 				WithError(errors.New("couldn't rollback tx")).
 				Error(txErr)
 		}
-
-		errorHandler.handleError(PipelineWriteError, err)
 
 		return
 	}
@@ -148,26 +157,19 @@ func (ae *Env) CreatePipelineVersion(w http.ResponseWriter, req *http.Request, p
 			log.Error(txErr)
 		}
 
-		errorHandler.handleError(PipelineReadError, err)
+		errorHandler.handleError(UnknownError, commitErr)
 
 		return
 	}
 
-	created, err := ae.DB.GetPipelineVersion(ctx, p.VersionID, true)
-	if err != nil {
-		errorHandler.handleError(PipelineReadError, err)
-
-		return
-	}
-
-	if err = sendResponse(w, http.StatusOK, created); err != nil {
+	if err = sendResponse(w, http.StatusOK, newVersion); err != nil {
 		errorHandler.handleError(UnknownError, err)
 
 		return
 	}
 }
 
-func (ae *Env) hasPrivateFunction(ctx context.Context, executableFunctions []script.FunctionParam) (bool, error) {
+func (ae *Env) hasPrivateFunction(ctx c.Context, executableFunctions []script.FunctionParam) (bool, error) {
 	//nolint:gocritic //коллекция без поинтеров
 	for _, fn := range executableFunctions {
 		function, getFunctionErr := ae.FunctionStore.GetFunctionVersion(ctx, fn.FunctionID, fn.VersionID)
@@ -184,10 +186,10 @@ func (ae *Env) hasPrivateFunction(ctx context.Context, executableFunctions []scr
 }
 
 func (ae *Env) getExternalSystem(
-	ctx context.Context,
+	ctx c.Context,
 	storage db.Database,
 	clientID, pipelineID, versionID string,
-) (*entity.ExternalSystem, error) {
+) (*e.ExternalSystem, error) {
 	system, err := ae.Integrations.RPCIntCli.GetIntegrationByClientId(ctx, &integration_v1.GetIntegrationByClientIdRequest{
 		ClientId:   clientID,
 		PipelineId: pipelineID,
@@ -213,8 +215,8 @@ func (ae *Env) getExternalSystem(
 	return &externalSystem, nil
 }
 
-func (ae *Env) processMappings(externalSystem *entity.ExternalSystem,
-	version *entity.EriusScenario, applicationBody orderedmap.OrderedMap,
+func (ae *Env) processMappings(externalSystem *e.ExternalSystem,
+	version *e.EriusScenario, applicationBody orderedmap.OrderedMap,
 ) (orderedmap.OrderedMap, error) {
 	if externalSystem == nil {
 		return applicationBody, nil
@@ -366,7 +368,7 @@ func (ae *Env) GetPipelineVersion(w http.ResponseWriter, req *http.Request, vers
 
 //nolint:gocyclo // Временная проверка, скоро уберем
 func (ae *Env) EditVersion(w http.ResponseWriter, req *http.Request) {
-	ctx, s := trace.StartSpan(req.Context(), "edit_draft")
+	ctx, s := trace.StartSpan(req.Context(), "edit_version")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
@@ -381,124 +383,103 @@ func (ae *Env) EditVersion(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	p := entity.EriusScenario{}
+	p := &e.EriusScenario{}
 
-	err = json.Unmarshal(b, &p)
+	err = json.Unmarshal(b, p)
 	if err != nil {
 		errorHandler.handleError(PipelineParseError, err)
 
 		return
 	}
 
-	apiErr, err := ae.fillPipeline(&p, "")
-	if err != nil {
-		errorHandler.handleError(apiErr, err)
+	version, errCustom, errUpdate := ae.updatePipelineVersion(ctx, p)
+	if errUpdate != nil {
+		errorHandler.handleError(errCustom, errUpdate)
 
 		return
 	}
 
-	updated, err := json.Marshal(p)
+	err = sendResponse(w, http.StatusOK, version)
 	if err != nil {
-		errorHandler.handleError(PipelineParseError, err)
+		errorHandler.handleError(UnknownError, err)
 
 		return
+	}
+}
+
+func (ae *Env) updatePipelineVersion(ctx c.Context, in *e.EriusScenario) (*e.EriusScenario, Err, error) {
+	isEditable, err := ae.DB.VersionEditable(ctx, in.VersionID)
+	if err != nil {
+		return nil, UnknownError, err
+	}
+
+	if !isEditable {
+		err = ae.DB.RollbackVersion(ctx, in.PipelineID, in.VersionID)
+		if err != nil {
+			return nil, ApproveError, err
+		}
+
+		return in, 0, nil
+	}
+
+	apiErr, err := ae.fillPipeline(in, "")
+	if err != nil {
+		return nil, apiErr, err
+	}
+
+	updated, err := json.Marshal(in)
+	if err != nil {
+		return nil, PipelineParseError, err
 	}
 
 	updated = []byte(wrapApplicationBody(string(updated)))
 
-	ok, valErr := p.Pipeline.Blocks.Validate(ctx, ae.ServiceDesc)
-	if p.Status == db.StatusApproved && !ok {
-		e := validateBlockTypeErrText(valErr)
-		errorHandler.handleError(e, errors.New(valErr))
-
-		return
+	ok, valErr := in.Pipeline.Blocks.Validate(ctx, ae.ServiceDesc)
+	if in.Status == db.StatusApproved && !ok {
+		return nil, validateBlockTypeErrText(valErr), errors.New(valErr)
 	}
 
-	groups, err := statusGroups(&p)
+	groups, err := statusGroups(in)
 	if err != nil {
-		errorHandler.handleError(UnknownError, err)
-
-		return
+		return nil, UnknownError, err
 	}
 
-	canEdit, err := ae.DB.VersionEditable(ctx, p.VersionID)
+	executableFunctions, err := in.Pipeline.Blocks.GetExecutableFunctions()
 	if err != nil {
-		errorHandler.handleError(UnknownError, err)
-
-		return
-	}
-
-	if !canEdit {
-		err = ae.DB.RollbackVersion(ctx, p.PipelineID, p.VersionID)
-		if err != nil {
-			errorHandler.handleError(ApproveError, err)
-
-			return
-		}
-
-		err = sendResponse(w, http.StatusOK, nil)
-		if err != nil {
-			errorHandler.handleError(UnknownError, err)
-		}
-
-		return
-	}
-
-	executableFunctions, err := p.Pipeline.Blocks.GetExecutableFunctions()
-	if err != nil {
-		errorHandler.handleError(GetExecutableFunctionIDsError, err)
-
-		return
+		return nil, GetExecutableFunctionIDsError, err
 	}
 
 	hasPrivateFunction, err := ae.hasPrivateFunction(ctx, executableFunctions)
 	if err != nil {
-		errorHandler.handleError(GetFunctionError, err)
-
-		return
+		return nil, GetFunctionError, err
 	}
 
-	err = ae.DB.UpdateDraft(ctx, &p, updated, groups, hasPrivateFunction)
+	err = ae.DB.UpdateDraft(ctx, in, updated, groups, hasPrivateFunction)
 	if err != nil {
-		errorHandler.handleError(PipelineWriteError, err)
-
-		return
+		return nil, PipelineWriteError, err
 	}
 
 	ui, err := user.GetUserInfoFromCtx(ctx)
 	if err != nil {
-		log.Error(err.Error())
-
-		return
+		return nil, UnknownError, err
 	}
 
-	err = ae.switchScenarioApproved(ctx, &p, ui)
+	err = ae.switchScenarioApproved(ctx, in, ui)
 	if err != nil {
-		errorHandler.handleError(ApproveError, err)
-
-		return
+		return nil, ApproveError, err
 	}
 
-	err = ae.handleScenario(ctx, &p, ui)
+	err = ae.handleScenario(ctx, in, ui)
 	if err != nil {
-		errorHandler.handleError(ApproveError, err)
-
-		return
+		return nil, ApproveError, err
 	}
 
-	edited, err := ae.DB.GetPipelineVersion(ctx, p.VersionID, true)
+	version, err := ae.DB.GetPipelineVersion(ctx, in.VersionID, true)
 	if err != nil {
-		errorHandler.handleError(PipelineReadError, err)
-
-		return
+		return nil, PipelineReadError, err
 	}
 
-	err = sendResponse(w, http.StatusOK, edited)
-	if err != nil {
-		errorHandler.handleError(UnknownError, err)
-
-		return
-	}
+	return version, 0, nil
 }
 
 func validateBlockTypeErrText(valErrText string) Err {
@@ -518,7 +499,7 @@ func validateBlockTypeErrText(valErrText string) Err {
 	}
 }
 
-func (ae *Env) handleScenario(ctx context.Context, p *entity.EriusScenario, ui *sso.UserInfo) (err error) {
+func (ae *Env) handleScenario(ctx c.Context, p *e.EriusScenario, ui *sso.UserInfo) (err error) {
 	switch p.Status {
 	case db.StatusApproved:
 		err = ae.DB.SwitchApproved(ctx, p.PipelineID, p.VersionID, ui.Username)
@@ -535,7 +516,7 @@ func (ae *Env) handleScenario(ctx context.Context, p *entity.EriusScenario, ui *
 	return nil
 }
 
-func (ae *Env) handlePipelineBlockLength(p *entity.EriusScenario) {
+func (ae *Env) handlePipelineBlockLength(p *e.EriusScenario) {
 	if len(p.Pipeline.Blocks) == 0 {
 		p.Pipeline.FillEmptyPipeline()
 	} else {
@@ -549,8 +530,8 @@ func (ae *Env) handlePipelineBlockLength(p *entity.EriusScenario) {
 	}
 }
 
-func statusGroups(p *entity.EriusScenario) (groups []*entity.NodeGroup, err error) {
-	groups = make([]*entity.NodeGroup, 0)
+func statusGroups(p *e.EriusScenario) (groups []*e.NodeGroup, err error) {
+	groups = make([]*e.NodeGroup, 0)
 
 	if p.Status == db.StatusApproved {
 		groups, err = p.Pipeline.Blocks.GetGroups()
@@ -562,7 +543,7 @@ func statusGroups(p *entity.EriusScenario) (groups []*entity.NodeGroup, err erro
 	return groups, nil
 }
 
-func (ae *Env) switchScenarioApproved(ctx context.Context, p *entity.EriusScenario, ui *sso.UserInfo) error {
+func (ae *Env) switchScenarioApproved(ctx c.Context, p *e.EriusScenario, ui *sso.UserInfo) error {
 	if p.Status == db.StatusApproved {
 		err := ae.DB.SwitchApproved(ctx, p.PipelineID, p.VersionID, ui.Username)
 		if err != nil {
@@ -574,7 +555,7 @@ func (ae *Env) switchScenarioApproved(ctx context.Context, p *entity.EriusScenar
 }
 
 type execVersionDTO struct {
-	version  *entity.EriusScenario
+	version  *e.EriusScenario
 	withStop bool
 
 	storage db.Database
@@ -585,10 +566,10 @@ type execVersionDTO struct {
 	makeNewWork      bool
 	allowRunAsOthers bool
 	workNumber       string
-	runCtx           entity.TaskRunContext
+	runCtx           e.TaskRunContext
 }
 
-func (ae *Env) execVersion(ctx context.Context, dto *execVersionDTO) (*entity.RunResponse, error) {
+func (ae *Env) execVersion(ctx c.Context, dto *execVersionDTO) (*e.RunResponse, error) {
 	ctxLocal, s := trace.StartSpan(ctx, "exec_version")
 	defer s.End()
 
@@ -603,10 +584,10 @@ func (ae *Env) execVersion(ctx context.Context, dto *execVersionDTO) (*entity.Ru
 
 	usr, err := user.GetUserInfoFromCtx(ctxLocal)
 	if err != nil {
-		e := NoUserInContextError
-		log.Error(e.errorMessage(err))
+		errCustom := NoUserInContextError
+		log.Error(errCustom.errorMessage(err))
 
-		return nil, errors.Wrap(err, e.error())
+		return nil, errors.Wrap(err, errCustom.error())
 	}
 
 	// if X-As-Other was used, then we will store the name of the real user here
@@ -615,11 +596,11 @@ func (ae *Env) execVersion(ctx context.Context, dto *execVersionDTO) (*entity.Ru
 	if dto.allowRunAsOthers {
 		usr, err = user.GetEffectiveUserInfoFromCtx(ctx)
 		if err != nil {
-			e := NoUserInContextError
+			errCustom := NoUserInContextError
 
-			log.Error(e.errorMessage(err))
+			log.Error(errCustom.errorMessage(err))
 
-			return nil, errors.Wrap(err, e.error())
+			return nil, errors.Wrap(err, errCustom.error())
 		}
 	}
 
@@ -636,11 +617,11 @@ func (ae *Env) execVersion(ctx context.Context, dto *execVersionDTO) (*entity.Ru
 		runCtx:         dto.runCtx,
 	}
 
-	executablePipeline, e, err := ae.execVersionInternal(ctxLocal, arg)
+	executablePipeline, errCustom, err := ae.execVersionInternal(ctxLocal, arg)
 	if err != nil {
-		log.Error(e.errorMessage(err))
+		log.Error(errCustom.errorMessage(err))
 
-		return nil, errors.Wrap(err, e.error())
+		return nil, errors.Wrap(err, errCustom.error())
 	}
 
 	if executablePipeline == nil {
@@ -649,7 +630,7 @@ func (ae *Env) execVersion(ctx context.Context, dto *execVersionDTO) (*entity.Ru
 		return nil, errors.New("No pipeline started")
 	}
 
-	return &entity.RunResponse{
+	return &e.RunResponse{
 		PipelineID: executablePipeline.PipelineID,
 		WorkNumber: executablePipeline.WorkNumber,
 		Status:     statusRunned,
@@ -667,17 +648,17 @@ func (dto *execVersionDTO) realAuthor(usr *sso.UserInfo) string {
 type execVersionInternalDTO struct {
 	storage        db.Database
 	reqID          string
-	p              *entity.EriusScenario
+	p              *e.EriusScenario
 	vars           map[string]interface{}
 	syncExecution  bool
 	authorName     string
 	realAuthorName string
 	makeNewWork    bool
 	workNumber     string
-	runCtx         entity.TaskRunContext
+	runCtx         e.TaskRunContext
 }
 
-func (ae *Env) execVersionInternal(ctx context.Context, dto *execVersionInternalDTO) (*pipeline.ExecutablePipeline, Err, error) {
+func (ae *Env) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO) (*pipeline.ExecutablePipeline, Err, error) {
 	ctx, span := trace.StartSpan(ctx, "exec_version_internal")
 	defer span.End()
 
@@ -937,7 +918,7 @@ func validateApplicationBody(applicationBody orderedmap.OrderedMap, jsonSchema s
 	return nil
 }
 
-func (ae *Env) fillPipeline(p *entity.EriusScenario, pipelineID string) (Err, error) {
+func (ae *Env) fillPipeline(p *e.EriusScenario, pipelineID string) (Err, error) {
 	if pipelineID != "" {
 		pID, err := uuid.Parse(pipelineID)
 		if err != nil {

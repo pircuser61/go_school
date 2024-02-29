@@ -30,6 +30,10 @@ type GoWaitForAllInputsBlock struct {
 	happenedEvents []entity.NodeEvent
 }
 
+func (gb *GoWaitForAllInputsBlock) CurrentExecutorData() CurrentExecutorData {
+	return CurrentExecutorData{}
+}
+
 func (gb *GoWaitForAllInputsBlock) GetNewEvents() []entity.NodeEvent {
 	return gb.happenedEvents
 }
@@ -172,6 +176,8 @@ func createGoWaitForAllInputsBlock(
 		if err := b.loadState(rawState); err != nil {
 			return nil, reEntry, err
 		}
+
+		b.State.Done = false
 	} else {
 		err := b.createExpectedEvents(ctx, runCtx, name, ef)
 		if err != nil {

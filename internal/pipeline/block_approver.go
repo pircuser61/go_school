@@ -44,6 +44,10 @@ type GoApproverBlock struct {
 	RunContext *BlockRunContext
 }
 
+func (gb *GoApproverBlock) CurrentExecutorData() CurrentExecutorData {
+	return CurrentExecutorData{}
+}
+
 func (gb *GoApproverBlock) GetNewEvents() []entity.NodeEvent {
 	return gb.happenedEvents
 }
