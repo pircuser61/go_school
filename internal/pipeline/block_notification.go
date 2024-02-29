@@ -303,6 +303,10 @@ func (gb *GoNotificationBlock) Model() script.FunctionModel {
 	}
 }
 
+func (gb *GoNotificationBlock) BlockAttachments() (ids []string) {
+	return ids
+}
+
 // nolint:dupl,unparam // another block
 func createGoNotificationBlock(
 	ctx context.Context,

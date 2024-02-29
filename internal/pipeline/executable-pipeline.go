@@ -213,3 +213,7 @@ func (gb *ExecutablePipeline) CreateBlocks(ctx c.Context, source map[string]enti
 
 	return nil
 }
+
+func (gb *ExecutablePipeline) BlockAttachments() (ids []string) {
+	return ids
+}

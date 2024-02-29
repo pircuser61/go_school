@@ -12,6 +12,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
+	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
 const (
@@ -598,4 +599,32 @@ func (gb *GoExecutionBlock) Model() script.FunctionModel {
 			script.NotExecutedSocket,
 		},
 	}
+}
+
+func (gb *GoExecutionBlock) BlockAttachments() (ids []string) {
+	ids = make([]string, 0)
+
+	for i := range gb.State.RequestExecutionInfoLogs {
+		for j := range gb.State.RequestExecutionInfoLogs[i].Attachments {
+			ids = append(ids, gb.State.RequestExecutionInfoLogs[i].Attachments[j].FileID)
+		}
+	}
+
+	for i := range gb.State.DecisionAttachments {
+		ids = append(ids, gb.State.DecisionAttachments[i].FileID)
+	}
+
+	for i := range gb.State.EditingAppLog {
+		for j := range gb.State.EditingAppLog[i].Attachments {
+			ids = append(ids, gb.State.EditingAppLog[i].Attachments[j].FileID)
+		}
+	}
+
+	for i := range gb.State.ChangedExecutorsLogs {
+		for j := range gb.State.ChangedExecutorsLogs[i].Attachments {
+			ids = append(ids, gb.State.ChangedExecutorsLogs[i].Attachments[j].FileID)
+		}
+	}
+
+	return utils.UniqueStrings(ids)
 }

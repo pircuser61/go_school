@@ -48,6 +48,10 @@ func (gb *GoPlaceholderBlock) Model() script.FunctionModel {
 	}
 }
 
+func (gb *GoPlaceholderBlock) BlockAttachments() (ids []string) {
+	return ids
+}
+
 func (gb *GoPlaceholderBlock) Members() []Member {
 	return nil
 }

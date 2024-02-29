@@ -179,6 +179,10 @@ func (gb *TimerBlock) Model() script.FunctionModel {
 	}
 }
 
+func (gb *TimerBlock) BlockAttachments() (ids []string) {
+	return ids
+}
+
 func (gb *TimerBlock) UpdateManual() bool {
 	return false
 }

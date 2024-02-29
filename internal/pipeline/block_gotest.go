@@ -68,6 +68,10 @@ func (gb *GoTestBlock) IsScenario() bool {
 	return false
 }
 
+func (gb *GoTestBlock) BlockAttachments() (ids []string) {
+	return ids
+}
+
 type stepCtx struct{}
 
 // nolint:dupl // not dupl?

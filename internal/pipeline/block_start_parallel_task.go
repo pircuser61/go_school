@@ -102,6 +102,10 @@ func (gb *GoBeginParallelTaskBlock) Model() script.FunctionModel {
 	}
 }
 
+func (gb *GoBeginParallelTaskBlock) BlockAttachments() (ids []string) {
+	return ids
+}
+
 //nolint:dupl,unparam //its not duplicate
 func createGoStartParallelBlock(ctx context.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext,
 	expectedEvents map[string]struct{},

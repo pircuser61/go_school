@@ -18,6 +18,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
+	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
 const (
@@ -718,6 +719,17 @@ func (gb *GoSignBlock) Model() script.FunctionModel {
 			script.ErrorSocket,
 		},
 	}
+}
+
+func (gb *GoSignBlock) BlockAttachments() (ids []string) {
+	ids = make([]string, 0)
+
+	latestDecisionLog := gb.State.SignLog[len(gb.State.SignLog)-1]
+	for i := range latestDecisionLog.Attachments {
+		ids = append(ids, latestDecisionLog.Attachments[i].FileID)
+	}
+
+	return utils.UniqueStrings(ids)
 }
 
 func (gb *GoSignBlock) loadState(raw json.RawMessage) error {

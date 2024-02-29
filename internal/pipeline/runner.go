@@ -63,5 +63,6 @@ type Runner interface {
 	Members() []Member
 	Deadlines(ctx context.Context) ([]Deadline, error)
 	GetNewEvents() []entity.NodeEvent
+	BlockAttachments() []string
 	CurrentExecutorData() CurrentExecutorData
 }

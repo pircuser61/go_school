@@ -47,8 +47,8 @@ type TaskStorager interface {
 	GetTaskStatusWithReadableString(ctx c.Context, taskID uuid.UUID) (int, string, error)
 	GetTaskStepsToWait(ctx c.Context, workNumber, blockName string) ([]string, error)
 	GetTaskRunContext(ctx c.Context, workNumber string) (e.TaskRunContext, error)
-	GetBlockDataFromVersion(ctx c.Context, workNumber, blockName string) (*e.EriusFunc, error)
-	GetVariableStorageForStep(ctx c.Context, taskID uuid.UUID, stepType string) (*store.VariableStore, error)
+	GetBlockDataFromVersion(ctx c.Context, workNumber, stepName string) (*e.EriusFunc, error)
+	GetVariableStorageForStep(ctx c.Context, taskID uuid.UUID, stepName string) (*store.VariableStore, error)
 	GetVariableStorage(ctx c.Context, workNumber string) (*store.VariableStore, error)
 	GetBlocksBreachedSLA(ctx c.Context) ([]StepBreachedSLA, error)
 	GetMeanTaskSolveTime(ctx c.Context, pipelineID string) ([]e.TaskCompletionInterval, error)
@@ -128,6 +128,7 @@ type SaveStepRequest struct {
 	Members         []Member
 	Deadlines       []Deadline
 	IsReEntry       bool
+	Attachments     int
 	CurrentExecutor CurrentExecutorData
 }
 
@@ -140,6 +141,7 @@ type UpdateStepRequest struct {
 	Status          string
 	Members         []Member
 	Deadlines       []Deadline
+	Attachments     int
 	CurrentExecutor CurrentExecutorData
 }
 
