@@ -102,13 +102,13 @@ func (p *blockProcessor) ProcessBlock(ctx context.Context, its int) error {
 	activeBlocks, ok := block.Next(p.runCtx.VarStore)
 	if !ok {
 		err = p.runCtx.updateStepInDB(ctx, &updateStepDTO{
-			id:          id,
-			name:        p.name,
-			status:      block.GetStatus(),
-			hasError:    true,
-			members:     block.Members(),
-			deadlines:   []Deadline{},
-			attachments: block.BlockAttachments(),
+			id:              id,
+			name:            p.name,
+			status:          block.GetStatus(),
+			hasError:        true,
+			members:         block.Members(),
+			deadlines:       []Deadline{},
+			attachments:     block.BlockAttachments(),
 			currentExecutor: CurrentExecutorData{},
 		})
 		if err != nil {
