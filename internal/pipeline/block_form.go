@@ -23,9 +23,11 @@ const (
 )
 
 const (
-	formName            = "form_name"
-	formFillFormAction  = "fill_form"
-	formStartWorkAction = "form_executor_start_work"
+	disabled                   = "disabled"
+	formName                   = "form_name"
+	formFillFormAction         = "fill_form"
+	formFillFormDisabledAction = "fill_form_disabled"
+	formStartWorkAction        = "form_executor_start_work"
 )
 
 const AutoFillUser = "auto_fill"
@@ -136,30 +138,85 @@ func (gb *GoFormBlock) formActions() []MemberAction {
 		return []MemberAction{action}
 	}
 
-	formNames := []string{gb.Name}
+	formActionNames := gb.CreateFillFormActions()
 
-	for _, v := range gb.State.FormsAccessibility {
-		if _, ok := gb.RunContext.VarStore.State[v.NodeID]; !ok {
-			continue
+	disabledForm := make([]string, 0)
+	fillForm := make([]string, 0)
+
+	for k, v := range formActionNames {
+		if v {
+			disabledForm = append(disabledForm, k)
 		}
 
-		if gb.Name == v.NodeID {
-			continue
-		}
-
-		if v.AccessType == "ReadWrite" {
-			formNames = append(formNames, v.NodeID)
-		}
+		fillForm = append(fillForm, k)
 	}
 
 	actions := []MemberAction{
 		{
+			ID:   formFillFormDisabledAction,
+			Type: ActionTypeCustom,
+			Params: map[string]interface{}{
+				formName: disabledForm,
+				disabled: true,
+			},
+		},
+		{
 			ID:   formFillFormAction,
 			Type: ActionTypeCustom,
 			Params: map[string]interface{}{
-				formName: formNames,
+				formName: fillForm,
 			},
 		},
+	}
+
+	return actions
+}
+
+func (gb *GoFormBlock) CreateFillFormActions() map[string]bool {
+	actions := make(map[string]bool, 0)
+
+FormLabel:
+	for _, form := range gb.State.FormsAccessibility {
+		formState, ok := gb.RunContext.VarStore.State[form.NodeID]
+		if !ok {
+			continue
+		}
+
+		switch form.AccessType {
+		case readWriteAccessType:
+			actions[form.NodeID] = false
+		case requiredFillAccessType:
+			var formData FormData
+			if err := json.Unmarshal(formState, &formData); err != nil {
+				return actions
+			}
+
+			users := make(map[string]struct{}, 0)
+
+			for user := range gb.State.Executors {
+				users[user] = struct{}{}
+			}
+
+			for user := range gb.State.InitialExecutors {
+				users[user] = struct{}{}
+			}
+
+			if !formData.IsFilled {
+				actions[form.NodeID] = false
+
+				continue
+			}
+
+			for _, v := range formData.ChangesLog {
+				if _, findOk := users[v.Executor]; findOk {
+					actions[form.NodeID] = false
+
+					continue FormLabel
+				}
+			}
+
+			actions[form.NodeID] = true
+		}
 	}
 
 	return actions

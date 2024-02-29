@@ -203,7 +203,85 @@ func (gb *GoSignBlock) signActions(login string) []MemberAction {
 		},
 	}
 
-	return []MemberAction{signAction, rejectAction, addApproversAction}
+	actions, formFilled := gb.CreateFillFormActions()
+	if !formFilled {
+		for i := 0; i < len(actions); i++ {
+			item := &actions[i]
+
+			if item.ID == signActionReject {
+				continue
+			}
+
+			item.Params = map[string]interface{}{"disabled": true}
+		}
+	}
+
+	actions = append(actions, signAction, rejectAction, addApproversAction)
+
+	return actions
+}
+
+func (gb *GoSignBlock) CreateFillFormActions() ([]MemberAction, bool) {
+	actions := make([]MemberAction, 0)
+	allFormsFilled := true
+
+FormLabel:
+	for _, form := range gb.State.FormsAccessibility {
+		formState, ok := gb.RunContext.VarStore.State[form.NodeID]
+		if !ok {
+			continue
+		}
+
+		switch form.AccessType {
+		case readWriteAccessType:
+			actions = append(actions, MemberAction{
+				ID:   formFillFormAction,
+				Type: ActionTypeCustom,
+				Params: map[string]interface{}{
+					formName: form.NodeID,
+				},
+			})
+		case requiredFillAccessType:
+			var formData FormData
+			if err := json.Unmarshal(formState, &formData); err != nil {
+				return actions, false
+			}
+
+			memAction := MemberAction{
+				ID:   formFillFormAction,
+				Type: ActionTypeCustom,
+				Params: map[string]interface{}{
+					formName: form.NodeID,
+				},
+			}
+
+			users := make(map[string]struct{}, 0)
+
+			for user := range gb.State.Signers {
+				users[user] = struct{}{}
+			}
+
+			if !formData.IsFilled {
+				allFormsFilled = false
+				actions = append(actions, memAction)
+
+				continue
+			}
+
+			for _, v := range formData.ChangesLog {
+				if _, findOk := gb.State.Signers[v.Executor]; findOk {
+					actions = append(actions, memAction)
+
+					continue FormLabel
+				}
+			}
+
+			memAction.Params = map[string]interface{}{"disabled": true}
+			actions = append(actions, memAction)
+		}
+	}
+
+	return actions, allFormsFilled
 }
 
 func (gb *GoSignBlock) signAddActions(a *AdditionalSignApprover) []MemberAction {

@@ -295,10 +295,8 @@ func (gb *GoExecutionBlock) executionActions(login string) []MemberAction {
 		})
 	}
 
-	checkedActions, wrongForm := gb.checkAccessType(login)
-
-	actions = append(actions, checkedActions...)
-	if wrongForm {
+	checkedActions, allFormFilled := gb.CreateFillFormActions()
+	if !allFormFilled {
 		for i := 0; i < len(actions); i++ {
 			item := &actions[i]
 
@@ -310,11 +308,14 @@ func (gb *GoExecutionBlock) executionActions(login string) []MemberAction {
 		}
 	}
 
+	actions = append(actions, checkedActions...)
+
 	return actions
 }
 
-func (gb *GoExecutionBlock) checkAccessType(login string) ([]MemberAction, bool) {
+func (gb *GoExecutionBlock) CreateFillFormActions() ([]MemberAction, bool) {
 	actions := make([]MemberAction, 0)
+	allFormFilled := true
 
 FormLabel:
 	for _, form := range gb.State.FormsAccessibility {
@@ -335,49 +336,53 @@ FormLabel:
 		case requiredFillAccessType:
 			var formData FormData
 			if err := json.Unmarshal(formState, &formData); err != nil {
-				return actions, true
+				return actions, false
 			}
 
-			delegation, err := gb.RunContext.Services.HumanTasks.GetDelegationsFromLogin(context.Background(), login)
-			if err != nil {
-				return actions, true
-			}
-
-			filteredDelegates := delegation.FilterByType("execution")
-			usersLogin := filteredDelegates.GetDelegates(login)
-
-			actions = append(actions, MemberAction{
+			memAction := MemberAction{
 				ID:   formFillFormAction,
 				Type: ActionTypeCustom,
 				Params: map[string]interface{}{
 					formName: form.NodeID,
 				},
-			})
+			}
 
-			for userLogin := range formData.Executors {
-				usersLogin = append(usersLogin, userLogin)
+			users := make(map[string]struct{}, 0)
+
+			for user := range gb.State.Executors {
+				users[user] = struct{}{}
+			}
+
+			for user := range gb.State.InitialExecutors {
+				users[user] = struct{}{}
 			}
 
 			for i := 0; i < len(gb.State.ChangedExecutorsLogs); i++ {
 				item := gb.State.ChangedExecutorsLogs[i]
-				usersLogin = append(usersLogin, item.OldLogin)
+				users[item.OldLogin] = struct{}{}
 			}
 
 			if !formData.IsFilled {
-				return actions, true
+				allFormFilled = false
+				actions = append(actions, memAction)
+
+				continue
 			}
 
-			for _, userLogin := range usersLogin {
-				if *formData.ActualExecutor == userLogin {
+			for _, v := range formData.ChangesLog {
+				if _, findOk := users[v.Executor]; findOk {
+					actions = append(actions, memAction)
+
 					continue FormLabel
 				}
 			}
 
-			return actions, true
+			memAction.Params = map[string]interface{}{"disabled": true}
+			actions = append(actions, memAction)
 		}
 	}
 
-	return actions, false
+	return actions, allFormFilled
 }
 
 func (gb *GoExecutionBlock) getNewSLADeadline(slaInfoPtr *sla.Info, half bool) time.Time {

@@ -230,16 +230,17 @@ func (gb *GoApproverBlock) approvementBaseActions(login string) []MemberAction {
 		})
 	}
 
-	checkedActions, wrongForm := gb.checkAccessType(login)
-	actions = append(actions, checkedActions...)
+	checkedActions, allFormFilled := gb.checkFormAccessType()
 
-	if wrongForm {
+	if allFormFilled {
 		for i := 0; i < len(actions); i++ {
 			item := &actions[i]
 
 			item.Params = map[string]interface{}{"disabled": true}
 		}
 	}
+
+	actions = append(actions, checkedActions...)
 
 	return append(actions, MemberAction{
 		ID:   approverAddApproversAction,
@@ -280,8 +281,9 @@ type qna struct {
 	aCrAt *time.Time
 }
 
-func (gb *GoApproverBlock) checkAccessType(login string) ([]MemberAction, bool) {
+func (gb *GoApproverBlock) checkFormAccessType() ([]MemberAction, bool) {
 	actions := make([]MemberAction, 0)
+	allFormFilled := true
 
 FormLabel:
 	for _, form := range gb.State.FormsAccessibility {
@@ -302,44 +304,38 @@ FormLabel:
 		case requiredFillAccessType:
 			var formData FormData
 			if err := json.Unmarshal(formState, &formData); err != nil {
-				return actions, true
+				return actions, false
 			}
 
-			delegation, err := gb.RunContext.Services.HumanTasks.GetDelegationsFromLogin(context.Background(), login)
-			if err != nil {
-				return actions, true
-			}
-
-			filteredDelegates := delegation.FilterByType("approvement")
-			delegates := filteredDelegates.GetDelegates(login)
-
-			actions = append(actions, MemberAction{
+			memAction := MemberAction{
 				ID:   formFillFormAction,
 				Type: ActionTypeCustom,
 				Params: map[string]interface{}{
 					formName: form.NodeID,
 				},
-			})
-
-			for userLogin := range formData.Executors {
-				delegates = append(delegates, userLogin)
 			}
 
 			if !formData.IsFilled {
-				return actions, true
+				allFormFilled = false
+				actions = append(actions, memAction)
+
+				continue
 			}
 
-			for _, userLogin := range delegates {
-				if *formData.ActualExecutor == userLogin {
+			for _, v := range formData.ChangesLog {
+				if _, findOk := gb.State.Approvers[v.Executor]; findOk {
+					actions = append(actions, memAction)
+
 					continue FormLabel
 				}
 			}
 
-			return actions, true
+			memAction.Params = map[string]interface{}{"disabled": true}
+			actions = append(actions, memAction)
 		}
 	}
 
-	return actions, false
+	return actions, allFormFilled
 }
 
 func (gb *GoApproverBlock) getNewSLADeadline(slaInfoPtr *sla.Info, half bool) time.Time {
