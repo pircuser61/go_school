@@ -771,7 +771,7 @@ func (db *PGCon) CreateVersion(c context.Context,
 			return err
 		}
 	} else {
-		err = db.SaveVersionSettings(c, entity.ProcessSettings{ID: p.VersionID.String(), ResubmissionPeriod: 0}, nil)
+		err = db.SaveVersionSettings(c, entity.ProcessSettings{VersionID: p.VersionID.String(), ResubmissionPeriod: 0}, nil)
 		if err != nil {
 			return err
 		}
@@ -1185,7 +1185,8 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 			break_points, 
 			has_error,
 			status,
-		    current_executor
+		    current_executor,
+			is_active
 			--update_col--
 		)
 		VALUES (
@@ -1198,7 +1199,8 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 			$7,
 			$8,
 			$9,
-		    $10
+		    $10,
+			true
 			--update_val--
 		)
 `
@@ -1755,56 +1757,101 @@ WHERE value ? $2`
 	return blocks, nil
 }
 
+func (db *PGCon) UnsetIsActive(ctx context.Context, workNumber, blockName string) error {
+	ctx, span := trace.StartSpan(ctx, "pg_unset_is_active")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	const q = `WITH RECURSIVE all_nodes AS(
+    	SELECT distinct key(jsonb_each(v.content #> '{pipeline,blocks}'))::text out_node,
+                    jsonb_array_elements_text(value(jsonb_each(value(jsonb_each(v.content #> '{pipeline,blocks}'))->'next'))) AS in_node
+    	FROM works w
+             INNER JOIN versions v ON w.version_id=v.id
+    			WHERE w.work_number=$1
+		),
+        next_gates_nodes AS(
+                SELECT out_node,
+                          in_node,
+                          1 AS level,
+                          Array[out_node] AS circle_check
+                FROM all_nodes
+                WHERE out_node=$2
+                UNION ALL
+                SELECT a.out_node,
+                          a.in_node,
+                          CASE WHEN a.out_node LIKE 'begin_parallel_task%' THEN ign.level+1
+                               WHEN a.out_node LIKE 'wait_for_all_inputs%' THEN ign.level-1
+                               ELSE ign.level end AS level,
+                          array_append(ign.circle_check, a.out_node)
+                FROM all_nodes a
+                INNER JOIN next_gates_nodes ign ON ign.in_node=a.out_node
+                WHERE array_position(circle_check,a.in_node) IS null
+               )
+		UPDATE variable_storage AS v
+			SET is_active=false
+		FROM variable_storage vs
+		INNER JOIN works w ON vs.work_id = w.id
+		WHERE v.id=vs.id AND w.work_number=$1 AND w.child_id IS null AND vs.step_name IN (SELECT distinct in_node
+                                                                                  FROM next_gates_nodes
+                                                                                  WHERE level>0);
+	`
+
+	_, err := db.Connection.Exec(ctx, q, workNumber, blockName)
+
+	return err
+}
+
 func (db *PGCon) ParallelIsFinished(ctx context.Context, workNumber, blockName string) (bool, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_parallel_is_finished")
 	defer span.End()
 
 	// nolint:gocritic
 	// language=PostgreSQL
-	const q = `with recursive all_nodes as(
-		select distinct key(jsonb_each(v.content #> '{pipeline,blocks}'))::text out_node,
-			jsonb_array_elements_text(value(jsonb_each(value(jsonb_each(v.content #> '{pipeline,blocks}'))->'next'))) as in_node
-		from works w
-		inner join versions v on w.version_id=v.id
-		where w.work_number=$1
+	const q = `WITH RECURSIVE all_nodes AS(
+		SELECT distinct key(jsonb_each(v.content #> '{pipeline,blocks}'))::text out_node,
+			jsonb_array_elements_text(value(jsonb_each(value(jsonb_each(v.content #> '{pipeline,blocks}'))->'next'))) AS in_node
+		FROM works w
+		INNER JOIN versions v ON w.version_id=v.id
+		WHERE w.work_number=$1
 	),
-	inside_gates_nodes as(
-	   select in_node,
+	inside_gates_nodes AS(
+	   SELECT in_node,
 			  out_node,
-			  1 as level,
-			  Array[in_node] as circle_check
-	   from all_nodes
-	   where in_node=$2
-	   union all
-	   select a.in_node,
+			  1 AS level,
+			  Array[in_node] AS circle_check
+	   FROM all_nodes
+	   WHERE in_node=$2
+	   UNION ALL
+	   SELECT a.in_node,
 			  a.out_node,
-			  case when a.out_node like 'wait_for_all_inputs%' then ign.level+1
-				   when a.out_node like 'begin_parallel_task%' then ign.level-1
-				   else ign.level end as level,
+			  CASE WHEN a.out_node LIKE 'wait_for_all_inputs%' THEN ign.level+1
+				   WHEN a.out_node LIKE 'begin_parallel_task%' THEN ign.level-1
+				   else ign.level end AS level,
 			  array_append(ign.circle_check, a.in_node)
-	   from all_nodes a
-				inner join inside_gates_nodes ign on a.in_node=ign.out_node
-	   where array_position(circle_check,a.out_node) is null and
-			   a.in_node not like 'begin_parallel_task%' and ign.level!=0)
-	select
+	   FROM all_nodes a
+				INNER JOIN inside_gates_nodes ign ON a.in_node=ign.out_node
+	   WHERE array_position(circle_check,a.out_node) is null AND
+			   a.in_node NOT LIKE 'begin_parallel_task%' AND ign.level!=0)
+	SELECT
     (
-        select case when count(*)=0 then true else false end
-        from variable_storage vs
-                 inner join works w on vs.work_id = w.id
-                 inner join inside_gates_nodes ign on vs.step_name=ign.out_node
-        where w.work_number=$1 and w.child_id is null and vs.status in('running', 'idle', 'ready')
+        SELECT CASE WHEN count(*)=0 THEN true ELSE false end
+        FROM variable_storage vs
+                 INNER JOIN works w on vs.work_id = w.id
+                 INNER JOIN inside_gates_nodes ign ON vs.step_name=ign.out_node
+        WHERE w.work_number=$1 and w.child_id is null and vs.status IN('running', 'idle', 'ready') AND is_active = true
     ) as is_finished,
     (
-        select case when count(distinct vs.step_name) = 
-			(select count(distinct inside_gates_nodes.in_node) 
-				from inside_gates_nodes 
-			where out_node like 'begin_parallel_task_%')
-        then true else false end
-    	from variable_storage vs
-                 inner join works w on vs.work_id = w.id
-                 inner join inside_gates_nodes ign on vs.step_name=ign.in_node
-        where w.work_number=$1 and w.child_id is null and ign.out_node like 'begin_parallel_task_%'
-	) as created_all_branches`
+        SELECT CASE WHEN count(distinct vs.step_name) = 
+			(SELECT count(distinct inside_gates_nodes.in_node) 
+				FROM inside_gates_nodes 
+			WHERE out_node LIKE 'begin_parallel_task_%')
+        THEN true ELSE false end
+    	FROM variable_storage vs
+                 INNER JOIN works w ON vs.work_id = w.id
+                 INNER JOIN inside_gates_nodes ign ON vs.step_name=ign.in_node
+        WHERE w.work_number=$1 and w.child_id is null AND ign.out_node LIKE 'begin_parallel_task_%' AND is_active = true
+	) AS created_all_branches`
 
 	var parallelIsFinished, createdAllBranches bool
 
