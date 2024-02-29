@@ -414,7 +414,13 @@ func (gb *GoSignBlock) handleNotifications(ctx context.Context) error {
 
 	emails := make(map[string]mail.Template, 0)
 
+	usersNotToNotify := gb.getUsersNotToNotifySet()
+
 	for _, login := range signers {
+		if _, ok := usersNotToNotify[login]; ok {
+			continue
+		}
+
 		em, getUserEmailErr := gb.RunContext.Services.People.GetUserEmail(ctx, login)
 		if getUserEmailErr != nil {
 			l.WithField("login", login).WithError(getUserEmailErr).Warning("couldn't get email")
@@ -818,4 +824,16 @@ func (gb *GoSignBlock) makeExpectedEvents(ctx context.Context, runCtx *BlockRunC
 	gb.happenedEvents = append(gb.happenedEvents, event)
 
 	return nil
+}
+
+func (gb *GoSignBlock) getUsersNotToNotifySet() map[string]struct{} {
+	usersNotToNotify := make(map[string]struct{})
+
+	for _, v := range gb.State.SignLog {
+		if v.LogType == SignerLogDecision {
+			usersNotToNotify[v.Login] = struct{}{}
+		}
+	}
+
+	return usersNotToNotify
 }

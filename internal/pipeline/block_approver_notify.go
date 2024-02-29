@@ -118,7 +118,13 @@ func (gb *GoApproverBlock) handleNotifications(ctx context.Context) error {
 
 	buttonImg := make([]string, 0, 7)
 
+	usersNotToNotify := gb.getUsersNotToNotifySet()
+
 	for _, login = range loginsToNotify {
+		if _, ok := usersNotToNotify[login]; ok {
+			continue
+		}
+
 		userEmail, getEmailErr := gb.RunContext.Services.People.GetUserEmail(ctx, login)
 		if getEmailErr != nil {
 			l.WithField("login", login).WithError(getEmailErr).Warning("couldn't get email")
@@ -585,4 +591,16 @@ func (gb *GoApproverBlock) notifyNeedMoreInfo(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func (gb *GoApproverBlock) getUsersNotToNotifySet() map[string]struct{} {
+	usersNotToNotify := make(map[string]struct{})
+
+	for _, v := range gb.State.ApproverLog {
+		if v.LogType == ApproverLogDecision {
+			usersNotToNotify[v.Login] = struct{}{}
+		}
+	}
+
+	return usersNotToNotify
 }
