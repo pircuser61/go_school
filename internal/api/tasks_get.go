@@ -17,6 +17,7 @@ import (
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	ht "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
@@ -206,18 +207,33 @@ func (ae *Env) GetTaskFormSchema(w http.ResponseWriter, req *http.Request, workN
 	}
 }
 
+const taskPath = "/tasks/{workNumber}"
+
 func (ae *Env) GetTask(w http.ResponseWriter, req *http.Request, workNumber string) {
+	start := time.Now()
 	ctx, s := trace.StartSpan(req.Context(), "get_task")
-	defer s.End()
+
+	requestInfo := metrics.NewGetRequestInfo(taskPath)
+
+	defer func() {
+		s.End()
+
+		requestInfo.Duration = time.Since(start)
+
+		ae.Metrics.RequestsIncrease(requestInfo)
+	}()
 
 	log := logger.GetLogger(ctx)
 	errorHandler := newHTTPErrorHandler(log, w)
+	errorHandler.setMetricsRequestInfo(requestInfo)
 
 	if workNumber == "" {
 		errorHandler.handleError(UUIDParsingError, errors.New("workNumber is empty"))
 
 		return
 	}
+
+	requestInfo.WorkNumber = workNumber
 
 	ui, err := user.GetEffectiveUserInfoFromCtx(ctx)
 	if err != nil {
@@ -302,6 +318,9 @@ func (ae *Env) GetTask(w http.ResponseWriter, req *http.Request, workNumber stri
 
 		return
 	}
+
+	requestInfo.PipelineID = scenario.PipelineID.String()
+	requestInfo.VersionID = scenario.VersionID.String()
 
 	if ui.Username != scenario.Author {
 		hideErr := ae.hideExecutors(ctx, dbTask, ui.Username, currentUserDelegateSteps, ui.Username == dbTask.Author)
@@ -482,13 +501,26 @@ func (ae *Env) getCurrentUserInDelegatesForSteps(
 	return userInDelegates, nil
 }
 
+const getTasksPath = "/tasks"
+
 //nolint:dupl,gocritic //its not duplicate // params без поинтера нужен для интерфейса
 func (ae *Env) GetTasks(w http.ResponseWriter, req *http.Request, params GetTasksParams) {
+	start := time.Now()
 	ctx, s := trace.StartSpan(req.Context(), "get_tasks")
-	defer s.End()
+
+	requestInfo := metrics.NewGetRequestInfo(getTasksPath)
+
+	defer func() {
+		s.End()
+
+		requestInfo.Duration = time.Since(start)
+
+		ae.Metrics.RequestsIncrease(requestInfo)
+	}()
 
 	log := logger.GetLogger(ctx)
 	errorHandler := newHTTPErrorHandler(log, w)
+	errorHandler.setMetricsRequestInfo(requestInfo)
 
 	filters, err := params.toEntity(req)
 	if err != nil {

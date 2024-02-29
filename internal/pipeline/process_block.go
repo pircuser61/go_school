@@ -288,9 +288,14 @@ func updateBlock(ctx c.Context, block Runner, name string, id uuid.UUID, runCtx 
 	return nil
 }
 
-//nolint:gocritic //изначально было без поинтера
-func (runCtx *BlockRunContext) saveStepInDB(ctx c.Context, name, stepType, status string,
-	pl []Member, deadlines []Deadline, isReEntered bool, currentExecutor CurrentExecutorData,
+//nolint:gocritic //want to use currentExecutor by value
+func (runCtx *BlockRunContext) saveStepInDB(
+	ctx c.Context,
+	name, stepType, status string,
+	pl []Member,
+	deadlines []Deadline,
+	isReEntered bool,
+	currentExecutor CurrentExecutorData,
 ) (uuid.UUID, time.Time, error) {
 	storageData, errSerialize := json.Marshal(runCtx.VarStore)
 	if errSerialize != nil {
@@ -346,9 +351,16 @@ func (runCtx *BlockRunContext) saveStepInDB(ctx c.Context, name, stepType, statu
 	})
 }
 
-//nolint:gocritic //изначально было без поинтера
-func (runCtx *BlockRunContext) updateStepInDB(ctx c.Context, name string, id uuid.UUID, hasError bool, status Status,
-	pl []Member, deadlines []Deadline, currentExecutor CurrentExecutorData,
+//nolint:gocritic //want to use currentExecutor by value
+func (runCtx *BlockRunContext) updateStepInDB(
+	ctx c.Context,
+	name string,
+	id uuid.UUID,
+	hasError bool,
+	status Status,
+	pl []Member,
+	deadlines []Deadline,
+	currentExecutor CurrentExecutorData,
 ) error {
 	storageData, err := json.Marshal(runCtx.VarStore)
 	if err != nil {

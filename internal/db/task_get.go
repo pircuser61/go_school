@@ -1311,7 +1311,7 @@ type executorData struct {
 	GroupName     string   `json:"group_name"`
 }
 
-//nolint:gocyclo,goccogint //its ok here
+//nolint:gocyclo //its ok here
 func (db *PGCon) getTasks(ctx c.Context, filters *entity.TaskFilter,
 	delegatorsWithUser []string, q string, args []interface{},
 ) (*entity.EriusTasks, error) {
