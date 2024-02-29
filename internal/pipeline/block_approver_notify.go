@@ -596,9 +596,9 @@ func (gb *GoApproverBlock) notifyNeedMoreInfo(ctx context.Context) error {
 func (gb *GoApproverBlock) getUsersNotToNotifySet() map[string]struct{} {
 	usersNotToNotify := make(map[string]struct{})
 
-	for _, v := range gb.State.ApproverLog {
-		if v.LogType == ApproverLogDecision {
-			usersNotToNotify[v.Login] = struct{}{}
+	for i := range gb.State.ApproverLog {
+		if gb.State.ApproverLog[i].LogType == ApproverLogDecision {
+			usersNotToNotify[gb.State.ApproverLog[i].Login] = struct{}{}
 		}
 	}
 

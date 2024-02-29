@@ -829,9 +829,9 @@ func (gb *GoSignBlock) makeExpectedEvents(ctx context.Context, runCtx *BlockRunC
 func (gb *GoSignBlock) getUsersNotToNotifySet() map[string]struct{} {
 	usersNotToNotify := make(map[string]struct{})
 
-	for _, v := range gb.State.SignLog {
-		if v.LogType == SignerLogDecision {
-			usersNotToNotify[v.Login] = struct{}{}
+	for i := range gb.State.SignLog {
+		if gb.State.SignLog[i].LogType == SignerLogDecision {
+			usersNotToNotify[gb.State.SignLog[i].Login] = struct{}{}
 		}
 	}
 
