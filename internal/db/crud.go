@@ -771,7 +771,7 @@ func (db *PGCon) CreateVersion(c context.Context,
 			return err
 		}
 	} else {
-		err = db.SaveVersionSettings(c, entity.ProcessSettings{ID: p.VersionID.String(), ResubmissionPeriod: 0}, nil)
+		err = db.SaveVersionSettings(c, entity.ProcessSettings{VersionID: p.VersionID.String(), ResubmissionPeriod: 0}, nil)
 		if err != nil {
 			return err
 		}

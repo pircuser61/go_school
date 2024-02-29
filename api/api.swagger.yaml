@@ -701,7 +701,7 @@ paths:
                 type: object
                 properties:
                   data:
-                    $ref: '#/components/schemas/ExternalSystem'
+                    $ref: '#/components/schemas/ProcessSettings'
                   status_code:
                     type: integer
         400:
