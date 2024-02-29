@@ -1555,13 +1555,9 @@ func (db *PGCon) GetTaskSteps(ctx c.Context, id uuid.UUID) (entity.TaskSteps, er
 	return res, nil
 }
 
-func (db *PGCon) GetFilteredStates(
-	ctx c.Context,
-	steps []string,
-	wNumber string,
-) (
+func (db *PGCon) GetFilteredStates(ctx c.Context, steps []string, wNumber string) (
 	filteredStates map[string]map[string]interface{},
-	filtereDates map[string]map[string]*time.Time,
+	filterDates map[string]map[string]*time.Time,
 	err error,
 ) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_filtered_states")
