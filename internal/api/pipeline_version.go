@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/golang-jwt/jwt/v4"
 
@@ -25,6 +26,7 @@ import (
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	e "gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
@@ -328,13 +330,26 @@ func (ae *Env) DeleteVersion(w http.ResponseWriter, req *http.Request, versionID
 	}
 }
 
+const getPipelineVersionPath = "/pipelines/version/{id}"
+
 //nolint:dupl //its not duplicate
 func (ae *Env) GetPipelineVersion(w http.ResponseWriter, req *http.Request, versionID string) {
+	start := time.Now()
 	ctx, s := trace.StartSpan(req.Context(), "get_pipeline_version")
-	defer s.End()
+
+	requestInfo := metrics.NewGetRequestInfo(getPipelineVersionPath)
+
+	defer func() {
+		s.End()
+
+		requestInfo.Duration = time.Since(start)
+
+		ae.Metrics.RequestsIncrease(requestInfo)
+	}()
 
 	log := logger.GetLogger(ctx)
 	errorHandler := newHTTPErrorHandler(log, w)
+	errorHandler.setMetricsRequestInfo(requestInfo)
 
 	versionUUID, err := uuid.Parse(versionID)
 	if err != nil {
@@ -343,12 +358,16 @@ func (ae *Env) GetPipelineVersion(w http.ResponseWriter, req *http.Request, vers
 		return
 	}
 
+	requestInfo.VersionID = versionUUID.String()
+
 	p, err := ae.DB.GetPipelineVersion(ctx, versionUUID, true)
 	if err != nil {
 		errorHandler.handleError(GetVersionError, err)
 
 		return
 	}
+
+	requestInfo.PipelineID = p.PipelineID.String()
 
 	err = p.FillEntryPointOutput()
 	if err != nil {

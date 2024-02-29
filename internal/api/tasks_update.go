@@ -23,6 +23,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	ht "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
@@ -127,17 +128,30 @@ func (ae *Env) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 }
 
 func (ae *Env) UpdateTask(w http.ResponseWriter, req *http.Request, workNumber string) {
+	start := time.Now()
 	ctx, s := trace.StartSpan(req.Context(), "update_task")
-	defer s.End()
+
+	requestInfo := metrics.NewPostRequestInfo(taskPath)
+
+	defer func() {
+		s.End()
+
+		requestInfo.Duration = time.Since(start)
+
+		ae.Metrics.RequestsIncrease(requestInfo)
+	}()
 
 	log := logger.GetLogger(ctx)
 	errorHandler := newHTTPErrorHandler(log, w)
+	errorHandler.setMetricsRequestInfo(requestInfo)
 
 	if workNumber == "" {
 		errorHandler.handleError(WorkNumberParsingError, errors.New("workNumber is empty"))
 
 		return
 	}
+
+	requestInfo.WorkNumber = workNumber
 
 	b, err := io.ReadAll(req.Body)
 	defer req.Body.Close()
@@ -151,6 +165,7 @@ func (ae *Env) UpdateTask(w http.ResponseWriter, req *http.Request, workNumber s
 	var updateData entity.TaskUpdate
 	if err = json.Unmarshal(b, &updateData); err != nil {
 		e := newHTTPErrorHandler(log.WithField("updateData", string(b)), w)
+		e.setMetricsRequestInfo(requestInfo)
 		e.handleError(UpdateTaskParsingError, err)
 
 		return
@@ -762,12 +777,25 @@ type stoppedTasks struct {
 	Tasks []stoppedTask `json:"tasks"`
 }
 
+const stopTasksPath = "/tasks/stop"
+
 func (ae *Env) StopTasks(w http.ResponseWriter, r *http.Request) {
+	start := time.Now()
 	ctx, s := trace.StartSpan(r.Context(), "stop_tasks")
-	defer s.End()
+
+	requestInfo := metrics.NewPostRequestInfo(stopTasksPath)
+
+	defer func() {
+		s.End()
+
+		requestInfo.Duration = time.Since(start)
+
+		ae.Metrics.RequestsIncrease(requestInfo)
+	}()
 
 	log := logger.GetLogger(ctx)
 	errorHandler := newHTTPErrorHandler(log, w)
+	errorHandler.setMetricsRequestInfo(requestInfo)
 
 	b, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -818,6 +846,8 @@ func (ae *Env) StopTasks(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	for _, workNumber := range req.Tasks {
+		requestInfo.WorkNumber = workNumber
+
 		updateErr := ae.updateTaskByWorkNumber(ctx, txStorage, ui, workNumber, &resp)
 		if updateErr != nil {
 			if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
@@ -961,7 +991,7 @@ func (ae *Env) updateTaskByWorkNumber(
 }
 
 func (ae *Env) processTasks(ctx context.Context, stoppedTasks []stoppedTask) error {
-	const maxSyncTasksCount = 3
+	const maxSyncTasksCount = 1
 	if len(stoppedTasks) > maxSyncTasksCount {
 		return ae.processTasksAsync(ctx, stoppedTasks)
 	}
