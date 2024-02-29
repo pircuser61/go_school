@@ -1391,7 +1391,7 @@ func (db *PGCon) getTasks(ctx c.Context, filters *entity.TaskFilter,
 
 		var currExecutorData executorData
 
-		if execData != nil && len(execData) != 0 {
+		if len(execData) != 0 {
 			if unmErr := json.Unmarshal(execData, &currExecutorData); unmErr != nil {
 				return nil, unmErr
 			}
@@ -1403,7 +1403,7 @@ func (db *PGCon) getTasks(ctx c.Context, filters *entity.TaskFilter,
 		et.CurrentExecutor.ExecutionGroupName = currExecutorData.GroupName
 
 		var actions []TaskAction
-		if actionData != nil && len(actionData) != 0 {
+		if len(actionData) != 0 {
 			if unmErr := json.Unmarshal(actionData, &actions); unmErr != nil {
 				return nil, unmErr
 			}

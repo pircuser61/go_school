@@ -147,7 +147,7 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
 	ctx, s := trace.StartSpan(r.Context(), "run_version_by_pipeline_id")
 
-	requestInfo := &metrics.RequestInfo{Method: http.MethodPost, Path: runByPipelineIDPath}
+	requestInfo := &metrics.RequestInfo{Method: http.MethodPost, Path: runByPipelineIDPath, Status: http.StatusOK}
 
 	defer func() {
 		s.End()
@@ -159,15 +159,13 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 
 	log := logger.GetLogger(ctx)
 	errorHandler := newHTTPErrorHandler(log, w)
+	errorHandler.setMetricsRequestInfo(requestInfo)
 
 	body, err := io.ReadAll(r.Body)
 	defer r.Body.Close()
 
 	if err != nil {
-		e := RequestReadError
-		requestInfo.Status = e.Status()
-
-		errorHandler.handleError(e, err)
+		errorHandler.handleError(RequestReadError, err)
 
 		return
 	}
@@ -175,9 +173,6 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 	req := &runVersionByPipelineIDRequest{}
 
 	if err = json.Unmarshal(body, req); err != nil {
-		e := BodyParseError
-		requestInfo.Status = e.Status()
-
 		errorHandler.handleError(BodyParseError, err)
 
 		return
@@ -186,10 +181,7 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 	requestInfo.PipelineID = req.PipelineID
 
 	if req.PipelineID == "" {
-		e := ValidationError
-		requestInfo.Status = e.Status()
-
-		errorHandler.handleError(e, errors.New("pipelineID is empty"))
+		errorHandler.handleError(ValidationError, errors.New("pipelineID is empty"))
 
 		return
 	}
@@ -198,9 +190,6 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 
 	storage, acquireErr := ae.DB.Acquire(ctx)
 	if acquireErr != nil {
-		e := PipelineExecutionError
-		requestInfo.Status = e.Status()
-
 		errorHandler.handleError(PipelineExecutionError, acquireErr)
 
 		return
@@ -211,10 +200,7 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 
 	version, err := storage.GetVersionByPipelineID(ctx, req.PipelineID)
 	if err != nil {
-		e := GetVersionsByBlueprintIDError
-		requestInfo.Status = e.Status()
-
-		errorHandler.handleError(e, err)
+		errorHandler.handleError(GetVersionsByBlueprintIDError, err)
 
 		return
 	}
@@ -225,10 +211,7 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 
 	clientID, err = ae.getClientIDFromToken(r.Header.Get(AuthorizationHeader))
 	if err != nil {
-		e := GetClientIDError
-		requestInfo.Status = e.Status()
-
-		errorHandler.handleError(e, err)
+		errorHandler.handleError(GetClientIDError, err)
 
 		return
 	}
@@ -239,10 +222,7 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 
 	externalSystem, err = ae.getExternalSystem(ctx, storage, clientID, req.PipelineID, version.VersionID.String())
 	if err != nil {
-		e := GetExternalSystemsError
-		requestInfo.Status = e.Status()
-
-		errorHandler.handleError(e, err)
+		errorHandler.handleError(GetExternalSystemsError, err)
 
 		return
 	}
@@ -256,19 +236,13 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 
 	mappedApplicationBody, err = ae.processMappings(externalSystem, version, req.ApplicationBody)
 	if err != nil {
-		e := MappingError
-		requestInfo.Status = e.Status()
-
-		errorHandler.handleError(e, err)
+		errorHandler.handleError(MappingError, err)
 
 		return
 	}
 
 	if err = version.FillEntryPointOutput(); err != nil {
-		e := GetEntryPointOutputError
-		requestInfo.Status = e.Status()
-
-		errorHandler.handleError(e, err)
+		errorHandler.handleError(GetEntryPointOutputError, err)
 
 		return
 	}
@@ -307,31 +281,21 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 		},
 	})
 	if execErr != nil {
-		e := PipelineExecutionError
-		requestInfo.Status = e.Status()
-
-		errorHandler.handleError(e, execErr)
+		errorHandler.handleError(PipelineExecutionError, execErr)
 
 		return
 	}
 
 	if v == nil {
-		e := PipelineExecutionError
-		requestInfo.Status = e.Status()
-
-		errorHandler.handleError(e, errors.New("run_version_by_pipeline_id execution error"))
+		errorHandler.handleError(PipelineExecutionError, errors.New("run_version_by_pipeline_id execution error"))
 
 		return
 	}
 
 	requestInfo.WorkNumber = v.WorkNumber
-	requestInfo.Status = http.StatusOK
 
 	if err = sendResponse(w, http.StatusOK, []*entity.RunResponse{v}); err != nil {
-		e := UnknownError
-		requestInfo.Status = e.Status()
-
-		errorHandler.handleError(e, err)
+		errorHandler.handleError(UnknownError, err)
 
 		return
 	}
