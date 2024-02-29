@@ -394,22 +394,9 @@ func (gb *GoSignBlock) handleNotifications(ctx context.Context) error {
 		return err
 	}
 
-	slaDeadline := ""
-
-	if gb.State.SLA != nil && gb.State.WorkType != nil {
-		slaInfoPtr, getSLAInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDTO{
-			TaskCompletionIntervals: []entity.TaskCompletionInterval{{
-				StartedAt:  gb.RunContext.CurrBlockStartTime,
-				FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100),
-			}},
-			WorkType: sla.WorkHourType(*gb.State.WorkType),
-		})
-		if getSLAInfoErr != nil {
-			return getSLAInfoErr
-		}
-
-		slaDeadline = gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(gb.RunContext.CurrBlockStartTime,
-			*gb.State.SLA, slaInfoPtr)
+	slaDeadline, getSLAErr := gb.getSLADeadline(ctx)
+	if getSLAErr != nil {
+		return getSLAErr
 	}
 
 	emails := make(map[string]mail.Template, 0)
@@ -836,4 +823,24 @@ func (gb *GoSignBlock) getUsersNotToNotifySet() map[string]struct{} {
 	}
 
 	return usersNotToNotify
+}
+
+func (gb *GoSignBlock) getSLADeadline(ctx context.Context) (string, error) {
+	if gb.State.SLA != nil && gb.State.WorkType != nil {
+		return "", nil
+	}
+
+	slaInfoPtr, err := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDTO{
+		TaskCompletionIntervals: []entity.TaskCompletionInterval{{
+			StartedAt:  gb.RunContext.CurrBlockStartTime,
+			FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100),
+		}},
+		WorkType: sla.WorkHourType(*gb.State.WorkType),
+	})
+	if err != nil {
+		return "", err
+	}
+
+	return gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(
+		gb.RunContext.CurrBlockStartTime, *gb.State.SLA, slaInfoPtr), nil
 }
