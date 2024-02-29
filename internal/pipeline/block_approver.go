@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"context"
+	"encoding/json"
 	"time"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
@@ -25,7 +26,8 @@ const (
 	approverAdditionalApprovementAction = "additional_approvement"
 	approverAdditionalRejectAction      = "additional_reject"
 
-	readWriteAccessType = "ReadWrite"
+	readWriteAccessType    = "ReadWrite"
+	requiredFillAccessType = "RequiredFill"
 )
 
 type GoApproverBlock struct {
@@ -228,21 +230,14 @@ func (gb *GoApproverBlock) approvementBaseActions(login string) []MemberAction {
 		})
 	}
 
-	for _, v := range gb.State.FormsAccessibility {
-		if _, ok := gb.RunContext.VarStore.State[v.NodeID]; !ok {
-			continue
-		}
+	checkedActions, wrongForm := gb.checkAccessType(login)
+	actions = append(actions, checkedActions...)
 
-		if v.AccessType == readWriteAccessType {
-			memAction := MemberAction{
-				ID:   formFillFormAction,
-				Type: ActionTypeCustom,
-				Params: map[string]interface{}{
-					formName: v.NodeID,
-				},
-			}
+	if wrongForm {
+		for i := 0; i < len(actions); i++ {
+			item := &actions[i]
 
-			actions = append(actions, memAction)
+			item.Params = map[string]interface{}{"disabled": true}
 		}
 	}
 
@@ -283,6 +278,68 @@ func (gb *GoApproverBlock) approvementAddActions(a *AdditionalApprover) []Member
 type qna struct {
 	qCrAt time.Time
 	aCrAt *time.Time
+}
+
+func (gb *GoApproverBlock) checkAccessType(login string) ([]MemberAction, bool) {
+	actions := make([]MemberAction, 0)
+
+FormLabel:
+	for _, form := range gb.State.FormsAccessibility {
+		formState, ok := gb.RunContext.VarStore.State[form.NodeID]
+		if !ok {
+			continue
+		}
+
+		switch form.AccessType {
+		case readWriteAccessType:
+			actions = append(actions, MemberAction{
+				ID:   formFillFormAction,
+				Type: ActionTypeCustom,
+				Params: map[string]interface{}{
+					formName: form.NodeID,
+				},
+			})
+		case requiredFillAccessType:
+			var formData FormData
+			if err := json.Unmarshal(formState, &formData); err != nil {
+				return actions, true
+			}
+
+			delegation, err := gb.RunContext.Services.HumanTasks.GetDelegationsFromLogin(context.Background(), login)
+			if err != nil {
+				return actions, true
+			}
+
+			filteredDelegates := delegation.FilterByType("approvement")
+			delegates := filteredDelegates.GetDelegates(login)
+
+			actions = append(actions, MemberAction{
+				ID:   formFillFormAction,
+				Type: ActionTypeCustom,
+				Params: map[string]interface{}{
+					formName: form.NodeID,
+				},
+			})
+
+			for userLogin := range formData.Executors {
+				delegates = append(delegates, userLogin)
+			}
+
+			if !formData.IsFilled {
+				return actions, true
+			}
+
+			for _, userLogin := range delegates {
+				if *formData.ActualExecutor == userLogin {
+					continue FormLabel
+				}
+			}
+
+			return actions, true
+		}
+	}
+
+	return actions, false
 }
 
 func (gb *GoApproverBlock) getNewSLADeadline(slaInfoPtr *sla.Info, half bool) time.Time {

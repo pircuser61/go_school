@@ -151,6 +151,27 @@ func (gb *GoFormBlock) handleRequestFillForm(ctx context.Context, data *script.B
 		gb.State.ChangesLog...,
 	)
 
+	if gb.State.CheckRequiredForm {
+		schema, getSchemaErr := gb.RunContext.Services.ServiceDesc.GetSchemaByID(ctx, gb.State.SchemaID)
+		if getSchemaErr != nil {
+			return getSchemaErr
+		}
+
+		byteSchema, marshalErr := json.Marshal(schema)
+		if marshalErr != nil {
+			return marshalErr
+		}
+
+		byteApplicationBody, marshalApBodyErr := json.Marshal(gb.State.ApplicationBody)
+		if marshalApBodyErr != nil {
+			return marshalApBodyErr
+		}
+
+		if validErr := script.ValidateJSONByJSONSchema(string(byteApplicationBody), string(byteSchema)); validErr != nil {
+			return validErr
+		}
+	}
+
 	personData, err := gb.RunContext.Services.ServiceDesc.GetSsoPerson(ctx, *gb.State.ActualExecutor)
 	if err != nil {
 		return err

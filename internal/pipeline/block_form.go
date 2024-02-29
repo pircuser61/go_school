@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	c "context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -73,8 +74,9 @@ type FormData struct {
 	AttachmentFields []string          `json:"attachment_fields"`
 	Keys             map[string]string `json:"keys"`
 
-	IsEditable      *bool                       `json:"is_editable"`
-	ReEnterSettings *script.FormReEnterSettings `json:"form_re_enter_settings,omitempty"`
+	CheckRequiredForm bool                        `json:"checkRequiredForm"`
+	IsEditable        *bool                       `json:"is_editable"`
+	ReEnterSettings   *script.FormReEnterSettings `json:"form_re_enter_settings,omitempty"`
 }
 
 type GoFormBlock struct {
@@ -299,6 +301,22 @@ func (gb *GoFormBlock) handleAutoFillForm() error {
 
 		if err = script.ValidateParam(formMapping, validSchema); err != nil {
 			return fmt.Errorf("mapping is not valid: %w", err)
+		}
+
+		if gb.State.CheckRequiredForm {
+			byteSchema, marshalErr := json.Marshal(validSchema)
+			if marshalErr != nil {
+				return marshalErr
+			}
+
+			byteApplicationBody, marshalApBodyErr := json.Marshal(gb.State.ApplicationBody)
+			if marshalApBodyErr != nil {
+				return marshalApBodyErr
+			}
+
+			if validErr := script.ValidateJSONByJSONSchema(string(byteApplicationBody), string(byteSchema)); validErr != nil {
+				return validErr
+			}
 		}
 
 		gb.State.ApplicationBody = formMapping

@@ -101,6 +101,8 @@ const (
 	FormAccessTypeRead FormAccessType = "Read"
 
 	FormAccessTypeReadWrite FormAccessType = "ReadWrite"
+
+	FormAccessTypeRequiredFill FormAccessType = "RequiredFill"
 )
 
 // Defines values for FormExecutorType.
@@ -1148,6 +1150,9 @@ type FormExecutorType string
 
 // Form params
 type FormParams struct {
+	// true - if you need to set required fill fields in form
+	CheckRequiredFill *bool `json:"check_required_fill,omitempty"`
+
 	// Is active SLA
 	CheckSla bool `json:"check_sla"`
 

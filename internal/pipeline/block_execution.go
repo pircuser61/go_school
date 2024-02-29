@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"context"
+	"encoding/json"
 	"time"
 
 	"github.com/pkg/errors"
@@ -74,7 +75,7 @@ func (gb *GoExecutionBlock) Members() []Member {
 	for login := range gb.State.Executors {
 		members = append(members, Member{
 			Login:                login,
-			Actions:              gb.executionActions(),
+			Actions:              gb.executionActions(login),
 			IsActed:              gb.isExecutionActed(login),
 			ExecutionGroupMember: gb.isPartOfExecutionGroup(login),
 		})
@@ -254,7 +255,7 @@ func (gb *GoExecutionBlock) isPartOfExecutionGroup(login string) bool {
 	return false
 }
 
-func (gb *GoExecutionBlock) executionActions() []MemberAction {
+func (gb *GoExecutionBlock) executionActions(login string) []MemberAction {
 	if gb.State.Decision != nil || gb.State.EditingApp != nil {
 		return nil
 	}
@@ -294,24 +295,89 @@ func (gb *GoExecutionBlock) executionActions() []MemberAction {
 		})
 	}
 
-	for _, v := range gb.State.FormsAccessibility {
-		if _, ok := gb.RunContext.VarStore.State[v.NodeID]; !ok {
-			continue
-		}
+	checkedActions, wrongForm := gb.checkAccessType(login)
 
-		if v.AccessType == readWriteAccessType {
-			memAction := MemberAction{
-				ID:   formFillFormAction,
-				Type: ActionTypeCustom,
-				Params: map[string]interface{}{
-					formName: v.NodeID,
-				},
+	actions = append(actions, checkedActions...)
+	if wrongForm {
+		for i := 0; i < len(actions); i++ {
+			item := &actions[i]
+
+			if item.ID == "decline" {
+				continue
 			}
-			actions = append(actions, memAction)
+
+			item.Params = map[string]interface{}{"disabled": true}
 		}
 	}
 
 	return actions
+}
+
+func (gb *GoExecutionBlock) checkAccessType(login string) ([]MemberAction, bool) {
+	actions := make([]MemberAction, 0)
+
+FormLabel:
+	for _, form := range gb.State.FormsAccessibility {
+		formState, ok := gb.RunContext.VarStore.State[form.NodeID]
+		if !ok {
+			continue
+		}
+
+		switch form.AccessType {
+		case readWriteAccessType:
+			actions = append(actions, MemberAction{
+				ID:   formFillFormAction,
+				Type: ActionTypeCustom,
+				Params: map[string]interface{}{
+					formName: form.NodeID,
+				},
+			})
+		case requiredFillAccessType:
+			var formData FormData
+			if err := json.Unmarshal(formState, &formData); err != nil {
+				return actions, true
+			}
+
+			delegation, err := gb.RunContext.Services.HumanTasks.GetDelegationsFromLogin(context.Background(), login)
+			if err != nil {
+				return actions, true
+			}
+
+			filteredDelegates := delegation.FilterByType("execution")
+			usersLogin := filteredDelegates.GetDelegates(login)
+
+			actions = append(actions, MemberAction{
+				ID:   formFillFormAction,
+				Type: ActionTypeCustom,
+				Params: map[string]interface{}{
+					formName: form.NodeID,
+				},
+			})
+
+			for userLogin := range formData.Executors {
+				usersLogin = append(usersLogin, userLogin)
+			}
+
+			for i := 0; i < len(gb.State.ChangedExecutorsLogs); i++ {
+				item := gb.State.ChangedExecutorsLogs[i]
+				usersLogin = append(usersLogin, item.OldLogin)
+			}
+
+			if !formData.IsFilled {
+				return actions, true
+			}
+
+			for _, userLogin := range usersLogin {
+				if *formData.ActualExecutor == userLogin {
+					continue FormLabel
+				}
+			}
+
+			return actions, true
+		}
+	}
+
+	return actions, false
 }
 
 func (gb *GoExecutionBlock) getNewSLADeadline(slaInfoPtr *sla.Info, half bool) time.Time {
