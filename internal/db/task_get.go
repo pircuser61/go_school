@@ -742,7 +742,6 @@ func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter, delegations 
 		return nil, waitErr
 	}
 
-	//TODO: delete this slice and sql for counting attachments
 	taskIDs := make([]string, 0, len(tasks.Tasks))
 
 	for _, task := range tasks.Tasks {
