@@ -778,7 +778,7 @@ func (ae *Env) execVersionInternal(ctx context.Context, dto *execVersionInternal
 
 	runCtx.SetTaskEvents(ctx)
 
-	err = pipeline.ProcessBlockWithEndMapping(ctx, ep.EntryPoint, &blockData, runCtx, false)
+	workFinished, err := pipeline.ProcessBlockWithEndMapping(ctx, ep.EntryPoint, &blockData, runCtx, false)
 	if err != nil {
 		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
 			log.WithField("funcName", "RollbackTransaction").
@@ -794,6 +794,13 @@ func (ae *Env) execVersionInternal(ctx context.Context, dto *execVersionInternal
 	err = txStorage.CommitTransaction(ctx)
 	if err != nil {
 		return nil, PipelineRunError, err
+	}
+
+	if workFinished {
+		err = ae.Scheduler.DeleteAllTasksByWorkID(ctx, ep.TaskID)
+		if err != nil {
+			log.WithError(err).Error("failed delete all tasks by work id in scheduler")
+		}
 	}
 
 	runCtx.NotifyEvents(ctx)

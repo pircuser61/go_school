@@ -156,7 +156,7 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 		return nil
 	}
 
-	blockErr := pipeline.ProcessBlockWithEndMapping(ctx, step.Name, blockFunc, runCtx, true)
+	workFinished, blockErr := pipeline.ProcessBlockWithEndMapping(ctx, step.Name, blockFunc, runCtx, true)
 	if blockErr != nil {
 		log.WithField("funcName", "ProcessBlockWithEndMapping").
 			WithField("step.WorkNumber", step.WorkNumber).
@@ -179,6 +179,13 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 			Error("commit transaction")
 
 		return commitErr
+	}
+
+	if workFinished {
+		err = ae.Scheduler.DeleteAllTasksByWorkID(ctx, step.WorkID)
+		if err != nil {
+			log.WithError(err).Error("failed delete all tasks by work id in scheduler")
+		}
 	}
 
 	runCtx.NotifyEvents(ctx)

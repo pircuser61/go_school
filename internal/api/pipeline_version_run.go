@@ -21,6 +21,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 )
 
 const runByPipelineIDPath = "/run/versions/pipeline_id"
@@ -122,6 +123,23 @@ func (ae *Env) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Request
 		errorHandler.handleError(UnknownError, errors.New("no one version was started"))
 
 		return
+	}
+
+	ui, err := user.GetUserInfoFromCtx(ctx)
+	if err != nil {
+		errorHandler.handleError(NoUserInContextError, err)
+
+		return
+	}
+
+	dbTask, getTaskErr := ae.DB.GetTask(ctx, []string{ui.Username}, []string{ui.Username}, ui.Username, req.WorkNumber)
+	if getTaskErr != nil {
+		log.WithError(getTaskErr).Error("couldn't get task: %v", getTaskErr)
+	}
+
+	err = ae.Scheduler.DeleteAllTasksByWorkID(ctx, dbTask.ID)
+	if err != nil {
+		log.WithError(err).Error("failed delete all tasks by work id in scheduler")
 	}
 
 	err = sendResponse(w, http.StatusOK, started)
