@@ -127,14 +127,12 @@ func (ae *Env) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Request
 
 	ui, err := user.GetUserInfoFromCtx(ctx)
 	if err != nil {
-		errorHandler.handleError(NoUserInContextError, err)
-
-		return
+		log.WithError(err).Error("couldn't get user forn context")
 	}
 
 	dbTask, getTaskErr := ae.DB.GetTask(ctx, []string{ui.Username}, []string{ui.Username}, ui.Username, req.WorkNumber)
 	if getTaskErr != nil {
-		log.WithError(getTaskErr).Error("couldn't get task: %v", getTaskErr)
+		log.WithError(getTaskErr).Error("couldn't get task")
 	}
 
 	err = ae.Scheduler.DeleteAllTasksByWorkID(ctx, dbTask.ID)
