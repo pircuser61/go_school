@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/iancoleman/orderedmap"
 	"github.com/pkg/errors"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
@@ -414,7 +415,13 @@ func (gb *GoSignBlock) handleNotifications(ctx context.Context) error {
 
 	emails := make(map[string]mail.Template, 0)
 
+	usersNotToNotify := gb.getUsersNotToNotifySet()
+
 	for _, login := range signers {
+		if _, ok := usersNotToNotify[login]; ok {
+			continue
+		}
+
 		em, getUserEmailErr := gb.RunContext.Services.People.GetUserEmail(ctx, login)
 		if getUserEmailErr != nil {
 			l.WithField("login", login).WithError(getUserEmailErr).Warning("couldn't get email")
@@ -440,19 +447,7 @@ func (gb *GoSignBlock) handleNotifications(ctx context.Context) error {
 	for i := range emails {
 		item := emails[i]
 
-		iconsName := []string{item.Image}
-
-		for _, v := range description {
-			links, link := v.Get("attachLinks")
-			if link {
-				attachFiles, ok := links.([]file_registry.AttachInfo)
-				if ok && len(attachFiles) != 0 {
-					iconsName = append(iconsName, downloadImg)
-
-					break
-				}
-			}
-		}
+		iconsName := append([]string{item.Image}, gb.getNotificationImages(description)...)
 
 		iconFiles, filesErr := gb.RunContext.GetIcons(iconsName)
 		if filesErr != nil {
@@ -819,4 +814,34 @@ func (gb *GoSignBlock) makeExpectedEvents(ctx context.Context, runCtx *BlockRunC
 	gb.happenedEvents = append(gb.happenedEvents, event)
 
 	return nil
+}
+
+func (gb *GoSignBlock) getUsersNotToNotifySet() map[string]struct{} {
+	usersNotToNotify := make(map[string]struct{})
+
+	for i := range gb.State.SignLog {
+		if gb.State.SignLog[i].LogType == SignerLogDecision {
+			usersNotToNotify[gb.State.SignLog[i].Login] = struct{}{}
+		}
+	}
+
+	return usersNotToNotify
+}
+
+func (gb *GoSignBlock) getNotificationImages(descriptions []orderedmap.OrderedMap) []string {
+	images := make([]string, 0)
+
+	for i := range descriptions {
+		links, link := descriptions[i].Get("attachLinks")
+		if link {
+			attachFiles, ok := links.([]file_registry.AttachInfo)
+			if ok && len(attachFiles) != 0 {
+				images = append(images, downloadImg)
+
+				break
+			}
+		}
+	}
+
+	return images
 }
