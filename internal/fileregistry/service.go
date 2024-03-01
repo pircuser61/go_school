@@ -123,7 +123,7 @@ func (s *Service) GetAttachmentsInfo(ctx context.Context, attachments map[string
 	return res, nil
 }
 
-func (s *Service) getAttachment(ctx context.Context, fileID string) (email.Attachment, error) {
+func (s *Service) getAttachment(ctx context.Context, fileID, workNumber string) (email.Attachment, error) {
 	ctxLocal, span := trace.StartSpan(ctx, "get_attachment")
 	defer span.End()
 
@@ -133,6 +133,8 @@ func (s *Service) getAttachment(ctx context.Context, fileID string) (email.Attac
 	if err != nil {
 		return email.Attachment{}, err
 	}
+
+	req.Header.Set("Work-Number", workNumber)
 
 	resp, err := s.restCli.Do(req)
 	if err != nil {
@@ -159,7 +161,7 @@ func (s *Service) getAttachment(ctx context.Context, fileID string) (email.Attac
 	}, nil
 }
 
-func (s *Service) GetAttachments(ctx context.Context, attachments []entity.Attachment) ([]email.Attachment, error) {
+func (s *Service) GetAttachments(ctx context.Context, attachments []entity.Attachment, workNumber string) ([]email.Attachment, error) {
 	ctxLocal, span := trace.StartSpan(ctx, "get_attachments")
 	defer span.End()
 
@@ -168,7 +170,7 @@ func (s *Service) GetAttachments(ctx context.Context, attachments []entity.Attac
 	for i := range attachments {
 		a := attachments[i]
 
-		file, err := s.getAttachment(ctxLocal, a.FileID)
+		file, err := s.getAttachment(ctxLocal, a.FileID, workNumber)
 		if err != nil {
 			return nil, err
 		}
@@ -179,7 +181,7 @@ func (s *Service) GetAttachments(ctx context.Context, attachments []entity.Attac
 	return res, nil
 }
 
-func (s *Service) SaveFile(ctx context.Context, token, name string, file []byte) (string, error) {
+func (s *Service) SaveFile(ctx context.Context, token, name string, file []byte, workNumber string) (string, error) {
 	ctx, span := trace.StartSpan(ctx, "save_file")
 	defer span.End()
 
@@ -209,6 +211,7 @@ func (s *Service) SaveFile(ctx context.Context, token, name string, file []byte)
 	}
 
 	req.Header.Set("Content-Type", writer.FormDataContentType())
+	req.Header.Set("Work-Number", workNumber)
 	req.Header.Set(authorizationHeader, token)
 
 	resp, err := s.restCli.Do(req)

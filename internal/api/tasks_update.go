@@ -86,7 +86,7 @@ func (ae *Env) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 		}
 
 		for fileName, fileData := range emails[i].Action.Attachments {
-			id, errSave := ae.FileRegistry.SaveFile(ctx, token, fileName, fileData.Raw)
+			id, errSave := ae.FileRegistry.SaveFile(ctx, token, fileName, fileData.Raw, emails[i].Action.WorkNumber)
 			if errSave != nil {
 				log.WithField("workNumber", emails[i].Action.WorkNumber).
 					WithField("fileName", fileName).

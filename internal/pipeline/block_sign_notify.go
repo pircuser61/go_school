@@ -172,6 +172,7 @@ func (gb *GoSignBlock) notifyDecisionMadeByAdditionalApprover(ctx c.Context, log
 	files, err := gb.RunContext.Services.FileRegistry.GetAttachments(
 		ctx,
 		latestDecisionLog.Attachments,
+		gb.RunContext.WorkNumber,
 	)
 	if err != nil {
 		return err
