@@ -599,6 +599,7 @@ func (gb *GoApproverBlock) getUsersNotToNotifySet() map[string]struct{} {
 	for i := range gb.State.ApproverLog {
 		if gb.State.ApproverLog[i].LogType == ApproverLogDecision {
 			usersNotToNotify[gb.State.ApproverLog[i].Login] = struct{}{}
+			usersNotToNotify[gb.State.ApproverLog[i].DelegateFor] = struct{}{}
 		}
 	}
 
