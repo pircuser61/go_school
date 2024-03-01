@@ -1,14 +1,15 @@
 package api
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"os"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-
 	"github.com/hrishin/httpmock"
+	"github.com/stretchr/testify/assert"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
@@ -924,4 +925,46 @@ func groupSliceToMap(g []*entity.NodeGroup) map[string]NodeGroupMap {
 	}
 
 	return gmap
+}
+
+func Test_validateMapping(t *testing.T) {
+	pipeline := *unmarshalFromTestFile(t, "testdata/mapping_validation.json")
+
+	pipelineResult, err := os.ReadFile("testdata/mapping_validation_result.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tests := []struct {
+		name       string
+		bt         entity.BlocksType
+		want       bool
+		wantResult string
+	}{
+		{
+			name:       "success case",
+			bt:         pipeline.Pipeline.Blocks,
+			want:       false,
+			wantResult: string(pipelineResult),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			isValid := validateMapping(tt.bt)
+
+			var marshaledResult []byte
+			marshaledResult, err = json.Marshal(tt.bt)
+			assert.Nil(t, err)
+
+			var prettyJSON bytes.Buffer
+			err = json.Indent(&prettyJSON, marshaledResult, "", "  ")
+			assert.Nil(t, err)
+
+			resultString := string(prettyJSON.Bytes())
+
+			assert.Equalf(t, tt.want, isValid, "validateMapping(%v)", tt.bt)
+			assert.Equalf(t, tt.wantResult, resultString, "validateMappingResult(%v)", tt.bt)
+		})
+	}
 }
