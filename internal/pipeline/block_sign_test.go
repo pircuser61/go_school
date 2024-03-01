@@ -13,6 +13,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	delegationht "gitlab.services.mts.ru/jocasta/human-tasks/pkg/proto/gen/proto/go/delegation"
+	"golang.org/x/net/context"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -21,6 +23,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks"
+	mocks2 "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	peopleMocks "gitlab.services.mts.ru/jocasta/pipeliner/internal/people/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
@@ -4861,4 +4864,740 @@ func unmarshalFromTestFile(t *testing.T, in string) json.RawMessage {
 	}
 
 	return bytes
+}
+
+func TestGoSignActions(t *testing.T) {
+	const (
+		exampleExecutor = "example"
+		stepName        = "exec"
+	)
+
+	login := "user1"
+	delLogin1 := "delLogin1"
+
+	type (
+		fields struct {
+			Name       string
+			Title      string
+			Input      map[string]string
+			Output     map[string]string
+			NextStep   []script.Socket
+			SignData   *SignData
+			RunContext *BlockRunContext
+		}
+		args struct {
+			ctx  context.Context
+			data *script.BlockUpdateData
+		}
+	)
+
+	tests := []struct {
+		name        string
+		fields      fields
+		args        args
+		wantActions []MemberAction
+	}{
+		{
+			name: "empty form accessibility",
+			fields: fields{
+				SignData: &SignData{
+					SignatureType: script.SignatureTypeUNEP,
+				},
+				Name: stepName,
+				RunContext: &BlockRunContext{
+					skipNotifications: true,
+					VarStore:          store.NewStore(),
+					Services: RunContextServices{
+						Storage: nil,
+					},
+				},
+			},
+			args: args{
+				ctx:  context.Background(),
+				data: nil,
+			},
+			wantActions: []MemberAction{
+				{ID: "sign_sign", Type: "primary", Params: map[string]interface{}{"signature_type": script.SignatureTypeUNEP}},
+				{ID: "sign_reject", Type: "secondary", Params: map[string]interface{}(nil)},
+				{ID: "add_approvers", Type: "other", Params: map[string]interface{}(nil)}},
+		},
+		{
+			name: "one form ReadWrite",
+			fields: fields{
+				Name: stepName,
+				SignData: &SignData{
+					IsTakenInWork: true,
+					Signers: map[string]struct{}{
+						exampleExecutor: {},
+					},
+					SignatureType: script.SignatureTypeUNEP,
+					FormsAccessibility: []script.FormAccessibility{
+						{
+							Name:        "Форма",
+							NodeID:      "form_0",
+							AccessType:  "ReadWrite",
+							Description: "форма",
+						},
+					}},
+				RunContext: &BlockRunContext{
+					skipNotifications: false,
+					VarStore: func() *store.VariableStore {
+						s := store.NewStore()
+						s.State = map[string]json.RawMessage{
+							"form_0": []byte{},
+						}
+
+						return s
+					}(),
+					Services: RunContextServices{
+						Storage: func() db.Database {
+							res := &mocks.MockedDatabase{}
+
+							return res
+						}(),
+					},
+				},
+			},
+
+			args: args{
+				ctx: context.Background(),
+				data: &script.BlockUpdateData{
+					ByLogin:    exampleExecutor,
+					Action:     string(entity.TaskUpdateActionExecution),
+					Parameters: []byte(`{"decision":"` + ExecutionDecisionExecuted + `"}`),
+				},
+			},
+			wantActions: []MemberAction{
+				{ID: "sign_sign", Type: "primary", Params: map[string]interface{}{"signature_type": script.SignatureTypeUNEP}},
+				{ID: "sign_reject", Type: "secondary", Params: map[string]interface{}(nil)},
+				{ID: "add_approvers", Type: "other", Params: map[string]interface{}(nil)},
+				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": "form_0"}}},
+		},
+		{
+			name: "two form (ReadWrite)",
+			fields: fields{
+				Name: stepName,
+				SignData: &SignData{
+					IsTakenInWork: true,
+					Signers: map[string]struct{}{
+						exampleExecutor: {},
+					},
+					SignatureType: script.SignatureTypeUNEP,
+					FormsAccessibility: []script.FormAccessibility{
+						{
+							Name:        "Форма",
+							NodeID:      "form_0",
+							AccessType:  "ReadWrite",
+							Description: "форма",
+						},
+						{
+							Name:        "Форма",
+							NodeID:      "form_1",
+							AccessType:  "ReadWrite",
+							Description: "форма",
+						},
+					},
+				},
+				RunContext: &BlockRunContext{
+					skipNotifications: false,
+					VarStore: func() *store.VariableStore {
+						s := store.NewStore()
+						s.State = map[string]json.RawMessage{
+							"form_0": []byte{},
+							"form_1": []byte{},
+						}
+
+						return s
+					}(),
+					Services: RunContextServices{
+						Storage: func() db.Database {
+							res := &mocks.MockedDatabase{}
+
+							return res
+						}(),
+					},
+				},
+			},
+
+			args: args{
+				ctx: context.Background(),
+				data: &script.BlockUpdateData{
+					ByLogin:    exampleExecutor,
+					Action:     string(entity.TaskUpdateActionExecution),
+					Parameters: []byte(`{"decision":"` + ExecutionDecisionExecuted + `"}`),
+				},
+			},
+			wantActions: []MemberAction{
+				{ID: "sign_sign", Type: "primary", Params: map[string]interface{}{"signature_type": script.SignatureTypeUNEP}},
+				{ID: "sign_reject", Type: "secondary", Params: map[string]interface{}(nil)},
+				{ID: "add_approvers", Type: "other", Params: map[string]interface{}(nil)},
+				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": "form_0"}},
+				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": "form_1"}}},
+		},
+		{
+			name: "Two form - is filled true (ReadWrite & RequiredFill)",
+			fields: fields{
+				Name: stepName,
+				SignData: &SignData{
+					IsTakenInWork: true,
+					Signers: map[string]struct{}{
+						exampleExecutor: {},
+					},
+					SignatureType: script.SignatureTypeUNEP,
+					FormsAccessibility: []script.FormAccessibility{
+						{
+							Name:        "Форма",
+							NodeID:      "form_0",
+							AccessType:  "ReadWrite",
+							Description: "форма",
+						},
+						{
+							Name:        "Форма",
+							NodeID:      "form_1",
+							AccessType:  "RequiredFill",
+							Description: "форма",
+						},
+					},
+				},
+				RunContext: &BlockRunContext{
+					skipNotifications: false,
+					VarStore: func() *store.VariableStore {
+						s := store.NewStore()
+						s.State = map[string]json.RawMessage{
+							"form_0": []byte{},
+							"form_1": func() []byte {
+								marshalForm, _ := json.Marshal(FormData{
+									IsFilled: true,
+									Executors: map[string]struct{}{
+										"usersф1": {},
+									},
+									ActualExecutor: &login,
+								})
+
+								return marshalForm
+							}()}
+						return s
+					}(),
+					Services: RunContextServices{
+						Storage: func() db.Database {
+							res := &mocks.MockedDatabase{}
+
+							return res
+						}(),
+						HumanTasks: func() *human_tasks.Service {
+							ht := human_tasks.Service{}
+							htMock := mocks2.DelegationServiceClient{}
+
+							htMock.On("GetDelegationsFromLogin", context.Background(), "users1").Return(nil, human_tasks.Delegations{})
+
+							req := &delegationht.GetDelegationsRequest{
+								FilterBy:  "fromLogin",
+								FromLogin: login,
+							}
+
+							htMock.On("getDelegationsInternal", context.Background(), req).Return(human_tasks.Delegations{
+								{
+									ToLogin:   delLogin1,
+									FromLogin: login,
+								},
+							}, nil)
+							htMock.On("FilterByType", "users1").Return(delegationht.GetDelegationsResponse{
+								Delegations: []*delegationht.Delegation{
+									{
+										FromUser: &delegationht.User{
+											Fullname: login,
+										},
+									},
+								},
+							})
+							htMock.On("GetDelegates", "users1").Return([]string{"a"})
+
+							ht = human_tasks.Service{
+								Cli: &htMock,
+								C:   nil,
+							}
+
+							return &ht
+						}(),
+					},
+				},
+			},
+
+			args: args{
+				ctx: context.Background(),
+				data: &script.BlockUpdateData{
+					ByLogin:    exampleExecutor,
+					Action:     string(entity.TaskUpdateActionExecution),
+					Parameters: []byte(`{"decision":"` + ExecutionDecisionExecuted + `"}`),
+				},
+			},
+			wantActions: []MemberAction{
+				{ID: "sign_sign", Type: "primary", Params: map[string]interface{}{"signature_type": script.SignatureTypeUNEP}},
+				{ID: "sign_reject", Type: "secondary", Params: map[string]interface{}(nil)},
+				{ID: "add_approvers", Type: "other", Params: map[string]interface{}(nil)},
+				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": "form_0"}},
+				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"disabled": true}}},
+		},
+		{
+			name: "Two form - is filled false (ReadWrite & RequiredFill)",
+			fields: fields{
+				Name: stepName,
+				SignData: &SignData{
+					IsTakenInWork: true,
+					Signers: map[string]struct{}{
+						exampleExecutor: {},
+					},
+					SignatureType: script.SignatureTypeUNEP,
+					FormsAccessibility: []script.FormAccessibility{
+						{
+							Name:        "Форма",
+							NodeID:      "form_0",
+							AccessType:  "ReadWrite",
+							Description: "форма",
+						},
+						{
+							Name:        "Форма",
+							NodeID:      "form_1",
+							AccessType:  "RequiredFill",
+							Description: "форма",
+						},
+					},
+				},
+				RunContext: &BlockRunContext{
+					skipNotifications: false,
+					VarStore: func() *store.VariableStore {
+						s := store.NewStore()
+						s.State = map[string]json.RawMessage{
+							"form_0": []byte{},
+							"form_1": func() []byte {
+								marshalForm, _ := json.Marshal(FormData{
+									IsFilled:       false,
+									ActualExecutor: &login,
+								})
+
+								return marshalForm
+							}()}
+						return s
+					}(),
+					Services: RunContextServices{
+						Storage: func() db.Database {
+							res := &mocks.MockedDatabase{}
+
+							return res
+						}(),
+						HumanTasks: func() *human_tasks.Service {
+							ht := human_tasks.Service{}
+							htMock := mocks2.DelegationServiceClient{}
+
+							htMock.On("GetDelegationsFromLogin", context.Background(), "users1").Return(nil, human_tasks.Delegations{})
+
+							req := &delegationht.GetDelegationsRequest{
+								FilterBy:  "fromLogin",
+								FromLogin: login,
+							}
+
+							htMock.On("getDelegationsInternal", context.Background(), req).Return(human_tasks.Delegations{
+								{
+									ToLogin:   delLogin1,
+									FromLogin: login,
+								},
+							}, nil)
+							htMock.On("FilterByType", "users1").Return(delegationht.GetDelegationsResponse{
+								Delegations: []*delegationht.Delegation{
+									{
+										FromUser: &delegationht.User{
+											Fullname: login,
+										},
+									},
+								},
+							})
+							htMock.On("GetDelegates", "users1").Return([]string{"a"})
+
+							ht = human_tasks.Service{
+								Cli: &htMock,
+								C:   nil,
+							}
+
+							return &ht
+						}(),
+					},
+				},
+			},
+
+			args: args{
+				ctx: context.Background(),
+				data: &script.BlockUpdateData{
+					ByLogin:    exampleExecutor,
+					Action:     string(entity.TaskUpdateActionExecution),
+					Parameters: []byte(`{"decision":"` + ExecutionDecisionExecuted + `"}`),
+				},
+			},
+			wantActions: []MemberAction{
+				{ID: "sign_sign", Type: "primary", Params: map[string]interface{}{"disabled": true}},
+				{ID: "sign_reject", Type: "secondary", Params: map[string]interface{}(nil)},
+				{ID: "add_approvers", Type: "other", Params: map[string]interface{}(nil)},
+				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": "form_0"}},
+				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": "form_1"}}},
+		},
+		{
+			name: "Two form is filled (RequiredFill)",
+			fields: fields{
+				Name: stepName,
+				SignData: &SignData{
+					IsTakenInWork: true,
+					SignatureType: script.SignatureTypeUNEP,
+					Signers: map[string]struct{}{
+						login: {},
+					},
+					FormsAccessibility: []script.FormAccessibility{
+						{
+							Name:        "Форма",
+							NodeID:      "form_0",
+							AccessType:  "RequiredFill",
+							Description: "форма",
+						},
+						{
+							Name:        "Форма",
+							NodeID:      "form_1",
+							AccessType:  "RequiredFill",
+							Description: "форма",
+						},
+					},
+				},
+				RunContext: &BlockRunContext{
+					skipNotifications: false,
+					VarStore: func() *store.VariableStore {
+						s := store.NewStore()
+						s.State = map[string]json.RawMessage{
+							"form_0": func() []byte {
+								marshalForm, _ := json.Marshal(FormData{
+									IsFilled: true,
+									Executors: map[string]struct{}{
+										"user1": {},
+									},
+									ActualExecutor: &delLogin1,
+								})
+
+								return marshalForm
+							}(),
+							"form_1": func() []byte {
+								marshalForm, _ := json.Marshal(FormData{
+									IsFilled: true,
+									Executors: map[string]struct{}{
+										"user1": {},
+									},
+									ActualExecutor: &login,
+								})
+
+								return marshalForm
+							}()}
+						return s
+					}(),
+					Services: RunContextServices{
+						Storage: func() db.Database {
+							res := &mocks.MockedDatabase{}
+
+							return res
+						}(),
+						HumanTasks: func() *human_tasks.Service {
+							ht := human_tasks.Service{}
+							htMock := mocks2.DelegationServiceClient{}
+
+							htMock.On("GetDelegationsFromLogin", context.Background(), "users1").Return(nil, human_tasks.Delegations{})
+
+							req := &delegationht.GetDelegationsRequest{
+								FilterBy:  "fromLogin",
+								FromLogin: login,
+							}
+
+							htMock.On("getDelegationsInternal", context.Background(), req).Return(human_tasks.Delegations{
+								{
+									ToLogin:   delLogin1,
+									FromLogin: login,
+								},
+							}, nil)
+							htMock.On("FilterByType", "users1").Return(delegationht.GetDelegationsResponse{
+								Delegations: []*delegationht.Delegation{
+									{
+										FromUser: &delegationht.User{
+											Fullname: login,
+										},
+									},
+								},
+							})
+							htMock.On("GetDelegates", "users1").Return([]string{"a"})
+
+							ht = human_tasks.Service{
+								Cli: &htMock,
+								C:   nil,
+							}
+
+							return &ht
+						}(),
+					},
+				},
+			},
+
+			args: args{
+				ctx: context.Background(),
+				data: &script.BlockUpdateData{
+					ByLogin:    exampleExecutor,
+					Action:     string(entity.TaskUpdateActionExecution),
+					Parameters: []byte(`{"decision":"` + ExecutionDecisionExecuted + `"}`),
+				},
+			},
+			wantActions: []MemberAction{
+				{ID: "sign_sign", Type: "primary", Params: map[string]interface{}{"signature_type": script.SignatureTypeUNEP}},
+				{ID: "sign_reject", Type: "secondary", Params: map[string]interface{}(nil)},
+				{ID: "add_approvers", Type: "other", Params: map[string]interface{}(nil)},
+				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"disabled": true}},
+				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"disabled": true}}},
+		},
+		{
+			name: "Two form is filled and not filled (RequiredFill)",
+			fields: fields{
+				Name: stepName,
+				SignData: &SignData{
+					IsTakenInWork: true,
+					SignatureType: script.SignatureTypeUNEP,
+					Signers: map[string]struct{}{
+						login: {},
+					},
+					FormsAccessibility: []script.FormAccessibility{
+						{
+							Name:        "Форма",
+							NodeID:      "form_0",
+							AccessType:  "RequiredFill",
+							Description: "форма",
+						},
+						{
+							Name:        "Форма",
+							NodeID:      "form_1",
+							AccessType:  "RequiredFill",
+							Description: "форма",
+						},
+					},
+				},
+				RunContext: &BlockRunContext{
+					skipNotifications: false,
+					VarStore: func() *store.VariableStore {
+						s := store.NewStore()
+						s.State = map[string]json.RawMessage{
+							"form_0": func() []byte {
+								marshalForm, _ := json.Marshal(FormData{
+									IsFilled: true,
+									Executors: map[string]struct{}{
+										"user1": {},
+									},
+									ActualExecutor: &delLogin1,
+								})
+
+								return marshalForm
+							}(),
+							"form_1": func() []byte {
+								marshalForm, _ := json.Marshal(FormData{
+									IsFilled: false,
+									Executors: map[string]struct{}{
+										"user1": {},
+									},
+									ActualExecutor: &login,
+								})
+
+								return marshalForm
+							}()}
+						return s
+					}(),
+					Services: RunContextServices{
+						Storage: func() db.Database {
+							res := &mocks.MockedDatabase{}
+
+							return res
+						}(),
+						HumanTasks: func() *human_tasks.Service {
+							ht := human_tasks.Service{}
+							htMock := mocks2.DelegationServiceClient{}
+
+							htMock.On("GetDelegationsFromLogin", context.Background(), "users1").Return(nil, human_tasks.Delegations{})
+
+							req := &delegationht.GetDelegationsRequest{
+								FilterBy:  "fromLogin",
+								FromLogin: login,
+							}
+
+							htMock.On("getDelegationsInternal", context.Background(), req).Return(human_tasks.Delegations{
+								{
+									ToLogin:   delLogin1,
+									FromLogin: login,
+								},
+							}, nil)
+							htMock.On("FilterByType", "users1").Return(delegationht.GetDelegationsResponse{
+								Delegations: []*delegationht.Delegation{
+									{
+										FromUser: &delegationht.User{
+											Fullname: login,
+										},
+									},
+								},
+							})
+							htMock.On("GetDelegates", "users1").Return([]string{"a"})
+
+							ht = human_tasks.Service{
+								Cli: &htMock,
+								C:   nil,
+							}
+
+							return &ht
+						}(),
+					},
+				},
+			},
+
+			args: args{
+				ctx: context.Background(),
+				data: &script.BlockUpdateData{
+					ByLogin:    exampleExecutor,
+					Action:     string(entity.TaskUpdateActionExecution),
+					Parameters: []byte(`{"decision":"` + ExecutionDecisionExecuted + `"}`),
+				},
+			},
+			wantActions: []MemberAction{
+				{ID: "sign_sign", Type: "primary", Params: map[string]interface{}{"disabled": true}},
+				{ID: "sign_reject", Type: "secondary", Params: map[string]interface{}(nil)},
+				{ID: "add_approvers", Type: "other", Params: map[string]interface{}(nil)},
+				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"disabled": true}},
+				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": "form_1"}}},
+		},
+		{
+			name: "Two form - not filled (RequiredFill)",
+			fields: fields{
+				Name: stepName,
+				SignData: &SignData{
+					IsTakenInWork: true,
+					Signers: map[string]struct{}{
+						exampleExecutor: {},
+					},
+					SignatureType: script.SignatureTypeUNEP,
+					FormsAccessibility: []script.FormAccessibility{
+						{
+							Name:        "Форма",
+							NodeID:      "form_0",
+							AccessType:  "RequiredFill",
+							Description: "форма",
+						},
+						{
+							Name:        "Форма",
+							NodeID:      "form_1",
+							AccessType:  "RequiredFill",
+							Description: "форма",
+						},
+					},
+				},
+				RunContext: &BlockRunContext{
+					skipNotifications: false,
+					VarStore: func() *store.VariableStore {
+						s := store.NewStore()
+						s.State = map[string]json.RawMessage{
+							"form_0": func() []byte {
+								marshalForm, _ := json.Marshal(FormData{
+									IsFilled: false,
+									Executors: map[string]struct{}{
+										"user1": {},
+									},
+									ActualExecutor: &delLogin1,
+								})
+
+								return marshalForm
+							}(),
+							"form_1": func() []byte {
+								marshalForm, _ := json.Marshal(FormData{
+									IsFilled: false,
+									Executors: map[string]struct{}{
+										"user1": {},
+									},
+									ActualExecutor: &login,
+								})
+
+								return marshalForm
+							}()}
+						return s
+					}(),
+					Services: RunContextServices{
+						Storage: func() db.Database {
+							res := &mocks.MockedDatabase{}
+
+							return res
+						}(),
+						HumanTasks: func() *human_tasks.Service {
+							ht := human_tasks.Service{}
+							htMock := mocks2.DelegationServiceClient{}
+
+							htMock.On("GetDelegationsFromLogin", context.Background(), "users1").Return(nil, human_tasks.Delegations{})
+
+							req := &delegationht.GetDelegationsRequest{
+								FilterBy:  "fromLogin",
+								FromLogin: login,
+							}
+
+							htMock.On("getDelegationsInternal", context.Background(), req).Return(human_tasks.Delegations{
+								{
+									ToLogin:   delLogin1,
+									FromLogin: login,
+								},
+							}, nil)
+							htMock.On("FilterByType", "users1").Return(delegationht.GetDelegationsResponse{
+								Delegations: []*delegationht.Delegation{
+									{
+										FromUser: &delegationht.User{
+											Fullname: login,
+										},
+									},
+								},
+							})
+							htMock.On("GetDelegates", "users1").Return([]string{"a"})
+
+							ht = human_tasks.Service{
+								Cli: &htMock,
+								C:   nil,
+							}
+
+							return &ht
+						}(),
+					},
+				},
+			},
+
+			args: args{
+				ctx: context.Background(),
+				data: &script.BlockUpdateData{
+					ByLogin:    exampleExecutor,
+					Action:     string(entity.TaskUpdateActionExecution),
+					Parameters: []byte(`{"decision":"` + ExecutionDecisionExecuted + `"}`),
+				},
+			},
+			wantActions: []MemberAction{
+				{ID: "sign_sign", Type: "primary", Params: map[string]interface{}{"disabled": true}},
+				{ID: "sign_reject", Type: "secondary", Params: map[string]interface{}(nil)},
+				{ID: "add_approvers", Type: "other", Params: map[string]interface{}(nil)},
+				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": "form_0"}},
+				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": "form_1"}}},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gb := &GoSignBlock{
+				Name:       tt.fields.Name,
+				Title:      tt.fields.Title,
+				Input:      tt.fields.Input,
+				Output:     tt.fields.Output,
+				Sockets:    tt.fields.NextStep,
+				State:      tt.fields.SignData,
+				RunContext: tt.fields.RunContext,
+			}
+			tt.fields.RunContext.UpdateData = tt.args.data
+
+			actions := gb.signActions(login)
+			assert.Equal(t, tt.wantActions, actions, fmt.Sprintf("signActions(%v)", login))
+		})
+	}
 }

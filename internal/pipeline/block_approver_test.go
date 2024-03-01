@@ -1109,12 +1109,10 @@ func TestGoApproverBlock_Actions(t *testing.T) {
 				ctx:  context.Background(),
 				data: nil,
 			},
-
 			wantActions: []MemberAction{
-				{ID: approveApproversAction, Type: "", Params: nil},
-				{ID: approverAddApproversAction, Type: ActionTypeOther, Params: nil},
-				{ID: approverRequestAddInfoAction, Type: ActionTypeOther, Params: nil},
-			},
+				{ID: "approve", Type: "", Params: map[string]interface{}(nil)},
+				{ID: "add_approvers", Type: "other", Params: map[string]interface{}(nil)},
+				{ID: "request_add_info", Type: "other", Params: map[string]interface{}(nil)}},
 		},
 		{
 			name: "one form (ReadWrite)",
@@ -1210,7 +1208,6 @@ func TestGoApproverBlock_Actions(t *testing.T) {
 					}(), Services: RunContextServices{},
 				},
 			},
-
 			args: args{
 				ctx: context.Background(),
 				data: &script.BlockUpdateData{
@@ -1320,8 +1317,8 @@ func TestGoApproverBlock_Actions(t *testing.T) {
 				ctx: context.Background(),
 			},
 			wantActions: []MemberAction{
-				{ID: "approve", Type: "", Params: map[string]interface{}{"disabled": true}},
-				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"disabled": true}},
+				{ID: "approve", Type: "", Params: map[string]interface{}(nil)},
+				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": "form_0"}},
 				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"disabled": true}},
 				{ID: "add_approvers", Type: "other", Params: map[string]interface{}(nil)},
 				{ID: "request_add_info", Type: "other", Params: map[string]interface{}(nil)}},
@@ -1417,10 +1414,96 @@ func TestGoApproverBlock_Actions(t *testing.T) {
 			wantActions: []MemberAction{
 				{ID: "approve", Type: "", Params: map[string]interface{}(nil)},
 				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": "form_0"}},
-				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": "form_1"}},
+				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"disabled": true}},
 				{ID: "add_approvers", Type: "other", Params: map[string]interface{}(nil)},
-				{ID: "request_add_info", Type: "other", Params: map[string]interface{}(nil)},
+				{ID: "request_add_info", Type: "other", Params: map[string]interface{}(nil)}},
+		},
+		{
+			name: "Required Fill - false filled",
+			fields: fields{
+				Name: stepName,
+				ApproverData: &ApproverData{
+					Type: script.ApproverTypeUser,
+					Approvers: map[string]struct{}{
+						exampleApprover:       {},
+						secondExampleApprover: {},
+					},
+					FormsAccessibility: []script.FormAccessibility{
+						{
+							Name:        "Форма",
+							NodeID:      "form_0",
+							AccessType:  "RequiredFill",
+							Description: "форма",
+						},
+					},
+					ApprovementRule: script.AnyOfApprovementRequired,
+					ActionList: []Action{
+						{
+							ID: ApproverActionApprove,
+						},
+					},
+				},
+				RunContext: &BlockRunContext{
+					skipNotifications: true,
+					VarStore: func() *store.VariableStore {
+						s := store.NewStore()
+						s.State = map[string]json.RawMessage{
+							"form_0": func() []byte {
+								marshalForm, _ := json.Marshal(FormData{
+									IsFilled: false,
+									Executors: map[string]struct{}{
+										"user1": {},
+									},
+									ActualExecutor: &login,
+								})
+
+								return marshalForm
+							}(),
+						}
+
+						return s
+					}(), Services: RunContextServices{
+						Storage: func() db.Database {
+							res := &mocks.MockedDatabase{}
+
+							return res
+						}(),
+						HumanTasks: func() *humanTasks.Service {
+							ht := humanTasks.Service{}
+							htMock := mocks2.DelegationServiceClient{}
+
+							htMock.On("GetDelegationsFromLogin", context.Background(), "users1").Return(humanTasks.Delegations{}, nil)
+
+							req := &delegationht.GetDelegationsRequest{
+								FilterBy:  "fromLogin",
+								FromLogin: login,
+							}
+
+							htMock.On("getDelegationsInternal", context.Background(), req).Return(humanTasks.Delegations{}, nil)
+							htMock.On("FilterByType", "users1").Return(delegationht.GetDelegationsResponse{
+								Delegations: []*delegationht.Delegation{},
+							})
+							htMock.On("GetDelegates", "users1").Return([]string{})
+
+							ht = humanTasks.Service{
+								Cli: &htMock,
+								C:   nil,
+							}
+
+							return &ht
+						}(),
+					},
+				},
 			},
+
+			args: args{
+				ctx: context.Background(),
+			},
+			wantActions: []MemberAction{
+				{ID: "approve", Type: "", Params: map[string]interface{}{"disabled": true}},
+				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": "form_0"}},
+				{ID: "add_approvers", Type: "other", Params: map[string]interface{}(nil)},
+				{ID: "request_add_info", Type: "other", Params: map[string]interface{}(nil)}},
 		},
 		{
 			name: "Two forms - ok (RequiredFill && RequiredFill)",
@@ -1524,7 +1607,8 @@ func TestGoApproverBlock_Actions(t *testing.T) {
 				ctx: context.Background(),
 			},
 			wantActions: []MemberAction{
-				{ID: "approve", Type: "", Params: map[string]interface{}{"disabled": true}},
+				{ID: "approve", Type: "", Params: map[string]interface{}(nil)},
+				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"disabled": true}},
 				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"disabled": true}},
 				{ID: "add_approvers", Type: "other", Params: map[string]interface{}(nil)},
 				{ID: "request_add_info", Type: "other", Params: map[string]interface{}(nil)}},

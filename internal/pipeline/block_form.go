@@ -4,6 +4,7 @@ import (
 	c "context"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"time"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
@@ -146,10 +147,15 @@ func (gb *GoFormBlock) formActions() []MemberAction {
 	for k, v := range formActionNames {
 		if v {
 			disabledForm = append(disabledForm, k)
+
+			continue
 		}
 
 		fillForm = append(fillForm, k)
 	}
+
+	sort.Strings(fillForm)
+	sort.Strings(disabledForm)
 
 	actions := []MemberAction{
 		{

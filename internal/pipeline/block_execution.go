@@ -75,7 +75,7 @@ func (gb *GoExecutionBlock) Members() []Member {
 	for login := range gb.State.Executors {
 		members = append(members, Member{
 			Login:                login,
-			Actions:              gb.executionActions(login),
+			Actions:              gb.executionActions(),
 			IsActed:              gb.isExecutionActed(login),
 			ExecutionGroupMember: gb.isPartOfExecutionGroup(login),
 		})
@@ -255,7 +255,7 @@ func (gb *GoExecutionBlock) isPartOfExecutionGroup(login string) bool {
 	return false
 }
 
-func (gb *GoExecutionBlock) executionActions(login string) []MemberAction {
+func (gb *GoExecutionBlock) executionActions() []MemberAction {
 	if gb.State.Decision != nil || gb.State.EditingApp != nil {
 		return nil
 	}
@@ -295,8 +295,8 @@ func (gb *GoExecutionBlock) executionActions(login string) []MemberAction {
 		})
 	}
 
-	checkedActions, allFormFilled := gb.CreateFillFormActions()
-	if !allFormFilled {
+	checkedActions, existEmptyForm := gb.CreateFillFormActions()
+	if existEmptyForm {
 		for i := 0; i < len(actions); i++ {
 			item := &actions[i]
 
@@ -315,7 +315,7 @@ func (gb *GoExecutionBlock) executionActions(login string) []MemberAction {
 
 func (gb *GoExecutionBlock) CreateFillFormActions() ([]MemberAction, bool) {
 	actions := make([]MemberAction, 0)
-	allFormFilled := true
+	emptyForm := false
 
 FormLabel:
 	for _, form := range gb.State.FormsAccessibility {
@@ -336,7 +336,7 @@ FormLabel:
 		case requiredFillAccessType:
 			var formData FormData
 			if err := json.Unmarshal(formState, &formData); err != nil {
-				return actions, false
+				return actions, true
 			}
 
 			memAction := MemberAction{
@@ -363,7 +363,7 @@ FormLabel:
 			}
 
 			if !formData.IsFilled {
-				allFormFilled = false
+				emptyForm = true
 				actions = append(actions, memAction)
 
 				continue
@@ -382,7 +382,7 @@ FormLabel:
 		}
 	}
 
-	return actions, allFormFilled
+	return actions, emptyForm
 }
 
 func (gb *GoExecutionBlock) getNewSLADeadline(slaInfoPtr *sla.Info, half bool) time.Time {

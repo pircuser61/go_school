@@ -230,9 +230,8 @@ func (gb *GoApproverBlock) approvementBaseActions(login string) []MemberAction {
 		})
 	}
 
-	checkedActions, allFormFilled := gb.checkFormAccessType()
-
-	if allFormFilled {
+	checkedActions, existEmptyForm := gb.checkFormAccessType()
+	if existEmptyForm {
 		for i := 0; i < len(actions); i++ {
 			item := &actions[i]
 
@@ -281,9 +280,10 @@ type qna struct {
 	aCrAt *time.Time
 }
 
+//nolint:dupl //its not duplicate
 func (gb *GoApproverBlock) checkFormAccessType() ([]MemberAction, bool) {
 	actions := make([]MemberAction, 0)
-	allFormFilled := true
+	emptyForm := false
 
 FormLabel:
 	for _, form := range gb.State.FormsAccessibility {
@@ -304,7 +304,7 @@ FormLabel:
 		case requiredFillAccessType:
 			var formData FormData
 			if err := json.Unmarshal(formState, &formData); err != nil {
-				return actions, false
+				return actions, true
 			}
 
 			memAction := MemberAction{
@@ -316,7 +316,7 @@ FormLabel:
 			}
 
 			if !formData.IsFilled {
-				allFormFilled = false
+				emptyForm = true
 				actions = append(actions, memAction)
 
 				continue
@@ -335,7 +335,7 @@ FormLabel:
 		}
 	}
 
-	return actions, allFormFilled
+	return actions, emptyForm
 }
 
 func (gb *GoApproverBlock) getNewSLADeadline(slaInfoPtr *sla.Info, half bool) time.Time {

@@ -195,18 +195,20 @@ func (gb *GoSignBlock) signActions(login string) []MemberAction {
 		return []MemberAction{takeInWorkAction, rejectAction, addApproversAction}
 	}
 
-	signAction := MemberAction{
+	signAction := []MemberAction{{
 		ID:   signActionSign,
 		Type: ActionTypePrimary,
 		Params: map[string]interface{}{
 			signatureTypeActionParamsKey: gb.State.SignatureType,
 		},
-	}
+	}}
 
-	actions, formFilled := gb.CreateFillFormActions()
-	if !formFilled {
-		for i := 0; i < len(actions); i++ {
-			item := &actions[i]
+	signAction = append(signAction, rejectAction)
+
+	actions, existEmptyForm := gb.CreateFillFormActions()
+	if existEmptyForm {
+		for i := 0; i < len(signAction); i++ {
+			item := &signAction[i]
 
 			if item.ID == signActionReject {
 				continue
@@ -216,14 +218,16 @@ func (gb *GoSignBlock) signActions(login string) []MemberAction {
 		}
 	}
 
-	actions = append(actions, signAction, rejectAction, addApproversAction)
+	signAction = append(signAction, addApproversAction)
+	signAction = append(signAction, actions...)
 
-	return actions
+	return signAction
 }
 
+//nolint:dupl //its not duplicate
 func (gb *GoSignBlock) CreateFillFormActions() ([]MemberAction, bool) {
 	actions := make([]MemberAction, 0)
-	allFormsFilled := true
+	emptyForm := false
 
 FormLabel:
 	for _, form := range gb.State.FormsAccessibility {
@@ -244,7 +248,7 @@ FormLabel:
 		case requiredFillAccessType:
 			var formData FormData
 			if err := json.Unmarshal(formState, &formData); err != nil {
-				return actions, false
+				return actions, true
 			}
 
 			memAction := MemberAction{
@@ -255,14 +259,8 @@ FormLabel:
 				},
 			}
 
-			users := make(map[string]struct{}, 0)
-
-			for user := range gb.State.Signers {
-				users[user] = struct{}{}
-			}
-
 			if !formData.IsFilled {
-				allFormsFilled = false
+				emptyForm = true
 				actions = append(actions, memAction)
 
 				continue
@@ -281,7 +279,7 @@ FormLabel:
 		}
 	}
 
-	return actions, allFormsFilled
+	return actions, emptyForm
 }
 
 func (gb *GoSignBlock) signAddActions(a *AdditionalSignApprover) []MemberAction {
