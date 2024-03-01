@@ -2279,7 +2279,7 @@ func (db *PGCon) CheckUserCanEditForm(ctx context.Context, workNumber, stepName,
 select count(*)
 from accesses
 where accesses.data::jsonb ->> 'node_id' = $2
-  and accesses.data::jsonb ->> 'accessType' = 'ReadWrite' or accesses.data::jsonb ->> 'accessType' = 'RequiredFill'
+  and accesses.data::jsonb ->> 'accessType' in ('ReadWrite', 'RequiredFill')
 `
 
 	var count int

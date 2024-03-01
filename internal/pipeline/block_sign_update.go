@@ -73,6 +73,25 @@ func (gb *GoSignBlock) handleSignature(ctx c.Context, login string) error {
 		return errors.New("can't assert provided update data")
 	}
 
+	if updateParams.Decision != SignDecisionRejected {
+		for _, v := range gb.State.FormsAccessibility {
+			if v.AccessType != requiredFillAccessType {
+				continue
+			}
+
+			form, _ := gb.RunContext.VarStore.State[v.NodeID]
+
+			var formData FormData
+			if unmarshalErr := json.Unmarshal(form, &formData); unmarshalErr != nil {
+				return unmarshalErr
+			}
+
+			if !formData.IsFilled {
+				return errors.New(fmt.Sprintf("%s is not filled", v.NodeID))
+			}
+		}
+	}
+
 	for _, v := range updateParams.Signatures {
 		newPair := fileSignaturePair{
 			File: entity.Attachment{

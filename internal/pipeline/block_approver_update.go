@@ -901,8 +901,27 @@ func (gb *GoApproverBlock) handleTaskUpdateAction(ctx context.Context) error {
 			return errors.New("can't assert provided data")
 		}
 
-		if !gb.actionAcceptable(updateParams.Decision) {
-			return errors.New("unacceptable action")
+		if updateParams.Decision.ToDecision() != ApproverDecisionRejected {
+			for _, v := range gb.State.FormsAccessibility {
+				if v.AccessType != requiredFillAccessType {
+					continue
+				}
+
+				form, _ := gb.RunContext.VarStore.State[v.NodeID]
+
+				var formData FormData
+				if err := json.Unmarshal(form, &formData); err != nil {
+					return err
+				}
+
+				if !formData.IsFilled {
+					return errors.New(fmt.Sprintf("%s is not filled", v.NodeID))
+				}
+			}
+
+			if !gb.actionAcceptable(updateParams.Decision) {
+				return errors.New("unacceptable action")
+			}
 		}
 
 		login := gb.RunContext.UpdateData.ByLogin

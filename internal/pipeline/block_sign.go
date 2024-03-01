@@ -226,8 +226,11 @@ func (gb *GoSignBlock) signActions(login string) []MemberAction {
 
 //nolint:dupl //its not duplicate
 func (gb *GoSignBlock) CreateFillFormActions() ([]MemberAction, bool) {
-	actions := make([]MemberAction, 0)
-	emptyForm := false
+	var (
+		actions   = make([]MemberAction, 0)
+		emptyForm = false
+		l         = logger.GetLogger(context.Background())
+	)
 
 FormLabel:
 	for _, form := range gb.State.FormsAccessibility {
@@ -248,34 +251,32 @@ FormLabel:
 		case requiredFillAccessType:
 			var formData FormData
 			if err := json.Unmarshal(formState, &formData); err != nil {
+				l.Error(err)
+
 				return actions, true
 			}
 
-			memAction := MemberAction{
+			actions = append(actions, MemberAction{
 				ID:   formFillFormAction,
 				Type: ActionTypeCustom,
 				Params: map[string]interface{}{
 					formName: form.NodeID,
 				},
-			}
+			})
 
 			if !formData.IsFilled {
 				emptyForm = true
-				actions = append(actions, memAction)
 
 				continue
 			}
 
 			for _, v := range formData.ChangesLog {
 				if _, findOk := gb.State.Signers[v.Executor]; findOk {
-					actions = append(actions, memAction)
-
 					continue FormLabel
 				}
 			}
 
-			memAction.Params = map[string]interface{}{"disabled": true}
-			actions = append(actions, memAction)
+			emptyForm = true
 		}
 	}
 

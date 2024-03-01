@@ -7,6 +7,8 @@ import (
 	"sort"
 	"time"
 
+	"golang.org/x/net/context"
+
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
@@ -155,17 +157,7 @@ func (gb *GoFormBlock) formActions() []MemberAction {
 	}
 
 	sort.Strings(fillForm)
-	sort.Strings(disabledForm)
-
 	actions := []MemberAction{
-		{
-			ID:   formFillFormDisabledAction,
-			Type: ActionTypeCustom,
-			Params: map[string]interface{}{
-				formName: disabledForm,
-				disabled: true,
-			},
-		},
 		{
 			ID:   formFillFormAction,
 			Type: ActionTypeCustom,
@@ -175,16 +167,38 @@ func (gb *GoFormBlock) formActions() []MemberAction {
 		},
 	}
 
+	if len(disabledForm) != 0 {
+		sort.Strings(disabledForm)
+
+		actions = append(actions, MemberAction{
+			ID:   formFillFormDisabledAction,
+			Type: ActionTypeCustom,
+			Params: map[string]interface{}{
+				formName: disabledForm,
+				disabled: true,
+			},
+		})
+	}
+
 	return actions
 }
 
 func (gb *GoFormBlock) CreateFillFormActions() map[string]bool {
-	actions := make(map[string]bool, 0)
+	var (
+		actions = map[string]bool{
+			gb.Name: false,
+		}
+		l = logger.GetLogger(context.Background())
+	)
 
 FormLabel:
 	for _, form := range gb.State.FormsAccessibility {
 		formState, ok := gb.RunContext.VarStore.State[form.NodeID]
 		if !ok {
+			continue
+		}
+
+		if gb.Name == form.NodeID {
 			continue
 		}
 
@@ -194,6 +208,8 @@ FormLabel:
 		case requiredFillAccessType:
 			var formData FormData
 			if err := json.Unmarshal(formState, &formData); err != nil {
+				l.Error(err)
+
 				return actions
 			}
 
@@ -208,7 +224,7 @@ FormLabel:
 			}
 
 			if !formData.IsFilled {
-				actions[form.NodeID] = false
+				actions[form.NodeID] = true
 
 				continue
 			}

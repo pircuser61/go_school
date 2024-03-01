@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"time"
 
+	"gitlab.services.mts.ru/abp/myosotis/logger"
+
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
@@ -235,6 +237,10 @@ func (gb *GoApproverBlock) approvementBaseActions(login string) []MemberAction {
 		for i := 0; i < len(actions); i++ {
 			item := &actions[i]
 
+			if item.ID == ApproverActionReject {
+				continue
+			}
+
 			item.Params = map[string]interface{}{"disabled": true}
 		}
 	}
@@ -282,8 +288,11 @@ type qna struct {
 
 //nolint:dupl //its not duplicate
 func (gb *GoApproverBlock) checkFormAccessType() ([]MemberAction, bool) {
-	actions := make([]MemberAction, 0)
-	emptyForm := false
+	var (
+		actions   = make([]MemberAction, 0)
+		emptyForm = false
+		l         = logger.GetLogger(context.Background())
+	)
 
 FormLabel:
 	for _, form := range gb.State.FormsAccessibility {
@@ -304,34 +313,32 @@ FormLabel:
 		case requiredFillAccessType:
 			var formData FormData
 			if err := json.Unmarshal(formState, &formData); err != nil {
+				l.Error(err)
+
 				return actions, true
 			}
 
-			memAction := MemberAction{
+			actions = append(actions, MemberAction{
 				ID:   formFillFormAction,
 				Type: ActionTypeCustom,
 				Params: map[string]interface{}{
 					formName: form.NodeID,
 				},
-			}
+			})
 
 			if !formData.IsFilled {
 				emptyForm = true
-				actions = append(actions, memAction)
 
 				continue
 			}
 
 			for _, v := range formData.ChangesLog {
 				if _, findOk := gb.State.Approvers[v.Executor]; findOk {
-					actions = append(actions, memAction)
-
 					continue FormLabel
 				}
 			}
 
-			memAction.Params = map[string]interface{}{"disabled": true}
-			actions = append(actions, memAction)
+			emptyForm = true
 		}
 	}
 

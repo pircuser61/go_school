@@ -685,6 +685,25 @@ func (gb *GoExecutionBlock) updateDecision(ctx context.Context) error {
 		return errors.New("can't assert provided update data")
 	}
 
+	if updateParams.Decision != ExecutionDecisionRejected {
+		for _, v := range gb.State.FormsAccessibility {
+			if v.AccessType != requiredFillAccessType {
+				continue
+			}
+
+			form, _ := gb.RunContext.VarStore.State[v.NodeID]
+
+			var formData FormData
+			if unmarshalErr := json.Unmarshal(form, &formData); unmarshalErr != nil {
+				return unmarshalErr
+			}
+
+			if !formData.IsFilled {
+				return errors.New(fmt.Sprintf("%s is not filled", v.NodeID))
+			}
+		}
+	}
+
 	if errSet := gb.State.SetDecision(gb.RunContext.UpdateData.ByLogin, &updateParams,
 		gb.RunContext.Delegations); errSet != nil {
 		return errSet

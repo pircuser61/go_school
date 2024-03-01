@@ -136,6 +136,23 @@ func (gb *GoFormBlock) handleRequestFillForm(ctx context.Context, data *script.B
 		return err
 	}
 
+	for _, v := range gb.State.FormsAccessibility {
+		if v.AccessType != requiredFillAccessType {
+			continue
+		}
+
+		form, _ := gb.RunContext.VarStore.State[v.NodeID]
+
+		var formData FormData
+		if unmarshallErr := json.Unmarshal(form, &formData); unmarshallErr != nil {
+			return unmarshallErr
+		}
+
+		if !formData.IsFilled {
+			return errors.New(fmt.Sprintf("%s is not filled", v.NodeID))
+		}
+	}
+
 	gb.State.ApplicationBody = updateParams.ApplicationBody
 	gb.State.Description = updateParams.Description
 
