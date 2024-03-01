@@ -871,6 +871,42 @@ func (gb *GoApproverBlock) Update(ctx context.Context) (interface{}, error) {
 	return nil, nil
 }
 
+func (gb *GoApproverBlock) checkFormFilled() error {
+	l := logger.GetLogger(context.Background())
+
+	for _, form := range gb.State.FormsAccessibility {
+		formState, ok := gb.RunContext.VarStore.State[form.NodeID]
+		if !ok {
+			continue
+		}
+
+		if form.AccessType != requiredFillAccessType {
+			continue
+		}
+
+		var formData FormData
+		if err := json.Unmarshal(formState, &formData); err != nil {
+			l.Error(err)
+
+			return err
+		}
+
+		if !formData.IsFilled {
+			return errors.New("form is not filled " + form.NodeID)
+		}
+
+		for _, v := range formData.ChangesLog {
+			if _, findOk := gb.State.Approvers[v.Executor]; findOk {
+				continue
+			}
+		}
+
+		return errors.New("form is filled but users is not exist in changeLog " + form.NodeID)
+	}
+
+	return nil
+}
+
 //nolint:gocognit,gocyclo //тут большой switch case, где нибудь но он должен быть
 func (gb *GoApproverBlock) handleTaskUpdateAction(ctx context.Context) error {
 	data := gb.RunContext.UpdateData
@@ -902,21 +938,8 @@ func (gb *GoApproverBlock) handleTaskUpdateAction(ctx context.Context) error {
 		}
 
 		if updateParams.Decision.ToDecision() != ApproverDecisionRejected {
-			for _, v := range gb.State.FormsAccessibility {
-				if v.AccessType != requiredFillAccessType {
-					continue
-				}
-
-				form, _ := gb.RunContext.VarStore.State[v.NodeID]
-
-				var formData FormData
-				if err := json.Unmarshal(form, &formData); err != nil {
-					return err
-				}
-
-				if !formData.IsFilled {
-					return errors.New(fmt.Sprintf("%s is not filled", v.NodeID))
-				}
+			if err := gb.checkFormFilled(); err != nil {
+				return err
 			}
 
 			if !gb.actionAcceptable(updateParams.Decision) {

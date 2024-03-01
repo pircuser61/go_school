@@ -4,7 +4,6 @@ import (
 	c "context"
 	"encoding/json"
 	"fmt"
-	"sort"
 	"time"
 
 	"golang.org/x/net/context"
@@ -141,41 +140,40 @@ func (gb *GoFormBlock) formActions() []MemberAction {
 		return []MemberAction{action}
 	}
 
-	formActionNames := gb.CreateFillFormActions()
+	fillFormActions, flag := gb.CreateFillFormActions()
+	if flag {
 
-	disabledForm := make([]string, 0)
-	fillForm := make([]string, 0)
-
-	for k, v := range formActionNames {
-		if v {
-			disabledForm = append(disabledForm, k)
-
-			continue
-		}
-
-		fillForm = append(fillForm, k)
+	} else {
+		fillFormActions = append(fillFormActions, gb.Name)
 	}
 
-	sort.Strings(fillForm)
-	actions := []MemberAction{
-		{
+	actions := make([]MemberAction, 0)
+
+	nodeNames, flag := gb.CreateFillFormActions()
+	if flag {
+		actions = append(actions, []MemberAction{
+			{
+				ID:   formFillFormAction,
+				Type: ActionTypeCustom,
+				Params: map[string]interface{}{
+					formName: nodeNames,
+				},
+			},
+			{
+				ID:   formFillFormDisabledAction,
+				Type: ActionTypeCustom,
+				Params: map[string]interface{}{
+					formName: gb.Name,
+					disabled: true,
+				},
+			},
+		}...)
+	} else {
+		actions = append(actions, MemberAction{
 			ID:   formFillFormAction,
 			Type: ActionTypeCustom,
 			Params: map[string]interface{}{
-				formName: fillForm,
-			},
-		},
-	}
-
-	if len(disabledForm) != 0 {
-		sort.Strings(disabledForm)
-
-		actions = append(actions, MemberAction{
-			ID:   formFillFormDisabledAction,
-			Type: ActionTypeCustom,
-			Params: map[string]interface{}{
-				formName: disabledForm,
-				disabled: true,
+				formName: nodeNames,
 			},
 		})
 	}
@@ -183,12 +181,11 @@ func (gb *GoFormBlock) formActions() []MemberAction {
 	return actions
 }
 
-func (gb *GoFormBlock) CreateFillFormActions() map[string]bool {
+func (gb *GoFormBlock) CreateFillFormActions() ([]string, bool) {
 	var (
-		actions = map[string]bool{
-			gb.Name: false,
-		}
-		l = logger.GetLogger(context.Background())
+		actions   = make([]string, 0)
+		emptyForm = false
+		l         = logger.GetLogger(context.Background())
 	)
 
 FormLabel:
@@ -204,14 +201,16 @@ FormLabel:
 
 		switch form.AccessType {
 		case readWriteAccessType:
-			actions[form.NodeID] = false
+			actions = append(actions, form.NodeID)
 		case requiredFillAccessType:
 			var formData FormData
 			if err := json.Unmarshal(formState, &formData); err != nil {
 				l.Error(err)
 
-				return actions
+				return actions, false
 			}
+
+			actions = append(actions, form.NodeID)
 
 			users := make(map[string]struct{}, 0)
 
@@ -224,24 +223,21 @@ FormLabel:
 			}
 
 			if !formData.IsFilled {
-				actions[form.NodeID] = true
-
+				emptyForm = true
 				continue
 			}
 
 			for _, v := range formData.ChangesLog {
 				if _, findOk := users[v.Executor]; findOk {
-					actions[form.NodeID] = false
-
 					continue FormLabel
 				}
 			}
 
-			actions[form.NodeID] = true
+			emptyForm = true
 		}
 	}
 
-	return actions
+	return actions, emptyForm
 }
 
 func (gb *GoFormBlock) Deadlines(ctx c.Context) ([]Deadline, error) {

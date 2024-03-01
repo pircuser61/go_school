@@ -1050,10 +1050,6 @@ func TestGoApproverBlock_Update(t *testing.T) {
 }
 
 func TestGoApproverBlock_Actions(t *testing.T) {
-	const (
-		approveApproversAction = "approve"
-	)
-
 	exampleApprover := "example"
 	secondExampleApprover := "example2"
 	stepName := "appr"
@@ -1317,9 +1313,9 @@ func TestGoApproverBlock_Actions(t *testing.T) {
 				ctx: context.Background(),
 			},
 			wantActions: []MemberAction{
-				{ID: "approve", Type: "", Params: map[string]interface{}(nil)},
+				{ID: "approve", Type: "", Params: map[string]interface{}{"disabled": true}},
 				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": "form_0"}},
-				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"disabled": true}},
+				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": "form_1"}},
 				{ID: "add_approvers", Type: "other", Params: map[string]interface{}(nil)},
 				{ID: "request_add_info", Type: "other", Params: map[string]interface{}(nil)}},
 		},
@@ -1412,9 +1408,9 @@ func TestGoApproverBlock_Actions(t *testing.T) {
 				ctx: context.Background(),
 			},
 			wantActions: []MemberAction{
-				{ID: "approve", Type: "", Params: map[string]interface{}(nil)},
+				{ID: "approve", Type: "", Params: map[string]interface{}{"disabled": true}},
 				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": "form_0"}},
-				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"disabled": true}},
+				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": "form_1"}},
 				{ID: "add_approvers", Type: "other", Params: map[string]interface{}(nil)},
 				{ID: "request_add_info", Type: "other", Params: map[string]interface{}(nil)}},
 		},
@@ -1607,9 +1603,9 @@ func TestGoApproverBlock_Actions(t *testing.T) {
 				ctx: context.Background(),
 			},
 			wantActions: []MemberAction{
-				{ID: "approve", Type: "", Params: map[string]interface{}(nil)},
-				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"disabled": true}},
-				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"disabled": true}},
+				{ID: "approve", Type: "", Params: map[string]interface{}{"disabled": true}},
+				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": "form_0"}},
+				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": "form_1"}},
 				{ID: "add_approvers", Type: "other", Params: map[string]interface{}(nil)},
 				{ID: "request_add_info", Type: "other", Params: map[string]interface{}(nil)}},
 		},

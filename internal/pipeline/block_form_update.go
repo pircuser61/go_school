@@ -119,6 +119,54 @@ func (gb *GoFormBlock) Update(ctx context.Context) (interface{}, error) {
 	return nil, nil
 }
 
+func (gb *GoFormBlock) checkFormFilled() error {
+	l := logger.GetLogger(context.Background())
+
+	for _, form := range gb.State.FormsAccessibility {
+		formState, ok := gb.RunContext.VarStore.State[form.NodeID]
+		if !ok {
+			continue
+		}
+
+		if gb.Name == form.NodeID {
+			continue
+		}
+
+		if form.AccessType == requiredFillAccessType {
+			var formData FormData
+			if err := json.Unmarshal(formState, &formData); err != nil {
+				l.Error(err)
+
+				return err
+			}
+
+			users := make(map[string]struct{}, 0)
+
+			for user := range gb.State.Executors {
+				users[user] = struct{}{}
+			}
+
+			for user := range gb.State.InitialExecutors {
+				users[user] = struct{}{}
+			}
+
+			if !formData.IsFilled {
+				return errors.New("form is not filled " + form.NodeID)
+			}
+
+			for _, v := range formData.ChangesLog {
+				if _, findOk := users[v.Executor]; findOk {
+					continue
+				}
+			}
+
+			return errors.New("form is filled but users is not exist in changeLog " + form.NodeID)
+		}
+	}
+
+	return nil
+}
+
 func (gb *GoFormBlock) handleRequestFillForm(ctx context.Context, data *script.BlockUpdateData) error {
 	var updateParams updateFillFormParams
 
@@ -141,7 +189,7 @@ func (gb *GoFormBlock) handleRequestFillForm(ctx context.Context, data *script.B
 			continue
 		}
 
-		form, _ := gb.RunContext.VarStore.State[v.NodeID]
+		form := gb.RunContext.VarStore.State[v.NodeID]
 
 		var formData FormData
 		if unmarshallErr := json.Unmarshal(form, &formData); unmarshallErr != nil {
@@ -149,7 +197,9 @@ func (gb *GoFormBlock) handleRequestFillForm(ctx context.Context, data *script.B
 		}
 
 		if !formData.IsFilled {
-			return errors.New(fmt.Sprintf("%s is not filled", v.NodeID))
+			comment := fmt.Sprintf("%s is not filled", v.NodeID)
+
+			return errors.New(comment)
 		}
 	}
 

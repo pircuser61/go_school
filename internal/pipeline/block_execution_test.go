@@ -2445,13 +2445,12 @@ func TestGoExecutionActions(t *testing.T) {
 				},
 			},
 			wantActions: []MemberAction{
-				{ID: "execution", Type: "primary", Params: map[string]interface{}(nil)},
+				{ID: "execution", Type: "primary", Params: map[string]interface{}{"disabled": true}},
 				{ID: "decline", Type: "secondary", Params: map[string]interface{}(nil)},
-				{ID: "change_executor", Type: "other", Params: map[string]interface{}(nil)},
-				{ID: "request_execution_info", Type: "other", Params: map[string]interface{}(nil)},
+				{ID: "change_executor", Type: "other", Params: map[string]interface{}{"disabled": true}},
+				{ID: "request_execution_info", Type: "other", Params: map[string]interface{}{"disabled": true}},
 				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": "form_0"}},
-				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"disabled": true}},
-			},
+				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": "form_1"}}},
 		},
 		{
 			name: "Two form - is filled false (ReadWrite & RequiredFill)",

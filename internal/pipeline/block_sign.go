@@ -205,7 +205,7 @@ func (gb *GoSignBlock) signActions(login string) []MemberAction {
 
 	signAction = append(signAction, rejectAction)
 
-	actions, existEmptyForm := gb.CreateFillFormActions()
+	fillFormActions, existEmptyForm := gb.getFormNamesToFill()
 	if existEmptyForm {
 		for i := 0; i < len(signAction); i++ {
 			item := &signAction[i]
@@ -218,16 +218,25 @@ func (gb *GoSignBlock) signActions(login string) []MemberAction {
 		}
 	}
 
+	if len(fillFormActions) != 0 {
+		signAction = append(signAction, MemberAction{
+			ID:   formFillFormAction,
+			Type: ActionTypeCustom,
+			Params: map[string]interface{}{
+				formName: fillFormActions,
+			},
+		})
+	}
+
 	signAction = append(signAction, addApproversAction)
-	signAction = append(signAction, actions...)
 
 	return signAction
 }
 
 //nolint:dupl //its not duplicate
-func (gb *GoSignBlock) CreateFillFormActions() ([]MemberAction, bool) {
+func (gb *GoSignBlock) getFormNamesToFill() ([]string, bool) {
 	var (
-		actions   = make([]MemberAction, 0)
+		actions   = make([]string, 0)
 		emptyForm = false
 		l         = logger.GetLogger(context.Background())
 	)
@@ -241,13 +250,7 @@ FormLabel:
 
 		switch form.AccessType {
 		case readWriteAccessType:
-			actions = append(actions, MemberAction{
-				ID:   formFillFormAction,
-				Type: ActionTypeCustom,
-				Params: map[string]interface{}{
-					formName: form.NodeID,
-				},
-			})
+			actions = append(actions, form.NodeID)
 		case requiredFillAccessType:
 			var formData FormData
 			if err := json.Unmarshal(formState, &formData); err != nil {
@@ -256,13 +259,7 @@ FormLabel:
 				return actions, true
 			}
 
-			actions = append(actions, MemberAction{
-				ID:   formFillFormAction,
-				Type: ActionTypeCustom,
-				Params: map[string]interface{}{
-					formName: form.NodeID,
-				},
-			})
+			actions = append(actions, form.NodeID)
 
 			if !formData.IsFilled {
 				emptyForm = true

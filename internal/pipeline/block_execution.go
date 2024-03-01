@@ -296,7 +296,7 @@ func (gb *GoExecutionBlock) executionActions() []MemberAction {
 		})
 	}
 
-	checkedActions, existEmptyForm := gb.CreateFillFormActions()
+	formNamesActions, existEmptyForm := gb.getFormNamesToFill()
 	if existEmptyForm {
 		for i := 0; i < len(actions); i++ {
 			item := &actions[i]
@@ -309,14 +309,22 @@ func (gb *GoExecutionBlock) executionActions() []MemberAction {
 		}
 	}
 
-	actions = append(actions, checkedActions...)
+	if len(formNamesActions) != 0 {
+		actions = append(actions, MemberAction{
+			ID:   formFillFormAction,
+			Type: ActionTypeCustom,
+			Params: map[string]interface{}{
+				formName: formNamesActions,
+			},
+		})
+	}
 
 	return actions
 }
 
-func (gb *GoExecutionBlock) CreateFillFormActions() ([]MemberAction, bool) {
+func (gb *GoExecutionBlock) getFormNamesToFill() ([]string, bool) {
 	var (
-		actions   = make([]MemberAction, 0)
+		actions   = make([]string, 0)
 		emptyForm = false
 		l         = logger.GetLogger(context.Background())
 	)
@@ -330,13 +338,7 @@ FormLabel:
 
 		switch form.AccessType {
 		case readWriteAccessType:
-			actions = append(actions, MemberAction{
-				ID:   formFillFormAction,
-				Type: ActionTypeCustom,
-				Params: map[string]interface{}{
-					formName: form.NodeID,
-				},
-			})
+			actions = append(actions, form.NodeID)
 		case requiredFillAccessType:
 			var formData FormData
 			if err := json.Unmarshal(formState, &formData); err != nil {
@@ -345,13 +347,7 @@ FormLabel:
 				return actions, true
 			}
 
-			actions = append(actions, MemberAction{
-				ID:   formFillFormAction,
-				Type: ActionTypeCustom,
-				Params: map[string]interface{}{
-					formName: form.NodeID,
-				},
-			})
+			actions = append(actions, form.NodeID)
 
 			users := make(map[string]struct{}, 0)
 
@@ -370,6 +366,7 @@ FormLabel:
 
 			if !formData.IsFilled {
 				emptyForm = true
+
 				continue
 			}
 

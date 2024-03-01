@@ -63,6 +63,43 @@ type changeStatusSignatureParams struct {
 	Status string `json:"status"`
 }
 
+func (gb *GoSignBlock) checkFormFill() error {
+	l := logger.GetLogger(c.Background())
+
+	for _, form := range gb.State.FormsAccessibility {
+		formState, ok := gb.RunContext.VarStore.State[form.NodeID]
+		if !ok {
+			continue
+		}
+
+		if form.AccessType != requiredFillAccessType {
+			continue
+		}
+
+		var formData FormData
+		if err := json.Unmarshal(formState, &formData); err != nil {
+			l.Error(err)
+
+			return err
+		}
+
+		if !formData.IsFilled {
+			return errors.New("forms is not filled " + form.NodeID)
+		}
+
+		for _, v := range formData.ChangesLog {
+			if _, findOk := gb.State.Signers[v.Executor]; findOk {
+				continue
+			}
+		}
+
+		return errors.New("form is filled but users is not exist in changeLog " + form.NodeID)
+	}
+
+	return nil
+}
+
+// nolint:gocognit //its ok here
 func (gb *GoSignBlock) handleSignature(ctx c.Context, login string) error {
 	log := logger.GetLogger(ctx)
 
@@ -74,21 +111,8 @@ func (gb *GoSignBlock) handleSignature(ctx c.Context, login string) error {
 	}
 
 	if updateParams.Decision != SignDecisionRejected {
-		for _, v := range gb.State.FormsAccessibility {
-			if v.AccessType != requiredFillAccessType {
-				continue
-			}
-
-			form, _ := gb.RunContext.VarStore.State[v.NodeID]
-
-			var formData FormData
-			if unmarshalErr := json.Unmarshal(form, &formData); unmarshalErr != nil {
-				return unmarshalErr
-			}
-
-			if !formData.IsFilled {
-				return errors.New(fmt.Sprintf("%s is not filled", v.NodeID))
-			}
+		if checkErr := gb.checkFormFill(); checkErr != nil {
+			return checkErr
 		}
 	}
 
