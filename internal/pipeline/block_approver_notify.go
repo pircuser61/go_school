@@ -431,6 +431,7 @@ func (gb *GoApproverBlock) notifyDecisionMadeByAdditionalApprover(ctx context.Co
 		ctx,
 		latestDecisonLog.Attachments,
 		gb.RunContext.WorkNumber,
+		gb.RunContext.ClientID,
 	)
 	if err != nil {
 		return err

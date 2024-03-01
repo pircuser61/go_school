@@ -173,6 +173,7 @@ func (gb *GoSignBlock) notifyDecisionMadeByAdditionalApprover(ctx c.Context, log
 		ctx,
 		latestDecisionLog.Attachments,
 		gb.RunContext.WorkNumber,
+		gb.RunContext.ClientID,
 	)
 	if err != nil {
 		return err

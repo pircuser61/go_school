@@ -68,7 +68,11 @@ func (runCtx *BlockRunContext) GetAttach(filesAttach []file_registry.FileInfo) (
 		return nil, err
 	}
 
-	attach, err := runCtx.Services.FileRegistry.GetAttachments(c.Background(), req, runCtx.WorkNumber)
+	attach, err := runCtx.Services.FileRegistry.GetAttachments(c.Background(),
+		req,
+		runCtx.WorkNumber,
+		runCtx.ClientID,
+	)
 	if err != nil {
 		return nil, err
 	}
