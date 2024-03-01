@@ -86,8 +86,13 @@ func (ae *Env) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 			continue
 		}
 
+		clientID, tokenParseErr := ae.getClientIDFromToken(token)
+		if tokenParseErr != nil {
+			log.WithError(err).Info("failed to get client id for file registry metrics")
+		}
+
 		for fileName, fileData := range emails[i].Action.Attachments {
-			id, errSave := ae.FileRegistry.SaveFile(ctx, token, fileName, fileData.Raw)
+			id, errSave := ae.FileRegistry.SaveFile(ctx, token, clientID, fileName, fileData.Raw, emails[i].Action.WorkNumber)
 			if errSave != nil {
 				log.WithField("workNumber", emails[i].Action.WorkNumber).
 					WithField("fileName", fileName).
