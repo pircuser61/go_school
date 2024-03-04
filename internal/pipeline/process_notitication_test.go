@@ -12,6 +12,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
@@ -127,4 +128,103 @@ func TestBlockRunContext_excludeHiddenFormFields(t *testing.T) {
 			assert.Equalf(t, tt.want, got, "excludeHiddenFormFields(%v, %v)", tt.args.formName, tt.args.desc)
 		})
 	}
+}
+
+func Test_initialApplicationAttachments(t *testing.T) {
+	testers := []*InitialApplicationAttachmentsTester{
+		{
+			CaseName:         "without hidden fields",
+			AttachmentFields: []string{"field-uuid-1", "field-uuid-2", "field-uuid-112", "field-uuid-110"},
+			ApplicationBody: map[string]any{
+				"field-uuid-1": map[string]string{
+					"file_id": "field-uuid-1_file_id",
+				},
+				"field-uuid-2": []any{
+					map[string]string{
+						"file_id": "field-uuid-2_file_id",
+					},
+					map[string]string{
+						"not_file_id": "field-uuid-2_file_id",
+					},
+				},
+			},
+			ExpectedAttachments: []entity.Attachment{
+				{
+					FileID: "field-uuid-1_file_id",
+				},
+				{
+					FileID: "field-uuid-2_file_id",
+				},
+			},
+		},
+
+		{
+			CaseName:         "with hidden fields",
+			AttachmentFields: []string{"field-uuid-1", "field-uuid-2", "field-uuid-112", "field-uuid-110"},
+			ApplicationBody: map[string]any{
+				"field-uuid-1": map[string]string{
+					"file_id": "field-uuid-1_file_id",
+				},
+				"field-uuid-2": []any{
+					map[string]string{
+						"file_id": "field-uuid-2_file_id",
+					},
+					map[string]string{
+						"not_file_id": "field-uuid-2_file_id",
+					},
+				},
+			},
+			HiddenFields: []string{"field-uuid-1"},
+			ExpectedAttachments: []entity.Attachment{
+				{
+					FileID: "field-uuid-2_file_id",
+				},
+			},
+		},
+	}
+
+	for _, tester := range testers {
+		t.Run(tester.Name(), tester.Test)
+	}
+}
+
+type InitialApplicationAttachmentsTester struct {
+	CaseName         string
+	AttachmentFields []string
+	HiddenFields     []string
+	ApplicationBody  map[string]any
+
+	ExpectedAttachments []entity.Attachment
+}
+
+func (i *InitialApplicationAttachmentsTester) Name() string {
+	return i.CaseName
+}
+
+func (i *InitialApplicationAttachmentsTester) Test(t *testing.T) {
+	initialApplication := entity.InitialApplication{
+		HiddenFields:     i.HiddenFields,
+		AttachmentFields: i.AttachmentFields,
+		ApplicationBody:  *i.applicationBody(),
+	}
+
+	attachments := initialApplicationAttachments(&initialApplication)
+
+	assert.Equal(t, i.ExpectedAttachments, attachments)
+}
+
+func (i *InitialApplicationAttachmentsTester) applicationBody() *orderedmap.OrderedMap {
+	om := orderedmap.New()
+
+	data, err := json.Marshal(i.ApplicationBody)
+	if err != nil {
+		panic("failed marshal application body in initial application attachment tester")
+	}
+
+	err = om.UnmarshalJSON(data)
+	if err != nil {
+		panic("failed unmarshal application body data in initial application attachment tester")
+	}
+
+	return om
 }

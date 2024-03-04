@@ -164,11 +164,32 @@ func (runCtx *BlockRunContext) makeNotificationAttachment() ([]fileregistry.File
 		return nil, err
 	}
 
-	attachments := make([]entity.Attachment, 0)
-	mapFiles := make(map[string][]entity.Attachment)
+	attachments := initialApplicationAttachments(&task.InitialApplication)
 
-	for _, v := range task.InitialApplication.AttachmentFields {
-		filesAttach, ok := task.InitialApplication.ApplicationBody.Get(v)
+	mapFiles := map[string][]entity.Attachment{
+		"files": attachments,
+	}
+
+	file, err := runCtx.Services.FileRegistry.GetAttachmentsInfo(c.Background(), mapFiles)
+	if err != nil {
+		return nil, err
+	}
+
+	ta := make([]fileregistry.FileInfo, 0)
+	for _, v := range file["files"] {
+		ta = append(ta, fileregistry.FileInfo{FileID: v.FileID, Size: v.Size, Name: v.Name})
+	}
+
+	return ta, nil
+}
+
+func initialApplicationAttachments(initialApplication *entity.InitialApplication) []entity.Attachment {
+	attachments := make([]entity.Attachment, 0)
+
+	notHiddenAttachmentFields := filterHiddenAttachmentFields(initialApplication.AttachmentFields, initialApplication.HiddenFields)
+
+	for _, v := range notHiddenAttachmentFields {
+		filesAttach, ok := initialApplication.ApplicationBody.Get(v)
 		if ok {
 			switch data := filesAttach.(type) {
 			case om.OrderedMap:
@@ -193,19 +214,27 @@ func (runCtx *BlockRunContext) makeNotificationAttachment() ([]fileregistry.File
 		}
 	}
 
-	mapFiles["files"] = attachments
+	return attachments
+}
 
-	file, err := runCtx.Services.FileRegistry.GetAttachmentsInfo(c.Background(), mapFiles)
-	if err != nil {
-		return nil, err
+func filterHiddenAttachmentFields(attachmentFields, hiddenFields []string) []string {
+	hiddenFieldsMap := make(map[string]struct{}, len(hiddenFields))
+
+	for _, field := range hiddenFields {
+		hiddenFieldsMap[field] = struct{}{}
 	}
 
-	ta := make([]fileregistry.FileInfo, 0)
-	for _, v := range file["files"] {
-		ta = append(ta, fileregistry.FileInfo{FileID: v.FileID, Size: v.Size, Name: v.Name})
+	filteredAttachmentFieldsCount := len(attachmentFields) - len(hiddenFields)
+	filteredAttachmentFields := make([]string, 0, filteredAttachmentFieldsCount)
+
+	for _, field := range attachmentFields {
+		_, hidden := hiddenFieldsMap[field]
+		if !hidden {
+			filteredAttachmentFields = append(filteredAttachmentFields, field)
+		}
 	}
 
-	return ta, nil
+	return filteredAttachmentFields
 }
 
 //nolint:gocognit,gocyclo // данный нейминг хорошо описывает механику метода
@@ -217,19 +246,10 @@ func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) ([]o
 
 	apBody := flatArray(taskContext.InitialApplication.ApplicationBody)
 
+	hiddenFieldsSet := makeStringSet(taskContext.InitialApplication.HiddenFields)
+
 	for k, v := range apBody.Values() {
-		isHiddenField := false
-
-		for _, hiddenField := range taskContext.InitialApplication.HiddenFields {
-			if hiddenField != k {
-				continue
-			}
-
-			isHiddenField = true
-
-			break
-		}
-
+		_, isHiddenField := hiddenFieldsSet[k]
 		if isHiddenField {
 			continue
 		}
@@ -287,7 +307,14 @@ func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) ([]o
 			return nil, nil, marshalErr
 		}
 
+		hiddenFieldsSet := makeStringSet(formBlock.HiddenFields)
+
 		for k, v := range form.Description.Values() {
+			_, isHiddenField := hiddenFieldsSet[k]
+			if isHiddenField {
+				continue
+			}
+
 			for _, attachVal := range formBlock.AttachmentFields {
 				if attachVal == k {
 					file, attachOk := v.(om.OrderedMap)
@@ -299,22 +326,6 @@ func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) ([]o
 						attachmentFiles = append(attachmentFiles, fileID.(string))
 					}
 				}
-			}
-
-			isHiddenFields := false
-
-			for _, hiddenFields := range formBlock.HiddenFields {
-				if k != hiddenFields {
-					continue
-				}
-
-				isHiddenFields = true
-
-				break
-			}
-
-			if isHiddenFields {
-				continue
 			}
 
 			key, ok := formBlock.Keys[k]
@@ -360,6 +371,15 @@ func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) ([]o
 	files = append(files, attachments.AttachmentsList...)
 
 	return descriptions, files, nil
+}
+
+func makeStringSet(values []string) map[string]struct{} {
+	set := make(map[string]struct{}, len(values))
+	for _, v := range values {
+		set[v] = struct{}{}
+	}
+
+	return set
 }
 
 func (runCtx *BlockRunContext) excludeHiddenApplicationFields(desc om.OrderedMap, hiddenFields []string) om.OrderedMap {
