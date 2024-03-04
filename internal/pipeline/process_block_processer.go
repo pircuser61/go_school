@@ -34,7 +34,7 @@ func newBlockProcessor(name string, bl *entity.EriusFunc, runCtx *BlockRunContex
 	}
 }
 
-//nolint:gocognit,gocyclo //it's ok
+//nolint:gocognit,gocyclo,nestif //it's ok
 func (p *blockProcessor) ProcessBlock(ctx context.Context, its int) error {
 	its++
 	if its > 10 {
@@ -66,8 +66,7 @@ func (p *blockProcessor) ProcessBlock(ctx context.Context, its int) error {
 		block.GetStatus() == StatusError
 
 	if (block.UpdateManual() && p.manual) || !block.UpdateManual() {
-		err = updateBlock(ctx, block, p.name, id, p.runCtx)
-		if err != nil {
+		if err = updateBlock(ctx, block, p.name, id, p.runCtx); err != nil {
 			return p.handleError(ctx, log, err)
 		}
 
