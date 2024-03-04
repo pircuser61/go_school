@@ -364,8 +364,7 @@ func TestProcessBlock(t *testing.T) {
 							)
 							currCall := res.ExpectedCalls[len(res.ExpectedCalls)-1]
 							currCall = currCall.Run(func(args mock.Arguments) {
-								currCall.ReturnArguments[0] =
-									didMeetBlocks([]string{"approver_0", "execution_0"}, metBlocks)
+								currCall.ReturnArguments[0] = didMeetBlocks([]string{"approver_0", "execution_0"}, metBlocks)
 							})
 
 							res.ExpectedCalls[len(res.ExpectedCalls)-1] = currCall

@@ -1540,7 +1540,7 @@
       "signingParams": {
         "inn": "",
         "snils": "",
-        "files": null
+        "files": []
       },
       "signer": "executable_function_1.somebody",
       "signatureType": "ukep",

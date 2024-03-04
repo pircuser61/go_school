@@ -23,13 +23,13 @@ const (
 	variableRefField     = "variableRef"
 )
 
-func (ae *Env) validatePipeline(ctx context.Context, pipeline *entity.EriusScenario) (valid bool, textErr string) {
-	ok := validateMapping(pipeline.Pipeline.Blocks)
+func (ae *Env) validatePipeline(ctx context.Context, p *entity.EriusScenario) (valid bool, textErr string) {
+	ok := validateMapping(p.Pipeline.Blocks)
 	if !ok {
 		return false, entity.PipelineValidateError
 	}
 
-	return pipeline.Pipeline.Blocks.Validate(ctx, ae.ServiceDesc)
+	return p.Pipeline.Blocks.Validate(ctx, ae.ServiceDesc)
 }
 
 func validateMapping(bt entity.BlocksType) bool {
@@ -71,8 +71,13 @@ func validateMapping(bt entity.BlocksType) bool {
 	return isValid
 }
 
-func validateFunctionBlock(bt entity.BlocksType, block entity.EriusFunc, blockName string) bool {
+func validateFunctionBlock(bt entity.BlocksType, block *entity.EriusFunc, blockName string) bool {
+	if block == nil {
+		return false
+	}
+
 	var function script.ExecutableFunctionParams
+
 	err := json.Unmarshal(block.Params, &function)
 	if err != nil {
 		return false
@@ -80,6 +85,7 @@ func validateFunctionBlock(bt entity.BlocksType, block entity.EriusFunc, blockNa
 
 	if !validateProperties(function.Mapping, bt, blockName) {
 		var marshaledFunction []byte
+
 		marshaledFunction, err = json.Marshal(function)
 		if err != nil {
 			return false
@@ -94,8 +100,14 @@ func validateFunctionBlock(bt entity.BlocksType, block entity.EriusFunc, blockNa
 	return true
 }
 
-func validateApproverBlock(bt entity.BlocksType, block entity.EriusFunc, blockName string) bool {
+//nolint:dupl //its not duplicate
+func validateApproverBlock(bt entity.BlocksType, block *entity.EriusFunc, blockName string) bool {
+	if block == nil {
+		return false
+	}
+
 	var blockApprover script.ApproverParams
+
 	err := json.Unmarshal(block.Params, &blockApprover)
 	if err != nil {
 		return false
@@ -105,6 +117,7 @@ func validateApproverBlock(bt entity.BlocksType, block entity.EriusFunc, blockNa
 
 	if blockApprover.Type == script.ApproverTypeFromSchema {
 		var validVars []string
+
 		approverVars := strings.Split(blockApprover.Approver, ";")
 		for _, approverVar := range approverVars {
 			schema := &script.JSONSchemaPropertiesValue{
@@ -115,6 +128,7 @@ func validateApproverBlock(bt entity.BlocksType, block entity.EriusFunc, blockNa
 
 			if !isPathValid(bt, schema, blockName) {
 				isValid = false
+
 				continue
 			}
 
@@ -140,6 +154,7 @@ func validateApproverBlock(bt entity.BlocksType, block entity.EriusFunc, blockNa
 
 	if !isValid {
 		var marshaledApproverBlock []byte
+
 		marshaledApproverBlock, err = json.Marshal(blockApprover)
 		if err != nil {
 			return false
@@ -152,8 +167,14 @@ func validateApproverBlock(bt entity.BlocksType, block entity.EriusFunc, blockNa
 	return isValid
 }
 
-func validateExecutionBlock(bt entity.BlocksType, block entity.EriusFunc, blockName string) bool {
+//nolint:dupl //its not duplicate
+func validateExecutionBlock(bt entity.BlocksType, block *entity.EriusFunc, blockName string) bool {
+	if block == nil {
+		return false
+	}
+
 	var blockExecution script.ExecutionParams
+
 	err := json.Unmarshal(block.Params, &blockExecution)
 	if err != nil {
 		return false
@@ -174,6 +195,7 @@ func validateExecutionBlock(bt entity.BlocksType, block entity.EriusFunc, blockN
 
 			if !isPathValid(bt, schema, blockName) {
 				isValid = false
+
 				continue
 			}
 
@@ -199,6 +221,7 @@ func validateExecutionBlock(bt entity.BlocksType, block entity.EriusFunc, blockN
 
 	if !isValid {
 		var marshaledExecutionBlock []byte
+
 		marshaledExecutionBlock, err = json.Marshal(blockExecution)
 		if err != nil {
 			return false
@@ -211,8 +234,13 @@ func validateExecutionBlock(bt entity.BlocksType, block entity.EriusFunc, blockN
 	return isValid
 }
 
-func validateFormBlock(bt entity.BlocksType, block entity.EriusFunc, blockName string) bool {
+func validateFormBlock(bt entity.BlocksType, block *entity.EriusFunc, blockName string) bool {
+	if block == nil {
+		return false
+	}
+
 	var blockForm script.FormParams
+
 	err := json.Unmarshal(block.Params, &blockForm)
 	if err != nil {
 		return false
@@ -246,6 +274,7 @@ func validateFormBlock(bt entity.BlocksType, block entity.EriusFunc, blockName s
 
 			if !isPathValid(bt, schema, blockName) {
 				isValid = false
+
 				continue
 			}
 
@@ -271,6 +300,7 @@ func validateFormBlock(bt entity.BlocksType, block entity.EriusFunc, blockName s
 
 	if !isValid {
 		var marshaledForm []byte
+
 		marshaledForm, err = json.Marshal(blockForm)
 		if err != nil {
 			return false
@@ -283,8 +313,13 @@ func validateFormBlock(bt entity.BlocksType, block entity.EriusFunc, blockName s
 	return isValid
 }
 
-func validateSignBlock(bt entity.BlocksType, block entity.EriusFunc, blockName string) bool {
+func validateSignBlock(bt entity.BlocksType, block *entity.EriusFunc, blockName string) bool {
+	if block == nil {
+		return false
+	}
+
 	var blockSign script.SignParams
+
 	err := json.Unmarshal(block.Params, &blockSign)
 	if err != nil {
 		return false
@@ -305,6 +340,7 @@ func validateSignBlock(bt entity.BlocksType, block entity.EriusFunc, blockName s
 
 			if !isPathValid(bt, schema, blockName) {
 				isValid = false
+
 				continue
 			}
 
@@ -345,7 +381,7 @@ func validateSignBlock(bt entity.BlocksType, block entity.EriusFunc, blockName s
 		blockSign.SigningParamsPaths.INN = ""
 	}
 
-	var validFiles []string
+	validFiles := make([]string, 0, len(blockSign.SigningParamsPaths.Files))
 
 	for _, fileRef := range blockSign.SigningParamsPaths.Files {
 		fileSchema := &script.JSONSchemaPropertiesValue{
@@ -363,6 +399,7 @@ func validateSignBlock(bt entity.BlocksType, block entity.EriusFunc, blockName s
 
 		if !isPathValid(bt, fileSchema, blockName) {
 			isValid = false
+
 			continue
 		}
 
@@ -379,6 +416,7 @@ func validateSignBlock(bt entity.BlocksType, block entity.EriusFunc, blockName s
 
 	if !isValid {
 		var marshaledSignBlock []byte
+
 		marshaledSignBlock, err = json.Marshal(blockSign)
 		if err != nil {
 			return false
@@ -391,8 +429,13 @@ func validateSignBlock(bt entity.BlocksType, block entity.EriusFunc, blockName s
 	return isValid
 }
 
-func validateIfBlock(bt entity.BlocksType, block entity.EriusFunc, blockName string) bool {
+func validateIfBlock(bt entity.BlocksType, block *entity.EriusFunc, blockName string) bool {
+	if block == nil {
+		return false
+	}
+
 	var blockIf map[string]interface{}
+
 	err := json.Unmarshal(block.Params, &blockIf)
 	if err != nil {
 		return false
@@ -412,47 +455,22 @@ func validateIfBlock(bt entity.BlocksType, block entity.EriusFunc, blockName str
 
 	for _, groupInterface := range conditionGroups {
 		var group map[string]interface{}
+
 		group, ok = groupInterface.(map[string]interface{})
 		if !ok {
+			isValid = false
+
 			continue
 		}
 
-		var conditionsInterface interface{}
-		conditionsInterface, ok = group[conditionsField]
-		if !ok {
-			continue
-		}
-
-		var conditions []interface{}
-		conditions, ok = conditionsInterface.([]interface{})
-		if !ok {
-			continue
-		}
-
-		for _, conditionInterface := range conditions {
-			var condition map[string]interface{}
-			condition, ok = conditionInterface.(map[string]interface{})
-			if !ok {
-				continue
-			}
-
-			var operandInterface interface{}
-			if operandInterface, ok = condition[leftOperand]; ok {
-				if !validateOperand(bt, operandInterface, blockName) {
-					isValid = false
-				}
-			}
-
-			if operandInterface, ok = condition[rightOperand]; ok {
-				if !validateOperand(bt, operandInterface, blockName) {
-					isValid = false
-				}
-			}
+		if !validateConditionGroup(bt, group, blockName) {
+			isValid = false
 		}
 	}
 
 	if !isValid {
 		var marshaledIfBlock []byte
+
 		marshaledIfBlock, err = json.Marshal(blockIf)
 		if err != nil {
 			return false
@@ -465,30 +483,89 @@ func validateIfBlock(bt entity.BlocksType, block entity.EriusFunc, blockName str
 	return isValid
 }
 
-func validateOperand(bt entity.BlocksType, operandInterface interface{}, blockName string) bool {
-	if operand, ok := operandInterface.(map[string]interface{}); ok {
-		var variableRefInterface interface{}
-		if variableRefInterface, ok = operand[variableRefField]; ok {
-			var variableRef string
-			if variableRef, ok = variableRefInterface.(string); ok {
-				schema := &script.JSONSchemaPropertiesValue{
-					Type:  stringType,
-					Value: variableRef,
-				}
+func validateConditionGroup(bt entity.BlocksType, group map[string]interface{}, blockName string) bool {
+	conditionsInterface, ok := group[conditionsField]
+	if !ok {
+		return false
+	}
 
-				if !isPathValid(bt, schema, blockName) {
-					delete(operand, variableRefField)
-					return false
-				}
+	var conditions []interface{}
+
+	conditions, ok = conditionsInterface.([]interface{})
+	if !ok {
+		return false
+	}
+
+	isValid := true
+
+	for _, conditionInterface := range conditions {
+		var condition map[string]interface{}
+
+		condition, ok = conditionInterface.(map[string]interface{})
+		if !ok {
+			isValid = false
+
+			continue
+		}
+
+		var operandInterface interface{}
+		if operandInterface, ok = condition[leftOperand]; ok {
+			if !validateOperand(bt, operandInterface, blockName) {
+				isValid = false
 			}
 		}
+
+		if operandInterface, ok = condition[rightOperand]; ok {
+			if !validateOperand(bt, operandInterface, blockName) {
+				isValid = false
+			}
+		}
+	}
+
+	return isValid
+}
+
+func validateOperand(bt entity.BlocksType, operandInterface interface{}, blockName string) bool {
+	operand, ok := operandInterface.(map[string]interface{})
+	if !ok {
+		return false
+	}
+
+	var variableRefInterface interface{}
+
+	variableRefInterface, ok = operand[variableRefField]
+	if !ok {
+		return true
+	}
+
+	var variableRef string
+
+	variableRef, ok = variableRefInterface.(string)
+	if !ok {
+		return false
+	}
+
+	schema := &script.JSONSchemaPropertiesValue{
+		Type:  stringType,
+		Value: variableRef,
+	}
+
+	if !isPathValid(bt, schema, blockName) {
+		delete(operand, variableRefField)
+
+		return false
 	}
 
 	return true
 }
 
-func validateNotificationBlock(bt entity.BlocksType, block entity.EriusFunc, blockName string) bool {
+func validateNotificationBlock(bt entity.BlocksType, block *entity.EriusFunc, blockName string) bool {
+	if block == nil {
+		return false
+	}
+
 	var blockNotification script.NotificationParams
+
 	err := json.Unmarshal(block.Params, &blockNotification)
 	if err != nil {
 		return false
@@ -496,7 +573,7 @@ func validateNotificationBlock(bt entity.BlocksType, block entity.EriusFunc, blo
 
 	isValid := true
 	paths := strings.Split(blockNotification.UsersFromSchema, ";")
-	var validPaths []string
+	validPaths := make([]string, 0, len(paths))
 
 	for _, path := range paths {
 		schema := &script.JSONSchemaPropertiesValue{
@@ -507,6 +584,7 @@ func validateNotificationBlock(bt entity.BlocksType, block entity.EriusFunc, blo
 
 		if !isPathValid(bt, schema, blockName) {
 			isValid = false
+
 			continue
 		}
 
@@ -527,6 +605,7 @@ func validateNotificationBlock(bt entity.BlocksType, block entity.EriusFunc, blo
 		blockNotification.UsersFromSchema = strings.Join(validPaths, ";")
 
 		var marshaledNotificationBlock []byte
+
 		marshaledNotificationBlock, err = json.Marshal(blockNotification)
 		if err != nil {
 			return false
@@ -539,6 +618,7 @@ func validateNotificationBlock(bt entity.BlocksType, block entity.EriusFunc, blo
 	return isValid
 }
 
+// nolint:gocritic,gosec // don't want pointer of JSONSchemaPropertiesValue
 func validateProperties(properties script.JSONSchemaProperties, bt entity.BlocksType, blockName string) bool {
 	isValid := true
 
@@ -566,12 +646,13 @@ func isPathValid(bt entity.BlocksType, property *script.JSONSchemaPropertiesValu
 
 	path := strings.Split(property.Value, ".")
 	targetBlockName := path[0]
+
 	targetBlock, ok := bt[targetBlockName]
 	if !ok {
 		return false
 	}
 
-	if !isBlockBefore(bt, &targetBlock, blockName, map[string]struct{}{}) {
+	if !isBlockBefore(bt, targetBlock, blockName, map[string]struct{}{}) {
 		return false
 	}
 
@@ -593,7 +674,8 @@ func isBlockBefore(
 	bt entity.BlocksType,
 	targetBlock *entity.EriusFunc,
 	currentBlockName string,
-	visitedBlocks map[string]struct{}) bool {
+	visitedBlocks map[string]struct{},
+) bool {
 	for _, socket := range targetBlock.Next {
 		for _, next := range socket {
 			if next == currentBlockName {
@@ -611,7 +693,7 @@ func isBlockBefore(
 				return false
 			}
 
-			if isBlockBefore(bt, &nextBlock, currentBlockName, visitedBlocks) {
+			if isBlockBefore(bt, nextBlock, currentBlockName, visitedBlocks) {
 				return true
 			}
 		}
@@ -683,6 +765,7 @@ func isObjectValid(propertySchema, targetSchema *script.JSONSchemaPropertiesValu
 	return true
 }
 
+// nolint:gocritic,gosec // don't want pointer of JSONSchemaPropertiesValue
 func isArrayValid(propertyItems, targetPropertyItems *script.ArrayItems) bool {
 	if propertyItems == nil || targetPropertyItems == nil ||
 		propertyItems.Type != targetPropertyItems.Type {

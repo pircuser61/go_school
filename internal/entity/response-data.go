@@ -3,6 +3,7 @@ package entity
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -52,7 +53,7 @@ type EriusTagInfo struct {
 	IsMarker bool      `json:"isMarker"`
 }
 
-type BlocksType map[string]EriusFunc
+type BlocksType map[string]*EriusFunc
 
 const (
 	BlockGoStartName       = "start"
@@ -203,7 +204,7 @@ func (bt *BlocksType) IsParallelNodesCorrect() (valid bool, textErr string) {
 				if !ok {
 					continue
 				}
-				nodes[socketOutNode] = &socketNode
+				nodes[socketOutNode] = socketNode
 			}
 		}
 
@@ -237,7 +238,7 @@ func (bt *BlocksType) IsParallelNodesCorrect() (valid bool, textErr string) {
 						if socketOutNode == idx {
 							return false, ParallelNodeReturnCycle
 						}
-						nodes[socketOutNode] = &socketNode
+						nodes[socketOutNode] = socketNode
 					}
 				}
 			}
@@ -284,7 +285,7 @@ func (bt *BlocksType) validateIntersectingPathParallelNodes(parallelStartNodes m
 					continue
 				}
 
-				nodes[socketOutNode] = &socketNode
+				nodes[socketOutNode] = socketNode
 
 				visitedBranchNodes := make(map[string]EriusFunc, 0)
 
@@ -325,7 +326,7 @@ func (bt *BlocksType) validateIntersectingPathParallelNodes(parallelStartNodes m
 									if !ok {
 										continue
 									}
-									nodes[socketOutBranchNode] = &socketBranchNode
+									nodes[socketOutBranchNode] = socketBranchNode
 								}
 							}
 						}
@@ -345,7 +346,7 @@ func (bt *BlocksType) validateIntersectingPathParallelNodes(parallelStartNodes m
 									if !ok {
 										continue
 									}
-									nodes[socketOutBranchNode] = &socketBranchNode
+									nodes[socketOutBranchNode] = socketBranchNode
 								}
 							}
 						}
@@ -364,7 +365,7 @@ func (bt *BlocksType) validateAfterEndParallelNodes(endNode, idx *string,
 ) (valid bool, visitedNodes map[string]EriusFunc) {
 	parallelEndNode := (*bt)[*endNode]
 	afterEndNodes := map[string]*EriusFunc{
-		*endNode: &parallelEndNode,
+		*endNode: parallelEndNode,
 	}
 	visitedEndParallelNodes := make(map[string]EriusFunc, 0)
 
@@ -400,7 +401,7 @@ func (bt *BlocksType) validateAfterEndParallelNodes(endNode, idx *string,
 					continue
 				}
 
-				afterEndNodes[socketOutNode] = &socketNode
+				afterEndNodes[socketOutNode] = socketNode
 			}
 		}
 	}
@@ -414,7 +415,7 @@ func (bt *BlocksType) validateBeforeStartParallelNodes(startKey, idx, endNode st
 ) (valid bool, textErr string) {
 	parallelStartNode := (*bt)[startKey]
 	BeforeStartNodes := map[string]*EriusFunc{
-		startKey: &parallelStartNode,
+		startKey: parallelStartNode,
 	}
 	visitedBeforStartParallelNodes := make(map[string]EriusFunc, 0)
 
@@ -459,7 +460,7 @@ func (bt *BlocksType) validateBeforeStartParallelNodes(startKey, idx, endNode st
 					continue
 				}
 
-				BeforeStartNodes[socketOutNode] = &socketNode
+				BeforeStartNodes[socketOutNode] = socketNode
 			}
 		}
 	}
@@ -468,7 +469,7 @@ func (bt *BlocksType) validateBeforeStartParallelNodes(startKey, idx, endNode st
 }
 
 func (bt *BlocksType) addDefaultStartNode() {
-	(*bt)[StartBlock0] = EriusFunc{
+	(*bt)[StartBlock0] = &EriusFunc{
 		X:         0,
 		Y:         0,
 		TypeID:    BlockGoStartName,
@@ -529,7 +530,7 @@ func (bt *BlocksType) getNodesByType(blockType string) map[string]EriusFunc {
 	for id := range *bt {
 		b := (*bt)[id]
 		if b.TypeID == blockType {
-			blocks[id] = b
+			blocks[id] = *b
 		}
 	}
 
@@ -559,7 +560,7 @@ func (bt *BlocksType) countRelatedNodesIds(startNode *EriusFunc) (res int) {
 				if !visited[blockID] {
 					visited[blockID] = true
 
-					nodes = append(nodes, &socketNode)
+					nodes = append(nodes, socketNode)
 
 					res++
 				}
@@ -763,8 +764,13 @@ type NodeGroup struct {
 
 // nolint
 func (bt *BlocksType) GetGroups() (nodeGroups []*NodeGroup, err error) {
+	startBlock := (*bt)[StartBlock0]
+	if startBlock == nil {
+		return nil, fmt.Errorf("%s not found", StartBlock0)
+	}
+
 	blocks := map[string]EriusFunc{
-		StartBlock0: (*bt)[StartBlock0],
+		StartBlock0: *startBlock,
 	}
 	visitedNodes := make(map[string]*EriusFunc, 0)
 	prevNodeMap := make(map[string]string, 0)
@@ -797,7 +803,7 @@ func (bt *BlocksType) GetGroups() (nodeGroups []*NodeGroup, err error) {
 					if !ok {
 						continue
 					}
-					blocks[socketOutNode] = socketNode
+					blocks[socketOutNode] = *socketNode
 					prevNodeMap[socketOutNode] = exitParallelIdx
 				}
 			}
@@ -818,7 +824,7 @@ func (bt *BlocksType) GetGroups() (nodeGroups []*NodeGroup, err error) {
 					if !ok {
 						continue
 					}
-					blocks[socketOutNode] = socketNode
+					blocks[socketOutNode] = *socketNode
 					prevNodeMap[socketOutNode] = nodeKey
 				}
 			}
@@ -893,7 +899,7 @@ func (bt *BlocksType) fillPrlGroups(nodeKey, prev string, its int, bl *EriusFunc
 						if !ok {
 							continue
 						}
-						blocks[socketOutNode] = &socketNode
+						blocks[socketOutNode] = socketNode
 						prevNodeMap[socketOutNode] = extIdx
 					}
 				}
@@ -914,7 +920,7 @@ func (bt *BlocksType) fillPrlGroups(nodeKey, prev string, its int, bl *EriusFunc
 						if !ok {
 							continue
 						}
-						blocks[socketOutNode] = &socketNode
+						blocks[socketOutNode] = socketNode
 						prevNodeMap[socketOutNode] = parallNodeKey
 					}
 				}
@@ -936,7 +942,7 @@ func (bt *BlocksType) fillPrlGroups(nodeKey, prev string, its int, bl *EriusFunc
 					if !ok {
 						continue
 					}
-					blocks[socketOutNode] = &socketNode
+					blocks[socketOutNode] = socketNode
 					prevNodeMap[socketOutNode] = parallNodeKey
 				}
 			}

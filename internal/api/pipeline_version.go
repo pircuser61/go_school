@@ -778,7 +778,7 @@ func (ae *Env) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO) (
 
 	runCtx.SetTaskEvents(ctx)
 
-	workFinished, err := pipeline.ProcessBlockWithEndMapping(ctx, ep.EntryPoint, &blockData, runCtx, false)
+	workFinished, err := pipeline.ProcessBlockWithEndMapping(ctx, ep.EntryPoint, blockData, runCtx, false)
 	if err != nil {
 		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
 			log.WithField("funcName", "RollbackTransaction").

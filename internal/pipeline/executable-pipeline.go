@@ -161,7 +161,7 @@ func (gb *ExecutablePipeline) Update(_ c.Context) (interface{}, error) {
 	return nil, nil
 }
 
-func (gb *ExecutablePipeline) CreateBlocks(ctx c.Context, source map[string]entity.EriusFunc) error {
+func (gb *ExecutablePipeline) CreateBlocks(ctx c.Context, source map[string]*entity.EriusFunc) error {
 	gb.Blocks = make(map[string]Runner)
 
 	ctx, s := trace.StartSpan(ctx, "create_blocks")
@@ -175,7 +175,7 @@ func (gb *ExecutablePipeline) CreateBlocks(ctx c.Context, source map[string]enti
 	for k := range source {
 		bl := source[k]
 
-		block, _, err := CreateBlock(ctx, k, &bl, &BlockRunContext{
+		block, _, err := CreateBlock(ctx, k, bl, &BlockRunContext{
 			TaskID:     gb.TaskID,
 			WorkNumber: gb.WorkNumber,
 			WorkTitle:  gb.Name,
