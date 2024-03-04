@@ -21,7 +21,6 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 )
 
 const runByPipelineIDPath = "/run/versions/pipeline_id"
@@ -71,6 +70,11 @@ func (ae *Env) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Request
 		errorHandler.handleError(ValidationError, errors.New("workNumber is empty"))
 
 		return
+	}
+
+	workID, err := ae.DB.GetWorkIDByWorkNumber(ctx, req.WorkNumber)
+	if err != nil {
+		log.WithError(err).Error("couldn't get workID")
 	}
 
 	version, err := ae.DB.GetVersionByWorkNumber(ctx, req.WorkNumber)
@@ -125,17 +129,7 @@ func (ae *Env) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	ui, err := user.GetUserInfoFromCtx(ctx)
-	if err != nil {
-		log.WithError(err).Error("couldn't get user forn context")
-	}
-
-	dbTask, getTaskErr := ae.DB.GetTask(ctx, []string{ui.Username}, []string{ui.Username}, ui.Username, req.WorkNumber)
-	if getTaskErr != nil {
-		log.WithError(getTaskErr).Error("couldn't get task")
-	}
-
-	err = ae.Scheduler.DeleteAllTasksByWorkID(ctx, dbTask.ID)
+	err = ae.Scheduler.DeleteAllTasksByWorkID(ctx, workID)
 	if err != nil {
 		log.WithError(err).Error("failed delete all tasks by work id in scheduler")
 	}

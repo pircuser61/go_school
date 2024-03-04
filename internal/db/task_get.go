@@ -1792,6 +1792,25 @@ func (db *PGCon) GetTaskStatusWithReadableString(ctx c.Context, taskID uuid.UUID
 	return intStatus, stringStatus, nil
 }
 
+func (db *PGCon) GetWorkIDByWorkNumber(ctx c.Context, workNumber string) (uuid.UUID, error) {
+	ctx, span := trace.StartSpan(ctx, "get_work_id_by_work_number")
+	defer span.End()
+
+	q := `
+		SELECT
+		  id
+		FROM works 
+		WHERE  work_number = $1 and child_id is null`
+
+	var workID uuid.UUID
+
+	if err := db.Connection.QueryRow(ctx, q, workNumber).Scan(&workID); err != nil {
+		return uuid.UUID{}, err
+	}
+
+	return workID, nil
+}
+
 func (db *PGCon) getActionsMap(ctx c.Context) (actions map[string]entity.TaskAction, err error) {
 	const q = `
 		SELECT 
