@@ -105,6 +105,7 @@
               >
                 Уважаемый коллега, функция {{ .FunctionName }} получила обновление. Актуальная версия: {{ .FunctionVersion }}. Данная функция используется в ваших процессах:
               </p>
+              {{if .HaveActive}}
               <!-- пустая линия -->
               <p
                 style="
@@ -124,8 +125,19 @@
                 >
               </p>
               <!-- конец пустой линии -->
+
+              <p style="margin: 0;padding: 0;font-family: MTS Text, sans-serif, serif, EmojiFont;font-size: 17px;font-weight: 400;line-height: 24px;">
+                Опубликованные процессы:
+              </p>
+
+              <!-- пустая линия -->
+              <p style="margin: 0cm; padding: 0;line-height: 24px;vertical-align: baseline;">
+                <span style="font-size: 10pt;font-family: 'MTS Text', sans-serif, serif, EmojiFont;color: transparent;" >&nbsp;</span>
+              </p>
+              <!-- конец пустой линии -->
+
               <p
-                      style="
+                style="
                   margin: 0;
                   padding: 0;
                   font-family: MTS Text, sans-serif, serif, EmojiFont;
@@ -135,7 +147,7 @@
                 "
               >
                 <ul>
-                  {{range .Versions}}
+                  {{range .ActiveVersions}}
                   <li style="
                     text-decoration: none;
                     color: #007cff;
@@ -159,6 +171,59 @@
                   {{end}}
                 </ul>
               </p>
+              {{end}}
+
+              {{if .HaveDraft}}
+              <!-- пустая линия -->
+              <p style="margin: 0cm; padding: 0;line-height: 24px;vertical-align: baseline;">
+                <span style="font-size: 10pt;font-family: 'MTS Text', sans-serif, serif, EmojiFont;color: transparent;" >&nbsp;</span>
+              </p>
+              <!-- конец пустой линии -->
+
+              <p style="margin: 0;padding: 0;font-family: MTS Text, sans-serif, serif, EmojiFont;font-size: 17px;font-weight: 400;line-height: 24px;">
+                Неопубликованные:
+              </p>
+
+              <!-- пустая линия -->
+              <p style="margin: 0cm; padding: 0;line-height: 24px;vertical-align: baseline;">
+                <span style="font-size: 10pt;font-family: 'MTS Text', sans-serif, serif, EmojiFont;color: transparent;" >&nbsp;</span>
+              </p>
+              <!-- конец пустой линии -->
+
+              <p
+                style="
+                  margin: 0;
+                  padding: 0;
+                  font-family: MTS Text, sans-serif, serif, EmojiFont;
+                  font-size: 17px;
+                  font-weight: 400;
+                  line-height: 24px;
+                "
+              >
+              <ul>
+                {{range .DraftVersions}}
+                <li style="
+                    text-decoration: none;
+                    color: #007cff;
+                    font-family: MTS Text, sans-serif, serif, EmojiFont;
+                    font-size: 17px;
+                    font-weight: 500;
+                    line-height: 24px;"
+                ><a href={{.Link}} target="_blank"
+                  style="
+                    text-decoration: none;
+                    color: #007cff;
+                    font-family: MTS Text, sans-serif, serif, EmojiFont;
+                    font-size: 17px;
+                    font-weight: 500;
+                    line-height: 24px;
+                  "
+                >{{.Name}}</a></li>
+
+                {{end}}
+              </ul>
+              </p>
+              {{end}}
             </td>
           </tr>
           <tr>

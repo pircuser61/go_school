@@ -307,6 +307,7 @@ func (ft functionTime) MarshalJSON() ([]byte, error) {
 }
 
 type VersionsByFunction struct {
-	Name string
-	Link string
+	Name   string
+	Link   string
+	Status int
 }
