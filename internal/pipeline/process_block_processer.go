@@ -31,6 +31,7 @@ func newBlockProcessor(name string, bl *entity.EriusFunc, runCtx *BlockRunContex
 	}
 }
 
+//nolint:gocognit,gocyclo //it's ok
 func (p *blockProcessor) ProcessBlock(ctx context.Context, its int) error {
 	its++
 	if its > 10 {
