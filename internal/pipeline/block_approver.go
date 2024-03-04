@@ -302,7 +302,6 @@ func (gb *GoApproverBlock) getFormNamesToFill() ([]string, bool) {
 		l         = logger.GetLogger(context.Background())
 	)
 
-FormLabel:
 	for _, form := range gb.State.FormsAccessibility {
 		formState, ok := gb.RunContext.VarStore.State[form.NodeID]
 		if !ok {
@@ -313,32 +312,33 @@ FormLabel:
 		case readWriteAccessType:
 			actions = append(actions, form.NodeID)
 		case requiredFillAccessType:
-			var formData FormData
-			if err := json.Unmarshal(formState, &formData); err != nil {
-				l.Error(err)
-
-				return actions, true
-			}
-
 			actions = append(actions, form.NodeID)
-
-			if !formData.IsFilled {
-				emptyForm = true
-
-				continue
-			}
-
-			for _, v := range formData.ChangesLog {
-				if _, findOk := gb.State.Approvers[v.Executor]; findOk {
-					continue FormLabel
-				}
-			}
-
-			emptyForm = true
+			emptyForm = gb.checkForEmptyForm(formState, l)
 		}
 	}
 
 	return actions, emptyForm
+}
+
+func (gb *GoApproverBlock) checkForEmptyForm(formState json.RawMessage, l logger.Logger) bool {
+	var formData FormData
+	if err := json.Unmarshal(formState, &formData); err != nil {
+		l.Error(err)
+
+		return true
+	}
+
+	if !formData.IsFilled {
+		return true
+	}
+
+	for _, v := range formData.ChangesLog {
+		if _, findOk := gb.State.Approvers[v.Executor]; findOk {
+			return false
+		}
+	}
+
+	return true
 }
 
 func (gb *GoApproverBlock) getNewSLADeadline(slaInfoPtr *sla.Info, half bool) time.Time {

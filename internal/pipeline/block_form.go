@@ -140,30 +140,23 @@ func (gb *GoFormBlock) formActions() []MemberAction {
 		return []MemberAction{action}
 	}
 
-	fillFormActions, flag := gb.CreateFillFormActions()
-	if flag {
-
-	} else {
-		fillFormActions = append(fillFormActions, gb.Name)
-	}
-
 	actions := make([]MemberAction, 0)
 
-	nodeNames, flag := gb.CreateFillFormActions()
-	if flag {
+	fillFormActions, existEmptyForm := gb.getFormNamesToFill()
+	if existEmptyForm {
 		actions = append(actions, []MemberAction{
 			{
 				ID:   formFillFormAction,
 				Type: ActionTypeCustom,
 				Params: map[string]interface{}{
-					formName: nodeNames,
+					formName: fillFormActions,
 				},
 			},
 			{
 				ID:   formFillFormDisabledAction,
 				Type: ActionTypeCustom,
 				Params: map[string]interface{}{
-					formName: gb.Name,
+					formName: []string{gb.Name},
 					disabled: true,
 				},
 			},
@@ -173,7 +166,7 @@ func (gb *GoFormBlock) formActions() []MemberAction {
 			ID:   formFillFormAction,
 			Type: ActionTypeCustom,
 			Params: map[string]interface{}{
-				formName: nodeNames,
+				formName: append(fillFormActions, gb.Name),
 			},
 		})
 	}
@@ -181,14 +174,13 @@ func (gb *GoFormBlock) formActions() []MemberAction {
 	return actions
 }
 
-func (gb *GoFormBlock) CreateFillFormActions() ([]string, bool) {
+func (gb *GoFormBlock) getFormNamesToFill() ([]string, bool) {
 	var (
 		actions   = make([]string, 0)
 		emptyForm = false
 		l         = logger.GetLogger(context.Background())
 	)
 
-FormLabel:
 	for _, form := range gb.State.FormsAccessibility {
 		formState, ok := gb.RunContext.VarStore.State[form.NodeID]
 		if !ok {
@@ -203,41 +195,44 @@ FormLabel:
 		case readWriteAccessType:
 			actions = append(actions, form.NodeID)
 		case requiredFillAccessType:
-			var formData FormData
-			if err := json.Unmarshal(formState, &formData); err != nil {
-				l.Error(err)
-
-				return actions, false
-			}
-
 			actions = append(actions, form.NodeID)
-
-			users := make(map[string]struct{}, 0)
-
-			for user := range gb.State.Executors {
-				users[user] = struct{}{}
-			}
-
-			for user := range gb.State.InitialExecutors {
-				users[user] = struct{}{}
-			}
-
-			if !formData.IsFilled {
-				emptyForm = true
-				continue
-			}
-
-			for _, v := range formData.ChangesLog {
-				if _, findOk := users[v.Executor]; findOk {
-					continue FormLabel
-				}
-			}
-
-			emptyForm = true
+			emptyForm = gb.checkForEmptyForm(formState, l)
 		}
 	}
 
 	return actions, emptyForm
+}
+
+func (gb *GoFormBlock) checkForEmptyForm(formState json.RawMessage, l logger.Logger) bool {
+	var formData FormData
+
+	if err := json.Unmarshal(formState, &formData); err != nil {
+		l.Error(err)
+
+		return true
+	}
+
+	users := make(map[string]struct{}, 0)
+
+	for user := range gb.State.Executors {
+		users[user] = struct{}{}
+	}
+
+	for user := range gb.State.InitialExecutors {
+		users[user] = struct{}{}
+	}
+
+	if !formData.IsFilled {
+		return true
+	}
+
+	for _, v := range formData.ChangesLog {
+		if _, findOk := users[v.Executor]; findOk {
+			return false
+		}
+	}
+
+	return true
 }
 
 func (gb *GoFormBlock) Deadlines(ctx c.Context) ([]Deadline, error) {

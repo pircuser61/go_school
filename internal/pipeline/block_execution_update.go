@@ -691,34 +691,11 @@ func (gb *GoExecutionBlock) checkFormFilled() error {
 		}
 
 		if form.AccessType == requiredFillAccessType {
-			var formData FormData
-			if err := json.Unmarshal(formState, &formData); err != nil {
-				l.Error(err)
+			if gb.checkForEmptyForm(formState, l) {
+				comment := fmt.Sprintf("%s have empty form", form.NodeID)
 
-				return err
+				return errors.New(comment)
 			}
-
-			users := make(map[string]struct{}, 0)
-
-			for user := range gb.State.Executors {
-				users[user] = struct{}{}
-			}
-
-			for user := range gb.State.InitialExecutors {
-				users[user] = struct{}{}
-			}
-
-			if !formData.IsFilled {
-				return errors.New("form is not filled" + form.NodeID)
-			}
-
-			for _, v := range formData.ChangesLog {
-				if _, findOk := users[v.Executor]; findOk {
-					continue
-				}
-			}
-
-			return errors.New("form is filled but users is not exist in changeLog " + form.NodeID)
 		}
 	}
 

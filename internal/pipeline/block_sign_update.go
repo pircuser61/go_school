@@ -72,28 +72,13 @@ func (gb *GoSignBlock) checkFormFill() error {
 			continue
 		}
 
-		if form.AccessType != requiredFillAccessType {
-			continue
-		}
+		if form.AccessType == requiredFillAccessType {
+			if gb.checkForEmptyForm(formState, l) {
+				comment := fmt.Sprintf("%s have empty form", form.NodeID)
 
-		var formData FormData
-		if err := json.Unmarshal(formState, &formData); err != nil {
-			l.Error(err)
-
-			return err
-		}
-
-		if !formData.IsFilled {
-			return errors.New("forms is not filled " + form.NodeID)
-		}
-
-		for _, v := range formData.ChangesLog {
-			if _, findOk := gb.State.Signers[v.Executor]; findOk {
-				continue
+				return errors.New(comment)
 			}
 		}
-
-		return errors.New("form is filled but users is not exist in changeLog " + form.NodeID)
 	}
 
 	return nil

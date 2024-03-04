@@ -296,7 +296,7 @@ func (gb *GoExecutionBlock) executionActions() []MemberAction {
 		})
 	}
 
-	formNamesActions, existEmptyForm := gb.getFormNamesToFill()
+	fillFormActions, existEmptyForm := gb.getFormNamesToFill()
 	if existEmptyForm {
 		for i := 0; i < len(actions); i++ {
 			item := &actions[i]
@@ -309,12 +309,12 @@ func (gb *GoExecutionBlock) executionActions() []MemberAction {
 		}
 	}
 
-	if len(formNamesActions) != 0 {
+	if len(fillFormActions) != 0 {
 		actions = append(actions, MemberAction{
 			ID:   formFillFormAction,
 			Type: ActionTypeCustom,
 			Params: map[string]interface{}{
-				formName: formNamesActions,
+				formName: fillFormActions,
 			},
 		})
 	}
@@ -329,7 +329,6 @@ func (gb *GoExecutionBlock) getFormNamesToFill() ([]string, bool) {
 		l         = logger.GetLogger(context.Background())
 	)
 
-FormLabel:
 	for _, form := range gb.State.FormsAccessibility {
 		formState, ok := gb.RunContext.VarStore.State[form.NodeID]
 		if !ok {
@@ -340,47 +339,48 @@ FormLabel:
 		case readWriteAccessType:
 			actions = append(actions, form.NodeID)
 		case requiredFillAccessType:
-			var formData FormData
-			if err := json.Unmarshal(formState, &formData); err != nil {
-				l.Error(err)
-
-				return actions, true
-			}
-
 			actions = append(actions, form.NodeID)
-
-			users := make(map[string]struct{}, 0)
-
-			for user := range gb.State.Executors {
-				users[user] = struct{}{}
-			}
-
-			for user := range gb.State.InitialExecutors {
-				users[user] = struct{}{}
-			}
-
-			for i := 0; i < len(gb.State.ChangedExecutorsLogs); i++ {
-				item := gb.State.ChangedExecutorsLogs[i]
-				users[item.OldLogin] = struct{}{}
-			}
-
-			if !formData.IsFilled {
-				emptyForm = true
-
-				continue
-			}
-
-			for _, v := range formData.ChangesLog {
-				if _, findOk := users[v.Executor]; findOk {
-					continue FormLabel
-				}
-			}
-
-			emptyForm = true
+			emptyForm = gb.checkForEmptyForm(formState, l)
 		}
 	}
 
 	return actions, emptyForm
+}
+
+func (gb *GoExecutionBlock) checkForEmptyForm(formState json.RawMessage, l logger.Logger) bool {
+	var formData FormData
+	if err := json.Unmarshal(formState, &formData); err != nil {
+		l.Error(err)
+
+		return true
+	}
+
+	users := make(map[string]struct{}, 0)
+
+	for user := range gb.State.Executors {
+		users[user] = struct{}{}
+	}
+
+	for user := range gb.State.InitialExecutors {
+		users[user] = struct{}{}
+	}
+
+	for i := 0; i < len(gb.State.ChangedExecutorsLogs); i++ {
+		item := gb.State.ChangedExecutorsLogs[i]
+		users[item.OldLogin] = struct{}{}
+	}
+
+	if !formData.IsFilled {
+		return true
+	}
+
+	for _, v := range formData.ChangesLog {
+		if _, findOk := users[v.Executor]; findOk {
+			return false
+		}
+	}
+
+	return true
 }
 
 func (gb *GoExecutionBlock) getNewSLADeadline(slaInfoPtr *sla.Info, half bool) time.Time {

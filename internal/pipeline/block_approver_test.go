@@ -1152,13 +1152,10 @@ func TestGoApproverBlock_Actions(t *testing.T) {
 				ctx: context.Background(),
 			},
 			wantActions: []MemberAction{
-				{ID: "approve", Type: "", Params: nil},
-				{ID: formFillFormAction, Type: ActionTypeCustom, Params: map[string]interface{}{
-					formName: "form_0",
-				}},
-				{ID: approverAddApproversAction, Type: ActionTypeOther},
-				{ID: approverRequestAddInfoAction, Type: ActionTypeOther},
-			},
+				{ID: "approve", Type: "", Params: map[string]interface{}(nil)},
+				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": []string{"form_0"}}},
+				{ID: "add_approvers", Type: "other", Params: map[string]interface{}(nil)},
+				{ID: "request_add_info", Type: "other", Params: map[string]interface{}(nil)}},
 		},
 		{
 			name: "Two forms ReadWrite",
@@ -1215,19 +1212,18 @@ func TestGoApproverBlock_Actions(t *testing.T) {
 			},
 			wantActions: []MemberAction{
 				{ID: "approve", Type: "", Params: map[string]interface{}(nil)},
-				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": "form_0"}},
-				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": "form_1"}},
+				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": []string{"form_0", "form_1"}}},
 				{ID: "add_approvers", Type: "other", Params: map[string]interface{}(nil)},
 				{ID: "request_add_info", Type: "other", Params: map[string]interface{}(nil)}},
 		},
 		{
-			name: "Two forms - not eq executors (ReadWrite && RequiredFill)",
+			name: "Two forms - not exist ChangeLog (ReadWrite && RequiredFill)",
 			fields: fields{
 				Name: stepName,
 				ApproverData: &ApproverData{
 					Type: script.ApproverTypeUser,
 					Approvers: map[string]struct{}{
-						exampleApprover:       {},
+						login:                 {},
 						secondExampleApprover: {},
 					},
 					FormsAccessibility: []script.FormAccessibility{
@@ -1261,7 +1257,7 @@ func TestGoApproverBlock_Actions(t *testing.T) {
 								marshalForm, _ := json.Marshal(FormData{
 									IsFilled: true,
 									Executors: map[string]struct{}{
-										"usersф1": {},
+										login: {},
 									},
 									ActualExecutor: &login,
 								})
@@ -1296,7 +1292,7 @@ func TestGoApproverBlock_Actions(t *testing.T) {
 									},
 								},
 							})
-							htMock.On("GetDelegates", "users1").Return([]string{"a"})
+							htMock.On("GetDelegates", "users1").Return([]string{})
 
 							ht = humanTasks.Service{
 								Cli: &htMock,
@@ -1314,8 +1310,7 @@ func TestGoApproverBlock_Actions(t *testing.T) {
 			},
 			wantActions: []MemberAction{
 				{ID: "approve", Type: "", Params: map[string]interface{}{"disabled": true}},
-				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": "form_0"}},
-				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": "form_1"}},
+				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": []string{"form_0", "form_1"}}},
 				{ID: "add_approvers", Type: "other", Params: map[string]interface{}(nil)},
 				{ID: "request_add_info", Type: "other", Params: map[string]interface{}(nil)}},
 		},
@@ -1326,7 +1321,7 @@ func TestGoApproverBlock_Actions(t *testing.T) {
 				ApproverData: &ApproverData{
 					Type: script.ApproverTypeUser,
 					Approvers: map[string]struct{}{
-						exampleApprover:       {},
+						login:                 {},
 						secondExampleApprover: {},
 					},
 					FormsAccessibility: []script.FormAccessibility{
@@ -1360,9 +1355,14 @@ func TestGoApproverBlock_Actions(t *testing.T) {
 								marshalForm, _ := json.Marshal(FormData{
 									IsFilled: true,
 									Executors: map[string]struct{}{
-										"user1": {},
+										login: {},
 									},
 									ActualExecutor: &login,
+									ChangesLog: []ChangesLogItem{
+										{
+											Executor: login,
+										},
+									},
 								})
 
 								return marshalForm
@@ -1408,9 +1408,8 @@ func TestGoApproverBlock_Actions(t *testing.T) {
 				ctx: context.Background(),
 			},
 			wantActions: []MemberAction{
-				{ID: "approve", Type: "", Params: map[string]interface{}{"disabled": true}},
-				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": "form_0"}},
-				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": "form_1"}},
+				{ID: "approve", Type: "", Params: map[string]interface{}(nil)},
+				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": []string{"form_0", "form_1"}}},
 				{ID: "add_approvers", Type: "other", Params: map[string]interface{}(nil)},
 				{ID: "request_add_info", Type: "other", Params: map[string]interface{}(nil)}},
 		},
@@ -1497,7 +1496,7 @@ func TestGoApproverBlock_Actions(t *testing.T) {
 			},
 			wantActions: []MemberAction{
 				{ID: "approve", Type: "", Params: map[string]interface{}{"disabled": true}},
-				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": "form_0"}},
+				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": []string{"form_0"}}},
 				{ID: "add_approvers", Type: "other", Params: map[string]interface{}(nil)},
 				{ID: "request_add_info", Type: "other", Params: map[string]interface{}(nil)}},
 		},
@@ -1508,7 +1507,7 @@ func TestGoApproverBlock_Actions(t *testing.T) {
 				ApproverData: &ApproverData{
 					Type: script.ApproverTypeUser,
 					Approvers: map[string]struct{}{
-						exampleApprover:       {},
+						login:                 {},
 						secondExampleApprover: {},
 					},
 					FormsAccessibility: []script.FormAccessibility{
@@ -1544,6 +1543,11 @@ func TestGoApproverBlock_Actions(t *testing.T) {
 										"user1": {},
 									},
 									ActualExecutor: &delLogin1,
+									ChangesLog: []ChangesLogItem{
+										{
+											Executor: login,
+										},
+									},
 								})
 
 								return marshalForm
@@ -1555,6 +1559,11 @@ func TestGoApproverBlock_Actions(t *testing.T) {
 										"user1": {},
 									},
 									ActualExecutor: &login,
+									ChangesLog: []ChangesLogItem{
+										{
+											Executor: login,
+										},
+									},
 								})
 
 								return marshalForm
@@ -1603,9 +1612,8 @@ func TestGoApproverBlock_Actions(t *testing.T) {
 				ctx: context.Background(),
 			},
 			wantActions: []MemberAction{
-				{ID: "approve", Type: "", Params: map[string]interface{}{"disabled": true}},
-				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": "form_0"}},
-				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": "form_1"}},
+				{ID: "approve", Type: "", Params: map[string]interface{}(nil)},
+				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": []string{"form_0", "form_1"}}},
 				{ID: "add_approvers", Type: "other", Params: map[string]interface{}(nil)},
 				{ID: "request_add_info", Type: "other", Params: map[string]interface{}(nil)}},
 		},

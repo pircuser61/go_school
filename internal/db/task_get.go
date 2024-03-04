@@ -1324,22 +1324,20 @@ func (db *PGCon) computeActions(
 			if len(compositeActionID) > 1 {
 				id := compositeActionID[0]
 
-				if strings.Contains(action, "fill_form_disabled") {
-					action = strings.Replace(action, "fill_form_disabled", "fill_form", 1)
-				}
-
 				if _, ok := metActions[id]; ok && !utils.IsContainsInSlice(id, canBeRepeated) {
 					continue
 				}
 
 				metActions[id] = struct{}{}
 
+				replaceID := replaceFormID(id)
+
 				priority := compositeActionID[1]
-				actionWithPreferences := allActions[id]
+				actionWithPreferences := allActions[replaceID]
 				actionParams := blockActions.Params[id]
 
 				computedAction := entity.TaskAction{
-					ID:                 id,
+					ID:                 replaceID,
 					ButtonType:         priority,
 					NodeType:           actionWithPreferences.NodeType,
 					Title:              actionWithPreferences.Title,
@@ -1390,6 +1388,10 @@ func (db *PGCon) computeActions(
 	}
 
 	return result, nil
+}
+
+func replaceFormID(id string) string {
+	return strings.Replace(id, "fill_form_disabled", "fill_form", 1)
 }
 
 func (db *PGCon) ignoreAction(a *entity.TaskAction, actionsToIgnore []IgnoreActionRule, computedActionIds []string) bool {
