@@ -454,7 +454,7 @@ func ProcessBlockWithEndMapping(ctx c.Context, name string, bl *entity.EriusFunc
 
 	updDeadlineErr := blockProcessor.updateTaskExecDeadline(ctx)
 	if updDeadlineErr != nil {
-		return updDeadlineErr
+		return false, updDeadlineErr
 	}
 
 	intStatus, stringStatus, err := runCtx.Services.Storage.GetTaskStatusWithReadableString(ctx, runCtx.TaskID)
