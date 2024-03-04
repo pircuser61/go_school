@@ -59,6 +59,10 @@ type GoNotificationBlock struct {
 	happenedEvents []entity.NodeEvent
 }
 
+func (gb *GoNotificationBlock) CurrentExecutorData() CurrentExecutorData {
+	return CurrentExecutorData{}
+}
+
 func (gb *GoNotificationBlock) GetNewEvents() []entity.NodeEvent {
 	return gb.happenedEvents
 }
@@ -297,6 +301,10 @@ func (gb *GoNotificationBlock) Model() script.FunctionModel {
 		},
 		Sockets: []script.Socket{script.DefaultSocket},
 	}
+}
+
+func (gb *GoNotificationBlock) BlockAttachments() (ids []string) {
+	return ids
 }
 
 // nolint:dupl,unparam // another block

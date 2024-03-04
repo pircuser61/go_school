@@ -36,6 +36,10 @@ type TimerBlock struct {
 	happenedEvents []entity.NodeEvent
 }
 
+func (gb *TimerBlock) CurrentExecutorData() CurrentExecutorData {
+	return CurrentExecutorData{}
+}
+
 func (gb *TimerBlock) GetNewEvents() []entity.NodeEvent {
 	return gb.happenedEvents
 }
@@ -173,6 +177,10 @@ func (gb *TimerBlock) Model() script.FunctionModel {
 		},
 		Sockets: []script.Socket{script.DefaultSocket},
 	}
+}
+
+func (gb *TimerBlock) BlockAttachments() (ids []string) {
+	return ids
 }
 
 func (gb *TimerBlock) UpdateManual() bool {

@@ -24,6 +24,10 @@ type GoStartBlock struct {
 	happenedEvents []entity.NodeEvent
 }
 
+func (gb *GoStartBlock) CurrentExecutorData() CurrentExecutorData {
+	return CurrentExecutorData{}
+}
+
 func (gb *GoStartBlock) GetNewEvents() []entity.NodeEvent {
 	return gb.happenedEvents
 }
@@ -122,6 +126,10 @@ func (gb *GoStartBlock) Model() script.FunctionModel {
 		},
 		Sockets: []script.Socket{script.DefaultSocket},
 	}
+}
+
+func (gb *GoStartBlock) BlockAttachments() (ids []string) {
+	return ids
 }
 
 //nolint:dupl,unparam //its not duplicate

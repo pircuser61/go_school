@@ -3,6 +3,7 @@ package pipeline
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/pkg/errors"
 
@@ -12,6 +13,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
+	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
 const (
@@ -45,6 +47,10 @@ type GoSdApplicationBlock struct {
 
 	expectedEvents map[string]struct{}
 	happenedEvents []entity.NodeEvent
+}
+
+func (gb *GoSdApplicationBlock) CurrentExecutorData() CurrentExecutorData {
+	return CurrentExecutorData{}
 }
 
 func (gb *GoSdApplicationBlock) GetNewEvents() []entity.NodeEvent {
@@ -183,6 +189,10 @@ func (gb *GoSdApplicationBlock) Model() script.FunctionModel {
 		},
 		Sockets: []script.Socket{script.DefaultSocket},
 	}
+}
+
+func (gb *GoSdApplicationBlock) BlockAttachments() []string {
+	return utils.UniqueStrings(utils.GetAttachmentsIds(fmt.Sprintf("%+v", gb.State.ApplicationBody)))
 }
 
 //nolint:unparam // its ok

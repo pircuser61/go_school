@@ -21,7 +21,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 )
 
-func (ae *Env) convertProcessSettingsToFlat(ctx c.Context, ps *e.ProcessSettings) error {
+func (ae *Env) toFlatProcessSettings(ctx c.Context, ps *e.ProcessSettings) error {
 	if ps.StartSchemaRaw != nil {
 		start, err := ae.Forms.MakeFlatSchema(ctx, ps.StartSchemaRaw)
 		if err != nil {
@@ -229,6 +229,8 @@ func (ae *Env) SaveVersionSettings(w http.ResponseWriter, req *http.Request, ver
 	log := logger.GetLogger(ctx)
 	errorHandler := newHTTPErrorHandler(log, w)
 
+	var errCustom Err
+
 	b, err := io.ReadAll(req.Body)
 	defer req.Body.Close()
 
@@ -246,13 +248,20 @@ func (ae *Env) SaveVersionSettings(w http.ResponseWriter, req *http.Request, ver
 		return
 	}
 
-	if convErr := ae.convertProcessSettingsToFlat(ctx, processSettings); convErr != nil {
-		errorHandler.handleError(ProcessSettingsConvertError, err)
+	if convErr := ae.toFlatProcessSettings(ctx, processSettings); convErr != nil {
+		errorHandler.handleError(ProcessSettingsConvertError, convErr)
 
 		return
 	}
 
-	processSettings.ID = versionID
+	scenario, err := ae.DB.GetPipelineVersion(ctx, uuid.MustParse(versionID), true)
+	if err != nil {
+		errorHandler.handleError(GetVersionError, err)
+
+		return
+	}
+
+	scenario.Settings = *processSettings
 
 	err = processSettings.Validate()
 	if err != nil {
@@ -261,9 +270,60 @@ func (ae *Env) SaveVersionSettings(w http.ResponseWriter, req *http.Request, ver
 		return
 	}
 
-	saveVersionErr := ae.DB.SaveVersionSettings(ctx, *processSettings, (*string)(params.SchemaFlag))
-	if saveVersionErr != nil {
+	txStorage, transactionErr := ae.DB.StartTransaction(ctx)
+	if transactionErr != nil {
+		log.WithError(transactionErr).Error("couldn't set update version or settings")
+
+		return
+	}
+
+	defer func() {
+		if r := recover(); r != nil {
+			log = log.WithField("funcName", "SaveVersionSettings").
+				WithField("panic handle", true)
+			log.Error(r)
+
+			if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
+				log.WithError(errors.New("couldn't rollback tx")).
+					Error(txErr)
+			}
+		}
+	}()
+
+	processSettings.VersionID, errCustom, err = ae.createOrUpdateVersion(ctx, scenario)
+	if err != nil {
+		errorHandler.handleError(errCustom, err)
+
+		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
+			log.WithField("funcName", "createOrUpdateVersion").
+				WithError(errors.New("couldn't rollback tx")).
+				Error(txErr)
+		}
+
+		return
+	}
+
+	err = ae.DB.SaveVersionSettings(ctx, *processSettings, (*string)(params.SchemaFlag))
+	if err != nil {
 		errorHandler.handleError(ProcessSettingsSaveError, err)
+
+		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
+			log.WithField("funcName", "SaveVersionSettings").
+				WithError(errors.New("couldn't rollback tx")).
+				Error(txErr)
+		}
+
+		return
+	}
+
+	if commitErr := txStorage.CommitTransaction(ctx); commitErr != nil {
+		log.WithError(commitErr).Error("couldn't update pipeline settings")
+
+		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
+			log.Error(txErr)
+		}
+
+		errorHandler.handleError(UnknownError, commitErr)
 
 		return
 	}
@@ -273,6 +333,26 @@ func (ae *Env) SaveVersionSettings(w http.ResponseWriter, req *http.Request, ver
 
 		return
 	}
+}
+
+func (ae *Env) createOrUpdateVersion(ctx c.Context, scenario *e.EriusScenario) (string, Err, error) {
+	isDraft := scenario.Status == db.StatusDraft
+
+	if isDraft {
+		p, errCustom, err := ae.updatePipelineVersion(ctx, scenario)
+		if err != nil {
+			return "", errCustom, err
+		}
+
+		return p.VersionID.String(), 0, nil
+	}
+
+	p, errCustom, err := ae.createPipelineVersion(ctx, scenario, scenario.PipelineID.String())
+	if err != nil {
+		return "", errCustom, err
+	}
+
+	return p.VersionID.String(), 0, nil
 }
 
 //nolint:dupl //its not duplicate
@@ -477,7 +557,7 @@ func (ae *Env) SaveVersionMainSettings(w http.ResponseWriter, req *http.Request,
 		return
 	}
 
-	processSettings.ID = versionID
+	processSettings.VersionID = versionID
 
 	transaction, transactionCreateErr := ae.DB.StartTransaction(ctx)
 	if transactionCreateErr != nil {

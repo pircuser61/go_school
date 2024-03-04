@@ -46,6 +46,13 @@ const (
 	StatusCanceled  Status = "cancel"
 )
 
+type CurrentExecutorData struct {
+	GroupID       string
+	GroupName     string
+	People        []string
+	InitialPeople []string
+}
+
 type Runner interface {
 	GetState() interface{}
 	Next(runCtx *store.VariableStore) ([]string, bool)
@@ -56,4 +63,6 @@ type Runner interface {
 	Members() []Member
 	Deadlines(ctx context.Context) ([]Deadline, error)
 	GetNewEvents() []entity.NodeEvent
+	BlockAttachments() []string
+	CurrentExecutorData() CurrentExecutorData
 }

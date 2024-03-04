@@ -24,6 +24,10 @@ type GoTestBlock struct {
 	happenedEvents []entity.NodeEvent
 }
 
+func (gb *GoTestBlock) CurrentExecutorData() CurrentExecutorData {
+	return CurrentExecutorData{}
+}
+
 func (gb *GoTestBlock) GetNewEvents() []entity.NodeEvent {
 	return gb.happenedEvents
 }
@@ -62,6 +66,10 @@ func (gb *GoTestBlock) Outputs() map[string]string {
 
 func (gb *GoTestBlock) IsScenario() bool {
 	return false
+}
+
+func (gb *GoTestBlock) BlockAttachments() (ids []string) {
+	return ids
 }
 
 type stepCtx struct{}

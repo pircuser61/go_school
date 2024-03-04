@@ -23,6 +23,10 @@ type GoBeginParallelTaskBlock struct {
 	happenedEvents []entity.NodeEvent
 }
 
+func (gb *GoBeginParallelTaskBlock) CurrentExecutorData() CurrentExecutorData {
+	return CurrentExecutorData{}
+}
+
 func (gb *GoBeginParallelTaskBlock) GetNewEvents() []entity.NodeEvent {
 	return gb.happenedEvents
 }
@@ -61,6 +65,11 @@ func (gb *GoBeginParallelTaskBlock) GetState() interface{} {
 }
 
 func (gb *GoBeginParallelTaskBlock) Update(ctx context.Context) (interface{}, error) {
+	err := gb.RunContext.Services.Storage.UnsetIsActive(ctx, gb.RunContext.WorkNumber, gb.Name)
+	if err != nil {
+		return nil, err
+	}
+
 	if _, ok := gb.expectedEvents[eventEnd]; ok {
 		status, _, _ := gb.GetTaskHumanStatus()
 
@@ -91,6 +100,10 @@ func (gb *GoBeginParallelTaskBlock) Model() script.FunctionModel {
 			script.DefaultSocket,
 		},
 	}
+}
+
+func (gb *GoBeginParallelTaskBlock) BlockAttachments() (ids []string) {
+	return ids
 }
 
 //nolint:dupl,unparam //its not duplicate

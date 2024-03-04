@@ -112,6 +112,23 @@ func makeStorage() *mocks.MockedDatabase {
 		mock.MatchedBy(func(string) bool { return true }),
 	).Return(&entity.Step{State: map[string]json.RawMessage{}}, nil)
 
+	res.On("GetDeadline",
+		mock.MatchedBy(func(ctx context.Context) bool { return true }),
+		mock.MatchedBy(func(workID string) bool { return true }),
+	).Return(time.Now(), nil)
+
+	res.On("SetExecDeadline",
+		mock.MatchedBy(func(ctx context.Context) bool { return true }),
+		mock.MatchedBy(func(taskID string) bool { return true }),
+		mock.MatchedBy(func(deadline time.Time) bool { return true }),
+	).Return(nil)
+
+	res.On("UnsetIsActive",
+		mock.MatchedBy(func(ctx context.Context) bool { return true }),
+		mock.MatchedBy(func(workNumber string) bool { return true }),
+		mock.MatchedBy(func(blockName string) bool { return true }),
+	).Return(nil)
+
 	return res
 }
 
@@ -564,7 +581,7 @@ func TestProcessBlock(t *testing.T) {
 				t.Fatal(blockErr)
 			}
 
-			if procErr := ProcessBlockWithEndMapping(
+			if _, procErr := ProcessBlockWithEndMapping(
 				context.Background(),
 				tt.fields.Entrypoint,
 				entrypointData,
@@ -581,7 +598,7 @@ func TestProcessBlock(t *testing.T) {
 				}
 
 				tt.fields.RunContext.UpdateData = &tt.fields.Updates[i].UpdateParams
-				if procErr := ProcessBlockWithEndMapping(context.Background(), tt.fields.Updates[i].BlockName, blockData,
+				if _, procErr := ProcessBlockWithEndMapping(context.Background(), tt.fields.Updates[i].BlockName, blockData,
 					tt.fields.RunContext, true); procErr != nil {
 					t.Fatal(procErr)
 				}

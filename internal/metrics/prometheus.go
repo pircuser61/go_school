@@ -39,6 +39,20 @@ type RequestInfo struct {
 	Duration   time.Duration
 }
 
+func NewPostRequestInfo(path string) *RequestInfo {
+	return &RequestInfo{
+		Method: http.MethodPost,
+		Status: http.StatusOK,
+	}
+}
+
+func NewGetRequestInfo(path string) *RequestInfo {
+	return &RequestInfo{
+		Method: http.MethodGet,
+		Status: http.StatusOK,
+	}
+}
+
 func New(config configs.PrometheusConfig) Metrics {
 	registry := prometheus.NewRegistry()
 

@@ -30,6 +30,10 @@ type GoWaitForAllInputsBlock struct {
 	happenedEvents []entity.NodeEvent
 }
 
+func (gb *GoWaitForAllInputsBlock) CurrentExecutorData() CurrentExecutorData {
+	return CurrentExecutorData{}
+}
+
 func (gb *GoWaitForAllInputsBlock) GetNewEvents() []entity.NodeEvent {
 	return gb.happenedEvents
 }
@@ -131,6 +135,10 @@ func (gb *GoWaitForAllInputsBlock) Model() script.FunctionModel {
 	}
 }
 
+func (gb *GoWaitForAllInputsBlock) BlockAttachments() (ids []string) {
+	return ids
+}
+
 //nolint:unparam // reEntry always false // когда-нибудь обязательно дорастёт до true
 func createGoWaitForAllInputsBlock(
 	ctx context.Context,
@@ -168,6 +176,8 @@ func createGoWaitForAllInputsBlock(
 		if err := b.loadState(rawState); err != nil {
 			return nil, reEntry, err
 		}
+
+		b.State.Done = false
 	} else {
 		err := b.createExpectedEvents(ctx, runCtx, name, ef)
 		if err != nil {

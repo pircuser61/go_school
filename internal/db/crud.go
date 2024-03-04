@@ -771,7 +771,7 @@ func (db *PGCon) CreateVersion(c context.Context,
 			return err
 		}
 	} else {
-		err = db.SaveVersionSettings(c, entity.ProcessSettings{ID: p.VersionID.String(), ResubmissionPeriod: 0}, nil)
+		err = db.SaveVersionSettings(c, entity.ProcessSettings{VersionID: p.VersionID.String(), ResubmissionPeriod: 0}, nil)
 		if err != nil {
 			return err
 		}
@@ -1136,37 +1136,44 @@ func (db *PGCon) UpdateGroupsForEmptyVersions(
 	return nil
 }
 
+func (db *PGCon) isStepExist(ctx context.Context, workID, stepName string) (bool, uuid.UUID, time.Time, error) {
+	var (
+		id uuid.UUID
+		t  time.Time
+	)
+
+	const q = `
+		SELECT id, time
+		FROM variable_storage
+		WHERE work_id = $1 AND
+			step_name = $2 AND
+			(status IN ('idle', 'ready', 'running') OR (
+				step_type = 'form' AND
+				status IN ('idle', 'ready', 'running', 'finished') AND
+				time = (SELECT max(time) FROM variable_storage vs 
+							WHERE vs.work_id = $1 AND step_name = $2)
+			))`
+
+	scanErr := db.Connection.QueryRow(ctx, q, workID, stepName).Scan(&id, &t)
+	if scanErr != nil && !errors.Is(scanErr, pgx.ErrNoRows) {
+		return false, uuid.Nil, time.Time{}, scanErr
+	}
+
+	return id != uuid.Nil, id, t, nil
+}
+
 func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uuid.UUID, time.Time, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_save_step_context")
 	defer span.End()
 
 	if !dto.IsReEntry {
-		var (
-			id uuid.UUID
-			t  time.Time
-		)
-
-		const q = `
-		SELECT id, time
-			FROM variable_storage
-			WHERE work_id = $1 AND
-                step_name = $2 AND
-                (status IN ('idle', 'ready', 'running') OR
-					(
-						step_type = 'form' AND
-						status IN ('idle', 'ready', 'running', 'finished') AND
-			    		time = (SELECT max(time) FROM variable_storage vs WHERE vs.work_id = $1 AND step_name = $2)
-					)
-			    )
-	`
-
-		if scanErr := db.Connection.QueryRow(ctx, q, dto.WorkID, dto.StepName).
-			Scan(&id, &t); scanErr != nil && !errors.Is(scanErr, pgx.ErrNoRows) {
-			return uuid.Nil, time.Time{}, scanErr
+		exists, stepID, createdAt, err := db.isStepExist(ctx, dto.WorkID.String(), dto.StepName)
+		if err != nil {
+			return uuid.Nil, time.Time{}, err
 		}
 
-		if id != uuid.Nil {
-			return id, t, nil
+		if exists {
+			return stepID, createdAt, nil
 		}
 	}
 
@@ -1184,7 +1191,10 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 			time, 
 			break_points, 
 			has_error,
-			status
+			status,
+		    attachments, 	                         
+		    current_executor,
+			is_active
 			--update_col--
 		)
 		VALUES (
@@ -1196,7 +1206,10 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 			$6, 
 			$7,
 			$8,
-			$9
+			$9,
+		    $10,
+		    $11,
+		    true
 			--update_val--
 		)
 `
@@ -1210,21 +1223,17 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 		dto.BreakPoints,
 		dto.HasError,
 		dto.Status,
+		dto.Attachments,
+		dto.CurrentExecutor,
 	}
 
-	if _, ok := map[string]struct{}{
-		"finished": {}, "no_success": {}, "error": {},
-	}[dto.Status]; ok {
+	if _, ok := map[string]struct{}{"finished": {}, "no_success": {}, "error": {}}[dto.Status]; ok {
 		args = append(args, timestamp)
 		query = strings.Replace(query, "--update_col--", ",updated_at", 1)
 		query = strings.Replace(query, "--update_val--", fmt.Sprintf(",$%d", len(args)), 1)
 	}
 
-	_, err := db.Connection.Exec(
-		ctx,
-		query,
-		args...,
-	)
+	_, err := db.Connection.Exec(ctx, query, args...)
 	if err != nil {
 		return uuid.Nil, time.Time{}, err
 	}
@@ -1248,26 +1257,23 @@ func (db *PGCon) UpdateStepContext(ctx context.Context, dto *UpdateStepRequest) 
 
 	// nolint:gocritic
 	// language=PostgreSQL
-	q := `
-	UPDATE variable_storage
-	SET
-		break_points = $2
-		, has_error = $3
-		, status = $4
-		, content = $5
-		, updated_at = NOW()
-	WHERE
-		id = $1
-`
+	const q = `
+		UPDATE variable_storage
+		SET
+			break_points = $2
+			, has_error = $3
+			, status = $4
+			, content = $5
+			, attachments = $6
+		    , current_executor = $7
+			, updated_at = NOW()
+		WHERE id = $1`
+
 	args := []interface{}{
-		dto.ID, dto.BreakPoints, dto.HasError, dto.Status, dto.Content,
+		dto.ID, dto.BreakPoints, dto.HasError, dto.Status, dto.Content, dto.Attachments, dto.CurrentExecutor,
 	}
 
-	_, err := db.Connection.Exec(
-		c,
-		q,
-		args...,
-	)
+	_, err := db.Connection.Exec(c, q, args...)
 	if err != nil {
 		return err
 	}
@@ -1281,11 +1287,7 @@ func (db *PGCon) UpdateStepContext(ctx context.Context, dto *UpdateStepRequest) 
 		DELETE FROM members 
 		WHERE block_id = $1`
 
-	_, err = db.Connection.Exec(
-		ctx,
-		qMembersDelete,
-		dto.ID,
-	)
+	_, err = db.Connection.Exec(ctx, qMembersDelete, dto.ID)
 	if err != nil {
 		return err
 	}
@@ -1751,56 +1753,101 @@ WHERE value ? $2`
 	return blocks, nil
 }
 
+func (db *PGCon) UnsetIsActive(ctx context.Context, workNumber, blockName string) error {
+	ctx, span := trace.StartSpan(ctx, "pg_unset_is_active")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	const q = `WITH RECURSIVE all_nodes AS(
+    	SELECT distinct key(jsonb_each(v.content #> '{pipeline,blocks}'))::text out_node,
+                    jsonb_array_elements_text(value(jsonb_each(value(jsonb_each(v.content #> '{pipeline,blocks}'))->'next'))) AS in_node
+    	FROM works w
+             INNER JOIN versions v ON w.version_id=v.id
+    			WHERE w.work_number=$1
+		),
+        next_gates_nodes AS(
+                SELECT out_node,
+                          in_node,
+                          1 AS level,
+                          Array[out_node] AS circle_check
+                FROM all_nodes
+                WHERE out_node=$2
+                UNION ALL
+                SELECT a.out_node,
+                          a.in_node,
+                          CASE WHEN a.out_node LIKE 'begin_parallel_task%' THEN ign.level+1
+                               WHEN a.out_node LIKE 'wait_for_all_inputs%' THEN ign.level-1
+                               ELSE ign.level end AS level,
+                          array_append(ign.circle_check, a.out_node)
+                FROM all_nodes a
+                INNER JOIN next_gates_nodes ign ON ign.in_node=a.out_node
+                WHERE array_position(circle_check,a.in_node) IS null
+               )
+		UPDATE variable_storage AS v
+			SET is_active=false
+		FROM variable_storage vs
+		INNER JOIN works w ON vs.work_id = w.id
+		WHERE v.id=vs.id AND w.work_number=$1 AND w.child_id IS null AND vs.step_name IN (SELECT distinct in_node
+                                                                                  FROM next_gates_nodes
+                                                                                  WHERE level>0);
+	`
+
+	_, err := db.Connection.Exec(ctx, q, workNumber, blockName)
+
+	return err
+}
+
 func (db *PGCon) ParallelIsFinished(ctx context.Context, workNumber, blockName string) (bool, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_parallel_is_finished")
 	defer span.End()
 
 	// nolint:gocritic
 	// language=PostgreSQL
-	const q = `with recursive all_nodes as(
-		select distinct key(jsonb_each(v.content #> '{pipeline,blocks}'))::text out_node,
-			jsonb_array_elements_text(value(jsonb_each(value(jsonb_each(v.content #> '{pipeline,blocks}'))->'next'))) as in_node
-		from works w
-		inner join versions v on w.version_id=v.id
-		where w.work_number=$1
+	const q = `WITH RECURSIVE all_nodes AS(
+		SELECT distinct key(jsonb_each(v.content #> '{pipeline,blocks}'))::text out_node,
+			jsonb_array_elements_text(value(jsonb_each(value(jsonb_each(v.content #> '{pipeline,blocks}'))->'next'))) AS in_node
+		FROM works w
+		INNER JOIN versions v ON w.version_id=v.id
+		WHERE w.work_number=$1
 	),
-	inside_gates_nodes as(
-	   select in_node,
+	inside_gates_nodes AS(
+	   SELECT in_node,
 			  out_node,
-			  1 as level,
-			  Array[in_node] as circle_check
-	   from all_nodes
-	   where in_node=$2
-	   union all
-	   select a.in_node,
+			  1 AS level,
+			  Array[in_node] AS circle_check
+	   FROM all_nodes
+	   WHERE in_node=$2
+	   UNION ALL
+	   SELECT a.in_node,
 			  a.out_node,
-			  case when a.out_node like 'wait_for_all_inputs%' then ign.level+1
-				   when a.out_node like 'begin_parallel_task%' then ign.level-1
-				   else ign.level end as level,
+			  CASE WHEN a.out_node LIKE 'wait_for_all_inputs%' THEN ign.level+1
+				   WHEN a.out_node LIKE 'begin_parallel_task%' THEN ign.level-1
+				   else ign.level end AS level,
 			  array_append(ign.circle_check, a.in_node)
-	   from all_nodes a
-				inner join inside_gates_nodes ign on a.in_node=ign.out_node
-	   where array_position(circle_check,a.out_node) is null and
-			   a.in_node not like 'begin_parallel_task%' and ign.level!=0)
-	select
+	   FROM all_nodes a
+				INNER JOIN inside_gates_nodes ign ON a.in_node=ign.out_node
+	   WHERE array_position(circle_check,a.out_node) is null AND
+			   a.in_node NOT LIKE 'begin_parallel_task%' AND ign.level!=0)
+	SELECT
     (
-        select case when count(*)=0 then true else false end
-        from variable_storage vs
-                 inner join works w on vs.work_id = w.id
-                 inner join inside_gates_nodes ign on vs.step_name=ign.out_node
-        where w.work_number=$1 and w.child_id is null and vs.status in('running', 'idle', 'ready')
+        SELECT CASE WHEN count(*)=0 THEN true ELSE false end
+        FROM variable_storage vs
+                 INNER JOIN works w on vs.work_id = w.id
+                 INNER JOIN inside_gates_nodes ign ON vs.step_name=ign.out_node
+        WHERE w.work_number=$1 and w.child_id is null and vs.status IN('running', 'idle', 'ready') AND is_active = true
     ) as is_finished,
     (
-        select case when count(distinct vs.step_name) = 
-			(select count(distinct inside_gates_nodes.in_node) 
-				from inside_gates_nodes 
-			where out_node like 'begin_parallel_task_%')
-        then true else false end
-    	from variable_storage vs
-                 inner join works w on vs.work_id = w.id
-                 inner join inside_gates_nodes ign on vs.step_name=ign.in_node
-        where w.work_number=$1 and w.child_id is null and ign.out_node like 'begin_parallel_task_%'
-	) as created_all_branches`
+        SELECT CASE WHEN count(distinct vs.step_name) = 
+			(SELECT count(distinct inside_gates_nodes.in_node) 
+				FROM inside_gates_nodes 
+			WHERE out_node LIKE 'begin_parallel_task_%')
+        THEN true ELSE false end
+    	FROM variable_storage vs
+                 INNER JOIN works w ON vs.work_id = w.id
+                 INNER JOIN inside_gates_nodes ign ON vs.step_name=ign.in_node
+        WHERE w.work_number=$1 and w.child_id is null AND ign.out_node LIKE 'begin_parallel_task_%' AND is_active = true
+	) AS created_all_branches`
 
 	var parallelIsFinished, createdAllBranches bool
 
@@ -2375,7 +2422,7 @@ func (db *PGCon) GetTaskRunContext(ctx context.Context, workNumber string) (enti
 	return runCtx, nil
 }
 
-func (db *PGCon) GetBlockDataFromVersion(ctx context.Context, workNumber, blockName string) (*entity.EriusFunc, error) {
+func (db *PGCon) GetBlockDataFromVersion(ctx context.Context, workNumber, stepName string) (*entity.EriusFunc, error) {
 	ctx, span := trace.StartSpan(ctx, "get_block_data_from_version")
 	defer span.End()
 
@@ -2386,7 +2433,7 @@ func (db *PGCon) GetBlockDataFromVersion(ctx context.Context, workNumber, blockN
 
 	var f *entity.EriusFunc
 
-	if scanErr := db.Connection.QueryRow(ctx, q, blockName, workNumber).Scan(&f); scanErr != nil {
+	if scanErr := db.Connection.QueryRow(ctx, q, stepName, workNumber).Scan(&f); scanErr != nil {
 		return nil, scanErr
 	}
 
@@ -2436,7 +2483,7 @@ func (db *PGCon) FinishTaskBlocks(ctx context.Context, taskID uuid.UUID, ignoreS
 	return err
 }
 
-func (db *PGCon) GetVariableStorageForStep(ctx context.Context, taskID uuid.UUID, stepType string) (*store.VariableStore, error) {
+func (db *PGCon) GetVariableStorageForStep(ctx context.Context, taskID uuid.UUID, stepName string) (*store.VariableStore, error) {
 	ctx, span := trace.StartSpan(ctx, "get_variable_storage_for_step")
 	defer span.End()
 
@@ -2448,7 +2495,7 @@ func (db *PGCon) GetVariableStorageForStep(ctx context.Context, taskID uuid.UUID
 
 	var content []byte
 
-	if err := db.Connection.QueryRow(ctx, q, taskID, stepType).Scan(&content); err != nil {
+	if err := db.Connection.QueryRow(ctx, q, taskID, stepName).Scan(&content); err != nil {
 		return nil, err
 	}
 
@@ -3043,38 +3090,53 @@ func (db *PGCon) GetTaskInWorkTime(ctx context.Context, workNumber string) (*ent
 
 	interval := entity.TaskCompletionInterval{}
 
+	var finishedAt sql.NullTime
+
 	err := row.Scan(
 		&interval.StartedAt,
-		&interval.FinishedAt,
+		&finishedAt,
 	)
 	if err != nil {
 		return &entity.TaskCompletionInterval{}, err
 	}
 
+	if finishedAt.Valid {
+		interval.FinishedAt = finishedAt.Time
+	}
+
 	return &interval, nil
 }
 
-func (db *PGCon) GetVersionsByFunction(ctx context.Context, functionID, versionID string) ([]entity.EriusScenario, error) {
+func (db *PGCon) GetVersionsByFunction(ctx context.Context, funcID, versionID string) ([]entity.EriusScenario, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_versions_by_function")
 	defer span.End()
 
 	// nolint:gocritic
 	// language=PostgreSQL
-	q := `
-	SELECT p.name, v.id, p.author
+	const q = `
+	SELECT p.name, v.id, p.author, v.status
     FROM versions v
 	JOIN pipelines p on v.pipeline_id = p.id
     JOIN LATERAL jsonb_each(v.content->'pipeline'->'blocks') as bks on true
-	WHERE v.status = 2
-	AND v.is_actual = true
-	AND v.deleted_at is null
+    JOIN LATERAL (
+        SELECT 
+        	pipeline_id,
+        	max(created_at) AS max_version_date
+        FROM versions
+        GROUP BY pipeline_id
+    ) latest ON latest.pipeline_id = v.pipeline_id
+	WHERE (
+		(v.status = 2 AND v.is_actual = true) OR
+	    (v.status = 1 AND v.created_at = latest.max_version_date)
+	)
+	AND v.deleted_at IS NULL
 	AND bks.value ->> 'type_id' = 'executable_function'
     AND bks.value->'params'->'function'->>'functionId' = $1
     AND bks.value->'params'->'function'->>'versionId' != $2
     GROUP BY p.name, v.id, p.author;
 `
 
-	rows, err := db.Connection.Query(ctx, q, functionID, versionID)
+	rows, err := db.Connection.Query(ctx, q, funcID, versionID)
 	if err != nil {
 		return nil, err
 	}
@@ -3084,14 +3146,14 @@ func (db *PGCon) GetVersionsByFunction(ctx context.Context, functionID, versionI
 	versions := make([]entity.EriusScenario, 0)
 
 	for rows.Next() {
-		version := entity.EriusScenario{}
+		v := entity.EriusScenario{}
 
-		err = rows.Scan(&version.Name, &version.VersionID, &version.Author)
+		err = rows.Scan(&v.Name, &v.VersionID, &v.Author, &v.Status)
 		if err != nil {
 			return nil, err
 		}
 
-		versions = append(versions, version)
+		versions = append(versions, v)
 	}
 
 	if rowsErr := rows.Err(); rowsErr != nil {

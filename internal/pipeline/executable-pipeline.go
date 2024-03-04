@@ -63,6 +63,10 @@ type ExecutablePipeline struct {
 	happenedEvents []entity.NodeEvent
 }
 
+func (gb *ExecutablePipeline) CurrentExecutorData() CurrentExecutorData {
+	return CurrentExecutorData{}
+}
+
 func (gb *ExecutablePipeline) GetNewEvents() []entity.NodeEvent {
 	return gb.happenedEvents
 }
@@ -208,4 +212,8 @@ func (gb *ExecutablePipeline) CreateBlocks(ctx c.Context, source map[string]enti
 	}
 
 	return nil
+}
+
+func (gb *ExecutablePipeline) BlockAttachments() (ids []string) {
+	return ids
 }

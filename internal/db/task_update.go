@@ -3,6 +3,7 @@ package db
 import (
 	c "context"
 	"encoding/json"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
@@ -247,6 +248,20 @@ func (db *PGCon) UpdateBlockVariablesInOthers(ctx c.Context, taskID string, valu
 		if err != nil {
 			return err
 		}
+	}
+
+	return nil
+}
+
+func (db *PGCon) SetExecDeadline(ctx c.Context, taskID string, deadline time.Time) error {
+	ctx, span := trace.StartSpan(ctx, "set_block_variables_in_others")
+	defer span.End()
+
+	const q = `UPDATE works SET exec_deadline = $1 WHERE id = $2`
+
+	_, err := db.Connection.Exec(ctx, q, deadline, taskID)
+	if err != nil {
+		return err
 	}
 
 	return nil

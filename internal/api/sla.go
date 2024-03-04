@@ -74,7 +74,7 @@ func (ae *Env) handleBreachSlA(ctx c.Context, item *db.StepBreachedSLA) {
 
 	runCtx.SetTaskEvents(ctx)
 
-	blockErr := pipeline.ProcessBlockWithEndMapping(ctx, item.StepName, item.BlockData, runCtx, true)
+	workFinished, blockErr := pipeline.ProcessBlockWithEndMapping(ctx, item.StepName, item.BlockData, runCtx, true)
 	if blockErr != nil {
 		log.WithError(blockErr).Error("couldn't set SLA breach")
 
@@ -92,6 +92,13 @@ func (ae *Env) handleBreachSlA(ctx c.Context, item *db.StepBreachedSLA) {
 
 		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
 			log.Error(txErr)
+		}
+	}
+
+	if workFinished {
+		err := ae.Scheduler.DeleteAllTasksByWorkID(ctx, item.TaskID)
+		if err != nil {
+			log.WithError(err).Error("failed delete all tasks by work id in scheduler")
 		}
 	}
 

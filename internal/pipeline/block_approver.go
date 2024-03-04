@@ -12,6 +12,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
+	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
 const (
@@ -45,6 +46,10 @@ type GoApproverBlock struct {
 	happenedEvents []entity.NodeEvent
 
 	RunContext *BlockRunContext
+}
+
+func (gb *GoApproverBlock) CurrentExecutorData() CurrentExecutorData {
+	return CurrentExecutorData{}
 }
 
 func (gb *GoApproverBlock) GetNewEvents() []entity.NodeEvent {
@@ -608,6 +613,30 @@ func (gb *GoApproverBlock) Model() script.FunctionModel {
 			script.RejectSocket,
 		},
 	}
+}
+
+func (gb *GoApproverBlock) BlockAttachments() (ids []string) {
+	ids = make([]string, 0)
+
+	for i := range gb.State.AddInfo {
+		for j := range gb.State.AddInfo[i].Attachments {
+			ids = append(ids, gb.State.AddInfo[i].Attachments[j].FileID)
+		}
+	}
+
+	for i := range gb.State.ApproverLog {
+		for j := range gb.State.ApproverLog[i].Attachments {
+			ids = append(ids, gb.State.ApproverLog[i].Attachments[j].FileID)
+		}
+	}
+
+	for i := range gb.State.EditingAppLog {
+		for j := range gb.State.EditingAppLog[i].Attachments {
+			ids = append(ids, gb.State.EditingAppLog[i].Attachments[j].FileID)
+		}
+	}
+
+	return utils.UniqueStrings(ids)
 }
 
 func getPositiveProcessingStatus(decision string) (status TaskHumanStatus) {

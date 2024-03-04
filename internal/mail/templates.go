@@ -956,19 +956,38 @@ func NewRejectPipelineGroupTemplate(workNumber, workTitle, sdURL string) Templat
 	}
 }
 
-func NewFunctionNotify(functionName, functionVersion string, versions []script.VersionsByFunction) Template {
+func NewFunctionNotify(funcName, funcVersion string, versions []script.VersionsByFunction) Template {
+	activeVersions := make([]script.VersionsByFunction, 0)
+	draftVersions := make([]script.VersionsByFunction, 0)
+
+	for i := range versions {
+		if versions[i].Status == 2 {
+			activeVersions = append(activeVersions, versions[i])
+		}
+
+		if versions[i].Status == 1 {
+			draftVersions = append(draftVersions, versions[i])
+		}
+	}
+
 	return Template{
 		Subject:  "У функции из вашего сценария появилась новая версия",
-		Template: "internal/mail/template/43notifyNewFunction.html",
+		Template: "internal/mail/template/43notifyNewFunction-template.html",
 		Image:    "43_notify_new_function.png",
 		Variables: struct {
 			FunctionName    string
 			FunctionVersion string
-			Versions        []script.VersionsByFunction
+			HaveActive      bool
+			HaveDraft       bool
+			ActiveVersions  []script.VersionsByFunction
+			DraftVersions   []script.VersionsByFunction
 		}{
-			FunctionName:    functionName,
-			FunctionVersion: functionVersion,
-			Versions:        versions,
+			FunctionName:    funcName,
+			FunctionVersion: funcVersion,
+			HaveActive:      len(activeVersions) > 0,
+			HaveDraft:       len(draftVersions) > 0,
+			ActiveVersions:  activeVersions,
+			DraftVersions:   draftVersions,
 		},
 	}
 }

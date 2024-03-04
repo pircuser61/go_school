@@ -1,7 +1,7 @@
 openapi: 3.0.1
 info:
   title: Pipeliner API
-  contact: {}
+  contact: { }
   version: "0.1"
 servers:
   - url: //localhost:8181/api/pipeliner/v1
@@ -701,7 +701,7 @@ paths:
                 type: object
                 properties:
                   data:
-                    $ref: '#/components/schemas/ExternalSystem'
+                    $ref: '#/components/schemas/ProcessSettings'
                   status_code:
                     type: integer
         400:
@@ -1482,7 +1482,7 @@ paths:
                 functionId:
                   type: string
                 versionId:
-                    type: string
+                  type: string
               required:
                 - functionId
                 - versionId
@@ -2497,7 +2497,7 @@ paths:
           style: form
           schema:
             type: array
-            default: []
+            default: [ ]
             items:
               type: string
               enum:
@@ -2685,7 +2685,7 @@ components:
           type: string
         params:
           type: object
-          properties: {}
+          properties: { }
         short_title:
           type: string
           example: lock-bts
@@ -2831,7 +2831,7 @@ components:
     NodeEvent:
       type: string
       description: Возможный ивент ноды
-      enum: ["start", "end"]
+      enum: [ "start", "end" ]
     NodeSubscriptionEvents:
       type: object
       properties:
@@ -2866,7 +2866,7 @@ components:
         method:
           type: string
           description: Какой http метод использовать
-          enum: ["POST"]
+          enum: [ "POST" ]
         notification_schema:
           $ref: '#/components/schemas/JSONSchema'
         mapping:
@@ -3024,7 +3024,7 @@ components:
         $ref: '#/components/schemas/EriusScenarioInfo'
     EriusTagInfo:
       type: object
-      required: [id, name, status, color, isMarker]
+      required: [ id, name, status, color, isMarker ]
       properties:
         color:
           type: string
@@ -3098,7 +3098,7 @@ components:
           type: string
         parameters:
           type: object
-          properties: {}
+          properties: { }
         started_at:
           type: string
         status:
@@ -3123,8 +3123,16 @@ components:
             $ref: '#/components/schemas/NodeGroup'
         approval_list:
           type: object
-          properties: {}
+          properties: { }
           description: мапа листов согласований из настроек сценария
+        current_executor:
+          $ref: '#/components/schemas/CurrentExecutorData'
+        current_execution_start:
+          type: string
+          description: Current execution start time (UTC)
+        current_approvement_start:
+          type: string
+          description: Current approvement start time (UTC)
       required:
         - id
         - version_id
@@ -3141,6 +3149,32 @@ components:
         - work_number
         - blueprint_id
         - approval_list
+        - current_executor
+
+    CurrentExecutorData:
+      type: object
+      description: Current task execution data
+      properties:
+        people:
+          type: array
+          description: Executors logins
+          items:
+            type: string
+        initial_people:
+          type: array
+          description: Initial executors logins
+          items:
+            type: string
+        execution_group_id:
+          type: string
+          description: Execution group ID
+        execution_group_name:
+          type: string
+          description: Execution group name
+      required:
+        - people
+        - initial_people
+
     NodeGroup:
       type: object
       properties:
@@ -3197,7 +3231,7 @@ components:
       properties:
         status:
           type: string
-          enum: ["В работе", "Завершен", "Остановлен", "Неизвестный статус"]
+          enum: [ "В работе", "Завершен", "Остановлен", "Неизвестный статус" ]
           description: task status
         process_name:
           type: string
@@ -3306,7 +3340,7 @@ components:
             type: string
         output:
           type: object
-          properties: {}
+          properties: { }
         pipeline_id:
           type: string
           format: uuid
@@ -3335,7 +3369,7 @@ components:
           type: string
         state:
           type: object
-          properties: {}
+          properties: { }
         status:
           type: string
           description: Task step execution status
@@ -3350,7 +3384,7 @@ components:
             type: string
         storage:
           type: object
-          properties: {}
+          properties: { }
         time:
           type: string
         type:
@@ -3464,7 +3498,7 @@ components:
           description: form data
         application_body:
           type: object
-          properties: {}
+          properties: { }
         block_id:
           type: string
           description: Form block id
@@ -3738,7 +3772,7 @@ components:
       properties:
         type:
           type: string
-          enum: [object]
+          enum: [ object ]
         properties:
           $ref: '#/components/schemas/JSONSchemaProperties'
         required:
@@ -3797,6 +3831,8 @@ components:
             $ref: '#/components/schemas/JSONSchemaProperties'
           items:
             $ref: '#/components/schemas/ArrayItems'
+          fieldHidden:
+            type: boolean
           value:
             type: string
             description: Здесь хранится маппинг переменной, то место, откуда нужно взять значение переменной
@@ -3830,7 +3866,7 @@ components:
           type: string
         method:
           type: string
-          enum: ["POST"]
+          enum: [ "POST" ]
       required:
         - microservice_id
         - URL
@@ -3918,11 +3954,11 @@ components:
         context_variables:
           type: object
           description: мапа ключ значение, контекстные переменные
-          properties: {}
+          properties: { }
         forms_variables:
           type: object
           description: мапа ключ значение, переменные форм
-          properties: {}
+          properties: { }
       required:
         - id
         - name
@@ -3990,17 +4026,17 @@ components:
           type: integer
     CreateTaskRequest:
       type: object
-      required: [parameters, version_id]
+      required: [ parameters, version_id ]
       properties:
         parameters:
           type: object
-          properties: {}
+          properties: { }
         version_id:
           type: string
           format: uuid
     DebugRunRequest:
       type: object
-      required: [action, break_points, work_number]
+      required: [ action, break_points, work_number ]
       properties:
         action:
           type: string
@@ -4016,12 +4052,12 @@ components:
     RunVersionBody:
       type: object
     RunVersionsByPipelineIdRequest:
-      required: [application_body, pipeline_id, description, keys, attachment_fields]
+      required: [ application_body, pipeline_id, description, keys, attachment_fields ]
       type: object
       properties:
         application_body:
           type: object
-          properties: {}
+          properties: { }
         pipeline_id:
           type: string
         is_test_application:
@@ -4037,9 +4073,9 @@ components:
         attachment_fields:
           type: array
           items:
-            $ref: '#/components/schemas/Attachment'
+            type: string
     RunNewVersionByPrevVersionRequest:
-      required: [work_number, description, application_body, keys, attachment_fields]
+      required: [ work_number, description, application_body, keys, attachment_fields ]
       type: object
       properties:
         work_number:
@@ -4048,7 +4084,7 @@ components:
           type: string
         application_body:
           type: object
-          properties: {}
+          properties: { }
         keys:
           type: object
           additionalProperties:
@@ -4086,7 +4122,7 @@ components:
         parameters:
           type: object
           description: Параметры заявки
-          properties: {}
+          properties: { }
         started_at:
           type: string
           description: Время начала исполнения заявки
@@ -4131,7 +4167,7 @@ components:
           description: Плановая дата завершения процесса
         approval_list:
           type: object
-          properties: {}
+          properties: { }
           description: мапа листов согласований из настроек сценария
       required:
         - id
@@ -4185,7 +4221,7 @@ components:
         state:
           type: object
           description: Объект состояния
-          properties: {}
+          properties: { }
         status:
           description: Статус шага
           type: string
@@ -4195,7 +4231,7 @@ components:
             type: string
         storage:
           type: object
-          properties: {}
+          properties: { }
         time:
           type: string
         updateTime:
@@ -4292,7 +4328,7 @@ components:
           description: IDs of next blocks
         actionType:
           type: string
-          enum: ["primary", "secondary", "other"]
+          enum: [ "primary", "secondary", "other" ]
           description: action type
       required:
         - id
@@ -4320,7 +4356,7 @@ components:
           type: string
         logicalOperator:
           type: string
-          enum: ["or", "and"]
+          enum: [ "or", "and" ]
         conditions:
           type: array
           items:
@@ -4364,10 +4400,10 @@ components:
       properties:
         dataType:
           type: string
-          enum: ["integer", "number", "date", "boolean", "string"]
+          enum: [ "integer", "number", "date", "boolean", "string" ]
         operandType:
           type: string
-          enum: ["variableOperand", "valueOperand"]
+          enum: [ "variableOperand", "valueOperand" ]
       required:
         - dataType
         - operandType
@@ -4377,10 +4413,10 @@ components:
       properties:
         dataType:
           type: string
-          enum: ["integer", "number", "boolean"]
+          enum: [ "integer", "number", "boolean" ]
         operandType:
           type: string
-          enum: ["variableOperand", "valueOperand"]
+          enum: [ "variableOperand", "valueOperand" ]
       required:
         - dataType
         - operandType
@@ -4390,10 +4426,10 @@ components:
       properties:
         dataType:
           type: string
-          enum: ["integer", "number", "string"]
+          enum: [ "integer", "number", "string" ]
         operandType:
           type: string
-          enum: ["variableOperand", "valueOperand"]
+          enum: [ "variableOperand", "valueOperand" ]
       required:
         - dataType
         - operandType
@@ -4403,10 +4439,10 @@ components:
       properties:
         dataType:
           type: string
-          enum: ["integer", "boolean", "string"]
+          enum: [ "integer", "boolean", "string" ]
         operandType:
           type: string
-          enum: ["variableOperand", "valueOperand"]
+          enum: [ "variableOperand", "valueOperand" ]
       required:
         - dataType
         - operandType
@@ -4416,10 +4452,10 @@ components:
       properties:
         dataType:
           type: string
-          enum: ["date", "string"]
+          enum: [ "date", "string" ]
         operandType:
           type: string
-          enum: ["variableOperand", "valueOperand"]
+          enum: [ "variableOperand", "valueOperand" ]
       required:
         - dataType
         - operandType
@@ -4456,28 +4492,28 @@ components:
     compareStringOperator:
       type: string
       description: Used operator to compare string operands
-      enum: ["Равно", "Не равно", "Содержит", "Не Содержит", "Не Пустое", "Пустое"]
-      x-enum-varnames: ["Equal", "NotEqual", "Contain", "NotContain", "Exists", "NotExists"]
+      enum: [ "Равно", "Не равно", "Содержит", "Не Содержит", "Не Пустое", "Пустое" ]
+      x-enum-varnames: [ "Equal", "NotEqual", "Contain", "NotContain", "Exists", "NotExists" ]
     compareIntegerOperator:
       type: string
       description: Used operator to compare integer operands
-      enum: ["Равно", "Не равно", "Больше", "Больше или равно", "Меньше", "Меньше или равно", "Не Пустое", "Пустое"]
-      x-enum-varnames: ["Equal", "NotEqual", "More", "MoreOrEqual", "Less", "LessOrEqual", "Exists", "NotExists"]
+      enum: [ "Равно", "Не равно", "Больше", "Больше или равно", "Меньше", "Меньше или равно", "Не Пустое", "Пустое" ]
+      x-enum-varnames: [ "Equal", "NotEqual", "More", "MoreOrEqual", "Less", "LessOrEqual", "Exists", "NotExists" ]
     compareNumberOperator:
       type: string
       description: Used operator to compare number operands
-      enum: ["Равно", "Не равно", "Больше", "Больше или равно", "Меньше", "Меньше или равно", "Не Пустое", "Пустое"]
-      x-enum-varnames: ["Equal", "NotEqual", "More", "MoreOrEqual", "Less", "LessOrEqual", "Exists", "NotExists"]
+      enum: [ "Равно", "Не равно", "Больше", "Больше или равно", "Меньше", "Меньше или равно", "Не Пустое", "Пустое" ]
+      x-enum-varnames: [ "Equal", "NotEqual", "More", "MoreOrEqual", "Less", "LessOrEqual", "Exists", "NotExists" ]
     compareBooleanOperator:
       type: string
       description: Used operator to compare bool operands
-      enum: ["Равно", "Не равно", "Не Пустое", "Пустое"]
-      x-enum-varnames: ["Equal", "NotEqual", "Exists", "NotExists"]
+      enum: [ "Равно", "Не равно", "Не Пустое", "Пустое" ]
+      x-enum-varnames: [ "Equal", "NotEqual", "Exists", "NotExists" ]
     compareDateOperator:
       type: string
       description: Used operator to compare date operands
-      enum: ["Равно", "Не равно", "Больше", "Больше или равно", "Меньше", "Меньше или равно", "Не Пустое", "Пустое"]
-      x-enum-varnames: ["Equal", "NotEqual", "More", "MoreOrEqual", "Less", "LessOrEqual", "Exists", "NotExists"]
+      enum: [ "Равно", "Не равно", "Больше", "Больше или равно", "Меньше", "Меньше или равно", "Не Пустое", "Пустое" ]
+      x-enum-varnames: [ "Equal", "NotEqual", "More", "MoreOrEqual", "Less", "LessOrEqual", "Exists", "NotExists" ]
     ConditionParams:
       type: object
       description: Condition params
@@ -4513,9 +4549,9 @@ components:
         text:
           type: string
           description: либо текст если своё значение либо путь к переменной если textSourceType = context
-        textSourceType: 
+        textSourceType:
           type: string
-          enum: [field, context]
+          enum: [ field, context ]
           description: context для переменной из контекста, field для своего значения
           default: field
       required:
@@ -4744,8 +4780,8 @@ components:
         - token
     SignatureCarrierTranslated:
       type: string
-      enum: ["Все", "Облачный", "Токен"]
-      x-enum-varnames: ["all", "cloud", "token"]
+      enum: [ "Все", "Облачный", "Токен" ]
+      x-enum-varnames: [ "all", "cloud", "token" ]
     SigningParams:
       type: object
       properties:
@@ -4889,7 +4925,7 @@ components:
           description: id of form schema id
         application_body:
           type: object
-          properties: {}
+          properties: { }
           description: Filled form values
         description:
           type: string
@@ -4928,8 +4964,8 @@ components:
       description: Form accessibility preferences for certain node
     FormAccessTypeTranslated:
       type: string
-      enum: ["Скрыть", "Только для чтения", "Чтение и редактирование", "Обязательное заполнение"]
-      x-enum-varnames: ['None', 'Read', 'ReadWrite', 'RequiredFill']
+      enum: [ "Скрыть", "Только для чтения", "Чтение и редактирование", "Обязательное заполнение" ]
+      x-enum-varnames: [ 'None', 'Read', 'ReadWrite', 'RequiredFill' ]
       description: Form accessibility preferences for certain node (translated)
     ApprovementRule:
       type: string
@@ -4945,13 +4981,13 @@ components:
       description: Count of singers which will participate in signing will depends of signing type. 'Any of' will check only first sign action, when 'all of' will be waiting for all signers.
     SigningRuleTranslated:
       type: string
-      enum: ["Один из подписантов", "Все подписанты"]
-      x-enum-varnames: ['AnyOf', 'AllOf']
+      enum: [ "Один из подписантов", "Все подписанты" ]
+      x-enum-varnames: [ 'AnyOf', 'AllOf' ]
       description: Count of signers which will participate in signing will depends of signing type. 'Any of' will check only first signing action, when 'all of' will be waiting for all signers.
     ApprovementRuleTranslated:
       type: string
-      enum: ["Один из согласующих", "Все согласующие"]
-      x-enum-varnames: ['AnyOf', 'AllOf']
+      enum: [ "Один из согласующих", "Все согласующие" ]
+      x-enum-varnames: [ 'AnyOf', 'AllOf' ]
       description: Count of approvers which will participate in approvement will depends of approvement type. 'Any of' will check only first approvement action, when 'all of' will be waiting for all approvers or auto actions (translated).
     FunctionParams:
       type: object
@@ -5011,7 +5047,7 @@ components:
       properties:
         data:
           type: object
-          properties: {}
+          properties: { }
         status_code:
           type: integer
       required:
@@ -5048,7 +5084,7 @@ components:
           description: "Айди ноды в variable_storage"
         status:
           type: string
-          enum: ["running", "finished"]
+          enum: [ "running", "finished" ]
           description: "Статус ноды"
         node_id:
           type: string

@@ -17,6 +17,7 @@ import (
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	ht "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
@@ -206,18 +207,33 @@ func (ae *Env) GetTaskFormSchema(w http.ResponseWriter, req *http.Request, workN
 	}
 }
 
+const taskPath = "/tasks/{workNumber}"
+
 func (ae *Env) GetTask(w http.ResponseWriter, req *http.Request, workNumber string) {
+	start := time.Now()
 	ctx, s := trace.StartSpan(req.Context(), "get_task")
-	defer s.End()
+
+	requestInfo := metrics.NewGetRequestInfo(taskPath)
+
+	defer func() {
+		s.End()
+
+		requestInfo.Duration = time.Since(start)
+
+		ae.Metrics.RequestsIncrease(requestInfo)
+	}()
 
 	log := logger.GetLogger(ctx)
 	errorHandler := newHTTPErrorHandler(log, w)
+	errorHandler.setMetricsRequestInfo(requestInfo)
 
 	if workNumber == "" {
 		errorHandler.handleError(UUIDParsingError, errors.New("workNumber is empty"))
 
 		return
 	}
+
+	requestInfo.WorkNumber = workNumber
 
 	ui, err := user.GetEffectiveUserInfoFromCtx(ctx)
 	if err != nil {
@@ -302,6 +318,9 @@ func (ae *Env) GetTask(w http.ResponseWriter, req *http.Request, workNumber stri
 
 		return
 	}
+
+	requestInfo.PipelineID = scenario.PipelineID.String()
+	requestInfo.VersionID = scenario.VersionID.String()
 
 	if ui.Username != scenario.Author {
 		hideErr := ae.hideExecutors(ctx, dbTask, ui.Username, currentUserDelegateSteps, ui.Username == dbTask.Author)
@@ -482,13 +501,26 @@ func (ae *Env) getCurrentUserInDelegatesForSteps(
 	return userInDelegates, nil
 }
 
+const getTasksPath = "/tasks"
+
 //nolint:dupl,gocritic //its not duplicate // params без поинтера нужен для интерфейса
 func (ae *Env) GetTasks(w http.ResponseWriter, req *http.Request, params GetTasksParams) {
+	start := time.Now()
 	ctx, s := trace.StartSpan(req.Context(), "get_tasks")
-	defer s.End()
+
+	requestInfo := metrics.NewGetRequestInfo(getTasksPath)
+
+	defer func() {
+		s.End()
+
+		requestInfo.Duration = time.Since(start)
+
+		ae.Metrics.RequestsIncrease(requestInfo)
+	}()
 
 	log := logger.GetLogger(ctx)
 	errorHandler := newHTTPErrorHandler(log, w)
+	errorHandler.setMetricsRequestInfo(requestInfo)
 
 	filters, err := params.toEntity(req)
 	if err != nil {
@@ -530,48 +562,7 @@ func (ae *Env) GetTasks(w http.ResponseWriter, req *http.Request, params GetTask
 		return
 	}
 
-	versionsSLA := make(map[string]*entity.SLAVersionSettings)
-
 	for i := range resp.Tasks {
-		if _, exists := versionsSLA[resp.Tasks[i].VersionID.String()]; !exists {
-			versionSettings, errSLA := ae.DB.GetSLAVersionSettings(ctx, resp.Tasks[i].VersionID.String())
-			if errSLA != nil {
-				errorHandler.handleError(GetProcessSLASettingsError, err)
-
-				return
-			}
-
-			versionsSLA[resp.Tasks[i].VersionID.String()] = &versionSettings
-		}
-
-		slaInfoPtr, getSLAInfoErr := ae.SLAService.GetSLAInfoPtr(ctx, sla.InfoDTO{
-			TaskCompletionIntervals: []entity.TaskCompletionInterval{
-				{
-					StartedAt:  resp.Tasks[i].StartedAt,
-					FinishedAt: resp.Tasks[i].StartedAt.Add(time.Hour * 24 * 100),
-				},
-			},
-			WorkType: sla.WorkHourType(versionsSLA[resp.Tasks[i].VersionID.String()].WorkType),
-		})
-		if getSLAInfoErr != nil {
-			errorHandler.handleError(UnknownError, err)
-
-			return
-		}
-
-		deadline, deadlineErr := ae.DB.GetDeadline(ctx, resp.Tasks[i].WorkNumber)
-		if deadlineErr != nil {
-			errorHandler.handleError(GetDeadlineError, err)
-
-			return
-		}
-
-		if deadline.IsZero() {
-			deadline = ae.SLAService.ComputeMaxDate(resp.Tasks[i].StartedAt, float32(versionsSLA[resp.Tasks[i].VersionID.String()].SLA), slaInfoPtr)
-		}
-
-		resp.Tasks[i].ProcessDeadline = deadline
-
 		approvalLists, errGetSettings := ae.DB.GetApprovalListsSettings(ctx, resp.Tasks[i].VersionID.String())
 		if errGetSettings != nil {
 			errorHandler.handleError(UnknownError, err)

@@ -156,7 +156,7 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 		return nil
 	}
 
-	blockErr := pipeline.ProcessBlockWithEndMapping(ctx, step.Name, blockFunc, runCtx, true)
+	workFinished, blockErr := pipeline.ProcessBlockWithEndMapping(ctx, step.Name, blockFunc, runCtx, true)
 	if blockErr != nil {
 		log.WithField("funcName", "ProcessBlockWithEndMapping").
 			WithField("step.WorkNumber", step.WorkNumber).
@@ -179,6 +179,13 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 			Error("commit transaction")
 
 		return commitErr
+	}
+
+	if workFinished {
+		err = ae.Scheduler.DeleteAllTasksByWorkID(ctx, step.WorkID)
+		if err != nil {
+			log.WithError(err).Error("failed delete all tasks by work id in scheduler")
+		}
 	}
 
 	runCtx.NotifyEvents(ctx)
@@ -213,7 +220,7 @@ func (ae *Env) NotifyNewFunctionVersion(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	actualVersions, err := ae.DB.GetVersionsByFunction(ctx, b.FunctionId, b.VersionId)
+	dbVersions, err := ae.DB.GetVersionsByFunction(ctx, b.FunctionId, b.VersionId)
 	if err != nil {
 		errorHandler.handleError(http.StatusInternalServerError, err)
 
@@ -221,14 +228,15 @@ func (ae *Env) NotifyNewFunctionVersion(w http.ResponseWriter, r *http.Request) 
 	}
 
 	versions := make(map[string][]script.VersionsByFunction)
-	for index := range actualVersions {
-		versions[actualVersions[index].Author] = append(versions[actualVersions[index].Author], script.VersionsByFunction{
-			Name: actualVersions[index].Name,
-			Link: fmt.Sprintf("%s/scenarios/%s", ae.HostURL, actualVersions[index].VersionID.String()),
+	for i := range dbVersions {
+		versions[dbVersions[i].Author] = append(versions[dbVersions[i].Author], script.VersionsByFunction{
+			Name:   dbVersions[i].Name,
+			Status: dbVersions[i].Status,
+			Link:   fmt.Sprintf("%s/scenarios/%s", ae.HostURL, dbVersions[i].VersionID.String()),
 		})
 	}
 
-	for login, nameAndLink := range versions {
+	for login, v := range versions {
 		emailToNotify, err := ae.People.GetUserEmail(ctx, login)
 		if err != nil {
 			log.WithField("failed to get mail for this login", login).Error(err)
@@ -236,11 +244,12 @@ func (ae *Env) NotifyNewFunctionVersion(w http.ResponseWriter, r *http.Request) 
 			continue
 		}
 
-		em := mail.NewFunctionNotify(latestFunctionVersion.Name, latestFunctionVersion.Version, nameAndLink)
+		em := mail.NewFunctionNotify(latestFunctionVersion.Name, latestFunctionVersion.Version, v)
 
 		file, ok := ae.Mail.Images[em.Image]
 		if !ok {
-			log.Error("couldn't find images: ", em.Image)
+			err = errors.New("couldn't find image")
+			log.Error(err.Error(), em.Image)
 			errorHandler.handleError(http.StatusInternalServerError, err)
 
 			return
@@ -284,5 +293,5 @@ func (ae *Env) getTaskStepWithRetry(ctx c.Context, stepID uuid.UUID) (*entity.St
 		return step, nil
 	}
 
-	return nil, errors.New("step by stepId not found")
+	return nil, errors.New("step by stepID not found")
 }

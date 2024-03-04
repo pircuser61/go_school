@@ -34,7 +34,6 @@ type TaskStorager interface {
 	GetDeadline(ctx c.Context, workID string) (time.Time, error)
 	GetTasks(ctx c.Context, filters e.TaskFilter, delegations []string) (*e.EriusTasksPage, error)
 	GetTasksCount(ctx c.Context, currentUser string, delegationsByApprovement, delegationsByExecution []string) (*e.CountTasks, error)
-	GetPipelineTasks(ctx c.Context, pipelineID uuid.UUID) (*e.EriusTasks, error)
 	GetTask(ctx c.Context, delegationsApprover, delegationsExecution []string, currentUser, workNumber string) (*e.EriusTask, error)
 	GetTaskSteps(ctx c.Context, id uuid.UUID) (e.TaskSteps, error)
 	GetUnfinishedTaskStepsByWorkIDAndStepType(ctx c.Context, id uuid.UUID, stepType string, in *e.TaskUpdate) (e.TaskSteps, error)
@@ -42,15 +41,14 @@ type TaskStorager interface {
 	GetParentTaskStepByName(ctx c.Context, workID uuid.UUID, stepName string) (*e.Step, error)
 	GetTaskStepByName(ctx c.Context, workID uuid.UUID, stepName string) (*e.Step, error)
 	GetCanceledTaskSteps(ctx c.Context, taskID uuid.UUID) ([]e.Step, error)
-	GetVersionTasks(ctx c.Context, versionID uuid.UUID) (*e.EriusTasks, error)
 	GetLastDebugTask(ctx c.Context, versionID uuid.UUID, author string) (*e.EriusTask, error)
 	GetTaskStatus(ctx c.Context, taskID uuid.UUID) (int, error)
 	GetTaskHumanStatus(ctx c.Context, taskID uuid.UUID) (string, error)
 	GetTaskStatusWithReadableString(ctx c.Context, taskID uuid.UUID) (int, string, error)
 	GetTaskStepsToWait(ctx c.Context, workNumber, blockName string) ([]string, error)
 	GetTaskRunContext(ctx c.Context, workNumber string) (e.TaskRunContext, error)
-	GetBlockDataFromVersion(ctx c.Context, workNumber, blockName string) (*e.EriusFunc, error)
-	GetVariableStorageForStep(ctx c.Context, taskID uuid.UUID, stepType string) (*store.VariableStore, error)
+	GetBlockDataFromVersion(ctx c.Context, workNumber, stepName string) (*e.EriusFunc, error)
+	GetVariableStorageForStep(ctx c.Context, taskID uuid.UUID, stepName string) (*store.VariableStore, error)
 	GetVariableStorage(ctx c.Context, workNumber string) (*store.VariableStore, error)
 	GetBlocksBreachedSLA(ctx c.Context) ([]StepBreachedSLA, error)
 	GetMeanTaskSolveTime(ctx c.Context, pipelineID string) ([]e.TaskCompletionInterval, error)
@@ -58,6 +56,7 @@ type TaskStorager interface {
 	GetExecutorsFromPrevExecutionBlockRun(ctx c.Context, taskID uuid.UUID, name string) (exec map[string]struct{}, err error)
 	GetExecutorsFromPrevWorkVersionExecutionBlockRun(ctx c.Context, workNumber, name string) (exec map[string]struct{}, err error)
 	GetTaskForMonitoring(ctx c.Context, workNumber string) ([]e.MonitoringTaskNode, error)
+	GetWorkIDByWorkNumber(ctx c.Context, workNumber string) (uuid.UUID, error)
 
 	CreateTask(ctx c.Context, dto *CreateTaskDTO) (*e.EriusTask, error)
 
@@ -68,6 +67,7 @@ type TaskStorager interface {
 	StopTaskBlocks(ctx c.Context, taskID uuid.UUID) error
 	FinishTaskBlocks(ctx c.Context, workID uuid.UUID, ignoreSteps []string, updateParent bool) error
 	ParallelIsFinished(ctx c.Context, workNumber, blockName string) (bool, error)
+	UnsetIsActive(ctx c.Context, workNumber, blockName string) error
 
 	UpdateTaskRate(ctx c.Context, req *UpdateTaskRate) error
 	UpdateTaskHumanStatus(ctx c.Context, taskID uuid.UUID, status, comment string) (*e.EriusTask, error)
@@ -96,6 +96,13 @@ type TaskAction struct {
 	IsInitiator bool                              `json:"is_initiator"`
 }
 
+type CurrentExecutorData struct {
+	GroupID       string   `json:"group_id"`
+	GroupName     string   `json:"group_name"`
+	People        []string `json:"people"`
+	InitialPeople []string `json:"initial_people"`
+}
+
 type Member struct {
 	Login                string
 	Actions              []MemberAction
@@ -112,27 +119,31 @@ type Deadline struct {
 }
 
 type SaveStepRequest struct {
-	WorkID      uuid.UUID
-	StepType    string
-	StepName    string
-	Content     []byte
-	BreakPoints []string
-	HasError    bool
-	Status      string
-	Members     []Member
-	Deadlines   []Deadline
-	IsReEntry   bool
+	WorkID          uuid.UUID
+	StepType        string
+	StepName        string
+	Content         []byte
+	BreakPoints     []string
+	HasError        bool
+	Status          string
+	Members         []Member
+	Deadlines       []Deadline
+	IsReEntry       bool
+	Attachments     int
+	CurrentExecutor CurrentExecutorData
 }
 
 type UpdateStepRequest struct {
-	ID          uuid.UUID
-	StepName    string
-	Content     []byte
-	BreakPoints []string
-	HasError    bool
-	Status      string
-	Members     []Member
-	Deadlines   []Deadline
+	ID              uuid.UUID
+	StepName        string
+	Content         []byte
+	BreakPoints     []string
+	HasError        bool
+	Status          string
+	Members         []Member
+	Deadlines       []Deadline
+	Attachments     int
+	CurrentExecutor CurrentExecutorData
 }
 
 type UpdateTaskBlocksDataRequest struct {
@@ -207,6 +218,7 @@ type Database interface {
 	UpdateStepContext(ctx c.Context, dto *UpdateStepRequest) error
 	UpdateTaskBlocksData(ctx c.Context, dto *UpdateTaskBlocksDataRequest) error
 	GetTaskActiveBlock(ctx c.Context, taskID, stepName string) ([]string, error)
+	SetExecDeadline(ctx c.Context, taskID string, deadline time.Time) error
 
 	GetExecutableScenarios(ctx c.Context) ([]e.EriusScenario, error)
 	GetExecutableByName(ctx c.Context, name string) (*e.EriusScenario, error)

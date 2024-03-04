@@ -3,11 +3,14 @@ package pipeline
 import (
 	"context"
 	"encoding/json"
+	"sort"
 	"time"
 
 	"github.com/pkg/errors"
+
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
+	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
@@ -48,6 +51,38 @@ type GoExecutionBlock struct {
 
 	expectedEvents map[string]struct{}
 	happenedEvents []entity.NodeEvent
+}
+
+func mapToSlice(data map[string]struct{}) []string {
+	keys := make([]string, 0, len(data))
+
+	for k := range data {
+		keys = append(keys, k)
+	}
+
+	sort.Strings(keys)
+
+	return keys
+}
+
+func (gb *GoExecutionBlock) CurrentExecutorData() CurrentExecutorData {
+	if gb.State.Decision != nil {
+		return CurrentExecutorData{}
+	}
+
+	if gb.State.IsTakenInWork {
+		return CurrentExecutorData{
+			People:        mapToSlice(gb.State.Executors),
+			InitialPeople: mapToSlice(gb.State.InitialExecutors),
+		}
+	}
+
+	return CurrentExecutorData{
+		GroupID:       gb.State.ExecutorsGroupID,
+		GroupName:     gb.State.ExecutorsGroupName,
+		People:        mapToSlice(gb.State.Executors),
+		InitialPeople: mapToSlice(gb.State.InitialExecutors),
+	}
 }
 
 func (gb *GoExecutionBlock) GetNewEvents() []entity.NodeEvent {
@@ -638,4 +673,32 @@ func (gb *GoExecutionBlock) Model() script.FunctionModel {
 			script.NotExecutedSocket,
 		},
 	}
+}
+
+func (gb *GoExecutionBlock) BlockAttachments() (ids []string) {
+	ids = make([]string, 0)
+
+	for i := range gb.State.RequestExecutionInfoLogs {
+		for j := range gb.State.RequestExecutionInfoLogs[i].Attachments {
+			ids = append(ids, gb.State.RequestExecutionInfoLogs[i].Attachments[j].FileID)
+		}
+	}
+
+	for i := range gb.State.DecisionAttachments {
+		ids = append(ids, gb.State.DecisionAttachments[i].FileID)
+	}
+
+	for i := range gb.State.EditingAppLog {
+		for j := range gb.State.EditingAppLog[i].Attachments {
+			ids = append(ids, gb.State.EditingAppLog[i].Attachments[j].FileID)
+		}
+	}
+
+	for i := range gb.State.ChangedExecutorsLogs {
+		for j := range gb.State.ChangedExecutorsLogs[i].Attachments {
+			ids = append(ids, gb.State.ChangedExecutorsLogs[i].Attachments[j].FileID)
+		}
+	}
+
+	return utils.UniqueStrings(ids)
 }

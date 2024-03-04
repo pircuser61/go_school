@@ -30,6 +30,10 @@ type IF struct {
 	happenedEvents []entity.NodeEvent
 }
 
+func (gb *IF) CurrentExecutorData() CurrentExecutorData {
+	return CurrentExecutorData{}
+}
+
 func (gb *IF) GetNewEvents() []entity.NodeEvent {
 	return gb.happenedEvents
 }
@@ -144,6 +148,10 @@ func (gb *IF) Model() script.FunctionModel {
 		},
 		Sockets: []script.Socket{script.DefaultSocket},
 	}
+}
+
+func (gb *IF) BlockAttachments() (ids []string) {
+	return ids
 }
 
 //nolint:unparam // its ok

@@ -17,6 +17,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
+	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
 const (
@@ -96,6 +97,10 @@ type GoFormBlock struct {
 
 	expectedEvents map[string]struct{}
 	happenedEvents []entity.NodeEvent
+}
+
+func (gb *GoFormBlock) CurrentExecutorData() CurrentExecutorData {
+	return CurrentExecutorData{}
 }
 
 func (gb *GoFormBlock) GetNewEvents() []entity.NodeEvent {
@@ -353,6 +358,10 @@ func (gb *GoFormBlock) Model() script.FunctionModel {
 		},
 		Sockets: []script.Socket{script.DefaultSocket},
 	}
+}
+
+func (gb *GoFormBlock) BlockAttachments() (ids []string) {
+	return utils.UniqueStrings(utils.GetAttachmentsIds(fmt.Sprintf("%+v", gb.State.ApplicationBody)))
 }
 
 func (gb *GoFormBlock) handleAutoFillForm() error {

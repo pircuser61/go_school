@@ -23,6 +23,10 @@ type GoEndBlock struct {
 	RunContext *BlockRunContext
 }
 
+func (gb *GoEndBlock) CurrentExecutorData() CurrentExecutorData {
+	return CurrentExecutorData{}
+}
+
 func (gb *GoEndBlock) GetNewEvents() []entity.NodeEvent {
 	return gb.happenedEvents
 }
@@ -108,6 +112,10 @@ func (gb *GoEndBlock) Model() script.FunctionModel {
 		Outputs:   nil,
 		Sockets:   []script.Socket{}, // TODO: по идее, тут нет никаких некстов, возможно, в будущем они понадобятся
 	}
+}
+
+func (gb *GoEndBlock) BlockAttachments() (ids []string) {
+	return ids
 }
 
 //nolint:dupl,unparam //its not duplicate
