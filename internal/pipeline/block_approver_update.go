@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-
 	"github.com/pkg/errors"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
@@ -871,6 +870,27 @@ func (gb *GoApproverBlock) Update(ctx context.Context) (interface{}, error) {
 	return nil, nil
 }
 
+func (gb *GoApproverBlock) checkFormFilled() error {
+	l := logger.GetLogger(context.Background())
+
+	for _, form := range gb.State.FormsAccessibility {
+		formState, ok := gb.RunContext.VarStore.State[form.NodeID]
+		if !ok {
+			continue
+		}
+
+		if form.AccessType == requiredFillAccessType {
+			if gb.checkForEmptyForm(formState, l) {
+				comment := fmt.Sprintf("%s have empty form", form.NodeID)
+
+				return errors.New(comment)
+			}
+		}
+	}
+
+	return nil
+}
+
 //nolint:gocognit,gocyclo //тут большой switch case, где нибудь но он должен быть
 func (gb *GoApproverBlock) handleTaskUpdateAction(ctx context.Context) error {
 	data := gb.RunContext.UpdateData
@@ -901,8 +921,14 @@ func (gb *GoApproverBlock) handleTaskUpdateAction(ctx context.Context) error {
 			return errors.New("can't assert provided data")
 		}
 
-		if !gb.actionAcceptable(updateParams.Decision) {
-			return errors.New("unacceptable action")
+		if updateParams.Decision.ToDecision() != ApproverDecisionRejected {
+			if err := gb.checkFormFilled(); err != nil {
+				return err
+			}
+
+			if !gb.actionAcceptable(updateParams.Decision) {
+				return errors.New("unacceptable action")
+			}
 		}
 
 		login := gb.RunContext.UpdateData.ByLogin
@@ -979,6 +1005,7 @@ func (gb *GoApproverBlock) handleTaskUpdateAction(ctx context.Context) error {
 		if errUpdate := gb.HandleBreachedSLARequestAddInfo(ctx); errUpdate != nil {
 			return errUpdate
 		}
+	case entity.TaskUpdateActionReload:
 	}
 
 	return nil

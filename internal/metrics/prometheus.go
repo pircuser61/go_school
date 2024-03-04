@@ -43,6 +43,7 @@ func NewPostRequestInfo(path string) *RequestInfo {
 	return &RequestInfo{
 		Method: http.MethodPost,
 		Status: http.StatusOK,
+		Path:   path,
 	}
 }
 
@@ -50,6 +51,7 @@ func NewGetRequestInfo(path string) *RequestInfo {
 	return &RequestInfo{
 		Method: http.MethodGet,
 		Status: http.StatusOK,
+		Path:   path,
 	}
 }
 

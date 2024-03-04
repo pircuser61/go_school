@@ -2326,7 +2326,7 @@ func (db *PGCon) CheckUserCanEditForm(ctx context.Context, workNumber, stepName,
 select count(*)
 from accesses
 where accesses.data::jsonb ->> 'node_id' = $2
-  and accesses.data::jsonb ->> 'accessType' = 'ReadWrite'
+  and accesses.data::jsonb ->> 'accessType' in ('ReadWrite', 'RequiredFill')
 `
 
 	var count int
@@ -2662,6 +2662,44 @@ func (db *PGCon) GetBlocksBreachedSLA(ctx context.Context) ([]StepBreachedSLA, e
 	}
 
 	return res, nil
+}
+
+func (db *PGCon) GetTaskActiveBlock(c context.Context, taskID, stepName string) ([]string, error) {
+	c, span := trace.StartSpan(c, "pg_get_task_active_block")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	q := `SELECT step_name 
+			FROM variable_storage 
+			WHERE 
+			    status IN ('running', 'idle') 
+				AND step_type IN ('approver', 'sign', 'form', 'execution') AND work_id = $1 and step_name != $2`
+
+	stepNames := make([]string, 0)
+
+	rows, err := db.Connection.Query(c, q, taskID, stepName)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var name string
+
+		if scanErr := rows.Scan(&name); scanErr != nil {
+			return stepNames, scanErr
+		}
+
+		stepNames = append(stepNames, name)
+	}
+
+	if rowsErr := rows.Err(); rowsErr != nil {
+		return nil, rowsErr
+	}
+
+	return stepNames, nil
 }
 
 func (db *PGCon) GetTaskForMonitoring(ctx context.Context, workNumber string) ([]entity.MonitoringTaskNode, error) {

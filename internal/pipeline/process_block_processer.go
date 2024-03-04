@@ -12,6 +12,7 @@ import (
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 )
 
@@ -33,7 +34,7 @@ func newBlockProcessor(name string, bl *entity.EriusFunc, runCtx *BlockRunContex
 	}
 }
 
-//nolint:gocognit,gocyclo //it's ok
+//nolint:gocognit,gocyclo,nestif //it's ok
 func (p *blockProcessor) ProcessBlock(ctx context.Context, its int) error {
 	its++
 	if its > 10 {
@@ -65,9 +66,19 @@ func (p *blockProcessor) ProcessBlock(ctx context.Context, its int) error {
 		block.GetStatus() == StatusError
 
 	if (block.UpdateManual() && p.manual) || !block.UpdateManual() {
-		err = updateBlock(ctx, block, p.name, id, p.runCtx)
-		if err != nil {
+		if err = updateBlock(ctx, block, p.name, id, p.runCtx); err != nil {
 			return p.handleError(ctx, log, err)
+		}
+
+		if p.bl.TypeID == "form" && p.runCtx.UpdateData != nil {
+			activeBlocks, getActiveBlockErr := p.runCtx.Services.Storage.GetTaskActiveBlock(ctx, p.runCtx.TaskID.String(), p.name)
+			if getActiveBlockErr != nil {
+				return getActiveBlockErr
+			}
+
+			if processActiveErr := p.processActiveBlocks(ctx, activeBlocks, its, true); processActiveErr != nil {
+				return processActiveErr
+			}
 		}
 	}
 
@@ -125,7 +136,7 @@ func (p *blockProcessor) ProcessBlock(ctx context.Context, its int) error {
 		return p.handleError(ctx, log, ErrCantGetNextStep)
 	}
 
-	err = p.processActiveBlocks(ctx, activeBlocks, its)
+	err = p.processActiveBlocks(ctx, activeBlocks, its, false)
 	if err != nil {
 		return p.handleError(ctx, log, err)
 	}
@@ -168,7 +179,7 @@ func (runCtx *BlockRunContext) updateStatusByStep(ctx context.Context, status Ta
 	return err
 }
 
-func (p *blockProcessor) processActiveBlocks(ctx context.Context, activeBlocks []string, its int) error {
+func (p *blockProcessor) processActiveBlocks(ctx context.Context, activeBlocks []string, its int, updateVarStore bool) error {
 	for _, blockName := range activeBlocks {
 		blockData, blockErr := p.runCtx.Services.Storage.GetBlockDataFromVersion(ctx, p.runCtx.WorkNumber, blockName)
 		if blockErr != nil {
@@ -177,7 +188,18 @@ func (p *blockProcessor) processActiveBlocks(ctx context.Context, activeBlocks [
 
 		ctxCopy := p.runCtx.Copy()
 
-		processor := newBlockProcessor(blockName, blockData, ctxCopy, false)
+		if updateVarStore {
+			ctxCopy.UpdateData = &script.BlockUpdateData{Action: string(entity.TaskUpdateActionReload)}
+
+			storage, getErrVarStorage := p.runCtx.Services.Storage.GetVariableStorageForStep(ctx, p.runCtx.TaskID, blockName)
+			if getErrVarStorage != nil {
+				return getErrVarStorage
+			}
+
+			ctxCopy.VarStore = storage
+		}
+
+		processor := newBlockProcessor(blockName, blockData, ctxCopy, updateVarStore)
 
 		err := processor.ProcessBlock(ctx, its)
 		if err != nil {
