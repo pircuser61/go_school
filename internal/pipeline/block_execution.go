@@ -340,7 +340,9 @@ func (gb *GoExecutionBlock) getFormNamesToFill() ([]string, bool) {
 			actions = append(actions, form.NodeID)
 		case requiredFillAccessType:
 			actions = append(actions, form.NodeID)
-			if emptyForm != gb.checkForEmptyForm(formState, l) {
+
+			existEmptyForm := gb.checkForEmptyForm(formState, l)
+			if existEmptyForm != emptyForm {
 				emptyForm = true
 			}
 		}
