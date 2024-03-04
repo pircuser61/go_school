@@ -2556,8 +2556,8 @@ func TestGoExecutionActions(t *testing.T) {
 			wantActions: []MemberAction{
 				{ID: "execution", Type: "primary", Params: map[string]interface{}{"disabled": true}},
 				{ID: "decline", Type: "secondary", Params: map[string]interface{}(nil)},
-				{ID: "change_executor", Type: "other", Params: map[string]interface{}{"disabled": true}},
-				{ID: "request_execution_info", Type: "other", Params: map[string]interface{}{"disabled": true}},
+				{ID: "change_executor", Type: "other", Params: map[string]interface{}(nil)},
+				{ID: "request_execution_info", Type: "other", Params: map[string]interface{}(nil)},
 				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": []string{"form_0", "form_1"}}}},
 		},
 		{
@@ -2657,8 +2657,8 @@ func TestGoExecutionActions(t *testing.T) {
 			wantActions: []MemberAction{
 				{ID: "execution", Type: "primary", Params: map[string]interface{}{"disabled": true}},
 				{ID: "decline", Type: "secondary", Params: map[string]interface{}(nil)},
-				{ID: "change_executor", Type: "other", Params: map[string]interface{}{"disabled": true}},
-				{ID: "request_execution_info", Type: "other", Params: map[string]interface{}{"disabled": true}},
+				{ID: "change_executor", Type: "other", Params: map[string]interface{}(nil)},
+				{ID: "request_execution_info", Type: "other", Params: map[string]interface{}(nil)},
 				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": []string{"form_0", "form_1"}}}},
 		},
 		{
@@ -2900,8 +2900,8 @@ func TestGoExecutionActions(t *testing.T) {
 			wantActions: []MemberAction{
 				{ID: "execution", Type: "primary", Params: map[string]interface{}{"disabled": true}},
 				{ID: "decline", Type: "secondary", Params: map[string]interface{}(nil)},
-				{ID: "change_executor", Type: "other", Params: map[string]interface{}{"disabled": true}},
-				{ID: "request_execution_info", Type: "other", Params: map[string]interface{}{"disabled": true}},
+				{ID: "change_executor", Type: "other", Params: map[string]interface{}(nil)},
+				{ID: "request_execution_info", Type: "other", Params: map[string]interface{}(nil)},
 				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": []string{"form_0", "form_1"}}}},
 		},
 		{
@@ -3014,8 +3014,8 @@ func TestGoExecutionActions(t *testing.T) {
 			wantActions: []MemberAction{
 				{ID: "execution", Type: "primary", Params: map[string]interface{}{"disabled": true}},
 				{ID: "decline", Type: "secondary", Params: map[string]interface{}(nil)},
-				{ID: "change_executor", Type: "other", Params: map[string]interface{}{"disabled": true}},
-				{ID: "request_execution_info", Type: "other", Params: map[string]interface{}{"disabled": true}},
+				{ID: "change_executor", Type: "other", Params: map[string]interface{}(nil)},
+				{ID: "request_execution_info", Type: "other", Params: map[string]interface{}(nil)},
 				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": []string{"form_0", "form_1"}}}},
 		},
 	}

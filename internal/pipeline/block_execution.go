@@ -10,12 +10,12 @@ import (
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
-	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
+	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
 const (
@@ -336,7 +336,7 @@ func (gb *GoExecutionBlock) executionActions() []MemberAction {
 		for i := 0; i < len(actions); i++ {
 			item := &actions[i]
 
-			if item.ID == "decline" {
+			if item.ID != executionExecuteAction {
 				continue
 			}
 
@@ -377,7 +377,7 @@ func (gb *GoExecutionBlock) getFormNamesToFill() ([]string, bool) {
 			actions = append(actions, form.NodeID)
 
 			existEmptyForm := gb.checkForEmptyForm(formState, l)
-			if existEmptyForm != emptyForm {
+			if existEmptyForm {
 				emptyForm = true
 			}
 		}

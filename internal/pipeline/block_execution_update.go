@@ -161,6 +161,7 @@ func (gb *GoExecutionBlock) handleAction(ctx context.Context, action entity.Task
 		if errUpdate != nil {
 			return errUpdate
 		}
+	case entity.TaskUpdateActionReload:
 	}
 
 	return nil

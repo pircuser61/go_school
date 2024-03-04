@@ -65,6 +65,7 @@ func (gb *GoFormBlock) Update(ctx context.Context) (interface{}, error) {
 		if errUpdate := gb.formExecutorStartWork(ctx); errUpdate != nil {
 			return nil, errUpdate
 		}
+	case string(entity.TaskUpdateActionReload):
 	}
 
 	var stateBytes []byte

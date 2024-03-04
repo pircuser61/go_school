@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-
 	"github.com/pkg/errors"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
@@ -1006,6 +1005,7 @@ func (gb *GoApproverBlock) handleTaskUpdateAction(ctx context.Context) error {
 		if errUpdate := gb.HandleBreachedSLARequestAddInfo(ctx); errUpdate != nil {
 			return errUpdate
 		}
+	case entity.TaskUpdateActionReload:
 	}
 
 	return nil

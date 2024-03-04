@@ -320,7 +320,7 @@ func (gb *GoApproverBlock) getFormNamesToFill() ([]string, bool) {
 			actions = append(actions, form.NodeID)
 
 			existEmptyForm := gb.checkForEmptyForm(formState, l)
-			if existEmptyForm != emptyForm {
+			if existEmptyForm {
 				emptyForm = true
 			}
 		}

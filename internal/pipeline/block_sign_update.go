@@ -207,6 +207,7 @@ func (gb *GoSignBlock) Update(ctx c.Context) (interface{}, error) {
 		if errUpdate := gb.handleChangeWorkStatus(ctx, data.ByLogin); errUpdate != nil {
 			return nil, errUpdate
 		}
+	case string(entity.TaskUpdateActionReload):
 	}
 
 	var stateBytes []byte

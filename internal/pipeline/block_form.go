@@ -203,7 +203,7 @@ func (gb *GoFormBlock) getFormNamesToFill() ([]string, bool) {
 			actions = append(actions, form.NodeID)
 
 			existEmptyForm := gb.checkForEmptyForm(formState, l)
-			if existEmptyForm != emptyForm {
+			if existEmptyForm {
 				emptyForm = true
 			}
 		}

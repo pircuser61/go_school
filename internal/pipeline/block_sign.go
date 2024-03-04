@@ -216,7 +216,7 @@ func (gb *GoSignBlock) signActions(login string) []MemberAction {
 		for i := 0; i < len(signAction); i++ {
 			item := &signAction[i]
 
-			if item.ID == signActionReject {
+			if item.ID != signActionSign {
 				continue
 			}
 
@@ -260,7 +260,7 @@ func (gb *GoSignBlock) getFormNamesToFill() ([]string, bool) {
 			actions = append(actions, form.NodeID)
 
 			existEmptyForm := gb.checkForEmptyForm(formState, l)
-			if existEmptyForm != emptyForm {
+			if existEmptyForm {
 				emptyForm = true
 			}
 		}
