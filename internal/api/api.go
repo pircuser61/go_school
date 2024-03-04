@@ -917,6 +917,9 @@ type EriusTask struct {
 	BlueprintId      string                 `json:"blueprint_id"`
 	Comment          *string                `json:"comment,omitempty"`
 
+	// Current approvement start time (UTC)
+	CurrentApprovementStart *string `json:"current_approvement_start,omitempty"`
+
 	// Current execution start time (UTC)
 	CurrentExecutionStart *string `json:"current_execution_start,omitempty"`
 

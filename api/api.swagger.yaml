@@ -3130,6 +3130,9 @@ components:
         current_execution_start:
           type: string
           description: Current execution start time (UTC)
+        current_approvement_start:
+          type: string
+          description: Current approvement start time (UTC)
       required:
         - id
         - version_id
