@@ -56,6 +56,7 @@ type TaskStorager interface {
 	GetExecutorsFromPrevExecutionBlockRun(ctx c.Context, taskID uuid.UUID, name string) (exec map[string]struct{}, err error)
 	GetExecutorsFromPrevWorkVersionExecutionBlockRun(ctx c.Context, workNumber, name string) (exec map[string]struct{}, err error)
 	GetTaskForMonitoring(ctx c.Context, workNumber string) ([]e.MonitoringTaskNode, error)
+	GetWorkIDByWorkNumber(ctx c.Context, workNumber string) (uuid.UUID, error)
 
 	CreateTask(ctx c.Context, dto *CreateTaskDTO) (*e.EriusTask, error)
 

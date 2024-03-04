@@ -437,7 +437,7 @@ func (runCtx *BlockRunContext) updateStepInDB(ctx c.Context, dto *updateStepDTO)
 
 func ProcessBlockWithEndMapping(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *BlockRunContext,
 	manual bool,
-) error {
+) (bool, error) {
 	ctx, s := trace.StartSpan(ctx, "process_block_with_end_mapping")
 	defer s.End()
 
@@ -449,7 +449,7 @@ func ProcessBlockWithEndMapping(ctx c.Context, name string, bl *entity.EriusFunc
 
 	pErr := blockProcessor.ProcessBlock(ctx, 0)
 	if pErr != nil {
-		return pErr
+		return false, pErr
 	}
 
 	updDeadlineErr := blockProcessor.updateTaskExecDeadline(ctx)
@@ -461,11 +461,11 @@ func ProcessBlockWithEndMapping(ctx c.Context, name string, bl *entity.EriusFunc
 	if err != nil {
 		log.WithError(err).Error("couldn't get task status")
 
-		return nil
+		return false, nil
 	}
 
 	if intStatus != 2 && intStatus != 4 {
-		return nil
+		return false, nil
 	}
 
 	endErr := processBlockEnd(ctx, stringStatus, runCtx)
@@ -473,7 +473,7 @@ func ProcessBlockWithEndMapping(ctx c.Context, name string, bl *entity.EriusFunc
 		log.WithError(endErr).Error("couldn't send process end notification")
 	}
 
-	return nil
+	return true, nil
 }
 
 func processBlockEnd(ctx c.Context, status string, runCtx *BlockRunContext) (err error) {

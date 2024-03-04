@@ -4299,6 +4299,61 @@ func (_c *MockedDatabase_GetVersionsByStatus_Call) RunAndReturn(run func(context
 	return _c
 }
 
+// GetWorkIDByWorkNumber provides a mock function with given fields: ctx, workNumber
+func (_m *MockedDatabase) GetWorkIDByWorkNumber(ctx context.Context, workNumber string) (uuid.UUID, error) {
+	ret := _m.Called(ctx, workNumber)
+
+	var r0 uuid.UUID
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) (uuid.UUID, error)); ok {
+		return rf(ctx, workNumber)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string) uuid.UUID); ok {
+		r0 = rf(ctx, workNumber)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(uuid.UUID)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, workNumber)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockedDatabase_GetWorkIDByWorkNumber_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetWorkIDByWorkNumber'
+type MockedDatabase_GetWorkIDByWorkNumber_Call struct {
+	*mock.Call
+}
+
+// GetWorkIDByWorkNumber is a helper method to define mock.On call
+//   - ctx context.Context
+//   - workNumber string
+func (_e *MockedDatabase_Expecter) GetWorkIDByWorkNumber(ctx interface{}, workNumber interface{}) *MockedDatabase_GetWorkIDByWorkNumber_Call {
+	return &MockedDatabase_GetWorkIDByWorkNumber_Call{Call: _e.mock.On("GetWorkIDByWorkNumber", ctx, workNumber)}
+}
+
+func (_c *MockedDatabase_GetWorkIDByWorkNumber_Call) Run(run func(ctx context.Context, workNumber string)) *MockedDatabase_GetWorkIDByWorkNumber_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string))
+	})
+	return _c
+}
+
+func (_c *MockedDatabase_GetWorkIDByWorkNumber_Call) Return(_a0 uuid.UUID, _a1 error) *MockedDatabase_GetWorkIDByWorkNumber_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockedDatabase_GetWorkIDByWorkNumber_Call) RunAndReturn(run func(context.Context, string) (uuid.UUID, error)) *MockedDatabase_GetWorkIDByWorkNumber_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetWorkedVersions provides a mock function with given fields: ctx
 func (_m *MockedDatabase) GetWorkedVersions(ctx context.Context) ([]entity.EriusScenario, error) {
 	ret := _m.Called(ctx)

@@ -581,7 +581,7 @@ func TestProcessBlock(t *testing.T) {
 				t.Fatal(blockErr)
 			}
 
-			if procErr := ProcessBlockWithEndMapping(
+			if _, procErr := ProcessBlockWithEndMapping(
 				context.Background(),
 				tt.fields.Entrypoint,
 				entrypointData,
@@ -598,7 +598,7 @@ func TestProcessBlock(t *testing.T) {
 				}
 
 				tt.fields.RunContext.UpdateData = &tt.fields.Updates[i].UpdateParams
-				if procErr := ProcessBlockWithEndMapping(context.Background(), tt.fields.Updates[i].BlockName, blockData,
+				if _, procErr := ProcessBlockWithEndMapping(context.Background(), tt.fields.Updates[i].BlockName, blockData,
 					tt.fields.RunContext, true); procErr != nil {
 					t.Fatal(procErr)
 				}

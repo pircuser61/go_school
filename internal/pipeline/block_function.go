@@ -192,6 +192,18 @@ func (gb *ExecutableFunctionBlock) Update(ctx context.Context) (interface{}, err
 		}
 
 		gb.happenedEvents = append(gb.happenedEvents, event)
+
+		// delete those that may exist
+		err := gb.RunContext.Services.Scheduler.DeleteTask(ctx,
+			&scheduler.DeleteTask{
+				WorkID:   gb.RunContext.TaskID.String(),
+				StepName: gb.Name,
+			})
+		if err != nil {
+			log.WithError(err).Error("cannot delete scheduler task for function")
+
+			return nil, err
+		}
 	}
 
 	return nil, nil

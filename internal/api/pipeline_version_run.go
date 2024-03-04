@@ -72,6 +72,11 @@ func (ae *Env) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	workID, err := ae.DB.GetWorkIDByWorkNumber(ctx, req.WorkNumber)
+	if err != nil {
+		log.WithError(err).Error("couldn't get workID")
+	}
+
 	version, err := ae.DB.GetVersionByWorkNumber(ctx, req.WorkNumber)
 	if err != nil {
 		errorHandler.handleError(GetVersionsByWorkNumberError, err)
@@ -122,6 +127,11 @@ func (ae *Env) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Request
 		errorHandler.handleError(UnknownError, errors.New("no one version was started"))
 
 		return
+	}
+
+	err = ae.Scheduler.DeleteAllTasksByWorkID(ctx, workID)
+	if err != nil {
+		log.WithError(err).Error("failed delete all tasks by work id in scheduler")
 	}
 
 	err = sendResponse(w, http.StatusOK, started)

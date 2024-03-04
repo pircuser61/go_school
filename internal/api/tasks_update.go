@@ -490,7 +490,7 @@ func (ae *Env) updateStepInternal(ctx context.Context, data *updateStepData) boo
 
 	runCtx.SetTaskEvents(ctx)
 
-	blockErr := pipeline.ProcessBlockWithEndMapping(ctx, data.step.Name, &blockFunc, runCtx, true)
+	workFinished, blockErr := pipeline.ProcessBlockWithEndMapping(ctx, data.step.Name, &blockFunc, runCtx, true)
 	if blockErr != nil {
 		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
 			log.WithField("funcName", "ProcessBlockWithEndMapping").
@@ -507,6 +507,13 @@ func (ae *Env) updateStepInternal(ctx context.Context, data *updateStepData) boo
 		log.WithError(err).Error("couldn't update block, CommitTransaction")
 
 		return false
+	}
+
+	if workFinished {
+		err := ae.Scheduler.DeleteAllTasksByWorkID(ctx, data.task.ID)
+		if err != nil {
+			log.WithError(err).Error("failed delete all tasks by work id in scheduler")
+		}
 	}
 
 	runCtx.NotifyEvents(ctx)
@@ -870,6 +877,13 @@ func (ae *Env) StopTasks(w http.ResponseWriter, r *http.Request) {
 		errorHandler.handleError(UnknownError, err)
 
 		return
+	}
+
+	for _, task := range resp.Tasks {
+		err = ae.Scheduler.DeleteAllTasksByWorkID(ctx, task.ID)
+		if err != nil {
+			log.WithError(err).Error("failed delete all tasks by work id in scheduler")
+		}
 	}
 
 	err = ae.processTasks(ctx, resp.Tasks)
