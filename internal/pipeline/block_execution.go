@@ -296,7 +296,7 @@ func (gb *GoExecutionBlock) executionActions() []MemberAction {
 		})
 	}
 
-	fillFormActions, existEmptyForm := gb.getFormNamesToFill()
+	fillFormNames, existEmptyForm := gb.getFormNamesToFill()
 	if existEmptyForm {
 		for i := 0; i < len(actions); i++ {
 			item := &actions[i]
@@ -309,12 +309,12 @@ func (gb *GoExecutionBlock) executionActions() []MemberAction {
 		}
 	}
 
-	if len(fillFormActions) != 0 {
+	if len(fillFormNames) != 0 {
 		actions = append(actions, MemberAction{
 			ID:   formFillFormAction,
 			Type: ActionTypeCustom,
 			Params: map[string]interface{}{
-				formName: fillFormActions,
+				formName: fillFormNames,
 			},
 		})
 	}
@@ -340,7 +340,9 @@ func (gb *GoExecutionBlock) getFormNamesToFill() ([]string, bool) {
 			actions = append(actions, form.NodeID)
 		case requiredFillAccessType:
 			actions = append(actions, form.NodeID)
-			emptyForm = gb.checkForEmptyForm(formState, l)
+			if emptyForm != gb.checkForEmptyForm(formState, l) {
+				emptyForm = true
+			}
 		}
 	}
 

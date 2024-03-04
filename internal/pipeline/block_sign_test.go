@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	delegationht "gitlab.services.mts.ru/jocasta/human-tasks/pkg/proto/gen/proto/go/delegation"
 	"golang.org/x/net/context"
 
 	"github.com/stretchr/testify/assert"
@@ -30,6 +29,8 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 	serviceDeskMocks "gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
+
+	delegationht "gitlab.services.mts.ru/jocasta/human-tasks/pkg/proto/gen/proto/go/delegation"
 )
 
 func getTaskRunContext() db.Database {

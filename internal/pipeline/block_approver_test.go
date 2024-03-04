@@ -20,7 +20,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	humanTasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks"
-	mocks2 "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks/mocks"
+	htMocks "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 	serviceDeskMocks "gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc/mocks"
@@ -1268,7 +1268,7 @@ func TestGoApproverBlock_Actions(t *testing.T) {
 					}(), Services: RunContextServices{
 						HumanTasks: func() *humanTasks.Service {
 							ht := humanTasks.Service{}
-							htMock := mocks2.DelegationServiceClient{}
+							htMock := htMocks.DelegationServiceClient{}
 
 							htMock.On("GetDelegationsFromLogin", context.Background(), "users1").Return(nil, humanTasks.Delegations{})
 
@@ -1378,7 +1378,7 @@ func TestGoApproverBlock_Actions(t *testing.T) {
 						}(),
 						HumanTasks: func() *humanTasks.Service {
 							ht := humanTasks.Service{}
-							htMock := mocks2.DelegationServiceClient{}
+							htMock := htMocks.DelegationServiceClient{}
 
 							htMock.On("GetDelegationsFromLogin", context.Background(), "users1").Return(humanTasks.Delegations{}, nil)
 
@@ -1465,7 +1465,7 @@ func TestGoApproverBlock_Actions(t *testing.T) {
 						}(),
 						HumanTasks: func() *humanTasks.Service {
 							ht := humanTasks.Service{}
-							htMock := mocks2.DelegationServiceClient{}
+							htMock := htMocks.DelegationServiceClient{}
 
 							htMock.On("GetDelegationsFromLogin", context.Background(), "users1").Return(humanTasks.Delegations{}, nil)
 
@@ -1579,7 +1579,7 @@ func TestGoApproverBlock_Actions(t *testing.T) {
 						}(),
 						HumanTasks: func() *humanTasks.Service {
 							ht := humanTasks.Service{}
-							htMock := mocks2.DelegationServiceClient{}
+							htMock := htMocks.DelegationServiceClient{}
 
 							htMock.On("GetDelegationsFromLogin", context.Background(), "users1").Return(humanTasks.Delegations{}, nil)
 
