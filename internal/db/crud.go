@@ -3069,27 +3069,36 @@ func (db *PGCon) GetTaskInWorkTime(ctx context.Context, workNumber string) (*ent
 	return &interval, nil
 }
 
-func (db *PGCon) GetVersionsByFunction(ctx context.Context, functionID, versionID string) ([]entity.EriusScenario, error) {
+func (db *PGCon) GetVersionsByFunction(ctx context.Context, funcID, versionID string) ([]entity.EriusScenario, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_versions_by_function")
 	defer span.End()
 
 	// nolint:gocritic
 	// language=PostgreSQL
-	q := `
-	SELECT p.name, v.id, p.author
+	const q = `
+	SELECT p.name, v.id, p.author, v.status
     FROM versions v
 	JOIN pipelines p on v.pipeline_id = p.id
     JOIN LATERAL jsonb_each(v.content->'pipeline'->'blocks') as bks on true
-	WHERE v.status = 2
-	AND v.is_actual = true
-	AND v.deleted_at is null
+    JOIN LATERAL (
+        SELECT 
+        	pipeline_id,
+        	max(created_at) AS max_version_date
+        FROM versions
+        GROUP BY pipeline_id
+    ) latest ON latest.pipeline_id = v.pipeline_id
+	WHERE (
+		(v.status = 2 AND v.is_actual = true) OR
+	    (v.status = 1 AND v.created_at = latest.max_version_date)
+	)
+	AND v.deleted_at IS NULL
 	AND bks.value ->> 'type_id' = 'executable_function'
     AND bks.value->'params'->'function'->>'functionId' = $1
     AND bks.value->'params'->'function'->>'versionId' != $2
     GROUP BY p.name, v.id, p.author;
 `
 
-	rows, err := db.Connection.Query(ctx, q, functionID, versionID)
+	rows, err := db.Connection.Query(ctx, q, funcID, versionID)
 	if err != nil {
 		return nil, err
 	}
@@ -3099,14 +3108,14 @@ func (db *PGCon) GetVersionsByFunction(ctx context.Context, functionID, versionI
 	versions := make([]entity.EriusScenario, 0)
 
 	for rows.Next() {
-		version := entity.EriusScenario{}
+		v := entity.EriusScenario{}
 
-		err = rows.Scan(&version.Name, &version.VersionID, &version.Author)
+		err = rows.Scan(&v.Name, &v.VersionID, &v.Author, &v.Status)
 		if err != nil {
 			return nil, err
 		}
 
-		versions = append(versions, version)
+		versions = append(versions, v)
 	}
 
 	if rowsErr := rows.Err(); rowsErr != nil {
