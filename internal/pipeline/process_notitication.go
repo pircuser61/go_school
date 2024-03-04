@@ -224,8 +224,7 @@ func filterHiddenAttachmentFields(attachmentFields, hiddenFields []string) []str
 		hiddenFieldsMap[field] = struct{}{}
 	}
 
-	filteredAttachmentFieldsCount := len(attachmentFields) - len(hiddenFields)
-	filteredAttachmentFields := make([]string, 0, filteredAttachmentFieldsCount)
+	filteredAttachmentFields := make([]string, 0)
 
 	for _, field := range attachmentFields {
 		_, hidden := hiddenFieldsMap[field]
