@@ -639,6 +639,11 @@ func (ae *Env) updateTaskInternal(ctx context.Context, workNumber, userLogin str
 		return commitErr
 	}
 
+	err = ae.Scheduler.DeleteAllTasksByWorkID(ctx, dbTask.ID)
+	if err != nil {
+		log.WithError(err).Error("failed delete all tasks by work id in scheduler")
+	}
+
 	runCtx := pipeline.BlockRunContext{
 		WorkNumber: workNumber,
 		TaskID:     dbTask.ID,
