@@ -54,6 +54,7 @@ func uniqueActionsByRole(loginsIn, stepType string, finished, acted bool) string
          , CASE WHEN vs.status IN ('running', 'idle', 'ready') THEN m.params ELSE '{}' END  AS params
          , vs.current_executor                                                              AS current_executor
          , CASE WHEN vs.step_type = 'execution' THEN vs.time END                            AS exec_start_time
+		 , CASE WHEN vs.step_type = 'approver' THEN vs.time END                          	AS appr_start_time
          , vs.time                                                                          AS node_start
     FROM members m
              JOIN variable_storage vs on vs.id = m.block_id
@@ -73,6 +74,7 @@ func uniqueActionsByRole(loginsIn, stepType string, finished, acted bool) string
          , JSONB_AGG(jsonb_actions.actions) 	         AS actions
          , max(actions.current_executor::text)::jsonb    AS current_executor
          , min(actions.exec_start_time)     	  		 AS exec_start_time
+         , min(actions.appr_start_time)     	  		 AS appr_start_time    
     FROM actions
              JOIN filtered_actions fa ON fa.time = actions.node_start AND fa.block_id = actions.block_id
              LEFT JOIN LATERAL (SELECT jsonb_build_object(
@@ -235,7 +237,7 @@ func getUniqueActions(selectFilter string, logins []string) string {
 		return strings.Replace(q, "--unique-actions-filter--", "AND m.execution_group_member = true", replaceCount)
 	default:
 		return fmt.Sprintf(`WITH unique_actions AS (
-    SELECT id AS work_id, '[]' AS actions, '' AS current_executor, null AS exec_start_time
+    SELECT id AS work_id, '[]' AS actions, '' AS current_executor, null AS exec_start_time, null AS appr_start_time
     FROM works
     WHERE author IN %s AND child_id IS NULL
 )`, loginsIn)
@@ -275,7 +277,8 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 		    ua.actions,
 		    w.exec_deadline,
 		    ua.current_executor,
-		    ua.exec_start_time
+		    ua.exec_start_time,
+		    ua.appr_start_time
 		FROM works w 
 		JOIN versions v ON v.id = w.version_id
 		JOIN pipelines p ON p.id = v.pipeline_id
@@ -1431,7 +1434,8 @@ func (db *PGCon) getTasks(ctx c.Context, filters *entity.TaskFilter,
 
 		var (
 			nullStringParameters sql.NullString
-			nullTime             sql.NullTime
+			nullExecTime         sql.NullTime
+			nullApprTime         sql.NullTime
 			actionData           []byte
 			execData             []byte
 		)
@@ -1458,7 +1462,8 @@ func (db *PGCon) getTasks(ctx c.Context, filters *entity.TaskFilter,
 			&actionData,
 			&et.ProcessDeadline,
 			&execData,
-			&nullTime,
+			&nullExecTime,
+			&nullApprTime,
 		)
 
 		if err != nil {
@@ -1476,13 +1481,22 @@ func (db *PGCon) getTasks(ctx c.Context, filters *entity.TaskFilter,
 
 		et.ProcessDeadline = et.ProcessDeadline.UTC()
 
-		if nullTime.Valid {
-			t := nullTime.Time.UTC()
+		if nullExecTime.Valid {
+			t := nullExecTime.Time.UTC()
 
 			et.CurrentExecutionStart = &t
 		}
 
-		var currExecutorData executorData
+		if nullApprTime.Valid {
+			t := nullApprTime.Time.UTC()
+
+			et.CurrentApprovementStart = &t
+		}
+
+		currExecutorData := executorData{
+			People:        make([]string, 0),
+			InitialPeople: make([]string, 0),
+		}
 
 		if len(execData) != 0 {
 			if unmErr := json.Unmarshal(execData, &currExecutorData); unmErr != nil {
