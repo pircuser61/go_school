@@ -82,6 +82,11 @@ func (p *blockProcessor) ProcessBlock(ctx context.Context, its int) error {
 		}
 	}
 
+	// handle edit form and other cases where we just poke the node
+	if (p.runCtx.UpdateData != nil) && isStatusFiniteBeforeUpdate {
+		return nil
+	}
+
 	taskHumanStatus, statusComment, action := block.GetTaskHumanStatus()
 
 	err = p.runCtx.updateStatusByStep(ctx, taskHumanStatus, statusComment)
