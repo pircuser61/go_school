@@ -142,7 +142,13 @@ func (gb *GoApproverBlock) handleBreachedSLA(ctx context.Context) error {
 
 		var approverEmail string
 
+		usersNotToNotify := gb.getUsersNotToNotifySet()
+
 		for i := range logins {
+			if _, ok := usersNotToNotify[logins[i]]; ok {
+				continue
+			}
+
 			approverEmail, err = gb.RunContext.Services.People.GetUserEmail(ctx, logins[i])
 			if err != nil {
 				log.WithError(err).Warning(fn, fmt.Sprintf("approver login %s not found", logins[i]))

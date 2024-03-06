@@ -331,7 +331,13 @@ func (gb *GoSignBlock) handleBreachedSLA(ctx c.Context) error {
 		emails := make([]string, 0, len(gb.State.Signers))
 		logins := getSliceFromMapOfStrings(gb.State.Signers)
 
+		usersNotToNotify := gb.getUsersNotToNotifySet()
+
 		for i := range logins {
+			if _, ok := usersNotToNotify[logins[i]]; ok {
+				continue
+			}
+
 			eml, err := gb.RunContext.Services.People.GetUserEmail(ctx, logins[i])
 			if err != nil {
 				continue
