@@ -280,8 +280,7 @@ func (gb *GoFormBlock) createState(ctx context.Context, ef *entity.EriusFunc) er
 	}
 
 	schema = checkFormGroup(schema)
-	prop, ok := schema["properties"]
-	if ok {
+	if prop, ok := schema["properties"]; ok {
 		propMap, propOk := prop.(map[string]interface{})
 		if !propOk {
 			return errors.New("properties is not map")
