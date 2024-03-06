@@ -339,6 +339,8 @@ func (ae *Env) handleStartApplicationParams(ctx c.Context, dto *requestStartPara
 		}
 	}
 
+	schemaJSON = checkGroup(schemaJSON)
+
 	if len(dto.keys) == 0 {
 		if res, _, getErr := schemaJSON.GetAllFields(); getErr == nil {
 			dto.keys = res
@@ -394,4 +396,38 @@ func (ae *Env) getHiddenFields(ctx c.Context, version *entity.EriusScenario) ([]
 	ae.Log.Info("hiddenFields", fmt.Sprintf("%+v", hiddenFields))
 
 	return hiddenFields, nil
+}
+
+func checkGroup(rawStartSchema jsonschema.Schema) jsonschema.Schema {
+	properties, ok := rawStartSchema["properties"]
+	if !ok {
+		return rawStartSchema
+	}
+
+	propertiesMap := properties.(map[string]interface{})
+
+	for k, v := range propertiesMap {
+		valMap, mapOk := v.(map[string]interface{})
+		if !mapOk {
+			continue
+		}
+
+		propVal, propValOk := valMap["properties"]
+		if !propValOk {
+			continue
+		}
+
+		propValMap := propVal.(map[string]interface{})
+		if _, user := propValMap["email"]; user {
+			continue
+		}
+
+		for key, val := range propValMap {
+			propertiesMap[key] = val
+		}
+
+		delete(propertiesMap, k)
+	}
+
+	return rawStartSchema
 }

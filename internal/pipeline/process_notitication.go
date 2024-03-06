@@ -3,7 +3,9 @@ package pipeline
 import (
 	c "context"
 	"encoding/json"
+	"fmt"
 	"strconv"
+	"strings"
 
 	om "github.com/iancoleman/orderedmap"
 
@@ -23,6 +25,12 @@ type handleInitiatorNotifyParams struct {
 	action   string
 	status   TaskHumanStatus
 }
+
+const (
+	attachLinks = "attachLinks"
+	attachExist = "attachExist"
+	attachList  = "attachList"
+)
 
 func (runCtx *BlockRunContext) handleInitiatorNotify(ctx c.Context, params handleInitiatorNotifyParams) error {
 	const (
@@ -100,7 +108,7 @@ func (runCtx *BlockRunContext) handleInitiatorNotify(ctx c.Context, params handl
 	iconsName := []string{tmpl.Image}
 
 	for _, v := range description {
-		links, link := v.Get("attachLinks")
+		links, link := v.Get(attachLinks)
 		if link {
 			attachFiles, ok := links.([]fileregistry.AttachInfo)
 			if ok && len(attachFiles) != 0 {
@@ -164,32 +172,13 @@ func (runCtx *BlockRunContext) makeNotificationAttachment() ([]fileregistry.File
 		return nil, err
 	}
 
-	attachments := initialApplicationAttachments(&task.InitialApplication)
-
-	mapFiles := map[string][]entity.Attachment{
-		"files": attachments,
-	}
-
-	file, err := runCtx.Services.FileRegistry.GetAttachmentsInfo(c.Background(), mapFiles)
-	if err != nil {
-		return nil, err
-	}
-
-	ta := make([]fileregistry.FileInfo, 0)
-	for _, v := range file["files"] {
-		ta = append(ta, fileregistry.FileInfo{FileID: v.FileID, Size: v.Size, Name: v.Name})
-	}
-
-	return ta, nil
-}
-
-func initialApplicationAttachments(initialApplication *entity.InitialApplication) []entity.Attachment {
 	attachments := make([]entity.Attachment, 0)
+	mapFiles := make(map[string][]entity.Attachment)
 
-	notHiddenAttachmentFields := filterHiddenAttachmentFields(initialApplication.AttachmentFields, initialApplication.HiddenFields)
+	notHiddenAttachmentFields := filterHiddenAttachmentFields(task.InitialApplication.AttachmentFields, task.InitialApplication.HiddenFields)
 
 	for _, v := range notHiddenAttachmentFields {
-		filesAttach, ok := initialApplication.ApplicationBody.Get(v)
+		filesAttach, ok := task.InitialApplication.ApplicationBody.Get(v)
 		if ok {
 			switch data := filesAttach.(type) {
 			case om.OrderedMap:
@@ -214,7 +203,19 @@ func initialApplicationAttachments(initialApplication *entity.InitialApplication
 		}
 	}
 
-	return attachments
+	mapFiles["files"] = attachments
+
+	file, err := runCtx.Services.FileRegistry.GetAttachmentsInfo(c.Background(), mapFiles)
+	if err != nil {
+		return nil, err
+	}
+
+	ta := make([]fileregistry.FileInfo, 0)
+	for _, v := range file["files"] {
+		ta = append(ta, fileregistry.FileInfo{FileID: v.FileID, Size: v.Size, Name: v.Name})
+	}
+
+	return ta, nil
 }
 
 func filterHiddenAttachmentFields(attachmentFields, hiddenFields []string) []string {
@@ -236,6 +237,25 @@ func filterHiddenAttachmentFields(attachmentFields, hiddenFields []string) []str
 	return filteredAttachmentFields
 }
 
+func cleanKey(s string) string {
+	replacements := map[string]string{
+		"\\t": "",
+		"\t":  "",
+		"\\n": "",
+		"\n":  "",
+		"\r":  "",
+		"\\r": "",
+	}
+
+	for old, news := range replacements {
+		s = strings.ReplaceAll(s, old, news)
+	}
+
+	s = strings.ReplaceAll(s, "\\", "")
+
+	return s
+}
+
 //nolint:gocognit,gocyclo // данный нейминг хорошо описывает механику метода
 func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) ([]om.OrderedMap, []e.Attachment, error) {
 	taskContext, err := runCtx.Services.Storage.GetTaskRunContext(c.Background(), runCtx.WorkNumber)
@@ -243,177 +263,232 @@ func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) ([]o
 		return nil, nil, err
 	}
 
-	apBody := flatArray(taskContext.InitialApplication.ApplicationBody)
+	var (
+		descriptions = make([]om.OrderedMap, 0)
+		files        = make([]e.Attachment, 0)
+	)
 
-	hiddenFieldsSet := makeStringSet(taskContext.InitialApplication.HiddenFields)
+	apDesc := flatArray(taskContext.InitialApplication.ApplicationBody)
 
-	for k, v := range apBody.Values() {
-		_, isHiddenField := hiddenFieldsSet[k]
-		if isHiddenField {
-			continue
-		}
-
-		key, ok := taskContext.InitialApplication.Keys[k]
-		if !ok {
-			continue
-		}
-
-		if k == key {
-			apBody.Delete(k)
-			apBody.Set("\r", v)
-
-			continue
-		}
-
-		apBody.Delete(k)
-		apBody.Set(key, v)
+	filesAttach, getAttachErr := runCtx.GetAttachmentFiles(&apDesc, nil)
+	if getAttachErr != nil {
+		return nil, nil, getAttachErr
 	}
 
-	descriptions := make([]om.OrderedMap, 0)
+	apDesc = GetConvertDesc(apDesc, taskContext.InitialApplication.Keys, taskContext.InitialApplication.HiddenFields)
 
-	filesAttach, err := runCtx.makeNotificationAttachment()
-	if err != nil {
-		return nil, nil, err
+	descriptions = append(descriptions, apDesc)
+	files = append(files, filesAttach...)
+
+	adFormDescriptions, adFormFilesAttach := runCtx.getAdditionalForms(nodeName)
+	if len(adFormDescriptions) != 0 {
+		descriptions = append(descriptions, adFormDescriptions...)
+		files = append(files, adFormFilesAttach...)
 	}
-
-	attachments, err := runCtx.GetAttach(filesAttach)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	files := make([]e.Attachment, 0, len(attachments.AttachmentsList))
-
-	if len(apBody.Values()) != 0 {
-		apBody.Set("attachLinks", attachments.AttachLinks)
-		apBody.Set("attachExist", attachments.AttachExists)
-		apBody.Set("attachList", attachments.AttachmentsList)
-	}
-
-	apBody = runCtx.excludeHiddenApplicationFields(apBody, taskContext.InitialApplication.HiddenFields)
-
-	descriptions = append(descriptions, apBody)
-
-	additionalForms, err := runCtx.Services.Storage.GetAdditionalDescriptionForms(runCtx.WorkNumber, nodeName)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	for _, form := range additionalForms {
-		attachmentFiles := make([]string, 0)
-
-		var formBlock FormData
-		if marshalErr := json.Unmarshal(runCtx.VarStore.State[form.Name], &formBlock); marshalErr != nil {
-			return nil, nil, marshalErr
-		}
-
-		hiddenFieldsSet := makeStringSet(formBlock.HiddenFields)
-
-		for k, v := range form.Description.Values() {
-			_, isHiddenField := hiddenFieldsSet[k]
-			if isHiddenField {
-				continue
-			}
-
-			for _, attachVal := range formBlock.AttachmentFields {
-				if attachVal == k {
-					file, attachOk := v.(om.OrderedMap)
-					if !attachOk {
-						continue
-					}
-
-					if fileID, fileOK := file.Get("file_id"); fileOK {
-						attachmentFiles = append(attachmentFiles, fileID.(string))
-					}
-				}
-			}
-
-			key, ok := formBlock.Keys[k]
-			if !ok {
-				continue
-			}
-
-			if k == key {
-				form.Description.Delete(k)
-				form.Description.Set("\r", v)
-
-				continue
-			}
-
-			form.Description.Delete(k)
-			form.Description.Set(key, v)
-		}
-
-		fileInfo, fileErr := runCtx.makeNotificationFormAttachment(attachmentFiles)
-		if fileErr != nil {
-			return nil, nil, err
-		}
-
-		attach, attachErr := runCtx.GetAttach(fileInfo)
-		if attachErr != nil {
-			return nil, nil, err
-		}
-
-		form.Description.Set("attachLinks", attach.AttachLinks)
-		form.Description.Set("attachExist", attach.AttachExists)
-		form.Description.Set("attachList", attach.AttachmentsList)
-
-		files = append(files, attach.AttachmentsList...)
-
-		formDesc, errExclude := runCtx.excludeHiddenFormFields(form.Name, form.Description)
-		if errExclude != nil {
-			return nil, nil, errExclude
-		}
-
-		descriptions = append(descriptions, flatArray(formDesc))
-	}
-
-	files = append(files, attachments.AttachmentsList...)
 
 	return descriptions, files, nil
 }
 
-func makeStringSet(values []string) map[string]struct{} {
-	set := make(map[string]struct{}, len(values))
-	for _, v := range values {
-		set[v] = struct{}{}
-	}
-
-	return set
-}
-
-func (runCtx *BlockRunContext) excludeHiddenApplicationFields(desc om.OrderedMap, hiddenFields []string) om.OrderedMap {
-	res := om.New()
-
-	for _, key := range desc.Keys() {
-		if !utils.IsContainsInSlice(key, hiddenFields) {
-			if val, exists := desc.Get(key); exists {
-				res.Set(key, val)
-			}
-		}
-	}
-
-	return *res
-}
-
-func (runCtx *BlockRunContext) excludeHiddenFormFields(formName string, desc om.OrderedMap) (om.OrderedMap, error) {
-	res := om.New()
-
-	var state FormData
-
-	err := json.Unmarshal(runCtx.VarStore.State[formName], &state)
+func (runCtx *BlockRunContext) getAdditionalForms(nodeName string) ([]om.OrderedMap, []e.Attachment) {
+	additionalForms, err := runCtx.Services.Storage.GetAdditionalDescriptionForms(runCtx.WorkNumber, nodeName)
 	if err != nil {
-		return desc, err
+		return nil, nil
 	}
 
-	for _, key := range desc.Keys() {
-		if !utils.IsContainsInSlice(key, state.HiddenFields) {
-			if val, exists := desc.Get(key); exists {
-				res.Set(key, val)
+	var (
+		descriptions = make([]om.OrderedMap, 0)
+		files        = make([]e.Attachment, 0)
+	)
+
+	for _, form := range additionalForms {
+		var formBlock FormData
+		if marshalErr := json.Unmarshal(runCtx.VarStore.State[form.Name], &formBlock); marshalErr != nil {
+			return nil, nil
+		}
+
+		attachmentFiles := getAdditionalAttachList(form, &formBlock)
+
+		adDesc := flatArray(form.Description)
+
+		additionalAttach, getAdAttachErr := runCtx.GetAttachmentFiles(&adDesc, attachmentFiles)
+		if getAdAttachErr != nil {
+			return nil, nil
+		}
+
+		adDesc = GetConvertDesc(adDesc, formBlock.Keys, formBlock.HiddenFields)
+
+		files = append(files, additionalAttach...)
+		descriptions = append(descriptions, adDesc)
+	}
+
+	return descriptions, files
+}
+
+//nolint:gocognit // it's ok
+func getAdditionalAttachList(form entity.DescriptionForm, formData *FormData) []string {
+	attachmentFiles := make([]string, 0)
+
+	for k, v := range form.Description.Values() {
+		notHiddenAttachmentFields := filterHiddenAttachmentFields(formData.AttachmentFields, formData.HiddenFields)
+
+		for _, attachVal := range notHiddenAttachmentFields {
+			if attachVal != k {
+				continue
+			}
+
+			switch attach := v.(type) {
+			case om.OrderedMap:
+				file, attachOk := v.(om.OrderedMap)
+				if !attachOk {
+					continue
+				}
+
+				if fileID, fileOK := file.Get("file_id"); fileOK {
+					attachmentFiles = append(attachmentFiles, fileID.(string))
+				}
+			case []interface{}:
+				for _, val := range attach {
+					valMap := val.(om.OrderedMap)
+					if fileID, fileOK := valMap.Get("file_id"); fileOK {
+						attachmentFiles = append(attachmentFiles, fileID.(string))
+					}
+				}
 			}
 		}
 	}
 
-	return *res, nil
+	return attachmentFiles
+}
+
+func (runCtx *BlockRunContext) GetAttachmentFiles(desc *om.OrderedMap, addAttach []string) ([]e.Attachment, error) {
+	var (
+		err         error
+		filesAttach []fileregistry.FileInfo
+	)
+
+	if addAttach == nil {
+		filesAttach, err = runCtx.makeNotificationAttachment()
+	} else {
+		filesAttach, err = runCtx.makeNotificationFormAttachment(addAttach)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	attachments, err := runCtx.GetAttach(filesAttach)
+	if err != nil {
+		return nil, err
+	}
+
+	if attachments != nil {
+		desc.Set(attachLinks, attachments.AttachLinks)
+		desc.Set(attachExist, attachments.AttachExists)
+		desc.Set(attachList, attachments.AttachmentsList)
+	}
+
+	return attachments.AttachmentsList, nil
+}
+
+//nolint:gocognit //it's ok
+func GetConvertDesc(descriptions om.OrderedMap, keys map[string]string, hiddenFields []string) om.OrderedMap {
+	var (
+		newDesc    = *om.New()
+		spaceCount = 1
+	)
+
+	descriptions = checkGroup(descriptions)
+
+	for k, v := range descriptions.Values() {
+		if utils.IsContainsInSlice(k, hiddenFields) {
+			continue
+		}
+
+		keysSplit := make([]string, 0)
+		if strings.Contains(k, "(") {
+			keysSplit = strings.Split(k, "(")
+		}
+
+		if len(keysSplit) == 0 {
+			if k == attachLinks || k == attachExist || k == attachList {
+				newDesc.Set(k, v)
+
+				continue
+			}
+		} else {
+			k = keysSplit[0]
+			k = strings.TrimSpace(k)
+		}
+
+		var (
+			ruKey string
+			ok    bool
+		)
+
+		if len(keysSplit) > 0 {
+			nameKey := strings.Replace(keysSplit[1], ")", "", 1)
+			ruKey, ok = keys[nameKey]
+		}
+
+		if !ok {
+			ruKey, ok = keys[k]
+			if !ok {
+				continue
+			}
+		}
+
+		ruKey = cleanKey(ruKey)
+		if _, existKey := newDesc.Get(ruKey); existKey {
+			newDesc.Set(fmt.Sprintf("%s %-*s", ruKey, spaceCount, " "), v)
+			spaceCount++
+
+			continue
+		}
+
+		if len(keysSplit) > 0 {
+			nameKey := strings.Replace(keysSplit[1], ")", "", 1)
+			if nameKey == "file_id" {
+				continue
+			}
+
+			if ok {
+				key := fmt.Sprintf("%s (%s)", ruKey, nameKey)
+				newDesc.Set(key, v)
+			} else {
+				newDesc.Set(ruKey, v)
+			}
+
+			continue
+		}
+
+		newDesc.Set(ruKey, v)
+
+		continue
+	}
+
+	return newDesc
+}
+
+func checkGroup(schema om.OrderedMap) om.OrderedMap {
+	for k, v := range schema.Values() {
+		val, ok := v.(om.OrderedMap)
+		if !ok {
+			continue
+		}
+
+		if _, user := val.Get("email"); user {
+			continue
+		}
+
+		for key, value := range val.Values() {
+			key = fmt.Sprintf("%s (%s)", k, key)
+			schema.Set(key, value)
+		}
+
+		schema.Delete(k)
+	}
+
+	return schema
 }
 
 func flatArray(v om.OrderedMap) om.OrderedMap {
