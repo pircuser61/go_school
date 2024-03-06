@@ -205,20 +205,8 @@ func (gb *GoApproverBlock) checkBreachedSLA(ctx context.Context) error {
 
 	log := logger.GetLogger(ctx)
 
-	seenAdditionalApprovers := map[string]bool{}
 	emails := make([]string, 0, len(gb.State.Approvers)+len(gb.State.AdditionalApprovers))
-	logins := getSliceFromMapOfStrings(gb.State.Approvers)
-
-	for _, additionalApprover := range gb.State.AdditionalApprovers {
-		// check if approver has not decisioned, and we did not see approver before
-		if additionalApprover.Decision != nil || seenAdditionalApprovers[additionalApprover.ApproverLogin] {
-			continue
-		}
-
-		seenAdditionalApprovers[additionalApprover.ApproverLogin] = true
-
-		logins = append(logins, additionalApprover.ApproverLogin)
-	}
+	logins := append(getSliceFromMapOfStrings(gb.State.Approvers), gb.getAdditionalApprovers()...)
 
 	delegations, err := gb.RunContext.Services.HumanTasks.GetDelegationsByLogins(ctx, logins)
 	if err != nil {
@@ -1085,4 +1073,22 @@ func (gb *GoApproverBlock) checkAdditionalApproverNotAdded(login string) bool {
 	}
 
 	return true
+}
+
+func (gb *GoApproverBlock) getAdditionalApprovers() []string {
+	seenAdditionalApprovers := make(map[string]bool)
+	logins := make([]string, 0)
+
+	for _, additionalApprover := range gb.State.AdditionalApprovers {
+		// check if approver has not decisioned, and we did not see approver before
+		if additionalApprover.Decision != nil || seenAdditionalApprovers[additionalApprover.ApproverLogin] {
+			continue
+		}
+
+		seenAdditionalApprovers[additionalApprover.ApproverLogin] = true
+
+		logins = append(logins, additionalApprover.ApproverLogin)
+	}
+
+	return logins
 }
