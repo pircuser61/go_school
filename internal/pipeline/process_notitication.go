@@ -390,6 +390,7 @@ func (runCtx *BlockRunContext) GetAttachmentFiles(desc *om.OrderedMap, addAttach
 	return attachments.AttachmentsList, nil
 }
 
+//nolint:gocognit //it's ok
 func GetConvertDesc(descriptions om.OrderedMap, keys map[string]string, hiddenFields []string) om.OrderedMap {
 	var (
 		newDesc    = *om.New()
@@ -403,30 +404,66 @@ func GetConvertDesc(descriptions om.OrderedMap, keys map[string]string, hiddenFi
 			continue
 		}
 
+		keysSplit := make([]string, 0)
 		if strings.Contains(k, "(") {
-			k = strings.Split(k, "(")[0]
+			keysSplit = strings.Split(k, "(")
 		}
 
-		if k == attachLinks || k == attachExist || k == attachList {
-			newDesc.Set(k, v)
+		if len(keysSplit) == 0 {
+			if k == attachLinks || k == attachExist || k == attachList {
+				newDesc.Set(k, v)
 
-			continue
+				continue
+			}
+		} else {
+			k = keysSplit[0]
+			k = strings.TrimSpace(k)
 		}
 
-		ruKey, ok := keys[k]
+		var (
+			ruKey string
+			ok    bool
+		)
+
+		if len(keysSplit) > 0 {
+			nameKey := strings.Replace(keysSplit[1], ")", "", 1)
+			ruKey, ok = keys[nameKey]
+		}
+
 		if !ok {
-			continue
+			ruKey, ok = keys[k]
+			if !ok {
+				continue
+			}
 		}
 
 		ruKey = cleanKey(ruKey)
-		if _, existKey := newDesc.Get(ruKey); !existKey {
-			newDesc.Set(ruKey, v)
+		if _, existKey := newDesc.Get(ruKey); existKey {
+			newDesc.Set(fmt.Sprintf("%s %-*s", ruKey, spaceCount, " "), v)
+			spaceCount++
 
 			continue
 		}
 
-		newDesc.Set(fmt.Sprintf("%s %-*s", ruKey, spaceCount, " "), v)
-		spaceCount++
+		if len(keysSplit) > 0 {
+			nameKey := strings.Replace(keysSplit[1], ")", "", 1)
+			if nameKey == "file_id" {
+				continue
+			}
+
+			if ok {
+				key := fmt.Sprintf("%s (%s)", ruKey, nameKey)
+				newDesc.Set(key, v)
+			} else {
+				newDesc.Set(ruKey, v)
+			}
+
+			continue
+		}
+
+		newDesc.Set(ruKey, v)
+
+		continue
 	}
 
 	return newDesc
@@ -444,6 +481,7 @@ func checkGroup(schema om.OrderedMap) om.OrderedMap {
 		}
 
 		for key, value := range val.Values() {
+			key = fmt.Sprintf("%s (%s)", k, key)
 			schema.Set(key, value)
 		}
 
