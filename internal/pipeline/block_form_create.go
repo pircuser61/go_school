@@ -279,21 +279,22 @@ func (gb *GoFormBlock) createState(ctx context.Context, ef *entity.EriusFunc) er
 		return errors.Wrap(err, "can`t get schema by ID")
 	}
 
+	schema = checkFormGroup(schema)
 	prop, ok := schema["properties"]
 	if ok {
-		propMap, ok := prop.(map[string]interface{})
-		if !ok {
+		propMap, propOk := prop.(map[string]interface{})
+		if !propOk {
 			return errors.New("properties is not map")
 		}
 
 		schemaJSON := jsonschema.Schema(propMap)
 
-		res, _, getAllFieldsErr := schemaJSON.GetAllFields()
+		keys, _, getAllFieldsErr := schemaJSON.GetAllFields()
 		if getAllFieldsErr != nil {
 			return getAllFieldsErr
 		}
 
-		params.Keys = res
+		params.Keys = keys
 
 		params.AttachmentFields = schemaJSON.GetAttachmentFields()
 	}
@@ -443,4 +444,34 @@ func (gb *GoFormBlock) setExecutorsByParams(ctx context.Context, dto *setFormExe
 	gb.State.InitialExecutors = gb.State.Executors
 
 	return nil
+}
+
+func checkFormGroup(rawStartSchema map[string]interface{}) jsonschema.Schema {
+	properties, ok := rawStartSchema["properties"]
+	if !ok {
+		return rawStartSchema
+	}
+
+	propertiesMap := properties.(map[string]interface{})
+
+	for k, v := range propertiesMap {
+		valMap, mapOk := v.(map[string]interface{})
+		if !mapOk {
+			continue
+		}
+
+		propVal, propValOk := valMap["properties"]
+		if !propValOk {
+			continue
+		}
+
+		propValMap := propVal.(map[string]interface{})
+		for key, val := range propValMap {
+			propertiesMap[key] = val
+		}
+
+		delete(propertiesMap, k)
+	}
+
+	return rawStartSchema
 }
