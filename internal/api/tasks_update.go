@@ -176,7 +176,7 @@ func (ae *Env) UpdateTask(w http.ResponseWriter, req *http.Request, workNumber s
 		return
 	}
 
-	ui, err := user.GetEffectiveUserInfoFromCtx(ctx)
+	ui, err := user.GetUserInfoFromCtx(ctx)
 	if err != nil {
 		errorHandler.handleError(NoUserInContextError, err)
 
