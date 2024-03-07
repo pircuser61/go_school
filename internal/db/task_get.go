@@ -2432,10 +2432,10 @@ func (db *PGCon) IsTaskPaused(ctx c.Context, workID string) (isPaused bool, err 
 		FROM works
 		WHERE id = $1`
 
-	if err = db.Connection.QueryRow(ctx, q, workID).Scan(&isPaused); err != nil {
+	err = db.Connection.QueryRow(ctx, q, workID).Scan(&isPaused)
+	if err != nil {
 		return isPaused, err
 	}
 
 	return isPaused, nil
-
 }

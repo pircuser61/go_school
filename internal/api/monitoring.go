@@ -23,6 +23,7 @@ import (
 const (
 	monitoringTimeLayout  = "2006-01-02T15:04:05-0700"
 	monitoringActionPause = "pause"
+	monitoringActionStart = "start"
 )
 
 func (ae *Env) GetTasksForMonitoring(w http.ResponseWriter, r *http.Request, params GetTasksForMonitoringParams) {
@@ -479,19 +480,31 @@ func (ae *Env) MonitoringTaskAction(w http.ResponseWriter, r *http.Request) {
 
 	switch req.Action {
 	case monitoringActionPause:
-		{
-			err = ae.pauseProcess(ctx, workID.String(), req.Params)
-			if err != nil {
-				errorHandler.handleError(GetTaskError, err)
+		err = ae.pauseProcess(ctx, workID.String(), req.Params)
+		if err != nil {
+			errorHandler.handleError(GetTaskError, err)
 
-				if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
-					log.WithField("funcName", "MonitoringTaskAction").
-						WithError(errors.New("couldn't rollback tx")).
-						Error(txErr)
-				}
-
-				return
+			if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
+				log.WithField("funcName", "MonitoringTaskAction").
+					WithError(errors.New("couldn't rollback tx")).
+					Error(txErr)
 			}
+
+			return
+		}
+
+	case monitoringActionStart:
+		err = ae.startPreocess()
+		if err != nil {
+			errorHandler.handleError(GetTaskError, err)
+
+			if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
+				log.WithField("funcName", "MonitoringTaskAction").
+					WithError(errors.New("couldn't rollback tx")).
+					Error(txErr)
+			}
+
+			return
 		}
 	}
 
@@ -527,5 +540,9 @@ func (ae *Env) pauseProcess(ctx context.Context, workID string, params *Monitori
 		return err
 	}
 
+	return nil
+}
+
+func (ae *Env) startPreocess() error {
 	return nil
 }
