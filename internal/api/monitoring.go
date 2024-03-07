@@ -3,7 +3,6 @@ package api
 import (
 	"context"
 	"encoding/json"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 	"io"
 	"net/http"
 	"regexp"
@@ -18,6 +17,7 @@ import (
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
@@ -562,6 +562,9 @@ func (ae *Env) pauseProcess(ctx context.Context, author, workID string, params *
 		EventType: processEventPause,
 		Params:    jsonParams,
 	})
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
