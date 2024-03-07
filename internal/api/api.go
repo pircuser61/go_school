@@ -773,21 +773,6 @@ type Created struct {
 	Start int `json:"start"`
 }
 
-// Current task execution data
-type CurrentExecutorData struct {
-	// Execution group ID
-	ExecutionGroupId *string `json:"execution_group_id,omitempty"`
-
-	// Execution group name
-	ExecutionGroupName *string `json:"execution_group_name,omitempty"`
-
-	// Initial executors logins
-	InitialPeople []string `json:"initial_people"`
-
-	// Executors logins
-	People []string `json:"people"`
-}
-
 // Basic date operand, can provide working compare types for this type
 type DateOperand struct {
 	DataType    DateOperandDataType    `json:"dataType"`
@@ -916,17 +901,8 @@ type EriusTask struct {
 	Author           string                 `json:"author"`
 	BlueprintId      string                 `json:"blueprint_id"`
 	Comment          *string                `json:"comment,omitempty"`
-
-	// Current approvement start time (UTC)
-	CurrentApprovementStart *string `json:"current_approvement_start,omitempty"`
-
-	// Current execution start time (UTC)
-	CurrentExecutionStart *string `json:"current_execution_start,omitempty"`
-
-	// Current task execution data
-	CurrentExecutor CurrentExecutorData `json:"current_executor"`
-	Debug           bool                `json:"debug"`
-	Description     string              `json:"description"`
+	Debug            bool                   `json:"debug"`
+	Description      string                 `json:"description"`
 
 	// Task human readable status
 	HumanStatus        TaskHumanStatus        `json:"human_status"`
@@ -1174,7 +1150,7 @@ type FormExecutorType string
 
 // Form params
 type FormParams struct {
-	// true - if you need to set required fill fields in form (for auto fill)
+	// true - if you need to set required fill fields in form
 	CheckRequiredFill *bool `json:"check_required_fill,omitempty"`
 
 	// Is active SLA
@@ -1328,7 +1304,6 @@ type JSONSchemaProperties struct {
 
 		// Description of param
 		Description *string `json:"description,omitempty"`
-		FieldHidden *bool   `json:"fieldHidden,omitempty"`
 
 		// Format of param
 		Format *string `json:"format,omitempty"`
@@ -1701,7 +1676,7 @@ type RunResponse struct {
 // RunVersionsByPipelineIdRequest defines model for RunVersionsByPipelineIdRequest.
 type RunVersionsByPipelineIdRequest struct {
 	ApplicationBody   map[string]interface{}              `json:"application_body"`
-	AttachmentFields  []string                            `json:"attachment_fields"`
+	AttachmentFields  []Attachment                        `json:"attachment_fields"`
 	CustomTitle       *string                             `json:"custom_title,omitempty"`
 	Description       string                              `json:"description"`
 	IsTestApplication *bool                               `json:"is_test_application,omitempty"`
@@ -2641,7 +2616,6 @@ func (a JSONSchemaProperties) Get(fieldName string) (value struct {
 
 	// Description of param
 	Description *string `json:"description,omitempty"`
-	FieldHidden *bool   `json:"fieldHidden,omitempty"`
 
 	// Format of param
 	Format *string `json:"format,omitempty"`
@@ -2680,7 +2654,6 @@ func (a *JSONSchemaProperties) Set(fieldName string, value struct {
 
 	// Description of param
 	Description *string `json:"description,omitempty"`
-	FieldHidden *bool   `json:"fieldHidden,omitempty"`
 
 	// Format of param
 	Format *string `json:"format,omitempty"`
@@ -2713,7 +2686,6 @@ func (a *JSONSchemaProperties) Set(fieldName string, value struct {
 
 			// Description of param
 			Description *string `json:"description,omitempty"`
-			FieldHidden *bool   `json:"fieldHidden,omitempty"`
 
 			// Format of param
 			Format *string `json:"format,omitempty"`
@@ -2758,7 +2730,6 @@ func (a *JSONSchemaProperties) UnmarshalJSON(b []byte) error {
 
 			// Description of param
 			Description *string `json:"description,omitempty"`
-			FieldHidden *bool   `json:"fieldHidden,omitempty"`
 
 			// Format of param
 			Format *string `json:"format,omitempty"`
@@ -2791,7 +2762,6 @@ func (a *JSONSchemaProperties) UnmarshalJSON(b []byte) error {
 
 				// Description of param
 				Description *string `json:"description,omitempty"`
-				FieldHidden *bool   `json:"fieldHidden,omitempty"`
 
 				// Format of param
 				Format *string `json:"format,omitempty"`

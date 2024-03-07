@@ -201,15 +201,93 @@ func (gb *GoSignBlock) signActions(login string) []MemberAction {
 		return []MemberAction{takeInWorkAction, rejectAction, addApproversAction}
 	}
 
-	signAction := MemberAction{
+	signAction := []MemberAction{{
 		ID:   signActionSign,
 		Type: ActionTypePrimary,
 		Params: map[string]interface{}{
 			signatureTypeActionParamsKey: gb.State.SignatureType,
 		},
+	}}
+
+	signAction = append(signAction, rejectAction)
+
+	fillFormNames, existEmptyForm := gb.getFormNamesToFill()
+	if existEmptyForm {
+		for i := 0; i < len(signAction); i++ {
+			item := &signAction[i]
+
+			if item.ID != signActionSign {
+				continue
+			}
+
+			item.Params = map[string]interface{}{"disabled": true}
+		}
 	}
 
-	return []MemberAction{signAction, rejectAction, addApproversAction}
+	if len(fillFormNames) != 0 {
+		signAction = append(signAction, MemberAction{
+			ID:   formFillFormAction,
+			Type: ActionTypeCustom,
+			Params: map[string]interface{}{
+				formName: fillFormNames,
+			},
+		})
+	}
+
+	signAction = append(signAction, addApproversAction)
+
+	return signAction
+}
+
+//nolint:dupl //its not duplicate
+func (gb *GoSignBlock) getFormNamesToFill() ([]string, bool) {
+	var (
+		actions   = make([]string, 0)
+		emptyForm = false
+		l         = logger.GetLogger(context.Background())
+	)
+
+	for _, form := range gb.State.FormsAccessibility {
+		formState, ok := gb.RunContext.VarStore.State[form.NodeID]
+		if !ok {
+			continue
+		}
+
+		switch form.AccessType {
+		case readWriteAccessType:
+			actions = append(actions, form.NodeID)
+		case requiredFillAccessType:
+			actions = append(actions, form.NodeID)
+
+			existEmptyForm := gb.checkForEmptyForm(formState, l)
+			if existEmptyForm {
+				emptyForm = true
+			}
+		}
+	}
+
+	return actions, emptyForm
+}
+
+func (gb *GoSignBlock) checkForEmptyForm(formState json.RawMessage, l logger.Logger) bool {
+	var formData FormData
+	if err := json.Unmarshal(formState, &formData); err != nil {
+		l.Error(err)
+
+		return true
+	}
+
+	if !formData.IsFilled {
+		return true
+	}
+
+	for _, v := range formData.ChangesLog {
+		if _, findOk := gb.State.Signers[v.Executor]; findOk {
+			return false
+		}
+	}
+
+	return true
 }
 
 func (gb *GoSignBlock) signAddActions(a *AdditionalSignApprover) []MemberAction {

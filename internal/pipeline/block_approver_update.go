@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-
 	"github.com/pkg/errors"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
@@ -143,7 +142,13 @@ func (gb *GoApproverBlock) handleBreachedSLA(ctx context.Context) error {
 
 		var approverEmail string
 
+		usersNotToNotify := gb.getUsersNotToNotifySet()
+
 		for i := range logins {
+			if _, ok := usersNotToNotify[logins[i]]; ok {
+				continue
+			}
+
 			approverEmail, err = gb.RunContext.Services.People.GetUserEmail(ctx, logins[i])
 			if err != nil {
 				log.WithError(err).Warning(fn, fmt.Sprintf("approver login %s not found", logins[i]))
@@ -200,20 +205,8 @@ func (gb *GoApproverBlock) checkBreachedSLA(ctx context.Context) error {
 
 	log := logger.GetLogger(ctx)
 
-	seenAdditionalApprovers := map[string]bool{}
 	emails := make([]string, 0, len(gb.State.Approvers)+len(gb.State.AdditionalApprovers))
-	logins := getSliceFromMapOfStrings(gb.State.Approvers)
-
-	for _, additionalApprover := range gb.State.AdditionalApprovers {
-		// check if approver has not decisioned, and we did not see approver before
-		if additionalApprover.Decision != nil || seenAdditionalApprovers[additionalApprover.ApproverLogin] {
-			continue
-		}
-
-		seenAdditionalApprovers[additionalApprover.ApproverLogin] = true
-
-		logins = append(logins, additionalApprover.ApproverLogin)
-	}
+	logins := append(getSliceFromMapOfStrings(gb.State.Approvers), gb.getAdditionalApprovers()...)
 
 	delegations, err := gb.RunContext.Services.HumanTasks.GetDelegationsByLogins(ctx, logins)
 	if err != nil {
@@ -225,7 +218,13 @@ func (gb *GoApproverBlock) checkBreachedSLA(ctx context.Context) error {
 
 	var approverEmail string
 
+	usersNotToNotify := gb.getUsersNotToNotifySet()
+
 	for i := range logins {
+		if _, ok := usersNotToNotify[logins[i]]; ok {
+			continue
+		}
+
 		approverEmail, err = gb.RunContext.Services.People.GetUserEmail(ctx, logins[i])
 		if err != nil {
 			log.WithError(err).Warning(fn, fmt.Sprintf("approver login %s not found", logins[i]))
@@ -871,6 +870,27 @@ func (gb *GoApproverBlock) Update(ctx context.Context) (interface{}, error) {
 	return nil, nil
 }
 
+func (gb *GoApproverBlock) checkFormFilled() error {
+	l := logger.GetLogger(context.Background())
+
+	for _, form := range gb.State.FormsAccessibility {
+		formState, ok := gb.RunContext.VarStore.State[form.NodeID]
+		if !ok {
+			continue
+		}
+
+		if form.AccessType == requiredFillAccessType {
+			if gb.checkForEmptyForm(formState, l) {
+				comment := fmt.Sprintf("%s have empty form", form.NodeID)
+
+				return errors.New(comment)
+			}
+		}
+	}
+
+	return nil
+}
+
 //nolint:gocognit,gocyclo //тут большой switch case, где нибудь но он должен быть
 func (gb *GoApproverBlock) handleTaskUpdateAction(ctx context.Context) error {
 	data := gb.RunContext.UpdateData
@@ -901,8 +921,14 @@ func (gb *GoApproverBlock) handleTaskUpdateAction(ctx context.Context) error {
 			return errors.New("can't assert provided data")
 		}
 
-		if !gb.actionAcceptable(updateParams.Decision) {
-			return errors.New("unacceptable action")
+		if updateParams.Decision.ToDecision() != ApproverDecisionRejected {
+			if err := gb.checkFormFilled(); err != nil {
+				return err
+			}
+
+			if !gb.actionAcceptable(updateParams.Decision) {
+				return errors.New("unacceptable action")
+			}
 		}
 
 		login := gb.RunContext.UpdateData.ByLogin
@@ -979,6 +1005,7 @@ func (gb *GoApproverBlock) handleTaskUpdateAction(ctx context.Context) error {
 		if errUpdate := gb.HandleBreachedSLARequestAddInfo(ctx); errUpdate != nil {
 			return errUpdate
 		}
+	case entity.TaskUpdateActionReload:
 	}
 
 	return nil
@@ -1046,4 +1073,22 @@ func (gb *GoApproverBlock) checkAdditionalApproverNotAdded(login string) bool {
 	}
 
 	return true
+}
+
+func (gb *GoApproverBlock) getAdditionalApprovers() []string {
+	seenAdditionalApprovers := make(map[string]bool)
+	logins := make([]string, 0)
+
+	for _, additionalApprover := range gb.State.AdditionalApprovers {
+		// check if approver has not decisioned, and we did not see approver before
+		if additionalApprover.Decision != nil || seenAdditionalApprovers[additionalApprover.ApproverLogin] {
+			continue
+		}
+
+		seenAdditionalApprovers[additionalApprover.ApproverLogin] = true
+
+		logins = append(logins, additionalApprover.ApproverLogin)
+	}
+
+	return logins
 }

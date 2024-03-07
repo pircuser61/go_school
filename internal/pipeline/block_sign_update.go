@@ -63,6 +63,28 @@ type changeStatusSignatureParams struct {
 	Status string `json:"status"`
 }
 
+func (gb *GoSignBlock) checkFormFill() error {
+	l := logger.GetLogger(c.Background())
+
+	for _, form := range gb.State.FormsAccessibility {
+		formState, ok := gb.RunContext.VarStore.State[form.NodeID]
+		if !ok {
+			continue
+		}
+
+		if form.AccessType == requiredFillAccessType {
+			if gb.checkForEmptyForm(formState, l) {
+				comment := fmt.Sprintf("%s have empty form", form.NodeID)
+
+				return errors.New(comment)
+			}
+		}
+	}
+
+	return nil
+}
+
+// nolint:gocognit //its ok here
 func (gb *GoSignBlock) handleSignature(ctx c.Context, login string) error {
 	log := logger.GetLogger(ctx)
 
@@ -71,6 +93,12 @@ func (gb *GoSignBlock) handleSignature(ctx c.Context, login string) error {
 	err := json.Unmarshal(gb.RunContext.UpdateData.Parameters, updateParams)
 	if err != nil {
 		return errors.New("can't assert provided update data")
+	}
+
+	if updateParams.Decision != SignDecisionRejected {
+		if checkErr := gb.checkFormFill(); checkErr != nil {
+			return checkErr
+		}
 	}
 
 	for _, v := range updateParams.Signatures {
@@ -179,6 +207,7 @@ func (gb *GoSignBlock) Update(ctx c.Context) (interface{}, error) {
 		if errUpdate := gb.handleChangeWorkStatus(ctx, data.ByLogin); errUpdate != nil {
 			return nil, errUpdate
 		}
+	case string(entity.TaskUpdateActionReload):
 	}
 
 	var stateBytes []byte
@@ -302,7 +331,13 @@ func (gb *GoSignBlock) handleBreachedSLA(ctx c.Context) error {
 		emails := make([]string, 0, len(gb.State.Signers))
 		logins := getSliceFromMapOfStrings(gb.State.Signers)
 
+		usersNotToNotify := gb.getUsersNotToNotifySet()
+
 		for i := range logins {
+			if _, ok := usersNotToNotify[logins[i]]; ok {
+				continue
+			}
+
 			eml, err := gb.RunContext.Services.People.GetUserEmail(ctx, logins[i])
 			if err != nil {
 				continue

@@ -33,6 +33,7 @@ type FormParams struct {
 	FullFormMapping           string                 `json:"full_form_mapping"`
 	WorkType                  *string                `json:"work_type"`
 	IsEditable                *bool                  `json:"is_editable"`
+	CheckRequiredForm         bool                   `json:"checkRequiredForm"`
 	ReEnterSettings           *FormReEnterSettings   `json:"form_re_enter_settings,omitempty"`
 	AttachmentFields          []string               `json:"attachment_fields"`
 	Keys                      map[string]string      `json:"keys"`

@@ -161,6 +161,7 @@ func (gb *GoExecutionBlock) handleAction(ctx context.Context, action entity.Task
 		if errUpdate != nil {
 			return errUpdate
 		}
+	case entity.TaskUpdateActionReload:
 	}
 
 	return nil
@@ -677,12 +678,43 @@ func (gb *GoExecutionBlock) HandleBreachedSLARequestAddInfo(ctx context.Context)
 	return nil
 }
 
+func (gb *GoExecutionBlock) checkFormFilled() error {
+	l := logger.GetLogger(context.Background())
+
+	for _, form := range gb.State.FormsAccessibility {
+		formState, ok := gb.RunContext.VarStore.State[form.NodeID]
+		if !ok {
+			continue
+		}
+
+		if gb.Name == form.NodeID {
+			continue
+		}
+
+		if form.AccessType == requiredFillAccessType {
+			if gb.checkForEmptyForm(formState, l) {
+				comment := fmt.Sprintf("%s have empty form", form.NodeID)
+
+				return errors.New(comment)
+			}
+		}
+	}
+
+	return nil
+}
+
 func (gb *GoExecutionBlock) updateDecision(ctx context.Context) error {
 	var updateParams ExecutionUpdateParams
 
 	err := json.Unmarshal(gb.RunContext.UpdateData.Parameters, &updateParams)
 	if err != nil {
 		return errors.New("can't assert provided update data")
+	}
+
+	if updateParams.Decision != ExecutionDecisionRejected {
+		if checkTypeErr := gb.checkFormFilled(); checkTypeErr != nil {
+			return checkTypeErr
+		}
 	}
 
 	if errSet := gb.State.SetDecision(gb.RunContext.UpdateData.ByLogin, &updateParams,

@@ -2919,6 +2919,62 @@ func (_c *MockedDatabase_GetTask_Call) RunAndReturn(run func(context.Context, []
 	return _c
 }
 
+// GetTaskActiveBlock provides a mock function with given fields: ctx, taskID, stepName
+func (_m *MockedDatabase) GetTaskActiveBlock(ctx context.Context, taskID string, stepName string) ([]string, error) {
+	ret := _m.Called(ctx, taskID, stepName)
+
+	var r0 []string
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) ([]string, error)); ok {
+		return rf(ctx, taskID, stepName)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) []string); ok {
+		r0 = rf(ctx, taskID, stepName)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]string)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
+		r1 = rf(ctx, taskID, stepName)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockedDatabase_GetTaskActiveBlock_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetTaskActiveBlock'
+type MockedDatabase_GetTaskActiveBlock_Call struct {
+	*mock.Call
+}
+
+// GetTaskActiveBlock is a helper method to define mock.On call
+//   - ctx context.Context
+//   - taskID string
+//   - stepName string
+func (_e *MockedDatabase_Expecter) GetTaskActiveBlock(ctx interface{}, taskID interface{}, stepName interface{}) *MockedDatabase_GetTaskActiveBlock_Call {
+	return &MockedDatabase_GetTaskActiveBlock_Call{Call: _e.mock.On("GetTaskActiveBlock", ctx, taskID, stepName)}
+}
+
+func (_c *MockedDatabase_GetTaskActiveBlock_Call) Run(run func(ctx context.Context, taskID string, stepName string)) *MockedDatabase_GetTaskActiveBlock_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string), args[2].(string))
+	})
+	return _c
+}
+
+func (_c *MockedDatabase_GetTaskActiveBlock_Call) Return(_a0 []string, _a1 error) *MockedDatabase_GetTaskActiveBlock_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockedDatabase_GetTaskActiveBlock_Call) RunAndReturn(run func(context.Context, string, string) ([]string, error)) *MockedDatabase_GetTaskActiveBlock_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetTaskCustomProps provides a mock function with given fields: ctx, taskID
 func (_m *MockedDatabase) GetTaskCustomProps(ctx context.Context, taskID uuid.UUID) (*db.TaskCustomProps, error) {
 	ret := _m.Called(ctx, taskID)

@@ -65,6 +65,7 @@ func (gb *GoFormBlock) Update(ctx context.Context) (interface{}, error) {
 		if errUpdate := gb.formExecutorStartWork(ctx); errUpdate != nil {
 			return nil, errUpdate
 		}
+	case string(entity.TaskUpdateActionReload):
 	}
 
 	var stateBytes []byte
@@ -119,6 +120,31 @@ func (gb *GoFormBlock) Update(ctx context.Context) (interface{}, error) {
 	return nil, nil
 }
 
+func (gb *GoFormBlock) checkFormFilled() error {
+	l := logger.GetLogger(context.Background())
+
+	for _, form := range gb.State.FormsAccessibility {
+		formState, ok := gb.RunContext.VarStore.State[form.NodeID]
+		if !ok {
+			continue
+		}
+
+		if gb.Name == form.NodeID {
+			continue
+		}
+
+		if form.AccessType == requiredFillAccessType {
+			if gb.checkForEmptyForm(formState, l) {
+				comment := fmt.Sprintf("%s have empty form", form.NodeID)
+
+				return errors.New(comment)
+			}
+		}
+	}
+
+	return nil
+}
+
 func (gb *GoFormBlock) handleRequestFillForm(ctx context.Context, data *script.BlockUpdateData) error {
 	var updateParams updateFillFormParams
 
@@ -136,6 +162,10 @@ func (gb *GoFormBlock) handleRequestFillForm(ctx context.Context, data *script.B
 		return err
 	}
 
+	if formErr := gb.checkFormFilled(); formErr != nil {
+		return formErr
+	}
+
 	gb.State.ApplicationBody = updateParams.ApplicationBody
 	gb.State.Description = updateParams.Description
 
@@ -150,6 +180,25 @@ func (gb *GoFormBlock) handleRequestFillForm(ctx context.Context, data *script.B
 		},
 		gb.State.ChangesLog...,
 	)
+
+	schema, getSchemaErr := gb.RunContext.Services.ServiceDesc.GetSchemaByID(ctx, gb.State.SchemaID)
+	if getSchemaErr != nil {
+		return getSchemaErr
+	}
+
+	byteSchema, marshalErr := json.Marshal(schema)
+	if marshalErr != nil {
+		return marshalErr
+	}
+
+	byteApplicationBody, marshalApBodyErr := json.Marshal(gb.State.ApplicationBody)
+	if marshalApBodyErr != nil {
+		return marshalApBodyErr
+	}
+
+	if validErr := script.ValidateJSONByJSONSchema(string(byteApplicationBody), string(byteSchema)); validErr != nil {
+		return validErr
+	}
 
 	personData, err := gb.RunContext.Services.ServiceDesc.GetSsoPerson(ctx, *gb.State.ActualExecutor)
 	if err != nil {

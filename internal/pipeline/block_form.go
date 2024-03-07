@@ -2,8 +2,11 @@ package pipeline
 
 import (
 	c "context"
+	"encoding/json"
 	"fmt"
 	"time"
+
+	"golang.org/x/net/context"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
@@ -23,9 +26,11 @@ const (
 )
 
 const (
-	formName            = "form_name"
-	formFillFormAction  = "fill_form"
-	formStartWorkAction = "form_executor_start_work"
+	disabled                   = "disabled"
+	formName                   = "form_name"
+	formFillFormAction         = "fill_form"
+	formFillFormDisabledAction = "fill_form_disabled"
+	formStartWorkAction        = "form_executor_start_work"
 )
 
 const AutoFillUser = "auto_fill"
@@ -74,8 +79,9 @@ type FormData struct {
 	AttachmentFields []string          `json:"attachment_fields"`
 	Keys             map[string]string `json:"keys"`
 
-	IsEditable      *bool                       `json:"is_editable"`
-	ReEnterSettings *script.FormReEnterSettings `json:"form_re_enter_settings,omitempty"`
+	CheckRequiredForm bool                        `json:"checkRequiredForm"`
+	IsEditable        *bool                       `json:"is_editable"`
+	ReEnterSettings   *script.FormReEnterSettings `json:"form_re_enter_settings,omitempty"`
 }
 
 type GoFormBlock struct {
@@ -139,33 +145,103 @@ func (gb *GoFormBlock) formActions() []MemberAction {
 		return []MemberAction{action}
 	}
 
-	formNames := []string{gb.Name}
+	actions := make([]MemberAction, 0)
 
-	for _, v := range gb.State.FormsAccessibility {
-		if _, ok := gb.RunContext.VarStore.State[v.NodeID]; !ok {
-			continue
-		}
-
-		if gb.Name == v.NodeID {
-			continue
-		}
-
-		if v.AccessType == "ReadWrite" {
-			formNames = append(formNames, v.NodeID)
-		}
-	}
-
-	actions := []MemberAction{
-		{
+	fillFormNames, existEmptyForm := gb.getFormNamesToFill()
+	if existEmptyForm {
+		actions = append(actions, []MemberAction{
+			{
+				ID:   formFillFormAction,
+				Type: ActionTypeCustom,
+				Params: map[string]interface{}{
+					formName: fillFormNames,
+				},
+			},
+			{
+				ID:   formFillFormDisabledAction,
+				Type: ActionTypeCustom,
+				Params: map[string]interface{}{
+					formName: []string{gb.Name},
+					disabled: true,
+				},
+			},
+		}...)
+	} else {
+		actions = append(actions, MemberAction{
 			ID:   formFillFormAction,
 			Type: ActionTypeCustom,
 			Params: map[string]interface{}{
-				formName: formNames,
+				formName: append(fillFormNames, gb.Name),
 			},
-		},
+		})
 	}
 
 	return actions
+}
+
+func (gb *GoFormBlock) getFormNamesToFill() ([]string, bool) {
+	var (
+		actions   = make([]string, 0)
+		emptyForm = false
+		l         = logger.GetLogger(context.Background())
+	)
+
+	for _, form := range gb.State.FormsAccessibility {
+		formState, ok := gb.RunContext.VarStore.State[form.NodeID]
+		if !ok {
+			continue
+		}
+
+		if gb.Name == form.NodeID {
+			continue
+		}
+
+		switch form.AccessType {
+		case readWriteAccessType:
+			actions = append(actions, form.NodeID)
+		case requiredFillAccessType:
+			actions = append(actions, form.NodeID)
+
+			existEmptyForm := gb.checkForEmptyForm(formState, l)
+			if existEmptyForm {
+				emptyForm = true
+			}
+		}
+	}
+
+	return actions, emptyForm
+}
+
+func (gb *GoFormBlock) checkForEmptyForm(formState json.RawMessage, l logger.Logger) bool {
+	var formData FormData
+
+	if err := json.Unmarshal(formState, &formData); err != nil {
+		l.Error(err)
+
+		return true
+	}
+
+	users := make(map[string]struct{}, 0)
+
+	for user := range gb.State.Executors {
+		users[user] = struct{}{}
+	}
+
+	for user := range gb.State.InitialExecutors {
+		users[user] = struct{}{}
+	}
+
+	if !formData.IsFilled {
+		return true
+	}
+
+	for _, v := range formData.ChangesLog {
+		if _, findOk := users[v.Executor]; findOk {
+			return false
+		}
+	}
+
+	return true
 }
 
 func (gb *GoFormBlock) Deadlines(ctx c.Context) ([]Deadline, error) {
@@ -308,6 +384,22 @@ func (gb *GoFormBlock) handleAutoFillForm() error {
 
 		if err = script.ValidateParam(formMapping, validSchema); err != nil {
 			return fmt.Errorf("mapping is not valid: %w", err)
+		}
+
+		if gb.State.CheckRequiredForm {
+			byteSchema, marshalErr := json.Marshal(validSchema)
+			if marshalErr != nil {
+				return marshalErr
+			}
+
+			byteApplicationBody, marshalApBodyErr := json.Marshal(gb.State.ApplicationBody)
+			if marshalApBodyErr != nil {
+				return marshalApBodyErr
+			}
+
+			if validErr := script.ValidateJSONByJSONSchema(string(byteApplicationBody), string(byteSchema)); validErr != nil {
+				return validErr
+			}
 		}
 
 		gb.State.ApplicationBody = formMapping

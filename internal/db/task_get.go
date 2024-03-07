@@ -1256,6 +1256,7 @@ func getMaxPriority(existingPriorities []entity.TaskAction) string {
 	return result
 }
 
+// nolint:gocognit //its ok here
 func (db *PGCon) computeActions(
 	ctx c.Context,
 	_ []string,
@@ -1291,33 +1292,47 @@ func (db *PGCon) computeActions(
 	for _, blockActions := range actions {
 		for _, action := range blockActions.Actions {
 			compositeActionID := strings.Split(action, ":")
-			if len(compositeActionID) > 1 {
-				id := compositeActionID[0]
+			if len(compositeActionID) <= 1 {
+				continue
+			}
 
-				if _, ok := metActions[id]; ok && !utils.IsContainsInSlice(id, canBeRepeated) {
+			id := compositeActionID[0]
+			actionParams := blockActions.Params[id]
+
+			if _, ok := metActions[id]; ok && !utils.IsContainsInSlice(id, canBeRepeated) {
+				if _, oks := actionParams["disabled"]; !oks {
 					continue
 				}
 
-				metActions[id] = struct{}{}
-
-				priority := compositeActionID[1]
-				actionWithPreferences := allActions[id]
-				actionParams := blockActions.Params[id]
-
-				computedAction := entity.TaskAction{
-					ID:                 id,
-					ButtonType:         priority,
-					NodeType:           actionWithPreferences.NodeType,
-					Title:              actionWithPreferences.Title,
-					CommentEnabled:     actionWithPreferences.CommentEnabled,
-					AttachmentsEnabled: actionWithPreferences.AttachmentsEnabled,
-					IsPublic:           actionWithPreferences.IsPublic,
-					Params:             actionParams,
+				for i := range computedActions {
+					if computedActions[i].ID == id {
+						computedActions[i].Params = actionParams
+					}
 				}
 
-				computedActions = append(computedActions, computedAction)
-				computedActionIds = append(computedActionIds, computedAction.ID)
+				continue
 			}
+
+			metActions[id] = struct{}{}
+
+			replaceID := replaceFormID(id)
+
+			priority := compositeActionID[1]
+			actionWithPreferences := allActions[replaceID]
+
+			computedAction := entity.TaskAction{
+				ID:                 replaceID,
+				ButtonType:         priority,
+				NodeType:           actionWithPreferences.NodeType,
+				Title:              actionWithPreferences.Title,
+				CommentEnabled:     actionWithPreferences.CommentEnabled,
+				AttachmentsEnabled: actionWithPreferences.AttachmentsEnabled,
+				IsPublic:           actionWithPreferences.IsPublic,
+				Params:             actionParams,
+			}
+
+			computedActions = append(computedActions, computedAction)
+			computedActionIds = append(computedActionIds, computedAction.ID)
 		}
 	}
 
@@ -1356,6 +1371,10 @@ func (db *PGCon) computeActions(
 	}
 
 	return result, nil
+}
+
+func replaceFormID(id string) string {
+	return strings.Replace(id, "fill_form_disabled", "fill_form", 1)
 }
 
 func (db *PGCon) ignoreAction(a *entity.TaskAction, actionsToIgnore []IgnoreActionRule, computedActionIds []string) bool {

@@ -2,7 +2,10 @@ package pipeline
 
 import (
 	"context"
+	"encoding/json"
 	"time"
+
+	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
@@ -26,7 +29,8 @@ const (
 	approverAdditionalApprovementAction = "additional_approvement"
 	approverAdditionalRejectAction      = "additional_reject"
 
-	readWriteAccessType = "ReadWrite"
+	readWriteAccessType    = "ReadWrite"
+	requiredFillAccessType = "RequiredFill"
 )
 
 type GoApproverBlock struct {
@@ -233,22 +237,27 @@ func (gb *GoApproverBlock) approvementBaseActions(login string) []MemberAction {
 		})
 	}
 
-	for _, v := range gb.State.FormsAccessibility {
-		if _, ok := gb.RunContext.VarStore.State[v.NodeID]; !ok {
-			continue
-		}
+	fillFormNames, existEmptyForm := gb.getFormNamesToFill()
+	if existEmptyForm {
+		for i := 0; i < len(actions); i++ {
+			item := &actions[i]
 
-		if v.AccessType == readWriteAccessType {
-			memAction := MemberAction{
-				ID:   formFillFormAction,
-				Type: ActionTypeCustom,
-				Params: map[string]interface{}{
-					formName: v.NodeID,
-				},
+			if item.ID == ApproverActionReject {
+				continue
 			}
 
-			actions = append(actions, memAction)
+			item.Params = map[string]interface{}{"disabled": true}
 		}
+	}
+
+	if len(fillFormNames) != 0 {
+		actions = append(actions, MemberAction{
+			ID:   formFillFormAction,
+			Type: ActionTypeCustom,
+			Params: map[string]interface{}{
+				formName: fillFormNames,
+			},
+		})
 	}
 
 	return append(actions, MemberAction{
@@ -288,6 +297,57 @@ func (gb *GoApproverBlock) approvementAddActions(a *AdditionalApprover) []Member
 type qna struct {
 	qCrAt time.Time
 	aCrAt *time.Time
+}
+
+//nolint:dupl //its not duplicate
+func (gb *GoApproverBlock) getFormNamesToFill() ([]string, bool) {
+	var (
+		actions   = make([]string, 0)
+		emptyForm = false
+		l         = logger.GetLogger(context.Background())
+	)
+
+	for _, form := range gb.State.FormsAccessibility {
+		formState, ok := gb.RunContext.VarStore.State[form.NodeID]
+		if !ok {
+			continue
+		}
+
+		switch form.AccessType {
+		case readWriteAccessType:
+			actions = append(actions, form.NodeID)
+		case requiredFillAccessType:
+			actions = append(actions, form.NodeID)
+
+			existEmptyForm := gb.checkForEmptyForm(formState, l)
+			if existEmptyForm {
+				emptyForm = true
+			}
+		}
+	}
+
+	return actions, emptyForm
+}
+
+func (gb *GoApproverBlock) checkForEmptyForm(formState json.RawMessage, l logger.Logger) bool {
+	var formData FormData
+	if err := json.Unmarshal(formState, &formData); err != nil {
+		l.Error(err)
+
+		return true
+	}
+
+	if !formData.IsFilled {
+		return true
+	}
+
+	for _, v := range formData.ChangesLog {
+		if _, findOk := gb.State.Approvers[v.Executor]; findOk {
+			return false
+		}
+	}
+
+	return true
 }
 
 func (gb *GoApproverBlock) getNewSLADeadline(slaInfoPtr *sla.Info, half bool) time.Time {

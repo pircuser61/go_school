@@ -217,6 +217,7 @@ type Database interface {
 	SaveStepContext(ctx c.Context, dto *SaveStepRequest) (uuid.UUID, time.Time, error)
 	UpdateStepContext(ctx c.Context, dto *UpdateStepRequest) error
 	UpdateTaskBlocksData(ctx c.Context, dto *UpdateTaskBlocksDataRequest) error
+	GetTaskActiveBlock(ctx c.Context, taskID, stepName string) ([]string, error)
 	SetExecDeadline(ctx c.Context, taskID string, deadline time.Time) error
 
 	GetExecutableScenarios(ctx c.Context) ([]e.EriusScenario, error)
