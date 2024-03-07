@@ -490,7 +490,13 @@ func validateSignBlock(bt entity.BlocksType, block *entity.EriusFunc, blockName 
 		blockSign.SigningParamsPaths.Files = validFiles
 	}
 
-	if blockSign.SigningParamsPaths.SNILS == "" || blockSign.SigningParamsPaths.INN == "" {
+	if blockSign.SignatureType == script.SignatureTypeUKEP &&
+		(blockSign.SigningParamsPaths.SNILS == "" || blockSign.SigningParamsPaths.INN == "") {
+		log.WithFields(logger.Fields{
+			funcName:       "validateSignBlock",
+			blockNameLabel: blockName,
+		}).Error(errors.New("snils and inn are required"))
+
 		isValid = false
 	}
 
