@@ -181,6 +181,10 @@ func (gb *GoApproverBlock) reEntry(ctx context.Context, ef *entity.EriusFunc) er
 		params.ApproversGroupID = fmt.Sprintf("%v", groupID)
 	}
 
+	if deadlineErr := gb.setWorkTypeAndDeadline(ctx, &params); deadlineErr != nil {
+		return deadlineErr
+	}
+
 	err = gb.setApproversByParams(ctx, &setApproversByParamsDTO{
 		Type:     params.Type,
 		GroupID:  params.ApproversGroupID,
@@ -281,6 +285,14 @@ func (gb *GoApproverBlock) createState(ctx context.Context, ef *entity.EriusFunc
 		return setErr
 	}
 
+	if deadlineErr := gb.setWorkTypeAndDeadline(ctx, &params); deadlineErr != nil {
+		return deadlineErr
+	}
+
+	return gb.handleNotifications(ctx)
+}
+
+func (gb *GoApproverBlock) setWorkTypeAndDeadline(ctx context.Context, params *script.ApproverParams) error {
 	if params.WorkType != nil {
 		gb.State.WorkType = *params.WorkType
 	} else {
@@ -289,14 +301,23 @@ func (gb *GoApproverBlock) createState(ctx context.Context, ef *entity.EriusFunc
 			return getVersionErr
 		}
 
-		processSLASettings, getVersionErr := gb.RunContext.Services.Storage.GetSLAVersionSettings(ctx, task.VersionID.String())
+		processSLASettings, getVersionErr := gb.RunContext.Services.Storage.GetSLAVersionSettings(
+			ctx, task.VersionID.String())
 		if getVersionErr != nil {
 			return getVersionErr
 		}
+
 		gb.State.WorkType = processSLASettings.WorkType
 	}
 
-	return gb.handleNotifications(ctx)
+	deadline, err := gb.getDeadline(ctx, gb.State.WorkType)
+	if err != nil {
+		return err
+	}
+
+	gb.State.Deadline = deadline
+
+	return nil
 }
 
 type setApproversByParamsDTO struct {

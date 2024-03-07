@@ -8,6 +8,8 @@ import (
 
 	"golang.org/x/net/context"
 
+	"github.com/pkg/errors"
+
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
@@ -65,11 +67,12 @@ type FormData struct {
 
 	IsRevoked bool `json:"is_revoked"`
 
-	SLA            int    `json:"sla"`
-	CheckSLA       bool   `json:"check_sla"`
-	SLAChecked     bool   `json:"sla_checked"`
-	HalfSLAChecked bool   `json:"half_sla_checked"`
-	WorkType       string `json:"work_type"`
+	Deadline       time.Time `json:"deadline,omitempty"`
+	SLA            int       `json:"sla"`
+	CheckSLA       bool      `json:"check_sla"`
+	SLAChecked     bool      `json:"sla_checked"`
+	HalfSLAChecked bool      `json:"half_sla_checked"`
+	WorkType       string    `json:"work_type"`
 
 	HideExecutorFromInitiator bool `json:"hide_executor_from_initiator"`
 
@@ -242,6 +245,25 @@ func (gb *GoFormBlock) checkForEmptyForm(formState json.RawMessage, l logger.Log
 	}
 
 	return true
+}
+
+func (gb *GoFormBlock) getDeadline(ctx context.Context, workType string) (time.Time, error) {
+	if gb.State.IsFilled {
+		return time.Time{}, nil
+	}
+
+	slaInfoPtr, getSLAInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDTO{
+		TaskCompletionIntervals: []entity.TaskCompletionInterval{{
+			StartedAt:  gb.RunContext.CurrBlockStartTime,
+			FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100),
+		}},
+		WorkType: sla.WorkHourType(workType),
+	})
+	if getSLAInfoErr != nil {
+		return time.Time{}, errors.Wrap(getSLAInfoErr, "can not get slaInfo")
+	}
+
+	return gb.RunContext.Services.SLAService.ComputeMaxDate(gb.RunContext.CurrBlockStartTime, float32(gb.State.SLA), slaInfoPtr), nil
 }
 
 func (gb *GoFormBlock) Deadlines(ctx c.Context) ([]Deadline, error) {

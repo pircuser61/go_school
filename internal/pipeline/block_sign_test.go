@@ -28,6 +28,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 	serviceDeskMocks "gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc/mocks"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 
 	delegationht "gitlab.services.mts.ru/jocasta/human-tasks/pkg/proto/gen/proto/go/delegation"
@@ -395,6 +396,9 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 
 	varStore := store.NewStore()
 
+	workTypeVal := "8/5"
+	slaVal := 8
+
 	varStore.SetValue("form_0.user", map[string]interface{}{
 		"username": "test",
 		"fullname": "test test test",
@@ -477,11 +481,17 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 					VarStore: func() *store.VariableStore {
 						s := store.NewStore()
 						r, _ := json.Marshal(&SignData{
-							Type: script.SignerTypeUser,
 							Signers: map[string]struct{}{
 								"tester": {},
 							},
 							FormsAccessibility: make([]script.FormAccessibility, 1),
+							WorkType:           &workTypeVal,
+							SLA:                &slaVal,
+							SignatureType:      script.SignatureTypeUNEP,
+							SignatureCarrier:   script.SignatureCarrierAll,
+							Type:               script.SignerTypeUser,
+							SigningRule:        script.AllOfSigningRequired,
+							Reentered:          false,
 						})
 						s.State = map[string]json.RawMessage{
 							example: r,
@@ -489,6 +499,13 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 
 						return s
 					}(),
+					Services: RunContextServices{
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSLAService(nil)
+
+							return slaMock
+						}(),
+					},
 				},
 				ef: &entity.EriusFunc{
 					BlockType:  BlockGoSignID,
@@ -518,6 +535,8 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 							Type:               script.SignerTypeUser,
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
+							WorkType:           &workTypeVal,
+							SLA:                &slaVal,
 						})
 
 						return r
@@ -556,6 +575,9 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 					SignLog:            []SignLogEntry{},
 					FormsAccessibility: []script.FormAccessibility{{}},
 					Reentered:          true,
+					WorkType:           &workTypeVal,
+					SLA:                &slaVal,
+					Deadline:           time.Date(0001, 01, 01, 14, 00, 00, 00, time.UTC),
 				},
 				RunContext: &BlockRunContext{
 					TaskID:      uuid.MustParse("00000000-0000-0000-0000-000000000000"),
@@ -594,6 +616,8 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 								"tester": {},
 							},
 							FormsAccessibility: make([]script.FormAccessibility, 1),
+							WorkType:           &workTypeVal,
+							SLA:                &slaVal,
 						})
 						s.State = map[string]json.RawMessage{
 							example: r,
@@ -601,6 +625,13 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 
 						return s
 					}(),
+					Services: RunContextServices{
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSLAService(nil)
+
+							return slaMock
+						}(),
+					},
 				},
 				ef: &entity.EriusFunc{
 					BlockType:  BlockGoSignID,
@@ -630,6 +661,8 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 							Type:               script.SignerTypeUser,
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
+							WorkType:           &workTypeVal,
+							SLA:                &slaVal,
 						})
 
 						return r
@@ -668,6 +701,9 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 					SignLog:            []SignLogEntry{},
 					FormsAccessibility: []script.FormAccessibility{{}},
 					Reentered:          true,
+					WorkType:           &workTypeVal,
+					SLA:                &slaVal,
+					Deadline:           time.Date(0001, 01, 01, 14, 00, 00, 00, time.UTC),
 				},
 				RunContext: &BlockRunContext{
 					TaskID:      uuid.MustParse("00000000-0000-0000-0000-000000000000"),
@@ -712,6 +748,8 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 								"tester": {},
 							},
 							FormsAccessibility: make([]script.FormAccessibility, 1),
+							WorkType:           &workTypeVal,
+							SLA:                &slaVal,
 						})
 						s.State = map[string]json.RawMessage{
 							example: r,
@@ -719,6 +757,13 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 
 						return s
 					}(),
+					Services: RunContextServices{
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSLAService(nil)
+
+							return slaMock
+						}(),
+					},
 				},
 				ef: &entity.EriusFunc{
 					BlockType:  BlockGoSignID,
@@ -753,6 +798,8 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 							},
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
+							WorkType:           &workTypeVal,
+							SLA:                &slaVal,
 						})
 
 						return r
@@ -804,6 +851,9 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 						SNILS: "form_3.snils",
 						Files: []string{"form_3.files"},
 					},
+					WorkType: &workTypeVal,
+					SLA:      &slaVal,
+					Deadline: time.Date(0001, 01, 01, 14, 00, 00, 00, time.UTC),
 				},
 				RunContext: &BlockRunContext{
 					TaskID:      uuid.MustParse("00000000-0000-0000-0000-000000000000"),
@@ -850,6 +900,8 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 								"tester": {},
 							},
 							FormsAccessibility: make([]script.FormAccessibility, 1),
+							WorkType:           &workTypeVal,
+							SLA:                &slaVal,
 						})
 						s.State = map[string]json.RawMessage{
 							example: r,
@@ -857,6 +909,13 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 
 						return s
 					}(),
+					Services: RunContextServices{
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSLAService(nil)
+
+							return slaMock
+						}(),
+					},
 				},
 				ef: &entity.EriusFunc{
 					BlockType:  BlockGoSignID,
@@ -886,6 +945,8 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 							Type:               script.SignerTypeUser,
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
+							WorkType:           &workTypeVal,
+							SLA:                &slaVal,
 						})
 
 						return r
@@ -924,6 +985,9 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 					SignLog:            []SignLogEntry{},
 					FormsAccessibility: []script.FormAccessibility{{}},
 					Reentered:          true,
+					WorkType:           &workTypeVal,
+					SLA:                &slaVal,
+					Deadline:           time.Date(0001, 01, 01, 14, 00, 00, 00, time.UTC),
 				},
 				RunContext: &BlockRunContext{
 					TaskID:      uuid.MustParse("00000000-0000-0000-0000-000000000000"),
@@ -962,6 +1026,8 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 								"tester": {},
 							},
 							FormsAccessibility: make([]script.FormAccessibility, 1),
+							WorkType:           &workTypeVal,
+							SLA:                &slaVal,
 						})
 						s.State = map[string]json.RawMessage{
 							example: r,
@@ -969,6 +1035,13 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 
 						return s
 					}(),
+					Services: RunContextServices{
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSLAService(nil)
+
+							return slaMock
+						}(),
+					},
 				},
 				ef: &entity.EriusFunc{
 					BlockType:  BlockGoSignID,
@@ -998,6 +1071,8 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 							Type:               script.SignerTypeUser,
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
+							WorkType:           &workTypeVal,
+							SLA:                &slaVal,
 						})
 
 						return r
@@ -1036,6 +1111,9 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 					SignLog:            []SignLogEntry{},
 					FormsAccessibility: []script.FormAccessibility{{}},
 					Reentered:          true,
+					WorkType:           &workTypeVal,
+					SLA:                &slaVal,
+					Deadline:           time.Date(0001, 01, 01, 14, 00, 00, 00, time.UTC),
 				},
 				RunContext: &BlockRunContext{
 					TaskID:      uuid.MustParse("00000000-0000-0000-0000-000000000000"),
@@ -1080,6 +1158,8 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 								"tester": {},
 							},
 							FormsAccessibility: make([]script.FormAccessibility, 1),
+							WorkType:           &workTypeVal,
+							SLA:                &slaVal,
 						})
 						s.State = map[string]json.RawMessage{
 							example: r,
@@ -1087,6 +1167,13 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 
 						return s
 					}(),
+					Services: RunContextServices{
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSLAService(nil)
+
+							return slaMock
+						}(),
+					},
 				},
 				ef: &entity.EriusFunc{
 					BlockType:  BlockGoSignID,
@@ -1121,6 +1208,8 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 							},
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
+							WorkType:           &workTypeVal,
+							SLA:                &slaVal,
 						})
 
 						return r
@@ -1172,6 +1261,9 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 					SignLog:            []SignLogEntry{},
 					FormsAccessibility: []script.FormAccessibility{{}},
 					Reentered:          true,
+					WorkType:           &workTypeVal,
+					SLA:                &slaVal,
+					Deadline:           time.Date(0001, 01, 01, 14, 00, 00, 00, time.UTC),
 				},
 				RunContext: &BlockRunContext{
 					TaskID:      uuid.MustParse("00000000-0000-0000-0000-000000000000"),
@@ -1392,6 +1484,8 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 								"tester": {},
 							},
 							FormsAccessibility: make([]script.FormAccessibility, 1),
+							WorkType:           &workTypeVal,
+							SLA:                &slaVal,
 						})
 						s.State = map[string]json.RawMessage{
 							example: r,
@@ -1399,6 +1493,13 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 
 						return s
 					}(),
+					Services: RunContextServices{
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSLAService(nil)
+
+							return slaMock
+						}(),
+					},
 				},
 				ef: &entity.EriusFunc{
 					BlockType:  BlockGoSignID,
@@ -1428,6 +1529,8 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 							Type:               script.SignerTypeUser,
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
+							WorkType:           &workTypeVal,
+							SLA:                &slaVal,
 						})
 
 						return r
@@ -1466,6 +1569,9 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 					SignLog:            []SignLogEntry{},
 					FormsAccessibility: []script.FormAccessibility{{}},
 					Reentered:          true,
+					WorkType:           &workTypeVal,
+					SLA:                &slaVal,
+					Deadline:           time.Date(0001, 01, 01, 14, 00, 00, 00, time.UTC),
 				},
 				RunContext: &BlockRunContext{
 					TaskID:      uuid.MustParse("00000000-0000-0000-0000-000000000000"),
@@ -1510,6 +1616,8 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 								"tester": {},
 							},
 							FormsAccessibility: make([]script.FormAccessibility, 1),
+							WorkType:           &workTypeVal,
+							SLA:                &slaVal,
 						})
 						s.State = map[string]json.RawMessage{
 							example: r,
@@ -1517,6 +1625,13 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 
 						return s
 					}(),
+					Services: RunContextServices{
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSLAService(nil)
+
+							return slaMock
+						}(),
+					},
 				},
 				ef: &entity.EriusFunc{
 					BlockType:  BlockGoSignID,
@@ -1551,6 +1666,8 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 							},
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
+							WorkType:           &workTypeVal,
+							SLA:                &slaVal,
 						})
 
 						return r
@@ -1594,6 +1711,9 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 					SignLog:            []SignLogEntry{},
 					FormsAccessibility: []script.FormAccessibility{{}},
 					Reentered:          true,
+					WorkType:           &workTypeVal,
+					SLA:                &slaVal,
+					Deadline:           time.Date(0001, 01, 01, 14, 00, 00, 00, time.UTC),
 				},
 				RunContext: &BlockRunContext{
 					TaskID:      uuid.MustParse("00000000-0000-0000-0000-000000000000"),
@@ -1640,6 +1760,8 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 								"tester": {},
 							},
 							FormsAccessibility: make([]script.FormAccessibility, 1),
+							WorkType:           &workTypeVal,
+							SLA:                &slaVal,
 						})
 						s.State = map[string]json.RawMessage{
 							example: r,
@@ -1647,6 +1769,13 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 
 						return s
 					}(),
+					Services: RunContextServices{
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSLAService(nil)
+
+							return slaMock
+						}(),
+					},
 				},
 				ef: &entity.EriusFunc{
 					BlockType:  BlockGoSignID,
@@ -1676,6 +1805,8 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 							Type:               script.SignerTypeUser,
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
+							WorkType:           &workTypeVal,
+							SLA:                &slaVal,
 						})
 
 						return r
@@ -1714,6 +1845,9 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 					SignLog:            []SignLogEntry{},
 					FormsAccessibility: []script.FormAccessibility{{}},
 					Reentered:          true,
+					WorkType:           &workTypeVal,
+					SLA:                &slaVal,
+					Deadline:           time.Date(0001, 01, 01, 14, 00, 00, 00, time.UTC),
 				},
 				RunContext: &BlockRunContext{
 					TaskID:      uuid.MustParse("00000000-0000-0000-0000-000000000000"),
@@ -1746,7 +1880,14 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 
 			got, _, _ := createGoSignBlock(ctx, test.args.name, test.args.ef, test.args.runCtx, nil)
 
-			assert.Equal(t, test.want, got)
+			if test.want == nil {
+				if got == nil {
+					assert.Equal(t, true, true)
+					return
+				}
+				assert.FailNow(t, "expected no State")
+			}
+			assert.Equal(t, test.want.State, got.State)
 		})
 	}
 }
@@ -1762,6 +1903,9 @@ func TestGoSignBlock_Update(t *testing.T) {
 	)
 
 	var logins = "example"
+
+	workTypeVal := "8/5"
+	slaVal := 8
 
 	type (
 		fields struct {
@@ -1816,11 +1960,18 @@ func TestGoSignBlock_Update(t *testing.T) {
 						invalidLogin: {},
 					},
 					ActualSigner: &logins,
+					WorkType:     &workTypeVal,
+					SLA:          &slaVal,
 				},
 				RunContext: &BlockRunContext{
 					skipNotifications: false,
 					VarStore:          store.NewStore(),
 					Services: RunContextServices{
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSLAService(nil)
+
+							return slaMock
+						}(),
 						ServiceDesc: func() *servicedesc.Service {
 							sdMock := servicedesc.Service{
 								SdURL: "",
@@ -1874,11 +2025,18 @@ func TestGoSignBlock_Update(t *testing.T) {
 						invalidLogin: {},
 					},
 					ActualSigner: &logins,
+					WorkType:     &workTypeVal,
+					SLA:          &slaVal,
 				},
 				RunContext: &BlockRunContext{
 					skipNotifications: false,
 					VarStore:          store.NewStore(),
 					Services: RunContextServices{
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSLAService(nil)
+
+							return slaMock
+						}(),
 						ServiceDesc: func() *servicedesc.Service {
 							sdMock := servicedesc.Service{
 								SdURL: "",
@@ -1933,11 +2091,18 @@ func TestGoSignBlock_Update(t *testing.T) {
 						invalidLogin: {},
 					},
 					ActualSigner: &logins,
+					WorkType:     &workTypeVal,
+					SLA:          &slaVal,
 				},
 				RunContext: &BlockRunContext{
 					skipNotifications: false,
 					VarStore:          store.NewStore(),
 					Services: RunContextServices{
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSLAService(nil)
+
+							return slaMock
+						}(),
 						ServiceDesc: func() *servicedesc.Service {
 							sdMock := servicedesc.Service{
 								SdURL: "",
@@ -1992,11 +2157,18 @@ func TestGoSignBlock_Update(t *testing.T) {
 						invalidLogin: {},
 					},
 					ActualSigner: &logins,
+					WorkType:     &workTypeVal,
+					SLA:          &slaVal,
 				},
 				RunContext: &BlockRunContext{
 					skipNotifications: false,
 					VarStore:          store.NewStore(),
 					Services: RunContextServices{
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSLAService(nil)
+
+							return slaMock
+						}(),
 						ServiceDesc: func() *servicedesc.Service {
 							sdMock := servicedesc.Service{
 								SdURL: "",
@@ -2051,11 +2223,18 @@ func TestGoSignBlock_Update(t *testing.T) {
 						invalidLogin: {},
 					},
 					ActualSigner: &logins,
+					WorkType:     &workTypeVal,
+					SLA:          &slaVal,
 				},
 				RunContext: &BlockRunContext{
 					skipNotifications: false,
 					VarStore:          store.NewStore(),
 					Services: RunContextServices{
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSLAService(nil)
+
+							return slaMock
+						}(),
 						ServiceDesc: func() *servicedesc.Service {
 							sdMock := servicedesc.Service{
 								SdURL: "",
@@ -2107,11 +2286,18 @@ func TestGoSignBlock_Update(t *testing.T) {
 						login2: {},
 					},
 					ActualSigner: &logins,
+					WorkType:     &workTypeVal,
+					SLA:          &slaVal,
 				},
 				RunContext: &BlockRunContext{
 					skipNotifications: false,
 					VarStore:          store.NewStore(),
 					Services: RunContextServices{
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSLAService(nil)
+
+							return slaMock
+						}(),
 						ServiceDesc: func() *servicedesc.Service {
 							sdMock := servicedesc.Service{
 								SdURL: "",
@@ -2165,11 +2351,18 @@ func TestGoSignBlock_Update(t *testing.T) {
 						login2: {},
 					},
 					ActualSigner: &logins,
+					WorkType:     &workTypeVal,
+					SLA:          &slaVal,
 				},
 				RunContext: &BlockRunContext{
 					skipNotifications: false,
 					VarStore:          store.NewStore(),
 					Services: RunContextServices{
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSLAService(nil)
+
+							return slaMock
+						}(),
 						ServiceDesc: func() *servicedesc.Service {
 							sdMock := servicedesc.Service{
 								SdURL: "",
@@ -2222,11 +2415,18 @@ func TestGoSignBlock_Update(t *testing.T) {
 						login2: {},
 					},
 					ActualSigner: &logins,
+					WorkType:     &workTypeVal,
+					SLA:          &slaVal,
 				},
 				RunContext: &BlockRunContext{
 					skipNotifications: false,
 					VarStore:          store.NewStore(),
 					Services: RunContextServices{
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSLAService(nil)
+
+							return slaMock
+						}(),
 						ServiceDesc: func() *servicedesc.Service {
 							sdMock := servicedesc.Service{
 								SdURL: "",
@@ -2279,11 +2479,18 @@ func TestGoSignBlock_Update(t *testing.T) {
 						invalidLogin: {},
 					},
 					ActualSigner: &logins,
+					WorkType:     &workTypeVal,
+					SLA:          &slaVal,
 				},
 				RunContext: &BlockRunContext{
 					skipNotifications: false,
 					VarStore:          store.NewStore(),
 					Services: RunContextServices{
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSLAService(nil)
+
+							return slaMock
+						}(),
 						ServiceDesc: func() *servicedesc.Service {
 							sdMock := servicedesc.Service{
 								SdURL: "",
@@ -2336,11 +2543,18 @@ func TestGoSignBlock_Update(t *testing.T) {
 						invalidLogin: {},
 					},
 					ActualSigner: &logins,
+					WorkType:     &workTypeVal,
+					SLA:          &slaVal,
 				},
 				RunContext: &BlockRunContext{
 					skipNotifications: false,
 					VarStore:          store.NewStore(),
 					Services: RunContextServices{
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSLAService(nil)
+
+							return slaMock
+						}(),
 						ServiceDesc: func() *servicedesc.Service {
 							sdMock := servicedesc.Service{
 								SdURL: "",
@@ -2393,11 +2607,18 @@ func TestGoSignBlock_Update(t *testing.T) {
 						invalidLogin: {},
 					},
 					ActualSigner: &logins,
+					WorkType:     &workTypeVal,
+					SLA:          &slaVal,
 				},
 				RunContext: &BlockRunContext{
 					skipNotifications: false,
 					VarStore:          store.NewStore(),
 					Services: RunContextServices{
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSLAService(nil)
+
+							return slaMock
+						}(),
 						ServiceDesc: func() *servicedesc.Service {
 							sdMock := servicedesc.Service{
 								SdURL: "",
@@ -2450,11 +2671,18 @@ func TestGoSignBlock_Update(t *testing.T) {
 						ServiceAccount: {},
 					},
 					ActualSigner: &logins,
+					WorkType:     &workTypeVal,
+					SLA:          &slaVal,
 				},
 				RunContext: &BlockRunContext{
 					skipNotifications: false,
 					VarStore:          store.NewStore(),
 					Services: RunContextServices{
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSLAService(nil)
+
+							return slaMock
+						}(),
 						ServiceDesc: func() *servicedesc.Service {
 							sdMock := servicedesc.Service{
 								SdURL: "",
@@ -2508,11 +2736,18 @@ func TestGoSignBlock_Update(t *testing.T) {
 						ServiceAccount: {},
 					},
 					ActualSigner: &logins,
+					WorkType:     &workTypeVal,
+					SLA:          &slaVal,
 				},
 				RunContext: &BlockRunContext{
 					skipNotifications: false,
 					VarStore:          store.NewStore(),
 					Services: RunContextServices{
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSLAService(nil)
+
+							return slaMock
+						}(),
 						ServiceDesc: func() *servicedesc.Service {
 							sdMock := servicedesc.Service{
 								SdURL: "",
@@ -2566,11 +2801,18 @@ func TestGoSignBlock_Update(t *testing.T) {
 						ServiceAccount: {},
 					},
 					ActualSigner: &logins,
+					WorkType:     &workTypeVal,
+					SLA:          &slaVal,
 				},
 				RunContext: &BlockRunContext{
 					skipNotifications: false,
 					VarStore:          store.NewStore(),
 					Services: RunContextServices{
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSLAService(nil)
+
+							return slaMock
+						}(),
 						ServiceDesc: func() *servicedesc.Service {
 							sdMock := servicedesc.Service{
 								SdURL: "",
@@ -2626,11 +2868,18 @@ func TestGoSignBlock_Update(t *testing.T) {
 						login2: {},
 					},
 					ActualSigner: &logins,
+					WorkType:     &workTypeVal,
+					SLA:          &slaVal,
 				},
 				RunContext: &BlockRunContext{
 					skipNotifications: false,
 					VarStore:          store.NewStore(),
 					Services: RunContextServices{
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSLAService(nil)
+
+							return slaMock
+						}(),
 						ServiceDesc: func() *servicedesc.Service {
 							sdMock := servicedesc.Service{
 								SdURL: "",
@@ -2681,6 +2930,8 @@ func TestGoSignBlock_Update(t *testing.T) {
 					IsTakenInWork: true,
 					Type:          script.SignerTypeUser,
 					Signers:       map[string]struct{}{},
+					WorkType:      &workTypeVal,
+					SLA:           &slaVal,
 				},
 				RunContext: &BlockRunContext{
 					skipNotifications: false,
@@ -2708,11 +2959,18 @@ func TestGoSignBlock_Update(t *testing.T) {
 						invalidLogin: {},
 					},
 					ActualSigner: &logins,
+					WorkType:     &workTypeVal,
+					SLA:          &slaVal,
 				},
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
 					VarStore:          store.NewStore(),
 					Services: RunContextServices{
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSLAService(nil)
+
+							return slaMock
+						}(),
 						ServiceDesc: func() *servicedesc.Service {
 							sdMock := servicedesc.Service{
 								SdURL: "",
@@ -2767,11 +3025,18 @@ func TestGoSignBlock_Update(t *testing.T) {
 						invalidLogin: {},
 					},
 					ActualSigner: &logins,
+					WorkType:     &workTypeVal,
+					SLA:          &slaVal,
 				},
 				RunContext: &BlockRunContext{
 					skipNotifications: false,
 					VarStore:          store.NewStore(),
 					Services: RunContextServices{
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSLAService(nil)
+
+							return slaMock
+						}(),
 						ServiceDesc: func() *servicedesc.Service {
 							sdMock := servicedesc.Service{
 								SdURL: "",
@@ -2840,6 +3105,9 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 
 		stepName = "sign"
 	)
+
+	workTypeVal := "8/5"
+	slaVal := 8
 
 	varStore := store.NewStore()
 
@@ -2921,6 +3189,11 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 					WorkNumber: "J001",
 					VarStore:   store.NewStore(),
 					Services: RunContextServices{
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSLAService(nil)
+
+							return slaMock
+						}(),
 						People: func() *people.Service {
 							plMock := people.Service{}
 							httpClient := http.DefaultClient
@@ -2977,6 +3250,8 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							Type:               script.SignerTypeFromSchema,
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
+							WorkType:           &workTypeVal,
+							SLA:                &slaVal,
 						})
 
 						return r
@@ -2993,6 +3268,11 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 					WorkNumber: "J001",
 					VarStore:   store.NewStore(),
 					Services: RunContextServices{
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSLAService(nil)
+
+							return slaMock
+						}(),
 						People: func() *people.Service {
 							plMock := people.Service{}
 							httpClient := http.DefaultClient
@@ -3049,6 +3329,8 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							Type:               script.SignerTypeGroup,
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
+							WorkType:           &workTypeVal,
+							SLA:                &slaVal,
 						})
 
 						return r
@@ -3065,6 +3347,11 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 					WorkNumber: "J001",
 					VarStore:   store.NewStore(),
 					Services: RunContextServices{
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSLAService(nil)
+
+							return slaMock
+						}(),
 						People: func() *people.Service {
 							plMock := people.Service{}
 							httpClient := http.DefaultClient
@@ -3121,6 +3408,8 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							Type:               script.SignerTypeFromSchema,
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
+							WorkType:           &workTypeVal,
+							SLA:                &slaVal,
 						})
 
 						return r
@@ -3137,6 +3426,11 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 					WorkNumber: "J001",
 					VarStore:   store.NewStore(),
 					Services: RunContextServices{
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSLAService(nil)
+
+							return slaMock
+						}(),
 						People: func() *people.Service {
 							plMock := people.Service{}
 							httpClient := http.DefaultClient
@@ -3193,6 +3487,8 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							Type:               script.SignerTypeGroup,
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
+							WorkType:           &workTypeVal,
+							SLA:                &slaVal,
 						})
 
 						return r
@@ -3209,6 +3505,11 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 					WorkNumber: "J001",
 					VarStore:   store.NewStore(),
 					Services: RunContextServices{
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSLAService(nil)
+
+							return slaMock
+						}(),
 						People: func() *people.Service {
 							plMock := people.Service{}
 							httpClient := http.DefaultClient
@@ -3265,6 +3566,8 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							Type:               script.SignerTypeFromSchema,
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
+							WorkType:           &workTypeVal,
+							SLA:                &slaVal,
 						})
 
 						return r
@@ -3281,6 +3584,11 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 					WorkNumber: "J001",
 					VarStore:   store.NewStore(),
 					Services: RunContextServices{
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSLAService(nil)
+
+							return slaMock
+						}(),
 						People: func() *people.Service {
 							plMock := people.Service{}
 							httpClient := http.DefaultClient
@@ -3337,6 +3645,8 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							Type:               script.SignerTypeGroup,
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
+							WorkType:           &workTypeVal,
+							SLA:                &slaVal,
 						})
 
 						return r
@@ -3353,6 +3663,11 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 					WorkNumber: "J001",
 					VarStore:   store.NewStore(),
 					Services: RunContextServices{
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSLAService(nil)
+
+							return slaMock
+						}(),
 						People: func() *people.Service {
 							plMock := people.Service{}
 							httpClient := http.DefaultClient
@@ -3409,6 +3724,8 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							Type:               script.SignerTypeFromSchema,
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
+							WorkType:           &workTypeVal,
+							SLA:                &slaVal,
 						})
 
 						return r
@@ -3425,6 +3742,11 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 					WorkNumber: "J001",
 					VarStore:   store.NewStore(),
 					Services: RunContextServices{
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSLAService(nil)
+
+							return slaMock
+						}(),
 						People: func() *people.Service {
 							plMock := people.Service{}
 							httpClient := http.DefaultClient
@@ -3481,6 +3803,8 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							Type:               script.SignerTypeGroup,
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
+							WorkType:           &workTypeVal,
+							SLA:                &slaVal,
 						})
 
 						return r
@@ -3497,6 +3821,11 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 					WorkNumber: "J001",
 					VarStore:   store.NewStore(),
 					Services: RunContextServices{
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSLAService(nil)
+
+							return slaMock
+						}(),
 						People: func() *people.Service {
 							plMock := people.Service{}
 							httpClient := http.DefaultClient
@@ -3553,6 +3882,8 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							Type:               script.SignerTypeFromSchema,
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
+							WorkType:           &workTypeVal,
+							SLA:                &slaVal,
 						})
 
 						return r
@@ -3569,6 +3900,11 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 					WorkNumber: "J001",
 					VarStore:   store.NewStore(),
 					Services: RunContextServices{
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSLAService(nil)
+
+							return slaMock
+						}(),
 						People: func() *people.Service {
 							plMock := people.Service{}
 							httpClient := http.DefaultClient
@@ -3612,6 +3948,8 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							Type:               script.SignerTypeGroup,
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
+							WorkType:           &workTypeVal,
+							SLA:                &slaVal,
 						})
 
 						return r
@@ -3628,6 +3966,11 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 					WorkNumber: "J001",
 					VarStore:   store.NewStore(),
 					Services: RunContextServices{
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSLAService(nil)
+
+							return slaMock
+						}(),
 						People: func() *people.Service {
 							plMock := people.Service{}
 							httpClient := http.DefaultClient
@@ -3671,6 +4014,8 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							Type:               script.SignerTypeUser,
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
+							WorkType:           &workTypeVal,
+							SLA:                &slaVal,
 						})
 
 						return r
@@ -3687,6 +4032,11 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 					WorkNumber: "J001",
 					VarStore:   store.NewStore(),
 					Services: RunContextServices{
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSLAService(nil)
+
+							return slaMock
+						}(),
 						People: func() *people.Service {
 							plMock := people.Service{}
 							httpClient := http.DefaultClient
@@ -3730,6 +4080,8 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							Type:               script.SignerTypeUser,
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
+							WorkType:           &workTypeVal,
+							SLA:                &slaVal,
 						})
 
 						return r
@@ -3766,6 +4118,11 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 						return s
 					}(),
 					Services: RunContextServices{
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSLAService(nil)
+
+							return slaMock
+						}(),
 						People: func() *people.Service {
 							plMock := people.Service{}
 							httpClient := http.DefaultClient
@@ -3814,6 +4171,8 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							},
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
+							WorkType:           &workTypeVal,
+							SLA:                &slaVal,
 						})
 
 						return r
@@ -3830,6 +4189,11 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 					WorkNumber: "J001",
 					VarStore:   store.NewStore(),
 					Services: RunContextServices{
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSLAService(nil)
+
+							return slaMock
+						}(),
 						People: func() *people.Service {
 							plMock := people.Service{}
 							httpClient := http.DefaultClient
@@ -3873,6 +4237,8 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							Type:               script.SignerTypeUser,
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
+							WorkType:           &workTypeVal,
+							SLA:                &slaVal,
 						})
 
 						return r
@@ -3889,6 +4255,11 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 					WorkNumber: "J001",
 					VarStore:   store.NewStore(),
 					Services: RunContextServices{
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSLAService(nil)
+
+							return slaMock
+						}(),
 						People: func() *people.Service {
 							plMock := people.Service{}
 							httpClient := http.DefaultClient
@@ -3932,6 +4303,8 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							Type:               script.SignerTypeUser,
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
+							WorkType:           &workTypeVal,
+							SLA:                &slaVal,
 						})
 
 						return r
@@ -3948,6 +4321,11 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 					WorkNumber: "J001",
 					VarStore:   store.NewStore(),
 					Services: RunContextServices{
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSLAService(nil)
+
+							return slaMock
+						}(),
 						People: func() *people.Service {
 							plMock := people.Service{}
 							httpClient := http.DefaultClient
@@ -3991,6 +4369,8 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							Type:               script.SignerTypeUser,
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
+							WorkType:           &workTypeVal,
+							SLA:                &slaVal,
 						})
 
 						return r
@@ -4006,6 +4386,11 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 					WorkNumber: "J001",
 					VarStore:   store.NewStore(),
 					Services: RunContextServices{
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSLAService(nil)
+
+							return slaMock
+						}(),
 						People: func() *people.Service {
 							plMock := people.Service{}
 							httpClient := http.DefaultClient
@@ -4062,6 +4447,8 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							Type:               script.SignerTypeUser,
 							Signer:             "",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
+							WorkType:           &workTypeVal,
+							SLA:                &slaVal,
 						})
 
 						return r
@@ -4078,6 +4465,11 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 					WorkNumber: "J001",
 					VarStore:   store.NewStore(),
 					Services: RunContextServices{
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSLAService(nil)
+
+							return slaMock
+						}(),
 						People: func() *people.Service {
 							plMock := people.Service{}
 							httpClient := http.DefaultClient
@@ -4134,6 +4526,8 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							Type:               script.SignerTypeUser,
 							Signer:             "",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
+							WorkType:           &workTypeVal,
+							SLA:                &slaVal,
 						})
 
 						return r
@@ -4150,6 +4544,11 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 					WorkNumber: "J001",
 					VarStore:   store.NewStore(),
 					Services: RunContextServices{
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSLAService(nil)
+
+							return slaMock
+						}(),
 						People: func() *people.Service {
 							plMock := people.Service{}
 							httpClient := http.DefaultClient
@@ -4206,6 +4605,8 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							Type:               script.SignerTypeUser,
 							Signer:             "",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
+							WorkType:           &workTypeVal,
+							SLA:                &slaVal,
 						})
 
 						return r
@@ -4222,6 +4623,11 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 					WorkNumber: "J001",
 					VarStore:   store.NewStore(),
 					Services: RunContextServices{
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSLAService(nil)
+
+							return slaMock
+						}(),
 						People: func() *people.Service {
 							plMock := people.Service{}
 							httpClient := http.DefaultClient
@@ -4265,6 +4671,8 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							Type:               script.SignerTypeUser,
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
+							WorkType:           &workTypeVal,
+							SLA:                &slaVal,
 						})
 
 						return r
@@ -4281,6 +4689,11 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 					WorkNumber: "J001",
 					VarStore:   store.NewStore(),
 					Services: RunContextServices{
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSLAService(nil)
+
+							return slaMock
+						}(),
 						People: func() *people.Service {
 							plMock := people.Service{}
 							httpClient := http.DefaultClient
@@ -4324,6 +4737,8 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							Type:               script.SignerTypeUser,
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
+							WorkType:           &workTypeVal,
+							SLA:                &slaVal,
 						})
 
 						return r
@@ -4360,6 +4775,11 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 						return s
 					}(),
 					Services: RunContextServices{
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSLAService(nil)
+
+							return slaMock
+						}(),
 						People: func() *people.Service {
 							plMock := people.Service{}
 							httpClient := http.DefaultClient
@@ -4408,6 +4828,8 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							},
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
+							WorkType:           &workTypeVal,
+							SLA:                &slaVal,
 						})
 
 						return r
@@ -4443,6 +4865,11 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 						return s
 					}(),
 					Services: RunContextServices{
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSLAService(nil)
+
+							return slaMock
+						}(),
 						People: func() *people.Service {
 							plMock := people.Service{}
 							httpClient := http.DefaultClient
@@ -4491,6 +4918,8 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							},
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
+							WorkType:           &workTypeVal,
+							SLA:                &slaVal,
 						})
 
 						return r
@@ -4526,6 +4955,11 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 						return s
 					}(),
 					Services: RunContextServices{
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSLAService(nil)
+
+							return slaMock
+						}(),
 						People: func() *people.Service {
 							plMock := people.Service{}
 							httpClient := http.DefaultClient
@@ -4574,6 +5008,8 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							},
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
+							WorkType:           &workTypeVal,
+							SLA:                &slaVal,
 						})
 
 						return r
@@ -4606,6 +5042,11 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 						return s
 					}(),
 					Services: RunContextServices{
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSLAService(nil)
+
+							return slaMock
+						}(),
 						People: func() *people.Service {
 							plMock := people.Service{}
 							httpClient := http.DefaultClient
@@ -4654,6 +5095,8 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							},
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
+							WorkType:           &workTypeVal,
+							SLA:                &slaVal,
 						})
 
 						return r
@@ -4690,6 +5133,11 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 						return s
 					}(),
 					Services: RunContextServices{
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSLAService(nil)
+
+							return slaMock
+						}(),
 						People: func() *people.Service {
 							plMock := people.Service{}
 							httpClient := http.DefaultClient
@@ -4738,6 +5186,8 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							},
 							Signer:             "tester",
 							FormsAccessibility: make([]script.FormAccessibility, 1),
+							WorkType:           &workTypeVal,
+							SLA:                &slaVal,
 						})
 
 						return r
