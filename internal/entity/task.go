@@ -31,6 +31,7 @@ type Step struct {
 	IsTest      bool                       `json:"-"`
 	ShortTitle  *string                    `json:"short_title,omitempty"`
 	Attachments int                        `json:"attachments"`
+	IsPaused    bool                       `json:"is_paused"`
 }
 
 type TaskSteps []*Step
@@ -215,6 +216,13 @@ const (
 	TaskUpdateActionSignChangeWorkStatus       TaskUpdateAction = "sign_change_work_status"
 	TaskUpdateActionReload                     TaskUpdateAction = "reload"
 )
+
+type GetUnfinishedTaskSteps struct {
+	ID        uuid.UUID
+	StepType  string
+	Action    TaskUpdateAction
+	StepNames []string
+}
 
 type TaskUpdate struct {
 	Action     TaskUpdateAction `json:"action"`

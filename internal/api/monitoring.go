@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 	"io"
 	"net/http"
 	"regexp"
@@ -21,9 +22,9 @@ import (
 )
 
 const (
-	monitoringTimeLayout  = "2006-01-02T15:04:05-0700"
-	monitoringActionPause = "pause"
-	monitoringActionStart = "start"
+	monitoringTimeLayout = "2006-01-02T15:04:05-0700"
+	processEventPause    = "pause"
+	processEventStart    = "start"
 )
 
 func (ae *Env) GetTasksForMonitoring(w http.ResponseWriter, r *http.Request, params GetTasksForMonitoringParams) {
@@ -443,6 +444,13 @@ func (ae *Env) MonitoringTaskAction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	ui, err := user.GetEffectiveUserInfoFromCtx(ctx)
+	if err != nil {
+		errorHandler.sendError(NoUserInContextError)
+
+		return
+	}
+
 	txStorage, transactionErr := ae.DB.StartTransaction(ctx)
 	if transactionErr != nil {
 		log.WithError(transactionErr).Error("couldn't start transaction")
@@ -479,10 +487,10 @@ func (ae *Env) MonitoringTaskAction(w http.ResponseWriter, r *http.Request) {
 	}
 
 	switch req.Action {
-	case monitoringActionPause:
-		err = ae.pauseProcess(ctx, workID.String(), req.Params)
+	case processEventPause:
+		err = ae.pauseProcess(ctx, ui.Name, workID.String(), req.Params)
 		if err != nil {
-			errorHandler.handleError(GetTaskError, err)
+			errorHandler.handleError(PauseProcessError, err)
 
 			if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
 				log.WithField("funcName", "MonitoringTaskAction").
@@ -493,8 +501,8 @@ func (ae *Env) MonitoringTaskAction(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-	case monitoringActionStart:
-		err = ae.startPreocess()
+	case processEventStart:
+		err = ae.startProcess()
 		if err != nil {
 			errorHandler.handleError(GetTaskError, err)
 
@@ -524,7 +532,7 @@ func (ae *Env) MonitoringTaskAction(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (ae *Env) pauseProcess(ctx context.Context, workID string, params *MonitoringTaskActionParams) error {
+func (ae *Env) pauseProcess(ctx context.Context, author, workID string, params *MonitoringTaskActionParams) error {
 	err := ae.DB.SetTaskPaused(ctx, workID, true)
 	if err != nil {
 		return err
@@ -540,9 +548,24 @@ func (ae *Env) pauseProcess(ctx context.Context, workID string, params *Monitori
 		return err
 	}
 
+	jsonParams := json.RawMessage{}
+	if params != nil {
+		jsonParams, err = json.Marshal(params)
+		if err != nil {
+			return err
+		}
+	}
+
+	_, err = ae.DB.CreateTaskEvent(ctx, &entity.CreateTaskEvent{
+		WorkID:    workID,
+		Author:    author,
+		EventType: processEventPause,
+		Params:    jsonParams,
+	})
+
 	return nil
 }
 
-func (ae *Env) startPreocess() error {
+func (ae *Env) startProcess() error {
 	return nil
 }

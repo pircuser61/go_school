@@ -1597,13 +1597,8 @@ func (db *PGCon) GetExecutableByName(c context.Context, name string) (*entity.Er
 	return nil, nil
 }
 
-func (db *PGCon) GetUnfinishedTaskStepsByWorkIDAndStepType(
-	ctx context.Context,
-	id uuid.UUID,
-	stepType string,
-	in *entity.TaskUpdate,
-) (entity.TaskSteps, error) {
-	ctx, span := trace.StartSpan(ctx, "pg_get_unfinished_task_steps_by_work_id_and_step_type")
+func (db *PGCon) GetUnfinishedTaskSteps(ctx context.Context, in *entity.GetUnfinishedTaskSteps) (entity.TaskSteps, error) {
+	ctx, span := trace.StartSpan(ctx, "pg_get_unfinished_task_steps")
 	defer span.End()
 
 	el := entity.TaskSteps{}
@@ -1617,19 +1612,15 @@ func (db *PGCon) GetUnfinishedTaskStepsByWorkIDAndStepType(
 	}, in.Action)
 
 	// nolint:gocritic,goconst
-	if stepType == "form" {
+	if in.StepType == "form" {
 		notInStatuses = []string{"skipped"}
-	} else if (stepType == "execution" || stepType == "approver") && isAddInfoReq {
+	} else if (in.StepType == "execution" || in.StepType == "approver") && isAddInfoReq {
 		notInStatuses = []string{"skipped"}
 	} else {
 		notInStatuses = []string{"skipped", "finished"}
 	}
 
-	args := []interface{}{
-		id,
-		stepType,
-		notInStatuses,
-	}
+	args := []interface{}{in.ID, in.StepType, notInStatuses}
 
 	var stepNamesQ string
 
@@ -1653,6 +1644,7 @@ func (db *PGCon) GetUnfinishedTaskStepsByWorkIDAndStepType(
 		vs.status
 	FROM variable_storage vs 
 	WHERE 
+	    vs.is_paused = false AND
 	    work_id = $1 AND 
 	    step_type = $2 AND 
 	    NOT status = ANY($3) AND 
@@ -1665,7 +1657,7 @@ func (db *PGCon) GetUnfinishedTaskStepsByWorkIDAndStepType(
 	rows, err := db.Connection.Query(ctx, q, args...)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, nil
+			return []*entity.Step{}, nil
 		}
 
 		return nil, err
@@ -1880,7 +1872,8 @@ func (db *PGCon) GetTaskStepByID(ctx context.Context, id uuid.UUID) (*entity.Ste
 		vs.status,
 		w.author,
 		vs.updated_at,
-		w.run_context -> 'initial_application' -> 'is_test_application' as isTest
+		w.run_context -> 'initial_application' -> 'is_test_application' as isTest,
+		vs.is_paused
 	FROM variable_storage vs 
 	JOIN works w ON vs.work_id = w.id
 		WHERE vs.id = $1
@@ -1905,6 +1898,7 @@ func (db *PGCon) GetTaskStepByID(ctx context.Context, id uuid.UUID) (*entity.Ste
 		&s.Initiator,
 		&s.UpdatedAt,
 		&s.IsTest,
+		&s.IsPaused,
 	)
 	if err != nil {
 		return nil, err

@@ -124,6 +124,7 @@ const (
 	GetExecutableFunctionIDsError
 	GetFunctionError
 	GetHiddenFieldsError
+	PauseProcessError
 )
 
 /*
@@ -236,6 +237,7 @@ var errorText = map[Err]string{
 	GetExecutableFunctionIDsError:       "error while getting executable function ids",
 	GetFunctionError:                    "error when getting function from function store",
 	GetHiddenFieldsError:                "error when getting hidden fields from schema",
+	PauseProcessError:                   "error when pause process",
 }
 
 /*
@@ -348,6 +350,7 @@ var errorDescription = map[Err]string{
 	GetExecutableFunctionIDsError: "Ошибка при получении id у executable functions",
 	GetFunctionError:              "Ошибка при получении функции",
 	GetHiddenFieldsError:          "Ошибка при получении скрытых полей из схемы",
+	PauseProcessError:             "Ошибка при остановке процесса",
 }
 
 /*

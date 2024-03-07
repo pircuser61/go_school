@@ -234,9 +234,9 @@ func (ae *Env) updateTaskBlockBySchedulerRequest(ctx context.Context, workNumber
 		return validateErr
 	}
 
-	blockTypes := getTaskStepNameByAction(in.Action)
-	if len(blockTypes) == 0 {
-		return errors.New("blockTypes is empty")
+	stepTypes := getTaskStepNameByAction(in.Action)
+	if len(stepTypes) == 0 {
+		return errors.New("stepTypes is empty")
 	}
 
 	delegationsByApprovement := delegations.FilterByType("approvement")
@@ -266,8 +266,13 @@ func (ae *Env) updateTaskBlockBySchedulerRequest(ctx context.Context, workNumber
 
 	var steps entity.TaskSteps
 
-	for _, blockType := range blockTypes {
-		stepsByBlock, stepErr := ae.DB.GetUnfinishedTaskStepsByWorkIDAndStepType(ctxLocal, dbTask.ID, blockType, in)
+	for _, stepType := range stepTypes {
+		stepsByBlock, stepErr := ae.DB.GetUnfinishedTaskSteps(ctxLocal, &entity.GetUnfinishedTaskSteps{
+			ID:        dbTask.ID,
+			StepType:  stepType,
+			Action:    in.Action,
+			StepNames: in.StepNames,
+		})
 		if stepErr != nil {
 			return GetTaskError.Join(stepErr)
 		}
@@ -321,9 +326,9 @@ func (ae *Env) updateTaskBlockInternal(ctx context.Context, workNumber, userLogi
 		return validateErr
 	}
 
-	blockTypes := getTaskStepNameByAction(in.Action)
-	if len(blockTypes) == 0 {
-		return errors.New("blockTypes is empty")
+	stepTypes := getTaskStepNameByAction(in.Action)
+	if len(stepTypes) == 0 {
+		return errors.New("stepTypes is empty")
 	}
 
 	delegationsByApprovement := delegations.FilterByType("approvement")
@@ -351,8 +356,13 @@ func (ae *Env) updateTaskBlockInternal(ctx context.Context, workNumber, userLogi
 
 	var steps entity.TaskSteps
 
-	for _, blockType := range blockTypes {
-		stepsByBlock, stepErr := ae.DB.GetUnfinishedTaskStepsByWorkIDAndStepType(ctxLocal, dbTask.ID, blockType, in)
+	for _, stepType := range stepTypes {
+		stepsByBlock, stepErr := ae.DB.GetUnfinishedTaskSteps(ctxLocal, &entity.GetUnfinishedTaskSteps{
+			ID:        dbTask.ID,
+			StepType:  stepType,
+			Action:    in.Action,
+			StepNames: in.StepNames,
+		})
 		if stepErr != nil {
 			return GetTaskError.Join(stepErr)
 		}

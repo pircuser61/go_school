@@ -95,8 +95,8 @@ func uniqueActiveActions(approverLogins, executionLogins []string, currentUser, 
     SELECT vs.work_id AS work_id
          , vs.step_name AS block_id
          , m.is_initiator
-         , CASE WHEN vs.status IN ('running', 'idle') THEN m.actions ELSE '{}' END AS action
-         , CASE WHEN vs.status IN ('running', 'idle') THEN m.params ELSE '{}' END  AS params
+         , CASE WHEN (vs.status IN ('running', 'idle') AND vs.is_paused = false) THEN m.actions ELSE '{}' END AS action
+         , CASE WHEN (vs.status IN ('running', 'idle') AND vs.is_paused = false) THEN m.params ELSE '{}' END  AS params
     FROM members m
              JOIN variable_storage vs on vs.id = m.block_id
              JOIN works w on vs.work_id = w.id
