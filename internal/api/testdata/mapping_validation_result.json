@@ -1,0 +1,1935 @@
+{
+  "approver_0": {
+    "x": 1182,
+    "y": -512,
+    "type_id": "approver",
+    "block_type": "go",
+    "title": "Согласование",
+    "short_title": "s1",
+    "output": {
+      "type": "object",
+      "properties": {
+        "approver": {
+          "description": "approver login which made a decision",
+          "format": "SsoPerson",
+          "global": "approver_0.approver",
+          "properties": {
+            "email": {
+              "title": "email",
+              "type": "string"
+            },
+            "fullOrgUnit": {
+              "title": "Подразделение",
+              "type": "string"
+            },
+            "fullname": {
+              "title": "Полное имя",
+              "type": "string"
+            },
+            "mobile": {
+              "title": "Номер мобильного телефона",
+              "type": "string"
+            },
+            "phone": {
+              "title": "Телефон",
+              "type": "string"
+            },
+            "position": {
+              "title": "Должность",
+              "type": "string"
+            },
+            "tabnum": {
+              "title": "Табельный номер",
+              "type": "string"
+            },
+            "username": {
+              "title": "Логин",
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "comment": {
+          "description": "approver comment",
+          "global": "approver_0.comment",
+          "type": "string"
+        },
+        "decision": {
+          "description": "block decision",
+          "global": "approver_0.decision",
+          "type": "string"
+        }
+      }
+    },
+    "param_type": "approver",
+    "params": {
+      "type": "fromSchema",
+      "approvementRule": "AllOf",
+      "approver": "executable_function_1.somebody",
+      "sla": 8,
+      "check_sla": true,
+      "rework_sla": 16,
+      "check_rework_sla": false,
+      "forms_accessibility": [
+        {
+          "node_id": "form_1",
+          "name": "Форма",
+          "description": "form_1",
+          "accessType": "Read"
+        }
+      ],
+      "is_editable": false,
+      "repeat_prev_decision": false,
+      "approvers_group_id": "",
+      "approvers_group_name": "",
+      "approvers_group_id_path": "",
+      "approve_status_name": "На согласовании",
+      "work_type": "8/5"
+    },
+    "next": {
+      "approve": [
+        "execution_0"
+      ],
+      "reject": [
+        "approver_1"
+      ]
+    },
+    "sockets": [
+      {
+        "id": "approve",
+        "title": "Согласовать",
+        "nextBlockIds": [
+          "execution_0"
+        ],
+        "actionType": "primary"
+      },
+      {
+        "id": "reject",
+        "title": "Отклонить",
+        "nextBlockIds": [
+          "approver_1"
+        ],
+        "actionType": "secondary"
+      }
+    ]
+  },
+  "approver_1": {
+    "x": 1526,
+    "y": -247,
+    "type_id": "approver",
+    "block_type": "go",
+    "title": "Согласование",
+    "short_title": "s2",
+    "output": {
+      "type": "object",
+      "properties": {
+        "approver": {
+          "description": "approver login which made a decision",
+          "format": "SsoPerson",
+          "global": "approver_1.approver",
+          "properties": {
+            "email": {
+              "title": "email",
+              "type": "string"
+            },
+            "fullOrgUnit": {
+              "title": "Подразделение",
+              "type": "string"
+            },
+            "fullname": {
+              "title": "Полное имя",
+              "type": "string"
+            },
+            "mobile": {
+              "title": "Номер мобильного телефона",
+              "type": "string"
+            },
+            "phone": {
+              "title": "Телефон",
+              "type": "string"
+            },
+            "position": {
+              "title": "Должность",
+              "type": "string"
+            },
+            "tabnum": {
+              "title": "Табельный номер",
+              "type": "string"
+            },
+            "username": {
+              "title": "Логин",
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "comment": {
+          "description": "approver comment",
+          "global": "approver_1.comment",
+          "type": "string"
+        },
+        "decision": {
+          "description": "block decision",
+          "global": "approver_1.decision",
+          "type": "string"
+        }
+      }
+    },
+    "param_type": "approver",
+    "params": {
+      "type": "group",
+      "approvementRule": "AllOf",
+      "approver": "",
+      "sla": 8,
+      "check_sla": true,
+      "rework_sla": 16,
+      "check_rework_sla": false,
+      "forms_accessibility": [
+        {
+          "node_id": "form_1",
+          "name": "Форма",
+          "description": "form_1",
+          "accessType": "Read"
+        }
+      ],
+      "is_editable": false,
+      "repeat_prev_decision": false,
+      "approvers_group_id": "",
+      "approvers_group_name": "",
+      "approve_status_name": "На согласовании",
+      "work_type": "8/5"
+    },
+    "next": {
+      "reject": [
+        "execution_1"
+      ]
+    },
+    "sockets": [
+      {
+        "id": "approve",
+        "title": "Согласовать",
+        "actionType": "primary"
+      },
+      {
+        "id": "reject",
+        "title": "Отклонить",
+        "nextBlockIds": [
+          "execution_1"
+        ],
+        "actionType": "secondary"
+      }
+    ]
+  },
+  "end_1": {
+    "x": 3574,
+    "y": -476,
+    "type_id": "end",
+    "block_type": "go",
+    "title": "Конец"
+  },
+  "executable_function_1": {
+    "x": 535,
+    "y": -324,
+    "type_id": "executable_function",
+    "block_type": "external",
+    "title": "Функция \"poa-cancel\"",
+    "output": {
+      "type": "object",
+      "properties": {
+        "decision": {
+          "description": "function decision",
+          "global": "executable_function_1.decision",
+          "title": "Решение",
+          "type": "string"
+        },
+        "error": {
+          "description": "Ошибка",
+          "global": "executable_function_1.error",
+          "type": "string"
+        },
+        "somebody": {
+          "format": "ssoperson",
+          "properties": {
+            "email": {
+              "type": "string"
+            },
+            "fullOrgUnit": {
+              "type": "string"
+            },
+            "fullname": {
+              "type": "string"
+            },
+            "mobile": {
+              "type": "string"
+            },
+            "phone": {
+              "type": "string"
+            },
+            "position": {
+              "type": "string"
+            },
+            "tabnum": {
+              "type": "string"
+            },
+            "username": {
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "testArray": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "testArray2": {
+          "items": {
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "testArray3": {
+          "items": {
+            "properties": {
+              "field": {
+                "type": "number"
+              }
+            },
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "testArray4": {
+          "items": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array"
+          },
+          "type": "array"
+        },
+        "testObject": {
+          "properties": {
+            "field": {
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "txId": {
+          "description": "Уникальный идентификатор транзакции",
+          "global": "executable_function_1.txId",
+          "type": "string"
+        }
+      }
+    },
+    "params": {
+      "name": "poa-cancel",
+      "version": "v1.0.0-alpha.20",
+      "mapping": {
+        "poa-cancel": {
+          "description": "XML-файл заявки на отмену доверенности",
+          "format": "file",
+          "properties": {
+            "external_link": {
+              "title": "Ссылка на внешний ресурс",
+              "type": "string"
+            },
+            "file_id": {
+              "description": "Необходимо получить ID из FileRegistry",
+              "title": "ID файла",
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "signature": {
+          "description": "SIG-файл открепленной подписи",
+          "format": "file",
+          "properties": {
+            "external_link": {
+              "title": "Ссылка на внешний ресурс",
+              "type": "string"
+            },
+            "file_id": {
+              "description": "Необходимо получить ID из FileRegistry",
+              "title": "ID файла",
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "workNumber": {
+          "description": "Work number",
+          "type": "string"
+        }
+      },
+      "function": {
+        "name": "poa-cancel",
+        "description": "Параметры для отмены регистрации МЧД",
+        "functionId": "090e100d-d707-4f74-a244-8a343a7e7dec",
+        "versionId": "e762bbeb-a8e2-41b4-8b56-2278d82372db",
+        "version": "v1.0.0-alpha.20",
+        "createdAt": "2023-10-18T06:50:41.113072Z",
+        "deletedAt": "0001-01-01T00:00:00Z",
+        "uses": 0,
+        "input": "{\"signature\": {\"type\": \"object\", \"format\": \"file\", \"properties\": {\"file_id\": {\"type\": \"string\", \"title\": \"ID файла\", \"description\": \"Необходимо получить ID из FileRegistry\"}, \"external_link\": {\"type\": \"string\", \"title\": \"Ссылка на внешний ресурс\"}}, \"description\": \"SIG-файл открепленной подписи\"}, \"poa-cancel\": {\"type\": \"object\", \"format\": \"file\", \"properties\": {\"file_id\": {\"type\": \"string\", \"title\": \"ID файла\", \"description\": \"Необходимо получить ID из FileRegistry\"}, \"external_link\": {\"type\": \"string\", \"title\": \"Ссылка на внешний ресурс\"}}, \"description\": \"XML-файл заявки на отмену доверенности\"}, \"workNumber\": {\"type\": \"string\", \"description\": \"Work number\"}}",
+        "requiredInput": [],
+        "output": "{\"txId\": {\"type\": \"string\", \"description\": \"Уникальный идентификатор транзакции\"}, \"error\": {\"type\": \"string\", \"description\": \"Ошибка\"}}",
+        "options": "{\"type\": \"sync\"}"
+      },
+      "waitCorrectRes": 0,
+      "constants": {},
+      "check_sla": false,
+      "sla": 0
+    },
+    "next": {
+      "default": [
+        "form_1"
+      ]
+    },
+    "sockets": [
+      {
+        "id": "default",
+        "title": "Выполнено",
+        "nextBlockIds": [
+          "form_1"
+        ],
+        "actionType": ""
+      }
+    ]
+  },
+  "executable_function_2": {
+    "x": 3052,
+    "y": -111,
+    "type_id": "executable_function",
+    "block_type": "external",
+    "title": "Функция \"ims-get-info\"",
+    "output": {
+      "type": "object",
+      "properties": {
+        "class_name": {
+          "global": "executable_function_2.class_name",
+          "title": "Класс критичности",
+          "type": "string"
+        },
+        "decision": {
+          "description": "function decision",
+          "global": "executable_function_2.decision",
+          "title": "Решение",
+          "type": "string"
+        },
+        "subsystem_name": {
+          "global": "executable_function_2.subsystem_name",
+          "title": "Подсистема",
+          "type": "string"
+        },
+        "type_os": {
+          "global": "executable_function_2.type_os",
+          "title": "Тип системы",
+          "type": "string"
+        }
+      }
+    },
+    "params": {
+      "name": "ims-get-info",
+      "version": "v1.1.0-alpha.1",
+      "mapping": {
+        "ims_id": {
+          "description": "Подтягивается из поля Service Desk",
+          "title": "ID оборудования",
+          "type": "number"
+        },
+        "ims_name": {
+          "description": "Подтягивается из поля Service Desk",
+          "title": "Имя оборудования",
+          "type": "string",
+          "value": "executable_function_1.decision"
+        },
+        "system_id": {
+          "description": "Подтягивается из поля Service Desk",
+          "title": "ID системы",
+          "type": "number"
+        },
+        "testArray1": {
+          "items": {
+            "type": "number"
+          },
+          "type": "array"
+        },
+        "testArray2": {
+          "items": {
+            "properties": {
+              "field": {
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "testArray3": {
+          "items": {
+            "properties": {
+              "field": {
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "testArray4": {
+          "items": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "type": "array"
+        },
+        "testArray5": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "value": "executable_function_1.testArray"
+        },
+        "testObject1": {
+          "properties": {
+            "foo": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "foo"
+          ],
+          "type": "object"
+        },
+        "testObject2": {
+          "properties": {
+            "foo": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "field"
+          ],
+          "type": "object"
+        },
+        "testObject3": {
+          "properties": {
+            "field": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "field"
+          ],
+          "type": "object"
+        },
+        "testObject4": {
+          "properties": {
+            "field": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "field"
+          ],
+          "type": "object",
+          "value": "executable_function_1.testObject"
+        }
+      },
+      "function": {
+        "name": "ims-get-info",
+        "description": "Подключение к системе IMS для выявления типа ОС и класса критичности",
+        "functionId": "e3e972ab-af13-43ed-9da5-dd20f1b47101",
+        "versionId": "ce59d5f5-a10c-4143-bea9-6b59e9a9ec5a",
+        "version": "v1.1.0-alpha.1",
+        "createdAt": "2023-08-03T10:10:12.796726Z",
+        "deletedAt": "0001-01-01T00:00:00Z",
+        "uses": 0,
+        "input": "{\"ims_id\": {\"type\": \"number\", \"title\": \"ID оборудования\", \"description\": \"Подтягивается из поля Service Desk\"}, \"ims_name\": {\"type\": \"string\", \"title\": \"Имя оборудования\", \"description\": \"Подтягивается из поля Service Desk\"}, \"system_id\": {\"type\": \"number\", \"title\": \"ID системы\", \"description\": \"Подтягивается из поля Service Desk\"}}",
+        "requiredInput": [],
+        "output": "{\"type_os\": {\"type\": \"string\", \"title\": \"Тип системы\"}, \"class_name\": {\"type\": \"string\", \"title\": \"Класс критичности\"}, \"subsystem_name\": {\"type\": \"string\", \"title\": \"Подсистема\"}}",
+        "options": "{\"type\": \"sync\"}"
+      },
+      "waitCorrectRes": 0,
+      "constants": {},
+      "check_sla": false,
+      "sla": 0
+    },
+    "next": {
+      "default": [
+        "end_1"
+      ]
+    },
+    "sockets": [
+      {
+        "id": "default",
+        "title": "Выполнено",
+        "nextBlockIds": [
+          "end_1"
+        ],
+        "actionType": ""
+      }
+    ]
+  },
+  "execution_0": {
+    "x": 1518,
+    "y": -619,
+    "type_id": "execution",
+    "block_type": "go",
+    "title": "Исполнение",
+    "short_title": "I1",
+    "output": {
+      "type": "object",
+      "properties": {
+        "comment": {
+          "description": "execution status comment",
+          "global": "execution_0.comment",
+          "type": "string"
+        },
+        "decision": {
+          "description": "execution status",
+          "global": "execution_0.decision",
+          "type": "string"
+        },
+        "login": {
+          "description": "executor login",
+          "format": "SsoPerson",
+          "global": "execution_0.login",
+          "properties": {
+            "email": {
+              "title": "email",
+              "type": "string"
+            },
+            "fullOrgUnit": {
+              "title": "Подразделение",
+              "type": "string"
+            },
+            "fullname": {
+              "title": "Полное имя",
+              "type": "string"
+            },
+            "mobile": {
+              "title": "Номер мобильного телефона",
+              "type": "string"
+            },
+            "phone": {
+              "title": "Телефон",
+              "type": "string"
+            },
+            "position": {
+              "title": "Должность",
+              "type": "string"
+            },
+            "tabnum": {
+              "title": "Табельный номер",
+              "type": "string"
+            },
+            "username": {
+              "title": "Логин",
+              "type": "string"
+            }
+          },
+          "type": "object"
+        }
+      }
+    },
+    "param_type": "execution",
+    "params": {
+      "type": "from_schema",
+      "executors": "executable_function_1.somebody",
+      "executors_group_id": "",
+      "executors_group_name": "",
+      "executors_group_id_path": "",
+      "forms_accessibility": [
+        {
+          "node_id": "form_1",
+          "name": "Форма",
+          "description": "form_1",
+          "accessType": "Read"
+        }
+      ],
+      "sla": 8,
+      "check_sla": true,
+      "rework_sla": 16,
+      "check_rework_sla": false,
+      "is_editable": false,
+      "repeat_prev_decision": false,
+      "work_type": "8/5",
+      "use_actual_executor": false,
+      "hide_executor": false
+    },
+    "next": {
+      "executed": [
+        "form_0"
+      ],
+      "not_executed": [
+        "form_0"
+      ]
+    },
+    "sockets": [
+      {
+        "id": "executed",
+        "title": "Исполнено",
+        "nextBlockIds": [
+          "form_0"
+        ],
+        "actionType": ""
+      },
+      {
+        "id": "not_executed",
+        "title": "Не исполнено",
+        "nextBlockIds": [
+          "form_0"
+        ],
+        "actionType": ""
+      }
+    ]
+  },
+  "execution_1": {
+    "x": 1880,
+    "y": -218,
+    "type_id": "execution",
+    "block_type": "go",
+    "title": "Исполнение",
+    "short_title": "i2",
+    "output": {
+      "type": "object",
+      "properties": {
+        "comment": {
+          "description": "execution status comment",
+          "global": "execution_1.comment",
+          "type": "string"
+        },
+        "decision": {
+          "description": "execution status",
+          "global": "execution_1.decision",
+          "type": "string"
+        },
+        "login": {
+          "description": "executor login",
+          "format": "SsoPerson",
+          "global": "execution_1.login",
+          "properties": {
+            "email": {
+              "title": "email",
+              "type": "string"
+            },
+            "fullOrgUnit": {
+              "title": "Подразделение",
+              "type": "string"
+            },
+            "fullname": {
+              "title": "Полное имя",
+              "type": "string"
+            },
+            "mobile": {
+              "title": "Номер мобильного телефона",
+              "type": "string"
+            },
+            "phone": {
+              "title": "Телефон",
+              "type": "string"
+            },
+            "position": {
+              "title": "Должность",
+              "type": "string"
+            },
+            "tabnum": {
+              "title": "Табельный номер",
+              "type": "string"
+            },
+            "username": {
+              "title": "Логин",
+              "type": "string"
+            }
+          },
+          "type": "object"
+        }
+      }
+    },
+    "param_type": "execution",
+    "params": {
+      "type": "group",
+      "executors": "",
+      "executors_group_id": "",
+      "executors_group_name": "",
+      "executors_group_id_path": null,
+      "forms_accessibility": [
+        {
+          "node_id": "form_1",
+          "name": "Форма",
+          "description": "f1",
+          "accessType": "Read"
+        }
+      ],
+      "sla": 8,
+      "check_sla": true,
+      "rework_sla": 16,
+      "check_rework_sla": false,
+      "is_editable": false,
+      "repeat_prev_decision": false,
+      "work_type": "8/5",
+      "use_actual_executor": false,
+      "hide_executor": false
+    },
+    "next": {
+      "executed": [
+        "sign_0"
+      ],
+      "not_executed": [
+        "form_2"
+      ]
+    },
+    "sockets": [
+      {
+        "id": "executed",
+        "title": "Исполнено",
+        "nextBlockIds": [
+          "sign_0"
+        ],
+        "actionType": ""
+      },
+      {
+        "id": "not_executed",
+        "title": "Не исполнено",
+        "nextBlockIds": [
+          "form_2"
+        ],
+        "actionType": ""
+      }
+    ]
+  },
+  "form_0": {
+    "x": 1868,
+    "y": -521,
+    "type_id": "form",
+    "block_type": "go",
+    "title": "Форма",
+    "short_title": "f2",
+    "output": {
+      "type": "object",
+      "properties": {
+        "application_body": {
+          "description": "form body",
+          "global": "form_0.application_body",
+          "properties": {
+            "field-uuid-1": {
+              "title": "Поле1",
+              "type": "string"
+            },
+            "field-uuid-2": {
+              "title": "Поле2",
+              "type": "number"
+            }
+          },
+          "type": "object"
+        },
+        "executor": {
+          "description": "person object from sso",
+          "format": "SsoPerson",
+          "global": "form_0.executor",
+          "properties": {
+            "email": {
+              "title": "email",
+              "type": "string"
+            },
+            "fullOrgUnit": {
+              "title": "Подразделение",
+              "type": "string"
+            },
+            "fullname": {
+              "title": "Полное имя",
+              "type": "string"
+            },
+            "mobile": {
+              "title": "Номер мобильного телефона",
+              "type": "string"
+            },
+            "phone": {
+              "title": "Телефон",
+              "type": "string"
+            },
+            "position": {
+              "title": "Должность",
+              "type": "string"
+            },
+            "tabnum": {
+              "title": "Табельный номер",
+              "type": "string"
+            },
+            "username": {
+              "title": "Логин",
+              "type": "string"
+            }
+          },
+          "type": "object"
+        }
+      }
+    },
+    "params": {
+      "schema_id": "66af9bac-f5b8-46ab-9801-bd1c2a9e3034",
+      "sla": 8,
+      "check_sla": true,
+      "executor": "",
+      "form_executor_type": "auto_fill",
+      "form_group_id": "",
+      "forms_accessibility": [
+        {
+          "node_id": "form_1",
+          "name": "Форма",
+          "description": "f1",
+          "accessType": "Read"
+        }
+      ],
+      "hide_executor_from_initiator": false,
+      "mapping": {
+        "field-uuid-1": {
+          "title": "Поле1",
+          "type": "string"
+        },
+        "field-uuid-2": {
+          "title": "Поле2",
+          "type": "number"
+        }
+      },
+      "full_form_mapping": "",
+      "work_type": "8/5",
+      "is_editable": false,
+      "checkRequiredForm": false,
+      "attachment_fields": null,
+      "keys": null,
+      "constants": {}
+    },
+    "next": {
+      "default": [
+        "sign_0"
+      ]
+    },
+    "sockets": [
+      {
+        "id": "default",
+        "title": "Выход по умолчанию",
+        "nextBlockIds": [
+          "sign_0"
+        ],
+        "actionType": ""
+      }
+    ]
+  },
+  "form_1": {
+    "x": 842,
+    "y": -324,
+    "type_id": "form",
+    "block_type": "go",
+    "title": "Форма",
+    "short_title": "f1",
+    "output": {
+      "type": "object",
+      "properties": {
+        "application_body": {
+          "description": "form body",
+          "global": "form_1.application_body",
+          "properties": {
+            "field-uuid-1": {
+              "format": "ssoperson",
+              "properties": {
+                "email": {
+                  "title": "email",
+                  "type": "string"
+                },
+                "fullOrgUnit": {
+                  "title": "Подразделение",
+                  "type": "string"
+                },
+                "fullname": {
+                  "title": "Полное имя",
+                  "type": "string"
+                },
+                "mobile": {
+                  "title": "Номер мобильного телефона",
+                  "type": "string"
+                },
+                "phone": {
+                  "title": "Телефон",
+                  "type": "string"
+                },
+                "position": {
+                  "title": "Должность",
+                  "type": "string"
+                },
+                "tabnum": {
+                  "title": "Табельный номер",
+                  "type": "string"
+                },
+                "username": {
+                  "title": "Логин",
+                  "type": "string"
+                }
+              },
+              "title": "Сотрудник",
+              "type": "object"
+            },
+            "field-uuid-2": {
+              "format": "ssoperson",
+              "properties": {
+                "email": {
+                  "title": "email",
+                  "type": "string"
+                },
+                "fullOrgUnit": {
+                  "title": "Подразделение",
+                  "type": "string"
+                },
+                "fullname": {
+                  "title": "Полное имя",
+                  "type": "string"
+                },
+                "mobile": {
+                  "title": "Номер мобильного телефона",
+                  "type": "string"
+                },
+                "phone": {
+                  "title": "Телефон",
+                  "type": "string"
+                },
+                "position": {
+                  "title": "Должность",
+                  "type": "string"
+                },
+                "tabnum": {
+                  "title": "Табельный номер",
+                  "type": "string"
+                },
+                "username": {
+                  "title": "Логин",
+                  "type": "string"
+                }
+              },
+              "title": "Сотрудник2",
+              "type": "object"
+            }
+          },
+          "type": "object"
+        },
+        "executor": {
+          "description": "person object from sso",
+          "format": "SsoPerson",
+          "global": "form_1.executor",
+          "properties": {
+            "email": {
+              "title": "email",
+              "type": "string"
+            },
+            "fullOrgUnit": {
+              "title": "Подразделение",
+              "type": "string"
+            },
+            "fullname": {
+              "title": "Полное имя",
+              "type": "string"
+            },
+            "mobile": {
+              "title": "Номер мобильного телефона",
+              "type": "string"
+            },
+            "phone": {
+              "title": "Телефон",
+              "type": "string"
+            },
+            "position": {
+              "title": "Должность",
+              "type": "string"
+            },
+            "tabnum": {
+              "title": "Табельный номер",
+              "type": "string"
+            },
+            "username": {
+              "title": "Логин",
+              "type": "string"
+            }
+          },
+          "type": "object"
+        }
+      }
+    },
+    "params": {
+      "schema_id": "cbbfca13-dbea-4226-87d8-ea1816bd93c6",
+      "sla": 8,
+      "check_sla": true,
+      "executor": "executable_function_1.somebody",
+      "form_executor_type": "from_schema",
+      "form_group_id": "",
+      "form_group_id_path": "",
+      "forms_accessibility": [],
+      "hide_executor_from_initiator": false,
+      "mapping": {},
+      "full_form_mapping": "",
+      "work_type": "8/5",
+      "is_editable": false,
+      "checkRequiredForm": false,
+      "attachment_fields": null,
+      "keys": null,
+      "constants": {}
+    },
+    "next": {
+      "default": [
+        "approver_0"
+      ]
+    },
+    "sockets": [
+      {
+        "id": "default",
+        "title": "Выход по умолчанию",
+        "nextBlockIds": [
+          "approver_0"
+        ],
+        "actionType": ""
+      }
+    ]
+  },
+  "form_2": {
+    "x": 2233,
+    "y": -114,
+    "type_id": "form",
+    "block_type": "go",
+    "title": "Форма",
+    "short_title": "f3",
+    "output": {
+      "type": "object",
+      "properties": {
+        "application_body": {
+          "description": "form body",
+          "global": "form_2.application_body",
+          "properties": {
+            "field-uuid-1": {
+              "title": "Название поля",
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "executor": {
+          "description": "person object from sso",
+          "format": "SsoPerson",
+          "global": "form_2.executor",
+          "properties": {
+            "email": {
+              "title": "email",
+              "type": "string"
+            },
+            "fullOrgUnit": {
+              "title": "Подразделение",
+              "type": "string"
+            },
+            "fullname": {
+              "title": "Полное имя",
+              "type": "string"
+            },
+            "mobile": {
+              "title": "Номер мобильного телефона",
+              "type": "string"
+            },
+            "phone": {
+              "title": "Телефон",
+              "type": "string"
+            },
+            "position": {
+              "title": "Должность",
+              "type": "string"
+            },
+            "tabnum": {
+              "title": "Табельный номер",
+              "type": "string"
+            },
+            "username": {
+              "title": "Логин",
+              "type": "string"
+            }
+          },
+          "type": "object"
+        }
+      }
+    },
+    "params": {
+      "schema_id": "f1dae6a9-ee52-4865-9bac-3a0e22cbc833",
+      "sla": 8,
+      "check_sla": true,
+      "executor": "",
+      "form_executor_type": "group",
+      "form_group_id": "",
+      "forms_accessibility": [
+        {
+          "node_id": "form_1",
+          "name": "Форма",
+          "description": "f1",
+          "accessType": "Read"
+        }
+      ],
+      "hide_executor_from_initiator": false,
+      "mapping": {},
+      "full_form_mapping": "",
+      "work_type": "8/5",
+      "is_editable": false,
+      "checkRequiredForm": false,
+      "attachment_fields": null,
+      "keys": null,
+      "constants": {}
+    },
+    "next": {
+      "default": [
+        "sign_1"
+      ]
+    },
+    "sockets": [
+      {
+        "id": "default",
+        "title": "Выход по умолчанию",
+        "nextBlockIds": [
+          "sign_1"
+        ],
+        "actionType": ""
+      }
+    ]
+  },
+  "form_3": {
+    "x": 3254,
+    "y": -511,
+    "type_id": "form",
+    "block_type": "go",
+    "title": "Форма",
+    "short_title": "f4",
+    "output": {
+      "type": "object",
+      "properties": {
+        "application_body": {
+          "description": "form body",
+          "global": "form_3.application_body",
+          "properties": {
+            "field-uuid-1": {
+              "title": "Название поля",
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "executor": {
+          "description": "person object from sso",
+          "format": "SsoPerson",
+          "global": "form_3.executor",
+          "properties": {
+            "email": {
+              "title": "email",
+              "type": "string"
+            },
+            "fullOrgUnit": {
+              "title": "Подразделение",
+              "type": "string"
+            },
+            "fullname": {
+              "title": "Полное имя",
+              "type": "string"
+            },
+            "mobile": {
+              "title": "Номер мобильного телефона",
+              "type": "string"
+            },
+            "phone": {
+              "title": "Телефон",
+              "type": "string"
+            },
+            "position": {
+              "title": "Должность",
+              "type": "string"
+            },
+            "tabnum": {
+              "title": "Табельный номер",
+              "type": "string"
+            },
+            "username": {
+              "title": "Логин",
+              "type": "string"
+            }
+          },
+          "type": "object"
+        }
+      }
+    },
+    "params": {
+      "schema_id": "399348bb-d051-4b11-9446-911145390405",
+      "sla": 8,
+      "check_sla": true,
+      "executor": "",
+      "form_executor_type": "auto_fill",
+      "form_group_id": "",
+      "forms_accessibility": [
+        {
+          "node_id": "form_0",
+          "name": "Форма",
+          "description": "f2",
+          "accessType": "Read"
+        },
+        {
+          "node_id": "form_1",
+          "name": "Форма",
+          "description": "f1",
+          "accessType": "Read"
+        },
+        {
+          "node_id": "form_2",
+          "name": "Форма",
+          "description": "f3",
+          "accessType": "Read"
+        }
+      ],
+      "hide_executor_from_initiator": false,
+      "mapping": {
+        "field-uuid-1": {
+          "title": "Название поля",
+          "type": "string"
+        }
+      },
+      "full_form_mapping": "",
+      "work_type": "8/5",
+      "is_editable": false,
+      "checkRequiredForm": false,
+      "attachment_fields": null,
+      "keys": null,
+      "constants": {}
+    },
+    "next": {
+      "default": [
+        "end_1"
+      ]
+    },
+    "sockets": [
+      {
+        "id": "default",
+        "title": "Выход по умолчанию",
+        "nextBlockIds": [
+          "end_1"
+        ],
+        "actionType": ""
+      }
+    ]
+  },
+  "if_0": {
+    "x": 2622,
+    "y": -501,
+    "type_id": "if",
+    "block_type": "go",
+    "title": "if",
+    "short_title": "u",
+    "params": {
+      "conditionGroups": [
+        {
+          "conditions": [
+            {
+              "leftOperand": {
+                "dataType": "string",
+                "operandType": "variableOperand"
+              },
+              "operator": "Equal",
+              "rightOperand": {
+                "dataType": "string",
+                "operandType": "variableOperand",
+                "value": ""
+              },
+              "uuid": "c405d330-07f1-4c2b-a0f9-215d471585cb"
+            },
+            {
+              "leftOperand": {
+                "dataType": "string",
+                "operandType": "variableOperand"
+              },
+              "operator": "Equal",
+              "rightOperand": {
+                "dataType": "number",
+                "operandType": "valueOperand",
+                "value": 4,
+                "variableRef": ""
+              },
+              "uuid": "5bc34ffe-deda-4f8e-9222-da55af2a0d90"
+            }
+          ],
+          "id": "new_condition_group_0",
+          "logicalOperator": "or",
+          "name": "Новая группа"
+        }
+      ]
+    },
+    "next": {
+      "new_condition_group_0": [
+        "notification_0"
+      ]
+    },
+    "sockets": [
+      {
+        "id": "default",
+        "title": "Выход по умолчанию",
+        "actionType": ""
+      },
+      {
+        "id": "new_condition_group_0",
+        "title": "Новая группа",
+        "nextBlockIds": [
+          "notification_0"
+        ],
+        "actionType": ""
+      }
+    ]
+  },
+  "notification_0": {
+    "x": 2970,
+    "y": -458,
+    "type_id": "notification",
+    "block_type": "go",
+    "title": "notification",
+    "short_title": "n",
+    "param_type": "notification",
+    "params": {
+      "people": [],
+      "emails": [],
+      "usersFromSchema": "execution_0.login;form_2.executor;executable_function_1.somebody",
+      "subject": "Тема",
+      "text": "",
+      "textSourceType": "context"
+    },
+    "next": {
+      "default": [
+        "form_3"
+      ]
+    },
+    "sockets": [
+      {
+        "id": "default",
+        "title": "Выход по умолчанию",
+        "nextBlockIds": [
+          "form_3"
+        ],
+        "actionType": ""
+      }
+    ]
+  },
+  "sign_0": {
+    "x": 2233,
+    "y": -567,
+    "type_id": "sign",
+    "block_type": "go",
+    "title": "Подписание",
+    "short_title": "p1",
+    "output": {
+      "type": "object",
+      "properties": {
+        "attachments": {
+          "description": "signed files",
+          "global": "sign_0.attachments",
+          "items": {
+            "properties": {
+              "external_link": {
+                "description": "link to file in another system",
+                "type": "string"
+              },
+              "file_id": {
+                "description": "file id in file Registry",
+                "type": "string"
+              }
+            },
+            "type": "object",
+            "format": "file"
+          },
+          "type": "array"
+        },
+        "comment": {
+          "description": "sign comment",
+          "global": "sign_0.comment",
+          "type": "string"
+        },
+        "decision": {
+          "description": "sign result",
+          "global": "sign_0.decision",
+          "type": "string"
+        },
+        "signatures": {
+          "description": "signatures",
+          "global": "sign_0.signatures",
+          "items": {
+            "properties": {
+              "file": {
+                "description": "file to sign",
+                "format": "file",
+                "properties": {
+                  "external_link": {
+                    "description": "link to file in another system",
+                    "type": "string"
+                  },
+                  "file_id": {
+                    "description": "file id in file Registry",
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
+              "signature_file": {
+                "description": "signature file",
+                "format": "file",
+                "properties": {
+                  "external_link": {
+                    "description": "link to file in another system",
+                    "type": "string"
+                  },
+                  "file_id": {
+                    "description": "file id in file Registry",
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              }
+            },
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "signer": {
+          "description": "signer login",
+          "format": "SsoPerson",
+          "global": "sign_0.signer",
+          "properties": {
+            "email": {
+              "title": "email",
+              "type": "string"
+            },
+            "fullOrgUnit": {
+              "title": "Подразделение",
+              "type": "string"
+            },
+            "fullname": {
+              "title": "Полное имя",
+              "type": "string"
+            },
+            "mobile": {
+              "title": "Номер мобильного телефона",
+              "type": "string"
+            },
+            "phone": {
+              "title": "Телефон",
+              "type": "string"
+            },
+            "position": {
+              "title": "Должность",
+              "type": "string"
+            },
+            "tabnum": {
+              "title": "Табельный номер",
+              "type": "string"
+            },
+            "username": {
+              "title": "Логин",
+              "type": "string"
+            }
+          },
+          "type": "object"
+        }
+      }
+    },
+    "params": {
+      "signerType": "fromSchema",
+      "signingRule": "AnyOf",
+      "signingParams": {
+        "inn": "",
+        "snils": "",
+        "files": []
+      },
+      "signer": "executable_function_1.somebody",
+      "signatureType": "ukep",
+      "signatureCarrier": "all",
+      "formsAccessibility": [
+        {
+          "node_id": "form_0",
+          "name": "Форма",
+          "description": "f",
+          "accessType": "Read"
+        },
+        {
+          "node_id": "form_1",
+          "name": "Форма",
+          "description": "form_1",
+          "accessType": "Read"
+        }
+      ],
+      "sla": 8,
+      "checkSLA": true,
+      "autoReject": null,
+      "workType": "8/5"
+    },
+    "next": {
+      "error": [
+        "if_0"
+      ],
+      "rejected": [
+        "if_0"
+      ],
+      "signed": [
+        "if_0"
+      ]
+    },
+    "sockets": [
+      {
+        "id": "signed",
+        "title": "Подписано",
+        "nextBlockIds": [
+          "if_0"
+        ],
+        "actionType": ""
+      },
+      {
+        "id": "rejected",
+        "title": "Отклонено",
+        "nextBlockIds": [
+          "if_0"
+        ],
+        "actionType": ""
+      },
+      {
+        "id": "error",
+        "title": "Ошибка",
+        "nextBlockIds": [
+          "if_0"
+        ],
+        "actionType": ""
+      }
+    ]
+  },
+  "sign_1": {
+    "x": 2704,
+    "y": -226,
+    "type_id": "sign",
+    "block_type": "go",
+    "title": "Подписание",
+    "short_title": "p2",
+    "output": {
+      "type": "object",
+      "properties": {
+        "attachments": {
+          "description": "signed files",
+          "global": "sign_1.attachments",
+          "items": {
+            "properties": {
+              "external_link": {
+                "description": "link to file in another system",
+                "type": "string"
+              },
+              "file_id": {
+                "description": "file id in file Registry",
+                "type": "string"
+              }
+            },
+            "type": "object",
+            "format": "file"
+          },
+          "type": "array"
+        },
+        "comment": {
+          "description": "sign comment",
+          "global": "sign_1.comment",
+          "type": "string"
+        },
+        "decision": {
+          "description": "sign result",
+          "global": "sign_1.decision",
+          "type": "string"
+        },
+        "signatures": {
+          "description": "signatures",
+          "global": "sign_1.signatures",
+          "items": {
+            "properties": {
+              "file": {
+                "description": "file to sign",
+                "format": "file",
+                "properties": {
+                  "external_link": {
+                    "description": "link to file in another system",
+                    "type": "string"
+                  },
+                  "file_id": {
+                    "description": "file id in file Registry",
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
+              "signature_file": {
+                "description": "signature file",
+                "format": "file",
+                "properties": {
+                  "external_link": {
+                    "description": "link to file in another system",
+                    "type": "string"
+                  },
+                  "file_id": {
+                    "description": "file id in file Registry",
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              }
+            },
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "signer": {
+          "description": "signer login",
+          "format": "SsoPerson",
+          "global": "sign_1.signer",
+          "properties": {
+            "email": {
+              "title": "email",
+              "type": "string"
+            },
+            "fullOrgUnit": {
+              "title": "Подразделение",
+              "type": "string"
+            },
+            "fullname": {
+              "title": "Полное имя",
+              "type": "string"
+            },
+            "mobile": {
+              "title": "Номер мобильного телефона",
+              "type": "string"
+            },
+            "phone": {
+              "title": "Телефон",
+              "type": "string"
+            },
+            "position": {
+              "title": "Должность",
+              "type": "string"
+            },
+            "tabnum": {
+              "title": "Табельный номер",
+              "type": "string"
+            },
+            "username": {
+              "title": "Логин",
+              "type": "string"
+            }
+          },
+          "type": "object"
+        }
+      }
+    },
+    "params": {
+      "signerType": "group",
+      "signingRule": "AnyOf",
+      "signingParams": {
+        "inn": "",
+        "snils": "",
+        "files": null
+      },
+      "signatureType": "unep",
+      "formsAccessibility": [
+        {
+          "node_id": "form_2",
+          "name": "Форма",
+          "description": "form_2",
+          "accessType": "Read"
+        },
+        {
+          "node_id": "form_1",
+          "name": "Форма",
+          "description": "f1",
+          "accessType": "Read"
+        }
+      ],
+      "sla": 8,
+      "checkSLA": true,
+      "autoReject": null,
+      "workType": "8/5"
+    },
+    "next": {
+      "error": [
+        "executable_function_2"
+      ],
+      "rejected": [
+        "notification_0"
+      ],
+      "signed": [
+        "notification_0"
+      ]
+    },
+    "sockets": [
+      {
+        "id": "signed",
+        "title": "Подписано",
+        "nextBlockIds": [
+          "notification_0"
+        ],
+        "actionType": ""
+      },
+      {
+        "id": "rejected",
+        "title": "Отклонено",
+        "nextBlockIds": [
+          "notification_0"
+        ],
+        "actionType": ""
+      },
+      {
+        "id": "error",
+        "title": "Ошибка",
+        "nextBlockIds": [
+          "executable_function_2"
+        ],
+        "actionType": ""
+      }
+    ]
+  },
+  "start_0": {
+    "x": -111,
+    "y": -334,
+    "type_id": "start",
+    "block_type": "go",
+    "title": "Начало",
+    "output": {
+      "type": "object",
+      "properties": {
+        "application_body": {
+          "global": "start_0.application_body",
+          "properties": {
+            "file": {
+              "description": "Используется для добавления файла в контекст процесса",
+              "format": "file",
+              "properties": {
+                "external-link": {
+                  "title": "Ссылка на внешний ресурс",
+                  "type": "string"
+                },
+                "id": {
+                  "description": "Необходимо получить ID из FileRegistry",
+                  "title": "ID файла",
+                  "type": "string"
+                }
+              },
+              "title": "Передача файла в контекст процесса",
+              "type": "object"
+            },
+            "foo": {
+              "type": "string"
+            },
+            "param1": {
+              "type": "string"
+            },
+            "param2": {
+              "type": "number"
+            },
+            "param3": {
+              "type": "integer"
+            },
+            "recipient": {
+              "title": "Получатель",
+              "type": "object"
+            },
+            "somebody": {
+              "format": "ssoperson",
+              "properties": {
+                "email": {
+                  "type": "string"
+                },
+                "fullOrgUnit": {
+                  "type": "string"
+                },
+                "fullname": {
+                  "type": "string"
+                },
+                "mobile": {
+                  "type": "string"
+                },
+                "phone": {
+                  "type": "string"
+                },
+                "position": {
+                  "type": "string"
+                },
+                "tabnum": {
+                  "type": "string"
+                },
+                "username": {
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          },
+          "type": "object"
+        },
+        "initiator": {
+          "format": "SsoPerson",
+          "global": "start_0.initiator",
+          "properties": {
+            "email": {
+              "title": "email",
+              "type": "string"
+            },
+            "fullOrgUnit": {
+              "title": "Подразделение",
+              "type": "string"
+            },
+            "fullname": {
+              "title": "Полное имя",
+              "type": "string"
+            },
+            "mobile": {
+              "title": "Номер мобильного телефона",
+              "type": "string"
+            },
+            "phone": {
+              "title": "Телефон",
+              "type": "string"
+            },
+            "position": {
+              "title": "Должность",
+              "type": "string"
+            },
+            "tabnum": {
+              "title": "Табельный номер",
+              "type": "string"
+            },
+            "username": {
+              "title": "Логин",
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "workNumber": {
+          "global": "start_0.workNumber",
+          "type": "string"
+        }
+      }
+    },
+    "next": {
+      "default": [
+        "executable_function_0"
+      ]
+    },
+    "sockets": [
+      {
+        "id": "default",
+        "title": "Выход по умолчанию",
+        "nextBlockIds": [
+          "executable_function_0"
+        ],
+        "actionType": ""
+      }
+    ]
+  }
+}

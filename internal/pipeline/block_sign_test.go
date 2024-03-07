@@ -586,7 +586,8 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 					VarStore: &store.VariableStore{
 						Mutex: sync.Mutex{},
 						State: map[string]json.RawMessage{
-							"example": unmarshalFromTestFile(t, "testdata/signing_params/signing_state_signing_params.json")},
+							"example": unmarshalFromTestFile(t, "testdata/signing_params/signing_state_signing_params.json"),
+						},
 						Values:     map[string]interface{}{},
 						Steps:      []string{"example"},
 						Errors:     []string{},
@@ -712,7 +713,8 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 					VarStore: &store.VariableStore{
 						Mutex: sync.Mutex{},
 						State: map[string]json.RawMessage{
-							"example": unmarshalFromTestFile(t, "testdata/signing_params/signing_state_signing_params.json")},
+							"example": unmarshalFromTestFile(t, "testdata/signing_params/signing_state_signing_params.json"),
+						},
 						Values:     map[string]interface{}{},
 						Steps:      []string{"example"},
 						Errors:     []string{},
@@ -996,7 +998,8 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 					VarStore: &store.VariableStore{
 						Mutex: sync.Mutex{},
 						State: map[string]json.RawMessage{
-							"example": unmarshalFromTestFile(t, "testdata/signing_params/signing_state_signing_params.json")},
+							"example": unmarshalFromTestFile(t, "testdata/signing_params/signing_state_signing_params.json"),
+						},
 						Values:     map[string]interface{}{},
 						Steps:      []string{"example"},
 						Errors:     []string{},
@@ -1122,7 +1125,8 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 					VarStore: &store.VariableStore{
 						Mutex: sync.Mutex{},
 						State: map[string]json.RawMessage{
-							"example": unmarshalFromTestFile(t, "testdata/signing_params/signing_state_signing_params.json")},
+							"example": unmarshalFromTestFile(t, "testdata/signing_params/signing_state_signing_params.json"),
+						},
 						Values:     map[string]interface{}{},
 						Steps:      []string{"example"},
 						Errors:     []string{},
@@ -1580,7 +1584,8 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 					VarStore: &store.VariableStore{
 						Mutex: sync.Mutex{},
 						State: map[string]json.RawMessage{
-							"example": unmarshalFromTestFile(t, "testdata/signing_params/signing_state_signing_params.json")},
+							"example": unmarshalFromTestFile(t, "testdata/signing_params/signing_state_signing_params.json"),
+						},
 						Values:     map[string]interface{}{},
 						Steps:      []string{"example"},
 						Errors:     []string{},
@@ -1902,7 +1907,7 @@ func TestGoSignBlock_Update(t *testing.T) {
 		stepName = "sign"
 	)
 
-	var logins = "example"
+	logins := "example"
 
 	workTypeVal := "8/5"
 	slaVal := 8
@@ -4379,7 +4384,8 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 			},
 			wantErr: false,
 		},
-		{name: "signature type UNEP with empty signer",
+		{
+			name: "signature type UNEP with empty signer",
 			fields: fields{
 				Name: stepName,
 				RunContext: &BlockRunContext{
