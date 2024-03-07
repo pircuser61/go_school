@@ -901,6 +901,7 @@
       "full_form_mapping": "",
       "work_type": "8/5",
       "is_editable": false,
+      "checkRequiredForm": false,
       "attachment_fields": null,
       "keys": null,
       "constants": {}
@@ -1072,6 +1073,7 @@
       "full_form_mapping": "",
       "work_type": "8/5",
       "is_editable": false,
+      "checkRequiredForm": false,
       "attachment_fields": null,
       "keys": null,
       "constants": {}
@@ -1175,6 +1177,7 @@
       "full_form_mapping": "",
       "work_type": "8/5",
       "is_editable": false,
+      "checkRequiredForm": false,
       "attachment_fields": null,
       "keys": null,
       "constants": {}
@@ -1295,6 +1298,7 @@
       "full_form_mapping": "",
       "work_type": "8/5",
       "is_editable": false,
+      "checkRequiredForm": false,
       "attachment_fields": null,
       "keys": null,
       "constants": {}

@@ -3,7 +3,11 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"strings"
+
+	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
@@ -21,48 +25,54 @@ const (
 	leftOperand          = "leftOperand"
 	rightOperand         = "rightOperand"
 	variableRefField     = "variableRef"
+	dataTypeField        = "dataType"
+
+	funcName       = "funcName"
+	blockNameLabel = "blockName"
 )
 
 func (ae *Env) validatePipeline(ctx context.Context, p *entity.EriusScenario) (valid bool, textErr string) {
-	ok := validateMapping(p.Pipeline.Blocks)
+	log := logger.GetLogger(ctx)
+
+	ok := validateMappingAndResetIfNotValid(p.Pipeline.Blocks, log)
 	if !ok {
 		return false, entity.PipelineValidateError
 	}
 
-	return p.Pipeline.Blocks.Validate(ctx, ae.ServiceDesc)
+	return p.Pipeline.Blocks.Validate(ctx, ae.ServiceDesc, log)
 }
 
-func validateMapping(bt entity.BlocksType) bool {
+func validateMappingAndResetIfNotValid(bt entity.BlocksType, log logger.Logger) bool {
 	isValid := true
 
 	for blockName, block := range bt {
 		switch block.TypeID {
 		case pipeline.BlockExecutableFunctionID:
-			if !validateFunctionBlock(bt, block, blockName) {
+			if !validateFunctionBlock(bt, block, blockName, log) {
 				isValid = false
 			}
 		case pipeline.BlockGoApproverID:
-			if !validateApproverBlock(bt, block, blockName) {
+			if !validateApproverBlock(bt, block, blockName, log) {
 				isValid = false
 			}
 		case pipeline.BlockGoExecutionID:
-			if !validateExecutionBlock(bt, block, blockName) {
+			if !validateExecutionBlock(bt, block, blockName, log) {
 				isValid = false
 			}
 		case pipeline.BlockGoFormID:
-			if !validateFormBlock(bt, block, blockName) {
+			if !validateFormBlock(bt, block, blockName, log) {
 				isValid = false
 			}
 		case pipeline.BlockGoSignID:
-			if !validateSignBlock(bt, block, blockName) {
+			if !validateSignBlock(bt, block, blockName, log) {
 				isValid = false
 			}
 		case pipeline.BlockGoIfID:
-			if !validateIfBlock(bt, block, blockName) {
+			if !validateIfBlock(bt, block, blockName, log) {
 				isValid = false
 			}
 		case pipeline.BlockGoNotificationID:
-			if !validateNotificationBlock(bt, block, blockName) {
+			if !validateNotificationBlock(bt, block, blockName, log) {
 				isValid = false
 			}
 		}
@@ -71,8 +81,13 @@ func validateMapping(bt entity.BlocksType) bool {
 	return isValid
 }
 
-func validateFunctionBlock(bt entity.BlocksType, block *entity.EriusFunc, blockName string) bool {
+func validateFunctionBlock(bt entity.BlocksType, block *entity.EriusFunc, blockName string, log logger.Logger) bool {
 	if block == nil {
+		log.WithFields(logger.Fields{
+			funcName:       "validateFunctionBlock",
+			blockNameLabel: blockName,
+		}).Error(errors.New("empty block"))
+
 		return false
 	}
 
@@ -80,14 +95,24 @@ func validateFunctionBlock(bt entity.BlocksType, block *entity.EriusFunc, blockN
 
 	err := json.Unmarshal(block.Params, &function)
 	if err != nil {
+		log.WithFields(logger.Fields{
+			funcName:       "validateFunctionBlock",
+			blockNameLabel: blockName,
+		}).Error(errors.New("failed to unmarshal function params"))
+
 		return false
 	}
 
-	if !validateProperties(function.Mapping, bt, blockName) {
+	if !validateProperties(function.Mapping, bt, blockName, log) {
 		var marshaledFunction []byte
 
 		marshaledFunction, err = json.Marshal(function)
 		if err != nil {
+			log.WithFields(logger.Fields{
+				funcName:       "validateFunctionBlock",
+				blockNameLabel: blockName,
+			}).Error(errors.New("failed to marshal function params"))
+
 			return false
 		}
 
@@ -101,8 +126,13 @@ func validateFunctionBlock(bt entity.BlocksType, block *entity.EriusFunc, blockN
 }
 
 //nolint:dupl //its not duplicate
-func validateApproverBlock(bt entity.BlocksType, block *entity.EriusFunc, blockName string) bool {
+func validateApproverBlock(bt entity.BlocksType, block *entity.EriusFunc, blockName string, log logger.Logger) bool {
 	if block == nil {
+		log.WithFields(logger.Fields{
+			funcName:       "validateApproverBlock",
+			blockNameLabel: blockName,
+		}).Error(errors.New("empty block"))
+
 		return false
 	}
 
@@ -110,6 +140,11 @@ func validateApproverBlock(bt entity.BlocksType, block *entity.EriusFunc, blockN
 
 	err := json.Unmarshal(block.Params, &blockApprover)
 	if err != nil {
+		log.WithFields(logger.Fields{
+			funcName:       "validateApproverBlock",
+			blockNameLabel: blockName,
+		}).Error(errors.New("failed to unmarshal approver params"))
+
 		return false
 	}
 
@@ -126,7 +161,7 @@ func validateApproverBlock(bt entity.BlocksType, block *entity.EriusFunc, blockN
 				Value:      approverVar,
 			}
 
-			if !isPathValid(bt, schema, blockName) {
+			if !isPathValid(bt, schema, blockName, log) {
 				isValid = false
 
 				continue
@@ -146,7 +181,7 @@ func validateApproverBlock(bt entity.BlocksType, block *entity.EriusFunc, blockN
 			Value: *blockApprover.ApproversGroupIDPath,
 		}
 
-		if !isPathValid(bt, schema, blockName) {
+		if !isPathValid(bt, schema, blockName, log) {
 			isValid = false
 			blockApprover.ApproversGroupIDPath = nil
 		}
@@ -157,6 +192,11 @@ func validateApproverBlock(bt entity.BlocksType, block *entity.EriusFunc, blockN
 
 		marshaledApproverBlock, err = json.Marshal(blockApprover)
 		if err != nil {
+			log.WithFields(logger.Fields{
+				funcName:       "validateApproverBlock",
+				blockNameLabel: blockName,
+			}).Error(errors.New("failed to marshal approver params"))
+
 			return false
 		}
 
@@ -168,8 +208,13 @@ func validateApproverBlock(bt entity.BlocksType, block *entity.EriusFunc, blockN
 }
 
 //nolint:dupl //its not duplicate
-func validateExecutionBlock(bt entity.BlocksType, block *entity.EriusFunc, blockName string) bool {
+func validateExecutionBlock(bt entity.BlocksType, block *entity.EriusFunc, blockName string, log logger.Logger) bool {
 	if block == nil {
+		log.WithFields(logger.Fields{
+			funcName:       "validateExecutionBlock",
+			blockNameLabel: blockName,
+		}).Error(errors.New("empty block"))
+
 		return false
 	}
 
@@ -177,6 +222,11 @@ func validateExecutionBlock(bt entity.BlocksType, block *entity.EriusFunc, block
 
 	err := json.Unmarshal(block.Params, &blockExecution)
 	if err != nil {
+		log.WithFields(logger.Fields{
+			funcName:       "validateExecutionBlock",
+			blockNameLabel: blockName,
+		}).Error(errors.New("failed to unmarshal execution params"))
+
 		return false
 	}
 
@@ -193,7 +243,7 @@ func validateExecutionBlock(bt entity.BlocksType, block *entity.EriusFunc, block
 				Value:      executorVar,
 			}
 
-			if !isPathValid(bt, schema, blockName) {
+			if !isPathValid(bt, schema, blockName, log) {
 				isValid = false
 
 				continue
@@ -213,7 +263,7 @@ func validateExecutionBlock(bt entity.BlocksType, block *entity.EriusFunc, block
 			Value: *blockExecution.ExecutorsGroupIDPath,
 		}
 
-		if !isPathValid(bt, schema, blockName) {
+		if !isPathValid(bt, schema, blockName, log) {
 			isValid = false
 			blockExecution.ExecutorsGroupIDPath = nil
 		}
@@ -224,6 +274,11 @@ func validateExecutionBlock(bt entity.BlocksType, block *entity.EriusFunc, block
 
 		marshaledExecutionBlock, err = json.Marshal(blockExecution)
 		if err != nil {
+			log.WithFields(logger.Fields{
+				funcName:       "validateExecutionBlock",
+				blockNameLabel: blockName,
+			}).Error(errors.New("failed to marshal execution params"))
+
 			return false
 		}
 
@@ -234,8 +289,13 @@ func validateExecutionBlock(bt entity.BlocksType, block *entity.EriusFunc, block
 	return isValid
 }
 
-func validateFormBlock(bt entity.BlocksType, block *entity.EriusFunc, blockName string) bool {
+func validateFormBlock(bt entity.BlocksType, block *entity.EriusFunc, blockName string, log logger.Logger) bool {
 	if block == nil {
+		log.WithFields(logger.Fields{
+			funcName:       "validateFormBlock",
+			blockNameLabel: blockName,
+		}).Error(errors.New("empty block"))
+
 		return false
 	}
 
@@ -243,11 +303,16 @@ func validateFormBlock(bt entity.BlocksType, block *entity.EriusFunc, blockName 
 
 	err := json.Unmarshal(block.Params, &blockForm)
 	if err != nil {
+		log.WithFields(logger.Fields{
+			funcName:       "validateFormBlock",
+			blockNameLabel: blockName,
+		}).Error(errors.New("failed to unmarshal form params"))
+
 		return false
 	}
 
 	isValid := true
-	if !validateProperties(blockForm.Mapping, bt, blockName) {
+	if !validateProperties(blockForm.Mapping, bt, blockName, log) {
 		isValid = false
 	}
 
@@ -256,7 +321,7 @@ func validateFormBlock(bt entity.BlocksType, block *entity.EriusFunc, blockName 
 		Value: blockForm.FullFormMapping,
 	}
 
-	if !isPathValid(bt, objectSchema, blockName) {
+	if !isPathValid(bt, objectSchema, blockName, log) {
 		isValid = false
 		blockForm.FullFormMapping = ""
 	}
@@ -272,7 +337,7 @@ func validateFormBlock(bt entity.BlocksType, block *entity.EriusFunc, blockName 
 				Value:      executorVar,
 			}
 
-			if !isPathValid(bt, schema, blockName) {
+			if !isPathValid(bt, schema, blockName, log) {
 				isValid = false
 
 				continue
@@ -292,7 +357,7 @@ func validateFormBlock(bt entity.BlocksType, block *entity.EriusFunc, blockName 
 			Value: *blockForm.FormGroupIDPath,
 		}
 
-		if !isPathValid(bt, schema, blockName) {
+		if !isPathValid(bt, schema, blockName, log) {
 			isValid = false
 			blockForm.FormGroupIDPath = nil
 		}
@@ -303,6 +368,11 @@ func validateFormBlock(bt entity.BlocksType, block *entity.EriusFunc, blockName 
 
 		marshaledForm, err = json.Marshal(blockForm)
 		if err != nil {
+			log.WithFields(logger.Fields{
+				funcName:       "validateFormBlock",
+				blockNameLabel: blockName,
+			}).Error(errors.New("failed to marshal form params"))
+
 			return false
 		}
 
@@ -313,8 +383,13 @@ func validateFormBlock(bt entity.BlocksType, block *entity.EriusFunc, blockName 
 	return isValid
 }
 
-func validateSignBlock(bt entity.BlocksType, block *entity.EriusFunc, blockName string) bool {
+func validateSignBlock(bt entity.BlocksType, block *entity.EriusFunc, blockName string, log logger.Logger) bool {
 	if block == nil {
+		log.WithFields(logger.Fields{
+			funcName:       "validateSignBlock",
+			blockNameLabel: blockName,
+		}).Error(errors.New("empty block"))
+
 		return false
 	}
 
@@ -322,6 +397,11 @@ func validateSignBlock(bt entity.BlocksType, block *entity.EriusFunc, blockName 
 
 	err := json.Unmarshal(block.Params, &blockSign)
 	if err != nil {
+		log.WithFields(logger.Fields{
+			funcName:       "validateSignBlock",
+			blockNameLabel: blockName,
+		}).Error(errors.New("failed to unmarshal sign params"))
+
 		return false
 	}
 
@@ -338,7 +418,7 @@ func validateSignBlock(bt entity.BlocksType, block *entity.EriusFunc, blockName 
 				Value:      signerVar,
 			}
 
-			if !isPathValid(bt, schema, blockName) {
+			if !isPathValid(bt, schema, blockName, log) {
 				isValid = false
 
 				continue
@@ -358,7 +438,7 @@ func validateSignBlock(bt entity.BlocksType, block *entity.EriusFunc, blockName 
 			Value: blockSign.SignerGroupIDPath,
 		}
 
-		if !isPathValid(bt, schema, blockName) {
+		if !isPathValid(bt, schema, blockName, log) {
 			isValid = false
 			blockSign.SignerGroupIDPath = ""
 		}
@@ -369,14 +449,14 @@ func validateSignBlock(bt entity.BlocksType, block *entity.EriusFunc, blockName 
 		Value: blockSign.SigningParamsPaths.SNILS,
 	}
 
-	if !isPathValid(bt, schema, blockName) {
+	if !isPathValid(bt, schema, blockName, log) {
 		isValid = false
 		blockSign.SigningParamsPaths.SNILS = ""
 	}
 
 	schema.Value = blockSign.SigningParamsPaths.INN
 
-	if !isPathValid(bt, schema, blockName) {
+	if !isPathValid(bt, schema, blockName, log) {
 		isValid = false
 		blockSign.SigningParamsPaths.INN = ""
 	}
@@ -397,7 +477,7 @@ func validateSignBlock(bt entity.BlocksType, block *entity.EriusFunc, blockName 
 			Value: fileRef,
 		}
 
-		if !isPathValid(bt, fileSchema, blockName) {
+		if !isPathValid(bt, fileSchema, blockName, log) {
 			isValid = false
 
 			continue
@@ -419,6 +499,11 @@ func validateSignBlock(bt entity.BlocksType, block *entity.EriusFunc, blockName 
 
 		marshaledSignBlock, err = json.Marshal(blockSign)
 		if err != nil {
+			log.WithFields(logger.Fields{
+				funcName:       "validateSignBlock",
+				blockNameLabel: blockName,
+			}).Error(errors.New("failed to marshal sign params"))
+
 			return false
 		}
 
@@ -429,8 +514,13 @@ func validateSignBlock(bt entity.BlocksType, block *entity.EriusFunc, blockName 
 	return isValid
 }
 
-func validateIfBlock(bt entity.BlocksType, block *entity.EriusFunc, blockName string) bool {
+func validateIfBlock(bt entity.BlocksType, block *entity.EriusFunc, blockName string, log logger.Logger) bool {
 	if block == nil {
+		log.WithFields(logger.Fields{
+			funcName:       "validateIfBlock",
+			blockNameLabel: blockName,
+		}).Error(errors.New("empty block"))
+
 		return false
 	}
 
@@ -438,16 +528,26 @@ func validateIfBlock(bt entity.BlocksType, block *entity.EriusFunc, blockName st
 
 	err := json.Unmarshal(block.Params, &blockIf)
 	if err != nil {
+		log.WithFields(logger.Fields{
+			funcName:       "validateIfBlock",
+			blockNameLabel: blockName,
+		}).Error(errors.New("failed to unmarshal block params"))
+
 		return false
 	}
 
 	conditionGroupsInterface, ok := blockIf[conditionGroupsField]
 	if !ok {
+		log.WithField(funcName, "validateIfBlock").Error(errors.New("condition groups are missing"))
+
 		return false
 	}
 
 	conditionGroups, ok := conditionGroupsInterface.([]interface{})
 	if !ok {
+		log.WithField(funcName, "validateIfBlock").
+			Error(errors.New("failed to cast condition groups to []interface{}"))
+
 		return false
 	}
 
@@ -458,12 +558,15 @@ func validateIfBlock(bt entity.BlocksType, block *entity.EriusFunc, blockName st
 
 		group, ok = groupInterface.(map[string]interface{})
 		if !ok {
+			log.WithField(funcName, "validateIfBlock").
+				Error(errors.New("failed to cast condition group to map[string]interface{}"))
+
 			isValid = false
 
 			continue
 		}
 
-		if !validateConditionGroup(bt, group, blockName) {
+		if !validateConditionGroup(bt, group, blockName, log) {
 			isValid = false
 		}
 	}
@@ -473,6 +576,11 @@ func validateIfBlock(bt entity.BlocksType, block *entity.EriusFunc, blockName st
 
 		marshaledIfBlock, err = json.Marshal(blockIf)
 		if err != nil {
+			log.WithFields(logger.Fields{
+				funcName:       "validateIfBlock",
+				blockNameLabel: blockName,
+			}).Error(errors.New("failed to marshal if block params"))
+
 			return false
 		}
 
@@ -483,9 +591,14 @@ func validateIfBlock(bt entity.BlocksType, block *entity.EriusFunc, blockName st
 	return isValid
 }
 
-func validateConditionGroup(bt entity.BlocksType, group map[string]interface{}, blockName string) bool {
+func validateConditionGroup(bt entity.BlocksType, group map[string]interface{}, blockName string, log logger.Logger) bool {
 	conditionsInterface, ok := group[conditionsField]
 	if !ok {
+		log.WithFields(logger.Fields{
+			funcName:       "validateConditionGroup",
+			blockNameLabel: blockName,
+		}).Error(errors.New("conditions not found"))
+
 		return false
 	}
 
@@ -493,6 +606,9 @@ func validateConditionGroup(bt entity.BlocksType, group map[string]interface{}, 
 
 	conditions, ok = conditionsInterface.([]interface{})
 	if !ok {
+		log.WithField(funcName, "validateConditionGroup").
+			Error(errors.New("failed to cast conditions to []interface{}"))
+
 		return false
 	}
 
@@ -503,6 +619,9 @@ func validateConditionGroup(bt entity.BlocksType, group map[string]interface{}, 
 
 		condition, ok = conditionInterface.(map[string]interface{})
 		if !ok {
+			log.WithField(funcName, "validateConditionGroup").
+				Error(errors.New("failed to cast condition to map[string]interface{}"))
+
 			isValid = false
 
 			continue
@@ -510,13 +629,13 @@ func validateConditionGroup(bt entity.BlocksType, group map[string]interface{}, 
 
 		var operandInterface interface{}
 		if operandInterface, ok = condition[leftOperand]; ok {
-			if !validateOperand(bt, operandInterface, blockName) {
+			if !validateOperand(bt, operandInterface, blockName, log) {
 				isValid = false
 			}
 		}
 
 		if operandInterface, ok = condition[rightOperand]; ok {
-			if !validateOperand(bt, operandInterface, blockName) {
+			if !validateOperand(bt, operandInterface, blockName, log) {
 				isValid = false
 			}
 		}
@@ -525,9 +644,12 @@ func validateConditionGroup(bt entity.BlocksType, group map[string]interface{}, 
 	return isValid
 }
 
-func validateOperand(bt entity.BlocksType, operandInterface interface{}, blockName string) bool {
+func validateOperand(bt entity.BlocksType, operandInterface interface{}, blockName string, log logger.Logger) bool {
 	operand, ok := operandInterface.(map[string]interface{})
 	if !ok {
+		log.WithField(funcName, "validateOperand").
+			Error(errors.New("failed to cast operand to map[string]interface{}"))
+
 		return false
 	}
 
@@ -542,15 +664,36 @@ func validateOperand(bt entity.BlocksType, operandInterface interface{}, blockNa
 
 	variableRef, ok = variableRefInterface.(string)
 	if !ok {
+		log.WithField(funcName, "validateOperand").
+			Error(errors.New("failed to cast variableRef to string"))
+
+		return false
+	}
+
+	dataTypeInterface, ok := operand[dataTypeField]
+	if !ok {
+		log.WithField(funcName, "validateOperand").
+			Error(errors.New("dataType is empty"))
+
+		return false
+	}
+
+	var typeField string
+
+	typeField, ok = dataTypeInterface.(string)
+	if !ok {
+		log.WithField(funcName, "validateOperand").
+			Error(errors.New("failed to cast dataType to string"))
+
 		return false
 	}
 
 	schema := &script.JSONSchemaPropertiesValue{
-		Type:  stringType,
+		Type:  typeField,
 		Value: variableRef,
 	}
 
-	if !isPathValid(bt, schema, blockName) {
+	if !isPathValid(bt, schema, blockName, log) {
 		delete(operand, variableRefField)
 
 		return false
@@ -559,8 +702,13 @@ func validateOperand(bt entity.BlocksType, operandInterface interface{}, blockNa
 	return true
 }
 
-func validateNotificationBlock(bt entity.BlocksType, block *entity.EriusFunc, blockName string) bool {
+func validateNotificationBlock(bt entity.BlocksType, block *entity.EriusFunc, blockName string, log logger.Logger) bool {
 	if block == nil {
+		log.WithFields(logger.Fields{
+			funcName:       "validateNotificationBlock",
+			blockNameLabel: blockName,
+		}).Error(errors.New("empty block"))
+
 		return false
 	}
 
@@ -568,6 +716,11 @@ func validateNotificationBlock(bt entity.BlocksType, block *entity.EriusFunc, bl
 
 	err := json.Unmarshal(block.Params, &blockNotification)
 	if err != nil {
+		log.WithFields(logger.Fields{
+			funcName:       "validateNotificationBlock",
+			blockNameLabel: blockName,
+		}).Error(errors.New("failed to unmarshal notification params"))
+
 		return false
 	}
 
@@ -582,7 +735,7 @@ func validateNotificationBlock(bt entity.BlocksType, block *entity.EriusFunc, bl
 			Value:      path,
 		}
 
-		if !isPathValid(bt, schema, blockName) {
+		if !isPathValid(bt, schema, blockName, log) {
 			isValid = false
 
 			continue
@@ -596,7 +749,7 @@ func validateNotificationBlock(bt entity.BlocksType, block *entity.EriusFunc, bl
 		Value: blockNotification.Text,
 	}
 
-	if !isPathValid(bt, schema, blockName) {
+	if !isPathValid(bt, schema, blockName, log) {
 		isValid = false
 		blockNotification.Text = ""
 	}
@@ -608,6 +761,11 @@ func validateNotificationBlock(bt entity.BlocksType, block *entity.EriusFunc, bl
 
 		marshaledNotificationBlock, err = json.Marshal(blockNotification)
 		if err != nil {
+			log.WithFields(logger.Fields{
+				funcName:       "validateNotificationBlock",
+				blockNameLabel: blockName,
+			}).Error(errors.New("failed to marshal notification params"))
+
 			return false
 		}
 
@@ -619,17 +777,17 @@ func validateNotificationBlock(bt entity.BlocksType, block *entity.EriusFunc, bl
 }
 
 // nolint:gocritic,gosec // don't want pointer of JSONSchemaPropertiesValue
-func validateProperties(properties script.JSONSchemaProperties, bt entity.BlocksType, blockName string) bool {
+func validateProperties(properties script.JSONSchemaProperties, bt entity.BlocksType, blockName string, log logger.Logger) bool {
 	isValid := true
 
 	for propertyName, property := range properties {
 		if property.Value == "" && property.Type == objectType {
-			if !validateProperties(property.Properties, bt, blockName) {
+			if !validateProperties(property.Properties, bt, blockName, log) {
 				isValid = false
 			}
 		}
 
-		if !isPathValid(bt, &property, blockName) {
+		if !isPathValid(bt, &property, blockName, log) {
 			isValid = false
 			property.Value = ""
 			properties[propertyName] = property
@@ -639,7 +797,7 @@ func validateProperties(properties script.JSONSchemaProperties, bt entity.Blocks
 	return isValid
 }
 
-func isPathValid(bt entity.BlocksType, property *script.JSONSchemaPropertiesValue, blockName string) bool {
+func isPathValid(bt entity.BlocksType, property *script.JSONSchemaPropertiesValue, blockName string, log logger.Logger) bool {
 	if property.Value == "" {
 		return true
 	}
@@ -649,10 +807,20 @@ func isPathValid(bt entity.BlocksType, property *script.JSONSchemaPropertiesValu
 
 	targetBlock, ok := bt[targetBlockName]
 	if !ok {
+		log.WithFields(logger.Fields{
+			funcName:       "isPathValid",
+			blockNameLabel: blockName,
+		}).Error(fmt.Errorf("mapping is not valid, block %s is missing, %s", targetBlockName, property.Value))
+
 		return false
 	}
 
 	if !isBlockBefore(bt, targetBlock, blockName, map[string]struct{}{}) {
+		log.WithFields(logger.Fields{
+			funcName:       "isPathValid",
+			blockNameLabel: blockName,
+		}).Error(fmt.Errorf("mapping is not valid, block %s is not in context, %s", targetBlockName, property.Value))
+
 		return false
 	}
 
@@ -660,10 +828,20 @@ func isPathValid(bt entity.BlocksType, property *script.JSONSchemaPropertiesValu
 
 	variableJSONSchema := searchVariableInJSONSchema(targetBlock.Output.Properties, path)
 	if variableJSONSchema == nil {
+		log.WithFields(logger.Fields{
+			funcName:       "isPathValid",
+			blockNameLabel: blockName,
+		}).Error(fmt.Errorf("mapping is not valid, variable %s is missing in block %s", property.Value, targetBlockName))
+
 		return false
 	}
 
 	if !isTypeValid(property, variableJSONSchema) {
+		log.WithFields(logger.Fields{
+			funcName:       "isPathValid",
+			blockNameLabel: blockName,
+		}).Error(fmt.Errorf("mapping is not valid, variable is not the same type, %s", property.Value))
+
 		return false
 	}
 

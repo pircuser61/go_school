@@ -13,6 +13,8 @@ import (
 
 	"golang.org/x/exp/maps"
 
+	"gitlab.services.mts.ru/abp/myosotis/logger"
+
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
@@ -77,25 +79,27 @@ const (
 	ParallelPathIntersected       = "ParallelPathIntersected"
 )
 
-func (bt *BlocksType) Validate(ctx context.Context, sd *servicedesc.Service) (valid bool, textErr string) {
-	if !bt.EndExists() {
+func (bt *BlocksType) Validate(ctx context.Context, sd *servicedesc.Service, log logger.Logger) (valid bool, textErr string) {
+	if !bt.EndExists(log) {
 		return false, PipelineValidateError
 	}
 
-	if !bt.IsPipelineComplete() {
+	if !bt.IsPipelineComplete(log) {
 		return false, PipelineValidateError
 	}
 
-	ok, filledErr := bt.IsSocketsFilled()
+	ok, filledErr := bt.IsSocketsFilled(log)
 	if !ok {
 		return false, filledErr
 	}
 
 	if !bt.IsSdBlueprintFilled(ctx, sd) {
+		log.WithField("funcName", "Validate").Error(errors.New("blueprint is not filled"))
+
 		return false, PipelineValidateError
 	}
 
-	ok, parallErr := bt.IsParallelNodesCorrect()
+	ok, parallErr := bt.IsParallelNodesCorrect(log)
 	if !ok {
 		return false, parallErr
 	}
@@ -103,14 +107,17 @@ func (bt *BlocksType) Validate(ctx context.Context, sd *servicedesc.Service) (va
 	return true, ""
 }
 
-func (bt *BlocksType) EndExists() bool {
-	return bt.blockTypeExists(BlockGoStartName) && bt.blockTypeExists(BlockGoEndName)
+func (bt *BlocksType) EndExists(log logger.Logger) bool {
+	return bt.blockTypeExists(BlockGoStartName, log) && bt.blockTypeExists(BlockGoEndName, log)
 }
 
-func (bt *BlocksType) IsPipelineComplete() bool {
+func (bt *BlocksType) IsPipelineComplete(log logger.Logger) bool {
 	startNodes := bt.getNodesByType(BlockGoStartName)
 
 	if len(startNodes) == 0 {
+		log.WithField("funcName", "IsPipelineComplete").
+			Error(fmt.Errorf("block%s does not exist", BlockGoStartName))
+
 		return false
 	}
 
@@ -119,13 +126,21 @@ func (bt *BlocksType) IsPipelineComplete() bool {
 	nodesIds := bt.getNodesIds()
 	relatedNodesNum := bt.countRelatedNodesIds(&startNode)
 
-	return len(nodesIds) == relatedNodesNum
+	if len(nodesIds) != relatedNodesNum {
+		log.WithField("funcName", "IsPipelineComplete").Error(errors.New("pipeline is on complete"))
+
+		return false
+	}
+
+	return true
 }
 
 //nolint:gocritic //
-func (bt *BlocksType) IsSocketsFilled() (valid bool, textErr string) {
+func (bt *BlocksType) IsSocketsFilled(log logger.Logger) (valid bool, textErr string) {
 	for _, b := range *bt {
 		if len(b.Next) != len(b.Sockets) {
+			log.WithField("funcName", "IsSocketsFilled").Error(errors.New("sockets not connected"))
+
 			return false, ParallelNodeExitsNotConnected
 		}
 
@@ -141,6 +156,9 @@ func (bt *BlocksType) IsSocketsFilled() (valid bool, textErr string) {
 
 		for _, s := range b.Sockets {
 			if !nextNames[s.ID] {
+				log.WithField("funcName", "IsSocketsFilled").
+					Error(fmt.Errorf("socket %s %s not connected", s.ID, s.Title))
+
 				return false, ""
 			}
 		}
@@ -182,7 +200,7 @@ func (bt *BlocksType) IsSdBlueprintFilled(ctx context.Context, sd *servicedesc.S
 }
 
 //nolint:all //its ok here // не ок
-func (bt *BlocksType) IsParallelNodesCorrect() (valid bool, textErr string) {
+func (bt *BlocksType) IsParallelNodesCorrect(log logger.Logger) (valid bool, textErr string) {
 	return true, ""
 	// TODO return Validation
 	parallelStartNodes := bt.getNodesByType(BlockParallelStartName)
@@ -520,8 +538,14 @@ func (bt *BlocksType) GetExecutableFunctions() ([]script.FunctionParam, error) {
 	return functionIDs, nil
 }
 
-func (bt *BlocksType) blockTypeExists(blockType string) bool {
-	return len(bt.getNodesByType(blockType)) != 0
+func (bt *BlocksType) blockTypeExists(blockType string, log logger.Logger) bool {
+	if len(bt.getNodesByType(blockType)) == 0 {
+		log.WithField("funcName", "blockTypeExists").Error(fmt.Errorf("%s does not exist", blockType))
+
+		return false
+	}
+
+	return true
 }
 
 func (bt *BlocksType) getNodesByType(blockType string) map[string]EriusFunc {
