@@ -248,7 +248,7 @@ func (gb *GoFormBlock) checkForEmptyForm(formState json.RawMessage, l logger.Log
 }
 
 func (gb *GoFormBlock) getDeadline(ctx context.Context, workType string) (time.Time, error) {
-	if gb.State.ApplicationBody != nil {
+	if gb.State.IsFilled {
 		return time.Time{}, nil
 	}
 
