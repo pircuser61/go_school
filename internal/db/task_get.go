@@ -282,7 +282,7 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 			w.rate,
 			w.rate_comment,
 		    ua.actions,
-		    COALESCE(ua.node_deadline, w.exec_deadline),
+		    COALESCE(NULLIF(ua.node_deadline, '0001-01-01T00:00:00Z'), w.exec_deadline),
 		    ua.current_executor,
 		    ua.exec_start_time,
 		    ua.appr_start_time
