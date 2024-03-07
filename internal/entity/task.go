@@ -121,6 +121,7 @@ type EriusTask struct {
 	CurrentExecutor         CurrentExecutorData `json:"current_executor"`
 	CurrentExecutionStart   *time.Time          `json:"current_execution_start,omitempty"`
 	CurrentApprovementStart *time.Time          `json:"current_approvement_start,omitempty"`
+	IsPaused                bool                `json:"is_paused"`
 }
 
 type CurrentExecutorData struct {

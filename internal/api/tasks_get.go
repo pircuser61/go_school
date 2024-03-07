@@ -54,6 +54,7 @@ type taskResp struct {
 	ProcessDeadline    time.Time              `json:"process_deadline"`
 	NodeGroup          []NodeGroup            `json:"node_group"`
 	ApprovalList       map[string]string      `json:"approval_list"`
+	IsPaused           bool                   `json:"is_paused"`
 }
 
 type step struct {

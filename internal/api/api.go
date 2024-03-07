@@ -180,6 +180,13 @@ const (
 	MonitoringTableTaskStatusОстановлен MonitoringTableTaskStatus = "Остановлен"
 )
 
+// Defines values for MonitoringTaskActionRequestAction.
+const (
+	MonitoringTaskActionRequestActionPause MonitoringTaskActionRequestAction = "pause"
+
+	MonitoringTaskActionRequestActionStart MonitoringTaskActionRequestAction = "start"
+)
+
 // Defines values for NodeEvent.
 const (
 	NodeEventEnd NodeEvent = "end"
@@ -773,6 +780,21 @@ type Created struct {
 	Start int `json:"start"`
 }
 
+// Current task execution data
+type CurrentExecutorData struct {
+	// Execution group ID
+	ExecutionGroupId *string `json:"execution_group_id,omitempty"`
+
+	// Execution group name
+	ExecutionGroupName *string `json:"execution_group_name,omitempty"`
+
+	// Initial executors logins
+	InitialPeople []string `json:"initial_people"`
+
+	// Executors logins
+	People []string `json:"people"`
+}
+
 // Basic date operand, can provide working compare types for this type
 type DateOperand struct {
 	DataType    DateOperandDataType    `json:"dataType"`
@@ -901,13 +923,23 @@ type EriusTask struct {
 	Author           string                 `json:"author"`
 	BlueprintId      string                 `json:"blueprint_id"`
 	Comment          *string                `json:"comment,omitempty"`
-	Debug            bool                   `json:"debug"`
-	Description      string                 `json:"description"`
+
+	// Current approvement start time (UTC)
+	CurrentApprovementStart *string `json:"current_approvement_start,omitempty"`
+
+	// Current execution start time (UTC)
+	CurrentExecutionStart *string `json:"current_execution_start,omitempty"`
+
+	// Current task execution data
+	CurrentExecutor CurrentExecutorData `json:"current_executor"`
+	Debug           bool                `json:"debug"`
+	Description     string              `json:"description"`
 
 	// Task human readable status
 	HumanStatus        TaskHumanStatus        `json:"human_status"`
 	HumanStatusComment *string                `json:"human_status_comment,omitempty"`
 	Id                 string                 `json:"id"`
+	IsPaused           *bool                  `json:"is_paused,omitempty"`
 	LastChangedAt      string                 `json:"last_changed_at"`
 	Name               string                 `json:"name"`
 	NodeGroup          *[]NodeGroup           `json:"node_group,omitempty"`
@@ -1150,7 +1182,7 @@ type FormExecutorType string
 
 // Form params
 type FormParams struct {
-	// true - if you need to set required fill fields in form
+	// true - if you need to set required fill fields in form (for auto fill)
 	CheckRequiredFill *bool `json:"check_required_fill,omitempty"`
 
 	// Is active SLA
@@ -1304,6 +1336,7 @@ type JSONSchemaProperties struct {
 
 		// Description of param
 		Description *string `json:"description,omitempty"`
+		FieldHidden *bool   `json:"fieldHidden,omitempty"`
 
 		// Format of param
 		Format *string `json:"format,omitempty"`
@@ -1384,6 +1417,9 @@ type MonitoringHistory struct {
 	// Айди ноды в variable_storage
 	BlockId string `json:"block_id"`
 
+	// Флаг паузы блока
+	IsPaused bool `json:"is_paused"`
+
 	// id ноды в заявке
 	NodeId string `json:"node_id"`
 
@@ -1455,7 +1491,10 @@ type MonitoringTableTaskStatus string
 
 // MonitoringTask defines model for MonitoringTask.
 type MonitoringTask struct {
-	History      []MonitoringHistory    `json:"history"`
+	History []MonitoringHistory `json:"history"`
+
+	// Флаг паузы процесса
+	IsPaused     bool                   `json:"is_paused"`
 	ScenarioInfo MonitoringScenarioInfo `json:"scenario_info"`
 
 	// Айди версии сценария для мониторинга
@@ -1464,6 +1503,27 @@ type MonitoringTask struct {
 	// Номер заявки для мониторинга
 	WorkNumber string `json:"work_number"`
 }
+
+// Параметры действия
+type MonitoringTaskActionParams struct {
+	// Названия блоков
+	Steps *[]string `json:"steps,omitempty"`
+}
+
+// MonitoringTaskActionRequest defines model for MonitoringTaskActionRequest.
+type MonitoringTaskActionRequest struct {
+	// Действия с заявкой
+	Action MonitoringTaskActionRequestAction `json:"action"`
+
+	// Параметры действия
+	Params *MonitoringTaskActionParams `json:"params,omitempty"`
+
+	// Номер заявки для мониторинга
+	WorkNumber string `json:"work_number"`
+}
+
+// Действия с заявкой
+type MonitoringTaskActionRequestAction string
 
 // MonitoringTasksPage defines model for MonitoringTasksPage.
 type MonitoringTasksPage struct {
@@ -1676,7 +1736,7 @@ type RunResponse struct {
 // RunVersionsByPipelineIdRequest defines model for RunVersionsByPipelineIdRequest.
 type RunVersionsByPipelineIdRequest struct {
 	ApplicationBody   map[string]interface{}              `json:"application_body"`
-	AttachmentFields  []Attachment                        `json:"attachment_fields"`
+	AttachmentFields  []string                            `json:"attachment_fields"`
 	CustomTitle       *string                             `json:"custom_title,omitempty"`
 	Description       string                              `json:"description"`
 	IsTestApplication *bool                               `json:"is_test_application,omitempty"`
@@ -2190,6 +2250,9 @@ type GetFormsChangelogParams struct {
 	BlockId string `json:"block_id"`
 }
 
+// MonitoringTaskActionJSONBody defines parameters for MonitoringTaskAction.
+type MonitoringTaskActionJSONBody MonitoringTaskActionRequest
+
 // GetTasksForMonitoringParams defines parameters for GetTasksForMonitoring.
 type GetTasksForMonitoringParams struct {
 	PerPage    *int                                   `json:"per_page,omitempty"`
@@ -2394,6 +2457,9 @@ type UpdateTaskJSONBody TaskUpdate
 
 // RateApplicationJSONRequestBody defines body for RateApplication for application/json ContentType.
 type RateApplicationJSONRequestBody RateApplicationJSONBody
+
+// MonitoringTaskActionJSONRequestBody defines body for MonitoringTaskAction for application/json ContentType.
+type MonitoringTaskActionJSONRequestBody MonitoringTaskActionJSONBody
 
 // SaveVersionMainSettingsJSONRequestBody defines body for SaveVersionMainSettings for application/json ContentType.
 type SaveVersionMainSettingsJSONRequestBody SaveVersionMainSettingsJSONBody
@@ -2616,6 +2682,7 @@ func (a JSONSchemaProperties) Get(fieldName string) (value struct {
 
 	// Description of param
 	Description *string `json:"description,omitempty"`
+	FieldHidden *bool   `json:"fieldHidden,omitempty"`
 
 	// Format of param
 	Format *string `json:"format,omitempty"`
@@ -2654,6 +2721,7 @@ func (a *JSONSchemaProperties) Set(fieldName string, value struct {
 
 	// Description of param
 	Description *string `json:"description,omitempty"`
+	FieldHidden *bool   `json:"fieldHidden,omitempty"`
 
 	// Format of param
 	Format *string `json:"format,omitempty"`
@@ -2686,6 +2754,7 @@ func (a *JSONSchemaProperties) Set(fieldName string, value struct {
 
 			// Description of param
 			Description *string `json:"description,omitempty"`
+			FieldHidden *bool   `json:"fieldHidden,omitempty"`
 
 			// Format of param
 			Format *string `json:"format,omitempty"`
@@ -2730,6 +2799,7 @@ func (a *JSONSchemaProperties) UnmarshalJSON(b []byte) error {
 
 			// Description of param
 			Description *string `json:"description,omitempty"`
+			FieldHidden *bool   `json:"fieldHidden,omitempty"`
 
 			// Format of param
 			Format *string `json:"format,omitempty"`
@@ -2762,6 +2832,7 @@ func (a *JSONSchemaProperties) UnmarshalJSON(b []byte) error {
 
 				// Description of param
 				Description *string `json:"description,omitempty"`
+				FieldHidden *bool   `json:"fieldHidden,omitempty"`
 
 				// Format of param
 				Format *string `json:"format,omitempty"`
@@ -3208,6 +3279,9 @@ type ServerInterface interface {
 	// Get list of modules
 	// (GET /modules)
 	GetModules(w http.ResponseWriter, r *http.Request)
+	// Действия с заявкой в мониторинге
+	// (PUT /monitoring/task/action)
+	MonitoringTaskAction(w http.ResponseWriter, r *http.Request)
 	// Get tasks for monitoring
 	// (GET /monitoring/tasks)
 	GetTasksForMonitoring(w http.ResponseWriter, r *http.Request, params GetTasksForMonitoringParams)
@@ -3509,6 +3583,21 @@ func (siw *ServerInterfaceWrapper) GetModules(w http.ResponseWriter, r *http.Req
 
 	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetModules(w, r)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
+// MonitoringTaskAction operation middleware
+func (siw *ServerInterfaceWrapper) MonitoringTaskAction(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.MonitoringTaskAction(w, r)
 	}
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -5238,6 +5327,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/modules", wrapper.GetModules)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/monitoring/task/action", wrapper.MonitoringTaskAction)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/monitoring/tasks", wrapper.GetTasksForMonitoring)

@@ -2703,7 +2703,7 @@ func (db *PGCon) GetTaskActiveBlock(c context.Context, taskID, stepName string) 
 }
 
 func (db *PGCon) GetTaskForMonitoring(ctx context.Context, workNumber string) ([]entity.MonitoringTaskNode, error) {
-	ctx, span := trace.StartSpan(ctx, "get_task_nodes_for_monitoring")
+	ctx, span := trace.StartSpan(ctx, "get_task_for_monitoring")
 	defer span.End()
 
 	// nolint:gocritic
@@ -2711,6 +2711,7 @@ func (db *PGCon) GetTaskForMonitoring(ctx context.Context, workNumber string) ([
 	q := `
 		SELECT w.work_number, 
 		       w.version_id, 
+		       w.is_paused process_is_paused, 
 		       p.author,
 		       p.created_at::text,
 		       p.name,
@@ -2718,7 +2719,8 @@ func (db *PGCon) GetTaskForMonitoring(ctx context.Context, workNumber string) ([
 		       vs.status,
 		       vs.id,
        		   v.content->'pipeline'-> 'blocks'->step_name->>'title' title,
-       		   vs.time block_date_init
+       		   vs.time block_date_init,
+       		   vs.is_paused block_is_paused
 		from works w
     		join versions v on w.version_id = v.id
     		join pipelines p on v.pipeline_id = p.id
@@ -2740,6 +2742,7 @@ func (db *PGCon) GetTaskForMonitoring(ctx context.Context, workNumber string) ([
 		if scanErr := rows.Scan(
 			&item.WorkNumber,
 			&item.VersionID,
+			&item.ProcessIsPaused,
 			&item.Author,
 			&item.CreationTime,
 			&item.ScenarioName,
@@ -2748,6 +2751,7 @@ func (db *PGCon) GetTaskForMonitoring(ctx context.Context, workNumber string) ([
 			&item.BlockID,
 			&item.RealName,
 			&item.BlockDateInit,
+			&item.BlockIsPaused,
 		); scanErr != nil {
 			return nil, scanErr
 		}

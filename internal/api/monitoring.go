@@ -2,6 +2,8 @@ package api
 
 import (
 	"context"
+	"encoding/json"
+	"io"
 	"net/http"
 	"regexp"
 	"strings"
@@ -19,7 +21,8 @@ import (
 )
 
 const (
-	monitoringTimeLayout = "2006-01-02T15:04:05-0700"
+	monitoringTimeLayout  = "2006-01-02T15:04:05-0700"
+	monitoringActionPause = "pause"
 )
 
 func (ae *Env) GetTasksForMonitoring(w http.ResponseWriter, r *http.Request, params GetTasksForMonitoringParams) {
@@ -174,7 +177,7 @@ func (ae *Env) GetBlockContext(w http.ResponseWriter, r *http.Request, blockID s
 }
 
 func (ae *Env) GetMonitoringTask(w http.ResponseWriter, req *http.Request, workNumber string) {
-	ctx, s := trace.StartSpan(req.Context(), "get_task_for_monitoring")
+	ctx, s := trace.StartSpan(req.Context(), "get_monitoring_task")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
@@ -221,6 +224,7 @@ func (ae *Env) GetMonitoringTask(w http.ResponseWriter, req *http.Request, workN
 	}
 	res.VersionId = nodes[0].VersionID
 	res.WorkNumber = nodes[0].WorkNumber
+	res.IsPaused = nodes[0].ProcessIsPaused
 
 	for i := range nodes {
 		monitoringHistory := MonitoringHistory{
@@ -228,6 +232,7 @@ func (ae *Env) GetMonitoringTask(w http.ResponseWriter, req *http.Request, workN
 			RealName: nodes[i].RealName,
 			Status:   getMonitoringStatus(nodes[i].Status),
 			NodeId:   nodes[i].NodeID,
+			IsPaused: nodes[i].BlockIsPaused,
 		}
 
 		if nodes[i].BlockDateInit != nil {
@@ -409,4 +414,118 @@ func (ae *Env) GetBlockState(w http.ResponseWriter, r *http.Request, blockID str
 
 		return
 	}
+}
+
+func (ae *Env) MonitoringTaskAction(w http.ResponseWriter, r *http.Request) {
+	ctx, span := trace.StartSpan(r.Context(), "monitoring_task_action")
+	defer span.End()
+
+	log := logger.GetLogger(ctx)
+	errorHandler := newHTTPErrorHandler(log, w)
+
+	b, err := io.ReadAll(r.Body)
+
+	defer r.Body.Close()
+
+	if err != nil {
+		errorHandler.handleError(RequestReadError, err)
+
+		return
+	}
+
+	req := &MonitoringTaskActionRequest{}
+
+	err = json.Unmarshal(b, req)
+	if err != nil {
+		errorHandler.handleError(PipelineParseError, err)
+
+		return
+	}
+
+	txStorage, transactionErr := ae.DB.StartTransaction(ctx)
+	if transactionErr != nil {
+		log.WithError(transactionErr).Error("couldn't start transaction")
+
+		errorHandler.sendError(UnknownError)
+
+		return
+	}
+
+	defer func() {
+		if r := recover(); r != nil {
+			log.WithField("funcName", "recover").
+				Error(r)
+
+			if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
+				log.WithField("funcName", "RollbackTransaction").
+					WithError(txErr).
+					Error("rollback transaction")
+			}
+		}
+	}()
+
+	workID, err := ae.DB.GetWorkIDByWorkNumber(ctx, req.WorkNumber)
+	if err != nil {
+		errorHandler.handleError(GetTaskError, err)
+
+		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
+			log.WithField("funcName", "MonitoringTaskAction").
+				WithError(errors.New("couldn't rollback tx")).
+				Error(txErr)
+		}
+
+		return
+	}
+
+	switch req.Action {
+	case monitoringActionPause:
+		{
+			err = ae.pauseProcess(ctx, workID.String(), req.Params)
+			if err != nil {
+				errorHandler.handleError(GetTaskError, err)
+
+				if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
+					log.WithField("funcName", "MonitoringTaskAction").
+						WithError(errors.New("couldn't rollback tx")).
+						Error(txErr)
+				}
+
+				return
+			}
+		}
+	}
+
+	if err = txStorage.CommitTransaction(ctx); err != nil {
+		log.WithError(err).Error("couldn't commit transaction")
+
+		errorHandler.sendError(UnknownError)
+
+		return
+	}
+
+	err = sendResponse(w, http.StatusOK, nil)
+	if err != nil {
+		errorHandler.handleError(UnknownError, err)
+
+		return
+	}
+}
+
+func (ae *Env) pauseProcess(ctx context.Context, workID string, params *MonitoringTaskActionParams) error {
+	err := ae.DB.SetTaskPaused(ctx, workID, true)
+	if err != nil {
+		return err
+	}
+
+	stepNames := make([]string, 0)
+	if params != nil && params.Steps != nil {
+		stepNames = *params.Steps
+	}
+
+	err = ae.DB.SetTaskBlocksPaused(ctx, workID, stepNames, true)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

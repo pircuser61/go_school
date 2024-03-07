@@ -272,4 +272,8 @@ type Database interface {
 		map[string]map[string]*time.Time,
 		error,
 	)
+	CreateTaskEvent(ctx c.Context, dto *e.CreateTaskEvent) (eventID string, err error)
+	SetTaskPaused(ctx c.Context, workID string, isPaused bool) error
+	SetTaskBlocksPaused(ctx c.Context, workID string, steps []string, isPaused bool) error
+	IsTaskPaused(ctx c.Context, workID string) (isPaused bool, err error)
 }
