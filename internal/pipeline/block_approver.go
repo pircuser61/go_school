@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/pkg/errors"
+
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
@@ -348,6 +350,25 @@ func (gb *GoApproverBlock) checkForEmptyForm(formState json.RawMessage, l logger
 	}
 
 	return true
+}
+
+func (gb *GoApproverBlock) getDeadline(ctx context.Context, workType string) (time.Time, error) {
+	if gb.State.Decision != nil {
+		return time.Time{}, nil
+	}
+
+	slaInfoPtr, getSLAInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDTO{
+		TaskCompletionIntervals: []entity.TaskCompletionInterval{{
+			StartedAt:  gb.RunContext.CurrBlockStartTime,
+			FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100),
+		}},
+		WorkType: sla.WorkHourType(workType),
+	})
+	if getSLAInfoErr != nil {
+		return time.Time{}, errors.Wrap(getSLAInfoErr, "can not get slaInfo")
+	}
+
+	return gb.getNewSLADeadline(slaInfoPtr, false), nil
 }
 
 func (gb *GoApproverBlock) getNewSLADeadline(slaInfoPtr *sla.Info, half bool) time.Time {

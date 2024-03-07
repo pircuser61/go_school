@@ -101,6 +101,16 @@ func makeStorage() *mocks.MockedDatabase {
 		}, nil,
 	)
 
+	res.On("GetTaskInWorkTime",
+		mock.MatchedBy(func(ctx context.Context) bool { return true }),
+		mock.MatchedBy(func(workNumber string) bool { return true }),
+	).Return(
+		&entity.TaskCompletionInterval{
+			StartedAt:  time.Time{},
+			FinishedAt: time.Time{},
+		}, nil,
+	)
+
 	res.On("GetCanceledTaskSteps",
 		mock.MatchedBy(func(ctx context.Context) bool { return true }),
 		mock.MatchedBy(func(taskID uuid.UUID) bool { return true }),
@@ -216,7 +226,11 @@ func TestProcessBlock(t *testing.T) {
 					skipNotifications: true,
 					VarStore:          store.NewStore(),
 					Services: RunContextServices{
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSLAService(nil)
 
+							return slaMock
+						}(),
 						Storage: func() db.Database {
 							res := makeStorage()
 

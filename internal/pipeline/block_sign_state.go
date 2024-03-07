@@ -77,10 +77,11 @@ type SignData struct {
 	SignerGroupID   string `json:"signer_group_id,omitempty"`
 	SignerGroupName string `json:"signer_group_name,omitempty"`
 
-	SLA        *int    `json:"sla,omitempty"`
-	CheckSLA   *bool   `json:"check_sla,omitempty"`
-	AutoReject *bool   `json:"auto_reject,omitempty"`
-	WorkType   *string `json:"work_type,omitempty"`
+	Deadline   time.Time `json:"deadline,omitempty"`
+	SLA        *int      `json:"sla,omitempty"`
+	CheckSLA   *bool     `json:"check_sla,omitempty"`
+	AutoReject *bool     `json:"auto_reject,omitempty"`
+	WorkType   *string   `json:"work_type,omitempty"`
 
 	SLAChecked          bool `json:"sla_checked"`
 	DayBeforeSLAChecked bool `json:"before_day_sla_checked"`

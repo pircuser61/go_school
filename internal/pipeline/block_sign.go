@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/iancoleman/orderedmap"
+
 	"github.com/pkg/errors"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
@@ -336,6 +337,25 @@ func (gb *GoSignBlock) Members() []Member {
 	return members
 }
 
+func (gb *GoSignBlock) getDeadline(ctx context.Context, workType string) (time.Time, error) {
+	if gb.State.Decision != nil {
+		return time.Time{}, nil
+	}
+
+	slaInfoPtr, getSLAInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDTO{
+		TaskCompletionIntervals: []entity.TaskCompletionInterval{{
+			StartedAt:  gb.RunContext.CurrBlockStartTime,
+			FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100),
+		}},
+		WorkType: sla.WorkHourType(workType),
+	})
+	if getSLAInfoErr != nil {
+		return time.Time{}, errors.Wrap(getSLAInfoErr, "can not get slaInfo")
+	}
+
+	return gb.RunContext.Services.SLAService.ComputeMaxDate(gb.RunContext.CurrBlockStartTime, float32(*gb.State.SLA), slaInfoPtr), nil
+}
+
 //nolint:dupl,gocyclo //Need here
 func (gb *GoSignBlock) Deadlines(ctx context.Context) ([]Deadline, error) {
 	deadlines := make([]Deadline, 0, 2)
@@ -382,6 +402,34 @@ func (gb *GoSignBlock) Deadlines(ctx context.Context) ([]Deadline, error) {
 	}
 
 	return deadlines, nil
+}
+
+func (gb *GoSignBlock) setWorkTypeAndDeadline(ctx context.Context, params *script.SignParams) error {
+	if params.WorkType != nil {
+		gb.State.WorkType = params.WorkType
+	} else {
+		task, getVersionErr := gb.RunContext.Services.Storage.GetVersionByWorkNumber(ctx, gb.RunContext.WorkNumber)
+		if getVersionErr != nil {
+			return getVersionErr
+		}
+
+		processSLASettings, getVersionErr := gb.RunContext.Services.Storage.GetSLAVersionSettings(
+			ctx, task.VersionID.String())
+		if getVersionErr != nil {
+			return getVersionErr
+		}
+
+		gb.State.WorkType = &processSLASettings.WorkType
+	}
+
+	deadline, err := gb.getDeadline(ctx, *gb.State.WorkType)
+	if err != nil {
+		return err
+	}
+
+	gb.State.Deadline = deadline
+
+	return nil
 }
 
 type setSignersByParamsDTO struct {
@@ -682,6 +730,10 @@ func (gb *GoSignBlock) createState(ctx context.Context, ef *entity.EriusFunc) er
 		}
 
 		gb.State.SigningParams.Files = filesForSigningParams
+	}
+
+	if deadlineErr := gb.setWorkTypeAndDeadline(ctx, &params); deadlineErr != nil {
+		return deadlineErr
 	}
 
 	setErr := gb.setSignersByParams(ctx, &setSignersByParamsDTO{
