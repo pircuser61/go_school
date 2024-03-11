@@ -27,7 +27,7 @@ type handleInitiatorNotifyParams struct {
 }
 
 const (
-	fileId    = "file_id"
+	fileID    = "file_id"
 	filesType = "files"
 
 	attachLinks = "attachLinks"
@@ -170,7 +170,6 @@ func (runCtx *BlockRunContext) makeNotificationFormAttachment(files []string) ([
 }
 
 func (runCtx *BlockRunContext) makeNotificationAttachment() ([]fileregistry.FileInfo, error) {
-
 	task, err := runCtx.Services.Storage.GetTaskRunContext(c.Background(), runCtx.WorkNumber)
 	if err != nil {
 		return nil, err
@@ -186,7 +185,7 @@ func (runCtx *BlockRunContext) makeNotificationAttachment() ([]fileregistry.File
 		if ok {
 			switch data := filesAttach.(type) {
 			case om.OrderedMap:
-				fileID, get := data.Get(fileId)
+				fileID, get := data.Get(fileID)
 				if !get {
 					continue
 				}
@@ -196,7 +195,7 @@ func (runCtx *BlockRunContext) makeNotificationAttachment() ([]fileregistry.File
 				for _, vv := range data {
 					fileMap := vv.(om.OrderedMap)
 
-					fileID, oks := fileMap.Get(fileId)
+					fileID, oks := fileMap.Get(fileID)
 					if !oks {
 						continue
 					}
@@ -328,13 +327,13 @@ func getAdditionalAttachList(form entity.DescriptionForm, formData *FormData) []
 					continue
 				}
 
-				if fileID, fileOK := file.Get(fileId); fileOK {
+				if fileID, fileOK := file.Get(fileID); fileOK {
 					attachmentFiles = append(attachmentFiles, fileID.(string))
 				}
 			case []interface{}:
 				for _, val := range attach {
 					valMap := val.(om.OrderedMap)
-					if fileID, fileOK := valMap.Get(fileId); fileOK {
+					if fileID, fileOK := valMap.Get(fileID); fileOK {
 						attachmentFiles = append(attachmentFiles, fileID.(string))
 					}
 				}
@@ -440,7 +439,7 @@ func GetConvertDesc(descriptions om.OrderedMap, keys map[string]string, hiddenFi
 		}
 
 		nameKey := strings.Replace(keysSplit[1], ")", "", 1)
-		if nameKey == fileId {
+		if nameKey == fileID {
 			continue
 		}
 
