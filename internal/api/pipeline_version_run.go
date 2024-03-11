@@ -24,7 +24,13 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 )
 
-const runByPipelineIDPath = "/run/versions/pipeline_id"
+const (
+	runByPipelineIDPath = "/run/versions/pipeline_id"
+
+	titleKey      = "title"
+	emailKey      = "email"
+	propertiesKey = "properties"
+)
 
 type runNewVersionsByPrevVersionRequest struct {
 	ApplicationBody   orderedmap.OrderedMap `json:"application_body"`
@@ -400,7 +406,7 @@ func (ae *Env) getHiddenFields(ctx c.Context, version *entity.EriusScenario) ([]
 }
 
 func checkGroup(rawStartSchema jsonschema.Schema) jsonschema.Schema {
-	properties, ok := rawStartSchema["properties"]
+	properties, ok := rawStartSchema[propertiesKey]
 	if !ok {
 		return rawStartSchema
 	}
@@ -415,16 +421,16 @@ func checkGroup(rawStartSchema jsonschema.Schema) jsonschema.Schema {
 
 		newTitle := cleanKey(v)
 		if newTitle != "" {
-			valMap["title"] = newTitle
+			valMap[titleKey] = newTitle
 		}
 
-		propVal, propValOk := valMap["properties"]
+		propVal, propValOk := valMap[propertiesKey]
 		if !propValOk {
 			continue
 		}
 
 		propValMap := propVal.(map[string]interface{})
-		if _, user := propValMap["email"]; user {
+		if _, user := propValMap[emailKey]; user {
 			continue
 		}
 
@@ -438,16 +444,16 @@ func checkGroup(rawStartSchema jsonschema.Schema) jsonschema.Schema {
 
 			newAdTitle := cleanKey(val)
 			if newAdTitle != "" {
-				valMaps["title"] = newAdTitle
+				valMaps[titleKey] = newAdTitle
 			}
 
-			propVals, propValOks := valMaps["properties"]
+			propVals, propValOks := valMaps[propertiesKey]
 			if !propValOks {
 				continue
 			}
 
 			propMap := propVals.(map[string]interface{})
-			if _, user := propMap["email"]; user {
+			if _, user := propMap[emailKey]; user {
 				continue
 			}
 
@@ -468,7 +474,7 @@ func cleanKey(mapKeys interface{}) string {
 		return ""
 	}
 
-	key := keys["title"]
+	key := keys[titleKey]
 
 	replacements := map[string]string{
 		"\\t":  "",

@@ -14,6 +14,11 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
 
+const (
+	titleKey      = "title"
+	propertiesKey = "properties"
+)
+
 // nolint:dupl // another block
 func createGoFormBlock(
 	ctx context.Context,
@@ -284,7 +289,7 @@ func (gb *GoFormBlock) createState(ctx context.Context, ef *entity.EriusFunc) er
 	}
 
 	schema = checkFormGroup(schema)
-	if prop, ok := schema["properties"]; ok {
+	if prop, ok := schema[propertiesKey]; ok {
 		propMap, propOk := prop.(map[string]interface{})
 		if !propOk {
 			return errors.New("properties is not map")
@@ -467,7 +472,7 @@ func (gb *GoFormBlock) setExecutorsByParams(ctx context.Context, dto *setFormExe
 }
 
 func checkFormGroup(rawStartSchema map[string]interface{}) jsonschema.Schema {
-	properties, ok := rawStartSchema["properties"]
+	properties, ok := rawStartSchema[propertiesKey]
 	if !ok {
 		return rawStartSchema
 	}
@@ -482,10 +487,10 @@ func checkFormGroup(rawStartSchema map[string]interface{}) jsonschema.Schema {
 
 		newTitle := cleanKey(v)
 		if newTitle != "" {
-			valMap["title"] = newTitle
+			valMap[titleKey] = newTitle
 		}
 
-		propVal, propValOk := valMap["properties"]
+		propVal, propValOk := valMap[propertiesKey]
 		if !propValOk {
 			continue
 		}
@@ -501,10 +506,10 @@ func checkFormGroup(rawStartSchema map[string]interface{}) jsonschema.Schema {
 
 			newAdTitle := cleanKey(val)
 			if newAdTitle != "" {
-				valMaps["title"] = newAdTitle
+				valMaps[titleKey] = newAdTitle
 			}
 
-			propVals, propValOks := valMaps["properties"]
+			propVals, propValOks := valMaps[propertiesKey]
 			if !propValOks {
 				continue
 			}
@@ -527,7 +532,7 @@ func cleanKey(mapKeys interface{}) string {
 		return ""
 	}
 
-	key := keys["title"]
+	key := keys[titleKey]
 
 	replacements := map[string]string{
 		"\\t":  "",
