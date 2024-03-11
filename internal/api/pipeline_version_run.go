@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/iancoleman/orderedmap"
@@ -412,6 +413,11 @@ func checkGroup(rawStartSchema jsonschema.Schema) jsonschema.Schema {
 			continue
 		}
 
+		newTitle := cleanKey(v)
+		if newTitle != "" {
+			valMap["title"] = newTitle
+		}
+
 		propVal, propValOk := valMap["properties"]
 		if !propValOk {
 			continue
@@ -423,11 +429,60 @@ func checkGroup(rawStartSchema jsonschema.Schema) jsonschema.Schema {
 		}
 
 		for key, val := range propValMap {
-			propertiesMap[key] = val
+			valMaps, valOk := v.(map[string]interface{})
+			if !valOk {
+				propertiesMap[key] = val
+
+				continue
+			}
+
+			newAdTitle := cleanKey(val)
+			if newAdTitle != "" {
+				valMaps["title"] = newAdTitle
+			}
+
+			propVals, propValOks := valMaps["properties"]
+			if !propValOks {
+				continue
+			}
+
+			propMap := propVals.(map[string]interface{})
+			if _, user := propMap["email"]; user {
+				continue
+			}
+
+			for propMapKey, propMapVal := range propMap {
+				propertiesMap[propMapKey] = propMapVal
+			}
 		}
 
 		delete(propertiesMap, k)
 	}
 
 	return rawStartSchema
+}
+
+func cleanKey(mapKeys interface{}) string {
+	keys, ok := mapKeys.(map[string]interface{})
+	if !ok {
+		return ""
+	}
+
+	key := keys["title"]
+
+	replacements := map[string]string{
+		"\\t":  "",
+		"\t":   "",
+		"\\n":  "",
+		"\n":   "",
+		"\r":   "",
+		"\\r":  "",
+		"\"\"": "",
+	}
+
+	for old, news := range replacements {
+		key = strings.ReplaceAll(key.(string), old, news)
+	}
+
+	return strings.ReplaceAll(key.(string), "\\", "")
 }

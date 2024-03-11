@@ -459,6 +459,11 @@ func checkFormGroup(rawStartSchema map[string]interface{}) jsonschema.Schema {
 			continue
 		}
 
+		newTitle := cleanKey(v)
+		if newTitle != "" {
+			valMap["title"] = newTitle
+		}
+
 		propVal, propValOk := valMap["properties"]
 		if !propValOk {
 			continue
@@ -466,11 +471,56 @@ func checkFormGroup(rawStartSchema map[string]interface{}) jsonschema.Schema {
 
 		propValMap := propVal.(map[string]interface{})
 		for key, val := range propValMap {
-			propertiesMap[key] = val
+			valMaps, mapOks := v.(map[string]interface{})
+			if mapOks {
+				propertiesMap[key] = val
+
+				continue
+			}
+
+			newAdTitle := cleanKey(val)
+			if newAdTitle != "" {
+				valMaps["title"] = newAdTitle
+			}
+
+			propVals, propValOks := valMaps["properties"]
+			if !propValOks {
+				continue
+			}
+
+			propValMaps := propVals.(map[string]interface{})
+			for keys, vals := range propValMaps {
+				propertiesMap[keys] = vals
+			}
 		}
 
 		delete(propertiesMap, k)
 	}
 
 	return rawStartSchema
+}
+
+func cleanKey(mapKeys interface{}) string {
+	keys, ok := mapKeys.(map[string]interface{})
+	if !ok {
+		return ""
+	}
+
+	key := keys["title"]
+
+	replacements := map[string]string{
+		"\\t":  "",
+		"\t":   "",
+		"\\n":  "",
+		"\n":   "",
+		"\r":   "",
+		"\\r":  "",
+		"\"\"": "",
+	}
+
+	for old, news := range replacements {
+		key = strings.ReplaceAll(key.(string), old, news)
+	}
+
+	return strings.ReplaceAll(key.(string), "\\", "")
 }

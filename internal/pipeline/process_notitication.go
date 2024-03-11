@@ -237,25 +237,6 @@ func filterHiddenAttachmentFields(attachmentFields, hiddenFields []string) []str
 	return filteredAttachmentFields
 }
 
-func cleanKey(s string) string {
-	replacements := map[string]string{
-		"\\t": "",
-		"\t":  "",
-		"\\n": "",
-		"\n":  "",
-		"\r":  "",
-		"\\r": "",
-	}
-
-	for old, news := range replacements {
-		s = strings.ReplaceAll(s, old, news)
-	}
-
-	s = strings.ReplaceAll(s, "\\", "")
-
-	return s
-}
-
 //nolint:gocognit,gocyclo // данный нейминг хорошо описывает механику метода
 func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) ([]om.OrderedMap, []e.Attachment, error) {
 	taskContext, err := runCtx.Services.Storage.GetTaskRunContext(c.Background(), runCtx.WorkNumber)
@@ -437,7 +418,10 @@ func GetConvertDesc(descriptions om.OrderedMap, keys map[string]string, hiddenFi
 			}
 		}
 
-		ruKey = cleanKey(ruKey)
+		if v == "" {
+			continue
+		}
+
 		if _, existKey := newDesc.Get(ruKey); existKey {
 			newDesc.Set(fmt.Sprintf("%s %-*s", ruKey, spaceCount, " "), v)
 			spaceCount++
@@ -445,25 +429,33 @@ func GetConvertDesc(descriptions om.OrderedMap, keys map[string]string, hiddenFi
 			continue
 		}
 
-		if len(keysSplit) > 0 {
-			nameKey := strings.Replace(keysSplit[1], ")", "", 1)
-			if nameKey == "file_id" {
+		if len(keysSplit) < 1 {
+			newDesc.Set(ruKey, v)
+
+			continue
+		}
+
+		nameKey := strings.Replace(keysSplit[1], ")", "", 1)
+		if nameKey == "file_id" {
+			continue
+		}
+
+		if ok {
+			key := fmt.Sprintf("%s (%s)", ruKey, nameKey)
+
+			if num, oks := v.(float64); oks {
+				strNum := strings.Split(fmt.Sprintf("%f", num), ".")[0]
+				newDesc.Set(key, strNum)
+
 				continue
 			}
 
-			if ok {
-				key := fmt.Sprintf("%s (%s)", ruKey, nameKey)
-				newDesc.Set(key, v)
-			} else {
-				newDesc.Set(ruKey, v)
-			}
+			newDesc.Set(key, v)
 
 			continue
 		}
 
 		newDesc.Set(ruKey, v)
-
-		continue
 	}
 
 	return newDesc
@@ -481,6 +473,29 @@ func checkGroup(schema om.OrderedMap) om.OrderedMap {
 		}
 
 		for key, value := range val.Values() {
+			values, oks := value.(om.OrderedMap)
+			if !oks {
+				key = fmt.Sprintf("%s (%s)", k, key)
+				schema.Set(key, value)
+
+				continue
+			}
+
+			if _, user := values.Get("email"); user {
+				continue
+			}
+
+			for ky, vl := range values.Values() {
+				ky = fmt.Sprintf("%s (%s)", key, ky)
+				schema.Set(ky, vl)
+
+				continue
+			}
+
+			if _, okay := schema.Get(k); okay {
+				continue
+			}
+
 			key = fmt.Sprintf("%s (%s)", k, key)
 			schema.Set(key, value)
 		}
