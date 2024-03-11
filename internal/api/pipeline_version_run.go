@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/iancoleman/orderedmap"
@@ -23,7 +24,13 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 )
 
-const runByPipelineIDPath = "/run/versions/pipeline_id"
+const (
+	runByPipelineIDPath = "/run/versions/pipeline_id"
+
+	titleKey      = "title"
+	emailKey      = "email"
+	propertiesKey = "properties"
+)
 
 type runNewVersionsByPrevVersionRequest struct {
 	ApplicationBody   orderedmap.OrderedMap `json:"application_body"`
@@ -399,7 +406,7 @@ func (ae *Env) getHiddenFields(ctx c.Context, version *entity.EriusScenario) ([]
 }
 
 func checkGroup(rawStartSchema jsonschema.Schema) jsonschema.Schema {
-	properties, ok := rawStartSchema["properties"]
+	properties, ok := rawStartSchema[propertiesKey]
 	if !ok {
 		return rawStartSchema
 	}
@@ -412,22 +419,76 @@ func checkGroup(rawStartSchema jsonschema.Schema) jsonschema.Schema {
 			continue
 		}
 
-		propVal, propValOk := valMap["properties"]
+		newTitle := cleanKey(v)
+		if newTitle != "" {
+			valMap[titleKey] = newTitle
+		}
+
+		propVal, propValOk := valMap[propertiesKey]
 		if !propValOk {
 			continue
 		}
 
 		propValMap := propVal.(map[string]interface{})
-		if _, user := propValMap["email"]; user {
+		if _, user := propValMap[emailKey]; user {
 			continue
 		}
 
 		for key, val := range propValMap {
-			propertiesMap[key] = val
+			valMaps, valOk := v.(map[string]interface{})
+			if !valOk {
+				propertiesMap[key] = val
+
+				continue
+			}
+
+			newAdTitle := cleanKey(val)
+			if newAdTitle != "" {
+				valMaps[titleKey] = newAdTitle
+			}
+
+			propVals, propValOks := valMaps[propertiesKey]
+			if !propValOks {
+				continue
+			}
+
+			propMap := propVals.(map[string]interface{})
+			if _, user := propMap[emailKey]; user {
+				continue
+			}
+
+			for propMapKey, propMapVal := range propMap {
+				propertiesMap[propMapKey] = propMapVal
+			}
 		}
 
 		delete(propertiesMap, k)
 	}
 
 	return rawStartSchema
+}
+
+func cleanKey(mapKeys interface{}) string {
+	keys, ok := mapKeys.(map[string]interface{})
+	if !ok {
+		return ""
+	}
+
+	key := keys[titleKey]
+
+	replacements := map[string]string{
+		"\\t":  "",
+		"\t":   "",
+		"\\n":  "",
+		"\n":   "",
+		"\r":   "",
+		"\\r":  "",
+		"\"\"": "",
+	}
+
+	for old, news := range replacements {
+		key = strings.ReplaceAll(key.(string), old, news)
+	}
+
+	return strings.ReplaceAll(key.(string), "\\", "")
 }

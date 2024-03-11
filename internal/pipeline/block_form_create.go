@@ -14,6 +14,11 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
 
+const (
+	titleKey      = "title"
+	propertiesKey = "properties"
+)
+
 // nolint:dupl // another block
 func createGoFormBlock(
 	ctx context.Context,
@@ -284,7 +289,7 @@ func (gb *GoFormBlock) createState(ctx context.Context, ef *entity.EriusFunc) er
 	}
 
 	schema = checkFormGroup(schema)
-	if prop, ok := schema["properties"]; ok {
+	if prop, ok := schema[propertiesKey]; ok {
 		propMap, propOk := prop.(map[string]interface{})
 		if !propOk {
 			return errors.New("properties is not map")
@@ -467,7 +472,7 @@ func (gb *GoFormBlock) setExecutorsByParams(ctx context.Context, dto *setFormExe
 }
 
 func checkFormGroup(rawStartSchema map[string]interface{}) jsonschema.Schema {
-	properties, ok := rawStartSchema["properties"]
+	properties, ok := rawStartSchema[propertiesKey]
 	if !ok {
 		return rawStartSchema
 	}
@@ -480,18 +485,68 @@ func checkFormGroup(rawStartSchema map[string]interface{}) jsonschema.Schema {
 			continue
 		}
 
-		propVal, propValOk := valMap["properties"]
+		newTitle := cleanKey(v)
+		if newTitle != "" {
+			valMap[titleKey] = newTitle
+		}
+
+		propVal, propValOk := valMap[propertiesKey]
 		if !propValOk {
 			continue
 		}
 
 		propValMap := propVal.(map[string]interface{})
 		for key, val := range propValMap {
-			propertiesMap[key] = val
+			valMaps, mapOks := v.(map[string]interface{})
+			if mapOks {
+				propertiesMap[key] = val
+
+				continue
+			}
+
+			newAdTitle := cleanKey(val)
+			if newAdTitle != "" {
+				valMaps[titleKey] = newAdTitle
+			}
+
+			propVals, propValOks := valMaps[propertiesKey]
+			if !propValOks {
+				continue
+			}
+
+			propValMaps := propVals.(map[string]interface{})
+			for keys, vals := range propValMaps {
+				propertiesMap[keys] = vals
+			}
 		}
 
 		delete(propertiesMap, k)
 	}
 
 	return rawStartSchema
+}
+
+func cleanKey(mapKeys interface{}) string {
+	keys, ok := mapKeys.(map[string]interface{})
+	if !ok {
+		return ""
+	}
+
+	key := keys[titleKey]
+
+	replacements := map[string]string{
+		"\\t":  "",
+		"\t":   "",
+		"\\n":  "",
+		"\n":   "",
+		"\r":   "",
+		"\\r":  "",
+		"\"\"": "",
+	}
+
+	for old, news := range replacements {
+		key = strings.ReplaceAll(key.(string), old, news)
+	}
+
+	return strings.ReplaceAll(key.(string), "\\", "")
 }
