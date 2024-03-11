@@ -170,6 +170,13 @@ func (gb *GoFormBlock) reEntry(ctx context.Context, ef *entity.EriusFunc) error 
 		return nil
 	}
 
+	var params script.FormParams
+
+	err := json.Unmarshal(ef.Params, &params)
+	if err != nil {
+		return errors.Wrap(err, "can not get form parameters in reentry")
+	}
+
 	isAutofill := gb.State.FormExecutorType == script.FormExecutorTypeAutoFillUser
 	if isAutofill && gb.State.ReEnterSettings == nil {
 		return errors.New("autofill with empty reenter settings data")
@@ -181,7 +188,7 @@ func (gb *GoFormBlock) reEntry(ctx context.Context, ef *entity.EriusFunc) error 
 	gb.State.ActualExecutor = nil
 
 	if !isAutofill && gb.State.FormExecutorType != script.FormExecutorTypeAutoFillUser {
-		err := gb.setExecutors(ctx, ef)
+		err := gb.setExecutors(ctx, &params)
 		if err != nil {
 			return err
 		}
@@ -194,18 +201,15 @@ func (gb *GoFormBlock) reEntry(ctx context.Context, ef *entity.EriusFunc) error 
 		}
 	}
 
+	if deadlineErr := gb.setWorkTypeAndDeadline(ctx, &params); deadlineErr != nil {
+		return deadlineErr
+	}
+
 	return gb.handleNotifications(ctx)
 }
 
-func (gb *GoFormBlock) setExecutors(ctx context.Context, ef *entity.EriusFunc) error {
+func (gb *GoFormBlock) setExecutors(ctx context.Context, params *script.FormParams) error {
 	if gb.State.FormExecutorType == script.FormExecutorTypeFromSchema {
-		var params script.FormParams
-
-		err := json.Unmarshal(ef.Params, &params)
-		if err != nil {
-			return errors.Wrap(err, "can not get form parameters in reentry")
-		}
-
 		setErr := gb.setExecutorsByParams(ctx, &setFormExecutorsByParamsDTO{
 			FormExecutorType: gb.State.FormExecutorType,
 			Value:            params.Executor,
@@ -344,6 +348,14 @@ func (gb *GoFormBlock) createState(ctx context.Context, ef *entity.EriusFunc) er
 		return setErr
 	}
 
+	if deadlineErr := gb.setWorkTypeAndDeadline(ctx, &params); deadlineErr != nil {
+		return deadlineErr
+	}
+
+	return gb.handleNotifications(ctx)
+}
+
+func (gb *GoFormBlock) setWorkTypeAndDeadline(ctx context.Context, params *script.FormParams) error {
 	if params.WorkType != nil {
 		gb.State.WorkType = *params.WorkType
 	} else {
@@ -352,14 +364,23 @@ func (gb *GoFormBlock) createState(ctx context.Context, ef *entity.EriusFunc) er
 			return getVersionErr
 		}
 
-		processSLASettings, getVersionErr := gb.RunContext.Services.Storage.GetSLAVersionSettings(ctx, task.VersionID.String())
+		processSLASettings, getVersionErr := gb.RunContext.Services.Storage.GetSLAVersionSettings(
+			ctx, task.VersionID.String())
 		if getVersionErr != nil {
 			return getVersionErr
 		}
+
 		gb.State.WorkType = processSLASettings.WorkType
 	}
 
-	return gb.handleNotifications(ctx)
+	deadline, err := gb.getDeadline(ctx, gb.State.WorkType)
+	if err != nil {
+		return err
+	}
+
+	gb.State.Deadline = deadline
+
+	return nil
 }
 
 type setFormExecutorsByParamsDTO struct {

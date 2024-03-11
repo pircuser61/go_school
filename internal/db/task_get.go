@@ -56,6 +56,7 @@ func uniqueActionsByRole(loginsIn, stepType string, finished, acted bool) string
          , CASE WHEN vs.step_type = 'execution' THEN vs.time END                            AS exec_start_time
 		 , CASE WHEN vs.step_type = 'approver' THEN vs.time END                          	AS appr_start_time
          , vs.time                                                                          AS node_start
+         , timestamptz(vs.content -> 'State' -> vs.step_name ->> 'deadline')                AS node_deadline
     FROM members m
              JOIN variable_storage vs on vs.id = m.block_id
              JOIN works w on vs.work_id = w.id
@@ -74,7 +75,8 @@ func uniqueActionsByRole(loginsIn, stepType string, finished, acted bool) string
          , JSONB_AGG(jsonb_actions.actions) 	         AS actions
          , max(actions.current_executor::text)::jsonb    AS current_executor
          , min(actions.exec_start_time)     	  		 AS exec_start_time
-         , min(actions.appr_start_time)     	  		 AS appr_start_time    
+         , min(actions.appr_start_time)     	  		 AS appr_start_time
+         , min(actions.node_deadline)     	  		 	 AS node_deadline    
     FROM actions
              JOIN filtered_actions fa ON fa.time = actions.node_start AND fa.block_id = actions.block_id
              LEFT JOIN LATERAL (SELECT jsonb_build_object(
@@ -237,7 +239,12 @@ func getUniqueActions(selectFilter string, logins []string) string {
 		return strings.Replace(q, "--unique-actions-filter--", "AND m.execution_group_member = true", replaceCount)
 	default:
 		return fmt.Sprintf(`WITH unique_actions AS (
-    SELECT id AS work_id, '[]' AS actions, '' AS current_executor, null AS exec_start_time, null AS appr_start_time
+    SELECT id                             AS work_id,
+           '[]'                           AS actions,
+           ''                             AS current_executor,
+           null                           AS exec_start_time,
+           null                           AS appr_start_time,
+           null::timestamp with time zone AS node_deadline
     FROM works
     WHERE author IN %s AND child_id IS NULL
 )`, loginsIn)
@@ -275,7 +282,7 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 			w.rate,
 			w.rate_comment,
 		    ua.actions,
-		    w.exec_deadline,
+		    COALESCE(NULLIF(ua.node_deadline, '0001-01-01T00:00:00Z'), w.exec_deadline),
 		    ua.current_executor,
 		    ua.exec_start_time,
 		    ua.appr_start_time

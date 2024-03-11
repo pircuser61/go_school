@@ -91,22 +91,13 @@ func getWorksToUpdate(tx *sql.Tx) ([]*workToAddDeadline, error) {
 	fmt.Println("getting works to update")
 
 	const q = `
-WITH blocks AS (
-    SELECT work_id, min(content -> 'State' -> step_name ->> 'deadline') as time
-    FROM variable_storage vs
-    WHERE step_type = 'execution'
-      AND status = 'running'
-    GROUP BY work_id
-)
 SELECT work_number
      , w.id
      , w.started_at
      , coalesce(vsla.work_type, '8/5')
      , coalesce(vsla.sla, 40)
-     , coalesce(b.time, '')
 FROM pipeliner.public.works w
-         LEFT JOIN pipeliner.public.version_sla vsla ON w.version_sla_id = vsla.id
-         LEFT JOIN blocks b ON b.work_id = w.id`
+         LEFT JOIN pipeliner.public.version_sla vsla ON w.version_sla_id = vsla.id`
 
 	rows, err := tx.Query(q)
 	if err != nil {
@@ -115,25 +106,12 @@ FROM pipeliner.public.works w
 
 	works := make([]*workToAddDeadline, 0, 10000)
 
-	var deadline string
-
-	loc, _ := time.LoadLocation("Europe/Moscow")
-
 	for rows.Next() {
 		w := &workToAddDeadline{}
 
-		scanErr := rows.Scan(&w.workNumber, &w.workID, &w.startedAt, &w.slaWorkType, &w.slaVal, &deadline)
+		scanErr := rows.Scan(&w.workNumber, &w.workID, &w.startedAt, &w.slaWorkType, &w.slaVal)
 		if scanErr != nil {
 			return nil, scanErr
-		}
-
-		if deadline != "" {
-			parsed, deadErr := time.ParseInLocation(time.RFC3339, deadline, loc)
-			if deadErr != nil {
-				return nil, deadErr
-			}
-
-			w.currDeadline = parsed
 		}
 
 		works = append(works, w)
@@ -150,10 +128,6 @@ func computeWorksDeadlines(srv sla.Service, ww []*workToAddDeadline) error {
 	fmt.Println("computing new deadlines")
 
 	for _, w := range ww {
-		if !w.currDeadline.IsZero() {
-			continue
-		}
-
 		slaInfoPtr, getSLAInfoErr := srv.GetSLAInfoPtr(context.Background(), sla.InfoDTO{
 			TaskCompletionIntervals: []entity.TaskCompletionInterval{
 				{

@@ -1,14 +1,17 @@
 package api
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"os"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-
 	"github.com/hrishin/httpmock"
+	"github.com/stretchr/testify/assert"
+
+	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
@@ -16,6 +19,8 @@ import (
 )
 
 func TestValidation_EndExists(t *testing.T) {
+	log := logger.GetLogger(context.TODO())
+
 	tests := []struct {
 		Name      string
 		Ef        entity.EriusScenario
@@ -57,7 +62,7 @@ func TestValidation_EndExists(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			if tt.Ef.Pipeline.Blocks.EndExists() != tt.WantValid {
+			if tt.Ef.Pipeline.Blocks.EndExists(log) != tt.WantValid {
 				t.Errorf("unexpected invalid %+v", tt.Ef.Pipeline.Blocks)
 			}
 		})
@@ -65,6 +70,8 @@ func TestValidation_EndExists(t *testing.T) {
 }
 
 func TestValidation_IsolationNode(t *testing.T) {
+	log := logger.GetLogger(context.TODO())
+
 	tests := []struct {
 		Name      string
 		Ef        entity.EriusScenario
@@ -294,7 +301,7 @@ func TestValidation_IsolationNode(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			if tt.Ef.Pipeline.Blocks.IsPipelineComplete() != tt.WantValid {
+			if tt.Ef.Pipeline.Blocks.IsPipelineComplete(log) != tt.WantValid {
 				t.Errorf("unexpected invalid %+v", tt.Ef.Pipeline.Blocks)
 			}
 		})
@@ -302,6 +309,8 @@ func TestValidation_IsolationNode(t *testing.T) {
 }
 
 func TestValidation_SocketFilled(t *testing.T) {
+	log := logger.GetLogger(context.TODO())
+
 	tests := []struct {
 		Name      string
 		Ef        entity.EriusScenario
@@ -453,7 +462,7 @@ func TestValidation_SocketFilled(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			isValid, _ := tt.Ef.Pipeline.Blocks.IsSocketsFilled()
+			isValid, _ := tt.Ef.Pipeline.Blocks.IsSocketsFilled(log)
 			if isValid != tt.WantValid {
 				t.Errorf("unexpected invalid %+v", tt.Ef.Pipeline.Blocks)
 			}
@@ -814,7 +823,7 @@ func TestValidation_ParallelNodes(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			isValid, _ := tt.Ef.Pipeline.Blocks.IsParallelNodesCorrect()
+			isValid, _ := tt.Ef.Pipeline.Blocks.IsParallelNodesCorrect(nil)
 			if isValid != true {
 				t.Errorf("unexpected invalid %+v", tt.Ef.Pipeline.Blocks)
 			}
@@ -924,4 +933,48 @@ func groupSliceToMap(g []*entity.NodeGroup) map[string]NodeGroupMap {
 	}
 
 	return gmap
+}
+
+func Test_validateMappingAndResetIfNotValid(t *testing.T) {
+	log := logger.GetLogger(context.TODO())
+
+	pipeline := *unmarshalFromTestFile(t, "testdata/mapping_validation.json")
+
+	pipelineResult, err := os.ReadFile("testdata/mapping_validation_result.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tests := []struct {
+		name       string
+		bt         entity.BlocksType
+		want       bool
+		wantResult string
+	}{
+		{
+			name:       "success case",
+			bt:         pipeline.Pipeline.Blocks,
+			want:       false,
+			wantResult: string(pipelineResult),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			isValid := validateMappingAndResetIfNotValid(tt.bt, log)
+
+			var marshaledResult []byte
+			marshaledResult, err = json.Marshal(tt.bt)
+			assert.Nil(t, err)
+
+			var prettyJSON bytes.Buffer
+			err = json.Indent(&prettyJSON, marshaledResult, "", "  ")
+			assert.Nil(t, err)
+
+			resultString := string(prettyJSON.Bytes())
+
+			assert.Equalf(t, tt.want, isValid, "validateMapping(%v)", tt.bt)
+			assert.Equalf(t, tt.wantResult, resultString, "validateMappingResult(%v)", tt.bt)
+		})
+	}
 }

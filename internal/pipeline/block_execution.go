@@ -90,6 +90,10 @@ func (gb *GoExecutionBlock) GetNewEvents() []entity.NodeEvent {
 }
 
 func (gb *GoExecutionBlock) getDeadline(ctx context.Context, workType string) (time.Time, error) {
+	if gb.State.Decision != nil {
+		return time.Time{}, nil
+	}
+
 	slaInfoPtr, getSLAInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDTO{
 		TaskCompletionIntervals: []entity.TaskCompletionInterval{{
 			StartedAt:  gb.RunContext.CurrBlockStartTime,

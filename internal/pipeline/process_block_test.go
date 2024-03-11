@@ -101,6 +101,16 @@ func makeStorage() *mocks.MockedDatabase {
 		}, nil,
 	)
 
+	res.On("GetTaskInWorkTime",
+		mock.MatchedBy(func(ctx context.Context) bool { return true }),
+		mock.MatchedBy(func(workNumber string) bool { return true }),
+	).Return(
+		&entity.TaskCompletionInterval{
+			StartedAt:  time.Time{},
+			FinishedAt: time.Time{},
+		}, nil,
+	)
+
 	res.On("GetCanceledTaskSteps",
 		mock.MatchedBy(func(ctx context.Context) bool { return true }),
 		mock.MatchedBy(func(taskID uuid.UUID) bool { return true }),
@@ -216,7 +226,11 @@ func TestProcessBlock(t *testing.T) {
 					skipNotifications: true,
 					VarStore:          store.NewStore(),
 					Services: RunContextServices{
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSLAService(nil)
 
+							return slaMock
+						}(),
 						Storage: func() db.Database {
 							res := makeStorage()
 
@@ -350,8 +364,7 @@ func TestProcessBlock(t *testing.T) {
 							)
 							currCall := res.ExpectedCalls[len(res.ExpectedCalls)-1]
 							currCall = currCall.Run(func(args mock.Arguments) {
-								currCall.ReturnArguments[0] =
-									didMeetBlocks([]string{"approver_0", "execution_0"}, metBlocks)
+								currCall.ReturnArguments[0] = didMeetBlocks([]string{"approver_0", "execution_0"}, metBlocks)
 							})
 
 							res.ExpectedCalls[len(res.ExpectedCalls)-1] = currCall

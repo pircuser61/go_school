@@ -30,6 +30,7 @@ func (a *updateFillFormParams) Validate() error {
 	return nil
 }
 
+//nolint:gocyclo,gocognit //ok
 func (gb *GoFormBlock) Update(ctx context.Context) (interface{}, error) {
 	updateInOtherBlocks := false
 
@@ -67,6 +68,13 @@ func (gb *GoFormBlock) Update(ctx context.Context) (interface{}, error) {
 		}
 	case string(entity.TaskUpdateActionReload):
 	}
+
+	deadline, deadlineErr := gb.getDeadline(ctx, gb.State.WorkType)
+	if deadlineErr != nil {
+		return nil, deadlineErr
+	}
+
+	gb.State.Deadline = deadline
 
 	var stateBytes []byte
 

@@ -446,17 +446,17 @@ func (ae *Env) updatePipelineVersion(ctx c.Context, in *e.EriusScenario) (*e.Eri
 		return nil, apiErr, err
 	}
 
+	ok, valErr := ae.validatePipeline(ctx, in)
+	if !ok && in.Status == db.StatusApproved {
+		return nil, validateBlockTypeErrText(valErr), errors.New(valErr)
+	}
+
 	updated, err := json.Marshal(in)
 	if err != nil {
 		return nil, PipelineParseError, err
 	}
 
 	updated = []byte(wrapApplicationBody(string(updated)))
-
-	ok, valErr := in.Pipeline.Blocks.Validate(ctx, ae.ServiceDesc)
-	if in.Status == db.StatusApproved && !ok {
-		return nil, validateBlockTypeErrText(valErr), errors.New(valErr)
-	}
 
 	groups, err := statusGroups(in)
 	if err != nil {
@@ -778,7 +778,7 @@ func (ae *Env) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO) (
 
 	runCtx.SetTaskEvents(ctx)
 
-	workFinished, err := pipeline.ProcessBlockWithEndMapping(ctx, ep.EntryPoint, &blockData, runCtx, false)
+	workFinished, err := pipeline.ProcessBlockWithEndMapping(ctx, ep.EntryPoint, blockData, runCtx, false)
 	if err != nil {
 		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
 			log.WithField("funcName", "RollbackTransaction").

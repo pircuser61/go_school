@@ -494,6 +494,11 @@ func Test_createGoApproverBlock(t *testing.T) {
 					VarStore:          varStore,
 					Services: RunContextServices{
 						Storage: myStorage,
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSLAService(nil)
+
+							return slaMock
+						}(),
 					},
 				},
 				ef: &entity.EriusFunc{
@@ -577,6 +582,11 @@ func Test_createGoApproverBlock(t *testing.T) {
 					VarStore:          store.NewStore(),
 					Services: RunContextServices{
 						Storage: myStorage,
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSLAService(nil)
+
+							return slaMock
+						}(),
 					},
 				},
 				ef: &entity.EriusFunc{
@@ -944,11 +954,17 @@ func TestGoApproverBlock_Update(t *testing.T) {
 							ID: ApproverActionApprove,
 						},
 					},
+					WorkType: "8/5",
 				},
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
 					VarStore:          store.NewStore(),
 					Services: RunContextServices{
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSLAService(nil)
+
+							return slaMock
+						}(),
 						ServiceDesc: func() *servicedesc.Service {
 							sdMock := servicedesc.Service{
 								SdURL: "",
