@@ -290,12 +290,12 @@ func (ae *Env) SaveVersionSettings(w http.ResponseWriter, req *http.Request, ver
 		}
 	}()
 
-	processSettings.VersionID, errCustom, err = ae.createOrUpdateVersion(ctx, scenario)
+	processSettings.VersionID, errCustom, err = ae.createVersion(ctx, scenario)
 	if err != nil {
 		errorHandler.handleError(errCustom, err)
 
 		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
-			log.WithField("funcName", "createOrUpdateVersion").
+			log.WithField("funcName", "createVersion").
 				WithError(errors.New("couldn't rollback tx")).
 				Error(txErr)
 		}
@@ -335,18 +335,7 @@ func (ae *Env) SaveVersionSettings(w http.ResponseWriter, req *http.Request, ver
 	}
 }
 
-func (ae *Env) createOrUpdateVersion(ctx c.Context, scenario *e.EriusScenario) (string, Err, error) {
-	isDraft := scenario.Status == db.StatusDraft
-
-	if isDraft {
-		p, errCustom, err := ae.updatePipelineVersion(ctx, scenario)
-		if err != nil {
-			return "", errCustom, err
-		}
-
-		return p.VersionID.String(), 0, nil
-	}
-
+func (ae *Env) createVersion(ctx c.Context, scenario *e.EriusScenario) (string, Err, error) {
 	p, errCustom, err := ae.createPipelineVersion(ctx, scenario, scenario.PipelineID.String())
 	if err != nil {
 		return "", errCustom, err
