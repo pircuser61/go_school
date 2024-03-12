@@ -924,6 +924,7 @@ WITH active_counts as (
     WHERE vs.status IN ('running', 'idle', 'ready')
       AND m.login = ANY ($2)
       AND vs.step_type = 'approver'
+	  AND m.finished = false
     GROUP BY vs.work_id
     limit 1
 )
@@ -935,6 +936,7 @@ WITH active_counts as (
     WHERE vs.status IN ('running', 'idle', 'ready')
       AND m.login = ANY ($3)
       AND vs.step_type = 'execution'
+	  AND m.finished = false
     GROUP BY vs.work_id
     LIMIT 1
 )
@@ -946,6 +948,7 @@ WITH active_counts as (
     WHERE vs.status IN ('running', 'idle', 'ready')
       AND m.login = $1
       AND vs.step_type = 'form'
+	  AND m.finished = false
     GROUP BY vs.work_id
     LIMIT 1
 )
@@ -957,6 +960,7 @@ WITH active_counts as (
     WHERE vs.status IN ('running', 'idle', 'ready')
       AND m.login = $1
       AND vs.step_type = 'sign'
+	  AND m.finished = false
     GROUP BY vs.work_id
     LIMIT 1
 )
