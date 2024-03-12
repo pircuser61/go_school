@@ -23,8 +23,8 @@ import (
 
 const (
 	monitoringTimeLayout = "2006-01-02T15:04:05-0700"
-	taskEventPause = "pause"
-	taskEventStart = "start"
+	taskEventPause       = "pause"
+	taskEventStart       = "start"
 )
 
 func (ae *Env) GetTasksForMonitoring(w http.ResponseWriter, r *http.Request, params GetTasksForMonitoringParams) {
@@ -418,6 +418,7 @@ func (ae *Env) GetBlockState(w http.ResponseWriter, r *http.Request, blockID str
 	}
 }
 
+//nolint:gocyclo //its ok here
 func (ae *Env) MonitoringTaskAction(w http.ResponseWriter, r *http.Request) {
 	ctx, span := trace.StartSpan(r.Context(), "monitoring_task_action")
 	defer span.End()
@@ -523,7 +524,6 @@ func (ae *Env) MonitoringTaskAction(w http.ResponseWriter, r *http.Request) {
 
 		return
 	}
-
 
 	nodes, err := ae.DB.GetTaskForMonitoring(ctx, req.WorkNumber)
 	if err != nil {
