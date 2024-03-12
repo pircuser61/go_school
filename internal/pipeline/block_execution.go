@@ -70,13 +70,6 @@ func (gb *GoExecutionBlock) CurrentExecutorData() CurrentExecutorData {
 		return CurrentExecutorData{}
 	}
 
-	if gb.State.IsTakenInWork {
-		return CurrentExecutorData{
-			People:        mapToSlice(gb.State.Executors),
-			InitialPeople: mapToSlice(gb.State.InitialExecutors),
-		}
-	}
-
 	return CurrentExecutorData{
 		GroupID:       gb.State.ExecutorsGroupID,
 		GroupName:     gb.State.ExecutorsGroupName,

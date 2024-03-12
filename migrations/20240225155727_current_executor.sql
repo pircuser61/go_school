@@ -21,18 +21,12 @@ WITH blocks AS (
 )
    , current_executor AS (
     SELECT id,
-           CASE
-               WHEN taken_in_work
-                   THEN jsonb_build_object(
-                       'group_id', '',
-                       'group_name', '',
-                       'people', people,
-                       'initial_people', initial_people)
-               ELSE jsonb_build_object(
-                       'group_id', exec_group_id,
-                       'group_name', exec_group_name,
-                       'people', people,
-                       'initial_people', initial_people) END AS executor
+           jsonb_build_object(
+               'group_id', exec_group_id,
+               'group_name', exec_group_name,
+               'people', people,
+               'initial_people', initial_people
+            ) AS executor
     FROM exec_data
 )
 UPDATE variable_storage
