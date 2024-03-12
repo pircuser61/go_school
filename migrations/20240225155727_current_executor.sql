@@ -25,7 +25,7 @@ WITH blocks AS (
                'group_id', exec_group_id,
                'group_name', exec_group_name,
                'people', people,
-               'initial_people', initial_people,
+               'initial_people', initial_people
             ) AS executor
     FROM exec_data
 )
