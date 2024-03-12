@@ -270,6 +270,13 @@ func (ae *Env) SaveVersionSettings(w http.ResponseWriter, req *http.Request, ver
 		return
 	}
 
+	err = scenario.FillEntryPointOutput()
+	if err != nil {
+		errorHandler.handleError(GetEntryPointOutputError, err)
+
+		return
+	}
+
 	txStorage, transactionErr := ae.DB.StartTransaction(ctx)
 	if transactionErr != nil {
 		log.WithError(transactionErr).Error("couldn't set update version or settings")
