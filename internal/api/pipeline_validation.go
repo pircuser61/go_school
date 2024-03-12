@@ -82,6 +82,7 @@ func validateMappingAndResetIfNotValid(bt entity.BlocksType, log logger.Logger) 
 }
 
 func validateFunctionBlock(bt entity.BlocksType, block *entity.EriusFunc, blockName string, log logger.Logger) bool {
+	// TODO: use function.Validate
 	if block == nil {
 		log.WithFields(logger.Fields{
 			funcName:       "validateFunctionBlock",
@@ -127,6 +128,7 @@ func validateFunctionBlock(bt entity.BlocksType, block *entity.EriusFunc, blockN
 
 //nolint:dupl //its not duplicate
 func validateApproverBlock(bt entity.BlocksType, block *entity.EriusFunc, blockName string, log logger.Logger) bool {
+	// TODO: use .Validate()
 	if block == nil {
 		log.WithFields(logger.Fields{
 			funcName:       "validateApproverBlock",
@@ -209,6 +211,7 @@ func validateApproverBlock(bt entity.BlocksType, block *entity.EriusFunc, blockN
 
 //nolint:dupl //its not duplicate
 func validateExecutionBlock(bt entity.BlocksType, block *entity.EriusFunc, blockName string, log logger.Logger) bool {
+	// TODO: use .Validate()
 	if block == nil {
 		log.WithFields(logger.Fields{
 			funcName:       "validateExecutionBlock",
@@ -290,6 +293,7 @@ func validateExecutionBlock(bt entity.BlocksType, block *entity.EriusFunc, block
 }
 
 func validateFormBlock(bt entity.BlocksType, block *entity.EriusFunc, blockName string, log logger.Logger) bool {
+	// TODO: use .Validate()
 	if block == nil {
 		log.WithFields(logger.Fields{
 			funcName:       "validateFormBlock",
@@ -384,6 +388,7 @@ func validateFormBlock(bt entity.BlocksType, block *entity.EriusFunc, blockName 
 }
 
 func validateSignBlock(bt entity.BlocksType, block *entity.EriusFunc, blockName string, log logger.Logger) bool {
+	// TODO: use .Validate()
 	if block == nil {
 		log.WithFields(logger.Fields{
 			funcName:       "validateSignBlock",
@@ -488,16 +493,6 @@ func validateSignBlock(bt entity.BlocksType, block *entity.EriusFunc, blockName 
 
 	if len(validFiles) != len(blockSign.SigningParamsPaths.Files) {
 		blockSign.SigningParamsPaths.Files = validFiles
-	}
-
-	if blockSign.SignatureType == script.SignatureTypeUKEP &&
-		(blockSign.SigningParamsPaths.SNILS == "" || blockSign.SigningParamsPaths.INN == "") {
-		log.WithFields(logger.Fields{
-			funcName:       "validateSignBlock",
-			blockNameLabel: blockName,
-		}).Error(errors.New("snils and inn are required"))
-
-		isValid = false
 	}
 
 	if !isValid {
@@ -709,6 +704,7 @@ func validateOperand(bt entity.BlocksType, operandInterface interface{}, blockNa
 }
 
 func validateNotificationBlock(bt entity.BlocksType, block *entity.EriusFunc, blockName string, log logger.Logger) bool {
+	// TODO: use .Validate()
 	if block == nil {
 		log.WithFields(logger.Fields{
 			funcName:       "validateNotificationBlock",
