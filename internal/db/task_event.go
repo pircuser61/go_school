@@ -19,7 +19,7 @@ func (db *PGCon) CreateTaskEvent(ctx c.Context, dto *e.CreateTaskEvent) (eventID
 	// nolint:gocritic
 	// language=PostgreSQL
 	const q = `
-		INSERT INTO pipelines (
+		INSERT INTO task_events (
 			id, 
 			work_id, 
 			author, 

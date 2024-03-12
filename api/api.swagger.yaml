@@ -2305,7 +2305,7 @@ paths:
                 type: object
                 properties:
                   data:
-                    $ref: '#/components/schemas/httpResponse'
+                    $ref: '#/components/schemas/MonitoringTask'
                   status_code:
                     type: integer
         400:
@@ -3203,6 +3203,7 @@ components:
         - blueprint_id
         - approval_list
         - current_executor
+        - is_paused
 
     CurrentExecutorData:
       type: object
@@ -3442,6 +3443,8 @@ components:
           type: string
         type:
           type: string
+        is_paused:
+          type: boolean
       required:
         - time
         - type
@@ -3452,6 +3455,7 @@ components:
         - steps
         - has_error
         - status
+        - is_paused
     TaskUpdate:
       type: object
       properties:

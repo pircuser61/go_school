@@ -16,12 +16,12 @@ CREATE INDEX variable_storage_is_paused_index
 CREATE INDEX works_is_paused_index
     ON works (is_paused);
 
-CREATE TABLE task_events IF NOT EXISTS (
+CREATE TABLE task_events (
     id uuid NOT NULL,
-    work_id uuid NOT NULL REFERENCES variable_storage(id),
+    work_id uuid NOT NULL REFERENCES works(id),
     author character varying NOT NULL,
     event_type character varying NOT NULL,
-    params jsonb NOT NULL,
+    params jsonb NOT NULL DEFAULT '{}'::JSONB,
     created_at timestamp with time zone NOT NULL,
     CONSTRAINT task_events_pk PRIMARY KEY (id)
 );

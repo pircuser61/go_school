@@ -23,8 +23,8 @@ import (
 
 const (
 	monitoringTimeLayout = "2006-01-02T15:04:05-0700"
-	processEventPause    = "pause"
-	processEventStart    = "start"
+	taskEventPause = "pause"
+	taskEventStart = "start"
 )
 
 func (ae *Env) GetTasksForMonitoring(w http.ResponseWriter, r *http.Request, params GetTasksForMonitoringParams) {
@@ -226,7 +226,7 @@ func (ae *Env) GetMonitoringTask(w http.ResponseWriter, req *http.Request, workN
 	}
 	res.VersionId = nodes[0].VersionID
 	res.WorkNumber = nodes[0].WorkNumber
-	res.IsPaused = nodes[0].ProcessIsPaused
+	res.IsPaused = nodes[0].IsPaused
 
 	for i := range nodes {
 		monitoringHistory := MonitoringHistory{
@@ -439,12 +439,12 @@ func (ae *Env) MonitoringTaskAction(w http.ResponseWriter, r *http.Request) {
 
 	err = json.Unmarshal(b, req)
 	if err != nil {
-		errorHandler.handleError(PipelineParseError, err)
+		errorHandler.handleError(MonitoringTaskActionParseError, err)
 
 		return
 	}
 
-	ui, err := user.GetEffectiveUserInfoFromCtx(ctx)
+	ui, err := user.GetUserInfoFromCtx(ctx)
 	if err != nil {
 		errorHandler.sendError(NoUserInContextError)
 
@@ -461,7 +461,7 @@ func (ae *Env) MonitoringTaskAction(w http.ResponseWriter, r *http.Request) {
 	}
 
 	defer func() {
-		if r := recover(); r != nil {
+		if rc := recover(); rc != nil {
 			log.WithField("funcName", "recover").
 				Error(r)
 
@@ -487,10 +487,10 @@ func (ae *Env) MonitoringTaskAction(w http.ResponseWriter, r *http.Request) {
 	}
 
 	switch req.Action {
-	case processEventPause:
-		err = ae.pauseProcess(ctx, ui.Name, workID.String(), req.Params)
+	case taskEventPause:
+		err = ae.pauseTask(ctx, ui.Name, workID.String(), req.Params)
 		if err != nil {
-			errorHandler.handleError(PauseProcessError, err)
+			errorHandler.handleError(PauseTaskError, err)
 
 			if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
 				log.WithField("funcName", "MonitoringTaskAction").
@@ -501,7 +501,7 @@ func (ae *Env) MonitoringTaskAction(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-	case processEventStart:
+	case taskEventStart:
 		err = ae.startProcess()
 		if err != nil {
 			errorHandler.handleError(GetTaskError, err)
@@ -524,7 +524,48 @@ func (ae *Env) MonitoringTaskAction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = sendResponse(w, http.StatusOK, nil)
+
+	nodes, err := ae.DB.GetTaskForMonitoring(ctx, req.WorkNumber)
+	if err != nil {
+		errorHandler.handleError(GetMonitoringNodesError, err)
+
+		return
+	}
+
+	if len(nodes) == 0 {
+		errorHandler.handleError(NoProcessNodesForMonitoringError, errors.New("No process nodes for monitoring"))
+
+		return
+	}
+
+	res := MonitoringTask{History: make([]MonitoringHistory, 0)}
+	res.ScenarioInfo = MonitoringScenarioInfo{
+		Author:       nodes[0].Author,
+		CreationTime: nodes[0].CreationTime,
+		ScenarioName: nodes[0].ScenarioName,
+	}
+	res.VersionId = nodes[0].VersionID
+	res.WorkNumber = nodes[0].WorkNumber
+	res.IsPaused = nodes[0].IsPaused
+
+	for i := range nodes {
+		monitoringHistory := MonitoringHistory{
+			BlockId:  nodes[i].BlockID,
+			RealName: nodes[i].RealName,
+			Status:   getMonitoringStatus(nodes[i].Status),
+			NodeId:   nodes[i].NodeID,
+			IsPaused: nodes[i].BlockIsPaused,
+		}
+
+		if nodes[i].BlockDateInit != nil {
+			formattedTime := nodes[i].BlockDateInit.Format(monitoringTimeLayout)
+			monitoringHistory.BlockDateInit = &formattedTime
+		}
+
+		res.History = append(res.History, monitoringHistory)
+	}
+
+	err = sendResponse(w, http.StatusOK, res)
 	if err != nil {
 		errorHandler.handleError(UnknownError, err)
 
@@ -532,7 +573,7 @@ func (ae *Env) MonitoringTaskAction(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (ae *Env) pauseProcess(ctx context.Context, author, workID string, params *MonitoringTaskActionParams) error {
+func (ae *Env) pauseTask(ctx context.Context, author, workID string, params *MonitoringTaskActionParams) error {
 	err := ae.DB.SetTaskPaused(ctx, workID, true)
 	if err != nil {
 		return err
@@ -559,7 +600,7 @@ func (ae *Env) pauseProcess(ctx context.Context, author, workID string, params *
 	_, err = ae.DB.CreateTaskEvent(ctx, &entity.CreateTaskEvent{
 		WorkID:    workID,
 		Author:    author,
-		EventType: processEventPause,
+		EventType: taskEventPause,
 		Params:    jsonParams,
 	})
 	if err != nil {

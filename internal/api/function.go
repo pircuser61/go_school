@@ -83,8 +83,12 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 		return nil
 	}
 
+	log = log.WithField("step.WorkNumber", st.WorkNumber).
+		WithField("step.Name", st.Name).
+		WithField("taskID", message.TaskID)
+
 	if st.IsPaused {
-		log.Error("block is paused, task id: " + message.TaskID.String())
+		log.Error("block is paused")
 
 		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
 			log.WithField("funcName", "RollbackTransaction").
@@ -154,8 +158,6 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 	blockFunc, err := ae.DB.GetBlockDataFromVersion(ctx, st.WorkNumber, st.Name)
 	if err != nil {
 		log.WithField("funcName", "GetBlockDataFromVersion").
-			WithField("step.WorkNumber", st.WorkNumber).
-			WithField("step.Name", st.Name).
 			WithError(err).
 			Error("get block data from pipeline version")
 
@@ -171,8 +173,6 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 	workFinished, blockErr := pipeline.ProcessBlockWithEndMapping(ctx, st.Name, blockFunc, runCtx, true)
 	if blockErr != nil {
 		log.WithField("funcName", "ProcessBlockWithEndMapping").
-			WithField("step.WorkNumber", st.WorkNumber).
-			WithField("step.Name", st.Name).
 			WithError(blockErr).
 			Error("process block with end mapping")
 

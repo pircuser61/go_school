@@ -74,7 +74,22 @@ func (ae *Env) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Request
 
 	workID, err := ae.DB.GetWorkIDByWorkNumber(ctx, req.WorkNumber)
 	if err != nil {
-		log.WithError(err).Error("couldn't get workID")
+		errorHandler.handleError(ValidationError, err)
+
+		return
+	}
+
+	isPaused, err := ae.DB.IsTaskPaused(ctx, workID.String())
+	if err != nil {
+		errorHandler.handleError(CheckIsTaskPausedError, err)
+
+		return
+	}
+
+	if isPaused {
+		errorHandler.handleError(TaskIsPausedError, err)
+
+		return
 	}
 
 	version, err := ae.DB.GetVersionByWorkNumber(ctx, req.WorkNumber)

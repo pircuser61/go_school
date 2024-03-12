@@ -3,8 +3,9 @@ package db
 import (
 	c "context"
 	"encoding/json"
-	"strings"
 	"time"
+
+	"github.com/lib/pq"
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
@@ -304,7 +305,8 @@ func (db *PGCon) SetTaskBlocksPaused(ctx c.Context, workID string, steps []strin
 			  status IN('running', 'idle', 'created') AND
 			  step_name IN($3)`
 
-	stepsIn := "'" + strings.Join(steps, "','") + "'"
+	stepsIn := make([]pq.StringArray, 0, len(steps))
+	stepsIn = append(stepsIn, steps)
 
 	_, err := db.Connection.Exec(ctx, q, isPaused, workID, stepsIn)
 	if err != nil {

@@ -2610,7 +2610,8 @@ func (db *PGCon) GetBlocksBreachedSLA(ctx context.Context) ([]StepBreachedSLA, e
 		    d.action = 'rework_sla_breached' OR d.action = 'day_before_sla_request_add_info' OR d.action = 'sla_breach_request_add_info'))
 			)
 			AND w.child_id IS NULL
-			AND d.deadline < NOW()`
+			AND d.deadline < NOW()
+			AND vs.is_paused = false`
 
 	rows, err := db.Connection.Query(ctx, q)
 	if err != nil {
@@ -2705,7 +2706,7 @@ func (db *PGCon) GetTaskForMonitoring(ctx context.Context, workNumber string) ([
 	q := `
 		SELECT w.work_number, 
 		       w.version_id, 
-		       w.is_paused process_is_paused, 
+		       w.is_paused task_is_paused, 
 		       p.author,
 		       p.created_at::text,
 		       p.name,
@@ -2736,7 +2737,7 @@ func (db *PGCon) GetTaskForMonitoring(ctx context.Context, workNumber string) ([
 		if scanErr := rows.Scan(
 			&item.WorkNumber,
 			&item.VersionID,
-			&item.ProcessIsPaused,
+			&item.IsPaused,
 			&item.Author,
 			&item.CreationTime,
 			&item.ScenarioName,
