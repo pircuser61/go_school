@@ -261,6 +261,7 @@ func (ae *Env) SaveVersionSettings(w http.ResponseWriter, req *http.Request, ver
 		return
 	}
 
+	scenario.Status = db.StatusDraft
 	scenario.Settings = *processSettings
 
 	err = processSettings.Validate()
