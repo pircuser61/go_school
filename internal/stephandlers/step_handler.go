@@ -1,6 +1,8 @@
 package stephandlers
 
-import "gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+import (
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+)
 
 type StepHandler interface {
 	HandleStep(step *entity.Step) error

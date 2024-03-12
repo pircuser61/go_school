@@ -500,7 +500,7 @@ func (ae *Env) updateStepInternal(ctx context.Context, data *updateStepData) boo
 
 	runCtx.SetTaskEvents(ctx)
 
-	workFinished, blockErr := pipeline.ProcessBlockWithEndMapping(ctx, data.step.Name, &blockFunc, runCtx, true)
+	workFinished, blockErr := pipeline.ProcessBlockWithEndMapping(ctx, data.step.Name, blockFunc, runCtx, true)
 	if blockErr != nil {
 		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
 			log.WithField("funcName", "ProcessBlockWithEndMapping").

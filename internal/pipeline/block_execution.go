@@ -70,13 +70,6 @@ func (gb *GoExecutionBlock) CurrentExecutorData() CurrentExecutorData {
 		return CurrentExecutorData{}
 	}
 
-	if gb.State.IsTakenInWork {
-		return CurrentExecutorData{
-			People:        mapToSlice(gb.State.Executors),
-			InitialPeople: mapToSlice(gb.State.InitialExecutors),
-		}
-	}
-
 	return CurrentExecutorData{
 		GroupID:       gb.State.ExecutorsGroupID,
 		GroupName:     gb.State.ExecutorsGroupName,
@@ -90,6 +83,10 @@ func (gb *GoExecutionBlock) GetNewEvents() []entity.NodeEvent {
 }
 
 func (gb *GoExecutionBlock) getDeadline(ctx context.Context, workType string) (time.Time, error) {
+	if gb.State.Decision != nil {
+		return time.Time{}, nil
+	}
+
 	slaInfoPtr, getSLAInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDTO{
 		TaskCompletionIntervals: []entity.TaskCompletionInterval{{
 			StartedAt:  gb.RunContext.CurrBlockStartTime,

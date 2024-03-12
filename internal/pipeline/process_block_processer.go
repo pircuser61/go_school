@@ -218,42 +218,38 @@ func (p *blockProcessor) processActiveBlocks(ctx context.Context, activeBlocks [
 }
 
 func (p *blockProcessor) updateTaskExecDeadline(ctx context.Context) error {
-	// get deadline based on execution blocks
-	deadline, err := p.runCtx.Services.Storage.GetDeadline(ctx, p.runCtx.WorkNumber)
+	sc, err := p.runCtx.Services.Storage.GetVersionByWorkNumber(ctx, p.runCtx.WorkNumber)
 	if err != nil {
 		return err
 	}
-
 	// compute deadline using sla from process version settings
-	if deadline.IsZero() {
-		versionSettings, errSLA := p.runCtx.Services.Storage.GetSLAVersionSettings(ctx, p.runCtx.VersionID.String())
-		if errSLA != nil {
-			return err
-		}
-
-		times, timesErr := p.runCtx.Services.Storage.GetTaskInWorkTime(ctx, p.runCtx.WorkNumber)
-		if timesErr != nil {
-			return timesErr
-		}
-
-		slaInfoPtr, getSLAInfoErr := p.runCtx.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDTO{
-			TaskCompletionIntervals: []entity.TaskCompletionInterval{
-				{
-					StartedAt:  times.StartedAt,
-					FinishedAt: times.StartedAt.Add(time.Hour * 24 * 100),
-				},
-			},
-			WorkType: sla.WorkHourType(versionSettings.WorkType),
-		})
-		if getSLAInfoErr != nil {
-			return getSLAInfoErr
-		}
-
-		deadline = p.runCtx.Services.SLAService.ComputeMaxDate(
-			times.StartedAt,
-			float32(versionSettings.SLA),
-			slaInfoPtr)
+	versionSettings, errSLA := p.runCtx.Services.Storage.GetSLAVersionSettings(ctx, sc.VersionID.String())
+	if errSLA != nil {
+		return errSLA
 	}
+
+	times, timesErr := p.runCtx.Services.Storage.GetTaskInWorkTime(ctx, p.runCtx.WorkNumber)
+	if timesErr != nil {
+		return timesErr
+	}
+
+	slaInfoPtr, getSLAInfoErr := p.runCtx.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDTO{
+		TaskCompletionIntervals: []entity.TaskCompletionInterval{
+			{
+				StartedAt:  times.StartedAt,
+				FinishedAt: times.StartedAt.Add(time.Hour * 24 * 100),
+			},
+		},
+		WorkType: sla.WorkHourType(versionSettings.WorkType),
+	})
+	if getSLAInfoErr != nil {
+		return getSLAInfoErr
+	}
+
+	deadline := p.runCtx.Services.SLAService.ComputeMaxDate(
+		times.StartedAt,
+		float32(versionSettings.SLA),
+		slaInfoPtr)
 
 	return p.runCtx.Services.Storage.SetExecDeadline(ctx, p.runCtx.TaskID.String(), deadline)
 }

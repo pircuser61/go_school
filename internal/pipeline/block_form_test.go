@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 	"io"
 	"net/http"
 	"testing"
@@ -27,7 +28,6 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 	serviceDeskMocks "gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
-	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
 func Test_createGoFormBlock(t *testing.T) {
@@ -41,10 +41,12 @@ func Test_createGoFormBlock(t *testing.T) {
 		versionID  = "d77be97a-f978-46d3-aa03-ab72663f2b74"
 		executor   = "executor"
 		workNumber = "J0000001"
-		workType   = "8/5"
 	)
 
 	timeNow := time.Now()
+
+	workTypeVal := "8/5"
+	slaVal := 8
 
 	next := []entity.Socket{
 		{
@@ -54,14 +56,7 @@ func Test_createGoFormBlock(t *testing.T) {
 		},
 	}
 
-	ctx := context.Background()
-	databaseMock := dbMocks.NewMockedDatabase(t)
-	vid, _ := uuid.Parse(versionID)
-
-	databaseMock.On("GetVersionByWorkNumber", ctx, workNumber).
-		Return(&entity.EriusScenario{VersionID: vid}, error(nil))
-	databaseMock.On("GetSLAVersionSettings", ctx, vid.String()).
-		Return(entity.SLAVersionSettings{WorkType: workType}, error(nil))
+	myStorage := makeStorage()
 
 	type args struct {
 		name   string
@@ -91,6 +86,9 @@ func Test_createGoFormBlock(t *testing.T) {
 				runCtx: &BlockRunContext{
 					skipNotifications: true,
 					VarStore:          store.NewStore(),
+					Services: RunContextServices{
+						Storage: myStorage,
+					},
 				},
 			},
 			want:    nil,
@@ -201,6 +199,8 @@ func Test_createGoFormBlock(t *testing.T) {
 							SchemaID:         schemaID,
 							Executor:         "form.executor",
 							FormExecutorType: script.FormExecutorTypeFromSchema,
+							WorkType:         &workTypeVal,
+							SLA:              slaVal,
 						})
 
 						return r
@@ -210,7 +210,12 @@ func Test_createGoFormBlock(t *testing.T) {
 				runCtx: &BlockRunContext{
 					WorkNumber: workNumber,
 					Services: RunContextServices{
-						Storage: databaseMock,
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSLAService(nil)
+
+							return slaMock
+						}(),
+						Storage: myStorage,
 						ServiceDesc: func() *servicedesc.Service {
 							sdMock := servicedesc.Service{
 								SdURL: "",
@@ -273,10 +278,12 @@ func Test_createGoFormBlock(t *testing.T) {
 					ChangesLog:         []ChangesLogItem{},
 					Description:        "",
 					FormsAccessibility: nil,
-					WorkType:           workType,
 					IsTakenInWork:      true,
 					InitialExecutors:   map[string]struct{}{executor: {}},
 					HiddenFields:       make([]string, 0),
+					Deadline:           time.Date(0001, 01, 01, 14, 00, 00, 00, time.UTC),
+					SLA:                slaVal,
+					WorkType:           workTypeVal,
 				},
 				Sockets: entity.ConvertSocket(next),
 			},
@@ -325,7 +332,7 @@ func Test_createGoFormBlock(t *testing.T) {
 									Value: "sd.form_0.b",
 								},
 							},
-							WorkType: utils.GetAddressOfValue("8/5"),
+							WorkType: &workTypeVal,
 						})
 
 						return r
@@ -479,7 +486,7 @@ func Test_createGoFormBlock(t *testing.T) {
 							Constants: map[string]interface{}{
 								"a": "a_from_constant",
 							},
-							WorkType: utils.GetAddressOfValue("8/5"),
+							WorkType: &workTypeVal,
 						})
 
 						return r
@@ -738,7 +745,8 @@ func TestGoFormBlock_Update(t *testing.T) {
 						Storage:     mockedDb,
 						ServiceDesc: serviceDesc,
 					},
-				}},
+				},
+			},
 			want:    nil,
 			wantErr: assert.Error,
 		},
@@ -1087,8 +1095,17 @@ func TestGoFormBlock_Update(t *testing.T) {
 					IsFilled:         false,
 					ActualExecutor:   nil,
 					ChangesLog:       []ChangesLogItem{},
+					WorkType:         "8/5",
+					SLA:              workingHours,
 				},
 				RunContext: &BlockRunContext{
+					Services: RunContextServices{
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSLAService(nil)
+
+							return slaMock
+						}(),
+					},
 					UpdateData: &script.BlockUpdateData{
 						Action:     string(entity.TaskUpdateActionCancelApp),
 						Parameters: json.RawMessage{},
@@ -1105,6 +1122,9 @@ func TestGoFormBlock_Update(t *testing.T) {
 				Executors:        map[string]struct{}{login: {}},
 				ApplicationBody:  map[string]interface{}{},
 				ChangesLog:       []ChangesLogItem{},
+				WorkType:         "8/5",
+				SLA:              workingHours,
+				Deadline:         time.Date(0001, 01, 01, 14, 00, 00, 00, time.UTC),
 			},
 		},
 	}

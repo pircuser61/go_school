@@ -171,15 +171,16 @@ func (gb *GoExecutionBlock) createState(ctx context.Context, ef *entity.EriusFun
 		}
 	}
 
+	if deadlineErr := gb.setWorkTypeAndDeadline(ctx, &params); deadlineErr != nil {
+		return deadlineErr
+	}
+
+	return gb.handleNotifications(ctx)
+}
+
+func (gb *GoExecutionBlock) setWorkTypeAndDeadline(ctx context.Context, params *script.ExecutionParams) error {
 	if params.WorkType != nil {
 		gb.State.WorkType = *params.WorkType
-
-		deadline, err := gb.getDeadline(ctx, gb.State.WorkType)
-		if err != nil {
-			return err
-		}
-
-		gb.State.Deadline = deadline
 	} else {
 		task, getVersionErr := gb.RunContext.Services.Storage.GetVersionByWorkNumber(ctx, gb.RunContext.WorkNumber)
 		if getVersionErr != nil {
@@ -195,7 +196,14 @@ func (gb *GoExecutionBlock) createState(ctx context.Context, ef *entity.EriusFun
 		gb.State.WorkType = processSLASettings.WorkType
 	}
 
-	return gb.handleNotifications(ctx)
+	deadline, err := gb.getDeadline(ctx, gb.State.WorkType)
+	if err != nil {
+		return err
+	}
+
+	gb.State.Deadline = deadline
+
+	return nil
 }
 
 func (gb *GoExecutionBlock) setExecutors(ctx context.Context, ef *entity.EriusFunc) error {
@@ -220,13 +228,8 @@ func (gb *GoExecutionBlock) setExecutors(ctx context.Context, ef *entity.EriusFu
 		params.ExecutorsGroupID = fmt.Sprintf("%v", groupID)
 	}
 
-	if params.WorkType != nil {
-		deadline, deadErr := gb.getDeadline(ctx, *params.WorkType)
-		if deadErr != nil {
-			return deadErr
-		}
-
-		gb.State.Deadline = deadline
+	if deadlineErr := gb.setWorkTypeAndDeadline(ctx, &params); deadlineErr != nil {
+		return deadlineErr
 	}
 
 	err = gb.setExecutorsByParams(

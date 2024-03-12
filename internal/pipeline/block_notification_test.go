@@ -442,5 +442,4 @@ func Test_GoNotificationBlock_notificationBlockText(t *testing.T) {
 			assert.Equal(t, tt.expectedNotificationText, text)
 		})
 	}
-
 }

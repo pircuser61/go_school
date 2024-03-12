@@ -837,6 +837,13 @@ func (gb *GoApproverBlock) Update(ctx context.Context) (interface{}, error) {
 		return nil, err
 	}
 
+	deadline, deadlineErr := gb.getDeadline(ctx, gb.State.WorkType)
+	if deadlineErr != nil {
+		return nil, deadlineErr
+	}
+
+	gb.State.Deadline = deadline
+
 	var stateBytes []byte
 
 	stateBytes, err = json.Marshal(gb.State)
