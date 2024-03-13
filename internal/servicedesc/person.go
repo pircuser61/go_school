@@ -5,18 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strings"
 
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 	"go.opencensus.io/trace"
 )
 
-const (
-	getUserInfo = "/api/herald/v1/externalData/user/single?search=%s"
-
-	autoApproval = "auto_approve"
-	autoSigner   = "auto_signer"
-	autoFill     = "auto_fill"
-)
+const getUserInfo = "/api/herald/v1/externalData/user/single?search=%s"
 
 type SsoPerson struct {
 	Fullname    string `json:"fullname"`
@@ -33,7 +27,7 @@ func (s *Service) GetSsoPerson(ctx context.Context, username string) (*SsoPerson
 	ctxLocal, span := trace.StartSpan(ctx, "get_sso_person")
 	defer span.End()
 
-	if isServiceUserName(username) {
+	if sso.IsServiceUserName(username) {
 		return &SsoPerson{
 			Username: username,
 		}, nil
@@ -63,24 +57,4 @@ func (s *Service) GetSsoPerson(ctx context.Context, username string) (*SsoPerson
 	}
 
 	return res, nil
-}
-
-func isServiceUserName(username string) bool {
-	if strings.HasPrefix(username, "service-account") {
-		return true
-	}
-
-	if username == autoApproval {
-		return true
-	}
-
-	if username == autoSigner {
-		return true
-	}
-
-	if username == autoFill {
-		return true
-	}
-
-	return false
 }
