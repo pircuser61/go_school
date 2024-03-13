@@ -474,7 +474,10 @@ func cleanKey(mapKeys interface{}) string {
 		return ""
 	}
 
-	key := keys[titleKey]
+	key, oks := keys[titleKey]
+	if !oks {
+		return ""
+	}
 
 	replacements := map[string]string{
 		"\\t":  "",
@@ -486,9 +489,14 @@ func cleanKey(mapKeys interface{}) string {
 		"\"\"": "",
 	}
 
-	for old, news := range replacements {
-		key = strings.ReplaceAll(key.(string), old, news)
+	keyStr, okStr := key.(string)
+	if !okStr {
+		return ""
 	}
 
-	return strings.ReplaceAll(key.(string), "\\", "")
+	for old, news := range replacements {
+		keyStr = strings.ReplaceAll(keyStr, old, news)
+	}
+
+	return strings.ReplaceAll(keyStr, "\\", "")
 }
