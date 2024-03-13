@@ -64,7 +64,7 @@ func (gb *ExecutableFunctionBlock) runFunction(ctx context.Context, log logger.L
 		return err
 	}
 
-	err = script.FillMapWithConstants(gb.State.Constants, functionMapping)
+	err = script.FillFuncMapWithConstants(gb.State.Constants, functionMapping)
 	if err != nil {
 		return err
 	}

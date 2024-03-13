@@ -97,8 +97,8 @@ func uniqueActiveActions(approverLogins, executionLogins []string, currentUser, 
     SELECT vs.work_id AS work_id
          , vs.step_name AS block_id
          , m.is_initiator
-         , CASE WHEN vs.status IN ('running', 'idle') THEN m.actions ELSE '{}' END AS action
-         , CASE WHEN vs.status IN ('running', 'idle') THEN m.params ELSE '{}' END  AS params
+         , CASE WHEN (vs.status IN ('running', 'idle') AND vs.is_paused = false) THEN m.actions ELSE '{}' END AS action
+         , CASE WHEN (vs.status IN ('running', 'idle') AND vs.is_paused = false) THEN m.params ELSE '{}' END  AS params
     FROM members m
              JOIN variable_storage vs on vs.id = m.block_id
              JOIN works w on vs.work_id = w.id
@@ -285,7 +285,8 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 		    COALESCE(NULLIF(ua.node_deadline, '0001-01-01T00:00:00Z'), w.exec_deadline),
 		    ua.current_executor,
 		    ua.exec_start_time,
-		    ua.appr_start_time
+		    ua.appr_start_time,
+		    w.is_paused
 		FROM works w 
 		JOIN versions v ON v.id = w.version_id
 		JOIN pipelines p ON p.id = v.pipeline_id
@@ -1082,7 +1083,8 @@ func (db *PGCon) GetTask(
 			w.status_author,
  			v.content,
  			v.node_groups,
- 			w.human_status_comment
+ 			w.human_status_comment,
+ 			w.is_paused
 		FROM works w 
 		JOIN versions v ON v.id = w.version_id
 		JOIN pipelines p ON p.id = v.pipeline_id
@@ -1148,6 +1150,7 @@ func (db *PGCon) getTask(ctx c.Context, delegators []string, q, workNumber strin
 		&et.VersionContent,
 		&nodeGroups,
 		&et.HumanStatusComment,
+		&et.IsPaused,
 	)
 	if err != nil {
 		return nil, err
@@ -1494,6 +1497,7 @@ func (db *PGCon) getTasks(ctx c.Context, filters *entity.TaskFilter,
 			&execData,
 			&nullExecTime,
 			&nullApprTime,
+			&et.IsPaused,
 		)
 
 		if err != nil {
@@ -2417,7 +2421,7 @@ func (db *PGCon) GetExecutorsFromPrevWorkVersionExecutionBlockRun(ctx c.Context,
 	var executors map[string]struct{}
 
 	q := `
-		SELECT  content-> 'State' -> step_name -> 'executors'
+		SELECT content-> 'State' -> step_name -> 'executors'
 		FROM variable_storage
 		WHERE work_id = (select id from works where work_number = $1 order by started_at desc limit 1 offset 1)
 		and step_name = $2 order by time desc limit 1`
@@ -2431,4 +2435,18 @@ func (db *PGCon) GetExecutorsFromPrevWorkVersionExecutionBlockRun(ctx c.Context,
 	}
 
 	return executors, nil
+}
+
+func (db *PGCon) IsTaskPaused(ctx c.Context, workID string) (isPaused bool, err error) {
+	const q = `
+		SELECT is_paused
+		FROM works
+		WHERE id = $1`
+
+	err = db.Connection.QueryRow(ctx, q, workID).Scan(&isPaused)
+	if err != nil {
+		return isPaused, err
+	}
+
+	return isPaused, nil
 }

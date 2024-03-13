@@ -7,6 +7,7 @@ import (
 type MonitoringTaskNode struct {
 	WorkNumber    string     `json:"work_number"`
 	VersionID     string     `json:"version_id"`
+	IsPaused      bool       `json:"task_is_paused"`
 	Author        string     `json:"author"`
 	CreationTime  string     `json:"creation_time"`
 	ScenarioName  string     `json:"scenario_name"`
@@ -15,6 +16,7 @@ type MonitoringTaskNode struct {
 	Status        string     `json:"status"`
 	NodeID        string     `json:"node_id"`
 	BlockDateInit *time.Time `json:"block_date_init"`
+	BlockIsPaused bool       `json:"block_is_paused"`
 }
 
 type BlockOutputs []BlockOutputValue

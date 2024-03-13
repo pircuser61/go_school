@@ -2282,6 +2282,57 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
+  /monitoring/task/action:
+    put:
+      operationId: MonitoringTaskAction
+      tags:
+        - monitoring
+      summary:  Действия с заявкой в мониторинге
+      description: Действия с заявкой в мониторинге
+      requestBody:
+        description: Monitoring task action
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MonitoringTaskActionRequest'
+        required: true
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/MonitoringTask'
+                  status_code:
+                    type: integer
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        403:
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+
   /monitoring/tasks/block/{blockId}/context:
     get:
       operationId: GetBlockContext
@@ -3133,6 +3184,8 @@ components:
         current_approvement_start:
           type: string
           description: Current approvement start time (UTC)
+        is_paused:
+          type: boolean
       required:
         - id
         - version_id
@@ -3150,6 +3203,7 @@ components:
         - blueprint_id
         - approval_list
         - current_executor
+        - is_paused
 
     CurrentExecutorData:
       type: object
@@ -3389,6 +3443,8 @@ components:
           type: string
         type:
           type: string
+        is_paused:
+          type: boolean
       required:
         - time
         - type
@@ -3399,6 +3455,7 @@ components:
         - steps
         - has_error
         - status
+        - is_paused
     TaskUpdate:
       type: object
       properties:
@@ -5052,6 +5109,32 @@ components:
           type: integer
       required:
         - status_code
+    MonitoringTaskActionRequest:
+      type: object
+      properties:
+        work_number:
+          type: string
+          description: "Номер заявки для мониторинга"
+        action:
+          type: string
+          enum: [ "start", "pause" ]
+          description: "Действия с заявкой"
+        params:
+          $ref: '#/components/schemas/MonitoringTaskActionParams'
+      required:
+        - work_number
+        - action
+
+    MonitoringTaskActionParams:
+      type: object
+      description: "Параметры действия"
+      properties:
+        steps:
+          type: array
+          description: "Названия блоков"
+          items:
+            type: string
+
     MonitoringTask:
       type: object
       properties:
@@ -5069,11 +5152,15 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/MonitoringHistory'
+        is_paused:
+          type: boolean
+          description: "Флаг паузы процесса"
       required:
         - version_id
         - work_number
         - scenario_info
         - history
+        - is_paused
     MonitoringHistory:
       type: object
       properties:
@@ -5096,11 +5183,15 @@ components:
           type: string
           description: "Время перехода на конкретный блок"
           example: "2020-07-16T17:10:25.112704+03:00"
+        is_paused:
+          type: boolean
+          description: "Флаг паузы блока"
       required:
         - node_id
         - status
         - block_id
         - real_name
+        - is_paused
     MonitoringScenarioInfo:
       type: object
       properties:

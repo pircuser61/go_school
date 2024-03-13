@@ -31,6 +31,7 @@ type Step struct {
 	IsTest      bool                       `json:"-"`
 	ShortTitle  *string                    `json:"short_title,omitempty"`
 	Attachments int                        `json:"attachments"`
+	IsPaused    bool                       `json:"is_paused"`
 }
 
 type TaskSteps []*Step
@@ -121,6 +122,7 @@ type EriusTask struct {
 	CurrentExecutor         CurrentExecutorData `json:"current_executor"`
 	CurrentExecutionStart   *time.Time          `json:"current_execution_start,omitempty"`
 	CurrentApprovementStart *time.Time          `json:"current_approvement_start,omitempty"`
+	IsPaused                bool                `json:"is_paused"`
 }
 
 type CurrentExecutorData struct {
@@ -214,6 +216,13 @@ const (
 	TaskUpdateActionSignChangeWorkStatus       TaskUpdateAction = "sign_change_work_status"
 	TaskUpdateActionReload                     TaskUpdateAction = "reload"
 )
+
+type GetUnfinishedTaskSteps struct {
+	ID        uuid.UUID
+	StepType  string
+	Action    TaskUpdateAction
+	StepNames []string
+}
 
 type TaskUpdate struct {
 	Action     TaskUpdateAction `json:"action"`

@@ -68,7 +68,7 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 		return nil
 	}
 
-	step, err := ae.getTaskStepWithRetry(ctx, message.TaskID)
+	st, err := ae.getTaskStepWithRetry(ctx, message.TaskID)
 	if err != nil {
 		log.WithField("funcName", "GetTaskStepById").
 			WithError(err).
@@ -83,11 +83,27 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 		return nil
 	}
 
+	log = log.WithField("step.WorkNumber", st.WorkNumber).
+		WithField("step.Name", st.Name).
+		WithField("taskID", message.TaskID)
+
+	if st.IsPaused {
+		log.Error("block is paused")
+
+		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
+			log.WithField("funcName", "RollbackTransaction").
+				WithError(txErr).
+				Error("rollback transaction")
+		}
+
+		return nil
+	}
+
 	storage := &store.VariableStore{
-		State:  step.State,
-		Values: step.Storage,
-		Steps:  step.Steps,
-		Errors: step.Errors,
+		State:  st.State,
+		Values: st.Storage,
+		Steps:  st.Steps,
+		Errors: st.Errors,
 	}
 
 	functionMapping := pipeline.FunctionUpdateParams{Mapping: message.FunctionMapping}
@@ -109,9 +125,9 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 	}
 
 	runCtx := &pipeline.BlockRunContext{
-		TaskID:     step.WorkID,
-		WorkNumber: step.WorkNumber,
-		Initiator:  step.Initiator,
+		TaskID:     st.WorkID,
+		WorkNumber: st.WorkNumber,
+		Initiator:  st.Initiator,
 		VarStore:   storage,
 		Services: pipeline.RunContextServices{
 			HTTPClient:    ae.HTTPClient,
@@ -134,16 +150,14 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 		UpdateData: &script.BlockUpdateData{
 			Parameters: mapping,
 		},
-		IsTest: step.IsTest,
+		IsTest: st.IsTest,
 	}
 
 	runCtx.SetTaskEvents(ctx)
 
-	blockFunc, err := ae.DB.GetBlockDataFromVersion(ctx, step.WorkNumber, step.Name)
+	blockFunc, err := ae.DB.GetBlockDataFromVersion(ctx, st.WorkNumber, st.Name)
 	if err != nil {
 		log.WithField("funcName", "GetBlockDataFromVersion").
-			WithField("step.WorkNumber", step.WorkNumber).
-			WithField("step.Name", step.Name).
 			WithError(err).
 			Error("get block data from pipeline version")
 
@@ -156,11 +170,9 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 		return nil
 	}
 
-	workFinished, blockErr := pipeline.ProcessBlockWithEndMapping(ctx, step.Name, blockFunc, runCtx, true)
+	workFinished, blockErr := pipeline.ProcessBlockWithEndMapping(ctx, st.Name, blockFunc, runCtx, true)
 	if blockErr != nil {
 		log.WithField("funcName", "ProcessBlockWithEndMapping").
-			WithField("step.WorkNumber", step.WorkNumber).
-			WithField("step.Name", step.Name).
 			WithError(blockErr).
 			Error("process block with end mapping")
 
@@ -182,7 +194,7 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 	}
 
 	if workFinished {
-		err = ae.Scheduler.DeleteAllTasksByWorkID(ctx, step.WorkID)
+		err = ae.Scheduler.DeleteAllTasksByWorkID(ctx, st.WorkID)
 		if err != nil {
 			log.WithError(err).Error("failed delete all tasks by work id in scheduler")
 		}
@@ -281,7 +293,7 @@ func (ae *Env) getTaskStepWithRetry(ctx c.Context, stepID uuid.UUID) (*entity.St
 	for i := 0; i < getTaskStepRetryCount; i++ {
 		<-time.After(getTaskStepTimeout * time.Second)
 
-		step, err := ae.DB.GetTaskStepByID(ctx, stepID)
+		st, err := ae.DB.GetTaskStepByID(ctx, stepID)
 		if errors.Is(err, pgx.ErrNoRows) {
 			continue
 		}
@@ -290,7 +302,7 @@ func (ae *Env) getTaskStepWithRetry(ctx c.Context, stepID uuid.UUID) (*entity.St
 			return nil, err
 		}
 
-		return step, nil
+		return st, nil
 	}
 
 	return nil, errors.New("step by stepID not found")

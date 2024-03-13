@@ -36,7 +36,7 @@ type TaskStorager interface {
 	GetTasksCount(ctx c.Context, currentUser string, delegationsByApprovement, delegationsByExecution []string) (*e.CountTasks, error)
 	GetTask(ctx c.Context, delegationsApprover, delegationsExecution []string, currentUser, workNumber string) (*e.EriusTask, error)
 	GetTaskSteps(ctx c.Context, id uuid.UUID) (e.TaskSteps, error)
-	GetUnfinishedTaskStepsByWorkIDAndStepType(ctx c.Context, id uuid.UUID, stepType string, in *e.TaskUpdate) (e.TaskSteps, error)
+	GetUnfinishedTaskSteps(ctx c.Context, in *e.GetUnfinishedTaskSteps) (e.TaskSteps, error)
 	GetTaskStepByID(ctx c.Context, id uuid.UUID) (*e.Step, error)
 	GetParentTaskStepByName(ctx c.Context, workID uuid.UUID, stepName string) (*e.Step, error)
 	GetTaskStepByName(ctx c.Context, workID uuid.UUID, stepName string) (*e.Step, error)
@@ -272,4 +272,8 @@ type Database interface {
 		map[string]map[string]*time.Time,
 		error,
 	)
+	CreateTaskEvent(ctx c.Context, dto *e.CreateTaskEvent) (eventID string, err error)
+	SetTaskPaused(ctx c.Context, workID string, isPaused bool) error
+	SetTaskBlocksPaused(ctx c.Context, workID string, steps []string, isPaused bool) error
+	IsTaskPaused(ctx c.Context, workID string) (isPaused bool, err error)
 }

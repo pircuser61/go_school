@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/lib/pq"
+
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 
@@ -260,6 +262,53 @@ func (db *PGCon) SetExecDeadline(ctx c.Context, taskID string, deadline time.Tim
 	const q = `UPDATE works SET exec_deadline = $1 WHERE id = $2`
 
 	_, err := db.Connection.Exec(ctx, q, deadline, taskID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *PGCon) SetTaskPaused(ctx c.Context, workID string, isPaused bool) error {
+	ctx, span := trace.StartSpan(ctx, "set_task_paused")
+	defer span.End()
+
+	const q = `UPDATE works SET is_paused = $1 WHERE id = $2`
+
+	_, err := db.Connection.Exec(ctx, q, workID, isPaused)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *PGCon) SetTaskBlocksPaused(ctx c.Context, workID string, steps []string, isPaused bool) error {
+	ctx, span := trace.StartSpan(ctx, "set_task_blocks_paused")
+	defer span.End()
+
+	if len(steps) == 0 {
+		q := `UPDATE variable_storage SET is_paused = $1 
+          	WHERE work_id = $2 AND status IN('running', 'idle', 'created')`
+
+		_, err := db.Connection.Exec(ctx, q, isPaused, workID)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}
+
+	q := `
+		UPDATE variable_storage SET is_paused = $1 
+		WHERE work_id = $2 AND
+			  status IN('running', 'idle', 'created') AND
+			  step_name IN($3)`
+
+	stepsIn := make([]pq.StringArray, 0, len(steps))
+	stepsIn = append(stepsIn, steps)
+
+	_, err := db.Connection.Exec(ctx, q, isPaused, workID, stepsIn)
 	if err != nil {
 		return err
 	}

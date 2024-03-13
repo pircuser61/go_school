@@ -124,6 +124,10 @@ const (
 	GetExecutableFunctionIDsError
 	GetFunctionError
 	GetHiddenFieldsError
+	PauseTaskError
+	TaskIsPausedError
+	CheckIsTaskPausedError
+	MonitoringTaskActionParseError
 )
 
 /*
@@ -236,6 +240,10 @@ var errorText = map[Err]string{
 	GetExecutableFunctionIDsError:       "error while getting executable function ids",
 	GetFunctionError:                    "error when getting function from function store",
 	GetHiddenFieldsError:                "error when getting hidden fields from schema",
+	PauseTaskError:                      "error when pause task",
+	TaskIsPausedError:                   "task is paused",
+	CheckIsTaskPausedError:              "can`t check task is paused",
+	MonitoringTaskActionParseError:      "can`t parse monitoring task action request",
 }
 
 /*
@@ -338,16 +346,20 @@ var errorDescription = map[Err]string{
 	ParallelNodeReturnCycle:             "Линии блоков внутри параллельности должны быть изолированы",
 	ParallelNodeExitsNotConnected:       "Процесс не опубликован. Соедините все ноды в процессе",
 	// nolint
-	OutOfParallelNodesConnection:  "Процесс не опубликован. Есть ноды, которые не располагаются внутри параллельности или не проходят через начало/конец шлюза, но связаны с блоками внутри параллельности.",
-	ParallelOutOfStartInsert:      "Процесс не опубликован. Есть ноды, которые соеденены с нодой конец параллельности, но не проходят через ноду начало параллельности",
-	GetDecisionsError:             "Не удалось получить список решений нод",
-	GetBlockStateError:            "can't get block state",
-	ParallelPathIntersected:       "Процесс не опубликован. Внутри параллельности один из сокетов ведет на другую ветвь внутри параллельности",
-	ForbiddenError:                "У вас нет прав на просмотр содержимого",
-	CheckForHiddenError:           "Ошибка при проверке на hidden",
-	GetExecutableFunctionIDsError: "Ошибка при получении id у executable functions",
-	GetFunctionError:              "Ошибка при получении функции",
-	GetHiddenFieldsError:          "Ошибка при получении скрытых полей из схемы",
+	OutOfParallelNodesConnection:   "Процесс не опубликован. Есть ноды, которые не располагаются внутри параллельности или не проходят через начало/конец шлюза, но связаны с блоками внутри параллельности.",
+	ParallelOutOfStartInsert:       "Процесс не опубликован. Есть ноды, которые соеденены с нодой конец параллельности, но не проходят через ноду начало параллельности",
+	GetDecisionsError:              "Не удалось получить список решений нод",
+	GetBlockStateError:             "can't get block state",
+	ParallelPathIntersected:        "Процесс не опубликован. Внутри параллельности один из сокетов ведет на другую ветвь внутри параллельности",
+	ForbiddenError:                 "У вас нет прав на просмотр содержимого",
+	CheckForHiddenError:            "Ошибка при проверке на hidden",
+	GetExecutableFunctionIDsError:  "Ошибка при получении id у executable functions",
+	GetFunctionError:               "Ошибка при получении функции",
+	GetHiddenFieldsError:           "Ошибка при получении скрытых полей из схемы",
+	PauseTaskError:                 "Ошибка при остановке таски",
+	TaskIsPausedError:              "Заявка на паузе",
+	CheckIsTaskPausedError:         "Не удалось проверить флаг паузы у таски",
+	MonitoringTaskActionParseError: "Не удалось распарсить запрос на действие с таской",
 }
 
 /*

@@ -434,7 +434,7 @@ func (gb *GoFormBlock) handleAutoFillForm() error {
 		gb.State.ApplicationBody = formMapping
 	}
 
-	if constErr := script.FillMapWithConstants(gb.State.Constants, gb.State.ApplicationBody); constErr != nil {
+	if constErr := script.FillFormMapWithConstants(gb.State.Constants, gb.State.ApplicationBody); constErr != nil {
 		return constErr
 	}
 

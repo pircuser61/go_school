@@ -3912,25 +3912,25 @@ func (_c *MockedDatabase_GetTasksForMonitoring_Call) RunAndReturn(run func(conte
 	return _c
 }
 
-// GetUnfinishedTaskStepsByWorkIDAndStepType provides a mock function with given fields: ctx, id, stepType, in
-func (_m *MockedDatabase) GetUnfinishedTaskStepsByWorkIDAndStepType(ctx context.Context, id uuid.UUID, stepType string, in *entity.TaskUpdate) (entity.TaskSteps, error) {
-	ret := _m.Called(ctx, id, stepType, in)
+// GetUnfinishedTaskSteps provides a mock function with given fields: ctx, id, stepType, in
+func (_m *MockedDatabase) GetUnfinishedTaskSteps(ctx context.Context, in *entity.GetUnfinishedTaskSteps) (entity.TaskSteps, error) {
+	ret := _m.Called(ctx, in)
 
 	var r0 entity.TaskSteps
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, string, *entity.TaskUpdate) (entity.TaskSteps, error)); ok {
-		return rf(ctx, id, stepType, in)
+	if rf, ok := ret.Get(0).(func(context.Context, *entity.GetUnfinishedTaskSteps) (entity.TaskSteps, error)); ok {
+		return rf(ctx, in)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, string, *entity.TaskUpdate) entity.TaskSteps); ok {
-		r0 = rf(ctx, id, stepType, in)
+	if rf, ok := ret.Get(0).(func(context.Context, *entity.GetUnfinishedTaskSteps) entity.TaskSteps); ok {
+		r0 = rf(ctx, in)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(entity.TaskSteps)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID, string, *entity.TaskUpdate) error); ok {
-		r1 = rf(ctx, id, stepType, in)
+	if rf, ok := ret.Get(1).(func(context.Context, *entity.GetUnfinishedTaskSteps) error); ok {
+		r1 = rf(ctx, in)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -3938,8 +3938,8 @@ func (_m *MockedDatabase) GetUnfinishedTaskStepsByWorkIDAndStepType(ctx context.
 	return r0, r1
 }
 
-// MockedDatabase_GetUnfinishedTaskStepsByWorkIDAndStepType_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetUnfinishedTaskStepsByWorkIDAndStepType'
-type MockedDatabase_GetUnfinishedTaskStepsByWorkIDAndStepType_Call struct {
+// MockedDatabase_GetUnfinishedTaskSteps_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetUnfinishedTaskSteps'
+type MockedDatabase_GetUnfinishedTaskSteps_Call struct {
 	*mock.Call
 }
 
@@ -3948,23 +3948,23 @@ type MockedDatabase_GetUnfinishedTaskStepsByWorkIDAndStepType_Call struct {
 //   - id uuid.UUID
 //   - stepType string
 //   - in *entity.TaskUpdate
-func (_e *MockedDatabase_Expecter) GetUnfinishedTaskStepsByWorkIDAndStepType(ctx interface{}, id interface{}, stepType interface{}, in interface{}) *MockedDatabase_GetUnfinishedTaskStepsByWorkIDAndStepType_Call {
-	return &MockedDatabase_GetUnfinishedTaskStepsByWorkIDAndStepType_Call{Call: _e.mock.On("GetUnfinishedTaskStepsByWorkIDAndStepType", ctx, id, stepType, in)}
+func (_e *MockedDatabase_Expecter) GetUnfinishedTaskStepsByWorkIDAndStepType(ctx interface{}, id interface{}, stepType interface{}, in interface{}) *MockedDatabase_GetUnfinishedTaskSteps_Call {
+	return &MockedDatabase_GetUnfinishedTaskSteps_Call{Call: _e.mock.On("GetUnfinishedTaskSteps", ctx, id, stepType, in)}
 }
 
-func (_c *MockedDatabase_GetUnfinishedTaskStepsByWorkIDAndStepType_Call) Run(run func(ctx context.Context, id uuid.UUID, stepType string, in *entity.TaskUpdate)) *MockedDatabase_GetUnfinishedTaskStepsByWorkIDAndStepType_Call {
+func (_c *MockedDatabase_GetUnfinishedTaskSteps_Call) Run(run func(ctx context.Context, id uuid.UUID, stepType string, in *entity.TaskUpdate)) *MockedDatabase_GetUnfinishedTaskSteps_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		run(args[0].(context.Context), args[1].(uuid.UUID), args[2].(string), args[3].(*entity.TaskUpdate))
 	})
 	return _c
 }
 
-func (_c *MockedDatabase_GetUnfinishedTaskStepsByWorkIDAndStepType_Call) Return(_a0 entity.TaskSteps, _a1 error) *MockedDatabase_GetUnfinishedTaskStepsByWorkIDAndStepType_Call {
+func (_c *MockedDatabase_GetUnfinishedTaskSteps_Call) Return(_a0 entity.TaskSteps, _a1 error) *MockedDatabase_GetUnfinishedTaskSteps_Call {
 	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
-func (_c *MockedDatabase_GetUnfinishedTaskStepsByWorkIDAndStepType_Call) RunAndReturn(run func(context.Context, uuid.UUID, string, *entity.TaskUpdate) (entity.TaskSteps, error)) *MockedDatabase_GetUnfinishedTaskStepsByWorkIDAndStepType_Call {
+func (_c *MockedDatabase_GetUnfinishedTaskSteps_Call) RunAndReturn(run func(context.Context, uuid.UUID, string, *entity.TaskUpdate) (entity.TaskSteps, error)) *MockedDatabase_GetUnfinishedTaskSteps_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -6235,6 +6235,22 @@ func (_m *MockedDatabase) VersionEditable(ctx context.Context, versionID uuid.UU
 	}
 
 	return r0, r1
+}
+
+func (_m *MockedDatabase) CreateTaskEvent(ctx context.Context, dto *entity.CreateTaskEvent) (eventID string, err error) {
+	return
+}
+
+func (_m *MockedDatabase) SetTaskPaused(ctx context.Context, workID string, isPaused bool) error {
+	return nil
+}
+
+func (_m *MockedDatabase) SetTaskBlocksPaused(ctx context.Context, workID string, steps []string, isPaused bool) error {
+	return nil
+}
+
+func (_m *MockedDatabase) IsTaskPaused(ctx context.Context, workID string) (isPaused bool, err error) {
+	return
 }
 
 // MockedDatabase_VersionEditable_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'VersionEditable'

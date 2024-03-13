@@ -1597,13 +1597,8 @@ func (db *PGCon) GetExecutableByName(c context.Context, name string) (*entity.Er
 	return nil, nil
 }
 
-func (db *PGCon) GetUnfinishedTaskStepsByWorkIDAndStepType(
-	ctx context.Context,
-	id uuid.UUID,
-	stepType string,
-	in *entity.TaskUpdate,
-) (entity.TaskSteps, error) {
-	ctx, span := trace.StartSpan(ctx, "pg_get_unfinished_task_steps_by_work_id_and_step_type")
+func (db *PGCon) GetUnfinishedTaskSteps(ctx context.Context, in *entity.GetUnfinishedTaskSteps) (entity.TaskSteps, error) {
+	ctx, span := trace.StartSpan(ctx, "pg_get_unfinished_task_steps")
 	defer span.End()
 
 	el := entity.TaskSteps{}
@@ -1617,19 +1612,15 @@ func (db *PGCon) GetUnfinishedTaskStepsByWorkIDAndStepType(
 	}, in.Action)
 
 	// nolint:gocritic,goconst
-	if stepType == "form" {
+	if in.StepType == "form" {
 		notInStatuses = []string{"skipped"}
-	} else if (stepType == "execution" || stepType == "approver") && isAddInfoReq {
+	} else if (in.StepType == "execution" || in.StepType == "approver") && isAddInfoReq {
 		notInStatuses = []string{"skipped"}
 	} else {
 		notInStatuses = []string{"skipped", "finished"}
 	}
 
-	args := []interface{}{
-		id,
-		stepType,
-		notInStatuses,
-	}
+	args := []interface{}{in.ID, in.StepType, notInStatuses}
 
 	var stepNamesQ string
 
@@ -1653,6 +1644,7 @@ func (db *PGCon) GetUnfinishedTaskStepsByWorkIDAndStepType(
 		vs.status
 	FROM variable_storage vs 
 	WHERE 
+	    vs.is_paused = false AND
 	    work_id = $1 AND 
 	    step_type = $2 AND 
 	    NOT status = ANY($3) AND 
@@ -1665,7 +1657,7 @@ func (db *PGCon) GetUnfinishedTaskStepsByWorkIDAndStepType(
 	rows, err := db.Connection.Query(ctx, q, args...)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, nil
+			return []*entity.Step{}, nil
 		}
 
 		return nil, err
@@ -1880,7 +1872,8 @@ func (db *PGCon) GetTaskStepByID(ctx context.Context, id uuid.UUID) (*entity.Ste
 		vs.status,
 		w.author,
 		vs.updated_at,
-		w.run_context -> 'initial_application' -> 'is_test_application' as isTest
+		w.run_context -> 'initial_application' -> 'is_test_application' as isTest,
+		vs.is_paused
 	FROM variable_storage vs 
 	JOIN works w ON vs.work_id = w.id
 		WHERE vs.id = $1
@@ -1905,6 +1898,7 @@ func (db *PGCon) GetTaskStepByID(ctx context.Context, id uuid.UUID) (*entity.Ste
 		&s.Initiator,
 		&s.UpdatedAt,
 		&s.IsTest,
+		&s.IsPaused,
 	)
 	if err != nil {
 		return nil, err
@@ -2616,7 +2610,8 @@ func (db *PGCon) GetBlocksBreachedSLA(ctx context.Context) ([]StepBreachedSLA, e
 		    d.action = 'rework_sla_breached' OR d.action = 'day_before_sla_request_add_info' OR d.action = 'sla_breach_request_add_info'))
 			)
 			AND w.child_id IS NULL
-			AND d.deadline < NOW()`
+			AND d.deadline < NOW()
+			AND vs.is_paused = false`
 
 	rows, err := db.Connection.Query(ctx, q)
 	if err != nil {
@@ -2703,7 +2698,7 @@ func (db *PGCon) GetTaskActiveBlock(c context.Context, taskID, stepName string) 
 }
 
 func (db *PGCon) GetTaskForMonitoring(ctx context.Context, workNumber string) ([]entity.MonitoringTaskNode, error) {
-	ctx, span := trace.StartSpan(ctx, "get_task_nodes_for_monitoring")
+	ctx, span := trace.StartSpan(ctx, "get_task_for_monitoring")
 	defer span.End()
 
 	// nolint:gocritic
@@ -2711,6 +2706,7 @@ func (db *PGCon) GetTaskForMonitoring(ctx context.Context, workNumber string) ([
 	q := `
 		SELECT w.work_number, 
 		       w.version_id, 
+		       w.is_paused task_is_paused, 
 		       p.author,
 		       p.created_at::text,
 		       p.name,
@@ -2718,7 +2714,8 @@ func (db *PGCon) GetTaskForMonitoring(ctx context.Context, workNumber string) ([
 		       vs.status,
 		       vs.id,
        		   v.content->'pipeline'-> 'blocks'->step_name->>'title' title,
-       		   vs.time block_date_init
+       		   vs.time block_date_init,
+       		   vs.is_paused block_is_paused
 		from works w
     		join versions v on w.version_id = v.id
     		join pipelines p on v.pipeline_id = p.id
@@ -2740,6 +2737,7 @@ func (db *PGCon) GetTaskForMonitoring(ctx context.Context, workNumber string) ([
 		if scanErr := rows.Scan(
 			&item.WorkNumber,
 			&item.VersionID,
+			&item.IsPaused,
 			&item.Author,
 			&item.CreationTime,
 			&item.ScenarioName,
@@ -2748,6 +2746,7 @@ func (db *PGCon) GetTaskForMonitoring(ctx context.Context, workNumber string) ([
 			&item.BlockID,
 			&item.RealName,
 			&item.BlockDateInit,
+			&item.BlockIsPaused,
 		); scanErr != nil {
 			return nil, scanErr
 		}

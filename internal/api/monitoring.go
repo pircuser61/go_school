@@ -2,6 +2,8 @@ package api
 
 import (
 	"context"
+	"encoding/json"
+	"io"
 	"net/http"
 	"regexp"
 	"strings"
@@ -15,11 +17,14 @@ import (
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
 const (
 	monitoringTimeLayout = "2006-01-02T15:04:05-0700"
+	taskEventPause       = "pause"
+	taskEventStart       = "start"
 )
 
 func (ae *Env) GetTasksForMonitoring(w http.ResponseWriter, r *http.Request, params GetTasksForMonitoringParams) {
@@ -174,7 +179,7 @@ func (ae *Env) GetBlockContext(w http.ResponseWriter, r *http.Request, blockID s
 }
 
 func (ae *Env) GetMonitoringTask(w http.ResponseWriter, req *http.Request, workNumber string) {
-	ctx, s := trace.StartSpan(req.Context(), "get_task_for_monitoring")
+	ctx, s := trace.StartSpan(req.Context(), "get_monitoring_task")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
@@ -213,32 +218,7 @@ func (ae *Env) GetMonitoringTask(w http.ResponseWriter, req *http.Request, workN
 		return
 	}
 
-	res := MonitoringTask{History: make([]MonitoringHistory, 0)}
-	res.ScenarioInfo = MonitoringScenarioInfo{
-		Author:       nodes[0].Author,
-		CreationTime: nodes[0].CreationTime,
-		ScenarioName: nodes[0].ScenarioName,
-	}
-	res.VersionId = nodes[0].VersionID
-	res.WorkNumber = nodes[0].WorkNumber
-
-	for i := range nodes {
-		monitoringHistory := MonitoringHistory{
-			BlockId:  nodes[i].BlockID,
-			RealName: nodes[i].RealName,
-			Status:   getMonitoringStatus(nodes[i].Status),
-			NodeId:   nodes[i].NodeID,
-		}
-
-		if nodes[i].BlockDateInit != nil {
-			formattedTime := nodes[i].BlockDateInit.Format(monitoringTimeLayout)
-			monitoringHistory.BlockDateInit = &formattedTime
-		}
-
-		res.History = append(res.History, monitoringHistory)
-	}
-
-	if err = sendResponse(w, http.StatusOK, res); err != nil {
+	if err = sendResponse(w, http.StatusOK, toMonitoringTaskResponse(nodes)); err != nil {
 		errorHandler.handleError(UnknownError, err)
 
 		return
@@ -409,4 +389,204 @@ func (ae *Env) GetBlockState(w http.ResponseWriter, r *http.Request, blockID str
 
 		return
 	}
+}
+
+//nolint:gocyclo //its ok here
+func (ae *Env) MonitoringTaskAction(w http.ResponseWriter, r *http.Request) {
+	ctx, span := trace.StartSpan(r.Context(), "monitoring_task_action")
+	defer span.End()
+
+	log := logger.GetLogger(ctx)
+	errorHandler := newHTTPErrorHandler(log, w)
+
+	b, err := io.ReadAll(r.Body)
+
+	defer r.Body.Close()
+
+	if err != nil {
+		errorHandler.handleError(RequestReadError, err)
+
+		return
+	}
+
+	req := &MonitoringTaskActionRequest{}
+
+	err = json.Unmarshal(b, req)
+	if err != nil {
+		errorHandler.handleError(MonitoringTaskActionParseError, err)
+
+		return
+	}
+
+	ui, err := user.GetUserInfoFromCtx(ctx)
+	if err != nil {
+		errorHandler.sendError(NoUserInContextError)
+
+		return
+	}
+
+	txStorage, transactionErr := ae.DB.StartTransaction(ctx)
+	if transactionErr != nil {
+		log.WithError(transactionErr).Error("couldn't start transaction")
+
+		errorHandler.sendError(UnknownError)
+
+		return
+	}
+
+	defer func() {
+		if rc := recover(); rc != nil {
+			log.WithField("funcName", "recover").
+				Error(r)
+
+			if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
+				log.WithField("funcName", "RollbackTransaction").
+					WithError(txErr).
+					Error("rollback transaction")
+			}
+		}
+	}()
+
+	workID, err := ae.DB.GetWorkIDByWorkNumber(ctx, req.WorkNumber)
+	if err != nil {
+		errorHandler.handleError(GetTaskError, err)
+
+		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
+			log.WithField("funcName", "MonitoringTaskAction").
+				WithError(errors.New("couldn't rollback tx")).
+				Error(txErr)
+		}
+
+		return
+	}
+
+	switch req.Action {
+	case taskEventPause:
+		err = ae.pauseTask(ctx, ui.Name, workID.String(), req.Params)
+		if err != nil {
+			errorHandler.handleError(PauseTaskError, err)
+
+			if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
+				log.WithField("funcName", "MonitoringTaskAction").
+					WithError(errors.New("couldn't rollback tx")).
+					Error(txErr)
+			}
+
+			return
+		}
+
+	case taskEventStart:
+		err = ae.startProcess()
+		if err != nil {
+			errorHandler.handleError(GetTaskError, err)
+
+			if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
+				log.WithField("funcName", "MonitoringTaskAction").
+					WithError(errors.New("couldn't rollback tx")).
+					Error(txErr)
+			}
+
+			return
+		}
+	}
+
+	if err = txStorage.CommitTransaction(ctx); err != nil {
+		log.WithError(err).Error("couldn't commit transaction")
+
+		errorHandler.sendError(UnknownError)
+
+		return
+	}
+
+	nodes, err := ae.DB.GetTaskForMonitoring(ctx, req.WorkNumber)
+	if err != nil {
+		errorHandler.handleError(GetMonitoringNodesError, err)
+
+		return
+	}
+
+	if len(nodes) == 0 {
+		errorHandler.handleError(NoProcessNodesForMonitoringError, errors.New("No process nodes for monitoring"))
+
+		return
+	}
+
+	err = sendResponse(w, http.StatusOK, toMonitoringTaskResponse(nodes))
+	if err != nil {
+		errorHandler.handleError(UnknownError, err)
+
+		return
+	}
+}
+
+func toMonitoringTaskResponse(nodes []entity.MonitoringTaskNode) *MonitoringTask {
+	res := &MonitoringTask{History: make([]MonitoringHistory, 0)}
+	res.ScenarioInfo = MonitoringScenarioInfo{
+		Author:       nodes[0].Author,
+		CreationTime: nodes[0].CreationTime,
+		ScenarioName: nodes[0].ScenarioName,
+	}
+	res.VersionId = nodes[0].VersionID
+	res.WorkNumber = nodes[0].WorkNumber
+	res.IsPaused = nodes[0].IsPaused
+
+	for i := range nodes {
+		monitoringHistory := MonitoringHistory{
+			BlockId:  nodes[i].BlockID,
+			RealName: nodes[i].RealName,
+			Status:   getMonitoringStatus(nodes[i].Status),
+			NodeId:   nodes[i].NodeID,
+			IsPaused: nodes[i].BlockIsPaused,
+		}
+
+		if nodes[i].BlockDateInit != nil {
+			formattedTime := nodes[i].BlockDateInit.Format(monitoringTimeLayout)
+			monitoringHistory.BlockDateInit = &formattedTime
+		}
+
+		res.History = append(res.History, monitoringHistory)
+	}
+
+	return res
+}
+
+func (ae *Env) pauseTask(ctx context.Context, author, workID string, params *MonitoringTaskActionParams) error {
+	err := ae.DB.SetTaskPaused(ctx, workID, true)
+	if err != nil {
+		return err
+	}
+
+	stepNames := make([]string, 0)
+	if params != nil && params.Steps != nil {
+		stepNames = *params.Steps
+	}
+
+	err = ae.DB.SetTaskBlocksPaused(ctx, workID, stepNames, true)
+	if err != nil {
+		return err
+	}
+
+	jsonParams := json.RawMessage{}
+	if params != nil {
+		jsonParams, err = json.Marshal(params)
+		if err != nil {
+			return err
+		}
+	}
+
+	_, err = ae.DB.CreateTaskEvent(ctx, &entity.CreateTaskEvent{
+		WorkID:    workID,
+		Author:    author,
+		EventType: taskEventPause,
+		Params:    jsonParams,
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (ae *Env) startProcess() error {
+	return nil
 }

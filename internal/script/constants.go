@@ -5,13 +5,13 @@ import (
 	"strings"
 )
 
-func FillMapWithConstants(consts, functionMapping map[string]interface{}) error {
-	for keyName, value := range consts {
-		keyParts := strings.Split(keyName, ".")
-		currMap := functionMapping
+func FillFuncMapWithConstants(constants, mapData map[string]interface{}) error {
+	for constantName, value := range constants {
+		constantNameParts := strings.Split(constantName, ".")
+		currMap := mapData
 
-		for i, part := range keyParts {
-			if i == len(keyParts)-1 {
+		for i, part := range constantNameParts {
+			if i == len(constantNameParts)-1 {
 				currMap[part] = value
 
 				break
@@ -29,6 +29,23 @@ func FillMapWithConstants(consts, functionMapping map[string]interface{}) error 
 			}
 
 			currMap = convNewCurrMap
+		}
+	}
+
+	return nil
+}
+
+func FillFormMapWithConstants(constants, mapData map[string]interface{}) error {
+	for constantName, value := range constants {
+		constantNameParts := strings.Split(constantName, ".")
+		currMap := mapData
+
+		for i, part := range constantNameParts {
+			if i == len(constantNameParts)-1 {
+				currMap[part] = value
+
+				break
+			}
 		}
 	}
 
