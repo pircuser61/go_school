@@ -32,6 +32,7 @@ const (
 	GetPipelineVersionsError
 	PipelineIsDraft
 	ApproveError
+	RejectError
 	PipelineDeleteError
 	PipelineCreateError
 	ModuleUsageError
@@ -153,6 +154,7 @@ var errorText = map[Err]string{
 	PipelineParseError:                  "can't pars pipeline data",
 	PipelineIsDraft:                     "pipeline is not a draft",
 	ApproveError:                        "can't approve pipeline",
+	RejectError:                         "can't reject pipeline",
 	PipelineDeleteError:                 "can't delete pipeline data",
 	PipelineCreateError:                 "can't create pipeline",
 	VersionCreateError:                  "can't create version",
@@ -269,6 +271,7 @@ var errorDescription = map[Err]string{
 	PipelineWriteError:                  "Не удалось записать информацию о сценарии",
 	PipelineParseError:                  "Не удалось разобрать информацию о сценарии",
 	ApproveError:                        "Не удалось согласовать сценарий",
+	RejectError:                         "Не удалось отклонить сценарий",
 	PipelineDeleteError:                 "Не удалось удалить информацию о сценарии",
 	PipelineCreateError:                 "Не удалось создать информацию о сценарии",
 	VersionCreateError:                  "Не удалось создать версию сценария",

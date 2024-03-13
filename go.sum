@@ -597,10 +597,6 @@ gitlab.services.mts.ru/jocasta/conditions-kit v1.0.10 h1:K2WNbKX+2vDgAENax9YGs5e
 gitlab.services.mts.ru/jocasta/conditions-kit v1.0.10/go.mod h1:jXNMNsVS3a0g3RML5d2HEw9NRipvE/V+A44O5ffePr8=
 gitlab.services.mts.ru/jocasta/file-registry v1.4.0 h1:DoUWZmVSwkKTJ/1eMcuAatEOYunvAIcGA4CMShta58o=
 gitlab.services.mts.ru/jocasta/file-registry v1.4.0/go.mod h1:nKSDD0s9LOFfnYjgY1CJnCs8AA0Pa76P3h3WpJIH0/s=
-gitlab.services.mts.ru/jocasta/forms v1.5.0-alpha.1 h1:lP9lIugAcG3BxDhJMTApcOVVXDGcibEGv9J8wmhCLaQ=
-gitlab.services.mts.ru/jocasta/forms v1.5.0-alpha.1/go.mod h1:tnMe8H/g7knbPt2ZMi6/41gSJQdX5sBWJJDO5feta1M=
-gitlab.services.mts.ru/jocasta/forms v1.7.0-rc.1.0.20240228093138-cfbc068bdf88 h1:cfDEe74zkHd6v+0CHtPBPSJzJsnMi7gSKRBsY5dBpEk=
-gitlab.services.mts.ru/jocasta/forms v1.7.0-rc.1.0.20240228093138-cfbc068bdf88/go.mod h1:tnMe8H/g7knbPt2ZMi6/41gSJQdX5sBWJJDO5feta1M=
 gitlab.services.mts.ru/jocasta/forms v1.7.0-rc.1.0.20240301073647-dad697e5b82d h1:RviLGcRaLJbNObVam9RyH4ncHxKRtHZHwI3EjJAALiI=
 gitlab.services.mts.ru/jocasta/forms v1.7.0-rc.1.0.20240301073647-dad697e5b82d/go.mod h1:tnMe8H/g7knbPt2ZMi6/41gSJQdX5sBWJJDO5feta1M=
 gitlab.services.mts.ru/jocasta/functions v1.11.0-alpha.1 h1:tbnERBd5I5LlmX6pQW4lzUY4iQhH4eDpo6YAi15J5zs=
