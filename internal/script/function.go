@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"github.com/araddon/dateparse"
+
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/functions"
 )
 
 const (
@@ -141,7 +143,49 @@ func (a *ExecutableFunctionParams) Validate() error {
 		return err
 	}
 
+	if slaErr := a.validateSLA(); slaErr != nil {
+		return slaErr
+	}
+
 	return nil
+}
+
+func (a *ExecutableFunctionParams) validateSLA() error {
+	funcType, err := a.getFuncType()
+	if err != nil {
+		return err
+	}
+
+	switch funcType {
+	case functions.SyncFlag:
+		if a.SLA > int(60*time.Minute.Seconds()+59*time.Second.Seconds()) {
+			return errors.New("sync function SLA is too long")
+		}
+	case functions.AsyncFlag:
+		if a.SLA > int(365*24*time.Hour.Seconds()+23*time.Hour.Seconds()+59*time.Minute.Seconds()) {
+			return errors.New("async function SLA is too long")
+		}
+	}
+
+	return nil
+}
+
+func (a *ExecutableFunctionParams) getFuncType() (string, error) {
+	validBody := strings.Replace(a.Function.Options, "\\", "", -1)
+
+	options := struct {
+		Type string `json:"type"`
+	}{}
+
+	if err := json.Unmarshal([]byte(validBody), &options); err != nil {
+		return "", fmt.Errorf("cannot unmarshal function options: %w", err)
+	}
+
+	if options.Type != functions.SyncFlag && options.Type != functions.AsyncFlag {
+		return "", errors.New("invalid function type")
+	}
+
+	return options.Type, nil
 }
 
 func (js *JSONSchema) Validate() error {
