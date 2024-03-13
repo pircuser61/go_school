@@ -432,6 +432,8 @@ func (ae *Env) EditVersion(w http.ResponseWriter, req *http.Request) {
 }
 
 func (ae *Env) updatePipelineVersion(ctx c.Context, in *e.EriusScenario) (*e.EriusScenario, Err, error) {
+	log := logger.GetLogger(ctx)
+
 	isEditable, err := ae.DB.VersionEditable(ctx, in.VersionID)
 	if err != nil {
 		return nil, UnknownError, err
@@ -452,8 +454,8 @@ func (ae *Env) updatePipelineVersion(ctx c.Context, in *e.EriusScenario) (*e.Eri
 	}
 
 	ok, valErr := ae.validatePipeline(ctx, in)
-	if !ok && in.Status == db.StatusApproved {
-		return nil, validateBlockTypeErrText(valErr), errors.New(valErr)
+	if !ok {
+		log.WithField(funcName, "updatePipelineVersion").Error(valErr)
 	}
 
 	updated, err := json.Marshal(in)
@@ -488,14 +490,18 @@ func (ae *Env) updatePipelineVersion(ctx c.Context, in *e.EriusScenario) (*e.Eri
 		return nil, UnknownError, err
 	}
 
-	err = ae.switchScenarioApproved(ctx, in, ui)
-	if err != nil {
-		return nil, ApproveError, err
+	if ok && in.Status == db.StatusApproved {
+		err = ae.DB.SwitchApproved(ctx, in.PipelineID, in.VersionID, ui.Username)
+		if err != nil {
+			return nil, ApproveError, err
+		}
 	}
 
-	err = ae.handleScenario(ctx, in, ui)
-	if err != nil {
-		return nil, ApproveError, err
+	if in.Status == db.StatusRejected {
+		err = ae.DB.SwitchRejected(ctx, in.VersionID, in.CommentRejected, ui.Username)
+		if err != nil {
+			return nil, RejectError, err
+		}
 	}
 
 	version, err := ae.DB.GetPipelineVersion(ctx, in.VersionID, true)
@@ -523,23 +529,6 @@ func validateBlockTypeErrText(valErrText string) Err {
 	}
 }
 
-func (ae *Env) handleScenario(ctx c.Context, p *e.EriusScenario, ui *sso.UserInfo) (err error) {
-	switch p.Status {
-	case db.StatusApproved:
-		err = ae.DB.SwitchApproved(ctx, p.PipelineID, p.VersionID, ui.Username)
-		if err != nil {
-			return err
-		}
-	case db.StatusRejected:
-		err = ae.DB.SwitchRejected(ctx, p.VersionID, p.CommentRejected, ui.Username)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
 func (ae *Env) handlePipelineBlockLength(p *e.EriusScenario) {
 	if len(p.Pipeline.Blocks) == 0 {
 		p.Pipeline.FillEmptyPipeline()
@@ -565,17 +554,6 @@ func statusGroups(p *e.EriusScenario) (groups []*e.NodeGroup, err error) {
 	}
 
 	return groups, nil
-}
-
-func (ae *Env) switchScenarioApproved(ctx c.Context, p *e.EriusScenario, ui *sso.UserInfo) error {
-	if p.Status == db.StatusApproved {
-		err := ae.DB.SwitchApproved(ctx, p.PipelineID, p.VersionID, ui.Username)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
 }
 
 type execVersionDTO struct {

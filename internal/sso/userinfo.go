@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -42,6 +43,12 @@ type UserInfo struct {
 	OrgUnit           string                 `json:"OrgUnit"`
 	ProxyEmails       []string               `json:"proxyAddresses"`
 }
+
+const (
+	autoApproval = "auto_approve"
+	autoSigner   = "auto_signer"
+	autoFill     = "auto_fill"
+)
 
 type custClaims struct {
 	PrefName string `json:"preferred_username"`
@@ -99,6 +106,12 @@ func (s *Service) getUserinfo(ctx context.Context, r *http.Request) (*UserInfo, 
 		return userinfo, nil
 	}
 
+	if IsServiceUserName(username) {
+		return &UserInfo{
+			Username: username,
+		}, nil
+	}
+
 	req, err := http.NewRequestWithContext(ctxLocal, http.MethodGet, s.userinfoURL, http.NoBody)
 	if err != nil {
 		return nil, err
@@ -129,4 +142,24 @@ func (s *Service) getUserinfo(ctx context.Context, r *http.Request) (*UserInfo, 
 	s.userinfoToCache(username, user)
 
 	return user, nil
+}
+
+func IsServiceUserName(username string) bool {
+	if strings.HasPrefix(username, "service-account") {
+		return true
+	}
+
+	if username == autoApproval {
+		return true
+	}
+
+	if username == autoSigner {
+		return true
+	}
+
+	if username == autoFill {
+		return true
+	}
+
+	return false
 }

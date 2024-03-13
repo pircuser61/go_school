@@ -175,6 +175,10 @@ func (s *Service) GetUserEmail(ctx context.Context, username string) (string, er
 	ctxLocal, span := trace.StartSpan(ctx, "GetUserEmail")
 	defer span.End()
 
+	if sso.IsServiceUserName(username) {
+		return "", nil
+	}
+
 	users, err := s.getUser(ctxLocal, username, true)
 	if err != nil {
 		return "", err
@@ -202,6 +206,10 @@ func (s *Service) GetUserEmail(ctx context.Context, username string) (string, er
 func (s *Service) GetUser(ctx context.Context, username string) (SSOUser, error) {
 	ctxLocal, span := trace.StartSpan(ctx, "GetUser")
 	defer span.End()
+
+	if sso.IsServiceUserName(username) {
+		return map[string]interface{}{"username": username}, nil
+	}
 
 	users, err := s.getUser(ctxLocal, username, false)
 	if err != nil {
