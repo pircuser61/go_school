@@ -34,7 +34,7 @@ const (
 )
 
 func uniqueActionsByRole(loginsIn, stepType string, finished, acted bool) string {
-	statuses := "(vs.status IN ('running', 'idle', 'ready') AND m.finished = false AND vs.is_paused = false)"
+	statuses := "(vs.status IN ('running', 'idle', 'ready') AND m.finished = false)"
 
 	if finished {
 		statuses = "(vs.status IN ('finished', 'cancel', 'no_success', 'error') OR m.finished = true)"

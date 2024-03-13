@@ -218,34 +218,7 @@ func (ae *Env) GetMonitoringTask(w http.ResponseWriter, req *http.Request, workN
 		return
 	}
 
-	res := MonitoringTask{History: make([]MonitoringHistory, 0)}
-	res.ScenarioInfo = MonitoringScenarioInfo{
-		Author:       nodes[0].Author,
-		CreationTime: nodes[0].CreationTime,
-		ScenarioName: nodes[0].ScenarioName,
-	}
-	res.VersionId = nodes[0].VersionID
-	res.WorkNumber = nodes[0].WorkNumber
-	res.IsPaused = nodes[0].IsPaused
-
-	for i := range nodes {
-		monitoringHistory := MonitoringHistory{
-			BlockId:  nodes[i].BlockID,
-			RealName: nodes[i].RealName,
-			Status:   getMonitoringStatus(nodes[i].Status),
-			NodeId:   nodes[i].NodeID,
-			IsPaused: nodes[i].BlockIsPaused,
-		}
-
-		if nodes[i].BlockDateInit != nil {
-			formattedTime := nodes[i].BlockDateInit.Format(monitoringTimeLayout)
-			monitoringHistory.BlockDateInit = &formattedTime
-		}
-
-		res.History = append(res.History, monitoringHistory)
-	}
-
-	if err = sendResponse(w, http.StatusOK, res); err != nil {
+	if err = sendResponse(w, http.StatusOK, toMonitoringTaskResponse(nodes)); err != nil {
 		errorHandler.handleError(UnknownError, err)
 
 		return
@@ -538,7 +511,16 @@ func (ae *Env) MonitoringTaskAction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res := MonitoringTask{History: make([]MonitoringHistory, 0)}
+	err = sendResponse(w, http.StatusOK, toMonitoringTaskResponse(nodes))
+	if err != nil {
+		errorHandler.handleError(UnknownError, err)
+
+		return
+	}
+}
+
+func toMonitoringTaskResponse(nodes []entity.MonitoringTaskNode) *MonitoringTask {
+	res := &MonitoringTask{History: make([]MonitoringHistory, 0)}
 	res.ScenarioInfo = MonitoringScenarioInfo{
 		Author:       nodes[0].Author,
 		CreationTime: nodes[0].CreationTime,
@@ -565,12 +547,7 @@ func (ae *Env) MonitoringTaskAction(w http.ResponseWriter, r *http.Request) {
 		res.History = append(res.History, monitoringHistory)
 	}
 
-	err = sendResponse(w, http.StatusOK, res)
-	if err != nil {
-		errorHandler.handleError(UnknownError, err)
-
-		return
-	}
+	return res
 }
 
 func (ae *Env) pauseTask(ctx context.Context, author, workID string, params *MonitoringTaskActionParams) error {

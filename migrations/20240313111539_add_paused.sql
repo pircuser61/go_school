@@ -17,13 +17,13 @@ CREATE INDEX works_is_paused_index
     ON works (is_paused);
 
 CREATE TABLE task_events (
-    id uuid NOT NULL,
-    work_id uuid NOT NULL REFERENCES works(id),
-    author character varying NOT NULL,
-    event_type character varying NOT NULL,
-    params jsonb NOT NULL DEFAULT '{}'::JSONB,
-    created_at timestamp with time zone NOT NULL,
-    CONSTRAINT task_events_pk PRIMARY KEY (id)
+                             id uuid NOT NULL,
+                             work_id uuid NOT NULL REFERENCES works(id),
+                             author character varying NOT NULL,
+                             event_type character varying NOT NULL,
+                             params jsonb NOT NULL DEFAULT '{}'::JSONB,
+                             created_at timestamp with time zone NOT NULL,
+                             CONSTRAINT task_events_pk PRIMARY KEY (id)
 );
 
 COMMENT ON TABLE task_events is 'Таблица с ивентами таски.';
