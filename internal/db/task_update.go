@@ -5,9 +5,8 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/lib/pq"
-
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 	"github.com/pkg/errors"
 
 	"go.opencensus.io/trace"
@@ -309,6 +308,34 @@ func (db *PGCon) SetTaskBlocksPaused(ctx c.Context, workID string, steps []strin
 	stepsIn = append(stepsIn, steps)
 
 	_, err := db.Connection.Exec(ctx, q, isPaused, workID, stepsIn)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *PGCon) UnpauseTaskBlock(ctx c.Context, workID, stepID string) (err error) {
+	ctx, span := trace.StartSpan(ctx, "unpause_task_block")
+	defer span.End()
+
+	const q = `UPDATE variable_storage SET is_paused = false WHERE id = $1 AND work_id = $2`
+
+	_, err = db.Connection.Exec(ctx, q, stepID, workID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *PGCon) TryUnpauseTask(ctx c.Context, workID string) (err error) {
+	ctx, span := trace.StartSpan(ctx, "try_unpause_task")
+	defer span.End()
+
+	const q = `UPDATE variable_storage SET is_paused = false WHERE id = $1 AND work_id = $2`
+
+	_, err = db.Connection.Exec(ctx, q, workID)
 	if err != nil {
 		return err
 	}

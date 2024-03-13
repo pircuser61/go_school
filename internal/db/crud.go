@@ -1152,7 +1152,7 @@ func (db *PGCon) isStepExist(ctx context.Context, workID, stepName string) (bool
 				status IN ('idle', 'ready', 'running', 'finished') AND
 				time = (SELECT max(time) FROM variable_storage vs 
 							WHERE vs.work_id = $1 AND step_name = $2)
-			))`
+			) AND is_paused = false)`
 
 	scanErr := db.Connection.QueryRow(ctx, q, workID, stepName).Scan(&id, &t)
 	if scanErr != nil && !errors.Is(scanErr, pgx.ErrNoRows) {
@@ -1162,22 +1162,24 @@ func (db *PGCon) isStepExist(ctx context.Context, workID, stepName string) (bool
 	return id != uuid.Nil, id, t, nil
 }
 
-func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uuid.UUID, time.Time, error) {
-	ctx, span := trace.StartSpan(ctx, "pg_save_step_context")
+//
+//
+
+func (db *PGCon) InitTaskBlock(ctx context.Context, dto *SaveStepRequest, isPaused bool) (id uuid.UUID, startTime time.Time, err error) {
+	ctx, span := trace.StartSpan(ctx, "pg_init_task_block")
 	defer span.End()
 
 	if !dto.IsReEntry {
-		exists, stepID, createdAt, err := db.isStepExist(ctx, dto.WorkID.String(), dto.StepName)
+		exists, stepID, t, err := db.isStepExist(ctx, dto.WorkID.String(), dto.StepName)
 		if err != nil {
 			return uuid.Nil, time.Time{}, err
 		}
 
 		if exists {
-			return stepID, createdAt, nil
+			return stepID, t, nil
 		}
 	}
-
-	id := uuid.New()
+	id = uuid.New()
 	timestamp := time.Now()
 	// nolint:gocritic
 	// language=PostgreSQL
@@ -1194,7 +1196,9 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 			status,
 		    attachments, 	                         
 		    current_executor,
-			is_active
+			is_active,
+		    is_paused
+		
 			--update_col--
 		)
 		VALUES (
@@ -1209,7 +1213,8 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 			$9,
 		    $10,
 		    $11,
-		    true
+		    true,
+		    $12
 			--update_val--
 		)
 `
@@ -1225,6 +1230,7 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 		dto.Status,
 		dto.Attachments,
 		dto.CurrentExecutor,
+		isPaused,
 	}
 
 	if _, ok := map[string]struct{}{"finished": {}, "no_success": {}, "error": {}}[dto.Status]; ok {
@@ -1233,7 +1239,7 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 		query = strings.Replace(query, "--update_val--", fmt.Sprintf(",$%d", len(args)), 1)
 	}
 
-	_, err := db.Connection.Exec(ctx, query, args...)
+	_, err = db.Connection.Exec(ctx, query, args...)
 	if err != nil {
 		return uuid.Nil, time.Time{}, err
 	}
@@ -1249,6 +1255,69 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 	}
 
 	return id, timestamp, nil
+}
+
+func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest, id uuid.UUID) (uuid.UUID, error) {
+	ctx, span := trace.StartSpan(ctx, "pg_save_step_context")
+	defer span.End()
+	// вот с этим непонятно немного
+	if !dto.IsReEntry {
+		exists, stepID, _, err := db.isStepExist(ctx, dto.WorkID.String(), dto.StepName)
+		if err != nil {
+			return uuid.Nil, err
+		}
+
+		if exists {
+			return stepID, nil
+		}
+	}
+	// nolint:gocritic
+	// language=PostgreSQL
+	query := `
+		UPDATE variable_storage SET 
+			content = $2, 
+			break_points = $3, 
+			has_error = $4,
+			status = $5,
+		    attachments = $6, 	                         
+		    current_executor = $7,
+			is_paused = $10
+			--update_col--
+			WHERE id = $1
+`
+	args := []interface{}{
+		id,
+		dto.Content,
+		dto.BreakPoints,
+		dto.HasError,
+		dto.Status,
+		dto.Attachments,
+		dto.CurrentExecutor,
+		false,
+	}
+
+	if _, ok := map[string]struct{}{"finished": {}, "no_success": {}, "error": {}}[dto.Status]; ok {
+		args = append(args, time.Now())
+		query = strings.Replace(query, "--update_col--", ",updated_at", 1)
+		query = strings.Replace(query, "--update_val--", fmt.Sprintf(",$%d", len(args)), 1)
+	}
+
+	_, err := db.Connection.Exec(ctx, query, args...)
+	if err != nil {
+		return uuid.Nil, err
+	}
+
+	err = db.insertIntoMembers(ctx, dto.Members, id)
+	if err != nil {
+		return uuid.Nil, err
+	}
+
+	err = db.deleteAndInsertIntoDeadlines(ctx, dto.Deadlines, id)
+	if err != nil {
+		return uuid.Nil, err
+	}
+
+	return id, nil
 }
 
 func (db *PGCon) UpdateStepContext(ctx context.Context, dto *UpdateStepRequest) error {

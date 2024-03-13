@@ -2450,3 +2450,23 @@ func (db *PGCon) IsTaskPaused(ctx c.Context, workID string) (isPaused bool, err 
 
 	return isPaused, nil
 }
+
+func (db *PGCon) IsBlockResumable(ctx c.Context, workID, stepID string) (isResumable bool, err error) {
+	ctx, span := trace.StartSpan(ctx, "is_block_resumable")
+	defer span.End()
+
+	var isPaused bool
+	var status string
+
+	const q = `
+		SELECT status, is_paused
+		FROM variable_storage
+		WHERE work_id = $1 AND id = $2`
+
+	err = db.Connection.QueryRow(ctx, q, workID, stepID).Scan(&status, isPaused)
+	if err != nil {
+		return false, err
+	}
+
+	return status == "finished" || isPaused, nil
+}

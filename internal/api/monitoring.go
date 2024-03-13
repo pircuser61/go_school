@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"regexp"
@@ -476,9 +477,9 @@ func (ae *Env) MonitoringTaskAction(w http.ResponseWriter, r *http.Request) {
 		}
 
 	case taskEventStart:
-		err = ae.startProcess()
+		err = ae.startProcess(ctx, ui.Name, workID.String(), req.Params)
 		if err != nil {
-			errorHandler.handleError(GetTaskError, err)
+			errorHandler.handleError(UnpauseTaskError, err)
 
 			if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
 				log.WithField("funcName", "MonitoringTaskAction").
@@ -587,6 +588,47 @@ func (ae *Env) pauseTask(ctx context.Context, author, workID string, params *Mon
 	return nil
 }
 
-func (ae *Env) startProcess() error {
+func (ae *Env) startProcess(ctx context.Context, author, workID string, params *MonitoringTaskActionParams) error {
+	isPaused, err := ae.DB.IsTaskPaused(ctx, workID)
+	if err != nil {
+		return err
+	}
+	if !isPaused {
+		return errors.New("Can't unpause running task")
+	}
+
+	for i := range *params.Steps {
+		isResumable, err := ae.DB.IsBlockResumable(ctx, workID, (*params.Steps)[i])
+		if err != nil {
+			return err
+		}
+		if !isResumable {
+			return errors.New(fmt.Sprintf("Can't unpause running task block: %s", (*params.Steps)[i]))
+		}
+	}
+
+	err = ae.DB.TryUnpauseTask(ctx, workID)
+	if err != nil {
+		return err
+	}
+
+	jsonParams := json.RawMessage{}
+	if params != nil {
+		jsonParams, err = json.Marshal(params)
+		if err != nil {
+			return err
+		}
+	}
+
+	_, err = ae.DB.CreateTaskEvent(ctx, &entity.CreateTaskEvent{
+		WorkID:    workID,
+		Author:    author,
+		EventType: taskEventStart,
+		Params:    jsonParams,
+	})
+	if err != nil {
+		return err
+	}
+
 	return nil
 }

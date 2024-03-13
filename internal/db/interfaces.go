@@ -214,7 +214,7 @@ type Database interface {
 	GetPipelineVersion(ctx c.Context, id uuid.UUID, checkNotDeleted bool) (*e.EriusScenario, error)
 	GetPipelineVersions(ctx c.Context, id uuid.UUID) ([]e.EriusVersionInfo, error)
 	UpdateDraft(ctx c.Context, p *e.EriusScenario, pipelineData []byte, groups []*e.NodeGroup, isHidden bool) error
-	SaveStepContext(ctx c.Context, dto *SaveStepRequest) (uuid.UUID, time.Time, error)
+	SaveStepContext(ctx c.Context, dto *SaveStepRequest, id uuid.UUID) (uuid.UUID, error)
 	UpdateStepContext(ctx c.Context, dto *UpdateStepRequest) error
 	UpdateTaskBlocksData(ctx c.Context, dto *UpdateTaskBlocksDataRequest) error
 	GetTaskActiveBlock(ctx c.Context, taskID, stepName string) ([]string, error)
@@ -276,4 +276,8 @@ type Database interface {
 	SetTaskPaused(ctx c.Context, workID string, isPaused bool) error
 	SetTaskBlocksPaused(ctx c.Context, workID string, steps []string, isPaused bool) error
 	IsTaskPaused(ctx c.Context, workID string) (isPaused bool, err error)
+	IsBlockResumable(ctx c.Context, workID, stepID string) (isResumable bool, err error)
+	UnpauseTaskBlock(ctx c.Context, workID, stepID string) (err error)
+	TryUnpauseTask(ctx c.Context, workID string) (err error)
+	InitTaskBlock(ctx c.Context, dto *SaveStepRequest, isPaused bool) (id uuid.UUID, startTime time.Time, err error)
 }

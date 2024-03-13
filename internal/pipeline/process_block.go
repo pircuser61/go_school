@@ -93,6 +93,9 @@ type BlockRunContext struct {
 	BlockRunResults *BlockRunResults
 
 	TaskSubscriptionData TaskSubscriptionData
+
+	OnceProductive bool
+	Productive     bool
 }
 
 func (runCtx *BlockRunContext) Copy() *BlockRunContext {
@@ -103,7 +106,7 @@ func (runCtx *BlockRunContext) Copy() *BlockRunContext {
 	runCtxCopy.BlockRunResults = &BlockRunResults{
 		NodeEvents: make([]entity.NodeEvent, 0),
 	}
-
+	runCtxCopy.Productive = !runCtx.OnceProductive == true
 	return &runCtxCopy
 }
 
@@ -233,6 +236,17 @@ func createGoBlock(ctx c.Context, ef *entity.EriusFunc, name string, runCtx *Blo
 }
 
 func initBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *BlockRunContext) (Runner, uuid.UUID, error) {
+	id, startTime, err := runCtx.Services.Storage.InitTaskBlock(ctx, &db.SaveStepRequest{
+		WorkID:   runCtx.TaskID,
+		StepType: bl.TypeID,
+		StepName: name,
+		Status:   string(StatusReady),
+	}, runCtx.OnceProductive)
+
+	if runCtx.Productive == false {
+		return nil, id, nil
+	}
+
 	block, isReEntry, err := CreateBlock(ctx, name, bl, runCtx)
 	if err != nil {
 		return nil, uuid.Nil, err
@@ -257,7 +271,7 @@ func initBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *BlockRu
 		return nil, uuid.Nil, deadlinesErr
 	}
 
-	id, startTime, err := runCtx.saveStepInDB(ctx, &saveStepDTO{
+	id, err = runCtx.saveStepInDB(ctx, &saveStepDTO{
 		name:            name,
 		stepType:        bl.TypeID,
 		status:          string(block.GetStatus()),
@@ -266,7 +280,7 @@ func initBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *BlockRu
 		isReEntered:     isReEntry,
 		attachments:     block.BlockAttachments(),
 		currentExecutor: block.CurrentExecutorData(),
-	})
+	}, id)
 	if err != nil {
 		return nil, uuid.Nil, err
 	}
@@ -313,10 +327,10 @@ type saveStepDTO struct {
 	currentExecutor        CurrentExecutorData
 }
 
-func (runCtx *BlockRunContext) saveStepInDB(ctx c.Context, dto *saveStepDTO) (uuid.UUID, time.Time, error) {
+func (runCtx *BlockRunContext) saveStepInDB(ctx c.Context, dto *saveStepDTO, id uuid.UUID) (uuid.UUID, error) {
 	storageData, errSerialize := json.Marshal(runCtx.VarStore)
 	if errSerialize != nil {
-		return uuid.Nil, time.Time{}, errSerialize
+		return uuid.Nil, errSerialize
 	}
 
 	dbMembers := make([]db.Member, 0, len(dto.members))
@@ -366,7 +380,7 @@ func (runCtx *BlockRunContext) saveStepInDB(ctx c.Context, dto *saveStepDTO) (uu
 			People:        dto.currentExecutor.People,
 			InitialPeople: dto.currentExecutor.InitialPeople,
 		},
-	})
+	}, id)
 }
 
 type updateStepDTO struct {
