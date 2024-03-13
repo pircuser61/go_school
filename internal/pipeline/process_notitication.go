@@ -169,6 +169,7 @@ func (runCtx *BlockRunContext) makeNotificationFormAttachment(files []string) ([
 	return ta, nil
 }
 
+// nolint:gocognit //it's ok
 func (runCtx *BlockRunContext) makeNotificationAttachment() ([]fileregistry.FileInfo, error) {
 	task, err := runCtx.Services.Storage.GetTaskRunContext(c.Background(), runCtx.WorkNumber)
 	if err != nil {
@@ -185,22 +186,49 @@ func (runCtx *BlockRunContext) makeNotificationAttachment() ([]fileregistry.File
 		if ok {
 			switch data := filesAttach.(type) {
 			case om.OrderedMap:
-				fileID, get := data.Get(fileID)
+				filesID, get := data.Get(fileID)
 				if !get {
 					continue
 				}
 
-				attachments = append(attachments, entity.Attachment{FileID: fileID.(string)})
+				attachments = append(attachments, entity.Attachment{FileID: filesID.(string)})
 			case []interface{}:
 				for _, vv := range data {
 					fileMap := vv.(om.OrderedMap)
 
-					fileID, oks := fileMap.Get(fileID)
+					filesID, oks := fileMap.Get(fileID)
 					if !oks {
 						continue
 					}
 
-					attachments = append(attachments, entity.Attachment{FileID: fileID.(string)})
+					attachments = append(attachments, entity.Attachment{FileID: filesID.(string)})
+				}
+			}
+		}
+
+		for _, val := range task.InitialApplication.ApplicationBody.Values() {
+			group, oks := val.(om.OrderedMap)
+			if !oks {
+				continue
+			}
+
+			for _, vss := range group.Values() {
+				switch field := vss.(type) {
+				case om.OrderedMap:
+					if fieldsID, okGet := field.Get(fileID); okGet {
+						attachments = append(attachments, entity.Attachment{FileID: fieldsID.(string)})
+					}
+				case []interface{}:
+					for _, vv := range field {
+						fileMap := vv.(om.OrderedMap)
+
+						filesID, okGet := fileMap.Get(fileID)
+						if !okGet {
+							continue
+						}
+
+						attachments = append(attachments, entity.Attachment{FileID: filesID.(string)})
+					}
 				}
 			}
 		}
@@ -252,12 +280,12 @@ func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) ([]o
 		files        = make([]e.Attachment, 0)
 	)
 
-	apDesc := flatArray(taskContext.InitialApplication.ApplicationBody)
-
-	filesAttach, getAttachErr := runCtx.GetAttachmentFiles(&apDesc, nil)
+	filesAttach, getAttachErr := runCtx.GetAttachmentFiles(&taskContext.InitialApplication.ApplicationBody, nil)
 	if getAttachErr != nil {
 		return nil, nil, getAttachErr
 	}
+
+	apDesc := flatArray(taskContext.InitialApplication.ApplicationBody)
 
 	apDesc = GetConvertDesc(apDesc, taskContext.InitialApplication.Keys, taskContext.InitialApplication.HiddenFields)
 
@@ -365,7 +393,7 @@ func (runCtx *BlockRunContext) GetAttachmentFiles(desc *om.OrderedMap, addAttach
 		return nil, err
 	}
 
-	if attachments != nil {
+	if len(attachments.AttachmentsList) != 0 {
 		desc.Set(attachLinks, attachments.AttachLinks)
 		desc.Set(attachExist, attachments.AttachExists)
 		desc.Set(attachList, attachments.AttachmentsList)
