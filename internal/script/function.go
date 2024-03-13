@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/araddon/dateparse"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/functions"
 )
 
 const (
@@ -155,11 +156,11 @@ func (a *ExecutableFunctionParams) validateSLA() error {
 	}
 
 	switch funcType {
-	case "sync":
+	case functions.SyncFlag:
 		if a.SLA > int(60*time.Minute.Seconds()+59*time.Second.Seconds()) {
 			return errors.New("sync function SLA is too long")
 		}
-	case "async":
+	case functions.AsyncFlag:
 		if a.SLA > int(365*24*time.Hour.Seconds()+23*time.Hour.Seconds()+59*time.Minute.Seconds()) {
 			return errors.New("async function SLA is too long")
 		}
@@ -179,7 +180,7 @@ func (a *ExecutableFunctionParams) getFuncType() (string, error) {
 		return "", fmt.Errorf("cannot unmarshal function options: %w", err)
 	}
 
-	if options.Type != "sync" && options.Type != "async" {
+	if options.Type != functions.SyncFlag && options.Type != functions.AsyncFlag {
 		return "", errors.New("invalid function type")
 	}
 
