@@ -163,8 +163,6 @@ func (a *ExecutableFunctionParams) validateSLA() error {
 		if a.SLA > int(365*24*time.Hour.Seconds()+23*time.Hour.Seconds()+59*time.Minute.Seconds()) {
 			return errors.New("async function SLA is too long")
 		}
-	default:
-		return errors.New("invalid function type")
 	}
 
 	return nil
