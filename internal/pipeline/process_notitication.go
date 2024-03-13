@@ -393,7 +393,7 @@ func (runCtx *BlockRunContext) GetAttachmentFiles(desc *om.OrderedMap, addAttach
 		return nil, err
 	}
 
-	if attachments != nil {
+	if len(attachments.AttachmentsList) != 0 {
 		desc.Set(attachLinks, attachments.AttachLinks)
 		desc.Set(attachExist, attachments.AttachExists)
 		desc.Set(attachList, attachments.AttachmentsList)
