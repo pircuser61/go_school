@@ -208,7 +208,7 @@ func (s *Service) GetUser(ctx context.Context, username string) (SSOUser, error)
 	defer span.End()
 
 	if sso.IsServiceUserName(username) {
-		return make(SSOUser, 0), nil
+		return map[string]interface{}{"username": username}, nil
 	}
 
 	users, err := s.getUser(ctxLocal, username, false)
