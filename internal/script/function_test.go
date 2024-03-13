@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -12,9 +13,11 @@ const versionExample = "916ad995-8d13-49fb-82ee-edd4f97649e2"
 
 func TestExecutableFunctionParams_Validate(t *testing.T) {
 	type fields struct {
-		Name    string
-		Version string
-		Mapping JSONSchemaProperties
+		Name     string
+		Version  string
+		Mapping  JSONSchemaProperties
+		Function FunctionParam
+		SLA      int
 	}
 
 	tests := []struct {
@@ -59,6 +62,10 @@ func TestExecutableFunctionParams_Validate(t *testing.T) {
 						},
 					},
 				},
+				Function: FunctionParam{
+					Options: `{\"type\": \"sync\"}`,
+				},
+				SLA: int(60*time.Minute.Seconds() + 59*time.Second.Seconds()),
 			},
 			wantErr: nil,
 		},
@@ -163,6 +170,94 @@ func TestExecutableFunctionParams_Validate(t *testing.T) {
 			wantErr: errors.New("properties is required"),
 		},
 		{
+			name: "invalid sync function SLA",
+			fields: fields{
+				Name:    "executable_function_0",
+				Version: versionExample,
+				Mapping: JSONSchemaProperties{
+					"param1": {
+						Description: "param1 name",
+						Type:        "string",
+						Value:       "form_0.a",
+					},
+					"param2": {
+						Description: "param2 name",
+						Type:        "boolean",
+						Value:       "form_0.b",
+					},
+					"param3": {
+						Description: "param4 name",
+						Type:        "object",
+						Properties: JSONSchemaProperties{
+							"param3.1": {
+								Description: "param3.1 name",
+								Type:        "string",
+								Format:      "date-time",
+								Value:       "form_0.c",
+							},
+							"param3.2": {
+								Description: "param3.2 name",
+								Type:        "array",
+								Items: &ArrayItems{
+									Type: "number",
+								},
+								Value: "form_0.d",
+							},
+						},
+					},
+				},
+				Function: FunctionParam{
+					Options: `{\"type\": \"sync\"}`,
+				},
+				SLA: int(60*time.Minute.Seconds() + 60*time.Second.Seconds()),
+			},
+			wantErr: errors.New("sync function SLA is too long"),
+		},
+		{
+			name: "invalid async function SLA",
+			fields: fields{
+				Name:    "executable_function_0",
+				Version: versionExample,
+				Mapping: JSONSchemaProperties{
+					"param1": {
+						Description: "param1 name",
+						Type:        "string",
+						Value:       "form_0.a",
+					},
+					"param2": {
+						Description: "param2 name",
+						Type:        "boolean",
+						Value:       "form_0.b",
+					},
+					"param3": {
+						Description: "param4 name",
+						Type:        "object",
+						Properties: JSONSchemaProperties{
+							"param3.1": {
+								Description: "param3.1 name",
+								Type:        "string",
+								Format:      "date-time",
+								Value:       "form_0.c",
+							},
+							"param3.2": {
+								Description: "param3.2 name",
+								Type:        "array",
+								Items: &ArrayItems{
+									Type: "number",
+								},
+								Value: "form_0.d",
+							},
+						},
+					},
+				},
+				Function: FunctionParam{
+					Options: `{\"type\": \"async\"}`,
+				},
+				SLA: int(365*24*time.Hour.Seconds() + 24*time.Hour.Seconds() + 59*time.Minute.Seconds()),
+			},
+			wantErr: errors.New("async function SLA is too long"),
+		},
+		{
 			name: "Tests of method ValidateSchemas, missing name case",
 			fields: fields{
 				Name:    "",
@@ -176,9 +271,11 @@ func TestExecutableFunctionParams_Validate(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			a := &ExecutableFunctionParams{
-				Name:    tt.fields.Name,
-				Version: tt.fields.Version,
-				Mapping: tt.fields.Mapping,
+				Name:     tt.fields.Name,
+				Version:  tt.fields.Version,
+				Mapping:  tt.fields.Mapping,
+				Function: tt.fields.Function,
+				SLA:      tt.fields.SLA,
 			}
 
 			err := a.Validate()
