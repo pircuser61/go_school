@@ -163,7 +163,15 @@ func getUniqueActions(selectFilter string, logins []string) string {
 	case entity.SelectAsValFinishedExecutor:
 		return uniqueActionsByRole(loginsIn, "execution", true, true)
 	case entity.SelectAsValFormExecutor:
-		return uniqueActionsByRole(loginsIn, "form", false, false)
+		q := uniqueActionsByRole(loginsIn, "form", false, false)
+		q = strings.Replace(q,
+			"--unique-actions-filter--",
+			"AND vs.content -> 'State' -> vs.step_name ->> is_reentry = 'true'"+
+				"AND (vs.content -> 'State' -> vs.step_name -> 'form_re_enter_settings' ->> 'form_executor_type' = 'initiator'"+
+				"OR vs.content -> 'State' -> vs.step_name ->> 'form_executor_type' = 'initiator') --unique-actions-filter--",
+			1)
+
+		return q
 	case entity.SelectAsValFinishedFormExecutor:
 		return uniqueActionsByRole(loginsIn, "form", true, true)
 	case entity.SelectAsValQueueExecutor:
@@ -362,15 +370,6 @@ func (cq *compileGetTaskQueryMaker) replaceUniqueActionsFilter() {
 		cq.q = strings.Replace(cq.q, "--unique-actions-filter--",
 			fmt.Sprintf("AND vs.content -> 'State' -> vs.step_name ->> 'signature_carrier' = '%s' --unique-actions-filter--",
 				*cq.fl.SignatureCarrier),
-			1)
-	}
-
-	if cq.fl.SelectAs != nil && *cq.fl.SelectAs == entity.SelectAsValFormExecutor {
-		cq.q = strings.Replace(cq.q,
-			"--unique-actions-filter--",
-			"AND vs.content -> 'State' -> vs.step_name ->> is_reentry = 'true'"+
-				"AND (vs.content -> 'State' -> vs.step_name -> 'form_re_enter_settings' ->> 'form_executor_type' = 'initiator'"+
-				"OR vs.content -> 'State' -> vs.step_name ->> 'form_executor_type' = 'initiator') --unique-actions-filter--",
 			1)
 	}
 }
