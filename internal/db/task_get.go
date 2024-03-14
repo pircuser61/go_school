@@ -166,7 +166,7 @@ func getUniqueActions(selectFilter string, logins []string) string {
 		q := uniqueActionsByRole(loginsIn, "form", false, false)
 		q = strings.Replace(q,
 			"--unique-actions-filter--",
-			"AND vs.content -> 'State' -> vs.step_name ->> is_reentry = 'true'"+
+			"AND vs.content -> 'State' -> vs.step_name ->> 'is_reentry' = 'true'"+
 				"AND (vs.content -> 'State' -> vs.step_name -> 'form_re_enter_settings' ->> 'form_executor_type' = 'initiator'"+
 				"OR vs.content -> 'State' -> vs.step_name ->> 'form_executor_type' = 'initiator') --unique-actions-filter--",
 			1)
