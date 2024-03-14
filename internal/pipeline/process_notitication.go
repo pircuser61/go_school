@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	om "github.com/iancoleman/orderedmap"
-
 	e "gitlab.services.mts.ru/abp/mail/pkg/email"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
@@ -298,7 +297,20 @@ func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) ([]o
 		files = append(files, adFormFilesAttach...)
 	}
 
+	cleanName(files)
+
 	return descriptions, files, nil
+}
+
+func cleanName(files []e.Attachment) {
+	for i := range files {
+		if strings.Contains(files[i].Name, "UTF-8") {
+			s := strings.Split(files[i].Name, "UTF-8")
+			k := strings.ReplaceAll(s[1], "''", "")
+			k = strings.ReplaceAll(k, "\"", "")
+			files[i].Name = k
+		}
+	}
 }
 
 func (runCtx *BlockRunContext) getAdditionalForms(nodeName string) ([]om.OrderedMap, []e.Attachment) {
@@ -393,7 +405,7 @@ func (runCtx *BlockRunContext) GetAttachmentFiles(desc *om.OrderedMap, addAttach
 		return nil, err
 	}
 
-	if len(attachments.AttachmentsList) != 0 {
+	if len(attachments.AttachmentsList) != 0 || len(attachments.AttachLinks) != 0 {
 		desc.Set(attachLinks, attachments.AttachLinks)
 		desc.Set(attachExist, attachments.AttachExists)
 		desc.Set(attachList, attachments.AttachmentsList)
