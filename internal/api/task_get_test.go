@@ -80,6 +80,17 @@ func TestGetAccessibleForms(t *testing.T) {
 			Steps:      unmarshalStepFromTestFile(t, "testdata/steps_get_accessible_forms_4.json"),
 			WantErr:    false,
 			AccessibleForms: map[string]struct{}{
+				"form_0": {},
+				"form_1": {},
+			},
+		},
+		{
+			Name:       "test accessibleForms step - form_0 - diffrent user",
+			CurrentUse: "user1",
+			Delegates:  &ht.Delegations{},
+			Steps:      unmarshalStepFromTestFile(t, "testdata/steps_get_accessible_forms_7.json"),
+			WantErr:    false,
+			AccessibleForms: map[string]struct{}{
 				"form_1": {},
 			},
 		},
@@ -90,6 +101,7 @@ func TestGetAccessibleForms(t *testing.T) {
 			Steps:      unmarshalStepFromTestFile(t, "testdata/steps_get_accessible_forms_5.json"),
 			WantErr:    false,
 			AccessibleForms: map[string]struct{}{
+				"form_0": {},
 				"form_1": {},
 			},
 		},
@@ -102,6 +114,42 @@ func TestGetAccessibleForms(t *testing.T) {
 			AccessibleForms: map[string]struct{}{
 				"form_0": {},
 				"form_1": {},
+			},
+		},
+		{
+			Name:       "test with accessibleForms step - form0,1,2,3 -  approve_0 - execution_0",
+			CurrentUse: "user2",
+			Delegates:  &ht.Delegations{},
+			Steps:      unmarshalStepFromTestFile(t, "testdata/steps_get_accessible_forms_8.json"),
+			WantErr:    false,
+			AccessibleForms: map[string]struct{}{
+				"form_0": {},
+				"form_2": {},
+				"form_3": {},
+			},
+		},
+		{
+			Name:       "test with accessibleForms step - form0,1,2 - form_3 -  sign_0 - execution_0",
+			CurrentUse: "user2",
+			Delegates:  &ht.Delegations{},
+			Steps:      unmarshalStepFromTestFile(t, "testdata/steps_get_accessible_forms_9.json"),
+			WantErr:    false,
+			AccessibleForms: map[string]struct{}{
+				"form_0": {},
+				"form_1": {},
+				"form_2": {},
+				"form_3": {},
+			},
+		},
+		{
+			Name:       "test with accessibleForms step - form0,1,2 - form_3 -  sign_0 - execution_0 - initial_executor",
+			CurrentUse: "user3",
+			Delegates:  &ht.Delegations{},
+			Steps:      unmarshalStepFromTestFile(t, "testdata/steps_get_accessible_forms_9.json"),
+			WantErr:    false,
+			AccessibleForms: map[string]struct{}{
+				"form_0": {},
+				"form_3": {},
 			},
 		},
 	}
