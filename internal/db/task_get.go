@@ -163,7 +163,15 @@ func getUniqueActions(selectFilter string, logins []string) string {
 	case entity.SelectAsValFinishedExecutor:
 		return uniqueActionsByRole(loginsIn, "execution", true, true)
 	case entity.SelectAsValFormExecutor:
-		return uniqueActionsByRole(loginsIn, "form", false, false)
+		q := uniqueActionsByRole(loginsIn, "form", false, false)
+		q = strings.Replace(q,
+			"--unique-actions-filter--",
+			"AND ((vs.content -> 'State' -> vs.step_name ->> 'is_reentry' = 'true' "+
+				"AND vs.content -> 'State' -> vs.step_name ->> 'form_executor_type' != 'initiator') "+
+				"OR (vs.content -> 'State' -> vs.step_name ->> 'is_reentry' != 'true')) --unique-actions-filter--",
+			1)
+
+		return q
 	case entity.SelectAsValFinishedFormExecutor:
 		return uniqueActionsByRole(loginsIn, "form", true, true)
 	case entity.SelectAsValQueueExecutor:
