@@ -38,10 +38,6 @@ func NewAccessibleFormsApproverBlockStepHandler(
 }
 
 func (h *AccessibleFormsApproverBlockStepHandler) HandleStep(step *entity.Step) error {
-	if step.State == nil || (step.Status != RunningStatus && step.Status != IdleStatus) {
-		return nil
-	}
-
 	var approver pipeline.ApproverData
 
 	err := json.Unmarshal(step.State[step.Name], &approver)
@@ -106,10 +102,6 @@ func NewAccessibleFormsFormBlockStepHandler(
 }
 
 func (h *AccessibleFormsFormBlockStepHandler) HandleStep(step *entity.Step) error {
-	if step.State == nil || (step.Status != RunningStatus && step.Status != IdleStatus) {
-		return nil
-	}
-
 	var form pipeline.FormData
 
 	unmarshalErr := json.Unmarshal(step.State[step.Name], &form)
@@ -139,6 +131,12 @@ func (h *AccessibleFormsFormBlockStepHandler) userHasAccess(form *pipeline.FormD
 		}
 	}
 
+	for member := range form.InitialExecutors {
+		if h.currentUser == member {
+			return true
+		}
+	}
+
 	return false
 }
 
@@ -161,10 +159,6 @@ func NewAccessibleFormsExecutionBlockStepHandler(
 }
 
 func (h *AccessibleFormsExecutionBlockStepHandler) HandleStep(step *entity.Step) error {
-	if step.State == nil || (step.Status != RunningStatus && step.Status != IdleStatus) {
-		return nil
-	}
-
 	var execution pipeline.ExecutionData
 
 	unmarshalErr := json.Unmarshal(step.State[step.Name], &execution)
@@ -192,6 +186,19 @@ func (h *AccessibleFormsExecutionBlockStepHandler) userHasAccess(execution *pipe
 		}
 	}
 
+	for member := range execution.InitialExecutors {
+		if member == h.currentUser || isDelegate(h.currentUser, member, &h.executionDelegations) {
+			return true
+		}
+	}
+
+	for i := range execution.ChangedExecutorsLogs {
+		member := execution.ChangedExecutorsLogs[i].OldLogin
+		if member == h.currentUser || isDelegate(h.currentUser, member, &h.executionDelegations) {
+			return true
+		}
+	}
+
 	return false
 }
 
@@ -208,10 +215,6 @@ func NewAccessibleFormsSignBlockStepHandler(currentUser string, accessibleForms 
 }
 
 func (h *AccessibleFormsSignBlockStepHandler) HandleStep(s *entity.Step) error {
-	if s.State == nil || (s.Status != "running" && s.Status != "idle") {
-		return nil
-	}
-
 	var sign pipeline.SignData
 
 	unmarshalErr := json.Unmarshal(s.State[s.Name], &sign)
