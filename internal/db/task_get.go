@@ -364,6 +364,15 @@ func (cq *compileGetTaskQueryMaker) replaceUniqueActionsFilter() {
 				*cq.fl.SignatureCarrier),
 			1)
 	}
+
+	if cq.fl.SelectAs != nil && *cq.fl.SelectAs == entity.SelectAsValFormExecutor {
+		cq.q = strings.Replace(cq.q,
+			"--unique-actions-filter--",
+			"AND vs.content -> 'State' -> vs.step_name ->> is_reentry = 'true'"+
+				"AND (vs.content -> 'State' -> vs.step_name -> 'form_re_enter_settings' ->> 'form_executor_type' = 'initiator'"+
+				"OR vs.content -> 'State' -> vs.step_name ->> 'form_executor_type' = 'initiator') --unique-actions-filter--",
+			1)
+	}
 }
 
 func (cq *compileGetTaskQueryMaker) addTaskID() {
