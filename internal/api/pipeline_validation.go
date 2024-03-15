@@ -913,7 +913,7 @@ func isTypeValid(propertySchema, targetSchema *script.JSONSchemaPropertiesValue)
 		return false
 	}
 
-	if propertySchema.Type == objectType && (propertySchema.Type == objectOrArrayType || targetSchema.Type == objectType) {
+	if propertySchema.Type == objectType || (propertySchema.Type == objectOrArrayType && targetSchema.Type == objectType) {
 		if !isObjectValid(propertySchema, targetSchema) {
 			return false
 		}
