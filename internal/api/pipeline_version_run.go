@@ -420,6 +420,7 @@ func (ae *Env) getHiddenFields(ctx c.Context, version *entity.EriusScenario) ([]
 	return hiddenFields, nil
 }
 
+//nolint:gocognit //it's ok
 func checkGroup(rawStartSchema jsonschema.Schema) jsonschema.Schema {
 	properties, ok := rawStartSchema[propertiesKey]
 	if !ok {
@@ -434,9 +435,13 @@ func checkGroup(rawStartSchema jsonschema.Schema) jsonschema.Schema {
 			continue
 		}
 
-		newTitle := cleanKey(v)
-		if newTitle != "" {
-			valMap[titleKey] = newTitle
+		if valMap[titleKey] == "" {
+			valMap[titleKey] = " "
+		} else {
+			newTitle := cleanKey(v)
+			if newTitle != "" {
+				valMap[titleKey] = newTitle
+			}
 		}
 
 		propVal, propValOk := valMap[propertiesKey]
@@ -457,9 +462,13 @@ func checkGroup(rawStartSchema jsonschema.Schema) jsonschema.Schema {
 				continue
 			}
 
-			newAdTitle := cleanKey(val)
-			if newAdTitle != "" {
-				valMaps[titleKey] = newAdTitle
+			if valMaps[titleKey] == "" {
+				valMap[titleKey] = " "
+			} else {
+				newAdTitle := cleanKey(val)
+				if newAdTitle != "" {
+					valMaps[titleKey] = newAdTitle
+				}
 			}
 
 			propVals, propValOks := valMaps[propertiesKey]
