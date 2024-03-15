@@ -1,0 +1,519 @@
+{
+    "id": "97edb651-4ef0-4c44-8d60-b964dc00aa04",
+    "name": "Регресс 13.03.24",
+    "status": 1,
+    "version_id": "2b3d44cb-1da5-4843-a2b7-682d993fab61",
+    "author": "",
+    "tags": [],
+    "comment": "",
+    "comment_rejected": "",
+    "pipeline": {
+        "blocks": {
+            "end_0": {
+                "x": -437,
+                "y": -13,
+                "title": "Конец",
+                "block_type": "go",
+                "input": [],
+                "type_id": "end",
+                "next": {},
+                "sockets": [],
+                "short_title": ""
+            },
+            "start_0": {
+                "x": -1515,
+                "y": -70,
+                "title": "Начало",
+                "block_type": "go",
+                "input": [],
+                "output": {
+                    "type": "object",
+                    "properties": {
+                        "application_body": {
+                            "global": "start_0.application_body",
+                            "properties": {
+                                "approvers": {
+                                    "items": {
+                                        "properties": {
+                                            "email": {
+                                                "type": "string"
+                                            },
+                                            "fullOrgUnit": {
+                                                "type": "string"
+                                            },
+                                            "fullname": {
+                                                "type": "string"
+                                            },
+                                            "login": {
+                                                "type": "string"
+                                            },
+                                            "mobile": {
+                                                "type": "string"
+                                            },
+                                            "phone": {
+                                                "type": "string"
+                                            },
+                                            "position": {
+                                                "type": "string"
+                                            },
+                                            "tabnum": {
+                                                "type": "string"
+                                            },
+                                            "username": {
+                                                "type": "string"
+                                            }
+                                        },
+                                        "type": "object",
+                                        "format": "ssoperson"
+                                    },
+                                    "type": "array"
+                                }
+                            },
+                            "type": "object",
+                            "translation": "application_body"
+                        },
+                        "initiator": {
+                            "format": "SsoPerson",
+                            "global": "start_0.initiator",
+                            "properties": {
+                                "email": {
+                                    "title": "email",
+                                    "type": "string"
+                                },
+                                "fullOrgUnit": {
+                                    "title": "Подразделение",
+                                    "type": "string"
+                                },
+                                "fullname": {
+                                    "title": "Полное имя",
+                                    "type": "string"
+                                },
+                                "mobile": {
+                                    "title": "Номер мобильного телефона",
+                                    "type": "string"
+                                },
+                                "phone": {
+                                    "title": "Телефон",
+                                    "type": "string"
+                                },
+                                "position": {
+                                    "title": "Должность",
+                                    "type": "string"
+                                },
+                                "tabnum": {
+                                    "title": "Табельный номер",
+                                    "type": "string"
+                                },
+                                "username": {
+                                    "title": "Логин",
+                                    "type": "string"
+                                }
+                            },
+                            "type": "object",
+                            "translation": "initiator"
+                        },
+                        "workNumber": {
+                            "global": "start_0.workNumber",
+                            "type": "string",
+                            "translation": "workNumber"
+                        }
+                    }
+                },
+                "type_id": "start",
+                "next": {
+                    "default": [
+                        "servicedesk_application_0"
+                    ]
+                },
+                "sockets": [
+                    {
+                        "id": "default",
+                        "title": "Выход по умолчанию",
+                        "nextBlockIds": [
+                            "servicedesk_application_0"
+                        ],
+                        "actionType": ""
+                    }
+                ],
+                "short_title": ""
+            },
+            "execution_0": {
+                "x": -774,
+                "y": -107,
+                "title": "Исполнение",
+                "block_type": "go",
+                "input": [],
+                "output": {
+                    "type": "object",
+                    "properties": {
+                        "comment": {
+                            "description": "execution status comment",
+                            "type": "string",
+                            "global": "execution_0.comment",
+                            "translation": "Комментарий"
+                        },
+                        "decision": {
+                            "description": "execution status",
+                            "type": "string",
+                            "global": "execution_0.decision",
+                            "translation": "Решение"
+                        },
+                        "login": {
+                            "description": "executor login",
+                            "format": "SsoPerson",
+                            "properties": {
+                                "email": {
+                                    "title": "email",
+                                    "type": "string"
+                                },
+                                "fullOrgUnit": {
+                                    "title": "Подразделение",
+                                    "type": "string"
+                                },
+                                "fullname": {
+                                    "title": "Полное имя",
+                                    "type": "string"
+                                },
+                                "mobile": {
+                                    "title": "Номер мобильного телефона",
+                                    "type": "string"
+                                },
+                                "phone": {
+                                    "title": "Телефон",
+                                    "type": "string"
+                                },
+                                "position": {
+                                    "title": "Должность",
+                                    "type": "string"
+                                },
+                                "tabnum": {
+                                    "title": "Табельный номер",
+                                    "type": "string"
+                                },
+                                "username": {
+                                    "title": "Логин",
+                                    "type": "string"
+                                }
+                            },
+                            "type": "object",
+                            "global": "execution_0.login",
+                            "translation": "Исполнитель"
+                        }
+                    }
+                },
+                "params": {
+                    "type": "from_schema",
+                    "executors": "servicedesk_application_0.application_body.field-uuid-3",
+                    "sla": 8,
+                    "check_sla": true,
+                    "rework_sla": 16,
+                    "check_rework_sla": false,
+                    "work_type": "8/5",
+                    "repeat_prev_decision": false,
+                    "is_editable": false,
+                    "executors_group_id": "",
+                    "executors_group_name": "",
+                    "executors_group_id_path": "",
+                    "forms_accessibility": [],
+                    "use_actual_executor": false,
+                    "hide_executor": false
+                },
+                "type_id": "execution",
+                "next": {
+                    "executed": [
+                        "end_0"
+                    ],
+                    "not_executed": [
+                        "end_0"
+                    ]
+                },
+                "sockets": [
+                    {
+                        "id": "executed",
+                        "title": "Исполнено",
+                        "nextBlockIds": [
+                            "end_0"
+                        ],
+                        "actionType": ""
+                    },
+                    {
+                        "id": "not_executed",
+                        "title": "Не исполнено",
+                        "nextBlockIds": [
+                            "end_0"
+                        ],
+                        "actionType": ""
+                    }
+                ],
+                "param_type": "execution",
+                "short_title": "exec"
+            },
+            "servicedesk_application_0": {
+                "x": -1164,
+                "y": -129,
+                "title": "Заявка Servicedesk",
+                "block_type": "go",
+                "input": [],
+                "output": {
+                    "type": "object",
+                    "properties": {
+                        "application_body": {
+                            "description": "application body",
+                            "type": "object",
+                            "global": "servicedesk_application_0.application_body",
+                            "translation": "Шаблон",
+                            "properties": {
+                                "recipient": {
+                                    "type": "object",
+                                    "title": "Получатель",
+                                    "translation": "Получатель",
+                                    "format": "ssoperson",
+                                    "properties": {
+                                        "fullname": {
+                                            "type": "string",
+                                            "title": "Полное имя"
+                                        },
+                                        "username": {
+                                            "type": "string",
+                                            "title": "Логин"
+                                        },
+                                        "email": {
+                                            "type": "string",
+                                            "title": "email"
+                                        },
+                                        "mobile": {
+                                            "type": "string",
+                                            "title": "Номер мобильного телефона"
+                                        },
+                                        "fullOrgUnit": {
+                                            "type": "string",
+                                            "title": "Подразделение"
+                                        },
+                                        "position": {
+                                            "type": "string",
+                                            "title": "Должность"
+                                        },
+                                        "phone": {
+                                            "type": "string",
+                                            "title": "Телефон"
+                                        },
+                                        "tabnum": {
+                                            "type": "string",
+                                            "title": "Табельный номер"
+                                        }
+                                    }
+                                },
+                                "field-uuid-6": {
+                                    "type": "string",
+                                    "title": "Группа",
+                                    "translation": "Группа"
+                                },
+                                "field-uuid-3": {
+                                    "type": "array",
+                                    "title": "Пользователи",
+                                    "translation": "Пользователи",
+                                    "items": {
+                                        "type": "object",
+                                        "format": "ssoperson",
+                                        "properties": {
+                                            "fullname": {
+                                                "type": "string",
+                                                "title": "Полное имя"
+                                            },
+                                            "username": {
+                                                "type": "string",
+                                                "title": "Логин"
+                                            },
+                                            "email": {
+                                                "type": "string",
+                                                "title": "email"
+                                            },
+                                            "mobile": {
+                                                "type": "string",
+                                                "title": "Номер мобильного телефона"
+                                            },
+                                            "fullOrgUnit": {
+                                                "type": "string",
+                                                "title": "Подразделение"
+                                            },
+                                            "position": {
+                                                "type": "string",
+                                                "title": "Должность"
+                                            },
+                                            "phone": {
+                                                "type": "string",
+                                                "title": "Телефон"
+                                            },
+                                            "tabnum": {
+                                                "type": "string",
+                                                "title": "Табельный номер"
+                                            }
+                                        }
+                                    }
+                                },
+                                "field-uuid-4": {
+                                    "type": "object",
+                                    "title": "Сотрудник 1",
+                                    "translation": "Сотрудник 1",
+                                    "format": "ssoperson",
+                                    "properties": {
+                                        "fullname": {
+                                            "type": "string",
+                                            "title": "Полное имя"
+                                        },
+                                        "username": {
+                                            "type": "string",
+                                            "title": "Логин"
+                                        },
+                                        "email": {
+                                            "type": "string",
+                                            "title": "email"
+                                        },
+                                        "mobile": {
+                                            "type": "string",
+                                            "title": "Номер мобильного телефона"
+                                        },
+                                        "fullOrgUnit": {
+                                            "type": "string",
+                                            "title": "Подразделение"
+                                        },
+                                        "position": {
+                                            "type": "string",
+                                            "title": "Должность"
+                                        },
+                                        "phone": {
+                                            "type": "string",
+                                            "title": "Телефон"
+                                        },
+                                        "tabnum": {
+                                            "type": "string",
+                                            "title": "Табельный номер"
+                                        }
+                                    }
+                                },
+                                "field-uuid-5": {
+                                    "type": "object",
+                                    "title": "Сотрудник 2",
+                                    "translation": "Сотрудник 2",
+                                    "format": "ssoperson",
+                                    "properties": {
+                                        "fullname": {
+                                            "type": "string",
+                                            "title": "Полное имя"
+                                        },
+                                        "username": {
+                                            "type": "string",
+                                            "title": "Логин"
+                                        },
+                                        "email": {
+                                            "type": "string",
+                                            "title": "email"
+                                        },
+                                        "mobile": {
+                                            "type": "string",
+                                            "title": "Номер мобильного телефона"
+                                        },
+                                        "fullOrgUnit": {
+                                            "type": "string",
+                                            "title": "Подразделение"
+                                        },
+                                        "position": {
+                                            "type": "string",
+                                            "title": "Должность"
+                                        },
+                                        "phone": {
+                                            "type": "string",
+                                            "title": "Телефон"
+                                        },
+                                        "tabnum": {
+                                            "type": "string",
+                                            "title": "Табельный номер"
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "blueprint_id": {
+                            "description": "application pipeline id",
+                            "type": "string",
+                            "global": "servicedesk_application_0.blueprint_id",
+                            "translation": "ID шаблона"
+                        },
+                        "description": {
+                            "description": "application description",
+                            "type": "string",
+                            "global": "servicedesk_application_0.description",
+                            "translation": "Описание шаблона"
+                        },
+                        "executor": {
+                            "description": "person object from sso",
+                            "format": "SsoPerson",
+                            "properties": {
+                                "email": {
+                                    "title": "email",
+                                    "type": "string"
+                                },
+                                "fullOrgUnit": {
+                                    "title": "Подразделение",
+                                    "type": "string"
+                                },
+                                "fullname": {
+                                    "title": "Полное имя",
+                                    "type": "string"
+                                },
+                                "mobile": {
+                                    "title": "Номер мобильного телефона",
+                                    "type": "string"
+                                },
+                                "phone": {
+                                    "title": "Телефон",
+                                    "type": "string"
+                                },
+                                "position": {
+                                    "title": "Должность",
+                                    "type": "string"
+                                },
+                                "tabnum": {
+                                    "title": "Табельный номер",
+                                    "type": "string"
+                                },
+                                "username": {
+                                    "title": "Логин",
+                                    "type": "string"
+                                }
+                            },
+                            "type": "object",
+                            "global": "servicedesk_application_0.executor",
+                            "translation": "executor"
+                        }
+                    }
+                },
+                "params": {
+                    "blueprint_id": "e80bdae1-1bbd-426c-8edf-9a41ca5966aa",
+                    "type": "servicedesk_application"
+                },
+                "type_id": "servicedesk_application",
+                "next": {
+                    "default": [
+                        "execution_0"
+                    ]
+                },
+                "sockets": [
+                    {
+                        "id": "default",
+                        "title": "Выход по умолчанию",
+                        "nextBlockIds": [
+                            "execution_0"
+                        ],
+                        "actionType": ""
+                    }
+                ],
+                "param_type": "servicedesk_application",
+                "short_title": ""
+            }
+        },
+        "entrypoint": "start_0"
+    },
+    "input": [],
+    "output": []
+}
