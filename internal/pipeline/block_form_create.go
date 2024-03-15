@@ -561,7 +561,7 @@ func cleanKey(mapKeys interface{}) string {
 	}
 
 	for old, news := range replacements {
-		key = strings.ReplaceAll(keyStr, old, news)
+		keyStr = strings.ReplaceAll(keyStr, old, news)
 	}
 
 	return strings.ReplaceAll(keyStr, "\\", "")

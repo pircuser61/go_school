@@ -405,6 +405,7 @@ func (ae *Env) getHiddenFields(ctx c.Context, version *entity.EriusScenario) ([]
 	return hiddenFields, nil
 }
 
+//nolint:gocognit //it's ok
 func checkGroup(rawStartSchema jsonschema.Schema) jsonschema.Schema {
 	properties, ok := rawStartSchema[propertiesKey]
 	if !ok {
