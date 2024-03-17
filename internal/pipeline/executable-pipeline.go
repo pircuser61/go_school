@@ -161,7 +161,6 @@ func (gb *ExecutablePipeline) CreateTask(ctx c.Context, dto *CreateTaskDTO) erro
 		EventType: "start",
 		Params:    jsonParams,
 	})
-
 	if err != nil {
 		log.Error(err)
 	}
