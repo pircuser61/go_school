@@ -644,7 +644,6 @@ func (db *PGCon) VersionEditable(c context.Context, versionID uuid.UUID) (bool, 
 	for rows.Next() {
 		count := 0
 		err = rows.Scan(&count)
-
 		if err != nil {
 			return false, err
 		}
@@ -1170,6 +1169,7 @@ func (db *PGCon) InitTaskBlock(ctx context.Context, dto *SaveStepRequest, isPaus
 	if existErr != nil {
 		return uuid.Nil, time.Time{}, existErr
 	}
+
 	if exists {
 		return stepID, t, nil
 	}
@@ -1729,7 +1729,6 @@ func (db *PGCon) GetUnfinishedTaskSteps(ctx context.Context, in *entity.GetUnfin
 			&s.HasError,
 			&s.Status,
 		)
-
 		if err != nil {
 			return nil, err
 		}
