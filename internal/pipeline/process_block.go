@@ -106,7 +106,7 @@ func (runCtx *BlockRunContext) Copy() *BlockRunContext {
 	runCtxCopy.BlockRunResults = &BlockRunResults{
 		NodeEvents: make([]entity.NodeEvent, 0),
 	}
-	runCtxCopy.Productive = !runCtx.OnceProductive == true
+	runCtxCopy.Productive = !runCtx.OnceProductive
 	return &runCtxCopy
 }
 
@@ -243,7 +243,11 @@ func initBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *BlockRu
 		Status:   string(StatusReady),
 	}, runCtx.OnceProductive)
 
-	if runCtx.Productive == false {
+	if err != nil {
+		return nil, uuid.Nil, err
+	}
+
+	if !runCtx.Productive {
 		return nil, id, nil
 	}
 
@@ -459,7 +463,7 @@ func ProcessBlockWithEndMapping(ctx c.Context, name string, bl *entity.EriusFunc
 
 	runCtx.BlockRunResults = &BlockRunResults{}
 
-	blockProcessor := newBlockProcessor(name, bl, runCtx, manual)
+	blockProcessor := NewBlockProcessor(name, bl, runCtx, manual)
 
 	pErr := blockProcessor.ProcessBlock(ctx, 0)
 	if pErr != nil {

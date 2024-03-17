@@ -2456,6 +2456,7 @@ func (db *PGCon) IsBlockResumable(ctx c.Context, workID, stepID string) (isResum
 	defer span.End()
 
 	var isPaused bool
+
 	var status string
 
 	const q = `

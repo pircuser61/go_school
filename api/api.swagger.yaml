@@ -5117,7 +5117,7 @@ components:
           description: "Номер заявки для мониторинга"
         action:
           type: string
-          enum: [ "start", "pause" ]
+          enum: [ "start", "pause", "startByOne" ]
           description: "Действия с заявкой"
         params:
           $ref: '#/components/schemas/MonitoringTaskActionParams'
@@ -5134,9 +5134,6 @@ components:
           description: "Названия блоков"
           items:
             type: string
-        start_by_one:
-          type: boolean
-          description: "Оставновить заявку после выполнения одного блока"
 
     MonitoringTask:
       type: object

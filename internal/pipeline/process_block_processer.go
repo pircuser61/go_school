@@ -25,7 +25,7 @@ type blockProcessor struct {
 	manual bool
 }
 
-func newBlockProcessor(name string, bl *entity.EriusFunc, runCtx *BlockRunContext, manual bool) blockProcessor {
+func NewBlockProcessor(name string, bl *entity.EriusFunc, runCtx *BlockRunContext, manual bool) blockProcessor {
 	return blockProcessor{
 		name:   name,
 		bl:     bl,
@@ -204,7 +204,7 @@ func (p *blockProcessor) processActiveBlocks(ctx context.Context, activeBlocks [
 			ctxCopy.VarStore = storage
 		}
 
-		processor := newBlockProcessor(blockName, blockData, ctxCopy, updateVarStore)
+		processor := NewBlockProcessor(blockName, blockData, ctxCopy, updateVarStore)
 
 		err := processor.ProcessBlock(ctx, its)
 		if err != nil {

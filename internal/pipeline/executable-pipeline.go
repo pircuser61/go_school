@@ -2,9 +2,11 @@ package pipeline
 
 import (
 	c "context"
+	"encoding/json"
 	"net/http"
 
 	"github.com/google/uuid"
+	"github.com/labstack/gommon/log"
 
 	"go.opencensus.io/trace"
 
@@ -140,6 +142,26 @@ func (gb *ExecutablePipeline) CreateTask(ctx c.Context, dto *CreateTaskDTO) erro
 	}
 
 	gb.WorkNumber = task.WorkNumber
+
+	params := struct {
+		Steps []string `json:"steps"`
+	}{Steps: []string{"start_0"}}
+
+	jsonParams, err := json.Marshal(params)
+	if err != nil {
+		log.Error(err)
+	}
+
+	_, err = gb.Storage.CreateTaskEvent(ctx, &entity.CreateTaskEvent{
+		WorkID:    gb.TaskID.String(),
+		Author:    dto.Author,
+		EventType: "start",
+		Params:    jsonParams,
+	})
+
+	if err != nil {
+		log.Error(err)
+	}
 
 	return nil
 }

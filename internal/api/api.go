@@ -185,6 +185,8 @@ const (
 	MonitoringTaskActionRequestActionPause MonitoringTaskActionRequestAction = "pause"
 
 	MonitoringTaskActionRequestActionStart MonitoringTaskActionRequestAction = "start"
+
+	MonitoringTaskActionRequestActionStartByOne MonitoringTaskActionRequestAction = "startByOne"
 )
 
 // Defines values for NodeEvent.
@@ -1506,9 +1508,6 @@ type MonitoringTask struct {
 
 // Параметры действия
 type MonitoringTaskActionParams struct {
-	// Оставновить заявку после выполнения одного блока
-	StartByOne *bool `json:"start_by_one,omitempty"`
-
 	// Названия блоков
 	Steps *[]string `json:"steps,omitempty"`
 }

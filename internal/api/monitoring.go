@@ -18,6 +18,8 @@ import (
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
@@ -26,6 +28,7 @@ const (
 	monitoringTimeLayout = "2006-01-02T15:04:05-0700"
 	taskEventPause       = "pause"
 	taskEventStart       = "start"
+	taskEventStartByOne  = "startByOne"
 )
 
 func (ae *Env) GetTasksForMonitoring(w http.ResponseWriter, r *http.Request, params GetTasksForMonitoringParams) {
@@ -477,7 +480,21 @@ func (ae *Env) MonitoringTaskAction(w http.ResponseWriter, r *http.Request) {
 		}
 
 	case taskEventStart:
-		err = ae.startProcess(ctx, ui.Name, workID.String(), req.Params)
+		err = ae.startProcess(ctx, ui.Name, workID.String(), req.WorkNumber, false, req.Params)
+		if err != nil {
+			errorHandler.handleError(UnpauseTaskError, err)
+
+			if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
+				log.WithField("funcName", "MonitoringTaskAction").
+					WithError(errors.New("couldn't rollback tx")).
+					Error(txErr)
+			}
+
+			return
+		}
+
+	case taskEventStartByOne:
+		err = ae.startProcess(ctx, ui.Name, workID.String(), req.WorkNumber, true, req.Params)
 		if err != nil {
 			errorHandler.handleError(UnpauseTaskError, err)
 
@@ -588,22 +605,38 @@ func (ae *Env) pauseTask(ctx context.Context, author, workID string, params *Mon
 	return nil
 }
 
-func (ae *Env) startProcess(ctx context.Context, author, workID string, params *MonitoringTaskActionParams) error {
+func (ae *Env) startProcess(ctx context.Context, author, workID, workNumber string, byOne bool, params *MonitoringTaskActionParams) error {
 	isPaused, err := ae.DB.IsTaskPaused(ctx, workID)
 	if err != nil {
 		return err
 	}
+
 	if !isPaused {
 		return errors.New("Can't unpause running task")
 	}
 
 	for i := range *params.Steps {
-		isResumable, err := ae.DB.IsBlockResumable(ctx, workID, (*params.Steps)[i])
-		if err != nil {
-			return err
+		isResumable, resumableErr := ae.DB.IsBlockResumable(ctx, workID, (*params.Steps)[i])
+		if resumableErr != nil {
+			return resumableErr
 		}
+
 		if !isResumable {
-			return errors.New(fmt.Sprintf("Can't unpause running task block: %s", (*params.Steps)[i]))
+			return fmt.Errorf("can't unpause running task block: %s", (*params.Steps)[i])
+		}
+		blockData, blockErr := ae.DB.GetBlockDataFromVersion(ctx, workNumber, (*params.Steps)[i])
+		if blockErr != nil {
+			return blockErr
+		}
+
+		blockProcessor := pipeline.NewBlockProcessor((*params.Steps)[i], blockData,
+			&pipeline.BlockRunContext{UpdateData: &script.BlockUpdateData{Action: string(entity.TaskUpdateActionReload)},
+				Productive: true, OnceProductive: byOne}, true)
+
+		// что такое its
+		processErr := blockProcessor.ProcessBlock(ctx, 0)
+		if processErr != nil {
+			return processErr
 		}
 	}
 

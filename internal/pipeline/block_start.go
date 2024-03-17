@@ -2,11 +2,8 @@ package pipeline
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/pkg/errors"
-
-	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
@@ -140,8 +137,6 @@ func createGoStartBlock(ctx context.Context, name string, ef *entity.EriusFunc, 
 	expectedEvents map[string]struct{},
 ) (*GoStartBlock, bool, error) {
 
-	l := logger.GetLogger(ctx)
-
 	b := &GoStartBlock{
 		Name:       name,
 		ShortName:  ef.ShortTitle,
@@ -182,25 +177,6 @@ func createGoStartBlock(ctx context.Context, name string, ef *entity.EriusFunc, 
 		}
 
 		b.happenedEvents = append(b.happenedEvents, event)
-	}
-
-	params := struct {
-		Steps []string `json:"steps"`
-	}{Steps: []string{"start_0"}}
-
-	jsonParams, err := json.Marshal(params)
-	if err != nil {
-		l.Error(err)
-	}
-
-	_, err = b.RunContext.Services.Storage.CreateTaskEvent(ctx, &entity.CreateTaskEvent{
-		WorkID:    b.RunContext.TaskID.String(),
-		Author:    b.RunContext.Initiator,
-		EventType: "start",
-		Params:    jsonParams,
-	})
-	if err != nil {
-		l.Error(err)
 	}
 
 	return b, false, nil

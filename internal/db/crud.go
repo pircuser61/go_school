@@ -1162,24 +1162,20 @@ func (db *PGCon) isStepExist(ctx context.Context, workID, stepName string) (bool
 	return id != uuid.Nil, id, t, nil
 }
 
-//
-//
-
 func (db *PGCon) InitTaskBlock(ctx context.Context, dto *SaveStepRequest, isPaused bool) (id uuid.UUID, startTime time.Time, err error) {
 	ctx, span := trace.StartSpan(ctx, "pg_init_task_block")
 	defer span.End()
 
-	if !dto.IsReEntry {
-		exists, stepID, t, err := db.isStepExist(ctx, dto.WorkID.String(), dto.StepName)
-		if err != nil {
-			return uuid.Nil, time.Time{}, err
-		}
-
-		if exists {
-			return stepID, t, nil
-		}
+	exists, stepID, t, existErr := db.isStepExist(ctx, dto.WorkID.String(), dto.StepName)
+	if existErr != nil {
+		return uuid.Nil, time.Time{}, existErr
 	}
+	if exists {
+		return stepID, t, nil
+	}
+
 	id = uuid.New()
+
 	timestamp := time.Now()
 	// nolint:gocritic
 	// language=PostgreSQL
@@ -1198,8 +1194,7 @@ func (db *PGCon) InitTaskBlock(ctx context.Context, dto *SaveStepRequest, isPaus
 		    current_executor,
 			is_active,
 		    is_paused
-		
-			--update_col--
+
 		)
 		VALUES (
 			$1, 
@@ -1215,7 +1210,6 @@ func (db *PGCon) InitTaskBlock(ctx context.Context, dto *SaveStepRequest, isPaus
 		    $11,
 		    true,
 		    $12
-			--update_val--
 		)
 `
 	args := []interface{}{
@@ -1233,23 +1227,7 @@ func (db *PGCon) InitTaskBlock(ctx context.Context, dto *SaveStepRequest, isPaus
 		isPaused,
 	}
 
-	if _, ok := map[string]struct{}{"finished": {}, "no_success": {}, "error": {}}[dto.Status]; ok {
-		args = append(args, timestamp)
-		query = strings.Replace(query, "--update_col--", ",updated_at", 1)
-		query = strings.Replace(query, "--update_val--", fmt.Sprintf(",$%d", len(args)), 1)
-	}
-
 	_, err = db.Connection.Exec(ctx, query, args...)
-	if err != nil {
-		return uuid.Nil, time.Time{}, err
-	}
-
-	err = db.insertIntoMembers(ctx, dto.Members, id)
-	if err != nil {
-		return uuid.Nil, time.Time{}, err
-	}
-
-	err = db.deleteAndInsertIntoDeadlines(ctx, dto.Deadlines, id)
 	if err != nil {
 		return uuid.Nil, time.Time{}, err
 	}
@@ -1862,7 +1840,7 @@ func (db *PGCon) UnsetIsActive(ctx context.Context, workNumber, blockName string
 func (db *PGCon) ParallelIsFinished(ctx context.Context, workNumber, blockName string) (bool, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_parallel_is_finished")
 	defer span.End()
-
+	//  проверка на актив добавить и не на паузе
 	// nolint:gocritic
 	// language=PostgreSQL
 	const q = `WITH RECURSIVE all_nodes AS(
