@@ -624,14 +624,17 @@ func (ae *Env) startProcess(ctx context.Context, author, workID, workNumber stri
 		if !isResumable {
 			return fmt.Errorf("can't unpause running task block: %s", (*params.Steps)[i])
 		}
+
 		blockData, blockErr := ae.DB.GetBlockDataFromVersion(ctx, workNumber, (*params.Steps)[i])
 		if blockErr != nil {
 			return blockErr
 		}
 
 		blockProcessor := pipeline.NewBlockProcessor((*params.Steps)[i], blockData,
-			&pipeline.BlockRunContext{UpdateData: &script.BlockUpdateData{Action: string(entity.TaskUpdateActionReload)},
-				Productive: true, OnceProductive: byOne}, true)
+			&pipeline.BlockRunContext{
+				UpdateData: &script.BlockUpdateData{Action: string(entity.TaskUpdateActionReload)},
+				Productive: true, OnceProductive: byOne,
+			}, true)
 
 		// что такое its
 		processErr := blockProcessor.ProcessBlock(ctx, 0)

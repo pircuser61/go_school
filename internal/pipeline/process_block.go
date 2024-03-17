@@ -242,7 +242,6 @@ func initBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *BlockRu
 		StepName: name,
 		Status:   string(StatusReady),
 	}, runCtx.OnceProductive)
-
 	if err != nil {
 		return nil, uuid.Nil, err
 	}

@@ -1499,7 +1499,6 @@ func (db *PGCon) getTasks(ctx c.Context, filters *entity.TaskFilter,
 			&nullApprTime,
 			&et.IsPaused,
 		)
-
 		if err != nil {
 			return nil, err
 		}
@@ -1593,7 +1592,6 @@ func (db *PGCon) getTasksMeta(ctx c.Context, q string, args []interface{}) (*ent
 			&workNumber,
 			&blueprintID,
 		)
-
 		if err != nil {
 			return nil, err
 		}

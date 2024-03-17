@@ -345,6 +345,7 @@ func (db *PGCon) TryUnpauseTask(ctx c.Context, workID string) (err error) {
 	if err != nil {
 		return err
 	}
+
 	if len(ids) != 0 {
 		return nil
 	}
