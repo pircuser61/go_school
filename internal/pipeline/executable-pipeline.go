@@ -6,9 +6,10 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
-	"github.com/labstack/gommon/log"
 
 	"go.opencensus.io/trace"
+
+	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
@@ -126,6 +127,8 @@ type CreateTaskDTO struct {
 
 func (gb *ExecutablePipeline) CreateTask(ctx c.Context, dto *CreateTaskDTO) error {
 	gb.TaskID = uuid.New()
+
+	log := logger.GetLogger(ctx)
 
 	task, err := gb.Storage.CreateTask(ctx, &db.CreateTaskDTO{
 		TaskID:     gb.TaskID,
