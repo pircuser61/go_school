@@ -1874,7 +1874,7 @@ func (db *PGCon) ParallelIsFinished(ctx context.Context, workNumber, blockName s
         FROM variable_storage vs
                  INNER JOIN works w on vs.work_id = w.id
                  INNER JOIN inside_gates_nodes ign ON vs.step_name=ign.out_node
-        WHERE w.work_number=$1 and w.child_id is null and vs.status IN('running', 'idle', 'ready') AND is_active = true
+        WHERE w.work_number=$1 and w.child_id is null and vs.status IN('running', 'idle') AND is_active = true
     ) as is_finished,
     (
         SELECT CASE WHEN count(distinct vs.step_name) = 
