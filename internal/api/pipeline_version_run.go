@@ -496,6 +496,7 @@ func cleanKey(mapKeys interface{}) string {
 		"\r":   "",
 		"\\r":  "",
 		"\"\"": "",
+		"\"":   "''",
 	}
 
 	keyStr, okStr := key.(string)
