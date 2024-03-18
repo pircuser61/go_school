@@ -4,7 +4,6 @@ import (
 	c "context"
 	"errors"
 	"fmt"
-	"golang.org/x/net/context"
 	"time"
 
 	"github.com/Shopify/sarama"
@@ -151,7 +150,7 @@ func (s *Service) checkHealth() {
 
 		s.MessageHandler = msg
 
-		s.StartConsumer(context.Background())
+		s.StartConsumer(c.Background())
 
 		s.log.Info("the reconnection to kafka was successful")
 
