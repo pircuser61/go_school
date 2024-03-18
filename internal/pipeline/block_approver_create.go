@@ -143,7 +143,21 @@ func (gb *GoApproverBlock) makeExpectedEvents(ctx context.Context, runCtx *Block
 			return err
 		}
 
+		kafkaEvent, err := runCtx.MakeNodeKafkaStartEvent(ctx, &MakeNodeStartKafkaEvent{
+			NodeName:      name,
+			NodeShortName: ef.ShortTitle,
+			HumanStatus:   status,
+			NodeStatus:    gb.GetStatus(),
+			NodeType:      BlockGoApproverID,
+			Rule:          gb.State.ApprovementRule.String(),
+			ToAddLogins:   getSliceFromMapOfStrings(gb.State.Approvers),
+		})
+		if err != nil {
+			return err
+		}
+
 		gb.happenedEvents = append(gb.happenedEvents, event)
+		gb.happenedKafkaEvents = append(gb.happenedKafkaEvents, kafkaEvent)
 	}
 
 	return nil

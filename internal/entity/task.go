@@ -371,7 +371,7 @@ type NodeKafkaEvent struct {
 	WorkNumber       string                 `json:"work_number"`
 	NodeName         string                 `json:"node_name"`
 	NodeShortName    string                 `json:"node_short_name"`
-	NodeStart        string                 `json:"node_start"`
+	NodeStart        int64                  `json:"node_start"`
 	NodeEnd          string                 `json:"node_end"`
 	TaskStatus       string                 `json:"task_status"`
 	NodeStatus       string                 `json:"node_status"`
