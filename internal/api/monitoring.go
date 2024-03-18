@@ -616,40 +616,9 @@ func (ae *Env) startProcess(ctx context.Context, author, workID, workNumber stri
 	}
 
 	for i := range *params.Steps {
-		isResumable, t, resumableErr := ae.DB.IsBlockResumable(ctx, workID, (*params.Steps)[i])
-		if resumableErr != nil {
-			return resumableErr
-		}
-
-		if !isResumable {
-			return fmt.Errorf("can't unpause running task block: %s", (*params.Steps)[i])
-		}
-
-		blockData, blockErr := ae.DB.GetBlockDataFromVersion(ctx, workNumber, (*params.Steps)[i])
-		if blockErr != nil {
-			return blockErr
-		}
-
-		nodesToSkip, skipErr := ae.getNodesToSkip(ctx, blockData.Next, workNumber)
-		if skipErr != nil {
-			return skipErr
-		}
-
-		dbSkipErr := ae.DB.SkipBlocksAfterRestarted(ctx, workID, t, nodesToSkip)
-		if dbSkipErr != nil {
-			return dbSkipErr
-		}
-
-		blockProcessor := pipeline.NewBlockProcessor((*params.Steps)[i], blockData,
-			&pipeline.BlockRunContext{
-				UpdateData: &script.BlockUpdateData{Action: string(entity.TaskUpdateActionReload)},
-				Productive: true, OnceProductive: byOne,
-			}, true)
-
-		// что такое its
-		processErr := blockProcessor.ProcessBlock(ctx, 0)
-		if processErr != nil {
-			return processErr
+		restartErr := ae.restartNode(ctx, workID, workNumber, (*params.Steps)[i], byOne)
+		if restartErr != nil {
+			return restartErr
 		}
 	}
 
@@ -674,6 +643,45 @@ func (ae *Env) startProcess(ctx context.Context, author, workID, workNumber stri
 	})
 	if err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func (ae *Env) restartNode(ctx context.Context, workID, workNumber, step string, byOne bool) (err error) {
+	isResumable, t, resumableErr := ae.DB.IsBlockResumable(ctx, workID, step)
+	if resumableErr != nil {
+		return resumableErr
+	}
+
+	if !isResumable {
+		return fmt.Errorf("can't unpause running task block: %s", step)
+	}
+
+	blockData, blockErr := ae.DB.GetBlockDataFromVersion(ctx, workNumber, step)
+	if blockErr != nil {
+		return blockErr
+	}
+
+	nodesToSkip, skipErr := ae.getNodesToSkip(ctx, blockData.Next, workNumber)
+	if skipErr != nil {
+		return skipErr
+	}
+
+	dbSkipErr := ae.DB.SkipBlocksAfterRestarted(ctx, workID, t, nodesToSkip)
+	if dbSkipErr != nil {
+		return dbSkipErr
+	}
+
+	blockProcessor := pipeline.NewBlockProcessor(step, blockData,
+		&pipeline.BlockRunContext{
+			UpdateData: &script.BlockUpdateData{Action: string(entity.TaskUpdateActionReload)},
+			Productive: true, OnceProductive: byOne,
+		}, true)
+
+	processErr := blockProcessor.ProcessBlock(ctx, 0)
+	if processErr != nil {
+		return processErr
 	}
 
 	return nil

@@ -107,6 +107,7 @@ func (runCtx *BlockRunContext) Copy() *BlockRunContext {
 		NodeEvents: make([]entity.NodeEvent, 0),
 	}
 	runCtxCopy.Productive = !runCtx.OnceProductive
+
 	return &runCtxCopy
 }
 

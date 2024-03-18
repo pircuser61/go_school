@@ -643,6 +643,7 @@ func (db *PGCon) VersionEditable(c context.Context, versionID uuid.UUID) (bool, 
 
 	for rows.Next() {
 		count := 0
+
 		err = rows.Scan(&count)
 		if err != nil {
 			return false, err

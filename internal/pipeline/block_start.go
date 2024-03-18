@@ -136,7 +136,6 @@ func (gb *GoStartBlock) BlockAttachments() (ids []string) {
 func createGoStartBlock(ctx context.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext,
 	expectedEvents map[string]struct{},
 ) (*GoStartBlock, bool, error) {
-
 	b := &GoStartBlock{
 		Name:       name,
 		ShortName:  ef.ShortTitle,
