@@ -1146,12 +1146,12 @@ func (db *PGCon) isStepExist(ctx context.Context, workID, stepName string) (bool
 		FROM variable_storage
 		WHERE work_id = $1 AND
 			step_name = $2 AND
-			(status IN ('idle', 'ready', 'running') OR (
+			(((status IN ('idle', 'running') AND is_paused = false) OR (status = 'ready')) OR (
 				step_type = 'form' AND
 				status IN ('idle', 'ready', 'running', 'finished') AND
 				time = (SELECT max(time) FROM variable_storage vs 
 							WHERE vs.work_id = $1 AND step_name = $2)
-			) AND is_paused = false)`
+			))`
 
 	scanErr := db.Connection.QueryRow(ctx, q, workID, stepName).Scan(&id, &t)
 	if scanErr != nil && !errors.Is(scanErr, pgx.ErrNoRows) {
