@@ -134,7 +134,7 @@ func (s *Service) checkHealth() {
 	saramaCfg.Producer.Return.Successes = true // Producer.Return.Successes must be true to be used in a SyncProducer
 
 	admin, err := sarama.NewClusterAdmin(s.brokers, saramaCfg)
-	if err != nil {
+	if err != nil || s.consumer == nil || s.producer == nil {
 		s.log.WithError(err).Error("couldn't connect to kafka! Trying to reconnect")
 
 		msg := s.MessageHandler
