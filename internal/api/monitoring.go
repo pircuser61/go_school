@@ -616,7 +616,7 @@ func (ae *Env) startProcess(ctx context.Context, author, workID, workNumber stri
 	}
 
 	for i := range *params.Steps {
-		isResumable, resumableErr := ae.DB.IsBlockResumable(ctx, workID, (*params.Steps)[i])
+		isResumable, t, resumableErr := ae.DB.IsBlockResumable(ctx, workID, (*params.Steps)[i])
 		if resumableErr != nil {
 			return resumableErr
 		}
@@ -628,6 +628,16 @@ func (ae *Env) startProcess(ctx context.Context, author, workID, workNumber stri
 		blockData, blockErr := ae.DB.GetBlockDataFromVersion(ctx, workNumber, (*params.Steps)[i])
 		if blockErr != nil {
 			return blockErr
+		}
+
+		nodesToSkip, skipErr := ae.getNodesToSkip(ctx, blockData.Next, workNumber)
+		if skipErr != nil {
+			return skipErr
+		}
+
+		dbSkipErr := ae.DB.SkipBlocksAfterRestarted(ctx, workID, t, nodesToSkip)
+		if dbSkipErr != nil {
+			return dbSkipErr
 		}
 
 		blockProcessor := pipeline.NewBlockProcessor((*params.Steps)[i], blockData,
@@ -667,4 +677,21 @@ func (ae *Env) startProcess(ctx context.Context, author, workID, workNumber stri
 	}
 
 	return nil
+}
+
+func (ae *Env) getNodesToSkip(ctx context.Context, nextNodes map[string][]string, workNumber string) (nodeList []string, err error) {
+	for _, val := range nextNodes {
+		for _, next := range val {
+			blockData, blockErr := ae.DB.GetBlockDataFromVersion(ctx, workNumber, next)
+			if blockErr != nil {
+				return nil, blockErr
+			}
+			nodes, recErr := ae.getNodesToSkip(ctx, blockData.Next, workNumber)
+			if recErr != nil {
+				return nil, recErr
+			}
+			nodeList = append(nodeList, nodes...)
+		}
+	}
+	return nodeList, nil
 }

@@ -4637,12 +4637,13 @@ func (_c *MockedDatabase_InitTaskBlock_Call) RunAndReturn(run func(context.Conte
 }
 
 // IsBlockResumable provides a mock function with given fields: ctx, workID, stepID
-func (_m *MockedDatabase) IsBlockResumable(ctx context.Context, workID string, stepID string) (bool, error) {
+func (_m *MockedDatabase) IsBlockResumable(ctx context.Context, workID string, stepID string) (bool, time.Time, error) {
 	ret := _m.Called(ctx, workID, stepID)
 
 	var r0 bool
-	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, string) (bool, error)); ok {
+	var r1 time.Time
+	var r2 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) (bool, time.Time, error)); ok {
 		return rf(ctx, workID, stepID)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, string, string) bool); ok {
@@ -4651,13 +4652,19 @@ func (_m *MockedDatabase) IsBlockResumable(ctx context.Context, workID string, s
 		r0 = ret.Get(0).(bool)
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, string, string) time.Time); ok {
 		r1 = rf(ctx, workID, stepID)
 	} else {
-		r1 = ret.Error(1)
+		r1 = ret.Get(1).(time.Time)
 	}
 
-	return r0, r1
+	if rf, ok := ret.Get(2).(func(context.Context, string, string) error); ok {
+		r2 = rf(ctx, workID, stepID)
+	} else {
+		r2 = ret.Error(2)
+	}
+
+	return r0, r1, r2
 }
 
 // MockedDatabase_IsBlockResumable_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'IsBlockResumable'
@@ -4680,12 +4687,12 @@ func (_c *MockedDatabase_IsBlockResumable_Call) Run(run func(ctx context.Context
 	return _c
 }
 
-func (_c *MockedDatabase_IsBlockResumable_Call) Return(isResumable bool, err error) *MockedDatabase_IsBlockResumable_Call {
-	_c.Call.Return(isResumable, err)
+func (_c *MockedDatabase_IsBlockResumable_Call) Return(isResumable bool, startTime time.Time, err error) *MockedDatabase_IsBlockResumable_Call {
+	_c.Call.Return(isResumable, startTime, err)
 	return _c
 }
 
-func (_c *MockedDatabase_IsBlockResumable_Call) RunAndReturn(run func(context.Context, string, string) (bool, error)) *MockedDatabase_IsBlockResumable_Call {
+func (_c *MockedDatabase_IsBlockResumable_Call) RunAndReturn(run func(context.Context, string, string) (bool, time.Time, error)) *MockedDatabase_IsBlockResumable_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -5783,6 +5790,51 @@ func (_c *MockedDatabase_SetTaskPaused_Call) Return(_a0 error) *MockedDatabase_S
 }
 
 func (_c *MockedDatabase_SetTaskPaused_Call) RunAndReturn(run func(context.Context, string, bool) error) *MockedDatabase_SetTaskPaused_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// SkipBlocksAfterRestarted provides a mock function with given fields: ctx, workID, startTime, blocks
+func (_m *MockedDatabase) SkipBlocksAfterRestarted(ctx context.Context, workID string, startTime time.Time, blocks []string) error {
+	ret := _m.Called(ctx, workID, startTime, blocks)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, time.Time, []string) error); ok {
+		r0 = rf(ctx, workID, startTime, blocks)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// MockedDatabase_SkipBlocksAfterRestarted_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SkipBlocksAfterRestarted'
+type MockedDatabase_SkipBlocksAfterRestarted_Call struct {
+	*mock.Call
+}
+
+// SkipBlocksAfterRestarted is a helper method to define mock.On call
+//   - ctx context.Context
+//   - workID string
+//   - startTime time.Time
+//   - blocks []string
+func (_e *MockedDatabase_Expecter) SkipBlocksAfterRestarted(ctx interface{}, workID interface{}, startTime interface{}, blocks interface{}) *MockedDatabase_SkipBlocksAfterRestarted_Call {
+	return &MockedDatabase_SkipBlocksAfterRestarted_Call{Call: _e.mock.On("SkipBlocksAfterRestarted", ctx, workID, startTime, blocks)}
+}
+
+func (_c *MockedDatabase_SkipBlocksAfterRestarted_Call) Run(run func(ctx context.Context, workID string, startTime time.Time, blocks []string)) *MockedDatabase_SkipBlocksAfterRestarted_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string), args[2].(time.Time), args[3].([]string))
+	})
+	return _c
+}
+
+func (_c *MockedDatabase_SkipBlocksAfterRestarted_Call) Return(err error) *MockedDatabase_SkipBlocksAfterRestarted_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockedDatabase_SkipBlocksAfterRestarted_Call) RunAndReturn(run func(context.Context, string, time.Time, []string) error) *MockedDatabase_SkipBlocksAfterRestarted_Call {
 	_c.Call.Return(run)
 	return _c
 }

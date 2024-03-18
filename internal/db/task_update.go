@@ -357,3 +357,18 @@ func (db *PGCon) TryUnpauseTask(ctx c.Context, workID string) (err error) {
 
 	return nil
 }
+
+func (db *PGCon) SkipBlocksAfterRestarted(ctx c.Context, workID string, startTime time.Time, blocks []string) (err error) {
+	ctx, span := trace.StartSpan(ctx, "skip_blocks_after_restarted")
+	defer span.End()
+
+	const q = `UPDATE variable_storage SET status = 'skipped' 
+                WHERE work_id = $1 AND step_name IN $2 AND time > $3`
+
+	_, err = db.Connection.Exec(ctx, q, workID, blocks, startTime)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

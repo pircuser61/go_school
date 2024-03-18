@@ -276,8 +276,9 @@ type Database interface {
 	SetTaskPaused(ctx c.Context, workID string, isPaused bool) error
 	SetTaskBlocksPaused(ctx c.Context, workID string, steps []string, isPaused bool) error
 	IsTaskPaused(ctx c.Context, workID string) (isPaused bool, err error)
-	IsBlockResumable(ctx c.Context, workID, stepID string) (isResumable bool, err error)
+	IsBlockResumable(ctx c.Context, workID, stepID string) (isResumable bool, startTime time.Time, err error)
 	UnpauseTaskBlock(ctx c.Context, workID, stepID string) (err error)
 	TryUnpauseTask(ctx c.Context, workID string) (err error)
 	InitTaskBlock(ctx c.Context, dto *SaveStepRequest, isPaused bool) (id uuid.UUID, startTime time.Time, err error)
+	SkipBlocksAfterRestarted(ctx c.Context, workID string, startTime time.Time, blocks []string) (err error)
 }
