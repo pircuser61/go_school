@@ -686,12 +686,15 @@ func (ae *Env) getNodesToSkip(ctx context.Context, nextNodes map[string][]string
 			if blockErr != nil {
 				return nil, blockErr
 			}
+
 			nodes, recErr := ae.getNodesToSkip(ctx, blockData.Next, workNumber)
 			if recErr != nil {
 				return nil, recErr
 			}
+
 			nodeList = append(nodeList, nodes...)
 		}
 	}
+
 	return nodeList, nil
 }

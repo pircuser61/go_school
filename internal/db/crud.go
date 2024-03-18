@@ -1148,7 +1148,7 @@ func (db *PGCon) isStepExist(ctx context.Context, workID, stepName string) (bool
 			step_name = $2 AND
 			(((status IN ('idle', 'running') AND is_paused = false) OR (status = 'ready')) OR (
 				step_type = 'form' AND
-				status IN ('idle', 'ready', 'running', 'finished') AND
+				((status IN ('idle', 'running') AND is_paused = false) OR (status = 'ready')) AND
 				time = (SELECT max(time) FROM variable_storage vs 
 							WHERE vs.work_id = $1 AND step_name = $2)
 			))`
