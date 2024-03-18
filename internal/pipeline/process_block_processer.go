@@ -61,6 +61,10 @@ func (p *BlockProcessor) ProcessBlock(ctx context.Context, its int) error {
 		return p.handleError(ctx, log, initErr)
 	}
 
+	if block == nil {
+		return nil
+	}
+
 	isStatusFiniteBeforeUpdate := block.GetStatus() == StatusFinished ||
 		block.GetStatus() == StatusNoSuccess ||
 		block.GetStatus() == StatusError
