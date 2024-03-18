@@ -113,9 +113,13 @@ func main() {
 	// don't forget to update mock
 	var _ db.Database = (*mocks.MockedDatabase)(nil)
 
-	kafkaService, err := kafka.NewService(log, cfg.Kafka)
+	kafkaService, canRestart, err := kafka.NewService(log, cfg.Kafka)
 	if err != nil {
 		log.WithError(err).Error("can't create kafka service")
+
+		if !canRestart {
+			return
+		}
 	}
 
 	schedulerService, err := scheduler.NewService(cfg.SchedulerTasks)
