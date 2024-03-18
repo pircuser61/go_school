@@ -18,8 +18,9 @@ type GoPlaceholderBlock struct {
 
 	RunContext *BlockRunContext
 
-	expectedEvents map[string]struct{}
-	happenedEvents []entity.NodeEvent
+	expectedEvents      map[string]struct{}
+	happenedEvents      []entity.NodeEvent
+	happenedKafkaEvents []entity.NodeKafkaEvent
 }
 
 func (gb *GoPlaceholderBlock) CurrentExecutorData() CurrentExecutorData {
@@ -28,6 +29,10 @@ func (gb *GoPlaceholderBlock) CurrentExecutorData() CurrentExecutorData {
 
 func (gb *GoPlaceholderBlock) GetNewEvents() []entity.NodeEvent {
 	return gb.happenedEvents
+}
+
+func (gb *GoPlaceholderBlock) GetNewKafkaEvents() []entity.NodeKafkaEvent {
+	return gb.happenedKafkaEvents
 }
 
 func (gb *GoPlaceholderBlock) Model() script.FunctionModel {

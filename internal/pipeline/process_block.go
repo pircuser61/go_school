@@ -65,7 +65,8 @@ type RunContextServices struct {
 }
 
 type BlockRunResults struct {
-	NodeEvents []entity.NodeEvent
+	NodeEvents      []entity.NodeEvent
+	NodeKafkaEvents []entity.NodeKafkaEvent
 }
 
 type BlockRunContext struct {

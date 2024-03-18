@@ -17,8 +17,9 @@ type GoEndBlock struct {
 	Output    map[string]string
 	Sockets   []script.Socket
 
-	expectedEvents map[string]struct{}
-	happenedEvents []entity.NodeEvent
+	expectedEvents      map[string]struct{}
+	happenedEvents      []entity.NodeEvent
+	happenedKafkaEvents []entity.NodeKafkaEvent
 
 	RunContext *BlockRunContext
 }
@@ -29,6 +30,10 @@ func (gb *GoEndBlock) CurrentExecutorData() CurrentExecutorData {
 
 func (gb *GoEndBlock) GetNewEvents() []entity.NodeEvent {
 	return gb.happenedEvents
+}
+
+func (gb *GoEndBlock) GetNewKafkaEvents() []entity.NodeKafkaEvent {
+	return gb.happenedKafkaEvents
 }
 
 func (gb *GoEndBlock) Members() []Member {

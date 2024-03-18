@@ -65,8 +65,9 @@ type GoSignBlock struct {
 
 	RunContext *BlockRunContext
 
-	expectedEvents map[string]struct{}
-	happenedEvents []entity.NodeEvent
+	expectedEvents      map[string]struct{}
+	happenedEvents      []entity.NodeEvent
+	happenedKafkaEvents []entity.NodeKafkaEvent
 }
 
 func (gb *GoSignBlock) CurrentExecutorData() CurrentExecutorData {
@@ -75,6 +76,10 @@ func (gb *GoSignBlock) CurrentExecutorData() CurrentExecutorData {
 
 func (gb *GoSignBlock) GetNewEvents() []entity.NodeEvent {
 	return gb.happenedEvents
+}
+
+func (gb *GoSignBlock) GetNewKafkaEvents() []entity.NodeKafkaEvent {
+	return gb.happenedKafkaEvents
 }
 
 func (gb *GoSignBlock) GetState() interface{} {

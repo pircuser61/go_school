@@ -365,3 +365,22 @@ func (ne *NodeEvent) ToMap() map[string]interface{} {
 
 	return res
 }
+
+type NodeKafkaEvent struct {
+	TaskID           string                 `json:"task_id"`
+	WorkNumber       string                 `json:"work_number"`
+	NodeName         string                 `json:"node_name"`
+	NodeShortName    string                 `json:"node_short_name"`
+	NodeStart        string                 `json:"node_start"`
+	NodeEnd          string                 `json:"node_end"`
+	TaskStatus       string                 `json:"task_status"`
+	NodeStatus       string                 `json:"node_status"`
+	Initiator        string                 `json:"initiator"`
+	CreatedAt        int64                  `json:"created_at"`
+	NodeSLA          int64                  `json:"node_sla"`
+	EventAt          int64                  `json:"event_at"`
+	Action           string                 `json:"action"`
+	NodeType         string                 `json:"node_type"`
+	ActionBody       map[string]interface{} `json:"action_body"`
+	AvailableActions []string               `json:"available_actions"`
+}
