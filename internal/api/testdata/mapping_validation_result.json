@@ -200,6 +200,9 @@
       "work_type": "8/5"
     },
     "next": {
+      "approve": [
+        "execution_2"
+      ],
       "reject": [
         "execution_1"
       ]
@@ -805,6 +808,62 @@
       }
     ]
   },
+  "execution_2": {
+    "x": -774,
+    "y": -107,
+    "type_id": "execution",
+    "block_type": "go",
+    "title": "Исполнение",
+    "short_title": "exec",
+    "output": {
+      "type": "object",
+      "properties": {}
+    },
+    "param_type": "execution",
+    "params": {
+      "type": "from_schema",
+      "executors": "form_1.application_body.field-uuid-3",
+      "sla": 8,
+      "check_sla": true,
+      "rework_sla": 16,
+      "check_rework_sla": false,
+      "work_type": "8/5",
+      "repeat_prev_decision": false,
+      "is_editable": false,
+      "executors_group_id": "",
+      "executors_group_name": "",
+      "executors_group_id_path": "",
+      "forms_accessibility": [],
+      "use_actual_executor": false,
+      "hide_executor": false
+    },
+    "next": {
+      "executed": [
+        "end_1"
+      ],
+      "not_executed": [
+        "end_1"
+      ]
+    },
+    "sockets": [
+      {
+        "id": "executed",
+        "title": "Исполнено",
+        "nextBlockIds": [
+          "end_1"
+        ],
+        "actionType": ""
+      },
+      {
+        "id": "not_executed",
+        "title": "Не исполнено",
+        "nextBlockIds": [
+          "end_1"
+        ],
+        "actionType": ""
+      }
+    ]
+  },
   "form_0": {
     "x": 1868,
     "y": -521,
@@ -1013,6 +1072,50 @@
               },
               "title": "Сотрудник2",
               "type": "object"
+            },
+            "field-uuid-3": {
+              "items": {
+                "properties": {
+                  "email": {
+                    "title": "email",
+                    "type": "string"
+                  },
+                  "fullOrgUnit": {
+                    "title": "Подразделение",
+                    "type": "string"
+                  },
+                  "fullname": {
+                    "title": "Полное имя",
+                    "type": "string"
+                  },
+                  "mobile": {
+                    "title": "Номер мобильного телефона",
+                    "type": "string"
+                  },
+                  "phone": {
+                    "title": "Телефон",
+                    "type": "string"
+                  },
+                  "position": {
+                    "title": "Должность",
+                    "type": "string"
+                  },
+                  "tabnum": {
+                    "title": "Табельный номер",
+                    "type": "string"
+                  },
+                  "username": {
+                    "title": "Логин",
+                    "type": "string"
+                  }
+                },
+                "type": "object",
+                "format": "ssoperson"
+              },
+              "type": "array"
+            },
+            "field-uuid-4": {
+              "type": "string"
             }
           },
           "type": "object"
@@ -1069,14 +1172,139 @@
       "form_group_id_path": "",
       "forms_accessibility": [],
       "hide_executor_from_initiator": false,
-      "mapping": {},
+      "mapping": {
+        "field-uuid-1": {
+          "format": "ssoperson",
+          "properties": {
+            "email": {
+              "title": "email",
+              "type": "string"
+            },
+            "fullOrgUnit": {
+              "title": "Подразделение",
+              "type": "string"
+            },
+            "fullname": {
+              "title": "Полное имя",
+              "type": "string"
+            },
+            "mobile": {
+              "title": "Номер мобильного телефона",
+              "type": "string"
+            },
+            "phone": {
+              "title": "Телефон",
+              "type": "string"
+            },
+            "position": {
+              "title": "Должность",
+              "type": "string"
+            },
+            "tabnum": {
+              "title": "Табельный номер",
+              "type": "string"
+            },
+            "username": {
+              "title": "Логин",
+              "type": "string"
+            }
+          },
+          "title": "Сотрудник",
+          "type": "object"
+        },
+        "field-uuid-2": {
+          "format": "ssoperson",
+          "properties": {
+            "email": {
+              "title": "email",
+              "type": "string"
+            },
+            "fullOrgUnit": {
+              "title": "Подразделение",
+              "type": "string"
+            },
+            "fullname": {
+              "title": "Полное имя",
+              "type": "string"
+            },
+            "mobile": {
+              "title": "Номер мобильного телефона",
+              "type": "string"
+            },
+            "phone": {
+              "title": "Телефон",
+              "type": "string"
+            },
+            "position": {
+              "title": "Должность",
+              "type": "string"
+            },
+            "tabnum": {
+              "title": "Табельный номер",
+              "type": "string"
+            },
+            "username": {
+              "title": "Логин",
+              "type": "string"
+            }
+          },
+          "title": "Сотрудник2",
+          "type": "object"
+        },
+        "field-uuid-3": {
+          "format": "ssoperson",
+          "properties": {
+            "email": {
+              "title": "email",
+              "type": "string"
+            },
+            "fullOrgUnit": {
+              "title": "Подразделение",
+              "type": "string"
+            },
+            "fullname": {
+              "title": "Полное имя",
+              "type": "string"
+            },
+            "mobile": {
+              "title": "Номер мобильного телефона",
+              "type": "string"
+            },
+            "phone": {
+              "title": "Телефон",
+              "type": "string"
+            },
+            "position": {
+              "title": "Должность",
+              "type": "string"
+            },
+            "tabnum": {
+              "title": "Табельный номер",
+              "type": "string"
+            },
+            "username": {
+              "title": "Логин",
+              "type": "string"
+            }
+          },
+          "title": "Сотрудник3",
+          "type": "object"
+        },
+        "field-uuid-4": {
+          "type": "string"
+        }
+      },
       "full_form_mapping": "",
       "work_type": "8/5",
       "is_editable": false,
       "checkRequiredForm": false,
       "attachment_fields": null,
       "keys": null,
-      "constants": {}
+      "constants": {
+        "field-uuid-2": {},
+        "field-uuid-3.fullname": "Test",
+        "field-uuid-4": "some string"
+      }
     },
     "next": {
       "default": [

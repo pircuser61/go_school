@@ -219,6 +219,9 @@
         "next": {
           "reject": [
             "execution_1"
+          ],
+          "approve": [
+            "execution_2"
           ]
         },
         "sockets": [
@@ -676,6 +679,67 @@
         "param_type": "execution",
         "short_title": "i2"
       },
+      "execution_2":{
+        "x":-774,
+        "y":-107,
+        "title":"Исполнение",
+        "block_type":"go",
+        "input":[
+
+        ],
+        "output":{
+          "type":"object",
+          "properties":{}
+        },
+        "params":{
+          "type":"from_schema",
+          "executors":"form_1.application_body.field-uuid-3",
+          "sla":8,
+          "check_sla":true,
+          "rework_sla":16,
+          "check_rework_sla":false,
+          "work_type":"8/5",
+          "repeat_prev_decision":false,
+          "is_editable":false,
+          "executors_group_id":"",
+          "executors_group_name":"",
+          "executors_group_id_path":"",
+          "forms_accessibility":[
+
+          ],
+          "use_actual_executor":false,
+          "hide_executor":false
+        },
+        "type_id":"execution",
+        "next":{
+          "executed":[
+            "end_1"
+          ],
+          "not_executed":[
+            "end_1"
+          ]
+        },
+        "sockets":[
+          {
+            "id":"executed",
+            "title":"Исполнено",
+            "nextBlockIds":[
+              "end_1"
+            ],
+            "actionType":""
+          },
+          {
+            "id":"not_executed",
+            "title":"Не исполнено",
+            "nextBlockIds":[
+              "end_1"
+            ],
+            "actionType":""
+          }
+        ],
+        "param_type":"execution",
+        "short_title":"exec"
+      },
       "form_0": {
         "x": 1868,
         "y": -521,
@@ -890,6 +954,52 @@
                       "title": "Табельный номер"
                     }
                   }
+                },
+                "field-uuid-3": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "title": "Сотрудник",
+                    "translation": "Сотрудник",
+                    "format": "ssoperson",
+                    "properties": {
+                      "fullname": {
+                        "type": "string",
+                        "title": "Полное имя"
+                      },
+                      "username": {
+                        "type": "string",
+                        "title": "Логин"
+                      },
+                      "email": {
+                        "type": "string",
+                        "title": "email"
+                      },
+                      "mobile": {
+                        "type": "string",
+                        "title": "Номер мобильного телефона"
+                      },
+                      "fullOrgUnit": {
+                        "type": "string",
+                        "title": "Подразделение"
+                      },
+                      "position": {
+                        "type": "string",
+                        "title": "Должность"
+                      },
+                      "phone": {
+                        "type": "string",
+                        "title": "Телефон"
+                      },
+                      "tabnum": {
+                        "type": "string",
+                        "title": "Табельный номер"
+                      }
+                    }
+                  }
+                },
+                "field-uuid-4": {
+                  "type": "string"
                 }
               },
               "type": "object",
@@ -940,8 +1050,138 @@
         },
         "params": {
           "form_group_id_path": "",
-          "mapping": {},
-          "constants": {},
+          "mapping": {
+            "field-uuid-1": {
+              "type": "object",
+              "title": "Сотрудник",
+              "translation": "Сотрудник",
+              "format": "ssoperson",
+              "properties": {
+                "fullname": {
+                  "type": "string",
+                  "title": "Полное имя"
+                },
+                "username": {
+                  "type": "string",
+                  "title": "Логин"
+                },
+                "email": {
+                  "type": "string",
+                  "title": "email"
+                },
+                "mobile": {
+                  "type": "string",
+                  "title": "Номер мобильного телефона"
+                },
+                "fullOrgUnit": {
+                  "type": "string",
+                  "title": "Подразделение"
+                },
+                "position": {
+                  "type": "string",
+                  "title": "Должность"
+                },
+                "phone": {
+                  "type": "string",
+                  "title": "Телефон"
+                },
+                "tabnum": {
+                  "type": "string",
+                  "title": "Табельный номер"
+                }
+              }
+            },
+            "field-uuid-2": {
+              "type": "object",
+              "title": "Сотрудник2",
+              "translation": "Сотрудник2",
+              "format": "ssoperson",
+              "properties": {
+                "fullname": {
+                  "type": "string",
+                  "title": "Полное имя"
+                },
+                "username": {
+                  "type": "string",
+                  "title": "Логин"
+                },
+                "email": {
+                  "type": "string",
+                  "title": "email"
+                },
+                "mobile": {
+                  "type": "string",
+                  "title": "Номер мобильного телефона"
+                },
+                "fullOrgUnit": {
+                  "type": "string",
+                  "title": "Подразделение"
+                },
+                "position": {
+                  "type": "string",
+                  "title": "Должность"
+                },
+                "phone": {
+                  "type": "string",
+                  "title": "Телефон"
+                },
+                "tabnum": {
+                  "type": "string",
+                  "title": "Табельный номер"
+                }
+              }
+            },
+            "field-uuid-3": {
+              "type": "object",
+              "title": "Сотрудник3",
+              "translation": "Сотрудник3",
+              "format": "ssoperson",
+              "properties": {
+                "fullname": {
+                  "type": "string",
+                  "title": "Полное имя"
+                },
+                "username": {
+                  "type": "string",
+                  "title": "Логин"
+                },
+                "email": {
+                  "type": "string",
+                  "title": "email"
+                },
+                "mobile": {
+                  "type": "string",
+                  "title": "Номер мобильного телефона"
+                },
+                "fullOrgUnit": {
+                  "type": "string",
+                  "title": "Подразделение"
+                },
+                "position": {
+                  "type": "string",
+                  "title": "Должность"
+                },
+                "phone": {
+                  "type": "string",
+                  "title": "Телефон"
+                },
+                "tabnum": {
+                  "type": "string",
+                  "title": "Табельный номер"
+                }
+              }
+            },
+            "field-uuid-4": {
+              "type": "string"
+            }
+          },
+          "constants": {
+            "field-uuid-1": "123",
+            "field-uuid-2": {},
+            "field-uuid-3.fullname": "Test",
+            "field-uuid-4": "some string",
+            "field-uuid-5": true
+          },
           "full_form_mapping": "",
           "form_executor_type": "from_schema",
           "executor": "start_0.application_body.somebody;start_0.initiator;executable_function_1.somebody",
