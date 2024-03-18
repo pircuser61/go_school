@@ -115,7 +115,6 @@ func (s *Service) StartConsumer(ctx c.Context) {
 	go func() {
 		err := s.consumer.Serve(ctx, s.MessageHandler)
 		if err != nil {
-			fmt.Println(1)
 			s.log.Error(err)
 		}
 	}()
