@@ -125,10 +125,9 @@ func (s *Service) StartConsumer(ctx c.Context) {
 // nolint:gocognit //its ok here
 func (s *Service) StartCheckHealth() {
 	for {
-		to := time.After(time.Duration(s.serviceConfig.HealthCheckTimeout) * time.Second)
-		for range to {
-			s.checkHealth()
-		}
+		<-time.After(time.Duration(s.serviceConfig.HealthCheckTimeout) * time.Second)
+
+		s.checkHealth()
 	}
 }
 
@@ -139,6 +138,9 @@ func (s *Service) checkHealth() {
 	saramaCfg := sarama.NewConfig()
 	saramaCfg.MetricRegistry = m
 	saramaCfg.Producer.Return.Successes = true // Producer.Return.Successes must be true to be used in a SyncProducer
+	saramaCfg.Net.DialTimeout = kafkaNetTimeout
+	saramaCfg.Net.ReadTimeout = kafkaNetTimeout
+	saramaCfg.Net.WriteTimeout = kafkaNetTimeout
 
 	admin, err := sarama.NewClusterAdmin(s.brokers, saramaCfg)
 	if err != nil || s.consumer == nil || s.producer == nil {
