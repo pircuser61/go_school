@@ -978,3 +978,56 @@ func Test_validateMappingAndResetIfNotValid(t *testing.T) {
 		})
 	}
 }
+
+func Test_validateMappingNotification(t *testing.T) {
+	log := logger.GetLogger(context.TODO())
+
+	pipeline := *unmarshalFromTestFile(t, "testdata/notification_validation.json")
+
+	tests := []struct {
+		name       string
+		bt         entity.BlocksType
+		want       bool
+		wantResult string
+	}{
+		{
+			name: "success case",
+			bt:   pipeline.Pipeline.Blocks,
+			want: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			isValid := validateMappingAndResetIfNotValid(tt.bt, log)
+
+			assert.Equalf(t, tt.want, isValid, "validateMapping(%v)", tt.bt)
+		})
+	}
+}
+
+func Test_validateMappingMultiSelect(t *testing.T) {
+	log := logger.GetLogger(context.TODO())
+
+	pipeline := *unmarshalFromTestFile(t, "testdata/multiselect_validation.json")
+
+	tests := []struct {
+		name string
+		bt   entity.BlocksType
+		want bool
+	}{
+		{
+			name: "success case",
+			bt:   pipeline.Pipeline.Blocks,
+			want: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			isValid := validateMappingAndResetIfNotValid(tt.bt, log)
+
+			assert.Equalf(t, tt.want, isValid, "validateMapping(%v)", tt.bt)
+		})
+	}
+}

@@ -1,0 +1,143 @@
+{
+    "id": "a242274a-6b78-4eeb-9fa2-249ec63544d0",
+    "name": "Тест после фикса",
+    "tags": [],
+    "author": "",
+    "status": 2,
+    "comment": "",
+    "pipeline": {
+        "blocks": {
+            "end_0": {
+                "x": 645,
+                "y": 59,
+                "title": "Конец",
+                "type_id": "end",
+                "block_type": "go"
+            },
+            "start_0": {
+                "next": {
+                    "default": [
+                        "notification_0"
+                    ]
+                },
+                "title": "Начало",
+                "output": {
+                    "type": "object",
+                    "properties": {
+                        "initiator": {
+                            "type": "object",
+                            "format": "SsoPerson",
+                            "global": "start_0.initiator",
+                            "properties": {
+                                "email": {
+                                    "type": "string",
+                                    "title": "email"
+                                },
+                                "phone": {
+                                    "type": "string",
+                                    "title": "Телефон"
+                                },
+                                "mobile": {
+                                    "type": "string",
+                                    "title": "Номер мобильного телефона"
+                                },
+                                "tabnum": {
+                                    "type": "string",
+                                    "title": "Табельный номер"
+                                },
+                                "fullname": {
+                                    "type": "string",
+                                    "title": "Полное имя"
+                                },
+                                "position": {
+                                    "type": "string",
+                                    "title": "Должность"
+                                },
+                                "username": {
+                                    "type": "string",
+                                    "title": "Логин"
+                                },
+                                "fullOrgUnit": {
+                                    "type": "string",
+                                    "title": "Подразделение"
+                                }
+                            }
+                        },
+                        "workNumber": {
+                            "type": "string",
+                            "global": "start_0.workNumber"
+                        },
+                        "application_body": {
+                            "type": "object",
+                            "global": "start_0.application_body",
+                            "properties": {
+                                "field-uuid-1": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                },
+                "sockets": [
+                    {
+                        "id": "default",
+                        "title": "Выход по умолчанию",
+                        "actionType": "",
+                        "nextBlockIds": [
+                            "notification_0"
+                        ]
+                    }
+                ],
+                "type_id": "start",
+                "block_type": "go"
+            },
+            "notification_0": {
+                "x": 331,
+                "y": 31,
+                "next": {
+                    "default": [
+                        "end_0"
+                    ]
+                },
+                "title": "notification",
+                "params": {
+                    "text": "",
+                    "emails": [],
+                    "people": [
+                        "zalisitsa"
+                    ],
+                    "subject": "Тема письма",
+                    "textSourceType": "field",
+                    "usersFromSchema": ""
+                },
+                "sockets": [
+                    {
+                        "id": "default",
+                        "title": "Выход по умолчанию",
+                        "actionType": "",
+                        "nextBlockIds": [
+                            "end_0"
+                        ]
+                    }
+                ],
+                "type_id": "notification",
+                "block_type": "go",
+                "param_type": "notification"
+            }
+        },
+        "entrypoint": "start_0"
+    },
+    "created_at": null,
+    "version_id": "55185530-05a8-402d-9f85-0a3ab5e164c4",
+    "approved_at": null,
+    "comment_rejected": "",
+    "process_settings": {
+        "sla": 0,
+        "name": "",
+        "work_type": "",
+        "end_schema": null,
+        "version_id": "",
+        "start_schema": null,
+        "resubmission_period": 0
+    }
+}

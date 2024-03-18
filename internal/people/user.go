@@ -147,6 +147,10 @@ type SearchUsersResp struct {
 }
 
 func (user *SSOUserTyped) GetFullName() string {
+	if user.LastName == "" && user.FirstName == "" {
+		return user.Username
+	}
+
 	return user.LastName + " " + user.FirstName
 }
 
