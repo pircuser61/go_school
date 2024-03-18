@@ -79,7 +79,7 @@ func NewService(log logger.Logger, cfg Config) (*Service, bool, error) {
 }
 
 func (s *Service) Produce(ctx c.Context, message *RunnerOutMessage) error {
-	if s == nil {
+	if s == nil || s.producer == nil {
 		return errors.New("kafka service unavailable")
 	}
 
@@ -87,7 +87,7 @@ func (s *Service) Produce(ctx c.Context, message *RunnerOutMessage) error {
 }
 
 func (s *Service) CloseProducer() error {
-	if s != nil {
+	if s != nil && s.producer != nil {
 		return s.producer.Close()
 	}
 
@@ -103,7 +103,7 @@ func (s *Service) InitMessageHandler(handler func(c.Context, RunnerInMessage) er
 }
 
 func (s *Service) StartConsumer(ctx c.Context) {
-	if s == nil {
+	if s == nil || s.consumer == nil {
 		return
 	}
 
