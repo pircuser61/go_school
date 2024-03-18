@@ -748,7 +748,7 @@ const (
 func (es *EriusScenario) FillEntryPointOutput() (err error) {
 	entryPoint := es.Pipeline.Blocks[es.Pipeline.Entrypoint]
 
-	if entryPoint.Output == nil || entryPoint.Output.Properties == nil {
+	if entryPoint == nil || entryPoint.Output == nil || entryPoint.Output.Properties == nil {
 		return nil
 	}
 
