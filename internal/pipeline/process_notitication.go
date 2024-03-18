@@ -168,7 +168,7 @@ func (runCtx *BlockRunContext) makeNotificationFormAttachment(files []string) ([
 	return ta, nil
 }
 
-// nolint:gocognit //it's ok
+// nolint:gocognit,gocyclo //it's ok
 func (runCtx *BlockRunContext) makeNotificationAttachment() ([]fileregistry.FileInfo, error) {
 	task, err := runCtx.Services.Storage.GetTaskRunContext(c.Background(), runCtx.WorkNumber)
 	if err != nil {
@@ -193,7 +193,10 @@ func (runCtx *BlockRunContext) makeNotificationAttachment() ([]fileregistry.File
 				attachments = append(attachments, entity.Attachment{FileID: filesID.(string)})
 			case []interface{}:
 				for _, vv := range data {
-					fileMap := vv.(om.OrderedMap)
+					fileMap, isMap := vv.(om.OrderedMap)
+					if !isMap {
+						continue
+					}
 
 					filesID, oks := fileMap.Get(fileID)
 					if !oks {
@@ -219,7 +222,10 @@ func (runCtx *BlockRunContext) makeNotificationAttachment() ([]fileregistry.File
 					}
 				case []interface{}:
 					for _, vv := range field {
-						fileMap := vv.(om.OrderedMap)
+						fileMap, isMap := vv.(om.OrderedMap)
+						if !isMap {
+							continue
+						}
 
 						filesID, okGet := fileMap.Get(fileID)
 						if !okGet {
@@ -367,14 +373,18 @@ func getAdditionalAttachList(form entity.DescriptionForm, formData *FormData) []
 					continue
 				}
 
-				if fileID, fileOK := file.Get(fileID); fileOK {
-					attachmentFiles = append(attachmentFiles, fileID.(string))
+				if filesID, fileOK := file.Get(fileID); fileOK {
+					attachmentFiles = append(attachmentFiles, filesID.(string))
 				}
 			case []interface{}:
 				for _, val := range attach {
-					valMap := val.(om.OrderedMap)
-					if fileID, fileOK := valMap.Get(fileID); fileOK {
-						attachmentFiles = append(attachmentFiles, fileID.(string))
+					valMap, isMap := val.(om.OrderedMap)
+					if !isMap {
+						continue
+					}
+
+					if filesID, fileOK := valMap.Get(fileID); fileOK {
+						attachmentFiles = append(attachmentFiles, filesID.(string))
 					}
 				}
 			}
