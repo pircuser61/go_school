@@ -28,6 +28,10 @@ type Service struct {
 	MessageHandler *msgkit.MessageHandler[RunnerInMessage]
 }
 
+const (
+	kafkaNetTimeout = 3 * time.Second
+)
+
 //nolint:gocritic //если тут удобно по значению значит пусть будет по значению
 func NewService(log logger.Logger, cfg Config) (*Service, bool, error) {
 	s := &Service{
@@ -55,6 +59,9 @@ func NewService(log logger.Logger, cfg Config) (*Service, bool, error) {
 	saramaCfg := sarama.NewConfig()
 	saramaCfg.MetricRegistry = m
 	saramaCfg.Producer.Return.Successes = true // Producer.Return.Successes must be true to be used in a SyncProducer
+	saramaCfg.Net.DialTimeout = kafkaNetTimeout
+	saramaCfg.Net.ReadTimeout = kafkaNetTimeout
+	saramaCfg.Net.WriteTimeout = kafkaNetTimeout
 
 	saramaClient, err := sarama.NewClient(cfg.Brokers, saramaCfg)
 	if err != nil {
