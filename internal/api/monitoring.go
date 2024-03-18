@@ -395,7 +395,7 @@ func (ae *Env) GetBlockState(w http.ResponseWriter, r *http.Request, blockID str
 	}
 }
 
-//nolint:gocyclo //its ok here
+//nolint:gocyclo,gocognit //its ok here
 func (ae *Env) MonitoringTaskAction(w http.ResponseWriter, r *http.Request) {
 	ctx, span := trace.StartSpan(r.Context(), "monitoring_task_action")
 	defer span.End()
