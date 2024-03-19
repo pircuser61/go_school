@@ -103,6 +103,7 @@ func (runCtx *BlockRunContext) Copy() *BlockRunContext {
 	runCtxCopy.UpdateData = nil
 	runCtxCopy.BlockRunResults = &BlockRunResults{
 		NodeEvents: make([]entity.NodeEvent, 0),
+		NodeKafkaEvents: make([]entity.NodeKafkaEvent, 0),
 	}
 
 	return &runCtxCopy

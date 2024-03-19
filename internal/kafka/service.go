@@ -14,13 +14,16 @@ import (
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	msgkit "gitlab.services.mts.ru/jocasta/msg-kit"
+
+	e "gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 )
 
 type Service struct {
 	log logger.Logger
 
-	producer *msgkit.Producer
-	consumer *msgkit.Consumer
+	producerSd *msgkit.Producer
+	producer   *msgkit.Producer
+	consumer   *msgkit.Consumer
 
 	brokers       []string
 	topics        []string
@@ -58,6 +61,11 @@ func NewService(log logger.Logger, cfg Config) (*Service, error) {
 		return nil, err
 	}
 
+	producerToSD, err := msgkit.NewProducer(saramaClient, cfg.ProducerTopicSD)
+	if err != nil {
+		return nil, err
+	}
+
 	consumer, err := msgkit.NewConsumer(saramaClient, cfg.ConsumerGroup, cfg.ConsumerTopic)
 	if err != nil {
 		return nil, err
@@ -70,17 +78,26 @@ func NewService(log logger.Logger, cfg Config) (*Service, error) {
 		brokers:       cfg.Brokers,
 		serviceConfig: cfg,
 
-		producer: producer,
-		consumer: consumer,
+		producerSd: producerToSD,
+		producer:   producer,
+		consumer:   consumer,
 	}, nil
 }
 
-func (s *Service) Produce(ctx c.Context, message *RunnerOutMessage) error {
+func (s *Service) ProduceFuncMessage(ctx c.Context, message *RunnerOutMessage) error {
 	if s == nil {
 		return errors.New("kafka service unavailable")
 	}
 
 	return s.producer.Produce(ctx, message)
+}
+
+func (s *Service) ProduceEventMessage(ctx c.Context, message *e.NodeKafkaEvent) error {
+	if s == nil {
+		return errors.New("kafka service unavailable")
+	}
+
+	return s.producerSd.Produce(ctx, message)
 }
 
 func (s *Service) CloseProducer() error {

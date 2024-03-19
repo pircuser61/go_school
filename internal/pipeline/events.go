@@ -90,6 +90,11 @@ func (runCtx *BlockRunContext) MakeNodeEndEvent(ctx c.Context, args MakeNodeEndE
 func (runCtx BlockRunContext) NotifyEvents(ctx c.Context) {
 	log := logger.GetLogger(ctx).WithField("workNumber", runCtx.WorkNumber)
 
+	runCtx.notifyEvents(ctx, log)
+	runCtx.notifyKafkaEvents(ctx, log)
+}
+
+func (runCtx BlockRunContext) notifyEvents(ctx c.Context, log logger.Logger) {
 	reqURL, err := url.Parse(runCtx.TaskSubscriptionData.MicroserviceURL)
 	if err != nil {
 		log.WithError(err).Error("couldn't parse url to send event notification")

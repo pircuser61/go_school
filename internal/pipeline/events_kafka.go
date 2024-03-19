@@ -2,7 +2,10 @@ package pipeline
 
 import (
 	c "context"
+	"fmt"
 	"time"
+
+	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	e "gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 )
@@ -59,4 +62,16 @@ func (runCtx *BlockRunContext) MakeNodeKafkaEvent(ctx c.Context, dto *MakeNodeKa
 		ActionBody:       actionBody,
 		AvailableActions: []string{},
 	}, nil
+}
+
+func (runCtx BlockRunContext) notifyKafkaEvents(ctx c.Context, log logger.Logger) {
+	for i := range runCtx.BlockRunResults.NodeKafkaEvents {
+		event := runCtx.BlockRunResults.NodeKafkaEvents[i]
+		err := runCtx.Services.Kafka.ProduceEventMessage(ctx, &event)
+		if err != nil {
+			log.WithError(err).Error(fmt.Sprintf("couldn't produce message: %+v", event))
+
+			continue
+		}
+	}
 }

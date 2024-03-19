@@ -244,8 +244,8 @@ func (gb *GoFormBlock) handleRequestFillForm(ctx context.Context, data *script.B
 		NodeStatus:     gb.GetStatus(),
 		NodeType:       BlockGoFormID,
 		SLA:            deadline.Unix(),
-		ToAddLogins:    []string{data.ByLogin},
-		ToRemoveLogins: getSliceFromMap(getDifMaps(gb.State.Executors, map[string]struct{}{data.ByLogin: {}})),
+		ToAddLogins:    []string{},
+		ToRemoveLogins: []string{data.ByLogin},
 	})
 	if err != nil {
 		return err
