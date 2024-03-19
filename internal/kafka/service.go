@@ -4,7 +4,6 @@ import (
 	c "context"
 	"errors"
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/Shopify/sarama"
@@ -29,17 +28,30 @@ type Service struct {
 	MessageHandler *msgkit.MessageHandler[RunnerInMessage]
 }
 
+const (
+	kafkaNetTimeout = 3 * time.Second
+)
+
 //nolint:gocritic //если тут удобно по значению значит пусть будет по значению
-func NewService(log logger.Logger, cfg Config) (*Service, error) {
+func NewService(log logger.Logger, cfg Config) (*Service, bool, error) {
+	s := &Service{
+		log: log,
+
+		brokers:       cfg.Brokers,
+		serviceConfig: cfg,
+	}
+
 	topics := []string{cfg.ProducerTopic, cfg.ConsumerTopic}
 
 	if len(cfg.Brokers) == 0 || len(topics) == 0 {
-		return nil, errors.New("brokers or topics is empty")
+		return s, false, errors.New("brokers or topics is empty")
 	}
 
 	if cfg.HealthCheckTimeout == 0 {
-		return nil, errors.New("field health_check is empty")
+		return s, false, errors.New("field health_check is empty")
 	}
+
+	s.topics = topics
 
 	m := metrics.DefaultRegistry
 	m.UnregisterAll()
@@ -47,36 +59,32 @@ func NewService(log logger.Logger, cfg Config) (*Service, error) {
 	saramaCfg := sarama.NewConfig()
 	saramaCfg.MetricRegistry = m
 	saramaCfg.Producer.Return.Successes = true // Producer.Return.Successes must be true to be used in a SyncProducer
+	saramaCfg.Net.DialTimeout = kafkaNetTimeout
 
 	saramaClient, err := sarama.NewClient(cfg.Brokers, saramaCfg)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create client: %w", err)
+		return s, true, fmt.Errorf("failed to create client: %w", err)
 	}
 
 	producer, err := msgkit.NewProducer(saramaClient, cfg.ProducerTopic)
 	if err != nil {
-		return nil, err
+		return s, true, err
 	}
+
+	s.producer = producer
 
 	consumer, err := msgkit.NewConsumer(saramaClient, cfg.ConsumerGroup, cfg.ConsumerTopic)
 	if err != nil {
-		return nil, err
+		return s, true, err
 	}
 
-	return &Service{
-		log: log,
+	s.consumer = consumer
 
-		topics:        topics,
-		brokers:       cfg.Brokers,
-		serviceConfig: cfg,
-
-		producer: producer,
-		consumer: consumer,
-	}, nil
+	return s, true, nil
 }
 
 func (s *Service) Produce(ctx c.Context, message *RunnerOutMessage) error {
-	if s == nil {
+	if s == nil || s.producer == nil {
 		return errors.New("kafka service unavailable")
 	}
 
@@ -84,7 +92,7 @@ func (s *Service) Produce(ctx c.Context, message *RunnerOutMessage) error {
 }
 
 func (s *Service) CloseProducer() error {
-	if s != nil {
+	if s != nil && s.producer != nil {
 		return s.producer.Close()
 	}
 
@@ -100,7 +108,7 @@ func (s *Service) InitMessageHandler(handler func(c.Context, RunnerInMessage) er
 }
 
 func (s *Service) StartConsumer(ctx c.Context) {
-	if s == nil {
+	if s == nil || s.consumer == nil {
 		return
 	}
 
@@ -108,7 +116,6 @@ func (s *Service) StartConsumer(ctx c.Context) {
 		err := s.consumer.Serve(ctx, s.MessageHandler)
 		if err != nil {
 			s.log.Error(err)
-			os.Exit(-4)
 		}
 	}()
 }
@@ -116,10 +123,9 @@ func (s *Service) StartConsumer(ctx c.Context) {
 // nolint:gocognit //its ok here
 func (s *Service) StartCheckHealth() {
 	for {
-		to := time.After(time.Duration(s.serviceConfig.HealthCheckTimeout) * time.Second)
-		for range to {
-			s.checkHealth()
-		}
+		<-time.After(time.Duration(s.serviceConfig.HealthCheckTimeout) * time.Second)
+
+		s.checkHealth()
 	}
 }
 
@@ -130,14 +136,15 @@ func (s *Service) checkHealth() {
 	saramaCfg := sarama.NewConfig()
 	saramaCfg.MetricRegistry = m
 	saramaCfg.Producer.Return.Successes = true // Producer.Return.Successes must be true to be used in a SyncProducer
+	saramaCfg.Net.DialTimeout = kafkaNetTimeout
 
 	admin, err := sarama.NewClusterAdmin(s.brokers, saramaCfg)
-	if err != nil {
+	if err != nil || s.consumer == nil || s.producer == nil {
 		s.log.WithError(err).Error("couldn't connect to kafka! Trying to reconnect")
 
 		msg := s.MessageHandler
 
-		newService, reconnectErr := NewService(s.log, s.serviceConfig)
+		newService, _, reconnectErr := NewService(s.log, s.serviceConfig)
 		if reconnectErr != nil {
 			s.log.WithError(reconnectErr).Error("failed to reconnect to kafka")
 
@@ -147,6 +154,8 @@ func (s *Service) checkHealth() {
 		*s = *newService
 
 		s.MessageHandler = msg
+
+		s.StartConsumer(c.Background())
 
 		s.log.Info("the reconnection to kafka was successful")
 

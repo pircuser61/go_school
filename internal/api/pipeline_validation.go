@@ -368,6 +368,12 @@ func validateFormBlock(bt entity.BlocksType, block *entity.EriusFunc, blockName 
 		}
 	}
 
+	if len(blockForm.Constants) != 0 {
+		if !validateConstants(blockForm.Constants, blockForm.Mapping, log) {
+			isValid = false
+		}
+	}
+
 	if !isValid {
 		var marshaledForm []byte
 
@@ -987,4 +993,51 @@ func isArrayValid(propertyItems, targetPropertyItems *script.ArrayItems) bool {
 	}
 
 	return true
+}
+
+func validateConstants(constants map[string]interface{}, mapping script.JSONSchemaProperties, log logger.Logger) bool {
+	isValid := true
+
+	for constPath, value := range constants {
+		pathParts := strings.Split(constPath, ".")
+
+		if !validateConstant(pathParts, value, mapping, log) {
+			isValid = false
+
+			delete(constants, constPath)
+		}
+	}
+
+	return isValid
+}
+
+func validateConstant(pathParts []string, value interface{}, schema script.JSONSchemaProperties, log logger.Logger) bool {
+	part := pathParts[0]
+	if part == "" {
+		log.WithField(funcName, "validateConstant").Error(fmt.Errorf("constant %v is not valid, empty path", value))
+
+		return false
+	}
+
+	paramJSONSchema, ok := schema[part]
+	if !ok {
+		log.WithField(funcName, "validateConstant").
+			Error(fmt.Errorf("constant %s %v is not valid, not found in schema", strings.Join(pathParts, "."), value))
+
+		return false
+	}
+
+	if len(pathParts) == 1 {
+		err := script.ValidateParam(value, &paramJSONSchema)
+		if err != nil {
+			log.WithField(funcName, "validateConstant").WithError(err).
+				Error(fmt.Errorf("constant %s %v is not valid, does not match schema", strings.Join(pathParts, "."), value))
+
+			return false
+		}
+
+		return true
+	}
+
+	return validateConstant(pathParts[1:], value, paramJSONSchema.Properties, log)
 }
