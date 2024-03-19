@@ -64,7 +64,7 @@ func (runCtx *BlockRunContext) MakeNodeKafkaEvent(ctx c.Context, dto *MakeNodeKa
 	}, nil
 }
 
-func (runCtx BlockRunContext) notifyKafkaEvents(ctx c.Context, log logger.Logger) {
+func (runCtx *BlockRunContext) notifyKafkaEvents(ctx c.Context, log logger.Logger) {
 	for i := range runCtx.BlockRunResults.NodeKafkaEvents {
 		event := runCtx.BlockRunResults.NodeKafkaEvents[i]
 

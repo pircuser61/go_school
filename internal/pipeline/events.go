@@ -94,7 +94,7 @@ func (runCtx BlockRunContext) NotifyEvents(ctx c.Context) {
 	runCtx.notifyKafkaEvents(ctx, log)
 }
 
-func (runCtx BlockRunContext) notifyEvents(ctx c.Context, log logger.Logger) {
+func (runCtx *BlockRunContext) notifyEvents(ctx c.Context, log logger.Logger) {
 	reqURL, err := url.Parse(runCtx.TaskSubscriptionData.MicroserviceURL)
 	if err != nil {
 		log.WithError(err).Error("couldn't parse url to send event notification")

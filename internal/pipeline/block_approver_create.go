@@ -74,7 +74,7 @@ func (gb *GoApproverBlock) load(
 	name string,
 	ef *entity.EriusFunc,
 ) (reEntry bool, err error) {
-	if err = gb.loadState(rawState); err != nil {
+	if err := gb.loadState(rawState); err != nil {
 		return false, err
 	}
 

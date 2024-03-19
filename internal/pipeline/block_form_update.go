@@ -85,6 +85,7 @@ func (gb *GoFormBlock) Update(ctx context.Context) (interface{}, error) {
 
 	gb.RunContext.VarStore.ReplaceState(gb.Name, stateBytes)
 
+	//nolint:exhaustive //its ok
 	if len(gb.State.ApplicationBody) > 0 {
 		if _, ok := gb.expectedEvents[eventEnd]; ok {
 			status, _, _ := gb.GetTaskHumanStatus()
