@@ -28,12 +28,14 @@ import (
 func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessage) error {
 	log := ae.Log
 
-	messageString, err := json.Marshal(message)
+	messageTmp, err := json.Marshal(message)
 	if err != nil {
 		log.WithField("taskID", message.TaskID).
 			WithError(err).
 			Error("error marshaling message from kafka")
 	}
+
+	messageString := string(messageTmp)
 
 	log.WithField("funcName", "FunctionReturnHandler").
 		WithField("message", messageString).
