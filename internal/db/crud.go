@@ -1149,7 +1149,7 @@ func (db *PGCon) isStepExist(ctx context.Context, workID, stepName string) (bool
 			step_name = $2 AND
 			(((status IN ('idle', 'running') AND is_paused = false) OR (status = 'ready')) OR (
 				step_type = 'form' AND
-				((status IN ('idle', 'running') AND is_paused = false) OR (status = 'ready')) AND
+				((status IN ('idle', 'running','finished') AND is_paused = false) OR (status = 'ready')) AND
 				time = (SELECT max(time) FROM variable_storage vs 
 							WHERE vs.work_id = $1 AND step_name = $2)
 			))`
@@ -1239,8 +1239,8 @@ func (db *PGCon) InitTaskBlock(ctx context.Context, dto *SaveStepRequest, isPaus
 func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest, id uuid.UUID) (uuid.UUID, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_save_step_context")
 	defer span.End()
-	// вот с этим непонятно немного
-	if !dto.IsReEntry {
+
+	if !dto.IsReEntry || dto.BlockExist {
 		exists, stepID, _, err := db.isStepExist(ctx, dto.WorkID.String(), dto.StepName)
 		if err != nil {
 			return uuid.Nil, err
@@ -1260,7 +1260,7 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest, id u
 			status = $5,
 		    attachments = $6, 	                         
 		    current_executor = $7,
-			is_paused = $10
+			is_paused = $8
 			--update_col--
 			WHERE id = $1
 `
@@ -1840,7 +1840,7 @@ func (db *PGCon) UnsetIsActive(ctx context.Context, workNumber, blockName string
 func (db *PGCon) ParallelIsFinished(ctx context.Context, workNumber, blockName string) (bool, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_parallel_is_finished")
 	defer span.End()
-	//  проверка на актив добавить и не на паузе
+
 	// nolint:gocritic
 	// language=PostgreSQL
 	const q = `WITH RECURSIVE all_nodes AS(
@@ -1874,7 +1874,8 @@ func (db *PGCon) ParallelIsFinished(ctx context.Context, workNumber, blockName s
         FROM variable_storage vs
                  INNER JOIN works w on vs.work_id = w.id
                  INNER JOIN inside_gates_nodes ign ON vs.step_name=ign.out_node
-        WHERE w.work_number=$1 and w.child_id is null and vs.status IN('running', 'idle') AND is_active = true
+        WHERE w.work_number=$1 and w.child_id is null and vs.status IN('running', 'idle') 
+          AND is_active = true AND vs.is_paused = false
     ) as is_finished,
     (
         SELECT CASE WHEN count(distinct vs.step_name) = 

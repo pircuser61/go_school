@@ -2443,7 +2443,7 @@ func (db *PGCon) GetExecutorsFromPrevWorkVersionExecutionBlockRun(ctx c.Context,
 	return executors, nil
 }
 
-func (db *PGCon) IsTaskPaused(ctx c.Context, workID string) (isPaused bool, err error) {
+func (db *PGCon) IsTaskPaused(ctx c.Context, workID uuid.UUID) (isPaused bool, err error) {
 	const q = `
 		SELECT is_paused
 		FROM works
@@ -2457,7 +2457,7 @@ func (db *PGCon) IsTaskPaused(ctx c.Context, workID string) (isPaused bool, err 
 	return isPaused, nil
 }
 
-func (db *PGCon) IsBlockResumable(ctx c.Context, workID, stepID string) (isResumable bool, startTime time.Time, err error) {
+func (db *PGCon) IsBlockResumable(ctx c.Context, workID, stepID uuid.UUID) (isResumable bool, startTime time.Time, err error) {
 	ctx, span := trace.StartSpan(ctx, "is_block_resumable")
 	defer span.End()
 

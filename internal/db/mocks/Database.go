@@ -4637,28 +4637,28 @@ func (_c *MockedDatabase_InitTaskBlock_Call) RunAndReturn(run func(context.Conte
 }
 
 // IsBlockResumable provides a mock function with given fields: ctx, workID, stepID
-func (_m *MockedDatabase) IsBlockResumable(ctx context.Context, workID string, stepID string) (bool, time.Time, error) {
+func (_m *MockedDatabase) IsBlockResumable(ctx context.Context, workID uuid.UUID, stepID uuid.UUID) (bool, time.Time, error) {
 	ret := _m.Called(ctx, workID, stepID)
 
 	var r0 bool
 	var r1 time.Time
 	var r2 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, string) (bool, time.Time, error)); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID) (bool, time.Time, error)); ok {
 		return rf(ctx, workID, stepID)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, string, string) bool); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID) bool); ok {
 		r0 = rf(ctx, workID, stepID)
 	} else {
 		r0 = ret.Get(0).(bool)
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string, string) time.Time); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID, uuid.UUID) time.Time); ok {
 		r1 = rf(ctx, workID, stepID)
 	} else {
 		r1 = ret.Get(1).(time.Time)
 	}
 
-	if rf, ok := ret.Get(2).(func(context.Context, string, string) error); ok {
+	if rf, ok := ret.Get(2).(func(context.Context, uuid.UUID, uuid.UUID) error); ok {
 		r2 = rf(ctx, workID, stepID)
 	} else {
 		r2 = ret.Error(2)
@@ -4674,15 +4674,15 @@ type MockedDatabase_IsBlockResumable_Call struct {
 
 // IsBlockResumable is a helper method to define mock.On call
 //   - ctx context.Context
-//   - workID string
-//   - stepID string
+//   - workID uuid.UUID
+//   - stepID uuid.UUID
 func (_e *MockedDatabase_Expecter) IsBlockResumable(ctx interface{}, workID interface{}, stepID interface{}) *MockedDatabase_IsBlockResumable_Call {
 	return &MockedDatabase_IsBlockResumable_Call{Call: _e.mock.On("IsBlockResumable", ctx, workID, stepID)}
 }
 
-func (_c *MockedDatabase_IsBlockResumable_Call) Run(run func(ctx context.Context, workID string, stepID string)) *MockedDatabase_IsBlockResumable_Call {
+func (_c *MockedDatabase_IsBlockResumable_Call) Run(run func(ctx context.Context, workID uuid.UUID, stepID uuid.UUID)) *MockedDatabase_IsBlockResumable_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(string), args[2].(string))
+		run(args[0].(context.Context), args[1].(uuid.UUID), args[2].(uuid.UUID))
 	})
 	return _c
 }
@@ -4692,27 +4692,27 @@ func (_c *MockedDatabase_IsBlockResumable_Call) Return(isResumable bool, startTi
 	return _c
 }
 
-func (_c *MockedDatabase_IsBlockResumable_Call) RunAndReturn(run func(context.Context, string, string) (bool, time.Time, error)) *MockedDatabase_IsBlockResumable_Call {
+func (_c *MockedDatabase_IsBlockResumable_Call) RunAndReturn(run func(context.Context, uuid.UUID, uuid.UUID) (bool, time.Time, error)) *MockedDatabase_IsBlockResumable_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // IsTaskPaused provides a mock function with given fields: ctx, workID
-func (_m *MockedDatabase) IsTaskPaused(ctx context.Context, workID string) (bool, error) {
+func (_m *MockedDatabase) IsTaskPaused(ctx context.Context, workID uuid.UUID) (bool, error) {
 	ret := _m.Called(ctx, workID)
 
 	var r0 bool
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string) (bool, error)); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) (bool, error)); ok {
 		return rf(ctx, workID)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, string) bool); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) bool); ok {
 		r0 = rf(ctx, workID)
 	} else {
 		r0 = ret.Get(0).(bool)
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
 		r1 = rf(ctx, workID)
 	} else {
 		r1 = ret.Error(1)
@@ -4728,14 +4728,14 @@ type MockedDatabase_IsTaskPaused_Call struct {
 
 // IsTaskPaused is a helper method to define mock.On call
 //   - ctx context.Context
-//   - workID string
+//   - workID uuid.UUID
 func (_e *MockedDatabase_Expecter) IsTaskPaused(ctx interface{}, workID interface{}) *MockedDatabase_IsTaskPaused_Call {
 	return &MockedDatabase_IsTaskPaused_Call{Call: _e.mock.On("IsTaskPaused", ctx, workID)}
 }
 
-func (_c *MockedDatabase_IsTaskPaused_Call) Run(run func(ctx context.Context, workID string)) *MockedDatabase_IsTaskPaused_Call {
+func (_c *MockedDatabase_IsTaskPaused_Call) Run(run func(ctx context.Context, workID uuid.UUID)) *MockedDatabase_IsTaskPaused_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(string))
+		run(args[0].(context.Context), args[1].(uuid.UUID))
 	})
 	return _c
 }
@@ -4745,7 +4745,7 @@ func (_c *MockedDatabase_IsTaskPaused_Call) Return(isPaused bool, err error) *Mo
 	return _c
 }
 
-func (_c *MockedDatabase_IsTaskPaused_Call) RunAndReturn(run func(context.Context, string) (bool, error)) *MockedDatabase_IsTaskPaused_Call {
+func (_c *MockedDatabase_IsTaskPaused_Call) RunAndReturn(run func(context.Context, uuid.UUID) (bool, error)) *MockedDatabase_IsTaskPaused_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -5795,11 +5795,11 @@ func (_c *MockedDatabase_SetTaskPaused_Call) RunAndReturn(run func(context.Conte
 }
 
 // SkipBlocksAfterRestarted provides a mock function with given fields: ctx, workID, startTime, blocks
-func (_m *MockedDatabase) SkipBlocksAfterRestarted(ctx context.Context, workID string, startTime time.Time, blocks []string) error {
+func (_m *MockedDatabase) SkipBlocksAfterRestarted(ctx context.Context, workID uuid.UUID, startTime time.Time, blocks []string) error {
 	ret := _m.Called(ctx, workID, startTime, blocks)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, time.Time, []string) error); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, time.Time, []string) error); ok {
 		r0 = rf(ctx, workID, startTime, blocks)
 	} else {
 		r0 = ret.Error(0)
@@ -5815,16 +5815,16 @@ type MockedDatabase_SkipBlocksAfterRestarted_Call struct {
 
 // SkipBlocksAfterRestarted is a helper method to define mock.On call
 //   - ctx context.Context
-//   - workID string
+//   - workID uuid.UUID
 //   - startTime time.Time
 //   - blocks []string
 func (_e *MockedDatabase_Expecter) SkipBlocksAfterRestarted(ctx interface{}, workID interface{}, startTime interface{}, blocks interface{}) *MockedDatabase_SkipBlocksAfterRestarted_Call {
 	return &MockedDatabase_SkipBlocksAfterRestarted_Call{Call: _e.mock.On("SkipBlocksAfterRestarted", ctx, workID, startTime, blocks)}
 }
 
-func (_c *MockedDatabase_SkipBlocksAfterRestarted_Call) Run(run func(ctx context.Context, workID string, startTime time.Time, blocks []string)) *MockedDatabase_SkipBlocksAfterRestarted_Call {
+func (_c *MockedDatabase_SkipBlocksAfterRestarted_Call) Run(run func(ctx context.Context, workID uuid.UUID, startTime time.Time, blocks []string)) *MockedDatabase_SkipBlocksAfterRestarted_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(string), args[2].(time.Time), args[3].([]string))
+		run(args[0].(context.Context), args[1].(uuid.UUID), args[2].(time.Time), args[3].([]string))
 	})
 	return _c
 }
@@ -5834,7 +5834,7 @@ func (_c *MockedDatabase_SkipBlocksAfterRestarted_Call) Return(err error) *Mocke
 	return _c
 }
 
-func (_c *MockedDatabase_SkipBlocksAfterRestarted_Call) RunAndReturn(run func(context.Context, string, time.Time, []string) error) *MockedDatabase_SkipBlocksAfterRestarted_Call {
+func (_c *MockedDatabase_SkipBlocksAfterRestarted_Call) RunAndReturn(run func(context.Context, uuid.UUID, time.Time, []string) error) *MockedDatabase_SkipBlocksAfterRestarted_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -6027,11 +6027,11 @@ func (_c *MockedDatabase_SwitchRejected_Call) RunAndReturn(run func(context.Cont
 }
 
 // TryUnpauseTask provides a mock function with given fields: ctx, workID
-func (_m *MockedDatabase) TryUnpauseTask(ctx context.Context, workID string) error {
+func (_m *MockedDatabase) TryUnpauseTask(ctx context.Context, workID uuid.UUID) error {
 	ret := _m.Called(ctx, workID)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, string) error); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) error); ok {
 		r0 = rf(ctx, workID)
 	} else {
 		r0 = ret.Error(0)
@@ -6047,14 +6047,14 @@ type MockedDatabase_TryUnpauseTask_Call struct {
 
 // TryUnpauseTask is a helper method to define mock.On call
 //   - ctx context.Context
-//   - workID string
+//   - workID uuid.UUID
 func (_e *MockedDatabase_Expecter) TryUnpauseTask(ctx interface{}, workID interface{}) *MockedDatabase_TryUnpauseTask_Call {
 	return &MockedDatabase_TryUnpauseTask_Call{Call: _e.mock.On("TryUnpauseTask", ctx, workID)}
 }
 
-func (_c *MockedDatabase_TryUnpauseTask_Call) Run(run func(ctx context.Context, workID string)) *MockedDatabase_TryUnpauseTask_Call {
+func (_c *MockedDatabase_TryUnpauseTask_Call) Run(run func(ctx context.Context, workID uuid.UUID)) *MockedDatabase_TryUnpauseTask_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(string))
+		run(args[0].(context.Context), args[1].(uuid.UUID))
 	})
 	return _c
 }
@@ -6064,17 +6064,17 @@ func (_c *MockedDatabase_TryUnpauseTask_Call) Return(err error) *MockedDatabase_
 	return _c
 }
 
-func (_c *MockedDatabase_TryUnpauseTask_Call) RunAndReturn(run func(context.Context, string) error) *MockedDatabase_TryUnpauseTask_Call {
+func (_c *MockedDatabase_TryUnpauseTask_Call) RunAndReturn(run func(context.Context, uuid.UUID) error) *MockedDatabase_TryUnpauseTask_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // UnpauseTaskBlock provides a mock function with given fields: ctx, workID, stepID
-func (_m *MockedDatabase) UnpauseTaskBlock(ctx context.Context, workID string, stepID string) error {
+func (_m *MockedDatabase) UnpauseTaskBlock(ctx context.Context, workID uuid.UUID, stepID uuid.UUID) error {
 	ret := _m.Called(ctx, workID, stepID)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, string) error); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID) error); ok {
 		r0 = rf(ctx, workID, stepID)
 	} else {
 		r0 = ret.Error(0)
@@ -6090,15 +6090,15 @@ type MockedDatabase_UnpauseTaskBlock_Call struct {
 
 // UnpauseTaskBlock is a helper method to define mock.On call
 //   - ctx context.Context
-//   - workID string
-//   - stepID string
+//   - workID uuid.UUID
+//   - stepID uuid.UUID
 func (_e *MockedDatabase_Expecter) UnpauseTaskBlock(ctx interface{}, workID interface{}, stepID interface{}) *MockedDatabase_UnpauseTaskBlock_Call {
 	return &MockedDatabase_UnpauseTaskBlock_Call{Call: _e.mock.On("UnpauseTaskBlock", ctx, workID, stepID)}
 }
 
-func (_c *MockedDatabase_UnpauseTaskBlock_Call) Run(run func(ctx context.Context, workID string, stepID string)) *MockedDatabase_UnpauseTaskBlock_Call {
+func (_c *MockedDatabase_UnpauseTaskBlock_Call) Run(run func(ctx context.Context, workID uuid.UUID, stepID uuid.UUID)) *MockedDatabase_UnpauseTaskBlock_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(string), args[2].(string))
+		run(args[0].(context.Context), args[1].(uuid.UUID), args[2].(uuid.UUID))
 	})
 	return _c
 }
@@ -6108,7 +6108,7 @@ func (_c *MockedDatabase_UnpauseTaskBlock_Call) Return(err error) *MockedDatabas
 	return _c
 }
 
-func (_c *MockedDatabase_UnpauseTaskBlock_Call) RunAndReturn(run func(context.Context, string, string) error) *MockedDatabase_UnpauseTaskBlock_Call {
+func (_c *MockedDatabase_UnpauseTaskBlock_Call) RunAndReturn(run func(context.Context, uuid.UUID, uuid.UUID) error) *MockedDatabase_UnpauseTaskBlock_Call {
 	_c.Call.Return(run)
 	return _c
 }

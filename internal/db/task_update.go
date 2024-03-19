@@ -315,7 +315,7 @@ func (db *PGCon) SetTaskBlocksPaused(ctx c.Context, workID string, steps []strin
 	return nil
 }
 
-func (db *PGCon) UnpauseTaskBlock(ctx c.Context, workID, stepID string) (err error) {
+func (db *PGCon) UnpauseTaskBlock(ctx c.Context, workID, stepID uuid.UUID) (err error) {
 	ctx, span := trace.StartSpan(ctx, "unpause_task_block")
 	defer span.End()
 
@@ -329,7 +329,7 @@ func (db *PGCon) UnpauseTaskBlock(ctx c.Context, workID, stepID string) (err err
 	return nil
 }
 
-func (db *PGCon) TryUnpauseTask(ctx c.Context, workID string) (err error) {
+func (db *PGCon) TryUnpauseTask(ctx c.Context, workID uuid.UUID) (err error) {
 	ctx, span := trace.StartSpan(ctx, "try_unpause_task")
 	defer span.End()
 
@@ -358,7 +358,7 @@ func (db *PGCon) TryUnpauseTask(ctx c.Context, workID string) (err error) {
 	return nil
 }
 
-func (db *PGCon) SkipBlocksAfterRestarted(ctx c.Context, workID string, startTime time.Time, blocks []string) (err error) {
+func (db *PGCon) SkipBlocksAfterRestarted(ctx c.Context, workID uuid.UUID, startTime time.Time, blocks []string) (err error) {
 	ctx, span := trace.StartSpan(ctx, "skip_blocks_after_restarted")
 	defer span.End()
 

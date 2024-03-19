@@ -282,6 +282,7 @@ func initBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *BlockRu
 		members:         block.Members(),
 		deadlines:       deadlines,
 		isReEntered:     isReEntry,
+		blockExist:      blockExists,
 		attachments:     block.BlockAttachments(),
 		currentExecutor: block.CurrentExecutorData(),
 	}, id)
@@ -329,6 +330,7 @@ type saveStepDTO struct {
 	attachments            []string
 	isReEntered            bool
 	currentExecutor        CurrentExecutorData
+	blockExist             bool
 }
 
 func (runCtx *BlockRunContext) saveStepInDB(ctx c.Context, dto *saveStepDTO, id uuid.UUID) (uuid.UUID, error) {
@@ -377,6 +379,7 @@ func (runCtx *BlockRunContext) saveStepInDB(ctx c.Context, dto *saveStepDTO, id 
 		Members:     dbMembers,
 		Deadlines:   dbDeadlines,
 		IsReEntry:   dto.isReEntered,
+		BlockExist:  dto.blockExist,
 		Attachments: len(dto.attachments),
 		CurrentExecutor: db.CurrentExecutorData{
 			GroupID:       dto.currentExecutor.GroupID,
@@ -463,7 +466,7 @@ func ProcessBlockWithEndMapping(ctx c.Context, name string, bl *entity.EriusFunc
 
 	runCtx.BlockRunResults = &BlockRunResults{}
 
-	blockProcessor := NewBlockProcessor(name, bl, runCtx, manual)
+	blockProcessor := newBlockProcessor(name, bl, runCtx, manual)
 
 	pErr := blockProcessor.ProcessBlock(ctx, 0)
 	if pErr != nil {

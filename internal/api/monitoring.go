@@ -17,7 +17,9 @@ import (
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
@@ -395,6 +397,14 @@ func (ae *Env) GetBlockState(w http.ResponseWriter, r *http.Request, blockID str
 	}
 }
 
+type startNodesParams struct {
+	workID             uuid.UUID
+	author, workNumber string
+	byOne              bool
+	params             *MonitoringTaskActionParams
+	tx                 db.Database
+}
+
 //nolint:gocyclo,gocognit //its ok here
 func (ae *Env) MonitoringTaskAction(w http.ResponseWriter, r *http.Request) {
 	ctx, span := trace.StartSpan(r.Context(), "monitoring_task_action")
@@ -480,7 +490,14 @@ func (ae *Env) MonitoringTaskAction(w http.ResponseWriter, r *http.Request) {
 		}
 
 	case taskEventStart:
-		err = ae.startProcess(ctx, ui.Name, workID.String(), req.WorkNumber, false, req.Params)
+		err = ae.startProcess(ctx, &startNodesParams{
+			workID:     workID,
+			author:     ui.Username,
+			workNumber: req.WorkNumber,
+			byOne:      false,
+			params:     req.Params,
+			tx:         txStorage,
+		})
 		if err != nil {
 			errorHandler.handleError(UnpauseTaskError, err)
 
@@ -494,7 +511,14 @@ func (ae *Env) MonitoringTaskAction(w http.ResponseWriter, r *http.Request) {
 		}
 
 	case taskEventStartByOne:
-		err = ae.startProcess(ctx, ui.Name, workID.String(), req.WorkNumber, true, req.Params)
+		err = ae.startProcess(ctx, &startNodesParams{
+			workID:     workID,
+			author:     ui.Username,
+			workNumber: req.WorkNumber,
+			byOne:      true,
+			params:     req.Params,
+			tx:         txStorage,
+		})
 		if err != nil {
 			errorHandler.handleError(UnpauseTaskError, err)
 
@@ -605,39 +629,40 @@ func (ae *Env) pauseTask(ctx context.Context, author, workID string, params *Mon
 	return nil
 }
 
-func (ae *Env) startProcess(ctx context.Context, author, workID, workNumber string, byOne bool, params *MonitoringTaskActionParams) error {
-	isPaused, err := ae.DB.IsTaskPaused(ctx, workID)
+func (ae *Env) startProcess(ctx context.Context, startParams *startNodesParams) error {
+	isPaused, err := ae.DB.IsTaskPaused(ctx, startParams.workID)
 	if err != nil {
 		return err
 	}
 
 	if !isPaused {
-		return errors.New("Can't unpause running task")
+		return errors.New("can't unpause running task")
 	}
 
-	for i := range *params.Steps {
-		restartErr := ae.restartNode(ctx, workID, workNumber, (*params.Steps)[i], byOne)
+	for i := range *startParams.params.Steps {
+		restartErr := ae.restartNode(ctx, startParams.workID, startParams.workNumber,
+			(*startParams.params.Steps)[i], startParams.author, startParams.byOne, startParams.tx)
 		if restartErr != nil {
 			return restartErr
 		}
 	}
 
-	err = ae.DB.TryUnpauseTask(ctx, workID)
+	err = ae.DB.TryUnpauseTask(ctx, startParams.workID)
 	if err != nil {
 		return err
 	}
 
 	jsonParams := json.RawMessage{}
-	if params != nil {
-		jsonParams, err = json.Marshal(params)
+	if startParams.params != nil {
+		jsonParams, err = json.Marshal(startParams.params)
 		if err != nil {
 			return err
 		}
 	}
 
 	_, err = ae.DB.CreateTaskEvent(ctx, &entity.CreateTaskEvent{
-		WorkID:    workID,
-		Author:    author,
+		WorkID:    startParams.workID.String(),
+		Author:    startParams.author,
 		EventType: taskEventStart,
 		Params:    jsonParams,
 	})
@@ -648,17 +673,22 @@ func (ae *Env) startProcess(ctx context.Context, author, workID, workNumber stri
 	return nil
 }
 
-func (ae *Env) restartNode(ctx context.Context, workID, workNumber, step string, byOne bool) (err error) {
-	isResumable, t, resumableErr := ae.DB.IsBlockResumable(ctx, workID, step)
+func (ae *Env) restartNode(ctx context.Context, workID uuid.UUID, workNumber, stepName, login string, byOne bool, tx db.Database) (err error) {
+	dbStep, stepErr := ae.DB.GetTaskStepByName(ctx, workID, stepName)
+	if stepErr != nil {
+		return stepErr
+	}
+
+	isResumable, blockStartTime, resumableErr := ae.DB.IsBlockResumable(ctx, workID, dbStep.ID)
 	if resumableErr != nil {
 		return resumableErr
 	}
 
 	if !isResumable {
-		return fmt.Errorf("can't unpause running task block: %s", step)
+		return fmt.Errorf("can't unpause running task block: %s", stepName)
 	}
 
-	blockData, blockErr := ae.DB.GetBlockDataFromVersion(ctx, workNumber, step)
+	blockData, blockErr := ae.DB.GetBlockDataFromVersion(ctx, workNumber, stepName)
 	if blockErr != nil {
 		return blockErr
 	}
@@ -668,18 +698,65 @@ func (ae *Env) restartNode(ctx context.Context, workID, workNumber, step string,
 		return skipErr
 	}
 
-	dbSkipErr := ae.DB.SkipBlocksAfterRestarted(ctx, workID, t, nodesToSkip)
+	dbSkipErr := ae.DB.SkipBlocksAfterRestarted(ctx, workID, blockStartTime, nodesToSkip)
 	if dbSkipErr != nil {
 		return dbSkipErr
 	}
 
-	blockProcessor := pipeline.NewBlockProcessor(step, blockData,
-		&pipeline.BlockRunContext{
-			UpdateData: &script.BlockUpdateData{Action: string(entity.TaskUpdateActionReload)},
-			Productive: true, OnceProductive: byOne,
-		}, true)
+	unpErr := ae.DB.UnpauseTaskBlock(ctx, workID, dbStep.ID)
+	if unpErr != nil {
+		return unpErr
+	}
 
-	processErr := blockProcessor.ProcessBlock(ctx, 0)
+	dbTask, err := ae.DB.GetTask(
+		ctx,
+		[]string{""},
+		[]string{""},
+		"",
+		workNumber,
+	)
+
+	storage, getErr := ae.DB.GetVariableStorageForStep(ctx, workID, workNumber)
+	if getErr != nil {
+		return getErr
+	}
+
+	_, processErr := pipeline.ProcessBlockWithEndMapping(ctx, stepName, blockData, &pipeline.BlockRunContext{
+		TaskID:      dbTask.ID,
+		WorkNumber:  workNumber,
+		WorkTitle:   dbTask.Name,
+		Initiator:   dbTask.Author,
+		VarStore:    storage,
+		Delegations: human_tasks.Delegations{},
+
+		Services: pipeline.RunContextServices{
+			HTTPClient:    ae.HTTPClient,
+			Sender:        ae.Mail,
+			Kafka:         ae.Kafka,
+			People:        ae.People,
+			ServiceDesc:   ae.ServiceDesc,
+			FunctionStore: ae.FunctionStore,
+			HumanTasks:    ae.HumanTasks,
+			Integrations:  ae.Integrations,
+			FileRegistry:  ae.FileRegistry,
+			FaaS:          ae.FaaS,
+			HrGate:        ae.HrGate,
+			Scheduler:     ae.Scheduler,
+			SLAService:    ae.SLAService,
+			Storage:       tx,
+		},
+		BlockRunResults: &pipeline.BlockRunResults{},
+
+		UpdateData: &script.BlockUpdateData{
+			Action:  string(entity.TaskUpdateActionReload),
+			ByLogin: login},
+
+		Productive:     true,
+		OnceProductive: byOne,
+
+		IsTest:    dbTask.IsTest,
+		NotifName: dbTask.Name,
+	}, false)
 	if processErr != nil {
 		return processErr
 	}

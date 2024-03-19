@@ -18,15 +18,15 @@ import (
 
 var ErrCantGetNextStep = errors.New("can't get next step")
 
-type BlockProcessor struct {
+type blockProcessor struct {
 	name   string
 	bl     *entity.EriusFunc
 	runCtx *BlockRunContext
 	manual bool
 }
 
-func NewBlockProcessor(name string, bl *entity.EriusFunc, runCtx *BlockRunContext, manual bool) BlockProcessor {
-	return BlockProcessor{
+func newBlockProcessor(name string, bl *entity.EriusFunc, runCtx *BlockRunContext, manual bool) blockProcessor {
+	return blockProcessor{
 		name:   name,
 		bl:     bl,
 		runCtx: runCtx,
@@ -35,7 +35,7 @@ func NewBlockProcessor(name string, bl *entity.EriusFunc, runCtx *BlockRunContex
 }
 
 //nolint:gocognit,gocyclo,nestif //it's ok
-func (p *BlockProcessor) ProcessBlock(ctx context.Context, its int) error {
+func (p *blockProcessor) ProcessBlock(ctx context.Context, its int) error {
 	its++
 	if its > 10 {
 		return errors.New("took too long")
@@ -153,7 +153,7 @@ func (p *BlockProcessor) ProcessBlock(ctx context.Context, its int) error {
 	return nil
 }
 
-func (p *BlockProcessor) handleError(ctx context.Context, log logger.Logger, err error) error {
+func (p *blockProcessor) handleError(ctx context.Context, log logger.Logger, err error) error {
 	if err != nil && !errors.Is(err, UserIsNotPartOfProcessErr{}) {
 		log.WithError(err).Error("couldn't process block")
 
@@ -188,7 +188,7 @@ func (runCtx *BlockRunContext) updateStatusByStep(ctx context.Context, status Ta
 	return err
 }
 
-func (p *BlockProcessor) processActiveBlocks(ctx context.Context, activeBlocks []string, its int, updateVarStore bool) error {
+func (p *blockProcessor) processActiveBlocks(ctx context.Context, activeBlocks []string, its int, updateVarStore bool) error {
 	for _, blockName := range activeBlocks {
 		blockData, blockErr := p.runCtx.Services.Storage.GetBlockDataFromVersion(ctx, p.runCtx.WorkNumber, blockName)
 		if blockErr != nil {
@@ -208,7 +208,7 @@ func (p *BlockProcessor) processActiveBlocks(ctx context.Context, activeBlocks [
 			ctxCopy.VarStore = storage
 		}
 
-		processor := NewBlockProcessor(blockName, blockData, ctxCopy, updateVarStore)
+		processor := newBlockProcessor(blockName, blockData, ctxCopy, updateVarStore)
 
 		err := processor.ProcessBlock(ctx, its)
 		if err != nil {
@@ -221,7 +221,7 @@ func (p *BlockProcessor) processActiveBlocks(ctx context.Context, activeBlocks [
 	return nil
 }
 
-func (p *BlockProcessor) updateTaskExecDeadline(ctx context.Context) error {
+func (p *blockProcessor) updateTaskExecDeadline(ctx context.Context) error {
 	sc, err := p.runCtx.Services.Storage.GetVersionByWorkNumber(ctx, p.runCtx.WorkNumber)
 	if err != nil {
 		return err
@@ -258,7 +258,7 @@ func (p *BlockProcessor) updateTaskExecDeadline(ctx context.Context) error {
 	return p.runCtx.Services.Storage.SetExecDeadline(ctx, p.runCtx.TaskID.String(), deadline)
 }
 
-func (p *BlockProcessor) handleStatus(ctx context.Context, status int) error {
+func (p *blockProcessor) handleStatus(ctx context.Context, status int) error {
 	switch status {
 	case db.RunStatusCreated:
 		if changeErr := p.runCtx.updateTaskStatus(ctx, db.RunStatusRunning, "", db.SystemLogin); changeErr != nil {

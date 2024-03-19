@@ -86,8 +86,6 @@ func (gb *ExecutablePipeline) GetStatus() Status {
 	switch {
 	case gb.IsOver():
 		return StatusFinished
-	// case gb.ReadyToStart():
-	// 	return StatusReady
 	case len(gb.ActiveBlocks) != 0:
 		return StatusRunning
 	default:

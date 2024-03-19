@@ -593,7 +593,7 @@ func TestProcessBlock(t *testing.T) {
 	}
 	for _, tt := range tests {
 		metBlocks = metBlocks[:0]
-		latestBlock = "aaa"
+		latestBlock = ""
 
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
