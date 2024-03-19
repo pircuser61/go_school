@@ -38,7 +38,7 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 	messageString := string(messageTmp)
 
 	log.WithField("funcName", "FunctionReturnHandler").
-		WithField("message", messageString).
+		WithField("body", messageString).
 		Info("start handle message from kafka")
 
 	ctx = logger.WithLogger(ctx, log)
@@ -201,7 +201,7 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 	runCtx.NotifyEvents(ctx)
 
 	log.WithField("funcName", "FunctionReturnHandler").
-		WithField("message", messageString).
+		WithField("body", messageString).
 		Info("message from kafka successfully handled")
 
 	return nil
