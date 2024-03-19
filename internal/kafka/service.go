@@ -34,7 +34,7 @@ type Service struct {
 
 //nolint:gocritic //если тут удобно по значению значит пусть будет по значению
 func NewService(log logger.Logger, cfg Config) (*Service, error) {
-	topics := []string{cfg.ProducerTopic, cfg.ConsumerTopic}
+	topics := []string{cfg.ProducerTopicSD, cfg.ProducerTopic, cfg.ConsumerTopic}
 
 	if len(cfg.Brokers) == 0 || len(topics) == 0 {
 		return nil, errors.New("brokers or topics is empty")
@@ -56,12 +56,12 @@ func NewService(log logger.Logger, cfg Config) (*Service, error) {
 		return nil, fmt.Errorf("failed to create client: %w", err)
 	}
 
-	producer, err := msgkit.NewProducer(saramaClient, cfg.ProducerTopic)
+	producerToSD, err := msgkit.NewProducer(saramaClient, cfg.ProducerTopicSD)
 	if err != nil {
 		return nil, err
 	}
 
-	producerToSD, err := msgkit.NewProducer(saramaClient, cfg.ProducerTopicSD)
+	producer, err := msgkit.NewProducer(saramaClient, cfg.ProducerTopic)
 	if err != nil {
 		return nil, err
 	}
