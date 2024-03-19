@@ -568,7 +568,7 @@ func (gb *GoExecutionBlock) makeExpectedEvents(ctx context.Context, runCtx *Bloc
 			NodeStatus:    gb.GetStatus(),
 			NodeType:      BlockGoExecutionID,
 			SLA:           deadline.Unix(),
-			ToAddLogins:   getSliceFromMapOfStrings(gb.State.Executors),
+			ToAddLogins:   getSliceFromMap(gb.State.Executors),
 		})
 		if err != nil {
 			return err

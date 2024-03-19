@@ -475,7 +475,7 @@ func (gb *GoFormBlock) handleNotifications(ctx c.Context) error {
 		return nil
 	}
 
-	executors := getSliceFromMapOfStrings(gb.State.Executors)
+	executors := getSliceFromMap(gb.State.Executors)
 
 	fileNames := make([]string, 0)
 	emails := make(map[string]mail.Template, 0)

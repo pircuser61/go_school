@@ -140,7 +140,7 @@ func (gb *GoSignBlock) handleSignature(ctx c.Context, login string) error {
 
 	if updateParams.Decision == SignDecisionError {
 		emails := make([]string, 0, len(gb.State.Signers))
-		logins := getSliceFromMapOfStrings(gb.State.Signers)
+		logins := getSliceFromMap(gb.State.Signers)
 
 		for i := range logins {
 			eml, err := gb.RunContext.Services.People.GetUserEmail(ctx, logins[i])
@@ -352,7 +352,7 @@ func (gb *GoSignBlock) handleBreachedSLA(ctx c.Context) error {
 
 	if gb.State.SLA != nil {
 		emails := make([]string, 0, len(gb.State.Signers))
-		logins := getSliceFromMapOfStrings(gb.State.Signers)
+		logins := getSliceFromMap(gb.State.Signers)
 
 		usersNotToNotify := gb.getUsersNotToNotifySet()
 

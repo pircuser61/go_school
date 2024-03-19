@@ -229,6 +229,30 @@ func (gb *GoFormBlock) handleRequestFillForm(ctx context.Context, data *script.B
 		return err
 	}
 
+	status, _, _ := gb.GetTaskHumanStatus()
+
+	deadline, err := gb.getDeadline(ctx, gb.State.WorkType)
+	if err != nil {
+		return err
+	}
+
+	kafkaEvent, err := gb.RunContext.MakeNodeKafkaEvent(ctx, &MakeNodeKafkaEvent{
+		EventName:      string(entity.TaskUpdateActionRequestFillForm),
+		NodeName:       gb.Name,
+		NodeShortName:  gb.ShortName,
+		HumanStatus:    status,
+		NodeStatus:     gb.GetStatus(),
+		NodeType:       BlockGoFormID,
+		SLA:            deadline.Unix(),
+		ToAddLogins:    []string{data.ByLogin},
+		ToRemoveLogins: getSliceFromMap(getDifMaps(gb.State.Executors, map[string]struct{}{data.ByLogin: {}})),
+	})
+	if err != nil {
+		return err
+	}
+
+	gb.happenedKafkaEvents = append(gb.happenedKafkaEvents, kafkaEvent)
+
 	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputFormExecutor], personData)
 	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputFormBody], gb.State.ApplicationBody)
 
@@ -301,7 +325,7 @@ func (gb *GoFormBlock) handleBreachedSLA(ctx context.Context) error {
 
 	if gb.State.SLA >= 8 {
 		emails := make([]string, 0, len(gb.State.Executors))
-		logins := getSliceFromMapOfStrings(gb.State.Executors)
+		logins := getSliceFromMap(gb.State.Executors)
 
 		for i := range logins {
 			executorEmail, err := gb.RunContext.Services.People.GetUserEmail(ctx, logins[i])
@@ -357,7 +381,7 @@ func (gb *GoFormBlock) handleHalfSLABreached(ctx context.Context) error {
 	}
 
 	if gb.State.SLA >= 8 {
-		logins := getSliceFromMapOfStrings(gb.State.Executors)
+		logins := getSliceFromMap(gb.State.Executors)
 		emails := gb.mapLoginsToEmails(ctx, fn, logins)
 
 		slaInfoPtr, getSLAInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(
@@ -436,7 +460,7 @@ func (gb *GoFormBlock) formExecutorStartWork(ctx context.Context) (err error) {
 	currentLogin := gb.RunContext.UpdateData.ByLogin
 	_, executorFound := gb.State.Executors[currentLogin]
 
-	_, isDelegate := gb.RunContext.Delegations.FindDelegatorFor(currentLogin, getSliceFromMapOfStrings(gb.State.Executors))
+	_, isDelegate := gb.RunContext.Delegations.FindDelegatorFor(currentLogin, getSliceFromMap(gb.State.Executors))
 	if !(executorFound || isDelegate) {
 		return NewUserIsNotPartOfProcessErr()
 	}
@@ -472,9 +496,35 @@ func (gb *GoFormBlock) formExecutorStartWork(ctx context.Context) (err error) {
 
 	gb.State.IncreaseSLA(workHours)
 
-	if err = gb.emailGroupExecutors(ctx, gb.RunContext.UpdateData.ByLogin, executorLogins); err != nil {
+	byLogin := gb.RunContext.UpdateData.ByLogin
+
+	if err = gb.emailGroupExecutors(ctx, byLogin, executorLogins); err != nil {
 		return nil
 	}
+
+	status, _, _ := gb.GetTaskHumanStatus()
+
+	deadline, err := gb.getDeadline(ctx, gb.State.WorkType)
+	if err != nil {
+		return err
+	}
+
+	kafkaEvent, err := gb.RunContext.MakeNodeKafkaEvent(ctx, &MakeNodeKafkaEvent{
+		EventName:      string(entity.TaskUpdateActionFormExecutorStartWork),
+		NodeName:       gb.Name,
+		NodeShortName:  gb.ShortName,
+		HumanStatus:    status,
+		NodeStatus:     gb.GetStatus(),
+		NodeType:       BlockGoFormID,
+		SLA:            deadline.Unix(),
+		ToAddLogins:    []string{byLogin},
+		ToRemoveLogins: getSliceFromMap(getDifMaps(executorLogins, map[string]struct{}{byLogin: {}})),
+	})
+	if err != nil {
+		return err
+	}
+
+	gb.happenedKafkaEvents = append(gb.happenedKafkaEvents, kafkaEvent)
 
 	return nil
 }
@@ -485,7 +535,7 @@ func (a *FormData) IncreaseSLA(addSLA int) {
 
 func (gb *GoFormBlock) emailGroupExecutors(ctx context.Context, loginTakenInWork string, logins map[string]struct{}) (err error) {
 	log := logger.GetLogger(ctx)
-	executors := getSliceFromMapOfStrings(logins)
+	executors := getSliceFromMap(logins)
 
 	emails := make([]string, 0, len(executors))
 

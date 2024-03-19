@@ -519,7 +519,7 @@ func (gb *GoSignBlock) handleNotifications(ctx context.Context) error {
 		return nil
 	}
 
-	signers := getSliceFromMapOfStrings(gb.State.Signers)
+	signers := getSliceFromMap(gb.State.Signers)
 
 	description, files, err := gb.RunContext.makeNotificationDescription(gb.Name)
 	if err != nil {
@@ -964,7 +964,7 @@ func (gb *GoSignBlock) makeExpectedEvents(ctx context.Context, runCtx *BlockRunC
 		NodeStatus:    gb.GetStatus(),
 		NodeType:      BlockGoSignID,
 		SLA:           deadline.Unix(),
-		ToAddLogins:   getSliceFromMapOfStrings(gb.State.Signers),
+		ToAddLogins:   getSliceFromMap(gb.State.Signers),
 	})
 	if err != nil {
 		return err

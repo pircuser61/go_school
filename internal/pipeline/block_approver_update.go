@@ -117,7 +117,7 @@ func (gb *GoApproverBlock) handleBreachedSLA(ctx context.Context) error {
 	if gb.State.SLA >= 8 {
 		seenAdditionalApprovers := map[string]bool{}
 
-		logins := getSliceFromMapOfStrings(gb.State.Approvers)
+		logins := getSliceFromMap(gb.State.Approvers)
 
 		for _, additionalApprover := range gb.State.AdditionalApprovers {
 			// check if approver has not decisioned, and we did not see approver before
@@ -206,7 +206,7 @@ func (gb *GoApproverBlock) checkBreachedSLA(ctx context.Context) error {
 	log := logger.GetLogger(ctx)
 
 	emails := make([]string, 0, len(gb.State.Approvers)+len(gb.State.AdditionalApprovers))
-	logins := append(getSliceFromMapOfStrings(gb.State.Approvers), gb.getAdditionalApprovers()...)
+	logins := append(getSliceFromMap(gb.State.Approvers), gb.getAdditionalApprovers()...)
 
 	delegations, err := gb.RunContext.Services.HumanTasks.GetDelegationsByLogins(ctx, logins)
 	if err != nil {
@@ -519,7 +519,7 @@ func (gb *GoApproverBlock) HandleBreachedSLARequestAddInfo(ctx context.Context) 
 		return stopErr
 	}
 
-	approvers := getSliceFromMapOfStrings(gb.State.Approvers)
+	approvers := getSliceFromMap(gb.State.Approvers)
 
 	delegates, getDelegationsErr := gb.RunContext.Services.HumanTasks.GetDelegationsByLogins(ctx, approvers)
 	if getDelegationsErr != nil {
@@ -589,7 +589,7 @@ func (gb *GoApproverBlock) toEditApplication(ctx context.Context, updateParams a
 
 	_, approverFound := gb.State.Approvers[gb.RunContext.UpdateData.ByLogin]
 	delegateFor, isDelegate := gb.RunContext.Delegations.FindDelegatorFor(
-		gb.RunContext.UpdateData.ByLogin, getSliceFromMapOfStrings(gb.State.Approvers))
+		gb.RunContext.UpdateData.ByLogin, getSliceFromMap(gb.State.Approvers))
 
 	if !(approverFound || isDelegate) && gb.RunContext.UpdateData.ByLogin != AutoApprover {
 		return NewUserIsNotPartOfProcessErr()

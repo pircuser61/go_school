@@ -178,7 +178,7 @@ func (gb *GoFormBlock) makeNodeStartEvent(ctx context.Context, runCtx *BlockRunC
 		NodeStatus:    gb.GetStatus(),
 		NodeType:      BlockGoFormID,
 		SLA:           deadline.Unix(),
-		ToAddLogins:   getSliceFromMapOfStrings(gb.State.Executors),
+		ToAddLogins:   getSliceFromMap(gb.State.Executors),
 	})
 	if err != nil {
 		return err

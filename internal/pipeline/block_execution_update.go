@@ -193,7 +193,7 @@ func (gb *GoExecutionBlock) changeExecutor(ctx context.Context) (err error) {
 	currentLogin := gb.RunContext.UpdateData.ByLogin
 	_, executorFound := gb.State.Executors[currentLogin]
 
-	delegateFor, isDelegate := gb.RunContext.Delegations.FindDelegatorFor(currentLogin, getSliceFromMapOfStrings(gb.State.Executors))
+	delegateFor, isDelegate := gb.RunContext.Delegations.FindDelegatorFor(currentLogin, getSliceFromMap(gb.State.Executors))
 	if !(executorFound || isDelegate) {
 		return NewUserIsNotPartOfProcessErr()
 	}
@@ -291,7 +291,7 @@ func (gb *GoExecutionBlock) checkBreachedSLA(ctx context.Context) error {
 	log := logger.GetLogger(ctx)
 
 	emails := make([]string, 0, len(gb.State.Executors))
-	logins := getSliceFromMapOfStrings(gb.State.Executors)
+	logins := getSliceFromMap(gb.State.Executors)
 
 	delegations, err := gb.RunContext.Services.HumanTasks.GetDelegationsByLogins(ctx, logins)
 	if err != nil {
@@ -361,7 +361,7 @@ func (gb *GoExecutionBlock) handleHalfSLABreached(ctx context.Context) {
 
 func (gb *GoExecutionBlock) sendNotification(ctx context.Context, log logger.Logger, fn string) error {
 	emails := make([]string, 0, len(gb.State.Executors))
-	logins := getSliceFromMapOfStrings(gb.State.Executors)
+	logins := getSliceFromMap(gb.State.Executors)
 
 	delegations, err := gb.RunContext.Services.HumanTasks.GetDelegationsByLogins(ctx, logins)
 	if err != nil {
@@ -631,7 +631,7 @@ func (gb *GoExecutionBlock) HandleBreachedSLARequestAddInfo(ctx context.Context)
 		return stopErr
 	}
 
-	executors := getSliceFromMapOfStrings(gb.State.Executors)
+	executors := getSliceFromMap(gb.State.Executors)
 
 	delegates, getDelegationsErr := gb.RunContext.Services.HumanTasks.GetDelegationsByLogins(ctx, executors)
 	if getDelegationsErr != nil {
@@ -849,7 +849,7 @@ func (a *ExecutionData) SetRequestExecutionInfo(
 	_, executorFound := a.Executors[login]
 	delegateFor, isDelegate := delegations.FindDelegatorFor(
 		login,
-		getSliceFromMapOfStrings(a.Executors),
+		getSliceFromMap(a.Executors),
 	)
 
 	if !(executorFound || isDelegate) && in.ReqType == RequestInfoQuestion {
@@ -882,7 +882,7 @@ func (gb *GoExecutionBlock) executorStartWork(ctx context.Context) (err error) {
 
 	delegateFor, isDelegate := gb.RunContext.Delegations.FindDelegatorFor(
 		currentLogin,
-		getSliceFromMapOfStrings(gb.State.Executors),
+		getSliceFromMap(gb.State.Executors),
 	)
 	if !(executorFound || isDelegate) {
 		return NewUserIsNotPartOfProcessErr()
@@ -941,7 +941,7 @@ func (gb *GoExecutionBlock) executorStartWork(ctx context.Context) (err error) {
 func (gb *GoExecutionBlock) emailGroupExecutors(ctx context.Context, loginTakenInWork string, logins map[string]struct{}) (err error) {
 	log := logger.GetLogger(ctx)
 
-	executors := getSliceFromMapOfStrings(logins)
+	executors := getSliceFromMap(logins)
 	log.WithField("func", "emailGroupExecutors").WithField("logins", logins)
 
 	delegates, err := gb.RunContext.Services.HumanTasks.GetDelegationsByLogins(ctx, executors)
@@ -1238,7 +1238,7 @@ func (gb *GoExecutionBlock) toEditApplication(ctx context.Context) (err error) {
 
 	delegateFor, isDelegate := gb.RunContext.Delegations.FindDelegatorFor(
 		byLogin,
-		getSliceFromMapOfStrings(gb.State.Executors),
+		getSliceFromMap(gb.State.Executors),
 	)
 	if !(executorFound || isDelegate) {
 		return NewUserIsNotPartOfProcessErr()

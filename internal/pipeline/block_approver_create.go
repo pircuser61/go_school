@@ -155,7 +155,7 @@ func (gb *GoApproverBlock) makeExpectedEvents(ctx context.Context, runCtx *Block
 			NodeType:      BlockGoApproverID,
 			SLA:           deadline.Unix(),
 			Rule:          gb.State.ApprovementRule.String(),
-			ToAddLogins:   getSliceFromMapOfStrings(gb.State.Approvers),
+			ToAddLogins:   getSliceFromMap(gb.State.Approvers),
 		})
 		if err != nil {
 			return err
