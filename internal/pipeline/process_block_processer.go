@@ -95,8 +95,9 @@ func (p *blockProcessor) ProcessBlock(ctx context.Context, its int) error {
 	}
 
 	newEvents := block.GetNewEvents()
-	newKafkaEvents := block.GetNewKafkaEvents()
 	p.runCtx.BlockRunResults.NodeEvents = append(p.runCtx.BlockRunResults.NodeEvents, newEvents...)
+
+	newKafkaEvents := block.GetNewKafkaEvents()
 	p.runCtx.BlockRunResults.NodeKafkaEvents = append(p.runCtx.BlockRunResults.NodeKafkaEvents, newKafkaEvents...)
 
 	isArchived, err := p.runCtx.Services.Storage.CheckIsArchived(ctx, p.runCtx.TaskID)

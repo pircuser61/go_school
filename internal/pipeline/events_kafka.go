@@ -67,6 +67,7 @@ func (runCtx *BlockRunContext) MakeNodeKafkaEvent(ctx c.Context, dto *MakeNodeKa
 func (runCtx BlockRunContext) notifyKafkaEvents(ctx c.Context, log logger.Logger) {
 	for i := range runCtx.BlockRunResults.NodeKafkaEvents {
 		event := runCtx.BlockRunResults.NodeKafkaEvents[i]
+
 		err := runCtx.Services.Kafka.ProduceEventMessage(ctx, &event)
 		if err != nil {
 			log.WithError(err).Error(fmt.Sprintf("couldn't produce message: %+v", event))
