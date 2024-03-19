@@ -946,7 +946,32 @@ func (gb *GoSignBlock) makeExpectedEvents(ctx context.Context, runCtx *BlockRunC
 		return err
 	}
 
+	workType := ""
+	if gb.State.WorkType != nil {
+		workType = *gb.State.WorkType
+	}
+
+	deadline, err := gb.getDeadline(ctx, workType)
+	if err != nil {
+		return err
+	}
+
+	kafkaEvent, err := runCtx.MakeNodeKafkaEvent(ctx, &MakeNodeKafkaEvent{
+		EventName:     eventStart,
+		NodeName:      name,
+		NodeShortName: ef.ShortTitle,
+		HumanStatus:   status,
+		NodeStatus:    gb.GetStatus(),
+		NodeType:      BlockGoSignID,
+		SLA:           deadline.Unix(),
+		ToAddLogins:   getSliceFromMapOfStrings(gb.State.Signers),
+	})
+	if err != nil {
+		return err
+	}
+
 	gb.happenedEvents = append(gb.happenedEvents, event)
+	gb.happenedKafkaEvents = append(gb.happenedKafkaEvents, kafkaEvent)
 
 	return nil
 }

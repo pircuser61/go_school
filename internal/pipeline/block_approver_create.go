@@ -74,14 +74,14 @@ func (gb *GoApproverBlock) load(
 	name string,
 	ef *entity.EriusFunc,
 ) (reEntry bool, err error) {
-	if err := gb.loadState(rawState); err != nil {
+	if err = gb.loadState(rawState); err != nil {
 		return false, err
 	}
 
 	reEntry = runCtx.UpdateData == nil
 
 	if reEntry {
-		err := gb.reentryMakeExpectedEvents(ctx, runCtx, name, ef)
+		err = gb.reentryMakeExpectedEvents(ctx, runCtx, name, ef)
 		if err != nil {
 			return false, err
 		}
@@ -101,9 +101,7 @@ func (gb *GoApproverBlock) init(ctx context.Context, runCtx *BlockRunContext, na
 	if err != nil {
 		return err
 	}
-	// TODO: выпилить когда сделаем циклы
-	// это для возврата на доработку при которой мы создаем новый процесс
-	// и пытаемся взять решение из прошлого процесса
+
 	gb.setPrevDecision(ctx)
 
 	return nil
@@ -143,12 +141,19 @@ func (gb *GoApproverBlock) makeExpectedEvents(ctx context.Context, runCtx *Block
 			return err
 		}
 
-		kafkaEvent, err := runCtx.MakeNodeKafkaStartEvent(ctx, &MakeNodeStartKafkaEvent{
+		deadline, err := gb.getDeadline(ctx, gb.State.WorkType)
+		if err != nil {
+			return err
+		}
+
+		kafkaEvent, err := runCtx.MakeNodeKafkaEvent(ctx, &MakeNodeKafkaEvent{
+			EventName:     eventStart,
 			NodeName:      name,
 			NodeShortName: ef.ShortTitle,
 			HumanStatus:   status,
 			NodeStatus:    gb.GetStatus(),
 			NodeType:      BlockGoApproverID,
+			SLA:           deadline.Unix(),
 			Rule:          gb.State.ApprovementRule.String(),
 			ToAddLogins:   getSliceFromMapOfStrings(gb.State.Approvers),
 		})
@@ -529,7 +534,28 @@ func (gb *GoApproverBlock) trySetPreviousDecision(ctx context.Context) (isPrevDe
 			return false
 		}
 
+		deadline, errDeadline := gb.getDeadline(ctx, gb.State.WorkType)
+		if errDeadline != nil {
+			return false
+		}
+
+		kafkaEvent, eventErr := gb.RunContext.MakeNodeKafkaEvent(ctx, &MakeNodeKafkaEvent{
+			EventName:      eventEnd,
+			NodeName:       gb.Name,
+			NodeShortName:  gb.ShortName,
+			HumanStatus:    status,
+			NodeStatus:     gb.GetStatus(),
+			NodeType:       BlockGoApproverID,
+			SLA:            deadline.Unix(),
+			ToRemoveLogins: []string{},
+		})
+
+		if eventErr != nil {
+			return false
+		}
+
 		gb.happenedEvents = append(gb.happenedEvents, event)
+		gb.happenedKafkaEvents = append(gb.happenedKafkaEvents, kafkaEvent)
 	}
 
 	return true

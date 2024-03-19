@@ -59,7 +59,23 @@ func (gb *GoExecutionBlock) Update(ctx context.Context) (interface{}, error) {
 			return nil, eventErr
 		}
 
+		kafkaEvent, eventErr := gb.RunContext.MakeNodeKafkaEvent(ctx, &MakeNodeKafkaEvent{
+			EventName:      eventEnd,
+			NodeName:       gb.Name,
+			NodeShortName:  gb.ShortName,
+			HumanStatus:    status,
+			NodeStatus:     gb.GetStatus(),
+			NodeType:       BlockGoExecutionID,
+			SLA:            deadline.Unix(),
+			ToRemoveLogins: []string{},
+		})
+
+		if eventErr != nil {
+			return nil, eventErr
+		}
+
 		gb.happenedEvents = append(gb.happenedEvents, event)
+		gb.happenedKafkaEvents = append(gb.happenedKafkaEvents, kafkaEvent)
 	}
 
 	return nil, nil

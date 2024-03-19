@@ -40,24 +40,6 @@ type MakeNodeEndEventArgs struct {
 	NodeStatus    Status
 }
 
-type MakeNodeStartKafkaEvent struct {
-	NodeName      string
-	NodeShortName string
-	HumanStatus   TaskHumanStatus
-	NodeStatus    Status
-	NodeType      string
-	Rule          string
-	ToAddLogins   []string
-}
-
-type MakeNodeEndKafkaEvent struct {
-	NodeName      string
-	NodeShortName string
-	HumanStatus   TaskHumanStatus
-	NodeStatus    Status
-	ToRemove      []string
-}
-
 func (runCtx *BlockRunContext) MakeNodeStartEvent(ctx c.Context, args MakeNodeStartEventArgs) (e.NodeEvent, error) {
 	if args.HumanStatus == "" {
 		hStatus, err := runCtx.Services.Storage.GetTaskHumanStatus(ctx, runCtx.TaskID)
@@ -76,38 +58,6 @@ func (runCtx *BlockRunContext) MakeNodeStartEvent(ctx c.Context, args MakeNodeSt
 		NodeStart:     time.Now().Format(time.RFC3339),
 		TaskStatus:    string(args.HumanStatus),
 		NodeStatus:    string(args.NodeStatus),
-	}, nil
-}
-
-func (runCtx *BlockRunContext) MakeNodeKafkaStartEvent(ctx c.Context, dto *MakeNodeStartKafkaEvent) (e.NodeKafkaEvent, error) {
-	if dto.HumanStatus == "" {
-		hStatus, err := runCtx.Services.Storage.GetTaskHumanStatus(ctx, runCtx.TaskID)
-		if err != nil {
-			return e.NodeKafkaEvent{}, nil
-		}
-
-		dto.HumanStatus = TaskHumanStatus(hStatus)
-	}
-
-	return e.NodeKafkaEvent{
-		TaskID:        runCtx.TaskID.String(),
-		WorkNumber:    runCtx.WorkNumber,
-		NodeName:      dto.NodeName,
-		NodeShortName: dto.NodeShortName,
-		NodeStart:     time.Now().Unix(),
-		TaskStatus:    string(dto.HumanStatus),
-		NodeStatus:    string(dto.NodeStatus),
-		Initiator:     runCtx.Initiator,
-		CreatedAt:     time.Now().Unix(),
-		NodeSLA:       0,
-		EventAt:       time.Now().Unix(),
-		Action:        eventStart,
-		NodeType:      dto.NodeType,
-		ActionBody: map[string]interface{}{
-			"toAdd": dto.ToAddLogins,
-			"rule":  dto.Rule,
-		},
-		AvailableActions: []string{},
 	}, nil
 }
 
