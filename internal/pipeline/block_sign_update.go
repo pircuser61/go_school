@@ -226,36 +226,9 @@ func (gb *GoSignBlock) Update(ctx c.Context) (interface{}, error) {
 
 	gb.RunContext.VarStore.ReplaceState(gb.Name, stateBytes)
 
-	if _, ok := gb.expectedEvents[eventEnd]; ok {
-		status, _, _ := gb.GetTaskHumanStatus()
-
-		event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, MakeNodeEndEventArgs{
-			NodeName:      gb.Name,
-			NodeShortName: gb.ShortName,
-			HumanStatus:   status,
-			NodeStatus:    gb.GetStatus(),
-		})
-		if eventErr != nil {
-			return nil, eventErr
-		}
-
-		kafkaEvent, eventErr := gb.RunContext.MakeNodeKafkaEvent(ctx, &MakeNodeKafkaEvent{
-			EventName:      eventEnd,
-			NodeName:       gb.Name,
-			NodeShortName:  gb.ShortName,
-			HumanStatus:    status,
-			NodeStatus:     gb.GetStatus(),
-			NodeType:       BlockGoSignID,
-			SLA:            deadline.Unix(),
-			ToRemoveLogins: []string{},
-		})
-
-		if eventErr != nil {
-			return nil, eventErr
-		}
-
-		gb.happenedEvents = append(gb.happenedEvents, event)
-		gb.happenedKafkaEvents = append(gb.happenedKafkaEvents, kafkaEvent)
+	err = gb.setEvents(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	return nil, nil

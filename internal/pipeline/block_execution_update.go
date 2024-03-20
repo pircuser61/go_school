@@ -46,36 +46,9 @@ func (gb *GoExecutionBlock) Update(ctx c.Context) (interface{}, error) {
 
 	gb.RunContext.VarStore.ReplaceState(gb.Name, stateBytes)
 
-	if _, ok := gb.expectedEvents[eventEnd]; ok {
-		status, _, _ := gb.GetTaskHumanStatus()
-
-		event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, MakeNodeEndEventArgs{
-			NodeName:      gb.Name,
-			NodeShortName: gb.ShortName,
-			HumanStatus:   status,
-			NodeStatus:    gb.GetStatus(),
-		})
-		if eventErr != nil {
-			return nil, eventErr
-		}
-
-		kafkaEvent, eventErr := gb.RunContext.MakeNodeKafkaEvent(ctx, &MakeNodeKafkaEvent{
-			EventName:      eventEnd,
-			NodeName:       gb.Name,
-			NodeShortName:  gb.ShortName,
-			HumanStatus:    status,
-			NodeStatus:     gb.GetStatus(),
-			NodeType:       BlockGoExecutionID,
-			SLA:            deadline.Unix(),
-			ToRemoveLogins: []string{},
-		})
-
-		if eventErr != nil {
-			return nil, eventErr
-		}
-
-		gb.happenedEvents = append(gb.happenedEvents, event)
-		gb.happenedKafkaEvents = append(gb.happenedKafkaEvents, kafkaEvent)
+	err = gb.setEvents(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	return nil, nil
@@ -92,98 +65,6 @@ func (gb *GoExecutionBlock) handleTaskUpdateAction(ctx c.Context) error {
 	err := gb.handleAction(ctx, e.TaskUpdateAction(data.Action))
 	if err != nil {
 		return err
-	}
-
-	return nil
-}
-
-func (gb *GoExecutionBlock) setEvents(ctx c.Context) error {
-	data := gb.RunContext.UpdateData
-
-	humanStatus, _, _ := gb.GetTaskHumanStatus()
-
-	switch data.Action {
-	case string(e.TaskUpdateActionExecution):
-		comment := ""
-		if gb.State.DecisionComment != nil {
-			comment = *gb.State.DecisionComment
-		}
-
-		delegateFor, _ := gb.RunContext.Delegations.FindDelegatorFor(data.ByLogin, getSliceFromMap(gb.State.Executors))
-
-		kafkaEvent, err := gb.RunContext.MakeNodeKafkaEvent(ctx, &MakeNodeKafkaEvent{
-			EventName:      string(e.TaskUpdateActionExecution),
-			NodeName:       gb.Name,
-			NodeShortName:  gb.ShortName,
-			HumanStatus:    humanStatus,
-			NodeStatus:     gb.GetStatus(),
-			NodeType:       BlockGoExecutionID,
-			SLA:            gb.State.Deadline.Unix(),
-			Decision:       gb.State.Decision.String(),
-			DelegateFor:    delegateFor,
-			Comment:        comment,
-			ToAddLogins:    []string{},
-			ToRemoveLogins: []string{data.ByLogin},
-		})
-		if err != nil {
-			return err
-		}
-
-		gb.happenedKafkaEvents = append(gb.happenedKafkaEvents, kafkaEvent)
-	case string(e.TaskUpdateActionReworkSLABreach):
-		kafkaEvent, err := gb.RunContext.MakeNodeKafkaEvent(ctx, &MakeNodeKafkaEvent{
-			EventName:      string(e.TaskUpdateActionReworkSLABreach),
-			NodeName:       gb.Name,
-			NodeShortName:  gb.ShortName,
-			HumanStatus:    humanStatus,
-			NodeStatus:     gb.GetStatus(),
-			NodeType:       BlockGoExecutionID,
-			SLA:            gb.State.Deadline.Unix(),
-			Decision:       gb.State.Decision.String(),
-			ToAddLogins:    []string{},
-			ToRemoveLogins: getSliceFromMap(gb.State.Executors),
-		})
-		if err != nil {
-			return err
-		}
-
-		gb.happenedKafkaEvents = append(gb.happenedKafkaEvents, kafkaEvent)
-	}
-
-	if gb.State.Decision != nil {
-		_, ok := gb.expectedEvents[eventEnd]
-		if !ok {
-			return nil
-		}
-
-		event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, MakeNodeEndEventArgs{
-			NodeName:      gb.Name,
-			NodeShortName: gb.ShortName,
-			HumanStatus:   humanStatus,
-			NodeStatus:    gb.GetStatus(),
-		})
-		if eventErr != nil {
-			return eventErr
-		}
-
-		gb.happenedEvents = append(gb.happenedEvents, event)
-
-		kafkaEvent, eventErr := gb.RunContext.MakeNodeKafkaEvent(ctx, &MakeNodeKafkaEvent{
-			EventName:      eventEnd,
-			NodeName:       gb.Name,
-			NodeShortName:  gb.ShortName,
-			HumanStatus:    humanStatus,
-			NodeStatus:     gb.GetStatus(),
-			NodeType:       BlockGoExecutionID,
-			SLA:            gb.State.Deadline.Unix(),
-			ToRemoveLogins: getSliceFromMap(gb.State.Executors),
-		})
-
-		if eventErr != nil {
-			return eventErr
-		}
-
-		gb.happenedKafkaEvents = append(gb.happenedKafkaEvents, kafkaEvent)
 	}
 
 	return nil
