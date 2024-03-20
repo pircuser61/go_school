@@ -789,7 +789,6 @@ func (ae *Env) getNodesToSkip(ctx context.Context, nextNodes map[string][]string
 ) (nodeList []string, err error) {
 	for _, val := range nextNodes {
 		for _, next := range val {
-
 			if _, ok := steps[next]; !ok {
 				continue
 			}
