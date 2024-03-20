@@ -132,6 +132,7 @@ type SaveStepRequest struct {
 	BlockExist      bool
 	Attachments     int
 	CurrentExecutor CurrentExecutorData
+	BlockStart      time.Time
 }
 
 type UpdateStepRequest struct {

@@ -2359,6 +2359,7 @@ func (db *PGCon) CheckUserCanEditForm(ctx context.Context, workNumber, stepName,
         or (step_type = 'execution' and content -> 'State' -> step_name -> 'executors' ? $3)
         or (step_type = 'form' and content -> 'State' -> step_name -> 'executors' ? $3)
 		or (step_type = 'sign' and content -> 'State' -> step_name -> 'signers' ? $3))
+      and status in ('idle', 'running')
       and work_id = (SELECT id
                      FROM works
                      WHERE work_number = $1
@@ -2613,10 +2614,12 @@ func mergeValues(stepsValues []map[string]interface{}) map[string]interface{} {
 			continue
 		}
 
+		prefix := fmt.Sprintf("%s.", stepName)
+
 		for varName := range stepsValues[i] {
 			if _, exists := res[varName]; !exists &&
 				varName != stepNameVariable &&
-				strings.Contains(varName, fmt.Sprintf("%s", stepName)) {
+				strings.HasPrefix(varName, prefix) {
 				res[varName] = stepsValues[i][varName]
 			}
 		}

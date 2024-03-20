@@ -892,24 +892,6 @@ func (gb *GoExecutionBlock) executorStartWork(ctx context.Context) (err error) {
 		DelegateFor: delegateFor,
 	})
 
-	slaInfoPtr, getSLAInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDTO{
-		TaskCompletionIntervals: []entity.TaskCompletionInterval{{
-			StartedAt:  gb.RunContext.CurrBlockStartTime,
-			FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100),
-		}},
-		WorkType: sla.WorkHourType(gb.State.WorkType),
-	})
-	if getSLAInfoErr != nil {
-		return getSLAInfoErr
-	}
-
-	workHours := gb.RunContext.Services.SLAService.GetWorkHoursBetweenDates(
-		gb.RunContext.CurrBlockStartTime,
-		time.Now(),
-		slaInfoPtr,
-	)
-	gb.State.IncreaseSLA(workHours)
-
 	if gb.RunContext.skipNotifications {
 		return nil
 	}

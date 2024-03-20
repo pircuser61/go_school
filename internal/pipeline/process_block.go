@@ -388,6 +388,8 @@ func (runCtx *BlockRunContext) saveStepInDB(ctx c.Context, dto *saveStepDTO, id 
 			InitialPeople: dto.currentExecutor.InitialPeople,
 		},
 	}, id)
+		BlockStart: runCtx.CurrBlockStartTime,
+	})
 }
 
 type updateStepDTO struct {

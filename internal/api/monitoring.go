@@ -164,7 +164,9 @@ func (ae *Env) GetBlockContext(w http.ResponseWriter, r *http.Request, blockID s
 	blocks := make(map[string]MonitoringBlockOutput, len(blocksOutputs))
 
 	for _, bo := range blocksOutputs {
-		if strings.Contains(bo.Name, bo.StepName) {
+		prefix := bo.StepName + "."
+
+		if strings.HasPrefix(bo.Name, prefix) {
 			continue
 		}
 
