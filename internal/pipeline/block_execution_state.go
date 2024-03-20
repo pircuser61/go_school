@@ -98,10 +98,6 @@ func (a *ExecutionData) GetDecision() *ExecutionDecision {
 	return a.Decision
 }
 
-func (a *ExecutionData) IncreaseSLA(addSLA int) {
-	a.SLA += addSLA
-}
-
 func (a *ExecutionData) GetRepeatPrevDecision() bool {
 	return a.RepeatPrevDecision
 }
