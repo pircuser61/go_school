@@ -2571,10 +2571,12 @@ func mergeValues(stepsValues []map[string]interface{}) map[string]interface{} {
 			continue
 		}
 
+		prefix := fmt.Sprintf("%s.", stepName)
+
 		for varName := range stepsValues[i] {
 			if _, exists := res[varName]; !exists &&
 				varName != stepNameVariable &&
-				strings.Contains(varName, fmt.Sprintf("%s", stepName)) {
+				strings.HasPrefix(varName, prefix) {
 				res[varName] = stepsValues[i][varName]
 			}
 		}

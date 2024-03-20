@@ -2221,10 +2221,12 @@ func (db *PGCon) GetBlockOutputs(ctx c.Context, blockID, blockName string) (enti
 		return nil, err
 	}
 
+	prefix := blockName + "."
+
 	for i := range blocksOutputs {
-		if strings.Contains(blocksOutputs[i].Name, blockName) {
+		if strings.HasPrefix(blocksOutputs[i].Name, prefix) {
 			blockOutputs = append(blockOutputs, entity.BlockOutputValue{
-				Name:  strings.Replace(blocksOutputs[i].Name, blockName+".", "", 1),
+				Name:  strings.Replace(blocksOutputs[i].Name, prefix, "", 1),
 				Value: blocksOutputs[i].Value,
 			})
 		}
