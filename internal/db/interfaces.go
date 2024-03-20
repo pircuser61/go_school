@@ -131,6 +131,7 @@ type SaveStepRequest struct {
 	IsReEntry       bool
 	Attachments     int
 	CurrentExecutor CurrentExecutorData
+	BlockStart      time.Time
 }
 
 type UpdateStepRequest struct {

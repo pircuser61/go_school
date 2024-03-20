@@ -1178,7 +1178,6 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 	}
 
 	id := uuid.New()
-	timestamp := time.Now()
 	// nolint:gocritic
 	// language=PostgreSQL
 	query := `
@@ -1219,7 +1218,7 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 		dto.StepType,
 		dto.StepName,
 		dto.Content,
-		timestamp,
+		dto.BlockStart,
 		dto.BreakPoints,
 		dto.HasError,
 		dto.Status,
