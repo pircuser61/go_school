@@ -32,17 +32,17 @@ func (a *updateFillFormParams) Validate() error {
 
 //nolint:gocyclo,gocognit //ok
 func (gb *GoFormBlock) Update(ctx context.Context) (interface{}, error) {
+	data := gb.RunContext.UpdateData
+	if data == nil {
+		return nil, errors.New("empty data")
+	}
+
 	wasAlreadyFilled := len(gb.State.ApplicationBody) > 0
 	updateInOtherBlocks := false
 
 	executorsLogins := make(map[string]struct{}, 0)
 	for i := range gb.State.Executors {
 		executorsLogins[i] = gb.State.Executors[i]
-	}
-
-	data := gb.RunContext.UpdateData
-	if data == nil {
-		return nil, errors.New("empty data")
 	}
 
 	switch data.Action {
