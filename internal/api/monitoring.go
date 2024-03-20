@@ -673,8 +673,9 @@ func (ae *Env) startProcess(ctx context.Context, startParams *startNodesParams) 
 	return nil
 }
 
-func (ae *Env) restartNode(ctx context.Context, workID uuid.UUID, workNumber, stepName, login string,
-	byOne bool, tx db.Database) (err error) {
+func (ae *Env) restartNode(ctx context.Context,
+	workID uuid.UUID, workNumber, stepName, login string, byOne bool, tx db.Database,
+) (err error) {
 	dbStep, stepErr := ae.DB.GetTaskStepByName(ctx, workID, stepName)
 	if stepErr != nil {
 		return stepErr
@@ -694,7 +695,18 @@ func (ae *Env) restartNode(ctx context.Context, workID uuid.UUID, workNumber, st
 		return blockErr
 	}
 
-	nodesToSkip, skipErr := ae.getNodesToSkip(ctx, blockData.Next, workNumber)
+	dbStepsEntity, dbStepErr := ae.DB.GetTaskSteps(ctx, workID)
+	if dbStepErr != nil {
+		return dbStepErr
+	}
+
+	dbSteps := make(map[string]bool, 0)
+
+	for i := range dbStepsEntity {
+		dbSteps[dbStepsEntity[i].Name] = true
+	}
+
+	nodesToSkip, skipErr := ae.getNodesToSkip(ctx, blockData.Next, workNumber, dbSteps)
 	if skipErr != nil {
 		return skipErr
 	}
@@ -769,15 +781,22 @@ func (ae *Env) restartNode(ctx context.Context, workID uuid.UUID, workNumber, st
 	return nil
 }
 
-func (ae *Env) getNodesToSkip(ctx context.Context, nextNodes map[string][]string, workNumber string) (nodeList []string, err error) {
+func (ae *Env) getNodesToSkip(ctx context.Context, nextNodes map[string][]string,
+	workNumber string, steps map[string]bool,
+) (nodeList []string, err error) {
 	for _, val := range nextNodes {
 		for _, next := range val {
+
+			if _, ok := steps[next]; !ok {
+				continue
+			}
+
 			blockData, blockErr := ae.DB.GetBlockDataFromVersion(ctx, workNumber, next)
 			if blockErr != nil {
 				return nil, blockErr
 			}
 
-			nodes, recErr := ae.getNodesToSkip(ctx, blockData.Next, workNumber)
+			nodes, recErr := ae.getNodesToSkip(ctx, blockData.Next, workNumber, steps)
 			if recErr != nil {
 				return nil, recErr
 			}
