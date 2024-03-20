@@ -58,7 +58,6 @@ func (gb *GoFormBlock) Update(ctx context.Context) (interface{}, error) {
 		if !gb.State.IsTakenInWork {
 			return nil, errors.New("is not taken in work")
 		}
-		//here
 		if errFill := gb.handleRequestFillForm(ctx, data); errFill != nil {
 			return nil, errFill
 		}
@@ -82,9 +81,19 @@ func (gb *GoFormBlock) Update(ctx context.Context) (interface{}, error) {
 
 	gb.State.Deadline = deadline
 
+	err := gb.setEvents(ctx, &setFormEventsDto{
+		action:           data.Action,
+		byLogin:          data.ByLogin,
+		wasAlreadyFilled: wasAlreadyFilled,
+		executorsLogins:  executorsLogins,
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	var stateBytes []byte
 
-	stateBytes, err := json.Marshal(gb.State)
+	stateBytes, err = json.Marshal(gb.State)
 	if err != nil {
 		return nil, err
 	}
@@ -113,26 +122,16 @@ func (gb *GoFormBlock) Update(ctx context.Context) (interface{}, error) {
 		}
 	}
 
-	err = gb.setUpdateKafkaEvents(ctx, &setUpdateKafkaEventsDto{
-		action:           data.Action,
-		byLogin:          data.ByLogin,
-		wasAlreadyFilled: wasAlreadyFilled,
-		executorsLogins:  executorsLogins,
-	})
-	if err != nil {
-		return nil, err
-	}
-
 	return nil, nil
 }
 
-type setUpdateKafkaEventsDto struct {
+type setFormEventsDto struct {
 	action, byLogin  string
 	wasAlreadyFilled bool
 	executorsLogins  map[string]struct{}
 }
 
-func (gb *GoFormBlock) setUpdateKafkaEvents(ctx context.Context, dto *setUpdateKafkaEventsDto) error {
+func (gb *GoFormBlock) setEvents(ctx context.Context, dto *setFormEventsDto) error {
 	humanStatus, _, _ := gb.GetTaskHumanStatus()
 
 	switch dto.action {

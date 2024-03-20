@@ -1,7 +1,7 @@
 package pipeline
 
 import (
-	"context"
+	c "context"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -15,7 +15,7 @@ import (
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	e "gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	file_registry "gitlab.services.mts.ru/jocasta/pipeliner/internal/fileregistry"
 	hs "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
@@ -24,7 +24,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
-func (gb *GoExecutionBlock) Update(ctx context.Context) (interface{}, error) {
+func (gb *GoExecutionBlock) Update(ctx c.Context) (interface{}, error) {
 	err := gb.handleTaskUpdateAction(ctx)
 	if err != nil {
 		return nil, err
@@ -81,7 +81,7 @@ func (gb *GoExecutionBlock) Update(ctx context.Context) (interface{}, error) {
 	return nil, nil
 }
 
-func (gb *GoExecutionBlock) handleTaskUpdateAction(ctx context.Context) error {
+func (gb *GoExecutionBlock) handleTaskUpdateAction(ctx c.Context) error {
 	data := gb.RunContext.UpdateData
 	if data == nil {
 		return errors.New("empty data")
@@ -89,7 +89,7 @@ func (gb *GoExecutionBlock) handleTaskUpdateAction(ctx context.Context) error {
 
 	gb.RunContext.Delegations = gb.RunContext.Delegations.FilterByType("execution")
 
-	err := gb.handleAction(ctx, entity.TaskUpdateAction(data.Action))
+	err := gb.handleAction(ctx, e.TaskUpdateAction(data.Action))
 	if err != nil {
 		return err
 	}
@@ -97,23 +97,115 @@ func (gb *GoExecutionBlock) handleTaskUpdateAction(ctx context.Context) error {
 	return nil
 }
 
+func (gb *GoExecutionBlock) setEvents(ctx c.Context) error {
+	data := gb.RunContext.UpdateData
+
+	humanStatus, _, _ := gb.GetTaskHumanStatus()
+
+	switch data.Action {
+	case string(e.TaskUpdateActionExecution):
+		comment := ""
+		if gb.State.DecisionComment != nil {
+			comment = *gb.State.DecisionComment
+		}
+
+		delegateFor, _ := gb.RunContext.Delegations.FindDelegatorFor(data.ByLogin, getSliceFromMap(gb.State.Executors))
+
+		kafkaEvent, err := gb.RunContext.MakeNodeKafkaEvent(ctx, &MakeNodeKafkaEvent{
+			EventName:      string(e.TaskUpdateActionExecution),
+			NodeName:       gb.Name,
+			NodeShortName:  gb.ShortName,
+			HumanStatus:    humanStatus,
+			NodeStatus:     gb.GetStatus(),
+			NodeType:       BlockGoExecutionID,
+			SLA:            gb.State.Deadline.Unix(),
+			Decision:       gb.State.Decision.String(),
+			DelegateFor:    delegateFor,
+			Comment:        comment,
+			ToAddLogins:    []string{},
+			ToRemoveLogins: []string{data.ByLogin},
+		})
+		if err != nil {
+			return err
+		}
+
+		gb.happenedKafkaEvents = append(gb.happenedKafkaEvents, kafkaEvent)
+	case string(e.TaskUpdateActionReworkSLABreach):
+		kafkaEvent, err := gb.RunContext.MakeNodeKafkaEvent(ctx, &MakeNodeKafkaEvent{
+			EventName:      string(e.TaskUpdateActionReworkSLABreach),
+			NodeName:       gb.Name,
+			NodeShortName:  gb.ShortName,
+			HumanStatus:    humanStatus,
+			NodeStatus:     gb.GetStatus(),
+			NodeType:       BlockGoExecutionID,
+			SLA:            gb.State.Deadline.Unix(),
+			Decision:       gb.State.Decision.String(),
+			ToAddLogins:    []string{},
+			ToRemoveLogins: getSliceFromMap(gb.State.Executors),
+		})
+		if err != nil {
+			return err
+		}
+
+		gb.happenedKafkaEvents = append(gb.happenedKafkaEvents, kafkaEvent)
+	}
+
+	if gb.State.Decision != nil {
+		_, ok := gb.expectedEvents[eventEnd]
+		if !ok {
+			return nil
+		}
+
+		event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, MakeNodeEndEventArgs{
+			NodeName:      gb.Name,
+			NodeShortName: gb.ShortName,
+			HumanStatus:   humanStatus,
+			NodeStatus:    gb.GetStatus(),
+		})
+		if eventErr != nil {
+			return eventErr
+		}
+
+		gb.happenedEvents = append(gb.happenedEvents, event)
+
+		kafkaEvent, eventErr := gb.RunContext.MakeNodeKafkaEvent(ctx, &MakeNodeKafkaEvent{
+			EventName:      eventEnd,
+			NodeName:       gb.Name,
+			NodeShortName:  gb.ShortName,
+			HumanStatus:    humanStatus,
+			NodeStatus:     gb.GetStatus(),
+			NodeType:       BlockGoExecutionID,
+			SLA:            gb.State.Deadline.Unix(),
+			ToRemoveLogins: getSliceFromMap(gb.State.Executors),
+		})
+
+		if eventErr != nil {
+			return eventErr
+		}
+
+		gb.happenedKafkaEvents = append(gb.happenedKafkaEvents, kafkaEvent)
+	}
+
+	return nil
+}
+
 //nolint:gocognit,gocyclo // вся сложность функции состоит в switch case, под каждым вызывается одна-две функции
-func (gb *GoExecutionBlock) handleAction(ctx context.Context, action entity.TaskUpdateAction) error {
+func (gb *GoExecutionBlock) handleAction(ctx c.Context, action e.TaskUpdateAction) error {
 	//nolint:exhaustive //нам не нужно обрабатывать остальные случаи
 	switch action {
-	case entity.TaskUpdateActionSLABreach:
+	case e.TaskUpdateActionSLABreach:
 		errUpdate := gb.handleBreachedSLA(ctx)
 		if errUpdate != nil {
 			return errUpdate
 		}
-	case entity.TaskUpdateActionHalfSLABreach:
+	case e.TaskUpdateActionHalfSLABreach:
 		gb.handleHalfSLABreached(ctx)
-	case entity.TaskUpdateActionReworkSLABreach:
+	case e.TaskUpdateActionReworkSLABreach:
 		errUpdate := gb.handleReworkSLABreached(ctx)
 		if errUpdate != nil {
 			return errUpdate
 		}
-	case entity.TaskUpdateActionExecution:
+	case e.TaskUpdateActionExecution:
 		if !gb.State.IsTakenInWork {
 			return errors.New("is not taken in work")
 		}
@@ -122,7 +214,7 @@ func (gb *GoExecutionBlock) handleAction(ctx context.Context, action entity.Task
 		if errUpdate != nil {
 			return errUpdate
 		}
-	case entity.TaskUpdateActionChangeExecutor:
+	case e.TaskUpdateActionChangeExecutor:
 		if !gb.State.IsTakenInWork {
 			return errors.New("is not taken in work")
 		}
@@ -131,7 +223,7 @@ func (gb *GoExecutionBlock) handleAction(ctx context.Context, action entity.Task
 		if errUpdate != nil {
 			return errUpdate
 		}
-	case entity.TaskUpdateActionRequestExecutionInfo:
+	case e.TaskUpdateActionRequestExecutionInfo:
 		if !gb.State.IsTakenInWork {
 			return errors.New("is not taken in work")
 		}
@@ -140,7 +232,7 @@ func (gb *GoExecutionBlock) handleAction(ctx context.Context, action entity.Task
 		if errUpdate != nil {
 			return errUpdate
 		}
-	case entity.TaskUpdateActionReplyExecutionInfo:
+	case e.TaskUpdateActionReplyExecutionInfo:
 		if !gb.State.IsTakenInWork {
 			return errors.New("is not taken in work")
 		}
@@ -149,7 +241,7 @@ func (gb *GoExecutionBlock) handleAction(ctx context.Context, action entity.Task
 		if errUpdate != nil {
 			return errUpdate
 		}
-	case entity.TaskUpdateActionExecutorStartWork:
+	case e.TaskUpdateActionExecutorStartWork:
 		if gb.State.IsTakenInWork {
 			return errors.New("is already taken in work")
 		}
@@ -158,7 +250,7 @@ func (gb *GoExecutionBlock) handleAction(ctx context.Context, action entity.Task
 		if errUpdate != nil {
 			return errUpdate
 		}
-	case entity.TaskUpdateActionExecutorSendEditApp:
+	case e.TaskUpdateActionExecutorSendEditApp:
 		if !gb.State.IsTakenInWork {
 			return errors.New("is not taken in work")
 		}
@@ -167,29 +259,29 @@ func (gb *GoExecutionBlock) handleAction(ctx context.Context, action entity.Task
 		if errUpdate != nil {
 			return errUpdate
 		}
-	case entity.TaskUpdateActionDayBeforeSLARequestAddInfo:
+	case e.TaskUpdateActionDayBeforeSLARequestAddInfo:
 		errUpdate := gb.handleBreachedDayBeforeSLARequestAddInfo(ctx)
 		if errUpdate != nil {
 			return errUpdate
 		}
-	case entity.TaskUpdateActionSLABreachRequestAddInfo:
+	case e.TaskUpdateActionSLABreachRequestAddInfo:
 		errUpdate := gb.HandleBreachedSLARequestAddInfo(ctx)
 		if errUpdate != nil {
 			return errUpdate
 		}
-	case entity.TaskUpdateActionReload:
+	case e.TaskUpdateActionReload:
 	}
 
 	return nil
 }
 
 type ExecutorChangeParams struct {
-	NewExecutorLogin string              `json:"new_executor_login"`
-	Comment          string              `json:"comment"`
-	Attachments      []entity.Attachment `json:"attachments,omitempty"`
+	NewExecutorLogin string         `json:"new_executor_login"`
+	Comment          string         `json:"comment"`
+	Attachments      []e.Attachment `json:"attachments,omitempty"`
 }
 
-func (gb *GoExecutionBlock) changeExecutor(ctx context.Context) (err error) {
+func (gb *GoExecutionBlock) changeExecutor(ctx c.Context) (err error) {
 	currentLogin := gb.RunContext.UpdateData.ByLogin
 	_, executorFound := gb.State.Executors[currentLogin]
 
@@ -258,13 +350,13 @@ func (a *ExecutionData) SetChangeExecutor(oldLogin, delegateFor, byLogin string,
 }
 
 type ExecutionUpdateParams struct {
-	Decision    ExecutionDecision   `json:"decision"`
-	Comment     string              `json:"comment"`
-	Attachments []entity.Attachment `json:"attachments"`
+	Decision    ExecutionDecision `json:"decision"`
+	Comment     string            `json:"comment"`
+	Attachments []e.Attachment    `json:"attachments"`
 }
 
 //nolint:dupl //its not duplicate
-func (gb *GoExecutionBlock) handleBreachedSLA(ctx context.Context) error {
+func (gb *GoExecutionBlock) handleBreachedSLA(ctx c.Context) error {
 	if !gb.State.CheckSLA {
 		gb.State.SLAChecked = true
 		gb.State.HalfSLAChecked = true
@@ -285,7 +377,7 @@ func (gb *GoExecutionBlock) handleBreachedSLA(ctx context.Context) error {
 	return nil
 }
 
-func (gb *GoExecutionBlock) checkBreachedSLA(ctx context.Context) error {
+func (gb *GoExecutionBlock) checkBreachedSLA(ctx c.Context) error {
 	const fn = "pipeline.execution.checkBreachedSLA"
 
 	log := logger.GetLogger(ctx)
@@ -340,7 +432,7 @@ func (gb *GoExecutionBlock) checkBreachedSLA(ctx context.Context) error {
 }
 
 //nolint:dupl //its not duplicate
-func (gb *GoExecutionBlock) handleHalfSLABreached(ctx context.Context) {
+func (gb *GoExecutionBlock) handleHalfSLABreached(ctx c.Context) {
 	const fn = "pipeline.execution.handleHalfSLABreached"
 
 	if !gb.State.CheckSLA {
@@ -359,7 +451,7 @@ func (gb *GoExecutionBlock) handleHalfSLABreached(ctx context.Context) {
 	gb.State.HalfSLAChecked = true
 }
 
-func (gb *GoExecutionBlock) sendNotification(ctx context.Context, log logger.Logger, fn string) error {
+func (gb *GoExecutionBlock) sendNotification(ctx c.Context, log logger.Logger, fn string) error {
 	emails := make([]string, 0, len(gb.State.Executors))
 	logins := getSliceFromMap(gb.State.Executors)
 
@@ -424,7 +516,7 @@ func (gb *GoExecutionBlock) sendNotification(ctx context.Context, log logger.Log
 	slaInfoPtr, getSLAInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(
 		ctx,
 		sla.InfoDTO{
-			TaskCompletionIntervals: []entity.TaskCompletionInterval{
+			TaskCompletionIntervals: []e.TaskCompletionInterval{
 				{
 					StartedAt:  gb.RunContext.CurrBlockStartTime,
 					FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100),
@@ -437,7 +529,7 @@ func (gb *GoExecutionBlock) sendNotification(ctx context.Context, log logger.Log
 		return getSLAInfoErr
 	}
 
-	lastWorksForUser := make([]*entity.EriusTask, 0)
+	lastWorksForUser := make([]*e.EriusTask, 0)
 
 	if processSettings.ResubmissionPeriod > 0 {
 		var getWorksErr error
@@ -482,7 +574,7 @@ func (gb *GoExecutionBlock) sendNotification(ctx context.Context, log logger.Log
 }
 
 // nolint:dupl // another action
-func (gb *GoExecutionBlock) handleReworkSLABreached(ctx context.Context) error {
+func (gb *GoExecutionBlock) handleReworkSLABreached(ctx c.Context) error {
 	const fn = "pipeline.execution.handleReworkSLABreached"
 
 	if !gb.State.CheckReworkSLA {
@@ -563,7 +655,7 @@ func (gb *GoExecutionBlock) handleReworkSLABreached(ctx context.Context) error {
 	return nil
 }
 
-func (gb *GoExecutionBlock) handleBreachedDayBeforeSLARequestAddInfo(ctx context.Context) error {
+func (gb *GoExecutionBlock) handleBreachedDayBeforeSLARequestAddInfo(ctx c.Context) error {
 	const fn = "pipeline.execution.handleBreachedDayBeforeSLARequestAddInfo"
 
 	if !gb.State.CheckDayBeforeSLARequestInfo {
@@ -608,7 +700,7 @@ func (gb *GoExecutionBlock) handleBreachedDayBeforeSLARequestAddInfo(ctx context
 }
 
 //nolint:dupl // dont duplicate
-func (gb *GoExecutionBlock) HandleBreachedSLARequestAddInfo(ctx context.Context) error {
+func (gb *GoExecutionBlock) HandleBreachedSLARequestAddInfo(ctx c.Context) error {
 	const fn = "pipeline.execution.HandleBreachedSLARequestAddInfo"
 
 	comment := "заявка автоматически перенесена в архив по истечении 3 дней"
@@ -695,7 +787,7 @@ func (gb *GoExecutionBlock) HandleBreachedSLARequestAddInfo(ctx context.Context)
 }
 
 func (gb *GoExecutionBlock) checkFormFilled() error {
-	l := logger.GetLogger(context.Background())
+	l := logger.GetLogger(c.Background())
 
 	for _, form := range gb.State.FormsAccessibility {
 		formState, ok := gb.RunContext.VarStore.State[form.NodeID]
@@ -719,7 +811,7 @@ func (gb *GoExecutionBlock) checkFormFilled() error {
 	return nil
 }
 
-func (gb *GoExecutionBlock) updateDecision(ctx context.Context) error {
+func (gb *GoExecutionBlock) updateDecision(ctx c.Context) error {
 	var updateParams ExecutionUpdateParams
 
 	err := json.Unmarshal(gb.RunContext.UpdateData.Parameters, &updateParams)
@@ -753,19 +845,19 @@ func (gb *GoExecutionBlock) updateDecision(ctx context.Context) error {
 }
 
 type requestInfoUpdateParams struct {
-	Comment       string              `json:"comment"`
-	ReqType       RequestInfoType     `json:"req_type"`
-	Attachments   []entity.Attachment `json:"attachments"`
-	ExecutorLogin string              `json:"executor_login"`
+	Comment       string          `json:"comment"`
+	ReqType       RequestInfoType `json:"req_type"`
+	Attachments   []e.Attachment  `json:"attachments"`
+	ExecutorLogin string          `json:"executor_login"`
 }
 
 type replyInfoUpdateParams struct {
-	Comment       string              `json:"comment"`
-	Attachments   []entity.Attachment `json:"attachments"`
-	ExecutorLogin string              `json:"executor_login"`
+	Comment       string         `json:"comment"`
+	Attachments   []e.Attachment `json:"attachments"`
+	ExecutorLogin string         `json:"executor_login"`
 }
 
-func (gb *GoExecutionBlock) updateRequestInfo(ctx context.Context) (err error) {
+func (gb *GoExecutionBlock) updateRequestInfo(ctx c.Context) (err error) {
 	var updateParams requestInfoUpdateParams
 
 	delegations := gb.RunContext.Delegations.FilterByType("execution")
@@ -803,7 +895,7 @@ func (gb *GoExecutionBlock) updateRequestInfo(ctx context.Context) (err error) {
 	return err
 }
 
-func (gb *GoExecutionBlock) updateReplyInfo(ctx context.Context) (err error) {
+func (gb *GoExecutionBlock) updateReplyInfo(ctx c.Context) (err error) {
 	if gb.RunContext.UpdateData.ByLogin != gb.RunContext.Initiator {
 		return NewUserIsNotPartOfProcessErr()
 	}
@@ -876,7 +968,7 @@ func (a *ExecutionData) SetRequestExecutionInfo(
 	return nil
 }
 
-func (gb *GoExecutionBlock) executorStartWork(ctx context.Context) (err error) {
+func (gb *GoExecutionBlock) executorStartWork(ctx c.Context) (err error) {
 	currentLogin := gb.RunContext.UpdateData.ByLogin
 	_, executorFound := gb.State.Executors[currentLogin]
 
@@ -909,7 +1001,7 @@ func (gb *GoExecutionBlock) executorStartWork(ctx context.Context) (err error) {
 	})
 
 	slaInfoPtr, getSLAInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDTO{
-		TaskCompletionIntervals: []entity.TaskCompletionInterval{{
+		TaskCompletionIntervals: []e.TaskCompletionInterval{{
 			StartedAt:  gb.RunContext.CurrBlockStartTime,
 			FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100),
 		}},
@@ -938,7 +1030,7 @@ func (gb *GoExecutionBlock) executorStartWork(ctx context.Context) (err error) {
 	return nil
 }
 
-func (gb *GoExecutionBlock) emailGroupExecutors(ctx context.Context, loginTakenInWork string, logins map[string]struct{}) (err error) {
+func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork string, logins map[string]struct{}) error {
 	log := logger.GetLogger(ctx)
 
 	executors := getSliceFromMap(logins)
@@ -989,7 +1081,7 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx context.Context, loginTakenI
 		login = recipient
 	}
 
-	lastWorksForUser, err := gb.lastWorksForUser(ctx, &processSettings, login, task)
+	lastWorksForUser, err := gb.lastWorksForUser(ctx, &processSettings, login, task.VersionID.String())
 	if err != nil {
 		return err
 	}
@@ -1041,7 +1133,7 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx context.Context, loginTakenI
 	slaInfoPtr, getSLAInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(
 		ctx,
 		sla.InfoDTO{
-			TaskCompletionIntervals: []entity.TaskCompletionInterval{
+			TaskCompletionIntervals: []e.TaskCompletionInterval{
 				{
 					StartedAt:  gb.RunContext.CurrBlockStartTime,
 					FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100),
@@ -1107,7 +1199,7 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx context.Context, loginTakenI
 func (gb *GoExecutionBlock) attachFiles(
 	tpl *mail.Template,
 	buttons []mail.Button,
-	lastWorksForUser []*entity.EriusTask,
+	lastWorksForUser []*e.EriusTask,
 	description []orderedmap.OrderedMap,
 ) ([]email.Attachment, error) {
 	iconsName := []string{tpl.Image, userImg}
@@ -1132,7 +1224,7 @@ func (gb *GoExecutionBlock) attachFiles(
 	return attachFiles, nil
 }
 
-func (gb *GoExecutionBlock) mapLoginsToEmails(ctx context.Context, loginsToNotify []string, loginTakenInWork string) []string {
+func (gb *GoExecutionBlock) mapLoginsToEmails(ctx c.Context, loginsToNotify []string, loginTakenInWork string) []string {
 	log := logger.GetLogger(ctx)
 	emails := make([]string, 0)
 
@@ -1152,7 +1244,7 @@ func (gb *GoExecutionBlock) mapLoginsToEmails(ctx context.Context, loginsToNotif
 	return emails
 }
 
-func (gb *GoExecutionBlock) typedAuthor(ctx context.Context) (*sso.UserInfo, error) {
+func (gb *GoExecutionBlock) typedAuthor(ctx c.Context) (*sso.UserInfo, error) {
 	author, err := gb.RunContext.Services.People.GetUser(ctx, gb.RunContext.UpdateData.ByLogin)
 	if err != nil {
 		return nil, err
@@ -1166,7 +1258,7 @@ func (gb *GoExecutionBlock) typedAuthor(ctx context.Context) (*sso.UserInfo, err
 	return typedAuthor, nil
 }
 
-func (gb *GoExecutionBlock) initiatorInfo(ctx context.Context) (*sso.UserInfo, error) {
+func (gb *GoExecutionBlock) initiatorInfo(ctx c.Context) (*sso.UserInfo, error) {
 	initiator, err := gb.RunContext.Services.People.GetUser(ctx, gb.RunContext.Initiator)
 	if err != nil {
 		return nil, err
@@ -1194,36 +1286,31 @@ func (gb *GoExecutionBlock) downloadImgFromDescription(description []orderedmap.
 	return false
 }
 
-func (gb *GoExecutionBlock) lastWorksForUser(
-	ctx context.Context,
-	processSettings *entity.ProcessSettings,
-	login string,
-	task *entity.EriusScenario,
-) ([]*entity.EriusTask, error) {
-	if processSettings.ResubmissionPeriod > 0 {
+func (gb *GoExecutionBlock) lastWorksForUser(ctx c.Context, dto *e.ProcessSettings, login, vID string) ([]*e.EriusTask, error) {
+	if dto.ResubmissionPeriod > 0 {
 		lastWorksForUser, getWorksErr := gb.RunContext.Services.Storage.GetWorksForUserWithGivenTimeRange(
 			ctx,
-			processSettings.ResubmissionPeriod,
+			dto.ResubmissionPeriod,
 			login,
-			task.VersionID.String(),
+			vID,
 			gb.RunContext.WorkNumber,
 		)
 		if getWorksErr != nil {
-			return make([]*entity.EriusTask, 0), getWorksErr
+			return make([]*e.EriusTask, 0), getWorksErr
 		}
 
 		return lastWorksForUser, nil
 	}
 
-	return make([]*entity.EriusTask, 0), nil
+	return make([]*e.EriusTask, 0), nil
 }
 
 type executorUpdateEditParams struct {
-	Comment     string              `json:"comment"`
-	Attachments []entity.Attachment `json:"attachments"`
+	Comment     string         `json:"comment"`
+	Attachments []e.Attachment `json:"attachments"`
 }
 
-func (gb *GoExecutionBlock) toEditApplication(ctx context.Context) (err error) {
+func (gb *GoExecutionBlock) toEditApplication(ctx c.Context) (err error) {
 	if gb.State.Decision != nil {
 		return errors.New("decision already set")
 	}
@@ -1250,7 +1337,7 @@ func (gb *GoExecutionBlock) toEditApplication(ctx context.Context) (err error) {
 
 	// возврат на доработку всей заявки инициатору
 	if gb.isNextBlockServiceDesk() {
-		err := gb.returnToAdminForRevision(ctx, delegateFor, updateParams)
+		err = gb.returnToAdminForRevision(ctx, delegateFor, updateParams)
 		if err != nil {
 			return err
 		}
@@ -1284,15 +1371,11 @@ func (gb *GoExecutionBlock) isNextBlockServiceDesk() bool {
 	return false
 }
 
-func (gb *GoExecutionBlock) returnToAdminForRevision(
-	ctx context.Context,
-	delegateFor string,
-	updateParams executorUpdateEditParams,
-) (err error) {
-	err = gb.State.setEditAppToInitiator(
+func (gb *GoExecutionBlock) returnToAdminForRevision(ctx c.Context, delegateFor string, dto executorUpdateEditParams) error {
+	err := gb.State.setEditAppToInitiator(
 		gb.RunContext.UpdateData.ByLogin,
 		delegateFor,
-		updateParams,
+		dto,
 	)
 	if err != nil {
 		return err

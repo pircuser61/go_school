@@ -18,6 +18,9 @@ type MakeNodeKafkaEvent struct {
 	NodeStatus     Status
 	NodeType       string
 	Rule           string
+	Decision       string
+	Comment        string
+	DelegateFor    string
 	SLA            int64
 	ToAddLogins    []string
 	ToRemoveLogins []string
@@ -44,6 +47,18 @@ func (runCtx *BlockRunContext) MakeNodeKafkaEvent(ctx c.Context, dto *MakeNodeKa
 
 	if dto.Rule != "" {
 		actionBody["rule"] = dto.Rule
+	}
+
+	if dto.Decision != "" {
+		actionBody["decision"] = dto.Decision
+	}
+
+	if dto.Comment != "" {
+		actionBody["comment"] = dto.Comment
+	}
+
+	if dto.DelegateFor != "" {
+		actionBody["delegateFor"] = dto.DelegateFor
 	}
 
 	return e.NodeKafkaEvent{
