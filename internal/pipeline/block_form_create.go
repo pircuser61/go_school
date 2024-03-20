@@ -165,11 +165,6 @@ func (gb *GoFormBlock) makeNodeStartEvent(ctx context.Context, runCtx *BlockRunC
 		return err
 	}
 
-	deadline, err := gb.getDeadline(ctx, gb.State.WorkType)
-	if err != nil {
-		return err
-	}
-
 	kafkaEvent, err := runCtx.MakeNodeKafkaEvent(ctx, &MakeNodeKafkaEvent{
 		EventName:     eventStart,
 		NodeName:      name,
@@ -177,7 +172,7 @@ func (gb *GoFormBlock) makeNodeStartEvent(ctx context.Context, runCtx *BlockRunC
 		HumanStatus:   status,
 		NodeStatus:    gb.GetStatus(),
 		NodeType:      BlockGoFormID,
-		SLA:           deadline.Unix(),
+		SLA:           gb.State.Deadline.Unix(),
 		ToAddLogins:   getSliceFromMap(gb.State.Executors),
 	})
 	if err != nil {

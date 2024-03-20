@@ -10,7 +10,7 @@ import (
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	e "gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
@@ -32,7 +32,13 @@ func (a *updateFillFormParams) Validate() error {
 
 //nolint:gocyclo,gocognit //ok
 func (gb *GoFormBlock) Update(ctx context.Context) (interface{}, error) {
+	wasAlreadyFilled := len(gb.State.ApplicationBody) > 0
 	updateInOtherBlocks := false
+
+	executorsLogins := make(map[string]struct{}, 0)
+	for i := range gb.State.Executors {
+		executorsLogins[i] = gb.State.Executors[i]
+	}
 
 	data := gb.RunContext.UpdateData
 	if data == nil {
@@ -40,33 +46,33 @@ func (gb *GoFormBlock) Update(ctx context.Context) (interface{}, error) {
 	}
 
 	switch data.Action {
-	case string(entity.TaskUpdateActionSLABreach):
+	case string(e.TaskUpdateActionSLABreach):
 		if errUpdate := gb.handleBreachedSLA(ctx); errUpdate != nil {
 			return nil, errUpdate
 		}
-	case string(entity.TaskUpdateActionHalfSLABreach):
+	case string(e.TaskUpdateActionHalfSLABreach):
 		if errUpdate := gb.handleHalfSLABreached(ctx); errUpdate != nil {
 			return nil, errUpdate
 		}
-	case string(entity.TaskUpdateActionRequestFillForm):
+	case string(e.TaskUpdateActionRequestFillForm):
 		if !gb.State.IsTakenInWork {
 			return nil, errors.New("is not taken in work")
 		}
-
+		//here
 		if errFill := gb.handleRequestFillForm(ctx, data); errFill != nil {
 			return nil, errFill
 		}
 
 		updateInOtherBlocks = true
-	case string(entity.TaskUpdateActionFormExecutorStartWork):
+	case string(e.TaskUpdateActionFormExecutorStartWork):
 		if gb.State.IsTakenInWork {
 			return nil, errors.New("is already taken in work")
 		}
 
-		if errUpdate := gb.formExecutorStartWork(ctx); errUpdate != nil {
+		if errUpdate := gb.formExecutorStartWork(ctx, executorsLogins); errUpdate != nil {
 			return nil, errUpdate
 		}
-	case string(entity.TaskUpdateActionReload):
+	case string(e.TaskUpdateActionReload):
 	}
 
 	deadline, deadlineErr := gb.getDeadline(ctx, gb.State.WorkType)
@@ -84,41 +90,6 @@ func (gb *GoFormBlock) Update(ctx context.Context) (interface{}, error) {
 	}
 
 	gb.RunContext.VarStore.ReplaceState(gb.Name, stateBytes)
-
-	//nolint:exhaustive //its ok
-	if len(gb.State.ApplicationBody) > 0 {
-		if _, ok := gb.expectedEvents[eventEnd]; ok {
-			status, _, _ := gb.GetTaskHumanStatus()
-
-			event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, MakeNodeEndEventArgs{
-				NodeName:      gb.Name,
-				NodeShortName: gb.ShortName,
-				HumanStatus:   status,
-				NodeStatus:    gb.GetStatus(),
-			})
-			if eventErr != nil {
-				return nil, eventErr
-			}
-
-			kafkaEvent, eventErr := gb.RunContext.MakeNodeKafkaEvent(ctx, &MakeNodeKafkaEvent{
-				EventName:      eventEnd,
-				NodeName:       gb.Name,
-				NodeShortName:  gb.ShortName,
-				HumanStatus:    status,
-				NodeStatus:     gb.GetStatus(),
-				NodeType:       BlockGoFormID,
-				SLA:            deadline.Unix(),
-				ToRemoveLogins: []string{},
-			})
-
-			if eventErr != nil {
-				return nil, eventErr
-			}
-
-			gb.happenedEvents = append(gb.happenedEvents, event)
-			gb.happenedKafkaEvents = append(gb.happenedKafkaEvents, kafkaEvent)
-		}
-	}
 
 	if updateInOtherBlocks {
 		taskID := gb.RunContext.TaskID.String()
@@ -142,7 +113,107 @@ func (gb *GoFormBlock) Update(ctx context.Context) (interface{}, error) {
 		}
 	}
 
+	err = gb.setUpdateKafkaEvents(ctx, &setUpdateKafkaEventsDto{
+		action:           data.Action,
+		byLogin:          data.ByLogin,
+		wasAlreadyFilled: wasAlreadyFilled,
+		executorsLogins:  executorsLogins,
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	return nil, nil
+}
+
+type setUpdateKafkaEventsDto struct {
+	action, byLogin  string
+	wasAlreadyFilled bool
+	executorsLogins  map[string]struct{}
+}
+
+func (gb *GoFormBlock) setUpdateKafkaEvents(ctx context.Context, dto *setUpdateKafkaEventsDto) error {
+	humanStatus, _, _ := gb.GetTaskHumanStatus()
+
+	switch dto.action {
+	case string(e.TaskUpdateActionRequestFillForm):
+		if !gb.State.IsTakenInWork {
+			break
+		}
+
+		kafkaEvent, err := gb.RunContext.MakeNodeKafkaEvent(ctx, &MakeNodeKafkaEvent{
+			EventName:      string(e.TaskUpdateActionRequestFillForm),
+			NodeName:       gb.Name,
+			NodeShortName:  gb.ShortName,
+			HumanStatus:    humanStatus,
+			NodeStatus:     gb.GetStatus(),
+			NodeType:       BlockGoFormID,
+			SLA:            gb.State.Deadline.Unix(),
+			ToAddLogins:    []string{},
+			ToRemoveLogins: []string{dto.byLogin},
+		})
+		if err != nil {
+			return err
+		}
+
+		gb.happenedKafkaEvents = append(gb.happenedKafkaEvents, kafkaEvent)
+
+	case string(e.TaskUpdateActionFormExecutorStartWork):
+		if gb.State.IsTakenInWork {
+			break
+		}
+
+		kafkaEvent, err := gb.RunContext.MakeNodeKafkaEvent(ctx, &MakeNodeKafkaEvent{
+			EventName:      string(e.TaskUpdateActionFormExecutorStartWork),
+			NodeName:       gb.Name,
+			NodeShortName:  gb.ShortName,
+			HumanStatus:    humanStatus,
+			NodeStatus:     gb.GetStatus(),
+			NodeType:       BlockGoFormID,
+			SLA:            gb.State.Deadline.Unix(),
+			ToAddLogins:    []string{dto.byLogin},
+			ToRemoveLogins: getSliceFromMap(getDifMaps(dto.executorsLogins, map[string]struct{}{dto.byLogin: {}})),
+		})
+		if err != nil {
+			return err
+		}
+
+		gb.happenedKafkaEvents = append(gb.happenedKafkaEvents, kafkaEvent)
+	}
+
+	if len(gb.State.ApplicationBody) > 0 && !dto.wasAlreadyFilled {
+		if _, ok := gb.expectedEvents[eventEnd]; ok {
+			event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, MakeNodeEndEventArgs{
+				NodeName:      gb.Name,
+				NodeShortName: gb.ShortName,
+				HumanStatus:   humanStatus,
+				NodeStatus:    gb.GetStatus(),
+			})
+			if eventErr != nil {
+				return eventErr
+			}
+
+			gb.happenedEvents = append(gb.happenedEvents, event)
+
+			kafkaEvent, eventErr := gb.RunContext.MakeNodeKafkaEvent(ctx, &MakeNodeKafkaEvent{
+				EventName:      eventEnd,
+				NodeName:       gb.Name,
+				NodeShortName:  gb.ShortName,
+				HumanStatus:    humanStatus,
+				NodeStatus:     gb.GetStatus(),
+				NodeType:       BlockGoFormID,
+				SLA:            gb.State.Deadline.Unix(),
+				ToRemoveLogins: []string{},
+			})
+			if eventErr != nil {
+				return eventErr
+			}
+
+			gb.happenedKafkaEvents = append(gb.happenedKafkaEvents, kafkaEvent)
+		}
+	}
+
+	return nil
 }
 
 func (gb *GoFormBlock) checkFormFilled() error {
@@ -229,30 +300,6 @@ func (gb *GoFormBlock) handleRequestFillForm(ctx context.Context, data *script.B
 	if err != nil {
 		return err
 	}
-
-	status, _, _ := gb.GetTaskHumanStatus()
-
-	deadline, err := gb.getDeadline(ctx, gb.State.WorkType)
-	if err != nil {
-		return err
-	}
-
-	kafkaEvent, err := gb.RunContext.MakeNodeKafkaEvent(ctx, &MakeNodeKafkaEvent{
-		EventName:      string(entity.TaskUpdateActionRequestFillForm),
-		NodeName:       gb.Name,
-		NodeShortName:  gb.ShortName,
-		HumanStatus:    status,
-		NodeStatus:     gb.GetStatus(),
-		NodeType:       BlockGoFormID,
-		SLA:            deadline.Unix(),
-		ToAddLogins:    []string{},
-		ToRemoveLogins: []string{data.ByLogin},
-	})
-	if err != nil {
-		return err
-	}
-
-	gb.happenedKafkaEvents = append(gb.happenedKafkaEvents, kafkaEvent)
 
 	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputFormExecutor], personData)
 	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputFormBody], gb.State.ApplicationBody)
@@ -388,7 +435,7 @@ func (gb *GoFormBlock) handleHalfSLABreached(ctx context.Context) error {
 		slaInfoPtr, getSLAInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(
 			ctx,
 			sla.InfoDTO{
-				TaskCompletionIntervals: []entity.TaskCompletionInterval{
+				TaskCompletionIntervals: []e.TaskCompletionInterval{
 					{
 						StartedAt:  gb.RunContext.CurrBlockStartTime,
 						FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100),
@@ -457,18 +504,13 @@ func (gb *GoFormBlock) mapLoginsToEmails(ctx context.Context, fn string, logins 
 	return emails
 }
 
-func (gb *GoFormBlock) formExecutorStartWork(ctx context.Context) (err error) {
+func (gb *GoFormBlock) formExecutorStartWork(ctx context.Context, executorLogins map[string]struct{}) (err error) {
 	currentLogin := gb.RunContext.UpdateData.ByLogin
 	_, executorFound := gb.State.Executors[currentLogin]
 
 	_, isDelegate := gb.RunContext.Delegations.FindDelegatorFor(currentLogin, getSliceFromMap(gb.State.Executors))
 	if !(executorFound || isDelegate) {
 		return NewUserIsNotPartOfProcessErr()
-	}
-
-	executorLogins := make(map[string]struct{}, 0)
-	for i := range gb.State.Executors {
-		executorLogins[i] = gb.State.Executors[i]
 	}
 
 	gb.State.Executors = map[string]struct{}{
@@ -478,7 +520,7 @@ func (gb *GoFormBlock) formExecutorStartWork(ctx context.Context) (err error) {
 	gb.State.IsTakenInWork = true
 
 	slaInfoPtr, getSLAInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDTO{
-		TaskCompletionIntervals: []entity.TaskCompletionInterval{{
+		TaskCompletionIntervals: []e.TaskCompletionInterval{{
 			StartedAt:  gb.RunContext.CurrBlockStartTime,
 			FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100),
 		}},
@@ -502,30 +544,6 @@ func (gb *GoFormBlock) formExecutorStartWork(ctx context.Context) (err error) {
 	if err = gb.emailGroupExecutors(ctx, byLogin, executorLogins); err != nil {
 		return nil
 	}
-
-	status, _, _ := gb.GetTaskHumanStatus()
-
-	deadline, err := gb.getDeadline(ctx, gb.State.WorkType)
-	if err != nil {
-		return err
-	}
-
-	kafkaEvent, err := gb.RunContext.MakeNodeKafkaEvent(ctx, &MakeNodeKafkaEvent{
-		EventName:      string(entity.TaskUpdateActionFormExecutorStartWork),
-		NodeName:       gb.Name,
-		NodeShortName:  gb.ShortName,
-		HumanStatus:    status,
-		NodeStatus:     gb.GetStatus(),
-		NodeType:       BlockGoFormID,
-		SLA:            deadline.Unix(),
-		ToAddLogins:    []string{byLogin},
-		ToRemoveLogins: getSliceFromMap(getDifMaps(executorLogins, map[string]struct{}{byLogin: {}})),
-	})
-	if err != nil {
-		return err
-	}
-
-	gb.happenedKafkaEvents = append(gb.happenedKafkaEvents, kafkaEvent)
 
 	return nil
 }
@@ -618,7 +636,7 @@ func (gb *GoFormBlock) emailGroupExecutors(ctx context.Context, loginTakenInWork
 	}
 
 	slaInfoPtr, getSLAInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDTO{
-		TaskCompletionIntervals: []entity.TaskCompletionInterval{{
+		TaskCompletionIntervals: []e.TaskCompletionInterval{{
 			StartedAt:  gb.RunContext.CurrBlockStartTime,
 			FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100),
 		}},

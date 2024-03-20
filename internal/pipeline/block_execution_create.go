@@ -555,11 +555,6 @@ func (gb *GoExecutionBlock) makeExpectedEvents(ctx context.Context, runCtx *Bloc
 			return err
 		}
 
-		deadline, err := gb.getDeadline(ctx, gb.State.WorkType)
-		if err != nil {
-			return err
-		}
-
 		kafkaEvent, err := runCtx.MakeNodeKafkaEvent(ctx, &MakeNodeKafkaEvent{
 			EventName:     eventStart,
 			NodeName:      name,
@@ -567,7 +562,7 @@ func (gb *GoExecutionBlock) makeExpectedEvents(ctx context.Context, runCtx *Bloc
 			HumanStatus:   status,
 			NodeStatus:    gb.GetStatus(),
 			NodeType:      BlockGoExecutionID,
-			SLA:           deadline.Unix(),
+			SLA:           gb.State.Deadline.Unix(),
 			ToAddLogins:   getSliceFromMap(gb.State.Executors),
 		})
 		if err != nil {

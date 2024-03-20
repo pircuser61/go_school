@@ -93,6 +93,9 @@ func ValidateParam(param interface{}, paramJSONSchema *JSONSchemaPropertiesValue
 }
 
 func ValidateJSONByJSONSchema(jsonString, jsonSchema string) error {
+	jsonSchema = strings.Replace(jsonSchema, `"format":"date"`, `"format":""`, -1)  // TODO: delete this string
+	jsonSchema = strings.Replace(jsonSchema, `"format": "date"`, `"format":""`, -1) // TODO: delete this string
+
 	loader := gojsonschema.NewStringLoader(jsonSchema)
 
 	schema, err := gojsonschema.NewSchema(loader)

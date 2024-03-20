@@ -141,11 +141,6 @@ func (gb *GoApproverBlock) makeExpectedEvents(ctx context.Context, runCtx *Block
 			return err
 		}
 
-		deadline, err := gb.getDeadline(ctx, gb.State.WorkType)
-		if err != nil {
-			return err
-		}
-
 		kafkaEvent, err := runCtx.MakeNodeKafkaEvent(ctx, &MakeNodeKafkaEvent{
 			EventName:     eventStart,
 			NodeName:      name,
@@ -153,7 +148,7 @@ func (gb *GoApproverBlock) makeExpectedEvents(ctx context.Context, runCtx *Block
 			HumanStatus:   status,
 			NodeStatus:    gb.GetStatus(),
 			NodeType:      BlockGoApproverID,
-			SLA:           deadline.Unix(),
+			SLA:           gb.State.Deadline.Unix(),
 			Rule:          gb.State.ApprovementRule.String(),
 			ToAddLogins:   getSliceFromMap(gb.State.Approvers),
 		})
