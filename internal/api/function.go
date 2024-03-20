@@ -27,8 +27,18 @@ import (
 
 func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessage) error {
 	log := ae.Log
+
+	messageTmp, err := json.Marshal(message)
+	if err != nil {
+		log.WithField("taskID", message.TaskID).
+			WithError(err).
+			Error("error marshaling message from kafka")
+	}
+
+	messageString := string(messageTmp)
+
 	log.WithField("funcName", "FunctionReturnHandler").
-		WithField("message", message).
+		WithField("body", messageString).
 		Info("start handle message from kafka")
 
 	ctx = logger.WithLogger(ctx, log)
@@ -203,7 +213,7 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 	runCtx.NotifyEvents(ctx)
 
 	log.WithField("funcName", "FunctionReturnHandler").
-		WithField("message", message).
+		WithField("body", messageString).
 		Info("message from kafka successfully handled")
 
 	return nil
