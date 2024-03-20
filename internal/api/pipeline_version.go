@@ -800,7 +800,7 @@ func (ae *Env) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO) (
 	_, err = ae.DB.CreateTaskEvent(ctx, &e.CreateTaskEvent{
 		WorkID:    ep.TaskID.String(),
 		Author:    dto.authorName,
-		EventType: "start",
+		EventType: string(MonitoringTaskActionRequestActionStart),
 		Params:    jsonParams,
 	})
 	if err != nil {

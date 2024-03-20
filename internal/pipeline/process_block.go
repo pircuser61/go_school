@@ -268,7 +268,7 @@ func initBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *BlockRu
 		runCtx.VarStore.ReplaceState(name, state)
 	}
 
-	runCtx.CurrBlockStartTime = time.Now() // will be used only for the block creation
+	runCtx.CurrBlockStartTime = startTime
 
 	deadlines, deadlinesErr := block.Deadlines(ctx)
 	if deadlinesErr != nil {
@@ -289,8 +289,6 @@ func initBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *BlockRu
 	if err != nil {
 		return nil, uuid.Nil, err
 	}
-
-	runCtx.CurrBlockStartTime = startTime
 
 	return block, id, nil
 }
@@ -387,9 +385,8 @@ func (runCtx *BlockRunContext) saveStepInDB(ctx c.Context, dto *saveStepDTO, id 
 			People:        dto.currentExecutor.People,
 			InitialPeople: dto.currentExecutor.InitialPeople,
 		},
-	}, id)
 		BlockStart: runCtx.CurrBlockStartTime,
-	})
+	}, id)
 }
 
 type updateStepDTO struct {

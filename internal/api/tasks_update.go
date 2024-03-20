@@ -239,16 +239,7 @@ func (ae *Env) updateTaskBlockBySchedulerRequest(ctx context.Context, workNumber
 		return errors.New("stepTypes is empty")
 	}
 
-	delegationsByApprovement := delegations.FilterByType("approvement")
-	delegationsByExecution := delegations.FilterByType("execution")
-
-	dbTask, err := ae.DB.GetTask(
-		ctxLocal,
-		delegationsByApprovement.GetUserInArrayWithDelegators([]string{userLogin}),
-		delegationsByExecution.GetUserInArrayWithDelegators([]string{userLogin}),
-		userLogin,
-		workNumber,
-	)
+	dbTask, err := ae.GetTaskForUpdate(ctxLocal, workNumber)
 	if err != nil {
 		return GetTaskError.Join(err)
 	}
@@ -331,16 +322,7 @@ func (ae *Env) updateTaskBlockInternal(ctx context.Context, workNumber, userLogi
 		return errors.New("stepTypes is empty")
 	}
 
-	delegationsByApprovement := delegations.FilterByType("approvement")
-	delegationsByExecution := delegations.FilterByType("execution")
-
-	dbTask, err := ae.DB.GetTask(
-		ctxLocal,
-		delegationsByApprovement.GetUserInArrayWithDelegators([]string{userLogin}),
-		delegationsByExecution.GetUserInArrayWithDelegators([]string{userLogin}),
-		userLogin,
-		workNumber,
-	)
+	dbTask, err := ae.GetTaskForUpdate(ctxLocal, workNumber)
 	if err != nil {
 		return GetTaskError.Join(err)
 	}

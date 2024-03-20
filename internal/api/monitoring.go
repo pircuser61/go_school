@@ -28,9 +28,6 @@ import (
 
 const (
 	monitoringTimeLayout = "2006-01-02T15:04:05-0700"
-	taskEventPause       = "pause"
-	taskEventStart       = "start"
-	taskEventStartByOne  = "startByOne"
 )
 
 func (ae *Env) GetTasksForMonitoring(w http.ResponseWriter, r *http.Request, params GetTasksForMonitoringParams) {
@@ -477,7 +474,7 @@ func (ae *Env) MonitoringTaskAction(w http.ResponseWriter, r *http.Request) {
 	}
 
 	switch req.Action {
-	case taskEventPause:
+	case MonitoringTaskActionRequestActionPause:
 		err = ae.pauseTask(ctx, ui.Name, workID.String(), req.Params)
 		if err != nil {
 			errorHandler.handleError(PauseTaskError, err)
@@ -491,7 +488,7 @@ func (ae *Env) MonitoringTaskAction(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-	case taskEventStart:
+	case MonitoringTaskActionRequestActionStart:
 		err = ae.startProcess(ctx, &startNodesParams{
 			workID:     workID,
 			author:     ui.Username,
@@ -512,7 +509,7 @@ func (ae *Env) MonitoringTaskAction(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-	case taskEventStartByOne:
+	case MonitoringTaskActionRequestActionStartByOne:
 		err = ae.startProcess(ctx, &startNodesParams{
 			workID:     workID,
 			author:     ui.Username,
@@ -621,7 +618,7 @@ func (ae *Env) pauseTask(ctx context.Context, author, workID string, params *Mon
 	_, err = ae.DB.CreateTaskEvent(ctx, &entity.CreateTaskEvent{
 		WorkID:    workID,
 		Author:    author,
-		EventType: taskEventPause,
+		EventType: string(MonitoringTaskActionRequestActionPause),
 		Params:    jsonParams,
 	})
 	if err != nil {
@@ -665,7 +662,7 @@ func (ae *Env) startProcess(ctx context.Context, startParams *startNodesParams) 
 	_, err = ae.DB.CreateTaskEvent(ctx, &entity.CreateTaskEvent{
 		WorkID:    startParams.workID.String(),
 		Author:    startParams.author,
-		EventType: taskEventStart,
+		EventType: string(MonitoringTaskActionRequestActionStart),
 		Params:    jsonParams,
 	})
 	if err != nil {
@@ -697,19 +694,19 @@ func (ae *Env) restartNode(ctx context.Context,
 		return blockErr
 	}
 
-	dbStepsEntity, dbStepErr := ae.DB.GetTaskSteps(ctx, workID)
-	if dbStepErr != nil {
-		return dbStepErr
+	task, dbTaskErr := ae.GetTaskForUpdate(ctx, workNumber)
+	if dbTaskErr != nil {
+		return dbTaskErr
 	}
 
 	dbSteps := make(map[string]bool, 0)
 
-	for i := range dbStepsEntity {
-		if dbStepsEntity[i].Time.Before(blockStartTime) {
+	for i := range task.Steps {
+		if task.Steps[i].Time.Before(blockStartTime) {
 			continue
 		}
 
-		dbSteps[dbStepsEntity[i].Name] = true
+		dbSteps[task.Steps[i].Name] = true
 	}
 
 	nodesToSkip, skipErr := ae.getNodesToSkip(ctx, blockData.Next, workNumber, dbSteps)
@@ -727,27 +724,16 @@ func (ae *Env) restartNode(ctx context.Context,
 		return unpErr
 	}
 
-	dbTask, taskErr := ae.DB.GetTask(
-		ctx,
-		[]string{""},
-		[]string{""},
-		"",
-		workNumber,
-	)
-	if taskErr != nil {
-		return taskErr
-	}
-
 	storage, getErr := ae.DB.GetVariableStorageForStep(ctx, workID, workNumber)
 	if getErr != nil {
 		return getErr
 	}
 
 	_, processErr := pipeline.ProcessBlockWithEndMapping(ctx, stepName, blockData, &pipeline.BlockRunContext{
-		TaskID:      dbTask.ID,
+		TaskID:      task.ID,
 		WorkNumber:  workNumber,
-		WorkTitle:   dbTask.Name,
-		Initiator:   dbTask.Author,
+		WorkTitle:   task.Name,
+		Initiator:   task.Author,
 		VarStore:    storage,
 		Delegations: human_tasks.Delegations{},
 
@@ -777,8 +763,8 @@ func (ae *Env) restartNode(ctx context.Context,
 		Productive:     true,
 		OnceProductive: byOne,
 
-		IsTest:    dbTask.IsTest,
-		NotifName: dbTask.Name,
+		IsTest:    task.IsTest,
+		NotifName: task.Name,
 	}, false)
 	if processErr != nil {
 		return processErr
