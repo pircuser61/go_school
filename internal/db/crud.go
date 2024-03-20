@@ -1177,6 +1177,7 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 		}
 	}
 
+	timestamp := time.Now()
 	id := uuid.New()
 	// nolint:gocritic
 	// language=PostgreSQL
