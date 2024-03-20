@@ -788,6 +788,25 @@ func (ae *Env) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO) (
 
 	runCtx.NotifyEvents(ctx)
 
+	params := struct {
+		Steps []string `json:"steps"`
+	}{Steps: []string{"start_0"}}
+
+	jsonParams, err := json.Marshal(params)
+	if err != nil {
+		log.Error(err)
+	}
+
+	_, err = ae.DB.CreateTaskEvent(ctx, &e.CreateTaskEvent{
+		WorkID:    ep.TaskID.String(),
+		Author:    dto.authorName,
+		EventType: "start",
+		Params:    jsonParams,
+	})
+	if err != nil {
+		log.Error(err)
+	}
+
 	return ep, 0, nil
 }
 

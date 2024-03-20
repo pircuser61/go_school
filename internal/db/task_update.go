@@ -362,10 +362,13 @@ func (db *PGCon) SkipBlocksAfterRestarted(ctx c.Context, workID uuid.UUID, start
 	ctx, span := trace.StartSpan(ctx, "skip_blocks_after_restarted")
 	defer span.End()
 
+	blocksDB := make([]pq.StringArray, 0, len(blocks))
+	blocksDB = append(blocksDB, blocks)
+
 	const q = `UPDATE variable_storage SET status = 'skipped' 
                 WHERE work_id = $1 AND step_name IN $2 AND time > $3`
 
-	_, err = db.Connection.Exec(ctx, q, workID, blocks, startTime)
+	_, err = db.Connection.Exec(ctx, q, workID, blocksDB, startTime)
 	if err != nil {
 		return err
 	}

@@ -673,7 +673,8 @@ func (ae *Env) startProcess(ctx context.Context, startParams *startNodesParams) 
 	return nil
 }
 
-func (ae *Env) restartNode(ctx context.Context, workID uuid.UUID, workNumber, stepName, login string, byOne bool, tx db.Database) (err error) {
+func (ae *Env) restartNode(ctx context.Context, workID uuid.UUID, workNumber, stepName, login string,
+	byOne bool, tx db.Database) (err error) {
 	dbStep, stepErr := ae.DB.GetTaskStepByName(ctx, workID, stepName)
 	if stepErr != nil {
 		return stepErr
@@ -708,13 +709,16 @@ func (ae *Env) restartNode(ctx context.Context, workID uuid.UUID, workNumber, st
 		return unpErr
 	}
 
-	dbTask, err := ae.DB.GetTask(
+	dbTask, taskErr := ae.DB.GetTask(
 		ctx,
 		[]string{""},
 		[]string{""},
 		"",
 		workNumber,
 	)
+	if taskErr != nil {
+		return taskErr
+	}
 
 	storage, getErr := ae.DB.GetVariableStorageForStep(ctx, workID, workNumber)
 	if getErr != nil {
@@ -749,7 +753,8 @@ func (ae *Env) restartNode(ctx context.Context, workID uuid.UUID, workNumber, st
 
 		UpdateData: &script.BlockUpdateData{
 			Action:  string(entity.TaskUpdateActionReload),
-			ByLogin: login},
+			ByLogin: login,
+		},
 
 		Productive:     true,
 		OnceProductive: byOne,

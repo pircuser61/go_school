@@ -2,14 +2,11 @@ package pipeline
 
 import (
 	c "context"
-	"encoding/json"
 	"net/http"
 
 	"github.com/google/uuid"
 
 	"go.opencensus.io/trace"
-
-	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
@@ -126,8 +123,6 @@ type CreateTaskDTO struct {
 func (gb *ExecutablePipeline) CreateTask(ctx c.Context, dto *CreateTaskDTO) error {
 	gb.TaskID = uuid.New()
 
-	log := logger.GetLogger(ctx)
-
 	task, err := gb.Storage.CreateTask(ctx, &db.CreateTaskDTO{
 		TaskID:     gb.TaskID,
 		VersionID:  gb.VersionID,
@@ -143,25 +138,6 @@ func (gb *ExecutablePipeline) CreateTask(ctx c.Context, dto *CreateTaskDTO) erro
 	}
 
 	gb.WorkNumber = task.WorkNumber
-
-	params := struct {
-		Steps []string `json:"steps"`
-	}{Steps: []string{"start_0"}}
-
-	jsonParams, err := json.Marshal(params)
-	if err != nil {
-		log.Error(err)
-	}
-
-	_, err = gb.Storage.CreateTaskEvent(ctx, &entity.CreateTaskEvent{
-		WorkID:    gb.TaskID.String(),
-		Author:    dto.Author,
-		EventType: "start",
-		Params:    jsonParams,
-	})
-	if err != nil {
-		log.Error(err)
-	}
 
 	return nil
 }
