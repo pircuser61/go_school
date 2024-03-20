@@ -233,6 +233,8 @@ func createGoBlock(ctx c.Context, ef *entity.EriusFunc, name string, runCtx *Blo
 }
 
 func initBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *BlockRunContext) (Runner, uuid.UUID, error) {
+	runCtx.CurrBlockStartTime = time.Now()
+
 	block, isReEntry, err := CreateBlock(ctx, name, bl, runCtx)
 	if err != nil {
 		return nil, uuid.Nil, err
@@ -249,8 +251,6 @@ func initBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *BlockRu
 
 		runCtx.VarStore.ReplaceState(name, state)
 	}
-
-	runCtx.CurrBlockStartTime = time.Now() // will be used only for the block creation
 
 	deadlines, deadlinesErr := block.Deadlines(ctx)
 	if deadlinesErr != nil {
@@ -366,6 +366,7 @@ func (runCtx *BlockRunContext) saveStepInDB(ctx c.Context, dto *saveStepDTO) (uu
 			People:        dto.currentExecutor.People,
 			InitialPeople: dto.currentExecutor.InitialPeople,
 		},
+		BlockStart: runCtx.CurrBlockStartTime,
 	})
 }
 

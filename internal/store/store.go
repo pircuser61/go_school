@@ -246,8 +246,10 @@ func (c *VariableStore) ClearValues(blockName string) {
 	c.Lock()
 	defer c.Unlock()
 
+	prefix := blockName + "."
+
 	for k := range c.Values {
-		if strings.HasPrefix(k, blockName) {
+		if strings.HasPrefix(k, prefix) {
 			delete(c.Values, k)
 		}
 	}
