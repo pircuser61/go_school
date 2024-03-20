@@ -703,6 +703,9 @@ func (ae *Env) restartNode(ctx context.Context,
 	dbSteps := make(map[string]bool, 0)
 
 	for i := range dbStepsEntity {
+		if dbStepsEntity[i].Time.Before(blockStartTime) {
+			continue
+		}
 		dbSteps[dbStepsEntity[i].Name] = true
 	}
 
