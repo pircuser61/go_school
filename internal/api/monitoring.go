@@ -706,6 +706,7 @@ func (ae *Env) restartNode(ctx context.Context,
 		if dbStepsEntity[i].Time.Before(blockStartTime) {
 			continue
 		}
+
 		dbSteps[dbStepsEntity[i].Name] = true
 	}
 
