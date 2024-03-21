@@ -629,7 +629,7 @@ func (ae *Env) pauseTask(ctx context.Context, author, workID string, params *Mon
 }
 
 func (ae *Env) startProcess(ctx context.Context, startParams *startNodesParams) error {
-	isPaused, err := ae.DB.IsTaskPaused(ctx, startParams.workID)
+	isPaused, err := startParams.tx.IsTaskPaused(ctx, startParams.workID)
 	if err != nil {
 		return err
 	}
@@ -646,7 +646,7 @@ func (ae *Env) startProcess(ctx context.Context, startParams *startNodesParams) 
 		}
 	}
 
-	err = ae.DB.TryUnpauseTask(ctx, startParams.workID)
+	err = startParams.tx.TryUnpauseTask(ctx, startParams.workID)
 	if err != nil {
 		return err
 	}
@@ -659,7 +659,7 @@ func (ae *Env) startProcess(ctx context.Context, startParams *startNodesParams) 
 		}
 	}
 
-	_, err = ae.DB.CreateTaskEvent(ctx, &entity.CreateTaskEvent{
+	_, err = startParams.tx.CreateTaskEvent(ctx, &entity.CreateTaskEvent{
 		WorkID:    startParams.workID.String(),
 		Author:    startParams.author,
 		EventType: string(MonitoringTaskActionRequestActionStart),
@@ -675,12 +675,12 @@ func (ae *Env) startProcess(ctx context.Context, startParams *startNodesParams) 
 func (ae *Env) restartNode(ctx context.Context,
 	workID uuid.UUID, workNumber, stepName, login string, byOne bool, tx db.Database,
 ) (err error) {
-	dbStep, stepErr := ae.DB.GetTaskStepByName(ctx, workID, stepName)
+	dbStep, stepErr := tx.GetTaskStepByName(ctx, workID, stepName)
 	if stepErr != nil {
 		return stepErr
 	}
 
-	isResumable, blockStartTime, resumableErr := ae.DB.IsBlockResumable(ctx, workID, dbStep.ID)
+	isResumable, blockStartTime, resumableErr := tx.IsBlockResumable(ctx, workID, dbStep.ID)
 	if resumableErr != nil {
 		return resumableErr
 	}
@@ -689,7 +689,7 @@ func (ae *Env) restartNode(ctx context.Context,
 		return fmt.Errorf("can't unpause running task block: %s", stepName)
 	}
 
-	blockData, blockErr := ae.DB.GetBlockDataFromVersion(ctx, workNumber, stepName)
+	blockData, blockErr := tx.GetBlockDataFromVersion(ctx, workNumber, stepName)
 	if blockErr != nil {
 		return blockErr
 	}
@@ -714,17 +714,17 @@ func (ae *Env) restartNode(ctx context.Context,
 		return skipErr
 	}
 
-	dbSkipErr := ae.DB.SkipBlocksAfterRestarted(ctx, workID, blockStartTime, nodesToSkip)
+	dbSkipErr := tx.SkipBlocksAfterRestarted(ctx, workID, blockStartTime, nodesToSkip)
 	if dbSkipErr != nil {
 		return dbSkipErr
 	}
 
-	unpErr := ae.DB.UnpauseTaskBlock(ctx, workID, dbStep.ID)
+	unpErr := tx.UnpauseTaskBlock(ctx, workID, dbStep.ID)
 	if unpErr != nil {
 		return unpErr
 	}
 
-	storage, getErr := ae.DB.GetVariableStorageForStep(ctx, workID, workNumber)
+	storage, getErr := tx.GetVariableStorageForStep(ctx, workID, stepName)
 	if getErr != nil {
 		return getErr
 	}

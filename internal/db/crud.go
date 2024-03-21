@@ -2080,7 +2080,8 @@ func (db *PGCon) GetTaskStepByName(ctx context.Context, workID uuid.UUID, stepNa
 			vs.content, 
 			COALESCE(vs.break_points, '{}') AS break_points, 
 			vs.has_error,
-			vs.status
+			vs.status,
+			vs.is_paused
 		FROM variable_storage vs  
 			WHERE vs.work_id = $1 AND vs.step_name = $2
 			ORDER BY vs.time DESC
@@ -2101,6 +2102,7 @@ func (db *PGCon) GetTaskStepByName(ctx context.Context, workID uuid.UUID, stepNa
 		&s.BreakPoints,
 		&s.HasError,
 		&s.Status,
+		&s.IsPaused,
 	)
 	if err != nil {
 		return nil, err

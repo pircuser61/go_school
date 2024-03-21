@@ -332,24 +332,24 @@ func (db *PGCon) TryUnpauseTask(ctx c.Context, workID uuid.UUID) (err error) {
 	ctx, span := trace.StartSpan(ctx, "try_unpause_task")
 	defer span.End()
 
-	var ids []string
+	var i int
 
 	const q = `
-		SELECT id
+		SELECT count(id)
 		FROM variable_storage
 		WHERE work_id = $1 AND is_paused = false 
 		AND  status IN('running', 'idle', 'created')`
 
-	err = db.Connection.QueryRow(ctx, q, workID).Scan(&ids)
+	err = db.Connection.QueryRow(ctx, q, workID).Scan(&i)
 	if err != nil {
 		return err
 	}
 
-	if len(ids) != 0 {
+	if i != 0 {
 		return nil
 	}
 
-	err = db.TryUnpauseTask(ctx, workID)
+	err = db.SetTaskPaused(ctx, workID.String(), false)
 	if err != nil {
 		return err
 	}
