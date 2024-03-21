@@ -3820,7 +3820,7 @@ components:
           type: boolean
         retry_count:
           type: integer
-          description: count  of repetitions for the function
+          description: count of repetitions for the function
           minimum: 1
         retry_policy:
           type: string
@@ -3829,6 +3829,10 @@ components:
             - fibonacci
             - exponential
           description: policy of repetitions for the function
+        retry_interval:
+          type: integer
+          description: in seconds
+          minimum: 1
       required:
         - name
         - version

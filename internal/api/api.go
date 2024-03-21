@@ -1011,8 +1011,11 @@ type ExecutableFunctionParams struct {
 	Name      string `json:"name"`
 	NeedRetry bool   `json:"need_retry"`
 
-	// count  of repetitions for the function
+	// count of repetitions for the function
 	RetryCount *int `json:"retry_count,omitempty"`
+
+	// in seconds
+	RetryInterval *int `json:"retry_interval,omitempty"`
 
 	// policy of repetitions for the function
 	RetryPolicy *ExecutableFunctionParamsRetryPolicy `json:"retry_policy,omitempty"`
