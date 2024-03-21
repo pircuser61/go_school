@@ -782,6 +782,8 @@ func (ae *Env) getNodesToSkip(ctx context.Context, nextNodes map[string][]string
 				continue
 			}
 
+			nodeList = append(nodeList, next)
+
 			blockData, blockErr := ae.DB.GetBlockDataFromVersion(ctx, workNumber, next)
 			if blockErr != nil {
 				return nil, blockErr
