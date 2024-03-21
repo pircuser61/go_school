@@ -461,8 +461,9 @@ func (ae *Env) updateStepInternal(ctx context.Context, data *updateStepData) boo
 			Parameters: data.updData.Parameters,
 		},
 
-		IsTest:    data.task.IsTest,
-		NotifName: data.task.Name,
+		IsTest:     data.task.IsTest,
+		NotifName:  data.task.Name,
+		Productive: true,
 	}
 
 	blockFunc, ok := data.scenario.Pipeline.Blocks[data.step.Name]

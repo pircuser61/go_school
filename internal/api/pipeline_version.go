@@ -756,6 +756,7 @@ func (ae *Env) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO) (
 			ep.Name,
 			dto.runCtx.InitialApplication.CustomTitle,
 			dto.runCtx.InitialApplication.IsTestApplication),
+		Productive: true,
 	}
 	blockData := dto.p.Pipeline.Blocks[ep.EntryPoint]
 

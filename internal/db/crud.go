@@ -1218,7 +1218,8 @@ func (db *PGCon) InitTaskBlock(ctx context.Context, dto *SaveStepRequest, isPaus
 		dto.WorkID,
 		dto.StepType,
 		dto.StepName,
-		dto.Content,
+		// Вот тут надо понять правильно ли это? Или в другом месте лучше
+		[]byte("{}"),
 		timestamp,
 		dto.BreakPoints,
 		dto.HasError,
@@ -1240,7 +1241,7 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest, id u
 	ctx, span := trace.StartSpan(ctx, "pg_save_step_context")
 	defer span.End()
 
-	if !dto.IsReEntry || dto.BlockExist {
+	if !dto.IsReEntry && dto.BlockExist {
 		exists, stepID, _, err := db.isStepExist(ctx, dto.WorkID.String(), dto.StepName)
 		if err != nil {
 			return uuid.Nil, err
@@ -1277,8 +1278,7 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest, id u
 
 	if _, ok := map[string]struct{}{"finished": {}, "no_success": {}, "error": {}}[dto.Status]; ok {
 		args = append(args, time.Now())
-		query = strings.Replace(query, "--update_col--", ",updated_at", 1)
-		query = strings.Replace(query, "--update_val--", fmt.Sprintf(",$%d", len(args)), 1)
+		query = strings.Replace(query, "--update_col--", fmt.Sprintf(",updated_at = $%d", len(args)), 1)
 	}
 
 	_, err := db.Connection.Exec(ctx, query, args...)

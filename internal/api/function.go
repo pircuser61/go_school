@@ -15,8 +15,10 @@ import (
 
 	"go.opencensus.io/trace"
 
-	"gitlab.services.mts.ru/abp/mail/pkg/email"
 	"gitlab.services.mts.ru/abp/myosotis/logger"
+
+	"gitlab.services.mts.ru/abp/mail/pkg/email"
+
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/kafka"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
@@ -160,7 +162,8 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 		UpdateData: &script.BlockUpdateData{
 			Parameters: mapping,
 		},
-		IsTest: st.IsTest,
+		IsTest:     st.IsTest,
+		Productive: true,
 	}
 
 	runCtx.SetTaskEvents(ctx)

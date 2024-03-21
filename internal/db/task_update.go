@@ -272,7 +272,7 @@ func (db *PGCon) SetTaskPaused(ctx c.Context, workID string, isPaused bool) erro
 	ctx, span := trace.StartSpan(ctx, "set_task_paused")
 	defer span.End()
 
-	const q = `UPDATE works SET is_paused = $1 WHERE id = $2`
+	const q = `UPDATE works SET is_paused = $2 WHERE id = $1`
 
 	_, err := db.Connection.Exec(ctx, q, workID, isPaused)
 	if err != nil {
@@ -302,10 +302,9 @@ func (db *PGCon) SetTaskBlocksPaused(ctx c.Context, workID string, steps []strin
 		UPDATE variable_storage SET is_paused = $1 
 		WHERE work_id = $2 AND
 			  status IN('running', 'idle', 'created') AND
-			  step_name IN($3)`
+			  step_name = ANY ($3)`
 
-	stepsIn := make([]pq.StringArray, 0, len(steps))
-	stepsIn = append(stepsIn, steps)
+	stepsIn := pq.StringArray(steps)
 
 	_, err := db.Connection.Exec(ctx, q, isPaused, workID, stepsIn)
 	if err != nil {
@@ -365,7 +364,7 @@ func (db *PGCon) SkipBlocksAfterRestarted(ctx c.Context, workID uuid.UUID, start
 	blocksDB := pq.StringArray(blocks)
 
 	const q = `UPDATE variable_storage SET status = 'skipped' 
-                WHERE work_id = $1 AND step_name IN $2 AND time > $3`
+                WHERE work_id = $1 AND step_name = ANY ($2) AND time > $3`
 
 	_, err = db.Connection.Exec(ctx, q, workID, blocksDB, startTime)
 	if err != nil {
