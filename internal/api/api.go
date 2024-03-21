@@ -80,6 +80,15 @@ const (
 	EndSystemSettingsMethodPOST EndSystemSettingsMethod = "POST"
 )
 
+// Defines values for ExecutableFunctionParamsRetryPolicy.
+const (
+	ExecutableFunctionParamsRetryPolicyExponential ExecutableFunctionParamsRetryPolicy = "exponential"
+
+	ExecutableFunctionParamsRetryPolicyFibonacci ExecutableFunctionParamsRetryPolicy = "fibonacci"
+
+	ExecutableFunctionParamsRetryPolicySimple ExecutableFunctionParamsRetryPolicy = "simple"
+)
+
 // Defines values for ExecutionParamsType.
 const (
 	ExecutionParamsTypeFromSchema ExecutionParamsType = "from_schema"
@@ -1000,7 +1009,17 @@ type ExecutableFunctionParams struct {
 	Mapping JSONSchemaProperties `json:"mapping"`
 
 	// Function name
-	Name string `json:"name"`
+	Name      string `json:"name"`
+	NeedRetry bool   `json:"need_retry"`
+
+	// count of repetitions for the function
+	RetryCount *int `json:"retry_count,omitempty"`
+
+	// in seconds
+	RetryInterval *int `json:"retry_interval,omitempty"`
+
+	// policy of repetitions for the function
+	RetryPolicy *ExecutableFunctionParamsRetryPolicy `json:"retry_policy,omitempty"`
 
 	// in seconds
 	Sla int `json:"sla"`
@@ -1011,6 +1030,9 @@ type ExecutableFunctionParams struct {
 	// Days to wait correct answer
 	WaitCorrectRes int `json:"waitCorrectRes"`
 }
+
+// policy of repetitions for the function
+type ExecutableFunctionParamsRetryPolicy string
 
 // Execution params
 type ExecutionParams struct {
