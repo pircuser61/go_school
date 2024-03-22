@@ -1218,8 +1218,7 @@ func (db *PGCon) InitTaskBlock(ctx context.Context, dto *SaveStepRequest, isPaus
 		dto.WorkID,
 		dto.StepType,
 		dto.StepName,
-		// Вот тут надо понять правильно ли это? Или в другом месте лучше
-		[]byte("{}"),
+		dto.Content,
 		timestamp,
 		dto.BreakPoints,
 		dto.HasError,

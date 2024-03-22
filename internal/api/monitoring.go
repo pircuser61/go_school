@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -699,24 +700,9 @@ func (ae *Env) restartNode(ctx context.Context,
 		return dbTaskErr
 	}
 
-	dbSteps := make(map[string]bool, 0)
-
-	for i := range task.Steps {
-		if task.Steps[i].Time.Before(blockStartTime) {
-			continue
-		}
-
-		dbSteps[task.Steps[i].Name] = true
-	}
-
-	nodesToSkip, skipErr := ae.getNodesToSkip(ctx, blockData.Next, workNumber, dbSteps)
+	skipErr := ae.skipTaskBlocksAfterRestart(ctx, &task.Steps, blockStartTime, blockData.Next, workNumber, workID, tx)
 	if skipErr != nil {
 		return skipErr
-	}
-
-	dbSkipErr := tx.SkipBlocksAfterRestarted(ctx, workID, blockStartTime, nodesToSkip)
-	if dbSkipErr != nil {
-		return dbSkipErr
 	}
 
 	unpErr := tx.UnpauseTaskBlock(ctx, workID, dbStep.ID)
@@ -799,4 +785,30 @@ func (ae *Env) getNodesToSkip(ctx context.Context, nextNodes map[string][]string
 	}
 
 	return nodeList, nil
+}
+
+func (ae *Env) skipTaskBlocksAfterRestart(ctx context.Context, steps *entity.TaskSteps, blockStartTime time.Time,
+	nextNodes map[string][]string, workNumber string, workID uuid.UUID, tx db.Database) (err error) {
+
+	dbSteps := make(map[string]bool, 0)
+
+	for i := range *steps {
+		if (*steps)[i].Time.Before(blockStartTime) {
+			continue
+		}
+
+		dbSteps[(*steps)[i].Name] = true
+	}
+
+	nodesToSkip, skipErr := ae.getNodesToSkip(ctx, nextNodes, workNumber, dbSteps)
+	if skipErr != nil {
+		return skipErr
+	}
+
+	dbSkipErr := tx.SkipBlocksAfterRestarted(ctx, workID, blockStartTime, nodesToSkip)
+	if dbSkipErr != nil {
+		return dbSkipErr
+	}
+
+	return nil
 }

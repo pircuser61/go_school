@@ -237,11 +237,18 @@ func createGoBlock(ctx c.Context, ef *entity.EriusFunc, name string, runCtx *Blo
 }
 
 func initBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *BlockRunContext) (Runner, uuid.UUID, error) {
+
+	storageData, errSerialize := json.Marshal(runCtx.VarStore)
+	if errSerialize != nil {
+		return nil, uuid.Nil, errSerialize
+	}
+
 	id, startTime, err := runCtx.Services.Storage.InitTaskBlock(ctx, &db.SaveStepRequest{
 		WorkID:   runCtx.TaskID,
 		StepType: bl.TypeID,
 		StepName: name,
 		Status:   string(StatusReady),
+		Content:  storageData,
 	}, runCtx.OnceProductive)
 	if err != nil {
 		return nil, uuid.Nil, err
