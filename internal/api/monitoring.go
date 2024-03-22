@@ -788,8 +788,8 @@ func (ae *Env) getNodesToSkip(ctx context.Context, nextNodes map[string][]string
 }
 
 func (ae *Env) skipTaskBlocksAfterRestart(ctx context.Context, steps *entity.TaskSteps, blockStartTime time.Time,
-	nextNodes map[string][]string, workNumber string, workID uuid.UUID, tx db.Database) (err error) {
-
+	nextNodes map[string][]string, workNumber string, workID uuid.UUID, tx db.Database,
+) (err error) {
 	dbSteps := make(map[string]bool, 0)
 
 	for i := range *steps {

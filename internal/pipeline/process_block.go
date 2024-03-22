@@ -237,7 +237,6 @@ func createGoBlock(ctx c.Context, ef *entity.EriusFunc, name string, runCtx *Blo
 }
 
 func initBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *BlockRunContext) (Runner, uuid.UUID, error) {
-
 	storageData, errSerialize := json.Marshal(runCtx.VarStore)
 	if errSerialize != nil {
 		return nil, uuid.Nil, errSerialize
