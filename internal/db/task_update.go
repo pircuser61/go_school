@@ -5,9 +5,8 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/lib/pq"
-
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 	"github.com/pkg/errors"
 
 	"go.opencensus.io/trace"
@@ -273,7 +272,7 @@ func (db *PGCon) SetTaskPaused(ctx c.Context, workID string, isPaused bool) erro
 	ctx, span := trace.StartSpan(ctx, "set_task_paused")
 	defer span.End()
 
-	const q = `UPDATE works SET is_paused = $1 WHERE id = $2`
+	const q = `UPDATE works SET is_paused = $2 WHERE id = $1`
 
 	_, err := db.Connection.Exec(ctx, q, workID, isPaused)
 	if err != nil {
@@ -303,12 +302,71 @@ func (db *PGCon) SetTaskBlocksPaused(ctx c.Context, workID string, steps []strin
 		UPDATE variable_storage SET is_paused = $1 
 		WHERE work_id = $2 AND
 			  status IN('running', 'idle', 'created') AND
-			  step_name IN($3)`
+			  step_name = ANY ($3)`
 
-	stepsIn := make([]pq.StringArray, 0, len(steps))
-	stepsIn = append(stepsIn, steps)
+	stepsIn := pq.StringArray(steps)
 
 	_, err := db.Connection.Exec(ctx, q, isPaused, workID, stepsIn)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *PGCon) UnpauseTaskBlock(ctx c.Context, workID, stepID uuid.UUID) (err error) {
+	ctx, span := trace.StartSpan(ctx, "unpause_task_block")
+	defer span.End()
+
+	const q = `UPDATE variable_storage SET is_paused = false WHERE id = $1 AND work_id = $2`
+
+	_, err = db.Connection.Exec(ctx, q, stepID, workID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *PGCon) TryUnpauseTask(ctx c.Context, workID uuid.UUID) (err error) {
+	ctx, span := trace.StartSpan(ctx, "try_unpause_task")
+	defer span.End()
+
+	var i int
+
+	const q = `
+		SELECT count(id)
+		FROM variable_storage
+		WHERE work_id = $1 AND is_paused = true 
+		AND  status IN('running', 'idle', 'created','ready')`
+
+	err = db.Connection.QueryRow(ctx, q, workID).Scan(&i)
+	if err != nil {
+		return err
+	}
+
+	if i != 0 {
+		return nil
+	}
+
+	err = db.SetTaskPaused(ctx, workID.String(), false)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *PGCon) SkipBlocksAfterRestarted(ctx c.Context, workID uuid.UUID, startTime time.Time, blocks []string) (err error) {
+	ctx, span := trace.StartSpan(ctx, "skip_blocks_after_restarted")
+	defer span.End()
+
+	blocksDB := pq.StringArray(blocks)
+
+	const q = `UPDATE variable_storage SET status = 'skipped' 
+                WHERE work_id = $1 AND step_name = ANY ($2) AND time > $3`
+
+	_, err = db.Connection.Exec(ctx, q, workID, blocksDB, startTime)
 	if err != nil {
 		return err
 	}

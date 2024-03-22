@@ -643,8 +643,8 @@ func (db *PGCon) VersionEditable(c context.Context, versionID uuid.UUID) (bool, 
 
 	for rows.Next() {
 		count := 0
-		err = rows.Scan(&count)
 
+		err = rows.Scan(&count)
 		if err != nil {
 			return false, err
 		}
@@ -1147,9 +1147,9 @@ func (db *PGCon) isStepExist(ctx context.Context, workID, stepName string) (bool
 		FROM variable_storage
 		WHERE work_id = $1 AND
 			step_name = $2 AND
-			(status IN ('idle', 'ready', 'running') OR (
+			(((status IN ('idle', 'running') AND is_paused = false) OR (status = 'ready')) OR (
 				step_type = 'form' AND
-				status IN ('idle', 'ready', 'running', 'finished') AND
+				((status IN ('idle', 'running','finished') AND is_paused = false) OR (status = 'ready')) AND
 				time = (SELECT max(time) FROM variable_storage vs 
 							WHERE vs.work_id = $1 AND step_name = $2)
 			))`
@@ -1162,23 +1162,22 @@ func (db *PGCon) isStepExist(ctx context.Context, workID, stepName string) (bool
 	return id != uuid.Nil, id, t, nil
 }
 
-func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uuid.UUID, time.Time, error) {
-	ctx, span := trace.StartSpan(ctx, "pg_save_step_context")
+func (db *PGCon) InitTaskBlock(ctx context.Context, dto *SaveStepRequest, isPaused bool) (id uuid.UUID, startTime time.Time, err error) {
+	ctx, span := trace.StartSpan(ctx, "pg_init_task_block")
 	defer span.End()
 
-	if !dto.IsReEntry {
-		exists, stepID, createdAt, err := db.isStepExist(ctx, dto.WorkID.String(), dto.StepName)
-		if err != nil {
-			return uuid.Nil, time.Time{}, err
-		}
-
-		if exists {
-			return stepID, createdAt, nil
-		}
+	exists, stepID, t, existErr := db.isStepExist(ctx, dto.WorkID.String(), dto.StepName)
+	if existErr != nil {
+		return uuid.Nil, time.Time{}, existErr
 	}
 
+	if exists {
+		return stepID, t, nil
+	}
+
+	id = uuid.New()
+
 	timestamp := time.Now()
-	id := uuid.New()
 	// nolint:gocritic
 	// language=PostgreSQL
 	query := `
@@ -1194,8 +1193,9 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 			status,
 		    attachments, 	                         
 		    current_executor,
-			is_active
-			--update_col--
+			is_active,
+		    is_paused
+
 		)
 		VALUES (
 			$1, 
@@ -1209,8 +1209,8 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 			$9,
 		    $10,
 		    $11,
-		    true
-			--update_val--
+		    true,
+		    $12
 		)
 `
 	args := []interface{}{
@@ -1219,36 +1219,83 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 		dto.StepType,
 		dto.StepName,
 		dto.Content,
-		dto.BlockStart,
+		timestamp,
 		dto.BreakPoints,
 		dto.HasError,
 		dto.Status,
 		dto.Attachments,
 		dto.CurrentExecutor,
+		isPaused,
 	}
 
-	if _, ok := map[string]struct{}{"finished": {}, "no_success": {}, "error": {}}[dto.Status]; ok {
-		args = append(args, timestamp)
-		query = strings.Replace(query, "--update_col--", ",updated_at", 1)
-		query = strings.Replace(query, "--update_val--", fmt.Sprintf(",$%d", len(args)), 1)
-	}
-
-	_, err := db.Connection.Exec(ctx, query, args...)
-	if err != nil {
-		return uuid.Nil, time.Time{}, err
-	}
-
-	err = db.insertIntoMembers(ctx, dto.Members, id)
-	if err != nil {
-		return uuid.Nil, time.Time{}, err
-	}
-
-	err = db.deleteAndInsertIntoDeadlines(ctx, dto.Deadlines, id)
+	_, err = db.Connection.Exec(ctx, query, args...)
 	if err != nil {
 		return uuid.Nil, time.Time{}, err
 	}
 
 	return id, timestamp, nil
+}
+
+func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest, id uuid.UUID) (uuid.UUID, error) {
+	ctx, span := trace.StartSpan(ctx, "pg_save_step_context")
+	defer span.End()
+
+	if !dto.IsReEntry && dto.BlockExist {
+		exists, stepID, _, err := db.isStepExist(ctx, dto.WorkID.String(), dto.StepName)
+		if err != nil {
+			return uuid.Nil, err
+		}
+
+		if exists {
+			return stepID, nil
+		}
+	}
+	// nolint:gocritic
+	// language=PostgreSQL
+	query := `
+		UPDATE variable_storage SET 
+			content = $2, 
+			break_points = $3, 
+			has_error = $4,
+			status = $5,
+		    attachments = $6, 	                         
+		    current_executor = $7,
+			is_paused = $8
+			--update_col--
+			WHERE id = $1
+`
+	args := []interface{}{
+		id,
+		dto.Content,
+		dto.BreakPoints,
+		dto.HasError,
+		dto.Status,
+		dto.Attachments,
+		dto.CurrentExecutor,
+		false,
+	}
+
+	if _, ok := map[string]struct{}{"finished": {}, "no_success": {}, "error": {}}[dto.Status]; ok {
+		args = append(args, time.Now())
+		query = strings.Replace(query, "--update_col--", fmt.Sprintf(",updated_at = $%d", len(args)), 1)
+	}
+
+	_, err := db.Connection.Exec(ctx, query, args...)
+	if err != nil {
+		return uuid.Nil, err
+	}
+
+	err = db.insertIntoMembers(ctx, dto.Members, id)
+	if err != nil {
+		return uuid.Nil, err
+	}
+
+	err = db.deleteAndInsertIntoDeadlines(ctx, dto.Deadlines, id)
+	if err != nil {
+		return uuid.Nil, err
+	}
+
+	return id, nil
 }
 
 func (db *PGCon) UpdateStepContext(ctx context.Context, dto *UpdateStepRequest) error {
@@ -1682,7 +1729,6 @@ func (db *PGCon) GetUnfinishedTaskSteps(ctx context.Context, in *entity.GetUnfin
 			&s.HasError,
 			&s.Status,
 		)
-
 		if err != nil {
 			return nil, err
 		}
@@ -1827,7 +1873,8 @@ func (db *PGCon) ParallelIsFinished(ctx context.Context, workNumber, blockName s
         FROM variable_storage vs
                  INNER JOIN works w on vs.work_id = w.id
                  INNER JOIN inside_gates_nodes ign ON vs.step_name=ign.out_node
-        WHERE w.work_number=$1 and w.child_id is null and vs.status IN('running', 'idle', 'ready') AND is_active = true
+        WHERE w.work_number=$1 and w.child_id is null and vs.status IN('running', 'idle') 
+          AND is_active = true AND vs.is_paused = false
     ) as is_finished,
     (
         SELECT CASE WHEN count(distinct vs.step_name) = 
@@ -2032,7 +2079,8 @@ func (db *PGCon) GetTaskStepByName(ctx context.Context, workID uuid.UUID, stepNa
 			vs.content, 
 			COALESCE(vs.break_points, '{}') AS break_points, 
 			vs.has_error,
-			vs.status
+			vs.status,
+			vs.is_paused
 		FROM variable_storage vs  
 			WHERE vs.work_id = $1 AND vs.step_name = $2
 			ORDER BY vs.time DESC
@@ -2053,6 +2101,7 @@ func (db *PGCon) GetTaskStepByName(ctx context.Context, workID uuid.UUID, stepNa
 		&s.BreakPoints,
 		&s.HasError,
 		&s.Status,
+		&s.IsPaused,
 	)
 	if err != nil {
 		return nil, err

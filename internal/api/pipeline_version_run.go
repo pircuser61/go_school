@@ -86,7 +86,7 @@ func (ae *Env) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	isPaused, err := ae.DB.IsTaskPaused(ctx, workID.String())
+	isPaused, err := ae.DB.IsTaskPaused(ctx, workID)
 	if err != nil {
 		errorHandler.handleError(CheckIsTaskPausedError, err)
 

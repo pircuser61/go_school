@@ -5135,7 +5135,7 @@ components:
           description: "Номер заявки для мониторинга"
         action:
           type: string
-          enum: [ "start", "pause" ]
+          enum: [ "start", "pause", "startByOne" ]
           description: "Действия с заявкой"
         params:
           $ref: '#/components/schemas/MonitoringTaskActionParams'

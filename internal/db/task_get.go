@@ -34,7 +34,7 @@ const (
 )
 
 func uniqueActionsByRole(loginsIn, stepType string, finished, acted bool) string {
-	statuses := "(vs.status IN ('running', 'idle', 'ready') AND m.finished = false)"
+	statuses := "(vs.status IN ('running', 'idle') AND m.finished = false)"
 
 	if finished {
 		statuses = "(vs.status IN ('finished', 'cancel', 'no_success', 'error') OR m.finished = true)"
@@ -50,8 +50,8 @@ func uniqueActionsByRole(loginsIn, stepType string, finished, acted bool) string
 	return fmt.Sprintf(`WITH actions AS (
     SELECT vs.work_id                                                                       AS work_id
          , vs.step_name                                                                     AS block_id
-         , CASE WHEN vs.status IN ('running', 'idle', 'ready') THEN m.actions ELSE '{}' END AS action
-         , CASE WHEN vs.status IN ('running', 'idle', 'ready') THEN m.params ELSE '{}' END  AS params
+         , CASE WHEN vs.status IN ('running', 'idle') THEN m.actions ELSE '{}' END AS action
+         , CASE WHEN vs.status IN ('running', 'idle') THEN m.params ELSE '{}' END  AS params
          , vs.current_executor                                                              AS current_executor
          , CASE WHEN vs.step_type = 'execution' THEN vs.time END                            AS exec_start_time
 		 , CASE WHEN vs.step_type = 'approver' THEN vs.time END                          	AS appr_start_time
@@ -107,7 +107,7 @@ func uniqueActiveActions(approverLogins, executionLogins []string, currentUser, 
         OR (m.login IN %s AND vs.step_type = 'approver')
         OR (m.login IN %s AND vs.step_type = 'execution'))
       AND w.work_number = '%s'
-      AND vs.status IN ('running', 'idle', 'ready')
+      AND vs.status IN ('running', 'idle')
       AND w.child_id IS NULL
 )
    , unique_actions AS (
@@ -930,7 +930,7 @@ WITH active_counts as (
     FROM members m
              JOIN variable_storage vs ON vs.id = m.block_id
              JOIN works w ON vs.work_id = w.id AND w.child_id IS NULL
-    WHERE vs.status IN ('running', 'idle', 'ready')
+    WHERE vs.status IN ('running', 'idle')
       AND m.login = ANY ($2)
       AND vs.step_type = 'approver'
 	  AND m.finished = false
@@ -942,7 +942,7 @@ WITH active_counts as (
     FROM members m
              JOIN variable_storage vs ON vs.id = m.block_id
              JOIN works w ON vs.work_id = w.id AND w.child_id IS NULL
-    WHERE vs.status IN ('running', 'idle', 'ready')
+    WHERE vs.status IN ('running', 'idle')
       AND m.login = ANY ($3)
       AND vs.step_type = 'execution'
 	  AND m.finished = false
@@ -954,7 +954,7 @@ WITH active_counts as (
     FROM members m
              JOIN variable_storage vs ON vs.id = m.block_id
              JOIN works w ON vs.work_id = w.id AND w.child_id IS NULL
-    WHERE vs.status IN ('running', 'idle', 'ready')
+    WHERE vs.status IN ('running', 'idle')
       AND m.login = $1
       AND vs.step_type = 'form'
 	  AND m.finished = false
@@ -966,7 +966,7 @@ WITH active_counts as (
     FROM members m
              JOIN variable_storage vs ON vs.id = m.block_id
              JOIN works w ON vs.work_id = w.id AND w.child_id IS NULL
-    WHERE vs.status IN ('running', 'idle', 'ready')
+    WHERE vs.status IN ('running', 'idle')
       AND m.login = $1
       AND vs.step_type = 'sign'
 	  AND m.finished = false
@@ -1507,7 +1507,6 @@ func (db *PGCon) getTasks(ctx c.Context, filters *entity.TaskFilter,
 			&nullApprTime,
 			&et.IsPaused,
 		)
-
 		if err != nil {
 			return nil, err
 		}
@@ -1601,7 +1600,6 @@ func (db *PGCon) getTasksMeta(ctx c.Context, q string, args []interface{}) (*ent
 			&workNumber,
 			&blueprintID,
 		)
-
 		if err != nil {
 			return nil, err
 		}
@@ -2447,7 +2445,7 @@ func (db *PGCon) GetExecutorsFromPrevWorkVersionExecutionBlockRun(ctx c.Context,
 	return executors, nil
 }
 
-func (db *PGCon) IsTaskPaused(ctx c.Context, workID string) (isPaused bool, err error) {
+func (db *PGCon) IsTaskPaused(ctx c.Context, workID uuid.UUID) (isPaused bool, err error) {
 	const q = `
 		SELECT is_paused
 		FROM works
@@ -2459,4 +2457,27 @@ func (db *PGCon) IsTaskPaused(ctx c.Context, workID string) (isPaused bool, err 
 	}
 
 	return isPaused, nil
+}
+
+func (db *PGCon) IsBlockResumable(ctx c.Context, workID, stepID uuid.UUID) (isResumable bool, startTime time.Time, err error) {
+	ctx, span := trace.StartSpan(ctx, "is_block_resumable")
+	defer span.End()
+
+	var isPaused bool
+
+	var status string
+
+	var t time.Time
+
+	const q = `
+		SELECT status, is_paused, time
+		FROM variable_storage
+		WHERE work_id = $1 AND id = $2`
+
+	err = db.Connection.QueryRow(ctx, q, workID, stepID).Scan(&status, &isPaused, &t)
+	if err != nil {
+		return false, time.Time{}, err
+	}
+
+	return status == "finished" || isPaused, t, nil
 }

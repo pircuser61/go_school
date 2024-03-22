@@ -977,3 +977,30 @@ func (ae *Env) hideExecutors(
 
 	return nil
 }
+
+func (ae *Env) GetTaskForUpdate(ctx context.Context, workNumber string) (task *entity.EriusTask, err error) {
+	dbTask, taskErr := ae.DB.GetTask(
+		ctx,
+		[]string{""},
+		[]string{""},
+		"",
+		workNumber,
+	)
+	if taskErr != nil {
+		return nil, taskErr
+	}
+
+	workID, idErr := ae.DB.GetWorkIDByWorkNumber(ctx, workNumber)
+	if idErr != nil {
+		return nil, idErr
+	}
+
+	dbSteps, dbStepErr := ae.DB.GetTaskSteps(ctx, workID)
+	if dbStepErr != nil {
+		return nil, dbStepErr
+	}
+
+	dbTask.Steps = dbSteps
+
+	return dbTask, nil
+}
