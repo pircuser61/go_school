@@ -3,10 +3,12 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -16,15 +18,17 @@ import (
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
 const (
 	monitoringTimeLayout = "2006-01-02T15:04:05-0700"
-	taskEventPause       = "pause"
-	taskEventStart       = "start"
 )
 
 func (ae *Env) GetTasksForMonitoring(w http.ResponseWriter, r *http.Request, params GetTasksForMonitoringParams) {
@@ -393,7 +397,15 @@ func (ae *Env) GetBlockState(w http.ResponseWriter, r *http.Request, blockID str
 	}
 }
 
-//nolint:gocyclo //its ok here
+type startNodesParams struct {
+	workID             uuid.UUID
+	author, workNumber string
+	byOne              bool
+	params             *MonitoringTaskActionParams
+	tx                 db.Database
+}
+
+//nolint:gocyclo,gocognit //its ok here
 func (ae *Env) MonitoringTaskAction(w http.ResponseWriter, r *http.Request) {
 	ctx, span := trace.StartSpan(r.Context(), "monitoring_task_action")
 	defer span.End()
@@ -463,7 +475,7 @@ func (ae *Env) MonitoringTaskAction(w http.ResponseWriter, r *http.Request) {
 	}
 
 	switch req.Action {
-	case taskEventPause:
+	case MonitoringTaskActionRequestActionPause:
 		err = ae.pauseTask(ctx, ui.Name, workID.String(), req.Params)
 		if err != nil {
 			errorHandler.handleError(PauseTaskError, err)
@@ -477,10 +489,38 @@ func (ae *Env) MonitoringTaskAction(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-	case taskEventStart:
-		err = ae.startProcess()
+	case MonitoringTaskActionRequestActionStart:
+		err = ae.startProcess(ctx, &startNodesParams{
+			workID:     workID,
+			author:     ui.Username,
+			workNumber: req.WorkNumber,
+			byOne:      false,
+			params:     req.Params,
+			tx:         txStorage,
+		})
 		if err != nil {
-			errorHandler.handleError(GetTaskError, err)
+			errorHandler.handleError(UnpauseTaskError, err)
+
+			if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
+				log.WithField("funcName", "MonitoringTaskAction").
+					WithError(errors.New("couldn't rollback tx")).
+					Error(txErr)
+			}
+
+			return
+		}
+
+	case MonitoringTaskActionRequestActionStartByOne:
+		err = ae.startProcess(ctx, &startNodesParams{
+			workID:     workID,
+			author:     ui.Username,
+			workNumber: req.WorkNumber,
+			byOne:      true,
+			params:     req.Params,
+			tx:         txStorage,
+		})
+		if err != nil {
+			errorHandler.handleError(UnpauseTaskError, err)
 
 			if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
 				log.WithField("funcName", "MonitoringTaskAction").
@@ -579,7 +619,7 @@ func (ae *Env) pauseTask(ctx context.Context, author, workID string, params *Mon
 	_, err = ae.DB.CreateTaskEvent(ctx, &entity.CreateTaskEvent{
 		WorkID:    workID,
 		Author:    author,
-		EventType: taskEventPause,
+		EventType: string(MonitoringTaskActionRequestActionPause),
 		Params:    jsonParams,
 	})
 	if err != nil {
@@ -589,6 +629,186 @@ func (ae *Env) pauseTask(ctx context.Context, author, workID string, params *Mon
 	return nil
 }
 
-func (ae *Env) startProcess() error {
+func (ae *Env) startProcess(ctx context.Context, startParams *startNodesParams) error {
+	isPaused, err := startParams.tx.IsTaskPaused(ctx, startParams.workID)
+	if err != nil {
+		return err
+	}
+
+	if !isPaused {
+		return errors.New("can't unpause running task")
+	}
+
+	for i := range *startParams.params.Steps {
+		restartErr := ae.restartNode(ctx, startParams.workID, startParams.workNumber,
+			(*startParams.params.Steps)[i], startParams.author, startParams.byOne, startParams.tx)
+		if restartErr != nil {
+			return restartErr
+		}
+	}
+
+	err = startParams.tx.TryUnpauseTask(ctx, startParams.workID)
+	if err != nil {
+		return err
+	}
+
+	jsonParams := json.RawMessage{}
+	if startParams.params != nil {
+		jsonParams, err = json.Marshal(startParams.params)
+		if err != nil {
+			return err
+		}
+	}
+
+	_, err = startParams.tx.CreateTaskEvent(ctx, &entity.CreateTaskEvent{
+		WorkID:    startParams.workID.String(),
+		Author:    startParams.author,
+		EventType: string(MonitoringTaskActionRequestActionStart),
+		Params:    jsonParams,
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (ae *Env) restartNode(ctx context.Context,
+	workID uuid.UUID, workNumber, stepName, login string, byOne bool, tx db.Database,
+) (err error) {
+	dbStep, stepErr := tx.GetTaskStepByName(ctx, workID, stepName)
+	if stepErr != nil {
+		return stepErr
+	}
+
+	isResumable, blockStartTime, resumableErr := tx.IsBlockResumable(ctx, workID, dbStep.ID)
+	if resumableErr != nil {
+		return resumableErr
+	}
+
+	if !isResumable {
+		return fmt.Errorf("can't unpause running task block: %s", stepName)
+	}
+
+	blockData, blockErr := tx.GetBlockDataFromVersion(ctx, workNumber, stepName)
+	if blockErr != nil {
+		return blockErr
+	}
+
+	task, dbTaskErr := ae.GetTaskForUpdate(ctx, workNumber)
+	if dbTaskErr != nil {
+		return dbTaskErr
+	}
+
+	skipErr := ae.skipTaskBlocksAfterRestart(ctx, &task.Steps, blockStartTime, blockData.Next, workNumber, workID, tx)
+	if skipErr != nil {
+		return skipErr
+	}
+
+	unpErr := tx.UnpauseTaskBlock(ctx, workID, dbStep.ID)
+	if unpErr != nil {
+		return unpErr
+	}
+
+	storage, getErr := tx.GetVariableStorageForStep(ctx, workID, stepName)
+	if getErr != nil {
+		return getErr
+	}
+
+	_, processErr := pipeline.ProcessBlockWithEndMapping(ctx, stepName, blockData, &pipeline.BlockRunContext{
+		TaskID:      task.ID,
+		WorkNumber:  workNumber,
+		WorkTitle:   task.Name,
+		Initiator:   task.Author,
+		VarStore:    storage,
+		Delegations: human_tasks.Delegations{},
+
+		Services: pipeline.RunContextServices{
+			HTTPClient:    ae.HTTPClient,
+			Sender:        ae.Mail,
+			Kafka:         ae.Kafka,
+			People:        ae.People,
+			ServiceDesc:   ae.ServiceDesc,
+			FunctionStore: ae.FunctionStore,
+			HumanTasks:    ae.HumanTasks,
+			Integrations:  ae.Integrations,
+			FileRegistry:  ae.FileRegistry,
+			FaaS:          ae.FaaS,
+			HrGate:        ae.HrGate,
+			Scheduler:     ae.Scheduler,
+			SLAService:    ae.SLAService,
+			Storage:       tx,
+		},
+		BlockRunResults: &pipeline.BlockRunResults{},
+
+		UpdateData: &script.BlockUpdateData{
+			Action:  string(entity.TaskUpdateActionReload),
+			ByLogin: login,
+		},
+
+		Productive:     true,
+		OnceProductive: byOne,
+
+		IsTest:    task.IsTest,
+		NotifName: task.Name,
+	}, false)
+	if processErr != nil {
+		return processErr
+	}
+
+	return nil
+}
+
+func (ae *Env) getNodesToSkip(ctx context.Context, nextNodes map[string][]string,
+	workNumber string, steps map[string]bool,
+) (nodeList []string, err error) {
+	for _, val := range nextNodes {
+		for _, next := range val {
+			if _, ok := steps[next]; !ok {
+				continue
+			}
+
+			nodeList = append(nodeList, next)
+
+			blockData, blockErr := ae.DB.GetBlockDataFromVersion(ctx, workNumber, next)
+			if blockErr != nil {
+				return nil, blockErr
+			}
+
+			nodes, recErr := ae.getNodesToSkip(ctx, blockData.Next, workNumber, steps)
+			if recErr != nil {
+				return nil, recErr
+			}
+
+			nodeList = append(nodeList, nodes...)
+		}
+	}
+
+	return nodeList, nil
+}
+
+func (ae *Env) skipTaskBlocksAfterRestart(ctx context.Context, steps *entity.TaskSteps, blockStartTime time.Time,
+	nextNodes map[string][]string, workNumber string, workID uuid.UUID, tx db.Database,
+) (err error) {
+	dbSteps := make(map[string]bool, 0)
+
+	for i := range *steps {
+		if (*steps)[i].Time.Before(blockStartTime) {
+			continue
+		}
+
+		dbSteps[(*steps)[i].Name] = true
+	}
+
+	nodesToSkip, skipErr := ae.getNodesToSkip(ctx, nextNodes, workNumber, dbSteps)
+	if skipErr != nil {
+		return skipErr
+	}
+
+	dbSkipErr := tx.SkipBlocksAfterRestarted(ctx, workID, blockStartTime, nodesToSkip)
+	if dbSkipErr != nil {
+		return dbSkipErr
+	}
+
 	return nil
 }

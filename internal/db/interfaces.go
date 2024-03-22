@@ -129,6 +129,7 @@ type SaveStepRequest struct {
 	Members         []Member
 	Deadlines       []Deadline
 	IsReEntry       bool
+	BlockExist      bool
 	Attachments     int
 	CurrentExecutor CurrentExecutorData
 	BlockStart      time.Time
@@ -215,7 +216,7 @@ type Database interface {
 	GetPipelineVersion(ctx c.Context, id uuid.UUID, checkNotDeleted bool) (*e.EriusScenario, error)
 	GetPipelineVersions(ctx c.Context, id uuid.UUID) ([]e.EriusVersionInfo, error)
 	UpdateDraft(ctx c.Context, p *e.EriusScenario, pipelineData []byte, groups []*e.NodeGroup, isHidden bool) error
-	SaveStepContext(ctx c.Context, dto *SaveStepRequest) (uuid.UUID, time.Time, error)
+	SaveStepContext(ctx c.Context, dto *SaveStepRequest, id uuid.UUID) (uuid.UUID, error)
 	UpdateStepContext(ctx c.Context, dto *UpdateStepRequest) error
 	UpdateTaskBlocksData(ctx c.Context, dto *UpdateTaskBlocksDataRequest) error
 	GetTaskActiveBlock(ctx c.Context, taskID, stepName string) ([]string, error)
@@ -276,5 +277,10 @@ type Database interface {
 	CreateTaskEvent(ctx c.Context, dto *e.CreateTaskEvent) (eventID string, err error)
 	SetTaskPaused(ctx c.Context, workID string, isPaused bool) error
 	SetTaskBlocksPaused(ctx c.Context, workID string, steps []string, isPaused bool) error
-	IsTaskPaused(ctx c.Context, workID string) (isPaused bool, err error)
+	IsTaskPaused(ctx c.Context, workID uuid.UUID) (isPaused bool, err error)
+	IsBlockResumable(ctx c.Context, workID, stepID uuid.UUID) (isResumable bool, startTime time.Time, err error)
+	UnpauseTaskBlock(ctx c.Context, workID, stepID uuid.UUID) (err error)
+	TryUnpauseTask(ctx c.Context, workID uuid.UUID) (err error)
+	InitTaskBlock(ctx c.Context, dto *SaveStepRequest, isPaused bool) (id uuid.UUID, startTime time.Time, err error)
+	SkipBlocksAfterRestarted(ctx c.Context, workID uuid.UUID, startTime time.Time, blocks []string) (err error)
 }
