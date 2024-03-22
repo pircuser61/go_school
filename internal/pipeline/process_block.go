@@ -174,6 +174,50 @@ func createGoBlock(ctx c.Context, ef *entity.EriusFunc, name string, runCtx *Blo
 	return nil, false, errors.New("unknown go-block type: " + ef.TypeID)
 }
 
+func initBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *BlockRunContext) (Runner, uuid.UUID, error) {
+	runCtx.CurrBlockStartTime = time.Now()
+
+	block, isReEntry, err := CreateBlock(ctx, name, bl, runCtx)
+	if err != nil {
+		return nil, uuid.Nil, err
+	}
+
+	_, blockExists := runCtx.VarStore.State[name]
+
+	// либо блока нет либо блок уже есть и мы зашли в него повторно
+	if !blockExists || isReEntry {
+		state, stateErr := json.Marshal(block.GetState())
+		if stateErr != nil {
+			return nil, uuid.Nil, stateErr
+		}
+
+		runCtx.VarStore.ReplaceState(name, state)
+	}
+
+	deadlines, deadlinesErr := block.Deadlines(ctx)
+	if deadlinesErr != nil {
+		return nil, uuid.Nil, deadlinesErr
+	}
+
+	id, startTime, err := runCtx.saveStepInDB(ctx, &saveStepDTO{
+		name:            name,
+		stepType:        bl.TypeID,
+		status:          string(block.GetStatus()),
+		members:         block.Members(),
+		deadlines:       deadlines,
+		isReEntered:     isReEntry,
+		attachments:     block.BlockAttachments(),
+		currentExecutor: block.CurrentExecutorData(),
+	})
+	if err != nil {
+		return nil, uuid.Nil, err
+	}
+
+	runCtx.CurrBlockStartTime = startTime
+
+	return block, id, nil
+}
+
 func createScenarioBlock(ctx c.Context, runCtx *BlockRunContext, bl *entity.EriusFunc) (*ExecutablePipeline, bool, error) {
 	p, err := runCtx.Services.Storage.GetExecutableByName(ctx, bl.Title)
 	if err != nil {
