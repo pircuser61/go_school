@@ -19,10 +19,11 @@ import (
 var ErrCantGetNextStep = errors.New("can't get next step")
 
 type blockProcessor struct {
-	name   string
-	bl     *entity.EriusFunc
-	runCtx *BlockRunContext
-	manual bool
+	name    string
+	bl      *entity.EriusFunc
+	runCtx  *BlockRunContext
+	storage db.Database
+	manual  bool
 }
 
 func newBlockProcessor(name string, bl *entity.EriusFunc, runCtx *BlockRunContext, manual bool) blockProcessor {
@@ -46,17 +47,24 @@ func (p *blockProcessor) ProcessBlock(ctx context.Context, its int) error {
 
 	log := logger.GetLogger(ctx).WithField("workNumber", p.runCtx.WorkNumber)
 
+	err := p.startTx(ctx)
+	if err != nil {
+		log.WithError(err).Error("failed start tx")
+
+		return err
+	}
+
 	status, getErr := p.runCtx.Services.Storage.GetTaskStatus(ctx, p.runCtx.TaskID)
 	if getErr != nil {
 		return p.handleError(ctx, log, getErr)
 	}
 
-	err := p.handleStatus(ctx, status)
+	err = p.handleStatus(ctx, status)
 	if err != nil {
 		return p.handleError(ctx, log, err)
 	}
 
-	block, id, initErr := initBlock(ctx, p.name, p.bl, p.runCtx)
+	block, id, initErr := InitBlock(ctx, p.name, p.bl, p.runCtx)
 	if initErr != nil {
 		return p.handleError(ctx, log, initErr)
 	}
@@ -77,9 +85,10 @@ func (p *blockProcessor) ProcessBlock(ctx context.Context, its int) error {
 		if p.bl.TypeID == "form" && p.runCtx.UpdateData != nil {
 			activeBlocks, getActiveBlockErr := p.runCtx.Services.Storage.GetTaskActiveBlock(ctx, p.runCtx.TaskID.String(), p.name)
 			if getActiveBlockErr != nil {
-				return getActiveBlockErr
+				return p.handleError(ctx, log, getActiveBlockErr)
 			}
 
+			// эта функция уже будет обрабатывать ошибку, ошибку которую она вернула не нужно обрабатывать повторно
 			if processActiveErr := p.processActiveBlocks(ctx, activeBlocks, its, true); processActiveErr != nil {
 				return processActiveErr
 			}
@@ -145,9 +154,10 @@ func (p *blockProcessor) ProcessBlock(ctx context.Context, its int) error {
 		return p.handleError(ctx, log, ErrCantGetNextStep)
 	}
 
+	// эта функция уже будет обрабатывать ошибку, ошибку которую она вернула не нужно обрабатывать повторно
 	err = p.processActiveBlocks(ctx, activeBlocks, its, false)
 	if err != nil {
-		return p.handleError(ctx, log, err)
+		return err
 	}
 
 	return nil
@@ -157,11 +167,42 @@ func (p *blockProcessor) handleError(ctx context.Context, log logger.Logger, err
 	if err != nil && !errors.Is(err, UserIsNotPartOfProcessErr{}) {
 		log.WithError(err).Error("couldn't process block")
 
+		err := p.rollbackTx(ctx)
+		if err != nil {
+			log.WithError(err).Error("couldn't rollback tx")
+		}
+
 		changeErr := p.runCtx.updateTaskStatus(ctx, db.RunStatusError, "", db.SystemLogin)
 		if changeErr != nil {
 			log.WithError(changeErr).Error("couldn't change task status")
 		}
 	}
+
+	return err
+}
+
+func (p *blockProcessor) startTx(ctx context.Context) error {
+	txStorage, err := p.runCtx.Services.Storage.StartTransaction(ctx)
+	if err != nil {
+		return err
+	}
+
+	p.storage = p.runCtx.Services.Storage
+	p.runCtx.Services.Storage = txStorage
+
+	return nil
+}
+
+func (b *blockProcessor) commitTx(ctx context.Context) error {
+	err := b.runCtx.Services.Storage.CommitTransaction(ctx)
+	b.runCtx.Services.Storage = b.storage
+
+	return err
+}
+
+func (b *blockProcessor) rollbackTx(ctx context.Context) error {
+	err := b.runCtx.Services.Storage.RollbackTransaction(ctx)
+	b.runCtx.Services.Storage = b.storage
 
 	return err
 }
@@ -188,11 +229,16 @@ func (runCtx *BlockRunContext) updateStatusByStep(ctx context.Context, status Ta
 	return err
 }
 
+// эта функция уже будет обрабатывать ошибку, ошибку которую она вернула не нужно обрабатывать повторно
 func (p *blockProcessor) processActiveBlocks(ctx context.Context, activeBlocks []string, its int, updateVarStore bool) error {
+	blockProcessors := make([]*blockProcessor, 0)
+
+	log := logger.GetLogger(ctx).WithField("workNumber", p.runCtx.WorkNumber)
+
 	for _, blockName := range activeBlocks {
 		blockData, blockErr := p.runCtx.Services.Storage.GetBlockDataFromVersion(ctx, p.runCtx.WorkNumber, blockName)
 		if blockErr != nil {
-			return blockErr
+			return p.handleError(ctx, log, blockErr)
 		}
 
 		ctxCopy := p.runCtx.Copy()
@@ -202,20 +248,36 @@ func (p *blockProcessor) processActiveBlocks(ctx context.Context, activeBlocks [
 
 			storage, getErrVarStorage := p.runCtx.Services.Storage.GetVariableStorageForStep(ctx, p.runCtx.TaskID, blockName)
 			if getErrVarStorage != nil {
-				return getErrVarStorage
+				return p.handleError(ctx, log, getErrVarStorage)
 			}
 
 			ctxCopy.VarStore = storage
 		}
 
+		_, _, err := InitBlock(ctx, blockName, blockData, p.runCtx)
+		if err != nil {
+			return p.handleError(ctx, log, err)
+		}
+
 		processor := newBlockProcessor(blockName, blockData, ctxCopy, updateVarStore)
 
+		blockProcessors = append(blockProcessors, &processor)
+	}
+
+	err := p.commitTx(ctx)
+	if err != nil {
+		log.WithError(err).Error("could`t commit tx")
+
+		return err
+	}
+
+	for _, processor := range blockProcessors {
 		err := processor.ProcessBlock(ctx, its)
 		if err != nil {
 			return err
 		}
 
-		p.runCtx.BlockRunResults.NodeEvents = append(p.runCtx.BlockRunResults.NodeEvents, ctxCopy.BlockRunResults.NodeEvents...)
+		p.runCtx.BlockRunResults.NodeEvents = append(p.runCtx.BlockRunResults.NodeEvents, processor.runCtx.BlockRunResults.NodeEvents...)
 	}
 
 	return nil

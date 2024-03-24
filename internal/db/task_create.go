@@ -22,6 +22,25 @@ type CreateTaskDTO struct {
 	RunCtx     entity.TaskRunContext
 }
 
+func NewCreateTaskDTO(
+	taskID, versionID uuid.UUID,
+	author, realAuthor, workNumber string,
+	isDebug bool,
+	params []byte,
+	runCtx entity.TaskRunContext,
+) CreateTaskDTO {
+	return CreateTaskDTO{
+		TaskID:     taskID,
+		VersionID:  versionID,
+		Author:     author,
+		RealAuthor: realAuthor,
+		WorkNumber: workNumber,
+		IsDebug:    isDebug,
+		Params:     params,
+		RunCtx:     runCtx,
+	}
+}
+
 func (db *PGCon) SetLastRunID(c context.Context, taskID, versionID uuid.UUID) error {
 	// nolint:gocritic
 	// language=PostgreSQL

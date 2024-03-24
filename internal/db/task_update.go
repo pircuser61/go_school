@@ -14,6 +14,12 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 )
 
+type UpdateTaskDTO struct {
+	WorkID     uuid.UUID
+	VersionID  uuid.UUID
+	RunContext entity.TaskRunContext
+}
+
 func (db *PGCon) deleteFinishedPipelineDeadlines(ctx c.Context, taskID uuid.UUID) error {
 	ctx, span := trace.StartSpan(ctx, "delete_finished_pipeline_deadlines")
 	defer span.End()

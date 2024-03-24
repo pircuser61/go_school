@@ -673,8 +673,12 @@ func (ae *Env) startProcess(ctx context.Context, startParams *startNodesParams) 
 	return nil
 }
 
-func (ae *Env) restartNode(ctx context.Context,
-	workID uuid.UUID, workNumber, stepName, login string, byOne bool, tx db.Database,
+func (ae *Env) restartNode(
+	ctx context.Context,
+	workID uuid.UUID,
+	workNumber, stepName, login string,
+	byOne bool,
+	tx db.Database,
 ) (err error) {
 	dbStep, stepErr := tx.GetTaskStepByName(ctx, workID, stepName)
 	if stepErr != nil {
@@ -737,7 +741,7 @@ func (ae *Env) restartNode(ctx context.Context,
 			HrGate:        ae.HrGate,
 			Scheduler:     ae.Scheduler,
 			SLAService:    ae.SLAService,
-			Storage:       tx,
+			Storage:       ae.DB,
 		},
 		BlockRunResults: &pipeline.BlockRunResults{},
 

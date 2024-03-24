@@ -451,7 +451,7 @@ func (ae *Env) updateStepInternal(ctx context.Context, data *updateStepData) boo
 			HrGate:        ae.HrGate,
 			Scheduler:     ae.Scheduler,
 			SLAService:    ae.SLAService,
-			Storage:       txStorage,
+			Storage:       ae.DB,
 		},
 		BlockRunResults: &pipeline.BlockRunResults{},
 
@@ -483,21 +483,15 @@ func (ae *Env) updateStepInternal(ctx context.Context, data *updateStepData) boo
 
 	runCtx.SetTaskEvents(ctx)
 
-	workFinished, blockErr := pipeline.ProcessBlockWithEndMapping(ctx, data.step.Name, blockFunc, runCtx, true)
-	if blockErr != nil {
-		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
-			log.WithField("funcName", "ProcessBlockWithEndMapping").
-				WithError(errors.New("couldn't rollback tx")).
-				Error(txErr)
-		}
-
-		log.WithError(blockErr).Error("couldn't update block")
+	if err := txStorage.CommitTransaction(ctx); err != nil {
+		log.WithError(err).Error("couldn't update block, CommitTransaction")
 
 		return false
 	}
 
-	if err := txStorage.CommitTransaction(ctx); err != nil {
-		log.WithError(err).Error("couldn't update block, CommitTransaction")
+	workFinished, blockErr := pipeline.ProcessBlockWithEndMapping(ctx, data.step.Name, blockFunc, runCtx, true)
+	if blockErr != nil {
+		log.WithError(blockErr).Error("couldn't update block")
 
 		return false
 	}

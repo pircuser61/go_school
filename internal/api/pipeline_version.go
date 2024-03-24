@@ -606,7 +606,7 @@ func (ae *Env) execVersion(ctx c.Context, dto *execVersionDTO) (*e.RunResponse, 
 		}
 	}
 
-	arg := &execVersionInternalDTO{
+	execVersionInternalDTO := &execVersionInternalDTO{
 		storage:        dto.storage,
 		reqID:          reqID,
 		p:              dto.version,
@@ -619,7 +619,7 @@ func (ae *Env) execVersion(ctx c.Context, dto *execVersionDTO) (*e.RunResponse, 
 		runCtx:         dto.runCtx,
 	}
 
-	executablePipeline, errCustom, err := ae.execVersionInternal(ctxLocal, arg)
+	executablePipeline, errCustom, err := ae.execVersionInternal(ctxLocal, execVersionInternalDTO)
 	if err != nil {
 		log.Error(errCustom.errorMessage(err))
 
@@ -686,10 +686,7 @@ func (ae *Env) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO) (
 
 	ep := ae.makeExecutablePipeline(dto, txStorage)
 
-	variableStorage := store.NewStore()
-	pipelineVars := dto.vars
-
-	parameters, err := json.Marshal(pipelineVars)
+	parameters, err := json.Marshal(dto.vars)
 	if err != nil {
 		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
 			log.WithField("funcName", "marshal vars").
@@ -700,18 +697,16 @@ func (ae *Env) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO) (
 		return nil, PipelineRunError, err
 	}
 
-	// use ctx as we need userinfo
-	err = ep.CreateTask(
-		ctx,
-		&pipeline.CreateTaskDTO{
-			Author:     dto.authorName,
-			RealAuthor: dto.realAuthorName,
-			IsDebug:    false,
-			Params:     parameters,
-			WorkNumber: dto.workNumber,
-			RunCtx:     dto.runCtx,
-		},
+	createTaskDTO := pipeline.NewCreateTaskDTO(
+		dto.authorName,
+		dto.realAuthorName,
+		false,
+		parameters,
+		dto.workNumber,
+		dto.runCtx,
 	)
+
+	err = ep.CreateTask(ctx, &createTaskDTO)
 	if err != nil {
 		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
 			log.WithField("funcName", "CreateTask").
@@ -721,6 +716,8 @@ func (ae *Env) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO) (
 
 		return nil, PipelineRunError, err
 	}
+
+	variableStorage := store.NewStore()
 
 	runCtx := &pipeline.BlockRunContext{
 		TaskID:     ep.TaskID,
@@ -746,7 +743,7 @@ func (ae *Env) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO) (
 			HrGate:        ae.HrGate,
 			Scheduler:     ae.Scheduler,
 			SLAService:    ae.SLAService,
-			Storage:       txStorage,
+			Storage:       ae.DB,
 		},
 		BlockRunResults: &pipeline.BlockRunResults{},
 
@@ -755,28 +752,35 @@ func (ae *Env) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO) (
 		NotifName: utils.MakeTaskTitle(
 			ep.Name,
 			dto.runCtx.InitialApplication.CustomTitle,
-			dto.runCtx.InitialApplication.IsTestApplication),
+			dto.runCtx.InitialApplication.IsTestApplication,
+		),
 		Productive: true,
 	}
+
 	blockData := dto.p.Pipeline.Blocks[ep.EntryPoint]
 
 	runCtx.SetTaskEvents(ctx)
 
-	workFinished, err := pipeline.ProcessBlockWithEndMapping(ctx, ep.EntryPoint, blockData, runCtx, false)
+	_, _, err = pipeline.InitBlock(ctx, ep.EntryPoint, blockData, runCtx)
 	if err != nil {
 		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
-			log.WithField("funcName", "RollbackTransaction").
+			log.WithField("funcName", "pipelne.InitBlock").
 				WithError(errors.New("couldn't rollback tx")).
 				Error(txErr)
 		}
-
-		variableStorage.AddError(err)
 
 		return nil, PipelineRunError, err
 	}
 
 	err = txStorage.CommitTransaction(ctx)
 	if err != nil {
+		return nil, PipelineRunError, err
+	}
+
+	workFinished, err := pipeline.ProcessBlockWithEndMapping(ctx, ep.EntryPoint, blockData, runCtx, false)
+	if err != nil {
+		variableStorage.AddError(err)
+
 		return nil, PipelineRunError, err
 	}
 

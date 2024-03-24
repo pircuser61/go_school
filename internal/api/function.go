@@ -143,7 +143,7 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 		VarStore:   storage,
 		Services: pipeline.RunContextServices{
 			HTTPClient:    ae.HTTPClient,
-			Storage:       txStorage,
+			Storage:       ae.DB,
 			Sender:        ae.Mail,
 			Kafka:         ae.Kafka,
 			People:        ae.People,
@@ -183,6 +183,14 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 		return nil
 	}
 
+	if commitErr := txStorage.CommitTransaction(ctx); commitErr != nil {
+		log.WithField("funcName", "CommitTransaction").
+			WithError(commitErr).
+			Error("commit transaction")
+
+		return commitErr
+	}
+
 	workFinished, blockErr := pipeline.ProcessBlockWithEndMapping(ctx, st.Name, blockFunc, runCtx, true)
 	if blockErr != nil {
 		log.WithField("funcName", "ProcessBlockWithEndMapping").
@@ -196,14 +204,6 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 		}
 
 		return nil
-	}
-
-	if commitErr := txStorage.CommitTransaction(ctx); commitErr != nil {
-		log.WithField("funcName", "CommitTransaction").
-			WithError(commitErr).
-			Error("commit transaction")
-
-		return commitErr
 	}
 
 	if workFinished {

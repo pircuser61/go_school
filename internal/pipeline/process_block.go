@@ -178,7 +178,7 @@ func createGoBlock(ctx c.Context, ef *entity.EriusFunc, name string, runCtx *Blo
 	return nil, false, errors.New("unknown go-block type: " + ef.TypeID)
 }
 
-func initBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *BlockRunContext) (Runner, uuid.UUID, error) {
+func InitBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *BlockRunContext) (Runner, uuid.UUID, error) {
 	storageData, errSerialize := json.Marshal(runCtx.VarStore)
 	if errSerialize != nil {
 		return nil, uuid.Nil, errSerialize
@@ -466,7 +466,11 @@ func (runCtx *BlockRunContext) updateStepInDB(ctx c.Context, dto *updateStepDTO)
 	})
 }
 
-func ProcessBlockWithEndMapping(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *BlockRunContext,
+func ProcessBlockWithEndMapping(
+	ctx c.Context,
+	name string,
+	bl *entity.EriusFunc,
+	runCtx *BlockRunContext,
 	manual bool,
 ) (bool, error) {
 	ctx, s := trace.StartSpan(ctx, "process_block_with_end_mapping")
