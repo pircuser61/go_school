@@ -242,16 +242,6 @@ func TestProcessBlock(t *testing.T) {
 						Storage: func() db.Database {
 							res := makeStorage()
 
-							res.On("UpdateStepContext",
-								mock.MatchedBy(func(ctx context.Context) bool { return true }),
-								mock.MatchedBy(func(data *db.UpdateStepRequest) bool { return true }),
-							).Run(func(args mock.Arguments) {
-								req := args.Get(1).(*db.UpdateStepRequest)
-								if req.Status == string(StatusFinished) {
-									latestBlock = req.StepName
-								}
-							}).Return(nil)
-
 							res.On("GetBlockDataFromVersion",
 								mock.MatchedBy(func(ctx context.Context) bool { return true }),
 								mock.MatchedBy(func(workNumber string) bool { return true }),
@@ -271,7 +261,11 @@ func TestProcessBlock(t *testing.T) {
 								}, nil,
 							)
 
-							res.On("GetBlockDataFromVersion",
+							txStorage := makeStorage()
+
+							res.EXPECT().StartTransaction(mock.Anything).Return(txStorage, nil).Once()
+
+							txStorage.On("GetBlockDataFromVersion",
 								mock.MatchedBy(func(ctx context.Context) bool { return true }),
 								mock.MatchedBy(func(workNumber string) bool { return true }),
 								"servicedesk_application_0",
@@ -291,7 +285,28 @@ func TestProcessBlock(t *testing.T) {
 								}, nil,
 							)
 
-							res.On("GetBlockDataFromVersion",
+							txStorage.On("UpdateStepContext",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(data *db.UpdateStepRequest) bool { return true }),
+							).Run(func(args mock.Arguments) {
+								req := args.Get(1).(*db.UpdateStepRequest)
+								if req.Status == string(StatusFinished) {
+									latestBlock = req.StepName
+								}
+							}).Return(nil)
+
+							txStorage.On("CheckIsArchived",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								uuid.Nil,
+							).Return(false, nil)
+
+							txStorage.EXPECT().CommitTransaction(mock.Anything).Return(nil).Once()
+
+							txStorage = makeStorage()
+
+							res.EXPECT().StartTransaction(mock.Anything).Return(txStorage, nil).Once()
+
+							txStorage.On("GetBlockDataFromVersion",
 								mock.MatchedBy(func(ctx context.Context) bool { return true }),
 								mock.MatchedBy(func(workNumber string) bool { return true }),
 								"end_0",
@@ -304,10 +319,43 @@ func TestProcessBlock(t *testing.T) {
 								}, nil,
 							)
 
-							res.On("CheckIsArchived",
+							txStorage.On("UpdateStepContext",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(data *db.UpdateStepRequest) bool { return true }),
+							).Run(func(args mock.Arguments) {
+								req := args.Get(1).(*db.UpdateStepRequest)
+								if req.Status == string(StatusFinished) {
+									latestBlock = req.StepName
+								}
+							}).Return(nil)
+
+							txStorage.On("CheckIsArchived",
 								mock.MatchedBy(func(ctx context.Context) bool { return true }),
 								uuid.Nil,
 							).Return(false, nil)
+
+							txStorage.EXPECT().CommitTransaction(mock.Anything).Return(nil).Once()
+
+							txStorage = makeStorage()
+
+							res.EXPECT().StartTransaction(mock.Anything).Return(txStorage, nil).Once()
+
+							txStorage.On("UpdateStepContext",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(data *db.UpdateStepRequest) bool { return true }),
+							).Run(func(args mock.Arguments) {
+								req := args.Get(1).(*db.UpdateStepRequest)
+								if req.Status == string(StatusFinished) {
+									latestBlock = req.StepName
+								}
+							}).Return(nil)
+
+							txStorage.On("CheckIsArchived",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								uuid.Nil,
+							).Return(false, nil)
+
+							txStorage.EXPECT().CommitTransaction(mock.Anything).Return(nil).Once()
 
 							return res
 						}(),
@@ -319,13 +367,12 @@ func TestProcessBlock(t *testing.T) {
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
-								body := io.NopCloser(bytes.NewReader(b))
-								defer body.Close()
+								body := bytes.NewReader(b)
 
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
-									Body:       body,
+									Body:       io.NopCloser(body),
 								}
 							}
 							fError := func(*http.Request) error {
@@ -371,6 +418,7 @@ func TestProcessBlock(t *testing.T) {
 							).Return(
 								false, nil,
 							)
+
 							currCall := res.ExpectedCalls[len(res.ExpectedCalls)-1]
 							currCall = currCall.Run(func(args mock.Arguments) {
 								currCall.ReturnArguments[0] = didMeetBlocks([]string{"approver_0", "execution_0"}, metBlocks)
@@ -529,13 +577,12 @@ func TestProcessBlock(t *testing.T) {
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
-								body := io.NopCloser(bytes.NewReader(b))
-								defer body.Close()
+								body := bytes.NewReader(b)
 
 								return &http.Response{
 									Status:     http.StatusText(http.StatusOK),
 									StatusCode: http.StatusOK,
-									Body:       body,
+									Body:       io.NopCloser(body),
 								}
 							}
 							fError := func(*http.Request) error {
@@ -598,7 +645,10 @@ func TestProcessBlock(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
 			entrypointData, blockErr := tt.fields.RunContext.Services.Storage.GetBlockDataFromVersion(
-				ctx, "", tt.fields.Entrypoint)
+				ctx,
+				"",
+				tt.fields.Entrypoint,
+			)
 			if blockErr != nil {
 				t.Fatal(blockErr)
 			}
@@ -620,8 +670,15 @@ func TestProcessBlock(t *testing.T) {
 				}
 
 				tt.fields.RunContext.UpdateData = &tt.fields.Updates[i].UpdateParams
-				if _, procErr := ProcessBlockWithEndMapping(context.Background(), tt.fields.Updates[i].BlockName, blockData,
-					tt.fields.RunContext, true); procErr != nil {
+
+				_, procErr := ProcessBlockWithEndMapping(
+					context.Background(),
+					tt.fields.Updates[i].BlockName,
+					blockData,
+					tt.fields.RunContext,
+					true,
+				)
+				if procErr != nil {
 					t.Fatal(procErr)
 				}
 			}

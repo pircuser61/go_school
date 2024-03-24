@@ -120,6 +120,7 @@ type CreateTaskDTO struct {
 	RunCtx     entity.TaskRunContext
 }
 
+//nolint:gocritic //in struct field without pointer
 func NewCreateTaskDTO(
 	author, realAuthor string,
 	isDebug bool,

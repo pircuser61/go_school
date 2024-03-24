@@ -241,6 +241,12 @@ func InitBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *BlockRu
 	return block, id, nil
 }
 
+/*
+поскольку значения функции просто пробрасываются дальше
+удобно чтобы выходные параметры соответствовали выходным параметрам
+функции из которой вызывается эта функция
+*/
+//nolint:unparam // см выше
 func createScenarioBlock(ctx c.Context, runCtx *BlockRunContext, bl *entity.EriusFunc) (*ExecutablePipeline, bool, error) {
 	p, err := runCtx.Services.Storage.GetExecutableByName(ctx, bl.Title)
 	if err != nil {

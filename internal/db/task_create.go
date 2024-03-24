@@ -22,6 +22,7 @@ type CreateTaskDTO struct {
 	RunCtx     entity.TaskRunContext
 }
 
+//nolint:gocritic //in struct field without pointer
 func NewCreateTaskDTO(
 	taskID, versionID uuid.UUID,
 	author, realAuthor, workNumber string,
