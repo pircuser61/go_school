@@ -41,7 +41,7 @@ func (db *PGCon) CreateEventToSend(ctx c.Context, dto *e.CreateEventToSend) (eve
 	return eventID, nil
 }
 
-func (db *PGCon) UpdateEventToSend(ctx c.Context, eventID string)  (err error) {
+func (db *PGCon) UpdateEventToSend(ctx c.Context, eventID string) (err error) {
 	ctx, span := trace.StartSpan(ctx, "update_event_to_send")
 	defer span.End()
 
@@ -83,6 +83,7 @@ func (db *PGCon) GetEventsToSend(ctx c.Context) ([]e.ToSendKafkaEvent, error) {
 
 	for rows.Next() {
 		var eventID, message string
+
 		item := e.NodeKafkaEvent{}
 
 		if scanErr := rows.Scan(&eventID, &message); scanErr != nil {

@@ -41,4 +41,3 @@ func (ae *Env) SendEventsToKafka(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
-

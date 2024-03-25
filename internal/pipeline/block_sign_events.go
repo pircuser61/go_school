@@ -9,6 +9,8 @@ import (
 )
 
 func (gb *GoSignBlock) setEvents(ctx c.Context) error {
+	const start = "start"
+
 	data := gb.RunContext.UpdateData
 
 	humanStatus, _, _ := gb.GetTaskHumanStatus()
@@ -53,7 +55,7 @@ func (gb *GoSignBlock) setEvents(ctx c.Context) error {
 			}
 		}
 
-		if updateParams.Status != "start" {
+		if updateParams.Status != start {
 			break
 		}
 

@@ -62,6 +62,7 @@ func (gb *GoFormBlock) setEvents(ctx c.Context, dto *setFormEventsDto) error {
 		gb.happenedKafkaEvents = append(gb.happenedKafkaEvents, kafkaEvent)
 	}
 
+	//nolint:gocyclo //its ok here
 	if len(gb.State.ApplicationBody) > 0 && !dto.wasAlreadyFilled {
 		if _, ok := gb.expectedEvents[eventEnd]; ok {
 			event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, MakeNodeEndEventArgs{
