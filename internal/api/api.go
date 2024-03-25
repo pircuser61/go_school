@@ -202,9 +202,9 @@ const (
 const (
 	MonitoringTaskEditBlockRequestChangeTypeContext MonitoringTaskEditBlockRequestChangeType = "context"
 
-	MonitoringTaskEditBlockRequestChangeTypeOutput MonitoringTaskEditBlockRequestChangeType = "output"
+	MonitoringTaskEditBlockRequestChangeTypeInput MonitoringTaskEditBlockRequestChangeType = "input"
 
-	MonitoringTaskEditBlockRequestChangeTypeStartVar MonitoringTaskEditBlockRequestChangeType = "startVar"
+	MonitoringTaskEditBlockRequestChangeTypeOutput MonitoringTaskEditBlockRequestChangeType = "output"
 
 	MonitoringTaskEditBlockRequestChangeTypeState MonitoringTaskEditBlockRequestChangeType = "state"
 )
@@ -3353,8 +3353,8 @@ type ServerInterface interface {
 	// Get tasks for monitoring
 	// (GET /monitoring/tasks)
 	GetTasksForMonitoring(w http.ResponseWriter, r *http.Request, params GetTasksForMonitoringParams)
-	// редактирование данных блока в мониторинге
-	// (POST /monitoring/tasks/block/{blockId})
+	// Редактирование данных блока в мониторинге
+	// (PUT /monitoring/tasks/block/{blockId})
 	EditTaskBlockData(w http.ResponseWriter, r *http.Request, blockId string)
 	// Получение контекста блоков
 	// (GET /monitoring/tasks/block/{blockId}/context)
@@ -5432,7 +5432,7 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/monitoring/tasks", wrapper.GetTasksForMonitoring)
 	})
 	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/monitoring/tasks/block/{blockId}", wrapper.EditTaskBlockData)
+		r.Put(options.BaseURL+"/monitoring/tasks/block/{blockId}", wrapper.EditTaskBlockData)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/monitoring/tasks/block/{blockId}/context", wrapper.GetBlockContext)

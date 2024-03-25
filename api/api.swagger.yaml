@@ -2334,12 +2334,12 @@ paths:
                 $ref: '#/components/schemas/httpError'
 
   /monitoring/tasks/block/{blockId}:
-    post:
+    put:
       operationId: EditTaskBlockData
       tags:
         - monitoring
-      summary: редактирование данных блока в мониторинге
-      description: редактирование данных блока в мониторинге
+      summary: Редактирование данных блока в мониторинге
+      description: Редактирование данных блока в мониторинге
       parameters:
         - name: blockId
           in: path
@@ -5217,7 +5217,7 @@ components:
       properties:
         change_type:
           type: string
-          enum: [ "state", "output", "context", "startVar" ]
+          enum: [ "state", "output", "context", "input" ]
           description: "Переменные в какой части блока редактируем"
         change_data:
           $ref: '#/components/schemas/MonitoringEditBlockData'
