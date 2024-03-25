@@ -8,7 +8,7 @@ import (
 	e "gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 )
 
-func (gb *GoSignBlock) setEvents(ctx c.Context) error {
+func (gb *GoSignBlock) setEvents(ctx c.Context, signers map[string]struct{}) error {
 	const start = "start"
 
 	data := gb.RunContext.UpdateData
@@ -67,26 +67,8 @@ func (gb *GoSignBlock) setEvents(ctx c.Context) error {
 			NodeStatus:     gb.GetStatus(),
 			NodeType:       BlockGoSignID,
 			SLA:            gb.State.Deadline.Unix(),
-			ToAddLogins:    []string{},
-			ToRemoveLogins: []string{data.ByLogin},
-		})
-		if err != nil {
-			return err
-		}
-
-		gb.happenedKafkaEvents = append(gb.happenedKafkaEvents, kafkaEvent)
-	case string(e.TaskUpdateActionReworkSLABreach):
-		kafkaEvent, err := gb.RunContext.MakeNodeKafkaEvent(ctx, &MakeNodeKafkaEvent{
-			EventName:      string(e.TaskUpdateActionReworkSLABreach),
-			NodeName:       gb.Name,
-			NodeShortName:  gb.ShortName,
-			HumanStatus:    humanStatus,
-			NodeStatus:     gb.GetStatus(),
-			NodeType:       BlockGoSignID,
-			SLA:            gb.State.Deadline.Unix(),
-			Decision:       gb.State.Decision.String(),
-			ToAddLogins:    []string{},
-			ToRemoveLogins: getSliceFromMap(gb.State.Signers),
+			ToAddLogins:    []string{data.ByLogin},
+			ToRemoveLogins: getSliceFromMap(signers),
 		})
 		if err != nil {
 			return err

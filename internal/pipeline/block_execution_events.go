@@ -2,6 +2,8 @@ package pipeline
 
 import (
 	c "context"
+	"encoding/json"
+	"errors"
 
 	e "gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 )
@@ -13,12 +15,17 @@ func (gb *GoExecutionBlock) setEvents(ctx c.Context, executors map[string]struct
 
 	switch data.Action {
 	case string(e.TaskUpdateActionExecution):
+		byLogin := data.ByLogin
+
 		comment := ""
 		if gb.State.DecisionComment != nil {
 			comment = *gb.State.DecisionComment
 		}
 
-		delegateFor, _ := gb.RunContext.Delegations.FindDelegatorFor(data.ByLogin, getSliceFromMap(gb.State.Executors))
+		delegator, ok := gb.RunContext.Delegations.FindDelegatorFor(data.ByLogin, getSliceFromMap(gb.State.Executors))
+		if ok {
+			byLogin = delegator
+		}
 
 		kafkaEvent, err := gb.RunContext.MakeNodeKafkaEvent(ctx, &MakeNodeKafkaEvent{
 			EventName:      string(e.TaskUpdateActionExecution),
@@ -29,10 +36,9 @@ func (gb *GoExecutionBlock) setEvents(ctx c.Context, executors map[string]struct
 			NodeType:       BlockGoExecutionID,
 			SLA:            gb.State.Deadline.Unix(),
 			Decision:       gb.State.Decision.String(),
-			DelegateFor:    delegateFor,
 			Comment:        comment,
 			ToAddLogins:    []string{},
-			ToRemoveLogins: []string{data.ByLogin},
+			ToRemoveLogins: []string{byLogin},
 		})
 		if err != nil {
 			return err
@@ -40,6 +46,12 @@ func (gb *GoExecutionBlock) setEvents(ctx c.Context, executors map[string]struct
 
 		gb.happenedKafkaEvents = append(gb.happenedKafkaEvents, kafkaEvent)
 	case string(e.TaskUpdateActionChangeExecutor):
+		var updateParams ExecutorChangeParams
+		err := json.Unmarshal(gb.RunContext.UpdateData.Parameters, &updateParams);
+		if err != nil {
+			return errors.New("can't assert provided update data")
+		}
+
 		kafkaEvent, err := gb.RunContext.MakeNodeKafkaEvent(ctx, &MakeNodeKafkaEvent{
 			EventName:      string(e.TaskUpdateActionChangeExecutor),
 			NodeName:       gb.Name,
@@ -48,8 +60,8 @@ func (gb *GoExecutionBlock) setEvents(ctx c.Context, executors map[string]struct
 			NodeStatus:     gb.GetStatus(),
 			NodeType:       BlockGoExecutionID,
 			SLA:            gb.State.Deadline.Unix(),
-			ToAddLogins:    []string{data.ByLogin},
-			ToRemoveLogins: getSliceFromMap(getDifMaps(executors, map[string]struct{}{data.ByLogin: {}})),
+			ToAddLogins:    []string{updateParams.NewExecutorLogin},
+			ToRemoveLogins: []string{data.ByLogin},
 		})
 		if err != nil {
 			return err
@@ -66,30 +78,7 @@ func (gb *GoExecutionBlock) setEvents(ctx c.Context, executors map[string]struct
 			NodeType:       BlockGoExecutionID,
 			SLA:            gb.State.Deadline.Unix(),
 			ToAddLogins:    []string{data.ByLogin},
-			ToRemoveLogins: getSliceFromMap(getDifMaps(executors, map[string]struct{}{data.ByLogin: {}})),
-		})
-		if err != nil {
-			return err
-		}
-
-		gb.happenedKafkaEvents = append(gb.happenedKafkaEvents, kafkaEvent)
-	case string(e.TaskUpdateActionReworkSLABreach):
-		decision := ""
-		if gb.State.Decision != nil {
-			decision = gb.State.Decision.String()
-		}
-
-		kafkaEvent, err := gb.RunContext.MakeNodeKafkaEvent(ctx, &MakeNodeKafkaEvent{
-			EventName:      string(e.TaskUpdateActionReworkSLABreach),
-			NodeName:       gb.Name,
-			NodeShortName:  gb.ShortName,
-			HumanStatus:    humanStatus,
-			NodeStatus:     gb.GetStatus(),
-			NodeType:       BlockGoExecutionID,
-			SLA:            gb.State.Deadline.Unix(),
-			Decision:       decision,
-			ToAddLogins:    []string{},
-			ToRemoveLogins: getSliceFromMap(gb.State.Executors),
+			ToRemoveLogins: getSliceFromMap(executors),
 		})
 		if err != nil {
 			return err

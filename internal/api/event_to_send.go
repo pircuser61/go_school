@@ -32,6 +32,14 @@ func (ae *Env) SendEventsToKafka(w http.ResponseWriter, r *http.Request) {
 
 			continue
 		}
+
+
+		err = ae.DB.UpdateEventToSend(ctx, events[i].EventID)
+		if err != nil {
+			log.WithError(err).Error(fmt.Sprintf("couldn't update event: %+v", events[i].Event))
+
+			continue
+		}
 	}
 
 	err = sendResponse(w, http.StatusOK, nil)

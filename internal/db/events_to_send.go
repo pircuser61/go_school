@@ -70,8 +70,7 @@ func (db *PGCon) GetEventsToSend(ctx c.Context) ([]e.ToSendKafkaEvent, error) {
 		SELECT id, message 
 			FROM events_to_send
 				WHERE sent_at IS NULL
-			ORDER BY created_at
-		LIMIT 100`
+			ORDER BY created_at`
 
 	rows, err := db.Connection.Query(ctx, q)
 	if err != nil {

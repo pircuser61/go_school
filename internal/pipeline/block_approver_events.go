@@ -2,6 +2,8 @@ package pipeline
 
 import (
 	c "context"
+	"encoding/json"
+	"errors"
 
 	e "gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 )
@@ -13,6 +15,18 @@ func (gb *GoApproverBlock) setEvents(ctx c.Context) error {
 
 	switch data.Action {
 	case string(e.TaskUpdateActionApprovement):
+		byLogin := data.ByLogin
+
+		var updateParams approverUpdateParams
+
+		if err := json.Unmarshal(data.Parameters, &updateParams); err != nil {
+			return errors.New("can't assert provided data")
+		}
+
+		if byLogin == ServiceAccount || byLogin == ServiceAccountStage || byLogin == ServiceAccountDev {
+			byLogin = updateParams.Username
+		}
+
 		comment := ""
 		if gb.State.Comment != nil {
 			comment = *gb.State.Comment
@@ -23,7 +37,10 @@ func (gb *GoApproverBlock) setEvents(ctx c.Context) error {
 			decision = gb.State.Decision.String()
 		}
 
-		delegateFor, _ := gb.RunContext.Delegations.FindDelegatorFor(data.ByLogin, getSliceFromMap(gb.State.Approvers))
+		delegator, ok := gb.RunContext.Delegations.FindDelegatorFor(data.ByLogin, getSliceFromMap(gb.State.Approvers))
+		if ok {
+			byLogin = delegator
+		}
 
 		kafkaEvent, err := gb.RunContext.MakeNodeKafkaEvent(ctx, &MakeNodeKafkaEvent{
 			EventName:      string(e.TaskUpdateActionApprovement),
@@ -34,28 +51,9 @@ func (gb *GoApproverBlock) setEvents(ctx c.Context) error {
 			NodeType:       BlockGoApproverID,
 			SLA:            gb.State.Deadline.Unix(),
 			Decision:       decision,
-			DelegateFor:    delegateFor,
 			Comment:        comment,
 			ToAddLogins:    []string{},
-			ToRemoveLogins: []string{data.ByLogin},
-		})
-		if err != nil {
-			return err
-		}
-
-		gb.happenedKafkaEvents = append(gb.happenedKafkaEvents, kafkaEvent)
-	case string(e.TaskUpdateActionReworkSLABreach):
-		kafkaEvent, err := gb.RunContext.MakeNodeKafkaEvent(ctx, &MakeNodeKafkaEvent{
-			EventName:      string(e.TaskUpdateActionReworkSLABreach),
-			NodeName:       gb.Name,
-			NodeShortName:  gb.ShortName,
-			HumanStatus:    humanStatus,
-			NodeStatus:     gb.GetStatus(),
-			NodeType:       BlockGoApproverID,
-			SLA:            gb.State.Deadline.Unix(),
-			Decision:       gb.State.Decision.String(),
-			ToAddLogins:    []string{},
-			ToRemoveLogins: getSliceFromMap(gb.State.Approvers),
+			ToRemoveLogins: []string{byLogin},
 		})
 		if err != nil {
 			return err

@@ -181,6 +181,11 @@ func (gb *GoSignBlock) Update(ctx c.Context) (interface{}, error) {
 		return nil, errors.New("empty data")
 	}
 
+	signersLogins := make(map[string]struct{}, 0)
+	for i := range gb.State.Signers {
+		signersLogins[i] = gb.State.Signers[i]
+	}
+
 	//nolint:gocritic //for future actions
 	switch data.Action {
 	case string(entity.TaskUpdateActionSLABreach):
@@ -217,7 +222,7 @@ func (gb *GoSignBlock) Update(ctx c.Context) (interface{}, error) {
 
 	gb.State.Deadline = deadline
 
-	err := gb.setEvents(ctx)
+	err := gb.setEvents(ctx, signersLogins)
 	if err != nil {
 		return nil, err
 	}
