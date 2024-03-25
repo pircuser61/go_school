@@ -47,6 +47,7 @@ func (gb *GoExecutionBlock) setEvents(ctx c.Context, executors map[string]struct
 		gb.happenedKafkaEvents = append(gb.happenedKafkaEvents, kafkaEvent)
 	case string(e.TaskUpdateActionChangeExecutor):
 		var updateParams ExecutorChangeParams
+
 		err := json.Unmarshal(gb.RunContext.UpdateData.Parameters, &updateParams)
 		if err != nil {
 			return errors.New("can't assert provided update data")

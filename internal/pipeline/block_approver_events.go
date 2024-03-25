@@ -13,8 +13,7 @@ func (gb *GoApproverBlock) setEvents(ctx c.Context) error {
 
 	humanStatus, _, _ := gb.GetTaskHumanStatus()
 
-	switch data.Action {
-	case string(e.TaskUpdateActionApprovement):
+	if data.Action == string(e.TaskUpdateActionApprovement) {
 		byLogin := data.ByLogin
 
 		var updateParams approverUpdateParams
