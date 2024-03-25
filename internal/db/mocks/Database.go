@@ -4573,32 +4573,32 @@ func (_c *MockedDatabase_GetWorksForUserWithGivenTimeRange_Call) RunAndReturn(ru
 	return _c
 }
 
-// InitTaskBlock provides a mock function with given fields: ctx, dto, isPaused
-func (_m *MockedDatabase) InitTaskBlock(ctx context.Context, dto *db.SaveStepRequest, isPaused bool) (uuid.UUID, time.Time, error) {
-	ret := _m.Called(ctx, dto, isPaused)
+// InitTaskBlock provides a mock function with given fields: ctx, dto, isPaused, hasUpdData
+func (_m *MockedDatabase) InitTaskBlock(ctx context.Context, dto *db.SaveStepRequest, isPaused bool, hasUpdData bool) (uuid.UUID, time.Time, error) {
+	ret := _m.Called(ctx, dto, isPaused, hasUpdData)
 
 	var r0 uuid.UUID
 	var r1 time.Time
 	var r2 error
-	if rf, ok := ret.Get(0).(func(context.Context, *db.SaveStepRequest, bool) (uuid.UUID, time.Time, error)); ok {
-		return rf(ctx, dto, isPaused)
+	if rf, ok := ret.Get(0).(func(context.Context, *db.SaveStepRequest, bool, bool) (uuid.UUID, time.Time, error)); ok {
+		return rf(ctx, dto, isPaused, hasUpdData)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, *db.SaveStepRequest, bool) uuid.UUID); ok {
-		r0 = rf(ctx, dto, isPaused)
+	if rf, ok := ret.Get(0).(func(context.Context, *db.SaveStepRequest, bool, bool) uuid.UUID); ok {
+		r0 = rf(ctx, dto, isPaused, hasUpdData)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(uuid.UUID)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, *db.SaveStepRequest, bool) time.Time); ok {
-		r1 = rf(ctx, dto, isPaused)
+	if rf, ok := ret.Get(1).(func(context.Context, *db.SaveStepRequest, bool, bool) time.Time); ok {
+		r1 = rf(ctx, dto, isPaused, hasUpdData)
 	} else {
 		r1 = ret.Get(1).(time.Time)
 	}
 
-	if rf, ok := ret.Get(2).(func(context.Context, *db.SaveStepRequest, bool) error); ok {
-		r2 = rf(ctx, dto, isPaused)
+	if rf, ok := ret.Get(2).(func(context.Context, *db.SaveStepRequest, bool, bool) error); ok {
+		r2 = rf(ctx, dto, isPaused, hasUpdData)
 	} else {
 		r2 = ret.Error(2)
 	}
@@ -4615,13 +4615,14 @@ type MockedDatabase_InitTaskBlock_Call struct {
 //   - ctx context.Context
 //   - dto *db.SaveStepRequest
 //   - isPaused bool
-func (_e *MockedDatabase_Expecter) InitTaskBlock(ctx interface{}, dto interface{}, isPaused interface{}) *MockedDatabase_InitTaskBlock_Call {
-	return &MockedDatabase_InitTaskBlock_Call{Call: _e.mock.On("InitTaskBlock", ctx, dto, isPaused)}
+//   - hasUpdData bool
+func (_e *MockedDatabase_Expecter) InitTaskBlock(ctx interface{}, dto interface{}, isPaused interface{}, hasUpdData interface{}) *MockedDatabase_InitTaskBlock_Call {
+	return &MockedDatabase_InitTaskBlock_Call{Call: _e.mock.On("InitTaskBlock", ctx, dto, isPaused, hasUpdData)}
 }
 
-func (_c *MockedDatabase_InitTaskBlock_Call) Run(run func(ctx context.Context, dto *db.SaveStepRequest, isPaused bool)) *MockedDatabase_InitTaskBlock_Call {
+func (_c *MockedDatabase_InitTaskBlock_Call) Run(run func(ctx context.Context, dto *db.SaveStepRequest, isPaused bool, hasUpdData bool)) *MockedDatabase_InitTaskBlock_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(*db.SaveStepRequest), args[2].(bool))
+		run(args[0].(context.Context), args[1].(*db.SaveStepRequest), args[2].(bool), args[3].(bool))
 	})
 	return _c
 }
@@ -4631,7 +4632,7 @@ func (_c *MockedDatabase_InitTaskBlock_Call) Return(id uuid.UUID, startTime time
 	return _c
 }
 
-func (_c *MockedDatabase_InitTaskBlock_Call) RunAndReturn(run func(context.Context, *db.SaveStepRequest, bool) (uuid.UUID, time.Time, error)) *MockedDatabase_InitTaskBlock_Call {
+func (_c *MockedDatabase_InitTaskBlock_Call) RunAndReturn(run func(context.Context, *db.SaveStepRequest, bool, bool) (uuid.UUID, time.Time, error)) *MockedDatabase_InitTaskBlock_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -5431,25 +5432,25 @@ func (_c *MockedDatabase_SaveSLAVersionSettings_Call) RunAndReturn(run func(cont
 	return _c
 }
 
-// SaveStepContext provides a mock function with given fields: ctx, dto, id
-func (_m *MockedDatabase) SaveStepContext(ctx context.Context, dto *db.SaveStepRequest, id uuid.UUID) (uuid.UUID, error) {
-	ret := _m.Called(ctx, dto, id)
+// SaveStepContext provides a mock function with given fields: ctx, dto, id, hasUpdData
+func (_m *MockedDatabase) SaveStepContext(ctx context.Context, dto *db.SaveStepRequest, id uuid.UUID, hasUpdData bool) (uuid.UUID, error) {
+	ret := _m.Called(ctx, dto, id, hasUpdData)
 
 	var r0 uuid.UUID
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, *db.SaveStepRequest, uuid.UUID) (uuid.UUID, error)); ok {
-		return rf(ctx, dto, id)
+	if rf, ok := ret.Get(0).(func(context.Context, *db.SaveStepRequest, uuid.UUID, bool) (uuid.UUID, error)); ok {
+		return rf(ctx, dto, id, hasUpdData)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, *db.SaveStepRequest, uuid.UUID) uuid.UUID); ok {
-		r0 = rf(ctx, dto, id)
+	if rf, ok := ret.Get(0).(func(context.Context, *db.SaveStepRequest, uuid.UUID, bool) uuid.UUID); ok {
+		r0 = rf(ctx, dto, id, hasUpdData)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(uuid.UUID)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, *db.SaveStepRequest, uuid.UUID) error); ok {
-		r1 = rf(ctx, dto, id)
+	if rf, ok := ret.Get(1).(func(context.Context, *db.SaveStepRequest, uuid.UUID, bool) error); ok {
+		r1 = rf(ctx, dto, id, hasUpdData)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -5466,13 +5467,14 @@ type MockedDatabase_SaveStepContext_Call struct {
 //   - ctx context.Context
 //   - dto *db.SaveStepRequest
 //   - id uuid.UUID
-func (_e *MockedDatabase_Expecter) SaveStepContext(ctx interface{}, dto interface{}, id interface{}) *MockedDatabase_SaveStepContext_Call {
-	return &MockedDatabase_SaveStepContext_Call{Call: _e.mock.On("SaveStepContext", ctx, dto, id)}
+//   - hasUpdData bool
+func (_e *MockedDatabase_Expecter) SaveStepContext(ctx interface{}, dto interface{}, id interface{}, hasUpdData interface{}) *MockedDatabase_SaveStepContext_Call {
+	return &MockedDatabase_SaveStepContext_Call{Call: _e.mock.On("SaveStepContext", ctx, dto, id, hasUpdData)}
 }
 
-func (_c *MockedDatabase_SaveStepContext_Call) Run(run func(ctx context.Context, dto *db.SaveStepRequest, id uuid.UUID)) *MockedDatabase_SaveStepContext_Call {
+func (_c *MockedDatabase_SaveStepContext_Call) Run(run func(ctx context.Context, dto *db.SaveStepRequest, id uuid.UUID, hasUpdData bool)) *MockedDatabase_SaveStepContext_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(*db.SaveStepRequest), args[2].(uuid.UUID))
+		run(args[0].(context.Context), args[1].(*db.SaveStepRequest), args[2].(uuid.UUID), args[3].(bool))
 	})
 	return _c
 }
@@ -5482,7 +5484,7 @@ func (_c *MockedDatabase_SaveStepContext_Call) Return(_a0 uuid.UUID, _a1 error) 
 	return _c
 }
 
-func (_c *MockedDatabase_SaveStepContext_Call) RunAndReturn(run func(context.Context, *db.SaveStepRequest, uuid.UUID) (uuid.UUID, error)) *MockedDatabase_SaveStepContext_Call {
+func (_c *MockedDatabase_SaveStepContext_Call) RunAndReturn(run func(context.Context, *db.SaveStepRequest, uuid.UUID, bool) (uuid.UUID, error)) *MockedDatabase_SaveStepContext_Call {
 	_c.Call.Return(run)
 	return _c
 }
