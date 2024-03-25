@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	c "context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -86,6 +87,23 @@ func (runCtx *BlockRunContext) notifyKafkaEvents(ctx c.Context, log logger.Logge
 		err := runCtx.Services.Kafka.ProduceEventMessage(ctx, &event)
 		if err != nil {
 			log.WithError(err).Error(fmt.Sprintf("couldn't produce message: %+v", event))
+
+			b, err := json.Marshal(&event)
+			if err != nil {
+				log.WithError(err).Error(fmt.Sprintf("couldn't marshal event: %+v", event))
+
+				continue
+			}
+
+			_, errCreate := runCtx.Services.Storage.CreateEventToSend(ctx, &e.CreateEventToSend{
+				WorkID:  event.TaskID,
+				Message: b,
+			})
+			if errCreate != nil {
+				log.WithError(errCreate).Error(fmt.Sprintf("couldn't create event to send: %+v", event))
+
+				continue
+			}
 
 			continue
 		}

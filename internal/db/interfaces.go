@@ -283,4 +283,8 @@ type Database interface {
 	TryUnpauseTask(ctx c.Context, workID uuid.UUID) (err error)
 	InitTaskBlock(ctx c.Context, dto *SaveStepRequest, isPaused bool) (id uuid.UUID, startTime time.Time, err error)
 	SkipBlocksAfterRestarted(ctx c.Context, workID uuid.UUID, startTime time.Time, blocks []string) (err error)
+
+	CreateEventToSend(ctx c.Context, dto *e.CreateEventToSend) (eventID string, err error)
+	UpdateEventToSend(ctx c.Context, eventID string)  (err error)
+	GetEventsToSend(ctx c.Context) ([]e.ToSendKafkaEvent, error)
 }

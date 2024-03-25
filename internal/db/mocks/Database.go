@@ -6680,6 +6680,18 @@ func (_m *MockedDatabase) VersionEditable(ctx context.Context, versionID uuid.UU
 	return r0, r1
 }
 
+func (_m *MockedDatabase) CreateEventToSend(ctx context.Context, dto *entity.CreateEventToSend) (eventID string, err error) {
+	return "", nil
+}
+
+func (_m *MockedDatabase) UpdateEventToSend(ctx context.Context, eventID string)  (err error) {
+	return nil
+}
+
+func (_m *MockedDatabase) GetEventsToSend(ctx context.Context) ([]entity.ToSendKafkaEvent, error) {
+	return nil, nil
+}
+
 // MockedDatabase_VersionEditable_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'VersionEditable'
 type MockedDatabase_VersionEditable_Call struct {
 	*mock.Call

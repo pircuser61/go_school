@@ -36,6 +36,11 @@ func (ne *NodeEvent) ToMap() map[string]interface{} {
 	return res
 }
 
+type ToSendKafkaEvent struct {
+	EventID string
+	Event   NodeKafkaEvent
+}
+
 type NodeKafkaEvent struct {
 	TaskID           string                 `json:"task_id"`
 	WorkNumber       string                 `json:"work_number"`
