@@ -58,6 +58,7 @@ func (gb *GoFormBlock) Update(ctx context.Context) (interface{}, error) {
 		if !gb.State.IsTakenInWork {
 			return nil, errors.New("is not taken in work")
 		}
+
 		if errFill := gb.handleRequestFillForm(ctx, data); errFill != nil {
 			return nil, errFill
 		}
