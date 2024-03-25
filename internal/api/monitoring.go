@@ -812,3 +812,8 @@ func (ae *Env) skipTaskBlocksAfterRestart(ctx context.Context, steps *entity.Tas
 
 	return nil
 }
+
+func (ae *Env) EditTaskBlockData(w http.ResponseWriter, r *http.Request, blockId string) {
+
+	return
+}

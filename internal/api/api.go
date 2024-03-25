@@ -198,6 +198,17 @@ const (
 	MonitoringTaskActionRequestActionStartByOne MonitoringTaskActionRequestAction = "startByOne"
 )
 
+// Defines values for MonitoringTaskEditBlockRequestChangeType.
+const (
+	MonitoringTaskEditBlockRequestChangeTypeContext MonitoringTaskEditBlockRequestChangeType = "context"
+
+	MonitoringTaskEditBlockRequestChangeTypeOutput MonitoringTaskEditBlockRequestChangeType = "output"
+
+	MonitoringTaskEditBlockRequestChangeTypeStartVar MonitoringTaskEditBlockRequestChangeType = "startVar"
+
+	MonitoringTaskEditBlockRequestChangeTypeState MonitoringTaskEditBlockRequestChangeType = "state"
+)
+
 // Defines values for NodeEvent.
 const (
 	NodeEventEnd NodeEvent = "end"
@@ -1433,6 +1444,21 @@ type MonitoringBlockState struct {
 	Value interface{} `json:"value"`
 }
 
+// MonitoringEditBlockData defines model for MonitoringEditBlockData.
+type MonitoringEditBlockData struct {
+	// Описание поля
+	Description string `json:"description"`
+
+	// Имя поля
+	Name string `json:"name"`
+
+	// Тип поля
+	Type string `json:"type"`
+
+	// Значение поля
+	Value interface{} `json:"value"`
+}
+
 // MonitoringHistory defines model for MonitoringHistory.
 type MonitoringHistory struct {
 	// Время перехода на конкретный блок
@@ -1548,6 +1574,17 @@ type MonitoringTaskActionRequest struct {
 
 // Действия с заявкой
 type MonitoringTaskActionRequestAction string
+
+// MonitoringTaskEditBlockRequest defines model for MonitoringTaskEditBlockRequest.
+type MonitoringTaskEditBlockRequest struct {
+	ChangeData MonitoringEditBlockData `json:"change_data"`
+
+	// Переменные в какой части блока редактируем
+	ChangeType MonitoringTaskEditBlockRequestChangeType `json:"change_type"`
+}
+
+// Переменные в какой части блока редактируем
+type MonitoringTaskEditBlockRequestChangeType string
 
 // MonitoringTasksPage defines model for MonitoringTasksPage.
 type MonitoringTasksPage struct {
@@ -2307,6 +2344,9 @@ type GetTasksForMonitoringParamsSortOrder string
 // GetTasksForMonitoringParamsStatus defines parameters for GetTasksForMonitoring.
 type GetTasksForMonitoringParamsStatus string
 
+// EditTaskBlockDataJSONBody defines parameters for EditTaskBlockData.
+type EditTaskBlockDataJSONBody MonitoringTaskEditBlockRequest
+
 // SaveVersionMainSettingsJSONBody defines parameters for SaveVersionMainSettings.
 type SaveVersionMainSettingsJSONBody ProcessSettings
 
@@ -2485,6 +2525,9 @@ type RateApplicationJSONRequestBody RateApplicationJSONBody
 
 // MonitoringTaskActionJSONRequestBody defines body for MonitoringTaskAction for application/json ContentType.
 type MonitoringTaskActionJSONRequestBody MonitoringTaskActionJSONBody
+
+// EditTaskBlockDataJSONRequestBody defines body for EditTaskBlockData for application/json ContentType.
+type EditTaskBlockDataJSONRequestBody EditTaskBlockDataJSONBody
 
 // SaveVersionMainSettingsJSONRequestBody defines body for SaveVersionMainSettings for application/json ContentType.
 type SaveVersionMainSettingsJSONRequestBody SaveVersionMainSettingsJSONBody
@@ -3310,6 +3353,9 @@ type ServerInterface interface {
 	// Get tasks for monitoring
 	// (GET /monitoring/tasks)
 	GetTasksForMonitoring(w http.ResponseWriter, r *http.Request, params GetTasksForMonitoringParams)
+	// редактирование данных блока в мониторинге
+	// (POST /monitoring/tasks/block/{blockId})
+	EditTaskBlockData(w http.ResponseWriter, r *http.Request, blockId string)
 	// Получение контекста блоков
 	// (GET /monitoring/tasks/block/{blockId}/context)
 	GetBlockContext(w http.ResponseWriter, r *http.Request, blockId string)
@@ -3731,6 +3777,32 @@ func (siw *ServerInterfaceWrapper) GetTasksForMonitoring(w http.ResponseWriter, 
 
 	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetTasksForMonitoring(w, r, params)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
+// EditTaskBlockData operation middleware
+func (siw *ServerInterfaceWrapper) EditTaskBlockData(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "blockId" -------------
+	var blockId string
+
+	err = runtime.BindStyledParameter("simple", false, "blockId", chi.URLParam(r, "blockId"), &blockId)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "blockId", Err: err})
+		return
+	}
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.EditTaskBlockData(w, r, blockId)
 	}
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -5358,6 +5430,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/monitoring/tasks", wrapper.GetTasksForMonitoring)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/monitoring/tasks/block/{blockId}", wrapper.EditTaskBlockData)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/monitoring/tasks/block/{blockId}/context", wrapper.GetBlockContext)

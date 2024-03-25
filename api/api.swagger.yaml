@@ -2333,6 +2333,65 @@ paths:
               schema:
                 $ref: '#/components/schemas/httpError'
 
+  /monitoring/tasks/block/{blockId}:
+    post:
+      operationId: EditTaskBlockData
+      tags:
+        - monitoring
+      summary: редактирование данных блока в мониторинге
+      description: редактирование данных блока в мониторинге
+      parameters:
+        - name: blockId
+          in: path
+          description: block ID
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: updated data
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MonitoringTaskEditBlockRequest'
+        required: true
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/MonitoringEditBlockData'
+                  status_code:
+                    type: integer
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        403:
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+      x-codegen-request-body-name: variables
+
   /monitoring/tasks/block/{blockId}/context:
     get:
       operationId: GetBlockContext
@@ -5153,6 +5212,19 @@ components:
           items:
             type: string
 
+    MonitoringTaskEditBlockRequest:
+      type: object
+      properties:
+        change_type:
+          type: string
+          enum: [ "state", "output", "context", "startVar" ]
+          description: "Переменные в какой части блока редактируем"
+        change_data:
+          $ref: '#/components/schemas/MonitoringEditBlockData'
+      required:
+        - change_type
+        - change_data
+
     MonitoringTask:
       type: object
       properties:
@@ -5339,6 +5411,34 @@ components:
         - type
         - description
         - value
+
+    MonitoringEditBlockData:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Имя поля
+        type:
+          type: string
+          description: Тип поля
+        description:
+          type: string
+          description: Описание поля
+        value:
+          oneOf:
+            - type: string
+            - type: number
+            - type: integer
+            - type: array
+            - type: object
+            - type: boolean
+          description: Значение поля
+      required:
+        - name
+        - type
+        - description
+        - value
+        -
     NameExists:
       type: object
       properties:
