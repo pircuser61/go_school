@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/iancoleman/orderedmap"
 
 	"github.com/pkg/errors"
@@ -19,9 +20,11 @@ import (
 
 	"gitlab.services.mts.ru/jocasta/forms/pkg/jsonschema"
 
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 )
 
 const (
@@ -79,6 +82,24 @@ func (ae *Env) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	usr, err := user.GetUserInfoFromCtx(ctx)
+	if err != nil {
+		errorHandler.handleError(NoUserInContextError, err)
+
+		return
+	}
+
+	taskID := uuid.New()
+
+	emptyTaskDTO := db.NewCreateEmptyTaskDTO(taskID, req.WorkNumber, usr.Username)
+
+	workNumber, err := ae.createEmptyTask(ctx, ae.DB, &emptyTaskDTO)
+	if err != nil {
+		errorHandler.handleError(PipelineCreateError, err)
+
+		return
+	}
+
 	workID, err := ae.DB.GetWorkIDByWorkNumber(ctx, req.WorkNumber)
 	if err != nil {
 		errorHandler.handleError(ValidationError, err)
@@ -124,7 +145,8 @@ func (ae *Env) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Request
 		w:           w,
 		req:         r,
 		makeNewWork: true,
-		workNumber:  req.WorkNumber,
+		workNumber:  workNumber,
+		taskID:      taskID,
 		runCtx: entity.TaskRunContext{
 			InitialApplication: entity.InitialApplication{
 				Description:               req.Description,
@@ -227,6 +249,24 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	usr, err := user.GetUserInfoFromCtx(ctx)
+	if err != nil {
+		errorHandler.handleError(NoUserInContextError, err)
+
+		return
+	}
+
+	taskID := uuid.New()
+
+	emptyTaskDTO := db.NewCreateEmptyTaskDTO(taskID, "", usr.Username)
+
+	workNumber, err := ae.createEmptyTask(ctx, storage, &emptyTaskDTO)
+	if err != nil {
+		errorHandler.handleError(PipelineCreateError, err)
+
+		return
+	}
+
 	//nolint:errcheck // нецелесообразно отслеживать подобные ошибки в defer
 	defer storage.Release(ctx)
 
@@ -298,6 +338,8 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 		w:                w,
 		req:              r,
 		allowRunAsOthers: allowRunAsOthers,
+		workNumber:       workNumber,
+		taskID:           taskID,
 		runCtx: entity.TaskRunContext{
 			ClientID: clientID,
 			InitialApplication: entity.InitialApplication{
@@ -450,7 +492,7 @@ func checkGroup(rawStartSchema jsonschema.Schema) jsonschema.Schema {
 		}
 
 		propValMap := propVal.(map[string]interface{})
-		if _, user := propValMap[emailKey]; user {
+		if _, ok := propValMap[emailKey]; ok {
 			continue
 		}
 
@@ -477,7 +519,7 @@ func checkGroup(rawStartSchema jsonschema.Schema) jsonschema.Schema {
 			}
 
 			propMap := propVals.(map[string]interface{})
-			if _, user := propMap[emailKey]; user {
+			if _, ok := propMap[emailKey]; ok {
 				continue
 			}
 
@@ -524,4 +566,30 @@ func cleanKey(mapKeys interface{}) string {
 	}
 
 	return strings.ReplaceAll(keyStr, "\\", "")
+}
+
+func (ae *Env) createEmptyTask(ctx c.Context, storage db.Database, emptyTask *db.CreateEmptyTaskDTO) (string, error) {
+	txStorage, err := storage.StartTransaction(ctx)
+	if err != nil {
+		return "", fmt.Errorf("failed start transaction, %s", err)
+	}
+
+	defer func() {
+		rollbackerr := txStorage.RollbackTransaction(ctx)
+		if rollbackerr != nil {
+			ae.Log.WithError(rollbackerr).Error("failed rollback transaction")
+		}
+	}()
+
+	workNumber, err := txStorage.CreateEmptyTask(ctx, emptyTask)
+	if err != nil {
+		return "", fmt.Errorf("failed create empty task in database, %w", err)
+	}
+
+	err = txStorage.CommitTransaction(ctx)
+	if err != nil {
+		return "", fmt.Errorf("failed commit transaction, %w", err)
+	}
+
+	return workNumber, nil
 }

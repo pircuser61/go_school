@@ -57,6 +57,113 @@ func (db *PGCon) SetLastRunID(c context.Context, taskID, versionID uuid.UUID) er
 	return nil
 }
 
+type CreateEmptyTaskDTO struct {
+	TaskID     uuid.UUID
+	WorkNumber string
+	Author     string
+}
+
+func NewCreateEmptyTaskDTO(taskID uuid.UUID, workNumber, author string) CreateEmptyTaskDTO {
+	return CreateEmptyTaskDTO{
+		TaskID:     taskID,
+		WorkNumber: workNumber,
+		Author:     author,
+	}
+}
+
+func (db *PGCon) CreateEmptyTask(ctx context.Context, task *CreateEmptyTaskDTO) (string, error) {
+	ctx, span := trace.StartSpan(ctx, "pg_create_empty_task")
+	defer span.End()
+
+	if task.WorkNumber == "" {
+		return db.insertEmptyTask(ctx, task)
+	}
+
+	return db.createEmptyTaskWithWorkID(ctx, task)
+}
+
+func (db *PGCon) insertEmptyTask(ctx context.Context, task *CreateEmptyTaskDTO) (string, error) {
+	// nolint:gocritic
+	// language=PostgreSQL
+	const query = `
+		INSERT INTO works(
+			id, 
+			started_at, 
+			status, 
+			author
+		)
+		VALUES (
+			$1, 
+			$2, 
+			$3, 
+			$4, 
+		)
+`
+
+	row := db.Connection.QueryRow(
+		ctx,
+		query,
+		task.TaskID,
+		time.Now(),
+		RunStatusCreated,
+		task.Author,
+	)
+
+	var worksNumber string
+
+	if err := row.Scan(&worksNumber); err != nil {
+		return "", err
+	}
+
+	return worksNumber, nil
+}
+
+func (db *PGCon) createEmptyTaskWithWorkID(ctx context.Context, task *CreateEmptyTaskDTO) (string, error) {
+	err := db.setTaskChild(ctx, task.WorkNumber, task.TaskID)
+	if err != nil {
+		return "", err
+	}
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	const query = `
+		INSERT INTO works(
+			id, 
+			started_at, 
+			status, 
+			author,
+			work_number
+		)
+		VALUES (
+			$1, 
+			$2, 
+			$3, 
+			$4,
+			$5
+		)
+`
+
+	_, err = db.Connection.Exec(
+		ctx,
+		query,
+		task.TaskID,
+		time.Now(),
+		RunStatusCreated,
+		task.Author,
+		task.WorkNumber,
+	)
+	if err != nil {
+		return "", err
+	}
+
+	err = db.FinishTaskBlocks(ctx, task.TaskID, nil, true)
+	if err != nil {
+		return "", err
+	}
+
+	return task.WorkNumber, nil
+}
+
 func (db *PGCon) CreateTask(c context.Context, dto *CreateTaskDTO) (*entity.EriusTask, error) {
 	c, span := trace.StartSpan(c, "pg_create_task")
 	defer span.End()

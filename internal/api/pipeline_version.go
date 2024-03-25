@@ -568,6 +568,7 @@ type execVersionDTO struct {
 	makeNewWork      bool
 	allowRunAsOthers bool
 	workNumber       string
+	taskID           uuid.UUID
 	runCtx           e.TaskRunContext
 }
 
@@ -617,6 +618,7 @@ func (ae *Env) execVersion(ctx c.Context, dto *execVersionDTO) (*e.RunResponse, 
 		makeNewWork:    dto.makeNewWork,
 		workNumber:     dto.workNumber,
 		runCtx:         dto.runCtx,
+		taskID:         dto.taskID,
 	}
 
 	executablePipeline, errCustom, err := ae.execVersionInternal(ctxLocal, execVersionInternalDTO)
@@ -657,6 +659,7 @@ type execVersionInternalDTO struct {
 	realAuthorName string
 	makeNewWork    bool
 	workNumber     string
+	taskID         uuid.UUID
 	runCtx         e.TaskRunContext
 }
 
@@ -697,19 +700,19 @@ func (ae *Env) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO) (
 		return nil, PipelineRunError, err
 	}
 
-	createTaskDTO := pipeline.NewCreateTaskDTO(
-		dto.authorName,
+	updateTaskDTO := db.NewUpdateTaskDTO(
+		dto.taskID,
+		dto.p.VersionID,
 		dto.realAuthorName,
-		false,
 		parameters,
-		dto.workNumber,
+		false,
 		dto.runCtx,
 	)
 
-	err = ep.CreateTask(ctx, &createTaskDTO)
+	err = txStorage.UpdateTask(ctx, &updateTaskDTO)
 	if err != nil {
 		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
-			log.WithField("funcName", "CreateTask").
+			log.WithField("funcName", "UpdateTask").
 				WithError(errors.New("couldn't rollback tx")).
 				Error(txErr)
 		}
@@ -816,13 +819,8 @@ func (ae *Env) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO) (
 }
 
 func (ae *Env) makeExecutablePipeline(dto *execVersionInternalDTO, txStorage db.Database) *pipeline.ExecutablePipeline {
-	var workNumber string
-	if dto.makeNewWork {
-		workNumber = dto.workNumber
-	}
-
 	return &pipeline.ExecutablePipeline{
-		WorkNumber:    workNumber,
+		WorkNumber:    dto.workNumber,
 		PipelineID:    dto.p.PipelineID,
 		VersionID:     dto.p.VersionID,
 		Storage:       txStorage,

@@ -59,6 +59,9 @@ type TaskStorager interface {
 	GetWorkIDByWorkNumber(ctx c.Context, workNumber string) (uuid.UUID, error)
 
 	CreateTask(ctx c.Context, dto *CreateTaskDTO) (*e.EriusTask, error)
+	UpdateTask(ctx c.Context, updateTask *UpdateTaskDTO) error
+
+	CreateEmptyTask(ctx c.Context, task *CreateEmptyTaskDTO) (string, error)
 
 	CheckUserCanEditForm(ctx c.Context, workNumber string, stepName string, login string) (bool, error)
 	SendTaskToArchive(ctx c.Context, taskID uuid.UUID) (err error)

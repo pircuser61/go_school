@@ -521,6 +521,63 @@ func (_c *MockedDatabase_CommitTransaction_Call) RunAndReturn(run func(context.C
 	return _c
 }
 
+// CreateEmptyTask provides a mock function with given fields: ctx, task
+func (_m *MockedDatabase) CreateEmptyTask(ctx context.Context, task *db.CreateEmptyTaskDTO) (string, error) {
+	ret := _m.Called(ctx, task)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CreateEmptyTask")
+	}
+
+	var r0 string
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, *db.CreateEmptyTaskDTO) (string, error)); ok {
+		return rf(ctx, task)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, *db.CreateEmptyTaskDTO) string); ok {
+		r0 = rf(ctx, task)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, *db.CreateEmptyTaskDTO) error); ok {
+		r1 = rf(ctx, task)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockedDatabase_CreateEmptyTask_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CreateEmptyTask'
+type MockedDatabase_CreateEmptyTask_Call struct {
+	*mock.Call
+}
+
+// CreateEmptyTask is a helper method to define mock.On call
+//   - ctx context.Context
+//   - task *db.CreateEmptyTaskDTO
+func (_e *MockedDatabase_Expecter) CreateEmptyTask(ctx interface{}, task interface{}) *MockedDatabase_CreateEmptyTask_Call {
+	return &MockedDatabase_CreateEmptyTask_Call{Call: _e.mock.On("CreateEmptyTask", ctx, task)}
+}
+
+func (_c *MockedDatabase_CreateEmptyTask_Call) Run(run func(ctx context.Context, task *db.CreateEmptyTaskDTO)) *MockedDatabase_CreateEmptyTask_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(*db.CreateEmptyTaskDTO))
+	})
+	return _c
+}
+
+func (_c *MockedDatabase_CreateEmptyTask_Call) Return(_a0 string, _a1 error) *MockedDatabase_CreateEmptyTask_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockedDatabase_CreateEmptyTask_Call) RunAndReturn(run func(context.Context, *db.CreateEmptyTaskDTO) (string, error)) *MockedDatabase_CreateEmptyTask_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // CreatePipeline provides a mock function with given fields: c, p, author, pipelineData, oldVersionID, hasPrivateFunction
 func (_m *MockedDatabase) CreatePipeline(c context.Context, p *entity.EriusScenario, author string, pipelineData []byte, oldVersionID uuid.UUID, hasPrivateFunction bool) error {
 	ret := _m.Called(c, p, author, pipelineData, oldVersionID, hasPrivateFunction)
@@ -6967,34 +7024,22 @@ func (_c *MockedDatabase_UpdateStepContext_Call) RunAndReturn(run func(context.C
 	return _c
 }
 
-// UpdateTask provides a mock function with given fields: ctx, dto
-func (_m *MockedDatabase) UpdateTask(ctx context.Context, dto *db.UpdateTaskDTO) (*entity.EriusTask, error) {
-	ret := _m.Called(ctx, dto)
+// UpdateTask provides a mock function with given fields: ctx, updateTask
+func (_m *MockedDatabase) UpdateTask(ctx context.Context, updateTask *db.UpdateTaskDTO) error {
+	ret := _m.Called(ctx, updateTask)
 
 	if len(ret) == 0 {
 		panic("no return value specified for UpdateTask")
 	}
 
-	var r0 *entity.EriusTask
-	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, *db.UpdateTaskDTO) (*entity.EriusTask, error)); ok {
-		return rf(ctx, dto)
-	}
-	if rf, ok := ret.Get(0).(func(context.Context, *db.UpdateTaskDTO) *entity.EriusTask); ok {
-		r0 = rf(ctx, dto)
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, *db.UpdateTaskDTO) error); ok {
+		r0 = rf(ctx, updateTask)
 	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*entity.EriusTask)
-		}
+		r0 = ret.Error(0)
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, *db.UpdateTaskDTO) error); ok {
-		r1 = rf(ctx, dto)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
+	return r0
 }
 
 // MockedDatabase_UpdateTask_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdateTask'
@@ -7004,24 +7049,24 @@ type MockedDatabase_UpdateTask_Call struct {
 
 // UpdateTask is a helper method to define mock.On call
 //   - ctx context.Context
-//   - dto *db.UpdateTaskDTO
-func (_e *MockedDatabase_Expecter) UpdateTask(ctx interface{}, dto interface{}) *MockedDatabase_UpdateTask_Call {
-	return &MockedDatabase_UpdateTask_Call{Call: _e.mock.On("UpdateTask", ctx, dto)}
+//   - updateTask *db.UpdateTaskDTO
+func (_e *MockedDatabase_Expecter) UpdateTask(ctx interface{}, updateTask interface{}) *MockedDatabase_UpdateTask_Call {
+	return &MockedDatabase_UpdateTask_Call{Call: _e.mock.On("UpdateTask", ctx, updateTask)}
 }
 
-func (_c *MockedDatabase_UpdateTask_Call) Run(run func(ctx context.Context, dto *db.UpdateTaskDTO)) *MockedDatabase_UpdateTask_Call {
+func (_c *MockedDatabase_UpdateTask_Call) Run(run func(ctx context.Context, updateTask *db.UpdateTaskDTO)) *MockedDatabase_UpdateTask_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		run(args[0].(context.Context), args[1].(*db.UpdateTaskDTO))
 	})
 	return _c
 }
 
-func (_c *MockedDatabase_UpdateTask_Call) Return(_a0 *entity.EriusTask, _a1 error) *MockedDatabase_UpdateTask_Call {
-	_c.Call.Return(_a0, _a1)
+func (_c *MockedDatabase_UpdateTask_Call) Return(_a0 error) *MockedDatabase_UpdateTask_Call {
+	_c.Call.Return(_a0)
 	return _c
 }
 
-func (_c *MockedDatabase_UpdateTask_Call) RunAndReturn(run func(context.Context, *db.UpdateTaskDTO) (*entity.EriusTask, error)) *MockedDatabase_UpdateTask_Call {
+func (_c *MockedDatabase_UpdateTask_Call) RunAndReturn(run func(context.Context, *db.UpdateTaskDTO) error) *MockedDatabase_UpdateTask_Call {
 	_c.Call.Return(run)
 	return _c
 }
