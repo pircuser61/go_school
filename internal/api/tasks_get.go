@@ -858,6 +858,10 @@ func getTaskStepNameByAction(action entity.TaskUpdateAction) []string {
 		return []string{pipeline.BlockExecutableFunctionID}
 	}
 
+	if action == entity.TaskUpdateActionRetry {
+		return []string{pipeline.BlockExecutableFunctionID}
+	}
+
 	return []string{}
 }
 

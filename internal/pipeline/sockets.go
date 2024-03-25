@@ -13,4 +13,5 @@ const (
 	requestAddInfoSocketID   = "req_add_info"
 	errorSocketID            = "error"
 	funcTimeExpired          = "func_sla_expired"
+	retryCountExceeded       = "retry_count_exceeded"
 )

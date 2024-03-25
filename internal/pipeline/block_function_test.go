@@ -148,7 +148,7 @@ func TestBlockFunction_Update(t *testing.T) {
 								"param1":{"type":"string", "title":"param1"},
 								"param2":{"type":"boolean","title":"param2"},
 								"param3":{"type":"number","title": "param3"},
-								"param4":{"type":"object", 
+								"param4":{"type":"object",
 									"properties":{
 										"param4.1":{"description":"param4.1","type":"string"},
 										"param4.2":{"description":"param4.2","type":"string"}
@@ -228,7 +228,7 @@ func TestBlockFunction_Update(t *testing.T) {
 						Input: `{
 								"param1":{"type":"string", "title":"param1"},
 								"param3":{"type":"number","title": "param3"},
-								"param4":{"type":"object", 
+								"param4":{"type":"object",
 									"properties":{
 										"param4.2":{"description":"param4.2","type":"string"}
 									},
@@ -312,7 +312,7 @@ func TestBlockFunction_Update(t *testing.T) {
 								"param1":{"type":"string", "title":"param1"},
 								"param2":{"type":"boolean","title":"param2"},
 								"param3":{"type":"number","title": "param3"},
-								"param4":{"type":"object", 
+								"param4":{"type":"object",
 									"properties":{
 										"param4.1":{"description":"param4.1","type":"string"},
 										"param4.2":{"description":"param4.2","type":"string"}
@@ -582,6 +582,194 @@ func TestBlockFunction_Update(t *testing.T) {
 			args: args{
 				ctx:  context.Background(),
 				data: nil,
+			},
+			wantErr: false,
+		},
+		{
+			name: "test response with do reply true and exceeded max replay",
+			fields: fields{
+				RunContext: &BlockRunContext{
+					TaskID:            workID,
+					skipNotifications: true,
+					skipProduce:       true,
+					VarStore:          store.NewStore(),
+				},
+				State: &ExecutableFunction{
+					RetryPolicy:        "simple",
+					RetryCount:         1,
+					CurRetryCount:      2,
+					RetryCountExceeded: true,
+					HasResponse:        false,
+					Function: script.FunctionParam{
+						Output: `{"mktu": {"type": "array"}, "name": {"type": "number"}}`,
+					},
+				},
+			},
+			args: args{
+				data: &script.BlockUpdateData{
+					ByLogin: "example",
+					Parameters: json.RawMessage(`{
+						"do_retry":true,
+						"mapping": {
+							"mktu": [1, 2, 3],
+							"name": "example"
+						}
+					}`),
+				},
+				ctx: context.Background(),
+			},
+			wantErr: false,
+		},
+		{
+			name: "test response with do reply false and error",
+			fields: fields{
+				RunContext: &BlockRunContext{
+					TaskID:            workID,
+					skipNotifications: true,
+					skipProduce:       true,
+					VarStore:          store.NewStore(),
+				},
+				State: &ExecutableFunction{
+					HasResponse: false,
+					Function: script.FunctionParam{
+						Output: `{"mktu": {"type": "array"}, "name": {"type": "number"}}`,
+					},
+				},
+			},
+			args: args{
+				data: &script.BlockUpdateData{
+					ByLogin: "example",
+					Parameters: json.RawMessage(`{
+						"do_retry":false,
+						"err":"test error",
+						"mapping": {
+							"mktu": [1, 2, 3],
+							"name": "example"
+						}
+					}`),
+				},
+				ctx: context.Background(),
+			},
+			wantErr: true,
+		},
+		{
+			name: "test with response do reply true and not exceeded max replay",
+			fields: fields{
+				RunContext: &BlockRunContext{
+					TaskID:            workID,
+					skipNotifications: true,
+					skipProduce:       true,
+					VarStore: func() *store.VariableStore {
+						s := store.NewStore()
+						s.SetValue("servicedesk_application_0.application_body", map[string]interface{}{
+							"short_name": "test name",
+							"recipient": map[string]interface{}{
+								"fullname": "Egor Jopov",
+							},
+						})
+
+						return s
+					}(),
+					Services: RunContextServices{
+						Storage: func() db.Database {
+							res := &mocks.MockedDatabase{}
+
+							res.On("GetTaskStepByName",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								workID,
+								stepName,
+							).Return(
+								&entity.Step{
+									ID: uuid.New(),
+								}, nil,
+							)
+
+							return res
+						}(),
+					},
+				},
+				State: &ExecutableFunction{
+					RetryPolicy:        "simple",
+					RetryCount:         1,
+					RetryCountExceeded: false,
+					HasResponse:        false,
+					Function: script.FunctionParam{
+						Output: `{"mktu": {"type": "array"}, "name": {"type": "number"}}`,
+					},
+				},
+			},
+			args: args{
+				data: &script.BlockUpdateData{
+					ByLogin: "example",
+					Parameters: json.RawMessage(`{
+			           "do_retry":true,
+			           "mapping": {
+				          "mktu": [1, 2, 3],
+				          "name": "example"
+			            }
+		            }`),
+				},
+				ctx: context.Background(),
+			},
+			wantErr: false,
+		},
+		{
+			name: "test action reply",
+			fields: fields{
+				Name: stepName,
+				State: &ExecutableFunction{
+					RetryPolicy:        "simple",
+					RetryCount:         1,
+					CurRetryTimeout:    3,
+					RetryCountExceeded: false,
+					HasResponse:        false,
+					Function: script.FunctionParam{
+						Input:         `{"name":{"type":"string","title":"имя"}}`,
+						RequiredInput: []string{},
+						Output:        `{"mktu": {"type": "array"}, "name": {"type": "number"}}`,
+					},
+				},
+				RunContext: &BlockRunContext{
+					TaskID:            workID,
+					skipNotifications: true,
+					skipProduce:       true,
+					VarStore: func() *store.VariableStore {
+						s := store.NewStore()
+						s.SetValue("servicedesk_application_0.application_body", map[string]interface{}{
+							"short_name": "test name",
+							"recipient": map[string]interface{}{
+								"fullname": "Egor Jopov",
+							},
+						})
+
+						return s
+					}(),
+					Services: RunContextServices{
+						Storage: func() db.Database {
+							res := &mocks.MockedDatabase{}
+
+							res.On("GetTaskStepByName",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								workID,
+								stepName,
+							).Return(
+								&entity.Step{
+									ID: uuid.New(),
+								}, nil,
+							)
+
+							return res
+						}(),
+					},
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				data: &script.BlockUpdateData{
+					ByLogin:    "example",
+					Action:     string(entity.TaskUpdateActionRetry),
+					Parameters: json.RawMessage(`{}`),
+				},
 			},
 			wantErr: false,
 		},

@@ -13,11 +13,15 @@ const versionExample = "916ad995-8d13-49fb-82ee-edd4f97649e2"
 
 func TestExecutableFunctionParams_Validate(t *testing.T) {
 	type fields struct {
-		Name     string
-		Version  string
-		Mapping  JSONSchemaProperties
-		Function FunctionParam
-		SLA      int
+		Name          string
+		Version       string
+		Mapping       JSONSchemaProperties
+		Function      FunctionParam
+		SLA           int
+		NeedRetry     bool
+		RetryCount    int
+		RetryInterval int
+		RetryPolicy   FunctionRetryPolicy
 	}
 
 	tests := []struct {
@@ -266,16 +270,137 @@ func TestExecutableFunctionParams_Validate(t *testing.T) {
 			},
 			wantErr: errors.New("got no function name or version"),
 		},
+		{
+			name: "Tests missing Retry count",
+			fields: fields{
+				Name:    "test",
+				Version: versionExample,
+				Mapping: JSONSchemaProperties{
+					"param1": {
+						Description: "param1 name",
+						Type:        "string",
+						Value:       "form_0.a",
+					},
+				},
+				Function: FunctionParam{
+					Options: `{\"type\": \"async\"}`,
+				},
+				SLA:           int(59 * time.Second.Seconds()),
+				NeedRetry:     true,
+				RetryInterval: 1,
+				RetryPolicy:   "simple",
+			},
+
+			wantErr: errors.New("invalid retry count: 0"),
+		},
+		{
+			name: "Tests missing retry interval",
+			fields: fields{
+				Name:    "test",
+				Version: versionExample,
+				Mapping: JSONSchemaProperties{
+					"param1": {
+						Description: "param1 name",
+						Type:        "string",
+						Value:       "form_0.a",
+					},
+				},
+				Function: FunctionParam{
+					Options: `{\"type\": \"async\"}`,
+				},
+				SLA:         int(59 * time.Second.Seconds()),
+				NeedRetry:   true,
+				RetryCount:  1,
+				RetryPolicy: "simple",
+			},
+
+			wantErr: errors.New("invalid return interval: 0"),
+		},
+		{
+			name: "Tests missing retry policy",
+			fields: fields{
+				Name:    "test",
+				Version: versionExample,
+				Mapping: JSONSchemaProperties{
+					"param1": {
+						Description: "param1 name",
+						Type:        "string",
+						Value:       "form_0.a",
+					},
+				},
+				Function: FunctionParam{
+					Options: `{\"type\": \"async\"}`,
+				},
+				SLA:           int(59 * time.Second.Seconds()),
+				NeedRetry:     true,
+				RetryCount:    1,
+				RetryInterval: 1,
+			},
+
+			wantErr: errors.New("retry policy is empty"),
+		},
+		{
+			name: "Tests invalid retry policy",
+			fields: fields{
+				Name:    "test",
+				Version: versionExample,
+				Mapping: JSONSchemaProperties{
+					"param1": {
+						Description: "param1 name",
+						Type:        "string",
+						Value:       "form_0.a",
+					},
+				},
+				Function: FunctionParam{
+					Options: `{\"type\": \"async\"}`,
+				},
+				SLA:           int(59 * time.Second.Seconds()),
+				NeedRetry:     true,
+				RetryCount:    1,
+				RetryInterval: 1,
+				RetryPolicy:   "testing policy",
+			},
+
+			wantErr: errors.New("invalid retry policy: testing policy"),
+		},
+		{
+			name: "Tests right retry param",
+			fields: fields{
+				Name:    "test",
+				Version: versionExample,
+				Mapping: JSONSchemaProperties{
+					"param1": {
+						Description: "param1 name",
+						Type:        "string",
+						Value:       "form_0.a",
+					},
+				},
+				Function: FunctionParam{
+					Options: `{\"type\": \"async\"}`,
+				},
+				SLA:           int(59 * time.Second.Seconds()),
+				NeedRetry:     true,
+				RetryCount:    1,
+				RetryInterval: 1,
+				RetryPolicy:   "fibonacci",
+			},
+
+			wantErr: nil,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			a := &ExecutableFunctionParams{
-				Name:     tt.fields.Name,
-				Version:  tt.fields.Version,
-				Mapping:  tt.fields.Mapping,
-				Function: tt.fields.Function,
-				SLA:      tt.fields.SLA,
+				Name:          tt.fields.Name,
+				Version:       tt.fields.Version,
+				Mapping:       tt.fields.Mapping,
+				Function:      tt.fields.Function,
+				SLA:           tt.fields.SLA,
+				NeedRetry:     tt.fields.NeedRetry,
+				RetryCount:    tt.fields.RetryCount,
+				RetryInterval: tt.fields.RetryInterval,
+				RetryPolicy:   tt.fields.RetryPolicy,
 			}
 
 			err := a.Validate()

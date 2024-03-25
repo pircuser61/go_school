@@ -19,4 +19,5 @@ type RunnerInMessage struct {
 	TaskID          uuid.UUID              `json:"task_id"`
 	FunctionMapping map[string]interface{} `json:"function_mapping"`
 	Err             string                 `json:"err"`
+	DoRetry         bool                   `json:"do_retry"`
 }

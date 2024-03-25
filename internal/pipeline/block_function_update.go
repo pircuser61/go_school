@@ -3,6 +3,7 @@ package pipeline
 import (
 	"context"
 	"encoding/json"
+	"math"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
@@ -12,7 +13,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
 
-func (gb *ExecutableFunctionBlock) updateFunctionResult(log logger.Logger) error {
+func (gb *ExecutableFunctionBlock) updateFunctionResult(ctx context.Context, log logger.Logger) error {
 	var updateData FunctionUpdateParams
 
 	updateDataUnmarshalErr := json.Unmarshal(gb.RunContext.UpdateData.Parameters, &updateData)
@@ -25,14 +26,44 @@ func (gb *ExecutableFunctionBlock) updateFunctionResult(log logger.Logger) error
 	if gb.RunContext.UpdateData.Action == string(entity.TaskUpdateActionFuncSLAExpired) {
 		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputFunctionDecision], TimeoutDecision)
 		gb.State.TimeExpired = true
-	} else {
-		err := gb.setStateByResponse(&updateData)
-		if err != nil {
-			return err
-		}
+
+		return nil
 	}
 
-	return nil
+	if gb.RunContext.UpdateData.Action == string(entity.TaskUpdateActionRetry) {
+		if gb.State.CurRetryCount < gb.State.RetryCount {
+			err := gb.runFunction(ctx, log)
+			if err != nil {
+				return err
+			}
+
+			gb.State.CurRetryCount++
+			gb.setRetryTimeout()
+		}
+
+		return nil
+	}
+
+	err := gb.setStateByResponse(ctx, log, &updateData)
+
+	return err
+}
+
+func (gb *ExecutableFunctionBlock) setRetryTimeout() {
+	switch gb.State.RetryPolicy {
+	case script.FunctionRetryPolicySimple:
+		return
+	case script.FunctionRetryPolicyFibonacci:
+		curRetryTimeOut := gb.State.CurRetryTimeout
+		gb.State.CurRetryTimeout += gb.State.PrevRetryTimeout
+		gb.State.PrevRetryTimeout = curRetryTimeOut
+
+		return
+	case script.FunctionRetryPolicyExponential:
+		gb.State.CurRetryTimeout *= int(math.Exp(1))
+
+		return
+	}
 }
 
 func (gb *ExecutableFunctionBlock) runFunction(ctx context.Context, log logger.Logger) error {

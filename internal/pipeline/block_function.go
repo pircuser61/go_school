@@ -33,29 +33,38 @@ const (
 
 	SimpleFunctionRetryPolicy FunctionRetryPolicy = "simple"
 
-	TimeoutDecision  FunctionDecision = "timeout"
-	ExecutedDecision FunctionDecision = "executed"
+	TimeoutDecision            FunctionDecision = "timeout"
+	ExecutedDecision           FunctionDecision = "executed"
+	RetryCountExceededDecision FunctionDecision = "retry_count_exceeded"
 )
 
 type ExecutableFunction struct {
-	Name           string                      `json:"name"`
-	Version        string                      `json:"version"`
-	Mapping        script.JSONSchemaProperties `json:"mapping"`
-	Function       script.FunctionParam        `json:"function"`
-	Async          bool                        `json:"async"`
-	HasAck         bool                        `json:"has_ack"`
-	HasResponse    bool                        `json:"has_response"`
-	Contracts      string                      `json:"contracts"`
-	WaitCorrectRes int                         `json:"waitCorrectRes"`
-	Constants      map[string]interface{}      `json:"constants"`
-	CheckSLA       bool                        `json:"check_sla"`
-	SLA            int                         `json:"sla"`
-	TimeExpired    bool                        `json:"time_expired"`
+	Name               string                      `json:"name"`
+	Version            string                      `json:"version"`
+	Mapping            script.JSONSchemaProperties `json:"mapping"`
+	Function           script.FunctionParam        `json:"function"`
+	Async              bool                        `json:"async"`
+	HasAck             bool                        `json:"has_ack"`
+	HasResponse        bool                        `json:"has_response"`
+	Contracts          string                      `json:"contracts"`
+	WaitCorrectRes     int                         `json:"waitCorrectRes"`
+	Constants          map[string]interface{}      `json:"constants"`
+	CheckSLA           bool                        `json:"check_sla"`
+	SLA                int                         `json:"sla"`
+	TimeExpired        bool                        `json:"time_expired"`
+	RetryPolicy        script.FunctionRetryPolicy  `json:"retry_policy"`
+	RetryCount         int                         `json:"retry_count"`
+	CurRetryCount      int                         `json:"cur_retry_count"`
+	CurRetryTimeout    int                         `json:"cur_retry_timeout"`
+	PrevRetryTimeout   int                         `json:"prev_retry_timeout"`
+	RetryCountExceeded bool                        `json:"retry_count_exceeded"`
 }
 
 type FunctionUpdateParams struct {
 	Action  string                 `json:"action"`
 	Mapping map[string]interface{} `json:"mapping"`
+	Err     string                 `json:"err"`
+	DoRetry bool                   `json:"do_retry"`
 }
 
 type ExecutableFunctionBlock struct {
@@ -100,7 +109,7 @@ func (gb *ExecutableFunctionBlock) Deadlines(_ context.Context) ([]Deadline, err
 }
 
 func (gb *ExecutableFunctionBlock) GetStatus() Status {
-	if gb.State.TimeExpired {
+	if gb.State.TimeExpired || gb.State.RetryCountExceeded {
 		return StatusFinished
 	}
 
@@ -116,7 +125,7 @@ func (gb *ExecutableFunctionBlock) GetStatus() Status {
 }
 
 func (gb *ExecutableFunctionBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment, action string) {
-	if gb.State.TimeExpired {
+	if gb.State.TimeExpired || gb.State.RetryCountExceeded {
 		return StatusDone, "", ""
 	}
 
@@ -137,6 +146,10 @@ func (gb *ExecutableFunctionBlock) Next(_ *store.VariableStore) ([]string, bool)
 		key = funcTimeExpired
 	}
 
+	if gb.State.RetryCountExceeded {
+		key = retryCountExceeded
+	}
+
 	nexts, ok := script.GetNexts(gb.Sockets, key)
 	if !ok {
 		return nil, false
@@ -153,7 +166,7 @@ func (gb *ExecutableFunctionBlock) Update(ctx context.Context) (interface{}, err
 	log := logger.GetLogger(ctx)
 
 	if gb.RunContext.UpdateData != nil {
-		err := gb.updateFunctionResult(log)
+		err := gb.updateFunctionResult(ctx, log)
 		if err != nil {
 			return nil, err
 		}
@@ -173,7 +186,7 @@ func (gb *ExecutableFunctionBlock) Update(ctx context.Context) (interface{}, err
 
 	gb.RunContext.VarStore.ReplaceState(gb.Name, stateBytes)
 
-	if gb.State.HasResponse || gb.State.TimeExpired {
+	if gb.State.HasResponse || gb.State.TimeExpired || gb.State.RetryCountExceeded {
 		_, ok := gb.expectedEvents[eventEnd]
 		if !ok {
 			return nil, nil
@@ -338,6 +351,12 @@ func (gb *ExecutableFunctionBlock) createState(ef *entity.EriusFunc) error {
 		SLA:            params.SLA,
 	}
 
+	if params.NeedRetry {
+		gb.State.RetryPolicy = params.RetryPolicy
+		gb.State.RetryCount = params.RetryCount
+		gb.State.CurRetryTimeout = params.RetryInterval
+	}
+
 	if gb.State.CheckSLA {
 		_, err = gb.RunContext.Services.Scheduler.CreateTask(context.Background(), &scheduler.CreateTask{
 			WorkNumber:  gb.RunContext.WorkNumber,
@@ -385,7 +404,35 @@ func (gb *ExecutableFunctionBlock) createExpectedEvents(
 	return nil
 }
 
-func (gb *ExecutableFunctionBlock) setStateByResponse(updateData *FunctionUpdateParams) error {
+func (gb *ExecutableFunctionBlock) setStateByResponse(ctx context.Context, log logger.Logger, updateData *FunctionUpdateParams) error {
+	if updateData.DoRetry && gb.State.RetryCount > 0 {
+		if gb.State.CurRetryCount >= gb.State.RetryCount {
+			gb.RunContext.VarStore.SetValue(gb.Output[keyOutputFunctionDecision], RetryCountExceededDecision)
+			gb.State.RetryCountExceeded = true
+		} else {
+			if !gb.RunContext.skipProduce { // for test
+				_, err := gb.RunContext.Services.Scheduler.CreateTask(ctx, &scheduler.CreateTask{
+					WorkNumber:  gb.RunContext.WorkNumber,
+					WorkID:      gb.RunContext.TaskID.String(),
+					ActionName:  string(entity.TaskUpdateActionRetry),
+					StepName:    gb.Name,
+					WaitSeconds: gb.State.CurRetryTimeout,
+				})
+				if err != nil {
+					return err
+				}
+			}
+		}
+
+		return nil
+	}
+
+	if updateData.Err != "" {
+		log.WithField("message.Err", updateData.Err).
+			Error("message from kafka has error")
+		return errors.New("message from kafka has error")
+	}
+
 	if gb.State.Async && !gb.State.HasAck {
 		gb.State.HasAck = true
 	} else {
