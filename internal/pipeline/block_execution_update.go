@@ -25,6 +25,11 @@ import (
 )
 
 func (gb *GoExecutionBlock) Update(ctx c.Context) (interface{}, error) {
+	data := gb.RunContext.UpdateData
+	if data == nil {
+		return nil, errors.New("empty data")
+	}
+
 	executorsLogins := make(map[string]struct{}, 0)
 	for i := range gb.State.Executors {
 		executorsLogins[i] = gb.State.Executors[i]
