@@ -1167,7 +1167,9 @@ func (db *PGCon) isStepExist(ctx context.Context, workID, stepName string, hasUp
 	return id != uuid.Nil, id, t, nil
 }
 
-func (db *PGCon) InitTaskBlock(ctx context.Context, dto *SaveStepRequest, isPaused, hasUpdData bool) (id uuid.UUID, startTime time.Time, err error) {
+func (db *PGCon) InitTaskBlock(ctx context.Context, dto *SaveStepRequest,
+	isPaused, hasUpdData bool,
+) (id uuid.UUID, startTime time.Time, err error) {
 	ctx, span := trace.StartSpan(ctx, "pg_init_task_block")
 	defer span.End()
 
