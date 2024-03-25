@@ -13,6 +13,7 @@ func (gb *GoApproverBlock) setEvents(ctx c.Context) error {
 
 	humanStatus, _, _ := gb.GetTaskHumanStatus()
 
+	//nolint:all //its ok here
 	if data.Action == string(e.TaskUpdateActionApprovement) {
 		byLogin := data.ByLogin
 
