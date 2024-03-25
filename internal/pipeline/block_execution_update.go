@@ -528,10 +528,12 @@ func (gb *GoExecutionBlock) handleReworkSLABreached(ctx c.Context) error {
 		return err
 	}
 
-	nodeEvents, err := gb.RunContext.GetCancelledStepsEvents(ctx)
+	nodeEvents, nodeKafkaEvents, err := gb.RunContext.GetCancelledStepsEvents(ctx)
 	if err != nil {
 		return err
 	}
+
+	gb.happenedKafkaEvents = append(gb.happenedKafkaEvents, nodeKafkaEvents...)
 
 	//nolint:gocritic //в этом проекте не принято использовать поинтеры в коллекциях
 	for _, event := range nodeEvents {
@@ -659,10 +661,12 @@ func (gb *GoExecutionBlock) HandleBreachedSLARequestAddInfo(ctx c.Context) error
 		return err
 	}
 
-	nodeEvents, err := gb.RunContext.GetCancelledStepsEvents(ctx)
+	nodeEvents, nodeKafkaEvents, err := gb.RunContext.GetCancelledStepsEvents(ctx)
 	if err != nil {
 		return err
 	}
+
+	gb.happenedKafkaEvents = append(gb.happenedKafkaEvents, nodeKafkaEvents...)
 
 	//nolint:gocritic //в этом проекте не принято использовать поинтеры в коллекциях
 	for _, event := range nodeEvents {

@@ -74,10 +74,12 @@ func (gb *GoEndBlock) Update(ctx c.Context) (interface{}, error) {
 		return nil, err
 	}
 
-	nodeEvents, err := gb.RunContext.GetCancelledStepsEvents(ctx)
+	nodeEvents, nodeKafkaEvents, err := gb.RunContext.GetCancelledStepsEvents(ctx)
 	if err != nil {
 		return nil, err
 	}
+
+	gb.happenedKafkaEvents = append(gb.happenedKafkaEvents, nodeKafkaEvents...)
 
 	//nolint:gocritic //в этом проекте не принято использовать поинтеры в коллекциях
 	for _, event := range nodeEvents {

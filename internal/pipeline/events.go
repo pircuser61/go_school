@@ -163,13 +163,14 @@ func (runCtx *BlockRunContext) notifyEvents(ctx c.Context, log logger.Logger) {
 	но используется в MakeNodeEndEvent в рамках этой функции, немного опасно ставить здесь указатель
 	так как может повлиять на те места о которых я даже не подозреваю
 */
-func (runCtx BlockRunContext) GetCancelledStepsEvents(ctx c.Context) ([]e.NodeEvent, error) {
+func (runCtx BlockRunContext) GetCancelledStepsEvents(ctx c.Context) ([]e.NodeEvent, []e.NodeKafkaEvent, error) {
 	steps, err := runCtx.Services.Storage.GetCanceledTaskSteps(ctx, runCtx.TaskID)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	nodeEvents := make([]e.NodeEvent, 0, len(steps))
+	nodeKafkaEvents := make([]e.NodeKafkaEvent, 0, len(steps))
 
 	for _, s := range steps {
 		notify := false
@@ -208,13 +209,79 @@ func (runCtx BlockRunContext) GetCancelledStepsEvents(ctx c.Context) ([]e.NodeEv
 
 		event, eventErr := runCtx.MakeNodeEndEvent(ctx, nodeEvent)
 		if eventErr != nil {
-			return nil, eventErr
+			return nil, nil, eventErr
 		}
 
 		nodeEvents = append(nodeEvents, event)
+
+		if s.Type == BlockGoExecutionID || s.Type == BlockGoApproverID || s.Type == BlockGoSignID || s.Type == BlockGoFormID {
+			shortTitle := ""
+			if s.ShortTitle != nil {
+				shortTitle = *s.ShortTitle
+			}
+
+			stepContent, errStep := runCtx.Services.Storage.GetVariableStorageForStep(ctx, runCtx.TaskID, s.Name)
+			if errStep != nil {
+				return nil, nil, errStep
+			}
+
+			stepPeople := make(map[string]struct{})
+
+			if _, ok := stepContent.State[s.Name]; ok {
+				switch s.Type {
+				case BlockGoApproverID:
+					state := &ApproverData{}
+					unmarshalErr := json.Unmarshal(stepContent.State[s.Name], &state)
+					if unmarshalErr != nil {
+						return nil, nil, unmarshalErr
+					}
+
+					stepPeople = state.Approvers
+				case BlockGoExecutionID:
+					state := &ExecutionData{}
+					unmarshalErr := json.Unmarshal(stepContent.State[s.Name], &state)
+					if unmarshalErr != nil {
+						return nil, nil, unmarshalErr
+					}
+
+					stepPeople = state.Executors
+				case BlockGoSignID:
+					state := &SignData{}
+					unmarshalErr := json.Unmarshal(stepContent.State[s.Name], &state)
+					if unmarshalErr != nil {
+						return nil, nil, unmarshalErr
+					}
+
+					stepPeople = state.Signers
+				case BlockGoFormID:
+					state := &FormData{}
+					unmarshalErr := json.Unmarshal(stepContent.State[s.Name], &state)
+					if unmarshalErr != nil {
+						return nil, nil, unmarshalErr
+					}
+
+					stepPeople = state.Executors
+				}
+			}
+
+			kafkaEvent, errEvent := runCtx.MakeNodeKafkaEvent(ctx, &MakeNodeKafkaEvent{
+				EventName:      eventEnd,
+				NodeName:       s.Name,
+				NodeShortName:  shortTitle,
+				HumanStatus:    StatusRevoke,
+				NodeStatus:     StatusCanceled,
+				NodeType:       s.Type,
+				ToRemoveLogins: getSliceFromMap(stepPeople),
+			})
+			if errEvent != nil {
+				return nil, nil, errEvent
+			}
+
+			nodeKafkaEvents = append(nodeKafkaEvents, kafkaEvent)
+		}
 	}
 
-	return nodeEvents, nil
+	return nodeEvents, nodeKafkaEvents, nil
 }
 
 func (runCtx *BlockRunContext) SetTaskEvents(ctx c.Context) {
