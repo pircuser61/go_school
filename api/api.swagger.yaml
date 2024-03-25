@@ -1682,6 +1682,10 @@ paths:
           description: Order
           schema:
             type: string
+        - name: orderBy
+          in: query
+          schema:
+            type: string
         - name: limit
           in: query
           description: Limit

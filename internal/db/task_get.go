@@ -77,6 +77,7 @@ func uniqueActionsByRole(loginsIn, stepType string, finished, acted bool) string
          , min(actions.exec_start_time)     	  		 AS exec_start_time
          , min(actions.appr_start_time)     	  		 AS appr_start_time
          , min(actions.node_deadline)     	  		 	 AS node_deadline    
+    	 , min(actions.node_start) 						 AS node_start
     FROM actions
              JOIN filtered_actions fa ON fa.time = actions.node_start AND fa.block_id = actions.block_id
              LEFT JOIN LATERAL (SELECT jsonb_build_object(
@@ -252,7 +253,8 @@ func getUniqueActions(selectFilter string, logins []string) string {
            ''                             AS current_executor,
            null                           AS exec_start_time,
            null                           AS appr_start_time,
-           null::timestamp with time zone AS node_deadline
+           null::timestamp with time zone AS node_deadline,
+           null::timestamp with time zone AS node_start
     FROM works
     WHERE author IN %s AND child_id IS NULL
 )`, loginsIn)
@@ -311,14 +313,19 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 		) descr ON descr.work_id = w.id
 		WHERE w.child_id IS NULL`
 
-	order := ascOrder
+	order := ""
 	if fl.Order != nil {
 		order = *fl.Order
 	}
 
+	orderBy := ""
+	if fl.OrderBy != nil {
+		orderBy = *fl.OrderBy
+	}
+
 	var queryMaker compileGetTaskQueryMaker
 
-	return queryMaker.MakeQuery(&fl, q, delegations, args, order, true)
+	return queryMaker.MakeQuery(&fl, q, delegations, args, order, orderBy, true)
 }
 
 //nolint:gocritic //изначально было без поинтера
@@ -337,14 +344,19 @@ func compileGetTasksMetaQuery(fl entity.TaskFilter, delegations []string) (q str
 		[join_variable_storage]
 		WHERE w.child_id IS NULL`
 
-	order := ascOrder
+	order := ""
 	if fl.Order != nil {
 		order = *fl.Order
 	}
 
+	orderBy := ""
+	if fl.OrderBy != nil {
+		orderBy = *fl.OrderBy
+	}
+
 	var queryMaker compileGetTaskQueryMaker
 
-	return queryMaker.MakeQuery(&fl, q, delegations, args, order, false)
+	return queryMaker.MakeQuery(&fl, q, delegations, args, order, orderBy, false)
 }
 
 type compileGetTaskQueryMaker struct {
@@ -445,10 +457,23 @@ func (cq *compileGetTaskQueryMaker) addProcessingSteps() {
 	}
 }
 
-func (cq *compileGetTaskQueryMaker) addOrder(order string) {
-	if order != "" {
-		cq.q = fmt.Sprintf("%s\n ORDER BY w.started_at %s", cq.q, order)
+func (cq *compileGetTaskQueryMaker) addOrderBy(orderBy string) {
+	switch orderBy {
+	case "execution_started":
+		cq.q = fmt.Sprintf("%s\n ORDER BY ua.node_start", cq.q)
+	case "execution_deadline":
+		cq.q = fmt.Sprintf("%s\n ORDER BY w.exec_deadline", cq.q)
+	default:
+		cq.q = fmt.Sprintf("%s\n ORDER BY w.started_at", cq.q)
 	}
+}
+
+func (cq *compileGetTaskQueryMaker) addOrder(order string) {
+	if order == "" {
+		order = ascOrder
+	}
+
+	cq.q = fmt.Sprintf("%s %s", cq.q, order)
 }
 
 func (cq *compileGetTaskQueryMaker) addOffset() {
@@ -471,6 +496,7 @@ func (cq *compileGetTaskQueryMaker) MakeQuery(
 	delegations []string,
 	args []any,
 	order string,
+	orderBy string,
 	useLimitOffset bool,
 ) (query string, resArgs []any) {
 	cq.fl = fl
@@ -489,6 +515,7 @@ func (cq *compileGetTaskQueryMaker) MakeQuery(
 	cq.addReceiver()
 	cq.addInitiator()
 	cq.addProcessingSteps()
+	cq.addOrderBy(orderBy)
 	cq.addOrder(order)
 
 	if useLimitOffset {

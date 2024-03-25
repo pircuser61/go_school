@@ -156,6 +156,7 @@ type GetTaskParams struct {
 	Name     *string     `json:"name"`
 	Created  *TimePeriod `json:"created"`
 	Order    *string     `json:"order"`
+	OrderBy  *string     `json:"order_by"`
 	Limit    *int        `json:"limit"`
 	Offset   *int        `json:"offset"`
 	TaskIDs  *[]string   `json:"task_ids"`

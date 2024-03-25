@@ -2423,7 +2423,8 @@ type GetTasksParams struct {
 	TaskIDs *[]string `json:"taskIDs,omitempty"`
 
 	// Order
-	Order *string `json:"order,omitempty"`
+	Order   *string `json:"order,omitempty"`
+	OrderBy *string `json:"orderBy,omitempty"`
 
 	// Limit
 	Limit *int `json:"limit,omitempty"`
@@ -4876,6 +4877,17 @@ func (siw *ServerInterfaceWrapper) GetTasks(w http.ResponseWriter, r *http.Reque
 	err = runtime.BindQueryParameter("form", true, false, "order", r.URL.Query(), &params.Order)
 	if err != nil {
 		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "order", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "orderBy" -------------
+	if paramValue := r.URL.Query().Get("orderBy"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "orderBy", r.URL.Query(), &params.OrderBy)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "orderBy", Err: err})
 		return
 	}
 
