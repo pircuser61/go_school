@@ -70,6 +70,7 @@ func (ae *Env) handleBreachSlA(ctx c.Context, item *db.StepBreachedSLA) {
 		IsTest:      item.IsTest,
 		CustomTitle: item.CustomTitle,
 		NotifName:   utils.MakeTaskTitle(item.WorkTitle, item.CustomTitle, item.IsTest),
+		Productive:  true,
 	}
 
 	runCtx.SetTaskEvents(ctx)
@@ -122,7 +123,7 @@ func (ae *Env) CheckBreachSLA(w http.ResponseWriter, r *http.Request) {
 
 	spCtx := span.SpanContext()
 
-	//nolint // так надо и без этого нельзя
+	// nolint // так надо и без этого нельзя
 	routineCtx := c.WithValue(c.Background(), XRequestIDHeader, ctx.Value(XRequestIDHeader))
 
 	routineCtx = logger.WithLogger(routineCtx, log)

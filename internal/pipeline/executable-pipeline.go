@@ -92,8 +92,6 @@ func (gb *ExecutablePipeline) GetStatus() Status {
 	switch {
 	case gb.IsOver():
 		return StatusFinished
-	case gb.ReadyToStart():
-		return StatusReady
 	case len(gb.ActiveBlocks) != 0:
 		return StatusRunning
 	default:
@@ -212,6 +210,7 @@ func (gb *ExecutablePipeline) CreateBlocks(ctx c.Context, source map[string]*ent
 			UpdateData: nil,
 			IsTest:     props.IsTest,
 			NotifName:  utils.MakeTaskTitle(gb.Name, props.CustomTitle, props.IsTest),
+			Productive: true,
 		})
 		if err != nil {
 			return err

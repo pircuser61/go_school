@@ -2,6 +2,8 @@ package pipeline
 
 import (
 	c "context"
+	"encoding/json"
+	"errors"
 
 	e "gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 )
@@ -33,6 +35,36 @@ func (gb *GoSignBlock) setEvents(ctx c.Context) error {
 			SLA:            gb.State.Deadline.Unix(),
 			Decision:       decision,
 			Comment:        comment,
+			ToAddLogins:    []string{},
+			ToRemoveLogins: []string{data.ByLogin},
+		})
+		if err != nil {
+			return err
+		}
+
+		gb.happenedKafkaEvents = append(gb.happenedKafkaEvents, kafkaEvent)
+	case string(e.TaskUpdateActionSignChangeWorkStatus):
+		updateParams := &changeStatusSignatureParams{}
+
+		if gb.RunContext.UpdateData.Parameters != nil {
+			err := json.Unmarshal(gb.RunContext.UpdateData.Parameters, updateParams)
+			if err != nil {
+				return errors.New("can't assert provided update data")
+			}
+		}
+
+		if updateParams.Status != "start" {
+			break
+		}
+
+		kafkaEvent, err := gb.RunContext.MakeNodeKafkaEvent(ctx, &MakeNodeKafkaEvent{
+			EventName:      string(e.TaskUpdateActionSignChangeWorkStatus),
+			NodeName:       gb.Name,
+			NodeShortName:  gb.ShortName,
+			HumanStatus:    humanStatus,
+			NodeStatus:     gb.GetStatus(),
+			NodeType:       BlockGoSignID,
+			SLA:            gb.State.Deadline.Unix(),
 			ToAddLogins:    []string{},
 			ToRemoveLogins: []string{data.ByLogin},
 		})

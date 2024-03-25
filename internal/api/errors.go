@@ -129,6 +129,7 @@ const (
 	TaskIsPausedError
 	CheckIsTaskPausedError
 	MonitoringTaskActionParseError
+	UnpauseTaskError
 )
 
 /*
@@ -246,6 +247,7 @@ var errorText = map[Err]string{
 	TaskIsPausedError:                   "task is paused",
 	CheckIsTaskPausedError:              "can`t check task is paused",
 	MonitoringTaskActionParseError:      "can`t parse monitoring task action request",
+	UnpauseTaskError:                    "error when unpausing task",
 }
 
 /*
@@ -255,7 +257,7 @@ var errorText = map[Err]string{
 	из минусов то что при добавлении новой ошибки надо не забыть добавить это в 3 разных места
 	ну и читаемость кода для просмотра конкретной ошибки низкая (тяжело в кучке три раза подряд искать нужную ошибку)
 */
-//nolint // ну либо так либо никак
+// nolint // ну либо так либо никак
 var errorDescription = map[Err]string{
 	UnknownError:                        "Сохраняйте спокойствие, что-то произошло непонятное",
 	GetAllApprovedError:                 "Невозможно получить список согласованных сценариев",
@@ -363,6 +365,7 @@ var errorDescription = map[Err]string{
 	TaskIsPausedError:              "Заявка на паузе",
 	CheckIsTaskPausedError:         "Не удалось проверить флаг паузы у таски",
 	MonitoringTaskActionParseError: "Не удалось распарсить запрос на действие с таской",
+	UnpauseTaskError:               "Ошибка при возобновлении заявки",
 }
 
 /*

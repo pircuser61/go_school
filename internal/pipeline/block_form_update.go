@@ -82,8 +82,6 @@ func (gb *GoFormBlock) Update(ctx context.Context) (interface{}, error) {
 	gb.State.Deadline = deadline
 
 	err := gb.setEvents(ctx, &setFormEventsDto{
-		action:           data.Action,
-		byLogin:          data.ByLogin,
 		wasAlreadyFilled: wasAlreadyFilled,
 		executorsLogins:  executorsLogins,
 	})

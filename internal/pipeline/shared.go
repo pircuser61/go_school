@@ -275,10 +275,12 @@ func getBlockOutput(varStore *store.VariableStore, node string) map[string]inter
 		return res
 	}
 
+	prefix := node + "."
+
 	storage, _ := varStore.GrabStorage()
 	for k, v := range storage {
-		if strings.HasPrefix(k, node) {
-			newK := strings.Replace(k, node+".", "", 1)
+		if strings.HasPrefix(k, prefix) {
+			newK := strings.Replace(k, prefix, "", 1)
 			res[newK] = v
 		}
 	}

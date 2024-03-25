@@ -6,7 +6,7 @@ import (
 	e "gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 )
 
-func (gb *GoExecutionBlock) setEvents(ctx c.Context) error {
+func (gb *GoExecutionBlock) setEvents(ctx c.Context, executors map[string]struct{}) error {
 	data := gb.RunContext.UpdateData
 
 	humanStatus, _, _ := gb.GetTaskHumanStatus()
@@ -33,6 +33,40 @@ func (gb *GoExecutionBlock) setEvents(ctx c.Context) error {
 			Comment:        comment,
 			ToAddLogins:    []string{},
 			ToRemoveLogins: []string{data.ByLogin},
+		})
+		if err != nil {
+			return err
+		}
+
+		gb.happenedKafkaEvents = append(gb.happenedKafkaEvents, kafkaEvent)
+	case string(e.TaskUpdateActionChangeExecutor):
+		kafkaEvent, err := gb.RunContext.MakeNodeKafkaEvent(ctx, &MakeNodeKafkaEvent{
+			EventName:      string(e.TaskUpdateActionChangeExecutor),
+			NodeName:       gb.Name,
+			NodeShortName:  gb.ShortName,
+			HumanStatus:    humanStatus,
+			NodeStatus:     gb.GetStatus(),
+			NodeType:       BlockGoExecutionID,
+			SLA:            gb.State.Deadline.Unix(),
+			ToAddLogins:    []string{data.ByLogin},
+			ToRemoveLogins: getSliceFromMap(getDifMaps(executors, map[string]struct{}{data.ByLogin: {}})),
+		})
+		if err != nil {
+			return err
+		}
+
+		gb.happenedKafkaEvents = append(gb.happenedKafkaEvents, kafkaEvent)
+	case string(e.TaskUpdateActionExecutorStartWork):
+		kafkaEvent, err := gb.RunContext.MakeNodeKafkaEvent(ctx, &MakeNodeKafkaEvent{
+			EventName:      string(e.TaskUpdateActionExecutorStartWork),
+			NodeName:       gb.Name,
+			NodeShortName:  gb.ShortName,
+			HumanStatus:    humanStatus,
+			NodeStatus:     gb.GetStatus(),
+			NodeType:       BlockGoExecutionID,
+			SLA:            gb.State.Deadline.Unix(),
+			ToAddLogins:    []string{data.ByLogin},
+			ToRemoveLogins: getSliceFromMap(getDifMaps(executors, map[string]struct{}{data.ByLogin: {}})),
 		})
 		if err != nil {
 			return err

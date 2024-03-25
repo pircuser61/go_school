@@ -7,15 +7,16 @@ import (
 )
 
 type setFormEventsDto struct {
-	action, byLogin  string
 	wasAlreadyFilled bool
 	executorsLogins  map[string]struct{}
 }
 
 func (gb *GoFormBlock) setEvents(ctx c.Context, dto *setFormEventsDto) error {
+	data := gb.RunContext.UpdateData
+
 	humanStatus, _, _ := gb.GetTaskHumanStatus()
 
-	switch dto.action {
+	switch data.Action {
 	case string(e.TaskUpdateActionRequestFillForm):
 		if !gb.State.IsTakenInWork {
 			break
@@ -30,7 +31,7 @@ func (gb *GoFormBlock) setEvents(ctx c.Context, dto *setFormEventsDto) error {
 			NodeType:       BlockGoFormID,
 			SLA:            gb.State.Deadline.Unix(),
 			ToAddLogins:    []string{},
-			ToRemoveLogins: []string{dto.byLogin},
+			ToRemoveLogins: []string{data.ByLogin},
 		})
 		if err != nil {
 			return err
@@ -51,8 +52,8 @@ func (gb *GoFormBlock) setEvents(ctx c.Context, dto *setFormEventsDto) error {
 			NodeStatus:     gb.GetStatus(),
 			NodeType:       BlockGoFormID,
 			SLA:            gb.State.Deadline.Unix(),
-			ToAddLogins:    []string{dto.byLogin},
-			ToRemoveLogins: getSliceFromMap(getDifMaps(dto.executorsLogins, map[string]struct{}{dto.byLogin: {}})),
+			ToAddLogins:    []string{data.ByLogin},
+			ToRemoveLogins: getSliceFromMap(getDifMaps(dto.executorsLogins, map[string]struct{}{data.ByLogin: {}})),
 		})
 		if err != nil {
 			return err
@@ -83,7 +84,7 @@ func (gb *GoFormBlock) setEvents(ctx c.Context, dto *setFormEventsDto) error {
 				NodeStatus:     gb.GetStatus(),
 				NodeType:       BlockGoFormID,
 				SLA:            gb.State.Deadline.Unix(),
-				ToRemoveLogins: []string{},
+				ToRemoveLogins: getSliceFromMap(gb.State.Executors),
 			})
 			if eventErr != nil {
 				return eventErr

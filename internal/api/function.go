@@ -15,8 +15,10 @@ import (
 
 	"go.opencensus.io/trace"
 
-	"gitlab.services.mts.ru/abp/mail/pkg/email"
 	"gitlab.services.mts.ru/abp/myosotis/logger"
+
+	"gitlab.services.mts.ru/abp/mail/pkg/email"
+
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/kafka"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
@@ -27,8 +29,18 @@ import (
 
 func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessage) error {
 	log := ae.Log
+
+	messageTmp, err := json.Marshal(message)
+	if err != nil {
+		log.WithField("taskID", message.TaskID).
+			WithError(err).
+			Error("error marshaling message from kafka")
+	}
+
+	messageString := string(messageTmp)
+
 	log.WithField("funcName", "FunctionReturnHandler").
-		WithField("message", message).
+		WithField("body", messageString).
 		Info("start handle message from kafka")
 
 	ctx = logger.WithLogger(ctx, log)
@@ -150,7 +162,8 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 		UpdateData: &script.BlockUpdateData{
 			Parameters: mapping,
 		},
-		IsTest: st.IsTest,
+		IsTest:     st.IsTest,
+		Productive: true,
 	}
 
 	runCtx.SetTaskEvents(ctx)
@@ -203,7 +216,7 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 	runCtx.NotifyEvents(ctx)
 
 	log.WithField("funcName", "FunctionReturnHandler").
-		WithField("message", message).
+		WithField("body", messageString).
 		Info("message from kafka successfully handled")
 
 	return nil

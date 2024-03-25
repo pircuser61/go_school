@@ -217,19 +217,19 @@ func (gb *GoSignBlock) Update(ctx c.Context) (interface{}, error) {
 
 	gb.State.Deadline = deadline
 
+	err := gb.setEvents(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	var stateBytes []byte
 
-	stateBytes, err := json.Marshal(gb.State)
+	stateBytes, err = json.Marshal(gb.State)
 	if err != nil {
 		return nil, err
 	}
 
 	gb.RunContext.VarStore.ReplaceState(gb.Name, stateBytes)
-
-	err = gb.setEvents(ctx)
-	if err != nil {
-		return nil, err
-	}
 
 	return nil, nil
 }

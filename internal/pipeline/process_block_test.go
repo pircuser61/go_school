@@ -62,7 +62,8 @@ func makeStorage() *mocks.MockedDatabase {
 	res.On("SaveStepContext",
 		mock.MatchedBy(func(ctx context.Context) bool { return true }),
 		mock.MatchedBy(func(data *db.SaveStepRequest) bool { return true }),
-	).Return(uuid.UUID{}, time.Now(), nil)
+		uuid.UUID{},
+	).Return(uuid.UUID{}, nil)
 
 	res.On("StopTaskBlocks",
 		mock.MatchedBy(func(ctx context.Context) bool { return true }),
@@ -138,6 +139,12 @@ func makeStorage() *mocks.MockedDatabase {
 		mock.MatchedBy(func(workNumber string) bool { return true }),
 		mock.MatchedBy(func(blockName string) bool { return true }),
 	).Return(nil)
+
+	res.On("InitTaskBlock",
+		mock.MatchedBy(func(ctx context.Context) bool { return true }),
+		mock.MatchedBy(func(data *db.SaveStepRequest) bool { return true }),
+		mock.MatchedBy(func(isPaused bool) bool { return true }),
+	).Return(uuid.UUID{}, time.Now(), nil)
 
 	return res
 }
@@ -224,6 +231,7 @@ func TestProcessBlock(t *testing.T) {
 				Entrypoint: "start_0",
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
+					Productive:        true,
 					VarStore:          store.NewStore(),
 					Services: RunContextServices{
 						SLAService: func() sla.Service {
@@ -339,6 +347,7 @@ func TestProcessBlock(t *testing.T) {
 				Entrypoint: "start_0",
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
+					Productive:        true,
 					VarStore:          store.NewStore(),
 					Services: RunContextServices{
 						Storage: func() db.Database {

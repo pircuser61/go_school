@@ -31,7 +31,7 @@ func (db *PGCon) CreateTaskEvent(ctx c.Context, dto *e.CreateTaskEvent) (eventID
 			$1, 
 			$2, 
 			$3, 
-			$4
+			$4,
 			$5,
 		    now()
 		)`

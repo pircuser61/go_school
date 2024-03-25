@@ -25,6 +25,11 @@ import (
 )
 
 func (gb *GoExecutionBlock) Update(ctx c.Context) (interface{}, error) {
+	executorsLogins := make(map[string]struct{}, 0)
+	for i := range gb.State.Executors {
+		executorsLogins[i] = gb.State.Executors[i]
+	}
+
 	err := gb.handleTaskUpdateAction(ctx)
 	if err != nil {
 		return nil, err
@@ -37,6 +42,11 @@ func (gb *GoExecutionBlock) Update(ctx c.Context) (interface{}, error) {
 
 	gb.State.Deadline = deadline
 
+	err = gb.setEvents(ctx, executorsLogins)
+	if err != nil {
+		return nil, err
+	}
+
 	var stateBytes []byte
 
 	stateBytes, err = json.Marshal(gb.State)
@@ -45,11 +55,6 @@ func (gb *GoExecutionBlock) Update(ctx c.Context) (interface{}, error) {
 	}
 
 	gb.RunContext.VarStore.ReplaceState(gb.Name, stateBytes)
-
-	err = gb.setEvents(ctx)
-	if err != nil {
-		return nil, err
-	}
 
 	return nil, nil
 }
@@ -880,24 +885,6 @@ func (gb *GoExecutionBlock) executorStartWork(ctx c.Context) (err error) {
 		CreatedAt:   time.Now(),
 		DelegateFor: delegateFor,
 	})
-
-	slaInfoPtr, getSLAInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDTO{
-		TaskCompletionIntervals: []e.TaskCompletionInterval{{
-			StartedAt:  gb.RunContext.CurrBlockStartTime,
-			FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100),
-		}},
-		WorkType: sla.WorkHourType(gb.State.WorkType),
-	})
-	if getSLAInfoErr != nil {
-		return getSLAInfoErr
-	}
-
-	workHours := gb.RunContext.Services.SLAService.GetWorkHoursBetweenDates(
-		gb.RunContext.CurrBlockStartTime,
-		time.Now(),
-		slaInfoPtr,
-	)
-	gb.State.IncreaseSLA(workHours)
 
 	if gb.RunContext.skipNotifications {
 		return nil
