@@ -39,25 +39,30 @@ const (
 )
 
 type ExecutableFunction struct {
-	Name               string                      `json:"name"`
-	Version            string                      `json:"version"`
-	Mapping            script.JSONSchemaProperties `json:"mapping"`
-	Function           script.FunctionParam        `json:"function"`
-	Async              bool                        `json:"async"`
-	HasAck             bool                        `json:"has_ack"`
-	HasResponse        bool                        `json:"has_response"`
-	Contracts          string                      `json:"contracts"`
-	WaitCorrectRes     int                         `json:"waitCorrectRes"`
-	Constants          map[string]interface{}      `json:"constants"`
-	CheckSLA           bool                        `json:"check_sla"`
-	SLA                int                         `json:"sla"`
-	TimeExpired        bool                        `json:"time_expired"`
-	RetryPolicy        script.FunctionRetryPolicy  `json:"retry_policy"`
-	RetryCount         int                         `json:"retry_count"`
-	CurRetryCount      int                         `json:"cur_retry_count"`
-	CurRetryTimeout    int                         `json:"cur_retry_timeout"`
-	PrevRetryTimeout   int                         `json:"prev_retry_timeout"`
-	RetryCountExceeded bool                        `json:"retry_count_exceeded"`
+	Name           string                      `json:"name"`
+	Version        string                      `json:"version"`
+	Mapping        script.JSONSchemaProperties `json:"mapping"`
+	Function       script.FunctionParam        `json:"function"`
+	Async          bool                        `json:"async"`
+	HasAck         bool                        `json:"has_ack"`
+	HasResponse    bool                        `json:"has_response"`
+	Contracts      string                      `json:"contracts"`
+	WaitCorrectRes int                         `json:"waitCorrectRes"`
+	Constants      map[string]interface{}      `json:"constants"`
+
+	// SLA
+	CheckSLA bool `json:"check_sla"`
+	SLA      int  `json:"sla"`
+
+	TimeExpired bool `json:"time_expired"`
+
+	// Retry
+	RetryPolicy        script.FunctionRetryPolicy `json:"retry_policy"`
+	RetryCount         int                        `json:"retry_count"`
+	CurrRetryCount     int                        `json:"cur_retry_count"`
+	CurrRetryTimeout   int                        `json:"cur_retry_timeout"`
+	RetryTimeouts      []int                      `json:"retry_timeouts"` // for timeout's calculations
+	RetryCountExceeded bool                       `json:"retry_count_exceeded"`
 }
 
 type FunctionUpdateParams struct {
@@ -354,7 +359,8 @@ func (gb *ExecutableFunctionBlock) createState(ef *entity.EriusFunc) error {
 	if params.NeedRetry {
 		gb.State.RetryPolicy = params.RetryPolicy
 		gb.State.RetryCount = params.RetryCount
-		gb.State.CurRetryTimeout = params.RetryInterval
+		gb.State.CurrRetryTimeout = params.RetryInterval
+		gb.State.RetryTimeouts = []int{params.RetryInterval}
 	}
 
 	if gb.State.CheckSLA {
@@ -407,7 +413,7 @@ func (gb *ExecutableFunctionBlock) createExpectedEvents(
 func (gb *ExecutableFunctionBlock) setStateByResponse(ctx context.Context, log logger.Logger, updateData *FunctionUpdateParams) error {
 	//nolint:nestif //it's ok
 	if updateData.DoRetry && gb.State.RetryCount > 0 {
-		if gb.State.CurRetryCount >= gb.State.RetryCount {
+		if gb.State.CurrRetryCount >= gb.State.RetryCount {
 			gb.RunContext.VarStore.SetValue(gb.Output[keyOutputFunctionDecision], RetryCountExceededDecision)
 			gb.State.RetryCountExceeded = true
 		} else if !gb.RunContext.skipProduce { // for test
@@ -416,7 +422,7 @@ func (gb *ExecutableFunctionBlock) setStateByResponse(ctx context.Context, log l
 				WorkID:      gb.RunContext.TaskID.String(),
 				ActionName:  string(entity.TaskUpdateActionRetry),
 				StepName:    gb.Name,
-				WaitSeconds: gb.State.CurRetryTimeout,
+				WaitSeconds: gb.State.CurrRetryTimeout,
 			})
 			if err != nil {
 				return err

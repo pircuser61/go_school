@@ -597,7 +597,7 @@ func TestBlockFunction_Update(t *testing.T) {
 				State: &ExecutableFunction{
 					RetryPolicy:        "simple",
 					RetryCount:         1,
-					CurRetryCount:      2,
+					CurrRetryCount:     2,
 					RetryCountExceeded: true,
 					HasResponse:        false,
 					Function: script.FunctionParam{
@@ -720,7 +720,7 @@ func TestBlockFunction_Update(t *testing.T) {
 				State: &ExecutableFunction{
 					RetryPolicy:        "simple",
 					RetryCount:         1,
-					CurRetryTimeout:    3,
+					CurrRetryTimeout:   3,
 					RetryCountExceeded: false,
 					HasResponse:        false,
 					Function: script.FunctionParam{

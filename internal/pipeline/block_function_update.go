@@ -31,14 +31,16 @@ func (gb *ExecutableFunctionBlock) updateFunctionResult(ctx context.Context, log
 	}
 
 	if gb.RunContext.UpdateData.Action == string(entity.TaskUpdateActionRetry) {
-		if gb.State.CurRetryCount < gb.State.RetryCount {
+		if gb.State.CurrRetryCount < gb.State.RetryCount {
 			err := gb.runFunction(ctx, log)
 			if err != nil {
 				return err
 			}
 
-			gb.State.CurRetryCount++
-			gb.setRetryTimeout()
+			gb.State.CurrRetryCount++
+			gb.updateRetryTimeout()
+
+			gb.State.RetryTimeouts = append(gb.State.RetryTimeouts, gb.State.CurrRetryTimeout)
 		}
 
 		return nil
@@ -49,18 +51,21 @@ func (gb *ExecutableFunctionBlock) updateFunctionResult(ctx context.Context, log
 	return err
 }
 
-func (gb *ExecutableFunctionBlock) setRetryTimeout() {
+func (gb *ExecutableFunctionBlock) updateRetryTimeout() {
 	switch gb.State.RetryPolicy {
 	case script.FunctionRetryPolicySimple:
 		return
 	case script.FunctionRetryPolicyFibonacci:
-		curRetryTimeOut := gb.State.CurRetryTimeout
-		gb.State.CurRetryTimeout += gb.State.PrevRetryTimeout
-		gb.State.PrevRetryTimeout = curRetryTimeOut
+		prevRetryTimeout := 0
+		if len(gb.State.RetryTimeouts) > 1 {
+			prevRetryTimeout = gb.State.RetryTimeouts[len(gb.State.RetryTimeouts)-2]
+		}
+
+		gb.State.CurrRetryTimeout += prevRetryTimeout
 
 		return
 	case script.FunctionRetryPolicyExponential:
-		gb.State.CurRetryTimeout *= int(math.Exp(1))
+		gb.State.CurrRetryTimeout = int(math.Pow(float64(gb.State.RetryTimeouts[0]), float64(gb.State.CurrRetryCount+1)))
 
 		return
 	}
