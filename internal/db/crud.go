@@ -1136,24 +1136,29 @@ func (db *PGCon) UpdateGroupsForEmptyVersions(
 	return nil
 }
 
-func (db *PGCon) isStepExist(ctx context.Context, workID, stepName string) (bool, uuid.UUID, time.Time, error) {
+func (db *PGCon) isStepExist(ctx context.Context, workID, stepName string, hasUpdData bool) (bool, uuid.UUID, time.Time, error) {
 	var (
 		id uuid.UUID
 		t  time.Time
 	)
 
-	const q = `
+	formStatuses := "('idle', 'running')"
+	if hasUpdData {
+		formStatuses = "('idle', 'running','finished')"
+	}
+
+	q := `
 		SELECT id, time
 		FROM variable_storage
 		WHERE work_id = $1 AND
 			step_name = $2 AND
 			(((status IN ('idle', 'running') AND is_paused = false) OR (status = 'ready')) OR (
 				step_type = 'form' AND
-				((status IN ('idle', 'running','finished') AND is_paused = false) OR (status = 'ready')) AND
+				((status IN --formStatuses-- AND is_paused = false) OR (status = 'ready')) AND
 				time = (SELECT max(time) FROM variable_storage vs 
 							WHERE vs.work_id = $1 AND step_name = $2)
 			))`
-
+	q = strings.Replace(q, "--formStatuses--", formStatuses, 1)
 	scanErr := db.Connection.QueryRow(ctx, q, workID, stepName).Scan(&id, &t)
 	if scanErr != nil && !errors.Is(scanErr, pgx.ErrNoRows) {
 		return false, uuid.Nil, time.Time{}, scanErr
@@ -1162,11 +1167,11 @@ func (db *PGCon) isStepExist(ctx context.Context, workID, stepName string) (bool
 	return id != uuid.Nil, id, t, nil
 }
 
-func (db *PGCon) InitTaskBlock(ctx context.Context, dto *SaveStepRequest, isPaused bool) (id uuid.UUID, startTime time.Time, err error) {
+func (db *PGCon) InitTaskBlock(ctx context.Context, dto *SaveStepRequest, isPaused, hasUpdData bool) (id uuid.UUID, startTime time.Time, err error) {
 	ctx, span := trace.StartSpan(ctx, "pg_init_task_block")
 	defer span.End()
 
-	exists, stepID, t, existErr := db.isStepExist(ctx, dto.WorkID.String(), dto.StepName)
+	exists, stepID, t, existErr := db.isStepExist(ctx, dto.WorkID.String(), dto.StepName, hasUpdData)
 	if existErr != nil {
 		return uuid.Nil, time.Time{}, existErr
 	}
@@ -1236,12 +1241,12 @@ func (db *PGCon) InitTaskBlock(ctx context.Context, dto *SaveStepRequest, isPaus
 	return id, timestamp, nil
 }
 
-func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest, id uuid.UUID) (uuid.UUID, error) {
+func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest, id uuid.UUID, hasUpdData bool) (uuid.UUID, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_save_step_context")
 	defer span.End()
 
 	if !dto.IsReEntry && dto.BlockExist {
-		exists, stepID, _, err := db.isStepExist(ctx, dto.WorkID.String(), dto.StepName)
+		exists, stepID, _, err := db.isStepExist(ctx, dto.WorkID.String(), dto.StepName, hasUpdData)
 		if err != nil {
 			return uuid.Nil, err
 		}
