@@ -38,9 +38,9 @@ func (gb *ExecutableFunctionBlock) updateFunctionResult(ctx context.Context, log
 			}
 
 			gb.State.CurrRetryCount++
-			gb.updateRetryTimeout()
-
 			gb.State.RetryTimeouts = append(gb.State.RetryTimeouts, gb.State.CurrRetryTimeout)
+
+			gb.updateRetryTimeout()
 		}
 
 		return nil
