@@ -405,22 +405,21 @@ func (gb *ExecutableFunctionBlock) createExpectedEvents(
 }
 
 func (gb *ExecutableFunctionBlock) setStateByResponse(ctx context.Context, log logger.Logger, updateData *FunctionUpdateParams) error {
+	//nolint:nestif //it's ok
 	if updateData.DoRetry && gb.State.RetryCount > 0 {
 		if gb.State.CurRetryCount >= gb.State.RetryCount {
 			gb.RunContext.VarStore.SetValue(gb.Output[keyOutputFunctionDecision], RetryCountExceededDecision)
 			gb.State.RetryCountExceeded = true
-		} else {
-			if !gb.RunContext.skipProduce { // for test
-				_, err := gb.RunContext.Services.Scheduler.CreateTask(ctx, &scheduler.CreateTask{
-					WorkNumber:  gb.RunContext.WorkNumber,
-					WorkID:      gb.RunContext.TaskID.String(),
-					ActionName:  string(entity.TaskUpdateActionRetry),
-					StepName:    gb.Name,
-					WaitSeconds: gb.State.CurRetryTimeout,
-				})
-				if err != nil {
-					return err
-				}
+		} else if !gb.RunContext.skipProduce { // for test
+			_, err := gb.RunContext.Services.Scheduler.CreateTask(ctx, &scheduler.CreateTask{
+				WorkNumber:  gb.RunContext.WorkNumber,
+				WorkID:      gb.RunContext.TaskID.String(),
+				ActionName:  string(entity.TaskUpdateActionRetry),
+				StepName:    gb.Name,
+				WaitSeconds: gb.State.CurRetryTimeout,
+			})
+			if err != nil {
+				return err
 			}
 		}
 
@@ -430,6 +429,7 @@ func (gb *ExecutableFunctionBlock) setStateByResponse(ctx context.Context, log l
 	if updateData.Err != "" {
 		log.WithField("message.Err", updateData.Err).
 			Error("message from kafka has error")
+
 		return errors.New("message from kafka has error")
 	}
 

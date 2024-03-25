@@ -176,7 +176,9 @@ func (a *ExecutableFunctionParams) validateRetryParam() error {
 			return errors.New("retry policy is empty")
 		}
 
-		if a.RetryPolicy != FunctionRetryPolicySimple && a.RetryPolicy != FunctionRetryPolicyFibonacci && a.RetryPolicy != FunctionRetryPolicyExponential {
+		if a.RetryPolicy != FunctionRetryPolicySimple &&
+			a.RetryPolicy != FunctionRetryPolicyFibonacci &&
+			a.RetryPolicy != FunctionRetryPolicyExponential {
 			return fmt.Errorf("invalid retry policy: %s", a.RetryPolicy)
 		}
 
