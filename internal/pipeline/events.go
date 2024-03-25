@@ -154,7 +154,7 @@ func (runCtx *BlockRunContext) notifyEvents(ctx c.Context, log logger.Logger) {
 	}
 }
 
-//nolint:gocritic
+//nolint:all
 /*
 	тут есть строчка
 	runCtx.CurrBlockStartTime = s.Time
@@ -214,6 +214,7 @@ func (runCtx BlockRunContext) GetCancelledStepsEvents(ctx c.Context) ([]e.NodeEv
 
 		nodeEvents = append(nodeEvents, event)
 
+		//nolint:all //its ok here
 		if s.Type == BlockGoExecutionID || s.Type == BlockGoApproverID || s.Type == BlockGoSignID || s.Type == BlockGoFormID {
 			shortTitle := ""
 			if s.ShortTitle != nil {
@@ -231,6 +232,7 @@ func (runCtx BlockRunContext) GetCancelledStepsEvents(ctx c.Context) ([]e.NodeEv
 				switch s.Type {
 				case BlockGoApproverID:
 					state := &ApproverData{}
+
 					unmarshalErr := json.Unmarshal(stepContent.State[s.Name], &state)
 					if unmarshalErr != nil {
 						return nil, nil, unmarshalErr
@@ -239,6 +241,7 @@ func (runCtx BlockRunContext) GetCancelledStepsEvents(ctx c.Context) ([]e.NodeEv
 					stepPeople = state.Approvers
 				case BlockGoExecutionID:
 					state := &ExecutionData{}
+
 					unmarshalErr := json.Unmarshal(stepContent.State[s.Name], &state)
 					if unmarshalErr != nil {
 						return nil, nil, unmarshalErr
@@ -247,6 +250,7 @@ func (runCtx BlockRunContext) GetCancelledStepsEvents(ctx c.Context) ([]e.NodeEv
 					stepPeople = state.Executors
 				case BlockGoSignID:
 					state := &SignData{}
+
 					unmarshalErr := json.Unmarshal(stepContent.State[s.Name], &state)
 					if unmarshalErr != nil {
 						return nil, nil, unmarshalErr
@@ -255,6 +259,7 @@ func (runCtx BlockRunContext) GetCancelledStepsEvents(ctx c.Context) ([]e.NodeEv
 					stepPeople = state.Signers
 				case BlockGoFormID:
 					state := &FormData{}
+
 					unmarshalErr := json.Unmarshal(stepContent.State[s.Name], &state)
 					if unmarshalErr != nil {
 						return nil, nil, unmarshalErr

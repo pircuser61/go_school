@@ -573,18 +573,6 @@ func (gb *GoApproverBlock) HandleBreachedSLARequestAddInfo(ctx context.Context) 
 
 	gb.happenedKafkaEvents = append(gb.happenedKafkaEvents, nodeKafkaEvents...)
 
-	//nolint:gocritic //в этом проекте не принято использовать поинтеры в коллекциях
-	for _, event := range nodeEvents {
-		// event for this node will spawn later
-		if event.NodeName == gb.Name {
-			continue
-		}
-
-		gb.happenedEvents = append(gb.happenedEvents, event)
-	}
-
-	return nil
-
 	for i := range nodeEvents {
 		event := nodeEvents[i]
 		// event for this node will spawn later
