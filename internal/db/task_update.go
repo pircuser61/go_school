@@ -274,7 +274,7 @@ func (db *PGCon) SetTaskPaused(ctx c.Context, workID string, isPaused bool) erro
 
 	const q = `UPDATE works SET is_paused = $1 WHERE id = $2`
 
-	_, err := db.Connection.Exec(ctx, q, workID, isPaused)
+	_, err := db.Connection.Exec(ctx, q, isPaused, workID)
 	if err != nil {
 		return err
 	}
