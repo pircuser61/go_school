@@ -761,7 +761,7 @@ func (ae *Env) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO) (
 
 	runCtx.SetTaskEvents(ctx)
 
-	_, _, err = pipeline.InitBlock(ctx, ep.EntryPoint, blockData, runCtx)
+	err = pipeline.InitBlockDB(ctx, ep.EntryPoint, blockData, runCtx)
 	if err != nil {
 		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
 			log.WithField("funcName", "pipelne.InitBlock").

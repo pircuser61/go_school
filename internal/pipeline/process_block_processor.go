@@ -64,7 +64,7 @@ func (p *blockProcessor) ProcessBlock(ctx context.Context, its int) error {
 		return p.handleErrorWithRollback(ctx, log, err)
 	}
 
-	block, id, initErr := InitBlock(ctx, p.name, p.bl, p.runCtx)
+	block, id, initErr := initBlock(ctx, p.name, p.bl, p.runCtx)
 	if initErr != nil {
 		return p.handleErrorWithRollback(ctx, log, initErr)
 	}
@@ -94,7 +94,8 @@ func (p *blockProcessor) ProcessBlock(ctx context.Context, its int) error {
 			}
 
 			// эта функция уже будет обрабатывать ошибку, ошибку которую она вернула не нужно обрабатывать повторно
-			if processActiveErr := p.processActiveBlocks(ctx, activeBlocks, its, true); processActiveErr != nil {
+			processActiveErr := p.processActiveBlocks(ctx, activeBlocks, its, true)
+			if processActiveErr != nil {
 				return processActiveErr
 			}
 		}
@@ -287,7 +288,7 @@ func (p *blockProcessor) processActiveBlocks(ctx context.Context, activeBlocks [
 			ctxCopy.VarStore = storage
 		}
 
-		_, _, err := InitBlock(ctx, blockName, blockData, p.runCtx)
+		err := InitBlockDB(ctx, blockName, blockData, p.runCtx)
 		if err != nil {
 			return p.handleErrorWithRollback(ctx, log, err)
 		}
