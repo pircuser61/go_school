@@ -1158,7 +1158,9 @@ func (db *PGCon) isStepExist(ctx context.Context, workID, stepName string, hasUp
 				time = (SELECT max(time) FROM variable_storage vs 
 							WHERE vs.work_id = $1 AND step_name = $2)
 			))`
+
 	q = strings.Replace(q, "--formStatuses--", formStatuses, 1)
+
 	scanErr := db.Connection.QueryRow(ctx, q, workID, stepName).Scan(&id, &t)
 	if scanErr != nil && !errors.Is(scanErr, pgx.ErrNoRows) {
 		return false, uuid.Nil, time.Time{}, scanErr
