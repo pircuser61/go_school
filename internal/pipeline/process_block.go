@@ -248,7 +248,8 @@ func initBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *BlockRu
 		StepName: name,
 		Status:   string(StatusReady),
 		Content:  storageData,
-	}, runCtx.OnceProductive)
+	}, runCtx.OnceProductive,
+		runCtx.UpdateData != nil)
 	if err != nil {
 		return nil, uuid.Nil, err
 	}
@@ -392,7 +393,7 @@ func (runCtx *BlockRunContext) saveStepInDB(ctx c.Context, dto *saveStepDTO, id 
 			InitialPeople: dto.currentExecutor.InitialPeople,
 		},
 		BlockStart: runCtx.CurrBlockStartTime,
-	}, id)
+	}, id, runCtx.UpdateData != nil)
 }
 
 type updateStepDTO struct {
