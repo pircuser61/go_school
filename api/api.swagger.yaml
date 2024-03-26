@@ -2376,7 +2376,10 @@ paths:
                 type: object
                 properties:
                   data:
-                    $ref: '#/components/schemas/MonitoringEditBlockData'
+                    type: object
+                    description: Стейт блока
+                    additionalProperties:
+                      $ref: '#/components/schemas/MonitoringEditBlockData'
                   status_code:
                     type: integer
         400:
@@ -5233,7 +5236,10 @@ components:
           enum: [ "state", "output", "context", "input" ]
           description: "Переменные в какой части блока редактируем"
         change_data:
-          $ref: '#/components/schemas/MonitoringEditBlockData'
+          type: object
+          description: Стейт блока
+          additionalProperties:
+            $ref: '#/components/schemas/MonitoringEditBlockData'
       required:
         - change_type
         - change_data

@@ -130,6 +130,9 @@ const (
 	CheckIsTaskPausedError
 	MonitoringTaskActionParseError
 	UnpauseTaskError
+	MonitoringEditBlockParseError
+	GetTaskStepError
+	EditMonitoringBlockError
 )
 
 /*
@@ -248,6 +251,9 @@ var errorText = map[Err]string{
 	CheckIsTaskPausedError:              "can`t check task is paused",
 	MonitoringTaskActionParseError:      "can`t parse monitoring task action request",
 	UnpauseTaskError:                    "error when unpausing task",
+	MonitoringEditBlockParseError:       "can't parse params for block data editing",
+	GetTaskStepError:                    "can't get step data from DB",
+	EditMonitoringBlockError:            "can't edit block data",
 }
 
 /*
@@ -366,6 +372,9 @@ var errorDescription = map[Err]string{
 	CheckIsTaskPausedError:         "Не удалось проверить флаг паузы у таски",
 	MonitoringTaskActionParseError: "Не удалось распарсить запрос на действие с таской",
 	UnpauseTaskError:               "Ошибка при возобновлении заявки",
+	MonitoringEditBlockParseError:  "Не удалось распарсить параметры для редактирования блока",
+	GetTaskStepError:               "Не удалось получить информацию о блоке из базы данных",
+	EditMonitoringBlockError:       "Не удалось редактировать данные в блоке",
 }
 
 /*
