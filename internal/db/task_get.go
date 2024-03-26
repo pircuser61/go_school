@@ -314,7 +314,7 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 		WHERE w.child_id IS NULL`
 
 	order := []string{ascOrder}
-	if len(*fl.Order) != 0 {
+	if fl.Order != nil {
 		order = *fl.Order
 	}
 
@@ -460,7 +460,11 @@ func (cq *compileGetTaskQueryMaker) addProcessingSteps() {
 func (cq *compileGetTaskQueryMaker) addOrderBy(order, orderBy []string) {
 	if len(orderBy) == 0 && len(order) == 1 {
 		cq.q = fmt.Sprintf("%s\n ORDER BY w.started_at %s", cq.q, order[0])
+
+		return
 	}
+
+	cq.q = fmt.Sprintf("%s\n ORDER BY", cq.q)
 
 	for k, item := range orderBy {
 		switch item {
@@ -472,9 +476,12 @@ func (cq *compileGetTaskQueryMaker) addOrderBy(order, orderBy []string) {
 			cq.q = fmt.Sprintf("%s w.started_at", cq.q)
 		}
 
-		if len(order) >= k {
+		switch {
+		case len(order) == 1:
+			cq.q = fmt.Sprintf("%s %s,", cq.q, order[0])
+		case len(order) > k:
 			cq.q = fmt.Sprintf("%s %s,", cq.q, order[k])
-		} else {
+		default:
 			cq.q = fmt.Sprintf("%s %s,", cq.q, ascOrder)
 		}
 	}
