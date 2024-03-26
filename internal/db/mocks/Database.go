@@ -6684,7 +6684,7 @@ func (_m *MockedDatabase) CreateEventToSend(ctx context.Context, dto *entity.Cre
 	return "", nil
 }
 
-func (_m *MockedDatabase) UpdateEventToSend(ctx context.Context, eventID string)  (err error) {
+func (_m *MockedDatabase) DeleteEventToSend(ctx context.Context, eventID string)  (err error) {
 	return nil
 }
 

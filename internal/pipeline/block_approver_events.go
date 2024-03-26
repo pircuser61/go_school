@@ -37,9 +37,13 @@ func (gb *GoApproverBlock) setEvents(ctx c.Context) error {
 			decision = gb.State.Decision.String()
 		}
 
-		delegator, ok := gb.RunContext.Delegations.FindDelegatorFor(data.ByLogin, getSliceFromMap(gb.State.Approvers))
-		if ok {
-			byLogin = delegator
+		toRemoveLogins := []string{byLogin}
+
+		delegators := gb.RunContext.Delegations.GetDelegators(data.ByLogin)
+		delegateFor := gb.State.delegateFor(delegators)
+
+		if len(delegateFor) > 0 {
+			toRemoveLogins = delegateFor
 		}
 
 		kafkaEvent, err := gb.RunContext.MakeNodeKafkaEvent(ctx, &MakeNodeKafkaEvent{
@@ -53,7 +57,7 @@ func (gb *GoApproverBlock) setEvents(ctx c.Context) error {
 			Decision:       decision,
 			Comment:        comment,
 			ToAddLogins:    []string{},
-			ToRemoveLogins: []string{byLogin},
+			ToRemoveLogins: toRemoveLogins,
 		})
 		if err != nil {
 			return err

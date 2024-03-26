@@ -22,9 +22,9 @@ func (gb *GoExecutionBlock) setEvents(ctx c.Context, executors map[string]struct
 			comment = *gb.State.DecisionComment
 		}
 
-		delegator, ok := gb.RunContext.Delegations.FindDelegatorFor(data.ByLogin, getSliceFromMap(gb.State.Executors))
-		if ok {
-			byLogin = delegator
+		delegateFor, isDelegate := gb.RunContext.Delegations.FindDelegatorFor(byLogin, getSliceFromMap(gb.State.Executors))
+		if isDelegate {
+			byLogin = delegateFor
 		}
 
 		kafkaEvent, err := gb.RunContext.MakeNodeKafkaEvent(ctx, &MakeNodeKafkaEvent{

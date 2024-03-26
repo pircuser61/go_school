@@ -41,16 +41,13 @@ func (db *PGCon) CreateEventToSend(ctx c.Context, dto *e.CreateEventToSend) (eve
 	return eventID, nil
 }
 
-func (db *PGCon) UpdateEventToSend(ctx c.Context, eventID string) (err error) {
-	ctx, span := trace.StartSpan(ctx, "update_event_to_send")
+func (db *PGCon) DeleteEventToSend(ctx c.Context, eventID string) (err error) {
+	ctx, span := trace.StartSpan(ctx, "delete_event_to_send")
 	defer span.End()
 
 	// nolint:gocritic
 	// language=PostgreSQL
-	const q = `
-		UPDATE events_to_send 
-			SET sent_at = now()
-		WHERE id = $1`
+	const q = `DELETE FROM events_to_send WHERE id = $1`
 
 	_, err = db.Connection.Exec(ctx, q, eventID)
 	if err != nil {
@@ -95,6 +92,10 @@ func (db *PGCon) GetEventsToSend(ctx c.Context) ([]e.ToSendKafkaEvent, error) {
 		}
 
 		items = append(items, e.ToSendKafkaEvent{EventID: eventID, Event: item})
+	}
+
+	if rowsErr := rows.Err(); rowsErr != nil {
+		return nil, rowsErr
 	}
 
 	return items, nil

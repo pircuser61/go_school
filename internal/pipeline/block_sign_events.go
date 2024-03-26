@@ -9,7 +9,10 @@ import (
 )
 
 func (gb *GoSignBlock) setEvents(ctx c.Context, signers map[string]struct{}) error {
-	const start = "start"
+	const (
+		start = "start"
+		end   = "end"
+	)
 
 	data := gb.RunContext.UpdateData
 
@@ -17,6 +20,16 @@ func (gb *GoSignBlock) setEvents(ctx c.Context, signers map[string]struct{}) err
 
 	switch data.Action {
 	case string(e.TaskUpdateActionSign):
+		var updateParams signSignatureParams
+
+		if err := json.Unmarshal(data.Parameters, &updateParams); err != nil {
+			return errors.New("can't assert provided data")
+		}
+
+		if updateParams.Username != "" {
+			data.ByLogin = updateParams.Username
+		}
+
 		comment := ""
 		if gb.State.Comment != nil {
 			comment = *gb.State.Comment
@@ -55,26 +68,43 @@ func (gb *GoSignBlock) setEvents(ctx c.Context, signers map[string]struct{}) err
 			}
 		}
 
-		if updateParams.Status != start {
-			break
+		if updateParams.Status == start {
+			kafkaEvent, err := gb.RunContext.MakeNodeKafkaEvent(ctx, &MakeNodeKafkaEvent{
+				EventName:      string(e.TaskUpdateActionSignChangeWorkStatus),
+				NodeName:       gb.Name,
+				NodeShortName:  gb.ShortName,
+				HumanStatus:    humanStatus,
+				NodeStatus:     gb.GetStatus(),
+				NodeType:       BlockGoSignID,
+				SLA:            gb.State.Deadline.Unix(),
+				ToAddLogins:    []string{data.ByLogin},
+				ToRemoveLogins: getSliceFromMap(signers),
+			})
+			if err != nil {
+				return err
+			}
+
+			gb.happenedKafkaEvents = append(gb.happenedKafkaEvents, kafkaEvent)
 		}
 
-		kafkaEvent, err := gb.RunContext.MakeNodeKafkaEvent(ctx, &MakeNodeKafkaEvent{
-			EventName:      string(e.TaskUpdateActionSignChangeWorkStatus),
-			NodeName:       gb.Name,
-			NodeShortName:  gb.ShortName,
-			HumanStatus:    humanStatus,
-			NodeStatus:     gb.GetStatus(),
-			NodeType:       BlockGoSignID,
-			SLA:            gb.State.Deadline.Unix(),
-			ToAddLogins:    []string{data.ByLogin},
-			ToRemoveLogins: getSliceFromMap(signers),
-		})
-		if err != nil {
-			return err
-		}
+		if updateParams.Status == end {
+			kafkaEvent, err := gb.RunContext.MakeNodeKafkaEvent(ctx, &MakeNodeKafkaEvent{
+				EventName:      string(e.TaskUpdateActionSignChangeWorkStatus),
+				NodeName:       gb.Name,
+				NodeShortName:  gb.ShortName,
+				HumanStatus:    humanStatus,
+				NodeStatus:     gb.GetStatus(),
+				NodeType:       BlockGoSignID,
+				SLA:            gb.State.Deadline.Unix(),
+				ToAddLogins:    getSliceFromMap(signers),
+				ToRemoveLogins: []string{},
+			})
+			if err != nil {
+				return err
+			}
 
-		gb.happenedKafkaEvents = append(gb.happenedKafkaEvents, kafkaEvent)
+			gb.happenedKafkaEvents = append(gb.happenedKafkaEvents, kafkaEvent)
+		}
 	}
 
 	if gb.State.Decision != nil {

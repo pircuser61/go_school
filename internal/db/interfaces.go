@@ -285,6 +285,6 @@ type Database interface {
 	SkipBlocksAfterRestarted(ctx c.Context, workID uuid.UUID, startTime time.Time, blocks []string) (err error)
 
 	CreateEventToSend(ctx c.Context, dto *e.CreateEventToSend) (eventID string, err error)
-	UpdateEventToSend(ctx c.Context, eventID string) (err error)
+	DeleteEventToSend(ctx c.Context, eventID string) (err error)
 	GetEventsToSend(ctx c.Context) ([]e.ToSendKafkaEvent, error)
 }

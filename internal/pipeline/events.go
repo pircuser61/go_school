@@ -22,8 +22,9 @@ import (
 )
 
 const (
-	eventStart = "start"
-	eventEnd   = "end"
+	eventStart  = "start"
+	eventEnd    = "end"
+	eventCancel = "cancel"
 )
 
 type MakeNodeStartEventArgs struct {
@@ -270,7 +271,7 @@ func (runCtx BlockRunContext) GetCancelledStepsEvents(ctx c.Context) ([]e.NodeEv
 			}
 
 			kafkaEvent, errEvent := runCtx.MakeNodeKafkaEvent(ctx, &MakeNodeKafkaEvent{
-				EventName:      eventEnd,
+				EventName:      eventCancel,
 				NodeName:       s.Name,
 				NodeShortName:  shortTitle,
 				HumanStatus:    StatusRevoke,

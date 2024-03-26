@@ -166,3 +166,14 @@ func (a *ExecutionData) latestUnansweredAddInfoLogEntry() *RequestExecutionInfoL
 
 	return &a.RequestExecutionInfoLogs[len(a.RequestExecutionInfoLogs)-1]
 }
+
+func isExecutorDecisionExists(login string, logs *[]) bool {
+	for i := 0; i < len(*logs); i++ {
+		logEntry := (*logs)[i]
+		if (logEntry.Login == login || logEntry.DelegateFor == login) && logEntry.LogType == ApproverLogDecision {
+			return true
+		}
+	}
+
+	return false
+}
