@@ -146,6 +146,8 @@ func makeStorage() *mocks.MockedDatabase {
 		mock.MatchedBy(func(isPaused bool) bool { return true }),
 	).Return(uuid.UUID{}, time.Now(), nil)
 
+	res.EXPECT().IsStepExist(mock.Anything, mock.Anything, mock.Anything).Return(true, uuid.Nil, time.Now(), nil)
+
 	return res
 }
 
