@@ -60,7 +60,7 @@ type TaskStorager interface {
 
 	CreateTask(ctx c.Context, dto *CreateTaskDTO) (*e.EriusTask, error)
 	FillEmptyTask(ctx c.Context, updateTask *UpdateEmptyTaskDTO) error
-	IsStepExist(ctx c.Context, workID, stepName string) (bool, uuid.UUID, time.Time, error)
+	IsStepExist(ctx c.Context, workID, stepName string, hasUpdData bool) (bool, uuid.UUID, time.Time, error)
 
 	CreateEmptyTask(ctx c.Context, task *CreateEmptyTaskDTO) (string, error)
 
@@ -220,7 +220,7 @@ type Database interface {
 	GetPipelineVersion(ctx c.Context, id uuid.UUID, checkNotDeleted bool) (*e.EriusScenario, error)
 	GetPipelineVersions(ctx c.Context, id uuid.UUID) ([]e.EriusVersionInfo, error)
 	UpdateDraft(ctx c.Context, p *e.EriusScenario, pipelineData []byte, groups []*e.NodeGroup, isHidden bool) error
-	SaveStepContext(ctx c.Context, dto *SaveStepRequest, id uuid.UUID) (uuid.UUID, error)
+	SaveStepContext(ctx c.Context, dto *SaveStepRequest, id uuid.UUID, hasUpdData bool) (uuid.UUID, error)
 	UpdateStepContext(ctx c.Context, dto *UpdateStepRequest) error
 	UpdateTaskBlocksData(ctx c.Context, dto *UpdateTaskBlocksDataRequest) error
 	GetTaskActiveBlock(ctx c.Context, taskID, stepName string) ([]string, error)
@@ -285,6 +285,10 @@ type Database interface {
 	IsBlockResumable(ctx c.Context, workID, stepID uuid.UUID) (isResumable bool, startTime time.Time, err error)
 	UnpauseTaskBlock(ctx c.Context, workID, stepID uuid.UUID) (err error)
 	TryUnpauseTask(ctx c.Context, workID uuid.UUID) (err error)
-	InitTaskBlock(ctx c.Context, dto *SaveStepRequest, isPaused bool) (id uuid.UUID, startTime time.Time, err error)
+	InitTaskBlock(ctx c.Context, dto *SaveStepRequest, isPaused, hasUpdData bool) (id uuid.UUID, startTime time.Time, err error)
 	SkipBlocksAfterRestarted(ctx c.Context, workID uuid.UUID, startTime time.Time, blocks []string) (err error)
+
+	CreateEventToSend(ctx c.Context, dto *e.CreateEventToSend) (eventID string, err error)
+	DeleteEventToSend(ctx c.Context, eventID string) (err error)
+	GetEventsToSend(ctx c.Context) ([]e.ToSendKafkaEvent, error)
 }

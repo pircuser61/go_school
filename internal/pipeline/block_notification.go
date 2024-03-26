@@ -55,8 +55,9 @@ type GoNotificationBlock struct {
 
 	RunContext *BlockRunContext
 
-	expectedEvents map[string]struct{}
-	happenedEvents []entity.NodeEvent
+	expectedEvents      map[string]struct{}
+	happenedEvents      []entity.NodeEvent
+	happenedKafkaEvents []entity.NodeKafkaEvent
 }
 
 func (gb *GoNotificationBlock) CurrentExecutorData() CurrentExecutorData {
@@ -65,6 +66,10 @@ func (gb *GoNotificationBlock) CurrentExecutorData() CurrentExecutorData {
 
 func (gb *GoNotificationBlock) GetNewEvents() []entity.NodeEvent {
 	return gb.happenedEvents
+}
+
+func (gb *GoNotificationBlock) GetNewKafkaEvents() []entity.NodeKafkaEvent {
+	return gb.happenedKafkaEvents
 }
 
 func (gb *GoNotificationBlock) Members() []Member {

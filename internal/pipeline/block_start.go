@@ -20,8 +20,9 @@ type GoStartBlock struct {
 	Sockets    []script.Socket
 	RunContext *BlockRunContext
 
-	expectedEvents map[string]struct{}
-	happenedEvents []entity.NodeEvent
+	expectedEvents      map[string]struct{}
+	happenedEvents      []entity.NodeEvent
+	happenedKafkaEvents []entity.NodeKafkaEvent
 }
 
 func (gb *GoStartBlock) CurrentExecutorData() CurrentExecutorData {
@@ -30,6 +31,10 @@ func (gb *GoStartBlock) CurrentExecutorData() CurrentExecutorData {
 
 func (gb *GoStartBlock) GetNewEvents() []entity.NodeEvent {
 	return gb.happenedEvents
+}
+
+func (gb *GoStartBlock) GetNewKafkaEvents() []entity.NodeKafkaEvent {
+	return gb.happenedKafkaEvents
 }
 
 func (gb *GoStartBlock) Members() []Member {

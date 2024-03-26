@@ -65,7 +65,8 @@ type RunContextServices struct {
 }
 
 type BlockRunResults struct {
-	NodeEvents []entity.NodeEvent
+	NodeEvents      []entity.NodeEvent
+	NodeKafkaEvents []entity.NodeKafkaEvent
 }
 
 type BlockRunContext struct {
@@ -104,7 +105,8 @@ func (runCtx *BlockRunContext) Copy() *BlockRunContext {
 	runCtxCopy.VarStore = runCtx.VarStore.Copy()
 	runCtxCopy.UpdateData = nil
 	runCtxCopy.BlockRunResults = &BlockRunResults{
-		NodeEvents: make([]entity.NodeEvent, 0),
+		NodeEvents:      make([]entity.NodeEvent, 0),
+		NodeKafkaEvents: make([]entity.NodeKafkaEvent, 0),
 	}
 	runCtxCopy.Productive = !runCtx.OnceProductive
 
@@ -189,7 +191,8 @@ func InitBlockInDB(ctx c.Context, name string, runCtx *BlockRunContext) error {
 		StepName: name,
 		Status:   string(StatusReady),
 		Content:  storageData,
-	}, runCtx.OnceProductive)
+	}, runCtx.OnceProductive,
+		runCtx.UpdateData != nil)
 	if err != nil {
 		return err
 	}
@@ -198,7 +201,7 @@ func InitBlockInDB(ctx c.Context, name string, runCtx *BlockRunContext) error {
 }
 
 func initBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *BlockRunContext) (Runner, uuid.UUID, error) {
-	_, id, startTime, err := runCtx.Services.Storage.IsStepExist(ctx, runCtx.TaskID.String(), name)
+	_, id, startTime, err := runCtx.Services.Storage.IsStepExist(ctx, runCtx.TaskID.String(), name, runCtx.UpdateData != nil)
 	if err != nil {
 		return nil, uuid.Nil, err
 	}
@@ -411,7 +414,7 @@ func (runCtx *BlockRunContext) saveStepInDB(ctx c.Context, dto *saveStepDTO, id 
 			InitialPeople: dto.currentExecutor.InitialPeople,
 		},
 		BlockStart: runCtx.CurrBlockStartTime,
-	}, id)
+	}, id, runCtx.UpdateData != nil)
 }
 
 type updateStepDTO struct {

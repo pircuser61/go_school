@@ -12,7 +12,7 @@ import (
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	e "gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
@@ -23,41 +23,41 @@ const (
 )
 
 type approverUpdateEditingParams struct {
-	Comment     string              `json:"comment"`
-	Attachments []entity.Attachment `json:"attachments"`
+	Comment     string         `json:"comment"`
+	Attachments []e.Attachment `json:"attachments"`
 }
 
 type approverUpdateParams struct {
-	Decision         ApproverAction      `json:"decision"`
-	Comment          string              `json:"comment"`
-	Attachments      []entity.Attachment `json:"attachments"`
-	Username         string              `json:"username"`
+	Decision         ApproverAction `json:"decision"`
+	Comment          string         `json:"comment"`
+	Attachments      []e.Attachment `json:"attachments"`
+	Username         string         `json:"username"`
 	internalDecision ApproverDecision
 }
 
 type additionalApproverUpdateParams struct {
-	Decision    ApproverDecision    `json:"decision"`
-	Comment     string              `json:"comment"`
-	Attachments []entity.Attachment `json:"attachments"`
+	Decision    ApproverDecision `json:"decision"`
+	Comment     string           `json:"comment"`
+	Attachments []e.Attachment   `json:"attachments"`
 }
 
 type requestInfoParams struct {
-	Type        AdditionalInfoType  `json:"type"`
-	Comment     string              `json:"comment"`
-	Attachments []entity.Attachment `json:"attachments"`
-	LinkID      *string             `json:"link_id,omitempty"`
+	Type        AdditionalInfoType `json:"type"`
+	Comment     string             `json:"comment"`
+	Attachments []e.Attachment     `json:"attachments"`
+	LinkID      *string            `json:"link_id,omitempty"`
 }
 
 type replyInfoParams struct {
-	Comment     string              `json:"comment"`
-	Attachments []entity.Attachment `json:"attachments"`
-	LinkID      *string             `json:"link_id,omitempty"`
+	Comment     string         `json:"comment"`
+	Attachments []e.Attachment `json:"attachments"`
+	LinkID      *string        `json:"link_id,omitempty"`
 }
 
 type addApproversParams struct {
-	AdditionalApproversLogins []string            `json:"additionalApprovers"`
-	Question                  string              `json:"question"`
-	Attachments               []entity.Attachment `json:"attachments"`
+	AdditionalApproversLogins []string       `json:"additionalApprovers"`
+	Question                  string         `json:"question"`
+	Attachments               []e.Attachment `json:"attachments"`
 }
 
 func (a *additionalApproverUpdateParams) Validate() error {
@@ -117,7 +117,7 @@ func (gb *GoApproverBlock) handleBreachedSLA(ctx context.Context) error {
 	if gb.State.SLA >= 8 {
 		seenAdditionalApprovers := map[string]bool{}
 
-		logins := getSliceFromMapOfStrings(gb.State.Approvers)
+		logins := getSliceFromMap(gb.State.Approvers)
 
 		for _, additionalApprover := range gb.State.AdditionalApprovers {
 			// check if approver has not decisioned, and we did not see approver before
@@ -206,7 +206,7 @@ func (gb *GoApproverBlock) checkBreachedSLA(ctx context.Context) error {
 	log := logger.GetLogger(ctx)
 
 	emails := make([]string, 0, len(gb.State.Approvers)+len(gb.State.AdditionalApprovers))
-	logins := append(getSliceFromMapOfStrings(gb.State.Approvers), gb.getAdditionalApprovers()...)
+	logins := append(getSliceFromMap(gb.State.Approvers), gb.getAdditionalApprovers()...)
 
 	delegations, err := gb.RunContext.Services.HumanTasks.GetDelegationsByLogins(ctx, logins)
 	if err != nil {
@@ -278,7 +278,7 @@ func (gb *GoApproverBlock) checkBreachedSLA(ctx context.Context) error {
 	}
 
 	slaInfoPtr, getSLAInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDTO{
-		TaskCompletionIntervals: []entity.TaskCompletionInterval{{
+		TaskCompletionIntervals: []e.TaskCompletionInterval{{
 			StartedAt:  gb.RunContext.CurrBlockStartTime,
 			FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100),
 		}},
@@ -288,7 +288,7 @@ func (gb *GoApproverBlock) checkBreachedSLA(ctx context.Context) error {
 		return getSLAInfoErr
 	}
 
-	lastWorksForUser := make([]*entity.EriusTask, 0)
+	lastWorksForUser := make([]*e.EriusTask, 0)
 
 	if processSettings.ResubmissionPeriod > 0 {
 		var getWorksErr error
@@ -427,10 +427,12 @@ func (gb *GoApproverBlock) handleReworkSLABreached(ctx context.Context) error {
 		return err
 	}
 
-	nodeEvents, err := gb.RunContext.GetCancelledStepsEvents(ctx)
+	nodeEvents, nodeKafkaEvents, err := gb.RunContext.GetCancelledStepsEvents(ctx)
 	if err != nil {
 		return err
 	}
+
+	gb.happenedKafkaEvents = append(gb.happenedKafkaEvents, nodeKafkaEvents...)
 
 	//nolint:gocritic //в этом проекте не принято использовать поинтеры в коллекциях
 	for _, event := range nodeEvents {
@@ -519,7 +521,7 @@ func (gb *GoApproverBlock) HandleBreachedSLARequestAddInfo(ctx context.Context) 
 		return stopErr
 	}
 
-	approvers := getSliceFromMapOfStrings(gb.State.Approvers)
+	approvers := getSliceFromMap(gb.State.Approvers)
 
 	delegates, getDelegationsErr := gb.RunContext.Services.HumanTasks.GetDelegationsByLogins(ctx, approvers)
 	if getDelegationsErr != nil {
@@ -564,10 +566,12 @@ func (gb *GoApproverBlock) HandleBreachedSLARequestAddInfo(ctx context.Context) 
 		return err
 	}
 
-	nodeEvents, err := gb.RunContext.GetCancelledStepsEvents(ctx)
+	nodeEvents, nodeKafkaEvents, err := gb.RunContext.GetCancelledStepsEvents(ctx)
 	if err != nil {
 		return err
 	}
+
+	gb.happenedKafkaEvents = append(gb.happenedKafkaEvents, nodeKafkaEvents...)
 
 	for i := range nodeEvents {
 		event := nodeEvents[i]
@@ -589,7 +593,7 @@ func (gb *GoApproverBlock) toEditApplication(ctx context.Context, updateParams a
 
 	_, approverFound := gb.State.Approvers[gb.RunContext.UpdateData.ByLogin]
 	delegateFor, isDelegate := gb.RunContext.Delegations.FindDelegatorFor(
-		gb.RunContext.UpdateData.ByLogin, getSliceFromMapOfStrings(gb.State.Approvers))
+		gb.RunContext.UpdateData.ByLogin, getSliceFromMap(gb.State.Approvers))
 
 	if !(approverFound || isDelegate) && gb.RunContext.UpdateData.ByLogin != AutoApprover {
 		return NewUserIsNotPartOfProcessErr()
@@ -853,25 +857,9 @@ func (gb *GoApproverBlock) Update(ctx context.Context) (interface{}, error) {
 
 	gb.RunContext.VarStore.ReplaceState(gb.Name, stateBytes)
 
-	if gb.State.Decision != nil {
-		_, ok := gb.expectedEvents[eventEnd]
-		if !ok {
-			return nil, nil
-		}
-
-		status, _, _ := gb.GetTaskHumanStatus()
-
-		event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, MakeNodeEndEventArgs{
-			NodeName:      gb.Name,
-			NodeShortName: gb.ShortName,
-			HumanStatus:   status,
-			NodeStatus:    gb.GetStatus(),
-		})
-		if eventErr != nil {
-			return nil, eventErr
-		}
-
-		gb.happenedEvents = append(gb.happenedEvents, event)
+	err = gb.setEvents(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	return nil, nil
@@ -908,20 +896,20 @@ func (gb *GoApproverBlock) handleTaskUpdateAction(ctx context.Context) error {
 	gb.RunContext.Delegations = gb.RunContext.Delegations.FilterByType("approvement")
 
 	//nolint:exhaustive //нам не нужна обработка всех возможных TaskUpdateAction
-	switch entity.TaskUpdateAction(data.Action) {
-	case entity.TaskUpdateActionSLABreach:
+	switch e.TaskUpdateAction(data.Action) {
+	case e.TaskUpdateActionSLABreach:
 		if errUpdate := gb.handleBreachedSLA(ctx); errUpdate != nil {
 			return errUpdate
 		}
-	case entity.TaskUpdateActionHalfSLABreach:
+	case e.TaskUpdateActionHalfSLABreach:
 		if errUpdate := gb.handleHalfBreachedSLA(ctx); errUpdate != nil {
 			return errUpdate
 		}
-	case entity.TaskUpdateActionReworkSLABreach:
+	case e.TaskUpdateActionReworkSLABreach:
 		if errUpdate := gb.handleReworkSLABreached(ctx); errUpdate != nil {
 			return errUpdate
 		}
-	case entity.TaskUpdateActionApprovement:
+	case e.TaskUpdateActionApprovement:
 		var updateParams approverUpdateParams
 
 		if err := json.Unmarshal(data.Parameters, &updateParams); err != nil {
@@ -949,7 +937,7 @@ func (gb *GoApproverBlock) handleTaskUpdateAction(ctx context.Context) error {
 			return errUpdate
 		}
 
-	case entity.TaskUpdateActionAdditionalApprovement:
+	case e.TaskUpdateActionAdditionalApprovement:
 		var updateParams additionalApproverUpdateParams
 
 		if err := json.Unmarshal(data.Parameters, &updateParams); err != nil {
@@ -973,7 +961,7 @@ func (gb *GoApproverBlock) handleTaskUpdateAction(ctx context.Context) error {
 			return err
 		}
 
-	case entity.TaskUpdateActionApproverSendEditApp:
+	case e.TaskUpdateActionApproverSendEditApp:
 		var updateParams approverUpdateEditingParams
 
 		if err := json.Unmarshal(data.Parameters, &updateParams); err != nil {
@@ -984,17 +972,17 @@ func (gb *GoApproverBlock) handleTaskUpdateAction(ctx context.Context) error {
 			return errUpdate
 		}
 
-	case entity.TaskUpdateActionRequestApproveInfo:
+	case e.TaskUpdateActionRequestApproveInfo:
 		if errUpdate := gb.updateRequestApproverInfo(ctx); errUpdate != nil {
 			return errUpdate
 		}
 
-	case entity.TaskUpdateActionReplyApproverInfo:
+	case e.TaskUpdateActionReplyApproverInfo:
 		if errUpdate := gb.updateReplyApproverInfo(ctx); errUpdate != nil {
 			return errUpdate
 		}
 
-	case entity.TaskUpdateActionAddApprovers:
+	case e.TaskUpdateActionAddApprovers:
 		var updateParams addApproversParams
 		if err := json.Unmarshal(data.Parameters, &updateParams); err != nil {
 			return errors.New("can't assert provided data")
@@ -1004,15 +992,15 @@ func (gb *GoApproverBlock) handleTaskUpdateAction(ctx context.Context) error {
 			return errUpdate
 		}
 
-	case entity.TaskUpdateActionDayBeforeSLARequestAddInfo:
+	case e.TaskUpdateActionDayBeforeSLARequestAddInfo:
 		if errUpdate := gb.handleBreachedDayBeforeSLARequestAddInfo(ctx); errUpdate != nil {
 			return errUpdate
 		}
-	case entity.TaskUpdateActionSLABreachRequestAddInfo:
+	case e.TaskUpdateActionSLABreachRequestAddInfo:
 		if errUpdate := gb.HandleBreachedSLARequestAddInfo(ctx); errUpdate != nil {
 			return errUpdate
 		}
-	case entity.TaskUpdateActionReload:
+	case e.TaskUpdateActionReload:
 	}
 
 	return nil

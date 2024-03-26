@@ -578,6 +578,63 @@ func (_c *MockedDatabase_CreateEmptyTask_Call) RunAndReturn(run func(context.Con
 	return _c
 }
 
+// CreateEventToSend provides a mock function with given fields: ctx, dto
+func (_m *MockedDatabase) CreateEventToSend(ctx context.Context, dto *entity.CreateEventToSend) (string, error) {
+	ret := _m.Called(ctx, dto)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CreateEventToSend")
+	}
+
+	var r0 string
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, *entity.CreateEventToSend) (string, error)); ok {
+		return rf(ctx, dto)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, *entity.CreateEventToSend) string); ok {
+		r0 = rf(ctx, dto)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, *entity.CreateEventToSend) error); ok {
+		r1 = rf(ctx, dto)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockedDatabase_CreateEventToSend_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CreateEventToSend'
+type MockedDatabase_CreateEventToSend_Call struct {
+	*mock.Call
+}
+
+// CreateEventToSend is a helper method to define mock.On call
+//   - ctx context.Context
+//   - dto *entity.CreateEventToSend
+func (_e *MockedDatabase_Expecter) CreateEventToSend(ctx interface{}, dto interface{}) *MockedDatabase_CreateEventToSend_Call {
+	return &MockedDatabase_CreateEventToSend_Call{Call: _e.mock.On("CreateEventToSend", ctx, dto)}
+}
+
+func (_c *MockedDatabase_CreateEventToSend_Call) Run(run func(ctx context.Context, dto *entity.CreateEventToSend)) *MockedDatabase_CreateEventToSend_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(*entity.CreateEventToSend))
+	})
+	return _c
+}
+
+func (_c *MockedDatabase_CreateEventToSend_Call) Return(eventID string, err error) *MockedDatabase_CreateEventToSend_Call {
+	_c.Call.Return(eventID, err)
+	return _c
+}
+
+func (_c *MockedDatabase_CreateEventToSend_Call) RunAndReturn(run func(context.Context, *entity.CreateEventToSend) (string, error)) *MockedDatabase_CreateEventToSend_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // CreatePipeline provides a mock function with given fields: c, p, author, pipelineData, oldVersionID, hasPrivateFunction
 func (_m *MockedDatabase) CreatePipeline(c context.Context, p *entity.EriusScenario, author string, pipelineData []byte, oldVersionID uuid.UUID, hasPrivateFunction bool) error {
 	ret := _m.Called(c, p, author, pipelineData, oldVersionID, hasPrivateFunction)
@@ -796,6 +853,53 @@ func (_c *MockedDatabase_CreateVersion_Call) RunAndReturn(run func(context.Conte
 	return _c
 }
 
+// DeleteEventToSend provides a mock function with given fields: ctx, eventID
+func (_m *MockedDatabase) DeleteEventToSend(ctx context.Context, eventID string) error {
+	ret := _m.Called(ctx, eventID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for DeleteEventToSend")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) error); ok {
+		r0 = rf(ctx, eventID)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// MockedDatabase_DeleteEventToSend_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DeleteEventToSend'
+type MockedDatabase_DeleteEventToSend_Call struct {
+	*mock.Call
+}
+
+// DeleteEventToSend is a helper method to define mock.On call
+//   - ctx context.Context
+//   - eventID string
+func (_e *MockedDatabase_Expecter) DeleteEventToSend(ctx interface{}, eventID interface{}) *MockedDatabase_DeleteEventToSend_Call {
+	return &MockedDatabase_DeleteEventToSend_Call{Call: _e.mock.On("DeleteEventToSend", ctx, eventID)}
+}
+
+func (_c *MockedDatabase_DeleteEventToSend_Call) Run(run func(ctx context.Context, eventID string)) *MockedDatabase_DeleteEventToSend_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string))
+	})
+	return _c
+}
+
+func (_c *MockedDatabase_DeleteEventToSend_Call) Return(err error) *MockedDatabase_DeleteEventToSend_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockedDatabase_DeleteEventToSend_Call) RunAndReturn(run func(context.Context, string) error) *MockedDatabase_DeleteEventToSend_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // DeletePipeline provides a mock function with given fields: ctx, id
 func (_m *MockedDatabase) DeletePipeline(ctx context.Context, id uuid.UUID) error {
 	ret := _m.Called(ctx, id)
@@ -915,7 +1019,7 @@ type MockedDatabase_FillEmptyTask_Call struct {
 
 // FillEmptyTask is a helper method to define mock.On call
 //   - ctx context.Context
-//   - updateTask *db.UpdateTaskDTO
+//   - updateTask *db.UpdateEmptyTaskDTO
 func (_e *MockedDatabase_Expecter) FillEmptyTask(ctx interface{}, updateTask interface{}) *MockedDatabase_FillEmptyTask_Call {
 	return &MockedDatabase_FillEmptyTask_Call{Call: _e.mock.On("FillEmptyTask", ctx, updateTask)}
 }
@@ -1979,6 +2083,64 @@ func (_c *MockedDatabase_GetDraftVersions_Call) Return(_a0 []entity.EriusScenari
 }
 
 func (_c *MockedDatabase_GetDraftVersions_Call) RunAndReturn(run func(context.Context, string) ([]entity.EriusScenarioInfo, error)) *MockedDatabase_GetDraftVersions_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// GetEventsToSend provides a mock function with given fields: ctx
+func (_m *MockedDatabase) GetEventsToSend(ctx context.Context) ([]entity.ToSendKafkaEvent, error) {
+	ret := _m.Called(ctx)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetEventsToSend")
+	}
+
+	var r0 []entity.ToSendKafkaEvent
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context) ([]entity.ToSendKafkaEvent, error)); ok {
+		return rf(ctx)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context) []entity.ToSendKafkaEvent); ok {
+		r0 = rf(ctx)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]entity.ToSendKafkaEvent)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
+		r1 = rf(ctx)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockedDatabase_GetEventsToSend_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetEventsToSend'
+type MockedDatabase_GetEventsToSend_Call struct {
+	*mock.Call
+}
+
+// GetEventsToSend is a helper method to define mock.On call
+//   - ctx context.Context
+func (_e *MockedDatabase_Expecter) GetEventsToSend(ctx interface{}) *MockedDatabase_GetEventsToSend_Call {
+	return &MockedDatabase_GetEventsToSend_Call{Call: _e.mock.On("GetEventsToSend", ctx)}
+}
+
+func (_c *MockedDatabase_GetEventsToSend_Call) Run(run func(ctx context.Context)) *MockedDatabase_GetEventsToSend_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context))
+	})
+	return _c
+}
+
+func (_c *MockedDatabase_GetEventsToSend_Call) Return(_a0 []entity.ToSendKafkaEvent, _a1 error) *MockedDatabase_GetEventsToSend_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockedDatabase_GetEventsToSend_Call) RunAndReturn(run func(context.Context) ([]entity.ToSendKafkaEvent, error)) *MockedDatabase_GetEventsToSend_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -5013,9 +5175,9 @@ func (_c *MockedDatabase_GetWorksForUserWithGivenTimeRange_Call) RunAndReturn(ru
 	return _c
 }
 
-// InitTaskBlock provides a mock function with given fields: ctx, dto, isPaused
-func (_m *MockedDatabase) InitTaskBlock(ctx context.Context, dto *db.SaveStepRequest, isPaused bool) (uuid.UUID, time.Time, error) {
-	ret := _m.Called(ctx, dto, isPaused)
+// InitTaskBlock provides a mock function with given fields: ctx, dto, isPaused, hasUpdData
+func (_m *MockedDatabase) InitTaskBlock(ctx context.Context, dto *db.SaveStepRequest, isPaused bool, hasUpdData bool) (uuid.UUID, time.Time, error) {
+	ret := _m.Called(ctx, dto, isPaused, hasUpdData)
 
 	if len(ret) == 0 {
 		panic("no return value specified for InitTaskBlock")
@@ -5024,25 +5186,25 @@ func (_m *MockedDatabase) InitTaskBlock(ctx context.Context, dto *db.SaveStepReq
 	var r0 uuid.UUID
 	var r1 time.Time
 	var r2 error
-	if rf, ok := ret.Get(0).(func(context.Context, *db.SaveStepRequest, bool) (uuid.UUID, time.Time, error)); ok {
-		return rf(ctx, dto, isPaused)
+	if rf, ok := ret.Get(0).(func(context.Context, *db.SaveStepRequest, bool, bool) (uuid.UUID, time.Time, error)); ok {
+		return rf(ctx, dto, isPaused, hasUpdData)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, *db.SaveStepRequest, bool) uuid.UUID); ok {
-		r0 = rf(ctx, dto, isPaused)
+	if rf, ok := ret.Get(0).(func(context.Context, *db.SaveStepRequest, bool, bool) uuid.UUID); ok {
+		r0 = rf(ctx, dto, isPaused, hasUpdData)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(uuid.UUID)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, *db.SaveStepRequest, bool) time.Time); ok {
-		r1 = rf(ctx, dto, isPaused)
+	if rf, ok := ret.Get(1).(func(context.Context, *db.SaveStepRequest, bool, bool) time.Time); ok {
+		r1 = rf(ctx, dto, isPaused, hasUpdData)
 	} else {
 		r1 = ret.Get(1).(time.Time)
 	}
 
-	if rf, ok := ret.Get(2).(func(context.Context, *db.SaveStepRequest, bool) error); ok {
-		r2 = rf(ctx, dto, isPaused)
+	if rf, ok := ret.Get(2).(func(context.Context, *db.SaveStepRequest, bool, bool) error); ok {
+		r2 = rf(ctx, dto, isPaused, hasUpdData)
 	} else {
 		r2 = ret.Error(2)
 	}
@@ -5059,13 +5221,14 @@ type MockedDatabase_InitTaskBlock_Call struct {
 //   - ctx context.Context
 //   - dto *db.SaveStepRequest
 //   - isPaused bool
-func (_e *MockedDatabase_Expecter) InitTaskBlock(ctx interface{}, dto interface{}, isPaused interface{}) *MockedDatabase_InitTaskBlock_Call {
-	return &MockedDatabase_InitTaskBlock_Call{Call: _e.mock.On("InitTaskBlock", ctx, dto, isPaused)}
+//   - hasUpdData bool
+func (_e *MockedDatabase_Expecter) InitTaskBlock(ctx interface{}, dto interface{}, isPaused interface{}, hasUpdData interface{}) *MockedDatabase_InitTaskBlock_Call {
+	return &MockedDatabase_InitTaskBlock_Call{Call: _e.mock.On("InitTaskBlock", ctx, dto, isPaused, hasUpdData)}
 }
 
-func (_c *MockedDatabase_InitTaskBlock_Call) Run(run func(ctx context.Context, dto *db.SaveStepRequest, isPaused bool)) *MockedDatabase_InitTaskBlock_Call {
+func (_c *MockedDatabase_InitTaskBlock_Call) Run(run func(ctx context.Context, dto *db.SaveStepRequest, isPaused bool, hasUpdData bool)) *MockedDatabase_InitTaskBlock_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(*db.SaveStepRequest), args[2].(bool))
+		run(args[0].(context.Context), args[1].(*db.SaveStepRequest), args[2].(bool), args[3].(bool))
 	})
 	return _c
 }
@@ -5075,7 +5238,7 @@ func (_c *MockedDatabase_InitTaskBlock_Call) Return(id uuid.UUID, startTime time
 	return _c
 }
 
-func (_c *MockedDatabase_InitTaskBlock_Call) RunAndReturn(run func(context.Context, *db.SaveStepRequest, bool) (uuid.UUID, time.Time, error)) *MockedDatabase_InitTaskBlock_Call {
+func (_c *MockedDatabase_InitTaskBlock_Call) RunAndReturn(run func(context.Context, *db.SaveStepRequest, bool, bool) (uuid.UUID, time.Time, error)) *MockedDatabase_InitTaskBlock_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -5145,9 +5308,9 @@ func (_c *MockedDatabase_IsBlockResumable_Call) RunAndReturn(run func(context.Co
 	return _c
 }
 
-// IsStepExist provides a mock function with given fields: ctx, workID, stepName
-func (_m *MockedDatabase) IsStepExist(ctx context.Context, workID string, stepName string) (bool, uuid.UUID, time.Time, error) {
-	ret := _m.Called(ctx, workID, stepName)
+// IsStepExist provides a mock function with given fields: ctx, workID, stepName, hasUpdData
+func (_m *MockedDatabase) IsStepExist(ctx context.Context, workID string, stepName string, hasUpdData bool) (bool, uuid.UUID, time.Time, error) {
+	ret := _m.Called(ctx, workID, stepName, hasUpdData)
 
 	if len(ret) == 0 {
 		panic("no return value specified for IsStepExist")
@@ -5157,31 +5320,31 @@ func (_m *MockedDatabase) IsStepExist(ctx context.Context, workID string, stepNa
 	var r1 uuid.UUID
 	var r2 time.Time
 	var r3 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, string) (bool, uuid.UUID, time.Time, error)); ok {
-		return rf(ctx, workID, stepName)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, bool) (bool, uuid.UUID, time.Time, error)); ok {
+		return rf(ctx, workID, stepName, hasUpdData)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, string, string) bool); ok {
-		r0 = rf(ctx, workID, stepName)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, bool) bool); ok {
+		r0 = rf(ctx, workID, stepName, hasUpdData)
 	} else {
 		r0 = ret.Get(0).(bool)
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string, string) uuid.UUID); ok {
-		r1 = rf(ctx, workID, stepName)
+	if rf, ok := ret.Get(1).(func(context.Context, string, string, bool) uuid.UUID); ok {
+		r1 = rf(ctx, workID, stepName, hasUpdData)
 	} else {
 		if ret.Get(1) != nil {
 			r1 = ret.Get(1).(uuid.UUID)
 		}
 	}
 
-	if rf, ok := ret.Get(2).(func(context.Context, string, string) time.Time); ok {
-		r2 = rf(ctx, workID, stepName)
+	if rf, ok := ret.Get(2).(func(context.Context, string, string, bool) time.Time); ok {
+		r2 = rf(ctx, workID, stepName, hasUpdData)
 	} else {
 		r2 = ret.Get(2).(time.Time)
 	}
 
-	if rf, ok := ret.Get(3).(func(context.Context, string, string) error); ok {
-		r3 = rf(ctx, workID, stepName)
+	if rf, ok := ret.Get(3).(func(context.Context, string, string, bool) error); ok {
+		r3 = rf(ctx, workID, stepName, hasUpdData)
 	} else {
 		r3 = ret.Error(3)
 	}
@@ -5198,13 +5361,14 @@ type MockedDatabase_IsStepExist_Call struct {
 //   - ctx context.Context
 //   - workID string
 //   - stepName string
-func (_e *MockedDatabase_Expecter) IsStepExist(ctx interface{}, workID interface{}, stepName interface{}) *MockedDatabase_IsStepExist_Call {
-	return &MockedDatabase_IsStepExist_Call{Call: _e.mock.On("IsStepExist", ctx, workID, stepName)}
+//   - hasUpdData bool
+func (_e *MockedDatabase_Expecter) IsStepExist(ctx interface{}, workID interface{}, stepName interface{}, hasUpdData interface{}) *MockedDatabase_IsStepExist_Call {
+	return &MockedDatabase_IsStepExist_Call{Call: _e.mock.On("IsStepExist", ctx, workID, stepName, hasUpdData)}
 }
 
-func (_c *MockedDatabase_IsStepExist_Call) Run(run func(ctx context.Context, workID string, stepName string)) *MockedDatabase_IsStepExist_Call {
+func (_c *MockedDatabase_IsStepExist_Call) Run(run func(ctx context.Context, workID string, stepName string, hasUpdData bool)) *MockedDatabase_IsStepExist_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(string), args[2].(string))
+		run(args[0].(context.Context), args[1].(string), args[2].(string), args[3].(bool))
 	})
 	return _c
 }
@@ -5214,7 +5378,7 @@ func (_c *MockedDatabase_IsStepExist_Call) Return(_a0 bool, _a1 uuid.UUID, _a2 t
 	return _c
 }
 
-func (_c *MockedDatabase_IsStepExist_Call) RunAndReturn(run func(context.Context, string, string) (bool, uuid.UUID, time.Time, error)) *MockedDatabase_IsStepExist_Call {
+func (_c *MockedDatabase_IsStepExist_Call) RunAndReturn(run func(context.Context, string, string, bool) (bool, uuid.UUID, time.Time, error)) *MockedDatabase_IsStepExist_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -6017,9 +6181,9 @@ func (_c *MockedDatabase_SaveSLAVersionSettings_Call) RunAndReturn(run func(cont
 	return _c
 }
 
-// SaveStepContext provides a mock function with given fields: ctx, dto, id
-func (_m *MockedDatabase) SaveStepContext(ctx context.Context, dto *db.SaveStepRequest, id uuid.UUID) (uuid.UUID, error) {
-	ret := _m.Called(ctx, dto, id)
+// SaveStepContext provides a mock function with given fields: ctx, dto, id, hasUpdData
+func (_m *MockedDatabase) SaveStepContext(ctx context.Context, dto *db.SaveStepRequest, id uuid.UUID, hasUpdData bool) (uuid.UUID, error) {
+	ret := _m.Called(ctx, dto, id, hasUpdData)
 
 	if len(ret) == 0 {
 		panic("no return value specified for SaveStepContext")
@@ -6027,19 +6191,19 @@ func (_m *MockedDatabase) SaveStepContext(ctx context.Context, dto *db.SaveStepR
 
 	var r0 uuid.UUID
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, *db.SaveStepRequest, uuid.UUID) (uuid.UUID, error)); ok {
-		return rf(ctx, dto, id)
+	if rf, ok := ret.Get(0).(func(context.Context, *db.SaveStepRequest, uuid.UUID, bool) (uuid.UUID, error)); ok {
+		return rf(ctx, dto, id, hasUpdData)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, *db.SaveStepRequest, uuid.UUID) uuid.UUID); ok {
-		r0 = rf(ctx, dto, id)
+	if rf, ok := ret.Get(0).(func(context.Context, *db.SaveStepRequest, uuid.UUID, bool) uuid.UUID); ok {
+		r0 = rf(ctx, dto, id, hasUpdData)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(uuid.UUID)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, *db.SaveStepRequest, uuid.UUID) error); ok {
-		r1 = rf(ctx, dto, id)
+	if rf, ok := ret.Get(1).(func(context.Context, *db.SaveStepRequest, uuid.UUID, bool) error); ok {
+		r1 = rf(ctx, dto, id, hasUpdData)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -6056,13 +6220,14 @@ type MockedDatabase_SaveStepContext_Call struct {
 //   - ctx context.Context
 //   - dto *db.SaveStepRequest
 //   - id uuid.UUID
-func (_e *MockedDatabase_Expecter) SaveStepContext(ctx interface{}, dto interface{}, id interface{}) *MockedDatabase_SaveStepContext_Call {
-	return &MockedDatabase_SaveStepContext_Call{Call: _e.mock.On("SaveStepContext", ctx, dto, id)}
+//   - hasUpdData bool
+func (_e *MockedDatabase_Expecter) SaveStepContext(ctx interface{}, dto interface{}, id interface{}, hasUpdData interface{}) *MockedDatabase_SaveStepContext_Call {
+	return &MockedDatabase_SaveStepContext_Call{Call: _e.mock.On("SaveStepContext", ctx, dto, id, hasUpdData)}
 }
 
-func (_c *MockedDatabase_SaveStepContext_Call) Run(run func(ctx context.Context, dto *db.SaveStepRequest, id uuid.UUID)) *MockedDatabase_SaveStepContext_Call {
+func (_c *MockedDatabase_SaveStepContext_Call) Run(run func(ctx context.Context, dto *db.SaveStepRequest, id uuid.UUID, hasUpdData bool)) *MockedDatabase_SaveStepContext_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(*db.SaveStepRequest), args[2].(uuid.UUID))
+		run(args[0].(context.Context), args[1].(*db.SaveStepRequest), args[2].(uuid.UUID), args[3].(bool))
 	})
 	return _c
 }
@@ -6072,7 +6237,7 @@ func (_c *MockedDatabase_SaveStepContext_Call) Return(_a0 uuid.UUID, _a1 error) 
 	return _c
 }
 
-func (_c *MockedDatabase_SaveStepContext_Call) RunAndReturn(run func(context.Context, *db.SaveStepRequest, uuid.UUID) (uuid.UUID, error)) *MockedDatabase_SaveStepContext_Call {
+func (_c *MockedDatabase_SaveStepContext_Call) RunAndReturn(run func(context.Context, *db.SaveStepRequest, uuid.UUID, bool) (uuid.UUID, error)) *MockedDatabase_SaveStepContext_Call {
 	_c.Call.Return(run)
 	return _c
 }

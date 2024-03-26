@@ -60,7 +60,8 @@ type ExecutablePipeline struct {
 
 	RunContext *BlockRunContext
 
-	happenedEvents []entity.NodeEvent
+	happenedEvents      []entity.NodeEvent
+	happenedKafkaEvents []entity.NodeKafkaEvent
 }
 
 func (gb *ExecutablePipeline) CurrentExecutorData() CurrentExecutorData {
@@ -69,6 +70,14 @@ func (gb *ExecutablePipeline) CurrentExecutorData() CurrentExecutorData {
 
 func (gb *ExecutablePipeline) GetNewEvents() []entity.NodeEvent {
 	return gb.happenedEvents
+}
+
+func (gb *ExecutablePipeline) GetNewKafkaEvents() []entity.NodeKafkaEvent {
+	return gb.happenedKafkaEvents
+}
+
+func (gb *ExecutablePipeline) GoNotificationBlock() []entity.NodeKafkaEvent {
+	return gb.happenedKafkaEvents
 }
 
 func (gb *ExecutablePipeline) Members() []Member {

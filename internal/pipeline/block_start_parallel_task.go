@@ -19,8 +19,9 @@ type GoBeginParallelTaskBlock struct {
 	Sockets    []script.Socket
 	RunContext *BlockRunContext
 
-	expectedEvents map[string]struct{}
-	happenedEvents []entity.NodeEvent
+	expectedEvents      map[string]struct{}
+	happenedEvents      []entity.NodeEvent
+	happenedKafkaEvents []entity.NodeKafkaEvent
 }
 
 func (gb *GoBeginParallelTaskBlock) CurrentExecutorData() CurrentExecutorData {
@@ -29,6 +30,10 @@ func (gb *GoBeginParallelTaskBlock) CurrentExecutorData() CurrentExecutorData {
 
 func (gb *GoBeginParallelTaskBlock) GetNewEvents() []entity.NodeEvent {
 	return gb.happenedEvents
+}
+
+func (gb *GoBeginParallelTaskBlock) GetNewKafkaEvents() []entity.NodeKafkaEvent {
+	return gb.happenedKafkaEvents
 }
 
 func (gb *GoBeginParallelTaskBlock) Members() []Member {

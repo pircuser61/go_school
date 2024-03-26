@@ -63,6 +63,7 @@ func makeStorage() *mocks.MockedDatabase {
 		mock.MatchedBy(func(ctx context.Context) bool { return true }),
 		mock.MatchedBy(func(data *db.SaveStepRequest) bool { return true }),
 		uuid.UUID{},
+		mock.MatchedBy(func(hasUpdData bool) bool { return true }),
 	).Return(uuid.UUID{}, nil)
 
 	res.On("StopTaskBlocks",
@@ -144,9 +145,10 @@ func makeStorage() *mocks.MockedDatabase {
 		mock.MatchedBy(func(ctx context.Context) bool { return true }),
 		mock.MatchedBy(func(data *db.SaveStepRequest) bool { return true }),
 		mock.MatchedBy(func(isPaused bool) bool { return true }),
+		mock.MatchedBy(func(hasUpdData bool) bool { return true }),
 	).Return(uuid.UUID{}, time.Now(), nil)
 
-	res.EXPECT().IsStepExist(mock.Anything, mock.Anything, mock.Anything).Return(true, uuid.Nil, time.Now(), nil)
+	res.EXPECT().IsStepExist(mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(true, uuid.Nil, time.Now(), nil)
 
 	return res
 }

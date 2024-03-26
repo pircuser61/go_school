@@ -634,12 +634,13 @@ func (ae *Env) updateTaskInternal(ctx context.Context, workNumber, userLogin str
 
 	runCtx.SetTaskEvents(ctx)
 
-	nodeEvents, err := runCtx.GetCancelledStepsEvents(ctxLocal)
+	nodeEvents, nodeKafkaEvents, err := runCtx.GetCancelledStepsEvents(ctxLocal)
 	if err != nil {
 		return err
 	}
 
 	runCtx.BlockRunResults.NodeEvents = nodeEvents
+	runCtx.BlockRunResults.NodeKafkaEvents = nodeKafkaEvents
 	runCtx.NotifyEvents(ctxLocal)
 
 	em := mail.NewRejectPipelineGroupTemplate(dbTask.WorkNumber, dbTask.Name, ae.Mail.SdAddress)
@@ -1023,12 +1024,13 @@ func (ae *Env) processSingleTask(ctx context.Context, task *stoppedTask) error {
 
 	runCtx.SetTaskEvents(ctx)
 
-	nodeEvents, eventErr := runCtx.GetCancelledStepsEvents(ctx)
-	if eventErr != nil {
-		return eventErr
+	nodeEvents, nodeKafkaEvents, err := runCtx.GetCancelledStepsEvents(ctx)
+	if err != nil {
+		return err
 	}
 
 	runCtx.BlockRunResults.NodeEvents = nodeEvents
+	runCtx.BlockRunResults.NodeKafkaEvents = nodeKafkaEvents
 	runCtx.NotifyEvents(ctx)
 
 	return nil

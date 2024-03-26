@@ -20,8 +20,9 @@ type GoTestBlock struct {
 
 	RunContext *BlockRunContext
 
-	expectedEvents map[string]struct{}
-	happenedEvents []entity.NodeEvent
+	expectedEvents      map[string]struct{}
+	happenedEvents      []entity.NodeEvent
+	happenedKafkaEvents []entity.NodeKafkaEvent
 }
 
 func (gb *GoTestBlock) CurrentExecutorData() CurrentExecutorData {
@@ -30,6 +31,10 @@ func (gb *GoTestBlock) CurrentExecutorData() CurrentExecutorData {
 
 func (gb *GoTestBlock) GetNewEvents() []entity.NodeEvent {
 	return gb.happenedEvents
+}
+
+func (gb *GoTestBlock) GetNewKafkaEvents() []entity.NodeKafkaEvent {
+	return gb.happenedKafkaEvents
 }
 
 func (gb *GoTestBlock) Members() []Member {

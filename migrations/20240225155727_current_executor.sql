@@ -7,7 +7,6 @@ WITH blocks AS (
     SELECT id, content -> 'State' -> step_name AS block_data
     FROM pipeliner.public.variable_storage
     WHERE step_type = 'execution'
-      AND status IN ('running', 'idle', 'ready')
 )
    , exec_data AS (
     SELECT id

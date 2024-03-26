@@ -17,8 +17,9 @@ type GoEndBlock struct {
 	Output    map[string]string
 	Sockets   []script.Socket
 
-	expectedEvents map[string]struct{}
-	happenedEvents []entity.NodeEvent
+	expectedEvents      map[string]struct{}
+	happenedEvents      []entity.NodeEvent
+	happenedKafkaEvents []entity.NodeKafkaEvent
 
 	RunContext *BlockRunContext
 }
@@ -29,6 +30,10 @@ func (gb *GoEndBlock) CurrentExecutorData() CurrentExecutorData {
 
 func (gb *GoEndBlock) GetNewEvents() []entity.NodeEvent {
 	return gb.happenedEvents
+}
+
+func (gb *GoEndBlock) GetNewKafkaEvents() []entity.NodeKafkaEvent {
+	return gb.happenedKafkaEvents
 }
 
 func (gb *GoEndBlock) Members() []Member {
@@ -69,10 +74,12 @@ func (gb *GoEndBlock) Update(ctx c.Context) (interface{}, error) {
 		return nil, err
 	}
 
-	nodeEvents, err := gb.RunContext.GetCancelledStepsEvents(ctx)
+	nodeEvents, nodeKafkaEvents, err := gb.RunContext.GetCancelledStepsEvents(ctx)
 	if err != nil {
 		return nil, err
 	}
+
+	gb.happenedKafkaEvents = append(gb.happenedKafkaEvents, nodeKafkaEvents...)
 
 	//nolint:gocritic //в этом проекте не принято использовать поинтеры в коллекциях
 	for _, event := range nodeEvents {
