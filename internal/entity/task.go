@@ -104,6 +104,7 @@ type EriusTask struct {
 	RateComment        *string                `json:"rate_comment"`
 	Actions            []TaskAction           `json:"available_actions"`
 	IsDelegate         bool                   `json:"is_delegate"`
+	IsExpired          bool                   `json:"is_expired"`
 
 	ActiveBlocks           map[string]struct{} `json:"active_blocks"`
 	SkippedBlocks          map[string]struct{} `json:"skipped_blocks"`
