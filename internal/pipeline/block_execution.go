@@ -66,10 +66,6 @@ func mapToSlice(data map[string]struct{}) []string {
 }
 
 func (gb *GoExecutionBlock) CurrentExecutorData() CurrentExecutorData {
-	if gb.State.Decision != nil {
-		return CurrentExecutorData{}
-	}
-
 	return CurrentExecutorData{
 		GroupID:       gb.State.ExecutorsGroupID,
 		GroupName:     gb.State.ExecutorsGroupName,
