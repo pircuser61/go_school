@@ -502,6 +502,8 @@ func (gb *GoApproverBlock) trySetPreviousDecision(ctx context.Context) (isPrevDe
 	gb.State.Comment = &comment
 	gb.State.Decision = parentState.Decision
 
+	gb.State.ApproverLog = parentState.ApproverLog
+
 	if _, ok = gb.expectedEvents[eventEnd]; ok {
 		status, _, _ := gb.GetTaskHumanStatus()
 		event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, MakeNodeEndEventArgs{
