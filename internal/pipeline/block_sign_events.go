@@ -8,6 +8,7 @@ import (
 	e "gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 )
 
+//nolint:all // ok
 func (gb *GoSignBlock) setEvents(ctx c.Context, signers map[string]struct{}) error {
 	const (
 		start = "start"
