@@ -700,16 +700,15 @@ func (ae *Env) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO) (
 		return nil, PipelineRunError, err
 	}
 
-	updateTaskDTO := db.NewUpdateTaskDTO(
+	updateTaskDTO := db.NewUpdateEmptyTaskDTO(
 		dto.taskID,
 		dto.p.VersionID,
 		dto.realAuthorName,
 		parameters,
-		false,
 		dto.runCtx,
 	)
 
-	err = txStorage.UpdateTask(ctx, &updateTaskDTO)
+	err = txStorage.FillEmptyTask(ctx, &updateTaskDTO)
 	if err != nil {
 		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
 			log.WithField("funcName", "UpdateTask").
@@ -764,7 +763,7 @@ func (ae *Env) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO) (
 
 	runCtx.SetTaskEvents(ctx)
 
-	err = pipeline.InitBlockDB(ctx, ep.EntryPoint, blockData, runCtx)
+	err = pipeline.InitBlockInDB(ctx, ep.EntryPoint, runCtx)
 	if err != nil {
 		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
 			log.WithField("funcName", "pipelne.InitBlock").
@@ -782,8 +781,6 @@ func (ae *Env) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO) (
 
 	workFinished, err := pipeline.ProcessBlockWithEndMapping(ctx, ep.EntryPoint, blockData, runCtx, false)
 	if err != nil {
-		variableStorage.AddError(err)
-
 		return nil, PipelineRunError, err
 	}
 

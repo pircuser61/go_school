@@ -45,37 +45,16 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 
 	ctx = logger.WithLogger(ctx, log)
 
-	txStorage, transactionErr := ae.DB.StartTransaction(ctx)
-	if transactionErr != nil {
-		log.WithField("funcName", "DB.StartTransaction").
-			WithError(transactionErr).
-			Error("start transaction")
-
-		return transactionErr
-	}
-
 	defer func() {
 		if r := recover(); r != nil {
 			log.WithField("funcName", "recover").
 				Error(r)
-
-			if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
-				log.WithField("funcName", "RollbackTransaction").
-					WithError(txErr).
-					Error("rollback transaction")
-			}
 		}
 	}()
 
 	if message.Err != "" {
 		log.WithField("message.Err", message.Err).
 			Error("message from kafka has error")
-
-		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
-			log.WithField("funcName", "RollbackTransaction").
-				WithError(txErr).
-				Error("rollback transaction")
-		}
 
 		return nil
 	}
@@ -86,12 +65,6 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 			WithError(err).
 			Error("get task step by id")
 
-		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
-			log.WithField("funcName", "RollbackTransaction").
-				WithError(txErr).
-				Error("rollback transaction")
-		}
-
 		return nil
 	}
 
@@ -101,12 +74,6 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 
 	if st.IsPaused {
 		log.Error("block is paused")
-
-		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
-			log.WithField("funcName", "RollbackTransaction").
-				WithError(txErr).
-				Error("rollback transaction")
-		}
 
 		return nil
 	}
@@ -126,12 +93,6 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 			WithField("functionMapping", functionMapping).
 			WithError(err).
 			Error("marshal functionMapping")
-
-		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
-			log.WithField("funcName", "RollbackTransaction").
-				WithError(txErr).
-				Error("rollback transaction")
-		}
 
 		return nil
 	}
@@ -174,21 +135,7 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 			WithError(err).
 			Error("get block data from pipeline version")
 
-		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
-			log.WithField("funcName", "RollbackTransaction").
-				WithError(txErr).
-				Error("rollback transaction")
-		}
-
 		return nil
-	}
-
-	if commitErr := txStorage.CommitTransaction(ctx); commitErr != nil {
-		log.WithField("funcName", "CommitTransaction").
-			WithError(commitErr).
-			Error("commit transaction")
-
-		return commitErr
 	}
 
 	workFinished, blockErr := pipeline.ProcessBlockWithEndMapping(ctx, st.Name, blockFunc, runCtx, true)
@@ -196,12 +143,6 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 		log.WithField("funcName", "ProcessBlockWithEndMapping").
 			WithError(blockErr).
 			Error("process block with end mapping")
-
-		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
-			log.WithField("funcName", "RollbackTransaction").
-				WithError(txErr).
-				Error("rollback transaction")
-		}
 
 		return nil
 	}

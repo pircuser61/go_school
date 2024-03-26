@@ -178,7 +178,7 @@ func createGoBlock(ctx c.Context, ef *entity.EriusFunc, name string, runCtx *Blo
 	return nil, false, errors.New("unknown go-block type: " + ef.TypeID)
 }
 
-func InitBlockDB(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *BlockRunContext) error {
+func InitBlockInDB(ctx c.Context, name string, runCtx *BlockRunContext) error {
 	storageData, errSerialize := json.Marshal(runCtx.VarStore)
 	if errSerialize != nil {
 		return errSerialize
@@ -186,7 +186,6 @@ func InitBlockDB(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *Block
 
 	_, _, err := runCtx.Services.Storage.InitTaskBlock(ctx, &db.SaveStepRequest{
 		WorkID:   runCtx.TaskID,
-		StepType: bl.TypeID,
 		StepName: name,
 		Status:   string(StatusReady),
 		Content:  storageData,
@@ -199,18 +198,7 @@ func InitBlockDB(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *Block
 }
 
 func initBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *BlockRunContext) (Runner, uuid.UUID, error) {
-	storageData, errSerialize := json.Marshal(runCtx.VarStore)
-	if errSerialize != nil {
-		return nil, uuid.Nil, errSerialize
-	}
-
-	id, startTime, err := runCtx.Services.Storage.InitTaskBlock(ctx, &db.SaveStepRequest{
-		WorkID:   runCtx.TaskID,
-		StepType: bl.TypeID,
-		StepName: name,
-		Status:   string(StatusReady),
-		Content:  storageData,
-	}, runCtx.OnceProductive)
+	_, id, startTime, err := runCtx.Services.Storage.IsStepExist(ctx, runCtx.TaskID.String(), name)
 	if err != nil {
 		return nil, uuid.Nil, err
 	}

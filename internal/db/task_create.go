@@ -61,14 +61,8 @@ type CreateEmptyTaskDTO struct {
 	TaskID     uuid.UUID
 	WorkNumber string
 	Author     string
-}
-
-func NewCreateEmptyTaskDTO(taskID uuid.UUID, workNumber, author string) CreateEmptyTaskDTO {
-	return CreateEmptyTaskDTO{
-		TaskID:     taskID,
-		WorkNumber: workNumber,
-		Author:     author,
-	}
+	RealAuthor string
+	RunContext *entity.TaskRunContext
 }
 
 func (db *PGCon) CreateEmptyTask(ctx context.Context, task *CreateEmptyTaskDTO) (string, error) {
@@ -90,13 +84,17 @@ func (db *PGCon) insertEmptyTask(ctx context.Context, task *CreateEmptyTaskDTO) 
 			id, 
 			started_at, 
 			status, 
-			author
+			author,
+			real_author,
+			run_context
 		)
 		VALUES (
 			$1, 
 			$2, 
 			$3, 
 			$4, 
+			$5,
+			$6
 		)
 `
 
@@ -107,6 +105,8 @@ func (db *PGCon) insertEmptyTask(ctx context.Context, task *CreateEmptyTaskDTO) 
 		time.Now(),
 		RunStatusCreated,
 		task.Author,
+		task.RealAuthor,
+		task.RunContext,
 	)
 
 	var worksNumber string
@@ -132,14 +132,18 @@ func (db *PGCon) createEmptyTaskWithWorkID(ctx context.Context, task *CreateEmpt
 			started_at, 
 			status, 
 			author,
-			work_number
+			work_number,
+			real_author,
+			run_context
 		)
 		VALUES (
 			$1, 
 			$2, 
 			$3, 
 			$4,
-			$5
+			$5,
+			$6,
+			$7
 		)
 `
 
@@ -151,6 +155,8 @@ func (db *PGCon) createEmptyTaskWithWorkID(ctx context.Context, task *CreateEmpt
 		RunStatusCreated,
 		task.Author,
 		task.WorkNumber,
+		task.RealAuthor,
+		task.RunContext,
 	)
 	if err != nil {
 		return "", err

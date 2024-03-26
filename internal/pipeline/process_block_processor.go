@@ -288,7 +288,7 @@ func (p *blockProcessor) processActiveBlocks(ctx context.Context, activeBlocks [
 			ctxCopy.VarStore = storage
 		}
 
-		err := InitBlockDB(ctx, blockName, blockData, p.runCtx)
+		err := InitBlockInDB(ctx, blockName, p.runCtx)
 		if err != nil {
 			return p.handleErrorWithRollback(ctx, log, err)
 		}

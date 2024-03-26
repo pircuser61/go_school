@@ -1136,7 +1136,7 @@ func (db *PGCon) UpdateGroupsForEmptyVersions(
 	return nil
 }
 
-func (db *PGCon) isStepExist(ctx context.Context, workID, stepName string) (bool, uuid.UUID, time.Time, error) {
+func (db *PGCon) IsStepExist(ctx context.Context, workID, stepName string) (bool, uuid.UUID, time.Time, error) {
 	var (
 		id uuid.UUID
 		t  time.Time
@@ -1166,7 +1166,7 @@ func (db *PGCon) InitTaskBlock(ctx context.Context, dto *SaveStepRequest, isPaus
 	ctx, span := trace.StartSpan(ctx, "pg_init_task_block")
 	defer span.End()
 
-	exists, stepID, t, existErr := db.isStepExist(ctx, dto.WorkID.String(), dto.StepName)
+	exists, stepID, t, existErr := db.IsStepExist(ctx, dto.WorkID.String(), dto.StepName)
 	if existErr != nil {
 		return uuid.Nil, time.Time{}, existErr
 	}
@@ -1241,14 +1241,7 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest, id u
 	defer span.End()
 
 	if !dto.IsReEntry && dto.BlockExist {
-		exists, stepID, _, err := db.isStepExist(ctx, dto.WorkID.String(), dto.StepName)
-		if err != nil {
-			return uuid.Nil, err
-		}
-
-		if exists {
-			return stepID, nil
-		}
+		return id, nil
 	}
 	// nolint:gocritic
 	// language=PostgreSQL

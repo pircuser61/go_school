@@ -19,26 +19,6 @@ import (
 func (ae *Env) handleBreachSlA(ctx c.Context, item *db.StepBreachedSLA) {
 	log := logger.GetLogger(ctx)
 
-	txStorage, transactionErr := ae.DB.StartTransaction(ctx)
-	if transactionErr != nil {
-		log.WithError(transactionErr).Error("couldn't set SLA breach")
-
-		return
-	}
-
-	defer func() {
-		if r := recover(); r != nil {
-			log = log.WithField("funcName", "handleBreachSlA").
-				WithField("panic handle", true)
-			log.Error(r)
-
-			if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
-				log.WithError(errors.New("couldn't rollback tx")).
-					Error(txErr)
-			}
-		}
-	}()
-
 	runCtx := &pipeline.BlockRunContext{
 		TaskID:     item.TaskID,
 		WorkNumber: item.WorkNumber,
@@ -74,14 +54,6 @@ func (ae *Env) handleBreachSlA(ctx c.Context, item *db.StepBreachedSLA) {
 	}
 
 	runCtx.SetTaskEvents(ctx)
-
-	if commitErr := txStorage.CommitTransaction(ctx); commitErr != nil {
-		log.WithError(commitErr).Error("couldn't set SLA breach")
-
-		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
-			log.Error(txErr)
-		}
-	}
 
 	workFinished, blockErr := pipeline.ProcessBlockWithEndMapping(ctx, item.StepName, item.BlockData, runCtx, true)
 	if blockErr != nil {

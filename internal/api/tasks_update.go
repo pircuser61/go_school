@@ -396,34 +396,16 @@ type updateStepData struct {
 func (ae *Env) updateStepInternal(ctx context.Context, data *updateStepData) bool {
 	log := logger.GetLogger(ctx)
 
-	txStorage, transactionErr := ae.DB.StartTransaction(ctx)
-	if transactionErr != nil {
-		log.WithError(transactionErr).Error("couldn't set update step")
-
-		return false
-	}
-
 	defer func() {
 		if r := recover(); r != nil {
 			log = log.WithField("funcName", "updateStepInternal").
 				WithField("panic handle", true)
 			log.Error(r)
-
-			if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
-				log.WithError(errors.New("couldn't rollback tx")).
-					Error(txErr)
-			}
 		}
 	}()
 
-	storage, getErr := txStorage.GetVariableStorageForStep(ctx, data.task.ID, data.step.Name)
+	storage, getErr := ae.DB.GetVariableStorageForStep(ctx, data.task.ID, data.step.Name)
 	if getErr != nil {
-		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
-			log.WithField("funcName", "GetVariableStorageForStep").
-				WithError(errors.New("couldn't rollback tx")).
-				Error(txErr)
-		}
-
 		log.WithError(getErr).Error("couldn't get block to update")
 
 		return false
@@ -468,12 +450,6 @@ func (ae *Env) updateStepInternal(ctx context.Context, data *updateStepData) boo
 
 	blockFunc, ok := data.scenario.Pipeline.Blocks[data.step.Name]
 	if !ok {
-		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
-			log.WithField("funcName", "get block by name").
-				WithError(errors.New("couldn't rollback tx")).
-				Error(txErr)
-		}
-
 		log.
 			WithError(errors.New("couldn't get block from pipeline")).
 			Error("couldn't get block to update")
@@ -482,12 +458,6 @@ func (ae *Env) updateStepInternal(ctx context.Context, data *updateStepData) boo
 	}
 
 	runCtx.SetTaskEvents(ctx)
-
-	if err := txStorage.CommitTransaction(ctx); err != nil {
-		log.WithError(err).Error("couldn't update block, CommitTransaction")
-
-		return false
-	}
 
 	workFinished, blockErr := pipeline.ProcessBlockWithEndMapping(ctx, data.step.Name, blockFunc, runCtx, true)
 	if blockErr != nil {

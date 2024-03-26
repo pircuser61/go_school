@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	c "context"
 	"time"
 
@@ -59,7 +60,8 @@ type TaskStorager interface {
 	GetWorkIDByWorkNumber(ctx c.Context, workNumber string) (uuid.UUID, error)
 
 	CreateTask(ctx c.Context, dto *CreateTaskDTO) (*e.EriusTask, error)
-	UpdateTask(ctx c.Context, updateTask *UpdateTaskDTO) error
+	FillEmptyTask(ctx c.Context, updateTask *UpdateEmptyTaskDTO) error
+	IsStepExist(ctx context.Context, workID, stepName string) (bool, uuid.UUID, time.Time, error)
 
 	CreateEmptyTask(ctx c.Context, task *CreateEmptyTaskDTO) (string, error)
 

@@ -890,6 +890,53 @@ func (_c *MockedDatabase_DeleteVersion_Call) RunAndReturn(run func(context.Conte
 	return _c
 }
 
+// FillEmptyTask provides a mock function with given fields: ctx, updateTask
+func (_m *MockedDatabase) FillEmptyTask(ctx context.Context, updateTask *db.UpdateEmptyTaskDTO) error {
+	ret := _m.Called(ctx, updateTask)
+
+	if len(ret) == 0 {
+		panic("no return value specified for FillEmptyTask")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, *db.UpdateEmptyTaskDTO) error); ok {
+		r0 = rf(ctx, updateTask)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// MockedDatabase_FillEmptyTask_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FillEmptyTask'
+type MockedDatabase_FillEmptyTask_Call struct {
+	*mock.Call
+}
+
+// FillEmptyTask is a helper method to define mock.On call
+//   - ctx context.Context
+//   - updateTask *db.UpdateTaskDTO
+func (_e *MockedDatabase_Expecter) FillEmptyTask(ctx interface{}, updateTask interface{}) *MockedDatabase_FillEmptyTask_Call {
+	return &MockedDatabase_FillEmptyTask_Call{Call: _e.mock.On("FillEmptyTask", ctx, updateTask)}
+}
+
+func (_c *MockedDatabase_FillEmptyTask_Call) Run(run func(ctx context.Context, updateTask *db.UpdateEmptyTaskDTO)) *MockedDatabase_FillEmptyTask_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(*db.UpdateEmptyTaskDTO))
+	})
+	return _c
+}
+
+func (_c *MockedDatabase_FillEmptyTask_Call) Return(_a0 error) *MockedDatabase_FillEmptyTask_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *MockedDatabase_FillEmptyTask_Call) RunAndReturn(run func(context.Context, *db.UpdateEmptyTaskDTO) error) *MockedDatabase_FillEmptyTask_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // FinishTaskBlocks provides a mock function with given fields: ctx, workID, ignoreSteps, updateParent
 func (_m *MockedDatabase) FinishTaskBlocks(ctx context.Context, workID uuid.UUID, ignoreSteps []string, updateParent bool) error {
 	ret := _m.Called(ctx, workID, ignoreSteps, updateParent)
@@ -5098,6 +5145,80 @@ func (_c *MockedDatabase_IsBlockResumable_Call) RunAndReturn(run func(context.Co
 	return _c
 }
 
+// IsStepExist provides a mock function with given fields: ctx, workID, stepName
+func (_m *MockedDatabase) IsStepExist(ctx context.Context, workID string, stepName string) (bool, uuid.UUID, time.Time, error) {
+	ret := _m.Called(ctx, workID, stepName)
+
+	if len(ret) == 0 {
+		panic("no return value specified for IsStepExist")
+	}
+
+	var r0 bool
+	var r1 uuid.UUID
+	var r2 time.Time
+	var r3 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) (bool, uuid.UUID, time.Time, error)); ok {
+		return rf(ctx, workID, stepName)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) bool); ok {
+		r0 = rf(ctx, workID, stepName)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string, string) uuid.UUID); ok {
+		r1 = rf(ctx, workID, stepName)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(uuid.UUID)
+		}
+	}
+
+	if rf, ok := ret.Get(2).(func(context.Context, string, string) time.Time); ok {
+		r2 = rf(ctx, workID, stepName)
+	} else {
+		r2 = ret.Get(2).(time.Time)
+	}
+
+	if rf, ok := ret.Get(3).(func(context.Context, string, string) error); ok {
+		r3 = rf(ctx, workID, stepName)
+	} else {
+		r3 = ret.Error(3)
+	}
+
+	return r0, r1, r2, r3
+}
+
+// MockedDatabase_IsStepExist_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'IsStepExist'
+type MockedDatabase_IsStepExist_Call struct {
+	*mock.Call
+}
+
+// IsStepExist is a helper method to define mock.On call
+//   - ctx context.Context
+//   - workID string
+//   - stepName string
+func (_e *MockedDatabase_Expecter) IsStepExist(ctx interface{}, workID interface{}, stepName interface{}) *MockedDatabase_IsStepExist_Call {
+	return &MockedDatabase_IsStepExist_Call{Call: _e.mock.On("IsStepExist", ctx, workID, stepName)}
+}
+
+func (_c *MockedDatabase_IsStepExist_Call) Run(run func(ctx context.Context, workID string, stepName string)) *MockedDatabase_IsStepExist_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string), args[2].(string))
+	})
+	return _c
+}
+
+func (_c *MockedDatabase_IsStepExist_Call) Return(_a0 bool, _a1 uuid.UUID, _a2 time.Time, _a3 error) *MockedDatabase_IsStepExist_Call {
+	_c.Call.Return(_a0, _a1, _a2, _a3)
+	return _c
+}
+
+func (_c *MockedDatabase_IsStepExist_Call) RunAndReturn(run func(context.Context, string, string) (bool, uuid.UUID, time.Time, error)) *MockedDatabase_IsStepExist_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // IsTaskPaused provides a mock function with given fields: ctx, workID
 func (_m *MockedDatabase) IsTaskPaused(ctx context.Context, workID uuid.UUID) (bool, error) {
 	ret := _m.Called(ctx, workID)
@@ -7020,53 +7141,6 @@ func (_c *MockedDatabase_UpdateStepContext_Call) Return(_a0 error) *MockedDataba
 }
 
 func (_c *MockedDatabase_UpdateStepContext_Call) RunAndReturn(run func(context.Context, *db.UpdateStepRequest) error) *MockedDatabase_UpdateStepContext_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// UpdateTask provides a mock function with given fields: ctx, updateTask
-func (_m *MockedDatabase) UpdateTask(ctx context.Context, updateTask *db.UpdateTaskDTO) error {
-	ret := _m.Called(ctx, updateTask)
-
-	if len(ret) == 0 {
-		panic("no return value specified for UpdateTask")
-	}
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, *db.UpdateTaskDTO) error); ok {
-		r0 = rf(ctx, updateTask)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
-// MockedDatabase_UpdateTask_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdateTask'
-type MockedDatabase_UpdateTask_Call struct {
-	*mock.Call
-}
-
-// UpdateTask is a helper method to define mock.On call
-//   - ctx context.Context
-//   - updateTask *db.UpdateTaskDTO
-func (_e *MockedDatabase_Expecter) UpdateTask(ctx interface{}, updateTask interface{}) *MockedDatabase_UpdateTask_Call {
-	return &MockedDatabase_UpdateTask_Call{Call: _e.mock.On("UpdateTask", ctx, updateTask)}
-}
-
-func (_c *MockedDatabase_UpdateTask_Call) Run(run func(ctx context.Context, updateTask *db.UpdateTaskDTO)) *MockedDatabase_UpdateTask_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(*db.UpdateTaskDTO))
-	})
-	return _c
-}
-
-func (_c *MockedDatabase_UpdateTask_Call) Return(_a0 error) *MockedDatabase_UpdateTask_Call {
-	_c.Call.Return(_a0)
-	return _c
-}
-
-func (_c *MockedDatabase_UpdateTask_Call) RunAndReturn(run func(context.Context, *db.UpdateTaskDTO) error) *MockedDatabase_UpdateTask_Call {
 	_c.Call.Return(run)
 	return _c
 }

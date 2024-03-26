@@ -15,7 +15,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 )
 
-type UpdateTaskDTO struct {
+type UpdateEmptyTaskDTO struct {
 	WorkID uuid.UUID
 
 	VersionID  uuid.UUID
@@ -26,24 +26,23 @@ type UpdateTaskDTO struct {
 }
 
 //nolint:gocritic //ну че нам памяти что-ли жалко
-func NewUpdateTaskDTO(
+func NewUpdateEmptyTaskDTO(
 	workID, versionID uuid.UUID,
 	realAuthor string,
 	parameters []byte,
-	debug bool,
 	runContext entity.TaskRunContext,
-) UpdateTaskDTO {
-	return UpdateTaskDTO{
+) UpdateEmptyTaskDTO {
+	return UpdateEmptyTaskDTO{
 		WorkID:     workID,
 		VersionID:  versionID,
 		RunContext: runContext,
 		RealAuthor: realAuthor,
 		Parameters: parameters,
-		Debug:      debug,
+		Debug:      false,
 	}
 }
 
-func (db *PGCon) UpdateTask(ctx c.Context, updateTask *UpdateTaskDTO) error {
+func (db *PGCon) FillEmptyTask(ctx c.Context, updateTask *UpdateEmptyTaskDTO) error {
 	ctx, span := trace.StartSpan(ctx, "update_task")
 	defer span.End()
 
@@ -78,6 +77,7 @@ func (db *PGCon) UpdateTask(ctx c.Context, updateTask *UpdateTaskDTO) error {
 		updateQuery,
 		updateTask.WorkID,
 		updateTask.VersionID,
+		updateTask.RunContext,
 		slaID,
 		updateTask.RealAuthor,
 		updateTask.Parameters,

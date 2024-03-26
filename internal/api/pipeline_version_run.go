@@ -89,11 +89,30 @@ func (ae *Env) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	realAuthor, err := user.GetEffectiveUserInfoFromCtx(ctx)
+	if err != nil {
+		errorHandler.handleError(NoUserInContextError, err)
+	}
+
 	taskID := uuid.New()
 
-	emptyTaskDTO := db.NewCreateEmptyTaskDTO(taskID, req.WorkNumber, usr.Username)
-
-	workNumber, err := ae.createEmptyTask(ctx, ae.DB, &emptyTaskDTO)
+	workNumber, err := ae.createEmptyTask(ctx, ae.DB, &db.CreateEmptyTaskDTO{
+		TaskID:     taskID,
+		WorkNumber: req.WorkNumber,
+		Author:     usr.Username,
+		RealAuthor: realAuthor.Username,
+		RunContext: &entity.TaskRunContext{
+			InitialApplication: entity.InitialApplication{
+				Description:               req.Description,
+				ApplicationBody:           req.ApplicationBody,
+				AttachmentFields:          req.AttachmentFields,
+				Keys:                      req.Keys,
+				ApplicationBodyFromSystem: req.ApplicationBody,
+				CustomTitle:               req.CustomTitle,
+				IsTestApplication:         req.IsTestApplication,
+			},
+		},
+	})
 	if err != nil {
 		errorHandler.handleError(PipelineCreateError, err)
 
@@ -242,6 +261,15 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 
 	log.Info("RunVersionsByPipelineId pipeline_id:", req.PipelineID)
 
+	clientID, err := ae.getClientIDFromToken(r.Header.Get(AuthorizationHeader))
+	if err != nil {
+		errorHandler.handleError(GetClientIDError, err)
+
+		return
+	}
+
+	requestInfo.ClientID = clientID
+
 	storage, acquireErr := ae.DB.Acquire(ctx)
 	if acquireErr != nil {
 		errorHandler.handleError(PipelineExecutionError, acquireErr)
@@ -256,11 +284,32 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	realAuthor, err := user.GetEffectiveUserInfoFromCtx(ctx)
+	if err != nil {
+		errorHandler.handleError(NoUserInContextError, err)
+	}
+
 	taskID := uuid.New()
 
-	emptyTaskDTO := db.NewCreateEmptyTaskDTO(taskID, "", usr.Username)
-
-	workNumber, err := ae.createEmptyTask(ctx, storage, &emptyTaskDTO)
+	workNumber, err := ae.createEmptyTask(ctx, storage,
+		&db.CreateEmptyTaskDTO{
+			TaskID:     taskID,
+			Author:     usr.Username,
+			RealAuthor: realAuthor.Username,
+			RunContext: &entity.TaskRunContext{
+				ClientID:   clientID,
+				PipelineID: req.PipelineID,
+				InitialApplication: entity.InitialApplication{
+					Description:               req.Description,
+					Keys:                      req.Keys,
+					AttachmentFields:          req.AttachmentFields,
+					IsTestApplication:         req.IsTestApplication,
+					ApplicationBodyFromSystem: req.ApplicationBody,
+					CustomTitle:               req.CustomTitle,
+				},
+			},
+		},
+	)
 	if err != nil {
 		errorHandler.handleError(PipelineCreateError, err)
 
@@ -279,17 +328,6 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 
 	requestInfo.VersionID = version.VersionID.String()
 
-	var clientID string
-
-	clientID, err = ae.getClientIDFromToken(r.Header.Get(AuthorizationHeader))
-	if err != nil {
-		errorHandler.handleError(GetClientIDError, err)
-
-		return
-	}
-
-	requestInfo.ClientID = clientID
-
 	var externalSystem *entity.ExternalSystem
 
 	externalSystem, err = ae.getExternalSystem(ctx, storage, clientID, req.PipelineID, version.VersionID.String())
@@ -304,9 +342,7 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 		allowRunAsOthers = externalSystem.AllowRunAsOthers
 	}
 
-	var mappedApplicationBody orderedmap.OrderedMap
-
-	mappedApplicationBody, err = ae.processMappings(externalSystem, version, req.ApplicationBody)
+	mappedApplicationBody, err := ae.processMappings(externalSystem, version, req.ApplicationBody)
 	if err != nil {
 		errorHandler.handleError(MappingError, err)
 
@@ -341,7 +377,8 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 		workNumber:       workNumber,
 		taskID:           taskID,
 		runCtx: entity.TaskRunContext{
-			ClientID: clientID,
+			ClientID:   clientID,
+			PipelineID: req.PipelineID,
 			InitialApplication: entity.InitialApplication{
 				Description:               req.Description,
 				ApplicationBody:           mappedApplicationBody,
@@ -571,7 +608,7 @@ func cleanKey(mapKeys interface{}) string {
 func (ae *Env) createEmptyTask(ctx c.Context, storage db.Database, emptyTask *db.CreateEmptyTaskDTO) (string, error) {
 	txStorage, err := storage.StartTransaction(ctx)
 	if err != nil {
-		return "", fmt.Errorf("failed start transaction, %s", err)
+		return "", fmt.Errorf("failed start transaction, %w", err)
 	}
 
 	defer func() {
