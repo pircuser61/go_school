@@ -1678,7 +1678,7 @@ paths:
             items:
               type: string
         - name: order
-          description: Waits for ASC/DESC by which the w column will be sorted.started_at
+          description: Waits asc/desc to sort the started_at column in the works table
           in: query
           deprecated: true
           schema:
