@@ -313,7 +313,7 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 		) descr ON descr.work_id = w.id
 		WHERE w.child_id IS NULL`
 
-	order := []string{ascOrder}
+	var order string
 	if fl.Order != nil {
 		order = *fl.Order
 	}
@@ -344,7 +344,7 @@ func compileGetTasksMetaQuery(fl entity.TaskFilter, delegations []string) (q str
 		[join_variable_storage]
 		WHERE w.child_id IS NULL`
 
-	order := []string{ascOrder}
+	var order string
 	if fl.Order != nil {
 		order = *fl.Order
 	}
@@ -457,31 +457,36 @@ func (cq *compileGetTaskQueryMaker) addProcessingSteps() {
 	}
 }
 
-func (cq *compileGetTaskQueryMaker) addOrderBy(order, orderBy []string) {
-	if len(orderBy) == 0 && len(order) == 1 {
-		cq.q = fmt.Sprintf("%s\n ORDER BY w.started_at %s", cq.q, order[0])
+func (cq *compileGetTaskQueryMaker) addOrderBy(order string, orderBy []string) {
+	if order != "" && len(orderBy) == 0 {
+		cq.q = fmt.Sprintf("%s\n ORDER BY w.started_at %s", cq.q, order)
 
 		return
 	}
 
 	cq.q = fmt.Sprintf("%s\n ORDER BY", cq.q)
 
-	for k, item := range orderBy {
-		switch item {
+	for _, item := range orderBy {
+		splits := strings.Split(item, ":")
+
+		if len(splits) == 0 {
+			continue
+		}
+
+		switch splits[0] {
 		case "execution_started":
 			cq.q = fmt.Sprintf("%s ua.node_start", cq.q)
+		case "started_at":
+			cq.q = fmt.Sprintf("%s w.started_at", cq.q)
 		case "execution_deadline":
 			cq.q = fmt.Sprintf("%s w.exec_deadline", cq.q)
 		default:
 			cq.q = fmt.Sprintf("%s w.started_at", cq.q)
 		}
 
-		switch {
-		case len(order) == 1:
-			cq.q = fmt.Sprintf("%s %s,", cq.q, order[0])
-		case len(order) > k:
-			cq.q = fmt.Sprintf("%s %s,", cq.q, order[k])
-		default:
+		if len(splits) == 2 {
+			cq.q = fmt.Sprintf("%s %s,", cq.q, splits[1])
+		} else {
 			cq.q = fmt.Sprintf("%s %s,", cq.q, ascOrder)
 		}
 	}
@@ -508,7 +513,7 @@ func (cq *compileGetTaskQueryMaker) MakeQuery(
 	q string,
 	delegations []string,
 	args []any,
-	order []string,
+	order string,
 	orderBy []string,
 	useLimitOffset bool,
 ) (query string, resArgs []any) {

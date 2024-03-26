@@ -1678,14 +1678,13 @@ paths:
             items:
               type: string
         - name: order
+          description: order
           in: query
-          description: Order
           schema:
-            type: array
-            items:
-              type: string
+            type: string
         - name: orderBy
           in: query
+          description: Order By
           schema:
             type: array
             items:

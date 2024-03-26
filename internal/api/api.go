@@ -2422,8 +2422,10 @@ type GetTasksParams struct {
 	// Task IDs
 	TaskIDs *[]string `json:"taskIDs,omitempty"`
 
-	// Order
-	Order   *[]string `json:"order,omitempty"`
+	// order
+	Order *string `json:"order,omitempty"`
+
+	// Order By
 	OrderBy *[]string `json:"orderBy,omitempty"`
 
 	// Limit

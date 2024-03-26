@@ -155,7 +155,7 @@ func (et *EriusTask) IsError() bool {
 type GetTaskParams struct {
 	Name     *string     `json:"name"`
 	Created  *TimePeriod `json:"created"`
-	Order    *[]string   `json:"order"`
+	Order    *string     `json:"order"`
 	OrderBy  *[]string   `json:"order_by"`
 	Limit    *int        `json:"limit"`
 	Offset   *int        `json:"offset"`
