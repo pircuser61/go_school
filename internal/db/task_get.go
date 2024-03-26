@@ -313,12 +313,12 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 		) descr ON descr.work_id = w.id
 		WHERE w.child_id IS NULL`
 
-	order := ""
-	if fl.Order != nil {
+	var order = []string{ascOrder}
+	if len(*fl.Order) != 0 {
 		order = *fl.Order
 	}
 
-	orderBy := ""
+	var orderBy []string
 	if fl.OrderBy != nil {
 		orderBy = *fl.OrderBy
 	}
@@ -344,12 +344,12 @@ func compileGetTasksMetaQuery(fl entity.TaskFilter, delegations []string) (q str
 		[join_variable_storage]
 		WHERE w.child_id IS NULL`
 
-	order := ""
+	var order = []string{ascOrder}
 	if fl.Order != nil {
 		order = *fl.Order
 	}
 
-	orderBy := ""
+	var orderBy []string
 	if fl.OrderBy != nil {
 		orderBy = *fl.OrderBy
 	}
@@ -457,23 +457,29 @@ func (cq *compileGetTaskQueryMaker) addProcessingSteps() {
 	}
 }
 
-func (cq *compileGetTaskQueryMaker) addOrderBy(orderBy string) {
-	switch orderBy {
-	case "execution_started":
-		cq.q = fmt.Sprintf("%s\n ORDER BY ua.node_start", cq.q)
-	case "execution_deadline":
-		cq.q = fmt.Sprintf("%s\n ORDER BY w.exec_deadline", cq.q)
-	default:
-		cq.q = fmt.Sprintf("%s\n ORDER BY w.started_at", cq.q)
-	}
-}
-
-func (cq *compileGetTaskQueryMaker) addOrder(order string) {
-	if order == "" {
-		order = ascOrder
+func (cq *compileGetTaskQueryMaker) addOrderBy(order []string, orderBy []string) {
+	if len(orderBy) == 0 && len(order) == 1 {
+		cq.q = fmt.Sprintf("%s\n ORDER BY w.started_at %s", cq.q, order[0])
 	}
 
-	cq.q = fmt.Sprintf("%s %s", cq.q, order)
+	for k, item := range orderBy {
+		switch item {
+		case "execution_started":
+			cq.q = fmt.Sprintf("%s ua.node_start", cq.q)
+		case "execution_deadline":
+			cq.q = fmt.Sprintf("%s w.exec_deadline", cq.q)
+		default:
+			cq.q = fmt.Sprintf("%s w.started_at", cq.q)
+		}
+
+		if len(order) >= k {
+			cq.q = fmt.Sprintf("%s %s,", cq.q, order[k])
+		} else {
+			cq.q = fmt.Sprintf("%s %s,", cq.q, ascOrder)
+		}
+	}
+
+	cq.q = strings.TrimRight(cq.q, ",")
 }
 
 func (cq *compileGetTaskQueryMaker) addOffset() {
@@ -495,8 +501,8 @@ func (cq *compileGetTaskQueryMaker) MakeQuery(
 	q string,
 	delegations []string,
 	args []any,
-	order string,
-	orderBy string,
+	order []string,
+	orderBy []string,
 	useLimitOffset bool,
 ) (query string, resArgs []any) {
 	cq.fl = fl
@@ -515,8 +521,7 @@ func (cq *compileGetTaskQueryMaker) MakeQuery(
 	cq.addReceiver()
 	cq.addInitiator()
 	cq.addProcessingSteps()
-	cq.addOrderBy(orderBy)
-	cq.addOrder(order)
+	cq.addOrderBy(order, orderBy)
 
 	if useLimitOffset {
 		cq.addOffset()

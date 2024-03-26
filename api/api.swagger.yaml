@@ -1681,11 +1681,15 @@ paths:
           in: query
           description: Order
           schema:
-            type: string
+            type: array
+            items:
+              type: string
         - name: orderBy
           in: query
           schema:
-            type: string
+            type: array
+            items:
+              type: string
         - name: limit
           in: query
           description: Limit
