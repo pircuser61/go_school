@@ -26,7 +26,7 @@ func (gb *GoExecutionBlock) handleNotifications(ctx context.Context) error {
 		return nil
 	}
 
-	executors := getSliceFromMapOfStrings(gb.State.Executors)
+	executors := getSliceFromMap(gb.State.Executors)
 
 	delegates, getDelegationsErr := gb.RunContext.Services.HumanTasks.GetDelegationsByLogins(ctx, executors)
 	if getDelegationsErr != nil {
@@ -332,12 +332,12 @@ func (gb *GoExecutionBlock) notifyNewInfoReceived(ctx context.Context) error {
 	l := logger.GetLogger(ctx)
 
 	delegates, err := gb.RunContext.Services.HumanTasks.GetDelegationsByLogins(ctx,
-		getSliceFromMapOfStrings(gb.State.Executors))
+		getSliceFromMap(gb.State.Executors))
 	if err != nil {
 		return err
 	}
 
-	loginsToNotify := delegates.GetUserInArrayWithDelegations(getSliceFromMapOfStrings(gb.State.Executors))
+	loginsToNotify := delegates.GetUserInArrayWithDelegations(getSliceFromMap(gb.State.Executors))
 
 	var userEmail string
 

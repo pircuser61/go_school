@@ -193,11 +193,23 @@ func CastUserForLogin(castData castUser) {
 	castData.result[loginString] = castData.toResolve[castData.varName]
 }
 
-func getSliceFromMapOfStrings(source map[string]struct{}) []string {
+func getSliceFromMap(source map[string]struct{}) []string {
 	result := make([]string, 0)
 
 	for key := range source {
 		result = append(result, key)
+	}
+
+	return result
+}
+
+func getDifMaps(a, b map[string]struct{}) map[string]struct{} {
+	result := make(map[string]struct{})
+
+	for key := range a {
+		if _, exists := b[key]; !exists {
+			result[key] = a[key]
+		}
 	}
 
 	return result

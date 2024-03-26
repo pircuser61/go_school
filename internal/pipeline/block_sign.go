@@ -65,8 +65,9 @@ type GoSignBlock struct {
 
 	RunContext *BlockRunContext
 
-	expectedEvents map[string]struct{}
-	happenedEvents []entity.NodeEvent
+	expectedEvents      map[string]struct{}
+	happenedEvents      []entity.NodeEvent
+	happenedKafkaEvents []entity.NodeKafkaEvent
 }
 
 func (gb *GoSignBlock) CurrentExecutorData() CurrentExecutorData {
@@ -75,6 +76,10 @@ func (gb *GoSignBlock) CurrentExecutorData() CurrentExecutorData {
 
 func (gb *GoSignBlock) GetNewEvents() []entity.NodeEvent {
 	return gb.happenedEvents
+}
+
+func (gb *GoSignBlock) GetNewKafkaEvents() []entity.NodeKafkaEvent {
+	return gb.happenedKafkaEvents
 }
 
 func (gb *GoSignBlock) GetState() interface{} {
@@ -514,7 +519,7 @@ func (gb *GoSignBlock) handleNotifications(ctx context.Context) error {
 		return nil
 	}
 
-	signers := getSliceFromMapOfStrings(gb.State.Signers)
+	signers := getSliceFromMap(gb.State.Signers)
 
 	description, files, err := gb.RunContext.makeNotificationDescription(gb.Name)
 	if err != nil {
@@ -941,7 +946,32 @@ func (gb *GoSignBlock) makeExpectedEvents(ctx context.Context, runCtx *BlockRunC
 		return err
 	}
 
+	workType := ""
+	if gb.State.WorkType != nil {
+		workType = *gb.State.WorkType
+	}
+
+	deadline, err := gb.getDeadline(ctx, workType)
+	if err != nil {
+		return err
+	}
+
+	kafkaEvent, err := runCtx.MakeNodeKafkaEvent(ctx, &MakeNodeKafkaEvent{
+		EventName:     eventStart,
+		NodeName:      name,
+		NodeShortName: ef.ShortTitle,
+		HumanStatus:   status,
+		NodeStatus:    gb.GetStatus(),
+		NodeType:      BlockGoSignID,
+		SLA:           deadline.Unix(),
+		ToAddLogins:   getSliceFromMap(gb.State.Signers),
+	})
+	if err != nil {
+		return err
+	}
+
 	gb.happenedEvents = append(gb.happenedEvents, event)
+	gb.happenedKafkaEvents = append(gb.happenedKafkaEvents, kafkaEvent)
 
 	return nil
 }

@@ -65,7 +65,8 @@ type RunContextServices struct {
 }
 
 type BlockRunResults struct {
-	NodeEvents []entity.NodeEvent
+	NodeEvents      []entity.NodeEvent
+	NodeKafkaEvents []entity.NodeKafkaEvent
 }
 
 type BlockRunContext struct {
@@ -104,7 +105,8 @@ func (runCtx *BlockRunContext) Copy() *BlockRunContext {
 	runCtxCopy.VarStore = runCtx.VarStore.Copy()
 	runCtxCopy.UpdateData = nil
 	runCtxCopy.BlockRunResults = &BlockRunResults{
-		NodeEvents: make([]entity.NodeEvent, 0),
+		NodeEvents:      make([]entity.NodeEvent, 0),
+		NodeKafkaEvents: make([]entity.NodeKafkaEvent, 0),
 	}
 	runCtxCopy.Productive = !runCtx.OnceProductive
 

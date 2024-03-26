@@ -101,6 +101,9 @@ func (p *blockProcessor) ProcessBlock(ctx context.Context, its int) error {
 	newEvents := block.GetNewEvents()
 	p.runCtx.BlockRunResults.NodeEvents = append(p.runCtx.BlockRunResults.NodeEvents, newEvents...)
 
+	newKafkaEvents := block.GetNewKafkaEvents()
+	p.runCtx.BlockRunResults.NodeKafkaEvents = append(p.runCtx.BlockRunResults.NodeKafkaEvents, newKafkaEvents...)
+
 	isArchived, err := p.runCtx.Services.Storage.CheckIsArchived(ctx, p.runCtx.TaskID)
 	if err != nil {
 		return p.handleError(ctx, log, err)
@@ -216,6 +219,7 @@ func (p *blockProcessor) processActiveBlocks(ctx context.Context, activeBlocks [
 		}
 
 		p.runCtx.BlockRunResults.NodeEvents = append(p.runCtx.BlockRunResults.NodeEvents, ctxCopy.BlockRunResults.NodeEvents...)
+		p.runCtx.BlockRunResults.NodeKafkaEvents = append(p.runCtx.BlockRunResults.NodeKafkaEvents, ctxCopy.BlockRunResults.NodeKafkaEvents...)
 	}
 
 	return nil

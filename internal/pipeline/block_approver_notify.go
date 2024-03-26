@@ -38,7 +38,7 @@ func (gb *GoApproverBlock) handleNotifications(ctx context.Context) error {
 
 	delegates, getDelegationsErr := gb.RunContext.Services.HumanTasks.GetDelegationsByLogins(
 		ctx,
-		getSliceFromMapOfStrings(gb.State.Approvers),
+		getSliceFromMap(gb.State.Approvers),
 	)
 	if getDelegationsErr != nil {
 		return getDelegationsErr
@@ -46,7 +46,7 @@ func (gb *GoApproverBlock) handleNotifications(ctx context.Context) error {
 
 	delegates = delegates.FilterByType("approvement")
 
-	approvers := getSliceFromMapOfStrings(gb.State.Approvers)
+	approvers := getSliceFromMap(gb.State.Approvers)
 	loginsToNotify := delegates.GetUserInArrayWithDelegations(approvers)
 
 	description, files, err := gb.RunContext.makeNotificationDescription(gb.Name)
