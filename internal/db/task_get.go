@@ -464,7 +464,7 @@ func (cq *compileGetTaskQueryMaker) addOrderBy(order string, orderBy []string) {
 		return
 	}
 
-	cq.q = fmt.Sprintf("%s\n ORDER BY", cq.q)
+	orderItem := make([]string, 0, len(orderBy))
 
 	for _, item := range orderBy {
 		splits := strings.Split(item, ":")
@@ -473,25 +473,24 @@ func (cq *compileGetTaskQueryMaker) addOrderBy(order string, orderBy []string) {
 			continue
 		}
 
-		switch splits[0] {
-		case "execution_started":
-			cq.q = fmt.Sprintf("%s ua.node_start", cq.q)
-		case "started_at":
-			cq.q = fmt.Sprintf("%s w.started_at", cq.q)
-		case "execution_deadline":
-			cq.q = fmt.Sprintf("%s w.exec_deadline", cq.q)
-		default:
-			cq.q = fmt.Sprintf("%s w.started_at", cq.q)
+		columnOrder := ascOrder
+		if len(splits) == 2 {
+			columnOrder = splits[1]
 		}
 
-		if len(splits) == 2 {
-			cq.q = fmt.Sprintf("%s %s,", cq.q, splits[1])
-		} else {
-			cq.q = fmt.Sprintf("%s %s,", cq.q, ascOrder)
+		switch splits[0] {
+		case "execution_started":
+			orderItem = append(orderItem, fmt.Sprintf("ua.node_start %s", columnOrder))
+		case "started_at":
+			orderItem = append(orderItem, fmt.Sprintf("w.started_at %s", columnOrder))
+		case "execution_deadline":
+			orderItem = append(orderItem, fmt.Sprintf("w.exec_deadline %s", columnOrder))
+		default:
+			continue
 		}
 	}
 
-	cq.q = strings.TrimRight(cq.q, ",")
+	cq.q = fmt.Sprintf("%s\n ORDER BY %v", cq.q, strings.Join(orderItem, ", "))
 }
 
 func (cq *compileGetTaskQueryMaker) addOffset() {

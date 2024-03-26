@@ -1678,13 +1678,14 @@ paths:
             items:
               type: string
         - name: order
-          description: order
+          description: Waits for ASC/DESC by which the w column will be sorted.started_at
           in: query
+          deprecated: true
           schema:
             type: string
         - name: orderBy
           in: query
-          description: Order By
+          description: Waiting for the field to be sorted by
           schema:
             type: array
             items:
