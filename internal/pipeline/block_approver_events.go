@@ -8,12 +8,12 @@ import (
 	e "gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 )
 
+//nolint:all //its ok here
 func (gb *GoApproverBlock) setEvents(ctx c.Context) error {
 	data := gb.RunContext.UpdateData
 
 	humanStatus, _, _ := gb.GetTaskHumanStatus()
 
-	//nolint:all //its ok here
 	if data.Action == string(e.TaskUpdateActionApprovement) {
 		byLogin := data.ByLogin
 
@@ -37,13 +37,20 @@ func (gb *GoApproverBlock) setEvents(ctx c.Context) error {
 			decision = gb.State.Decision.String()
 		}
 
-		toRemoveLogins := []string{byLogin}
+		toRemoveLogins := make([]string, 0)
 
-		delegators := gb.RunContext.Delegations.GetDelegators(data.ByLogin)
+		delegators := gb.RunContext.Delegations.GetDelegators(byLogin)
 		delegateFor := gb.State.delegateFor(delegators)
 
-		if len(delegateFor) > 0 {
-			toRemoveLogins = delegateFor
+		for i := range delegateFor {
+			_, founded := gb.State.Approvers[delegateFor[i]]
+			if founded {
+				toRemoveLogins = append(toRemoveLogins, delegateFor[i])
+			}
+		}
+
+		if len(toRemoveLogins) == 0 {
+			toRemoveLogins = []string{byLogin}
 		}
 
 		kafkaEvent, err := gb.RunContext.MakeNodeKafkaEvent(ctx, &MakeNodeKafkaEvent{
@@ -84,6 +91,25 @@ func (gb *GoApproverBlock) setEvents(ctx c.Context) error {
 
 		gb.happenedEvents = append(gb.happenedEvents, event)
 
+		loginsNotYetMadeDecision := make([]string, 0)
+
+		if len(gb.State.ApproverLog) > 0 {
+			for i := range gb.State.Approvers {
+				a := false
+				for j := range gb.State.ApproverLog {
+					if i == gb.State.ApproverLog[j].Login {
+						a = true
+						break
+					}
+				}
+				if !a {
+					loginsNotYetMadeDecision = append(loginsNotYetMadeDecision, i)
+				}
+			}
+		} else {
+			loginsNotYetMadeDecision = getSliceFromMap(gb.State.Approvers)
+		}
+
 		kafkaEvent, eventErr := gb.RunContext.MakeNodeKafkaEvent(ctx, &MakeNodeKafkaEvent{
 			EventName:      eventEnd,
 			NodeName:       gb.Name,
@@ -92,7 +118,7 @@ func (gb *GoApproverBlock) setEvents(ctx c.Context) error {
 			NodeStatus:     gb.GetStatus(),
 			NodeType:       BlockGoApproverID,
 			SLA:            gb.State.Deadline.Unix(),
-			ToRemoveLogins: getSliceFromMap(gb.State.Approvers),
+			ToRemoveLogins: loginsNotYetMadeDecision,
 		})
 
 		if eventErr != nil {

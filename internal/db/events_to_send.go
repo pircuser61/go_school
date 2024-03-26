@@ -63,11 +63,7 @@ func (db *PGCon) GetEventsToSend(ctx c.Context) ([]e.ToSendKafkaEvent, error) {
 
 	// nolint:gocritic
 	// language=PostgreSQL
-	const q = `
-		SELECT id, message 
-			FROM events_to_send
-				WHERE sent_at IS NULL
-			ORDER BY created_at`
+	const q = `SELECT id, message FROM events_to_send ORDER BY created_at`
 
 	rows, err := db.Connection.Query(ctx, q)
 	if err != nil {
