@@ -313,7 +313,7 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 		) descr ON descr.work_id = w.id
 		WHERE w.child_id IS NULL`
 
-	var order = []string{ascOrder}
+	order := []string{ascOrder}
 	if len(*fl.Order) != 0 {
 		order = *fl.Order
 	}
@@ -344,7 +344,7 @@ func compileGetTasksMetaQuery(fl entity.TaskFilter, delegations []string) (q str
 		[join_variable_storage]
 		WHERE w.child_id IS NULL`
 
-	var order = []string{ascOrder}
+	order := []string{ascOrder}
 	if fl.Order != nil {
 		order = *fl.Order
 	}
@@ -457,7 +457,7 @@ func (cq *compileGetTaskQueryMaker) addProcessingSteps() {
 	}
 }
 
-func (cq *compileGetTaskQueryMaker) addOrderBy(order []string, orderBy []string) {
+func (cq *compileGetTaskQueryMaker) addOrderBy(order, orderBy []string) {
 	if len(orderBy) == 0 && len(order) == 1 {
 		cq.q = fmt.Sprintf("%s\n ORDER BY w.started_at %s", cq.q, order[0])
 	}
