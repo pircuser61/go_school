@@ -49,8 +49,9 @@ func (gb *GoApproverBlock) setEvents(ctx c.Context) error {
 			}
 		}
 
-		if len(toRemoveLogins) == 0 {
-			toRemoveLogins = []string{byLogin}
+		_, founded := gb.State.Approvers[byLogin]
+		if len(toRemoveLogins) == 0 || founded {
+			toRemoveLogins = append(toRemoveLogins, byLogin)
 		}
 
 		kafkaEvent, err := gb.RunContext.MakeNodeKafkaEvent(ctx, &MakeNodeKafkaEvent{
