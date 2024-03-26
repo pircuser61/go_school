@@ -392,7 +392,7 @@ func (a *ApproverData) delegateFor(delegators []string) []string {
 
 	for approver := range a.Approvers {
 		for _, delegator := range delegators {
-			if delegator == approver && !decisionForPersonExists(delegator, &a.ApproverLog) {
+			if delegator == approver && !isApproverDecisionExists(delegator, &a.ApproverLog) {
 				delegateFor = append(delegateFor, delegator)
 			}
 		}
@@ -451,7 +451,7 @@ func (a *ApproverData) isUserDecisionSet(login string) bool {
 	return false
 }
 
-func decisionForPersonExists(login string, logs *[]ApproverLogEntry) bool {
+func isApproverDecisionExists(login string, logs *[]ApproverLogEntry) bool {
 	for i := 0; i < len(*logs); i++ {
 		logEntry := (*logs)[i]
 		if (logEntry.Login == login || logEntry.DelegateFor == login) && logEntry.LogType == ApproverLogDecision {

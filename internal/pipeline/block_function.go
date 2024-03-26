@@ -68,8 +68,9 @@ type ExecutableFunctionBlock struct {
 	State     *ExecutableFunction
 	RunURL    string
 
-	expectedEvents map[string]struct{}
-	happenedEvents []entity.NodeEvent
+	expectedEvents      map[string]struct{}
+	happenedEvents      []entity.NodeEvent
+	happenedKafkaEvents []entity.NodeKafkaEvent
 
 	RunContext *BlockRunContext
 }
@@ -80,6 +81,10 @@ func (gb *ExecutableFunctionBlock) CurrentExecutorData() CurrentExecutorData {
 
 func (gb *ExecutableFunctionBlock) GetNewEvents() []entity.NodeEvent {
 	return gb.happenedEvents
+}
+
+func (gb *ExecutableFunctionBlock) GetNewKafkaEvents() []entity.NodeKafkaEvent {
+	return gb.happenedKafkaEvents
 }
 
 func (gb *ExecutableFunction) GetSchema() string {

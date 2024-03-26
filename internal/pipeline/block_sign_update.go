@@ -140,7 +140,7 @@ func (gb *GoSignBlock) handleSignature(ctx c.Context, login string) error {
 
 	if updateParams.Decision == SignDecisionError {
 		emails := make([]string, 0, len(gb.State.Signers))
-		logins := getSliceFromMapOfStrings(gb.State.Signers)
+		logins := getSliceFromMap(gb.State.Signers)
 
 		for i := range logins {
 			eml, err := gb.RunContext.Services.People.GetUserEmail(ctx, logins[i])
@@ -181,6 +181,11 @@ func (gb *GoSignBlock) Update(ctx c.Context) (interface{}, error) {
 		return nil, errors.New("empty data")
 	}
 
+	signersLogins := make(map[string]struct{}, 0)
+	for i := range gb.State.Signers {
+		signersLogins[i] = gb.State.Signers[i]
+	}
+
 	//nolint:gocritic //for future actions
 	switch data.Action {
 	case string(entity.TaskUpdateActionSLABreach):
@@ -217,30 +222,19 @@ func (gb *GoSignBlock) Update(ctx c.Context) (interface{}, error) {
 
 	gb.State.Deadline = deadline
 
+	err := gb.setEvents(ctx, signersLogins)
+	if err != nil {
+		return nil, err
+	}
+
 	var stateBytes []byte
 
-	stateBytes, err := json.Marshal(gb.State)
+	stateBytes, err = json.Marshal(gb.State)
 	if err != nil {
 		return nil, err
 	}
 
 	gb.RunContext.VarStore.ReplaceState(gb.Name, stateBytes)
-
-	if _, ok := gb.expectedEvents[eventEnd]; ok {
-		status, _, _ := gb.GetTaskHumanStatus()
-
-		event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, MakeNodeEndEventArgs{
-			NodeName:      gb.Name,
-			NodeShortName: gb.ShortName,
-			HumanStatus:   status,
-			NodeStatus:    gb.GetStatus(),
-		})
-		if eventErr != nil {
-			return nil, eventErr
-		}
-
-		gb.happenedEvents = append(gb.happenedEvents, event)
-	}
 
 	return nil, nil
 }
@@ -336,7 +330,7 @@ func (gb *GoSignBlock) handleBreachedSLA(ctx c.Context) error {
 
 	if gb.State.SLA != nil {
 		emails := make([]string, 0, len(gb.State.Signers))
-		logins := getSliceFromMapOfStrings(gb.State.Signers)
+		logins := getSliceFromMap(gb.State.Signers)
 
 		usersNotToNotify := gb.getUsersNotToNotifySet()
 

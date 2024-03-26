@@ -63,6 +63,7 @@ type Runner interface {
 	Members() []Member
 	Deadlines(ctx context.Context) ([]Deadline, error)
 	GetNewEvents() []entity.NodeEvent
+	GetNewKafkaEvents() []entity.NodeKafkaEvent
 	BlockAttachments() []string
 	CurrentExecutorData() CurrentExecutorData
 }
