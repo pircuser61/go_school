@@ -2422,10 +2422,10 @@ type GetTasksParams struct {
 	// Task IDs
 	TaskIDs *[]string `json:"taskIDs,omitempty"`
 
-	// Waits asc/desc to sort the started_at column in the works table
+	// order for started_at
 	Order *string `json:"order,omitempty"`
 
-	// Waiting for the field to be sorted by
+	// params for tasks ordering
 	OrderBy *[]string `json:"orderBy,omitempty"`
 
 	// Limit

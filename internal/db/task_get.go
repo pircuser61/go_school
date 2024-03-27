@@ -56,6 +56,8 @@ func uniqueActionsByRole(loginsIn, stepType string, finished, acted bool) string
          , CASE WHEN vs.step_type = 'execution' THEN vs.time END                            AS exec_start_time
 		 , CASE WHEN vs.step_type = 'approver' THEN vs.time END                          	AS appr_start_time
          , vs.time                                                                          AS node_start
+         , vs.updated_at																	AS updated_at
+         , vs.attachments																	AS attachments
          , timestamptz(vs.content -> 'State' -> vs.step_name ->> 'deadline')                AS node_deadline
     FROM members m
              JOIN variable_storage vs on vs.id = m.block_id
@@ -76,8 +78,10 @@ func uniqueActionsByRole(loginsIn, stepType string, finished, acted bool) string
          , max(actions.current_executor::text)::jsonb    AS current_executor
          , min(actions.exec_start_time)     	  		 AS exec_start_time
          , min(actions.appr_start_time)     	  		 AS appr_start_time
+         , max(actions.updated_at)     	  		 		 AS updated_at
          , min(actions.node_deadline)     	  		 	 AS node_deadline    
     	 , min(actions.node_start) 						 AS node_start
+    	 , actions.attachments 							 AS attachments
     FROM actions
              JOIN filtered_actions fa ON fa.time = actions.node_start AND fa.block_id = actions.block_id
              LEFT JOIN LATERAL (SELECT jsonb_build_object(
@@ -469,10 +473,6 @@ func (cq *compileGetTaskQueryMaker) addOrderBy(order string, orderBy []string) {
 	for _, item := range orderBy {
 		splits := strings.Split(item, ":")
 
-		if len(splits) == 0 {
-			continue
-		}
-
 		columnOrder := ascOrder
 		if len(splits) == 2 {
 			columnOrder = splits[1]
@@ -484,7 +484,35 @@ func (cq *compileGetTaskQueryMaker) addOrderBy(order string, orderBy []string) {
 		case "started_at":
 			orderItem = append(orderItem, fmt.Sprintf("w.started_at %s", columnOrder))
 		case "execution_deadline":
-			orderItem = append(orderItem, fmt.Sprintf("w.exec_deadline %s", columnOrder))
+			orderItem = append(orderItem, fmt.Sprintf("ua.node_deadline %s", columnOrder))
+		case "author":
+			orderItem = append(orderItem, fmt.Sprintf("w.author %s", columnOrder))
+		case "blueprint_id":
+			orderItem = append(orderItem, fmt.Sprintf("content::json->'State'->step_name->>'blueprint_id' %s", columnOrder))
+		case "debug":
+			orderItem = append(orderItem, fmt.Sprintf("w.debug %s", columnOrder))
+		case "description":
+			orderItem = append(orderItem, fmt.Sprintf("content::json->'State'->step_name->>'description' %s", columnOrder))
+		case "human_status":
+			orderItem = append(orderItem, fmt.Sprintf("w.human_status %s", columnOrder))
+		case "id":
+			orderItem = append(orderItem, fmt.Sprintf("w.id %s", columnOrder))
+		case "last_changed_at":
+			orderItem = append(orderItem, fmt.Sprintf("ua.updated_at %s", columnOrder))
+		case "name":
+			orderItem = append(orderItem, fmt.Sprintf("p.name %s", columnOrder))
+		case "status":
+			orderItem = append(orderItem, fmt.Sprintf("w.status %s", columnOrder))
+		case "version_id":
+			orderItem = append(orderItem, fmt.Sprintf("v.id %s", columnOrder))
+		case "work_number":
+			orderItem = append(orderItem, fmt.Sprintf("w.work_number %s", columnOrder))
+		case "rate":
+			orderItem = append(orderItem, fmt.Sprintf("w.rate %s", columnOrder))
+		case "attachments_count":
+			orderItem = append(orderItem, fmt.Sprintf("ua.attachments %s", columnOrder))
+		case "is_paused":
+			orderItem = append(orderItem, fmt.Sprintf("w.is_paused %s", columnOrder))
 		default:
 			continue
 		}

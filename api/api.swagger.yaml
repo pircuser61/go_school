@@ -1678,17 +1678,19 @@ paths:
             items:
               type: string
         - name: order
-          description: Waits asc/desc to sort the started_at column in the works table
+          description: order for started_at
           in: query
           deprecated: true
           schema:
             type: string
         - name: orderBy
           in: query
-          description: Waiting for the field to be sorted by
+          description: params for tasks ordering
           schema:
             type: array
             items:
+              example: "started_at:desc"
+              description: param consist of field and order parts, divided with a colon - field:order
               type: string
         - name: limit
           in: query
