@@ -85,6 +85,14 @@ func (jspv *JSONSchemaPropertiesValue) GetProperties() map[string]interface{} {
 	return properties
 }
 
+type FunctionRetryPolicy string
+
+const (
+	FunctionRetryPolicySimple      FunctionRetryPolicy = "simple"
+	FunctionRetryPolicyFibonacci   FunctionRetryPolicy = "fibonacci"
+	FunctionRetryPolicyExponential FunctionRetryPolicy = "exponential"
+)
+
 type ExecutableFunctionParams struct {
 	Name           string                 `json:"name"`
 	Version        string                 `json:"version"`
@@ -94,6 +102,10 @@ type ExecutableFunctionParams struct {
 	Constants      map[string]interface{} `json:"constants"`
 	CheckSLA       bool                   `json:"check_sla"`
 	SLA            int                    `json:"sla"` // seconds
+	NeedRetry      bool                   `json:"need_retry"`
+	RetryCount     int                    `json:"retry_count"`
+	RetryPolicy    FunctionRetryPolicy    `json:"retry_policy"`
+	RetryInterval  int                    `json:"retry_interval"` // seconds
 }
 
 type FunctionParam struct {
@@ -145,6 +157,34 @@ func (a *ExecutableFunctionParams) Validate() error {
 
 	if slaErr := a.validateSLA(); slaErr != nil {
 		return slaErr
+	}
+
+	if retryErr := a.validateRetryParam(); retryErr != nil {
+		return retryErr
+	}
+
+	return nil
+}
+
+func (a *ExecutableFunctionParams) validateRetryParam() error {
+	if a.NeedRetry {
+		if a.RetryCount <= 0 {
+			return fmt.Errorf("invalid retry count: %d", a.RetryCount)
+		}
+
+		if a.RetryPolicy == "" {
+			return errors.New("retry policy is empty")
+		}
+
+		if a.RetryPolicy != FunctionRetryPolicySimple &&
+			a.RetryPolicy != FunctionRetryPolicyFibonacci &&
+			a.RetryPolicy != FunctionRetryPolicyExponential {
+			return fmt.Errorf("invalid retry policy: %s", a.RetryPolicy)
+		}
+
+		if a.RetryInterval <= 0 {
+			return fmt.Errorf("invalid return interval: %d", a.RetryInterval)
+		}
 	}
 
 	return nil

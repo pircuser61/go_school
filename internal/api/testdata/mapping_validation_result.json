@@ -385,7 +385,11 @@
       "waitCorrectRes": 0,
       "constants": {},
       "check_sla": false,
-      "sla": 0
+      "sla": 0,
+      "need_retry": false,
+      "retry_count": 0,
+      "retry_policy": "",
+      "retry_interval": 0
     },
     "next": {
       "default": [
@@ -562,7 +566,11 @@
       "waitCorrectRes": 0,
       "constants": {},
       "check_sla": false,
-      "sla": 0
+      "sla": 0,
+      "need_retry": false,
+      "retry_count": 0,
+      "retry_policy": "",
+      "retry_interval": 0
     },
     "next": {
       "default": [
