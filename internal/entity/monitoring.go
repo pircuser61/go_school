@@ -44,6 +44,8 @@ type TaskForMonitoring struct {
 	StartedAt        time.Time
 	FinishedAt       *time.Time
 	ProcessDeletedAt *time.Time
+	LastEventAt      *time.Time
+	LastEventType    *string
 	Status           string
 	WorkNumber       string
 }

@@ -44,7 +44,7 @@ func NewService(log logger.Logger, cfg Config) (*Service, bool, error) {
 		serviceConfig: cfg,
 	}
 
-	topics := []string{cfg.ProducerTopic, cfg.ConsumerTopic}
+	topics := []string{cfg.ProducerTopic, cfg.ProducerTopicSD, cfg.ConsumerTopic}
 
 	if len(cfg.Brokers) == 0 || len(topics) == 0 {
 		return s, false, errors.New("brokers or topics is empty")
