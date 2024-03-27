@@ -145,15 +145,14 @@ func (s *Service) checkHealth() {
 		msg := s.MessageHandler
 
 		newService, _, reconnectErr := NewService(s.log, s.serviceConfig)
+		*s = *newService
+		s.MessageHandler = msg
+
 		if reconnectErr != nil {
 			s.log.WithError(reconnectErr).Error("failed to reconnect to kafka")
 
 			return
 		}
-
-		*s = *newService
-
-		s.MessageHandler = msg
 
 		s.StartConsumer(c.Background())
 
