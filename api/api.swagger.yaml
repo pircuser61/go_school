@@ -1691,10 +1691,20 @@ paths:
             items:
               type: string
         - name: order
+          description: order for started_at
           in: query
-          description: Order
+          deprecated: true
           schema:
             type: string
+        - name: orderBy
+          in: query
+          description: params for tasks ordering
+          schema:
+            type: array
+            items:
+              example: "started_at:desc"
+              description: param consist of field and order parts, divided with a colon - field:order
+              type: string
         - name: limit
           in: query
           description: Limit
