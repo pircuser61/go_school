@@ -80,7 +80,7 @@ func (gb *ExecutableFunctionBlock) runFunction(ctx context.Context, log logger.L
 	}
 
 	if !gb.RunContext.skipProduce {
-		err = gb.RunContext.Services.Kafka.Produce(ctx,
+		err = gb.RunContext.Services.Kafka.ProduceFuncMessage(ctx,
 			&kafka.RunnerOutMessage{
 				TaskID:          taskStep.ID,
 				PipelineID:      gb.RunContext.PipelineID,

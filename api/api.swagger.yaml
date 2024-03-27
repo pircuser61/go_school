@@ -19,6 +19,19 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
+  /cron/events_to_send:
+    get:
+      summary: Send failed tasks events to kafka
+      operationId: sendEventsToKafka
+      responses:
+        200:
+          description: OK
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
   /application/rate/{workNumber}:
     post:
       summary: rate application

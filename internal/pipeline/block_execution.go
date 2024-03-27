@@ -49,8 +49,9 @@ type GoExecutionBlock struct {
 
 	RunContext *BlockRunContext
 
-	expectedEvents map[string]struct{}
-	happenedEvents []entity.NodeEvent
+	expectedEvents      map[string]struct{}
+	happenedEvents      []entity.NodeEvent
+	happenedKafkaEvents []entity.NodeKafkaEvent
 }
 
 func mapToSlice(data map[string]struct{}) []string {
@@ -66,10 +67,6 @@ func mapToSlice(data map[string]struct{}) []string {
 }
 
 func (gb *GoExecutionBlock) CurrentExecutorData() CurrentExecutorData {
-	if gb.State.Decision != nil {
-		return CurrentExecutorData{}
-	}
-
 	return CurrentExecutorData{
 		GroupID:       gb.State.ExecutorsGroupID,
 		GroupName:     gb.State.ExecutorsGroupName,
@@ -80,6 +77,10 @@ func (gb *GoExecutionBlock) CurrentExecutorData() CurrentExecutorData {
 
 func (gb *GoExecutionBlock) GetNewEvents() []entity.NodeEvent {
 	return gb.happenedEvents
+}
+
+func (gb *GoExecutionBlock) GetNewKafkaEvents() []entity.NodeKafkaEvent {
+	return gb.happenedKafkaEvents
 }
 
 func (gb *GoExecutionBlock) getDeadline(ctx context.Context, workType string) (time.Time, error) {

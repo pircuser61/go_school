@@ -32,8 +32,9 @@ type TimerBlock struct {
 
 	RunContext *BlockRunContext
 
-	expectedEvents map[string]struct{}
-	happenedEvents []entity.NodeEvent
+	expectedEvents      map[string]struct{}
+	happenedEvents      []entity.NodeEvent
+	happenedKafkaEvents []entity.NodeKafkaEvent
 }
 
 func (gb *TimerBlock) CurrentExecutorData() CurrentExecutorData {
@@ -42,6 +43,10 @@ func (gb *TimerBlock) CurrentExecutorData() CurrentExecutorData {
 
 func (gb *TimerBlock) GetNewEvents() []entity.NodeEvent {
 	return gb.happenedEvents
+}
+
+func (gb *TimerBlock) GetNewKafkaEvents() []entity.NodeKafkaEvent {
+	return gb.happenedKafkaEvents
 }
 
 type TimerParams struct {
