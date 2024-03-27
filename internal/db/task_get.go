@@ -461,6 +461,7 @@ func (cq *compileGetTaskQueryMaker) addProcessingSteps() {
 	}
 }
 
+//nolint:gocyclo //it's ok
 func (cq *compileGetTaskQueryMaker) addOrderBy(order string, orderBy []string) {
 	if order != "" && len(orderBy) == 0 {
 		cq.q = fmt.Sprintf("%s\n ORDER BY w.started_at %s", cq.q, order)
