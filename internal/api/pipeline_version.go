@@ -62,11 +62,6 @@ func (ae *Env) createPipelineVersion(ctx c.Context, in *e.EriusScenario, pID str
 		log.WithError(err).Error("user failed")
 	}
 
-	ok, valErr := ae.validatePipeline(ctx, in)
-	if !ok && in.Status == db.StatusApproved {
-		return nil, validateBlockTypeErrText(valErr), errors.New(valErr)
-	}
-
 	updated, err := json.Marshal(in)
 	if err != nil {
 		return nil, PipelineParseError, err
