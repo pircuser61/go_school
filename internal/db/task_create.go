@@ -96,6 +96,7 @@ func (db *PGCon) insertEmptyTask(ctx context.Context, task *CreateEmptyTaskDTO) 
 			$5,
 			$6
 		)
+	RETURNING work_number
 `
 
 	row := db.Connection.QueryRow(
