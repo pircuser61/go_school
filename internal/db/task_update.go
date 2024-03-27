@@ -268,18 +268,18 @@ func (db *PGCon) SetExecDeadline(ctx c.Context, taskID string, deadline time.Tim
 	return nil
 }
 
-func (db *PGCon) SetTaskPaused(ctx c.Context, workID string, isPaused bool) error {
+func (db *PGCon) SetTaskPaused(ctx c.Context, workID string, pause bool) error {
 	ctx, span := trace.StartSpan(ctx, "set_task_paused")
 	defer span.End()
 
 	const q = `UPDATE works SET is_paused = $1, status = $2 WHERE id = $3`
 
 	status := 4
-	if !isPaused {
+	if !pause {
 		status = 1
 	}
 
-	_, err := db.Connection.Exec(ctx, q, isPaused, status, workID)
+	_, err := db.Connection.Exec(ctx, q, pause, status, workID)
 	if err != nil {
 		return err
 	}
