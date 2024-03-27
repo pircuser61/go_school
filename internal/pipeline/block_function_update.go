@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"math"
 
+	"github.com/pkg/errors"
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
@@ -31,17 +32,19 @@ func (gb *ExecutableFunctionBlock) updateFunctionResult(ctx context.Context, log
 	}
 
 	if gb.RunContext.UpdateData.Action == string(entity.TaskUpdateActionRetry) {
-		if gb.State.CurrRetryCount < gb.State.RetryCount {
-			err := gb.runFunction(ctx, log)
-			if err != nil {
-				return err
-			}
-
-			gb.State.CurrRetryCount++
-			gb.State.RetryTimeouts = append(gb.State.RetryTimeouts, gb.State.CurrRetryTimeout)
-
-			gb.updateRetryTimeout()
+		if gb.State.CurrRetryCount >= gb.State.RetryCount {
+			return errors.New("retry count exceeded")
 		}
+
+		err := gb.runFunction(ctx, log)
+		if err != nil {
+			return err
+		}
+
+		gb.State.CurrRetryCount++
+		gb.State.RetryTimeouts = append(gb.State.RetryTimeouts, gb.State.CurrRetryTimeout)
+
+		gb.updateRetryTimeout()
 
 		return nil
 	}

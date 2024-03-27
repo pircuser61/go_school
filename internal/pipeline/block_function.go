@@ -360,7 +360,7 @@ func (gb *ExecutableFunctionBlock) createState(ef *entity.EriusFunc) error {
 		gb.State.RetryPolicy = params.RetryPolicy
 		gb.State.RetryCount = params.RetryCount
 		gb.State.CurrRetryTimeout = params.RetryInterval
-		gb.State.RetryTimeouts = []int{}
+		gb.State.RetryTimeouts = make([]int, 0)
 	}
 
 	if gb.State.CheckSLA {
