@@ -1600,9 +1600,7 @@ func (db *PGCon) getTasks(ctx c.Context, filters *entity.TaskFilter,
 			et.CurrentExecutionStart = &t
 		}
 
-		if et.ProcessDeadline.Before(time.Now()) {
-			et.IsExpired = true
-		}
+		et.IsExpired = et.ProcessDeadline.Before(time.Now())
 
 		if nullApprTime.Valid {
 			t := nullApprTime.Time.UTC()
