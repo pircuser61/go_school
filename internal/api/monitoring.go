@@ -566,7 +566,10 @@ func (ae *Env) MonitoringTaskAction(w http.ResponseWriter, r *http.Request) {
 }
 
 func toMonitoringTaskResponse(nodes []entity.MonitoringTaskNode) *MonitoringTask {
-	res := &MonitoringTask{History: make([]MonitoringHistory, 0)}
+	res := &MonitoringTask{
+		History:  make([]MonitoringHistory, 0),
+		TaskRuns: make([]MonitoringTaskRun, 0),
+	}
 	res.ScenarioInfo = MonitoringScenarioInfo{
 		Author:       nodes[0].Author,
 		CreationTime: nodes[0].CreationTime,
@@ -815,4 +818,74 @@ func (ae *Env) skipTaskBlocksAfterRestart(ctx context.Context, steps *entity.Tas
 	}
 
 	return nil
+}
+
+func (ae *Env) GetMonitoringTaskEvents(w http.ResponseWriter, req *http.Request, workNumber string) {
+	ctx, s := trace.StartSpan(req.Context(), "get_monitoring_task_events")
+	defer s.End()
+
+	log := logger.GetLogger(ctx)
+	errorHandler := newHTTPErrorHandler(log, w)
+
+	if workNumber == "" {
+		err := errors.New("workNumber is empty")
+		errorHandler.handleError(ValidationError, err)
+
+		return
+	}
+
+	workID, err := ae.DB.GetWorkIDByWorkNumber(ctx, workNumber)
+	if err != nil {
+		errorHandler.handleError(GetTaskError, err)
+
+		return
+	}
+
+	events, err := ae.DB.GetTaskEvents(ctx, workID.String())
+	if err != nil {
+		errorHandler.handleError(GetTaskEventsError, err)
+
+		return
+	}
+
+	err = sendResponse(w, http.StatusOK, ae.toMonitoringTaskEventsResponse(ctx, events))
+	if err != nil {
+		errorHandler.handleError(UnknownError, err)
+
+		return
+	}
+}
+
+func (ae *Env) toMonitoringTaskEventsResponse(ctx context.Context, events []entity.TaskEvent) *MonitoringTaskEvents {
+	res := &MonitoringTaskEvents{
+		Events: make([]MonitoringTaskEvent, len(events)),
+	}
+
+	fullNameCache := make(map[string]string)
+
+	for i := range events {
+		if _, ok := fullNameCache[events[i].Author]; !ok {
+			userFullName, getUserErr := ae.getUserFullName(ctx, events[i].Author)
+			if getUserErr != nil {
+				fullNameCache[events[i].Author] = events[i].Author
+			}
+
+			fullNameCache[events[i].Author] = userFullName
+		}
+
+		params, err := json.Marshal(events[i].Params)
+		if err != nil {
+			params = []byte{}
+		}
+
+		res.Events = append(res.Events, MonitoringTaskEvent{
+			Id:        events[i].ID,
+			Author:    fullNameCache[events[i].Author],
+			EventType: MonitoringTaskEventEventType(events[i].EventType),
+			Params:    string(params),
+			CreatedAt: events[i].CreatedAt.Format(monitoringTimeLayout),
+		})
+	}
+
+	return res
 }

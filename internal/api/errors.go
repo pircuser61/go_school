@@ -130,6 +130,7 @@ const (
 	CheckIsTaskPausedError
 	MonitoringTaskActionParseError
 	UnpauseTaskError
+	GetTaskEventsError
 )
 
 /*
@@ -248,6 +249,7 @@ var errorText = map[Err]string{
 	CheckIsTaskPausedError:              "can`t check task is paused",
 	MonitoringTaskActionParseError:      "can`t parse monitoring task action request",
 	UnpauseTaskError:                    "error when unpausing task",
+	GetTaskEventsError:                  "can`t get task events",
 }
 
 /*
@@ -366,6 +368,7 @@ var errorDescription = map[Err]string{
 	CheckIsTaskPausedError:         "Не удалось проверить флаг паузы у таски",
 	MonitoringTaskActionParseError: "Не удалось распарсить запрос на действие с таской",
 	UnpauseTaskError:               "Ошибка при возобновлении заявки",
+	GetTaskEventsError:             "Не удалось получить события по заявке",
 }
 
 /*
