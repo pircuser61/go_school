@@ -99,8 +99,9 @@ type GoFormBlock struct {
 
 	RunContext *BlockRunContext
 
-	expectedEvents map[string]struct{}
-	happenedEvents []entity.NodeEvent
+	expectedEvents      map[string]struct{}
+	happenedEvents      []entity.NodeEvent
+	happenedKafkaEvents []entity.NodeKafkaEvent
 }
 
 func (gb *GoFormBlock) CurrentExecutorData() CurrentExecutorData {
@@ -109,6 +110,10 @@ func (gb *GoFormBlock) CurrentExecutorData() CurrentExecutorData {
 
 func (gb *GoFormBlock) GetNewEvents() []entity.NodeEvent {
 	return gb.happenedEvents
+}
+
+func (gb *GoFormBlock) GetNewKafkaEvents() []entity.NodeKafkaEvent {
+	return gb.happenedKafkaEvents
 }
 
 func (gb *GoFormBlock) Members() []Member {
@@ -467,7 +472,7 @@ func (gb *GoFormBlock) handleNotifications(ctx c.Context) error {
 		return nil
 	}
 
-	executors := getSliceFromMapOfStrings(gb.State.Executors)
+	executors := getSliceFromMap(gb.State.Executors)
 
 	fileNames := make([]string, 0)
 	emails := make(map[string]mail.Template, 0)

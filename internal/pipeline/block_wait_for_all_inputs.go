@@ -26,8 +26,9 @@ type GoWaitForAllInputsBlock struct {
 
 	RunContext *BlockRunContext
 
-	expectedEvents map[string]struct{}
-	happenedEvents []entity.NodeEvent
+	expectedEvents      map[string]struct{}
+	happenedEvents      []entity.NodeEvent
+	happenedKafkaEvents []entity.NodeKafkaEvent
 }
 
 func (gb *GoWaitForAllInputsBlock) CurrentExecutorData() CurrentExecutorData {
@@ -36,6 +37,10 @@ func (gb *GoWaitForAllInputsBlock) CurrentExecutorData() CurrentExecutorData {
 
 func (gb *GoWaitForAllInputsBlock) GetNewEvents() []entity.NodeEvent {
 	return gb.happenedEvents
+}
+
+func (gb *GoWaitForAllInputsBlock) GetNewKafkaEvents() []entity.NodeKafkaEvent {
+	return gb.happenedKafkaEvents
 }
 
 func (gb *GoWaitForAllInputsBlock) Members() []Member {

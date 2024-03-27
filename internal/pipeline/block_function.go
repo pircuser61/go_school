@@ -33,8 +33,9 @@ const (
 
 	SimpleFunctionRetryPolicy FunctionRetryPolicy = "simple"
 
-	TimeoutDecision  FunctionDecision = "timeout"
-	ExecutedDecision FunctionDecision = "executed"
+	TimeoutDecision            FunctionDecision = "timeout"
+	ExecutedDecision           FunctionDecision = "executed"
+	RetryCountExceededDecision FunctionDecision = "retry_count_exceeded"
 )
 
 type ExecutableFunction struct {
@@ -48,14 +49,27 @@ type ExecutableFunction struct {
 	Contracts      string                      `json:"contracts"`
 	WaitCorrectRes int                         `json:"waitCorrectRes"`
 	Constants      map[string]interface{}      `json:"constants"`
-	CheckSLA       bool                        `json:"check_sla"`
-	SLA            int                         `json:"sla"`
-	TimeExpired    bool                        `json:"time_expired"`
+
+	// SLA
+	CheckSLA bool `json:"check_sla"`
+	SLA      int  `json:"sla"`
+
+	TimeExpired bool `json:"time_expired"`
+
+	// Retry
+	RetryPolicy        script.FunctionRetryPolicy `json:"retry_policy"`
+	RetryCount         int                        `json:"retry_count"`
+	CurrRetryCount     int                        `json:"cur_retry_count"`
+	CurrRetryTimeout   int                        `json:"cur_retry_timeout"`
+	RetryTimeouts      []int                      `json:"retry_timeouts"` // for timeout's calculations
+	RetryCountExceeded bool                       `json:"retry_count_exceeded"`
 }
 
 type FunctionUpdateParams struct {
 	Action  string                 `json:"action"`
 	Mapping map[string]interface{} `json:"mapping"`
+	Err     string                 `json:"err"`
+	DoRetry bool                   `json:"do_retry"`
 }
 
 type ExecutableFunctionBlock struct {
@@ -68,8 +82,9 @@ type ExecutableFunctionBlock struct {
 	State     *ExecutableFunction
 	RunURL    string
 
-	expectedEvents map[string]struct{}
-	happenedEvents []entity.NodeEvent
+	expectedEvents      map[string]struct{}
+	happenedEvents      []entity.NodeEvent
+	happenedKafkaEvents []entity.NodeKafkaEvent
 
 	RunContext *BlockRunContext
 }
@@ -80,6 +95,10 @@ func (gb *ExecutableFunctionBlock) CurrentExecutorData() CurrentExecutorData {
 
 func (gb *ExecutableFunctionBlock) GetNewEvents() []entity.NodeEvent {
 	return gb.happenedEvents
+}
+
+func (gb *ExecutableFunctionBlock) GetNewKafkaEvents() []entity.NodeKafkaEvent {
+	return gb.happenedKafkaEvents
 }
 
 func (gb *ExecutableFunction) GetSchema() string {
@@ -100,7 +119,7 @@ func (gb *ExecutableFunctionBlock) Deadlines(_ context.Context) ([]Deadline, err
 }
 
 func (gb *ExecutableFunctionBlock) GetStatus() Status {
-	if gb.State.TimeExpired {
+	if gb.State.TimeExpired || gb.State.RetryCountExceeded {
 		return StatusFinished
 	}
 
@@ -116,7 +135,7 @@ func (gb *ExecutableFunctionBlock) GetStatus() Status {
 }
 
 func (gb *ExecutableFunctionBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment, action string) {
-	if gb.State.TimeExpired {
+	if gb.State.TimeExpired || gb.State.RetryCountExceeded {
 		return StatusDone, "", ""
 	}
 
@@ -137,6 +156,10 @@ func (gb *ExecutableFunctionBlock) Next(_ *store.VariableStore) ([]string, bool)
 		key = funcTimeExpired
 	}
 
+	if gb.State.RetryCountExceeded {
+		key = retryCountExceeded
+	}
+
 	nexts, ok := script.GetNexts(gb.Sockets, key)
 	if !ok {
 		return nil, false
@@ -153,7 +176,7 @@ func (gb *ExecutableFunctionBlock) Update(ctx context.Context) (interface{}, err
 	log := logger.GetLogger(ctx)
 
 	if gb.RunContext.UpdateData != nil {
-		err := gb.updateFunctionResult(log)
+		err := gb.updateFunctionResult(ctx, log)
 		if err != nil {
 			return nil, err
 		}
@@ -173,7 +196,7 @@ func (gb *ExecutableFunctionBlock) Update(ctx context.Context) (interface{}, err
 
 	gb.RunContext.VarStore.ReplaceState(gb.Name, stateBytes)
 
-	if gb.State.HasResponse || gb.State.TimeExpired {
+	if gb.State.HasResponse || gb.State.TimeExpired || gb.State.RetryCountExceeded {
 		_, ok := gb.expectedEvents[eventEnd]
 		if !ok {
 			return nil, nil
@@ -338,6 +361,13 @@ func (gb *ExecutableFunctionBlock) createState(ef *entity.EriusFunc) error {
 		SLA:            params.SLA,
 	}
 
+	if params.NeedRetry {
+		gb.State.RetryPolicy = params.RetryPolicy
+		gb.State.RetryCount = params.RetryCount
+		gb.State.CurrRetryTimeout = params.RetryInterval
+		gb.State.RetryTimeouts = make([]int, 0)
+	}
+
 	if gb.State.CheckSLA {
 		_, err = gb.RunContext.Services.Scheduler.CreateTask(context.Background(), &scheduler.CreateTask{
 			WorkNumber:  gb.RunContext.WorkNumber,
@@ -385,7 +415,35 @@ func (gb *ExecutableFunctionBlock) createExpectedEvents(
 	return nil
 }
 
-func (gb *ExecutableFunctionBlock) setStateByResponse(updateData *FunctionUpdateParams) error {
+func (gb *ExecutableFunctionBlock) setStateByResponse(ctx context.Context, log logger.Logger, updateData *FunctionUpdateParams) error {
+	//nolint:nestif //it's ok
+	if updateData.DoRetry && gb.State.RetryCount > 0 {
+		if gb.State.CurrRetryCount >= gb.State.RetryCount {
+			gb.RunContext.VarStore.SetValue(gb.Output[keyOutputFunctionDecision], RetryCountExceededDecision)
+			gb.State.RetryCountExceeded = true
+		} else if !gb.RunContext.skipProduce { // for test
+			_, err := gb.RunContext.Services.Scheduler.CreateTask(ctx, &scheduler.CreateTask{
+				WorkNumber:  gb.RunContext.WorkNumber,
+				WorkID:      gb.RunContext.TaskID.String(),
+				ActionName:  string(entity.TaskUpdateActionRetry),
+				StepName:    gb.Name,
+				WaitSeconds: gb.State.CurrRetryTimeout,
+			})
+			if err != nil {
+				return err
+			}
+		}
+
+		return nil
+	}
+
+	if updateData.Err != "" {
+		log.WithField("message.Err", updateData.Err).
+			Error("message from kafka has error")
+
+		return errors.New("message from kafka has error")
+	}
+
 	if gb.State.Async && !gb.State.HasAck {
 		gb.State.HasAck = true
 	} else {

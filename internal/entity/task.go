@@ -2,7 +2,6 @@ package entity
 
 import (
 	"encoding/json"
-	"reflect"
 	"time"
 
 	"github.com/google/uuid"
@@ -157,6 +156,7 @@ type GetTaskParams struct {
 	Name     *string     `json:"name"`
 	Created  *TimePeriod `json:"created"`
 	Order    *string     `json:"order"`
+	OrderBy  *[]string   `json:"order_by"`
 	Limit    *int        `json:"limit"`
 	Offset   *int        `json:"offset"`
 	TaskIDs  *[]string   `json:"task_ids"`
@@ -214,6 +214,7 @@ const (
 	TaskUpdateActionSign                       TaskUpdateAction = "sign"
 	TaskUpdateActionFinishTimer                TaskUpdateAction = "finish_timer"
 	TaskUpdateActionFuncSLAExpired             TaskUpdateAction = "func_sla_expired"
+	TaskUpdateActionRetry                      TaskUpdateAction = "func_retry"
 	TaskUpdateActionSignChangeWorkStatus       TaskUpdateAction = "sign_change_work_status"
 	TaskUpdateActionReload                     TaskUpdateAction = "reload"
 )
@@ -238,7 +239,8 @@ type CancelAppParams struct {
 func (t *TaskUpdate) IsSchedulerTaskUpdateAction() bool {
 	//nolint:exhaustive //нам нужны только эти три кейса
 	switch t.Action {
-	case TaskUpdateActionFinishTimer, TaskUpdateActionSignChangeWorkStatus, TaskUpdateActionFuncSLAExpired:
+	case TaskUpdateActionFinishTimer, TaskUpdateActionSignChangeWorkStatus,
+		TaskUpdateActionFuncSLAExpired, TaskUpdateActionRetry:
 		return true
 	default:
 		return false
@@ -263,6 +265,7 @@ func (t *TaskUpdate) Validate() error {
 		TaskUpdateActionSign,
 		TaskUpdateActionFinishTimer,
 		TaskUpdateActionFuncSLAExpired,
+		TaskUpdateActionRetry,
 		TaskUpdateActionSignChangeWorkStatus,
 		TaskUpdateActionReplyExecutionInfo,
 		TaskUpdateActionReplyApproverInfo:
@@ -331,38 +334,4 @@ func (at *Attachment) UnmarshalJSON(b []byte) error {
 	at.ExternalLink = atTemp.ExternalLink
 
 	return nil
-}
-
-type NodeEvent struct {
-	TaskID        string                 `json:"task_id"`
-	WorkNumber    string                 `json:"work_number"`
-	NodeName      string                 `json:"node_name"`
-	NodeShortName string                 `json:"node_short_name"`
-	NodeStart     string                 `json:"node_start"`
-	NodeEnd       string                 `json:"node_end"`
-	TaskStatus    string                 `json:"task_status"`
-	NodeStatus    string                 `json:"node_status"`
-	NodeOutput    map[string]interface{} `json:"node_output"`
-}
-
-func (ne *NodeEvent) ToMap() map[string]interface{} {
-	if ne.NodeOutput == nil {
-		ne.NodeOutput = make(map[string]interface{})
-	}
-
-	res := make(map[string]interface{})
-
-	for i := 0; i < reflect.TypeOf(*ne).NumField(); i++ {
-		f := reflect.TypeOf(*ne).Field(i)
-		k := f.Tag.Get("json")
-
-		if k == "" {
-			continue
-		}
-
-		val := reflect.ValueOf(*ne).Field(i).Interface()
-		res[k] = val
-	}
-
-	return res
 }

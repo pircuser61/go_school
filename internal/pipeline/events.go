@@ -17,13 +17,14 @@ import (
 	integration_v1 "gitlab.services.mts.ru/jocasta/integrations/pkg/proto/gen/integration/v1"
 	microservice_v1 "gitlab.services.mts.ru/jocasta/integrations/pkg/proto/gen/microservice/v1"
 
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	e "gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
 
 const (
-	eventStart = "start"
-	eventEnd   = "end"
+	eventStart  = "start"
+	eventEnd    = "end"
+	eventCancel = "cancel"
 )
 
 type MakeNodeStartEventArgs struct {
@@ -40,17 +41,17 @@ type MakeNodeEndEventArgs struct {
 	NodeStatus    Status
 }
 
-func (runCtx *BlockRunContext) MakeNodeStartEvent(ctx c.Context, args MakeNodeStartEventArgs) (entity.NodeEvent, error) {
+func (runCtx *BlockRunContext) MakeNodeStartEvent(ctx c.Context, args MakeNodeStartEventArgs) (e.NodeEvent, error) {
 	if args.HumanStatus == "" {
 		hStatus, err := runCtx.Services.Storage.GetTaskHumanStatus(ctx, runCtx.TaskID)
 		if err != nil {
-			return entity.NodeEvent{}, nil
+			return e.NodeEvent{}, nil
 		}
 
 		args.HumanStatus = TaskHumanStatus(hStatus)
 	}
 
-	return entity.NodeEvent{
+	return e.NodeEvent{
 		TaskID:        runCtx.TaskID.String(),
 		WorkNumber:    runCtx.WorkNumber,
 		NodeName:      args.NodeName,
@@ -61,11 +62,11 @@ func (runCtx *BlockRunContext) MakeNodeStartEvent(ctx c.Context, args MakeNodeSt
 	}, nil
 }
 
-func (runCtx *BlockRunContext) MakeNodeEndEvent(ctx c.Context, args MakeNodeEndEventArgs) (entity.NodeEvent, error) {
+func (runCtx *BlockRunContext) MakeNodeEndEvent(ctx c.Context, args MakeNodeEndEventArgs) (e.NodeEvent, error) {
 	if args.HumanStatus == "" {
 		hStatus, err := runCtx.Services.Storage.GetTaskHumanStatus(ctx, runCtx.TaskID)
 		if err != nil {
-			return entity.NodeEvent{}, nil
+			return e.NodeEvent{}, nil
 		}
 
 		args.HumanStatus = TaskHumanStatus(hStatus)
@@ -73,7 +74,7 @@ func (runCtx *BlockRunContext) MakeNodeEndEvent(ctx c.Context, args MakeNodeEndE
 
 	outputs := getBlockOutput(runCtx.VarStore, args.NodeName)
 
-	return entity.NodeEvent{
+	return e.NodeEvent{
 		TaskID:        runCtx.TaskID.String(),
 		WorkNumber:    runCtx.WorkNumber,
 		NodeName:      args.NodeName,
@@ -90,6 +91,11 @@ func (runCtx *BlockRunContext) MakeNodeEndEvent(ctx c.Context, args MakeNodeEndE
 func (runCtx BlockRunContext) NotifyEvents(ctx c.Context) {
 	log := logger.GetLogger(ctx).WithField("workNumber", runCtx.WorkNumber)
 
+	runCtx.notifyEvents(ctx, log)
+	runCtx.notifyKafkaEvents(ctx, log)
+}
+
+func (runCtx *BlockRunContext) notifyEvents(ctx c.Context, log logger.Logger) {
 	reqURL, err := url.Parse(runCtx.TaskSubscriptionData.MicroserviceURL)
 	if err != nil {
 		log.WithError(err).Error("couldn't parse url to send event notification")
@@ -149,7 +155,7 @@ func (runCtx BlockRunContext) NotifyEvents(ctx c.Context) {
 	}
 }
 
-//nolint:gocritic
+//nolint:all
 /*
 	тут есть строчка
 	runCtx.CurrBlockStartTime = s.Time
@@ -158,13 +164,14 @@ func (runCtx BlockRunContext) NotifyEvents(ctx c.Context) {
 	но используется в MakeNodeEndEvent в рамках этой функции, немного опасно ставить здесь указатель
 	так как может повлиять на те места о которых я даже не подозреваю
 */
-func (runCtx BlockRunContext) GetCancelledStepsEvents(ctx c.Context) ([]entity.NodeEvent, error) {
+func (runCtx BlockRunContext) GetCancelledStepsEvents(ctx c.Context) ([]e.NodeEvent, []e.NodeKafkaEvent, error) {
 	steps, err := runCtx.Services.Storage.GetCanceledTaskSteps(ctx, runCtx.TaskID)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	nodeEvents := make([]entity.NodeEvent, 0, len(steps))
+	nodeEvents := make([]e.NodeEvent, 0, len(steps))
+	nodeKafkaEvents := make([]e.NodeKafkaEvent, 0, len(steps))
 
 	for _, s := range steps {
 		notify := false
@@ -203,13 +210,84 @@ func (runCtx BlockRunContext) GetCancelledStepsEvents(ctx c.Context) ([]entity.N
 
 		event, eventErr := runCtx.MakeNodeEndEvent(ctx, nodeEvent)
 		if eventErr != nil {
-			return nil, eventErr
+			return nil, nil, eventErr
 		}
 
 		nodeEvents = append(nodeEvents, event)
+
+		//nolint:all //its ok here
+		if s.Type == BlockGoExecutionID || s.Type == BlockGoApproverID || s.Type == BlockGoSignID || s.Type == BlockGoFormID {
+			shortTitle := ""
+			if s.ShortTitle != nil {
+				shortTitle = *s.ShortTitle
+			}
+
+			stepContent, errStep := runCtx.Services.Storage.GetVariableStorageForStep(ctx, runCtx.TaskID, s.Name)
+			if errStep != nil {
+				return nil, nil, errStep
+			}
+
+			stepPeople := make(map[string]struct{})
+
+			if _, ok := stepContent.State[s.Name]; ok {
+				switch s.Type {
+				case BlockGoApproverID:
+					state := &ApproverData{}
+
+					unmarshalErr := json.Unmarshal(stepContent.State[s.Name], &state)
+					if unmarshalErr != nil {
+						return nil, nil, unmarshalErr
+					}
+
+					stepPeople = state.Approvers
+				case BlockGoExecutionID:
+					state := &ExecutionData{}
+
+					unmarshalErr := json.Unmarshal(stepContent.State[s.Name], &state)
+					if unmarshalErr != nil {
+						return nil, nil, unmarshalErr
+					}
+
+					stepPeople = state.Executors
+				case BlockGoSignID:
+					state := &SignData{}
+
+					unmarshalErr := json.Unmarshal(stepContent.State[s.Name], &state)
+					if unmarshalErr != nil {
+						return nil, nil, unmarshalErr
+					}
+
+					stepPeople = state.Signers
+				case BlockGoFormID:
+					state := &FormData{}
+
+					unmarshalErr := json.Unmarshal(stepContent.State[s.Name], &state)
+					if unmarshalErr != nil {
+						return nil, nil, unmarshalErr
+					}
+
+					stepPeople = state.Executors
+				}
+			}
+
+			kafkaEvent, errEvent := runCtx.MakeNodeKafkaEvent(ctx, &MakeNodeKafkaEvent{
+				EventName:      eventCancel,
+				NodeName:       s.Name,
+				NodeShortName:  shortTitle,
+				HumanStatus:    StatusRevoke,
+				NodeStatus:     StatusCanceled,
+				NodeType:       s.Type,
+				ToRemoveLogins: getSliceFromMap(stepPeople),
+			})
+			if errEvent != nil {
+				return nil, nil, errEvent
+			}
+
+			nodeKafkaEvents = append(nodeKafkaEvents, kafkaEvent)
+		}
 	}
 
-	return nodeEvents, nil
+	return nodeEvents, nodeKafkaEvents, nil
 }
 
 func (runCtx *BlockRunContext) SetTaskEvents(ctx c.Context) {
@@ -222,7 +300,7 @@ func (runCtx *BlockRunContext) SetTaskEvents(ctx c.Context) {
 		}
 
 		if runCtx.TaskSubscriptionData.ExpectedEvents == nil {
-			runCtx.TaskSubscriptionData.ExpectedEvents = make([]entity.NodeSubscriptionEvents, 0)
+			runCtx.TaskSubscriptionData.ExpectedEvents = make([]e.NodeSubscriptionEvents, 0)
 		}
 	}()
 

@@ -19,6 +19,19 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
+  /cron/events_to_send:
+    get:
+      summary: Send failed tasks events to kafka
+      operationId: sendEventsToKafka
+      responses:
+        200:
+          description: OK
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
   /application/rate/{workNumber}:
     post:
       summary: rate application
@@ -1678,10 +1691,20 @@ paths:
             items:
               type: string
         - name: order
+          description: order for started_at
           in: query
-          description: Order
+          deprecated: true
           schema:
             type: string
+        - name: orderBy
+          in: query
+          description: params for tasks ordering
+          schema:
+            type: array
+            items:
+              example: "started_at:desc"
+              description: param consist of field and order parts, divided with a colon - field:order
+              type: string
         - name: limit
           in: query
           description: Limit
@@ -3304,6 +3327,9 @@ components:
         finished_at:
           type: string
           example: 2020-07-16T17:10:25.112704+03:00
+        paused_at:
+          type: string
+          example: 2020-07-16T17:10:25.112704+03:00
       required:
         - id
         - status
@@ -3313,6 +3339,7 @@ components:
         - finished_at
         - initiator
         - initiator_fullname
+        - paused_at
     EriusVersionInfo:
       type: object
       properties:

@@ -13,13 +13,16 @@ import (
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	msgkit "gitlab.services.mts.ru/jocasta/msg-kit"
+
+	e "gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 )
 
 type Service struct {
 	log logger.Logger
 
-	producer *msgkit.Producer
-	consumer *msgkit.Consumer
+	producerSd *msgkit.Producer
+	producer   *msgkit.Producer
+	consumer   *msgkit.Consumer
 
 	brokers       []string
 	topics        []string
@@ -41,7 +44,7 @@ func NewService(log logger.Logger, cfg Config) (*Service, bool, error) {
 		serviceConfig: cfg,
 	}
 
-	topics := []string{cfg.ProducerTopic, cfg.ConsumerTopic}
+	topics := []string{cfg.ProducerTopic, cfg.ProducerTopicSD, cfg.ConsumerTopic}
 
 	if len(cfg.Brokers) == 0 || len(topics) == 0 {
 		return s, false, errors.New("brokers or topics is empty")
@@ -66,6 +69,13 @@ func NewService(log logger.Logger, cfg Config) (*Service, bool, error) {
 		return s, true, fmt.Errorf("failed to create client: %w", err)
 	}
 
+	producerToSD, err := msgkit.NewProducer(saramaClient, cfg.ProducerTopicSD)
+	if err != nil {
+		return s, true, err
+	}
+
+	s.producerSd = producerToSD
+
 	producer, err := msgkit.NewProducer(saramaClient, cfg.ProducerTopic)
 	if err != nil {
 		return s, true, err
@@ -83,7 +93,7 @@ func NewService(log logger.Logger, cfg Config) (*Service, bool, error) {
 	return s, true, nil
 }
 
-func (s *Service) Produce(ctx c.Context, message *RunnerOutMessage) error {
+func (s *Service) ProduceFuncMessage(ctx c.Context, message *RunnerOutMessage) error {
 	if s == nil || s.producer == nil {
 		return errors.New("kafka service unavailable")
 	}
@@ -91,9 +101,27 @@ func (s *Service) Produce(ctx c.Context, message *RunnerOutMessage) error {
 	return s.producer.Produce(ctx, message)
 }
 
+func (s *Service) ProduceEventMessage(ctx c.Context, message *e.NodeKafkaEvent) error {
+	if s == nil || s.producerSd == nil {
+		return errors.New("kafka service unavailable")
+	}
+
+	return s.producerSd.Produce(ctx, message)
+}
+
 func (s *Service) CloseProducer() error {
 	if s != nil && s.producer != nil {
-		return s.producer.Close()
+		err := s.producer.Close()
+		if err != nil {
+			return err
+		}
+	}
+
+	if s != nil && s.producerSd != nil {
+		err := s.producerSd.Close()
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -145,15 +173,14 @@ func (s *Service) checkHealth() {
 		msg := s.MessageHandler
 
 		newService, _, reconnectErr := NewService(s.log, s.serviceConfig)
+		*s = *newService
+		s.MessageHandler = msg
+
 		if reconnectErr != nil {
 			s.log.WithError(reconnectErr).Error("failed to reconnect to kafka")
 
 			return
 		}
-
-		*s = *newService
-
-		s.MessageHandler = msg
 
 		s.StartConsumer(c.Background())
 

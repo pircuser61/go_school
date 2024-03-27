@@ -44,8 +44,9 @@ type GoApproverBlock struct {
 	Sockets   []script.Socket
 	State     *ApproverData
 
-	expectedEvents map[string]struct{}
-	happenedEvents []entity.NodeEvent
+	expectedEvents      map[string]struct{}
+	happenedEvents      []entity.NodeEvent
+	happenedKafkaEvents []entity.NodeKafkaEvent
 
 	RunContext *BlockRunContext
 }
@@ -56,6 +57,10 @@ func (gb *GoApproverBlock) CurrentExecutorData() CurrentExecutorData {
 
 func (gb *GoApproverBlock) GetNewEvents() []entity.NodeEvent {
 	return gb.happenedEvents
+}
+
+func (gb *GoApproverBlock) GetNewKafkaEvents() []entity.NodeKafkaEvent {
+	return gb.happenedKafkaEvents
 }
 
 func (gb *GoApproverBlock) Members() []Member {

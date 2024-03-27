@@ -122,7 +122,7 @@ func (a *ExecutionData) setEditAppToInitiator(login, delegateFor string, params 
 func (a *ExecutionData) SetDecision(login string, in *ExecutionUpdateParams, delegations human_tasks.Delegations) error {
 	_, executorFound := a.Executors[login]
 
-	delegateFor, isDelegate := delegations.FindDelegatorFor(login, getSliceFromMapOfStrings(a.Executors))
+	delegateFor, isDelegate := delegations.FindDelegatorFor(login, getSliceFromMap(a.Executors))
 	if !(executorFound || isDelegate) {
 		return NewUserIsNotPartOfProcessErr()
 	}

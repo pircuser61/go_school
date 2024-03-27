@@ -8,3 +8,8 @@ type CreateTaskEvent struct {
 	EventType string
 	Params    json.RawMessage
 }
+
+type CreateEventToSend struct {
+	WorkID  string
+	Message json.RawMessage
+}

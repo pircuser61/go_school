@@ -3,7 +3,9 @@ package pipeline
 import (
 	"context"
 	"encoding/json"
+	"math"
 
+	"github.com/pkg/errors"
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
@@ -12,7 +14,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
 
-func (gb *ExecutableFunctionBlock) updateFunctionResult(log logger.Logger) error {
+func (gb *ExecutableFunctionBlock) updateFunctionResult(ctx context.Context, log logger.Logger) error {
 	var updateData FunctionUpdateParams
 
 	updateDataUnmarshalErr := json.Unmarshal(gb.RunContext.UpdateData.Parameters, &updateData)
@@ -25,14 +27,51 @@ func (gb *ExecutableFunctionBlock) updateFunctionResult(log logger.Logger) error
 	if gb.RunContext.UpdateData.Action == string(entity.TaskUpdateActionFuncSLAExpired) {
 		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputFunctionDecision], TimeoutDecision)
 		gb.State.TimeExpired = true
-	} else {
-		err := gb.setStateByResponse(&updateData)
+
+		return nil
+	}
+
+	if gb.RunContext.UpdateData.Action == string(entity.TaskUpdateActionRetry) {
+		if gb.State.CurrRetryCount >= gb.State.RetryCount {
+			return errors.New("retry count exceeded")
+		}
+
+		err := gb.runFunction(ctx, log)
 		if err != nil {
 			return err
 		}
+
+		gb.State.CurrRetryCount++
+		gb.State.RetryTimeouts = append(gb.State.RetryTimeouts, gb.State.CurrRetryTimeout)
+
+		gb.updateRetryTimeout()
+
+		return nil
 	}
 
-	return nil
+	err := gb.setStateByResponse(ctx, log, &updateData)
+
+	return err
+}
+
+func (gb *ExecutableFunctionBlock) updateRetryTimeout() {
+	switch gb.State.RetryPolicy {
+	case script.FunctionRetryPolicySimple:
+		return
+	case script.FunctionRetryPolicyFibonacci:
+		prevRetryTimeout := 0
+		if len(gb.State.RetryTimeouts) > 1 {
+			prevRetryTimeout = gb.State.RetryTimeouts[len(gb.State.RetryTimeouts)-2]
+		}
+
+		gb.State.CurrRetryTimeout += prevRetryTimeout
+
+		return
+	case script.FunctionRetryPolicyExponential:
+		gb.State.CurrRetryTimeout = int(math.Pow(float64(gb.State.RetryTimeouts[0]), float64(gb.State.CurrRetryCount+1)))
+
+		return
+	}
 }
 
 func (gb *ExecutableFunctionBlock) runFunction(ctx context.Context, log logger.Logger) error {
@@ -80,7 +119,7 @@ func (gb *ExecutableFunctionBlock) runFunction(ctx context.Context, log logger.L
 	}
 
 	if !gb.RunContext.skipProduce {
-		err = gb.RunContext.Services.Kafka.Produce(ctx,
+		err = gb.RunContext.Services.Kafka.ProduceFuncMessage(ctx,
 			&kafka.RunnerOutMessage{
 				TaskID:          taskStep.ID,
 				PipelineID:      gb.RunContext.PipelineID,

@@ -10,7 +10,7 @@ import (
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	e "gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
@@ -32,23 +32,29 @@ func (a *updateFillFormParams) Validate() error {
 
 //nolint:gocyclo,gocognit //ok
 func (gb *GoFormBlock) Update(ctx context.Context) (interface{}, error) {
-	updateInOtherBlocks := false
-
 	data := gb.RunContext.UpdateData
 	if data == nil {
 		return nil, errors.New("empty data")
 	}
 
+	wasAlreadyFilled := len(gb.State.ApplicationBody) > 0
+	updateInOtherBlocks := false
+
+	executorsLogins := make(map[string]struct{}, 0)
+	for i := range gb.State.Executors {
+		executorsLogins[i] = gb.State.Executors[i]
+	}
+
 	switch data.Action {
-	case string(entity.TaskUpdateActionSLABreach):
+	case string(e.TaskUpdateActionSLABreach):
 		if errUpdate := gb.handleBreachedSLA(ctx); errUpdate != nil {
 			return nil, errUpdate
 		}
-	case string(entity.TaskUpdateActionHalfSLABreach):
+	case string(e.TaskUpdateActionHalfSLABreach):
 		if errUpdate := gb.handleHalfSLABreached(ctx); errUpdate != nil {
 			return nil, errUpdate
 		}
-	case string(entity.TaskUpdateActionRequestFillForm):
+	case string(e.TaskUpdateActionRequestFillForm):
 		if !gb.State.IsTakenInWork {
 			return nil, errors.New("is not taken in work")
 		}
@@ -58,15 +64,15 @@ func (gb *GoFormBlock) Update(ctx context.Context) (interface{}, error) {
 		}
 
 		updateInOtherBlocks = true
-	case string(entity.TaskUpdateActionFormExecutorStartWork):
+	case string(e.TaskUpdateActionFormExecutorStartWork):
 		if gb.State.IsTakenInWork {
 			return nil, errors.New("is already taken in work")
 		}
 
-		if errUpdate := gb.formExecutorStartWork(ctx); errUpdate != nil {
+		if errUpdate := gb.formExecutorStartWork(ctx, executorsLogins); errUpdate != nil {
 			return nil, errUpdate
 		}
-	case string(entity.TaskUpdateActionReload):
+	case string(e.TaskUpdateActionReload):
 	}
 
 	deadline, deadlineErr := gb.getDeadline(ctx, gb.State.WorkType)
@@ -76,32 +82,22 @@ func (gb *GoFormBlock) Update(ctx context.Context) (interface{}, error) {
 
 	gb.State.Deadline = deadline
 
+	err := gb.setEvents(ctx, &setFormEventsDto{
+		wasAlreadyFilled: wasAlreadyFilled,
+		executorsLogins:  executorsLogins,
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	var stateBytes []byte
 
-	stateBytes, err := json.Marshal(gb.State)
+	stateBytes, err = json.Marshal(gb.State)
 	if err != nil {
 		return nil, err
 	}
 
 	gb.RunContext.VarStore.ReplaceState(gb.Name, stateBytes)
-
-	if len(gb.State.ApplicationBody) > 0 {
-		if _, ok := gb.expectedEvents[eventEnd]; ok {
-			status, _, _ := gb.GetTaskHumanStatus()
-
-			event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, MakeNodeEndEventArgs{
-				NodeName:      gb.Name,
-				NodeShortName: gb.ShortName,
-				HumanStatus:   status,
-				NodeStatus:    gb.GetStatus(),
-			})
-			if eventErr != nil {
-				return nil, eventErr
-			}
-
-			gb.happenedEvents = append(gb.happenedEvents, event)
-		}
-	}
 
 	if updateInOtherBlocks {
 		taskID := gb.RunContext.TaskID.String()
@@ -287,7 +283,7 @@ func (gb *GoFormBlock) handleBreachedSLA(ctx context.Context) error {
 
 	if gb.State.SLA >= 8 {
 		emails := make([]string, 0, len(gb.State.Executors))
-		logins := getSliceFromMapOfStrings(gb.State.Executors)
+		logins := getSliceFromMap(gb.State.Executors)
 
 		for i := range logins {
 			executorEmail, err := gb.RunContext.Services.People.GetUserEmail(ctx, logins[i])
@@ -343,13 +339,13 @@ func (gb *GoFormBlock) handleHalfSLABreached(ctx context.Context) error {
 	}
 
 	if gb.State.SLA >= 8 {
-		logins := getSliceFromMapOfStrings(gb.State.Executors)
+		logins := getSliceFromMap(gb.State.Executors)
 		emails := gb.mapLoginsToEmails(ctx, fn, logins)
 
 		slaInfoPtr, getSLAInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(
 			ctx,
 			sla.InfoDTO{
-				TaskCompletionIntervals: []entity.TaskCompletionInterval{
+				TaskCompletionIntervals: []e.TaskCompletionInterval{
 					{
 						StartedAt:  gb.RunContext.CurrBlockStartTime,
 						FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100),
@@ -418,18 +414,13 @@ func (gb *GoFormBlock) mapLoginsToEmails(ctx context.Context, fn string, logins 
 	return emails
 }
 
-func (gb *GoFormBlock) formExecutorStartWork(ctx context.Context) (err error) {
+func (gb *GoFormBlock) formExecutorStartWork(ctx context.Context, executorLogins map[string]struct{}) (err error) {
 	currentLogin := gb.RunContext.UpdateData.ByLogin
 	_, executorFound := gb.State.Executors[currentLogin]
 
-	_, isDelegate := gb.RunContext.Delegations.FindDelegatorFor(currentLogin, getSliceFromMapOfStrings(gb.State.Executors))
+	_, isDelegate := gb.RunContext.Delegations.FindDelegatorFor(currentLogin, getSliceFromMap(gb.State.Executors))
 	if !(executorFound || isDelegate) {
 		return NewUserIsNotPartOfProcessErr()
-	}
-
-	executorLogins := make(map[string]struct{}, 0)
-	for i := range gb.State.Executors {
-		executorLogins[i] = gb.State.Executors[i]
 	}
 
 	gb.State.Executors = map[string]struct{}{
@@ -439,7 +430,7 @@ func (gb *GoFormBlock) formExecutorStartWork(ctx context.Context) (err error) {
 	gb.State.IsTakenInWork = true
 
 	slaInfoPtr, getSLAInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDTO{
-		TaskCompletionIntervals: []entity.TaskCompletionInterval{{
+		TaskCompletionIntervals: []e.TaskCompletionInterval{{
 			StartedAt:  gb.RunContext.CurrBlockStartTime,
 			FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100),
 		}},
@@ -458,7 +449,9 @@ func (gb *GoFormBlock) formExecutorStartWork(ctx context.Context) (err error) {
 
 	gb.State.IncreaseSLA(workHours)
 
-	if err = gb.emailGroupExecutors(ctx, gb.RunContext.UpdateData.ByLogin, executorLogins); err != nil {
+	byLogin := gb.RunContext.UpdateData.ByLogin
+
+	if err = gb.emailGroupExecutors(ctx, byLogin, executorLogins); err != nil {
 		return nil
 	}
 
@@ -471,7 +464,7 @@ func (a *FormData) IncreaseSLA(addSLA int) {
 
 func (gb *GoFormBlock) emailGroupExecutors(ctx context.Context, loginTakenInWork string, logins map[string]struct{}) (err error) {
 	log := logger.GetLogger(ctx)
-	executors := getSliceFromMapOfStrings(logins)
+	executors := getSliceFromMap(logins)
 
 	emails := make([]string, 0, len(executors))
 
@@ -553,7 +546,7 @@ func (gb *GoFormBlock) emailGroupExecutors(ctx context.Context, loginTakenInWork
 	}
 
 	slaInfoPtr, getSLAInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDTO{
-		TaskCompletionIntervals: []entity.TaskCompletionInterval{{
+		TaskCompletionIntervals: []e.TaskCompletionInterval{{
 			StartedAt:  gb.RunContext.CurrBlockStartTime,
 			FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100),
 		}},

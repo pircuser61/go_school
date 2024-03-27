@@ -1500,6 +1500,7 @@ type MonitoringTableTask struct {
 
 	// fullname of the initiator
 	InitiatorFullname string `json:"initiator_fullname"`
+	PausedAt          string `json:"paused_at"`
 
 	// name of the process
 	ProcessName string `json:"process_name"`
@@ -2422,8 +2423,11 @@ type GetTasksParams struct {
 	// Task IDs
 	TaskIDs *[]string `json:"taskIDs,omitempty"`
 
-	// Order
+	// order for started_at
 	Order *string `json:"order,omitempty"`
+
+	// params for tasks ordering
+	OrderBy *[]string `json:"orderBy,omitempty"`
 
 	// Limit
 	Limit *int `json:"limit,omitempty"`
@@ -3283,6 +3287,9 @@ type ServerInterface interface {
 	// rate application
 	// (POST /application/rate/{workNumber})
 	RateApplication(w http.ResponseWriter, r *http.Request, workNumber string)
+	// Send failed tasks events to kafka
+	// (GET /cron/events_to_send)
+	SendEventsToKafka(w http.ResponseWriter, r *http.Request)
 	// Check if any steps breached SLA
 	// (GET /cron/sla)
 	CheckBreachSLA(w http.ResponseWriter, r *http.Request)
@@ -3470,6 +3477,21 @@ func (siw *ServerInterfaceWrapper) RateApplication(w http.ResponseWriter, r *htt
 
 	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.RateApplication(w, r, workNumber)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
+// SendEventsToKafka operation middleware
+func (siw *ServerInterfaceWrapper) SendEventsToKafka(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SendEventsToKafka(w, r)
 	}
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -4879,6 +4901,17 @@ func (siw *ServerInterfaceWrapper) GetTasks(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	// ------------- Optional query parameter "orderBy" -------------
+	if paramValue := r.URL.Query().Get("orderBy"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "orderBy", r.URL.Query(), &params.OrderBy)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "orderBy", Err: err})
+		return
+	}
+
 	// ------------- Optional query parameter "limit" -------------
 	if paramValue := r.URL.Query().Get("limit"); paramValue != "" {
 
@@ -5331,6 +5364,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/application/rate/{workNumber}", wrapper.RateApplication)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/cron/events_to_send", wrapper.SendEventsToKafka)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/cron/sla", wrapper.CheckBreachSLA)

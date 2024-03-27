@@ -642,6 +642,7 @@ func (p *GetTasksParams) toEntity(req *http.Request) (entity.TaskFilter, error) 
 		Name:                 p.Name,
 		Created:              p.Created.toEntity(),
 		Order:                p.Order,
+		OrderBy:              p.OrderBy,
 		Limit:                &limit,
 		Offset:               &offset,
 		TaskIDs:              p.TaskIDs,
@@ -855,6 +856,10 @@ func getTaskStepNameByAction(action entity.TaskUpdateAction) []string {
 	}
 
 	if action == entity.TaskUpdateActionFuncSLAExpired {
+		return []string{pipeline.BlockExecutableFunctionID}
+	}
+
+	if action == entity.TaskUpdateActionRetry {
 		return []string{pipeline.BlockExecutableFunctionID}
 	}
 
