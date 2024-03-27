@@ -1,6 +1,7 @@
 package api
 
 import (
+	c "context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -25,15 +26,24 @@ func (ae *Env) SendEventsToKafka(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	spCtx := span.SpanContext()
+
+	// nolint // так надо и без этого нельзя
+	routineCtx := c.WithValue(c.Background(), XRequestIDHeader, ctx.Value(XRequestIDHeader))
+
+	routineCtx = logger.WithLogger(routineCtx, log)
+	processCtx, fakeSpan := trace.StartSpanWithRemoteParent(routineCtx, "start_send_events_to_kafka", spCtx)
+	fakeSpan.End()
+
 	for i := range events {
-		err = ae.Kafka.ProduceEventMessage(ctx, &events[i].Event)
+		err = ae.Kafka.ProduceEventMessage(processCtx, &events[i].Event)
 		if err != nil {
 			log.WithError(err).Error(fmt.Sprintf("couldn't produce event message: %+v", events[i].Event))
 
 			continue
 		}
 
-		err = ae.DB.DeleteEventToSend(ctx, events[i].EventID)
+		err = ae.DB.DeleteEventToSend(processCtx, events[i].EventID)
 		if err != nil {
 			log.WithError(err).Error(fmt.Sprintf("couldn't update event: %+v", events[i].Event))
 

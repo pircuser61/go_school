@@ -2066,7 +2066,10 @@ func (db *PGCon) GetTasksForMonitoring(ctx c.Context, filters *entity.TasksForMo
 			&task.StartedAt,
 			&task.FinishedAt,
 			&task.ProcessDeletedAt,
-			&tasksForMonitoring.Total)
+			&task.LastEventType,
+			&task.LastEventAt,
+			&tasksForMonitoring.Total,
+		)
 		if err != nil {
 			return nil, err
 		}
@@ -2101,24 +2104,33 @@ func getWorksStatusQuery(statusFilter []string) *string {
 
 func getTasksForMonitoringQuery(filters *entity.TasksForMonitoringFilters) *string {
 	q := `
-			SELECT CASE
-					WHEN w.status IN (1, 3, 5) THEN 'В работе'
-        			WHEN w.status = 2 THEN 'Завершен'
-				    WHEN w.status = 4 THEN 'Остановлен'
-			    	WHEN w.status = 6 THEN 'Отменен'
-        			WHEN w.status IS NULL THEN 'Неизвестный статус'
-    			END AS status,
-				p.name AS process_name,
-				w.author AS initiator,
-				w.work_number AS work_number,
-				w.started_at AS started_at,
-				w.finished_at as finished_at,
-				p.deleted_at as process_deleted_at,
-				COUNT(*) OVER() as total
-			FROM works w
-			LEFT JOIN versions v on w.version_id = v.id
-			LEFT JOIN pipelines p on v.pipeline_id = p.id
-			WHERE w.started_at IS NOT NULL AND p.name IS NOT NULL AND v.is_hidden = false
+		SELECT CASE
+				WHEN w.status IN (1, 3, 5) THEN 'В работе'
+				WHEN w.status = 2 THEN 'Завершен'
+				WHEN w.status = 4 THEN 'Остановлен'
+				WHEN w.status = 6 THEN 'Отменен'
+				WHEN w.status IS NULL THEN 'Неизвестный статус'
+			END AS status,
+			p.name AS process_name,
+			w.author AS initiator,
+			w.work_number AS work_number,
+			w.started_at AS started_at,
+			w.finished_at AS finished_at,
+			p.deleted_at AS process_deleted_at,
+			e.event_type AS last_event_type,
+			e.created_at AS last_event_at,
+			COUNT(*) OVER() AS total
+		FROM works w
+		LEFT JOIN versions v ON w.version_id = v.id
+		LEFT JOIN pipelines p ON v.pipeline_id = p.id
+		LEFT JOIN LATERAL (
+			SELECT event_type, created_at
+			FROM task_events
+			ORDER BY created_at DESC
+			WHERE event_type IN('pause', 'start', 'startByOne')
+			LIMIT 1
+		) e ON e.work_id = w.id
+		WHERE w.started_at IS NOT NULL AND p.name IS NOT NULL AND v.is_hidden = false
 	`
 
 	if filters.FromDate != nil || filters.ToDate != nil {
