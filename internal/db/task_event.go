@@ -2,13 +2,12 @@ package db
 
 import (
 	c "context"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
-
-	e "gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 
 	"github.com/google/uuid"
 
 	"go.opencensus.io/trace"
+
+	e "gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 )
 
 func (db *PGCon) CreateTaskEvent(ctx c.Context, dto *e.CreateTaskEvent) (eventID string, err error) {
