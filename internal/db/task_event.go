@@ -96,4 +96,3 @@ func (db *PGCon) GetTaskEvents(ctx c.Context, workID string) ([]e.TaskEvent, err
 
 	return events, nil
 }
-
