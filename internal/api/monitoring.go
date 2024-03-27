@@ -105,6 +105,10 @@ func (ae *Env) GetTasksForMonitoring(w http.ResponseWriter, r *http.Request, par
 			monitoringTableTask.FinishedAt = t.FinishedAt.Format(monitoringTimeLayout)
 		}
 
+		if t.LastEventAt != nil && t.LastEventType != nil && *t.LastEventType == string(MonitoringTaskActionRequestActionPause) {
+			monitoringTableTask.PausedAt = t.LastEventAt.Format(monitoringTimeLayout)
+		}
+
 		responseTasks = append(responseTasks, monitoringTableTask)
 	}
 
