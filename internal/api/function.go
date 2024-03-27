@@ -52,13 +52,6 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 		}
 	}()
 
-	if message.Err != "" {
-		log.WithField("message.Err", message.Err).
-			Error("message from kafka has error")
-
-		return nil
-	}
-
 	st, err := ae.getTaskStepWithRetry(ctx, message.TaskID)
 	if err != nil {
 		log.WithField("funcName", "GetTaskStepById").
@@ -85,7 +78,10 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 		Errors: st.Errors,
 	}
 
-	functionMapping := pipeline.FunctionUpdateParams{Mapping: message.FunctionMapping}
+	functionMapping := pipeline.FunctionUpdateParams{
+		Mapping: message.FunctionMapping,
+		DoRetry: message.DoRetry,
+	}
 
 	mapping, err := json.Marshal(functionMapping)
 	if err != nil {

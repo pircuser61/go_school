@@ -213,6 +213,7 @@ const (
 	TaskUpdateActionSign                       TaskUpdateAction = "sign"
 	TaskUpdateActionFinishTimer                TaskUpdateAction = "finish_timer"
 	TaskUpdateActionFuncSLAExpired             TaskUpdateAction = "func_sla_expired"
+	TaskUpdateActionRetry                      TaskUpdateAction = "func_retry"
 	TaskUpdateActionSignChangeWorkStatus       TaskUpdateAction = "sign_change_work_status"
 	TaskUpdateActionReload                     TaskUpdateAction = "reload"
 )
@@ -237,7 +238,8 @@ type CancelAppParams struct {
 func (t *TaskUpdate) IsSchedulerTaskUpdateAction() bool {
 	//nolint:exhaustive //нам нужны только эти три кейса
 	switch t.Action {
-	case TaskUpdateActionFinishTimer, TaskUpdateActionSignChangeWorkStatus, TaskUpdateActionFuncSLAExpired:
+	case TaskUpdateActionFinishTimer, TaskUpdateActionSignChangeWorkStatus,
+		TaskUpdateActionFuncSLAExpired, TaskUpdateActionRetry:
 		return true
 	default:
 		return false
@@ -262,6 +264,7 @@ func (t *TaskUpdate) Validate() error {
 		TaskUpdateActionSign,
 		TaskUpdateActionFinishTimer,
 		TaskUpdateActionFuncSLAExpired,
+		TaskUpdateActionRetry,
 		TaskUpdateActionSignChangeWorkStatus,
 		TaskUpdateActionReplyExecutionInfo,
 		TaskUpdateActionReplyApproverInfo:

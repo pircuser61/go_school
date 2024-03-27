@@ -1157,7 +1157,8 @@ func (db *PGCon) IsStepExist(ctx context.Context, workID, stepName string, hasUp
 				((status IN --formStatuses-- AND is_paused = false) OR (status = 'ready')) AND
 				time = (SELECT max(time) FROM variable_storage vs 
 							WHERE vs.work_id = $1 AND step_name = $2)
-			))`
+			))
+		FOR UPDATE`
 
 	q = strings.Replace(q, "--formStatuses--", formStatuses, 1)
 
