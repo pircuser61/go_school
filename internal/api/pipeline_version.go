@@ -807,32 +807,6 @@ func (ae *Env) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO) (
 	return 0, nil
 }
 
-func (ae *Env) makeExecutablePipeline(dto *execVersionInternalDTO, txStorage db.Database) *pipeline.ExecutablePipeline {
-	return &pipeline.ExecutablePipeline{
-		WorkNumber:    dto.workNumber,
-		PipelineID:    dto.p.PipelineID,
-		VersionID:     dto.p.VersionID,
-		Storage:       txStorage,
-		FaaS:          ae.FaaS,
-		PipelineModel: dto.p,
-		HTTPClient:    ae.HTTPClient,
-		Remedy:        ae.Remedy,
-		ActiveBlocks:  make(map[string]struct{}, 0),
-		SkippedBlocks: make(map[string]struct{}, 0),
-		EntryPoint:    pipeline.BlockGoFirstStart,
-		Kafka:         ae.Kafka,
-		Sender:        ae.Mail,
-		People:        ae.People,
-		Name:          dto.p.Name,
-		ServiceDesc:   ae.ServiceDesc,
-		FunctionStore: ae.FunctionStore,
-		HumanTasks:    ae.HumanTasks,
-		Integrations:  ae.Integrations,
-		FileRegistry:  ae.FileRegistry,
-		Scheduler:     ae.Scheduler,
-	}
-}
-
 func (ae *Env) SearchPipelines(w http.ResponseWriter, req *http.Request, params SearchPipelinesParams) {
 	ctx, s := trace.StartSpan(req.Context(), "search_pipelines")
 	defer s.End()
