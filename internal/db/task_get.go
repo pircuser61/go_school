@@ -2190,7 +2190,7 @@ func getTasksForMonitoringQuery(filters *entity.TasksForMonitoringFilters) *stri
 		LEFT JOIN versions v ON w.version_id = v.id
 		LEFT JOIN pipelines p ON v.pipeline_id = p.id
 		LEFT JOIN LATERAL (
-			SELECT event_type, created_at
+			SELECT event_type, created_at, work_id
 			FROM task_events
 			WHERE event_type IN('pause', 'start', 'startByOne')
 			ORDER BY created_at DESC
