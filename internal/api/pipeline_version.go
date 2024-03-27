@@ -621,22 +621,16 @@ func (ae *Env) execVersion(ctx c.Context, dto *execVersionDTO) (*e.RunResponse, 
 		taskID:         dto.taskID,
 	}
 
-	executablePipeline, errCustom, err := ae.execVersionInternal(ctxLocal, execVersionInternalDTO)
+	errCustom, err := ae.execVersionInternal(ctxLocal, execVersionInternalDTO)
 	if err != nil {
 		log.Error(errCustom.errorMessage(err))
 
 		return nil, errors.Wrap(err, errCustom.error())
 	}
 
-	if executablePipeline == nil {
-		log.Error("got no pipeline")
-
-		return nil, errors.New("No pipeline started")
-	}
-
 	return &e.RunResponse{
-		PipelineID: executablePipeline.PipelineID,
-		WorkNumber: executablePipeline.WorkNumber,
+		PipelineID: dto.version.PipelineID,
+		WorkNumber: dto.workNumber,
 		Status:     statusRunned,
 	}, nil
 }
@@ -663,7 +657,7 @@ type execVersionInternalDTO struct {
 	runCtx         e.TaskRunContext
 }
 
-func (ae *Env) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO) (*pipeline.ExecutablePipeline, Err, error) {
+func (ae *Env) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO) (Err, error) {
 	ctx, span := trace.StartSpan(ctx, "exec_version_internal")
 	defer span.End()
 
@@ -671,7 +665,7 @@ func (ae *Env) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO) (
 
 	txStorage, transactionErr := dto.storage.StartTransaction(ctx)
 	if transactionErr != nil {
-		return nil, PipelineRunError, transactionErr
+		return PipelineRunError, transactionErr
 	}
 
 	defer func() {
@@ -687,8 +681,6 @@ func (ae *Env) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO) (
 		}
 	}()
 
-	ep := ae.makeExecutablePipeline(dto, txStorage)
-
 	parameters, err := json.Marshal(dto.vars)
 	if err != nil {
 		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
@@ -697,7 +689,7 @@ func (ae *Env) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO) (
 				Error(txErr)
 		}
 
-		return nil, PipelineRunError, err
+		return PipelineRunError, err
 	}
 
 	updateTaskDTO := db.NewUpdateEmptyTaskDTO(
@@ -716,32 +708,32 @@ func (ae *Env) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO) (
 				Error(txErr)
 		}
 
-		return nil, PipelineRunError, err
+		return PipelineRunError, err
 	}
 
 	variableStorage := store.NewStore()
 
 	runCtx := &pipeline.BlockRunContext{
-		TaskID:     ep.TaskID,
-		WorkNumber: ep.WorkNumber,
+		TaskID:     dto.taskID,
+		WorkNumber: dto.workNumber,
 		ClientID:   dto.runCtx.ClientID,
-		PipelineID: ep.PipelineID,
-		VersionID:  ep.VersionID,
-		WorkTitle:  ep.Name,
+		PipelineID: dto.p.PipelineID,
+		VersionID:  dto.p.VersionID,
+		WorkTitle:  dto.p.Name,
 		Initiator:  dto.authorName,
 		VarStore:   variableStorage,
 
 		Services: pipeline.RunContextServices{
-			HTTPClient:    ep.HTTPClient,
-			Sender:        ep.Sender,
-			Kafka:         ep.Kafka,
-			People:        ep.People,
-			ServiceDesc:   ep.ServiceDesc,
-			FunctionStore: ep.FunctionStore,
-			HumanTasks:    ep.HumanTasks,
-			Integrations:  ep.Integrations,
-			FileRegistry:  ep.FileRegistry,
-			FaaS:          ep.FaaS,
+			HTTPClient:    ae.HTTPClient,
+			Sender:        ae.Mail,
+			Kafka:         ae.Kafka,
+			People:        ae.People,
+			ServiceDesc:   ae.ServiceDesc,
+			FunctionStore: ae.FunctionStore,
+			HumanTasks:    ae.HumanTasks,
+			Integrations:  ae.Integrations,
+			FileRegistry:  ae.FileRegistry,
+			FaaS:          ae.FaaS,
 			HrGate:        ae.HrGate,
 			Scheduler:     ae.Scheduler,
 			SLAService:    ae.SLAService,
@@ -752,18 +744,18 @@ func (ae *Env) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO) (
 		UpdateData: nil,
 		IsTest:     dto.runCtx.InitialApplication.IsTestApplication,
 		NotifName: utils.MakeTaskTitle(
-			ep.Name,
+			dto.p.Name,
 			dto.runCtx.InitialApplication.CustomTitle,
 			dto.runCtx.InitialApplication.IsTestApplication,
 		),
 		Productive: true,
 	}
 
-	blockData := dto.p.Pipeline.Blocks[ep.EntryPoint]
+	blockData := dto.p.Pipeline.Blocks[pipeline.BlockGoFirstStart]
 
 	runCtx.SetTaskEvents(ctx)
 
-	err = pipeline.InitBlockInDB(ctx, ep.EntryPoint, runCtx)
+	err = pipeline.InitBlockInDB(ctx, pipeline.BlockGoFirstStart, runCtx)
 	if err != nil {
 		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
 			log.WithField("funcName", "pipelne.InitBlock").
@@ -771,21 +763,21 @@ func (ae *Env) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO) (
 				Error(txErr)
 		}
 
-		return nil, PipelineRunError, err
+		return PipelineRunError, err
 	}
 
 	err = txStorage.CommitTransaction(ctx)
 	if err != nil {
-		return nil, PipelineRunError, err
+		return PipelineRunError, err
 	}
 
-	workFinished, err := pipeline.ProcessBlockWithEndMapping(ctx, ep.EntryPoint, blockData, runCtx, false)
+	workFinished, err := pipeline.ProcessBlockWithEndMapping(ctx, pipeline.BlockGoFirstStart, blockData, runCtx, false)
 	if err != nil {
-		return nil, PipelineRunError, err
+		return PipelineRunError, err
 	}
 
 	if workFinished {
-		err = ae.Scheduler.DeleteAllTasksByWorkID(ctx, ep.TaskID)
+		err = ae.Scheduler.DeleteAllTasksByWorkID(ctx, dto.taskID)
 		if err != nil {
 			log.WithError(err).Error("failed delete all tasks by work id in scheduler")
 		}
@@ -803,7 +795,7 @@ func (ae *Env) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO) (
 	}
 
 	_, err = ae.DB.CreateTaskEvent(ctx, &e.CreateTaskEvent{
-		WorkID:    ep.TaskID.String(),
+		WorkID:    dto.taskID.String(),
 		Author:    dto.authorName,
 		EventType: string(MonitoringTaskActionRequestActionStart),
 		Params:    jsonParams,
@@ -812,7 +804,7 @@ func (ae *Env) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO) (
 		log.Error(err)
 	}
 
-	return ep, 0, nil
+	return 0, nil
 }
 
 func (ae *Env) makeExecutablePipeline(dto *execVersionInternalDTO, txStorage db.Database) *pipeline.ExecutablePipeline {
