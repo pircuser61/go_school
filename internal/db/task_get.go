@@ -59,7 +59,9 @@ func uniqueActionsByRole(loginsIn, stepType string, finished, acted bool) string
          , CASE WHEN vs.step_type = 'execution' THEN vs.time END                            AS exec_start_time
 		 , CASE WHEN vs.step_type = 'approver' THEN vs.time END                          	AS appr_start_time
          , vs.time                                                                          AS node_start
-         , vs.updated_at																	AS updated_at
+         , CASE 
+             WHEN vs.status in ('finished', 'no_success') AND vs.step_type in ('execution', 'approver', 'form', 'sign') THEN vs.updated_at 
+		   END AS updated_at
          , timestamptz(vs.content -> 'State' -> vs.step_name ->> 'deadline')                AS node_deadline
          ,  vs.content -> 'State' -> vs.step_name ->> 'is_expired'		   					AS is_expired
     FROM members m
@@ -480,7 +482,7 @@ func (cq *compileGetTaskQueryMaker) addOrderBy(order string, orderBy []string) {
 
 		columnOrder := ascOrder
 		if len(splits) == 2 {
-			columnOrder = splits[1]
+			columnOrder = splits[1] + " nulls last"
 		}
 
 		switch splits[0] {
@@ -925,10 +927,6 @@ func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter, delegations 
 		task := tasks.Tasks[i]
 		count := attachmentsToTasks[tasks.Tasks[i].ID]
 		task.AttachmentsCount = &count
-
-		if task.Status != finishStatus && task.Status != noSuccessStatus {
-			tasks.Tasks[i].LastChangedAt = nil
-		}
 	}
 
 	if len(tasks.Tasks) == 0 {
