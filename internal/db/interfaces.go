@@ -220,7 +220,7 @@ type Database interface {
 	GetPipelineVersion(ctx c.Context, id uuid.UUID, checkNotDeleted bool) (*e.EriusScenario, error)
 	GetPipelineVersions(ctx c.Context, id uuid.UUID) ([]e.EriusVersionInfo, error)
 	UpdateDraft(ctx c.Context, p *e.EriusScenario, pipelineData []byte, groups []*e.NodeGroup, isHidden bool) error
-	SaveStepContext(ctx c.Context, dto *SaveStepRequest, id uuid.UUID, hasUpdData bool) (uuid.UUID, error)
+	SaveStepContext(ctx c.Context, dto *SaveStepRequest, id uuid.UUID) (uuid.UUID, error)
 	UpdateStepContext(ctx c.Context, dto *UpdateStepRequest) error
 	UpdateTaskBlocksData(ctx c.Context, dto *UpdateTaskBlocksDataRequest) error
 	GetTaskActiveBlock(ctx c.Context, taskID, stepName string) ([]string, error)

@@ -1248,7 +1248,7 @@ func (db *PGCon) InitTaskBlock(
 	return id, timestamp, nil
 }
 
-func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest, id uuid.UUID, hasUpdData bool) (uuid.UUID, error) {
+func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest, id uuid.UUID) (uuid.UUID, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_save_step_context")
 	defer span.End()
 

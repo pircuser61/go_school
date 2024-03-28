@@ -201,9 +201,21 @@ func InitBlockInDB(ctx c.Context, name string, runCtx *BlockRunContext) error {
 }
 
 func initBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *BlockRunContext) (Runner, uuid.UUID, error) {
-	_, id, startTime, err := runCtx.Services.Storage.IsStepExist(ctx, runCtx.TaskID.String(), name, runCtx.UpdateData != nil)
+	exists, id, startTime, err := runCtx.Services.Storage.IsStepExist(ctx, runCtx.TaskID.String(), name, runCtx.UpdateData != nil)
 	if err != nil {
 		return nil, uuid.Nil, err
+	}
+
+	if !exists {
+		log := logger.CreateLogger(nil)
+
+		log.
+			WithFields(logger.Fields{
+				"funcName": "initBlock",
+				"taskID":   runCtx.TaskID.String(),
+				"stepName": name,
+			}).
+			Warning("block is not exists")
 	}
 
 	if !runCtx.Productive {
@@ -414,7 +426,7 @@ func (runCtx *BlockRunContext) saveStepInDB(ctx c.Context, dto *saveStepDTO, id 
 			InitialPeople: dto.currentExecutor.InitialPeople,
 		},
 		BlockStart: runCtx.CurrBlockStartTime,
-	}, id, runCtx.UpdateData != nil)
+	}, id)
 }
 
 type updateStepDTO struct {

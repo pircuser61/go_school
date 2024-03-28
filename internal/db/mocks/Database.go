@@ -6181,9 +6181,9 @@ func (_c *MockedDatabase_SaveSLAVersionSettings_Call) RunAndReturn(run func(cont
 	return _c
 }
 
-// SaveStepContext provides a mock function with given fields: ctx, dto, id, hasUpdData
-func (_m *MockedDatabase) SaveStepContext(ctx context.Context, dto *db.SaveStepRequest, id uuid.UUID, hasUpdData bool) (uuid.UUID, error) {
-	ret := _m.Called(ctx, dto, id, hasUpdData)
+// SaveStepContext provides a mock function with given fields: ctx, dto, id
+func (_m *MockedDatabase) SaveStepContext(ctx context.Context, dto *db.SaveStepRequest, id uuid.UUID) (uuid.UUID, error) {
+	ret := _m.Called(ctx, dto, id)
 
 	if len(ret) == 0 {
 		panic("no return value specified for SaveStepContext")
@@ -6191,19 +6191,19 @@ func (_m *MockedDatabase) SaveStepContext(ctx context.Context, dto *db.SaveStepR
 
 	var r0 uuid.UUID
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, *db.SaveStepRequest, uuid.UUID, bool) (uuid.UUID, error)); ok {
-		return rf(ctx, dto, id, hasUpdData)
+	if rf, ok := ret.Get(0).(func(context.Context, *db.SaveStepRequest, uuid.UUID) (uuid.UUID, error)); ok {
+		return rf(ctx, dto, id)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, *db.SaveStepRequest, uuid.UUID, bool) uuid.UUID); ok {
-		r0 = rf(ctx, dto, id, hasUpdData)
+	if rf, ok := ret.Get(0).(func(context.Context, *db.SaveStepRequest, uuid.UUID) uuid.UUID); ok {
+		r0 = rf(ctx, dto, id)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(uuid.UUID)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, *db.SaveStepRequest, uuid.UUID, bool) error); ok {
-		r1 = rf(ctx, dto, id, hasUpdData)
+	if rf, ok := ret.Get(1).(func(context.Context, *db.SaveStepRequest, uuid.UUID) error); ok {
+		r1 = rf(ctx, dto, id)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -6220,14 +6220,13 @@ type MockedDatabase_SaveStepContext_Call struct {
 //   - ctx context.Context
 //   - dto *db.SaveStepRequest
 //   - id uuid.UUID
-//   - hasUpdData bool
-func (_e *MockedDatabase_Expecter) SaveStepContext(ctx interface{}, dto interface{}, id interface{}, hasUpdData interface{}) *MockedDatabase_SaveStepContext_Call {
-	return &MockedDatabase_SaveStepContext_Call{Call: _e.mock.On("SaveStepContext", ctx, dto, id, hasUpdData)}
+func (_e *MockedDatabase_Expecter) SaveStepContext(ctx interface{}, dto interface{}, id interface{}) *MockedDatabase_SaveStepContext_Call {
+	return &MockedDatabase_SaveStepContext_Call{Call: _e.mock.On("SaveStepContext", ctx, dto, id)}
 }
 
-func (_c *MockedDatabase_SaveStepContext_Call) Run(run func(ctx context.Context, dto *db.SaveStepRequest, id uuid.UUID, hasUpdData bool)) *MockedDatabase_SaveStepContext_Call {
+func (_c *MockedDatabase_SaveStepContext_Call) Run(run func(ctx context.Context, dto *db.SaveStepRequest, id uuid.UUID)) *MockedDatabase_SaveStepContext_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(*db.SaveStepRequest), args[2].(uuid.UUID), args[3].(bool))
+		run(args[0].(context.Context), args[1].(*db.SaveStepRequest), args[2].(uuid.UUID))
 	})
 	return _c
 }
@@ -6237,7 +6236,7 @@ func (_c *MockedDatabase_SaveStepContext_Call) Return(_a0 uuid.UUID, _a1 error) 
 	return _c
 }
 
-func (_c *MockedDatabase_SaveStepContext_Call) RunAndReturn(run func(context.Context, *db.SaveStepRequest, uuid.UUID, bool) (uuid.UUID, error)) *MockedDatabase_SaveStepContext_Call {
+func (_c *MockedDatabase_SaveStepContext_Call) RunAndReturn(run func(context.Context, *db.SaveStepRequest, uuid.UUID) (uuid.UUID, error)) *MockedDatabase_SaveStepContext_Call {
 	_c.Call.Return(run)
 	return _c
 }
