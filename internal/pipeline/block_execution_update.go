@@ -706,6 +706,7 @@ func (gb *GoExecutionBlock) checkFormFilled() error {
 	return nil
 }
 
+//nolint:nestif //it's ok
 func (gb *GoExecutionBlock) updateDecision(ctx c.Context) error {
 	var updateParams ExecutionUpdateParams
 
