@@ -438,3 +438,11 @@ func sortAndFilterAttachments(files []file_registry.FileInfo) (requiredFiles []e
 
 	return requiredFiles, skippedFiles
 }
+
+func (gb *GoNotificationBlock) UpdateStateUsingOutput(ctx context.Context, data []byte) (state map[string]interface{}, err error) {
+	return nil, nil
+}
+
+func (gb *GoNotificationBlock) UpdateOutputUsingState(ctx context.Context) (output map[string]interface{}, err error) {
+	return nil, nil
+}

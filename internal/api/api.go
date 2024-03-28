@@ -209,6 +209,15 @@ const (
 	MonitoringTaskEditBlockRequestChangeTypeState MonitoringTaskEditBlockRequestChangeType = "state"
 )
 
+// Defines values for MonitoringTaskEventEventType.
+const (
+	MonitoringTaskEventEventTypePause MonitoringTaskEventEventType = "pause"
+
+	MonitoringTaskEventEventTypeStart MonitoringTaskEventEventType = "start"
+
+	MonitoringTaskEventEventTypeStartByOne MonitoringTaskEventEventType = "startByOne"
+)
+
 // Defines values for NodeEvent.
 const (
 	NodeEventEnd NodeEvent = "end"
@@ -1526,6 +1535,7 @@ type MonitoringTableTask struct {
 
 	// fullname of the initiator
 	InitiatorFullname string `json:"initiator_fullname"`
+	PausedAt          string `json:"paused_at"`
 
 	// name of the process
 	ProcessName string `json:"process_name"`
@@ -1546,6 +1556,7 @@ type MonitoringTask struct {
 	// Флаг паузы процесса
 	IsPaused     bool                   `json:"is_paused"`
 	ScenarioInfo MonitoringScenarioInfo `json:"scenario_info"`
+	TaskRuns     []MonitoringTaskRun    `json:"task_runs"`
 
 	// Айди версии сценария для мониторинга
 	VersionId string `json:"version_id"`
@@ -1567,9 +1578,6 @@ type MonitoringTaskActionRequest struct {
 
 	// Параметры действия
 	Params *MonitoringTaskActionParams `json:"params,omitempty"`
-
-	// Номер заявки для мониторинга
-	WorkNumber string `json:"work_number"`
 }
 
 // Действия с заявкой
@@ -1591,6 +1599,42 @@ type MonitoringTaskEditBlockRequest_ChangeData struct {
 
 // Переменные в какой части блока редактируем
 type MonitoringTaskEditBlockRequestChangeType string
+
+// MonitoringTaskEvent defines model for MonitoringTaskEvent.
+type MonitoringTaskEvent struct {
+	// имя автора ивента
+	Author    string `json:"author"`
+	CreatedAt string `json:"created_at"`
+
+	// тип ивента
+	EventType MonitoringTaskEventEventType `json:"event_type"`
+
+	// id ивента
+	Id string `json:"id"`
+
+	// Параметры действия
+	Params MonitoringTaskActionParams `json:"params"`
+}
+
+// тип ивента
+type MonitoringTaskEventEventType string
+
+// MonitoringTaskEvents defines model for MonitoringTaskEvents.
+type MonitoringTaskEvents struct {
+	Events []MonitoringTaskEvent `json:"events"`
+}
+
+// MonitoringTaskRun defines model for MonitoringTaskRun.
+type MonitoringTaskRun struct {
+	// Айди ивента паузы таски
+	EndEventId string `json:"end_event_id"`
+
+	// Порядковый номер пары ивентов старт - пауза
+	Index float32 `json:"index"`
+
+	// Айди ивента старта таски
+	StartEventId string `json:"start_event_id"`
+}
 
 // MonitoringTasksPage defines model for MonitoringTasksPage.
 type MonitoringTasksPage struct {
@@ -2318,9 +2362,6 @@ type GetFormsChangelogParams struct {
 	BlockId string `json:"block_id"`
 }
 
-// MonitoringTaskActionJSONBody defines parameters for MonitoringTaskAction.
-type MonitoringTaskActionJSONBody MonitoringTaskActionRequest
-
 // GetTasksForMonitoringParams defines parameters for GetTasksForMonitoring.
 type GetTasksForMonitoringParams struct {
 	PerPage    *int                                   `json:"per_page,omitempty"`
@@ -2352,6 +2393,18 @@ type GetTasksForMonitoringParamsStatus string
 
 // EditTaskBlockDataJSONBody defines parameters for EditTaskBlockData.
 type EditTaskBlockDataJSONBody MonitoringTaskEditBlockRequest
+
+// GetMonitoringTaskParams defines parameters for GetMonitoringTask.
+type GetMonitoringTaskParams struct {
+	// id ивента с которого нужно взять блоки
+	FromEventId *string `json:"from_event_id,omitempty"`
+
+	// id ивента по который нужно взять блоки
+	ToEventId *string `json:"to_event_id,omitempty"`
+}
+
+// MonitoringTaskActionJSONBody defines parameters for MonitoringTaskAction.
+type MonitoringTaskActionJSONBody MonitoringTaskActionRequest
 
 // SaveVersionMainSettingsJSONBody defines parameters for SaveVersionMainSettings.
 type SaveVersionMainSettingsJSONBody ProcessSettings
@@ -2468,8 +2521,11 @@ type GetTasksParams struct {
 	// Task IDs
 	TaskIDs *[]string `json:"taskIDs,omitempty"`
 
-	// Order
+	// order for started_at
 	Order *string `json:"order,omitempty"`
+
+	// params for tasks ordering
+	OrderBy *[]string `json:"orderBy,omitempty"`
 
 	// Limit
 	Limit *int `json:"limit,omitempty"`
@@ -2529,11 +2585,11 @@ type UpdateTaskJSONBody TaskUpdate
 // RateApplicationJSONRequestBody defines body for RateApplication for application/json ContentType.
 type RateApplicationJSONRequestBody RateApplicationJSONBody
 
-// MonitoringTaskActionJSONRequestBody defines body for MonitoringTaskAction for application/json ContentType.
-type MonitoringTaskActionJSONRequestBody MonitoringTaskActionJSONBody
-
 // EditTaskBlockDataJSONRequestBody defines body for EditTaskBlockData for application/json ContentType.
 type EditTaskBlockDataJSONRequestBody EditTaskBlockDataJSONBody
+
+// MonitoringTaskActionJSONRequestBody defines body for MonitoringTaskAction for application/json ContentType.
+type MonitoringTaskActionJSONRequestBody MonitoringTaskActionJSONBody
 
 // SaveVersionMainSettingsJSONRequestBody defines body for SaveVersionMainSettings for application/json ContentType.
 type SaveVersionMainSettingsJSONRequestBody SaveVersionMainSettingsJSONBody
@@ -3409,9 +3465,6 @@ type ServerInterface interface {
 	// Get list of modules
 	// (GET /modules)
 	GetModules(w http.ResponseWriter, r *http.Request)
-	// Действия с заявкой в мониторинге
-	// (PUT /monitoring/task/action)
-	MonitoringTaskAction(w http.ResponseWriter, r *http.Request)
 	// Get tasks for monitoring
 	// (GET /monitoring/tasks)
 	GetTasksForMonitoring(w http.ResponseWriter, r *http.Request, params GetTasksForMonitoringParams)
@@ -3429,7 +3482,13 @@ type ServerInterface interface {
 	GetBlockState(w http.ResponseWriter, r *http.Request, blockId string)
 	// Get task for monitoring
 	// (GET /monitoring/tasks/{workNumber})
-	GetMonitoringTask(w http.ResponseWriter, r *http.Request, workNumber string)
+	GetMonitoringTask(w http.ResponseWriter, r *http.Request, workNumber string, params GetMonitoringTaskParams)
+	// Действия с заявкой в мониторинге
+	// (PUT /monitoring/tasks/{workNumber}/action)
+	MonitoringTaskAction(w http.ResponseWriter, r *http.Request, workNumber string)
+	// Ивенты заяви в мониторинге
+	// (GET /monitoring/tasks/{workNumber}/events)
+	GetMonitoringTaskEvents(w http.ResponseWriter, r *http.Request, workNumber string)
 	// Save process main settings
 	// (POST /pipeline/version/{versionID}/settings/main)
 	SaveVersionMainSettings(w http.ResponseWriter, r *http.Request, versionID string)
@@ -3740,21 +3799,6 @@ func (siw *ServerInterfaceWrapper) GetModules(w http.ResponseWriter, r *http.Req
 	handler(w, r.WithContext(ctx))
 }
 
-// MonitoringTaskAction operation middleware
-func (siw *ServerInterfaceWrapper) MonitoringTaskAction(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	var handler = func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.MonitoringTaskAction(w, r)
-	}
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler(w, r.WithContext(ctx))
-}
-
 // GetTasksForMonitoring operation middleware
 func (siw *ServerInterfaceWrapper) GetTasksForMonitoring(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -3982,8 +4026,85 @@ func (siw *ServerInterfaceWrapper) GetMonitoringTask(w http.ResponseWriter, r *h
 		return
 	}
 
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetMonitoringTaskParams
+
+	// ------------- Optional query parameter "from_event_id" -------------
+	if paramValue := r.URL.Query().Get("from_event_id"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "from_event_id", r.URL.Query(), &params.FromEventId)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "from_event_id", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "to_event_id" -------------
+	if paramValue := r.URL.Query().Get("to_event_id"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "to_event_id", r.URL.Query(), &params.ToEventId)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "to_event_id", Err: err})
+		return
+	}
+
 	var handler = func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetMonitoringTask(w, r, workNumber)
+		siw.Handler.GetMonitoringTask(w, r, workNumber, params)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
+// MonitoringTaskAction operation middleware
+func (siw *ServerInterfaceWrapper) MonitoringTaskAction(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "workNumber" -------------
+	var workNumber string
+
+	err = runtime.BindStyledParameter("simple", false, "workNumber", chi.URLParam(r, "workNumber"), &workNumber)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workNumber", Err: err})
+		return
+	}
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.MonitoringTaskAction(w, r, workNumber)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
+// GetMonitoringTaskEvents operation middleware
+func (siw *ServerInterfaceWrapper) GetMonitoringTaskEvents(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "workNumber" -------------
+	var workNumber string
+
+	err = runtime.BindStyledParameter("simple", false, "workNumber", chi.URLParam(r, "workNumber"), &workNumber)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workNumber", Err: err})
+		return
+	}
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetMonitoringTaskEvents(w, r, workNumber)
 	}
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -5028,6 +5149,17 @@ func (siw *ServerInterfaceWrapper) GetTasks(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	// ------------- Optional query parameter "orderBy" -------------
+	if paramValue := r.URL.Query().Get("orderBy"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "orderBy", r.URL.Query(), &params.OrderBy)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "orderBy", Err: err})
+		return
+	}
+
 	// ------------- Optional query parameter "limit" -------------
 	if paramValue := r.URL.Query().Get("limit"); paramValue != "" {
 
@@ -5506,9 +5638,6 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/modules", wrapper.GetModules)
 	})
 	r.Group(func(r chi.Router) {
-		r.Put(options.BaseURL+"/monitoring/task/action", wrapper.MonitoringTaskAction)
-	})
-	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/monitoring/tasks", wrapper.GetTasksForMonitoring)
 	})
 	r.Group(func(r chi.Router) {
@@ -5525,6 +5654,12 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/monitoring/tasks/{workNumber}", wrapper.GetMonitoringTask)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/monitoring/tasks/{workNumber}/action", wrapper.MonitoringTaskAction)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/monitoring/tasks/{workNumber}/events", wrapper.GetMonitoringTaskEvents)
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/pipeline/version/{versionID}/settings/main", wrapper.SaveVersionMainSettings)

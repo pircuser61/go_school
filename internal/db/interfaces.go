@@ -243,6 +243,7 @@ type Database interface {
 	GetMergedVariableStorage(ctx c.Context, workID uuid.UUID, blockIds []string) (*store.VariableStore, error)
 	CheckTaskForHiddenFlag(ctx c.Context, workNumber string) (bool, error)
 	GetBlockState(ctx c.Context, blockID string) (e.BlockState, error)
+	GetRawBlockState(ctx c.Context, blockID string) (map[string]interface{}, error)
 
 	SaveVersionSettings(ctx c.Context, settings e.ProcessSettings, schemaFlag *string) error
 	SaveVersionMainSettings(ctx c.Context, settings e.ProcessSettings) error

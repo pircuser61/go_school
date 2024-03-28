@@ -2519,3 +2519,26 @@ func (db *PGCon) IsBlockResumable(ctx c.Context, workID, stepID uuid.UUID) (isRe
 
 	return status == "finished" || isPaused, t, nil
 }
+
+func (db *PGCon) GetRawBlockState(ctx c.Context, blockID string) (map[string]interface{}, error) {
+	ctx, span := trace.StartSpan(ctx, "pg_get_block_state")
+	defer span.End()
+
+	params := make(map[string]interface{}, 0)
+
+	const q = `
+		SELECT content -> 'State' -> step_name
+		FROM variable_storage
+		WHERE id = $1;
+	`
+
+	if err := db.Connection.QueryRow(ctx, q, blockID).Scan(&params); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return params, nil
+		}
+
+		return nil, err
+	}
+
+	return params, nil
+}

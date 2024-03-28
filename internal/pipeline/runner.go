@@ -66,4 +66,6 @@ type Runner interface {
 	GetNewKafkaEvents() []entity.NodeKafkaEvent
 	BlockAttachments() []string
 	CurrentExecutorData() CurrentExecutorData
+	UpdateStateUsingOutput(ctx context.Context, data []byte) (state map[string]interface{}, err error)
+	UpdateOutputUsingState(ctx context.Context) (output map[string]interface{}, err error)
 }

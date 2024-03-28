@@ -485,6 +485,59 @@ func (_c *MockedDatabase_CommitTransaction_Call) RunAndReturn(run func(context.C
 	return _c
 }
 
+// CreateEventToSend provides a mock function with given fields: ctx, dto
+func (_m *MockedDatabase) CreateEventToSend(ctx context.Context, dto *entity.CreateEventToSend) (string, error) {
+	ret := _m.Called(ctx, dto)
+
+	var r0 string
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, *entity.CreateEventToSend) (string, error)); ok {
+		return rf(ctx, dto)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, *entity.CreateEventToSend) string); ok {
+		r0 = rf(ctx, dto)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, *entity.CreateEventToSend) error); ok {
+		r1 = rf(ctx, dto)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockedDatabase_CreateEventToSend_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CreateEventToSend'
+type MockedDatabase_CreateEventToSend_Call struct {
+	*mock.Call
+}
+
+// CreateEventToSend is a helper method to define mock.On call
+//   - ctx context.Context
+//   - dto *entity.CreateEventToSend
+func (_e *MockedDatabase_Expecter) CreateEventToSend(ctx interface{}, dto interface{}) *MockedDatabase_CreateEventToSend_Call {
+	return &MockedDatabase_CreateEventToSend_Call{Call: _e.mock.On("CreateEventToSend", ctx, dto)}
+}
+
+func (_c *MockedDatabase_CreateEventToSend_Call) Run(run func(ctx context.Context, dto *entity.CreateEventToSend)) *MockedDatabase_CreateEventToSend_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(*entity.CreateEventToSend))
+	})
+	return _c
+}
+
+func (_c *MockedDatabase_CreateEventToSend_Call) Return(eventID string, err error) *MockedDatabase_CreateEventToSend_Call {
+	_c.Call.Return(eventID, err)
+	return _c
+}
+
+func (_c *MockedDatabase_CreateEventToSend_Call) RunAndReturn(run func(context.Context, *entity.CreateEventToSend) (string, error)) *MockedDatabase_CreateEventToSend_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // CreatePipeline provides a mock function with given fields: c, p, author, pipelineData, oldVersionID, hasPrivateFunction
 func (_m *MockedDatabase) CreatePipeline(c context.Context, p *entity.EriusScenario, author string, pipelineData []byte, oldVersionID uuid.UUID, hasPrivateFunction bool) error {
 	ret := _m.Called(c, p, author, pipelineData, oldVersionID, hasPrivateFunction)
@@ -683,6 +736,49 @@ func (_c *MockedDatabase_CreateVersion_Call) Return(_a0 error) *MockedDatabase_C
 }
 
 func (_c *MockedDatabase_CreateVersion_Call) RunAndReturn(run func(context.Context, *entity.EriusScenario, string, []byte, uuid.UUID, bool) error) *MockedDatabase_CreateVersion_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// DeleteEventToSend provides a mock function with given fields: ctx, eventID
+func (_m *MockedDatabase) DeleteEventToSend(ctx context.Context, eventID string) error {
+	ret := _m.Called(ctx, eventID)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) error); ok {
+		r0 = rf(ctx, eventID)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// MockedDatabase_DeleteEventToSend_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DeleteEventToSend'
+type MockedDatabase_DeleteEventToSend_Call struct {
+	*mock.Call
+}
+
+// DeleteEventToSend is a helper method to define mock.On call
+//   - ctx context.Context
+//   - eventID string
+func (_e *MockedDatabase_Expecter) DeleteEventToSend(ctx interface{}, eventID interface{}) *MockedDatabase_DeleteEventToSend_Call {
+	return &MockedDatabase_DeleteEventToSend_Call{Call: _e.mock.On("DeleteEventToSend", ctx, eventID)}
+}
+
+func (_c *MockedDatabase_DeleteEventToSend_Call) Run(run func(ctx context.Context, eventID string)) *MockedDatabase_DeleteEventToSend_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string))
+	})
+	return _c
+}
+
+func (_c *MockedDatabase_DeleteEventToSend_Call) Return(err error) *MockedDatabase_DeleteEventToSend_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockedDatabase_DeleteEventToSend_Call) RunAndReturn(run func(context.Context, string) error) *MockedDatabase_DeleteEventToSend_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -1747,6 +1843,60 @@ func (_c *MockedDatabase_GetDraftVersions_Call) RunAndReturn(run func(context.Co
 	return _c
 }
 
+// GetEventsToSend provides a mock function with given fields: ctx
+func (_m *MockedDatabase) GetEventsToSend(ctx context.Context) ([]entity.ToSendKafkaEvent, error) {
+	ret := _m.Called(ctx)
+
+	var r0 []entity.ToSendKafkaEvent
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context) ([]entity.ToSendKafkaEvent, error)); ok {
+		return rf(ctx)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context) []entity.ToSendKafkaEvent); ok {
+		r0 = rf(ctx)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]entity.ToSendKafkaEvent)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
+		r1 = rf(ctx)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockedDatabase_GetEventsToSend_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetEventsToSend'
+type MockedDatabase_GetEventsToSend_Call struct {
+	*mock.Call
+}
+
+// GetEventsToSend is a helper method to define mock.On call
+//   - ctx context.Context
+func (_e *MockedDatabase_Expecter) GetEventsToSend(ctx interface{}) *MockedDatabase_GetEventsToSend_Call {
+	return &MockedDatabase_GetEventsToSend_Call{Call: _e.mock.On("GetEventsToSend", ctx)}
+}
+
+func (_c *MockedDatabase_GetEventsToSend_Call) Run(run func(ctx context.Context)) *MockedDatabase_GetEventsToSend_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context))
+	})
+	return _c
+}
+
+func (_c *MockedDatabase_GetEventsToSend_Call) Return(_a0 []entity.ToSendKafkaEvent, _a1 error) *MockedDatabase_GetEventsToSend_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockedDatabase_GetEventsToSend_Call) RunAndReturn(run func(context.Context) ([]entity.ToSendKafkaEvent, error)) *MockedDatabase_GetEventsToSend_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetExecutableByName provides a mock function with given fields: ctx, name
 func (_m *MockedDatabase) GetExecutableByName(ctx context.Context, name string) (*entity.EriusScenario, error) {
 	ret := _m.Called(ctx, name)
@@ -2807,6 +2957,61 @@ func (_c *MockedDatabase_GetPipelinesWithLatestVersion_Call) RunAndReturn(run fu
 	return _c
 }
 
+// GetRawBlockState provides a mock function with given fields: ctx, blockID
+func (_m *MockedDatabase) GetRawBlockState(ctx context.Context, blockID string) (map[string]interface{}, error) {
+	ret := _m.Called(ctx, blockID)
+
+	var r0 map[string]interface{}
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) (map[string]interface{}, error)); ok {
+		return rf(ctx, blockID)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string) map[string]interface{}); ok {
+		r0 = rf(ctx, blockID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(map[string]interface{})
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, blockID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockedDatabase_GetRawBlockState_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetRawBlockState'
+type MockedDatabase_GetRawBlockState_Call struct {
+	*mock.Call
+}
+
+// GetRawBlockState is a helper method to define mock.On call
+//   - ctx context.Context
+//   - blockID string
+func (_e *MockedDatabase_Expecter) GetRawBlockState(ctx interface{}, blockID interface{}) *MockedDatabase_GetRawBlockState_Call {
+	return &MockedDatabase_GetRawBlockState_Call{Call: _e.mock.On("GetRawBlockState", ctx, blockID)}
+}
+
+func (_c *MockedDatabase_GetRawBlockState_Call) Run(run func(ctx context.Context, blockID string)) *MockedDatabase_GetRawBlockState_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string))
+	})
+	return _c
+}
+
+func (_c *MockedDatabase_GetRawBlockState_Call) Return(_a0 map[string]interface{}, _a1 error) *MockedDatabase_GetRawBlockState_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockedDatabase_GetRawBlockState_Call) RunAndReturn(run func(context.Context, string) (map[string]interface{}, error)) *MockedDatabase_GetRawBlockState_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetRejectedVersions provides a mock function with given fields: ctx
 func (_m *MockedDatabase) GetRejectedVersions(ctx context.Context) ([]entity.EriusScenarioInfo, error) {
 	ret := _m.Called(ctx)
@@ -3079,6 +3284,61 @@ func (_c *MockedDatabase_GetTaskCustomProps_Call) Return(_a0 *db.TaskCustomProps
 }
 
 func (_c *MockedDatabase_GetTaskCustomProps_Call) RunAndReturn(run func(context.Context, uuid.UUID) (*db.TaskCustomProps, error)) *MockedDatabase_GetTaskCustomProps_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// GetTaskEvents provides a mock function with given fields: ctx, workID
+func (_m *MockedDatabase) GetTaskEvents(ctx context.Context, workID string) ([]entity.TaskEvent, error) {
+	ret := _m.Called(ctx, workID)
+
+	var r0 []entity.TaskEvent
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) ([]entity.TaskEvent, error)); ok {
+		return rf(ctx, workID)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string) []entity.TaskEvent); ok {
+		r0 = rf(ctx, workID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]entity.TaskEvent)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, workID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockedDatabase_GetTaskEvents_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetTaskEvents'
+type MockedDatabase_GetTaskEvents_Call struct {
+	*mock.Call
+}
+
+// GetTaskEvents is a helper method to define mock.On call
+//   - ctx context.Context
+//   - workID string
+func (_e *MockedDatabase_Expecter) GetTaskEvents(ctx interface{}, workID interface{}) *MockedDatabase_GetTaskEvents_Call {
+	return &MockedDatabase_GetTaskEvents_Call{Call: _e.mock.On("GetTaskEvents", ctx, workID)}
+}
+
+func (_c *MockedDatabase_GetTaskEvents_Call) Run(run func(ctx context.Context, workID string)) *MockedDatabase_GetTaskEvents_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string))
+	})
+	return _c
+}
+
+func (_c *MockedDatabase_GetTaskEvents_Call) Return(events []entity.TaskEvent, err error) *MockedDatabase_GetTaskEvents_Call {
+	_c.Call.Return(events, err)
+	return _c
+}
+
+func (_c *MockedDatabase_GetTaskEvents_Call) RunAndReturn(run func(context.Context, string) ([]entity.TaskEvent, error)) *MockedDatabase_GetTaskEvents_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -6680,22 +6940,6 @@ func (_m *MockedDatabase) VersionEditable(ctx context.Context, versionID uuid.UU
 	}
 
 	return r0, r1
-}
-
-func (_m *MockedDatabase) CreateEventToSend(ctx context.Context, dto *entity.CreateEventToSend) (eventID string, err error) {
-	return "", nil
-}
-
-func (_m *MockedDatabase) DeleteEventToSend(ctx context.Context, eventID string)  (err error) {
-	return nil
-}
-
-func (_m *MockedDatabase) GetEventsToSend(ctx context.Context) ([]entity.ToSendKafkaEvent, error) {
-	return nil, nil
-}
-
-func (_m *MockedDatabase) GetTaskEvents(ctx context.Context, workID string) (events []entity.TaskEvent, err error) {
-	return nil, nil
 }
 
 // MockedDatabase_VersionEditable_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'VersionEditable'

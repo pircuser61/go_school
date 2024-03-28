@@ -12,6 +12,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
@@ -267,4 +268,50 @@ func createGoSdApplicationBlock(ctx context.Context, name string, ef *entity.Eri
 	}
 
 	return b, reEntry, nil
+}
+
+type SDOutput struct {
+	Executor        servicedesc.SsoPerson
+	ApplicationBody map[string]interface{}
+	Description     string
+	BlueprintID     string
+}
+
+func (gb *GoSdApplicationBlock) UpdateStateUsingOutput(ctx context.Context, data []byte) (state map[string]interface{}, err error) {
+	sdOutput := SDOutput{}
+
+	unmErr := json.Unmarshal(data, &sdOutput)
+	if unmErr != nil {
+		return nil, fmt.Errorf("can't unmarshal into output struct")
+	}
+	gb.State.BlueprintID = sdOutput.BlueprintID
+	gb.State.Description = sdOutput.Description
+
+	if sdOutput.ApplicationBody != nil {
+		gb.State.ApplicationBody = sdOutput.ApplicationBody
+	}
+
+	jsonState, marshErr := json.Marshal(gb.State)
+	if marshErr != nil {
+		return nil, marshErr
+	}
+
+	unmarshErr := json.Unmarshal(jsonState, &state)
+	if unmarshErr != nil {
+		return nil, unmarshErr
+	}
+
+	return state, nil
+}
+
+func (gb *GoSdApplicationBlock) UpdateOutputUsingState(ctx context.Context) (output map[string]interface{}, err error) {
+
+	output[keyOutputBlueprintID] = gb.State.BlueprintID
+	output[keyOutputSdApplicationDesc] = gb.State.Description
+
+	if gb.State.ApplicationBody != nil {
+		output[keyOutputSdApplication] = gb.State.ApplicationBody
+	}
+
+	return output, nil
 }
