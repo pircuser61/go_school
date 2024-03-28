@@ -204,12 +204,15 @@ func (gb *GoFormBlock) handleRequestFillForm(ctx context.Context, data *script.B
 		return validErr
 	}
 
-	personData, err := gb.RunContext.Services.ServiceDesc.GetSsoPerson(ctx, *gb.State.ActualExecutor)
-	if err != nil {
-		return err
+	if gb.State.ActualExecutor != nil {
+		personData, err := gb.RunContext.Services.ServiceDesc.GetSsoPerson(ctx, *gb.State.ActualExecutor)
+		if err != nil {
+			return err
+		}
+
+		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputFormExecutor], personData)
 	}
 
-	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputFormExecutor], personData)
 	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputFormBody], gb.State.ApplicationBody)
 
 	return nil
