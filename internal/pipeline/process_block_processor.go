@@ -198,13 +198,13 @@ func (p *blockProcessor) handleErrorWithCommit(ctx context.Context, log logger.L
 }
 
 func (p *blockProcessor) handleErrorWithRollback(ctx context.Context, log logger.Logger, err error) error {
+	rollbackErr := p.rollbackTx(ctx)
+	if rollbackErr != nil {
+		log.WithError(rollbackErr).Error("couldn't rollback tx")
+	}
+
 	if err != nil && !errors.Is(err, UserIsNotPartOfProcessErr{}) {
 		log.WithError(err).Error("couldn't process block")
-
-		rollbackErr := p.rollbackTx(ctx)
-		if rollbackErr != nil {
-			log.WithError(rollbackErr).Error("couldn't rollback tx")
-		}
 
 		changeErr := p.runCtx.updateTaskStatus(ctx, db.RunStatusError, "", db.SystemLogin)
 		if changeErr != nil {
@@ -265,9 +265,21 @@ func (runCtx *BlockRunContext) updateStatusByStep(ctx context.Context, status Ta
 
 // эта функция уже будет обрабатывать ошибку, ошибку которую она вернула не нужно обрабатывать повторно
 func (p *blockProcessor) processActiveBlocks(ctx context.Context, activeBlocks []string, its int, updateVarStore bool) error {
-	blockProcessors := make([]*blockProcessor, 0)
-
 	log := logger.GetLogger(ctx).WithField("workNumber", p.runCtx.WorkNumber)
+
+	for _, blockName := range activeBlocks {
+		err := InitBlockInDB(ctx, blockName, p.runCtx)
+		if err != nil {
+			return p.handleErrorWithRollback(ctx, log, err)
+		}
+	}
+
+	err := p.commitTx(ctx)
+	if err != nil {
+		log.WithError(err).Error("could`t commit tx")
+
+		return err
+	}
 
 	for _, blockName := range activeBlocks {
 		blockData, blockErr := p.runCtx.Services.Storage.GetBlockDataFromVersion(ctx, p.runCtx.WorkNumber, blockName)
@@ -288,26 +300,10 @@ func (p *blockProcessor) processActiveBlocks(ctx context.Context, activeBlocks [
 			ctxCopy.VarStore = storage
 		}
 
-		err := InitBlockInDB(ctx, blockName, p.runCtx)
-		if err != nil {
-			return p.handleErrorWithRollback(ctx, log, err)
-		}
-
 		ctxCopy.Services.Storage = p.storage
 
 		processor := newBlockProcessor(blockName, blockData, ctxCopy, updateVarStore)
 
-		blockProcessors = append(blockProcessors, &processor)
-	}
-
-	err := p.commitTx(ctx)
-	if err != nil {
-		log.WithError(err).Error("could`t commit tx")
-
-		return err
-	}
-
-	for _, processor := range blockProcessors {
 		err := processor.ProcessBlock(ctx, its)
 		if err != nil {
 			return err
