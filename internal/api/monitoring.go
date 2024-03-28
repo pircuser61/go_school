@@ -215,6 +215,20 @@ func (ae *Env) GetMonitoringTask(w http.ResponseWriter, req *http.Request, workN
 		return
 	}
 
+	workID, err := ae.DB.GetWorkIDByWorkNumber(ctx, workNumber)
+	if err != nil {
+		errorHandler.handleError(GetTaskError, err)
+
+		return
+	}
+
+	events, err := ae.DB.GetTaskEvents(ctx, workID.String())
+	if err != nil {
+		errorHandler.handleError(GetTaskEventsError, err)
+
+		return
+	}
+
 	nodes, err := ae.DB.GetTaskForMonitoring(ctx, workNumber)
 	if err != nil {
 		errorHandler.handleError(GetMonitoringNodesError, err)
@@ -228,7 +242,7 @@ func (ae *Env) GetMonitoringTask(w http.ResponseWriter, req *http.Request, workN
 		return
 	}
 
-	if err = sendResponse(w, http.StatusOK, toMonitoringTaskResponse(nodes)); err != nil {
+	if err = sendResponse(w, http.StatusOK, toMonitoringTaskResponse(nodes, events)); err != nil {
 		errorHandler.handleError(UnknownError, err)
 
 		return
@@ -551,6 +565,14 @@ func (ae *Env) MonitoringTaskAction(w http.ResponseWriter, r *http.Request, work
 		return
 	}
 
+	events, err := ae.DB.GetTaskEvents(ctx, workID.String())
+	if err != nil {
+		errorHandler.handleError(GetTaskEventsError, err)
+
+		return
+	}
+
+
 	nodes, err := ae.DB.GetTaskForMonitoring(ctx, workNumber)
 	if err != nil {
 		errorHandler.handleError(GetMonitoringNodesError, err)
@@ -564,7 +586,7 @@ func (ae *Env) MonitoringTaskAction(w http.ResponseWriter, r *http.Request, work
 		return
 	}
 
-	err = sendResponse(w, http.StatusOK, toMonitoringTaskResponse(nodes))
+	err = sendResponse(w, http.StatusOK, toMonitoringTaskResponse(nodes, events))
 	if err != nil {
 		errorHandler.handleError(UnknownError, err)
 
@@ -572,7 +594,7 @@ func (ae *Env) MonitoringTaskAction(w http.ResponseWriter, r *http.Request, work
 	}
 }
 
-func toMonitoringTaskResponse(nodes []entity.MonitoringTaskNode) *MonitoringTask {
+func toMonitoringTaskResponse(nodes []entity.MonitoringTaskNode, events []entity.TaskEvent) *MonitoringTask {
 	res := &MonitoringTask{
 		History:  make([]MonitoringHistory, 0),
 		TaskRuns: make([]MonitoringTaskRun, 0),
@@ -601,6 +623,26 @@ func toMonitoringTaskResponse(nodes []entity.MonitoringTaskNode) *MonitoringTask
 		}
 
 		res.History = append(res.History, monitoringHistory)
+	}
+
+	run := MonitoringTaskRun{}
+
+	for i := range events {
+		if events[i].EventType == string(MonitoringTaskEventEventTypeStart) {
+			run.StartEventId = events[i].ID
+		}
+
+		if events[i].EventType == string(MonitoringTaskEventEventTypePause) {
+			run.EndEventId = events[i].ID
+		}
+
+		isLastEvent := len(events) == i + 1
+
+		if (run.StartEventId != "" && run.EndEventId != "") || isLastEvent {
+			run.Index = float32(len(res.TaskRuns) + 1)
+			res.TaskRuns = append(res.TaskRuns, run)
+			run = MonitoringTaskRun{}
+		}
 	}
 
 	return res
