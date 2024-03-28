@@ -288,6 +288,26 @@ func TestProcessBlock(t *testing.T) {
 								}, nil,
 							)
 
+							txStorage.On("GetBlockDataFromVersion",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(workNumber string) bool { return true }),
+								"servicedesk_application_0",
+							).Return(
+								&entity.EriusFunc{
+									TypeID:     BlockGoSdApplicationID,
+									BlockType:  script.TypeGo,
+									Title:      BlockGoSdApplicationTitle,
+									ShortTitle: shortTitle,
+									Sockets: []entity.Socket{
+										{
+											ID:           DefaultSocketID,
+											NextBlockIds: []string{"end_0"},
+										},
+									},
+									Params: sdAppParams,
+								}, nil,
+							)
+
 							txStorage.On("UpdateStepContext",
 								mock.MatchedBy(func(ctx context.Context) bool { return true }),
 								mock.MatchedBy(func(data *db.UpdateStepRequest) bool { return true }),
@@ -310,6 +330,19 @@ func TestProcessBlock(t *testing.T) {
 							res.EXPECT().StartTransaction(mock.Anything).Return(txStorage, nil).Once()
 
 							res.On("GetBlockDataFromVersion",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(workNumber string) bool { return true }),
+								"end_0",
+							).Return(
+								&entity.EriusFunc{
+									TypeID:     BlockGoEndID,
+									BlockType:  script.TypeGo,
+									Title:      BlockGoEndTitle,
+									ShortTitle: shortTitle,
+								}, nil,
+							)
+
+							txStorage.On("GetBlockDataFromVersion",
 								mock.MatchedBy(func(ctx context.Context) bool { return true }),
 								mock.MatchedBy(func(workNumber string) bool { return true }),
 								"end_0",
@@ -446,6 +479,26 @@ func TestProcessBlock(t *testing.T) {
 								}, nil,
 							)
 
+							txStorage.On("GetBlockDataFromVersion",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(workNumber string) bool { return true }),
+								"servicedesk_application_0",
+							).Return(
+								&entity.EriusFunc{
+									TypeID:     BlockGoSdApplicationID,
+									BlockType:  script.TypeGo,
+									Title:      BlockGoSdApplicationTitle,
+									ShortTitle: shortTitle,
+									Sockets: []entity.Socket{
+										{
+											ID:           DefaultSocketID,
+											NextBlockIds: []string{"start_parallel_0"},
+										},
+									},
+									Params: sdAppParams,
+								}, nil,
+							)
+
 							txStorage.On("CheckIsArchived",
 								mock.MatchedBy(func(ctx context.Context) bool { return true }),
 								uuid.Nil,
@@ -469,6 +522,25 @@ func TestProcessBlock(t *testing.T) {
 							res.EXPECT().StartTransaction(mock.Anything).Return(txStorage, nil).Once()
 
 							res.On("GetBlockDataFromVersion",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(workNumber string) bool { return true }),
+								"start_parallel_0",
+							).Return(
+								&entity.EriusFunc{
+									TypeID:     BlockGoBeginParallelTaskID,
+									BlockType:  script.TypeGo,
+									Title:      BlockGoBeginParallelTaskTitle,
+									ShortTitle: shortTitle,
+									Sockets: []entity.Socket{
+										{
+											ID:           DefaultSocketID,
+											NextBlockIds: []string{"approver_0", "execution_0"},
+										},
+									},
+								}, nil,
+							)
+
+							txStorage.On("GetBlockDataFromVersion",
 								mock.MatchedBy(func(ctx context.Context) bool { return true }),
 								mock.MatchedBy(func(workNumber string) bool { return true }),
 								"start_parallel_0",
@@ -528,7 +600,45 @@ func TestProcessBlock(t *testing.T) {
 								}, nil,
 							)
 
+							txStorage.On("GetBlockDataFromVersion",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(workNumber string) bool { return true }),
+								"approver_0",
+							).Return(
+								&entity.EriusFunc{
+									TypeID:     BlockGoApproverID,
+									ShortTitle: shortTitle,
+									BlockType:  script.TypeGo,
+									Sockets: []entity.Socket{
+										{
+											ID:           "approve",
+											NextBlockIds: []string{"end_parallel_0"},
+										},
+									},
+									Params: approveParams,
+								}, nil,
+							)
+
 							res.On("GetBlockDataFromVersion",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(workNumber string) bool { return true }),
+								"execution_0",
+							).Return(
+								&entity.EriusFunc{
+									TypeID:     BlockGoExecutionID,
+									ShortTitle: shortTitle,
+									BlockType:  script.TypeGo,
+									Sockets: []entity.Socket{
+										{
+											ID:           executedSocketID,
+											NextBlockIds: []string{"end_parallel_0"},
+										},
+									},
+									Params: execParams,
+								}, nil,
+							)
+
+							txStorage.On("GetBlockDataFromVersion",
 								mock.MatchedBy(func(ctx context.Context) bool { return true }),
 								mock.MatchedBy(func(workNumber string) bool { return true }),
 								"execution_0",
@@ -570,6 +680,25 @@ func TestProcessBlock(t *testing.T) {
 							res.EXPECT().StartTransaction(mock.Anything).Return(txStorage, nil).Once()
 
 							res.On("GetBlockDataFromVersion",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(workNumber string) bool { return true }),
+								"end_parallel_0",
+							).Return(
+								&entity.EriusFunc{
+									TypeID:     BlockWaitForAllInputsID,
+									ShortTitle: shortTitle,
+									BlockType:  script.TypeGo,
+									Title:      BlockGoWaitForAllInputsTitle,
+									Sockets: []entity.Socket{
+										{
+											ID:           DefaultSocketID,
+											NextBlockIds: []string{"end_0"},
+										},
+									},
+								}, nil,
+							)
+
+							txStorage.On("GetBlockDataFromVersion",
 								mock.MatchedBy(func(ctx context.Context) bool { return true }),
 								mock.MatchedBy(func(workNumber string) bool { return true }),
 								"end_parallel_0",
@@ -655,9 +784,41 @@ func TestProcessBlock(t *testing.T) {
 								}, nil,
 							)
 
+							txStorage.On("GetBlockDataFromVersion",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(workNumber string) bool { return true }),
+								"end_0",
+							).Return(
+								&entity.EriusFunc{
+									TypeID:     BlockGoEndID,
+									ShortTitle: shortTitle,
+									BlockType:  script.TypeGo,
+									Title:      BlockGoEndTitle,
+								}, nil,
+							)
+
 							txStorage.EXPECT().CommitTransaction(mock.Anything).Return(nil).Once()
 
 							res.EXPECT().
+								GetBlockDataFromVersion(mock.Anything, mock.Anything, "approver_0").
+								Return(
+									&entity.EriusFunc{
+										TypeID:     BlockGoApproverID,
+										ShortTitle: shortTitle,
+										BlockType:  script.TypeGo,
+										Sockets: []entity.Socket{
+											{
+												ID:           "approve",
+												NextBlockIds: []string{"end_parallel_0"},
+											},
+										},
+										Params: approveParams,
+									},
+									nil,
+								).
+								Once()
+
+							txStorage.EXPECT().
 								GetBlockDataFromVersion(mock.Anything, mock.Anything, "approver_0").
 								Return(
 									&entity.EriusFunc{
@@ -709,9 +870,47 @@ func TestProcessBlock(t *testing.T) {
 								}, nil,
 							)
 
+							txStorage.On("GetBlockDataFromVersion",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(workNumber string) bool { return true }),
+								"execution_0",
+							).Return(
+								&entity.EriusFunc{
+									TypeID:     BlockGoExecutionID,
+									ShortTitle: shortTitle,
+									BlockType:  script.TypeGo,
+									Sockets: []entity.Socket{
+										{
+											ID:           executedSocketID,
+											NextBlockIds: []string{"end_parallel_0"},
+										},
+									},
+									Params: execParams,
+								}, nil,
+							)
+
 							expectParallelBlockProcessing(res, shortTitle, f, parallelIsFinished)
 
 							res.On("GetBlockDataFromVersion",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(workNumber string) bool { return true }),
+								"execution_0",
+							).Return(
+								&entity.EriusFunc{
+									TypeID:     BlockGoExecutionID,
+									ShortTitle: shortTitle,
+									BlockType:  script.TypeGo,
+									Sockets: []entity.Socket{
+										{
+											ID:           executedSocketID,
+											NextBlockIds: []string{"end_parallel_0"},
+										},
+									},
+									Params: execParams,
+								}, nil,
+							)
+
+							txStorage.On("GetBlockDataFromVersion",
 								mock.MatchedBy(func(ctx context.Context) bool { return true }),
 								mock.MatchedBy(func(workNumber string) bool { return true }),
 								"execution_0",
@@ -925,6 +1124,25 @@ func expectParallelBlockProcessing(
 		}, nil,
 	)
 
+	txStorage.On("GetBlockDataFromVersion",
+		mock.MatchedBy(func(ctx context.Context) bool { return true }),
+		mock.MatchedBy(func(workNumber string) bool { return true }),
+		"end_parallel_0",
+	).Return(
+		&entity.EriusFunc{
+			TypeID:     BlockWaitForAllInputsID,
+			ShortTitle: shortTitle,
+			BlockType:  script.TypeGo,
+			Title:      BlockGoWaitForAllInputsTitle,
+			Sockets: []entity.Socket{
+				{
+					ID:           DefaultSocketID,
+					NextBlockIds: []string{"end_0"},
+				},
+			},
+		}, nil,
+	)
+
 	txStorage.EXPECT().
 		ParallelIsFinished(mock.Anything, mock.Anything, mock.Anything).
 		RunAndReturn(parallelIsFinishedFunc).
@@ -964,7 +1182,7 @@ func expectParallelBlockProcessing(
 		Run(f).
 		Return(nil)
 
-	res.On("GetBlockDataFromVersion",
+	txStorage.On("GetBlockDataFromVersion",
 		mock.MatchedBy(func(ctx context.Context) bool { return true }),
 		mock.MatchedBy(func(workNumber string) bool { return true }),
 		"end_parallel_0",
@@ -1020,6 +1238,19 @@ func expectParallelBlockProcessingEnd(
 		Return(nil)
 
 	res.On("GetBlockDataFromVersion",
+		mock.MatchedBy(func(ctx context.Context) bool { return true }),
+		mock.MatchedBy(func(workNumber string) bool { return true }),
+		"end_0",
+	).Return(
+		&entity.EriusFunc{
+			TypeID:     BlockGoEndID,
+			ShortTitle: shortTitle,
+			BlockType:  script.TypeGo,
+			Title:      BlockGoEndTitle,
+		}, nil,
+	)
+
+	txStorage.On("GetBlockDataFromVersion",
 		mock.MatchedBy(func(ctx context.Context) bool { return true }),
 		mock.MatchedBy(func(workNumber string) bool { return true }),
 		"end_0",

@@ -268,7 +268,12 @@ func (p *blockProcessor) processActiveBlocks(ctx context.Context, activeBlocks [
 	log := logger.GetLogger(ctx).WithField("workNumber", p.runCtx.WorkNumber)
 
 	for _, blockName := range activeBlocks {
-		err := InitBlockInDB(ctx, blockName, p.runCtx)
+		blockData, blockErr := p.runCtx.Services.Storage.GetBlockDataFromVersion(ctx, p.runCtx.WorkNumber, blockName)
+		if blockErr != nil {
+			return p.handleErrorWithRollback(ctx, log, blockErr)
+		}
+
+		err := InitBlockInDB(ctx, blockName, blockData.TypeID, p.runCtx)
 		if err != nil {
 			return p.handleErrorWithRollback(ctx, log, err)
 		}

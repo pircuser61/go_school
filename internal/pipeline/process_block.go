@@ -180,7 +180,7 @@ func createGoBlock(ctx c.Context, ef *entity.EriusFunc, name string, runCtx *Blo
 	return nil, false, errors.New("unknown go-block type: " + ef.TypeID)
 }
 
-func InitBlockInDB(ctx c.Context, name string, runCtx *BlockRunContext) error {
+func InitBlockInDB(ctx c.Context, name, stepType string, runCtx *BlockRunContext) error {
 	storageData, errSerialize := json.Marshal(runCtx.VarStore)
 	if errSerialize != nil {
 		return errSerialize
@@ -189,6 +189,7 @@ func InitBlockInDB(ctx c.Context, name string, runCtx *BlockRunContext) error {
 	_, _, err := runCtx.Services.Storage.InitTaskBlock(ctx, &db.SaveStepRequest{
 		WorkID:   runCtx.TaskID,
 		StepName: name,
+		StepType: stepType,
 		Status:   string(StatusReady),
 		Content:  storageData,
 	}, runCtx.OnceProductive,

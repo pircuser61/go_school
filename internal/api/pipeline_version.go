@@ -750,7 +750,7 @@ func (ae *Env) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO) (
 
 	runCtx.SetTaskEvents(ctx)
 
-	err = pipeline.InitBlockInDB(ctx, pipeline.BlockGoFirstStart, runCtx)
+	err = pipeline.InitBlockInDB(ctx, pipeline.BlockGoFirstStart, blockData.TypeID, runCtx)
 	if err != nil {
 		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
 			log.WithField("funcName", "pipelne.InitBlock").
