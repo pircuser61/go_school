@@ -4,6 +4,7 @@ import (
 	"context"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -176,6 +177,7 @@ func Test_toMonitoringTaskResponse(t *testing.T) {
 		nodes  []entity.MonitoringTaskNode
 		events []entity.TaskEvent
 	}
+
 	tests := []struct {
 		name string
 		args args
@@ -229,18 +231,22 @@ func Test_toMonitoringTaskResponse(t *testing.T) {
 					{
 						StartEventId: "1",
 						EndEventId:   "3",
-						Index:        float32(1),
+						Index:        1,
+						StartEventAt: firstStart,
+						EndEventAt:   firstPause,
 					},
 					{
 						StartEventId: "4",
 						EndEventId:   "",
-						Index:        float32(2),
+						Index:        2,
+						StartEventAt: secondStart,
+						EndEventAt:   secondPause,
 					},
 				},
 				History: []MonitoringHistory{
 					{
 						IsPaused: true,
-						Status: "running",
+						Status:   "running",
 					},
 				},
 				VersionId:  "6969",

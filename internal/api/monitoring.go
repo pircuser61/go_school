@@ -606,6 +606,8 @@ func toMonitoringTaskResponse(nodes []entity.MonitoringTaskNode, events []entity
 	res.VersionId = nodes[0].VersionID
 	res.WorkNumber = nodes[0].WorkNumber
 	res.IsPaused = nodes[0].IsPaused
+	res.TaskRuns = getRunsByEvents(events)
+	res.IsFinished = nodes[0].WorkStatus == 2 || nodes[0].WorkStatus == 4 || nodes[0].WorkStatus == 6
 
 	for i := range nodes {
 		monitoringHistory := MonitoringHistory{
@@ -624,22 +626,33 @@ func toMonitoringTaskResponse(nodes []entity.MonitoringTaskNode, events []entity
 		res.History = append(res.History, monitoringHistory)
 	}
 
+	return res
+}
+
+func getRunsByEvents(events []entity.TaskEvent) []MonitoringTaskRun {
+	res := make([]MonitoringTaskRun, 0)
 	run := MonitoringTaskRun{}
 
 	for i := range events {
 		if events[i].EventType == string(MonitoringTaskEventEventTypeStart) {
 			run.StartEventId = events[i].ID
+			run.StartEventAt = events[i].CreatedAt
 		}
 
 		if events[i].EventType == string(MonitoringTaskEventEventTypePause) {
 			run.EndEventId = events[i].ID
+			run.EndEventAt = events[i].CreatedAt
 		}
 
 		isLastEvent := len(events) == i+1
 
+		if isLastEvent {
+			run.EndEventAt = time.Now()
+		}
+
 		if (run.StartEventId != "" && run.EndEventId != "") || isLastEvent {
-			run.Index = float32(len(res.TaskRuns) + 1)
-			res.TaskRuns = append(res.TaskRuns, run)
+			run.Index = len(res) + 1
+			res = append(res, run)
 			run = MonitoringTaskRun{}
 		}
 	}
@@ -922,15 +935,29 @@ func (ae *Env) toMonitoringTaskEventsResponse(ctx context.Context, events []enti
 		}
 
 		params := MonitoringTaskActionParams{}
-		_ = json.Unmarshal(events[i].Params, &params)
+		err := json.Unmarshal(events[i].Params, &params)
+		if err != nil {
+			return res
+		}
 
-		res.Events = append(res.Events, MonitoringTaskEvent{
+		event := MonitoringTaskEvent{
 			Id:        events[i].ID,
 			Author:    fullNameCache[events[i].Author],
 			EventType: MonitoringTaskEventEventType(events[i].EventType),
 			Params:    params,
-			CreatedAt: events[i].CreatedAt.Format(monitoringTimeLayout),
-		})
+			CreatedAt: events[i].CreatedAt,
+		}
+
+		runs := getRunsByEvents(events)
+
+		for runIndex := range runs {
+			if event.CreatedAt.After(runs[runIndex].StartEventAt) &&
+				event.CreatedAt.Before(runs[runIndex].EndEventAt) {
+				event.RunIndex = runIndex + 1
+			}
+		}
+
+		res.Events = append(res.Events, event)
 	}
 
 	return res
