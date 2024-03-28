@@ -4,10 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"gitlab.services.mts.ru/abp/myosotis/logger"
 	"io"
 	"net/http"
 	"strings"
+
+	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"github.com/google/uuid"
 	"go.opencensus.io/trace"
@@ -487,6 +488,7 @@ func (ae *Env) startParallelEditBlock(ctx context.Context, stepId uuid.UUID, ste
 
 	return res, nil
 }
+
 func (ae *Env) endParallelEditBlock(ctx context.Context, stepId uuid.UUID, stepType, stepName string, data map[string]interface{},
 	editType MonitoringTaskEditBlockRequestChangeType,
 ) (res []EditBlock, err error) {

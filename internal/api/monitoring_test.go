@@ -240,7 +240,7 @@ func Test_toMonitoringTaskResponse(t *testing.T) {
 				History: []MonitoringHistory{
 					{
 						IsPaused: true,
-						Status: "running",
+						Status:   "running",
 					},
 				},
 				VersionId:  "6969",

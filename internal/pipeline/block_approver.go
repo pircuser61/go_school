@@ -711,7 +711,6 @@ type ApproverOutput struct {
 }
 
 func (gb *GoApproverBlock) UpdateStateUsingOutput(ctx context.Context, data []byte) (state map[string]interface{}, err error) {
-
 	approverOutput := ApproverOutput{}
 
 	unmErr := json.Unmarshal(data, &approverOutput)

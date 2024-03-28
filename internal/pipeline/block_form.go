@@ -570,7 +570,6 @@ type FormOutput struct {
 }
 
 func (gb *GoFormBlock) UpdateStateUsingOutput(ctx c.Context, data []byte) (state map[string]interface{}, err error) {
-
 	formOutput := FormOutput{}
 
 	unmErr := json.Unmarshal(data, &formOutput)

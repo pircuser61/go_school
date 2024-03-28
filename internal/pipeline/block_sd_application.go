@@ -305,7 +305,6 @@ func (gb *GoSdApplicationBlock) UpdateStateUsingOutput(ctx context.Context, data
 }
 
 func (gb *GoSdApplicationBlock) UpdateOutputUsingState(ctx context.Context) (output map[string]interface{}, err error) {
-
 	output[keyOutputBlueprintID] = gb.State.BlueprintID
 	output[keyOutputSdApplicationDesc] = gb.State.Description
 
