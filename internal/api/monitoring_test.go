@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -165,6 +166,92 @@ func TestGetNodesToSkip(t *testing.T) {
 			}
 			if !assert.ElementsMatch(t, nodes, tt.result) {
 				t.Fatalf("Didn't matched the patten nodes %s , got %s ", nodes, tt.result)
+			}
+		})
+	}
+}
+
+func Test_toMonitoringTaskResponse(t *testing.T) {
+	type args struct {
+		nodes  []entity.MonitoringTaskNode
+		events []entity.TaskEvent
+	}
+	tests := []struct {
+		name string
+		args args
+		want *MonitoringTask
+	}{
+		{
+			name: "success",
+			args: args{
+				nodes: []entity.MonitoringTaskNode{
+					{
+						WorkNumber:    "J666",
+						VersionID:     "6969",
+						IsPaused:      true,
+						BlockIsPaused: true,
+						Author:        "lohundra",
+						ScenarioName:  "ebanina",
+						CreationTime:  "6.6.6",
+					},
+				},
+				events: []entity.TaskEvent{
+					{
+						ID:        "1",
+						EventType: "start",
+					},
+					{
+						ID:        "2",
+						EventType: "edit",
+					},
+					{
+						ID:        "3",
+						EventType: "pause",
+					},
+					{
+						ID:        "4",
+						EventType: "start",
+					},
+					{
+						ID:        "5",
+						EventType: "other action",
+					},
+				},
+			},
+			want: &MonitoringTask{
+				IsPaused: true,
+				ScenarioInfo: MonitoringScenarioInfo{
+					Author:       "lohundra",
+					CreationTime: "6.6.6",
+					ScenarioName: "ebanina",
+				},
+				TaskRuns: []MonitoringTaskRun{
+					{
+						StartEventId: "1",
+						EndEventId:   "3",
+						Index:        float32(1),
+					},
+					{
+						StartEventId: "4",
+						EndEventId:   "",
+						Index:        float32(2),
+					},
+				},
+				History: []MonitoringHistory{
+					{
+						IsPaused: true,
+						Status: "running",
+					},
+				},
+				VersionId:  "6969",
+				WorkNumber: "J666",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := toMonitoringTaskResponse(tt.args.nodes, tt.args.events); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("toMonitoringTaskResponse() = %v, want %v", got, tt.want)
 			}
 		})
 	}

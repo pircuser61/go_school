@@ -2305,13 +2305,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
-  /monitoring/task/action:
+  /monitoring/tasks/{workNumber}/action:
     put:
       operationId: MonitoringTaskAction
       tags:
         - monitoring
       summary:  Действия с заявкой в мониторинге
       description: Действия с заявкой в мониторинге
+      parameters:
+        - name: workNumber
+          in: path
+          description: work number
+          required: true
+          schema:
+            type: string
       requestBody:
         description: Monitoring task action
         content:
@@ -2329,6 +2336,57 @@ paths:
                 properties:
                   data:
                     $ref: '#/components/schemas/MonitoringTask'
+                  status_code:
+                    type: integer
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        403:
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+
+  /monitoring/tasks/{workNumber}/events:
+    get:
+      operationId: GetMonitoringTaskEvents
+      tags:
+        - monitoring
+      summary:  Ивенты заяви в мониторинге
+      description: Ивенты заяви в мониторинге
+      parameters:
+        - name: workNumber
+          in: path
+          description: work number
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/MonitoringTaskEvents'
                   status_code:
                     type: integer
         400:
@@ -2622,6 +2680,20 @@ paths:
           required: true
           schema:
             type: string
+        - name: from_event_id
+          in: query
+          description: "id ивента с которого нужно взять блоки"
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: to_event_id
+          in: query
+          description: "id ивента по который нужно взять блоки"
+          required: false
+          schema:
+            type: string
+            format: uuid
       responses:
         200:
           description: OK
@@ -5157,12 +5229,12 @@ components:
     MonitoringTaskActionRequest:
       type: object
       properties:
-        work_number:
-          type: string
-          description: "Номер заявки для мониторинга"
         action:
           type: string
-          enum: [ "start", "pause", "startByOne" ]
+          enum:
+            - pause
+            - start
+            - startByOne
           description: "Действия с заявкой"
         params:
           $ref: '#/components/schemas/MonitoringTaskActionParams'
@@ -5200,12 +5272,75 @@ components:
         is_paused:
           type: boolean
           description: "Флаг паузы процесса"
+        task_runs:
+          type: array
+          items:
+            $ref: '#/components/schemas/MonitoringTaskRun'
       required:
         - version_id
         - work_number
         - scenario_info
         - history
         - is_paused
+        - task_runs
+
+    MonitoringTaskEvents:
+      type: object
+      properties:
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/MonitoringTaskEvent'
+      required:
+        - events
+
+    MonitoringTaskEvent:
+      type: object
+      properties:
+        id:
+          type: string
+          description: "id ивента"
+        author:
+          type: string
+          description: "имя автора ивента"
+        event_type:
+          type: string
+          enum:
+            - pause
+            - start
+            - startByOne
+          description: "тип ивента"
+        params:
+          $ref: '#/components/schemas/MonitoringTaskActionParams'
+        created_at:
+          type: string
+          example: 2020-07-16T17:10:25.112704+03:00
+      required:
+        - id
+        - author
+        - event_type
+        - params
+        - created_at
+
+    MonitoringTaskRun:
+      type: object
+      properties:
+        start_event_id:
+          type: string
+          format: uuid
+          description: "Айди ивента старта таски"
+        end_event_id:
+          type: string
+          format: uuid
+          description: "Айди ивента паузы таски"
+        index:
+          type: number
+          description: "Порядковый номер пары ивентов старт - пауза"
+      required:
+        - start_event_id
+        - end_event_id
+        - index
+
     MonitoringHistory:
       type: object
       properties:

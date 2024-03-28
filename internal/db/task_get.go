@@ -274,7 +274,7 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 			w.started_at,
 			w.started_at,
 			ws.name,
-			w.human_status, 
+			CASE WHEN w.is_paused THEN 'wait' ELSE w.human_status END, 
 			w.debug, 
 			w.parameters, 
 			w.author, 
@@ -1134,7 +1134,7 @@ func (db *PGCon) GetTask(
 			w.started_at, 
 			w.finished_at,
 			ws.name,
-			w.human_status,
+			CASE WHEN w.is_paused THEN 'wait' ELSE w.human_status END,
 			w.debug, 
 			COALESCE(w.parameters, '{}') AS parameters,
 			w.author,
@@ -2104,46 +2104,6 @@ func (db *PGCon) GetMergedVariableStorage(ctx c.Context, workID uuid.UUID, block
 	}
 
 	return storage, nil
-}
-
-func (db *PGCon) GetTasksForMonitoring(ctx c.Context, filters *entity.TasksForMonitoringFilters) (*entity.TasksForMonitoring, error) {
-	ctx, span := trace.StartSpan(ctx, "get_tasks_for_monitoring")
-	defer span.End()
-
-	q := getTasksForMonitoringQuery(filters)
-
-	rows, err := db.Connection.Query(ctx, *q)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	tasksForMonitoring := &entity.TasksForMonitoring{
-		Tasks: make([]entity.TaskForMonitoring, 0),
-	}
-
-	for rows.Next() {
-		task := entity.TaskForMonitoring{}
-
-		err = rows.Scan(&task.Status,
-			&task.ProcessName,
-			&task.Initiator,
-			&task.WorkNumber,
-			&task.StartedAt,
-			&task.FinishedAt,
-			&task.ProcessDeletedAt,
-			&task.LastEventType,
-			&task.LastEventAt,
-			&tasksForMonitoring.Total,
-		)
-		if err != nil {
-			return nil, err
-		}
-
-		tasksForMonitoring.Tasks = append(tasksForMonitoring.Tasks, task)
-	}
-
-	return tasksForMonitoring, nil
 }
 
 func getWorksStatusQuery(statusFilter []string) *string {

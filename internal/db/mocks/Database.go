@@ -3577,6 +3577,65 @@ func (_c *MockedDatabase_GetTaskCustomProps_Call) RunAndReturn(run func(context.
 	return _c
 }
 
+// GetTaskEvents provides a mock function with given fields: ctx, workID
+func (_m *MockedDatabase) GetTaskEvents(ctx context.Context, workID string) ([]entity.TaskEvent, error) {
+	ret := _m.Called(ctx, workID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetTaskEvents")
+	}
+
+	var r0 []entity.TaskEvent
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) ([]entity.TaskEvent, error)); ok {
+		return rf(ctx, workID)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string) []entity.TaskEvent); ok {
+		r0 = rf(ctx, workID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]entity.TaskEvent)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, workID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockedDatabase_GetTaskEvents_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetTaskEvents'
+type MockedDatabase_GetTaskEvents_Call struct {
+	*mock.Call
+}
+
+// GetTaskEvents is a helper method to define mock.On call
+//   - ctx context.Context
+//   - workID string
+func (_e *MockedDatabase_Expecter) GetTaskEvents(ctx interface{}, workID interface{}) *MockedDatabase_GetTaskEvents_Call {
+	return &MockedDatabase_GetTaskEvents_Call{Call: _e.mock.On("GetTaskEvents", ctx, workID)}
+}
+
+func (_c *MockedDatabase_GetTaskEvents_Call) Run(run func(ctx context.Context, workID string)) *MockedDatabase_GetTaskEvents_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string))
+	})
+	return _c
+}
+
+func (_c *MockedDatabase_GetTaskEvents_Call) Return(events []entity.TaskEvent, err error) *MockedDatabase_GetTaskEvents_Call {
+	_c.Call.Return(events, err)
+	return _c
+}
+
+func (_c *MockedDatabase_GetTaskEvents_Call) RunAndReturn(run func(context.Context, string) ([]entity.TaskEvent, error)) *MockedDatabase_GetTaskEvents_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetTaskEventsParamsByWorkNumber provides a mock function with given fields: ctx, workNumber, systemID
 func (_m *MockedDatabase) GetTaskEventsParamsByWorkNumber(ctx context.Context, workNumber string, systemID string) (entity.ExternalSystemSubscriptionParams, error) {
 	ret := _m.Called(ctx, workNumber, systemID)

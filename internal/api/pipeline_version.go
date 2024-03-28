@@ -750,6 +750,25 @@ func (ae *Env) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO) (
 
 	runCtx.SetTaskEvents(ctx)
 
+	params := struct {
+		Steps []string `json:"steps"`
+	}{Steps: []string{"start_0"}}
+
+	jsonParams, err := json.Marshal(params)
+	if err != nil {
+		log.Error(err)
+	}
+
+	_, err = ae.DB.CreateTaskEvent(ctx, &e.CreateTaskEvent{
+		WorkID:    dto.taskID.String(),
+		Author:    dto.authorName,
+		EventType: string(MonitoringTaskActionRequestActionStart),
+		Params:    jsonParams,
+	})
+	if err != nil {
+		log.Error(err)
+	}
+
 	err = pipeline.InitBlockInDB(ctx, pipeline.BlockGoFirstStart, blockData.TypeID, runCtx)
 	if err != nil {
 		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
@@ -779,25 +798,6 @@ func (ae *Env) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO) (
 	}
 
 	runCtx.NotifyEvents(ctx)
-
-	params := struct {
-		Steps []string `json:"steps"`
-	}{Steps: []string{"start_0"}}
-
-	jsonParams, err := json.Marshal(params)
-	if err != nil {
-		log.Error(err)
-	}
-
-	_, err = ae.DB.CreateTaskEvent(ctx, &e.CreateTaskEvent{
-		WorkID:    dto.taskID.String(),
-		Author:    dto.authorName,
-		EventType: string(MonitoringTaskActionRequestActionStart),
-		Params:    jsonParams,
-	})
-	if err != nil {
-		log.Error(err)
-	}
 
 	return 0, nil
 }

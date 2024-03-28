@@ -55,8 +55,10 @@ type TaskStorager interface {
 	GetTaskInWorkTime(ctx c.Context, workNumber string) (*e.TaskCompletionInterval, error)
 	GetExecutorsFromPrevExecutionBlockRun(ctx c.Context, taskID uuid.UUID, name string) (exec map[string]struct{}, err error)
 	GetExecutorsFromPrevWorkVersionExecutionBlockRun(ctx c.Context, workNumber, name string) (exec map[string]struct{}, err error)
-	GetTaskForMonitoring(ctx c.Context, workNumber string) ([]e.MonitoringTaskNode, error)
 	GetWorkIDByWorkNumber(ctx c.Context, workNumber string) (uuid.UUID, error)
+
+	GetTaskForMonitoring(ctx c.Context, workNumber string) ([]e.MonitoringTaskNode, error)
+	GetTasksForMonitoring(ctx c.Context, filters *e.TasksForMonitoringFilters) (*e.TasksForMonitoring, error)
 
 	CreateTask(ctx c.Context, dto *CreateTaskDTO) (*e.EriusTask, error)
 	FillEmptyTask(ctx c.Context, updateTask *UpdateEmptyTaskDTO) error
@@ -244,7 +246,6 @@ type Database interface {
 	CheckBlockForHiddenFlag(ctx c.Context, blockID string) (bool, error)
 	GetMergedVariableStorage(ctx c.Context, workID uuid.UUID, blockIds []string) (*store.VariableStore, error)
 	CheckTaskForHiddenFlag(ctx c.Context, workNumber string) (bool, error)
-	GetTasksForMonitoring(ctx c.Context, filters *e.TasksForMonitoringFilters) (*e.TasksForMonitoring, error)
 	GetBlockState(ctx c.Context, blockID string) (e.BlockState, error)
 
 	SaveVersionSettings(ctx c.Context, settings e.ProcessSettings, schemaFlag *string) error
@@ -279,6 +280,7 @@ type Database interface {
 		error,
 	)
 	CreateTaskEvent(ctx c.Context, dto *e.CreateTaskEvent) (eventID string, err error)
+	GetTaskEvents(ctx c.Context, workID string) (events []e.TaskEvent, err error)
 	SetTaskPaused(ctx c.Context, workID string, isPaused bool) error
 	SetTaskBlocksPaused(ctx c.Context, workID string, steps []string, isPaused bool) error
 	IsTaskPaused(ctx c.Context, workID uuid.UUID) (isPaused bool, err error)
