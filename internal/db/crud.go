@@ -1253,7 +1253,14 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest, id u
 	defer span.End()
 
 	if !dto.IsReEntry && dto.BlockExist {
-		return id, nil
+		exists, stepID, _, err := db.IsStepExist(ctx, dto.WorkID.String(), dto.StepName, false)
+		if err != nil {
+			return uuid.Nil, err
+		}
+
+		if exists {
+			return stepID, nil
+		}
 	}
 	// nolint:gocritic
 	// language=PostgreSQL
