@@ -31,6 +31,9 @@ const (
 	ActionTypeSecondary = "secondary"
 
 	ascOrder = "ASC"
+
+	finishStatus    = "finished"
+	noSuccessStatus = "no_success"
 )
 
 func uniqueActionsByRole(loginsIn, stepType string, finished, acted bool) string {
@@ -919,10 +922,11 @@ func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter, delegations 
 	}
 
 	for i := range tasks.Tasks {
+		task := tasks.Tasks[i]
 		count := attachmentsToTasks[tasks.Tasks[i].ID]
-		tasks.Tasks[i].AttachmentsCount = &count
+		task.AttachmentsCount = &count
 
-		if tasks.Tasks[i].Status == "finished" || tasks.Tasks[i].Status == "no_success" {
+		if task.Status != finishStatus && task.Status != noSuccessStatus {
 			tasks.Tasks[i].LastChangedAt = nil
 		}
 	}
@@ -1603,8 +1607,6 @@ func (db *PGCon) getTasks(ctx c.Context, filters *entity.TaskFilter,
 
 			et.CurrentExecutionStart = &t
 		}
-
-		et.IsExpired = et.ProcessDeadline.Before(time.Now())
 
 		if nullApprTime.Valid {
 			t := nullApprTime.Time.UTC()
