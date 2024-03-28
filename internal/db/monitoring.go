@@ -2,6 +2,7 @@ package db
 
 import (
 	c "context"
+	"fmt"
 
 	e "gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 
@@ -48,7 +49,7 @@ func (db *PGCon) GetTasksForMonitoring(ctx c.Context, dto *e.TasksForMonitoringF
 	return tasksForMonitoring, nil
 }
 
-func (db *PGCon) GetTaskForMonitoring(ctx c.Context, workNumber string) ([]e.MonitoringTaskNode, error) {
+func (db *PGCon) GetTaskForMonitoring(ctx c.Context, workNumber string, fromEventId, ToEventId *string) ([]e.MonitoringTaskNode, error) {
 	ctx, span := trace.StartSpan(ctx, "get_task_for_monitoring")
 	defer span.End()
 
@@ -67,12 +68,30 @@ func (db *PGCon) GetTaskForMonitoring(ctx c.Context, workNumber string) ([]e.Mon
        		   v.content->'pipeline'-> 'blocks'->step_name->>'title' title,
        		   vs.time block_date_init,
        		   vs.is_paused block_is_paused
-		from works w
-    		join versions v on w.version_id = v.id
-    		join pipelines p on v.pipeline_id = p.id
-    		join variable_storage vs on w.id = vs.work_id
-		where w.work_number = $1
-		order by vs.time`
+		FROM works w
+    		JOIN versions v ON w.version_id = v.id
+    		JOIN pipelines p ON v.pipeline_id = p.id
+    		JOIN variable_storage vs ON w.id = vs.work_id
+		WHERE w.work_number = $1`
+
+	if fromEventId != nil && *fromEventId != "" && ToEventId != nil && *ToEventId != "" {
+		q = fmt.Sprintf("%s %s", q,
+			fmt.Sprintf(
+				`AND vs.time >= (SELECT creted_at FROM task_events WHERE id = %s)
+						AND vs.time <= (SELECT creted_at FROM task_events WHERE id = %s)`,
+				*fromEventId,
+				*ToEventId,
+			),
+		)
+	}
+
+	if (fromEventId != nil && *fromEventId != "") && (ToEventId == nil || *ToEventId == "") {
+		q = fmt.Sprintf("%s %s", q,
+			fmt.Sprintf(`AND vs.time >= (SELECT creted_at FROM task_events WHERE id = %s)`, *fromEventId),
+		)
+	}
+
+	q = fmt.Sprintf("%s %s", q, "ORDER BY vs.time")
 
 	rows, err := db.Connection.Query(ctx, q, workNumber)
 	if err != nil {

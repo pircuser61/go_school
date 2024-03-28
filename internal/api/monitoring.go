@@ -32,7 +32,7 @@ const (
 )
 
 func (ae *Env) GetTasksForMonitoring(w http.ResponseWriter, r *http.Request, params GetTasksForMonitoringParams) {
-	ctx, span := trace.StartSpan(r.Context(), "start get tasks for monitoring")
+	ctx, span := trace.StartSpan(r.Context(), "get_tasks_for_monitoring")
 	defer span.End()
 
 	log := logger.GetLogger(ctx)
@@ -229,7 +229,7 @@ func (ae *Env) GetMonitoringTask(w http.ResponseWriter, req *http.Request, workN
 		return
 	}
 
-	nodes, err := ae.DB.GetTaskForMonitoring(ctx, workNumber)
+	nodes, err := ae.DB.GetTaskForMonitoring(ctx, workNumber, params.FromEventId, params.ToEventId)
 	if err != nil {
 		errorHandler.handleError(GetMonitoringNodesError, err)
 
@@ -572,7 +572,7 @@ func (ae *Env) MonitoringTaskAction(w http.ResponseWriter, r *http.Request, work
 		return
 	}
 
-	nodes, err := ae.DB.GetTaskForMonitoring(ctx, workNumber)
+	nodes, err := ae.DB.GetTaskForMonitoring(ctx, workNumber, nil, nil)
 	if err != nil {
 		errorHandler.handleError(GetMonitoringNodesError, err)
 
