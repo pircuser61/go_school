@@ -572,7 +572,6 @@ func (ae *Env) MonitoringTaskAction(w http.ResponseWriter, r *http.Request, work
 		return
 	}
 
-
 	nodes, err := ae.DB.GetTaskForMonitoring(ctx, workNumber)
 	if err != nil {
 		errorHandler.handleError(GetMonitoringNodesError, err)
@@ -636,7 +635,7 @@ func toMonitoringTaskResponse(nodes []entity.MonitoringTaskNode, events []entity
 			run.EndEventId = events[i].ID
 		}
 
-		isLastEvent := len(events) == i + 1
+		isLastEvent := len(events) == i+1
 
 		if (run.StartEventId != "" && run.EndEventId != "") || isLastEvent {
 			run.Index = float32(len(res.TaskRuns) + 1)
