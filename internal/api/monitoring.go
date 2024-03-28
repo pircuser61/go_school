@@ -806,7 +806,7 @@ func (ae *Env) restartNode(ctx context.Context,
 
 		IsTest:    task.IsTest,
 		NotifName: task.Name,
-	}, false)
+	}, true)
 	if processErr != nil {
 		return processErr
 	}
