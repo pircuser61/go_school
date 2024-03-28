@@ -49,7 +49,7 @@ func (db *PGCon) GetTasksForMonitoring(ctx c.Context, dto *e.TasksForMonitoringF
 	return tasksForMonitoring, nil
 }
 
-func (db *PGCon) GetTaskForMonitoring(ctx c.Context, workNumber string, fromEventID, ToEventID *string) ([]e.MonitoringTaskNode, error) {
+func (db *PGCon) GetTaskForMonitoring(ctx c.Context, workNumber string, fromEventID, toEventID *string) ([]e.MonitoringTaskNode, error) {
 	ctx, span := trace.StartSpan(ctx, "get_task_for_monitoring")
 	defer span.End()
 
@@ -74,18 +74,18 @@ func (db *PGCon) GetTaskForMonitoring(ctx c.Context, workNumber string, fromEven
     		JOIN variable_storage vs ON w.id = vs.work_id
 		WHERE w.work_number = $1`
 
-	if fromEventID != nil && *fromEventID != "" && ToEventID != nil && *ToEventID != "" {
+	if fromEventID != nil && *fromEventID != "" && toEventID != nil && *toEventID != "" {
 		q = fmt.Sprintf("%s %s", q,
 			fmt.Sprintf(
 				`AND vs.time >= (SELECT created_at FROM task_events WHERE id = %s)
 						AND vs.time <= (SELECT created_at FROM task_events WHERE id = %s)`,
 				*fromEventID,
-				*ToEventID,
+				*toEventID,
 			),
 		)
 	}
 
-	if (fromEventID != nil && *fromEventID != "") && (ToEventID == nil || *ToEventID == "") {
+	if (fromEventID != nil && *fromEventID != "") && (toEventID == nil || *toEventID == "") {
 		q = fmt.Sprintf("%s %s", q,
 			fmt.Sprintf(`AND vs.time >= (SELECT created_at FROM task_events WHERE id = %s)`, *fromEventID),
 		)
