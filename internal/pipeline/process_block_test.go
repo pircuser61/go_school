@@ -63,7 +63,6 @@ func makeStorage() *mocks.MockedDatabase {
 		mock.MatchedBy(func(ctx context.Context) bool { return true }),
 		mock.MatchedBy(func(data *db.SaveStepRequest) bool { return true }),
 		uuid.UUID{},
-		mock.MatchedBy(func(hasUpdData bool) bool { return true }),
 	).Return(uuid.UUID{}, nil)
 
 	res.On("StopTaskBlocks",
