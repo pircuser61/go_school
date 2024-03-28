@@ -735,8 +735,13 @@ func (gb *GoExecutionBlock) updateDecision(ctx c.Context) error {
 			gb.RunContext.VarStore.SetValue(gb.Output[keyOutputExecutionLogin], person)
 		}
 
-		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputDecision], &gb.State.Decision)
-		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputComment], &gb.State.DecisionComment)
+		if gb.State.Decision != nil {
+			gb.RunContext.VarStore.SetValue(gb.Output[keyOutputDecision], &gb.State.Decision)
+		}
+
+		if gb.State.DecisionComment != nil {
+			gb.RunContext.VarStore.SetValue(gb.Output[keyOutputComment], &gb.State.DecisionComment)
+		}
 	}
 
 	return nil
