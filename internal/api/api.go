@@ -1553,9 +1553,6 @@ type MonitoringTaskActionRequest struct {
 
 	// Параметры действия
 	Params *MonitoringTaskActionParams `json:"params,omitempty"`
-
-	// Номер заявки для мониторинга
-	WorkNumber string `json:"work_number"`
 }
 
 // Действия с заявкой
@@ -1573,8 +1570,8 @@ type MonitoringTaskEvent struct {
 	// id ивента
 	Id string `json:"id"`
 
-	// параметры ивента
-	Params string `json:"params"`
+	// Параметры действия
+	Params MonitoringTaskActionParams `json:"params"`
 }
 
 // тип ивента
@@ -1588,13 +1585,13 @@ type MonitoringTaskEvents struct {
 // MonitoringTaskRun defines model for MonitoringTaskRun.
 type MonitoringTaskRun struct {
 	// Айди ивента паузы таски
-	EndEventId *string `json:"end_event_id,omitempty"`
+	EndEventId string `json:"end_event_id"`
 
 	// Порядковый номер пары ивентов старт - пауза
-	Index *float32 `json:"index,omitempty"`
+	Index float32 `json:"index"`
 
 	// Айди ивента старта таски
-	StartEventId *string `json:"start_event_id,omitempty"`
+	StartEventId string `json:"start_event_id"`
 }
 
 // MonitoringTasksPage defines model for MonitoringTasksPage.
@@ -2323,9 +2320,6 @@ type GetFormsChangelogParams struct {
 	BlockId string `json:"block_id"`
 }
 
-// MonitoringTaskActionJSONBody defines parameters for MonitoringTaskAction.
-type MonitoringTaskActionJSONBody MonitoringTaskActionRequest
-
 // GetTasksForMonitoringParams defines parameters for GetTasksForMonitoring.
 type GetTasksForMonitoringParams struct {
 	PerPage    *int                                   `json:"per_page,omitempty"`
@@ -2363,6 +2357,9 @@ type GetMonitoringTaskParams struct {
 	// id ивента по который нужно взять блоки
 	ToEventId *string `json:"to_event_id,omitempty"`
 }
+
+// MonitoringTaskActionJSONBody defines parameters for MonitoringTaskAction.
+type MonitoringTaskActionJSONBody MonitoringTaskActionRequest
 
 // SaveVersionMainSettingsJSONBody defines parameters for SaveVersionMainSettings.
 type SaveVersionMainSettingsJSONBody ProcessSettings
@@ -3367,12 +3364,6 @@ type ServerInterface interface {
 	// Get list of modules
 	// (GET /modules)
 	GetModules(w http.ResponseWriter, r *http.Request)
-	// Действия с заявкой в мониторинге
-	// (PUT /monitoring/task/action)
-	MonitoringTaskAction(w http.ResponseWriter, r *http.Request)
-	// Ивенты заяви в мониторинге
-	// (GET /monitoring/task/events/{workNumber})
-	GetMonitoringTaskEvents(w http.ResponseWriter, r *http.Request, workNumber string)
 	// Get tasks for monitoring
 	// (GET /monitoring/tasks)
 	GetTasksForMonitoring(w http.ResponseWriter, r *http.Request, params GetTasksForMonitoringParams)
@@ -3388,6 +3379,12 @@ type ServerInterface interface {
 	// Get task for monitoring
 	// (GET /monitoring/tasks/{workNumber})
 	GetMonitoringTask(w http.ResponseWriter, r *http.Request, workNumber string, params GetMonitoringTaskParams)
+	// Действия с заявкой в мониторинге
+	// (PUT /monitoring/tasks/{workNumber}/action)
+	MonitoringTaskAction(w http.ResponseWriter, r *http.Request, workNumber string)
+	// Ивенты заяви в мониторинге
+	// (GET /monitoring/tasks/{workNumber}/events)
+	GetMonitoringTaskEvents(w http.ResponseWriter, r *http.Request, workNumber string)
 	// Save process main settings
 	// (POST /pipeline/version/{versionID}/settings/main)
 	SaveVersionMainSettings(w http.ResponseWriter, r *http.Request, versionID string)
@@ -3697,47 +3694,6 @@ func (siw *ServerInterfaceWrapper) GetModules(w http.ResponseWriter, r *http.Req
 	handler(w, r.WithContext(ctx))
 }
 
-// MonitoringTaskAction operation middleware
-func (siw *ServerInterfaceWrapper) MonitoringTaskAction(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	var handler = func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.MonitoringTaskAction(w, r)
-	}
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler(w, r.WithContext(ctx))
-}
-
-// GetMonitoringTaskEvents operation middleware
-func (siw *ServerInterfaceWrapper) GetMonitoringTaskEvents(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	var err error
-
-	// ------------- Path parameter "workNumber" -------------
-	var workNumber string
-
-	err = runtime.BindStyledParameter("simple", false, "workNumber", chi.URLParam(r, "workNumber"), &workNumber)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Invalid format for parameter workNumber: %s", err), http.StatusBadRequest)
-		return
-	}
-
-	var handler = func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetMonitoringTaskEvents(w, r, workNumber)
-	}
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler(w, r.WithContext(ctx))
-}
-
 // GetTasksForMonitoring operation middleware
 func (siw *ServerInterfaceWrapper) GetTasksForMonitoring(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -3966,6 +3922,58 @@ func (siw *ServerInterfaceWrapper) GetMonitoringTask(w http.ResponseWriter, r *h
 
 	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetMonitoringTask(w, r, workNumber, params)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
+// MonitoringTaskAction operation middleware
+func (siw *ServerInterfaceWrapper) MonitoringTaskAction(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "workNumber" -------------
+	var workNumber string
+
+	err = runtime.BindStyledParameter("simple", false, "workNumber", chi.URLParam(r, "workNumber"), &workNumber)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Invalid format for parameter workNumber: %s", err), http.StatusBadRequest)
+		return
+	}
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.MonitoringTaskAction(w, r, workNumber)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
+// GetMonitoringTaskEvents operation middleware
+func (siw *ServerInterfaceWrapper) GetMonitoringTaskEvents(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "workNumber" -------------
+	var workNumber string
+
+	err = runtime.BindStyledParameter("simple", false, "workNumber", chi.URLParam(r, "workNumber"), &workNumber)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Invalid format for parameter workNumber: %s", err), http.StatusBadRequest)
+		return
+	}
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetMonitoringTaskEvents(w, r, workNumber)
 	}
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -5423,12 +5431,6 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/modules", wrapper.GetModules)
 	})
 	r.Group(func(r chi.Router) {
-		r.Put(options.BaseURL+"/monitoring/task/action", wrapper.MonitoringTaskAction)
-	})
-	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/monitoring/task/events/{workNumber}", wrapper.GetMonitoringTaskEvents)
-	})
-	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/monitoring/tasks", wrapper.GetTasksForMonitoring)
 	})
 	r.Group(func(r chi.Router) {
@@ -5442,6 +5444,12 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/monitoring/tasks/{workNumber}", wrapper.GetMonitoringTask)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/monitoring/tasks/{workNumber}/action", wrapper.MonitoringTaskAction)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/monitoring/tasks/{workNumber}/events", wrapper.GetMonitoringTaskEvents)
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/pipeline/version/{versionID}/settings/main", wrapper.SaveVersionMainSettings)

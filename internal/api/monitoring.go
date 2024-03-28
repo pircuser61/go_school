@@ -410,12 +410,19 @@ type startNodesParams struct {
 }
 
 //nolint:gocyclo,gocognit //its ok here
-func (ae *Env) MonitoringTaskAction(w http.ResponseWriter, r *http.Request) {
+func (ae *Env) MonitoringTaskAction(w http.ResponseWriter, r *http.Request, workNumber string) {
 	ctx, span := trace.StartSpan(r.Context(), "monitoring_task_action")
 	defer span.End()
 
 	log := logger.GetLogger(ctx)
 	errorHandler := newHTTPErrorHandler(log, w)
+
+	if workNumber == "" {
+		err := errors.New("workNumber is empty")
+		errorHandler.handleError(ValidationError, err)
+
+		return
+	}
 
 	b, err := io.ReadAll(r.Body)
 
@@ -465,7 +472,7 @@ func (ae *Env) MonitoringTaskAction(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
-	workID, err := ae.DB.GetWorkIDByWorkNumber(ctx, req.WorkNumber)
+	workID, err := ae.DB.GetWorkIDByWorkNumber(ctx, workNumber)
 	if err != nil {
 		errorHandler.handleError(GetTaskError, err)
 
@@ -497,7 +504,7 @@ func (ae *Env) MonitoringTaskAction(w http.ResponseWriter, r *http.Request) {
 		err = ae.startProcess(ctx, &startNodesParams{
 			workID:     workID,
 			author:     ui.Username,
-			workNumber: req.WorkNumber,
+			workNumber: workNumber,
 			byOne:      false,
 			params:     req.Params,
 			tx:         txStorage,
@@ -518,7 +525,7 @@ func (ae *Env) MonitoringTaskAction(w http.ResponseWriter, r *http.Request) {
 		err = ae.startProcess(ctx, &startNodesParams{
 			workID:     workID,
 			author:     ui.Username,
-			workNumber: req.WorkNumber,
+			workNumber: workNumber,
 			byOne:      true,
 			params:     req.Params,
 			tx:         txStorage,
@@ -544,7 +551,7 @@ func (ae *Env) MonitoringTaskAction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	nodes, err := ae.DB.GetTaskForMonitoring(ctx, req.WorkNumber)
+	nodes, err := ae.DB.GetTaskForMonitoring(ctx, workNumber)
 	if err != nil {
 		errorHandler.handleError(GetMonitoringNodesError, err)
 
@@ -873,16 +880,14 @@ func (ae *Env) toMonitoringTaskEventsResponse(ctx context.Context, events []enti
 			fullNameCache[events[i].Author] = userFullName
 		}
 
-		params, err := json.Marshal(events[i].Params)
-		if err != nil {
-			params = []byte{}
-		}
+		params := MonitoringTaskActionParams{}
+		_ = json.Unmarshal(events[i].Params, &params)
 
 		res.Events = append(res.Events, MonitoringTaskEvent{
 			Id:        events[i].ID,
 			Author:    fullNameCache[events[i].Author],
 			EventType: MonitoringTaskEventEventType(events[i].EventType),
-			Params:    string(params),
+			Params:    params,
 			CreatedAt: events[i].CreatedAt.Format(monitoringTimeLayout),
 		})
 	}
