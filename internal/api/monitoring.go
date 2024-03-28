@@ -188,7 +188,7 @@ func (ae *Env) GetBlockContext(w http.ResponseWriter, r *http.Request, blockID s
 	}
 }
 
-func (ae *Env) GetMonitoringTask(w http.ResponseWriter, req *http.Request, workNumber string) {
+func (ae *Env) GetMonitoringTask(w http.ResponseWriter, req *http.Request, workNumber string, params GetMonitoringTaskParams) {
 	ctx, s := trace.StartSpan(req.Context(), "get_monitoring_task")
 	defer s.End()
 
@@ -410,12 +410,19 @@ type startNodesParams struct {
 }
 
 //nolint:gocyclo,gocognit //its ok here
-func (ae *Env) MonitoringTaskAction(w http.ResponseWriter, r *http.Request) {
+func (ae *Env) MonitoringTaskAction(w http.ResponseWriter, r *http.Request, workNumber string) {
 	ctx, span := trace.StartSpan(r.Context(), "monitoring_task_action")
 	defer span.End()
 
 	log := logger.GetLogger(ctx)
 	errorHandler := newHTTPErrorHandler(log, w)
+
+	if workNumber == "" {
+		err := errors.New("workNumber is empty")
+		errorHandler.handleError(ValidationError, err)
+
+		return
+	}
 
 	b, err := io.ReadAll(r.Body)
 
@@ -465,7 +472,7 @@ func (ae *Env) MonitoringTaskAction(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
-	workID, err := ae.DB.GetWorkIDByWorkNumber(ctx, req.WorkNumber)
+	workID, err := ae.DB.GetWorkIDByWorkNumber(ctx, workNumber)
 	if err != nil {
 		errorHandler.handleError(GetTaskError, err)
 
@@ -497,7 +504,7 @@ func (ae *Env) MonitoringTaskAction(w http.ResponseWriter, r *http.Request) {
 		err = ae.startProcess(ctx, &startNodesParams{
 			workID:     workID,
 			author:     ui.Username,
-			workNumber: req.WorkNumber,
+			workNumber: workNumber,
 			byOne:      false,
 			params:     req.Params,
 			tx:         txStorage,
@@ -518,7 +525,7 @@ func (ae *Env) MonitoringTaskAction(w http.ResponseWriter, r *http.Request) {
 		err = ae.startProcess(ctx, &startNodesParams{
 			workID:     workID,
 			author:     ui.Username,
-			workNumber: req.WorkNumber,
+			workNumber: workNumber,
 			byOne:      true,
 			params:     req.Params,
 			tx:         txStorage,
@@ -544,7 +551,7 @@ func (ae *Env) MonitoringTaskAction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	nodes, err := ae.DB.GetTaskForMonitoring(ctx, req.WorkNumber)
+	nodes, err := ae.DB.GetTaskForMonitoring(ctx, workNumber)
 	if err != nil {
 		errorHandler.handleError(GetMonitoringNodesError, err)
 
@@ -566,7 +573,10 @@ func (ae *Env) MonitoringTaskAction(w http.ResponseWriter, r *http.Request) {
 }
 
 func toMonitoringTaskResponse(nodes []entity.MonitoringTaskNode) *MonitoringTask {
-	res := &MonitoringTask{History: make([]MonitoringHistory, 0)}
+	res := &MonitoringTask{
+		History:  make([]MonitoringHistory, 0),
+		TaskRuns: make([]MonitoringTaskRun, 0),
+	}
 	res.ScenarioInfo = MonitoringScenarioInfo{
 		Author:       nodes[0].Author,
 		CreationTime: nodes[0].CreationTime,
@@ -815,4 +825,72 @@ func (ae *Env) skipTaskBlocksAfterRestart(ctx context.Context, steps *entity.Tas
 	}
 
 	return nil
+}
+
+func (ae *Env) GetMonitoringTaskEvents(w http.ResponseWriter, req *http.Request, workNumber string) {
+	ctx, s := trace.StartSpan(req.Context(), "get_monitoring_task_events")
+	defer s.End()
+
+	log := logger.GetLogger(ctx)
+	errorHandler := newHTTPErrorHandler(log, w)
+
+	if workNumber == "" {
+		err := errors.New("workNumber is empty")
+		errorHandler.handleError(ValidationError, err)
+
+		return
+	}
+
+	workID, err := ae.DB.GetWorkIDByWorkNumber(ctx, workNumber)
+	if err != nil {
+		errorHandler.handleError(GetTaskError, err)
+
+		return
+	}
+
+	events, err := ae.DB.GetTaskEvents(ctx, workID.String())
+	if err != nil {
+		errorHandler.handleError(GetTaskEventsError, err)
+
+		return
+	}
+
+	err = sendResponse(w, http.StatusOK, ae.toMonitoringTaskEventsResponse(ctx, events))
+	if err != nil {
+		errorHandler.handleError(UnknownError, err)
+
+		return
+	}
+}
+
+func (ae *Env) toMonitoringTaskEventsResponse(ctx context.Context, events []entity.TaskEvent) *MonitoringTaskEvents {
+	res := &MonitoringTaskEvents{
+		Events: make([]MonitoringTaskEvent, len(events)),
+	}
+
+	fullNameCache := make(map[string]string)
+
+	for i := range events {
+		if _, ok := fullNameCache[events[i].Author]; !ok {
+			userFullName, getUserErr := ae.getUserFullName(ctx, events[i].Author)
+			if getUserErr != nil {
+				fullNameCache[events[i].Author] = events[i].Author
+			}
+
+			fullNameCache[events[i].Author] = userFullName
+		}
+
+		params := MonitoringTaskActionParams{}
+		_ = json.Unmarshal(events[i].Params, &params)
+
+		res.Events = append(res.Events, MonitoringTaskEvent{
+			Id:        events[i].ID,
+			Author:    fullNameCache[events[i].Author],
+			EventType: MonitoringTaskEventEventType(events[i].EventType),
+			Params:    params,
+			CreatedAt: events[i].CreatedAt.Format(monitoringTimeLayout),
+		})
+	}
+
+	return res
 }

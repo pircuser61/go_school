@@ -6694,6 +6694,10 @@ func (_m *MockedDatabase) GetEventsToSend(ctx context.Context) ([]entity.ToSendK
 	return nil, nil
 }
 
+func (_m *MockedDatabase) GetTaskEvents(ctx context.Context, workID string) (events []entity.TaskEvent, err error) {
+	return nil, nil
+}
+
 // MockedDatabase_VersionEditable_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'VersionEditable'
 type MockedDatabase_VersionEditable_Call struct {
 	*mock.Call
