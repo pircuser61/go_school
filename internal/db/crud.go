@@ -1252,7 +1252,7 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest, id u
 	ctx, span := trace.StartSpan(ctx, "pg_save_step_context")
 	defer span.End()
 
-	if !dto.IsReEntry && dto.BlockExist {
+	if !dto.IsReEntry {
 		return id, nil
 	}
 	// nolint:gocritic
