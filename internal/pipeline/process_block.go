@@ -254,7 +254,7 @@ func initBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *BlockRu
 		members:         block.Members(),
 		deadlines:       deadlines,
 		isReEntered:     isReEntry,
-		blockExist:      exists,
+		blockExist:      blockExistsInContext,
 		attachments:     block.BlockAttachments(),
 		currentExecutor: block.CurrentExecutorData(),
 	}, id)
