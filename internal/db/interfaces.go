@@ -275,6 +275,7 @@ type Database interface {
 		error,
 	)
 	CreateTaskEvent(ctx c.Context, dto *e.CreateTaskEvent) (eventID string, err error)
+	GetTaskEvents(ctx c.Context, workID string) (events []e.TaskEvent, err error)
 	SetTaskPaused(ctx c.Context, workID string, isPaused bool) error
 	SetTaskBlocksPaused(ctx c.Context, workID string, steps []string, isPaused bool) error
 	IsTaskPaused(ctx c.Context, workID uuid.UUID) (isPaused bool, err error)
