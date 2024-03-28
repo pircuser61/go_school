@@ -77,8 +77,8 @@ func (db *PGCon) GetTaskForMonitoring(ctx c.Context, workNumber string, fromEven
 	if fromEventID != nil && *fromEventID != "" && ToEventID != nil && *ToEventID != "" {
 		q = fmt.Sprintf("%s %s", q,
 			fmt.Sprintf(
-				`AND vs.time >= (SELECT creted_at FROM task_events WHERE id = %s)
-						AND vs.time <= (SELECT creted_at FROM task_events WHERE id = %s)`,
+				`AND vs.time >= (SELECT created_at FROM task_events WHERE id = %s)
+						AND vs.time <= (SELECT created_at FROM task_events WHERE id = %s)`,
 				*fromEventID,
 				*ToEventID,
 			),
@@ -87,7 +87,7 @@ func (db *PGCon) GetTaskForMonitoring(ctx c.Context, workNumber string, fromEven
 
 	if (fromEventID != nil && *fromEventID != "") && (ToEventID == nil || *ToEventID == "") {
 		q = fmt.Sprintf("%s %s", q,
-			fmt.Sprintf(`AND vs.time >= (SELECT creted_at FROM task_events WHERE id = %s)`, *fromEventID),
+			fmt.Sprintf(`AND vs.time >= (SELECT created_at FROM task_events WHERE id = %s)`, *fromEventID),
 		)
 	}
 
