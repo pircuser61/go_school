@@ -228,10 +228,10 @@ func initBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *BlockRu
 		return nil, uuid.Nil, err
 	}
 
-	_, blockExists := runCtx.VarStore.State[name]
+	_, blockExistsInContext := runCtx.VarStore.State[name]
 
 	// либо блока нет либо блок уже есть и мы зашли в него повторно
-	if !blockExists || isReEntry {
+	if !blockExistsInContext || isReEntry {
 		state, stateErr := json.Marshal(block.GetState())
 		if stateErr != nil {
 			return nil, uuid.Nil, stateErr
@@ -254,7 +254,7 @@ func initBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *BlockRu
 		members:         block.Members(),
 		deadlines:       deadlines,
 		isReEntered:     isReEntry,
-		blockExist:      blockExists,
+		blockExist:      exists,
 		attachments:     block.BlockAttachments(),
 		currentExecutor: block.CurrentExecutorData(),
 	}, id)
