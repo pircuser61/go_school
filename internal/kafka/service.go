@@ -44,7 +44,7 @@ func NewService(log logger.Logger, cfg Config) (*Service, bool, error) {
 		serviceConfig: cfg,
 	}
 
-	topics := []string{cfg.ProducerTopic, cfg.ConsumerTopic}
+	topics := []string{cfg.ProducerTopic, cfg.ProducerTopicSD, cfg.ConsumerTopic}
 
 	if len(cfg.Brokers) == 0 || len(topics) == 0 {
 		return s, false, errors.New("brokers or topics is empty")
@@ -173,15 +173,14 @@ func (s *Service) checkHealth() {
 		msg := s.MessageHandler
 
 		newService, _, reconnectErr := NewService(s.log, s.serviceConfig)
+		*s = *newService
+		s.MessageHandler = msg
+
 		if reconnectErr != nil {
 			s.log.WithError(reconnectErr).Error("failed to reconnect to kafka")
 
 			return
 		}
-
-		*s = *newService
-
-		s.MessageHandler = msg
 
 		s.StartConsumer(c.Background())
 

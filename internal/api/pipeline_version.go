@@ -62,11 +62,6 @@ func (ae *Env) createPipelineVersion(ctx c.Context, in *e.EriusScenario, pID str
 		log.WithError(err).Error("user failed")
 	}
 
-	ok, valErr := ae.validatePipeline(ctx, in)
-	if !ok && in.Status == db.StatusApproved {
-		return nil, validateBlockTypeErrText(valErr), errors.New(valErr)
-	}
-
 	updated, err := json.Marshal(in)
 	if err != nil {
 		return nil, PipelineParseError, err
@@ -762,6 +757,25 @@ func (ae *Env) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO) (
 
 	runCtx.SetTaskEvents(ctx)
 
+	params := struct {
+		Steps []string `json:"steps"`
+	}{Steps: []string{"start_0"}}
+
+	jsonParams, err := json.Marshal(params)
+	if err != nil {
+		log.Error(err)
+	}
+
+	_, err = ae.DB.CreateTaskEvent(ctx, &e.CreateTaskEvent{
+		WorkID:    ep.TaskID.String(),
+		Author:    dto.authorName,
+		EventType: string(MonitoringTaskActionRequestActionStart),
+		Params:    jsonParams,
+	})
+	if err != nil {
+		log.Error(err)
+	}
+
 	workFinished, err := pipeline.ProcessBlockWithEndMapping(ctx, ep.EntryPoint, blockData, runCtx, false)
 	if err != nil {
 		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
@@ -788,25 +802,6 @@ func (ae *Env) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO) (
 	}
 
 	runCtx.NotifyEvents(ctx)
-
-	params := struct {
-		Steps []string `json:"steps"`
-	}{Steps: []string{"start_0"}}
-
-	jsonParams, err := json.Marshal(params)
-	if err != nil {
-		log.Error(err)
-	}
-
-	_, err = ae.DB.CreateTaskEvent(ctx, &e.CreateTaskEvent{
-		WorkID:    ep.TaskID.String(),
-		Author:    dto.authorName,
-		EventType: string(MonitoringTaskActionRequestActionStart),
-		Params:    jsonParams,
-	})
-	if err != nil {
-		log.Error(err)
-	}
 
 	return ep, 0, nil
 }

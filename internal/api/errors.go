@@ -133,6 +133,7 @@ const (
 	MonitoringEditBlockParseError
 	GetTaskStepError
 	EditMonitoringBlockError
+	GetTaskEventsError
 )
 
 /*
@@ -254,6 +255,7 @@ var errorText = map[Err]string{
 	MonitoringEditBlockParseError:       "can't parse params for block data editing",
 	GetTaskStepError:                    "can't get step data from DB",
 	EditMonitoringBlockError:            "can't edit block data",
+	GetTaskEventsError:                  "can`t get task events",
 }
 
 /*
@@ -375,6 +377,7 @@ var errorDescription = map[Err]string{
 	MonitoringEditBlockParseError:  "Не удалось распарсить параметры для редактирования блока",
 	GetTaskStepError:               "Не удалось получить информацию о блоке из базы данных",
 	EditMonitoringBlockError:       "Не удалось редактировать данные в блоке",
+	GetTaskEventsError:             "Не удалось получить события по заявке",
 }
 
 /*

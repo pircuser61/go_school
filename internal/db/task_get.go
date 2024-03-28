@@ -56,6 +56,7 @@ func uniqueActionsByRole(loginsIn, stepType string, finished, acted bool) string
          , CASE WHEN vs.step_type = 'execution' THEN vs.time END                            AS exec_start_time
 		 , CASE WHEN vs.step_type = 'approver' THEN vs.time END                          	AS appr_start_time
          , vs.time                                                                          AS node_start
+         , vs.updated_at																	AS updated_at
          , timestamptz(vs.content -> 'State' -> vs.step_name ->> 'deadline')                AS node_deadline
     FROM members m
              JOIN variable_storage vs on vs.id = m.block_id
@@ -76,7 +77,9 @@ func uniqueActionsByRole(loginsIn, stepType string, finished, acted bool) string
          , max(actions.current_executor::text)::jsonb    AS current_executor
          , min(actions.exec_start_time)     	  		 AS exec_start_time
          , min(actions.appr_start_time)     	  		 AS appr_start_time
+         , max(actions.updated_at)     	  		 		 AS updated_at
          , min(actions.node_deadline)     	  		 	 AS node_deadline    
+    	 , min(actions.node_start) 						 AS node_start
     FROM actions
              JOIN filtered_actions fa ON fa.time = actions.node_start AND fa.block_id = actions.block_id
              LEFT JOIN LATERAL (SELECT jsonb_build_object(
@@ -252,7 +255,8 @@ func getUniqueActions(selectFilter string, logins []string) string {
            ''                             AS current_executor,
            null                           AS exec_start_time,
            null                           AS appr_start_time,
-           null::timestamp with time zone AS node_deadline
+           null::timestamp with time zone AS node_deadline,
+           null::timestamp with time zone AS node_start
     FROM works
     WHERE author IN %s AND child_id IS NULL
 )`, loginsIn)
@@ -270,7 +274,7 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 			w.started_at,
 			w.started_at,
 			ws.name,
-			w.human_status, 
+			CASE WHEN w.is_paused THEN 'wait' ELSE w.human_status END, 
 			w.debug, 
 			w.parameters, 
 			w.author, 
@@ -311,14 +315,19 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 		) descr ON descr.work_id = w.id
 		WHERE w.child_id IS NULL`
 
-	order := ascOrder
+	var order string
 	if fl.Order != nil {
 		order = *fl.Order
 	}
 
+	var orderBy []string
+	if fl.OrderBy != nil {
+		orderBy = *fl.OrderBy
+	}
+
 	var queryMaker compileGetTaskQueryMaker
 
-	return queryMaker.MakeQuery(&fl, q, delegations, args, order, true)
+	return queryMaker.MakeQuery(&fl, q, delegations, args, order, orderBy, true)
 }
 
 //nolint:gocritic //изначально было без поинтера
@@ -337,14 +346,19 @@ func compileGetTasksMetaQuery(fl entity.TaskFilter, delegations []string) (q str
 		[join_variable_storage]
 		WHERE w.child_id IS NULL`
 
-	order := ascOrder
+	var order string
 	if fl.Order != nil {
 		order = *fl.Order
 	}
 
+	var orderBy []string
+	if fl.OrderBy != nil {
+		orderBy = *fl.OrderBy
+	}
+
 	var queryMaker compileGetTaskQueryMaker
 
-	return queryMaker.MakeQuery(&fl, q, delegations, args, order, false)
+	return queryMaker.MakeQuery(&fl, q, delegations, args, order, orderBy, false)
 }
 
 type compileGetTaskQueryMaker struct {
@@ -445,9 +459,60 @@ func (cq *compileGetTaskQueryMaker) addProcessingSteps() {
 	}
 }
 
-func (cq *compileGetTaskQueryMaker) addOrder(order string) {
-	if order != "" {
+//nolint:gocyclo //it's ok
+func (cq *compileGetTaskQueryMaker) addOrderBy(order string, orderBy []string) {
+	if (order != "" && len(orderBy) == 0) || len(orderBy) == 0 {
 		cq.q = fmt.Sprintf("%s\n ORDER BY w.started_at %s", cq.q, order)
+
+		return
+	}
+
+	orderItem := make([]string, 0, len(orderBy))
+
+	for _, item := range orderBy {
+		splits := strings.Split(item, ":")
+
+		columnOrder := ascOrder
+		if len(splits) == 2 {
+			columnOrder = splits[1]
+		}
+
+		switch splits[0] {
+		case "execution_started":
+			orderItem = append(orderItem, fmt.Sprintf("ua.node_start %s", columnOrder))
+		case "started_at":
+			orderItem = append(orderItem, fmt.Sprintf("w.started_at %s", columnOrder))
+		case "execution_deadline":
+			orderItem = append(orderItem, fmt.Sprintf("ua.node_deadline %s", columnOrder))
+		case "author":
+			orderItem = append(orderItem, fmt.Sprintf("w.author %s", columnOrder))
+		case "debug":
+			orderItem = append(orderItem, fmt.Sprintf("w.debug %s", columnOrder))
+		case "human_status":
+			orderItem = append(orderItem, fmt.Sprintf("w.human_status %s", columnOrder))
+		case "id":
+			orderItem = append(orderItem, fmt.Sprintf("w.id %s", columnOrder))
+		case "last_changed_at":
+			orderItem = append(orderItem, fmt.Sprintf("w.started_at %s", columnOrder))
+		case "name":
+			orderItem = append(orderItem, fmt.Sprintf("p.name %s", columnOrder))
+		case "status":
+			orderItem = append(orderItem, fmt.Sprintf("w.status %s", columnOrder))
+		case "version_id":
+			orderItem = append(orderItem, fmt.Sprintf("v.id %s", columnOrder))
+		case "work_number":
+			orderItem = append(orderItem, fmt.Sprintf("w.work_number %s", columnOrder))
+		case "rate":
+			orderItem = append(orderItem, fmt.Sprintf("w.rate %s", columnOrder))
+		case "is_paused":
+			orderItem = append(orderItem, fmt.Sprintf("w.is_paused %s", columnOrder))
+		default:
+			continue
+		}
+	}
+
+	if len(orderItem) != 0 {
+		cq.q = fmt.Sprintf("%s\n ORDER BY %v", cq.q, strings.Join(orderItem, ", "))
 	}
 }
 
@@ -471,6 +536,7 @@ func (cq *compileGetTaskQueryMaker) MakeQuery(
 	delegations []string,
 	args []any,
 	order string,
+	orderBy []string,
 	useLimitOffset bool,
 ) (query string, resArgs []any) {
 	cq.fl = fl
@@ -489,7 +555,7 @@ func (cq *compileGetTaskQueryMaker) MakeQuery(
 	cq.addReceiver()
 	cq.addInitiator()
 	cq.addProcessingSteps()
-	cq.addOrder(order)
+	cq.addOrderBy(order, orderBy)
 
 	if useLimitOffset {
 		cq.addOffset()
@@ -1068,7 +1134,7 @@ func (db *PGCon) GetTask(
 			w.started_at, 
 			w.finished_at,
 			ws.name,
-			w.human_status,
+			CASE WHEN w.is_paused THEN 'wait' ELSE w.human_status END,
 			w.debug, 
 			COALESCE(w.parameters, '{}') AS parameters,
 			w.author,
@@ -2040,43 +2106,6 @@ func (db *PGCon) GetMergedVariableStorage(ctx c.Context, workID uuid.UUID, block
 	return storage, nil
 }
 
-func (db *PGCon) GetTasksForMonitoring(ctx c.Context, filters *entity.TasksForMonitoringFilters) (*entity.TasksForMonitoring, error) {
-	ctx, span := trace.StartSpan(ctx, "get_tasks_for_monitoring")
-	defer span.End()
-
-	q := getTasksForMonitoringQuery(filters)
-
-	rows, err := db.Connection.Query(ctx, *q)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	tasksForMonitoring := &entity.TasksForMonitoring{
-		Tasks: make([]entity.TaskForMonitoring, 0),
-	}
-
-	for rows.Next() {
-		task := entity.TaskForMonitoring{}
-
-		err = rows.Scan(&task.Status,
-			&task.ProcessName,
-			&task.Initiator,
-			&task.WorkNumber,
-			&task.StartedAt,
-			&task.FinishedAt,
-			&task.ProcessDeletedAt,
-			&tasksForMonitoring.Total)
-		if err != nil {
-			return nil, err
-		}
-
-		tasksForMonitoring.Tasks = append(tasksForMonitoring.Tasks, task)
-	}
-
-	return tasksForMonitoring, nil
-}
-
 func getWorksStatusQuery(statusFilter []string) *string {
 	statusQuery := `(CASE 
 						WHEN w.status IN (1, 3, 5) THEN 'В работе' 
@@ -2101,24 +2130,33 @@ func getWorksStatusQuery(statusFilter []string) *string {
 
 func getTasksForMonitoringQuery(filters *entity.TasksForMonitoringFilters) *string {
 	q := `
-			SELECT CASE
-					WHEN w.status IN (1, 3, 5) THEN 'В работе'
-        			WHEN w.status = 2 THEN 'Завершен'
-				    WHEN w.status = 4 THEN 'Остановлен'
-			    	WHEN w.status = 6 THEN 'Отменен'
-        			WHEN w.status IS NULL THEN 'Неизвестный статус'
-    			END AS status,
-				p.name AS process_name,
-				w.author AS initiator,
-				w.work_number AS work_number,
-				w.started_at AS started_at,
-				w.finished_at as finished_at,
-				p.deleted_at as process_deleted_at,
-				COUNT(*) OVER() as total
-			FROM works w
-			LEFT JOIN versions v on w.version_id = v.id
-			LEFT JOIN pipelines p on v.pipeline_id = p.id
-			WHERE w.started_at IS NOT NULL AND p.name IS NOT NULL AND v.is_hidden = false
+		SELECT CASE
+				WHEN w.status IN (1, 3, 5) THEN 'В работе'
+				WHEN w.status = 2 THEN 'Завершен'
+				WHEN w.status = 4 THEN 'Остановлен'
+				WHEN w.status = 6 THEN 'Отменен'
+				WHEN w.status IS NULL THEN 'Неизвестный статус'
+			END AS status,
+			p.name AS process_name,
+			w.author AS initiator,
+			w.work_number AS work_number,
+			w.started_at AS started_at,
+			w.finished_at AS finished_at,
+			p.deleted_at AS process_deleted_at,
+			e.event_type AS last_event_type,
+			e.created_at AS last_event_at,
+			COUNT(*) OVER() AS total
+		FROM works w
+		LEFT JOIN versions v ON w.version_id = v.id
+		LEFT JOIN pipelines p ON v.pipeline_id = p.id
+		LEFT JOIN LATERAL (
+			SELECT event_type, created_at, work_id
+			FROM task_events
+			WHERE event_type IN('pause', 'start', 'startByOne')
+			ORDER BY created_at DESC
+			LIMIT 1
+		) e ON e.work_id = w.id
+		WHERE w.started_at IS NOT NULL AND p.name IS NOT NULL AND v.is_hidden = false
 	`
 
 	if filters.FromDate != nil || filters.ToDate != nil {
