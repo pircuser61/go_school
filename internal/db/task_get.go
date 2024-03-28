@@ -274,7 +274,7 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 		SELECT 
 			w.id,
 			w.started_at,
-			w.started_at,
+			ua.updated_at,
 			ws.name,
 			CASE WHEN w.is_paused THEN 'idle' ELSE w.human_status END, 
 			w.debug, 
@@ -496,7 +496,7 @@ func (cq *compileGetTaskQueryMaker) addOrderBy(order string, orderBy []string) {
 		case "id":
 			orderItem = append(orderItem, fmt.Sprintf("w.id %s", columnOrder))
 		case "last_changed_at":
-			orderItem = append(orderItem, fmt.Sprintf("w.started_at %s", columnOrder))
+			orderItem = append(orderItem, fmt.Sprintf("ua.updated_at %s", columnOrder))
 		case "name":
 			orderItem = append(orderItem, fmt.Sprintf("p.name %s", columnOrder))
 		case "status":
@@ -921,6 +921,10 @@ func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter, delegations 
 	for i := range tasks.Tasks {
 		count := attachmentsToTasks[tasks.Tasks[i].ID]
 		tasks.Tasks[i].AttachmentsCount = &count
+
+		if tasks.Tasks[i].Status == "finished" || tasks.Tasks[i].Status == "no_success" {
+			tasks.Tasks[i].LastChangedAt = nil
+		}
 	}
 
 	if len(tasks.Tasks) == 0 {
