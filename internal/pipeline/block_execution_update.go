@@ -706,6 +706,7 @@ func (gb *GoExecutionBlock) checkFormFilled() error {
 	return nil
 }
 
+//nolint:nestif //it's ok
 func (gb *GoExecutionBlock) updateDecision(ctx c.Context) error {
 	var updateParams ExecutionUpdateParams
 
@@ -726,14 +727,22 @@ func (gb *GoExecutionBlock) updateDecision(ctx c.Context) error {
 	}
 
 	if gb.State.Decision != nil {
-		person, personErr := gb.RunContext.Services.ServiceDesc.GetSsoPerson(ctx, *gb.State.ActualExecutor)
-		if personErr != nil {
-			return personErr
+		if gb.State.ActualExecutor != nil {
+			person, personErr := gb.RunContext.Services.ServiceDesc.GetSsoPerson(ctx, *gb.State.ActualExecutor)
+			if personErr != nil {
+				return personErr
+			}
+
+			gb.RunContext.VarStore.SetValue(gb.Output[keyOutputExecutionLogin], person)
 		}
 
-		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputExecutionLogin], person)
-		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputDecision], &gb.State.Decision)
-		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputComment], &gb.State.DecisionComment)
+		if gb.State.Decision != nil {
+			gb.RunContext.VarStore.SetValue(gb.Output[keyOutputDecision], &gb.State.Decision)
+		}
+
+		if gb.State.DecisionComment != nil {
+			gb.RunContext.VarStore.SetValue(gb.Output[keyOutputComment], &gb.State.DecisionComment)
+		}
 	}
 
 	return nil
