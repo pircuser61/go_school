@@ -31,9 +31,6 @@ const (
 	ActionTypeSecondary = "secondary"
 
 	ascOrder = "ASC"
-
-	finishStatus    = "finished"
-	noSuccessStatus = "no_success"
 )
 
 func uniqueActionsByRole(loginsIn, stepType string, finished, acted bool) string {
