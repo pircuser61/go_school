@@ -5231,7 +5231,10 @@ components:
       properties:
         action:
           type: string
-          enum: [ "start", "pause", "startByOne" ]
+          enum:
+            - pause
+            - start
+            - startByOne
           description: "Действия с заявкой"
         params:
           $ref: '#/components/schemas/MonitoringTaskActionParams'
@@ -5299,10 +5302,13 @@ components:
           description: "id ивента"
         author:
           type: string
-          description: "логин автора ивента"
+          description: "имя автора ивента"
         event_type:
           type: string
-          enum: [ "pause", "start", "startByOne" ]
+          enum:
+            - pause
+            - start
+            - startByOne
           description: "тип ивента"
         params:
           $ref: '#/components/schemas/MonitoringTaskActionParams'

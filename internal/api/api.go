@@ -1560,7 +1560,7 @@ type MonitoringTaskActionRequestAction string
 
 // MonitoringTaskEvent defines model for MonitoringTaskEvent.
 type MonitoringTaskEvent struct {
-	// логин автора ивента
+	// имя автора ивента
 	Author    string `json:"author"`
 	CreatedAt string `json:"created_at"`
 

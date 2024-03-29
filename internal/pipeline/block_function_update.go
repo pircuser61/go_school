@@ -17,12 +17,16 @@ import (
 func (gb *ExecutableFunctionBlock) updateFunctionResult(ctx context.Context, log logger.Logger) error {
 	var updateData FunctionUpdateParams
 
+	log.Info("update function action: " + gb.RunContext.UpdateData.Action)
+
+	if gb.RunContext.UpdateData.Action == string(entity.TaskUpdateActionReload) {
+		return nil
+	}
+
 	updateDataUnmarshalErr := json.Unmarshal(gb.RunContext.UpdateData.Parameters, &updateData)
 	if updateDataUnmarshalErr != nil {
 		return updateDataUnmarshalErr
 	}
-
-	log.Info("update function action: " + gb.RunContext.UpdateData.Action)
 
 	if gb.RunContext.UpdateData.Action == string(entity.TaskUpdateActionFuncSLAExpired) {
 		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputFunctionDecision], TimeoutDecision)

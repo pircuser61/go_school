@@ -55,8 +55,10 @@ type TaskStorager interface {
 	GetTaskInWorkTime(ctx c.Context, workNumber string) (*e.TaskCompletionInterval, error)
 	GetExecutorsFromPrevExecutionBlockRun(ctx c.Context, taskID uuid.UUID, name string) (exec map[string]struct{}, err error)
 	GetExecutorsFromPrevWorkVersionExecutionBlockRun(ctx c.Context, workNumber, name string) (exec map[string]struct{}, err error)
-	GetTaskForMonitoring(ctx c.Context, workNumber string) ([]e.MonitoringTaskNode, error)
 	GetWorkIDByWorkNumber(ctx c.Context, workNumber string) (uuid.UUID, error)
+
+	GetTaskForMonitoring(ctx c.Context, workNumber string) ([]e.MonitoringTaskNode, error)
+	GetTasksForMonitoring(ctx c.Context, filters *e.TasksForMonitoringFilters) (*e.TasksForMonitoring, error)
 
 	CreateTask(ctx c.Context, dto *CreateTaskDTO) (*e.EriusTask, error)
 
@@ -240,7 +242,6 @@ type Database interface {
 	CheckBlockForHiddenFlag(ctx c.Context, blockID string) (bool, error)
 	GetMergedVariableStorage(ctx c.Context, workID uuid.UUID, blockIds []string) (*store.VariableStore, error)
 	CheckTaskForHiddenFlag(ctx c.Context, workNumber string) (bool, error)
-	GetTasksForMonitoring(ctx c.Context, filters *e.TasksForMonitoringFilters) (*e.TasksForMonitoring, error)
 	GetBlockState(ctx c.Context, blockID string) (e.BlockState, error)
 
 	SaveVersionSettings(ctx c.Context, settings e.ProcessSettings, schemaFlag *string) error

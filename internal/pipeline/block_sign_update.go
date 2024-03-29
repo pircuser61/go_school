@@ -467,9 +467,13 @@ func (gb *GoSignBlock) setSignerDecision(ctx c.Context, u *signSignatureParams) 
 	}
 
 	if gb.State.Decision != nil {
-		personData, err := gb.RunContext.Services.ServiceDesc.GetSsoPerson(ctx, *gb.State.ActualSigner)
-		if err != nil {
-			return err
+		if gb.State.ActualSigner != nil {
+			personData, err := gb.RunContext.Services.ServiceDesc.GetSsoPerson(ctx, *gb.State.ActualSigner)
+			if err != nil {
+				return err
+			}
+
+			gb.RunContext.VarStore.SetValue(gb.Output[keyOutputSigner], personData)
 		}
 
 		gb.State.IsExpired = gb.State.Deadline.Before(time.Now())

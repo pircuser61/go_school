@@ -1883,8 +1883,8 @@ func (db *PGCon) ParallelIsFinished(ctx context.Context, workNumber, blockName s
         FROM variable_storage vs
                  INNER JOIN works w on vs.work_id = w.id
                  INNER JOIN inside_gates_nodes ign ON vs.step_name=ign.out_node
-        WHERE w.work_number=$1 and w.child_id is null and vs.status IN('running', 'idle') 
-          AND is_active = true AND vs.is_paused = false
+        WHERE w.work_number=$1 and w.child_id is null and vs.status IN('running', 'idle', 'ready') 
+          AND is_active = true
     ) as is_finished,
     (
         SELECT CASE WHEN count(distinct vs.step_name) = 
@@ -2757,70 +2757,6 @@ func (db *PGCon) GetTaskActiveBlock(c context.Context, taskID, stepName string) 
 	}
 
 	return stepNames, nil
-}
-
-func (db *PGCon) GetTaskForMonitoring(ctx context.Context, workNumber string) ([]entity.MonitoringTaskNode, error) {
-	ctx, span := trace.StartSpan(ctx, "get_task_for_monitoring")
-	defer span.End()
-
-	// nolint:gocritic
-	// language=PostgreSQL
-	q := `
-		SELECT w.work_number, 
-		       w.version_id, 
-		       w.is_paused task_is_paused, 
-		       p.author,
-		       p.created_at::text,
-		       p.name,
-		       vs.step_name, 
-		       vs.status,
-		       vs.id,
-       		   v.content->'pipeline'-> 'blocks'->step_name->>'title' title,
-       		   vs.time block_date_init,
-       		   vs.is_paused block_is_paused
-		from works w
-    		join versions v on w.version_id = v.id
-    		join pipelines p on v.pipeline_id = p.id
-    		join variable_storage vs on w.id = vs.work_id
-		where w.work_number = $1
-		order by vs.time`
-
-	rows, err := db.Connection.Query(ctx, q, workNumber)
-	if err != nil {
-		return nil, err
-	}
-
-	defer rows.Close()
-
-	res := make([]entity.MonitoringTaskNode, 0)
-
-	for rows.Next() {
-		item := entity.MonitoringTaskNode{}
-		if scanErr := rows.Scan(
-			&item.WorkNumber,
-			&item.VersionID,
-			&item.IsPaused,
-			&item.Author,
-			&item.CreationTime,
-			&item.ScenarioName,
-			&item.NodeID,
-			&item.Status,
-			&item.BlockID,
-			&item.RealName,
-			&item.BlockDateInit,
-			&item.BlockIsPaused,
-		); scanErr != nil {
-			return nil, scanErr
-		}
-
-		res = append(res, item)
-	}
-
-	if rowsErr := rows.Err(); rowsErr != nil {
-		return nil, rowsErr
-	}
-
-	return res, nil
 }
 
 func (db *PGCon) AddExternalSystemToVersion(ctx context.Context, versionID, systemID string) error {

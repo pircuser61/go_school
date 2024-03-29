@@ -440,7 +440,11 @@ func (gb *GoExecutionBlock) handleDecision(ctx context.Context, parentState *Exe
 	}
 
 	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputExecutionLogin], person)
-	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputDecision], &parentState.Decision)
+
+	if parentState.Decision != nil {
+		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputDecision], &parentState.Decision)
+	}
+
 	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputComment], comment)
 
 	gb.State.ActualExecutor = &actualExecutor

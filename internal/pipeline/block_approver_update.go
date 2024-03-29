@@ -88,9 +88,17 @@ func (gb *GoApproverBlock) setApproveDecision(ctx context.Context, u *approverUp
 		return nil
 	}
 
-	person, err := gb.RunContext.Services.ServiceDesc.GetSsoPerson(ctx, *gb.State.ActualApprover)
-	if err != nil {
-		return err
+	if gb.State.ActualApprover != nil {
+		person, err := gb.RunContext.Services.ServiceDesc.GetSsoPerson(ctx, *gb.State.ActualApprover)
+		if err != nil {
+			return err
+		}
+
+		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputApprover], person)
+	}
+
+	if gb.State.Decision != nil {
+		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputDecision], gb.State.Decision.String())
 	}
 
 	gb.State.IsExpired = gb.State.Deadline.Before(time.Now())
