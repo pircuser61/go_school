@@ -103,8 +103,6 @@ func (gb *GoApproverBlock) setApproveDecision(ctx context.Context, u *approverUp
 
 	gb.State.IsExpired = gb.State.Deadline.Before(time.Now())
 
-	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputApprover], person)
-	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputDecision], gb.State.Decision.String())
 	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputComment], gb.State.Comment)
 
 	return nil

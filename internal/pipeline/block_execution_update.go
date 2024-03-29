@@ -743,11 +743,8 @@ func (gb *GoExecutionBlock) updateDecision(ctx c.Context) error {
 		if gb.State.DecisionComment != nil {
 			gb.RunContext.VarStore.SetValue(gb.Output[keyOutputComment], &gb.State.DecisionComment)
 		}
-		gb.State.IsExpired = gb.State.Deadline.Before(time.Now())
 
-		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputExecutionLogin], person)
-		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputDecision], &gb.State.Decision)
-		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputComment], &gb.State.DecisionComment)
+		gb.State.IsExpired = gb.State.Deadline.Before(time.Now())
 	}
 
 	return nil
