@@ -85,7 +85,7 @@ type EriusTask struct {
 	ID                 uuid.UUID              `json:"id"`
 	VersionID          uuid.UUID              `json:"version_id"`
 	StartedAt          time.Time              `json:"started_at"`
-	LastChangedAt      time.Time              `json:"last_changed_at"`
+	LastChangedAt      *time.Time             `json:"last_changed_at"`
 	FinishedAt         *time.Time             `json:"finished_at"`
 	Name               string                 `json:"name"`
 	VersionContent     string                 `json:"-"`
@@ -103,6 +103,7 @@ type EriusTask struct {
 	RateComment        *string                `json:"rate_comment"`
 	Actions            []TaskAction           `json:"available_actions"`
 	IsDelegate         bool                   `json:"is_delegate"`
+	IsExpired          bool                   `json:"is_expired"`
 
 	ActiveBlocks           map[string]struct{} `json:"active_blocks"`
 	SkippedBlocks          map[string]struct{} `json:"skipped_blocks"`

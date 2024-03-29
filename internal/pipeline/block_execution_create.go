@@ -78,6 +78,7 @@ func (gb *GoExecutionBlock) reEntry(ctx context.Context, ef *entity.EriusFunc) e
 	gb.State.ActualExecutor = nil
 	gb.State.IsTakenInWork = false
 	gb.State.Executors = make(map[string]struct{})
+	gb.State.IsExpired = false
 
 	if gb.State.UseActualExecutor {
 		execs, prevErr := gb.RunContext.Services.Storage.GetExecutorsFromPrevExecutionBlockRun(ctx, gb.RunContext.TaskID, gb.Name)

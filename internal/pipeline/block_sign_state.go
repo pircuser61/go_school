@@ -71,6 +71,7 @@ type SignData struct {
 
 	FormsAccessibility []script.FormAccessibility `json:"forms_accessibility,omitempty"`
 
+	IsExpired     bool   `json:"is_expired"`
 	IsTakenInWork bool   `json:"is_taken_in_work"`
 	WorkerLogin   string `json:"worker_login"`
 

@@ -17,6 +17,7 @@ import (
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	e "gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	pip "gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 )
@@ -880,6 +881,8 @@ func (ae *Env) GetApprovalListSetting(w http.ResponseWriter, r *http.Request, wo
 		return
 	}
 
+	deleteNotFinalDecisions(states)
+
 	varStore, err := ae.DB.GetVariableStorage(ctx, workNumber)
 	if err != nil {
 		errorHandler.handleError(UnknownError, err)
@@ -915,6 +918,24 @@ func (ae *Env) GetApprovalListSetting(w http.ResponseWriter, r *http.Request, wo
 	}
 }
 
+func deleteNotFinalDecisions(states map[string]map[string]interface{}) {
+	for stepName, state := range states {
+		if decisionInterface, ok := state["decision"]; ok {
+			if decisionString, ok := decisionInterface.(string); ok {
+				decision := pip.ApproverDecision(decisionString)
+				if decision == pip.ApproverDecisionApproved || decision == pip.ApproverDecisionRejected ||
+					decision == pip.ApproverDecisionViewed || decision == pip.ApproverDecisionInformed ||
+					decision == pip.ApproverDecisionSigned || decision == pip.ApproverDecisionSignedUkep ||
+					decision == pip.ApproverDecisionConfirmed || decision == pip.ApproverDecisionSentToEdit {
+					continue
+				}
+			}
+		}
+
+		delete(states, stepName)
+	}
+}
+
 type toResponseApprovalListSettingsDTO struct {
 	approvalList *e.ApprovalListSettings
 	stepsStates  map[string]map[string]interface{}
@@ -934,14 +955,18 @@ func toResponseApprovalListSettings(dto *toResponseApprovalListSettingsDTO) (
 		errs := make([]string, 0)
 		hasError := false
 		storage := map[string]interface{}{}
-		shortTitle := ""
 		isDelegateOfAnyStepMember := false
 		status := ""
 
 		var (
-			updatedAt *string
-			createdAt *string
+			shortTitle *string
+			updatedAt  *string
+			createdAt  *string
 		)
+
+		if title, ok := state["short_title"].(string); ok {
+			shortTitle = &title
+		}
 
 		if ut, ok := dto.dates[stepName]["updatedAt"]; ok && ut != nil {
 			utt := ut.Format(time.RFC3339)
@@ -955,7 +980,7 @@ func toResponseApprovalListSettings(dto *toResponseApprovalListSettingsDTO) (
 
 		steps = append(steps, TaskResponseStep{
 			Name:       &stepName,
-			ShortTitle: &shortTitle,
+			ShortTitle: shortTitle,
 			Type:       &stepType,
 			State: &map[string]interface{}{
 				stepName: state,
