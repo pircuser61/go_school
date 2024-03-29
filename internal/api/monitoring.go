@@ -690,7 +690,7 @@ func getRunsByEvents(events []entity.TaskEvent) []MonitoringTaskRun {
 
 		isLastEvent := len(events) == i+1
 
-		if isLastEvent {
+		if isLastEvent && run.EndEventId == "" {
 			run.EndEventAt = time.Now()
 		}
 
