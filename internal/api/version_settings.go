@@ -17,6 +17,7 @@ import (
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	e "gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	pip "gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 )
@@ -880,6 +881,8 @@ func (ae *Env) GetApprovalListSetting(w http.ResponseWriter, r *http.Request, wo
 		return
 	}
 
+	deleteNotFinalDecisions(states)
+
 	varStore, err := ae.DB.GetVariableStorage(ctx, workNumber)
 	if err != nil {
 		errorHandler.handleError(UnknownError, err)
@@ -912,6 +915,24 @@ func (ae *Env) GetApprovalListSetting(w http.ResponseWriter, r *http.Request, wo
 		errorHandler.handleError(UnknownError, err)
 
 		return
+	}
+}
+
+func deleteNotFinalDecisions(states map[string]map[string]interface{}) {
+	for stepName, state := range states {
+		if decisionInterface, ok := state["decision"]; ok {
+			if decisionString, ok := decisionInterface.(string); ok {
+				decision := pip.ApproverDecision(decisionString)
+				if decision == pip.ApproverDecisionApproved || decision == pip.ApproverDecisionRejected ||
+					decision == pip.ApproverDecisionViewed || decision == pip.ApproverDecisionInformed ||
+					decision == pip.ApproverDecisionSigned || decision == pip.ApproverDecisionSignedUkep ||
+					decision == pip.ApproverDecisionConfirmed || decision == pip.ApproverDecisionSentToEdit {
+					continue
+				}
+			}
+		}
+
+		delete(states, stepName)
 	}
 }
 
