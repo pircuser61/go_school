@@ -188,7 +188,7 @@ func (ae *Env) GetBlockContext(w http.ResponseWriter, r *http.Request, blockID s
 	}
 }
 
-func (ae *Env) GetMonitoringTask(w http.ResponseWriter, req *http.Request, workNumber string, params GetMonitoringTaskParams) {
+func (ae *Env) GetMonitoringTask(w http.ResponseWriter, req *http.Request, workNumber string, _ GetMonitoringTaskParams) {
 	ctx, s := trace.StartSpan(req.Context(), "get_monitoring_task")
 	defer s.End()
 

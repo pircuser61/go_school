@@ -165,6 +165,7 @@ type ApproverData struct {
 	ApprovementRule     script.ApprovementRule `json:"approvementRule,omitempty"`
 	ApproverLog         []ApproverLogEntry     `json:"approver_log,omitempty"`
 
+	IsExpired          bool                 `json:"is_expired"`
 	IsEditable         bool                 `json:"is_editable"`
 	RepeatPrevDecision bool                 `json:"repeat_prev_decision"`
 	EditingApp         *ApproverEditingApp  `json:"editing_app,omitempty"`

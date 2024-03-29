@@ -173,6 +173,7 @@ func (gb *GoApproverBlock) reEntry(ctx context.Context, ef *entity.EriusFunc) er
 	gb.State.DecisionAttachments = make([]entity.Attachment, 0)
 	gb.State.ActualApprover = nil
 	gb.State.ApproverLog = make([]ApproverLogEntry, 0)
+	gb.State.IsExpired = false
 
 	var params script.ApproverParams
 

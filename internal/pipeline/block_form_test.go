@@ -6,11 +6,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 	"io"
 	"net/http"
 	"testing"
 	"time"
+
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 
 	"github.com/google/uuid"
 
@@ -351,6 +352,11 @@ func Test_createGoFormBlock(t *testing.T) {
 						return s
 					}(),
 					Services: RunContextServices{
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSLAService(nil)
+
+							return slaMock
+						}(),
 						ServiceDesc: func() *servicedesc.Service {
 							sdMock := servicedesc.Service{
 								SdURL: "",
@@ -505,6 +511,11 @@ func Test_createGoFormBlock(t *testing.T) {
 						return s
 					}(),
 					Services: RunContextServices{
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSLAService(nil)
+
+							return slaMock
+						}(),
 						ServiceDesc: func() *servicedesc.Service {
 							sdMock := servicedesc.Service{
 								SdURL: "",
@@ -803,6 +814,7 @@ func TestGoFormBlock_Update(t *testing.T) {
 					ActualExecutor:   nil,
 					ChangesLog:       []ChangesLogItem{},
 					IsTakenInWork:    true,
+					WorkType:         "8/5",
 				},
 				RunContext: &BlockRunContext{
 					UpdateData: &script.BlockUpdateData{
@@ -824,6 +836,11 @@ func TestGoFormBlock_Update(t *testing.T) {
 					},
 					VarStore: store.NewStore(),
 					Services: RunContextServices{
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSLAService(nil)
+
+							return slaMock
+						}(),
 						Storage: mockedDb,
 						ServiceDesc: func() *servicedesc.Service {
 							sdMock := servicedesc.Service{
@@ -866,7 +883,9 @@ func TestGoFormBlock_Update(t *testing.T) {
 				ApplicationBody: map[string]interface{}{
 					fieldName: fieldValue,
 				},
-				IsFilled: true,
+				WorkType:  "8/5",
+				IsFilled:  true,
+				IsExpired: true,
 				ActualExecutor: func() *string {
 					l := login
 
@@ -902,6 +921,7 @@ func TestGoFormBlock_Update(t *testing.T) {
 					ApplicationBody: map[string]interface{}{
 						fieldName: fieldValue,
 					},
+					WorkType:       "8/5",
 					IsTakenInWork:  true,
 					IsFilled:       true,
 					ActualExecutor: getStringAddress(login),
@@ -927,6 +947,11 @@ func TestGoFormBlock_Update(t *testing.T) {
 					},
 					VarStore: store.NewStore(),
 					Services: RunContextServices{
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSLAService(nil)
+
+							return slaMock
+						}(),
 						Storage: mockedDb,
 						ServiceDesc: func() *servicedesc.Service {
 							sdMock := servicedesc.Service{
@@ -968,7 +993,9 @@ func TestGoFormBlock_Update(t *testing.T) {
 				ApplicationBody: map[string]interface{}{
 					fieldName: newValue,
 				},
-				IsFilled: true,
+				WorkType:  "8/5",
+				IsExpired: false,
+				IsFilled:  true,
 				ActualExecutor: func() *string {
 					l := login
 

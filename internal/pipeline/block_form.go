@@ -65,6 +65,7 @@ type FormData struct {
 
 	FormsAccessibility []script.FormAccessibility `json:"forms_accessibility,omitempty"`
 
+	IsExpired bool `json:"is_expired"`
 	IsRevoked bool `json:"is_revoked"`
 
 	Deadline       time.Time `json:"deadline,omitempty"`
@@ -253,10 +254,6 @@ func (gb *GoFormBlock) checkForEmptyForm(formState json.RawMessage, l logger.Log
 }
 
 func (gb *GoFormBlock) getDeadline(ctx context.Context, workType string) (time.Time, error) {
-	if gb.State.IsFilled {
-		return time.Time{}, nil
-	}
-
 	slaInfoPtr, getSLAInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDTO{
 		TaskCompletionIntervals: []entity.TaskCompletionInterval{{
 			StartedAt:  gb.RunContext.CurrBlockStartTime,

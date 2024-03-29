@@ -206,6 +206,7 @@ func (gb *GoFormBlock) reEntry(ctx context.Context, ef *entity.EriusFunc) error 
 	gb.State.IsTakenInWork = false
 	gb.State.IsReentry = true
 	gb.State.ActualExecutor = nil
+	gb.State.IsExpired = false
 
 	if !isAutofill && gb.State.FormExecutorType != script.FormExecutorTypeAutoFillUser {
 		err := gb.setExecutors(ctx, &params)

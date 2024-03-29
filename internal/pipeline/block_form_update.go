@@ -264,6 +264,8 @@ func (gb *GoFormBlock) handleEmptyState(data *script.BlockUpdateData) error {
 		return NewUserIsNotPartOfProcessErr()
 	}
 
+	gb.State.IsExpired = gb.State.Deadline.Before(time.Now())
+
 	gb.State.ActualExecutor = &data.ByLogin
 	gb.State.IsFilled = true
 
