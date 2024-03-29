@@ -3,6 +3,7 @@ package pipeline
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"math"
 
 	"github.com/pkg/errors"
@@ -20,6 +21,13 @@ func (gb *ExecutableFunctionBlock) updateFunctionResult(ctx context.Context, log
 	log.Info("update function action: " + gb.RunContext.UpdateData.Action)
 
 	if gb.RunContext.UpdateData.Action == string(entity.TaskUpdateActionReload) {
+		if !gb.State.Started {
+			err := gb.runFunction(ctx, log)
+			if err != nil {
+				return fmt.Errorf("failed run function, %w", err)
+			}
+		}
+
 		return nil
 	}
 
@@ -82,6 +90,8 @@ func (gb *ExecutableFunctionBlock) runFunction(ctx context.Context, log logger.L
 	if gb.State.HasResponse {
 		return nil
 	}
+
+	gb.State.Started = true
 
 	taskStep, errTask := gb.RunContext.Services.Storage.GetTaskStepByName(ctx, gb.RunContext.TaskID, gb.Name)
 	if errTask != nil {
