@@ -636,20 +636,6 @@ func toMonitoringTaskResponse(nodes []entity.MonitoringTaskNode, events []entity
 	return res
 }
 
-func getEventByID(events []entity.TaskEvent, eventID *string) *entity.TaskEvent {
-	if eventID == nil {
-		return nil
-	}
-
-	for i := range events {
-		if events[i].ID == *eventID {
-			return &events[i]
-		}
-	}
-
-	return nil
-}
-
 func getRunsByEvents(events []entity.TaskEvent) []MonitoringTaskRun {
 	res := make([]MonitoringTaskRun, 0)
 	run := MonitoringTaskRun{}
