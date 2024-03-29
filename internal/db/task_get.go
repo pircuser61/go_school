@@ -56,8 +56,11 @@ func uniqueActionsByRole(loginsIn, stepType string, finished, acted bool) string
          , CASE WHEN vs.step_type = 'execution' THEN vs.time END                            AS exec_start_time
 		 , CASE WHEN vs.step_type = 'approver' THEN vs.time END                          	AS appr_start_time
          , vs.time                                                                          AS node_start
-         , vs.updated_at																	AS updated_at
+         , CASE 
+             WHEN vs.status in ('finished', 'no_success') AND vs.step_type in ('execution', 'approver', 'form', 'sign') THEN vs.updated_at 
+		   END AS updated_at
          , timestamptz(vs.content -> 'State' -> vs.step_name ->> 'deadline')                AS node_deadline
+         ,  vs.content -> 'State' -> vs.step_name ->> 'is_expired'		   					AS is_expired
     FROM members m
              JOIN variable_storage vs on vs.id = m.block_id
              JOIN works w on vs.work_id = w.id
@@ -80,6 +83,7 @@ func uniqueActionsByRole(loginsIn, stepType string, finished, acted bool) string
          , max(actions.updated_at)     	  		 		 AS updated_at
          , min(actions.node_deadline)     	  		 	 AS node_deadline    
     	 , min(actions.node_start) 						 AS node_start
+	 	 , max(actions.is_expired)						 AS is_expired
     FROM actions
              JOIN filtered_actions fa ON fa.time = actions.node_start AND fa.block_id = actions.block_id
              LEFT JOIN LATERAL (SELECT jsonb_build_object(
@@ -272,7 +276,7 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 		SELECT 
 			w.id,
 			w.started_at,
-			w.started_at,
+			ua.updated_at,
 			ws.name,
 			CASE WHEN w.is_paused THEN 'wait' ELSE w.human_status END, 
 			w.debug, 
@@ -298,6 +302,7 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 		    ua.current_executor,
 		    ua.exec_start_time,
 		    ua.appr_start_time,
+			CASE WHEN ua.node_deadline > now() OR coalesce(ua.is_expired::boolean, false) THEN false ELSE true END as is_expired,
 		    w.is_paused
 		FROM works w 
 		JOIN versions v ON v.id = w.version_id
@@ -474,7 +479,7 @@ func (cq *compileGetTaskQueryMaker) addOrderBy(order string, orderBy []string) {
 
 		columnOrder := ascOrder
 		if len(splits) == 2 {
-			columnOrder = splits[1]
+			columnOrder = splits[1] + " nulls last"
 		}
 
 		switch splits[0] {
@@ -493,7 +498,7 @@ func (cq *compileGetTaskQueryMaker) addOrderBy(order string, orderBy []string) {
 		case "id":
 			orderItem = append(orderItem, fmt.Sprintf("w.id %s", columnOrder))
 		case "last_changed_at":
-			orderItem = append(orderItem, fmt.Sprintf("w.started_at %s", columnOrder))
+			orderItem = append(orderItem, fmt.Sprintf("ua.updated_at %s", columnOrder))
 		case "name":
 			orderItem = append(orderItem, fmt.Sprintf("p.name %s", columnOrder))
 		case "status":
@@ -916,8 +921,9 @@ func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter, delegations 
 	}
 
 	for i := range tasks.Tasks {
+		task := tasks.Tasks[i]
 		count := attachmentsToTasks[tasks.Tasks[i].ID]
-		tasks.Tasks[i].AttachmentsCount = &count
+		task.AttachmentsCount = &count
 	}
 
 	if len(tasks.Tasks) == 0 {
@@ -1158,6 +1164,7 @@ func (db *PGCon) GetTask(
  			v.content,
  			v.node_groups,
  			w.human_status_comment,
+			CASE WHEN ua.node_deadline > now() OR coalesce(ua.is_expired::boolean, false) THEN false ELSE true END as is_expired,
  			w.is_paused
 		FROM works w 
 		JOIN versions v ON v.id = w.version_id
@@ -1224,6 +1231,7 @@ func (db *PGCon) getTask(ctx c.Context, delegators []string, q, workNumber strin
 		&et.VersionContent,
 		&nodeGroups,
 		&et.HumanStatusComment,
+		&et.IsExpired,
 		&et.IsPaused,
 	)
 	if err != nil {
@@ -1514,7 +1522,7 @@ type executorData struct {
 	GroupName     string   `json:"group_name"`
 }
 
-//nolint:gocyclo //its ok here
+//nolint:gocyclo,gocognit //its ok here
 func (db *PGCon) getTasks(ctx c.Context, filters *entity.TaskFilter,
 	delegatorsWithUser []string, q string, args []interface{},
 ) (*entity.EriusTasks, error) {
@@ -1571,6 +1579,7 @@ func (db *PGCon) getTasks(ctx c.Context, filters *entity.TaskFilter,
 			&execData,
 			&nullExecTime,
 			&nullApprTime,
+			&et.IsExpired,
 			&et.IsPaused,
 		)
 		if err != nil {

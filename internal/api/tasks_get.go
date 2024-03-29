@@ -33,7 +33,7 @@ type taskResp struct {
 	ID                 uuid.UUID              `json:"id"`
 	VersionID          uuid.UUID              `json:"version_id"`
 	StartedAt          time.Time              `json:"started_at"`
-	LastChangedAt      time.Time              `json:"last_changed_at"`
+	LastChangedAt      *time.Time             `json:"last_changed_at"`
 	FinishedAt         *time.Time             `json:"finished_at"`
 	Name               string                 `json:"name"`
 	Description        string                 `json:"description"`
