@@ -594,11 +594,13 @@ func (ae *Env) MonitoringTaskAction(w http.ResponseWriter, r *http.Request, work
 	}
 }
 
+//nolint:all // ok
 func toMonitoringTaskResponse(nodes []entity.MonitoringTaskNode, events []entity.TaskEvent, fromEventID, toEventID *string) *MonitoringTask {
 	const (
 		finished = 2
 		canceled = 6
 	)
+
 	res := &MonitoringTask{
 		History:  make([]MonitoringHistory, 0),
 		TaskRuns: make([]MonitoringTaskRun, 0),
