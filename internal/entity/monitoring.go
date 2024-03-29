@@ -5,6 +5,7 @@ import (
 )
 
 type MonitoringTaskNode struct {
+	WorkStatus    int        `json:"work_status"`
 	WorkNumber    string     `json:"work_number"`
 	VersionID     string     `json:"version_id"`
 	IsPaused      bool       `json:"task_is_paused"`

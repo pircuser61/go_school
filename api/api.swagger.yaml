@@ -5263,6 +5263,9 @@ components:
         work_number:
           type: string
           description: "Номер заявки для мониторинга"
+        is_finished:
+          type: boolean
+          description: "Признак завершенности"
         scenario_info:
           $ref: '#/components/schemas/MonitoringScenarioInfo'
         history:
@@ -5283,6 +5286,7 @@ components:
         - history
         - is_paused
         - task_runs
+        - is_finished
 
     MonitoringTaskEvents:
       type: object
@@ -5300,6 +5304,9 @@ components:
         id:
           type: string
           description: "id ивента"
+        run_index:
+          type: integer
+          description: "номер запуска (старт - пауза) в котором произошел этот ивент"
         author:
           type: string
           description: "имя автора ивента"
@@ -5314,9 +5321,11 @@ components:
           $ref: '#/components/schemas/MonitoringTaskActionParams'
         created_at:
           type: string
+          format: 'date-time'
           example: 2020-07-16T17:10:25.112704+03:00
       required:
         - id
+        - run_index
         - author
         - event_type
         - params
@@ -5333,12 +5342,22 @@ components:
           type: string
           format: uuid
           description: "Айди ивента паузы таски"
+        start_event_at:
+          type: string
+          format: 'date-time'
+          description: "Дата старта"
+        end_event_at:
+          type: string
+          format: 'date-time'
+          description: "Дата паузы"
         index:
-          type: number
+          type: integer
           description: "Порядковый номер пары ивентов старт - пауза"
       required:
         - start_event_id
         - end_event_id
+        - start_event_at
+        - end_event_at
         - index
 
     MonitoringHistory:
