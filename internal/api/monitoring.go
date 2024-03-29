@@ -948,14 +948,17 @@ func (ae *Env) toMonitoringTaskEventsResponse(ctx context.Context, events []enti
 			Author:    fullNameCache[events[i].Author],
 			EventType: MonitoringTaskEventEventType(events[i].EventType),
 			Params:    params,
+			RunIndex:  1,
 			CreatedAt: events[i].CreatedAt,
 		}
 
 		runs := getRunsByEvents(events)
 
 		for runIndex := range runs {
-			if event.CreatedAt.After(runs[runIndex].StartEventAt) &&
-				event.CreatedAt.Before(runs[runIndex].EndEventAt) {
+			if (event.CreatedAt.After(runs[runIndex].StartEventAt) ||
+				event.CreatedAt.Equal(runs[runIndex].StartEventAt)) &&
+				(event.CreatedAt.Before(runs[runIndex].EndEventAt) ||
+					event.CreatedAt.Equal(runs[runIndex].EndEventAt)) {
 				event.RunIndex = runs[runIndex].Index
 
 				break
