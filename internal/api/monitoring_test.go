@@ -268,7 +268,7 @@ func Test_toMonitoringTaskResponse(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := toMonitoringTaskResponse(tt.args.nodes, tt.args.events, nil, nil); !reflect.DeepEqual(got, tt.want) {
+			if got := toMonitoringTaskResponse(tt.args.nodes, tt.args.events); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("toMonitoringTaskResponse() = \n %+v, want \n %+v", got, tt.want)
 			}
 		})

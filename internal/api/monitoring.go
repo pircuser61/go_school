@@ -229,7 +229,7 @@ func (ae *Env) GetMonitoringTask(w http.ResponseWriter, req *http.Request, workN
 		return
 	}
 
-	nodes, err := ae.DB.GetTaskForMonitoring(ctx, workNumber, nil, nil)
+	nodes, err := ae.DB.GetTaskForMonitoring(ctx, workNumber, params.FromEventId, params.ToEventId)
 	if err != nil {
 		errorHandler.handleError(GetMonitoringNodesError, err)
 
@@ -242,7 +242,7 @@ func (ae *Env) GetMonitoringTask(w http.ResponseWriter, req *http.Request, workN
 		return
 	}
 
-	resp := toMonitoringTaskResponse(nodes, events, params.FromEventId, params.ToEventId)
+	resp := toMonitoringTaskResponse(nodes, events)
 	if err = sendResponse(w, http.StatusOK, resp); err != nil {
 		errorHandler.handleError(UnknownError, err)
 
@@ -586,7 +586,7 @@ func (ae *Env) MonitoringTaskAction(w http.ResponseWriter, r *http.Request, work
 		return
 	}
 
-	err = sendResponse(w, http.StatusOK, toMonitoringTaskResponse(nodes, events, nil, nil))
+	err = sendResponse(w, http.StatusOK, toMonitoringTaskResponse(nodes, events))
 	if err != nil {
 		errorHandler.handleError(UnknownError, err)
 
@@ -595,7 +595,7 @@ func (ae *Env) MonitoringTaskAction(w http.ResponseWriter, r *http.Request, work
 }
 
 //nolint:all // ok
-func toMonitoringTaskResponse(nodes []entity.MonitoringTaskNode, events []entity.TaskEvent, fromEventID, toEventID *string) *MonitoringTask {
+func toMonitoringTaskResponse(nodes []entity.MonitoringTaskNode, events []entity.TaskEvent) *MonitoringTask {
 	const (
 		finished = 2
 		canceled = 6
@@ -616,33 +616,7 @@ func toMonitoringTaskResponse(nodes []entity.MonitoringTaskNode, events []entity
 	res.TaskRuns = getRunsByEvents(events)
 	res.IsFinished = nodes[0].WorkStatus == finished || nodes[0].WorkStatus == canceled
 
-	eventStart := getEventByID(events, fromEventID)
-	eventPause := getEventByID(events, toEventID)
-
-	filterByStartPause := eventStart != nil && eventPause != nil
-	filterByStart := eventStart != nil && eventPause == nil
-
 	for i := range nodes {
-		if nodes[i].BlockDateInit != nil && (filterByStartPause || filterByStart) {
-			params := MonitoringTaskActionParams{}
-
-			err := json.Unmarshal(eventStart.Params, &params)
-			if err != nil {
-				return res
-			}
-
-			isNodeInStartSteps := params.Steps != nil && utils.IsContainsInSlice(nodes[i].NodeID, *params.Steps)
-
-			if filterByStartPause {
-				initAt := nodes[i].BlockDateInit
-				isNodeBetweenEvents := initAt.After(eventStart.CreatedAt) || initAt.After(eventPause.CreatedAt)
-
-				if !isNodeBetweenEvents && !isNodeInStartSteps {
-					continue
-				}
-			}
-		}
-
 		monitoringHistory := MonitoringHistory{
 			BlockId:  nodes[i].BlockID,
 			RealName: nodes[i].RealName,

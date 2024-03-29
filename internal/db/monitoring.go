@@ -165,7 +165,32 @@ func (db *PGCon) GetTaskForMonitoring(ctx c.Context, workNumber string, fromEven
     		JOIN pipelines p ON v.pipeline_id = p.id
     		JOIN variable_storage vs ON w.id = vs.work_id
 		WHERE w.work_number = $1
-		ORDER BY vs.time`
+`
+
+	if fromEventID != nil && *fromEventID != "" && toEventID != nil && *toEventID != "" {
+		q = fmt.Sprintf("%s %s", q,
+			fmt.Sprintf(
+				`AND ((vs.time >= (SELECT creted_at FROM task_events WHERE id = %s)
+						AND vs.time <= (SELECT creted_at FROM task_events WHERE id = %s))
+						OR vs.step_name IN (SELECT jsonb_array_elements(params -> 'steps')
+							FROM task_events WHERE id = %s)`,
+				*fromEventID,
+				*toEventID,
+				*fromEventID,
+			),
+		)
+	}
+
+	if (fromEventID != nil && *fromEventID != "") && (toEventID == nil || *toEventID == "") {
+		q = fmt.Sprintf("%s %s", q,
+			fmt.Sprintf(`
+				AND (vs.time >= (SELECT creted_at FROM task_events WHERE id = %s) 
+				OR vs.step_name IN (SELECT jsonb_array_elements(params -> 'steps')
+					FROM task_events WHERE id = %s)`, *fromEventID, *fromEventID),
+		)
+	}
+
+	q = fmt.Sprintf("%s %s", q, "ORDER BY vs.time")
 
 	rows, err := db.Connection.Query(ctx, q, workNumber)
 	if err != nil {
