@@ -921,7 +921,7 @@ func (ae *Env) GetMonitoringTaskEvents(w http.ResponseWriter, req *http.Request,
 
 func (ae *Env) toMonitoringTaskEventsResponse(ctx context.Context, events []entity.TaskEvent) *MonitoringTaskEvents {
 	res := &MonitoringTaskEvents{
-		Events: make([]MonitoringTaskEvent, len(events)),
+		Events: make([]MonitoringTaskEvent, 0, len(events)),
 	}
 
 	fullNameCache := make(map[string]string)
@@ -956,7 +956,7 @@ func (ae *Env) toMonitoringTaskEventsResponse(ctx context.Context, events []enti
 		for runIndex := range runs {
 			if event.CreatedAt.After(runs[runIndex].StartEventAt) &&
 				event.CreatedAt.Before(runs[runIndex].EndEventAt) {
-				event.RunIndex = runIndex + 1
+				event.RunIndex = runs[runIndex].Index
 			}
 		}
 
