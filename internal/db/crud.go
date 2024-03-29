@@ -1157,7 +1157,8 @@ func (db *PGCon) isStepExist(ctx context.Context, workID, stepName string, hasUp
 				((status IN --formStatuses-- AND is_paused = false) OR (status = 'ready')) AND
 				time = (SELECT max(time) FROM variable_storage vs 
 							WHERE vs.work_id = $1 AND step_name = $2)
-			))`
+			))
+		FOR UPDATE`
 
 	q = strings.Replace(q, "--formStatuses--", formStatuses, 1)
 
@@ -1882,8 +1883,8 @@ func (db *PGCon) ParallelIsFinished(ctx context.Context, workNumber, blockName s
         FROM variable_storage vs
                  INNER JOIN works w on vs.work_id = w.id
                  INNER JOIN inside_gates_nodes ign ON vs.step_name=ign.out_node
-        WHERE w.work_number=$1 and w.child_id is null and vs.status IN('running', 'idle') 
-          AND is_active = true AND vs.is_paused = false
+        WHERE w.work_number=$1 and w.child_id is null and vs.status IN('running', 'idle', 'ready') 
+          AND is_active = true
     ) as is_finished,
     (
         SELECT CASE WHEN count(distinct vs.step_name) = 
