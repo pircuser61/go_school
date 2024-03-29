@@ -120,7 +120,8 @@ func uniqueActiveActions(approverLogins, executionLogins []string, currentUser, 
       AND w.child_id IS NULL
 )
    , unique_actions AS (
-    SELECT actions.work_id AS work_id, JSONB_AGG(jsonb_actions.actions) AS actions, min(actions.node_deadline) AS node_deadline, max(actions.is_expired) AS is_expired
+    SELECT actions.work_id AS work_id, JSONB_AGG(jsonb_actions.actions) AS actions,
+        min(actions.node_deadline) AS node_deadline, max(actions.is_expired) AS is_expired
     FROM actions
              LEFT JOIN LATERAL (SELECT jsonb_build_object(
                                                'block_id', actions.block_id,
