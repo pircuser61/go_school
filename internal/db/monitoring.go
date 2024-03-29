@@ -164,26 +164,8 @@ func (db *PGCon) GetTaskForMonitoring(ctx c.Context, workNumber string, fromEven
     		JOIN versions v ON w.version_id = v.id
     		JOIN pipelines p ON v.pipeline_id = p.id
     		JOIN variable_storage vs ON w.id = vs.work_id
-		WHERE w.work_number = $1`
-
-	if fromEventID != nil && *fromEventID != "" && toEventID != nil && *toEventID != "" {
-		q = fmt.Sprintf("%s %s", q,
-			fmt.Sprintf(
-				`AND vs.time >= (SELECT created_at FROM task_events WHERE id = %s)
-						AND vs.time <= (SELECT created_at FROM task_events WHERE id = %s)`,
-				*fromEventID,
-				*toEventID,
-			),
-		)
-	}
-
-	if (fromEventID != nil && *fromEventID != "") && (toEventID == nil || *toEventID == "") {
-		q = fmt.Sprintf("%s %s", q,
-			fmt.Sprintf(`AND vs.time >= (SELECT created_at FROM task_events WHERE id = %s)`, *fromEventID),
-		)
-	}
-
-	q = fmt.Sprintf("%s %s", q, "ORDER BY vs.time")
+		WHERE w.work_number = $1
+		ORDER BY vs.time`
 
 	rows, err := db.Connection.Query(ctx, q, workNumber)
 	if err != nil {

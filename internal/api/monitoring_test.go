@@ -2,12 +2,10 @@ package api
 
 import (
 	"context"
-	"reflect"
-	"testing"
-	"time"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"reflect"
+	"testing"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db/mocks"
@@ -232,15 +230,11 @@ func Test_toMonitoringTaskResponse(t *testing.T) {
 						StartEventId: "1",
 						EndEventId:   "3",
 						Index:        1,
-						StartEventAt: firstStart,
-						EndEventAt:   firstPause,
 					},
 					{
 						StartEventId: "4",
 						EndEventId:   "",
 						Index:        2,
-						StartEventAt: secondStart,
-						EndEventAt:   secondPause,
 					},
 				},
 				History: []MonitoringHistory{
@@ -256,7 +250,7 @@ func Test_toMonitoringTaskResponse(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := toMonitoringTaskResponse(tt.args.nodes, tt.args.events); !reflect.DeepEqual(got, tt.want) {
+			if got := toMonitoringTaskResponse(tt.args.nodes, tt.args.events, nil, nil); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("toMonitoringTaskResponse() = %v, want %v", got, tt.want)
 			}
 		})
