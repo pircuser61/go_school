@@ -934,14 +934,18 @@ func toResponseApprovalListSettings(dto *toResponseApprovalListSettingsDTO) (
 		errs := make([]string, 0)
 		hasError := false
 		storage := map[string]interface{}{}
-		shortTitle := ""
 		isDelegateOfAnyStepMember := false
 		status := ""
 
 		var (
-			updatedAt *string
-			createdAt *string
+			shortTitle *string
+			updatedAt  *string
+			createdAt  *string
 		)
+
+		if title, ok := state["short_title"].(string); ok {
+			shortTitle = &title
+		}
 
 		if ut, ok := dto.dates[stepName]["updatedAt"]; ok && ut != nil {
 			utt := ut.Format(time.RFC3339)
@@ -955,7 +959,7 @@ func toResponseApprovalListSettings(dto *toResponseApprovalListSettingsDTO) (
 
 		steps = append(steps, TaskResponseStep{
 			Name:       &stepName,
-			ShortTitle: &shortTitle,
+			ShortTitle: shortTitle,
 			Type:       &stepType,
 			State: &map[string]interface{}{
 				stepName: state,

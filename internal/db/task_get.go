@@ -1779,8 +1779,14 @@ func (db *PGCon) GetFilteredStates(ctx c.Context, steps []string, wNumber string
 	// nolint:gocritic
 	// language=PostgreSQL
 	query := `
-		SELECT step_name, vs.content-> 'State', time, updated_at
+		SELECT vs.step_name,
+       			jsonb_set(vs.content-> 'State', array[vs.step_name, 'short_title'],
+       			    v.content -> 'pipeline' -> 'blocks' -> vs.step_name -> 'short_title', true),
+        		vs.time,
+        		vs.updated_at
 		FROM variable_storage vs 
+		LEFT JOIN works w on vs.work_id = w.id
+		LEFT JOIN versions v on w.version_id = v.id
 			WHERE vs.work_id = (SELECT id FROM works 
 			                 	WHERE work_number = $1 AND child_id IS NULL LIMIT 1) AND 
 			vs.step_name IN %s AND 
