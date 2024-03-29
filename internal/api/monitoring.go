@@ -623,6 +623,7 @@ func toMonitoringTaskResponse(nodes []entity.MonitoringTaskNode, events []entity
 	for i := range nodes {
 		if nodes[i].BlockDateInit != nil && (filterByStartPause || filterByStart) {
 			params := MonitoringTaskActionParams{}
+
 			err := json.Unmarshal(eventStart.Params, &params)
 			if err != nil {
 				return res
@@ -979,6 +980,7 @@ func (ae *Env) toMonitoringTaskEventsResponse(ctx context.Context, events []enti
 		}
 
 		params := MonitoringTaskActionParams{}
+
 		err := json.Unmarshal(events[i].Params, &params)
 		if err != nil {
 			return res
