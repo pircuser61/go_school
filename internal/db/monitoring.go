@@ -170,10 +170,10 @@ func (db *PGCon) GetTaskForMonitoring(ctx c.Context, workNumber string, fromEven
 	if fromEventID != nil && *fromEventID != "" && toEventID != nil && *toEventID != "" {
 		q = fmt.Sprintf("%s %s", q,
 			fmt.Sprintf(
-				`AND ((vs.time >= (SELECT created_at FROM task_events WHERE id = %s)
-						AND vs.time <= (SELECT created_at FROM task_events WHERE id = %s))
+				`AND ((vs.time >= (SELECT created_at FROM task_events WHERE id = '%s')
+						AND vs.time <= (SELECT created_at FROM task_events WHERE id = '%s'))
 						OR vs.step_name IN (SELECT jsonb_array_elements(params) ->> 'steps'
-							FROM task_events WHERE id = %s))`,
+							FROM task_events WHERE id = '%s'))`,
 				*fromEventID,
 				*toEventID,
 				*fromEventID,
@@ -184,9 +184,9 @@ func (db *PGCon) GetTaskForMonitoring(ctx c.Context, workNumber string, fromEven
 	if (fromEventID != nil && *fromEventID != "") && (toEventID == nil || *toEventID == "") {
 		q = fmt.Sprintf("%s %s", q,
 			fmt.Sprintf(`
-				AND (vs.time >= (SELECT created_at FROM task_events WHERE id = %s) 
+				AND (vs.time >= (SELECT created_at FROM task_events WHERE id = '%s') 
 				OR vs.step_name IN (SELECT jsonb_array_elements(params) ->> 'steps'
-					FROM task_events WHERE id = %s))`, *fromEventID, *fromEventID),
+					FROM task_events WHERE id = '%s'))`, *fromEventID, *fromEventID),
 		)
 	}
 

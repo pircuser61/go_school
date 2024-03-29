@@ -957,6 +957,8 @@ func (ae *Env) toMonitoringTaskEventsResponse(ctx context.Context, events []enti
 			if event.CreatedAt.After(runs[runIndex].StartEventAt) &&
 				event.CreatedAt.Before(runs[runIndex].EndEventAt) {
 				event.RunIndex = runs[runIndex].Index
+
+				break
 			}
 		}
 
