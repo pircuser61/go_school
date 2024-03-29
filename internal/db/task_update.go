@@ -3,6 +3,7 @@ package db
 import (
 	c "context"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -13,6 +14,81 @@ import (
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 )
+
+type UpdateEmptyTaskDTO struct {
+	WorkID uuid.UUID
+
+	VersionID  uuid.UUID
+	RealAuthor string
+	Parameters []byte
+	Debug      bool
+	RunContext entity.TaskRunContext
+}
+
+//nolint:gocritic //ну че нам памяти что-ли жалко
+func NewUpdateEmptyTaskDTO(
+	workID, versionID uuid.UUID,
+	realAuthor string,
+	parameters []byte,
+	runContext entity.TaskRunContext,
+) UpdateEmptyTaskDTO {
+	return UpdateEmptyTaskDTO{
+		WorkID:     workID,
+		VersionID:  versionID,
+		RunContext: runContext,
+		RealAuthor: realAuthor,
+		Parameters: parameters,
+		Debug:      false,
+	}
+}
+
+func (db *PGCon) FillEmptyTask(ctx c.Context, updateTask *UpdateEmptyTaskDTO) error {
+	ctx, span := trace.StartSpan(ctx, "update_task")
+	defer span.End()
+
+	const versionSLAQuery = `
+		SELECT id FROM version_sla
+			WHERE version_id = $1
+		ORDER BY created_at DESC LIMIT 1
+	`
+
+	var slaID uuid.UUID
+
+	err := db.Connection.QueryRow(ctx, versionSLAQuery, updateTask.VersionID).Scan(&slaID)
+	if err != nil {
+		return fmt.Errorf("failed get version_sla_id for version_id = %s, %w", updateTask.VersionID, err)
+	}
+
+	const updateQuery = `
+			UPDATE works 
+			SET 
+			version_id = $2,
+			run_context = $3,
+			version_sla_id = $4,
+			real_author = $5,
+			parameters = $6,
+			debug = $7
+			
+			WHERE id = $1 
+	`
+
+	_, err = db.Connection.Exec(
+		ctx,
+		updateQuery,
+		updateTask.WorkID,
+		updateTask.VersionID,
+		updateTask.RunContext,
+		slaID,
+		updateTask.RealAuthor,
+		updateTask.Parameters,
+		updateTask.Debug,
+	)
+	if err != nil {
+		return fmt.Errorf("failed update task by work_id %s, %w", updateTask.WorkID, err)
+	}
+
+	return nil
+}
 
 func (db *PGCon) deleteFinishedPipelineDeadlines(ctx c.Context, taskID uuid.UUID) error {
 	ctx, span := trace.StartSpan(ctx, "delete_finished_pipeline_deadlines")

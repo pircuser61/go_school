@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/iancoleman/orderedmap"
 
 	"github.com/pkg/errors"
@@ -19,9 +20,11 @@ import (
 
 	"gitlab.services.mts.ru/jocasta/forms/pkg/jsonschema"
 
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 )
 
 const (
@@ -79,6 +82,43 @@ func (ae *Env) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	usr, err := user.GetUserInfoFromCtx(ctx)
+	if err != nil {
+		errorHandler.handleError(NoUserInContextError, err)
+
+		return
+	}
+
+	realAuthor, err := user.GetEffectiveUserInfoFromCtx(ctx)
+	if err != nil {
+		errorHandler.handleError(NoUserInContextError, err)
+	}
+
+	taskID := uuid.New()
+
+	workNumber, err := ae.createEmptyTask(ctx, ae.DB, &db.CreateEmptyTaskDTO{
+		TaskID:     taskID,
+		WorkNumber: req.WorkNumber,
+		Author:     usr.Username,
+		RealAuthor: realAuthor.Username,
+		RunContext: &entity.TaskRunContext{
+			InitialApplication: entity.InitialApplication{
+				Description:               req.Description,
+				ApplicationBody:           req.ApplicationBody,
+				AttachmentFields:          req.AttachmentFields,
+				Keys:                      req.Keys,
+				ApplicationBodyFromSystem: req.ApplicationBody,
+				CustomTitle:               req.CustomTitle,
+				IsTestApplication:         req.IsTestApplication,
+			},
+		},
+	})
+	if err != nil {
+		errorHandler.handleError(PipelineCreateError, err)
+
+		return
+	}
+
 	workID, err := ae.DB.GetWorkIDByWorkNumber(ctx, req.WorkNumber)
 	if err != nil {
 		errorHandler.handleError(ValidationError, err)
@@ -124,7 +164,8 @@ func (ae *Env) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Request
 		w:           w,
 		req:         r,
 		makeNewWork: true,
-		workNumber:  req.WorkNumber,
+		workNumber:  workNumber,
+		taskID:      taskID,
 		runCtx: entity.TaskRunContext{
 			InitialApplication: entity.InitialApplication{
 				Description:               req.Description,
@@ -220,9 +261,57 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 
 	log.Info("RunVersionsByPipelineId pipeline_id:", req.PipelineID)
 
+	clientID, err := ae.getClientIDFromToken(r.Header.Get(AuthorizationHeader))
+	if err != nil {
+		errorHandler.handleError(GetClientIDError, err)
+
+		return
+	}
+
+	requestInfo.ClientID = clientID
+
 	storage, acquireErr := ae.DB.Acquire(ctx)
 	if acquireErr != nil {
 		errorHandler.handleError(PipelineExecutionError, acquireErr)
+
+		return
+	}
+
+	usr, err := user.GetUserInfoFromCtx(ctx)
+	if err != nil {
+		errorHandler.handleError(NoUserInContextError, err)
+
+		return
+	}
+
+	realAuthor, err := user.GetEffectiveUserInfoFromCtx(ctx)
+	if err != nil {
+		errorHandler.handleError(NoUserInContextError, err)
+	}
+
+	taskID := uuid.New()
+
+	workNumber, err := ae.createEmptyTask(ctx, storage,
+		&db.CreateEmptyTaskDTO{
+			TaskID:     taskID,
+			Author:     usr.Username,
+			RealAuthor: realAuthor.Username,
+			RunContext: &entity.TaskRunContext{
+				ClientID:   clientID,
+				PipelineID: req.PipelineID,
+				InitialApplication: entity.InitialApplication{
+					Description:               req.Description,
+					Keys:                      req.Keys,
+					AttachmentFields:          req.AttachmentFields,
+					IsTestApplication:         req.IsTestApplication,
+					ApplicationBodyFromSystem: req.ApplicationBody,
+					CustomTitle:               req.CustomTitle,
+				},
+			},
+		},
+	)
+	if err != nil {
+		errorHandler.handleError(PipelineCreateError, err)
 
 		return
 	}
@@ -239,17 +328,6 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 
 	requestInfo.VersionID = version.VersionID.String()
 
-	var clientID string
-
-	clientID, err = ae.getClientIDFromToken(r.Header.Get(AuthorizationHeader))
-	if err != nil {
-		errorHandler.handleError(GetClientIDError, err)
-
-		return
-	}
-
-	requestInfo.ClientID = clientID
-
 	var externalSystem *entity.ExternalSystem
 
 	externalSystem, err = ae.getExternalSystem(ctx, storage, clientID, req.PipelineID, version.VersionID.String())
@@ -264,9 +342,7 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 		allowRunAsOthers = externalSystem.AllowRunAsOthers
 	}
 
-	var mappedApplicationBody orderedmap.OrderedMap
-
-	mappedApplicationBody, err = ae.processMappings(externalSystem, version, req.ApplicationBody)
+	mappedApplicationBody, err := ae.processMappings(externalSystem, version, req.ApplicationBody)
 	if err != nil {
 		errorHandler.handleError(MappingError, err)
 
@@ -298,8 +374,11 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 		w:                w,
 		req:              r,
 		allowRunAsOthers: allowRunAsOthers,
+		workNumber:       workNumber,
+		taskID:           taskID,
 		runCtx: entity.TaskRunContext{
-			ClientID: clientID,
+			ClientID:   clientID,
+			PipelineID: req.PipelineID,
 			InitialApplication: entity.InitialApplication{
 				Description:               req.Description,
 				ApplicationBody:           mappedApplicationBody,
@@ -450,7 +529,7 @@ func checkGroup(rawStartSchema jsonschema.Schema) jsonschema.Schema {
 		}
 
 		propValMap := propVal.(map[string]interface{})
-		if _, user := propValMap[emailKey]; user {
+		if _, ok := propValMap[emailKey]; ok {
 			continue
 		}
 
@@ -477,7 +556,7 @@ func checkGroup(rawStartSchema jsonschema.Schema) jsonschema.Schema {
 			}
 
 			propMap := propVals.(map[string]interface{})
-			if _, user := propMap[emailKey]; user {
+			if _, ok := propMap[emailKey]; ok {
 				continue
 			}
 
@@ -524,4 +603,30 @@ func cleanKey(mapKeys interface{}) string {
 	}
 
 	return strings.ReplaceAll(keyStr, "\\", "")
+}
+
+func (ae *Env) createEmptyTask(ctx c.Context, storage db.Database, emptyTask *db.CreateEmptyTaskDTO) (string, error) {
+	txStorage, err := storage.StartTransaction(ctx)
+	if err != nil {
+		return "", fmt.Errorf("failed start transaction, %w", err)
+	}
+
+	defer func() {
+		rollbackerr := txStorage.RollbackTransaction(ctx)
+		if rollbackerr != nil {
+			ae.Log.WithError(rollbackerr).Error("failed rollback transaction")
+		}
+	}()
+
+	workNumber, err := txStorage.CreateEmptyTask(ctx, emptyTask)
+	if err != nil {
+		return "", fmt.Errorf("failed create empty task in database, %w", err)
+	}
+
+	err = txStorage.CommitTransaction(ctx)
+	if err != nil {
+		return "", fmt.Errorf("failed commit transaction, %w", err)
+	}
+
+	return workNumber, nil
 }

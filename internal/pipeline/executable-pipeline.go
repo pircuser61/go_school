@@ -129,19 +129,39 @@ type CreateTaskDTO struct {
 	RunCtx     entity.TaskRunContext
 }
 
+//nolint:gocritic //in struct field without pointer
+func NewCreateTaskDTO(
+	author, realAuthor string,
+	isDebug bool,
+	params []byte,
+	workNumber string,
+	runCtx entity.TaskRunContext,
+) CreateTaskDTO {
+	return CreateTaskDTO{
+		Author:     author,
+		RealAuthor: realAuthor,
+		IsDebug:    isDebug,
+		Params:     params,
+		WorkNumber: workNumber,
+		RunCtx:     runCtx,
+	}
+}
+
 func (gb *ExecutablePipeline) CreateTask(ctx c.Context, dto *CreateTaskDTO) error {
 	gb.TaskID = uuid.New()
 
-	task, err := gb.Storage.CreateTask(ctx, &db.CreateTaskDTO{
-		TaskID:     gb.TaskID,
-		VersionID:  gb.VersionID,
-		Author:     dto.Author,
-		RealAuthor: dto.RealAuthor,
-		WorkNumber: dto.WorkNumber,
-		IsDebug:    dto.IsDebug,
-		Params:     dto.Params,
-		RunCtx:     dto.RunCtx,
-	})
+	taskDTO := db.NewCreateTaskDTO(
+		gb.TaskID,
+		gb.VersionID,
+		dto.Author,
+		dto.RealAuthor,
+		dto.WorkNumber,
+		dto.IsDebug,
+		dto.Params,
+		dto.RunCtx,
+	)
+
+	task, err := gb.Storage.CreateTask(ctx, &taskDTO)
 	if err != nil {
 		return err
 	}
