@@ -2,11 +2,11 @@ package api
 
 import (
 	"context"
-	"reflect"
-	"testing"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"reflect"
+	"testing"
+	"time"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db/mocks"
@@ -176,6 +176,12 @@ func Test_toMonitoringTaskResponse(t *testing.T) {
 		nodes  []entity.MonitoringTaskNode
 		events []entity.TaskEvent
 	}
+
+	firstStartAt := time.Date(2009, 11, 17, 20, 34, 58, 651387237, time.UTC)
+	firstPauseAt := time.Date(2009, 11, 18, 20, 34, 58, 651387237, time.UTC)
+	secondStartAt := time.Date(2009, 11, 27, 20, 34, 58, 651387237, time.UTC)
+	secondPauseAt := time.Date(2009, 11, 28, 20, 34, 58, 651387237, time.UTC)
+
 	tests := []struct {
 		name string
 		args args
@@ -199,6 +205,7 @@ func Test_toMonitoringTaskResponse(t *testing.T) {
 					{
 						ID:        "1",
 						EventType: "start",
+						CreatedAt: firstStartAt,
 					},
 					{
 						ID:        "2",
@@ -207,14 +214,21 @@ func Test_toMonitoringTaskResponse(t *testing.T) {
 					{
 						ID:        "3",
 						EventType: "pause",
+						CreatedAt: firstPauseAt,
 					},
 					{
 						ID:        "4",
 						EventType: "start",
+						CreatedAt: secondStartAt,
 					},
 					{
 						ID:        "5",
 						EventType: "other action",
+					},
+					{
+						ID:        "6",
+						EventType: "pause",
+						CreatedAt: secondPauseAt,
 					},
 				},
 			},
@@ -229,18 +243,22 @@ func Test_toMonitoringTaskResponse(t *testing.T) {
 					{
 						StartEventId: "1",
 						EndEventId:   "3",
-						Index:        float32(1),
+						Index:        1,
+						StartEventAt: firstStartAt,
+						EndEventAt:   firstPauseAt,
 					},
 					{
 						StartEventId: "4",
-						EndEventId:   "",
-						Index:        float32(2),
+						EndEventId:   "6",
+						Index:        2,
+						StartEventAt: secondStartAt,
+						EndEventAt:   secondPauseAt,
 					},
 				},
 				History: []MonitoringHistory{
 					{
 						IsPaused: true,
-						Status: "running",
+						Status:   "running",
 					},
 				},
 				VersionId:  "6969",
@@ -251,7 +269,7 @@ func Test_toMonitoringTaskResponse(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := toMonitoringTaskResponse(tt.args.nodes, tt.args.events); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("toMonitoringTaskResponse() = %v, want %v", got, tt.want)
+				t.Errorf("toMonitoringTaskResponse() = \n %+v, want \n %+v", got, tt.want)
 			}
 		})
 	}

@@ -3695,7 +3695,7 @@ func (_c *MockedDatabase_GetTaskEventsParamsByWorkNumber_Call) RunAndReturn(run 
 }
 
 // GetTaskForMonitoring provides a mock function with given fields: ctx, workNumber
-func (_m *MockedDatabase) GetTaskForMonitoring(ctx context.Context, workNumber string) ([]entity.MonitoringTaskNode, error) {
+func (_m *MockedDatabase) GetTaskForMonitoring(ctx context.Context, workNumber string, fromEventID, toEventID *string) ([]entity.MonitoringTaskNode, error) {
 	ret := _m.Called(ctx, workNumber)
 
 	if len(ret) == 0 {

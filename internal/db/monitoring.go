@@ -2,11 +2,103 @@ package db
 
 import (
 	c "context"
+	"fmt"
+	"strings"
 
 	e "gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 
 	"go.opencensus.io/trace"
 )
+
+func getTasksForMonitoringQuery(filters *e.TasksForMonitoringFilters) *string {
+	q := `
+		SELECT CASE
+				WHEN w.status IN (1, 3, 5) THEN 'В работе'
+				WHEN w.status = 2 THEN 'Завершен'
+				WHEN w.status = 4 THEN 'Остановлен'
+				WHEN w.status = 6 THEN 'Отменен'
+				WHEN w.status IS NULL THEN 'Неизвестный статус'
+			END AS status,
+			p.name AS process_name,
+			w.author AS initiator,
+			w.work_number AS work_number,
+			w.started_at AS started_at,
+			w.finished_at AS finished_at,
+			p.deleted_at AS process_deleted_at,
+			e.event_type AS last_event_type,
+			e.created_at AS last_event_at,
+			COUNT(*) OVER() AS total
+		FROM works w
+		LEFT JOIN versions v ON w.version_id = v.id
+		LEFT JOIN pipelines p ON v.pipeline_id = p.id
+		LEFT JOIN LATERAL (
+			SELECT event_type, created_at, work_id
+			FROM task_events
+			WHERE event_type IN('pause', 'start', 'startByOne')
+			ORDER BY created_at DESC
+			LIMIT 1
+		) e ON e.work_id = w.id
+		WHERE w.started_at IS NOT NULL AND p.name IS NOT NULL AND v.is_hidden = false
+	`
+
+	if filters.FromDate != nil || filters.ToDate != nil {
+		q = fmt.Sprintf("%s AND %s", q, getFiltersDateConditions(filters.FromDate, filters.ToDate))
+	}
+
+	if searchConditions := getFiltersSearchConditions(filters.Filter); searchConditions != "" {
+		q = fmt.Sprintf("%s AND %s", q, searchConditions)
+	}
+
+	if len(filters.StatusFilter) != 0 {
+		statusQuery := getWorksStatusQuery(filters.StatusFilter)
+		q = fmt.Sprintf("%s AND %s", q, *statusQuery)
+	}
+
+	if filters.SortColumn != nil && filters.SortOrder != nil {
+		q = fmt.Sprintf("%s ORDER BY %s %s", q, *filters.SortColumn, *filters.SortOrder)
+	} else {
+		q = fmt.Sprintf("%s ORDER BY %s %s", q, "w.started_at", "DESC")
+	}
+
+	if filters.Page != nil && filters.PerPage != nil {
+		q = fmt.Sprintf("%s OFFSET %d", q, *filters.Page**filters.PerPage)
+	}
+
+	if filters.PerPage != nil {
+		q = fmt.Sprintf("%s LIMIT %d", q, *filters.PerPage)
+	}
+
+	return &q
+}
+
+func getFiltersSearchConditions(filter *string) string {
+	if filter == nil {
+		return ""
+	}
+
+	escapeFilter := strings.ReplaceAll(*filter, "_", "!_")
+	escapeFilter = strings.ReplaceAll(escapeFilter, "%", "!%")
+
+	return fmt.Sprintf(`
+		(w.work_number ILIKE '%%%s%%' ESCAPE '!' OR
+		 p.name ILIKE '%%%s%%' ESCAPE '!' OR
+		 w.author ILIKE '%%%s%%' ESCAPE '!')`,
+		escapeFilter, escapeFilter, escapeFilter)
+}
+
+func getFiltersDateConditions(dateFrom, dateTo *string) string {
+	conditions := make([]string, 0)
+
+	if dateFrom != nil {
+		conditions = append(conditions, fmt.Sprintf("w.started_at >= '%s'::timestamptz", *dateFrom))
+	}
+
+	if dateTo != nil {
+		conditions = append(conditions, fmt.Sprintf("w.started_at <= '%s'::timestamptz", *dateTo))
+	}
+
+	return strings.Join(conditions, " AND ")
+}
 
 func (db *PGCon) GetTasksForMonitoring(ctx c.Context, dto *e.TasksForMonitoringFilters) (*e.TasksForMonitoring, error) {
 	ctx, span := trace.StartSpan(ctx, "get_tasks_for_monitoring")
@@ -48,14 +140,15 @@ func (db *PGCon) GetTasksForMonitoring(ctx c.Context, dto *e.TasksForMonitoringF
 	return tasksForMonitoring, nil
 }
 
-func (db *PGCon) GetTaskForMonitoring(ctx c.Context, workNumber string) ([]e.MonitoringTaskNode, error) {
+func (db *PGCon) GetTaskForMonitoring(ctx c.Context, workNumber string, fromEventID, toEventID *string) ([]e.MonitoringTaskNode, error) {
 	ctx, span := trace.StartSpan(ctx, "get_task_for_monitoring")
 	defer span.End()
 
 	// nolint:gocritic
 	// language=PostgreSQL
 	q := `
-		SELECT w.work_number, 
+		SELECT w.status,
+		       w.work_number, 
 		       w.version_id, 
 		       w.is_paused task_is_paused, 
 		       p.author,
@@ -67,12 +160,37 @@ func (db *PGCon) GetTaskForMonitoring(ctx c.Context, workNumber string) ([]e.Mon
        		   v.content->'pipeline'-> 'blocks'->step_name->>'title' title,
        		   vs.time block_date_init,
        		   vs.is_paused block_is_paused
-		from works w
-    		join versions v on w.version_id = v.id
-    		join pipelines p on v.pipeline_id = p.id
-    		join variable_storage vs on w.id = vs.work_id
-		where w.work_number = $1
-		order by vs.time`
+		FROM works w
+    		JOIN versions v ON w.version_id = v.id
+    		JOIN pipelines p ON v.pipeline_id = p.id
+    		JOIN variable_storage vs ON w.id = vs.work_id
+		WHERE w.work_number = $1
+`
+
+	if fromEventID != nil && *fromEventID != "" && toEventID != nil && *toEventID != "" {
+		q = fmt.Sprintf("%s %s", q,
+			fmt.Sprintf(
+				`AND ((vs.time >= (SELECT created_at FROM task_events WHERE id = %s)
+						AND vs.time <= (SELECT created_at FROM task_events WHERE id = %s))
+						OR vs.step_name IN (SELECT jsonb_array_elements(params) ->> 'steps'
+							FROM task_events WHERE id = %s))`,
+				*fromEventID,
+				*toEventID,
+				*fromEventID,
+			),
+		)
+	}
+
+	if (fromEventID != nil && *fromEventID != "") && (toEventID == nil || *toEventID == "") {
+		q = fmt.Sprintf("%s %s", q,
+			fmt.Sprintf(`
+				AND (vs.time >= (SELECT created_at FROM task_events WHERE id = %s) 
+				OR vs.step_name IN (SELECT jsonb_array_elements(params) ->> 'steps'
+					FROM task_events WHERE id = %s))`, *fromEventID, *fromEventID),
+		)
+	}
+
+	q = fmt.Sprintf("%s %s", q, "ORDER BY vs.time")
 
 	rows, err := db.Connection.Query(ctx, q, workNumber)
 	if err != nil {
@@ -86,6 +204,7 @@ func (db *PGCon) GetTaskForMonitoring(ctx c.Context, workNumber string) ([]e.Mon
 	for rows.Next() {
 		item := e.MonitoringTaskNode{}
 		if scanErr := rows.Scan(
+			&item.WorkStatus,
 			&item.WorkNumber,
 			&item.VersionID,
 			&item.IsPaused,

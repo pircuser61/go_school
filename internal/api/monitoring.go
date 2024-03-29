@@ -32,7 +32,7 @@ const (
 )
 
 func (ae *Env) GetTasksForMonitoring(w http.ResponseWriter, r *http.Request, params GetTasksForMonitoringParams) {
-	ctx, span := trace.StartSpan(r.Context(), "start get tasks for monitoring")
+	ctx, span := trace.StartSpan(r.Context(), "get_tasks_for_monitoring")
 	defer span.End()
 
 	log := logger.GetLogger(ctx)
@@ -188,7 +188,7 @@ func (ae *Env) GetBlockContext(w http.ResponseWriter, r *http.Request, blockID s
 	}
 }
 
-func (ae *Env) GetMonitoringTask(w http.ResponseWriter, req *http.Request, workNumber string, _ GetMonitoringTaskParams) {
+func (ae *Env) GetMonitoringTask(w http.ResponseWriter, req *http.Request, workNumber string, params GetMonitoringTaskParams) {
 	ctx, s := trace.StartSpan(req.Context(), "get_monitoring_task")
 	defer s.End()
 
@@ -229,7 +229,7 @@ func (ae *Env) GetMonitoringTask(w http.ResponseWriter, req *http.Request, workN
 		return
 	}
 
-	nodes, err := ae.DB.GetTaskForMonitoring(ctx, workNumber)
+	nodes, err := ae.DB.GetTaskForMonitoring(ctx, workNumber, params.FromEventId, params.ToEventId)
 	if err != nil {
 		errorHandler.handleError(GetMonitoringNodesError, err)
 
@@ -242,7 +242,8 @@ func (ae *Env) GetMonitoringTask(w http.ResponseWriter, req *http.Request, workN
 		return
 	}
 
-	if err = sendResponse(w, http.StatusOK, toMonitoringTaskResponse(nodes, events)); err != nil {
+	resp := toMonitoringTaskResponse(nodes, events)
+	if err = sendResponse(w, http.StatusOK, resp); err != nil {
 		errorHandler.handleError(UnknownError, err)
 
 		return
@@ -522,7 +523,7 @@ func (ae *Env) MonitoringTaskAction(w http.ResponseWriter, r *http.Request, work
 		return
 	}
 
-	nodes, err := ae.DB.GetTaskForMonitoring(ctx, workNumber)
+	nodes, err := ae.DB.GetTaskForMonitoring(ctx, workNumber, nil, nil)
 	if err != nil {
 		errorHandler.handleError(GetMonitoringNodesError, err)
 
@@ -543,7 +544,13 @@ func (ae *Env) MonitoringTaskAction(w http.ResponseWriter, r *http.Request, work
 	}
 }
 
+//nolint:all // ok
 func toMonitoringTaskResponse(nodes []entity.MonitoringTaskNode, events []entity.TaskEvent) *MonitoringTask {
+	const (
+		finished = 2
+		canceled = 6
+	)
+
 	res := &MonitoringTask{
 		History:  make([]MonitoringHistory, 0),
 		TaskRuns: make([]MonitoringTaskRun, 0),
@@ -556,6 +563,8 @@ func toMonitoringTaskResponse(nodes []entity.MonitoringTaskNode, events []entity
 	res.VersionId = nodes[0].VersionID
 	res.WorkNumber = nodes[0].WorkNumber
 	res.IsPaused = nodes[0].IsPaused
+	res.TaskRuns = getRunsByEvents(events)
+	res.IsFinished = nodes[0].WorkStatus == finished || nodes[0].WorkStatus == canceled
 
 	for i := range nodes {
 		monitoringHistory := MonitoringHistory{
@@ -574,22 +583,33 @@ func toMonitoringTaskResponse(nodes []entity.MonitoringTaskNode, events []entity
 		res.History = append(res.History, monitoringHistory)
 	}
 
+	return res
+}
+
+func getRunsByEvents(events []entity.TaskEvent) []MonitoringTaskRun {
+	res := make([]MonitoringTaskRun, 0)
 	run := MonitoringTaskRun{}
 
 	for i := range events {
 		if events[i].EventType == string(MonitoringTaskEventEventTypeStart) {
 			run.StartEventId = events[i].ID
+			run.StartEventAt = events[i].CreatedAt
 		}
 
 		if events[i].EventType == string(MonitoringTaskEventEventTypePause) {
 			run.EndEventId = events[i].ID
+			run.EndEventAt = events[i].CreatedAt
 		}
 
 		isLastEvent := len(events) == i+1
 
+		if isLastEvent && run.EndEventId == "" {
+			run.EndEventAt = time.Now()
+		}
+
 		if (run.StartEventId != "" && run.EndEventId != "") || isLastEvent {
-			run.Index = float32(len(res.TaskRuns) + 1)
-			res.TaskRuns = append(res.TaskRuns, run)
+			run.Index = len(res) + 1
+			res = append(res, run)
 			run = MonitoringTaskRun{}
 		}
 	}
@@ -917,15 +937,30 @@ func (ae *Env) toMonitoringTaskEventsResponse(ctx context.Context, events []enti
 		}
 
 		params := MonitoringTaskActionParams{}
-		_ = json.Unmarshal(events[i].Params, &params)
 
-		res.Events = append(res.Events, MonitoringTaskEvent{
+		err := json.Unmarshal(events[i].Params, &params)
+		if err != nil {
+			return res
+		}
+
+		event := MonitoringTaskEvent{
 			Id:        events[i].ID,
 			Author:    fullNameCache[events[i].Author],
 			EventType: MonitoringTaskEventEventType(events[i].EventType),
 			Params:    params,
-			CreatedAt: events[i].CreatedAt.Format(monitoringTimeLayout),
-		})
+			CreatedAt: events[i].CreatedAt,
+		}
+
+		runs := getRunsByEvents(events)
+
+		for runIndex := range runs {
+			if event.CreatedAt.After(runs[runIndex].StartEventAt) &&
+				event.CreatedAt.Before(runs[runIndex].EndEventAt) {
+				event.RunIndex = runIndex + 1
+			}
+		}
+
+		res.Events = append(res.Events, event)
 	}
 
 	return res

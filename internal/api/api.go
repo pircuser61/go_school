@@ -1528,6 +1528,9 @@ type MonitoringTableTaskStatus string
 type MonitoringTask struct {
 	History []MonitoringHistory `json:"history"`
 
+	// Признак завершенности
+	IsFinished bool `json:"is_finished"`
+
 	// Флаг паузы процесса
 	IsPaused     bool                   `json:"is_paused"`
 	ScenarioInfo MonitoringScenarioInfo `json:"scenario_info"`
@@ -1561,8 +1564,8 @@ type MonitoringTaskActionRequestAction string
 // MonitoringTaskEvent defines model for MonitoringTaskEvent.
 type MonitoringTaskEvent struct {
 	// имя автора ивента
-	Author    string `json:"author"`
-	CreatedAt string `json:"created_at"`
+	Author    string    `json:"author"`
+	CreatedAt time.Time `json:"created_at"`
 
 	// тип ивента
 	EventType MonitoringTaskEventEventType `json:"event_type"`
@@ -1572,6 +1575,9 @@ type MonitoringTaskEvent struct {
 
 	// Параметры действия
 	Params MonitoringTaskActionParams `json:"params"`
+
+	// номер запуска (старт - пауза) в котором произошел этот ивент
+	RunIndex int `json:"run_index"`
 }
 
 // тип ивента
@@ -1584,11 +1590,17 @@ type MonitoringTaskEvents struct {
 
 // MonitoringTaskRun defines model for MonitoringTaskRun.
 type MonitoringTaskRun struct {
+	// Дата паузы
+	EndEventAt time.Time `json:"end_event_at"`
+
 	// Айди ивента паузы таски
 	EndEventId string `json:"end_event_id"`
 
 	// Порядковый номер пары ивентов старт - пауза
-	Index float32 `json:"index"`
+	Index int `json:"index"`
+
+	// Дата старта
+	StartEventAt time.Time `json:"start_event_at"`
 
 	// Айди ивента старта таски
 	StartEventId string `json:"start_event_id"`
