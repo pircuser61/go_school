@@ -273,7 +273,9 @@ func (p *blockProcessor) processActiveBlocks(ctx context.Context, activeBlocks [
 			return p.handleErrorWithRollback(ctx, log, blockErr)
 		}
 
-		err := InitBlockInDB(ctx, blockName, blockData.TypeID, p.runCtx)
+		tmpCtx := p.runCtx.Copy()
+
+		err := InitBlockInDB(ctx, blockName, blockData.TypeID, tmpCtx)
 		if err != nil {
 			return p.handleErrorWithRollback(ctx, log, err)
 		}
