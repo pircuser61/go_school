@@ -1101,7 +1101,8 @@ func (ae *Env) timerEditBlock(ctx context.Context, stepID uuid.UUID, stepName st
 				return nil, inerStepErr
 			}
 
-			blockRes, contextErr := ae.editGoBlock(ctx, innerStep.ID, innerStep.Type, paramKey, paramVal, MonitoringTaskEditBlockRequestChangeTypeOutput)
+			blockRes, contextErr := ae.editGoBlock(ctx,
+				innerStep.ID, innerStep.Type, paramKey, paramVal, MonitoringTaskEditBlockRequestChangeTypeOutput)
 			if contextErr != nil {
 				return nil, contextErr
 			}

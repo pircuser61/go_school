@@ -739,7 +739,9 @@ func (gb *GoApproverBlock) UpdateStateUsingOutput(ctx context.Context, data []by
 	return state, nil
 }
 
-func (gb *GoApproverBlock) UpdateOutputUsingState(ctx context.Context) (output map[string]interface{}, err error) {
+func (gb *GoApproverBlock) UpdateOutputUsingState(ctx context.Context) (res map[string]interface{}, err error) {
+	output := map[string]interface{}{}
+
 	if gb.State.ActualApprover != nil {
 		personData, ssoErr := gb.RunContext.Services.ServiceDesc.GetSsoPerson(ctx, *gb.State.ActualApprover)
 		if ssoErr != nil {

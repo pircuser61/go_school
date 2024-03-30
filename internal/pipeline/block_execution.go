@@ -738,7 +738,9 @@ func (gb *GoExecutionBlock) UpdateStateUsingOutput(ctx context.Context, data []b
 	return state, nil
 }
 
-func (gb *GoExecutionBlock) UpdateOutputUsingState(ctx context.Context) (output map[string]interface{}, err error) {
+func (gb *GoExecutionBlock) UpdateOutputUsingState(ctx context.Context) (res map[string]interface{}, err error) {
+	output := map[string]interface{}{}
+
 	if gb.State.ActualExecutor != nil {
 		personData, ssoErr := gb.RunContext.Services.ServiceDesc.GetSsoPerson(ctx, *gb.State.ActualExecutor)
 		if ssoErr != nil {

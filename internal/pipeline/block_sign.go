@@ -1047,7 +1047,9 @@ func (gb *GoSignBlock) UpdateStateUsingOutput(ctx context.Context, data []byte) 
 	return state, nil
 }
 
-func (gb *GoSignBlock) UpdateOutputUsingState(ctx context.Context) (output map[string]interface{}, err error) {
+func (gb *GoSignBlock) UpdateOutputUsingState(ctx context.Context) (res map[string]interface{}, err error) {
+	output := map[string]interface{}{}
+
 	if gb.State.ActualSigner != nil {
 		personData, ssoErr := gb.RunContext.Services.ServiceDesc.GetSsoPerson(ctx, *gb.State.ActualSigner)
 		if ssoErr != nil {
@@ -1071,12 +1073,12 @@ func (gb *GoSignBlock) UpdateOutputUsingState(ctx context.Context) (output map[s
 
 	resAttachments := make([]entity.Attachment, 0)
 
-	for _, l := range gb.State.SignLog {
-		if l.LogType != SignerLogDecision {
+	for l := range gb.State.SignLog {
+		if gb.State.SignLog[l].LogType != SignerLogDecision {
 			continue
 		}
 
-		resAttachments = append(resAttachments, l.Attachments...)
+		resAttachments = append(resAttachments, gb.State.SignLog[l].Attachments...)
 	}
 
 	resAttachments = append(resAttachments, gb.State.SigningParams.Files...)
