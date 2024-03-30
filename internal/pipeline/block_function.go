@@ -56,6 +56,8 @@ type ExecutableFunction struct {
 
 	TimeExpired bool `json:"time_expired"`
 
+	Started bool `json:"started"`
+
 	// Retry
 	RetryPolicy        script.FunctionRetryPolicy `json:"retry_policy"`
 	RetryCount         int                        `json:"retry_count"`
@@ -422,6 +424,8 @@ func (gb *ExecutableFunctionBlock) setStateByResponse(ctx context.Context, log l
 			gb.RunContext.VarStore.SetValue(gb.Output[keyOutputFunctionDecision], RetryCountExceededDecision)
 			gb.State.RetryCountExceeded = true
 		} else if !gb.RunContext.skipProduce { // for test
+			gb.State.Started = false
+
 			_, err := gb.RunContext.Services.Scheduler.CreateTask(ctx, &scheduler.CreateTask{
 				WorkNumber:  gb.RunContext.WorkNumber,
 				WorkID:      gb.RunContext.TaskID.String(),

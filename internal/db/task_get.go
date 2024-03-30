@@ -106,6 +106,8 @@ func uniqueActiveActions(approverLogins, executionLogins []string, currentUser, 
          , m.is_initiator
          , CASE WHEN (vs.status IN ('running', 'idle') AND vs.is_paused = false) THEN m.actions ELSE '{}' END AS action
          , CASE WHEN (vs.status IN ('running', 'idle') AND vs.is_paused = false) THEN m.params ELSE '{}' END  AS params
+		 , timestamptz(vs.content -> 'State' -> vs.step_name ->> 'deadline')               					  AS node_deadline
+		 , vs.content -> 'State' -> vs.step_name ->> 'is_expired'		   									  AS is_expired
     FROM members m
              JOIN variable_storage vs on vs.id = m.block_id
              JOIN works w on vs.work_id = w.id
@@ -118,7 +120,8 @@ func uniqueActiveActions(approverLogins, executionLogins []string, currentUser, 
       AND w.child_id IS NULL
 )
    , unique_actions AS (
-    SELECT actions.work_id AS work_id, JSONB_AGG(jsonb_actions.actions) AS actions
+    SELECT actions.work_id AS work_id, JSONB_AGG(jsonb_actions.actions) AS actions,
+        min(actions.node_deadline) AS node_deadline, max(actions.is_expired) AS is_expired
     FROM actions
              LEFT JOIN LATERAL (SELECT jsonb_build_object(
                                                'block_id', actions.block_id,
@@ -2141,96 +2144,6 @@ func getWorksStatusQuery(statusFilter []string) *string {
 	statusQuery = fmt.Sprintf(statusQuery, v)
 
 	return &statusQuery
-}
-
-func getTasksForMonitoringQuery(filters *entity.TasksForMonitoringFilters) *string {
-	q := `
-		SELECT CASE
-				WHEN w.status IN (1, 3, 5) THEN 'В работе'
-				WHEN w.status = 2 THEN 'Завершен'
-				WHEN w.status = 4 THEN 'Остановлен'
-				WHEN w.status = 6 THEN 'Отменен'
-				WHEN w.status IS NULL THEN 'Неизвестный статус'
-			END AS status,
-			p.name AS process_name,
-			w.author AS initiator,
-			w.work_number AS work_number,
-			w.started_at AS started_at,
-			w.finished_at AS finished_at,
-			p.deleted_at AS process_deleted_at,
-			e.event_type AS last_event_type,
-			e.created_at AS last_event_at,
-			COUNT(*) OVER() AS total
-		FROM works w
-		LEFT JOIN versions v ON w.version_id = v.id
-		LEFT JOIN pipelines p ON v.pipeline_id = p.id
-		LEFT JOIN LATERAL (
-			SELECT event_type, created_at, work_id
-			FROM task_events
-			WHERE event_type IN('pause', 'start', 'startByOne')
-			ORDER BY created_at DESC
-			LIMIT 1
-		) e ON e.work_id = w.id
-		WHERE w.started_at IS NOT NULL AND p.name IS NOT NULL AND v.is_hidden = false
-	`
-
-	if filters.FromDate != nil || filters.ToDate != nil {
-		q = fmt.Sprintf("%s AND %s", q, getFiltersDateConditions(filters.FromDate, filters.ToDate))
-	}
-
-	if searchConditions := getFiltersSearchConditions(filters.Filter); searchConditions != "" {
-		q = fmt.Sprintf("%s AND %s", q, searchConditions)
-	}
-
-	if len(filters.StatusFilter) != 0 {
-		statusQuery := getWorksStatusQuery(filters.StatusFilter)
-		q = fmt.Sprintf("%s AND %s", q, *statusQuery)
-	}
-
-	if filters.SortColumn != nil && filters.SortOrder != nil {
-		q = fmt.Sprintf("%s ORDER BY %s %s", q, *filters.SortColumn, *filters.SortOrder)
-	} else {
-		q = fmt.Sprintf("%s ORDER BY %s %s", q, "w.started_at", "DESC")
-	}
-
-	if filters.Page != nil && filters.PerPage != nil {
-		q = fmt.Sprintf("%s OFFSET %d", q, *filters.Page**filters.PerPage)
-	}
-
-	if filters.PerPage != nil {
-		q = fmt.Sprintf("%s LIMIT %d", q, *filters.PerPage)
-	}
-
-	return &q
-}
-
-func getFiltersSearchConditions(filter *string) string {
-	if filter == nil {
-		return ""
-	}
-
-	escapeFilter := strings.ReplaceAll(*filter, "_", "!_")
-	escapeFilter = strings.ReplaceAll(escapeFilter, "%", "!%")
-
-	return fmt.Sprintf(`
-		(w.work_number ILIKE '%%%s%%' ESCAPE '!' OR
-		 p.name ILIKE '%%%s%%' ESCAPE '!' OR
-		 w.author ILIKE '%%%s%%' ESCAPE '!')`,
-		escapeFilter, escapeFilter, escapeFilter)
-}
-
-func getFiltersDateConditions(dateFrom, dateTo *string) string {
-	conditions := make([]string, 0)
-
-	if dateFrom != nil {
-		conditions = append(conditions, fmt.Sprintf("w.started_at >= '%s'::timestamptz", *dateFrom))
-	}
-
-	if dateTo != nil {
-		conditions = append(conditions, fmt.Sprintf("w.started_at <= '%s'::timestamptz", *dateTo))
-	}
-
-	return strings.Join(conditions, " AND ")
 }
 
 func (db *PGCon) GetBlockInputs(ctx c.Context, blockName, workNumber string) (entity.BlockInputs, error) {

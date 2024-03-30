@@ -32,7 +32,7 @@ const (
 )
 
 func (ae *Env) GetTasksForMonitoring(w http.ResponseWriter, r *http.Request, params GetTasksForMonitoringParams) {
-	ctx, span := trace.StartSpan(r.Context(), "start get tasks for monitoring")
+	ctx, span := trace.StartSpan(r.Context(), "get_tasks_for_monitoring")
 	defer span.End()
 
 	log := logger.GetLogger(ctx)
@@ -188,7 +188,7 @@ func (ae *Env) GetBlockContext(w http.ResponseWriter, r *http.Request, blockID s
 	}
 }
 
-func (ae *Env) GetMonitoringTask(w http.ResponseWriter, req *http.Request, workNumber string, _ GetMonitoringTaskParams) {
+func (ae *Env) GetMonitoringTask(w http.ResponseWriter, req *http.Request, workNumber string, params GetMonitoringTaskParams) {
 	ctx, s := trace.StartSpan(req.Context(), "get_monitoring_task")
 	defer s.End()
 
@@ -229,7 +229,7 @@ func (ae *Env) GetMonitoringTask(w http.ResponseWriter, req *http.Request, workN
 		return
 	}
 
-	nodes, err := ae.DB.GetTaskForMonitoring(ctx, workNumber)
+	nodes, err := ae.DB.GetTaskForMonitoring(ctx, workNumber, params.FromEventId, params.ToEventId)
 	if err != nil {
 		errorHandler.handleError(GetMonitoringNodesError, err)
 
@@ -242,7 +242,8 @@ func (ae *Env) GetMonitoringTask(w http.ResponseWriter, req *http.Request, workN
 		return
 	}
 
-	if err = sendResponse(w, http.StatusOK, toMonitoringTaskResponse(nodes, events)); err != nil {
+	resp := toMonitoringTaskResponse(nodes, events)
+	if err = sendResponse(w, http.StatusOK, resp); err != nil {
 		errorHandler.handleError(UnknownError, err)
 
 		return
@@ -420,7 +421,6 @@ type startNodesParams struct {
 	author, workNumber string
 	byOne              bool
 	params             *MonitoringTaskActionParams
-	tx                 db.Database
 }
 
 //nolint:gocyclo,gocognit //its ok here
@@ -464,37 +464,16 @@ func (ae *Env) MonitoringTaskAction(w http.ResponseWriter, r *http.Request, work
 		return
 	}
 
-	txStorage, transactionErr := ae.DB.StartTransaction(ctx)
-	if transactionErr != nil {
-		log.WithError(transactionErr).Error("couldn't start transaction")
-
-		errorHandler.sendError(UnknownError)
-
-		return
-	}
-
 	defer func() {
 		if rc := recover(); rc != nil {
 			log.WithField("funcName", "recover").
 				Error(r)
-
-			if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
-				log.WithField("funcName", "RollbackTransaction").
-					WithError(txErr).
-					Error("rollback transaction")
-			}
 		}
 	}()
 
 	workID, err := ae.DB.GetWorkIDByWorkNumber(ctx, workNumber)
 	if err != nil {
 		errorHandler.handleError(GetTaskError, err)
-
-		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
-			log.WithField("funcName", "MonitoringTaskAction").
-				WithError(errors.New("couldn't rollback tx")).
-				Error(txErr)
-		}
 
 		return
 	}
@@ -504,12 +483,6 @@ func (ae *Env) MonitoringTaskAction(w http.ResponseWriter, r *http.Request, work
 		err = ae.pauseTask(ctx, ui.Name, workID.String(), req.Params)
 		if err != nil {
 			errorHandler.handleError(PauseTaskError, err)
-
-			if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
-				log.WithField("funcName", "MonitoringTaskAction").
-					WithError(errors.New("couldn't rollback tx")).
-					Error(txErr)
-			}
 
 			return
 		}
@@ -521,16 +494,9 @@ func (ae *Env) MonitoringTaskAction(w http.ResponseWriter, r *http.Request, work
 			workNumber: workNumber,
 			byOne:      false,
 			params:     req.Params,
-			tx:         txStorage,
 		})
 		if err != nil {
 			errorHandler.handleError(UnpauseTaskError, err)
-
-			if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
-				log.WithField("funcName", "MonitoringTaskAction").
-					WithError(errors.New("couldn't rollback tx")).
-					Error(txErr)
-			}
 
 			return
 		}
@@ -542,27 +508,12 @@ func (ae *Env) MonitoringTaskAction(w http.ResponseWriter, r *http.Request, work
 			workNumber: workNumber,
 			byOne:      true,
 			params:     req.Params,
-			tx:         txStorage,
 		})
 		if err != nil {
 			errorHandler.handleError(UnpauseTaskError, err)
 
-			if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
-				log.WithField("funcName", "MonitoringTaskAction").
-					WithError(errors.New("couldn't rollback tx")).
-					Error(txErr)
-			}
-
 			return
 		}
-	}
-
-	if err = txStorage.CommitTransaction(ctx); err != nil {
-		log.WithError(err).Error("couldn't commit transaction")
-
-		errorHandler.sendError(UnknownError)
-
-		return
 	}
 
 	events, err := ae.DB.GetTaskEvents(ctx, workID.String())
@@ -572,7 +523,7 @@ func (ae *Env) MonitoringTaskAction(w http.ResponseWriter, r *http.Request, work
 		return
 	}
 
-	nodes, err := ae.DB.GetTaskForMonitoring(ctx, workNumber)
+	nodes, err := ae.DB.GetTaskForMonitoring(ctx, workNumber, nil, nil)
 	if err != nil {
 		errorHandler.handleError(GetMonitoringNodesError, err)
 
@@ -593,7 +544,13 @@ func (ae *Env) MonitoringTaskAction(w http.ResponseWriter, r *http.Request, work
 	}
 }
 
+//nolint:all // ok
 func toMonitoringTaskResponse(nodes []entity.MonitoringTaskNode, events []entity.TaskEvent) *MonitoringTask {
+	const (
+		finished = 2
+		canceled = 6
+	)
+
 	res := &MonitoringTask{
 		History:  make([]MonitoringHistory, 0),
 		TaskRuns: make([]MonitoringTaskRun, 0),
@@ -606,6 +563,8 @@ func toMonitoringTaskResponse(nodes []entity.MonitoringTaskNode, events []entity
 	res.VersionId = nodes[0].VersionID
 	res.WorkNumber = nodes[0].WorkNumber
 	res.IsPaused = nodes[0].IsPaused
+	res.TaskRuns = getRunsByEvents(events)
+	res.IsFinished = nodes[0].WorkStatus == finished || nodes[0].WorkStatus == canceled
 
 	for i := range nodes {
 		monitoringHistory := MonitoringHistory{
@@ -624,22 +583,33 @@ func toMonitoringTaskResponse(nodes []entity.MonitoringTaskNode, events []entity
 		res.History = append(res.History, monitoringHistory)
 	}
 
+	return res
+}
+
+func getRunsByEvents(events []entity.TaskEvent) []MonitoringTaskRun {
+	res := make([]MonitoringTaskRun, 0)
 	run := MonitoringTaskRun{}
 
 	for i := range events {
 		if events[i].EventType == string(MonitoringTaskEventEventTypeStart) {
 			run.StartEventId = events[i].ID
+			run.StartEventAt = events[i].CreatedAt
 		}
 
 		if events[i].EventType == string(MonitoringTaskEventEventTypePause) {
 			run.EndEventId = events[i].ID
+			run.EndEventAt = events[i].CreatedAt
 		}
 
 		isLastEvent := len(events) == i+1
 
+		if isLastEvent && run.EndEventId == "" {
+			run.EndEventAt = time.Now()
+		}
+
 		if (run.StartEventId != "" && run.EndEventId != "") || isLastEvent {
-			run.Index = float32(len(res.TaskRuns) + 1)
-			res.TaskRuns = append(res.TaskRuns, run)
+			run.Index = len(res) + 1
+			res = append(res, run)
 			run = MonitoringTaskRun{}
 		}
 	}
@@ -648,7 +618,21 @@ func toMonitoringTaskResponse(nodes []entity.MonitoringTaskNode, events []entity
 }
 
 func (ae *Env) pauseTask(ctx context.Context, author, workID string, params *MonitoringTaskActionParams) error {
-	err := ae.DB.SetTaskPaused(ctx, workID, true)
+	txStorage, err := ae.DB.StartTransaction(ctx)
+	if err != nil {
+		return fmt.Errorf("failed start transaction, %w", err)
+	}
+
+	defer func() {
+		rollbackErr := txStorage.RollbackTransaction(ctx)
+		if rollbackErr != nil {
+			ae.Log.WithError(err).
+				WithField("funcName", "pauseTask").
+				Error("failed rollback transaction")
+		}
+	}()
+
+	err = txStorage.SetTaskPaused(ctx, workID, true)
 	if err != nil {
 		return err
 	}
@@ -658,7 +642,7 @@ func (ae *Env) pauseTask(ctx context.Context, author, workID string, params *Mon
 		stepNames = *params.Steps
 	}
 
-	err = ae.DB.SetTaskBlocksPaused(ctx, workID, stepNames, true)
+	err = txStorage.SetTaskBlocksPaused(ctx, workID, stepNames, true)
 	if err != nil {
 		return err
 	}
@@ -671,7 +655,7 @@ func (ae *Env) pauseTask(ctx context.Context, author, workID string, params *Mon
 		}
 	}
 
-	_, err = ae.DB.CreateTaskEvent(ctx, &entity.CreateTaskEvent{
+	_, err = txStorage.CreateTaskEvent(ctx, &entity.CreateTaskEvent{
 		WorkID:    workID,
 		Author:    author,
 		EventType: string(MonitoringTaskActionRequestActionPause),
@@ -681,11 +665,16 @@ func (ae *Env) pauseTask(ctx context.Context, author, workID string, params *Mon
 		return err
 	}
 
+	err = txStorage.CommitTransaction(ctx)
+	if err != nil {
+		return fmt.Errorf("failed commit transaction, %w", err)
+	}
+
 	return nil
 }
 
 func (ae *Env) startProcess(ctx context.Context, startParams *startNodesParams) error {
-	isPaused, err := startParams.tx.IsTaskPaused(ctx, startParams.workID)
+	isPaused, err := ae.DB.IsTaskPaused(ctx, startParams.workID)
 	if err != nil {
 		return err
 	}
@@ -695,14 +684,20 @@ func (ae *Env) startProcess(ctx context.Context, startParams *startNodesParams) 
 	}
 
 	for i := range *startParams.params.Steps {
-		restartErr := ae.restartNode(ctx, startParams.workID, startParams.workNumber,
-			(*startParams.params.Steps)[i], startParams.author, startParams.byOne, startParams.tx)
+		restartErr := ae.restartNode(
+			ctx,
+			startParams.workID,
+			startParams.workNumber,
+			(*startParams.params.Steps)[i],
+			startParams.author,
+			startParams.byOne,
+		)
 		if restartErr != nil {
 			return restartErr
 		}
 	}
 
-	err = startParams.tx.TryUnpauseTask(ctx, startParams.workID)
+	err = ae.DB.TryUnpauseTask(ctx, startParams.workID)
 	if err != nil {
 		return err
 	}
@@ -715,7 +710,7 @@ func (ae *Env) startProcess(ctx context.Context, startParams *startNodesParams) 
 		}
 	}
 
-	_, err = startParams.tx.CreateTaskEvent(ctx, &entity.CreateTaskEvent{
+	_, err = ae.DB.CreateTaskEvent(ctx, &entity.CreateTaskEvent{
 		WorkID:    startParams.workID.String(),
 		Author:    startParams.author,
 		EventType: string(MonitoringTaskActionRequestActionStart),
@@ -728,15 +723,30 @@ func (ae *Env) startProcess(ctx context.Context, startParams *startNodesParams) 
 	return nil
 }
 
-func (ae *Env) restartNode(ctx context.Context,
-	workID uuid.UUID, workNumber, stepName, login string, byOne bool, tx db.Database,
+func (ae *Env) restartNode(
+	ctx context.Context,
+	workID uuid.UUID,
+	workNumber, stepName, login string,
+	byOne bool,
 ) (err error) {
-	dbStep, stepErr := tx.GetTaskStepByName(ctx, workID, stepName)
+	txStorage, err := ae.DB.StartTransaction(ctx)
+	if err != nil {
+		return fmt.Errorf("failed start transaction, %w", err)
+	}
+
+	defer func() {
+		rollbackErr := txStorage.RollbackTransaction(ctx)
+		if rollbackErr != nil {
+			ae.Log.WithError(err).Error("failed rollback transaction")
+		}
+	}()
+
+	dbStep, stepErr := txStorage.GetTaskStepByName(ctx, workID, stepName)
 	if stepErr != nil {
 		return stepErr
 	}
 
-	isResumable, blockStartTime, resumableErr := tx.IsBlockResumable(ctx, workID, dbStep.ID)
+	isResumable, blockStartTime, resumableErr := txStorage.IsBlockResumable(ctx, workID, dbStep.ID)
 	if resumableErr != nil {
 		return resumableErr
 	}
@@ -745,7 +755,7 @@ func (ae *Env) restartNode(ctx context.Context,
 		return fmt.Errorf("can't unpause running task block: %s", stepName)
 	}
 
-	blockData, blockErr := tx.GetBlockDataFromVersion(ctx, workNumber, stepName)
+	blockData, blockErr := txStorage.GetBlockDataFromVersion(ctx, workNumber, stepName)
 	if blockErr != nil {
 		return blockErr
 	}
@@ -755,19 +765,24 @@ func (ae *Env) restartNode(ctx context.Context,
 		return dbTaskErr
 	}
 
-	skipErr := ae.skipTaskBlocksAfterRestart(ctx, &task.Steps, blockStartTime, blockData.Next, workNumber, workID, tx)
+	skipErr := ae.skipTaskBlocksAfterRestart(ctx, &task.Steps, blockStartTime, blockData.Next, workNumber, workID, txStorage)
 	if skipErr != nil {
 		return skipErr
 	}
 
-	unpErr := tx.UnpauseTaskBlock(ctx, workID, dbStep.ID)
+	unpErr := txStorage.UnpauseTaskBlock(ctx, workID, dbStep.ID)
 	if unpErr != nil {
 		return unpErr
 	}
 
-	storage, getErr := tx.GetVariableStorageForStep(ctx, workID, stepName)
+	storage, getErr := txStorage.GetVariableStorageForStep(ctx, workID, stepName)
 	if getErr != nil {
 		return getErr
+	}
+
+	err = txStorage.CommitTransaction(ctx)
+	if err != nil {
+		return fmt.Errorf("failed commit transaction, %w", err)
 	}
 
 	_, processErr := pipeline.ProcessBlockWithEndMapping(ctx, stepName, blockData, &pipeline.BlockRunContext{
@@ -792,7 +807,7 @@ func (ae *Env) restartNode(ctx context.Context,
 			HrGate:        ae.HrGate,
 			Scheduler:     ae.Scheduler,
 			SLAService:    ae.SLAService,
-			Storage:       tx,
+			Storage:       ae.DB,
 		},
 		BlockRunResults: &pipeline.BlockRunResults{},
 
@@ -906,7 +921,7 @@ func (ae *Env) GetMonitoringTaskEvents(w http.ResponseWriter, req *http.Request,
 
 func (ae *Env) toMonitoringTaskEventsResponse(ctx context.Context, events []entity.TaskEvent) *MonitoringTaskEvents {
 	res := &MonitoringTaskEvents{
-		Events: make([]MonitoringTaskEvent, len(events)),
+		Events: make([]MonitoringTaskEvent, 0, len(events)),
 	}
 
 	fullNameCache := make(map[string]string)
@@ -922,15 +937,35 @@ func (ae *Env) toMonitoringTaskEventsResponse(ctx context.Context, events []enti
 		}
 
 		params := MonitoringTaskActionParams{}
-		_ = json.Unmarshal(events[i].Params, &params)
 
-		res.Events = append(res.Events, MonitoringTaskEvent{
+		err := json.Unmarshal(events[i].Params, &params)
+		if err != nil {
+			return res
+		}
+
+		event := MonitoringTaskEvent{
 			Id:        events[i].ID,
 			Author:    fullNameCache[events[i].Author],
 			EventType: MonitoringTaskEventEventType(events[i].EventType),
 			Params:    params,
-			CreatedAt: events[i].CreatedAt.Format(monitoringTimeLayout),
-		})
+			RunIndex:  1,
+			CreatedAt: events[i].CreatedAt,
+		}
+
+		runs := getRunsByEvents(events)
+
+		for runIndex := range runs {
+			if (event.CreatedAt.After(runs[runIndex].StartEventAt) ||
+				event.CreatedAt.Equal(runs[runIndex].StartEventAt)) &&
+				(event.CreatedAt.Before(runs[runIndex].EndEventAt) ||
+					event.CreatedAt.Equal(runs[runIndex].EndEventAt)) {
+				event.RunIndex = runs[runIndex].Index
+
+				break
+			}
+		}
+
+		res.Events = append(res.Events, event)
 	}
 
 	return res

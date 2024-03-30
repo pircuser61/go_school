@@ -300,6 +300,7 @@ type InitialApplication struct {
 
 type TaskRunContext struct {
 	ClientID           string             `json:"client_id"`
+	PipelineID         string             `json:"pipeline_id"`
 	InitialApplication InitialApplication `json:"initial_application"`
 }
 

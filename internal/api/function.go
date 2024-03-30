@@ -45,25 +45,10 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 
 	ctx = logger.WithLogger(ctx, log)
 
-	txStorage, transactionErr := ae.DB.StartTransaction(ctx)
-	if transactionErr != nil {
-		log.WithField("funcName", "DB.StartTransaction").
-			WithError(transactionErr).
-			Error("start transaction")
-
-		return transactionErr
-	}
-
 	defer func() {
 		if r := recover(); r != nil {
 			log.WithField("funcName", "recover").
 				Error(r)
-
-			if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
-				log.WithField("funcName", "RollbackTransaction").
-					WithError(txErr).
-					Error("rollback transaction")
-			}
 		}
 	}()
 
@@ -72,12 +57,6 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 		log.WithField("funcName", "GetTaskStepById").
 			WithError(err).
 			Error("get task step by id")
-
-		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
-			log.WithField("funcName", "RollbackTransaction").
-				WithError(txErr).
-				Error("rollback transaction")
-		}
 
 		return nil
 	}
@@ -88,12 +67,6 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 
 	if st.IsPaused {
 		log.Error("block is paused")
-
-		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
-			log.WithField("funcName", "RollbackTransaction").
-				WithError(txErr).
-				Error("rollback transaction")
-		}
 
 		return nil
 	}
@@ -117,12 +90,6 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 			WithError(err).
 			Error("marshal functionMapping")
 
-		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
-			log.WithField("funcName", "RollbackTransaction").
-				WithError(txErr).
-				Error("rollback transaction")
-		}
-
 		return nil
 	}
 
@@ -133,7 +100,7 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 		VarStore:   storage,
 		Services: pipeline.RunContextServices{
 			HTTPClient:    ae.HTTPClient,
-			Storage:       txStorage,
+			Storage:       ae.DB,
 			Sender:        ae.Mail,
 			Kafka:         ae.Kafka,
 			People:        ae.People,
@@ -164,12 +131,6 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 			WithError(err).
 			Error("get block data from pipeline version")
 
-		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
-			log.WithField("funcName", "RollbackTransaction").
-				WithError(txErr).
-				Error("rollback transaction")
-		}
-
 		return nil
 	}
 
@@ -179,21 +140,7 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 			WithError(blockErr).
 			Error("process block with end mapping")
 
-		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
-			log.WithField("funcName", "RollbackTransaction").
-				WithError(txErr).
-				Error("rollback transaction")
-		}
-
 		return nil
-	}
-
-	if commitErr := txStorage.CommitTransaction(ctx); commitErr != nil {
-		log.WithField("funcName", "CommitTransaction").
-			WithError(commitErr).
-			Error("commit transaction")
-
-		return commitErr
 	}
 
 	if workFinished {

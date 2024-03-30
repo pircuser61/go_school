@@ -57,10 +57,14 @@ type TaskStorager interface {
 	GetExecutorsFromPrevWorkVersionExecutionBlockRun(ctx c.Context, workNumber, name string) (exec map[string]struct{}, err error)
 	GetWorkIDByWorkNumber(ctx c.Context, workNumber string) (uuid.UUID, error)
 
-	GetTaskForMonitoring(ctx c.Context, workNumber string) ([]e.MonitoringTaskNode, error)
+	GetTaskForMonitoring(ctx c.Context, workNumber string, fromEventID, toEventID *string) ([]e.MonitoringTaskNode, error)
 	GetTasksForMonitoring(ctx c.Context, filters *e.TasksForMonitoringFilters) (*e.TasksForMonitoring, error)
 
 	CreateTask(ctx c.Context, dto *CreateTaskDTO) (*e.EriusTask, error)
+	FillEmptyTask(ctx c.Context, updateTask *UpdateEmptyTaskDTO) error
+	IsStepExist(ctx c.Context, workID, stepName string, hasUpdData bool) (bool, uuid.UUID, time.Time, error)
+
+	CreateEmptyTask(ctx c.Context, task *CreateEmptyTaskDTO) (string, error)
 
 	CheckUserCanEditForm(ctx c.Context, workNumber string, stepName string, login string) (bool, error)
 	SendTaskToArchive(ctx c.Context, taskID uuid.UUID) (err error)
@@ -218,7 +222,7 @@ type Database interface {
 	GetPipelineVersion(ctx c.Context, id uuid.UUID, checkNotDeleted bool) (*e.EriusScenario, error)
 	GetPipelineVersions(ctx c.Context, id uuid.UUID) ([]e.EriusVersionInfo, error)
 	UpdateDraft(ctx c.Context, p *e.EriusScenario, pipelineData []byte, groups []*e.NodeGroup, isHidden bool) error
-	SaveStepContext(ctx c.Context, dto *SaveStepRequest, id uuid.UUID, hasUpdData bool) (uuid.UUID, error)
+	SaveStepContext(ctx c.Context, dto *SaveStepRequest, id uuid.UUID) (uuid.UUID, error)
 	UpdateStepContext(ctx c.Context, dto *UpdateStepRequest) error
 	UpdateTaskBlocksData(ctx c.Context, dto *UpdateTaskBlocksDataRequest) error
 	GetTaskActiveBlock(ctx c.Context, taskID, stepName string) ([]string, error)

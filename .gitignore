@@ -362,3 +362,5 @@ main
 api/api.go
 
 config.yaml
+
+.vscode

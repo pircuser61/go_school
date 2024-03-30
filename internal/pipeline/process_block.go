@@ -135,65 +135,7 @@ func CreateBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *Block
 	case script.TypeExternal:
 		return createExecutableFunctionBlock(ctx, name, bl, runCtx, expectedEvents)
 	case script.TypeScenario:
-		p, err := runCtx.Services.Storage.GetExecutableByName(ctx, bl.Title)
-		if err != nil {
-			return nil, false, err
-		}
-
-		epi := ExecutablePipeline{}
-		epi.PipelineID = p.PipelineID
-		epi.VersionID = p.VersionID
-		epi.Storage = runCtx.Services.Storage
-		epi.EntryPoint = p.Pipeline.Entrypoint
-		epi.FaaS = runCtx.Services.FaaS
-		epi.Input = make(map[string]string)
-		epi.Output = make(map[string]string)
-		epi.Nexts = bl.Next
-		epi.Name = bl.Title
-		epi.PipelineModel = p
-		epi.RunContext = runCtx
-
-		parametersMap := make(map[string]interface{})
-		for _, v := range bl.Input {
-			parametersMap[v.Name] = v.Global
-		}
-
-		parameters, err := json.Marshal(parametersMap)
-		if err != nil {
-			return nil, false, err
-		}
-
-		err = epi.CreateTask(ctx, &CreateTaskDTO{
-			Author:  "Erius",
-			IsDebug: false,
-			Params:  parameters,
-		})
-		if err != nil {
-			return nil, false, err
-		}
-
-		err = epi.CreateBlocks(ctx, p.Pipeline.Blocks)
-		if err != nil {
-			return nil, false, err
-		}
-
-		for _, v := range bl.Input {
-			epi.Input[p.Name+KeyDelimiter+v.Name] = v.Global
-		}
-
-		if bl.Output != nil {
-			//nolint:gocritic //коллекция без поинтеров
-			for propertyName, v := range bl.Output.Properties {
-				epi.Output[propertyName] = v.Global
-			}
-		}
-
-		err = epi.Storage.SetLastRunID(ctx, runCtx.TaskID, epi.VersionID)
-		if err != nil {
-			return nil, false, errors.Wrap(err, "can’t set id of the last runned task")
-		}
-
-		return &epi, false, nil
+		return createScenarioBlock(ctx, runCtx, bl)
 	}
 
 	return nil, false, errors.Errorf("can't create block with type: %s", bl.BlockType)
@@ -238,22 +180,43 @@ func createGoBlock(ctx c.Context, ef *entity.EriusFunc, name string, runCtx *Blo
 	return nil, false, errors.New("unknown go-block type: " + ef.TypeID)
 }
 
-func initBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *BlockRunContext) (Runner, uuid.UUID, error) {
+func InitBlockInDB(ctx c.Context, name, stepType string, runCtx *BlockRunContext) error {
 	storageData, errSerialize := json.Marshal(runCtx.VarStore)
 	if errSerialize != nil {
-		return nil, uuid.Nil, errSerialize
+		return errSerialize
 	}
 
-	id, startTime, err := runCtx.Services.Storage.InitTaskBlock(ctx, &db.SaveStepRequest{
+	_, _, err := runCtx.Services.Storage.InitTaskBlock(ctx, &db.SaveStepRequest{
 		WorkID:   runCtx.TaskID,
-		StepType: bl.TypeID,
 		StepName: name,
+		StepType: stepType,
 		Status:   string(StatusReady),
 		Content:  storageData,
 	}, runCtx.OnceProductive,
 		runCtx.UpdateData != nil)
 	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func initBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *BlockRunContext) (Runner, uuid.UUID, error) {
+	exists, id, startTime, err := runCtx.Services.Storage.IsStepExist(ctx, runCtx.TaskID.String(), name, runCtx.UpdateData != nil)
+	if err != nil {
 		return nil, uuid.Nil, err
+	}
+
+	if !exists {
+		log := logger.CreateLogger(nil)
+
+		log.
+			WithFields(logger.Fields{
+				"funcName": "initBlock",
+				"taskID":   runCtx.TaskID.String(),
+				"stepName": name,
+			}).
+			Warning("block is not exists")
 	}
 
 	if !runCtx.Productive {
@@ -265,10 +228,10 @@ func initBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *BlockRu
 		return nil, uuid.Nil, err
 	}
 
-	_, blockExists := runCtx.VarStore.State[name]
+	_, blockExistsInContext := runCtx.VarStore.State[name]
 
 	// либо блока нет либо блок уже есть и мы зашли в него повторно
-	if !blockExists || isReEntry {
+	if !blockExistsInContext || isReEntry {
 		state, stateErr := json.Marshal(block.GetState())
 		if stateErr != nil {
 			return nil, uuid.Nil, stateErr
@@ -291,7 +254,7 @@ func initBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *BlockRu
 		members:         block.Members(),
 		deadlines:       deadlines,
 		isReEntered:     isReEntry,
-		blockExist:      blockExists,
+		blockExist:      blockExistsInContext,
 		attachments:     block.BlockAttachments(),
 		currentExecutor: block.CurrentExecutorData(),
 	}, id)
@@ -300,6 +263,75 @@ func initBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *BlockRu
 	}
 
 	return block, id, nil
+}
+
+/*
+поскольку значения функции просто пробрасываются дальше
+удобно чтобы выходные параметры соответствовали выходным параметрам
+функции из которой вызывается эта функция
+*/
+//nolint:unparam // см выше
+func createScenarioBlock(ctx c.Context, runCtx *BlockRunContext, bl *entity.EriusFunc) (*ExecutablePipeline, bool, error) {
+	p, err := runCtx.Services.Storage.GetExecutableByName(ctx, bl.Title)
+	if err != nil {
+		return nil, false, err
+	}
+
+	epi := ExecutablePipeline{
+		PipelineID:    p.PipelineID,
+		VersionID:     p.VersionID,
+		Storage:       runCtx.Services.Storage,
+		EntryPoint:    p.Pipeline.Entrypoint,
+		FaaS:          runCtx.Services.FaaS,
+		Input:         make(map[string]string),
+		Output:        make(map[string]string),
+		Nexts:         bl.Next,
+		Name:          bl.Title,
+		PipelineModel: p,
+		RunContext:    runCtx,
+	}
+
+	parametersMap := make(map[string]interface{})
+	for _, v := range bl.Input {
+		parametersMap[v.Name] = v.Global
+	}
+
+	parameters, err := json.Marshal(parametersMap)
+	if err != nil {
+		return nil, false, err
+	}
+
+	err = epi.CreateTask(ctx, &CreateTaskDTO{
+		Author:  "Erius",
+		IsDebug: false,
+		Params:  parameters,
+	})
+	if err != nil {
+		return nil, false, err
+	}
+
+	err = epi.CreateBlocks(ctx, p.Pipeline.Blocks)
+	if err != nil {
+		return nil, false, err
+	}
+
+	for _, v := range bl.Input {
+		epi.Input[p.Name+KeyDelimiter+v.Name] = v.Global
+	}
+
+	if bl.Output != nil {
+		//nolint:gocritic //коллекция без поинтеров
+		for propertyName, v := range bl.Output.Properties {
+			epi.Output[propertyName] = v.Global
+		}
+	}
+
+	err = epi.Storage.SetLastRunID(ctx, runCtx.TaskID, epi.VersionID)
+	if err != nil {
+		return nil, false, errors.Wrap(err, "can’t set id of the last runned task")
+	}
+
+	return &epi, false, nil
 }
 
 func updateBlock(ctx c.Context, block Runner, name string, id uuid.UUID, runCtx *BlockRunContext) error {
@@ -395,7 +427,7 @@ func (runCtx *BlockRunContext) saveStepInDB(ctx c.Context, dto *saveStepDTO, id 
 			InitialPeople: dto.currentExecutor.InitialPeople,
 		},
 		BlockStart: runCtx.CurrBlockStartTime,
-	}, id, runCtx.UpdateData != nil)
+	}, id)
 }
 
 type updateStepDTO struct {
@@ -464,7 +496,11 @@ func (runCtx *BlockRunContext) updateStepInDB(ctx c.Context, dto *updateStepDTO)
 	})
 }
 
-func ProcessBlockWithEndMapping(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *BlockRunContext,
+func ProcessBlockWithEndMapping(
+	ctx c.Context,
+	name string,
+	bl *entity.EriusFunc,
+	runCtx *BlockRunContext,
 	manual bool,
 ) (bool, error) {
 	ctx, s := trace.StartSpan(ctx, "process_block_with_end_mapping")

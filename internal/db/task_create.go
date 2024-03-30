@@ -22,6 +22,26 @@ type CreateTaskDTO struct {
 	RunCtx     entity.TaskRunContext
 }
 
+//nolint:gocritic //in struct field without pointer
+func NewCreateTaskDTO(
+	taskID, versionID uuid.UUID,
+	author, realAuthor, workNumber string,
+	isDebug bool,
+	params []byte,
+	runCtx entity.TaskRunContext,
+) CreateTaskDTO {
+	return CreateTaskDTO{
+		TaskID:     taskID,
+		VersionID:  versionID,
+		Author:     author,
+		RealAuthor: realAuthor,
+		WorkNumber: workNumber,
+		IsDebug:    isDebug,
+		Params:     params,
+		RunCtx:     runCtx,
+	}
+}
+
 func (db *PGCon) SetLastRunID(c context.Context, taskID, versionID uuid.UUID) error {
 	// nolint:gocritic
 	// language=PostgreSQL
@@ -35,6 +55,120 @@ func (db *PGCon) SetLastRunID(c context.Context, taskID, versionID uuid.UUID) er
 	}
 
 	return nil
+}
+
+type CreateEmptyTaskDTO struct {
+	TaskID     uuid.UUID
+	WorkNumber string
+	Author     string
+	RealAuthor string
+	RunContext *entity.TaskRunContext
+}
+
+func (db *PGCon) CreateEmptyTask(ctx context.Context, task *CreateEmptyTaskDTO) (string, error) {
+	ctx, span := trace.StartSpan(ctx, "pg_create_empty_task")
+	defer span.End()
+
+	if task.WorkNumber == "" {
+		return db.insertEmptyTask(ctx, task)
+	}
+
+	return db.createEmptyTaskWithWorkID(ctx, task)
+}
+
+func (db *PGCon) insertEmptyTask(ctx context.Context, task *CreateEmptyTaskDTO) (string, error) {
+	// nolint:gocritic
+	// language=PostgreSQL
+	const query = `
+		INSERT INTO works(
+			id, 
+			started_at, 
+			status, 
+			author,
+			real_author,
+			run_context
+		)
+		VALUES (
+			$1, 
+			$2, 
+			$3, 
+			$4, 
+			$5,
+			$6
+		)
+	RETURNING work_number
+`
+
+	row := db.Connection.QueryRow(
+		ctx,
+		query,
+		task.TaskID,
+		time.Now(),
+		RunStatusCreated,
+		task.Author,
+		task.RealAuthor,
+		task.RunContext,
+	)
+
+	var worksNumber string
+
+	if err := row.Scan(&worksNumber); err != nil {
+		return "", err
+	}
+
+	return worksNumber, nil
+}
+
+func (db *PGCon) createEmptyTaskWithWorkID(ctx context.Context, task *CreateEmptyTaskDTO) (string, error) {
+	err := db.setTaskChild(ctx, task.WorkNumber, task.TaskID)
+	if err != nil {
+		return "", err
+	}
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	const query = `
+		INSERT INTO works(
+			id, 
+			started_at, 
+			status, 
+			author,
+			work_number,
+			real_author,
+			run_context
+		)
+		VALUES (
+			$1, 
+			$2, 
+			$3, 
+			$4,
+			$5,
+			$6,
+			$7
+		)
+`
+
+	_, err = db.Connection.Exec(
+		ctx,
+		query,
+		task.TaskID,
+		time.Now(),
+		RunStatusCreated,
+		task.Author,
+		task.WorkNumber,
+		task.RealAuthor,
+		task.RunContext,
+	)
+	if err != nil {
+		return "", err
+	}
+
+	err = db.FinishTaskBlocks(ctx, task.TaskID, nil, true)
+	if err != nil {
+		return "", err
+	}
+
+	return task.WorkNumber, nil
 }
 
 func (db *PGCon) CreateTask(c context.Context, dto *CreateTaskDTO) (*entity.EriusTask, error) {
