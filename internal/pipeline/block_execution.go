@@ -712,6 +712,7 @@ func (gb *GoExecutionBlock) UpdateStateUsingOutput(ctx context.Context, data []b
 	if unmErr != nil {
 		return nil, fmt.Errorf("can't unmarshal into output struct")
 	}
+
 	if executionParams.Decision != nil {
 		gb.State.Decision = executionParams.Decision
 	}
@@ -743,6 +744,7 @@ func (gb *GoExecutionBlock) UpdateOutputUsingState(ctx context.Context) (output 
 		if ssoErr != nil {
 			return nil, ssoErr
 		}
+
 		output[keyOutputExecutionLogin] = personData
 	}
 

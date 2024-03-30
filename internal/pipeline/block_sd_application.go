@@ -284,6 +284,7 @@ func (gb *GoSdApplicationBlock) UpdateStateUsingOutput(ctx context.Context, data
 	if unmErr != nil {
 		return nil, fmt.Errorf("can't unmarshal into output struct")
 	}
+
 	gb.State.BlueprintID = sdOutput.BlueprintID
 	gb.State.Description = sdOutput.Description
 

@@ -713,6 +713,7 @@ func (gb *GoApproverBlock) UpdateStateUsingOutput(ctx context.Context, data []by
 	if unmErr != nil {
 		return nil, fmt.Errorf("can't unmarshal into output struct")
 	}
+
 	if approverOutput.Decision != nil {
 		gb.State.Decision = approverOutput.Decision
 	}
@@ -744,6 +745,7 @@ func (gb *GoApproverBlock) UpdateOutputUsingState(ctx context.Context) (output m
 		if ssoErr != nil {
 			return nil, ssoErr
 		}
+
 		output[keyOutputApprover] = personData
 	}
 

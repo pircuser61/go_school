@@ -3162,7 +3162,7 @@ func (db *PGCon) GetVersionsByFunction(ctx context.Context, funcID, versionID st
 	return versions, nil
 }
 
-func (db *PGCon) GetTaskStepByNameForCtxEditing(ctx context.Context, workID uuid.UUID, stepName string, time time.Time) (*entity.Step, error) {
+func (db *PGCon) GetTaskStepByNameForCtxEditing(ctx context.Context, workID uuid.UUID, stepName string, t time.Time) (*entity.Step, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_task_step_by_name")
 	defer span.End()
 
@@ -3181,7 +3181,7 @@ func (db *PGCon) GetTaskStepByNameForCtxEditing(ctx context.Context, workID uuid
 
 	var s entity.Step
 
-	err := db.Connection.QueryRow(ctx, query, workID, stepName, time).Scan(
+	err := db.Connection.QueryRow(ctx, query, workID, stepName, t).Scan(
 		&s.ID,
 		&s.Type,
 		&s.Name,
@@ -3193,7 +3193,7 @@ func (db *PGCon) GetTaskStepByNameForCtxEditing(ctx context.Context, workID uuid
 	return &s, nil
 }
 
-func (db *PGCon) SaveNodePreviousContent(ctx context.Context, stepId, eventId uuid.UUID) error {
+func (db *PGCon) SaveNodePreviousContent(ctx context.Context, stepID, eventID uuid.UUID) error {
 	ctx, span := trace.StartSpan(ctx, "pg_save_node_previous_content")
 	defer span.End()
 
@@ -3219,7 +3219,7 @@ func (db *PGCon) SaveNodePreviousContent(ctx context.Context, stepId, eventId uu
 		)
 	)`
 
-	_, err := db.Connection.Exec(ctx, q, id, eventId, stepId, stepId)
+	_, err := db.Connection.Exec(ctx, q, id, eventID, stepID, stepID)
 	if err != nil {
 		return err
 	}
@@ -3227,7 +3227,7 @@ func (db *PGCon) SaveNodePreviousContent(ctx context.Context, stepId, eventId uu
 	return nil
 }
 
-func (db *PGCon) UpdateNodeContent(ctx context.Context, stepId, workId uuid.UUID,
+func (db *PGCon) UpdateNodeContent(ctx context.Context, stepID, workID uuid.UUID,
 	stepName string, state, output map[string]interface{},
 ) error {
 	ctx, span := trace.StartSpan(ctx, "pg_update_node_content")
@@ -3248,20 +3248,20 @@ func (db *PGCon) UpdateNodeContent(ctx context.Context, stepId, workId uuid.UUID
 			LIMIT 1  )
     `
 	stateArgs := []interface{}{
-		stepId,
+		stepID,
 		stepName,
 		state,
-		workId,
-		workId,
+		workID,
+		workID,
 		stepName,
 	}
+
 	_, stateErr := db.Connection.Exec(ctx, qState, stateArgs...)
 	if stateErr != nil {
 		return stateErr
 	}
 
 	for key, val := range output {
-
 		// nolint:gocritic
 		// language=PostgreSQL
 		qOutput := `
@@ -3278,11 +3278,11 @@ func (db *PGCon) UpdateNodeContent(ctx context.Context, stepId, workId uuid.UUID
     `
 
 		outputArgs := []interface{}{
-			stepId,
+			stepID,
 			stepName + "." + key,
 			val,
-			workId,
-			workId,
+			workID,
+			workID,
 			stepName,
 		}
 

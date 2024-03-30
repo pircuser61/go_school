@@ -1017,6 +1017,7 @@ func (gb *GoSignBlock) UpdateStateUsingOutput(ctx context.Context, data []byte) 
 	if unmErr != nil {
 		return nil, fmt.Errorf("can't unmarshal into output struct")
 	}
+
 	if signOutput.Decision != nil {
 		gb.State.Decision = signOutput.Decision
 	}
@@ -1047,15 +1048,12 @@ func (gb *GoSignBlock) UpdateStateUsingOutput(ctx context.Context, data []byte) 
 }
 
 func (gb *GoSignBlock) UpdateOutputUsingState(ctx context.Context) (output map[string]interface{}, err error) {
-	// хотим
-	// 1 проверить что ключ в стейте существует
-	// 2 положить его значение (возможно измененное см персондата в струкруру/мапу которую и возвращаем в метода
-
 	if gb.State.ActualSigner != nil {
 		personData, ssoErr := gb.RunContext.Services.ServiceDesc.GetSsoPerson(ctx, *gb.State.ActualSigner)
 		if ssoErr != nil {
 			return nil, ssoErr
 		}
+
 		output[keyOutputSigner] = personData
 	}
 
@@ -1073,9 +1071,6 @@ func (gb *GoSignBlock) UpdateOutputUsingState(ctx context.Context) (output map[s
 
 	resAttachments := make([]entity.Attachment, 0)
 
-	if gb.State.SignLog != nil {
-	}
-
 	for _, l := range gb.State.SignLog {
 		if l.LogType != SignerLogDecision {
 			continue
@@ -1083,6 +1078,7 @@ func (gb *GoSignBlock) UpdateOutputUsingState(ctx context.Context) (output map[s
 
 		resAttachments = append(resAttachments, l.Attachments...)
 	}
+
 	resAttachments = append(resAttachments, gb.State.SigningParams.Files...)
 
 	output[keyOutputSignAttachments] = resAttachments
