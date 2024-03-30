@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"golang.org/x/net/context"
 
 	e "gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
@@ -59,6 +60,7 @@ type TaskStorager interface {
 
 	GetTaskForMonitoring(ctx c.Context, workNumber string, fromEventID, toEventID *string) ([]e.MonitoringTaskNode, error)
 	GetTasksForMonitoring(ctx c.Context, filters *e.TasksForMonitoringFilters) (*e.TasksForMonitoring, error)
+	GetTaskStepByNameForCtxEditing(ctx c.Context, workID uuid.UUID, stepName string, time time.Time) (*e.Step, error)
 
 	CreateTask(ctx c.Context, dto *CreateTaskDTO) (*e.EriusTask, error)
 	FillEmptyTask(ctx c.Context, updateTask *UpdateEmptyTaskDTO) error
@@ -80,6 +82,8 @@ type TaskStorager interface {
 	UpdateTaskStatus(ctx c.Context, taskID uuid.UUID, status int, comment, author string) error
 	UpdateBlockStateInOthers(ctx c.Context, blockName, taskID string, blockState []byte) error
 	UpdateBlockVariablesInOthers(ctx c.Context, taskID string, values map[string]interface{}) error
+	SaveNodePreviousContent(ctx c.Context, stepId, eventId uuid.UUID) error
+	UpdateNodeContent(ctx context.Context, stepId, workId uuid.UUID, stepName string, state, output map[string]interface{}) error
 }
 
 type UpdateTaskRate struct {
@@ -246,8 +250,8 @@ type Database interface {
 	CheckBlockForHiddenFlag(ctx c.Context, blockID string) (bool, error)
 	GetMergedVariableStorage(ctx c.Context, workID uuid.UUID, blockIds []string) (*store.VariableStore, error)
 	CheckTaskForHiddenFlag(ctx c.Context, workNumber string) (bool, error)
-	GetBlockState(ctx c.Context, blockID string) (e.BlockState, error)
-	GetRawBlockState(ctx c.Context, blockID string) (map[string]interface{}, error)
+	GetBlockStateForMonitoring(ctx c.Context, blockID string) (e.BlockState, error)
+	GetBlockState(ctx c.Context, blockID string) ([]byte, error)
 
 	SaveVersionSettings(ctx c.Context, settings e.ProcessSettings, schemaFlag *string) error
 	SaveVersionMainSettings(ctx c.Context, settings e.ProcessSettings) error

@@ -134,6 +134,10 @@ const (
 	GetTaskStepError
 	EditMonitoringBlockError
 	GetTaskEventsError
+	MarshalEventParamsError
+	CreateTaskEventError
+	SaveNodePrevContentError
+	SaveUpdatedBlockData
 )
 
 /*
@@ -256,6 +260,10 @@ var errorText = map[Err]string{
 	GetTaskStepError:                    "can't get step data from DB",
 	EditMonitoringBlockError:            "can't edit block data",
 	GetTaskEventsError:                  "can`t get task events",
+	MarshalEventParamsError:             "can't marshal event params",
+	CreateTaskEventError:                "can't create task event",
+	SaveNodePrevContentError:            "can't save node prev content",
+	SaveUpdatedBlockData:                "can't save updated block data",
 }
 
 /*
@@ -378,6 +386,10 @@ var errorDescription = map[Err]string{
 	GetTaskStepError:               "Не удалось получить информацию о блоке из базы данных",
 	EditMonitoringBlockError:       "Не удалось редактировать данные в блоке",
 	GetTaskEventsError:             "Не удалось получить события по заявке",
+	MarshalEventParamsError:        "Не удалось замаршалить параметры ивента",
+	CreateTaskEventError:           "Не удалось создать ивент",
+	SaveNodePrevContentError:       "Не удалось сохранить предыдущий контент ноды",
+	SaveUpdatedBlockData:           "Не удалось сохранить обновленные данные блока",
 }
 
 /*
