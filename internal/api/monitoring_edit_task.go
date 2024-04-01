@@ -137,7 +137,7 @@ func convertReqEditData(reqData map[string]MonitoringEditBlockData) (res map[str
 
 func (ae *Env) UpdateContent(ctx context.Context, txStorage db.Database, eh httpErrorHandler,
 	data []EditBlock, workID, eventID string,
-) (res map[string]interface{}) {
+) {
 	for i := range data {
 		savePrevErr := txStorage.SaveNodePreviousContent(ctx, data[i].StepID.String(), eventID)
 		if savePrevErr != nil {
