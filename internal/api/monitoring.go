@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 
@@ -682,6 +683,11 @@ func (ae *Env) startProcess(ctx context.Context, startParams *startNodesParams) 
 	if !isPaused {
 		return errors.New("can't unpause running task")
 	}
+
+	steps := *startParams.params.Steps
+	sort.Slice(steps, func(i, j int) bool {
+		return strings.Contains(steps[i], "wait_for_all_inputs")
+	})
 
 	for i := range *startParams.params.Steps {
 		restartErr := ae.restartNode(
