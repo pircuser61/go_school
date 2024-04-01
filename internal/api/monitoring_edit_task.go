@@ -152,8 +152,6 @@ func (ae *Env) UpdateContent(ctx context.Context, txStorage db.Database, eh http
 			eh.handleError(SaveUpdatedBlockData, saveErr)
 		}
 	}
-
-	return
 }
 
 type EditBlock struct {
