@@ -18,6 +18,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
@@ -1000,4 +1001,89 @@ func (gb *GoSignBlock) getNotificationImages(descriptions []orderedmap.OrderedMa
 	}
 
 	return images
+}
+
+type SignOutput struct {
+	Comment    *string
+	Decision   *SignDecision
+	Signatures []fileSignaturePair
+	Signer     *servicedesc.SsoPerson
+}
+
+func (gb *GoSignBlock) UpdateStateUsingOutput(ctx context.Context, data []byte) (state map[string]interface{}, err error) {
+	signOutput := SignOutput{}
+
+	unmErr := json.Unmarshal(data, &signOutput)
+	if unmErr != nil {
+		return nil, fmt.Errorf("can't unmarshal into output struct")
+	}
+
+	if signOutput.Decision != nil {
+		gb.State.Decision = signOutput.Decision
+	}
+
+	if signOutput.Comment != nil {
+		gb.State.Comment = signOutput.Comment
+	}
+
+	if signOutput.Signatures != nil {
+		gb.State.Signatures = signOutput.Signatures
+	}
+
+	if signOutput.Signer != nil {
+		gb.State.ActualSigner = &signOutput.Signer.Username
+	}
+
+	jsonState, marshErr := json.Marshal(gb.State)
+	if marshErr != nil {
+		return nil, marshErr
+	}
+
+	unmarshErr := json.Unmarshal(jsonState, &state)
+	if unmarshErr != nil {
+		return nil, unmarshErr
+	}
+
+	return state, nil
+}
+
+func (gb *GoSignBlock) UpdateOutputUsingState(ctx context.Context) (res map[string]interface{}, err error) {
+	output := map[string]interface{}{}
+
+	if gb.State.ActualSigner != nil {
+		personData, ssoErr := gb.RunContext.Services.ServiceDesc.GetSsoPerson(ctx, *gb.State.ActualSigner)
+		if ssoErr != nil {
+			return nil, ssoErr
+		}
+
+		output[keyOutputSigner] = personData
+	}
+
+	if gb.State.Decision != nil {
+		output[keyOutputSignDecision] = gb.State.Decision
+	}
+
+	if gb.State.Comment != nil {
+		output[keyOutputSignComment] = gb.State.Comment
+	}
+
+	if gb.State.Signatures != nil {
+		output[keyOutputSignatures] = gb.State.Signatures
+	}
+
+	resAttachments := make([]entity.Attachment, 0)
+
+	for l := range gb.State.SignLog {
+		if gb.State.SignLog[l].LogType != SignerLogDecision {
+			continue
+		}
+
+		resAttachments = append(resAttachments, gb.State.SignLog[l].Attachments...)
+	}
+
+	resAttachments = append(resAttachments, gb.State.SigningParams.Files...)
+
+	output[keyOutputSignAttachments] = resAttachments
+
+	return output, nil
 }

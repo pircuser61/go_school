@@ -3,6 +3,7 @@ package pipeline
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"sort"
 	"time"
 
@@ -13,6 +14,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
@@ -695,4 +697,66 @@ func (gb *GoExecutionBlock) BlockAttachments() (ids []string) {
 	}
 
 	return utils.UniqueStrings(ids)
+}
+
+type ExecutionOutput struct {
+	Login    *servicedesc.SsoPerson
+	Comment  *string
+	Decision *ExecutionDecision
+}
+
+func (gb *GoExecutionBlock) UpdateStateUsingOutput(ctx context.Context, data []byte) (state map[string]interface{}, err error) {
+	executionParams := ExecutionOutput{}
+
+	unmErr := json.Unmarshal(data, &executionParams)
+	if unmErr != nil {
+		return nil, fmt.Errorf("can't unmarshal into output struct")
+	}
+
+	if executionParams.Decision != nil {
+		gb.State.Decision = executionParams.Decision
+	}
+
+	if executionParams.Comment != nil {
+		gb.State.DecisionComment = executionParams.Comment
+	}
+
+	if executionParams.Login != nil {
+		gb.State.ActualExecutor = &executionParams.Login.Username
+	}
+
+	jsonState, marshErr := json.Marshal(gb.State)
+	if marshErr != nil {
+		return nil, marshErr
+	}
+
+	unmarshErr := json.Unmarshal(jsonState, &state)
+	if unmarshErr != nil {
+		return nil, unmarshErr
+	}
+
+	return state, nil
+}
+
+func (gb *GoExecutionBlock) UpdateOutputUsingState(ctx context.Context) (res map[string]interface{}, err error) {
+	output := map[string]interface{}{}
+
+	if gb.State.ActualExecutor != nil {
+		personData, ssoErr := gb.RunContext.Services.ServiceDesc.GetSsoPerson(ctx, *gb.State.ActualExecutor)
+		if ssoErr != nil {
+			return nil, ssoErr
+		}
+
+		output[keyOutputExecutionLogin] = personData
+	}
+
+	if gb.State.Decision != nil {
+		output[keyOutputDecision] = gb.State.Decision
+	}
+
+	if gb.State.DecisionComment != nil {
+		output[keyOutputComment] = gb.State.DecisionComment
+	}
+
+	return output, nil
 }

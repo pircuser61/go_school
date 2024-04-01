@@ -301,3 +301,11 @@ func (gb *TimerBlock) createState(ef *entity.EriusFunc) error {
 
 	return nil
 }
+
+func (gb *TimerBlock) UpdateStateUsingOutput(ctx context.Context, data []byte) (state map[string]interface{}, err error) {
+	return nil, nil
+}
+
+func (gb *TimerBlock) UpdateOutputUsingState(ctx context.Context) (output map[string]interface{}, err error) {
+	return nil, nil
+}

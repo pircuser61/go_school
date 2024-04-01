@@ -392,7 +392,7 @@ func (ae *Env) GetBlockState(w http.ResponseWriter, r *http.Request, blockID str
 		return
 	}
 
-	state, err := ae.DB.GetBlockState(ctx, id.String())
+	state, err := ae.DB.GetBlockStateForMonitoring(ctx, id.String())
 	if err != nil {
 		errorHandler.handleError(GetBlockStateError, err)
 
@@ -512,6 +512,12 @@ func (ae *Env) MonitoringTaskAction(w http.ResponseWriter, r *http.Request, work
 		})
 		if err != nil {
 			errorHandler.handleError(UnpauseTaskError, err)
+
+			return
+		}
+	case MonitoringTaskActionRequestActionEdit:
+		if err != nil {
+			errorHandler.handleError(WrongMonitoringActionError, err)
 
 			return
 		}

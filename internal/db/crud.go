@@ -3161,3 +3161,144 @@ func (db *PGCon) GetVersionsByFunction(ctx context.Context, funcID, versionID st
 
 	return versions, nil
 }
+
+func (db *PGCon) GetTaskStepByNameForCtxEditing(ctx context.Context, workID uuid.UUID, stepName string, t time.Time) (*entity.Step, error) {
+	ctx, span := trace.StartSpan(ctx, "pg_get_task_step_by_name")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	const query = `
+		SELECT 
+			vs.id,
+			vs.step_type,
+			vs.step_name, 
+		FROM variable_storage vs  
+			WHERE vs.work_id = $1 AND vs.step_name = $2 AND time < $3
+			ORDER BY vs.time DESC
+		LIMIT 1
+`
+
+	var s entity.Step
+
+	err := db.Connection.QueryRow(ctx, query, workID, stepName, t).Scan(
+		&s.ID,
+		&s.Type,
+		&s.Name,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return &s, nil
+}
+
+func (db *PGCon) SaveNodePreviousContent(ctx context.Context, stepID, eventID string) error {
+	ctx, span := trace.StartSpan(ctx, "pg_save_node_previous_content")
+	defer span.End()
+
+	id := uuid.New()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	q := `
+	INSERT INTO edit_nodes_history (
+		id,
+		event_id,
+		step_id,
+		content                                                           
+	)
+	VALUES (
+		$1, 
+		$2, 
+		$3, 
+		(
+		    SELECT content FROM variable_storage 
+		                   WHERE id = $3
+		)
+	)`
+
+	_, err := db.Connection.Exec(ctx, q, id, eventID, stepID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *PGCon) UpdateNodeContent(ctx context.Context, stepID, workID,
+	stepName string, state, output map[string]interface{},
+) error {
+	ctx, span := trace.StartSpan(ctx, "pg_update_node_content")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	qState := `
+		WITH blockStartTime AS (
+		    SELECT time from variable_storage WHERE id = $1                                    
+		),
+		endTime AS (
+		        SELECT time from variable_storage 
+      			WHERE work_id = $4 AND step_name = $2 AND time > blockStartTime.time
+       			ORDER BY time DESC
+				LIMIT 1  
+		    )
+	    UPDATE variable_storage
+        SET content = jsonb_set(content, array['State', $2]::varchar[], $3::jsonb , false)
+    		WHERE work_id = $4 AND time >= blockStartTime.time
+      		AND CASE 
+      		    WHEN endTime.time IS NOT NULL THEN time < endTime.time
+				ELSE TRUE
+				END
+    `
+	stateArgs := []interface{}{
+		stepID,
+		stepName,
+		state,
+		workID,
+	}
+
+	_, stateErr := db.Connection.Exec(ctx, qState, stateArgs...)
+	if stateErr != nil {
+		return stateErr
+	}
+
+	for key, val := range output {
+		// nolint:gocritic
+		// language=PostgreSQL
+		qOutput := `
+		WITH blockStartTime AS (
+		    SELECT time from variable_storage WHERE id = $1                                    
+		),
+		endTime AS (
+		        SELECT time from variable_storage 
+      			WHERE work_id = $4 AND step_name = $2 AND time > blockStartTime.time
+       			ORDER BY time DESC
+				LIMIT 1  
+		    )
+	    UPDATE variable_storage
+        SET content = jsonb_set(content, array['Values', $2]::varchar[], $3::jsonb , false)
+    		WHERE work_id = $4 AND time >= blockStartTime.time
+      		AND CASE 
+      		    WHEN endTime.time IS NOT NULL THEN time < endTime.time
+				ELSE TRUE
+				END
+    `
+
+		outputArgs := []interface{}{
+			stepID,
+			stepName + "." + key,
+			val,
+			workID,
+			stepName,
+		}
+
+		_, outPutErr := db.Connection.Exec(ctx, qOutput, outputArgs...)
+		if outPutErr != nil {
+			return outPutErr
+		}
+	}
+
+	return nil
+}

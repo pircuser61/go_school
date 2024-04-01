@@ -179,3 +179,12 @@ func createGoEndBlock(
 
 	return b, reEntry, nil
 }
+
+// А что делать с блоками у которых нет стейта?
+func (gb *GoEndBlock) UpdateStateUsingOutput(ctx c.Context, data []byte) (state map[string]interface{}, err error) {
+	return nil, nil
+}
+
+func (gb *GoEndBlock) UpdateOutputUsingState(ctx c.Context) (output map[string]interface{}, err error) {
+	return nil, nil
+}

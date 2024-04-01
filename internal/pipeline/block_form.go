@@ -560,3 +560,56 @@ func (gb *GoFormBlock) handleNotifications(ctx c.Context) error {
 
 	return nil
 }
+
+type FormOutput struct {
+	Executor        *servicedesc.SsoPerson
+	ApplicationBody map[string]interface{}
+}
+
+func (gb *GoFormBlock) UpdateStateUsingOutput(ctx c.Context, data []byte) (state map[string]interface{}, err error) {
+	formOutput := FormOutput{}
+
+	unmErr := json.Unmarshal(data, &formOutput)
+	if unmErr != nil {
+		return nil, fmt.Errorf("can't unmarshal into output struct")
+	}
+
+	if formOutput.ApplicationBody != nil {
+		gb.State.ApplicationBody = formOutput.ApplicationBody
+	}
+
+	if formOutput.Executor != nil {
+		gb.State.ActualExecutor = &formOutput.Executor.Username
+	}
+
+	jsonState, marshErr := json.Marshal(gb.State)
+	if marshErr != nil {
+		return nil, marshErr
+	}
+
+	unmarshErr := json.Unmarshal(jsonState, &state)
+	if unmarshErr != nil {
+		return nil, unmarshErr
+	}
+
+	return state, nil
+}
+
+func (gb *GoFormBlock) UpdateOutputUsingState(ctx c.Context) (res map[string]interface{}, err error) {
+	output := map[string]interface{}{}
+
+	if gb.State.ActualExecutor != nil {
+		personData, ssoErr := gb.RunContext.Services.ServiceDesc.GetSsoPerson(ctx, *gb.State.ActualExecutor)
+		if ssoErr != nil {
+			return nil, ssoErr
+		}
+
+		output[keyOutputFormExecutor] = personData
+	}
+
+	if gb.State.ApplicationBody != nil {
+		output[keyOutputFormBody] = gb.State.ApplicationBody
+	}
+
+	return output, nil
+}
