@@ -262,9 +262,11 @@ func getUniqueActions(selectFilter string, logins []string) string {
            ''                             AS current_executor,
            null                           AS exec_start_time,
            null                           AS appr_start_time,
+           null::timestamp with time zone AS updated_at,
+           null							  AS is_expired,
            null::timestamp with time zone AS node_deadline,
            null::timestamp with time zone AS node_start
-    FROM works
+ 	FROM works
     WHERE author IN %s AND child_id IS NULL
 )`, loginsIn)
 	}
