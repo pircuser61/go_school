@@ -138,6 +138,7 @@ const (
 	CreateTaskEventError
 	SaveNodePrevContentError
 	SaveUpdatedBlockData
+	WrongMonitoringActionError
 )
 
 /*
@@ -264,6 +265,7 @@ var errorText = map[Err]string{
 	CreateTaskEventError:                "can't create task event",
 	SaveNodePrevContentError:            "can't save node prev content",
 	SaveUpdatedBlockData:                "can't save updated block data",
+	WrongMonitoringActionError:          "wrong action for this handler",
 }
 
 /*
@@ -390,6 +392,7 @@ var errorDescription = map[Err]string{
 	CreateTaskEventError:           "Не удалось создать ивент",
 	SaveNodePrevContentError:       "Не удалось сохранить предыдущий контент ноды",
 	SaveUpdatedBlockData:           "Не удалось сохранить обновленные данные блока",
+	WrongMonitoringActionError:     "Неправильное действие для этой ручки",
 }
 
 /*

@@ -514,6 +514,12 @@ func (ae *Env) MonitoringTaskAction(w http.ResponseWriter, r *http.Request, work
 
 			return
 		}
+	default:
+		if err != nil {
+			errorHandler.handleError(WrongMonitoringActionError, err)
+
+			return
+		}
 	}
 
 	events, err := ae.DB.GetTaskEvents(ctx, workID.String())

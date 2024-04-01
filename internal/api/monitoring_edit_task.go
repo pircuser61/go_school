@@ -152,6 +152,7 @@ func (ae *Env) UpdateContent(ctx context.Context, txStorage db.Database, eh http
 			eh.handleError(SaveUpdatedBlockData, saveErr)
 		}
 	}
+
 	return
 }
 
@@ -198,6 +199,7 @@ func (ae *Env) editGoBlock(ctx context.Context, stepID uuid.UUID, stepType, step
 	return res, err
 }
 
+// nolint:dupl
 func (ae *Env) approverEditBlock(ctx context.Context, stepID uuid.UUID, stepName string, data map[string]interface{},
 	editType MonitoringTaskEditBlockRequestChangeType,
 ) (res []EditBlock, err error) {
@@ -265,6 +267,7 @@ func (ae *Env) approverEditBlock(ctx context.Context, stepID uuid.UUID, stepName
 	return res, nil
 }
 
+// nolint:dupl
 func (ae *Env) executorEditBlock(ctx context.Context, stepID uuid.UUID, stepName string, data map[string]interface{},
 	editType MonitoringTaskEditBlockRequestChangeType,
 ) (res []EditBlock, err error) {
@@ -332,6 +335,7 @@ func (ae *Env) executorEditBlock(ctx context.Context, stepID uuid.UUID, stepName
 	return res, nil
 }
 
+// nolint:dupl
 func (ae *Env) startEditBlock(ctx context.Context, stepID uuid.UUID, stepName string, data map[string]interface{},
 	editType MonitoringTaskEditBlockRequestChangeType,
 ) (res []EditBlock, err error) {
@@ -349,6 +353,7 @@ func (ae *Env) startEditBlock(ctx context.Context, stepID uuid.UUID, stepName st
 	return res, nil
 }
 
+// nolint:dupl
 func (ae *Env) endEditBlock(ctx context.Context, stepID uuid.UUID, stepName string, data map[string]interface{},
 	editType MonitoringTaskEditBlockRequestChangeType,
 ) (res []EditBlock, err error) {
@@ -365,6 +370,7 @@ func (ae *Env) endEditBlock(ctx context.Context, stepID uuid.UUID, stepName stri
 	return res, nil
 }
 
+// nolint:dupl
 func (ae *Env) startParallelEditBlock(ctx context.Context, stepID uuid.UUID, stepName string, data map[string]interface{},
 	editType MonitoringTaskEditBlockRequestChangeType,
 ) (res []EditBlock, err error) {
@@ -382,6 +388,7 @@ func (ae *Env) startParallelEditBlock(ctx context.Context, stepID uuid.UUID, ste
 	return res, nil
 }
 
+// nolint:dupl
 func (ae *Env) endParallelEditBlock(ctx context.Context, stepID uuid.UUID, stepName string, data map[string]interface{},
 	editType MonitoringTaskEditBlockRequestChangeType,
 ) (res []EditBlock, err error) {
@@ -398,6 +405,7 @@ func (ae *Env) endParallelEditBlock(ctx context.Context, stepID uuid.UUID, stepN
 	return res, nil
 }
 
+// nolint:dupl
 func (ae *Env) functionEditBlock(ctx context.Context, stepID uuid.UUID, stepName string, data map[string]interface{},
 	editType MonitoringTaskEditBlockRequestChangeType,
 ) (res []EditBlock, err error) {
@@ -427,6 +435,7 @@ func (ae *Env) functionEditBlock(ctx context.Context, stepID uuid.UUID, stepName
 	return res, nil
 }
 
+// nolint:dupl
 func (ae *Env) formEditBlock(ctx context.Context, stepID uuid.UUID, stepName string, data map[string]interface{},
 	editType MonitoringTaskEditBlockRequestChangeType,
 ) (res []EditBlock, err error) {
@@ -494,6 +503,7 @@ func (ae *Env) formEditBlock(ctx context.Context, stepID uuid.UUID, stepName str
 	return res, nil
 }
 
+// nolint:dupl
 func (ae *Env) ifEditBlock(ctx context.Context, stepID uuid.UUID, stepName string, data map[string]interface{},
 	editType MonitoringTaskEditBlockRequestChangeType,
 ) (res []EditBlock, err error) {
@@ -510,6 +520,7 @@ func (ae *Env) ifEditBlock(ctx context.Context, stepID uuid.UUID, stepName strin
 	return res, nil
 }
 
+// nolint:dupl
 func (ae *Env) notificationEditBlock(ctx context.Context, stepID uuid.UUID, stepName string, data map[string]interface{},
 	editType MonitoringTaskEditBlockRequestChangeType,
 ) (res []EditBlock, err error) {
@@ -543,6 +554,7 @@ func (ae *Env) notificationEditBlock(ctx context.Context, stepID uuid.UUID, step
 	return res, nil
 }
 
+// nolint:dupl
 func (ae *Env) sdEditBlock(ctx context.Context, stepID uuid.UUID, stepName string, data map[string]interface{},
 	editType MonitoringTaskEditBlockRequestChangeType,
 ) (res []EditBlock, err error) {
@@ -610,7 +622,7 @@ func (ae *Env) sdEditBlock(ctx context.Context, stepID uuid.UUID, stepName strin
 	return res, nil
 }
 
-// nolint:gocognit,gocritic
+// nolint:dupl
 func (ae *Env) signEditBlock(ctx context.Context, stepID uuid.UUID, stepName string, data map[string]interface{},
 	editType MonitoringTaskEditBlockRequestChangeType,
 ) (res []EditBlock, err error) {
@@ -678,6 +690,7 @@ func (ae *Env) signEditBlock(ctx context.Context, stepID uuid.UUID, stepName str
 	return res, nil
 }
 
+// nolint:dupl
 func (ae *Env) timerEditBlock(ctx context.Context, stepID uuid.UUID, stepName string, data map[string]interface{},
 	editType MonitoringTaskEditBlockRequestChangeType,
 ) (res []EditBlock, err error) {
@@ -730,5 +743,6 @@ func (ae *Env) editBlockContext(ctx context.Context, stepID uuid.UUID, data map[
 
 		res = append(res, blockRes...)
 	}
+
 	return res, nil
 }

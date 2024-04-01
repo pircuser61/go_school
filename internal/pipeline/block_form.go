@@ -595,7 +595,9 @@ func (gb *GoFormBlock) UpdateStateUsingOutput(ctx c.Context, data []byte) (state
 	return state, nil
 }
 
-func (gb *GoFormBlock) UpdateOutputUsingState(ctx c.Context) (output map[string]interface{}, err error) {
+func (gb *GoFormBlock) UpdateOutputUsingState(ctx c.Context) (res map[string]interface{}, err error) {
+	output := map[string]interface{}{}
+
 	if gb.State.ActualExecutor != nil {
 		personData, ssoErr := gb.RunContext.Services.ServiceDesc.GetSsoPerson(ctx, *gb.State.ActualExecutor)
 		if ssoErr != nil {
