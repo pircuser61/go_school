@@ -514,7 +514,7 @@ func (ae *Env) MonitoringTaskAction(w http.ResponseWriter, r *http.Request, work
 
 			return
 		}
-	default:
+	case MonitoringTaskActionRequestActionEdit:
 		if err != nil {
 			errorHandler.handleError(WrongMonitoringActionError, err)
 
