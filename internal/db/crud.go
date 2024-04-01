@@ -3193,7 +3193,7 @@ func (db *PGCon) GetTaskStepByNameForCtxEditing(ctx context.Context, workID uuid
 	return &s, nil
 }
 
-func (db *PGCon) SaveNodePreviousContent(ctx context.Context, stepID, eventID uuid.UUID) error {
+func (db *PGCon) SaveNodePreviousContent(ctx context.Context, stepID, eventID string) error {
 	ctx, span := trace.StartSpan(ctx, "pg_save_node_previous_content")
 	defer span.End()
 
@@ -3203,11 +3203,10 @@ func (db *PGCon) SaveNodePreviousContent(ctx context.Context, stepID, eventID uu
 	// language=PostgreSQL
 	q := `
 	INSERT INTO edit_nodes_history (
-	id,
-	event_id,
-	step_id,
-	content                                
-	                                
+		id,
+		event_id,
+		step_id,
+		content                                                           
 	)
 	VALUES (
 		$1, 
@@ -3215,11 +3214,11 @@ func (db *PGCon) SaveNodePreviousContent(ctx context.Context, stepID, eventID uu
 		$3, 
 		(
 		    SELECT content FROM variable_storage 
-		                   WHERE id = $4
+		                   WHERE id = $3
 		)
 	)`
 
-	_, err := db.Connection.Exec(ctx, q, id, eventID, stepID, stepID)
+	_, err := db.Connection.Exec(ctx, q, id, eventID, stepID)
 	if err != nil {
 		return err
 	}
@@ -3227,7 +3226,7 @@ func (db *PGCon) SaveNodePreviousContent(ctx context.Context, stepID, eventID uu
 	return nil
 }
 
-func (db *PGCon) UpdateNodeContent(ctx context.Context, stepID, workID uuid.UUID,
+func (db *PGCon) UpdateNodeContent(ctx context.Context, stepID, workID,
 	stepName string, state, output map[string]interface{},
 ) error {
 	ctx, span := trace.StartSpan(ctx, "pg_update_node_content")
@@ -3237,23 +3236,27 @@ func (db *PGCon) UpdateNodeContent(ctx context.Context, stepID, workID uuid.UUID
 	// language=PostgreSQL
 	qState := `
 		WITH blockStartTime AS (
-		    SELECT time from variable_storage WHERE id = $1 
-		)
+		    SELECT time from variable_storage WHERE id = $1                                    
+		),
+		endTime AS (
+		        SELECT time from variable_storage 
+      			WHERE work_id = $4 AND step_name = $2 AND time > blockStartTime.time
+       			ORDER BY time DESC
+				LIMIT 1  
+		    )
 	    UPDATE variable_storage
         SET content = jsonb_set(content, array['State', $2]::varchar[], $3::jsonb , false)
     		WHERE work_id = $4 AND time >= blockStartTime.time
-      		AND time < (SELECT time from variable_storage 
-      		WHERE work_id = $5 AND step_name = $6 AND time > blockStartTime.time
-       		ORDER BY time DESC
-			LIMIT 1  )
+      		AND CASE 
+      		    WHEN endTime.time IS NOT NULL THEN time < endTime.time
+				ELSE TRUE
+				END
     `
 	stateArgs := []interface{}{
 		stepID,
 		stepName,
 		state,
 		workID,
-		workID,
-		stepName,
 	}
 
 	_, stateErr := db.Connection.Exec(ctx, qState, stateArgs...)
@@ -3266,22 +3269,27 @@ func (db *PGCon) UpdateNodeContent(ctx context.Context, stepID, workID uuid.UUID
 		// language=PostgreSQL
 		qOutput := `
 		WITH blockStartTime AS (
-		    SELECT time from variable_storage WHERE id = $1 
-		)
+		    SELECT time from variable_storage WHERE id = $1                                    
+		),
+		endTime AS (
+		        SELECT time from variable_storage 
+      			WHERE work_id = $4 AND step_name = $2 AND time > blockStartTime.time
+       			ORDER BY time DESC
+				LIMIT 1  
+		    )
 	    UPDATE variable_storage
         SET content = jsonb_set(content, array['Values', $2]::varchar[], $3::jsonb , false)
     		WHERE work_id = $4 AND time >= blockStartTime.time
-      		AND time < (SELECT time from variable_storage 
-      		WHERE work_id = $5 AND step_name = $6 AND time > blockStartTime.time
-       		ORDER BY time DESC
-			LIMIT 1  )
+      		AND CASE 
+      		    WHEN endTime.time IS NOT NULL THEN time < endTime.time
+				ELSE TRUE
+				END
     `
 
 		outputArgs := []interface{}{
 			stepID,
 			stepName + "." + key,
 			val,
-			workID,
 			workID,
 			stepName,
 		}

@@ -5874,13 +5874,13 @@ func (_c *MockedDatabase_SaveExternalSystemSubscriptionParams_Call) RunAndReturn
 	return _c
 }
 
-// SaveNodePreviousContent provides a mock function with given fields: ctx, stepId, eventId
-func (_m *MockedDatabase) SaveNodePreviousContent(ctx context.Context, stepId uuid.UUID, eventId uuid.UUID) error {
-	ret := _m.Called(ctx, stepId, eventId)
+// SaveNodePreviousContent provides a mock function with given fields: ctx, stepID, eventID
+func (_m *MockedDatabase) SaveNodePreviousContent(ctx context.Context, stepID string, eventID string) error {
+	ret := _m.Called(ctx, stepID, eventID)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID) error); ok {
-		r0 = rf(ctx, stepId, eventId)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) error); ok {
+		r0 = rf(ctx, stepID, eventID)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -5895,15 +5895,15 @@ type MockedDatabase_SaveNodePreviousContent_Call struct {
 
 // SaveNodePreviousContent is a helper method to define mock.On call
 //   - ctx context.Context
-//   - stepId uuid.UUID
-//   - eventId uuid.UUID
-func (_e *MockedDatabase_Expecter) SaveNodePreviousContent(ctx interface{}, stepId interface{}, eventId interface{}) *MockedDatabase_SaveNodePreviousContent_Call {
-	return &MockedDatabase_SaveNodePreviousContent_Call{Call: _e.mock.On("SaveNodePreviousContent", ctx, stepId, eventId)}
+//   - stepID string
+//   - eventID string
+func (_e *MockedDatabase_Expecter) SaveNodePreviousContent(ctx interface{}, stepID interface{}, eventID interface{}) *MockedDatabase_SaveNodePreviousContent_Call {
+	return &MockedDatabase_SaveNodePreviousContent_Call{Call: _e.mock.On("SaveNodePreviousContent", ctx, stepID, eventID)}
 }
 
-func (_c *MockedDatabase_SaveNodePreviousContent_Call) Run(run func(ctx context.Context, stepId uuid.UUID, eventId uuid.UUID)) *MockedDatabase_SaveNodePreviousContent_Call {
+func (_c *MockedDatabase_SaveNodePreviousContent_Call) Run(run func(ctx context.Context, stepID string, eventID string)) *MockedDatabase_SaveNodePreviousContent_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(uuid.UUID), args[2].(uuid.UUID))
+		run(args[0].(context.Context), args[1].(string), args[2].(string))
 	})
 	return _c
 }
@@ -5913,7 +5913,7 @@ func (_c *MockedDatabase_SaveNodePreviousContent_Call) Return(_a0 error) *Mocked
 	return _c
 }
 
-func (_c *MockedDatabase_SaveNodePreviousContent_Call) RunAndReturn(run func(context.Context, uuid.UUID, uuid.UUID) error) *MockedDatabase_SaveNodePreviousContent_Call {
+func (_c *MockedDatabase_SaveNodePreviousContent_Call) RunAndReturn(run func(context.Context, string, string) error) *MockedDatabase_SaveNodePreviousContent_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -6955,13 +6955,13 @@ func (_c *MockedDatabase_UpdateGroupsForEmptyVersions_Call) RunAndReturn(run fun
 	return _c
 }
 
-// UpdateNodeContent provides a mock function with given fields: ctx, stepId, workId, stepName, state, output
-func (_m *MockedDatabase) UpdateNodeContent(ctx context.Context, stepId uuid.UUID, workId uuid.UUID, stepName string, state map[string]interface{}, output map[string]interface{}) error {
-	ret := _m.Called(ctx, stepId, workId, stepName, state, output)
+// UpdateNodeContent provides a mock function with given fields: ctx, stepID, workID, stepName, state, output
+func (_m *MockedDatabase) UpdateNodeContent(ctx context.Context, stepID string, workID string, stepName string, state map[string]interface{}, output map[string]interface{}) error {
+	ret := _m.Called(ctx, stepID, workID, stepName, state, output)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID, string, map[string]interface{}, map[string]interface{}) error); ok {
-		r0 = rf(ctx, stepId, workId, stepName, state, output)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, string, map[string]interface{}, map[string]interface{}) error); ok {
+		r0 = rf(ctx, stepID, workID, stepName, state, output)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -6976,18 +6976,18 @@ type MockedDatabase_UpdateNodeContent_Call struct {
 
 // UpdateNodeContent is a helper method to define mock.On call
 //   - ctx context.Context
-//   - stepId uuid.UUID
-//   - workId uuid.UUID
+//   - stepID string
+//   - workID string
 //   - stepName string
 //   - state map[string]interface{}
 //   - output map[string]interface{}
-func (_e *MockedDatabase_Expecter) UpdateNodeContent(ctx interface{}, stepId interface{}, workId interface{}, stepName interface{}, state interface{}, output interface{}) *MockedDatabase_UpdateNodeContent_Call {
-	return &MockedDatabase_UpdateNodeContent_Call{Call: _e.mock.On("UpdateNodeContent", ctx, stepId, workId, stepName, state, output)}
+func (_e *MockedDatabase_Expecter) UpdateNodeContent(ctx interface{}, stepID interface{}, workID interface{}, stepName interface{}, state interface{}, output interface{}) *MockedDatabase_UpdateNodeContent_Call {
+	return &MockedDatabase_UpdateNodeContent_Call{Call: _e.mock.On("UpdateNodeContent", ctx, stepID, workID, stepName, state, output)}
 }
 
-func (_c *MockedDatabase_UpdateNodeContent_Call) Run(run func(ctx context.Context, stepId uuid.UUID, workId uuid.UUID, stepName string, state map[string]interface{}, output map[string]interface{})) *MockedDatabase_UpdateNodeContent_Call {
+func (_c *MockedDatabase_UpdateNodeContent_Call) Run(run func(ctx context.Context, stepID string, workID string, stepName string, state map[string]interface{}, output map[string]interface{})) *MockedDatabase_UpdateNodeContent_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(uuid.UUID), args[2].(uuid.UUID), args[3].(string), args[4].(map[string]interface{}), args[5].(map[string]interface{}))
+		run(args[0].(context.Context), args[1].(string), args[2].(string), args[3].(string), args[4].(map[string]interface{}), args[5].(map[string]interface{}))
 	})
 	return _c
 }
@@ -6997,7 +6997,7 @@ func (_c *MockedDatabase_UpdateNodeContent_Call) Return(_a0 error) *MockedDataba
 	return _c
 }
 
-func (_c *MockedDatabase_UpdateNodeContent_Call) RunAndReturn(run func(context.Context, uuid.UUID, uuid.UUID, string, map[string]interface{}, map[string]interface{}) error) *MockedDatabase_UpdateNodeContent_Call {
+func (_c *MockedDatabase_UpdateNodeContent_Call) RunAndReturn(run func(context.Context, string, string, string, map[string]interface{}, map[string]interface{}) error) *MockedDatabase_UpdateNodeContent_Call {
 	_c.Call.Return(run)
 	return _c
 }

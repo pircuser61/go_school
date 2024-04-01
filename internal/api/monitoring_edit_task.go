@@ -13,6 +13,7 @@ import (
 	"github.com/google/uuid"
 	"go.opencensus.io/trace"
 
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
@@ -47,6 +48,15 @@ func (ae *Env) EditTaskBlockData(w http.ResponseWriter, r *http.Request, blockId
 
 		return
 	}
+
+	defer func() {
+		rollbackErr := txStorage.RollbackTransaction(ctx)
+		if rollbackErr != nil {
+			ae.Log.WithError(err).
+				WithField("funcName", "EditTaskBlockData").
+				Error("failed rollback transaction")
+		}
+	}()
 
 	req := &MonitoringTaskEditBlockRequest{}
 
@@ -108,26 +118,11 @@ func (ae *Env) EditTaskBlockData(w http.ResponseWriter, r *http.Request, blockId
 		errorHandler.handleError(CreateTaskEventError, err)
 	}
 
-	eventUUID, parseIDErr := uuid.Parse(eventID)
-	if parseIDErr != nil {
-		errorHandler.handleError(UUIDParsingError, parseIDErr)
+	ae.UpdateContent(ctx, txStorage, errorHandler, editBlockData, dbStep.WorkID.String(), eventID)
 
-		return
-	}
-
-	for i := range editBlockData {
-		savePrevErr := txStorage.SaveNodePreviousContent(ctx, editBlockData[i].StepID, eventUUID)
-		if savePrevErr != nil {
-			errorHandler.handleError(SaveNodePrevContentError, savePrevErr)
-		}
-	}
-
-	for i := range editBlockData {
-		saveErr := txStorage.UpdateNodeContent(ctx, editBlockData[i].StepID, dbStep.WorkID, editBlockData[i].StepName,
-			editBlockData[i].State, editBlockData[i].Output)
-		if saveErr != nil {
-			errorHandler.handleError(SaveUpdatedBlockData, saveErr)
-		}
+	err = txStorage.CommitTransaction(ctx)
+	if err != nil {
+		errorHandler.handleError(UnknownError, err)
 	}
 }
 
@@ -138,6 +133,26 @@ func convertReqEditData(reqData map[string]MonitoringEditBlockData) (res map[str
 	}
 
 	return convertedData
+}
+
+func (ae *Env) UpdateContent(ctx context.Context, txStorage db.Database, eh httpErrorHandler,
+	data []EditBlock, workID, eventID string,
+) (res map[string]interface{}) {
+	for i := range data {
+		savePrevErr := txStorage.SaveNodePreviousContent(ctx, data[i].StepID.String(), eventID)
+		if savePrevErr != nil {
+			eh.handleError(SaveNodePrevContentError, savePrevErr)
+		}
+	}
+
+	for i := range data {
+		saveErr := txStorage.UpdateNodeContent(ctx, data[i].StepID.String(), workID, data[i].StepName,
+			data[i].State, data[i].Output)
+		if saveErr != nil {
+			eh.handleError(SaveUpdatedBlockData, saveErr)
+		}
+	}
+	return
 }
 
 type EditBlock struct {
@@ -193,41 +208,7 @@ func (ae *Env) approverEditBlock(ctx context.Context, stepID uuid.UUID, stepName
 
 	switch editType {
 	case MonitoringTaskEditBlockRequestChangeTypeContext:
-		contextParams := map[string]map[string]interface{}{}
-
-		for key, val := range data {
-			splitedCtxParam := strings.Split(key, ".")
-			if len(splitedCtxParam) < 2 {
-				continue
-			}
-
-			if _, ok := contextParams[splitedCtxParam[0]]; ok {
-				contextParams[splitedCtxParam[0]][splitedCtxParam[1]] = val
-			} else {
-				contextParams[splitedCtxParam[0]] = map[string]interface{}{splitedCtxParam[1]: val}
-			}
-		}
-
-		taskStep, stepErr := ae.DB.GetTaskStepByID(ctx, stepID)
-		if stepErr != nil {
-			return nil, stepErr
-		}
-
-		for paramKey, paramVal := range contextParams {
-			innerStep, inerStepErr := ae.DB.GetTaskStepByNameForCtxEditing(ctx, taskStep.WorkID, paramKey, taskStep.Time)
-			if inerStepErr != nil {
-				return nil, inerStepErr
-			}
-
-			blockRes, contextErr := ae.editGoBlock(ctx,
-				innerStep.ID, innerStep.Type, paramKey, paramVal, MonitoringTaskEditBlockRequestChangeTypeOutput)
-			if contextErr != nil {
-				return nil, contextErr
-			}
-
-			res = append(res, blockRes...)
-		}
-
+		return ae.editBlockContext(ctx, stepID, data)
 	case MonitoringTaskEditBlockRequestChangeTypeInput:
 		appParams := script.ApproverParams{}
 
@@ -294,41 +275,7 @@ func (ae *Env) executorEditBlock(ctx context.Context, stepID uuid.UUID, stepName
 
 	switch editType {
 	case MonitoringTaskEditBlockRequestChangeTypeContext:
-		contextParams := map[string]map[string]interface{}{}
-
-		for key, val := range data {
-			splitedCtxParam := strings.Split(key, ".")
-			if len(splitedCtxParam) < 2 {
-				continue
-			}
-
-			if _, ok := contextParams[splitedCtxParam[0]]; ok {
-				contextParams[splitedCtxParam[0]][splitedCtxParam[1]] = val
-			} else {
-				contextParams[splitedCtxParam[0]] = map[string]interface{}{splitedCtxParam[1]: val}
-			}
-		}
-
-		taskStep, stepErr := ae.DB.GetTaskStepByID(ctx, stepID)
-		if stepErr != nil {
-			return nil, stepErr
-		}
-
-		for paramKey, paramVal := range contextParams {
-			innerStep, inerStepErr := ae.DB.GetTaskStepByNameForCtxEditing(ctx, taskStep.WorkID, paramKey, taskStep.Time)
-			if inerStepErr != nil {
-				return nil, inerStepErr
-			}
-
-			blockRes, contextErr := ae.editGoBlock(ctx,
-				innerStep.ID, innerStep.Type, paramKey, paramVal, MonitoringTaskEditBlockRequestChangeTypeOutput)
-			if contextErr != nil {
-				return nil, contextErr
-			}
-
-			res = append(res, blockRes...)
-		}
-
+		return ae.editBlockContext(ctx, stepID, data)
 	case MonitoringTaskEditBlockRequestChangeTypeInput:
 		execParams := script.ExecutionParams{}
 
@@ -390,41 +337,7 @@ func (ae *Env) startEditBlock(ctx context.Context, stepID uuid.UUID, stepName st
 ) (res []EditBlock, err error) {
 	switch editType {
 	case MonitoringTaskEditBlockRequestChangeTypeContext:
-		contextParams := map[string]map[string]interface{}{}
-
-		for key, val := range data {
-			splitedCtxParam := strings.Split(key, ".")
-			if len(splitedCtxParam) < 2 {
-				continue
-			}
-
-			if _, ok := contextParams[splitedCtxParam[0]]; ok {
-				contextParams[splitedCtxParam[0]][splitedCtxParam[1]] = val
-			} else {
-				contextParams[splitedCtxParam[0]] = map[string]interface{}{splitedCtxParam[1]: val}
-			}
-		}
-
-		taskStep, stepErr := ae.DB.GetTaskStepByID(ctx, stepID)
-		if stepErr != nil {
-			return nil, stepErr
-		}
-
-		for paramKey, paramVal := range contextParams {
-			innerStep, inerStepErr := ae.DB.GetTaskStepByNameForCtxEditing(ctx, taskStep.WorkID, paramKey, taskStep.Time)
-			if inerStepErr != nil {
-				return nil, inerStepErr
-			}
-
-			blockRes, contextErr := ae.editGoBlock(ctx,
-				innerStep.ID, innerStep.Type, paramKey, paramVal, MonitoringTaskEditBlockRequestChangeTypeOutput)
-			if contextErr != nil {
-				return nil, contextErr
-			}
-
-			res = append(res, blockRes...)
-		}
-
+		return ae.editBlockContext(ctx, stepID, data)
 	case MonitoringTaskEditBlockRequestChangeTypeInput:
 	case MonitoringTaskEditBlockRequestChangeTypeOutput:
 		return []EditBlock{{State: map[string]interface{}{}, Output: data, StepName: stepName, StepID: stepID}}, nil
@@ -441,41 +354,7 @@ func (ae *Env) endEditBlock(ctx context.Context, stepID uuid.UUID, stepName stri
 ) (res []EditBlock, err error) {
 	switch editType {
 	case MonitoringTaskEditBlockRequestChangeTypeContext:
-		contextParams := map[string]map[string]interface{}{}
-
-		for key, val := range data {
-			splitedCtxParam := strings.Split(key, ".")
-			if len(splitedCtxParam) < 2 {
-				continue
-			}
-
-			if _, ok := contextParams[splitedCtxParam[0]]; ok {
-				contextParams[splitedCtxParam[0]][splitedCtxParam[1]] = val
-			} else {
-				contextParams[splitedCtxParam[0]] = map[string]interface{}{splitedCtxParam[1]: val}
-			}
-		}
-
-		taskStep, stepErr := ae.DB.GetTaskStepByID(ctx, stepID)
-		if stepErr != nil {
-			return nil, stepErr
-		}
-
-		for paramKey, paramVal := range contextParams {
-			innerStep, inerStepErr := ae.DB.GetTaskStepByNameForCtxEditing(ctx, taskStep.WorkID, paramKey, taskStep.Time)
-			if inerStepErr != nil {
-				return nil, inerStepErr
-			}
-
-			blockRes, contextErr := ae.editGoBlock(ctx,
-				innerStep.ID, innerStep.Type, paramKey, paramVal, MonitoringTaskEditBlockRequestChangeTypeOutput)
-			if contextErr != nil {
-				return nil, contextErr
-			}
-
-			res = append(res, blockRes...)
-		}
-
+		return ae.editBlockContext(ctx, stepID, data)
 	case MonitoringTaskEditBlockRequestChangeTypeInput:
 	case MonitoringTaskEditBlockRequestChangeTypeOutput:
 		return []EditBlock{{State: map[string]interface{}{}, Output: data, StepName: stepName, StepID: stepID}}, nil
@@ -491,41 +370,7 @@ func (ae *Env) startParallelEditBlock(ctx context.Context, stepID uuid.UUID, ste
 ) (res []EditBlock, err error) {
 	switch editType {
 	case MonitoringTaskEditBlockRequestChangeTypeContext:
-		contextParams := map[string]map[string]interface{}{}
-
-		for key, val := range data {
-			splitedCtxParam := strings.Split(key, ".")
-			if len(splitedCtxParam) < 2 {
-				continue
-			}
-
-			if _, ok := contextParams[splitedCtxParam[0]]; ok {
-				contextParams[splitedCtxParam[0]][splitedCtxParam[1]] = val
-			} else {
-				contextParams[splitedCtxParam[0]] = map[string]interface{}{splitedCtxParam[1]: val}
-			}
-		}
-
-		taskStep, stepErr := ae.DB.GetTaskStepByID(ctx, stepID)
-		if stepErr != nil {
-			return nil, stepErr
-		}
-
-		for paramKey, paramVal := range contextParams {
-			innerStep, inerStepErr := ae.DB.GetTaskStepByNameForCtxEditing(ctx, taskStep.WorkID, paramKey, taskStep.Time)
-			if inerStepErr != nil {
-				return nil, inerStepErr
-			}
-
-			blockRes, contextErr := ae.editGoBlock(ctx,
-				innerStep.ID, innerStep.Type, paramKey, paramVal, MonitoringTaskEditBlockRequestChangeTypeOutput)
-			if contextErr != nil {
-				return nil, contextErr
-			}
-
-			res = append(res, blockRes...)
-		}
-
+		return ae.editBlockContext(ctx, stepID, data)
 	case MonitoringTaskEditBlockRequestChangeTypeInput:
 	case MonitoringTaskEditBlockRequestChangeTypeOutput:
 		return []EditBlock{{State: map[string]interface{}{}, Output: data, StepName: stepName, StepID: stepID}}, nil
@@ -542,41 +387,7 @@ func (ae *Env) endParallelEditBlock(ctx context.Context, stepID uuid.UUID, stepN
 ) (res []EditBlock, err error) {
 	switch editType {
 	case MonitoringTaskEditBlockRequestChangeTypeContext:
-		contextParams := map[string]map[string]interface{}{}
-
-		for key, val := range data {
-			splitedCtxParam := strings.Split(key, ".")
-			if len(splitedCtxParam) < 2 {
-				continue
-			}
-
-			if _, ok := contextParams[splitedCtxParam[0]]; ok {
-				contextParams[splitedCtxParam[0]][splitedCtxParam[1]] = val
-			} else {
-				contextParams[splitedCtxParam[0]] = map[string]interface{}{splitedCtxParam[1]: val}
-			}
-		}
-
-		taskStep, stepErr := ae.DB.GetTaskStepByID(ctx, stepID)
-		if stepErr != nil {
-			return nil, stepErr
-		}
-
-		for paramKey, paramVal := range contextParams {
-			innerStep, inerStepErr := ae.DB.GetTaskStepByNameForCtxEditing(ctx, taskStep.WorkID, paramKey, taskStep.Time)
-			if inerStepErr != nil {
-				return nil, inerStepErr
-			}
-
-			blockRes, contextErr := ae.editGoBlock(ctx,
-				innerStep.ID, innerStep.Type, paramKey, paramVal, MonitoringTaskEditBlockRequestChangeTypeOutput)
-			if contextErr != nil {
-				return nil, contextErr
-			}
-
-			res = append(res, blockRes...)
-		}
-
+		return ae.editBlockContext(ctx, stepID, data)
 	case MonitoringTaskEditBlockRequestChangeTypeInput:
 	case MonitoringTaskEditBlockRequestChangeTypeOutput:
 		return []EditBlock{{State: map[string]interface{}{}, Output: data, StepName: stepName, StepID: stepID}}, nil
@@ -597,41 +408,7 @@ func (ae *Env) functionEditBlock(ctx context.Context, stepID uuid.UUID, stepName
 
 	switch editType {
 	case MonitoringTaskEditBlockRequestChangeTypeContext:
-		contextParams := map[string]map[string]interface{}{}
-
-		for key, val := range data {
-			splitedCtxParam := strings.Split(key, ".")
-			if len(splitedCtxParam) < 2 {
-				continue
-			}
-
-			if _, ok := contextParams[splitedCtxParam[0]]; ok {
-				contextParams[splitedCtxParam[0]][splitedCtxParam[1]] = val
-			} else {
-				contextParams[splitedCtxParam[0]] = map[string]interface{}{splitedCtxParam[1]: val}
-			}
-		}
-
-		taskStep, stepErr := ae.DB.GetTaskStepByID(ctx, stepID)
-		if stepErr != nil {
-			return nil, stepErr
-		}
-
-		for paramKey, paramVal := range contextParams {
-			innerStep, inerStepErr := ae.DB.GetTaskStepByNameForCtxEditing(ctx, taskStep.WorkID, paramKey, taskStep.Time)
-			if inerStepErr != nil {
-				return nil, inerStepErr
-			}
-
-			blockRes, contextErr := ae.editGoBlock(ctx,
-				innerStep.ID, innerStep.Type, paramKey, paramVal, MonitoringTaskEditBlockRequestChangeTypeOutput)
-			if contextErr != nil {
-				return nil, contextErr
-			}
-
-			res = append(res, blockRes...)
-		}
-
+		return ae.editBlockContext(ctx, stepID, data)
 	case MonitoringTaskEditBlockRequestChangeTypeInput:
 		funcParams := script.FunctionParams{}
 
@@ -660,41 +437,7 @@ func (ae *Env) formEditBlock(ctx context.Context, stepID uuid.UUID, stepName str
 
 	switch editType {
 	case MonitoringTaskEditBlockRequestChangeTypeContext:
-		contextParams := map[string]map[string]interface{}{}
-
-		for key, val := range data {
-			splitedCtxParam := strings.Split(key, ".")
-			if len(splitedCtxParam) < 2 {
-				continue
-			}
-
-			if _, ok := contextParams[splitedCtxParam[0]]; ok {
-				contextParams[splitedCtxParam[0]][splitedCtxParam[1]] = val
-			} else {
-				contextParams[splitedCtxParam[0]] = map[string]interface{}{splitedCtxParam[1]: val}
-			}
-		}
-
-		taskStep, stepErr := ae.DB.GetTaskStepByID(ctx, stepID)
-		if stepErr != nil {
-			return nil, stepErr
-		}
-
-		for paramKey, paramVal := range contextParams {
-			innerStep, inerStepErr := ae.DB.GetTaskStepByNameForCtxEditing(ctx, taskStep.WorkID, paramKey, taskStep.Time)
-			if inerStepErr != nil {
-				return nil, inerStepErr
-			}
-
-			blockRes, contextErr := ae.editGoBlock(ctx,
-				innerStep.ID, innerStep.Type, paramKey, paramVal, MonitoringTaskEditBlockRequestChangeTypeOutput)
-			if contextErr != nil {
-				return nil, contextErr
-			}
-
-			res = append(res, blockRes...)
-		}
-
+		return ae.editBlockContext(ctx, stepID, data)
 	case MonitoringTaskEditBlockRequestChangeTypeInput:
 		formParams := script.FormParams{}
 
@@ -756,41 +499,7 @@ func (ae *Env) ifEditBlock(ctx context.Context, stepID uuid.UUID, stepName strin
 ) (res []EditBlock, err error) {
 	switch editType {
 	case MonitoringTaskEditBlockRequestChangeTypeContext:
-		contextParams := map[string]map[string]interface{}{}
-
-		for key, val := range data {
-			splitedCtxParam := strings.Split(key, ".")
-			if len(splitedCtxParam) < 2 {
-				continue
-			}
-
-			if _, ok := contextParams[splitedCtxParam[0]]; ok {
-				contextParams[splitedCtxParam[0]][splitedCtxParam[1]] = val
-			} else {
-				contextParams[splitedCtxParam[0]] = map[string]interface{}{splitedCtxParam[1]: val}
-			}
-		}
-
-		taskStep, stepErr := ae.DB.GetTaskStepByID(ctx, stepID)
-		if stepErr != nil {
-			return nil, stepErr
-		}
-
-		for paramKey, paramVal := range contextParams {
-			innerStep, inerStepErr := ae.DB.GetTaskStepByNameForCtxEditing(ctx, taskStep.WorkID, paramKey, taskStep.Time)
-			if inerStepErr != nil {
-				return nil, inerStepErr
-			}
-
-			blockRes, contextErr := ae.editGoBlock(ctx,
-				innerStep.ID, innerStep.Type, paramKey, paramVal, MonitoringTaskEditBlockRequestChangeTypeOutput)
-			if contextErr != nil {
-				return nil, contextErr
-			}
-
-			res = append(res, blockRes...)
-		}
-
+		return ae.editBlockContext(ctx, stepID, data)
 	case MonitoringTaskEditBlockRequestChangeTypeInput:
 	case MonitoringTaskEditBlockRequestChangeTypeOutput:
 		return []EditBlock{{State: map[string]interface{}{}, Output: data, StepName: stepName, StepID: stepID}}, nil
@@ -811,41 +520,7 @@ func (ae *Env) notificationEditBlock(ctx context.Context, stepID uuid.UUID, step
 
 	switch editType {
 	case MonitoringTaskEditBlockRequestChangeTypeContext:
-		contextParams := map[string]map[string]interface{}{}
-
-		for key, val := range data {
-			splitedCtxParam := strings.Split(key, ".")
-			if len(splitedCtxParam) < 2 {
-				continue
-			}
-
-			if _, ok := contextParams[splitedCtxParam[0]]; ok {
-				contextParams[splitedCtxParam[0]][splitedCtxParam[1]] = val
-			} else {
-				contextParams[splitedCtxParam[0]] = map[string]interface{}{splitedCtxParam[1]: val}
-			}
-		}
-
-		taskStep, stepErr := ae.DB.GetTaskStepByID(ctx, stepID)
-		if stepErr != nil {
-			return nil, stepErr
-		}
-
-		for paramKey, paramVal := range contextParams {
-			innerStep, inerStepErr := ae.DB.GetTaskStepByNameForCtxEditing(ctx, taskStep.WorkID, paramKey, taskStep.Time)
-			if inerStepErr != nil {
-				return nil, inerStepErr
-			}
-
-			blockRes, contextErr := ae.editGoBlock(ctx,
-				innerStep.ID, innerStep.Type, paramKey, paramVal, MonitoringTaskEditBlockRequestChangeTypeOutput)
-			if contextErr != nil {
-				return nil, contextErr
-			}
-
-			res = append(res, blockRes...)
-		}
-
+		return ae.editBlockContext(ctx, stepID, data)
 	case MonitoringTaskEditBlockRequestChangeTypeInput:
 		notifParams := script.NotificationParams{}
 
@@ -878,41 +553,7 @@ func (ae *Env) sdEditBlock(ctx context.Context, stepID uuid.UUID, stepName strin
 
 	switch editType {
 	case MonitoringTaskEditBlockRequestChangeTypeContext:
-		contextParams := map[string]map[string]interface{}{}
-
-		for key, val := range data {
-			splitedCtxParam := strings.Split(key, ".")
-			if len(splitedCtxParam) < 2 {
-				continue
-			}
-
-			if _, ok := contextParams[splitedCtxParam[0]]; ok {
-				contextParams[splitedCtxParam[0]][splitedCtxParam[1]] = val
-			} else {
-				contextParams[splitedCtxParam[0]] = map[string]interface{}{splitedCtxParam[1]: val}
-			}
-		}
-
-		taskStep, stepErr := ae.DB.GetTaskStepByID(ctx, stepID)
-		if stepErr != nil {
-			return nil, stepErr
-		}
-
-		for paramKey, paramVal := range contextParams {
-			innerStep, inerStepErr := ae.DB.GetTaskStepByNameForCtxEditing(ctx, taskStep.WorkID, paramKey, taskStep.Time)
-			if inerStepErr != nil {
-				return nil, inerStepErr
-			}
-
-			blockRes, contextErr := ae.editGoBlock(ctx,
-				innerStep.ID, innerStep.Type, paramKey, paramVal, MonitoringTaskEditBlockRequestChangeTypeOutput)
-			if contextErr != nil {
-				return nil, contextErr
-			}
-
-			res = append(res, blockRes...)
-		}
-
+		return ae.editBlockContext(ctx, stepID, data)
 	case MonitoringTaskEditBlockRequestChangeTypeInput:
 		sdParams := script.SdApplicationParams{}
 
@@ -978,42 +619,9 @@ func (ae *Env) signEditBlock(ctx context.Context, stepID uuid.UUID, stepName str
 		return nil, marshErr
 	}
 
-	taskStep, stepErr := ae.DB.GetTaskStepByID(ctx, stepID)
-	if stepErr != nil {
-		return nil, stepErr
-	}
-
 	switch editType {
 	case MonitoringTaskEditBlockRequestChangeTypeContext:
-		contextParams := map[string]map[string]interface{}{}
-
-		for key, val := range data {
-			splitedCtxParam := strings.Split(key, ".")
-			if len(splitedCtxParam) < 2 {
-				continue
-			}
-
-			if _, ok := contextParams[splitedCtxParam[0]]; ok {
-				contextParams[splitedCtxParam[0]][splitedCtxParam[1]] = val
-			} else {
-				contextParams[splitedCtxParam[0]] = map[string]interface{}{splitedCtxParam[1]: val}
-			}
-		}
-
-		for paramKey, paramVal := range contextParams {
-			innerStep, inerStepErr := ae.DB.GetTaskStepByNameForCtxEditing(ctx, taskStep.WorkID, paramKey, taskStep.Time)
-			if inerStepErr != nil {
-				return nil, inerStepErr
-			}
-
-			blockRes, contextErr := ae.editGoBlock(ctx,
-				innerStep.ID, innerStep.Type, paramKey, paramVal, MonitoringTaskEditBlockRequestChangeTypeOutput)
-			if contextErr != nil {
-				return nil, contextErr
-			}
-
-			res = append(res, blockRes...)
-		}
+		return ae.editBlockContext(ctx, stepID, data)
 	case MonitoringTaskEditBlockRequestChangeTypeInput:
 		signParams := script.SignParams{}
 
@@ -1075,40 +683,7 @@ func (ae *Env) timerEditBlock(ctx context.Context, stepID uuid.UUID, stepName st
 ) (res []EditBlock, err error) {
 	switch editType {
 	case MonitoringTaskEditBlockRequestChangeTypeContext:
-		contextParams := map[string]map[string]interface{}{}
-
-		for key, val := range data {
-			splitedCtxParam := strings.Split(key, ".")
-			if len(splitedCtxParam) < 2 {
-				continue
-			}
-
-			if _, ok := contextParams[splitedCtxParam[0]]; ok {
-				contextParams[splitedCtxParam[0]][splitedCtxParam[1]] = val
-			} else {
-				contextParams[splitedCtxParam[0]] = map[string]interface{}{splitedCtxParam[1]: val}
-			}
-		}
-
-		taskStep, stepErr := ae.DB.GetTaskStepByID(ctx, stepID)
-		if stepErr != nil {
-			return nil, stepErr
-		}
-
-		for paramKey, paramVal := range contextParams {
-			innerStep, inerStepErr := ae.DB.GetTaskStepByNameForCtxEditing(ctx, taskStep.WorkID, paramKey, taskStep.Time)
-			if inerStepErr != nil {
-				return nil, inerStepErr
-			}
-
-			blockRes, contextErr := ae.editGoBlock(ctx,
-				innerStep.ID, innerStep.Type, paramKey, paramVal, MonitoringTaskEditBlockRequestChangeTypeOutput)
-			if contextErr != nil {
-				return nil, contextErr
-			}
-
-			res = append(res, blockRes...)
-		}
+		return ae.editBlockContext(ctx, stepID, data)
 	case MonitoringTaskEditBlockRequestChangeTypeInput:
 	case MonitoringTaskEditBlockRequestChangeTypeOutput:
 		return []EditBlock{{State: map[string]interface{}{}, Output: data, StepName: stepName, StepID: stepID}}, nil
@@ -1117,5 +692,43 @@ func (ae *Env) timerEditBlock(ctx context.Context, stepID uuid.UUID, stepName st
 		return []EditBlock{{State: data, Output: map[string]interface{}{}, StepName: stepName, StepID: stepID}}, nil
 	}
 
+	return res, nil
+}
+
+func (ae *Env) editBlockContext(ctx context.Context, stepID uuid.UUID, data map[string]interface{}) (res []EditBlock, err error) {
+	contextParams := map[string]map[string]interface{}{}
+
+	for key, val := range data {
+		splitedCtxParam := strings.Split(key, ".")
+		if len(splitedCtxParam) < 2 {
+			continue
+		}
+
+		if _, ok := contextParams[splitedCtxParam[0]]; ok {
+			contextParams[splitedCtxParam[0]][splitedCtxParam[1]] = val
+		} else {
+			contextParams[splitedCtxParam[0]] = map[string]interface{}{splitedCtxParam[1]: val}
+		}
+	}
+
+	taskStep, stepErr := ae.DB.GetTaskStepByID(ctx, stepID)
+	if stepErr != nil {
+		return nil, stepErr
+	}
+
+	for paramKey, paramVal := range contextParams {
+		innerStep, inerStepErr := ae.DB.GetTaskStepByNameForCtxEditing(ctx, taskStep.WorkID, paramKey, taskStep.Time)
+		if inerStepErr != nil {
+			return nil, inerStepErr
+		}
+
+		blockRes, contextErr := ae.editGoBlock(ctx,
+			innerStep.ID, innerStep.Type, paramKey, paramVal, MonitoringTaskEditBlockRequestChangeTypeOutput)
+		if contextErr != nil {
+			return nil, contextErr
+		}
+
+		res = append(res, blockRes...)
+	}
 	return res, nil
 }
