@@ -78,9 +78,10 @@ func (p *blockProcessor) ProcessBlock(ctx context.Context, its int) error {
 		return nil
 	}
 
-	isStatusFiniteBeforeUpdate := block.GetStatus() == StatusFinished ||
+	isStatusFiniteBeforeUpdate := (block.GetStatus() == StatusFinished ||
 		block.GetStatus() == StatusNoSuccess ||
-		block.GetStatus() == StatusError
+		block.GetStatus() == StatusError) &&
+		(p.runCtx.UpdateData != nil && p.runCtx.UpdateData.Action != string(entity.TaskUpdateActionReload))
 
 	if (block.UpdateManual() && p.manual) || !block.UpdateManual() {
 		if err = updateBlock(ctx, block, p.name, id, p.runCtx); err != nil {
@@ -102,7 +103,7 @@ func (p *blockProcessor) ProcessBlock(ctx context.Context, its int) error {
 	}
 
 	// handle edit form and other cases where we just poke the node
-	if (p.runCtx.UpdateData != nil) && isStatusFiniteBeforeUpdate {
+	if isStatusFiniteBeforeUpdate {
 		err = p.commitTx(ctx)
 		if err != nil {
 			log.WithError(err).Error("couldn't commit tx")
@@ -128,8 +129,7 @@ func (p *blockProcessor) ProcessBlock(ctx context.Context, its int) error {
 
 	if isArchived || (block.GetStatus() != StatusFinished &&
 		block.GetStatus() != StatusNoSuccess &&
-		block.GetStatus() != StatusError) ||
-		((p.runCtx.UpdateData != nil) && isStatusFiniteBeforeUpdate) {
+		block.GetStatus() != StatusError) || isStatusFiniteBeforeUpdate {
 		err = p.commitTx(ctx)
 		if err != nil {
 			log.WithError(err).Error("couldn't commit tx")
