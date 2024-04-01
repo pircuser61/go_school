@@ -308,7 +308,8 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 		    ua.exec_start_time,
 		    ua.appr_start_time,
 			CASE WHEN ua.node_deadline > now() OR coalesce(ua.is_expired::boolean, false) THEN false ELSE true END as is_expired,
-		    w.is_paused
+		    w.is_paused,
+		    w.finished_at
 		FROM works w 
 		JOIN versions v ON v.id = w.version_id
 		JOIN pipelines p ON p.id = v.pipeline_id
@@ -1586,6 +1587,7 @@ func (db *PGCon) getTasks(ctx c.Context, filters *entity.TaskFilter,
 			&nullApprTime,
 			&et.IsExpired,
 			&et.IsPaused,
+			&et.FinishedAt,
 		)
 		if err != nil {
 			return nil, err
