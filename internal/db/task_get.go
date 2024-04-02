@@ -2427,7 +2427,7 @@ func (db *PGCon) IsTaskPaused(ctx c.Context, workID uuid.UUID) (isPaused bool, e
 		return isPaused, err
 	}
 
-	isFinished := status == 2 ||  status == 4 || status == 6
+	isFinished := status == 2 || status == 4 || status == 6
 
 	return isPaused || isFinished, nil
 }
