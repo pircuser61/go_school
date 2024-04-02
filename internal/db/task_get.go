@@ -1796,7 +1796,7 @@ func (db *PGCon) GetFilteredStates(ctx c.Context, steps []string, wNumber string
 	// language=PostgreSQL
 	query := `
 		SELECT vs.step_name,
-       			jsonb_set(vs.content-> 'State', array[vs.step_name, 'short_title'],
+       			jsonb_set(vs.content-> 'State' -> vs.step_name, array['short_title'],
        			    v.content -> 'pipeline' -> 'blocks' -> vs.step_name -> 'short_title', true),
         		vs.time,
         		vs.updated_at
@@ -1815,8 +1815,6 @@ func (db *PGCon) GetFilteredStates(ctx c.Context, steps []string, wNumber string
 		query = fmt.Sprintf(query, buildInExpression(steps))
 	}
 
-	res := make([]map[string]map[string]interface{}, 0)
-
 	rows, err := db.Connection.Query(ctx, query, wNumber)
 	if err != nil {
 		return nil, nil, err
@@ -1826,26 +1824,28 @@ func (db *PGCon) GetFilteredStates(ctx c.Context, steps []string, wNumber string
 
 	dates := make(map[string]map[string]*time.Time)
 
+	states := make(map[string]map[string]interface{})
+
 	for rows.Next() {
 		stepName := ""
 
-		states := make(map[string]map[string]interface{})
+		state := make(map[string]interface{})
 
 		var (
 			createdAt *time.Time
 			updatedAt *time.Time
 		)
 
-		if scanErr := rows.Scan(&stepName, &states, &createdAt, &updatedAt); scanErr != nil {
+		if scanErr := rows.Scan(&stepName, &state, &createdAt, &updatedAt); scanErr != nil {
 			return nil, nil, scanErr
 		}
+
+		states[stepName] = state
 
 		dates[stepName] = map[string]*time.Time{
 			"createdAt": createdAt,
 			"updatedAt": updatedAt,
 		}
-
-		res = append(res, states)
 	}
 
 	err = rows.Err()
@@ -1853,25 +1853,7 @@ func (db *PGCon) GetFilteredStates(ctx c.Context, steps []string, wNumber string
 		return nil, nil, err
 	}
 
-	return mergeStates(res, steps), dates, nil
-}
-
-func mergeStates(in []map[string]map[string]interface{}, steps []string) (res map[string]map[string]interface{}) {
-	res = make(map[string]map[string]interface{})
-
-	for i := range in {
-		for stepName := range in[i] {
-			if !utils.IsContainsInSlice(stepName, steps) {
-				continue
-			}
-
-			if _, exists := res[stepName]; !exists {
-				res[stepName] = in[i][stepName]
-			}
-		}
-	}
-
-	return res
+	return states, dates, nil
 }
 
 func (db *PGCon) GetTaskHumanStatus(ctx c.Context, taskID uuid.UUID) (string, error) {
