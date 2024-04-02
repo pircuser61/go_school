@@ -861,7 +861,7 @@ func (ae *Env) StopTasks(w http.ResponseWriter, r *http.Request) {
 				Author:    ui.Username,
 			})
 			if err != nil {
-				log.WithError(updateErr).Error("couldn't create task event pause: " + workNumber)
+				log.WithError(err).Error("couldn't create task event pause: " + workNumber)
 			}
 		}
 	}
