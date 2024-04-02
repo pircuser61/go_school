@@ -26,6 +26,7 @@ import (
 
 	"golang.org/x/exp/slices"
 
+	"gitlab.services.mts.ru/abp/myosotis/logger"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/configs"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
@@ -1367,6 +1368,9 @@ func (db *PGCon) UpdateStepContext(ctx context.Context, dto *UpdateStepRequest) 
 func (db *PGCon) insertIntoMembers(ctx context.Context, members []Member, id uuid.UUID) error {
 	_, span := trace.StartSpan(ctx, "pg_insert_into_members")
 	defer span.End()
+
+	log := logger.GetLogger(ctx)
+	log.WithField("insertIntoMembers blockID: ", id.String())
 
 	// nolint:gocritic
 	// language=PostgreSQL
