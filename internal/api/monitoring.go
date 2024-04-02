@@ -680,7 +680,7 @@ func (ae *Env) pauseTask(ctx context.Context, author, workID string, params *Mon
 	return nil
 }
 
-func (ae *Env) startTask(ctx context.Context, dto *startNodesParams) (err error) {
+func (ae *Env) startTask(ctx context.Context, dto *startNodesParams) error {
 	isPaused, err := ae.DB.IsTaskPaused(ctx, dto.workID)
 	if err != nil {
 		return err
@@ -713,11 +713,23 @@ func (ae *Env) startTask(ctx context.Context, dto *startNodesParams) (err error)
 		return strings.Contains(steps[i], "wait_for_all_inputs")
 	})
 
+	restartedNodes := make(map[string]interface{})
 	for i := range *dto.params.Steps {
-		err = ae.restartNode(ctx, dto.workID, dto.workNumber, (*dto.params.Steps)[i], dto.author, dto.byOne)
-		if err != nil {
-			return err
+		if _, ok := restartedNodes[(*dto.params.Steps)[i]]; !ok {
+			restartErr := ae.restartNode(
+				ctx,
+				dto.workID,
+				dto.workNumber,
+				(*dto.params.Steps)[i],
+				dto.author,
+				dto.byOne,
+			)
+			if restartErr != nil {
+				return restartErr
+			}
 		}
+
+		restartedNodes[(*dto.params.Steps)[i]] = nil
 	}
 
 	err = ae.DB.TryUnpauseTask(ctx, dto.workID)
