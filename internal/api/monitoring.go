@@ -738,11 +738,6 @@ func (ae *Env) startTask(ctx context.Context, dto *startNodesParams) error {
 		restartedNodes[(*dto.params.Steps)[i]] = nil
 	}
 
-	err = ae.DB.SetTaskPaused(ctx, dto.workID.String(), false)
-	if err != nil {
-		return err
-	}
-
 	err = ae.DB.TryUnpauseTask(ctx, dto.workID)
 	if err != nil {
 		return err
