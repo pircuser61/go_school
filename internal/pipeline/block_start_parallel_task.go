@@ -162,10 +162,10 @@ func createGoStartParallelBlock(ctx context.Context, name string, ef *entity.Eri
 	return b, reEntry, nil
 }
 
-func (gb *GoBeginParallelTaskBlock) UpdateStateUsingOutput(context.Context, []byte) (state map[string]interface{}, err error) {
+func (gb *GoBeginParallelTaskBlock) UpdateStateUsingOutput(ctx context.Context, data []byte) (state map[string]interface{}, err error) {
 	return nil, nil
 }
 
-func (gb *GoBeginParallelTaskBlock) UpdateOutputUsingState(context.Context) (output map[string]interface{}, err error) {
+func (gb *GoBeginParallelTaskBlock) UpdateOutputUsingState(ctx context.Context) (output map[string]interface{}, err error) {
 	return nil, nil
 }

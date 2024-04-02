@@ -185,10 +185,10 @@ func createGoPlaceholderBlock(
 	return b, reEntry, nil
 }
 
-func (gb *GoPlaceholderBlock) UpdateStateUsingOutput(context.Context, []byte) (state map[string]interface{}, err error) {
+func (gb *GoPlaceholderBlock) UpdateStateUsingOutput(ctx context.Context, data []byte) (state map[string]interface{}, err error) {
 	return nil, nil
 }
 
-func (gb *GoPlaceholderBlock) UpdateOutputUsingState(context.Context) (output map[string]interface{}, err error) {
+func (gb *GoPlaceholderBlock) UpdateOutputUsingState(ctx context.Context) (output map[string]interface{}, err error) {
 	return nil, nil
 }

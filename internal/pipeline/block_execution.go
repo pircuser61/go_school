@@ -705,7 +705,7 @@ type ExecutionOutput struct {
 	Decision *ExecutionDecision
 }
 
-func (gb *GoExecutionBlock) UpdateStateUsingOutput(_ context.Context, data []byte) (state map[string]interface{}, err error) {
+func (gb *GoExecutionBlock) UpdateStateUsingOutput(ctx context.Context, data []byte) (state map[string]interface{}, err error) {
 	executionParams := ExecutionOutput{}
 
 	unmErr := json.Unmarshal(data, &executionParams)

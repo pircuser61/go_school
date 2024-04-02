@@ -104,8 +104,6 @@ FROM pipeliner.public.works w
 		return nil, err
 	}
 
-	defer rows.Close()
-
 	works := make([]*workToAddDeadline, 0, 10000)
 
 	for rows.Next() {

@@ -186,10 +186,10 @@ func createGoStartBlock(ctx context.Context, name string, ef *entity.EriusFunc, 
 	return b, false, nil
 }
 
-func (gb *GoStartBlock) UpdateStateUsingOutput(context.Context, []byte) (state map[string]interface{}, err error) {
+func (gb *GoStartBlock) UpdateStateUsingOutput(ctx context.Context, data []byte) (state map[string]interface{}, err error) {
 	return nil, nil
 }
 
-func (gb *GoStartBlock) UpdateOutputUsingState(context.Context) (output map[string]interface{}, err error) {
+func (gb *GoStartBlock) UpdateOutputUsingState(ctx context.Context) (output map[string]interface{}, err error) {
 	return nil, nil
 }
