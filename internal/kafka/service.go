@@ -101,9 +101,10 @@ func (s *Service) ProduceFuncMessage(ctx c.Context, message *RunnerOutMessage) e
 	return s.producer.Produce(ctx, message)
 }
 
+//nolint:all //its ok here
 func (s *Service) ProduceEventMessage(ctx c.Context, message *e.NodeKafkaEvent) error {
 	if message == nil {
-		return nil	
+		return nil
 	}
 
 	l := s.log.WithField("workNumber", message.WorkNumber).
@@ -113,8 +114,6 @@ func (s *Service) ProduceEventMessage(ctx c.Context, message *e.NodeKafkaEvent) 
 	l.Info("try to send event to kafka")
 
 	if s == nil || s.producerSd == nil {
-		l.Error(errors.New("kafka service unavailable"))
-
 		return errors.New("kafka service unavailable")
 	}
 
