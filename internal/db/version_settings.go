@@ -243,6 +243,7 @@ func (db *PGCon) SaveVersionMainSettings(ctx context.Context, params e.ProcessSe
 	return nil
 }
 
+//nolint:gocritic //всегда передавалось по значению
 func (db *PGCon) SaveExternalSystemSettings(ctx context.Context, vID string, system e.ExternalSystem, schemaFlag *string) error {
 	ctx, span := trace.StartSpan(ctx, "pg_save_external_system_settings")
 	defer span.End()
