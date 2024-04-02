@@ -2452,7 +2452,9 @@ func (db *PGCon) IsBlockResumable(ctx c.Context, workID, stepID uuid.UUID) (isRe
 		return false, time.Time{}, err
 	}
 
-	return status == "finished" || isPaused, t, nil
+	isFinished := status == "finished" || status == "skipped" || status == "cancel"
+
+	return isFinished || isPaused, t, nil
 }
 
 func (db *PGCon) GetBlockState(ctx c.Context, blockID string) ([]byte, error) {

@@ -1392,8 +1392,7 @@ func (db *PGCon) insertIntoMembers(ctx context.Context, members []Member, id uui
 		    $7,
 		    $8,
 		    $9
-		)
-`
+		) ON CONFLICT DO NOTHING`
 
 	for _, val := range members {
 		membersID := uuid.New()
