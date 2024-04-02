@@ -566,7 +566,7 @@ type FormOutput struct {
 	ApplicationBody map[string]interface{}
 }
 
-func (gb *GoFormBlock) UpdateStateUsingOutput(_ c.Context, data []byte) (state map[string]interface{}, err error) {
+func (gb *GoFormBlock) UpdateStateUsingOutput(ctx c.Context, data []byte) (state map[string]interface{}, err error) {
 	formOutput := FormOutput{}
 
 	unmErr := json.Unmarshal(data, &formOutput)

@@ -238,10 +238,10 @@ func getVariables(runCtx *store.VariableStore) (result map[string]interface{}, e
 	return variables, nil
 }
 
-func (gb *IF) UpdateStateUsingOutput(context.Context, []byte) (state map[string]interface{}, err error) {
+func (gb *IF) UpdateStateUsingOutput(ctx context.Context, data []byte) (state map[string]interface{}, err error) {
 	return nil, nil
 }
 
-func (gb *IF) UpdateOutputUsingState(context.Context) (output map[string]interface{}, err error) {
+func (gb *IF) UpdateOutputUsingState(ctx context.Context) (output map[string]interface{}, err error) {
 	return nil, nil
 }

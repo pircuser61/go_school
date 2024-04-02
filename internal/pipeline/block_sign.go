@@ -1010,7 +1010,7 @@ type SignOutput struct {
 	Signer     *servicedesc.SsoPerson
 }
 
-func (gb *GoSignBlock) UpdateStateUsingOutput(_ context.Context, data []byte) (state map[string]interface{}, err error) {
+func (gb *GoSignBlock) UpdateStateUsingOutput(ctx context.Context, data []byte) (state map[string]interface{}, err error) {
 	signOutput := SignOutput{}
 
 	unmErr := json.Unmarshal(data, &signOutput)
