@@ -47,7 +47,6 @@ mail:
 kafka:
   brokers:
     - 10.73.138.117:9094
-  producer_topic_sd: "from.pipeliner.to.sd"
   producer_topic: "from.pipeliner.to.runner"
   consumer_group: "pipeliner"
   consumer_topic: "from.runner.to.pipeliner2"
@@ -94,13 +93,13 @@ servicedesc:
   scope: 'servicedesk-develop-aud'
 
 function_store:
-  url: 'localhost:9001'
+  url: 'functions:90'
 
 scheduler_tasks:
-  url: 'localhost:9004'
+  url: 'scheduler:90'
 
 human_tasks:
-  url: 'localhost:9005'
+  url: 'human-tasks:90'
 
 imap:
   imap_connection: "mail.inside.mts.ru:993"
@@ -109,10 +108,10 @@ imap:
   imap_mail_box: "Inbox"
 
 integrations:
-  url: 'localhost:9003'
+  url: 'integrations:90'
 
 forms:
-  url: 'localhost:9002'
+  url: 'forms:90'
 
 hrgate:
   hr_gate_url: "https://hr-gate.stage.autobp.mts.ru"
