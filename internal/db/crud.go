@@ -1280,7 +1280,7 @@ func (db *PGCon) CopyTaskBlock(ctx context.Context, stepID uuid.UUID) (newStepID
 			now(), 
 			break_points, 
 			false,
-			'running',
+			status,
 			attachments, 	                         
 			current_executor,
 			true,
