@@ -481,7 +481,7 @@ func (ae *Env) MonitoringTaskAction(w http.ResponseWriter, r *http.Request, work
 
 	switch req.Action {
 	case MonitoringTaskActionRequestActionPause:
-		err = ae.pauseTask(ctx, ui.Name, workID.String(), req.Params)
+		err = ae.pauseTask(ctx, ui.Username, workID.String(), req.Params)
 		if err != nil {
 			errorHandler.handleError(PauseTaskError, err)
 
@@ -489,7 +489,7 @@ func (ae *Env) MonitoringTaskAction(w http.ResponseWriter, r *http.Request, work
 		}
 
 	case MonitoringTaskActionRequestActionStart:
-		err = ae.startProcess(ctx, &startNodesParams{
+		err = ae.startTask(ctx, &startNodesParams{
 			workID:     workID,
 			author:     ui.Username,
 			workNumber: workNumber,
@@ -503,7 +503,7 @@ func (ae *Env) MonitoringTaskAction(w http.ResponseWriter, r *http.Request, work
 		}
 
 	case MonitoringTaskActionRequestActionStartByOne:
-		err = ae.startProcess(ctx, &startNodesParams{
+		err = ae.startTask(ctx, &startNodesParams{
 			workID:     workID,
 			author:     ui.Username,
 			workNumber: workNumber,
@@ -680,8 +680,8 @@ func (ae *Env) pauseTask(ctx context.Context, author, workID string, params *Mon
 	return nil
 }
 
-func (ae *Env) startProcess(ctx context.Context, startParams *startNodesParams) error {
-	isPaused, err := ae.DB.IsTaskPaused(ctx, startParams.workID)
+func (ae *Env) startTask(ctx context.Context, dto *startNodesParams) error {
+	isPaused, err := ae.DB.IsTaskPaused(ctx, dto.workID)
 	if err != nil {
 		return err
 	}
@@ -691,16 +691,16 @@ func (ae *Env) startProcess(ctx context.Context, startParams *startNodesParams) 
 	}
 
 	jsonParams := json.RawMessage{}
-	if startParams.params != nil {
-		jsonParams, err = json.Marshal(startParams.params)
+	if dto.params != nil {
+		jsonParams, err = json.Marshal(dto.params)
 		if err != nil {
 			return err
 		}
 	}
 
 	_, err = ae.DB.CreateTaskEvent(ctx, &entity.CreateTaskEvent{
-		WorkID:    startParams.workID.String(),
-		Author:    startParams.author,
+		WorkID:    dto.workID.String(),
+		Author:    dto.author,
 		EventType: string(MonitoringTaskActionRequestActionStart),
 		Params:    jsonParams,
 	})
@@ -708,31 +708,31 @@ func (ae *Env) startProcess(ctx context.Context, startParams *startNodesParams) 
 		return err
 	}
 
-	steps := *startParams.params.Steps
+	steps := *dto.params.Steps
 	sort.Slice(steps, func(i, j int) bool {
 		return strings.Contains(steps[i], "wait_for_all_inputs")
 	})
 
 	restartedNodes := make(map[string]interface{})
-	for i := range *startParams.params.Steps {
-		if _, ok := restartedNodes[(*startParams.params.Steps)[i]]; !ok {
+	for i := range *dto.params.Steps {
+		if _, ok := restartedNodes[(*dto.params.Steps)[i]]; !ok {
 			restartErr := ae.restartNode(
 				ctx,
-				startParams.workID,
-				startParams.workNumber,
-				(*startParams.params.Steps)[i],
-				startParams.author,
-				startParams.byOne,
+				dto.workID,
+				dto.workNumber,
+				(*dto.params.Steps)[i],
+				dto.author,
+				dto.byOne,
 			)
 			if restartErr != nil {
 				return restartErr
 			}
 		}
 
-		restartedNodes[(*startParams.params.Steps)[i]] = nil
+		restartedNodes[(*dto.params.Steps)[i]] = nil
 	}
 
-	err = ae.DB.TryUnpauseTask(ctx, startParams.workID)
+	err = ae.DB.TryUnpauseTask(ctx, dto.workID)
 	if err != nil {
 		return err
 	}
@@ -740,12 +740,7 @@ func (ae *Env) startProcess(ctx context.Context, startParams *startNodesParams) 
 	return nil
 }
 
-func (ae *Env) restartNode(
-	ctx context.Context,
-	workID uuid.UUID,
-	workNumber, stepName, login string,
-	byOne bool,
-) (err error) {
+func (ae *Env) restartNode(ctx context.Context, workID uuid.UUID, workNumber, stepName, login string, byOne bool) error {
 	txStorage, err := ae.DB.StartTransaction(ctx)
 	if err != nil {
 		return fmt.Errorf("failed start transaction, %w", err)
