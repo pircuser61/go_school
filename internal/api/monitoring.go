@@ -681,6 +681,15 @@ func (ae *Env) pauseTask(ctx context.Context, author, workID string, params *Mon
 }
 
 func (ae *Env) startTask(ctx context.Context, dto *startNodesParams) (err error) {
+	isPaused, err := ae.DB.IsTaskPaused(ctx, dto.workID)
+	if err != nil {
+		return err
+	}
+
+	if !isPaused {
+		return errors.New("can't unpause running task")
+	}
+
 	steps := *dto.params.Steps
 	sort.Slice(steps, func(i, j int) bool {
 		return strings.Contains(steps[i], "wait_for_all_inputs")
@@ -693,7 +702,7 @@ func (ae *Env) startTask(ctx context.Context, dto *startNodesParams) (err error)
 		}
 	}
 
-	err = ae.DB.SetTaskPaused(ctx, dto.workID.String(), false)
+	err = ae.DB.TryUnpauseTask(ctx, dto.workID)
 	if err != nil {
 		return err
 	}
