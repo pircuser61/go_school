@@ -253,7 +253,7 @@ func (ae *Env) GetMonitoringTask(w http.ResponseWriter, req *http.Request, workN
 
 func getMonitoringStatus(status string) MonitoringHistoryStatus {
 	switch status {
-	case "cancel", "finished", "no_success", "revoke", "error", "skipped":
+	case "cancel", string(EriusTaskResponseStatusFinished), "no_success", "revoke", "error", "skipped":
 		return MonitoringHistoryStatusFinished
 	default:
 		return MonitoringHistoryStatusRunning
@@ -758,7 +758,7 @@ func (ae *Env) restartNode(ctx context.Context, workID uuid.UUID, workNumber, st
 		return stepErr
 	}
 
-	isFinished := dbStep.Status == "finished" || dbStep.Status == "skipped" || dbStep.Status == "cancel"
+	isFinished := dbStep.Status == string(EriusTaskResponseStatusFinished) || dbStep.Status == "skipped" || dbStep.Status == "cancel"
 
 	if isFinished {
 		var errCopy error
