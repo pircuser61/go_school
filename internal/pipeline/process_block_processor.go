@@ -185,11 +185,6 @@ func (p *blockProcessor) ProcessBlock(ctx context.Context, its int) error {
 func (p *blockProcessor) handleErrorWithCommit(ctx context.Context, log logger.Logger, err error) error {
 	if err != nil && !errors.Is(err, UserIsNotPartOfProcessErr{}) {
 		log.WithError(err).Error("couldn't process block")
-
-		changeErr := p.runCtx.updateTaskStatus(ctx, db.RunStatusError, "", db.SystemLogin)
-		if changeErr != nil {
-			log.WithError(changeErr).Error("couldn't change task status")
-		}
 	}
 
 	commitErr := p.commitTx(ctx)
@@ -208,11 +203,6 @@ func (p *blockProcessor) handleErrorWithRollback(ctx context.Context, log logger
 
 	if err != nil && !errors.Is(err, UserIsNotPartOfProcessErr{}) {
 		log.WithError(err).Error("couldn't process block")
-
-		changeErr := p.runCtx.updateTaskStatus(ctx, db.RunStatusError, "", db.SystemLogin)
-		if changeErr != nil {
-			log.WithError(changeErr).Error("couldn't change task status")
-		}
 	}
 
 	return err
