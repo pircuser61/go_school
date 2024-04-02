@@ -251,9 +251,15 @@ func (ae *Env) GetMonitoringTask(w http.ResponseWriter, req *http.Request, workN
 	}
 }
 
+const (
+	cancel   = "cancel"
+	skipped  = "skipped"
+	finished = "finished"
+)
+
 func getMonitoringStatus(status string) MonitoringHistoryStatus {
 	switch status {
-	case "cancel", "finished", "no_success", "revoke", "error", "skipped":
+	case cancel, finished, "no_success", "revoke", "error", "skipped":
 		return MonitoringHistoryStatusFinished
 	default:
 		return MonitoringHistoryStatusRunning
@@ -756,6 +762,17 @@ func (ae *Env) restartNode(ctx context.Context, workID uuid.UUID, workNumber, st
 	dbStep, stepErr := txStorage.GetTaskStepByName(ctx, workID, stepName)
 	if stepErr != nil {
 		return stepErr
+	}
+
+	isFinished := dbStep.Status == finished || dbStep.Status == skipped || dbStep.Status == cancel
+
+	if isFinished {
+		var errCopy error
+		dbStep.ID, errCopy = txStorage.CopyTaskBlock(ctx, dbStep.ID)
+
+		if errCopy != nil {
+			return errCopy
+		}
 	}
 
 	isResumable, blockStartTime, resumableErr := txStorage.IsBlockResumable(ctx, workID, dbStep.ID)

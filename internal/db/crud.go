@@ -26,7 +26,6 @@ import (
 
 	"golang.org/x/exp/slices"
 
-	"gitlab.services.mts.ru/abp/myosotis/logger"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/configs"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
@@ -1208,7 +1207,6 @@ func (db *PGCon) InitTaskBlock(
 		    current_executor,
 			is_active,
 		    is_paused
-
 		)
 		VALUES (
 			$1, 
@@ -1247,6 +1245,55 @@ func (db *PGCon) InitTaskBlock(
 	}
 
 	return id, timestamp, nil
+}
+
+func (db *PGCon) CopyTaskBlock(ctx context.Context, stepID uuid.UUID) (newStepID uuid.UUID, err error) {
+	ctx, span := trace.StartSpan(ctx, "pg_copy_task_block")
+	defer span.End()
+
+	newStepID = uuid.New()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	const query = `
+		INSERT INTO variable_storage (
+			id, 
+			work_id, 
+			step_type,
+			step_name, 
+			content, 
+			time, 
+			break_points, 
+			has_error,
+			status,
+			attachments, 	                         
+			current_executor,
+			is_active,
+			is_paused
+		)
+		SELECT
+			$1,
+			work_id,
+			step_type,
+			step_name, 
+			content, 
+			now(), 
+			break_points, 
+			false,
+			'running',
+			attachments, 	                         
+			current_executor,
+			true,
+			false
+		FROM variable_storage 
+		WHERE id = $2`
+
+	_, err = db.Connection.Exec(ctx, query, newStepID, stepID)
+	if err != nil {
+		return newStepID, err
+	}
+
+	return newStepID, nil
 }
 
 func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest, id uuid.UUID) (uuid.UUID, error) {
@@ -1369,9 +1416,6 @@ func (db *PGCon) insertIntoMembers(ctx context.Context, members []Member, id uui
 	_, span := trace.StartSpan(ctx, "pg_insert_into_members")
 	defer span.End()
 
-	log := logger.GetLogger(ctx)
-	log.WithField("insertIntoMembers blockID: ", id.String())
-
 	// nolint:gocritic
 	// language=PostgreSQL
 	const queryMembers = `
@@ -1396,7 +1440,7 @@ func (db *PGCon) insertIntoMembers(ctx context.Context, members []Member, id uui
 		    $7,
 		    $8,
 		    $9
-		) ON CONFLICT DO NOTHING`
+		)`
 
 	for _, val := range members {
 		membersID := uuid.New()
