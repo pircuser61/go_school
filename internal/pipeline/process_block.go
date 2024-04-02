@@ -536,7 +536,7 @@ func ProcessBlockWithEndMapping(
 	_, err = runCtx.Services.Storage.CreateTaskEvent(ctx, &entity.CreateTaskEvent{
 		WorkID:    runCtx.TaskID.String(),
 		EventType: "pause",
-		Author:    "system",
+		Author:    db.SystemLogin,
 	})
 	if err != nil {
 		return false, err
