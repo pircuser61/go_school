@@ -4,6 +4,7 @@ import (
 	c "context"
 	"encoding/json"
 	"errors"
+	"slices"
 
 	e "gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 )
@@ -108,6 +109,8 @@ func (gb *GoApproverBlock) setEvents(ctx c.Context) error {
 		} else {
 			loginsNotYetMadeDecision = getSliceFromMap(gb.State.Approvers)
 		}
+
+		slices.Sort(loginsNotYetMadeDecision)
 
 		kafkaEvent, eventErr := gb.RunContext.MakeNodeKafkaEvent(ctx, &MakeNodeKafkaEvent{
 			EventName:      eventEnd,
