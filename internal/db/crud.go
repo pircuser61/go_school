@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"gitlab.services.mts.ru/abp/myosotis/logger"
 	"os"
 	"strconv"
 	"strings"
@@ -27,6 +26,7 @@ import (
 
 	"golang.org/x/exp/slices"
 
+	"gitlab.services.mts.ru/abp/myosotis/logger"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/configs"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
