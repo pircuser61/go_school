@@ -140,6 +140,7 @@ func (ae *Env) EditTaskBlockData(w http.ResponseWriter, r *http.Request, blockId
 	}
 
 	var getErr Err = -1
+
 	switch req.ChangeType {
 	case MonitoringTaskEditBlockRequestChangeTypeContext:
 		getErr = ae.returnContext(ctx, blockId, w)
@@ -182,6 +183,7 @@ func (ae *Env) UpdateContent(ctx context.Context, txStorage db.Database,
 			return SaveUpdatedBlockData
 		}
 	}
+
 	return -1
 }
 
@@ -205,6 +207,7 @@ func (ae *Env) returnState(ctx context.Context, blockID string, w http.ResponseW
 	}); err != nil {
 		return UnknownError
 	}
+
 	return -1
 }
 
@@ -236,8 +239,8 @@ func (ae *Env) returnContext(ctx context.Context, blockID string, w http.Respons
 	})
 	if err != nil {
 		return UnknownError
-
 	}
+
 	return -1
 }
 
