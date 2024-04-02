@@ -76,21 +76,19 @@ func (gb *GoApproverBlock) setEvents(ctx c.Context) error {
 
 	if gb.State.Decision != nil {
 		_, ok := gb.expectedEvents[eventEnd]
-		if !ok {
-			return nil
-		}
+		if ok {
+			event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, MakeNodeEndEventArgs{
+				NodeName:      gb.Name,
+				NodeShortName: gb.ShortName,
+				HumanStatus:   humanStatus,
+				NodeStatus:    gb.GetStatus(),
+			})
+			if eventErr != nil {
+				return eventErr
+			}
 
-		event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, MakeNodeEndEventArgs{
-			NodeName:      gb.Name,
-			NodeShortName: gb.ShortName,
-			HumanStatus:   humanStatus,
-			NodeStatus:    gb.GetStatus(),
-		})
-		if eventErr != nil {
-			return eventErr
+			gb.happenedEvents = append(gb.happenedEvents, event)
 		}
-
-		gb.happenedEvents = append(gb.happenedEvents, event)
 
 		loginsNotYetMadeDecision := make([]string, 0)
 

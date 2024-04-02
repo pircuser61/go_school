@@ -110,21 +110,19 @@ func (gb *GoSignBlock) setEvents(ctx c.Context, signers map[string]struct{}) err
 
 	if gb.State.Decision != nil {
 		_, ok := gb.expectedEvents[eventEnd]
-		if !ok {
-			return nil
-		}
+		if ok {
+			event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, MakeNodeEndEventArgs{
+				NodeName:      gb.Name,
+				NodeShortName: gb.ShortName,
+				HumanStatus:   humanStatus,
+				NodeStatus:    gb.GetStatus(),
+			})
+			if eventErr != nil {
+				return eventErr
+			}
 
-		event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, MakeNodeEndEventArgs{
-			NodeName:      gb.Name,
-			NodeShortName: gb.ShortName,
-			HumanStatus:   humanStatus,
-			NodeStatus:    gb.GetStatus(),
-		})
-		if eventErr != nil {
-			return eventErr
+			gb.happenedEvents = append(gb.happenedEvents, event)
 		}
-
-		gb.happenedEvents = append(gb.happenedEvents, event)
 
 		kafkaEvent, eventErr := gb.RunContext.MakeNodeKafkaEvent(ctx, &MakeNodeKafkaEvent{
 			EventName:      eventEnd,

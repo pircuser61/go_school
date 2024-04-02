@@ -149,6 +149,24 @@ func (gb *GoFormBlock) makeNodeStartEventIfExpected(ctx context.Context, runCtx 
 		}
 	}
 
+	status, _, _ := gb.GetTaskHumanStatus()
+
+	kafkaEvent, err := runCtx.MakeNodeKafkaEvent(ctx, &MakeNodeKafkaEvent{
+		EventName:     eventStart,
+		NodeName:      name,
+		NodeShortName: ef.ShortTitle,
+		HumanStatus:   status,
+		NodeStatus:    gb.GetStatus(),
+		NodeType:      BlockGoFormID,
+		SLA:           gb.State.Deadline.Unix(),
+		ToAddLogins:   getSliceFromMap(gb.State.Executors),
+	})
+	if err != nil {
+		return err
+	}
+
+	gb.happenedKafkaEvents = append(gb.happenedKafkaEvents, kafkaEvent)
+
 	return nil
 }
 
@@ -165,22 +183,7 @@ func (gb *GoFormBlock) makeNodeStartEvent(ctx context.Context, runCtx *BlockRunC
 		return err
 	}
 
-	kafkaEvent, err := runCtx.MakeNodeKafkaEvent(ctx, &MakeNodeKafkaEvent{
-		EventName:     eventStart,
-		NodeName:      name,
-		NodeShortName: ef.ShortTitle,
-		HumanStatus:   status,
-		NodeStatus:    gb.GetStatus(),
-		NodeType:      BlockGoFormID,
-		SLA:           gb.State.Deadline.Unix(),
-		ToAddLogins:   getSliceFromMap(gb.State.Executors),
-	})
-	if err != nil {
-		return err
-	}
-
 	gb.happenedEvents = append(gb.happenedEvents, event)
-	gb.happenedKafkaEvents = append(gb.happenedKafkaEvents, kafkaEvent)
 
 	return err
 }
