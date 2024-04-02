@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -564,6 +565,10 @@ func (gb *GoExecutionBlock) makeExpectedEvents(ctx context.Context, runCtx *Bloc
 		gb.happenedEvents = append(gb.happenedEvents, event)
 	}
 
+	toAddLogins := getSliceFromMap(gb.State.Executors)
+
+	sort.Strings(toAddLogins)
+
 	kafkaEvent, err := runCtx.MakeNodeKafkaEvent(ctx, &MakeNodeKafkaEvent{
 		EventName:     eventStart,
 		NodeName:      name,
@@ -572,7 +577,7 @@ func (gb *GoExecutionBlock) makeExpectedEvents(ctx context.Context, runCtx *Bloc
 		NodeStatus:    gb.GetStatus(),
 		NodeType:      BlockGoExecutionID,
 		SLA:           gb.State.Deadline.Unix(),
-		ToAddLogins:   getSliceFromMap(gb.State.Executors),
+		ToAddLogins:   toAddLogins,
 	})
 	if err != nil {
 		return err

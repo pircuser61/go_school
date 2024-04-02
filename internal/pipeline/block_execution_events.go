@@ -4,6 +4,7 @@ import (
 	c "context"
 	"encoding/json"
 	"errors"
+	"sort"
 
 	e "gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 )
@@ -104,6 +105,9 @@ func (gb *GoExecutionBlock) setEvents(ctx c.Context, executors map[string]struct
 			gb.happenedEvents = append(gb.happenedEvents, event)
 		}
 
+		toRemoveLogins := getSliceFromMap(gb.State.Executors)
+		sort.Strings(toRemoveLogins)
+
 		kafkaEvent, eventErr := gb.RunContext.MakeNodeKafkaEvent(ctx, &MakeNodeKafkaEvent{
 			EventName:      eventEnd,
 			NodeName:       gb.Name,
@@ -112,7 +116,7 @@ func (gb *GoExecutionBlock) setEvents(ctx c.Context, executors map[string]struct
 			NodeStatus:     gb.GetStatus(),
 			NodeType:       BlockGoExecutionID,
 			SLA:            gb.State.Deadline.Unix(),
-			ToRemoveLogins: getSliceFromMap(gb.State.Executors),
+			ToRemoveLogins: toRemoveLogins,
 		})
 
 		if eventErr != nil {

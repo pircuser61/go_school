@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -144,6 +145,10 @@ func (gb *GoApproverBlock) makeExpectedEvents(ctx context.Context, runCtx *Block
 		gb.happenedEvents = append(gb.happenedEvents, event)
 	}
 
+	toAddLogins := getSliceFromMap(gb.State.Approvers)
+
+	sort.Strings(toAddLogins)
+
 	kafkaEvent, err := runCtx.MakeNodeKafkaEvent(ctx, &MakeNodeKafkaEvent{
 		EventName:     eventStart,
 		NodeName:      name,
@@ -153,7 +158,7 @@ func (gb *GoApproverBlock) makeExpectedEvents(ctx context.Context, runCtx *Block
 		NodeType:      BlockGoApproverID,
 		SLA:           gb.State.Deadline.Unix(),
 		Rule:          gb.State.ApprovementRule.String(),
-		ToAddLogins:   getSliceFromMap(gb.State.Approvers),
+		ToAddLogins:   toAddLogins,
 	})
 	if err != nil {
 		return err
