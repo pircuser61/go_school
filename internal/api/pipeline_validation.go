@@ -105,26 +105,42 @@ func validateFunctionBlock(bt entity.BlocksType, block *entity.EriusFunc, blockN
 		return false
 	}
 
-	if !validateProperties(function.Mapping, bt, blockName, log) {
-		var marshaledFunction []byte
-
-		marshaledFunction, err = json.Marshal(function)
-		if err != nil {
-			log.WithFields(logger.Fields{
-				funcName:       "validateFunctionBlock",
-				blockNameLabel: blockName,
-			}).Error(errors.New("failed to marshal function params"))
-
-			return false
-		}
-
-		block.Params = marshaledFunction
-		bt[blockName] = block
+	newMapping, err := function.GetMappingFromInput()
+	if err != nil {
+		log.WithFields(logger.Fields{
+			funcName:       "getMappingFromInput",
+			blockNameLabel: blockName,
+		}).Error(errors.New("failed to get new mapping from input params"))
 
 		return false
 	}
 
-	return true
+	function.Mapping = newMapping
+
+	validateRes := validateProperties(function.Mapping, bt, blockName, log)
+
+	if len(function.Constants) != 0 {
+		if !validateConstants(function.Constants, function.Mapping, log) {
+			validateRes = false
+		}
+	}
+
+	var marshaledFunction []byte
+
+	marshaledFunction, err = json.Marshal(function)
+	if err != nil {
+		log.WithFields(logger.Fields{
+			funcName:       "validateFunctionBlock",
+			blockNameLabel: blockName,
+		}).Error(errors.New("failed to marshal function params"))
+
+		return false
+	}
+
+	block.Params = marshaledFunction
+	bt[blockName] = block
+
+	return validateRes
 }
 
 //nolint:dupl //its not duplicate

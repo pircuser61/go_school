@@ -123,6 +123,45 @@ type FunctionParam struct {
 	Options       string       `json:"options"`
 }
 
+func updateMappingIter(oldProps, newProps JSONSchemaProperties) {
+	for key := range oldProps {
+		oldVal := oldProps[key]
+
+		newVal, ok := newProps[key]
+		if !ok {
+			continue
+		}
+
+		if oldVal.Value != "" {
+			newVal.Value = oldVal.Value
+			newProps[key] = newVal
+		}
+
+		updateMappingIter(oldVal.Properties, newVal.Properties)
+	}
+}
+
+func (a *ExecutableFunctionParams) GetMappingFromInput() (JSONSchemaProperties, error) {
+	newMapping, err := a.getSchemaPropertiesFromInput()
+	if err != nil {
+		return nil, err
+	}
+
+	updateMappingIter(a.Mapping, newMapping)
+
+	return newMapping, nil
+}
+
+func (a *ExecutableFunctionParams) getSchemaPropertiesFromInput() (JSONSchemaProperties, error) {
+	pp := JSONSchemaProperties{}
+
+	if err := json.Unmarshal([]byte(a.Function.Input), &pp); err != nil {
+		return nil, err
+	}
+
+	return pp, nil
+}
+
 type functionTime time.Time
 
 type ParamMetadata struct {

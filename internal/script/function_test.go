@@ -610,3 +610,254 @@ func Test_functionTime_UnmarshalJSON(t *testing.T) {
 		})
 	}
 }
+
+func Test_GetMappingFromInput(t *testing.T) {
+	type fields struct {
+		Input    string
+		Mapping  JSONSchemaProperties
+		Function FunctionParam
+	}
+
+	tests := []struct {
+		name   string
+		fields fields
+		want   JSONSchemaProperties
+	}{
+		{
+			name: "Tests of method GetMappingFromInput, same result",
+			fields: fields{
+				Input: `{
+						"param1":{"description":"param1 name","type":"string"},
+						"param2":{"description":"param2 name","type":"boolean"},
+						"param3":{"description":"param3 name","type":"object", "properties": {
+							"param3.1":{"description":"param3.1 name","type":"string","format":"date-time"},
+							"param3.2":{"description":"param3.2 name","type":"array","items":{"type":"number"}}
+						}}
+						}`,
+				Mapping: JSONSchemaProperties{
+					"param1": {
+						Description: "param1 name",
+						Type:        "string",
+						Value:       "form_0.a",
+					},
+					"param2": {
+						Description: "param2 name",
+						Type:        "boolean",
+						Value:       "form_0.b",
+					},
+					"param3": {
+						Description: "param3 name",
+						Type:        "object",
+						Properties: JSONSchemaProperties{
+							"param3.1": {
+								Description: "param3.1 name",
+								Type:        "string",
+								Format:      "date-time",
+								Value:       "form_0.c",
+							},
+							"param3.2": {
+								Description: "param3.2 name",
+								Type:        "array",
+								Items: &ArrayItems{
+									Type: "number",
+								},
+								Value: "form_0.d",
+							},
+						},
+					},
+				},
+			},
+			want: JSONSchemaProperties{
+				"param1": {
+					Description: "param1 name",
+					Type:        "string",
+					Value:       "form_0.a",
+				},
+				"param2": {
+					Description: "param2 name",
+					Type:        "boolean",
+					Value:       "form_0.b",
+				},
+				"param3": {
+					Description: "param3 name",
+					Type:        "object",
+					Properties: JSONSchemaProperties{
+						"param3.1": {
+							Description: "param3.1 name",
+							Type:        "string",
+							Format:      "date-time",
+							Value:       "form_0.c",
+						},
+						"param3.2": {
+							Description: "param3.2 name",
+							Type:        "array",
+							Items: &ArrayItems{
+								Type: "number",
+							},
+							Value: "form_0.d",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Tests of method GetMappingFromInput, + new field result",
+			fields: fields{
+				Input: `{
+						"param1":{"description":"param1 name","type":"string"},
+						"param2":{"description":"param2 name","type":"boolean"},
+						"param3":{"description":"param3 name","type":"object", "properties": {
+							"param3.1":{"description":"param3.1 name","type":"string","format":"date-time"},
+							"param3.2":{"description":"param3.2 name","type":"array","items":{"type":"number"}}
+						}},
+						"param4":{"description":"param4 name","type":"integer"}
+						}`,
+				Mapping: JSONSchemaProperties{
+					"param1": {
+						Description: "param1 name",
+						Type:        "string",
+						Value:       "form_0.a",
+					},
+					"param2": {
+						Description: "param2 name",
+						Type:        "boolean",
+						Value:       "form_0.b",
+					},
+					"param3": {
+						Description: "param3 name",
+						Type:        "object",
+						Properties: JSONSchemaProperties{
+							"param3.1": {
+								Description: "param3.1 name",
+								Type:        "string",
+								Format:      "date-time",
+								Value:       "form_0.c",
+							},
+							"param3.2": {
+								Description: "param3.2 name",
+								Type:        "array",
+								Items: &ArrayItems{
+									Type: "number",
+								},
+								Value: "form_0.d",
+							},
+						},
+					},
+				},
+			},
+			want: JSONSchemaProperties{
+				"param1": {
+					Description: "param1 name",
+					Type:        "string",
+					Value:       "form_0.a",
+				},
+				"param2": {
+					Description: "param2 name",
+					Type:        "boolean",
+					Value:       "form_0.b",
+				},
+				"param3": {
+					Description: "param3 name",
+					Type:        "object",
+					Properties: JSONSchemaProperties{
+						"param3.1": {
+							Description: "param3.1 name",
+							Type:        "string",
+							Format:      "date-time",
+							Value:       "form_0.c",
+						},
+						"param3.2": {
+							Description: "param3.2 name",
+							Type:        "array",
+							Items: &ArrayItems{
+								Type: "number",
+							},
+							Value: "form_0.d",
+						},
+					},
+				},
+				"param4": {
+					Description: "param4 name",
+					Type:        "integer",
+				},
+			},
+		},
+		{
+			name: "Tests of method GetMappingFromInput, - old field result",
+			fields: fields{
+				Input: `{
+						"param1":{"description":"param1 name","type":"string"},
+						"param3":{"description":"param3 name","type":"object", "properties": {
+							"param3.1":{"description":"param3.1 name","type":"string","format":"date-time"}
+						}}
+						}`,
+				Mapping: JSONSchemaProperties{
+					"param1": {
+						Description: "param1 name",
+						Type:        "string",
+						Value:       "form_0.a",
+					},
+					"param2": {
+						Description: "param2 name",
+						Type:        "boolean",
+						Value:       "form_0.b",
+					},
+					"param3": {
+						Description: "param3 name",
+						Type:        "object",
+						Properties: JSONSchemaProperties{
+							"param3.1": {
+								Description: "param3.1 name",
+								Type:        "string",
+								Format:      "date-time",
+								Value:       "form_0.c",
+							},
+							"param3.2": {
+								Description: "param3.2 name",
+								Type:        "array",
+								Items: &ArrayItems{
+									Type: "number",
+								},
+								Value: "form_0.d",
+							},
+						},
+					},
+				},
+			},
+			want: JSONSchemaProperties{
+				"param1": {
+					Description: "param1 name",
+					Type:        "string",
+					Value:       "form_0.a",
+				},
+				"param3": {
+					Description: "param3 name",
+					Type:        "object",
+					Properties: JSONSchemaProperties{
+						"param3.1": {
+							Description: "param3.1 name",
+							Type:        "string",
+							Format:      "date-time",
+							Value:       "form_0.c",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			params := &ExecutableFunctionParams{
+				Mapping: tt.fields.Mapping,
+				Function: FunctionParam{
+					Input: tt.fields.Input,
+				},
+			}
+			newMapping, _ := params.GetMappingFromInput()
+			assert.Equal(t, tt.want, newMapping,
+				fmt.Sprintf("Incorrect result. GetMappingFromInput() method. Expect result %v, got %v", tt.want, newMapping))
+
+		})
+	}
+}
