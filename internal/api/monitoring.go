@@ -738,7 +738,7 @@ func (ae *Env) startTask(ctx context.Context, dto *startNodesParams) error {
 		restartedNodes[(*dto.params.Steps)[i]] = nil
 	}
 
-	err = ae.DB.TryUnpauseTask(ctx, dto.workID)
+	err = ae.DB.SetTaskPaused(ctx, dto.workID.String(), false)
 	if err != nil {
 		return err
 	}
@@ -763,6 +763,8 @@ func (ae *Env) restartNode(ctx context.Context, workID uuid.UUID, workNumber, st
 	if stepErr != nil {
 		return stepErr
 	}
+
+	stepID := dbStep.ID
 
 	isFinished := dbStep.Status == finished || dbStep.Status == skipped || dbStep.Status == cancel
 
