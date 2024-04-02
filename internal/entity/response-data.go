@@ -84,10 +84,6 @@ func (bt *BlocksType) Validate(ctx context.Context, sd *servicedesc.Service, log
 		return false, PipelineValidateError
 	}
 
-	if !bt.IsPipelineComplete(log) {
-		return false, PipelineValidateError
-	}
-
 	ok, filledErr := bt.IsSocketsFilled(log)
 	if !ok {
 		return false, filledErr
@@ -109,30 +105,6 @@ func (bt *BlocksType) Validate(ctx context.Context, sd *servicedesc.Service, log
 
 func (bt *BlocksType) EndExists(log logger.Logger) bool {
 	return bt.blockTypeExists(BlockGoStartName, log) && bt.blockTypeExists(BlockGoEndName, log)
-}
-
-func (bt *BlocksType) IsPipelineComplete(log logger.Logger) bool {
-	startNodes := bt.getNodesByType(BlockGoStartName)
-
-	if len(startNodes) == 0 {
-		log.WithField("funcName", "IsPipelineComplete").
-			Error(fmt.Errorf("block%s does not exist", BlockGoStartName))
-
-		return false
-	}
-
-	startNode := startNodes[maps.Keys(startNodes)[0]]
-
-	nodesIds := bt.getNodesIds()
-	relatedNodesNum := bt.countRelatedNodesIds(&startNode)
-
-	if len(nodesIds) != relatedNodesNum {
-		log.WithField("funcName", "IsPipelineComplete").Error(errors.New("pipeline is on complete"))
-
-		return false
-	}
-
-	return true
 }
 
 //nolint:gocritic //
