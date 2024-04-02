@@ -758,6 +758,16 @@ func (ae *Env) restartNode(ctx context.Context, workID uuid.UUID, workNumber, st
 		return stepErr
 	}
 
+	isFinished := dbStep.Status == "finished" || dbStep.Status == "skipped" || dbStep.Status == "cancel"
+
+	if isFinished {
+		var errCopy error
+		dbStep.ID, errCopy = txStorage.CopyTaskBlock(ctx, dbStep.ID)
+		if errCopy != nil {
+			return errCopy
+		}
+	}
+
 	isResumable, blockStartTime, resumableErr := txStorage.IsBlockResumable(ctx, workID, dbStep.ID)
 	if resumableErr != nil {
 		return resumableErr

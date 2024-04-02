@@ -292,6 +292,7 @@ type Database interface {
 	UnpauseTaskBlock(ctx c.Context, workID, stepID uuid.UUID) (err error)
 	TryUnpauseTask(ctx c.Context, workID uuid.UUID) (err error)
 	InitTaskBlock(ctx c.Context, dto *SaveStepRequest, isPaused, hasUpdData bool) (id uuid.UUID, startTime time.Time, err error)
+	CopyTaskBlock(ctx c.Context, stepID uuid.UUID) (newStepID uuid.UUID, err error)
 	SkipBlocksAfterRestarted(ctx c.Context, workID uuid.UUID, startTime time.Time, blocks []string) (err error)
 
 	CreateEventToSend(ctx c.Context, dto *e.CreateEventToSend) (eventID string, err error)

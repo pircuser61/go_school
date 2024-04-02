@@ -6295,6 +6295,10 @@ func (_m *MockedDatabase) SetTaskPaused(ctx context.Context, workID string, isPa
 	return r0
 }
 
+func (_m *MockedDatabase) CopyTaskBlock(ctx context.Context, stepID uuid.UUID) (newStepID uuid.UUID, err error) {
+	return
+}
+
 // MockedDatabase_SetTaskPaused_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SetTaskPaused'
 type MockedDatabase_SetTaskPaused_Call struct {
 	*mock.Call
