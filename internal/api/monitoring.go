@@ -243,8 +243,7 @@ func (ae *Env) GetMonitoringTask(w http.ResponseWriter, req *http.Request, workN
 		return
 	}
 
-	resp := toMonitoringTaskResponse(nodes, events)
-	if err = sendResponse(w, http.StatusOK, resp); err != nil {
+	if err = sendResponse(w, http.StatusOK, toMonitoringTaskResponse(nodes, events)); err != nil {
 		errorHandler.handleError(UnknownError, err)
 
 		return
