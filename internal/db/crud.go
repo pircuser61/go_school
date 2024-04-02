@@ -1266,25 +1266,25 @@ func (db *PGCon) CopyTaskBlock(ctx context.Context, stepID uuid.UUID) (newStepID
 			break_points, 
 			has_error,
 			status,
-		    attachments, 	                         
-		    current_executor,
+			attachments, 	                         
+			current_executor,
 			is_active,
-		    is_paused
+			is_paused
 		)
 		SELECT
-		    $1,
-		    work_id,
-		    step_type,
-		    step_name, 
+			$1,
+			work_id,
+			step_type,
+			step_name, 
 			content, 
 			now(), 
 			break_points, 
 			false,
 			'running',
-		    attachments, 	                         
-		    current_executor,
+			attachments, 	                         
+			current_executor,
 			true,
-		    false
+			false
 		FROM variable_storage 
 		WHERE id = $2`
 
