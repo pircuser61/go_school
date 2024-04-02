@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"gitlab.services.mts.ru/abp/myosotis/logger"
 	"os"
 	"strconv"
 	"strings"
@@ -1367,6 +1368,9 @@ func (db *PGCon) UpdateStepContext(ctx context.Context, dto *UpdateStepRequest) 
 func (db *PGCon) insertIntoMembers(ctx context.Context, members []Member, id uuid.UUID) error {
 	_, span := trace.StartSpan(ctx, "pg_insert_into_members")
 	defer span.End()
+
+	log := logger.GetLogger(ctx)
+	log.WithField("insertIntoMembers blockID: ", id.String())
 
 	// nolint:gocritic
 	// language=PostgreSQL
