@@ -713,9 +713,9 @@ func (ae *Env) startProcess(ctx context.Context, startParams *startNodesParams) 
 		return strings.Contains(steps[i], "wait_for_all_inputs")
 	})
 
-	restartedNode := make(map[string]interface{})
+	restartedNodes := make(map[string]interface{})
 	for i := range *startParams.params.Steps {
-		if _, ok := restartedNode[(*startParams.params.Steps)[i]]; !ok {
+		if _, ok := restartedNodes[(*startParams.params.Steps)[i]]; !ok {
 			restartErr := ae.restartNode(
 				ctx,
 				startParams.workID,
@@ -729,7 +729,7 @@ func (ae *Env) startProcess(ctx context.Context, startParams *startNodesParams) 
 			}
 		}
 
-		restartedNode[(*startParams.params.Steps)[i]] = nil
+		restartedNodes[(*startParams.params.Steps)[i]] = nil
 	}
 
 	err = ae.DB.TryUnpauseTask(ctx, startParams.workID)
