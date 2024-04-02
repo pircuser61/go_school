@@ -1936,11 +1936,10 @@ func (db *PGCon) GetWorkIDByWorkNumber(ctx c.Context, workNumber string) (uuid.U
 	ctx, span := trace.StartSpan(ctx, "get_work_id_by_work_number")
 	defer span.End()
 
-	q := `
-		SELECT
-		  id
+	const q = `
+		SELECT id
 		FROM works 
-		WHERE  work_number = $1 and child_id is null`
+		WHERE work_number = $1 and child_id is null`
 
 	var workID uuid.UUID
 

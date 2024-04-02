@@ -419,7 +419,7 @@ func (db *PGCon) TryUnpauseTask(ctx c.Context, workID uuid.UUID) (err error) {
 		SELECT count(id)
 		FROM variable_storage
 		WHERE work_id = $1 AND is_paused = true 
-		AND  status IN('running', 'idle', 'created','ready')`
+		AND status IN('running', 'idle', 'created','ready')`
 
 	err = db.Connection.QueryRow(ctx, q, workID).Scan(&i)
 	if err != nil {
