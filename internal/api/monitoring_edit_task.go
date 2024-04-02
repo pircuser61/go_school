@@ -18,6 +18,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
+	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
 const MonitoringTaskActionRequestActionEdit MonitoringTaskActionRequestAction = "edit"
@@ -86,6 +87,8 @@ func (ae *Env) EditTaskBlockData(w http.ResponseWriter, r *http.Request, blockId
 	editBlockData, editErr := ae.editGoBlock(ctx, blockUUID, dbStep.Type, dbStep.Name, data, req.ChangeType)
 	if editErr != nil {
 		errorHandler.handleError(EditMonitoringBlockError, err)
+
+		return
 	}
 
 	ui, err := user.GetUserInfoFromCtx(ctx)
@@ -106,6 +109,8 @@ func (ae *Env) EditTaskBlockData(w http.ResponseWriter, r *http.Request, blockId
 	jsonParams, err = json.Marshal(eventData)
 	if err != nil {
 		errorHandler.handleError(MarshalEventParamsError, err)
+
+		return
 	}
 
 	eventID, err := txStorage.CreateTaskEvent(ctx, &entity.CreateTaskEvent{
@@ -116,13 +121,38 @@ func (ae *Env) EditTaskBlockData(w http.ResponseWriter, r *http.Request, blockId
 	})
 	if err != nil {
 		errorHandler.handleError(CreateTaskEventError, err)
+
+		return
 	}
 
-	ae.UpdateContent(ctx, txStorage, errorHandler, editBlockData, dbStep.WorkID.String(), eventID)
+	updErr := ae.UpdateContent(ctx, txStorage, editBlockData, dbStep.WorkID.String(), eventID)
+	if updErr != -1 {
+		errorHandler.sendError(updErr)
+
+		return
+	}
 
 	err = txStorage.CommitTransaction(ctx)
 	if err != nil {
 		errorHandler.handleError(UnknownError, err)
+
+		return
+	}
+
+	var getErr Err = -1
+	switch req.ChangeType {
+	case MonitoringTaskEditBlockRequestChangeTypeContext:
+		getErr = ae.returnContext(ctx, blockId, w)
+	case MonitoringTaskEditBlockRequestChangeTypeInput:
+		getErr = ae.returnInput(ctx, w, dbStep)
+	case MonitoringTaskEditBlockRequestChangeTypeOutput:
+		getErr = ae.returnOutput(ctx, blockId, w, dbStep)
+	case MonitoringTaskEditBlockRequestChangeTypeState:
+		getErr = ae.returnState(ctx, blockId, w)
+	}
+
+	if getErr != -1 {
+		errorHandler.sendError(getErr)
 	}
 }
 
@@ -135,13 +165,13 @@ func convertReqEditData(reqData map[string]MonitoringEditBlockData) (res map[str
 	return convertedData
 }
 
-func (ae *Env) UpdateContent(ctx context.Context, txStorage db.Database, eh httpErrorHandler,
+func (ae *Env) UpdateContent(ctx context.Context, txStorage db.Database,
 	data []EditBlock, workID, eventID string,
-) {
+) (err Err) {
 	for i := range data {
 		savePrevErr := txStorage.SaveNodePreviousContent(ctx, data[i].StepID.String(), eventID)
 		if savePrevErr != nil {
-			eh.handleError(SaveNodePrevContentError, savePrevErr)
+			return SaveNodePrevContentError
 		}
 	}
 
@@ -149,9 +179,116 @@ func (ae *Env) UpdateContent(ctx context.Context, txStorage db.Database, eh http
 		saveErr := txStorage.UpdateNodeContent(ctx, data[i].StepID.String(), workID, data[i].StepName,
 			data[i].State, data[i].Output)
 		if saveErr != nil {
-			eh.handleError(SaveUpdatedBlockData, saveErr)
+			return SaveUpdatedBlockData
 		}
 	}
+	return -1
+}
+
+func (ae *Env) returnState(ctx context.Context, blockID string, w http.ResponseWriter) (getErr Err) {
+	state, err := ae.DB.GetBlockStateForMonitoring(ctx, blockID)
+	if err != nil {
+		return GetBlockStateError
+	}
+
+	params := make(map[string]MonitoringEditBlockData, len(state))
+	for _, bo := range state {
+		params[bo.Name] = MonitoringEditBlockData{
+			Name:  bo.Name,
+			Value: bo.Value,
+			Type:  utils.GetJSONType(bo.Value),
+		}
+	}
+
+	if err = sendResponse(w, http.StatusOK, BlockEditResponse{
+		Blocks: &BlockEditResponse_Blocks{params},
+	}); err != nil {
+		return UnknownError
+	}
+	return -1
+}
+
+func (ae *Env) returnContext(ctx context.Context, blockID string, w http.ResponseWriter) (getErr Err) {
+	blocksOutputs, err := ae.DB.GetBlocksOutputs(ctx, blockID)
+	if err != nil {
+		return GetBlockContextError
+	}
+
+	blocks := make(map[string]MonitoringEditBlockData, len(blocksOutputs))
+
+	for _, bo := range blocksOutputs {
+		prefix := bo.StepName + "."
+
+		if strings.HasPrefix(bo.Name, prefix) {
+			continue
+		}
+
+		blocks[bo.Name] = MonitoringEditBlockData{
+			Name:        bo.Name,
+			Value:       bo.Value,
+			Description: "",
+			Type:        utils.GetJSONType(bo.Value),
+		}
+	}
+
+	err = sendResponse(w, http.StatusOK, BlockEditResponse{
+		Blocks: &BlockEditResponse_Blocks{blocks},
+	})
+	if err != nil {
+		return UnknownError
+
+	}
+	return -1
+}
+
+func (ae *Env) returnInput(ctx context.Context, w http.ResponseWriter, step *entity.Step) (getErr Err) {
+	blockInputs, err := ae.DB.GetBlockInputs(ctx, step.Name, step.WorkNumber)
+	if err != nil {
+		return GetBlockContextError
+	}
+
+	inputs := make(map[string]MonitoringEditBlockData, 0)
+
+	for _, bo := range blockInputs {
+		inputs[bo.Name] = MonitoringEditBlockData{
+			Name:  bo.Name,
+			Value: bo.Value,
+			Type:  utils.GetJSONType(bo.Value),
+		}
+	}
+
+	if err := sendResponse(w, http.StatusOK, BlockEditResponse{
+		Blocks: &BlockEditResponse_Blocks{AdditionalProperties: inputs},
+	}); err != nil {
+		return UnknownError
+	}
+
+	return -1
+}
+
+func (ae *Env) returnOutput(ctx context.Context, blockID string, w http.ResponseWriter, step *entity.Step) (getErr Err) {
+	blockOutputs, err := ae.DB.GetBlockOutputs(ctx, blockID, step.Name)
+	if err != nil {
+		return GetBlockContextError
+	}
+
+	outputs := make(map[string]MonitoringEditBlockData, 0)
+
+	for _, bo := range blockOutputs {
+		outputs[bo.Name] = MonitoringEditBlockData{
+			Name:  bo.Name,
+			Value: bo.Value,
+			Type:  utils.GetJSONType(bo.Value),
+		}
+	}
+
+	if err := sendResponse(w, http.StatusOK, BlockEditResponse{
+		Blocks: &BlockEditResponse_Blocks{AdditionalProperties: outputs},
+	}); err != nil {
+		return UnknownError
+	}
+
+	return -1
 }
 
 type EditBlock struct {

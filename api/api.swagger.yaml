@@ -2444,10 +2444,7 @@ paths:
                 type: object
                 properties:
                   data:
-                    type: object
-                    description: Стейт блока
-                    additionalProperties:
-                      $ref: '#/components/schemas/MonitoringEditBlockData'
+                    $ref: '#/components/schemas/BlockEditResponse'
                   status_code:
                     type: integer
         400:
@@ -5598,7 +5595,14 @@ components:
         - type
         - description
         - value
-
+    BlockEditResponse:
+      type: object
+      properties:
+        blocks:
+          type: object
+          description: Ноды
+          additionalProperties:
+            $ref: '#/components/schemas/MonitoringEditBlockData'
     MonitoringEditBlockData:
       type: object
       properties:

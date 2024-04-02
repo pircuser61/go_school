@@ -3236,19 +3236,19 @@ func (db *PGCon) UpdateNodeContent(ctx context.Context, stepID, workID,
 	// language=PostgreSQL
 	qState := `
 		WITH blockStartTime AS (
-		    SELECT time from variable_storage WHERE id = $1                                    
+		    SELECT time FROM variable_storage WHERE id = $1                                    
 		),
 		endTime AS (
-		        SELECT time from variable_storage 
-      			WHERE work_id = $4 AND step_name = $2 AND time > blockStartTime.time
+		        SELECT time FROM variable_storage 
+      			WHERE work_id = $4 AND step_name = $2 AND time > (SELECT time FROM blockStartTime)
        			ORDER BY time DESC
 				LIMIT 1  
 		    )
 	    UPDATE variable_storage
         SET content = jsonb_set(content, array['State', $2]::varchar[], $3::jsonb , false)
-    		WHERE work_id = $4 AND time >= blockStartTime.time
+    		WHERE work_id = $4 AND time >= (SELECT time FROM blockStartTime)
       		AND CASE 
-      		    WHEN endTime.time IS NOT NULL THEN time < endTime.time
+      		    WHEN (SELECT time FROM endTime) IS NOT NULL THEN time < (SELECT time FROM endTime)
 				ELSE TRUE
 				END
     `
@@ -3269,27 +3269,29 @@ func (db *PGCon) UpdateNodeContent(ctx context.Context, stepID, workID,
 		// language=PostgreSQL
 		qOutput := `
 		WITH blockStartTime AS (
-		    SELECT time from variable_storage WHERE id = $1                                    
+		    SELECT time FROM variable_storage WHERE id = $1                                    
 		),
 		endTime AS (
 		        SELECT time from variable_storage 
-      			WHERE work_id = $4 AND step_name = $2 AND time > blockStartTime.time
+      			WHERE work_id = $4 AND step_name = $5 AND time > (SELECT time FROM blockStartTime)
        			ORDER BY time DESC
 				LIMIT 1  
 		    )
 	    UPDATE variable_storage
         SET content = jsonb_set(content, array['Values', $2]::varchar[], $3::jsonb , false)
-    		WHERE work_id = $4 AND time >= blockStartTime.time
+    		WHERE work_id = $4 AND time >= (SELECT time FROM blockStartTime)
       		AND CASE 
-      		    WHEN endTime.time IS NOT NULL THEN time < endTime.time
+      		    WHEN (SELECT time FROM endTime) IS NOT NULL THEN time < (SELECT time FROM endTime)
 				ELSE TRUE
 				END
     `
 
+		dbVal := wrapVal(val)
+
 		outputArgs := []interface{}{
 			stepID,
 			stepName + "." + key,
-			val,
+			dbVal,
 			workID,
 			stepName,
 		}
@@ -3301,4 +3303,12 @@ func (db *PGCon) UpdateNodeContent(ctx context.Context, stepID, workID,
 	}
 
 	return nil
+}
+
+func wrapVal(data interface{}) interface{} {
+	convData, ok := data.(string)
+	if !ok {
+		return data
+	}
+	return fmt.Sprintf("\"%s\"", convData)
 }

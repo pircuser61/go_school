@@ -733,6 +733,17 @@ type BlockContextResponse_Blocks struct {
 	AdditionalProperties map[string]MonitoringBlockOutput `json:"-"`
 }
 
+// BlockEditResponse defines model for BlockEditResponse.
+type BlockEditResponse struct {
+	// Ноды
+	Blocks *BlockEditResponse_Blocks `json:"blocks,omitempty"`
+}
+
+// Ноды
+type BlockEditResponse_Blocks struct {
+	AdditionalProperties map[string]MonitoringEditBlockData `json:"-"`
+}
+
 // BlockStateResponse defines model for BlockStateResponse.
 type BlockStateResponse struct {
 	// Стейт блока
@@ -2698,6 +2709,59 @@ func (a *BlockContextResponse_Blocks) UnmarshalJSON(b []byte) error {
 
 // Override default JSON handling for BlockContextResponse_Blocks to handle AdditionalProperties
 func (a BlockContextResponse_Blocks) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for BlockEditResponse_Blocks. Returns the specified
+// element and whether it was found
+func (a BlockEditResponse_Blocks) Get(fieldName string) (value MonitoringEditBlockData, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for BlockEditResponse_Blocks
+func (a *BlockEditResponse_Blocks) Set(fieldName string, value MonitoringEditBlockData) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]MonitoringEditBlockData)
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for BlockEditResponse_Blocks to handle AdditionalProperties
+func (a *BlockEditResponse_Blocks) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]MonitoringEditBlockData)
+		for fieldName, fieldBuf := range object {
+			var fieldVal MonitoringEditBlockData
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for BlockEditResponse_Blocks to handle AdditionalProperties
+func (a BlockEditResponse_Blocks) MarshalJSON() ([]byte, error) {
 	var err error
 	object := make(map[string]json.RawMessage)
 
