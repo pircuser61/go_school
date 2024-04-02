@@ -3310,5 +3310,6 @@ func wrapVal(data interface{}) interface{} {
 	if !ok {
 		return data
 	}
+
 	return fmt.Sprintf("%q", convData)
 }
