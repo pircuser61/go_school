@@ -1370,7 +1370,7 @@ func (db *PGCon) insertIntoMembers(ctx context.Context, members []Member, id uui
 	defer span.End()
 
 	log := logger.GetLogger(ctx)
-	log.WithField("insertIntoMembers blockID: ", id.String())
+	log.Info("insertIntoMembers blockID: ", id.String())
 
 	// nolint:gocritic
 	// language=PostgreSQL
