@@ -763,6 +763,7 @@ func (ae *Env) restartNode(ctx context.Context, workID uuid.UUID, workNumber, st
 	if isFinished {
 		var errCopy error
 		dbStep.ID, errCopy = txStorage.CopyTaskBlock(ctx, dbStep.ID)
+
 		if errCopy != nil {
 			return errCopy
 		}
