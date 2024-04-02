@@ -269,6 +269,27 @@ func Test_createGoFormBlock(t *testing.T) {
 					keyOutputFormBody:     global2,
 				},
 				happenedEvents: make([]entity.NodeEvent, 0),
+				happenedKafkaEvents: []entity.NodeKafkaEvent{
+					{
+						TaskID:        "00000000-0000-0000-0000-000000000000",
+						WorkNumber:    "J0000001",
+						NodeName:      "form_0",
+						NodeShortName: "Нода Форма",
+						NodeStart:     time.Now().Unix(),
+						TaskStatus:    "processing",
+						NodeStatus:    "running",
+						CreatedAt:     time.Now().Unix(),
+						NodeSLA:       -62135546400,
+						Action:        "start",
+						NodeType:      "form",
+						ActionBody: map[string]interface{}{
+							"toAdd": []string{
+								"executor",
+							},
+						},
+						AvailableActions: []string{},
+					},
+				},
 				State: &FormData{
 					FormExecutorType:   script.FormExecutorTypeFromSchema,
 					SchemaID:           schemaID,
@@ -402,6 +423,26 @@ func Test_createGoFormBlock(t *testing.T) {
 					keyOutputFormBody:     global2,
 				},
 				happenedEvents: make([]entity.NodeEvent, 0),
+				happenedKafkaEvents: []entity.NodeKafkaEvent{
+					{
+						TaskID:        "00000000-0000-0000-0000-000000000000",
+						NodeName:      "form_0",
+						NodeShortName: "Нода Форма",
+						NodeStart:     time.Now().Unix(),
+						TaskStatus:    "done",
+						NodeStatus:    "finished",
+						CreatedAt:     time.Now().Unix(),
+						NodeSLA:       -62135596800,
+						Action:        "start",
+						NodeType:      "form",
+						ActionBody: map[string]interface{}{
+							"toAdd": []string{
+								"auto_fill",
+							},
+						},
+						AvailableActions: []string{},
+					},
+				},
 				State: &FormData{
 					FormExecutorType: script.FormExecutorTypeAutoFillUser,
 					SchemaID:         schemaID,

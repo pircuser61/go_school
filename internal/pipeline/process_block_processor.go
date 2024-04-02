@@ -320,7 +320,10 @@ func (p *blockProcessor) processActiveBlocks(ctx context.Context, activeBlocks [
 		}
 
 		p.runCtx.BlockRunResults.NodeEvents = append(p.runCtx.BlockRunResults.NodeEvents, processor.runCtx.BlockRunResults.NodeEvents...)
-		p.runCtx.BlockRunResults.NodeKafkaEvents = append(p.runCtx.BlockRunResults.NodeKafkaEvents, processor.runCtx.BlockRunResults.NodeKafkaEvents...)
+		p.runCtx.BlockRunResults.NodeKafkaEvents = append(
+			p.runCtx.BlockRunResults.NodeKafkaEvents,
+			processor.runCtx.BlockRunResults.NodeKafkaEvents...,
+		)
 	}
 
 	return nil

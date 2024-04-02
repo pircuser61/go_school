@@ -551,7 +551,6 @@ func (gb *GoExecutionBlock) makeExpectedEvents(ctx context.Context, runCtx *Bloc
 	status, _, _ := gb.GetTaskHumanStatus()
 
 	if _, ok := gb.expectedEvents[eventStart]; ok {
-
 		event, err := runCtx.MakeNodeStartEvent(ctx, MakeNodeStartEventArgs{
 			NodeName:      name,
 			NodeShortName: ef.ShortTitle,

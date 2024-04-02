@@ -505,6 +505,7 @@ func Test_createGoApproverBlock(t *testing.T) {
 					BlockType:  BlockGoApproverID,
 					Title:      title,
 					ShortTitle: shortTitle,
+
 					Input: []entity.EriusFunctionValue{
 						{
 							Name:   "foo",
@@ -544,6 +545,28 @@ func Test_createGoApproverBlock(t *testing.T) {
 					keyOutputApprover: example,
 				},
 				happenedEvents: make([]entity.NodeEvent, 0),
+				happenedKafkaEvents: []entity.NodeKafkaEvent{
+					{
+						TaskID:        "00000000-0000-0000-0000-000000000000",
+						NodeName:      "example",
+						NodeShortName: "Нода Согласование",
+						NodeStart:     time.Now().Unix(),
+						TaskStatus:    "approvement",
+						NodeStatus:    "running",
+						CreatedAt:     time.Now().Unix(),
+						NodeSLA:       -62135596800,
+						Action:        "start",
+						NodeType:      "approver",
+						ActionBody: map[string]interface{}{
+							"rule": "AnyOf",
+							"toAdd": []string{
+								"pilzner1",
+								"pupok_na_jope",
+							},
+						},
+						AvailableActions: []string{},
+					},
+				},
 				State: &ApproverData{
 					Type: script.ApproverTypeFromSchema,
 					Approvers: map[string]struct{}{
@@ -632,6 +655,27 @@ func Test_createGoApproverBlock(t *testing.T) {
 					keyOutputApprover: example,
 				},
 				happenedEvents: make([]entity.NodeEvent, 0),
+				happenedKafkaEvents: []entity.NodeKafkaEvent{
+					{
+						TaskID:        "00000000-0000-0000-0000-000000000000",
+						NodeName:      "example",
+						NodeShortName: "Нода Согласование",
+						NodeStart:     time.Now().Unix(),
+						TaskStatus:    "approvement",
+						NodeStatus:    "running",
+						CreatedAt:     time.Now().Unix(),
+						NodeSLA:       -62135596800,
+						Action:        "start",
+						NodeType:      "approver",
+						ActionBody: map[string]interface{}{
+							"rule": "AnyOf",
+							"toAdd": []string{
+								"login1",
+							},
+						},
+						AvailableActions: []string{},
+					},
+				},
 				State: &ApproverData{
 					Type: script.ApproverTypeUser,
 					Approvers: map[string]struct{}{

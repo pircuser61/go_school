@@ -131,7 +131,6 @@ func (gb *GoApproverBlock) makeExpectedEvents(ctx context.Context, runCtx *Block
 	status, _, _ := gb.GetTaskHumanStatus()
 
 	if _, ok := gb.expectedEvents[eventStart]; ok {
-
 		event, err := runCtx.MakeNodeStartEvent(ctx, MakeNodeStartEventArgs{
 			NodeName:      name,
 			NodeShortName: ef.ShortTitle,

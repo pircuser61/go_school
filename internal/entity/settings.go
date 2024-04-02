@@ -159,7 +159,7 @@ func (ps *ProcessSettings) Validate() error {
 	return nil
 }
 
-func (es ExternalSystem) ValidateSchemas() error {
+func (es *ExternalSystem) ValidateSchemas() error {
 	err := es.InputSchema.Validate()
 	if err != nil {
 		return err
