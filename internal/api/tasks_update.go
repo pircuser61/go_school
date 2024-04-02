@@ -610,6 +610,21 @@ func (ae *Env) updateTaskInternal(ctx context.Context, workNumber, userLogin str
 		return err
 	}
 
+	_, err = txStorage.CreateTaskEvent(ctx, &entity.CreateTaskEvent{
+		WorkID:    dbTask.ID.String(),
+		EventType: "pause",
+		Author:    userLogin,
+	})
+	if err != nil {
+		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
+			log.WithField("funcName", "CreateTaskEvent").
+				WithError(errors.New("couldn't rollback tx")).
+				Error(txErr)
+		}
+
+		return err
+	}
+
 	if commitErr := txStorage.CommitTransaction(ctxLocal); commitErr != nil {
 		log.WithError(commitErr).Error("couldn't commit transaction")
 
@@ -832,6 +847,24 @@ func (ae *Env) StopTasks(w http.ResponseWriter, r *http.Request) {
 			}
 
 			log.WithError(updateErr).Error("couldn't update human status")
+
+			continue
+		}
+
+		workID, errGetID := ae.DB.GetWorkIDByWorkNumber(ctx, workNumber)
+		if errGetID != nil {
+			log.WithError(errGetID).Error("couldn't update get work id by number: " + workNumber)
+
+			continue
+		}
+
+		_, err = txStorage.CreateTaskEvent(ctx, &entity.CreateTaskEvent{
+			WorkID:    workID.String(),
+			EventType: "pause",
+			Author:    ui.Username,
+		})
+		if err != nil {
+			log.WithError(err).Error("couldn't create task event pause: " + workNumber)
 		}
 	}
 

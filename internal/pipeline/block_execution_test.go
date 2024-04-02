@@ -262,7 +262,29 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 					"foo": "bar",
 				},
 				happenedEvents: make([]entity.NodeEvent, 0),
-				Sockets:        entity.ConvertSocket(next),
+				happenedKafkaEvents: []entity.NodeKafkaEvent{
+					{
+						TaskID:        "00000000-0000-0000-0000-000000000000",
+						WorkNumber:    "J001",
+						NodeName:      "example",
+						NodeShortName: "Нода Исполнение",
+						NodeStart:     time.Now().Unix(),
+						TaskStatus:    "processing",
+						NodeStatus:    "running",
+						CreatedAt:     time.Now().Unix(),
+						NodeSLA:       -62135546400,
+						Action:        "start",
+						NodeType:      "execution",
+						ActionBody: map[string]interface{}{
+							"toAdd": []string{
+								"test",
+								"test2",
+							},
+						},
+						AvailableActions: []string{},
+					},
+				},
+				Sockets: entity.ConvertSocket(next),
 				RunContext: &BlockRunContext{
 					Services: RunContextServices{
 						Storage: myStorage,
@@ -349,7 +371,28 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 					"foo": "bar",
 				},
 				happenedEvents: make([]entity.NodeEvent, 0),
-				Sockets:        entity.ConvertSocket(next),
+				happenedKafkaEvents: []entity.NodeKafkaEvent{
+					{
+						TaskID:        "00000000-0000-0000-0000-000000000000",
+						WorkNumber:    "J001",
+						NodeName:      "example",
+						NodeShortName: "Нода Исполнение",
+						NodeStart:     time.Now().Unix(),
+						TaskStatus:    "processing",
+						NodeStatus:    "running",
+						CreatedAt:     time.Now().Unix(),
+						NodeSLA:       -62135546400,
+						Action:        "start",
+						NodeType:      "execution",
+						ActionBody: map[string]interface{}{
+							"toAdd": []string{
+								"test",
+							},
+						},
+						AvailableActions: []string{},
+					},
+				},
+				Sockets: entity.ConvertSocket(next),
 				RunContext: &BlockRunContext{
 					Services: RunContextServices{
 						Storage: myStorage,
@@ -451,7 +494,27 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 					"foo": "bar",
 				},
 				happenedEvents: make([]entity.NodeEvent, 0),
-				Sockets:        entity.ConvertSocket(next),
+				happenedKafkaEvents: []entity.NodeKafkaEvent{
+					{
+						TaskID:        "00000000-0000-0000-0000-000000000000",
+						NodeName:      "example",
+						NodeShortName: "Нода Исполнение",
+						NodeStart:     time.Now().Unix(),
+						TaskStatus:    "processing",
+						NodeStatus:    "running",
+						CreatedAt:     time.Now().Unix(),
+						NodeSLA:       -62135571600,
+						Action:        "start",
+						NodeType:      "execution",
+						ActionBody: map[string]interface{}{
+							"toAdd": []string{
+								"tester",
+							},
+						},
+						AvailableActions: []string{},
+					},
+				},
+				Sockets: entity.ConvertSocket(next),
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
 					Services: RunContextServices{

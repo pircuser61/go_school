@@ -28,17 +28,13 @@ func (ae *Env) GetModules(w http.ResponseWriter, req *http.Request) {
 	log := logger.GetLogger(ctx)
 	errorHandler := newHTTPErrorHandler(log, w)
 
-	eriusFunctions := eriusFunctions()
+	blocks := eriusFunctions()
 
-	eriusFunctionsResult := make([]script.FunctionModel, 0, len(eriusFunctions))
+	blocksResult := make([]script.FunctionModel, 0, len(blocks))
 
-	for i := range eriusFunctions {
-		eriusFunction := eriusFunctions[i]
-		title := ae.eriusFunctionTitle(eriusFunction.ID, eriusFunction.Title)
-
-		eriusFunctions[i].Title = title
-
-		eriusFunctionsResult = append(eriusFunctionsResult, eriusFunctions[i])
+	for i := range blocks {
+		blocks[i].Title = ae.eriusFunctionTitle(blocks[i].ID, blocks[i].Title)
+		blocksResult = append(blocksResult, blocks[i])
 	}
 
 	eriusShapes, err := script.GetShapes()
@@ -48,7 +44,7 @@ func (ae *Env) GetModules(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	err = sendResponse(w, http.StatusOK, entity.EriusFunctionList{Functions: eriusFunctionsResult, Shapes: eriusShapes})
+	err = sendResponse(w, http.StatusOK, entity.EriusFunctionList{Functions: blocksResult, Shapes: eriusShapes})
 	if err != nil {
 		errorHandler.handleError(UnknownError, err)
 

@@ -1936,11 +1936,10 @@ func (db *PGCon) GetWorkIDByWorkNumber(ctx c.Context, workNumber string) (uuid.U
 	ctx, span := trace.StartSpan(ctx, "get_work_id_by_work_number")
 	defer span.End()
 
-	q := `
-		SELECT
-		  id
+	const q = `
+		SELECT id
 		FROM works 
-		WHERE  work_number = $1 and child_id is null`
+		WHERE work_number = $1 and child_id is null`
 
 	var workID uuid.UUID
 
@@ -2417,16 +2416,20 @@ func (db *PGCon) GetExecutorsFromPrevWorkVersionExecutionBlockRun(ctx c.Context,
 
 func (db *PGCon) IsTaskPaused(ctx c.Context, workID uuid.UUID) (isPaused bool, err error) {
 	const q = `
-		SELECT is_paused
+		SELECT is_paused, status
 		FROM works
 		WHERE id = $1`
 
-	err = db.Connection.QueryRow(ctx, q, workID).Scan(&isPaused)
+	var status int
+
+	err = db.Connection.QueryRow(ctx, q, workID).Scan(&isPaused, &status)
 	if err != nil {
 		return isPaused, err
 	}
 
-	return isPaused, nil
+	isFinished := status == 2 || status == 4 || status == 6
+
+	return isPaused || isFinished, nil
 }
 
 func (db *PGCon) IsBlockResumable(ctx c.Context, workID, stepID uuid.UUID) (isResumable bool, startTime time.Time, err error) {
