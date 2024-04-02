@@ -521,10 +521,10 @@ func (gb *ExecutableFunctionBlock) isFirstStart(ctx context.Context, workID uuid
 	return countRunFunc > 1, firstRun, nil
 }
 
-func (gb *ExecutableFunctionBlock) UpdateStateUsingOutput(ctx context.Context, data []byte) (state map[string]interface{}, err error) {
+func (gb *ExecutableFunctionBlock) UpdateStateUsingOutput(context.Context, []byte) (state map[string]interface{}, err error) {
 	return nil, nil
 }
 
-func (gb *ExecutableFunctionBlock) UpdateOutputUsingState(ctx context.Context) (output map[string]interface{}, err error) {
+func (gb *ExecutableFunctionBlock) UpdateOutputUsingState(context.Context) (output map[string]interface{}, err error) {
 	return nil, nil
 }

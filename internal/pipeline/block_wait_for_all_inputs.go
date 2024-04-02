@@ -243,10 +243,10 @@ func (gb *GoWaitForAllInputsBlock) createState(ctx context.Context) error {
 	return nil
 }
 
-func (gb *GoWaitForAllInputsBlock) UpdateStateUsingOutput(ctx context.Context, data []byte) (state map[string]interface{}, err error) {
+func (gb *GoWaitForAllInputsBlock) UpdateStateUsingOutput(context.Context, []byte) (state map[string]interface{}, err error) {
 	return nil, nil
 }
 
-func (gb *GoWaitForAllInputsBlock) UpdateOutputUsingState(ctx context.Context) (output map[string]interface{}, err error) {
+func (gb *GoWaitForAllInputsBlock) UpdateOutputUsingState(context.Context) (output map[string]interface{}, err error) {
 	return nil, nil
 }
