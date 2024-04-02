@@ -104,9 +104,9 @@ func (ae *Env) eriusFunctionTitle(id, currentTitle string) string {
 	case "end":
 		return "Конец"
 	case WaitForAllInputsBase:
-		return WaitForAllInputsBase
+		return "Параллельность конец"
 	case BeginParallelTask:
-		return BeginParallelTask
+		return "Параллельность начало"
 	case pipeline.BlockPlaceholderID:
 		if !ae.IncludePlaceholderBlock {
 			return currentTitle
