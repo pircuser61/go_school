@@ -847,22 +847,24 @@ func (ae *Env) StopTasks(w http.ResponseWriter, r *http.Request) {
 			}
 
 			log.WithError(updateErr).Error("couldn't update human status")
+
+			continue
 		}
 
-		if updateErr == nil {
-			workID, err := ae.DB.GetWorkIDByWorkNumber(ctx, workNumber)
-			if err != nil {
-				log.WithError(err).Error("couldn't update get work id by number: " + workNumber)
-			}
+		workID, errGetID := ae.DB.GetWorkIDByWorkNumber(ctx, workNumber)
+		if errGetID != nil {
+			log.WithError(errGetID).Error("couldn't update get work id by number: " + workNumber)
 
-			_, err = txStorage.CreateTaskEvent(ctx, &entity.CreateTaskEvent{
-				WorkID:    workID.String(),
-				EventType: "pause",
-				Author:    ui.Username,
-			})
-			if err != nil {
-				log.WithError(err).Error("couldn't create task event pause: " + workNumber)
-			}
+			continue
+		}
+
+		_, err = txStorage.CreateTaskEvent(ctx, &entity.CreateTaskEvent{
+			WorkID:    workID.String(),
+			EventType: "pause",
+			Author:    ui.Username,
+		})
+		if err != nil {
+			log.WithError(err).Error("couldn't create task event pause: " + workNumber)
 		}
 	}
 
