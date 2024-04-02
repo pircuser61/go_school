@@ -690,6 +690,24 @@ func (ae *Env) startProcess(ctx context.Context, startParams *startNodesParams) 
 		return errors.New("can't unpause running task")
 	}
 
+	jsonParams := json.RawMessage{}
+	if startParams.params != nil {
+		jsonParams, err = json.Marshal(startParams.params)
+		if err != nil {
+			return err
+		}
+	}
+
+	_, err = ae.DB.CreateTaskEvent(ctx, &entity.CreateTaskEvent{
+		WorkID:    startParams.workID.String(),
+		Author:    startParams.author,
+		EventType: string(MonitoringTaskActionRequestActionStart),
+		Params:    jsonParams,
+	})
+	if err != nil {
+		return err
+	}
+
 	steps := *startParams.params.Steps
 	sort.Slice(steps, func(i, j int) bool {
 		return strings.Contains(steps[i], "wait_for_all_inputs")
@@ -710,24 +728,6 @@ func (ae *Env) startProcess(ctx context.Context, startParams *startNodesParams) 
 	}
 
 	err = ae.DB.TryUnpauseTask(ctx, startParams.workID)
-	if err != nil {
-		return err
-	}
-
-	jsonParams := json.RawMessage{}
-	if startParams.params != nil {
-		jsonParams, err = json.Marshal(startParams.params)
-		if err != nil {
-			return err
-		}
-	}
-
-	_, err = ae.DB.CreateTaskEvent(ctx, &entity.CreateTaskEvent{
-		WorkID:    startParams.workID.String(),
-		Author:    startParams.author,
-		EventType: string(MonitoringTaskActionRequestActionStart),
-		Params:    jsonParams,
-	})
 	if err != nil {
 		return err
 	}
