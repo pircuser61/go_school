@@ -451,10 +451,10 @@ func (gb *GoExecutionBlock) handleDecision(ctx context.Context, parentState *Exe
 	gb.State.DecisionComment = &comment
 	gb.State.Decision = parentState.Decision
 
+	status, _, _ := gb.GetTaskHumanStatus()
+
 	_, ok := gb.expectedEvents[eventEnd]
 	if ok {
-		status, _, _ := gb.GetTaskHumanStatus()
-
 		event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, MakeNodeEndEventArgs{
 			NodeName:      gb.Name,
 			NodeShortName: gb.ShortName,
@@ -465,29 +465,30 @@ func (gb *GoExecutionBlock) handleDecision(ctx context.Context, parentState *Exe
 			return eventErr
 		}
 
-		deadline, errDeadline := gb.getDeadline(ctx, gb.State.WorkType)
-		if errDeadline != nil {
-			return errDeadline
-		}
-
-		kafkaEvent, eventErr := gb.RunContext.MakeNodeKafkaEvent(ctx, &MakeNodeKafkaEvent{
-			EventName:      eventEnd,
-			NodeName:       gb.Name,
-			NodeShortName:  gb.ShortName,
-			HumanStatus:    status,
-			NodeStatus:     gb.GetStatus(),
-			NodeType:       BlockGoExecutionID,
-			SLA:            deadline.Unix(),
-			ToRemoveLogins: []string{},
-		})
-
-		if eventErr != nil {
-			return eventErr
-		}
-
 		gb.happenedEvents = append(gb.happenedEvents, event)
-		gb.happenedKafkaEvents = append(gb.happenedKafkaEvents, kafkaEvent)
 	}
+
+	deadline, errDeadline := gb.getDeadline(ctx, gb.State.WorkType)
+	if errDeadline != nil {
+		return errDeadline
+	}
+
+	kafkaEvent, eventErr := gb.RunContext.MakeNodeKafkaEvent(ctx, &MakeNodeKafkaEvent{
+		EventName:      eventEnd,
+		NodeName:       gb.Name,
+		NodeShortName:  gb.ShortName,
+		HumanStatus:    status,
+		NodeStatus:     gb.GetStatus(),
+		NodeType:       BlockGoExecutionID,
+		SLA:            deadline.Unix(),
+		ToRemoveLogins: []string{},
+	})
+
+	if eventErr != nil {
+		return eventErr
+	}
+
+	gb.happenedKafkaEvents = append(gb.happenedKafkaEvents, kafkaEvent)
 
 	return nil
 }
@@ -547,8 +548,9 @@ func (gb *GoExecutionBlock) load(
 }
 
 func (gb *GoExecutionBlock) makeExpectedEvents(ctx context.Context, runCtx *BlockRunContext, name string, ef *entity.EriusFunc) error {
+	status, _, _ := gb.GetTaskHumanStatus()
+
 	if _, ok := gb.expectedEvents[eventStart]; ok {
-		status, _, _ := gb.GetTaskHumanStatus()
 
 		event, err := runCtx.MakeNodeStartEvent(ctx, MakeNodeStartEventArgs{
 			NodeName:      name,
@@ -560,23 +562,24 @@ func (gb *GoExecutionBlock) makeExpectedEvents(ctx context.Context, runCtx *Bloc
 			return err
 		}
 
-		kafkaEvent, err := runCtx.MakeNodeKafkaEvent(ctx, &MakeNodeKafkaEvent{
-			EventName:     eventStart,
-			NodeName:      name,
-			NodeShortName: ef.ShortTitle,
-			HumanStatus:   status,
-			NodeStatus:    gb.GetStatus(),
-			NodeType:      BlockGoExecutionID,
-			SLA:           gb.State.Deadline.Unix(),
-			ToAddLogins:   getSliceFromMap(gb.State.Executors),
-		})
-		if err != nil {
-			return err
-		}
-
 		gb.happenedEvents = append(gb.happenedEvents, event)
-		gb.happenedKafkaEvents = append(gb.happenedKafkaEvents, kafkaEvent)
 	}
+
+	kafkaEvent, err := runCtx.MakeNodeKafkaEvent(ctx, &MakeNodeKafkaEvent{
+		EventName:     eventStart,
+		NodeName:      name,
+		NodeShortName: ef.ShortTitle,
+		HumanStatus:   status,
+		NodeStatus:    gb.GetStatus(),
+		NodeType:      BlockGoExecutionID,
+		SLA:           gb.State.Deadline.Unix(),
+		ToAddLogins:   getSliceFromMap(gb.State.Executors),
+	})
+	if err != nil {
+		return err
+	}
+
+	gb.happenedKafkaEvents = append(gb.happenedKafkaEvents, kafkaEvent)
 
 	return nil
 }

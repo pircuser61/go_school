@@ -128,8 +128,9 @@ func (gb *GoApproverBlock) reentryMakeExpectedEvents(
 }
 
 func (gb *GoApproverBlock) makeExpectedEvents(ctx context.Context, runCtx *BlockRunContext, name string, ef *entity.EriusFunc) error {
+	status, _, _ := gb.GetTaskHumanStatus()
+
 	if _, ok := gb.expectedEvents[eventStart]; ok {
-		status, _, _ := gb.GetTaskHumanStatus()
 
 		event, err := runCtx.MakeNodeStartEvent(ctx, MakeNodeStartEventArgs{
 			NodeName:      name,
@@ -141,24 +142,25 @@ func (gb *GoApproverBlock) makeExpectedEvents(ctx context.Context, runCtx *Block
 			return err
 		}
 
-		kafkaEvent, err := runCtx.MakeNodeKafkaEvent(ctx, &MakeNodeKafkaEvent{
-			EventName:     eventStart,
-			NodeName:      name,
-			NodeShortName: ef.ShortTitle,
-			HumanStatus:   status,
-			NodeStatus:    gb.GetStatus(),
-			NodeType:      BlockGoApproverID,
-			SLA:           gb.State.Deadline.Unix(),
-			Rule:          gb.State.ApprovementRule.String(),
-			ToAddLogins:   getSliceFromMap(gb.State.Approvers),
-		})
-		if err != nil {
-			return err
-		}
-
 		gb.happenedEvents = append(gb.happenedEvents, event)
-		gb.happenedKafkaEvents = append(gb.happenedKafkaEvents, kafkaEvent)
 	}
+
+	kafkaEvent, err := runCtx.MakeNodeKafkaEvent(ctx, &MakeNodeKafkaEvent{
+		EventName:     eventStart,
+		NodeName:      name,
+		NodeShortName: ef.ShortTitle,
+		HumanStatus:   status,
+		NodeStatus:    gb.GetStatus(),
+		NodeType:      BlockGoApproverID,
+		SLA:           gb.State.Deadline.Unix(),
+		Rule:          gb.State.ApprovementRule.String(),
+		ToAddLogins:   getSliceFromMap(gb.State.Approvers),
+	})
+	if err != nil {
+		return err
+	}
+
+	gb.happenedKafkaEvents = append(gb.happenedKafkaEvents, kafkaEvent)
 
 	return nil
 }
@@ -519,8 +521,9 @@ func (gb *GoApproverBlock) trySetPreviousDecision(ctx context.Context) (isPrevDe
 
 	gb.State.ApproverLog = parentState.ApproverLog
 
+	status, _, _ := gb.GetTaskHumanStatus()
+
 	if _, ok = gb.expectedEvents[eventEnd]; ok {
-		status, _, _ := gb.GetTaskHumanStatus()
 		event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, MakeNodeEndEventArgs{
 			NodeName:      gb.Name,
 			NodeShortName: gb.ShortName,
@@ -532,29 +535,30 @@ func (gb *GoApproverBlock) trySetPreviousDecision(ctx context.Context) (isPrevDe
 			return false
 		}
 
-		deadline, errDeadline := gb.getDeadline(ctx, gb.State.WorkType)
-		if errDeadline != nil {
-			return false
-		}
-
-		kafkaEvent, eventErr := gb.RunContext.MakeNodeKafkaEvent(ctx, &MakeNodeKafkaEvent{
-			EventName:      eventEnd,
-			NodeName:       gb.Name,
-			NodeShortName:  gb.ShortName,
-			HumanStatus:    status,
-			NodeStatus:     gb.GetStatus(),
-			NodeType:       BlockGoApproverID,
-			SLA:            deadline.Unix(),
-			ToRemoveLogins: []string{},
-		})
-
-		if eventErr != nil {
-			return false
-		}
-
 		gb.happenedEvents = append(gb.happenedEvents, event)
-		gb.happenedKafkaEvents = append(gb.happenedKafkaEvents, kafkaEvent)
 	}
+
+	deadline, errDeadline := gb.getDeadline(ctx, gb.State.WorkType)
+	if errDeadline != nil {
+		return false
+	}
+
+	kafkaEvent, eventErr := gb.RunContext.MakeNodeKafkaEvent(ctx, &MakeNodeKafkaEvent{
+		EventName:      eventEnd,
+		NodeName:       gb.Name,
+		NodeShortName:  gb.ShortName,
+		HumanStatus:    status,
+		NodeStatus:     gb.GetStatus(),
+		NodeType:       BlockGoApproverID,
+		SLA:            deadline.Unix(),
+		ToRemoveLogins: []string{},
+	})
+
+	if eventErr != nil {
+		return false
+	}
+
+	gb.happenedKafkaEvents = append(gb.happenedKafkaEvents, kafkaEvent)
 
 	return true
 }

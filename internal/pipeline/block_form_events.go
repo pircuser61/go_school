@@ -76,23 +76,23 @@ func (gb *GoFormBlock) setEvents(ctx c.Context, dto *setFormEventsDto) error {
 			}
 
 			gb.happenedEvents = append(gb.happenedEvents, event)
-
-			kafkaEvent, eventErr := gb.RunContext.MakeNodeKafkaEvent(ctx, &MakeNodeKafkaEvent{
-				EventName:      eventEnd,
-				NodeName:       gb.Name,
-				NodeShortName:  gb.ShortName,
-				HumanStatus:    humanStatus,
-				NodeStatus:     gb.GetStatus(),
-				NodeType:       BlockGoFormID,
-				SLA:            gb.State.Deadline.Unix(),
-				ToRemoveLogins: getSliceFromMap(gb.State.Executors),
-			})
-			if eventErr != nil {
-				return eventErr
-			}
-
-			gb.happenedKafkaEvents = append(gb.happenedKafkaEvents, kafkaEvent)
 		}
+
+		kafkaEvent, eventErr := gb.RunContext.MakeNodeKafkaEvent(ctx, &MakeNodeKafkaEvent{
+			EventName:      eventEnd,
+			NodeName:       gb.Name,
+			NodeShortName:  gb.ShortName,
+			HumanStatus:    humanStatus,
+			NodeStatus:     gb.GetStatus(),
+			NodeType:       BlockGoFormID,
+			SLA:            gb.State.Deadline.Unix(),
+			ToRemoveLogins: getSliceFromMap(gb.State.Executors),
+		})
+		if eventErr != nil {
+			return eventErr
+		}
+
+		gb.happenedKafkaEvents = append(gb.happenedKafkaEvents, kafkaEvent)
 	}
 
 	return nil
