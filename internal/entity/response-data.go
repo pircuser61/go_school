@@ -533,47 +533,6 @@ func (bt *BlocksType) getNodesByType(blockType string) map[string]EriusFunc {
 	return blocks
 }
 
-func (bt *BlocksType) getNodesIds() (res []string) {
-	for k := range *bt {
-		res = append(res, k)
-	}
-
-	return res
-}
-
-func (bt *BlocksType) countRelatedNodesIds(startNode *EriusFunc) (res int) {
-	nodes := make([]*EriusFunc, 0)
-	visited := make(map[string]bool)
-
-	currentNode := startNode
-	res++
-
-	for {
-		for _, s := range currentNode.Sockets {
-			for _, blockID := range s.NextBlockIds {
-				socketNode := (*bt)[blockID]
-
-				if !visited[blockID] {
-					visited[blockID] = true
-
-					nodes = append(nodes, socketNode)
-
-					res++
-				}
-			}
-		}
-
-		if len(nodes) == 0 {
-			break
-		}
-
-		currentNode = nodes[0]
-		nodes = nodes[1:]
-	}
-
-	return res
-}
-
 type PipelineType struct {
 	Entrypoint string     `json:"entrypoint"`
 	Blocks     BlocksType `json:"blocks"`
