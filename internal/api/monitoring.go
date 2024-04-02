@@ -738,7 +738,7 @@ func (ae *Env) startTask(ctx context.Context, dto *startNodesParams) error {
 		restartedNodes[(*dto.params.Steps)[i]] = nil
 	}
 
-	err = ae.DB.TryUnpauseTask(ctx, dto.workID)
+	err = ae.DB.SetTaskPaused(ctx, dto.workID.String(), false)
 	if err != nil {
 		return err
 	}
@@ -963,6 +963,10 @@ func (ae *Env) toMonitoringTaskEventsResponse(ctx context.Context, events []enti
 			}
 
 			fullNameCache[events[i].Author] = userFullName
+
+			if userFullName == "" {
+				fullNameCache[events[i].Author] = events[i].Author
+			}
 		}
 
 		params := MonitoringTaskActionParams{}
