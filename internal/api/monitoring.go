@@ -780,7 +780,7 @@ func (ae *Env) restartNode(ctx context.Context, workID uuid.UUID, workNumber, st
 		return resumableErr
 	}
 
-	if !isResumable {
+	if !isResumable && !isFinished {
 		return fmt.Errorf("can't unpause running task block: %s", stepName)
 	}
 
