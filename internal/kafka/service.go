@@ -4,6 +4,7 @@ import (
 	c "context"
 	"errors"
 	"fmt"
+	"github.com/labstack/gommon/log"
 	"time"
 
 	"github.com/Shopify/sarama"
@@ -102,26 +103,30 @@ func (s *Service) ProduceFuncMessage(ctx c.Context, message *RunnerOutMessage) e
 }
 
 func (s *Service) ProduceEventMessage(ctx c.Context, message *e.NodeKafkaEvent) error {
-	log := s.log.WithField("workNumber", message.WorkNumber).
+	if message == nil {
+		return nil	
+	}
+
+	l := s.log.WithField("workNumber", message.WorkNumber).
 		WithField("nodeName", message.NodeName).
 		WithField("action", message.Action)
 
-	log.Info("try to send event to kafka")
+	l.Info("try to send event to kafka")
 
 	if s == nil || s.producerSd == nil {
-		log.Error("kafka service unavailable")
+		l.Error(errors.New("kafka service unavailable"))
 
 		return errors.New("kafka service unavailable")
 	}
 
 	err := s.producerSd.Produce(ctx, message)
 	if err != nil {
-		log.Error("error send event to kafka", err)
+		l.Error("error send event to kafka", err)
 
 		return err
 	}
 
-	log.Info("success send event to kafka")
+	l.Info("success send event to kafka")
 
 	return nil
 }
