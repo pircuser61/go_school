@@ -109,17 +109,19 @@ func (s *Service) ProduceEventMessage(ctx c.Context, message *e.NodeKafkaEvent) 
 	log.Info("try to send event to kafka")
 
 	if s == nil || s.producerSd == nil {
-		log.Info("kafka service unavailable")
+		log.Error("kafka service unavailable")
+
 		return errors.New("kafka service unavailable")
 	}
 
 	err := s.producerSd.Produce(ctx, message)
 	if err != nil {
-		log.Info("error send event to kafka", err)
+		log.Error("error send event to kafka", err)
+
 		return err
 	}
 
-	log.Info("success send event to kafka", err)
+	log.Info("success send event to kafka")
 
 	return nil
 }
