@@ -252,8 +252,8 @@ func (ae *Env) GetMonitoringTask(w http.ResponseWriter, req *http.Request, workN
 }
 
 const (
-	cancel = "cancel"
-	skipped = "skipped"
+	cancel   = "cancel"
+	skipped  = "skipped"
 	finished = "finished"
 )
 
