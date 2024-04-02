@@ -691,16 +691,16 @@ func (ae *Env) startTask(ctx context.Context, dto *startNodesParams) (err error)
 	}
 
 	jsonParams := json.RawMessage{}
-	if startParams.params != nil {
-		jsonParams, err = json.Marshal(startParams.params)
+	if dto.params != nil {
+		jsonParams, err = json.Marshal(dto.params)
 		if err != nil {
 			return err
 		}
 	}
 
 	_, err = ae.DB.CreateTaskEvent(ctx, &entity.CreateTaskEvent{
-		WorkID:    startParams.workID.String(),
-		Author:    startParams.author,
+		WorkID:    dto.workID.String(),
+		Author:    dto.author,
 		EventType: string(MonitoringTaskActionRequestActionStart),
 		Params:    jsonParams,
 	})
@@ -708,7 +708,7 @@ func (ae *Env) startTask(ctx context.Context, dto *startNodesParams) (err error)
 		return err
 	}
 
-	steps := *startParams.params.Steps
+	steps := *dto.params.Steps
 	sort.Slice(steps, func(i, j int) bool {
 		return strings.Contains(steps[i], "wait_for_all_inputs")
 	})
