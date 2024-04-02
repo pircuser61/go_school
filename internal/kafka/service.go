@@ -4,7 +4,6 @@ import (
 	c "context"
 	"errors"
 	"fmt"
-	"github.com/labstack/gommon/log"
 	"time"
 
 	"github.com/Shopify/sarama"
