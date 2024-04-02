@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"slices"
+	"sort"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -147,7 +147,7 @@ func (gb *GoApproverBlock) makeExpectedEvents(ctx context.Context, runCtx *Block
 
 	toAddLogins := getSliceFromMap(gb.State.Approvers)
 
-	slices.Sort(toAddLogins)
+	sort.Strings(toAddLogins)
 
 	kafkaEvent, err := runCtx.MakeNodeKafkaEvent(ctx, &MakeNodeKafkaEvent{
 		EventName:     eventStart,
