@@ -167,6 +167,7 @@ func (db *PGCon) GetTaskForMonitoring(ctx c.Context, workNumber string, fromEven
 		WHERE w.work_number = $1`
 
 	var withSteps string
+
 	filterFromEvent := fromEventID != nil && *fromEventID != ""
 
 	if filterFromEvent {
