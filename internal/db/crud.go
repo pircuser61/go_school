@@ -2586,6 +2586,31 @@ func (db *PGCon) FinishTaskBlocks(ctx context.Context, taskID uuid.UUID, ignoreS
 	return err
 }
 
+func (db *PGCon) GetVariableStorageForStepByID(ctx context.Context, stepID uuid.UUID) (*store.VariableStore, error) {
+	ctx, span := trace.StartSpan(ctx, "get_variable_storage_for_step")
+	defer span.End()
+
+	const q = `
+		SELECT content
+		FROM variable_storage
+		WHERE id = $1
+		ORDER BY time DESC LIMIT 1`
+
+	var content []byte
+
+	if err := db.Connection.QueryRow(ctx, q, stepID).Scan(&content); err != nil {
+		return nil, err
+	}
+
+	storage := store.NewStore()
+
+	if err := json.Unmarshal(content, &storage); err != nil {
+		return nil, err
+	}
+
+	return storage, nil
+}
+
 func (db *PGCon) GetVariableStorageForStep(ctx context.Context, taskID uuid.UUID, stepName string) (*store.VariableStore, error) {
 	ctx, span := trace.StartSpan(ctx, "get_variable_storage_for_step")
 	defer span.End()
@@ -3219,7 +3244,7 @@ func (db *PGCon) GetTaskStepByNameForCtxEditing(ctx context.Context, workID uuid
 		SELECT 
 			vs.id,
 			vs.step_type,
-			vs.step_name, 
+			vs.step_name
 		FROM variable_storage vs  
 			WHERE vs.work_id = $1 AND vs.step_name = $2 AND time < $3
 			ORDER BY vs.time DESC

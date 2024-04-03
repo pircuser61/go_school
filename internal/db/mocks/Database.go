@@ -4490,6 +4490,32 @@ func (_c *MockedDatabase_GetVariableStorage_Call) RunAndReturn(run func(context.
 	return _c
 }
 
+// GetVariableStorageForStep provides a mock function with given fields: ctx, stepID
+func (_m *MockedDatabase) GetVariableStorageForStepByID(ctx context.Context, stepID uuid.UUID) (*store.VariableStore, error) {
+	ret := _m.Called(ctx, stepID)
+
+	var r0 *store.VariableStore
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) (*store.VariableStore, error)); ok {
+		return rf(ctx, stepID)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) *store.VariableStore); ok {
+		r0 = rf(ctx, stepID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*store.VariableStore)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
+		r1 = rf(ctx, stepID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetVariableStorageForStep provides a mock function with given fields: ctx, taskID, stepName
 func (_m *MockedDatabase) GetVariableStorageForStep(ctx context.Context, taskID uuid.UUID, stepName string) (*store.VariableStore, error) {
 	ret := _m.Called(ctx, taskID, stepName)
