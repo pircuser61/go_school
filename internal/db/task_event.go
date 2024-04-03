@@ -2,6 +2,7 @@ package db
 
 import (
 	c "context"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -33,10 +34,15 @@ func (db *PGCon) CreateTaskEvent(ctx c.Context, dto *e.CreateTaskEvent) (eventID
 			$3, 
 			$4,
 			$5,
-		    now()
+		    $6
 		)`
 
-	_, err = db.Connection.Exec(ctx, q, eventID, dto.WorkID, dto.Author, dto.EventType, dto.Params)
+	eventTime := time.Now()
+	if !dto.Time.IsZero() {
+		eventTime = dto.Time
+	}
+
+	_, err = db.Connection.Exec(ctx, q, eventID, dto.WorkID, dto.Author, dto.EventType, dto.Params, eventTime)
 	if err != nil {
 		return eventID, err
 	}

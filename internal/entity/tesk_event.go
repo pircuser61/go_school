@@ -10,6 +10,7 @@ type CreateTaskEvent struct {
 	Author    string
 	EventType string
 	Params    json.RawMessage
+	Time      time.Time
 }
 
 type TaskEvent struct {

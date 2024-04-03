@@ -719,7 +719,27 @@ func (ae *Env) startTask(ctx context.Context, dto *startNodesParams) error {
 		return strings.Contains(steps[i], "wait_for_all_inputs")
 	})
 
-	dto.params.Steps = &steps
+	crEventTime := time.Now()
+
+	newSteps := make([]string, 0, len(steps))
+
+	for i := range steps {
+		newStepID, restartErr := ae.restartNode(
+			ctx,
+			dto.workID,
+			dto.workNumber,
+			(*dto.params.Steps)[i],
+			dto.author,
+			dto.byOne,
+		)
+		if restartErr != nil {
+			return restartErr
+		}
+
+		newSteps = append(newSteps, newStepID)
+	}
+
+	dto.params.Steps = &newSteps
 
 	jsonParams := json.RawMessage{}
 	if dto.params != nil {
@@ -734,23 +754,10 @@ func (ae *Env) startTask(ctx context.Context, dto *startNodesParams) error {
 		Author:    dto.author,
 		EventType: string(MonitoringTaskActionRequestActionStart),
 		Params:    jsonParams,
+		Time:      crEventTime,
 	})
 	if err != nil {
 		return err
-	}
-
-	for i := range *dto.params.Steps {
-		restartErr := ae.restartNode(
-			ctx,
-			dto.workID,
-			dto.workNumber,
-			(*dto.params.Steps)[i],
-			dto.author,
-			dto.byOne,
-		)
-		if restartErr != nil {
-			return restartErr
-		}
 	}
 
 	err = ae.DB.SetTaskPaused(ctx, dto.workID.String(), false)
@@ -761,10 +768,10 @@ func (ae *Env) startTask(ctx context.Context, dto *startNodesParams) error {
 	return nil
 }
 
-func (ae *Env) restartNode(ctx context.Context, workID uuid.UUID, workNumber, stepID, login string, byOne bool) error {
+func (ae *Env) restartNode(ctx context.Context, workID uuid.UUID, workNumber, stepID, login string, byOne bool) (string, error) {
 	txStorage, err := ae.DB.StartTransaction(ctx)
 	if err != nil {
-		return fmt.Errorf("failed start transaction, %w", err)
+		return "", fmt.Errorf("failed start transaction, %w", err)
 	}
 
 	defer func() {
@@ -776,12 +783,12 @@ func (ae *Env) restartNode(ctx context.Context, workID uuid.UUID, workNumber, st
 
 	sid, parseErr := uuid.Parse(stepID)
 	if parseErr != nil {
-		return parseErr
+		return "", parseErr
 	}
 
 	dbStep, stepErr := txStorage.GetTaskStepByID(ctx, sid)
 	if stepErr != nil {
-		return stepErr
+		return "", stepErr
 	}
 
 	isFinished := dbStep.Status == finished || dbStep.Status == skipped || dbStep.Status == cancel
@@ -793,47 +800,47 @@ func (ae *Env) restartNode(ctx context.Context, workID uuid.UUID, workNumber, st
 		dbStep.ID, errCopy = txStorage.CopyTaskBlock(ctx, dbStep.ID)
 
 		if errCopy != nil {
-			return errCopy
+			return "", errCopy
 		}
 	}
 
 	isResumable, _, resumableErr := txStorage.IsBlockResumable(ctx, workID, dbStep.ID)
 	if resumableErr != nil {
-		return resumableErr
+		return "", resumableErr
 	}
 
 	if !isResumable && !isFinished {
-		return fmt.Errorf("can't unpause running task block: %s", sid)
+		return "", fmt.Errorf("can't unpause running task block: %s", sid)
 	}
 
 	blockData, blockErr := txStorage.GetBlockDataFromVersion(ctx, workNumber, dbStep.Name)
 	if blockErr != nil {
-		return blockErr
+		return "", blockErr
 	}
 
 	task, dbTaskErr := ae.GetTaskForUpdate(ctx, workNumber)
 	if dbTaskErr != nil {
-		return dbTaskErr
+		return "", dbTaskErr
 	}
 
 	skipErr := ae.skipTaskBlocksAfterRestart(ctx, &task.Steps, blockStart, blockData.Next, workNumber, workID, txStorage)
 	if skipErr != nil {
-		return skipErr
+		return "", skipErr
 	}
 
 	unpErr := txStorage.UnpauseTaskBlock(ctx, workID, dbStep.ID)
 	if unpErr != nil {
-		return unpErr
+		return "", unpErr
 	}
 
 	storage, getErr := txStorage.GetVariableStorageForStepByID(ctx, dbStep.ID)
 	if getErr != nil {
-		return getErr
+		return "", getErr
 	}
 
 	err = txStorage.CommitTransaction(ctx)
 	if err != nil {
-		return fmt.Errorf("failed commit transaction, %w", err)
+		return "", fmt.Errorf("failed commit transaction, %w", err)
 	}
 
 	_, processErr := pipeline.ProcessBlockWithEndMapping(ctx, dbStep.Name, blockData, &pipeline.BlockRunContext{
@@ -874,10 +881,10 @@ func (ae *Env) restartNode(ctx context.Context, workID uuid.UUID, workNumber, st
 		NotifName: task.Name,
 	}, true)
 	if processErr != nil {
-		return processErr
+		return "", processErr
 	}
 
-	return nil
+	return dbStep.ID.String(), nil
 }
 
 func (ae *Env) getNodesToSkip(ctx context.Context, nextNodes map[string][]string,
