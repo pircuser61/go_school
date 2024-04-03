@@ -821,7 +821,7 @@ func (ae *Env) restartNode(ctx context.Context, workID uuid.UUID, workNumber, st
 		return unpErr
 	}
 
-	storage, getErr := txStorage.GetVariableStorageForStep(ctx, workID, stepName)
+	storage, getErr := txStorage.GetVariableStorageForStepByID(ctx, dbStep.ID)
 	if getErr != nil {
 		return getErr
 	}

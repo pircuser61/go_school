@@ -49,6 +49,7 @@ type TaskStorager interface {
 	GetTaskRunContext(ctx c.Context, workNumber string) (e.TaskRunContext, error)
 	GetBlockDataFromVersion(ctx c.Context, workNumber, stepName string) (*e.EriusFunc, error)
 	GetVariableStorageForStep(ctx c.Context, taskID uuid.UUID, stepName string) (*store.VariableStore, error)
+	GetVariableStorageForStepByID(ctx c.Context, stepID uuid.UUID) (*store.VariableStore, error)
 	GetVariableStorage(ctx c.Context, workNumber string) (*store.VariableStore, error)
 	GetBlocksBreachedSLA(ctx c.Context) ([]StepBreachedSLA, error)
 	GetMeanTaskSolveTime(ctx c.Context, pipelineID string) ([]e.TaskCompletionInterval, error)
