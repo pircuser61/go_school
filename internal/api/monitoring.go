@@ -695,6 +695,28 @@ func (ae *Env) startTask(ctx context.Context, dto *startNodesParams) error {
 		return errors.New("can't unpause running task")
 	}
 
+	if dto.params == nil || dto.params.Steps == nil {
+		return errors.New("can't found restarting steps")
+	}
+
+	// remove double steps
+	filteredSteps := make(map[string]interface{})
+	steps := make([]string, 0)
+
+	for i := range *dto.params.Steps {
+		if _, ok := filteredSteps[(*dto.params.Steps)[i]]; !ok {
+			steps = append(steps, (*dto.params.Steps)[i])
+		}
+
+		filteredSteps[(*dto.params.Steps)[i]] = nil
+	}
+
+	sort.Slice(steps, func(i, j int) bool {
+		return strings.Contains(steps[i], "wait_for_all_inputs")
+	})
+
+	dto.params.Steps = &steps
+
 	jsonParams := json.RawMessage{}
 	if dto.params != nil {
 		jsonParams, err = json.Marshal(dto.params)
@@ -713,28 +735,18 @@ func (ae *Env) startTask(ctx context.Context, dto *startNodesParams) error {
 		return err
 	}
 
-	steps := *dto.params.Steps
-	sort.Slice(steps, func(i, j int) bool {
-		return strings.Contains(steps[i], "wait_for_all_inputs")
-	})
-
-	restartedNodes := make(map[string]interface{})
 	for i := range *dto.params.Steps {
-		if _, ok := restartedNodes[(*dto.params.Steps)[i]]; !ok {
-			restartErr := ae.restartNode(
-				ctx,
-				dto.workID,
-				dto.workNumber,
-				(*dto.params.Steps)[i],
-				dto.author,
-				dto.byOne,
-			)
-			if restartErr != nil {
-				return restartErr
-			}
+		restartErr := ae.restartNode(
+			ctx,
+			dto.workID,
+			dto.workNumber,
+			(*dto.params.Steps)[i],
+			dto.author,
+			dto.byOne,
+		)
+		if restartErr != nil {
+			return restartErr
 		}
-
-		restartedNodes[(*dto.params.Steps)[i]] = nil
 	}
 
 	err = ae.DB.SetTaskPaused(ctx, dto.workID.String(), false)
