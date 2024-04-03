@@ -508,6 +508,13 @@ func ProcessBlockWithEndMapping(
 
 	log := logger.GetLogger(ctx).WithField("workNumber", runCtx.WorkNumber)
 
+	statusBefore, _, err := runCtx.Services.Storage.GetTaskStatusWithReadableString(ctx, runCtx.TaskID)
+	if err != nil {
+		log.WithError(err).Error("couldn't get task status before processing")
+
+		return false, nil
+	}
+
 	runCtx.BlockRunResults = &BlockRunResults{}
 
 	blockProcessor := newBlockProcessor(name, bl, runCtx, manual)
@@ -524,7 +531,7 @@ func ProcessBlockWithEndMapping(
 
 	intStatus, stringStatus, err := runCtx.Services.Storage.GetTaskStatusWithReadableString(ctx, runCtx.TaskID)
 	if err != nil {
-		log.WithError(err).Error("couldn't get task status")
+		log.WithError(err).Error("couldn't get task status after processing ")
 
 		return false, nil
 	}
