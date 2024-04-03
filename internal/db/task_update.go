@@ -454,7 +454,7 @@ func (db *PGCon) SkipBlocksAfterRestarted(ctx c.Context, workID uuid.UUID, start
 
 	blocksDB := pq.StringArray(blocks)
 
-	const q = `UPDATE variable_storage SET status = 'skipped' 
+	const q = `UPDATE variable_storage SET status = 'skipped', is_paused = false
                 WHERE work_id = $1 AND step_name = ANY ($2) AND time > $3`
 
 	_, err = db.Connection.Exec(ctx, q, workID, blocksDB, startTime)

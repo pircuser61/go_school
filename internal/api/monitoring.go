@@ -760,7 +760,7 @@ func (ae *Env) startTask(ctx context.Context, dto *startNodesParams) error {
 		return err
 	}
 
-	err = ae.DB.SetTaskPaused(ctx, dto.workID.String(), false)
+	err = ae.DB.TryUnpauseTask(ctx, dto.workID)
 	if err != nil {
 		return err
 	}

@@ -1731,11 +1731,11 @@ func (db *PGCon) GetTaskSteps(ctx c.Context, id uuid.UUID) (entity.TaskSteps, er
 			vs.updated_at,
 			vs.attachments
 		FROM variable_storage vs 
-			WHERE work_id = $1 AND vs.status != 'skipped' AND 
+			WHERE work_id = $1 AND NOT vs.status IN ('skipped', 'ready') AND
 			(SELECT max(time)
 				 FROM variable_storage vrbs
 				 WHERE vrbs.step_name = vs.step_name AND
-					   vrbs.work_id = $1
+					   vrbs.work_id = $1 AND NOT vs.status IN ('skipped', 'ready')
 				) = vs.time
 		ORDER BY vs.time DESC`
 
