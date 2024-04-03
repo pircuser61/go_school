@@ -172,12 +172,13 @@ func (db *PGCon) GetTaskForMonitoring(ctx c.Context, workNumber string, fromEven
 
 	if filterFromEvent {
 		withSteps = fmt.Sprintf(`WITH steps AS (
-			SELECT id, step_name, time
-			FROM variable_storage
-			WHERE step_name IN (SELECT jsonb_array_elements_text(params -> 'steps')
+			SELECT vs.id, vs.step_name, vs.time
+			FROM variable_storage vs
+			LEFT JOIN works w ON w.id = vs.work_id
+			WHERE w.work_number = '%s' AND vs.step_name IN (SELECT jsonb_array_elements_text(params -> 'steps')
 				FROM task_events WHERE id = '%s')
-			ORDER BY time DESC
-		)`, *fromEventID)
+			ORDER BY vs.time DESC
+		)`, workNumber, *fromEventID)
 	}
 
 	if filterFromEvent && toEventID != nil && *toEventID != "" {
