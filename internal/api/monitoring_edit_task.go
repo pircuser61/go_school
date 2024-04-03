@@ -100,8 +100,8 @@ func (ae *Env) EditTaskBlockData(w http.ResponseWriter, r *http.Request, blockId
 
 	eventData := struct {
 		Data  map[string]interface{} `json:"data"`
-		Steps []string               `json:"steps"`
-	}{Data: data, Steps: []string{blockUUID.String()}}
+		Steps []uuid.UUID            `json:"steps"`
+	}{Data: data, Steps: []uuid.UUID{blockUUID}}
 
 	// nolint:ineffassign,staticcheck
 	jsonParams := json.RawMessage{}
