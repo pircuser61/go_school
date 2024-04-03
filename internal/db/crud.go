@@ -3219,7 +3219,7 @@ func (db *PGCon) GetTaskStepByNameForCtxEditing(ctx context.Context, workID uuid
 		SELECT 
 			vs.id,
 			vs.step_type,
-			vs.step_name, 
+			vs.step_name
 		FROM variable_storage vs  
 			WHERE vs.work_id = $1 AND vs.step_name = $2 AND time < $3
 			ORDER BY vs.time DESC
