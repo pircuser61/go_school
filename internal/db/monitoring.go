@@ -175,7 +175,7 @@ func (db *PGCon) GetTaskForMonitoring(ctx c.Context, workNumber string, fromEven
 			SELECT vs.id, vs.step_name, vs.time
 			FROM variable_storage vs
 			LEFT JOIN works w ON w.id = vs.work_id
-			WHERE w.work_number = '%s' AND vs.id IN (SELECT jsonb_array_elements_text(params -> 'steps')
+			WHERE w.work_number = '%s' AND vs.id::text IN (SELECT jsonb_array_elements_text(params -> 'steps')
 				FROM task_events WHERE id = '%s')
 			ORDER BY vs.time DESC
 		)`, workNumber, *fromEventID)
