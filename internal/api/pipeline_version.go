@@ -752,7 +752,7 @@ func (ae *Env) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO) (
 
 	params := struct {
 		Steps []string `json:"steps"`
-	}{Steps: []string{"start_0"}}
+	}{Steps: []string{}}
 
 	jsonParams, err := json.Marshal(params)
 	if err != nil {
