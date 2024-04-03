@@ -383,7 +383,7 @@ func (db *PGCon) SetTaskBlocksPaused(ctx c.Context, workID string, steps []strin
 		UPDATE variable_storage SET is_paused = $1 
 		WHERE work_id = $2 AND
 			  status IN('running', 'idle', 'created', 'ready') AND
-			  step_name = ANY ($3)`
+			  id = ANY ($3)`
 
 	stepsIn := pq.StringArray(steps)
 
