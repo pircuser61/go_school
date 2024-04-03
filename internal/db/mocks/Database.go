@@ -4490,6 +4490,32 @@ func (_c *MockedDatabase_GetVariableStorage_Call) RunAndReturn(run func(context.
 	return _c
 }
 
+// GetVariableStorageForStep provides a mock function with given fields: ctx, stepID
+func (_m *MockedDatabase) GetVariableStorageForStepByID(ctx context.Context, stepID uuid.UUID) (*store.VariableStore, error) {
+	ret := _m.Called(ctx, stepID)
+
+	var r0 *store.VariableStore
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) (*store.VariableStore, error)); ok {
+		return rf(ctx, stepID)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) *store.VariableStore); ok {
+		r0 = rf(ctx, stepID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*store.VariableStore)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
+		r1 = rf(ctx, stepID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetVariableStorageForStep provides a mock function with given fields: ctx, taskID, stepName
 func (_m *MockedDatabase) GetVariableStorageForStep(ctx context.Context, taskID uuid.UUID, stepName string) (*store.VariableStore, error) {
 	ret := _m.Called(ctx, taskID, stepName)
@@ -6237,20 +6263,20 @@ func (_c *MockedDatabase_SetLastRunID_Call) RunAndReturn(run func(context.Contex
 }
 
 // SetTaskBlocksPaused provides a mock function with given fields: ctx, workID, steps, isPaused
-func (_m *MockedDatabase) SetTaskBlocksPaused(ctx context.Context, workID string, steps []string, isPaused bool) error {
-	ret := _m.Called(ctx, workID, steps, isPaused)
+func (_m *MockedDatabase) PauseTaskBlocks(ctx context.Context, workID string, steps []string) ([]string, error) {
+	ret := _m.Called(ctx, workID, steps)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, []string, bool) error); ok {
-		r0 = rf(ctx, workID, steps, isPaused)
+	if rf, ok := ret.Get(0).(func(context.Context, string, []string) ([]string, error)); ok {
+		_, r0 = rf(ctx, workID, steps)
 	} else {
 		r0 = ret.Error(0)
 	}
 
-	return r0
+	return []string{}, r0
 }
 
-// MockedDatabase_SetTaskBlocksPaused_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SetTaskBlocksPaused'
+// MockedDatabase_SetTaskBlocksPaused_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'PauseTaskBlocks'
 type MockedDatabase_SetTaskBlocksPaused_Call struct {
 	*mock.Call
 }
@@ -6261,7 +6287,7 @@ type MockedDatabase_SetTaskBlocksPaused_Call struct {
 //   - steps []string
 //   - isPaused bool
 func (_e *MockedDatabase_Expecter) SetTaskBlocksPaused(ctx interface{}, workID interface{}, steps interface{}, isPaused interface{}) *MockedDatabase_SetTaskBlocksPaused_Call {
-	return &MockedDatabase_SetTaskBlocksPaused_Call{Call: _e.mock.On("SetTaskBlocksPaused", ctx, workID, steps, isPaused)}
+	return &MockedDatabase_SetTaskBlocksPaused_Call{Call: _e.mock.On("PauseTaskBlocks", ctx, workID, steps, isPaused)}
 }
 
 func (_c *MockedDatabase_SetTaskBlocksPaused_Call) Run(run func(ctx context.Context, workID string, steps []string, isPaused bool)) *MockedDatabase_SetTaskBlocksPaused_Call {

@@ -5307,7 +5307,7 @@ components:
       properties:
         steps:
           type: array
-          description: "Названия блоков"
+          description: "ID блоков"
           items:
             type: string
 
