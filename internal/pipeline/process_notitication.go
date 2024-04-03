@@ -8,8 +8,10 @@ import (
 	"strings"
 
 	om "github.com/iancoleman/orderedmap"
-	e "gitlab.services.mts.ru/abp/mail/pkg/email"
 
+	"github.com/pkg/errors"
+
+	e "gitlab.services.mts.ru/abp/mail/pkg/email"
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
@@ -178,6 +180,20 @@ func (runCtx *BlockRunContext) makeNotificationAttachment() ([]fileregistry.File
 	attachments := make([]entity.Attachment, 0)
 	mapFiles := make(map[string][]entity.Attachment)
 
+	emailAttachments, err := runCtx.getEmailAttachments()
+	if err != nil {
+		return nil, err
+	}
+
+	attachments = append(attachments, emailAttachments...)
+
+	updateAttachments, err := runCtx.getUpdateParamsAttachments()
+	if err != nil {
+		return nil, err
+	}
+
+	attachments = append(attachments, updateAttachments...)
+
 	notHiddenAttachmentFields := filterHiddenAttachmentFields(task.InitialApplication.AttachmentFields, task.InitialApplication.HiddenFields)
 
 	for _, v := range notHiddenAttachmentFields {
@@ -252,6 +268,93 @@ func (runCtx *BlockRunContext) makeNotificationAttachment() ([]fileregistry.File
 	}
 
 	return ta, nil
+}
+
+func (runCtx *BlockRunContext) getUpdateParamsAttachments() ([]entity.Attachment, error) {
+	if runCtx.UpdateData == nil {
+		return nil, nil
+	}
+
+	attachments := make([]entity.Attachment, 0)
+
+	params := make(map[string]interface{}, 0)
+
+	err := json.Unmarshal(runCtx.UpdateData.Parameters, &params)
+	if err != nil {
+		return nil, err
+	}
+
+	attachParams, isAttach := params["attachments"]
+	if !isAttach {
+		return attachments, errors.New("parameters in updateData not have attachments field")
+	}
+
+	attachArray, isArray := attachParams.([]interface{})
+	if !isArray {
+		return attachments, errors.New("attachments in update params is not array")
+	}
+
+	for _, v := range attachArray {
+		attachItem, isMap := v.(map[string]interface{})
+		if !isMap {
+			continue
+		}
+
+		filedID, isFileID := attachItem["file_id"]
+		if !isFileID {
+			continue
+		}
+
+		attachments = append(attachments, entity.Attachment{FileID: filedID.(string)})
+	}
+
+	return attachments, nil
+}
+
+func (runCtx *BlockRunContext) getEmailAttachments() ([]entity.Attachment, error) {
+	attachments := make([]entity.Attachment, 0)
+
+	for k, v := range runCtx.VarStore.Steps {
+		isNotification := strings.Contains(v, "notification")
+		if !isNotification {
+			continue
+		}
+
+		blockName := runCtx.VarStore.Steps[k-1]
+
+		block := runCtx.VarStore.State[blockName]
+
+		blockParams := make(map[string]interface{})
+		if err := json.Unmarshal(block, &blockParams); err != nil {
+			return nil, err
+		}
+
+		attach, exAttach := blockParams["decision_attachments"]
+		if !exAttach {
+			continue
+		}
+
+		attachArray, isArray := attach.([]interface{})
+		if !isArray {
+			continue
+		}
+
+		for _, item := range attachArray {
+			attachItem, isMap := item.(map[string]interface{})
+			if !isMap {
+				continue
+			}
+
+			filedID, isFieldID := attachItem["file_id"]
+			if !isFieldID {
+				continue
+			}
+
+			attachments = append(attachments, entity.Attachment{FileID: filedID.(string)})
+		}
+	}
+
+	return attachments, nil
 }
 
 func filterHiddenAttachmentFields(attachmentFields, hiddenFields []string) []string {
