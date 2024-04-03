@@ -148,32 +148,56 @@ func (db *PGCon) GetTaskForMonitoring(ctx c.Context, workNumber string, fromEven
 	// language=PostgreSQL
 	q := `
 		SELECT w.status,
-		       w.work_number, 
-		       w.version_id, 
-		       w.is_paused task_is_paused, 
-		       p.author,
-		       p.created_at::text,
-		       p.name,
-		       vs.step_name, 
-		       vs.status,
-		       vs.id,
-       		   v.content->'pipeline'-> 'blocks'->step_name->>'title' title,
-       		   vs.time block_date_init,
-       		   vs.is_paused block_is_paused
+			   w.work_number,
+			   w.version_id,
+			   w.is_paused task_is_paused,
+			   p.author,
+			   p.created_at::text,
+			   p.name,
+			   vs.step_name,
+			   vs.status,
+			   vs.id,
+			   v.content->'pipeline'-> 'blocks'->step_name->>'title' title,
+			   vs.time block_date_init,
+			   vs.is_paused block_is_paused
 		FROM works w
-    		JOIN versions v ON w.version_id = v.id
-    		JOIN pipelines p ON v.pipeline_id = p.id
-    		JOIN variable_storage vs ON w.id = vs.work_id
-		WHERE w.work_number = $1
-`
+			 JOIN versions v ON w.version_id = v.id
+			 JOIN pipelines p ON v.pipeline_id = p.id
+			 JOIN variable_storage vs ON w.id = vs.work_id
+		WHERE w.work_number = $1`
 
-	if fromEventID != nil && *fromEventID != "" && toEventID != nil && *toEventID != "" {
-		q = fmt.Sprintf("%s %s", q,
-			fmt.Sprintf(
-				`AND ((vs.time >= (SELECT created_at FROM task_events WHERE id = '%s')
-						AND vs.time <= (SELECT created_at FROM task_events WHERE id = '%s'))
-						OR vs.step_name IN (SELECT jsonb_array_elements_text(params -> 'steps')
-							FROM task_events WHERE id = '%s'))`,
+	var withSteps string
+
+	filterFromEvent := fromEventID != nil && *fromEventID != ""
+
+	if filterFromEvent {
+		withSteps = fmt.Sprintf(`WITH steps AS (
+			SELECT id, step_name, time
+			FROM variable_storage
+			WHERE step_name IN (SELECT jsonb_array_elements_text(params -> 'steps')
+				FROM task_events WHERE id = '%s')
+			ORDER BY time DESC
+		)`, *fromEventID)
+	}
+
+	if filterFromEvent && toEventID != nil && *toEventID != "" {
+		q = fmt.Sprintf("%s %s %s", withSteps, q,
+			fmt.Sprintf(`AND
+			   (
+				   (
+					   vs.time >= (SELECT created_at FROM task_events WHERE id = '%s') AND
+					   vs.time <= (SELECT created_at FROM task_events WHERE id = '%s')
+				   ) OR
+				   (
+					   vs.time =
+					   (SELECT time FROM steps
+						  WHERE
+							step_name = vs.step_name AND
+							time < (SELECT created_at FROM task_events WHERE id = '%s')
+						  LIMIT 1
+					   )
+				   )
+			   )`,
 				*fromEventID,
 				*toEventID,
 				*fromEventID,
@@ -181,12 +205,21 @@ func (db *PGCon) GetTaskForMonitoring(ctx c.Context, workNumber string, fromEven
 		)
 	}
 
-	if (fromEventID != nil && *fromEventID != "") && (toEventID == nil || *toEventID == "") {
-		q = fmt.Sprintf("%s %s", q,
-			fmt.Sprintf(`
-				AND (vs.time >= (SELECT created_at FROM task_events WHERE id = '%s') 
-				OR vs.step_name IN (SELECT jsonb_array_elements_text(params -> 'steps')
-					FROM task_events WHERE id = '%s'))`, *fromEventID, *fromEventID),
+	if filterFromEvent && (toEventID == nil || *toEventID == "") {
+		q = fmt.Sprintf("%s %s %s", withSteps, q,
+			fmt.Sprintf(`AND
+			   (
+					vs.time >= (SELECT created_at FROM task_events WHERE id = '%s') OR
+				   (
+					   vs.time =
+					   (SELECT time FROM steps
+						  WHERE
+							step_name = vs.step_name AND
+							time < (SELECT created_at FROM task_events WHERE id = '%s')
+						  LIMIT 1
+					   )
+				   )
+			   )`, *fromEventID, *fromEventID),
 		)
 	}
 
