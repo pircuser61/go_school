@@ -757,8 +757,7 @@ func (ae *Env) startTask(ctx context.Context, dto *startNodesParams) error {
 	return nil
 }
 
-func (ae *Env) restartNode(ctx context.Context, workID uuid.UUID, workNumber, stepID, login string,
-	byOne bool) error {
+func (ae *Env) restartNode(ctx context.Context, workID uuid.UUID, workNumber, stepID, login string, byOne bool) error {
 	txStorage, err := ae.DB.StartTransaction(ctx)
 	if err != nil {
 		return fmt.Errorf("failed start transaction, %w", err)
@@ -783,6 +782,8 @@ func (ae *Env) restartNode(ctx context.Context, workID uuid.UUID, workNumber, st
 
 	isFinished := dbStep.Status == finished || dbStep.Status == skipped || dbStep.Status == cancel
 
+	blockStart := dbStep.Time
+
 	if isFinished {
 		var errCopy error
 		dbStep.ID, errCopy = txStorage.CopyTaskBlock(ctx, dbStep.ID)
@@ -792,7 +793,7 @@ func (ae *Env) restartNode(ctx context.Context, workID uuid.UUID, workNumber, st
 		}
 	}
 
-	isResumable, blockStartTime, resumableErr := txStorage.IsBlockResumable(ctx, workID, dbStep.ID)
+	isResumable, _, resumableErr := txStorage.IsBlockResumable(ctx, workID, dbStep.ID)
 	if resumableErr != nil {
 		return resumableErr
 	}
@@ -811,7 +812,7 @@ func (ae *Env) restartNode(ctx context.Context, workID uuid.UUID, workNumber, st
 		return dbTaskErr
 	}
 
-	skipErr := ae.skipTaskBlocksAfterRestart(ctx, &task.Steps, blockStartTime, blockData.Next, workNumber, workID, txStorage)
+	skipErr := ae.skipTaskBlocksAfterRestart(ctx, &task.Steps, blockStart, blockData.Next, workNumber, workID, txStorage)
 	if skipErr != nil {
 		return skipErr
 	}
