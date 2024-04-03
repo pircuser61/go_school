@@ -649,14 +649,18 @@ func (ae *Env) pauseTask(ctx context.Context, author, workID string, params *Mon
 		return err
 	}
 
-	stepNames := make([]string, 0)
+	stepIDS := make([]string, 0)
 	if params != nil && params.Steps != nil {
-		stepNames = *params.Steps
+		stepIDS = *params.Steps
 	}
 
-	err = txStorage.SetTaskBlocksPaused(ctx, workID, stepNames, true)
+	ids, err := txStorage.PauseTaskBlocks(ctx, workID, stepIDS)
 	if err != nil {
 		return err
+	}
+
+	if ids != nil {
+		params.Steps = &ids
 	}
 
 	jsonParams := json.RawMessage{}

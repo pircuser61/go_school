@@ -286,7 +286,7 @@ type Database interface {
 	CreateTaskEvent(ctx c.Context, dto *e.CreateTaskEvent) (eventID string, err error)
 	GetTaskEvents(ctx c.Context, workID string) (events []e.TaskEvent, err error)
 	SetTaskPaused(ctx c.Context, workID string, isPaused bool) error
-	SetTaskBlocksPaused(ctx c.Context, workID string, steps []string, isPaused bool) error
+	PauseTaskBlocks(ctx c.Context, workID string, stepIDS []string) (updatedIDS []string, err error)
 	IsTaskPaused(ctx c.Context, workID uuid.UUID) (isPaused bool, err error)
 	IsBlockResumable(ctx c.Context, workID, stepID uuid.UUID) (isResumable bool, startTime time.Time, err error)
 	UnpauseTaskBlock(ctx c.Context, workID, stepID uuid.UUID) (err error)

@@ -363,36 +363,46 @@ func (db *PGCon) SetTaskPaused(ctx c.Context, workID string, pause bool) error {
 	return nil
 }
 
-func (db *PGCon) SetTaskBlocksPaused(ctx c.Context, workID string, steps []string, isPaused bool) error {
-	ctx, span := trace.StartSpan(ctx, "set_task_blocks_paused")
+func (db *PGCon) PauseTaskBlocks(ctx c.Context, workID string, steps []string) ([]string, error) {
+	ctx, span := trace.StartSpan(ctx, "pause_task_blocks")
 	defer span.End()
 
-	if len(steps) == 0 {
-		q := `UPDATE variable_storage SET is_paused = $1 
-          	WHERE work_id = $2 AND status IN('running', 'idle', 'created', 'ready')`
+	params := []interface{}{workID}
 
-		_, err := db.Connection.Exec(ctx, q, isPaused, workID)
-		if err != nil {
-			return err
+	q := `UPDATE variable_storage SET is_paused = true 
+          	WHERE work_id = $1 AND is_paused = false AND status IN('running', 'idle', 'created', 'ready')
+			RETURNING id`
+
+	if len(steps) > 0 {
+		q = `
+			UPDATE variable_storage SET is_paused = true
+			WHERE work_id = $1 AND is_paused = false
+				  status IN('running', 'idle', 'created', 'ready') AND
+				  step_name = ANY ($2) RETURNING id`
+
+		params = append(params, pq.StringArray(steps))
+	}
+
+	rows, err := db.Connection.Query(ctx, q, params...)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	updatedIDS := make([]string, 0)
+
+	for rows.Next() {
+		var id string
+
+		if scanErr := rows.Scan(&id); scanErr != nil {
+			return nil, scanErr
 		}
 
-		return nil
+		updatedIDS = append(updatedIDS, id)
 	}
 
-	q := `
-		UPDATE variable_storage SET is_paused = $1 
-		WHERE work_id = $2 AND
-			  status IN('running', 'idle', 'created', 'ready') AND
-			  step_name = ANY ($3)`
-
-	stepsIn := pq.StringArray(steps)
-
-	_, err := db.Connection.Exec(ctx, q, isPaused, workID, stepsIn)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return updatedIDS, nil
 }
 
 func (db *PGCon) UnpauseTaskBlock(ctx c.Context, workID, stepID uuid.UUID) (err error) {
