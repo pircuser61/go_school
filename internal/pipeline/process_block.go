@@ -533,6 +533,17 @@ func ProcessBlockWithEndMapping(
 		return false, nil
 	}
 
+	if intStatus == 2 {
+		_, err = runCtx.Services.Storage.CreateTaskEvent(ctx, &entity.CreateTaskEvent{
+			WorkID:    runCtx.TaskID.String(),
+			EventType: "pause",
+			Author:    db.SystemLogin,
+		})
+		if err != nil {
+			return false, err
+		}
+	}
+
 	endErr := processBlockEnd(ctx, stringStatus, runCtx)
 	if endErr != nil {
 		log.WithError(endErr).Error("couldn't send process end notification")
