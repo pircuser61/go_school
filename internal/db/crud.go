@@ -3353,6 +3353,17 @@ func (db *PGCon) UpdateNodeContent(ctx context.Context, stepID, workID,
 }
 
 func wrapVal(data interface{}) interface{} {
+	switch data.(type) {
+	case string:
+		convData, _ := data.(string)
+
+		return fmt.Sprintf("%q", convData)
+	case *string:
+		convData, _ := data.(*string)
+
+		return fmt.Sprintf("%q", *convData)
+	}
+
 	convData, ok := data.(string)
 	if !ok {
 		return data
