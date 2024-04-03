@@ -392,8 +392,10 @@ func (ae *Env) approverEditBlock(ctx context.Context, stepID uuid.UUID, stepName
 			return nil, unmErr
 		}
 
-		block := pipeline.GoApproverBlock{State: &approverState,
-			RunContext: &pipeline.BlockRunContext{Services: pipeline.RunContextServices{ServiceDesc: ae.ServiceDesc}}}
+		block := pipeline.GoApproverBlock{
+			State:      &approverState,
+			RunContext: &pipeline.BlockRunContext{Services: pipeline.RunContextServices{ServiceDesc: ae.ServiceDesc}},
+		}
 
 		updOutput, updErr := block.UpdateOutputUsingState(ctx)
 		if updErr != nil {
@@ -461,8 +463,10 @@ func (ae *Env) executorEditBlock(ctx context.Context, stepID uuid.UUID, stepName
 			return nil, unmErr
 		}
 
-		block := pipeline.GoExecutionBlock{State: &execState,
-			RunContext: &pipeline.BlockRunContext{Services: pipeline.RunContextServices{ServiceDesc: ae.ServiceDesc}}}
+		block := pipeline.GoExecutionBlock{
+			State:      &execState,
+			RunContext: &pipeline.BlockRunContext{Services: pipeline.RunContextServices{ServiceDesc: ae.ServiceDesc}},
+		}
 
 		updOutput, updErr := block.UpdateOutputUsingState(ctx)
 		if updErr != nil {
@@ -630,8 +634,10 @@ func (ae *Env) formEditBlock(ctx context.Context, stepID uuid.UUID, stepName str
 			return nil, unmErr
 		}
 
-		block := pipeline.GoFormBlock{State: &formBlockState,
-			RunContext: &pipeline.BlockRunContext{Services: pipeline.RunContextServices{ServiceDesc: ae.ServiceDesc}}}
+		block := pipeline.GoFormBlock{
+			State:      &formBlockState,
+			RunContext: &pipeline.BlockRunContext{Services: pipeline.RunContextServices{ServiceDesc: ae.ServiceDesc}},
+		}
 
 		updOutput, updErr := block.UpdateOutputUsingState(ctx)
 		if updErr != nil {
@@ -750,8 +756,10 @@ func (ae *Env) sdEditBlock(ctx context.Context, stepID uuid.UUID, stepName strin
 			return nil, unmErr
 		}
 
-		block := pipeline.GoSdApplicationBlock{State: &sdState,
-			RunContext: &pipeline.BlockRunContext{Services: pipeline.RunContextServices{ServiceDesc: ae.ServiceDesc}}}
+		block := pipeline.GoSdApplicationBlock{
+			State:      &sdState,
+			RunContext: &pipeline.BlockRunContext{Services: pipeline.RunContextServices{ServiceDesc: ae.ServiceDesc}},
+		}
 
 		updOutput, updErr := block.UpdateOutputUsingState(ctx)
 		if updErr != nil {
@@ -819,8 +827,10 @@ func (ae *Env) signEditBlock(ctx context.Context, stepID uuid.UUID, stepName str
 			return nil, unmErr
 		}
 
-		block := pipeline.GoSignBlock{State: &signState,
-			RunContext: &pipeline.BlockRunContext{Services: pipeline.RunContextServices{ServiceDesc: ae.ServiceDesc}}}
+		block := pipeline.GoSignBlock{
+			State:      &signState,
+			RunContext: &pipeline.BlockRunContext{Services: pipeline.RunContextServices{ServiceDesc: ae.ServiceDesc}},
+		}
 
 		updOutput, updErr := block.UpdateOutputUsingState(ctx)
 		if updErr != nil {
