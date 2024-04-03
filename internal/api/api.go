@@ -1581,7 +1581,7 @@ type MonitoringTask struct {
 
 // Параметры действия
 type MonitoringTaskActionParams struct {
-	// Названия блоков
+	// ID блоков
 	Steps *[]string `json:"steps,omitempty"`
 }
 

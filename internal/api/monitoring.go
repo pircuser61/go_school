@@ -649,12 +649,12 @@ func (ae *Env) pauseTask(ctx context.Context, author, workID string, params *Mon
 		return err
 	}
 
-	stepNames := make([]string, 0)
+	stepIDs := make([]string, 0)
 	if params != nil && params.Steps != nil {
-		stepNames = *params.Steps
+		stepIDs = *params.Steps
 	}
 
-	err = txStorage.SetTaskBlocksPaused(ctx, workID, stepNames, true)
+	err = txStorage.SetTaskBlocksPaused(ctx, workID, stepIDs, true)
 	if err != nil {
 		return err
 	}
@@ -757,7 +757,7 @@ func (ae *Env) startTask(ctx context.Context, dto *startNodesParams) error {
 	return nil
 }
 
-func (ae *Env) restartNode(ctx context.Context, workID uuid.UUID, workNumber, stepName, login string, byOne bool) error {
+func (ae *Env) restartNode(ctx context.Context, workID uuid.UUID, workNumber, stepID, login string, byOne bool) error {
 	txStorage, err := ae.DB.StartTransaction(ctx)
 	if err != nil {
 		return fmt.Errorf("failed start transaction, %w", err)
@@ -770,12 +770,19 @@ func (ae *Env) restartNode(ctx context.Context, workID uuid.UUID, workNumber, st
 		}
 	}()
 
-	dbStep, stepErr := txStorage.GetTaskStepByName(ctx, workID, stepName)
+	sid, parseErr := uuid.Parse(stepID)
+	if parseErr != nil {
+		return parseErr
+	}
+
+	dbStep, stepErr := txStorage.GetTaskStepByID(ctx, sid)
 	if stepErr != nil {
 		return stepErr
 	}
 
 	isFinished := dbStep.Status == finished || dbStep.Status == skipped || dbStep.Status == cancel
+
+	blockStart := dbStep.Time
 
 	if isFinished {
 		var errCopy error
@@ -786,16 +793,16 @@ func (ae *Env) restartNode(ctx context.Context, workID uuid.UUID, workNumber, st
 		}
 	}
 
-	isResumable, blockStartTime, resumableErr := txStorage.IsBlockResumable(ctx, workID, dbStep.ID)
+	isResumable, _, resumableErr := txStorage.IsBlockResumable(ctx, workID, dbStep.ID)
 	if resumableErr != nil {
 		return resumableErr
 	}
 
 	if !isResumable && !isFinished {
-		return fmt.Errorf("can't unpause running task block: %s", stepName)
+		return fmt.Errorf("can't unpause running task block: %s", sid)
 	}
 
-	blockData, blockErr := txStorage.GetBlockDataFromVersion(ctx, workNumber, stepName)
+	blockData, blockErr := txStorage.GetBlockDataFromVersion(ctx, workNumber, dbStep.Name)
 	if blockErr != nil {
 		return blockErr
 	}
@@ -805,7 +812,7 @@ func (ae *Env) restartNode(ctx context.Context, workID uuid.UUID, workNumber, st
 		return dbTaskErr
 	}
 
-	skipErr := ae.skipTaskBlocksAfterRestart(ctx, &task.Steps, blockStartTime, blockData.Next, workNumber, workID, txStorage)
+	skipErr := ae.skipTaskBlocksAfterRestart(ctx, &task.Steps, blockStart, blockData.Next, workNumber, workID, txStorage)
 	if skipErr != nil {
 		return skipErr
 	}
@@ -815,7 +822,7 @@ func (ae *Env) restartNode(ctx context.Context, workID uuid.UUID, workNumber, st
 		return unpErr
 	}
 
-	storage, getErr := txStorage.GetVariableStorageForStep(ctx, workID, stepName)
+	storage, getErr := txStorage.GetVariableStorageForStepByID(ctx, dbStep.ID)
 	if getErr != nil {
 		return getErr
 	}
@@ -825,7 +832,7 @@ func (ae *Env) restartNode(ctx context.Context, workID uuid.UUID, workNumber, st
 		return fmt.Errorf("failed commit transaction, %w", err)
 	}
 
-	_, processErr := pipeline.ProcessBlockWithEndMapping(ctx, stepName, blockData, &pipeline.BlockRunContext{
+	_, processErr := pipeline.ProcessBlockWithEndMapping(ctx, dbStep.Name, blockData, &pipeline.BlockRunContext{
 		TaskID:      task.ID,
 		WorkNumber:  workNumber,
 		WorkTitle:   task.Name,
