@@ -26,8 +26,12 @@ type handleInitiatorNotifyParams struct {
 }
 
 const (
-	fileID    = "file_id"
-	externalLink = "external_link"
+	fileIDKey       = "file_id"
+	externalLinkKey = "external_link"
+
+	decisionAttachmentsKey = "decision_attachments"
+	attachmentsKey         = "attachments"
+
 	filesType = "files"
 
 	attachLinks = "attachLinks"
@@ -196,7 +200,7 @@ func (runCtx *BlockRunContext) makeNotificationAttachment() ([]fileregistry.File
 		if ok {
 			switch data := filesAttach.(type) {
 			case om.OrderedMap:
-				if filesID, get := data.Get(fileID); get {
+				if filesID, get := data.Get(fileIDKey); get {
 					attachmentsList = append(attachmentsList, entity.Attachment{FileID: filesID.(string)})
 				}
 			case []interface{}:
@@ -206,7 +210,7 @@ func (runCtx *BlockRunContext) makeNotificationAttachment() ([]fileregistry.File
 						continue
 					}
 
-					if filesID, oks := fileMap.Get(fileID); oks {
+					if filesID, oks := fileMap.Get(fileIDKey); oks {
 						attachmentsList = append(attachmentsList, entity.Attachment{FileID: filesID.(string)})
 					}
 				}
@@ -222,7 +226,7 @@ func (runCtx *BlockRunContext) makeNotificationAttachment() ([]fileregistry.File
 			for _, vss := range group.Values() {
 				switch field := vss.(type) {
 				case om.OrderedMap:
-					if fieldsID, okGet := field.Get(fileID); okGet {
+					if fieldsID, okGet := field.Get(fileIDKey); okGet {
 						attachmentsList = append(attachmentsList, entity.Attachment{FileID: fieldsID.(string)})
 					}
 				case []interface{}:
@@ -232,7 +236,7 @@ func (runCtx *BlockRunContext) makeNotificationAttachment() ([]fileregistry.File
 							continue
 						}
 
-						if filesID, okGet := fileMap.Get(fileID); okGet {
+						if filesID, okGet := fileMap.Get(fileIDKey); okGet {
 							attachmentsList = append(attachmentsList, entity.Attachment{FileID: filesID.(string)})
 						}
 					}
@@ -269,7 +273,7 @@ func (runCtx *BlockRunContext) getUpdateParamsAttachments(attachmentsList *[]ent
 		return err
 	}
 
-	attachParams, isAttach := params["attachments"]
+	attachParams, isAttach := params[attachmentsKey]
 	if !isAttach {
 		return nil
 	}
@@ -285,12 +289,12 @@ func (runCtx *BlockRunContext) getUpdateParamsAttachments(attachmentsList *[]ent
 			continue
 		}
 
-		filedID, isFileID := attachItem[]
+		filesID, isFileID := attachItem[fileIDKey]
 		if isFileID {
-			*attachmentsList = append(*attachmentsList, entity.Attachment{FileID: filedID.(string)})
+			*attachmentsList = append(*attachmentsList, entity.Attachment{FileID: filesID.(string)})
 		}
 
-		externalLink, isExternalLink := attachItem[externalLink]
+		externalLink, isExternalLink := attachItem[externalLinkKey]
 		if isExternalLink {
 			*attachmentsLinks = append(*attachmentsLinks, fileregistry.AttachInfo{ExternalLink: externalLink.(string)})
 		}
@@ -316,7 +320,7 @@ func (runCtx *BlockRunContext) getEmailAttachments(attachmentsList *[]entity.Att
 			return err
 		}
 
-		attach, exAttach := blockParams["decision_attachments"]
+		attach, exAttach := blockParams[decisionAttachmentsKey]
 		if !exAttach {
 			continue
 		}
@@ -332,12 +336,12 @@ func (runCtx *BlockRunContext) getEmailAttachments(attachmentsList *[]entity.Att
 				continue
 			}
 
-			filedID, isFieldID := attachItem[fileID]
+			filesID, isFieldID := attachItem[fileIDKey]
 			if isFieldID {
-				*attachmentsList = append(*attachmentsList, entity.Attachment{FileID: filedID.(string)})
+				*attachmentsList = append(*attachmentsList, entity.Attachment{FileID: filesID.(string)})
 			}
 
-			externalLink, isExternalLink := attachItem[externalLink]
+			externalLink, isExternalLink := attachItem[externalLinkKey]
 			if isExternalLink {
 				*attachmentsLinks = append(*attachmentsLinks, fileregistry.AttachInfo{ExternalLink: externalLink.(string)})
 			}
@@ -466,7 +470,7 @@ func getAdditionalAttachList(form entity.DescriptionForm, formData *FormData) []
 					continue
 				}
 
-				if filesID, fileOK := file.Get(fileID); fileOK {
+				if filesID, fileOK := file.Get(fileIDKey); fileOK {
 					attachmentFiles = append(attachmentFiles, filesID.(string))
 				}
 			case []interface{}:
@@ -476,7 +480,7 @@ func getAdditionalAttachList(form entity.DescriptionForm, formData *FormData) []
 						continue
 					}
 
-					if filesID, fileOK := valMap.Get(fileID); fileOK {
+					if filesID, fileOK := valMap.Get(fileIDKey); fileOK {
 						attachmentFiles = append(attachmentFiles, filesID.(string))
 					}
 				}
@@ -585,7 +589,7 @@ func GetConvertDesc(descriptions om.OrderedMap, keys map[string]string, hiddenFi
 		}
 
 		nameKey := strings.Replace(keysSplit[1], ")", "", 1)
-		if nameKey == fileID {
+		if nameKey == fileIDKey {
 			continue
 		}
 
