@@ -262,7 +262,7 @@ func (runCtx *BlockRunContext) makeNotificationAttachment() ([]fileregistry.File
 
 // nolint:lll //it'ok
 func (runCtx *BlockRunContext) getUpdateParamsAttachments(attachmentsList *[]entity.Attachment, attachmentsLinks *[]fileregistry.AttachInfo) error {
-	if runCtx.UpdateData == nil {
+	if runCtx.UpdateData == nil || runCtx.UpdateData.Parameters == nil {
 		return nil
 	}
 
@@ -314,6 +314,10 @@ func (runCtx *BlockRunContext) getEmailAttachments(attachmentsList *[]entity.Att
 		blockName := runCtx.VarStore.Steps[k-1]
 
 		block := runCtx.VarStore.State[blockName]
+
+		if block == nil {
+			continue
+		}
 
 		blockParams := make(map[string]interface{})
 		if err := json.Unmarshal(block, &blockParams); err != nil {
