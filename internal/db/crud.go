@@ -2049,7 +2049,7 @@ func (db *PGCon) GetActiveTaskStepByID(ctx context.Context, id uuid.UUID) (*enti
 		vs.is_paused
 	FROM variable_storage vs 
 	JOIN works w ON vs.work_id = w.id
-		WHERE vs.id = $1 AND vs.status IN ('running', 'idle')
+		WHERE vs.id = $1 AND vs.status IN ('running', 'idle') AND NOT vs.is_paused
 	LIMIT 1`
 
 	var (
