@@ -9,8 +9,6 @@ import (
 
 	om "github.com/iancoleman/orderedmap"
 
-	"github.com/pkg/errors"
-
 	e "gitlab.services.mts.ru/abp/mail/pkg/email"
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
@@ -29,6 +27,7 @@ type handleInitiatorNotifyParams struct {
 
 const (
 	fileID    = "file_id"
+	externalLink = "external_link"
 	filesType = "files"
 
 	attachLinks = "attachLinks"
@@ -267,17 +266,17 @@ func (runCtx *BlockRunContext) getUpdateParamsAttachments(attachmentsList *[]ent
 
 	err := json.Unmarshal(runCtx.UpdateData.Parameters, &params)
 	if err != nil {
-		return nil
+		return err
 	}
 
 	attachParams, isAttach := params["attachments"]
 	if !isAttach {
-		return errors.New("parameters in updateData not have attachments field")
+		return nil
 	}
 
 	attachArray, isArray := attachParams.([]interface{})
 	if !isArray {
-		return errors.New("attachments in update params is not array")
+		return nil
 	}
 
 	for _, v := range attachArray {
@@ -286,12 +285,12 @@ func (runCtx *BlockRunContext) getUpdateParamsAttachments(attachmentsList *[]ent
 			continue
 		}
 
-		filedID, isFileID := attachItem["file_id"]
+		filedID, isFileID := attachItem[]
 		if isFileID {
 			*attachmentsList = append(*attachmentsList, entity.Attachment{FileID: filedID.(string)})
 		}
 
-		externalLink, isExternalLink := attachItem["external_link"]
+		externalLink, isExternalLink := attachItem[externalLink]
 		if isExternalLink {
 			*attachmentsLinks = append(*attachmentsLinks, fileregistry.AttachInfo{ExternalLink: externalLink.(string)})
 		}
@@ -333,12 +332,12 @@ func (runCtx *BlockRunContext) getEmailAttachments(attachmentsList *[]entity.Att
 				continue
 			}
 
-			filedID, isFieldID := attachItem["file_id"]
+			filedID, isFieldID := attachItem[fileID]
 			if isFieldID {
 				*attachmentsList = append(*attachmentsList, entity.Attachment{FileID: filedID.(string)})
 			}
 
-			externalLink, isExternalLink := attachItem["external_link"]
+			externalLink, isExternalLink := attachItem[externalLink]
 			if isExternalLink {
 				*attachmentsLinks = append(*attachmentsLinks, fileregistry.AttachInfo{ExternalLink: externalLink.(string)})
 			}
