@@ -338,7 +338,7 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 
 	var queryMaker compileGetTaskQueryMaker
 
-	return queryMaker.MakeQuery(&fl, q, delegations, args, order, orderBy, true, fl.Expired)
+	return queryMaker.MakeQuery(&fl, q, delegations, args, order, orderBy, true)
 }
 
 //nolint:gocritic //изначально было без поинтера
@@ -369,7 +369,7 @@ func compileGetTasksMetaQuery(fl entity.TaskFilter, delegations []string) (q str
 
 	var queryMaker compileGetTaskQueryMaker
 
-	return queryMaker.MakeQuery(&fl, q, delegations, args, order, orderBy, false, fl.Expired)
+	return queryMaker.MakeQuery(&fl, q, delegations, args, order, orderBy, false)
 }
 
 type compileGetTaskQueryMaker struct {
@@ -561,7 +561,6 @@ func (cq *compileGetTaskQueryMaker) MakeQuery(
 	order string,
 	orderBy []string,
 	useLimitOffset bool,
-	expired *bool,
 ) (query string, resArgs []any) {
 	cq.fl = fl
 	cq.q = q
@@ -579,7 +578,7 @@ func (cq *compileGetTaskQueryMaker) MakeQuery(
 	cq.addReceiver()
 	cq.addInitiator()
 	cq.addProcessingSteps()
-	cq.addIsExpiredFilter(expired)
+	cq.addIsExpiredFilter(fl.Expired)
 	cq.addOrderBy(order, orderBy)
 
 	if useLimitOffset {
