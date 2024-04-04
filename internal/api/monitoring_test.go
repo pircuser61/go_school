@@ -180,8 +180,10 @@ func Test_toMonitoringTaskResponse(t *testing.T) {
 
 	firstStartAt := time.Date(2009, 11, 17, 20, 34, 58, 651387237, time.UTC)
 	firstPauseAt := time.Date(2009, 11, 18, 20, 34, 58, 651387237, time.UTC)
+	cancelPauseAt := time.Date(2009, 11, 19, 20, 34, 58, 651387237, time.UTC)
 	secondStartAt := time.Date(2009, 11, 27, 20, 34, 58, 651387237, time.UTC)
 	secondPauseAt := time.Date(2009, 11, 28, 20, 34, 58, 651387237, time.UTC)
+	thirdPauseAt := time.Date(2009, 11, 28, 21, 34, 58, 651387237, time.UTC)
 
 	tests := []struct {
 		name string
@@ -219,17 +221,27 @@ func Test_toMonitoringTaskResponse(t *testing.T) {
 					},
 					{
 						ID:        "4",
+						EventType: "pause",
+						CreatedAt: cancelPauseAt,
+					},
+					{
+						ID:        "5",
 						EventType: "start",
 						CreatedAt: secondStartAt,
 					},
 					{
-						ID:        "5",
+						ID:        "6",
 						EventType: "other action",
 					},
 					{
-						ID:        "6",
+						ID:        "7",
 						EventType: "pause",
 						CreatedAt: secondPauseAt,
+					},
+					{
+						ID:        "8",
+						EventType: "pause",
+						CreatedAt: thirdPauseAt,
 					},
 				},
 			},
@@ -249,8 +261,8 @@ func Test_toMonitoringTaskResponse(t *testing.T) {
 						EndEventAt:   firstPauseAt,
 					},
 					{
-						StartEventId: "4",
-						EndEventId:   "6",
+						StartEventId: "5",
+						EndEventId:   "7",
 						Index:        2,
 						StartEventAt: secondStartAt,
 						EndEventAt:   secondPauseAt,
