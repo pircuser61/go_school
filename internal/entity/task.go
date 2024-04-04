@@ -153,28 +153,28 @@ func (et *EriusTask) IsError() bool {
 }
 
 type GetTaskParams struct {
-	Name     *string     `json:"name" :"name"`
-	Created  *TimePeriod `json:"created" :"created"`
-	Order    *string     `json:"order" :"order"`
-	OrderBy  *[]string   `json:"order_by" :"order_by"`
+	Name     *string     `json:"name"`
+	Created  *TimePeriod `json:"created"`
+	Order    *string     `json:"order"`
+	OrderBy  *[]string   `json:"order_by"`
 	Expired  *bool       `json:"expired"`
-	Limit    *int        `json:"limit" :"limit"`
-	Offset   *int        `json:"offset" :"offset"`
-	TaskIDs  *[]string   `json:"task_ids" :"task_i_ds"`
-	SelectAs *string     `json:"select_as" :"select_as"`
+	Limit    *int        `json:"limit"`
+	Offset   *int        `json:"offset"`
+	TaskIDs  *[]string   `json:"task_ids"`
+	SelectAs *string     `json:"select_as"`
 	// fot initiator
-	Archived         *bool   `json:"archived" :"archived"`
-	ForCarousel      *bool   `json:"forCarousel" :"for_carousel"`
-	Status           *string `json:"status" :"status"`
-	Receiver         *string `json:"receiver" :"receiver"`
-	HasAttachments   *bool   `json:"hasAttachments" :"has_attachments"`
-	SignatureCarrier *string `json:"signature_carrier" :"signature_carrier"`
+	Archived         *bool   `json:"archived"`
+	ForCarousel      *bool   `json:"forCarousel"`
+	Status           *string `json:"status"`
+	Receiver         *string `json:"receiver"`
+	HasAttachments   *bool   `json:"hasAttachments"`
+	SignatureCarrier *string `json:"signature_carrier"`
 
-	Initiator            *[]string `json:"initiator" :"initiator"`
-	InitiatorLogins      *[]string `json:"initiatorLogins" :"initiator_logins"`
-	ProcessingLogins     *[]string `json:"processingLogins" :"processing_logins"`
-	ProcessingGroupIds   *[]string `json:"processingGroupIds" :"processing_group_ids"`
-	ExecutorTypeAssigned *string   `json:"executorTypeAssigned" :"executor_type_assigned"`
+	Initiator            *[]string `json:"initiator"`
+	InitiatorLogins      *[]string `json:"initiatorLogins"`
+	ProcessingLogins     *[]string `json:"processingLogins"`
+	ProcessingGroupIds   *[]string `json:"processingGroupIds"`
+	ExecutorTypeAssigned *string   `json:"executorTypeAssigned"`
 }
 
 type TimePeriod struct {
