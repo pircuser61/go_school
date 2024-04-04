@@ -182,12 +182,12 @@ func (db *PGCon) UpdateTaskHumanStatus(ctx c.Context, taskID uuid.UUID, status, 
 				(SELECT COUNT(*)
 					FROM variable_storage
 			 		WHERE work_id = $2
-			   			AND step_type = 'begin_parallel_task')
+			   			AND step_type = 'begin_parallel_task' AND status != 'skipped')
 				>
 				(SELECT COUNT(*)
 					FROM variable_storage
 					WHERE work_id = $2
-						AND step_type = 'wait_for_all_inputs' 
+						AND step_type = 'wait_for_all_inputs'
 						AND status = 'finished') AS result
 		     )
 		
