@@ -53,7 +53,7 @@ func (ae *Env) EditTaskBlockData(w http.ResponseWriter, r *http.Request, blockId
 	defer func() {
 		rollbackErr := txStorage.RollbackTransaction(ctx)
 		if rollbackErr != nil {
-			ae.Log.WithError(err).
+			ae.Log.WithError(rollbackErr).
 				WithField("funcName", "EditTaskBlockData").
 				Error("failed rollback transaction")
 		}

@@ -2553,7 +2553,7 @@ func (db *PGCon) StopTaskBlocks(ctx context.Context, taskID uuid.UUID) error {
 
 	q := `
 		UPDATE variable_storage
-		SET status = 'cancel', updated_at = now()
+		SET status = 'cancel', updated_at = now(), is_paused = true
 		WHERE work_id = $1 AND status IN ('ready', 'idle', 'running')`
 
 	_, err := db.Connection.Exec(ctx, q, taskID)

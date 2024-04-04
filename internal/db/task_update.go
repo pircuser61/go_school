@@ -127,12 +127,21 @@ func (db *PGCon) UpdateTaskStatus(ctx c.Context, taskID uuid.UUID, status int, c
 	// nolint:gocritic
 	// language=PostgreSQL
 	switch status {
-	case RunStatusCanceled, RunStatusFinished, RunStatusStopped:
+	case RunStatusCanceled, RunStatusFinished:
 		q = `UPDATE works 
 		SET status = $1, finished_at = now(), status_comment = $3, status_author = $4
 		WHERE id = $2`
 
 		_, err := db.Connection.Exec(ctx, q, status, taskID, comment, author)
+		if err != nil {
+			return err
+		}
+	case RunStatusRunning:
+		q = `UPDATE works 
+		SET status = $1, finished_at = null
+		WHERE id = $2`
+
+		_, err := db.Connection.Exec(ctx, q, status, taskID)
 		if err != nil {
 			return err
 		}
@@ -348,14 +357,9 @@ func (db *PGCon) SetTaskPaused(ctx c.Context, workID string, pause bool) error {
 	ctx, span := trace.StartSpan(ctx, "set_task_paused")
 	defer span.End()
 
-	const q = `UPDATE works SET is_paused = $1, status = $2 WHERE id = $3`
+	const q = `UPDATE works SET is_paused = $1 WHERE id = $2`
 
-	status := 4
-	if !pause {
-		status = 1
-	}
-
-	_, err := db.Connection.Exec(ctx, q, pause, status, workID)
+	_, err := db.Connection.Exec(ctx, q, pause, workID)
 	if err != nil {
 		return err
 	}

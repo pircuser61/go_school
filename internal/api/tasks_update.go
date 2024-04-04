@@ -541,6 +541,7 @@ func (ae *Env) getAuthorAndMembersToNotify(ctx context.Context, workNumber, user
 	return res, nil
 }
 
+// nolint:gocyclo // ok
 func (ae *Env) updateTaskInternal(ctx context.Context, workNumber, userLogin string, in *entity.TaskUpdate) (err error) {
 	ctxLocal, span := trace.StartSpan(ctx, "update_task_internal")
 	defer span.End()
@@ -610,10 +611,20 @@ func (ae *Env) updateTaskInternal(ctx context.Context, workNumber, userLogin str
 		return err
 	}
 
+	params := struct {
+		Steps []string `json:"steps"`
+	}{Steps: []string{}}
+
+	jsonParams, err := json.Marshal(params)
+	if err != nil {
+		log.Error(err)
+	}
+
 	_, err = txStorage.CreateTaskEvent(ctx, &entity.CreateTaskEvent{
 		WorkID:    dbTask.ID.String(),
 		EventType: "pause",
 		Author:    userLogin,
+		Params:    jsonParams,
 	})
 	if err != nil {
 		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
@@ -702,6 +713,11 @@ func (ae *Env) stopTaskBlocks(
 	_, err = ae.DB.UpdateTaskHumanStatus(ctx, dbTask.ID, string(pipeline.StatusRevoke), "")
 	if err != nil {
 		return fmt.Errorf("failed UpdateTaskHumanStatus, err: %w", err)
+	}
+
+	err = ae.DB.SetTaskPaused(ctx, dbTask.ID.String(), false)
+	if err != nil {
+		return fmt.Errorf("failed UnpauseTask, err: %w", err)
 	}
 
 	return nil
@@ -858,10 +874,20 @@ func (ae *Env) StopTasks(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
+		params := struct {
+			Steps []string `json:"steps"`
+		}{Steps: []string{}}
+
+		jsonParams, mrshErr := json.Marshal(params)
+		if mrshErr != nil {
+			log.Error(mrshErr)
+		}
+
 		_, err = txStorage.CreateTaskEvent(ctx, &entity.CreateTaskEvent{
 			WorkID:    workID.String(),
 			EventType: "pause",
 			Author:    ui.Username,
+			Params:    jsonParams,
 		})
 		if err != nil {
 			log.WithError(err).Error("couldn't create task event pause: " + workNumber)
