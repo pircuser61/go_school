@@ -2547,6 +2547,9 @@ type GetTasksParams struct {
 	// order for started_at
 	Order *string `json:"order,omitempty"`
 
+	// params for get expired applications
+	Expired *bool `json:"expired,omitempty"`
+
 	// params for tasks ordering
 	OrderBy *[]string `json:"orderBy,omitempty"`
 
@@ -5222,6 +5225,17 @@ func (siw *ServerInterfaceWrapper) GetTasks(w http.ResponseWriter, r *http.Reque
 	err = runtime.BindQueryParameter("form", true, false, "order", r.URL.Query(), &params.Order)
 	if err != nil {
 		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "order", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "expired" -------------
+	if paramValue := r.URL.Query().Get("expired"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "expired", r.URL.Query(), &params.Expired)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "expired", Err: err})
 		return
 	}
 

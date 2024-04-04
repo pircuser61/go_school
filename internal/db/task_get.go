@@ -338,7 +338,7 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 
 	var queryMaker compileGetTaskQueryMaker
 
-	return queryMaker.MakeQuery(&fl, q, delegations, args, order, orderBy, true)
+	return queryMaker.MakeQuery(&fl, q, delegations, args, order, orderBy, true, fl.Expired)
 }
 
 //nolint:gocritic //изначально было без поинтера
@@ -369,7 +369,7 @@ func compileGetTasksMetaQuery(fl entity.TaskFilter, delegations []string) (q str
 
 	var queryMaker compileGetTaskQueryMaker
 
-	return queryMaker.MakeQuery(&fl, q, delegations, args, order, orderBy, false)
+	return queryMaker.MakeQuery(&fl, q, delegations, args, order, orderBy, false, fl.Expired)
 }
 
 type compileGetTaskQueryMaker struct {
@@ -470,6 +470,18 @@ func (cq *compileGetTaskQueryMaker) addProcessingSteps() {
 	}
 }
 
+func (cq *compileGetTaskQueryMaker) addIsExpiredFilter(isExpired *bool) {
+	if isExpired == nil {
+		return
+	}
+
+	if !*isExpired {
+		cq.q = fmt.Sprintf("%s AND (ua.node_deadline > now() OR coalesce(ua.is_expired::boolean, false)) ", cq.q)
+	} else {
+		cq.q = fmt.Sprintf("%s AND (ua.node_deadline < now() OR coalesce(ua.is_expired::boolean, true)) ", cq.q)
+	}
+}
+
 //nolint:gocyclo //it's ok
 func (cq *compileGetTaskQueryMaker) addOrderBy(order string, orderBy []string) {
 	if (order != "" && len(orderBy) == 0) || len(orderBy) == 0 {
@@ -549,6 +561,7 @@ func (cq *compileGetTaskQueryMaker) MakeQuery(
 	order string,
 	orderBy []string,
 	useLimitOffset bool,
+	expired *bool,
 ) (query string, resArgs []any) {
 	cq.fl = fl
 	cq.q = q
@@ -566,6 +579,7 @@ func (cq *compileGetTaskQueryMaker) MakeQuery(
 	cq.addReceiver()
 	cq.addInitiator()
 	cq.addProcessingSteps()
+	cq.addIsExpiredFilter(expired)
 	cq.addOrderBy(order, orderBy)
 
 	if useLimitOffset {
