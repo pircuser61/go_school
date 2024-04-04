@@ -541,10 +541,20 @@ func ProcessBlockWithEndMapping(
 	}
 
 	if intStatus == 2 && statusBefore != 2 {
+		params := struct {
+			Steps []string `json:"steps"`
+		}{Steps: []string{}}
+
+		jsonParams, mrshErr := json.Marshal(params)
+		if mrshErr != nil {
+			log.Error(mrshErr)
+		}
+
 		_, err = runCtx.Services.Storage.CreateTaskEvent(ctx, &entity.CreateTaskEvent{
 			WorkID:    runCtx.TaskID.String(),
 			EventType: "pause",
 			Author:    db.SystemLogin,
+			Params:    jsonParams,
 		})
 		if err != nil {
 			return false, err
