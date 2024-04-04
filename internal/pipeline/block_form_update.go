@@ -509,7 +509,7 @@ func (gb *GoFormBlock) emailGroupExecutors(ctx context.Context, loginTakenInWork
 		return err
 	}
 
-	filesAttach, err := gb.RunContext.makeNotificationAttachment()
+	filesAttach, _, err := gb.RunContext.makeNotificationAttachment()
 	if err != nil {
 		return err
 	}

@@ -9,8 +9,6 @@ import (
 
 	om "github.com/iancoleman/orderedmap"
 
-	"github.com/pkg/errors"
-
 	e "gitlab.services.mts.ru/abp/mail/pkg/email"
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
@@ -28,7 +26,12 @@ type handleInitiatorNotifyParams struct {
 }
 
 const (
-	fileID    = "file_id"
+	fileIDKey       = "file_id"
+	externalLinkKey = "external_link"
+
+	decisionAttachmentsKey = "decision_attachments"
+	attachmentsKey         = "attachments"
+
 	filesType = "files"
 
 	attachLinks = "attachLinks"
@@ -171,28 +174,24 @@ func (runCtx *BlockRunContext) makeNotificationFormAttachment(files []string) ([
 }
 
 // nolint:gocognit,gocyclo //it's ok
-func (runCtx *BlockRunContext) makeNotificationAttachment() ([]fileregistry.FileInfo, error) {
+func (runCtx *BlockRunContext) makeNotificationAttachment() ([]fileregistry.FileInfo, []fileregistry.AttachInfo, error) {
 	task, err := runCtx.Services.Storage.GetTaskRunContext(c.Background(), runCtx.WorkNumber)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	attachments := make([]entity.Attachment, 0)
+	attachmentsList := make([]entity.Attachment, 0)
+	attachmentsLinks := make([]fileregistry.AttachInfo, 0)
+
 	mapFiles := make(map[string][]entity.Attachment)
 
-	emailAttachments, err := runCtx.getEmailAttachments()
-	if err != nil {
-		return nil, err
+	if getEmailAttachErr := runCtx.getEmailAttachments(&attachmentsList, &attachmentsLinks); getEmailAttachErr != nil {
+		return nil, nil, getEmailAttachErr
 	}
 
-	attachments = append(attachments, emailAttachments...)
-
-	updateAttachments, err := runCtx.getUpdateParamsAttachments()
-	if err != nil {
-		return nil, err
+	if getUpdateParamsErr := runCtx.getUpdateParamsAttachments(&attachmentsList, &attachmentsLinks); getUpdateParamsErr != nil {
+		return nil, nil, getUpdateParamsErr
 	}
-
-	attachments = append(attachments, updateAttachments...)
 
 	notHiddenAttachmentFields := filterHiddenAttachmentFields(task.InitialApplication.AttachmentFields, task.InitialApplication.HiddenFields)
 
@@ -201,12 +200,9 @@ func (runCtx *BlockRunContext) makeNotificationAttachment() ([]fileregistry.File
 		if ok {
 			switch data := filesAttach.(type) {
 			case om.OrderedMap:
-				filesID, get := data.Get(fileID)
-				if !get {
-					continue
+				if filesID, get := data.Get(fileIDKey); get {
+					attachmentsList = append(attachmentsList, entity.Attachment{FileID: filesID.(string)})
 				}
-
-				attachments = append(attachments, entity.Attachment{FileID: filesID.(string)})
 			case []interface{}:
 				for _, vv := range data {
 					fileMap, isMap := vv.(om.OrderedMap)
@@ -214,12 +210,9 @@ func (runCtx *BlockRunContext) makeNotificationAttachment() ([]fileregistry.File
 						continue
 					}
 
-					filesID, oks := fileMap.Get(fileID)
-					if !oks {
-						continue
+					if filesID, oks := fileMap.Get(fileIDKey); oks {
+						attachmentsList = append(attachmentsList, entity.Attachment{FileID: filesID.(string)})
 					}
-
-					attachments = append(attachments, entity.Attachment{FileID: filesID.(string)})
 				}
 			}
 		}
@@ -233,8 +226,8 @@ func (runCtx *BlockRunContext) makeNotificationAttachment() ([]fileregistry.File
 			for _, vss := range group.Values() {
 				switch field := vss.(type) {
 				case om.OrderedMap:
-					if fieldsID, okGet := field.Get(fileID); okGet {
-						attachments = append(attachments, entity.Attachment{FileID: fieldsID.(string)})
+					if fieldsID, okGet := field.Get(fileIDKey); okGet {
+						attachmentsList = append(attachmentsList, entity.Attachment{FileID: fieldsID.(string)})
 					}
 				case []interface{}:
 					for _, vv := range field {
@@ -243,55 +236,51 @@ func (runCtx *BlockRunContext) makeNotificationAttachment() ([]fileregistry.File
 							continue
 						}
 
-						filesID, okGet := fileMap.Get(fileID)
-						if !okGet {
-							continue
+						if filesID, okGet := fileMap.Get(fileIDKey); okGet {
+							attachmentsList = append(attachmentsList, entity.Attachment{FileID: filesID.(string)})
 						}
-
-						attachments = append(attachments, entity.Attachment{FileID: filesID.(string)})
 					}
 				}
 			}
 		}
 	}
 
-	mapFiles[filesType] = attachments
+	mapFiles[filesType] = attachmentsList
 
 	file, err := runCtx.Services.FileRegistry.GetAttachmentsInfo(c.Background(), mapFiles)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	ta := make([]fileregistry.FileInfo, 0)
+	attachFiles := make([]fileregistry.FileInfo, 0)
 	for _, v := range file[filesType] {
-		ta = append(ta, fileregistry.FileInfo{FileID: v.FileID, Size: v.Size, Name: v.Name})
+		attachFiles = append(attachFiles, fileregistry.FileInfo{FileID: v.FileID, Size: v.Size, Name: v.Name})
 	}
 
-	return ta, nil
+	return attachFiles, attachmentsLinks, nil
 }
 
-func (runCtx *BlockRunContext) getUpdateParamsAttachments() ([]entity.Attachment, error) {
+// nolint:lll //it'ok
+func (runCtx *BlockRunContext) getUpdateParamsAttachments(attachmentsList *[]entity.Attachment, attachmentsLinks *[]fileregistry.AttachInfo) error {
 	if runCtx.UpdateData == nil {
-		return nil, nil
+		return nil
 	}
-
-	attachments := make([]entity.Attachment, 0)
 
 	params := make(map[string]interface{}, 0)
 
 	err := json.Unmarshal(runCtx.UpdateData.Parameters, &params)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	attachParams, isAttach := params["attachments"]
+	attachParams, isAttach := params[attachmentsKey]
 	if !isAttach {
-		return attachments, errors.New("parameters in updateData not have attachments field")
+		return nil
 	}
 
 	attachArray, isArray := attachParams.([]interface{})
 	if !isArray {
-		return attachments, errors.New("attachments in update params is not array")
+		return nil
 	}
 
 	for _, v := range attachArray {
@@ -300,20 +289,22 @@ func (runCtx *BlockRunContext) getUpdateParamsAttachments() ([]entity.Attachment
 			continue
 		}
 
-		filedID, isFileID := attachItem["file_id"]
-		if !isFileID {
-			continue
+		filesID, isFileID := attachItem[fileIDKey]
+		if isFileID {
+			*attachmentsList = append(*attachmentsList, entity.Attachment{FileID: filesID.(string)})
 		}
 
-		attachments = append(attachments, entity.Attachment{FileID: filedID.(string)})
+		externalLink, isExternalLink := attachItem[externalLinkKey]
+		if isExternalLink {
+			*attachmentsLinks = append(*attachmentsLinks, fileregistry.AttachInfo{ExternalLink: externalLink.(string)})
+		}
 	}
 
-	return attachments, nil
+	return nil
 }
 
-func (runCtx *BlockRunContext) getEmailAttachments() ([]entity.Attachment, error) {
-	attachments := make([]entity.Attachment, 0)
-
+// nolint:lll //it'ok
+func (runCtx *BlockRunContext) getEmailAttachments(attachmentsList *[]entity.Attachment, attachmentsLinks *[]fileregistry.AttachInfo) error {
 	for k, v := range runCtx.VarStore.Steps {
 		isNotification := strings.Contains(v, "notification")
 		if !isNotification {
@@ -326,10 +317,10 @@ func (runCtx *BlockRunContext) getEmailAttachments() ([]entity.Attachment, error
 
 		blockParams := make(map[string]interface{})
 		if err := json.Unmarshal(block, &blockParams); err != nil {
-			return nil, err
+			return err
 		}
 
-		attach, exAttach := blockParams["decision_attachments"]
+		attach, exAttach := blockParams[decisionAttachmentsKey]
 		if !exAttach {
 			continue
 		}
@@ -345,16 +336,19 @@ func (runCtx *BlockRunContext) getEmailAttachments() ([]entity.Attachment, error
 				continue
 			}
 
-			filedID, isFieldID := attachItem["file_id"]
-			if !isFieldID {
-				continue
+			filesID, isFieldID := attachItem[fileIDKey]
+			if isFieldID {
+				*attachmentsList = append(*attachmentsList, entity.Attachment{FileID: filesID.(string)})
 			}
 
-			attachments = append(attachments, entity.Attachment{FileID: filedID.(string)})
+			externalLink, isExternalLink := attachItem[externalLinkKey]
+			if isExternalLink {
+				*attachmentsLinks = append(*attachmentsLinks, fileregistry.AttachInfo{ExternalLink: externalLink.(string)})
+			}
 		}
 	}
 
-	return attachments, nil
+	return nil
 }
 
 func filterHiddenAttachmentFields(attachmentFields, hiddenFields []string) []string {
@@ -476,7 +470,7 @@ func getAdditionalAttachList(form entity.DescriptionForm, formData *FormData) []
 					continue
 				}
 
-				if filesID, fileOK := file.Get(fileID); fileOK {
+				if filesID, fileOK := file.Get(fileIDKey); fileOK {
 					attachmentFiles = append(attachmentFiles, filesID.(string))
 				}
 			case []interface{}:
@@ -486,7 +480,7 @@ func getAdditionalAttachList(form entity.DescriptionForm, formData *FormData) []
 						continue
 					}
 
-					if filesID, fileOK := valMap.Get(fileID); fileOK {
+					if filesID, fileOK := valMap.Get(fileIDKey); fileOK {
 						attachmentFiles = append(attachmentFiles, filesID.(string))
 					}
 				}
@@ -499,12 +493,13 @@ func getAdditionalAttachList(form entity.DescriptionForm, formData *FormData) []
 
 func (runCtx *BlockRunContext) GetAttachmentFiles(desc *om.OrderedMap, addAttach []string) ([]e.Attachment, error) {
 	var (
-		err         error
-		filesAttach []fileregistry.FileInfo
+		err              error
+		filesAttach      []fileregistry.FileInfo
+		filesAttachLinks []fileregistry.AttachInfo
 	)
 
 	if addAttach == nil {
-		filesAttach, err = runCtx.makeNotificationAttachment()
+		filesAttach, filesAttachLinks, err = runCtx.makeNotificationAttachment()
 	} else {
 		filesAttach, err = runCtx.makeNotificationFormAttachment(addAttach)
 	}
@@ -519,6 +514,8 @@ func (runCtx *BlockRunContext) GetAttachmentFiles(desc *om.OrderedMap, addAttach
 	}
 
 	if len(attachments.AttachmentsList) != 0 || len(attachments.AttachLinks) != 0 {
+		attachments.AttachLinks = append(attachments.AttachLinks, filesAttachLinks...)
+
 		desc.Set(attachLinks, attachments.AttachLinks)
 		desc.Set(attachExist, attachments.AttachExists)
 		desc.Set(attachList, attachments.AttachmentsList)
@@ -592,7 +589,7 @@ func GetConvertDesc(descriptions om.OrderedMap, keys map[string]string, hiddenFi
 		}
 
 		nameKey := strings.Replace(keysSplit[1], ")", "", 1)
-		if nameKey == fileID {
+		if nameKey == fileIDKey {
 			continue
 		}
 
