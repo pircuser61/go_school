@@ -20,4 +20,6 @@ variables:
   WRK_MEMORY_LIMIT_REVIEW: 2Gi
   WRK_LIMIT_CPU_REVIEW: 2
   GOLANGCI_LINT_TIMEOUT: 30m
+  WRK_MEMORY_LIMIT_DEPLOY_HELPER:   1024Mi
+  WRK_MEMORY_LIMIT_DEPLOY:          1024Mi
   WRK_IMG_GOLANG_BUILD: registry.services.mts.ru/docker/golang/all:1.20.0-alpine3.17.1-gcc-v1

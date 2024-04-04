@@ -243,7 +243,7 @@ func (ae *Env) getTaskStepWithRetry(ctx c.Context, stepID uuid.UUID) (*entity.St
 	for i := 0; i < getTaskStepRetryCount; i++ {
 		<-time.After(getTaskStepTimeout * time.Second)
 
-		st, err := ae.DB.GetTaskStepByID(ctx, stepID)
+		st, err := ae.DB.GetActiveTaskStepByID(ctx, stepID)
 		if errors.Is(err, pgx.ErrNoRows) {
 			continue
 		}

@@ -38,6 +38,7 @@ type TaskStorager interface {
 	GetTaskSteps(ctx c.Context, id uuid.UUID) (e.TaskSteps, error)
 	GetUnfinishedTaskSteps(ctx c.Context, in *e.GetUnfinishedTaskSteps) (e.TaskSteps, error)
 	GetTaskStepByID(ctx c.Context, id uuid.UUID) (*e.Step, error)
+	GetActiveTaskStepByID(ctx c.Context, id uuid.UUID) (*e.Step, error)
 	GetParentTaskStepByName(ctx c.Context, workID uuid.UUID, stepName string) (*e.Step, error)
 	GetTaskStepByName(ctx c.Context, workID uuid.UUID, stepName string) (*e.Step, error)
 	GetCanceledTaskSteps(ctx c.Context, taskID uuid.UUID) ([]e.Step, error)

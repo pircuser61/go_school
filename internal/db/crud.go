@@ -2025,6 +2025,73 @@ func (db *PGCon) GetTaskStepByID(ctx context.Context, id uuid.UUID) (*entity.Ste
 	return &s, nil
 }
 
+func (db *PGCon) GetActiveTaskStepByID(ctx context.Context, id uuid.UUID) (*entity.Step, error) {
+	ctx, span := trace.StartSpan(ctx, "pg_get_task_step_by_id")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	q := `
+	SELECT 
+	    vs.id,
+	    vs.work_id,
+		w.work_number,
+	    vs.step_type,
+		vs.step_name, 
+		vs.time, 
+		vs.content, 
+		COALESCE(vs.break_points, '{}') AS break_points, 
+		vs.has_error,
+		vs.status,
+		w.author,
+		vs.updated_at,
+		w.run_context -> 'initial_application' -> 'is_test_application' as isTest,
+		vs.is_paused
+	FROM variable_storage vs 
+	JOIN works w ON vs.work_id = w.id
+		WHERE vs.id = $1 AND vs.status IN ('running', 'idle') AND NOT vs.is_paused
+	LIMIT 1`
+
+	var (
+		s       entity.Step
+		content string
+	)
+
+	err := db.Connection.QueryRow(ctx, q, id).Scan(
+		&s.ID,
+		&s.WorkID,
+		&s.WorkNumber,
+		&s.Type,
+		&s.Name,
+		&s.Time,
+		&content,
+		&s.BreakPoints,
+		&s.HasError,
+		&s.Status,
+		&s.Initiator,
+		&s.UpdatedAt,
+		&s.IsTest,
+		&s.IsPaused,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	storage := store.NewStore()
+
+	err = json.Unmarshal([]byte(content), storage)
+	if err != nil {
+		return nil, err
+	}
+
+	s.State = storage.State
+	s.Steps = storage.Steps
+	s.Errors = storage.Errors
+	s.Storage = storage.Values
+
+	return &s, nil
+}
+
 //nolint:dupl //its not duplicate
 func (db *PGCon) GetParentTaskStepByName(ctx context.Context,
 	workID uuid.UUID, stepName string,
