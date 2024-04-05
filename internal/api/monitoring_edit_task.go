@@ -50,20 +50,12 @@ func (ae *Env) EditTaskBlockData(w http.ResponseWriter, r *http.Request, blockId
 		return
 	}
 
-	defer func() {
-		rollbackErr := txStorage.RollbackTransaction(ctx)
-		if rollbackErr != nil {
-			ae.Log.WithError(rollbackErr).
-				WithField("funcName", "EditTaskBlockData").
-				Error("failed rollback transaction")
-		}
-	}()
-
 	req := &MonitoringTaskEditBlockRequest{}
 
 	err = json.Unmarshal(b, req)
 	if err != nil {
 		errorHandler.handleError(MonitoringEditBlockParseError, err)
+		ae.rollbackTransaction(ctx, txStorage)
 
 		return
 	}
@@ -73,6 +65,7 @@ func (ae *Env) EditTaskBlockData(w http.ResponseWriter, r *http.Request, blockId
 	blockUUID, parseIDErr := uuid.Parse(blockId)
 	if parseIDErr != nil {
 		errorHandler.handleError(UUIDParsingError, parseIDErr)
+		ae.rollbackTransaction(ctx, txStorage)
 
 		return
 	}
@@ -80,6 +73,7 @@ func (ae *Env) EditTaskBlockData(w http.ResponseWriter, r *http.Request, blockId
 	dbStep, getStepErr := ae.DB.GetTaskStepByID(ctx, blockUUID)
 	if getStepErr != nil {
 		errorHandler.handleError(GetTaskStepError, getStepErr)
+		ae.rollbackTransaction(ctx, txStorage)
 
 		return
 	}
@@ -87,6 +81,7 @@ func (ae *Env) EditTaskBlockData(w http.ResponseWriter, r *http.Request, blockId
 	editBlockData, editErr := ae.editGoBlock(ctx, blockUUID, dbStep.Type, dbStep.Name, data, req.ChangeType)
 	if editErr != nil {
 		errorHandler.handleError(EditMonitoringBlockError, err)
+		ae.rollbackTransaction(ctx, txStorage)
 
 		return
 	}
@@ -94,6 +89,7 @@ func (ae *Env) EditTaskBlockData(w http.ResponseWriter, r *http.Request, blockId
 	ui, err := user.GetUserInfoFromCtx(ctx)
 	if err != nil {
 		errorHandler.handleError(NoUserInContextError, err)
+		ae.rollbackTransaction(ctx, txStorage)
 
 		return
 	}
@@ -109,6 +105,7 @@ func (ae *Env) EditTaskBlockData(w http.ResponseWriter, r *http.Request, blockId
 	jsonParams, err = json.Marshal(eventData)
 	if err != nil {
 		errorHandler.handleError(MarshalEventParamsError, err)
+		ae.rollbackTransaction(ctx, txStorage)
 
 		return
 	}
@@ -121,6 +118,7 @@ func (ae *Env) EditTaskBlockData(w http.ResponseWriter, r *http.Request, blockId
 	})
 	if err != nil {
 		errorHandler.handleError(CreateTaskEventError, err)
+		ae.rollbackTransaction(ctx, txStorage)
 
 		return
 	}
@@ -128,6 +126,7 @@ func (ae *Env) EditTaskBlockData(w http.ResponseWriter, r *http.Request, blockId
 	updErr := ae.UpdateContent(ctx, txStorage, editBlockData, dbStep.WorkID.String(), eventID)
 	if updErr != -1 {
 		errorHandler.sendError(updErr)
+		ae.rollbackTransaction(ctx, txStorage)
 
 		return
 	}
@@ -164,6 +163,15 @@ func convertReqEditData(reqData map[string]MonitoringEditBlockData) (res map[str
 	}
 
 	return convertedData
+}
+
+func (ae *Env) rollbackTransaction(ctx context.Context, tx db.Database) {
+	rollbackErr := tx.RollbackTransaction(ctx)
+	if rollbackErr != nil {
+		ae.Log.WithError(rollbackErr).
+			WithField("funcName", "EditTaskBlockData").
+			Error("failed rollback transaction")
+	}
 }
 
 func (ae *Env) UpdateContent(ctx context.Context, txStorage db.Database,

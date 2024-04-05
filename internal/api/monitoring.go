@@ -639,22 +639,17 @@ func (ae *Env) pauseTask(ctx context.Context, author string, workID uuid.UUID, p
 		return fmt.Errorf("failed start transaction, %w", err)
 	}
 
-	defer func() {
-		rollbackErr := txStorage.RollbackTransaction(ctx)
-		if rollbackErr != nil {
-			ae.Log.WithError(rollbackErr).
-				WithField("funcName", "pauseTask").
-				Error("failed rollback transaction")
-		}
-	}()
-
 	err = txStorage.SetTaskPaused(ctx, workID.String(), true)
 	if err != nil {
+		ae.rollbackTransaction(ctx, txStorage)
+
 		return err
 	}
 
 	err = txStorage.UpdateTaskStatus(ctx, workID, db.RunStatusStopped, "", "")
 	if err != nil {
+		ae.rollbackTransaction(ctx, txStorage)
+
 		return err
 	}
 
@@ -665,6 +660,8 @@ func (ae *Env) pauseTask(ctx context.Context, author string, workID uuid.UUID, p
 
 	ids, err := txStorage.PauseTaskBlocks(ctx, workID.String(), stepIDs)
 	if err != nil {
+		ae.rollbackTransaction(ctx, txStorage)
+
 		return err
 	}
 
@@ -676,6 +673,8 @@ func (ae *Env) pauseTask(ctx context.Context, author string, workID uuid.UUID, p
 	if params != nil {
 		jsonParams, err = json.Marshal(params)
 		if err != nil {
+			ae.rollbackTransaction(ctx, txStorage)
+
 			return err
 		}
 	}
@@ -687,6 +686,8 @@ func (ae *Env) pauseTask(ctx context.Context, author string, workID uuid.UUID, p
 		Params:    jsonParams,
 	})
 	if err != nil {
+		ae.rollbackTransaction(ctx, txStorage)
+
 		return err
 	}
 
@@ -704,25 +705,22 @@ func (ae *Env) startTask(ctx context.Context, dto *startNodesParams) error {
 		return fmt.Errorf("failed start transaction, %w", err)
 	}
 
-	defer func() {
-		rollbackErr := txStorage.RollbackTransaction(ctx)
-		if rollbackErr != nil {
-			ae.Log.WithError(rollbackErr).
-				WithField("funcName", "pauseTask").
-				Error("failed rollback transaction")
-		}
-	}()
-
 	isPaused, err := txStorage.IsTaskPaused(ctx, dto.workID)
 	if err != nil {
+		ae.rollbackTransaction(ctx, txStorage)
+
 		return err
 	}
 
 	if !isPaused {
+		ae.rollbackTransaction(ctx, txStorage)
+
 		return errors.New("can't unpause running task")
 	}
 
 	if dto.params == nil || dto.params.Steps == nil {
+		ae.rollbackTransaction(ctx, txStorage)
+
 		return errors.New("can't found restarting steps")
 	}
 
@@ -747,6 +745,8 @@ func (ae *Env) startTask(ctx context.Context, dto *startNodesParams) error {
 	newSteps := make([]string, 0, len(steps))
 
 	if updErr := txStorage.UpdateTaskStatus(ctx, dto.workID, db.RunStatusRunning, "", ""); updErr != nil {
+		ae.rollbackTransaction(ctx, txStorage)
+
 		return updErr
 	}
 
@@ -761,6 +761,8 @@ func (ae *Env) startTask(ctx context.Context, dto *startNodesParams) error {
 			dto.byOne,
 		)
 		if restartErr != nil {
+			ae.rollbackTransaction(ctx, txStorage)
+
 			return restartErr
 		}
 
@@ -773,6 +775,8 @@ func (ae *Env) startTask(ctx context.Context, dto *startNodesParams) error {
 	if dto.params != nil {
 		jsonParams, err = json.Marshal(dto.params)
 		if err != nil {
+			ae.rollbackTransaction(ctx, txStorage)
+
 			return err
 		}
 	}
@@ -785,11 +789,15 @@ func (ae *Env) startTask(ctx context.Context, dto *startNodesParams) error {
 		Time:      crEventTime,
 	})
 	if err != nil {
+		ae.rollbackTransaction(ctx, txStorage)
+
 		return err
 	}
 
 	err = txStorage.TryUnpauseTask(ctx, dto.workID)
 	if err != nil {
+		ae.rollbackTransaction(ctx, txStorage)
+
 		return err
 	}
 
