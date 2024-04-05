@@ -28,6 +28,9 @@ import (
 )
 
 func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessage) error {
+	ctx, span := trace.StartSpan(ctx, "FunctionReturnHandler")
+	defer span.End()
+
 	log := ae.Log
 
 	messageTmp, err := json.Marshal(message)
