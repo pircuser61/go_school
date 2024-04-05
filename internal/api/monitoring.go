@@ -828,17 +828,6 @@ func (ae *Env) restartNode(
 
 	isFinished := dbStep.Status == finished || dbStep.Status == skipped || dbStep.Status == cancel
 
-	blockStart := dbStep.Time
-
-	if isFinished {
-		var errCopy error
-		dbStep.ID, errCopy = txStorage.CopyTaskBlock(ctx, dbStep.ID)
-
-		if errCopy != nil {
-			return "", errCopy
-		}
-	}
-
 	isResumable, _, resumableErr := txStorage.IsBlockResumable(ctx, workID, dbStep.ID)
 	if resumableErr != nil {
 		return "", resumableErr
@@ -858,9 +847,18 @@ func (ae *Env) restartNode(
 		return "", dbTaskErr
 	}
 
-	skipErr := ae.skipTaskBlocksAfterRestart(ctx, &task.Steps, blockStart, blockData.Next, workNumber, workID, txStorage)
+	skipErr := ae.skipTaskBlocksAfterRestart(ctx, &task.Steps, dbStep.Time, blockData.Next, workNumber, workID, txStorage)
 	if skipErr != nil {
 		return "", skipErr
+	}
+
+	if isFinished {
+		var errCopy error
+		dbStep.ID, errCopy = txStorage.CopyTaskBlock(ctx, dbStep.ID)
+
+		if errCopy != nil {
+			return "", errCopy
+		}
 	}
 
 	unpErr := txStorage.UnpauseTaskBlock(ctx, workID, dbStep.ID)
@@ -918,7 +916,7 @@ func (ae *Env) restartNode(
 }
 
 func (ae *Env) getNodesToSkip(ctx context.Context, nextNodes map[string][]string,
-	workNumber string, steps map[string]bool,
+	workNumber string, steps map[string]bool, viewedNodes map[string]struct{},
 ) (nodeList []string, err error) {
 	for _, val := range nextNodes {
 		for _, next := range val {
@@ -926,14 +924,19 @@ func (ae *Env) getNodesToSkip(ctx context.Context, nextNodes map[string][]string
 				continue
 			}
 
+			if _, ok := viewedNodes[next]; ok {
+				continue
+			}
+
 			nodeList = append(nodeList, next)
+			viewedNodes[next] = struct{}{}
 
 			blockData, blockErr := ae.DB.GetBlockDataFromVersion(ctx, workNumber, next)
 			if blockErr != nil {
 				return nil, blockErr
 			}
 
-			nodes, recErr := ae.getNodesToSkip(ctx, blockData.Next, workNumber, steps)
+			nodes, recErr := ae.getNodesToSkip(ctx, blockData.Next, workNumber, steps, viewedNodes)
 			if recErr != nil {
 				return nil, recErr
 			}
@@ -958,7 +961,7 @@ func (ae *Env) skipTaskBlocksAfterRestart(ctx context.Context, steps *entity.Tas
 		dbSteps[(*steps)[i].Name] = true
 	}
 
-	nodesToSkip, skipErr := ae.getNodesToSkip(ctx, nextNodes, workNumber, dbSteps)
+	nodesToSkip, skipErr := ae.getNodesToSkip(ctx, nextNodes, workNumber, dbSteps, map[string]struct{}{})
 	if skipErr != nil {
 		return skipErr
 	}
