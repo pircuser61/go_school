@@ -163,6 +163,7 @@ func (s *Service) StartConsumer(ctx c.Context) {
 	go func() {
 		err := s.consumer.Serve(ctx, s.MessageHandler)
 		if err != nil {
+			s.consumer = nil
 			s.log.Error(err)
 		}
 	}()
