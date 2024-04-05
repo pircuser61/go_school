@@ -607,6 +607,8 @@ gitlab.services.mts.ru/jocasta/integrations v1.9.0 h1:TVPQPTLLNZmRzwLPen33UjfPuS
 gitlab.services.mts.ru/jocasta/integrations v1.9.0/go.mod h1:9rKUlXs3NW0eWoWKkEMtVYNZwS71L4gu04UTtoRoG4Q=
 gitlab.services.mts.ru/jocasta/msg-kit v0.1.1 h1:+cqIlLRKbmJmBwzGsvdtwzXkUaui8KhVg1spmsbfHS8=
 gitlab.services.mts.ru/jocasta/msg-kit v0.1.1/go.mod h1:yXp0u760CmAViHEQ6ZgIRZl/fO7oblf98t3N1O+IYac=
+gitlab.services.mts.ru/jocasta/msg-kit v0.1.4 h1:c/aTJ5f8uRMnpYEK5p+/AIjwz9WxeEhtqzHK9WYIpG4=
+gitlab.services.mts.ru/jocasta/msg-kit v0.1.4/go.mod h1:yXp0u760CmAViHEQ6ZgIRZl/fO7oblf98t3N1O+IYac=
 gitlab.services.mts.ru/jocasta/scheduler v1.6.1-0.20240208115625-18ca89318e84 h1:ovquJ/+mSk4B3PlnQtXlRXp+EM74qmKCFwBphgVW2UI=
 gitlab.services.mts.ru/jocasta/scheduler v1.6.1-0.20240208115625-18ca89318e84/go.mod h1:Ri3G/AocVrNrWn1q1bxQNWadhCfaOoNdKY8RC4wyg90=
 gitlab.services.mts.ru/prodboard/infra v0.3.0 h1:i1owlG5nvYcyNHx7fjTKvaeQm+aW3KeyxHbrapVgxFk=
