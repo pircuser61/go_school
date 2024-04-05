@@ -161,7 +161,7 @@ func TestGetNodesToSkip(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
-			nodes, err := ae.getNodesToSkip(ctx, tt.params.nextNodes, tt.params.workNumber, tt.params.steps)
+			nodes, err := ae.getNodesToSkip(ctx, tt.params.nextNodes, tt.params.workNumber, tt.params.steps, map[string]struct{}{})
 			if err != nil {
 				t.Fatal(err)
 			}
