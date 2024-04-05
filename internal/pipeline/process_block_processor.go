@@ -95,7 +95,7 @@ func (p *blockProcessor) ProcessBlock(ctx context.Context, its int) error {
 			}
 
 			// эта функция уже будет обрабатывать ошибку, ошибку которую она вернула не нужно обрабатывать повторно
-			processActiveErr := p.processActiveBlocks(ctx, activeBlocks, its, true)
+			processActiveErr := p.processActiveBlocks(ctx, activeBlocks, its, true, false)
 			if processActiveErr != nil {
 				return processActiveErr
 			}
@@ -174,7 +174,7 @@ func (p *blockProcessor) ProcessBlock(ctx context.Context, its int) error {
 	}
 
 	// эта функция уже будет обрабатывать ошибку, ошибку которую она вернула не нужно обрабатывать повторно
-	err = p.processActiveBlocks(ctx, activeBlocks, its, false)
+	err = p.processActiveBlocks(ctx, activeBlocks, its, false, true)
 	if err != nil {
 		return err
 	}
@@ -257,7 +257,7 @@ func (runCtx *BlockRunContext) updateStatusByStep(ctx context.Context, status Ta
 }
 
 // эта функция уже будет обрабатывать ошибку, ошибку которую она вернула не нужно обрабатывать повторно
-func (p *blockProcessor) processActiveBlocks(ctx context.Context, activeBlocks []string, its int, updateVarStore bool) error {
+func (p *blockProcessor) processActiveBlocks(ctx context.Context, activeBlocks []string, its int, updateVarStore, commitTx bool) error {
 	log := logger.GetLogger(ctx).WithField("workNumber", p.runCtx.WorkNumber)
 
 	for _, blockName := range activeBlocks {
@@ -274,11 +274,13 @@ func (p *blockProcessor) processActiveBlocks(ctx context.Context, activeBlocks [
 		}
 	}
 
-	err := p.commitTx(ctx)
-	if err != nil {
-		log.WithError(err).Error("could`t commit tx")
+	if commitTx {
+		err := p.commitTx(ctx)
+		if err != nil {
+			log.WithError(err).Error("could`t commit tx")
 
-		return err
+			return err
+		}
 	}
 
 	for _, blockName := range activeBlocks {
