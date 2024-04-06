@@ -10,7 +10,7 @@ INSERT INTO task_events (id, work_id, author, event_type, params, created_at)
     (SELECT uuid_generate_v4(), start_ids, author,'start', '{"steps": []}', started_at  from old_events);
 
 INSERT INTO task_events (id, work_id, author, event_type,params, created_at)
-    (SELECT uuid_generate_v4(), pause_ids, author,'pause', '{"steps": []}', fat  from old_events where pause_ids is not null);
+    (SELECT uuid_generate_v4(), pause_ids, 'jocasta','pause', '{"steps": []}', fat  from old_events where pause_ids is not null);
 
 drop table if exists old_events;
 -- +goose StatementEnd
