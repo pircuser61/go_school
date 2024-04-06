@@ -4,6 +4,9 @@ import (
 	c "context"
 	"fmt"
 	"strings"
+	"time"
+
+	"github.com/google/uuid"
 
 	e "gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 
@@ -11,8 +14,12 @@ import (
 )
 
 func getTasksForMonitoringQuery(filters *e.TasksForMonitoringFilters) *string {
+	// nolint:gocritic
+	// language=PostgreSQL
 	q := `
-		SELECT CASE
+		SELECT 	
+		    w.id,
+		    CASE
 				WHEN w.status IN (1, 3, 5) THEN 'В работе'
 				WHEN w.status = 2 THEN 'Завершен'
 				WHEN w.status = 4 THEN 'Остановлен'
@@ -25,19 +32,10 @@ func getTasksForMonitoringQuery(filters *e.TasksForMonitoringFilters) *string {
 			w.started_at AS started_at,
 			w.finished_at AS finished_at,
 			p.deleted_at AS process_deleted_at,
-			e.event_type AS last_event_type,
-			e.created_at AS last_event_at,
 			COUNT(*) OVER() AS total
 		FROM works w
 		LEFT JOIN versions v ON w.version_id = v.id
 		LEFT JOIN pipelines p ON v.pipeline_id = p.id
-		LEFT JOIN LATERAL (
-			SELECT event_type, created_at, work_id
-			FROM task_events
-			WHERE event_type IN('pause', 'start', 'startByOne')
-			ORDER BY created_at DESC
-			LIMIT 1
-		) e ON e.work_id = w.id
 		WHERE w.started_at IS NOT NULL AND p.name IS NOT NULL AND v.is_hidden = false
 	`
 
@@ -116,20 +114,27 @@ func (db *PGCon) GetTasksForMonitoring(ctx c.Context, dto *e.TasksForMonitoringF
 		Tasks: make([]e.TaskForMonitoring, 0),
 	}
 
+	var workID uuid.UUID
+
 	for rows.Next() {
 		task := e.TaskForMonitoring{}
 
-		err = rows.Scan(&task.Status,
+		err = rows.Scan(
+			&workID,
+			&task.Status,
 			&task.ProcessName,
 			&task.Initiator,
 			&task.WorkNumber,
 			&task.StartedAt,
 			&task.FinishedAt,
 			&task.ProcessDeletedAt,
-			&task.LastEventType,
-			&task.LastEventAt,
 			&tasksForMonitoring.Total,
 		)
+		if err != nil {
+			return nil, err
+		}
+
+		task.LastEventType, task.LastEventAt, err = db.getLastEventForMonitoringByWorkID(ctx, workID)
 		if err != nil {
 			return nil, err
 		}
@@ -263,4 +268,30 @@ func (db *PGCon) GetTaskForMonitoring(ctx c.Context, workNumber string, fromEven
 	}
 
 	return res, nil
+}
+
+func (db *PGCon) getLastEventForMonitoringByWorkID(ctx c.Context, workID uuid.UUID) (eventType *string, eventTime *time.Time, err error) {
+	ctx, span := trace.StartSpan(ctx, "get_task_for_monitoring")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	q := `
+			SELECT created_at, event_type 
+			FROM task_events WHERE work_id = $1 
+			ORDER BY created_at DESC LIMIT 1
+		`
+
+	row := db.Connection.QueryRow(ctx, q, workID)
+
+	var eType *string
+
+	var t *time.Time
+
+	err = row.Scan(&t, &eType)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return eType, t, nil
 }
