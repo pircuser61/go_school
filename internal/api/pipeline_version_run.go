@@ -89,18 +89,12 @@ func (ae *Env) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	realAuthor, err := user.GetEffectiveUserInfoFromCtx(ctx)
-	if err != nil {
-		errorHandler.handleError(NoUserInContextError, err)
-	}
-
 	taskID := uuid.New()
 
 	workNumber, err := ae.createEmptyTask(ctx, ae.DB, &db.CreateEmptyTaskDTO{
 		TaskID:     taskID,
 		WorkNumber: req.WorkNumber,
 		Author:     usr.Username,
-		RealAuthor: realAuthor.Username,
 		RunContext: &entity.TaskRunContext{
 			InitialApplication: entity.InitialApplication{
 				Description:               req.Description,
@@ -284,18 +278,12 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	realAuthor, err := user.GetEffectiveUserInfoFromCtx(ctx)
-	if err != nil {
-		errorHandler.handleError(NoUserInContextError, err)
-	}
-
 	taskID := uuid.New()
 
 	workNumber, err := ae.createEmptyTask(ctx, storage,
 		&db.CreateEmptyTaskDTO{
-			TaskID:     taskID,
-			Author:     usr.Username,
-			RealAuthor: realAuthor.Username,
+			TaskID: taskID,
+			Author: usr.Username,
 			RunContext: &entity.TaskRunContext{
 				ClientID:   clientID,
 				PipelineID: req.PipelineID,

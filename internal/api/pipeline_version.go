@@ -695,6 +695,7 @@ func (ae *Env) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO) (
 	updateTaskDTO := db.NewUpdateEmptyTaskDTO(
 		dto.taskID,
 		dto.p.VersionID,
+		dto.authorName,
 		dto.realAuthorName,
 		parameters,
 		dto.runCtx,
