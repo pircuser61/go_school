@@ -285,6 +285,7 @@ func (db *PGCon) getLastEventForMonitoringByWorkID(ctx c.Context, workID uuid.UU
 	row := db.Connection.QueryRow(ctx, q, workID)
 
 	var eType *string
+
 	var t *time.Time
 
 	err = row.Scan(&t, &eType)
