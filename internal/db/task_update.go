@@ -19,6 +19,7 @@ type UpdateEmptyTaskDTO struct {
 	WorkID uuid.UUID
 
 	VersionID  uuid.UUID
+	Author     string
 	RealAuthor string
 	Parameters []byte
 	Debug      bool
@@ -28,6 +29,7 @@ type UpdateEmptyTaskDTO struct {
 //nolint:gocritic //ну че нам памяти что-ли жалко
 func NewUpdateEmptyTaskDTO(
 	workID, versionID uuid.UUID,
+	author string,
 	realAuthor string,
 	parameters []byte,
 	runContext entity.TaskRunContext,
@@ -36,6 +38,7 @@ func NewUpdateEmptyTaskDTO(
 		WorkID:     workID,
 		VersionID:  versionID,
 		RunContext: runContext,
+		Author:     author,
 		RealAuthor: realAuthor,
 		Parameters: parameters,
 		Debug:      false,
@@ -65,9 +68,10 @@ func (db *PGCon) FillEmptyTask(ctx c.Context, updateTask *UpdateEmptyTaskDTO) er
 			version_id = $2,
 			run_context = $3,
 			version_sla_id = $4,
-			real_author = $5,
-			parameters = $6,
-			debug = $7
+			author = $5,
+			real_author = $6,
+			parameters = $7,
+			debug = $8
 			
 			WHERE id = $1 
 	`
@@ -79,6 +83,7 @@ func (db *PGCon) FillEmptyTask(ctx c.Context, updateTask *UpdateEmptyTaskDTO) er
 		updateTask.VersionID,
 		updateTask.RunContext,
 		slaID,
+		updateTask.Author,
 		updateTask.RealAuthor,
 		updateTask.Parameters,
 		updateTask.Debug,
