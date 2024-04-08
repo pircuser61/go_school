@@ -706,7 +706,7 @@ type ApproverOutput struct {
 	Decision *ApproverDecision
 }
 
-func (gb *GoApproverBlock) UpdateStateUsingOutput(ctx context.Context, data []byte) (state map[string]interface{}, err error) {
+func (gb *GoApproverBlock) UpdateStateUsingOutput(_ context.Context, data []byte) (state map[string]interface{}, err error) {
 	approverOutput := ApproverOutput{}
 
 	unmErr := json.Unmarshal(data, &approverOutput)

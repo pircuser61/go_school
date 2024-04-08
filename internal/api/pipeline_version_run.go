@@ -403,8 +403,7 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 func (ae *Env) handleStartApplicationParams(ctx c.Context, dto *requestStartParams) error {
 	hiddenFields, err := ae.getHiddenFields(ctx, dto.version)
 	if err != nil {
-		e := GetHiddenFieldsError
-		ae.Log.Error(e.errorMessage(err))
+		ae.Log.Error(GetHiddenFieldsError.errorMessage(err))
 	}
 
 	dto.hiddenFields = hiddenFields
@@ -570,6 +569,15 @@ func cleanKey(mapKeys interface{}) string {
 		return ""
 	}
 
+	keyStr, okStr := key.(string)
+	if !okStr {
+		return ""
+	}
+
+	return cleanUnexpectedSymbols(keyStr)
+}
+
+func cleanUnexpectedSymbols(s string) string {
 	replacements := map[string]string{
 		"\\t":  "",
 		"\t":   "",
@@ -581,16 +589,11 @@ func cleanKey(mapKeys interface{}) string {
 		"\"":   "''",
 	}
 
-	keyStr, okStr := key.(string)
-	if !okStr {
-		return ""
-	}
-
 	for old, news := range replacements {
-		keyStr = strings.ReplaceAll(keyStr, old, news)
+		s = strings.ReplaceAll(s, old, news)
 	}
 
-	return strings.ReplaceAll(keyStr, "\\", "")
+	return strings.ReplaceAll(s, "\\", "")
 }
 
 func (ae *Env) createEmptyTask(ctx c.Context, storage db.Database, emptyTask *db.CreateEmptyTaskDTO) (string, error) {
