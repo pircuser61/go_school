@@ -585,8 +585,10 @@ func (ae *Env) GetTasks(w http.ResponseWriter, req *http.Request, params GetTask
 		if resp.Tasks[i].CurrentExecutor.ExecutionGroupName == "" {
 			if resp.Tasks[i].CurrentExecutor.ExecutionGroupID == "" {
 				resp.Tasks[i].CurrentExecutor.ExecutionGroupName = executionNotInGroup
+
 				continue
 			}
+
 			resp.Tasks[i].CurrentExecutor.ExecutionGroupName = executionBaseGroupName
 		}
 	}
