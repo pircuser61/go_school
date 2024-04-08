@@ -744,6 +744,15 @@ type BlockEditResponse_Blocks struct {
 	AdditionalProperties map[string]MonitoringEditBlockData `json:"-"`
 }
 
+// BlockErrorResponse defines model for BlockErrorResponse.
+type BlockErrorResponse struct {
+	// Описание способа просмотра ошибок
+	Description string `json:"description"`
+
+	// Ссылка на OpenSearch
+	Url string `json:"url"`
+}
+
 // BlockStateResponse defines model for BlockStateResponse.
 type BlockStateResponse struct {
 	// Стейт блока
@@ -3550,6 +3559,9 @@ type ServerInterface interface {
 	// Получение контекста блоков
 	// (GET /monitoring/tasks/block/{blockId}/context)
 	GetBlockContext(w http.ResponseWriter, r *http.Request, blockId string)
+	// Получение ошибок блока
+	// (GET /monitoring/tasks/block/{blockId}/error)
+	GetBlockError(w http.ResponseWriter, r *http.Request, blockId string)
 	// Get inputs and outputs of block
 	// (GET /monitoring/tasks/block/{blockId}/params)
 	GetMonitoringTasksBlockBlockIdParams(w http.ResponseWriter, r *http.Request, blockId string)
@@ -4026,6 +4038,32 @@ func (siw *ServerInterfaceWrapper) GetBlockContext(w http.ResponseWriter, r *htt
 
 	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetBlockContext(w, r, blockId)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
+// GetBlockError operation middleware
+func (siw *ServerInterfaceWrapper) GetBlockError(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "blockId" -------------
+	var blockId string
+
+	err = runtime.BindStyledParameter("simple", false, "blockId", chi.URLParam(r, "blockId"), &blockId)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "blockId", Err: err})
+		return
+	}
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetBlockError(w, r, blockId)
 	}
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -5721,6 +5759,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/monitoring/tasks/block/{blockId}/context", wrapper.GetBlockContext)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/monitoring/tasks/block/{blockId}/error", wrapper.GetBlockError)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/monitoring/tasks/block/{blockId}/params", wrapper.GetMonitoringTasksBlockBlockIdParams)

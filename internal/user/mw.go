@@ -5,6 +5,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"gitlab.services.mts.ru/abp/myosotis/logger"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 )
 
@@ -53,9 +54,11 @@ func GetEffectiveUserInfoFromCtx(ctx context.Context) (*sso.UserInfo, error) {
 }
 
 func SetUserInfoToCtx(ctx context.Context, ui *sso.UserInfo) context.Context {
-	return context.WithValue(ctx, userInfoCtx{}, ui)
+	log := logger.GetLogger(ctx).WithField("requestLogin", ui.Username)
+	return logger.WithLogger(context.WithValue(ctx, userInfoCtx{}, ui), log)
 }
 
 func SetAsOtherUserInfoToCtx(ctx context.Context, ui *sso.UserInfo) context.Context {
-	return context.WithValue(ctx, asOtherUserInfoCtx{}, ui)
+	log := logger.GetLogger(ctx).WithField("X-As-Other", ui.Username)
+	return logger.WithLogger(context.WithValue(ctx, asOtherUserInfoCtx{}, ui), log)
 }

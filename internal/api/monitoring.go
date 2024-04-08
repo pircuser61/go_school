@@ -282,7 +282,7 @@ func (ae *Env) GetMonitoringTasksBlockBlockIdParams(w http.ResponseWriter, req *
 	if err != nil {
 		e := UnknownError
 
-		log.WithField("blockId", blockID).
+		log.WithField("stepID", blockID).
 			Error(e.errorMessage(err))
 		errorHandler.sendError(e)
 	}
@@ -291,8 +291,8 @@ func (ae *Env) GetMonitoringTasksBlockBlockIdParams(w http.ResponseWriter, req *
 	if err != nil {
 		e := GetBlockContextError
 
-		log.WithField("blockId", blockID).
-			WithField("taskStep.Name", taskStep.Name).
+		log.WithField("stepID", blockID).
+			WithField("stepName", taskStep.Name).
 			Error(e.errorMessage(err))
 		errorHandler.sendError(e)
 
@@ -313,8 +313,8 @@ func (ae *Env) GetMonitoringTasksBlockBlockIdParams(w http.ResponseWriter, req *
 	if err != nil {
 		e := GetBlockContextError
 
-		log.WithField("blockId", blockID).
-			WithField("taskStep.Name", taskStep.Name).
+		log.WithField("stepID", blockID).
+			WithField("stepName", taskStep.Name).
 			Error(e.errorMessage(err))
 		errorHandler.sendError(e)
 
@@ -325,8 +325,8 @@ func (ae *Env) GetMonitoringTasksBlockBlockIdParams(w http.ResponseWriter, req *
 	if err != nil {
 		e := CheckForHiddenError
 
-		log.WithField("blockId", blockID).
-			WithField("taskStep.Name", taskStep.Name).
+		log.WithField("stepID", blockID).
+			WithField("stepName", taskStep.Name).
 			Error(e.errorMessage(err))
 		errorHandler.sendError(e)
 
@@ -384,7 +384,7 @@ func (ae *Env) GetBlockState(w http.ResponseWriter, r *http.Request, blockID str
 	if err != nil {
 		e := CheckForHiddenError
 		log.
-			WithField("blockId", blockID).
+			WithField("stepID", blockID).
 			Error(e.errorMessage(err))
 		errorHandler.sendError(e)
 
@@ -422,6 +422,59 @@ func (ae *Env) GetBlockState(w http.ResponseWriter, r *http.Request, blockID str
 	}
 }
 
+func (ae *Env) GetBlockError(w http.ResponseWriter, r *http.Request, blockID string) {
+	ctx, span := trace.StartSpan(r.Context(), "start get block state")
+	defer span.End()
+
+	log := logger.GetLogger(ctx).
+		WithField("stepID", blockID)
+	errorHandler := newHTTPErrorHandler(log, w)
+
+	blockIsHidden, err := ae.DB.CheckBlockForHiddenFlag(ctx, blockID)
+	if err != nil {
+		e := CheckForHiddenError
+		log.Error(e.errorMessage(err))
+		errorHandler.sendError(e)
+
+		return
+	}
+
+	if blockIsHidden {
+		errorHandler.handleError(ForbiddenError, nil)
+
+		return
+	}
+
+	blockIDUUID, err := uuid.Parse(blockID)
+	if err != nil {
+		errorHandler.handleError(UUIDParsingError, err)
+	}
+
+	taskStep, err := ae.DB.GetTaskStepByID(ctx, blockIDUUID)
+	if err != nil {
+		e := UnknownError
+
+		log.Error(e.errorMessage(err))
+		errorHandler.sendError(e)
+	}
+
+	log = log.WithField("workID", taskStep.WorkID).
+		WithField("workNumber", taskStep.WorkNumber).
+		WithField("stepName", taskStep.Name)
+
+	desc := fmt.Sprintf(getErrorDescription(), blockID, taskStep.WorkNumber)
+	urlError := getErrorURL(taskStep.WorkNumber, blockID)
+
+	if err = sendResponse(w, http.StatusOK, BlockErrorResponse{
+		Description: desc,
+		Url:         urlError,
+	}); err != nil {
+		errorHandler.handleError(UnknownError, err)
+
+		return
+	}
+}
+
 type startNodesParams struct {
 	workID             uuid.UUID
 	author, workNumber string
@@ -434,7 +487,9 @@ func (ae *Env) MonitoringTaskAction(w http.ResponseWriter, r *http.Request, work
 	ctx, span := trace.StartSpan(r.Context(), "monitoring_task_action")
 	defer span.End()
 
-	log := logger.GetLogger(ctx)
+	log := logger.GetLogger(ctx).
+		WithField("funcName", "MonitoringTaskAction").
+		WithField("workNumber", workNumber)
 	errorHandler := newHTTPErrorHandler(log, w)
 
 	if workNumber == "" {
@@ -483,6 +538,9 @@ func (ae *Env) MonitoringTaskAction(w http.ResponseWriter, r *http.Request, work
 
 		return
 	}
+
+	log = log.WithField("action", req.Action)
+	ctx = logger.WithLogger(ctx, log)
 
 	switch req.Action {
 	case MonitoringTaskActionRequestActionPause:
@@ -1053,4 +1111,38 @@ func (ae *Env) toMonitoringTaskEventsResponse(ctx context.Context, events []enti
 	}
 
 	return res
+}
+
+func getErrorDescription() string {
+	return `Для просмотра ошибок по данному блоку: 
+	1. Получите права доступ к индексу Jocasta на https://dashboards.obs.mts.ru/, для этого можно обратиться к Немировой Екатерине (eonemir1@mts.ru), Королеву Владиславу (vvkorolev1@mts.ru)
+	2. Войдите на https://dashboards.obs.mts.ru/
+	3. Произвидите выборку записей по фильтрам
+		- stepID = %s
+		- workNumber = %s		
+		- method oneOf(POST, PUT, kafka,faas) 
+		- level = error
+	или воспользуйтесь предлагаемой ссылкой`
+}
+
+func getErrorURL(workNumber, stepID string) string {
+	var (
+		// indexJocasta              = `jocasta-prod-s1-0000-s1-k8s-cmn-inside-01`
+		indexJocasta = `jocasta-dev-jocasta-dev-ocean-0000-s1-k8s-cmn-inside-01`
+
+		logRequestStart           = `https://dashboards.obs.mts.ru/app/discoverLegacy#/?_a=(columns:!(_source),discover:(columns:!(_source),isDirty:!f,sort:!()),filters:!(`
+		logRequestFilter          = `('$state':(store:appState),meta:(alias:!n,disabled:!f,index:%s,key:%s,negate:!f,params:(query:'%s'),type:phrase),query:(match_phrase:(%s:'%s'))),`
+		logRequestFilterMethod    = `('$state':(store:appState),meta:(alias:!n,disabled:!f,index:%s,key:method,negate:!f,params:!(POST,PUT,kafka,faas),type:phrases,value:'POST,PUT,kafka,faas'),`
+		logRequestFilterMethodEnd = `query:(bool:(minimum_should_match:1,should:!((match_phrase:(method:POST)),(match_phrase:(method:PUT)),(match_phrase:(method:kafka)),(match_phrase:(method:faas))))))),`
+		logRequestEnd             = `index:%s,interval:auto,metadata:(indexPattern:aggregated-index-pattern-for-tenant,view:discover),query:(language:kuery,query:''),`
+		logRequestEnd2            = `sort:!())&_g=(filters:!(),refreshInterval:(pause:!t,value:0),time:(from:now-20d,to:now))&_q=(filters:!(),query:(language:kuery,query:''))`
+	)
+
+	URL := logRequestStart +
+		fmt.Sprintf(logRequestFilter, indexJocasta, "level", "error", "level", "error") +
+		fmt.Sprintf(logRequestFilter, indexJocasta, "stepID", stepID, "stepID", stepID) +
+		fmt.Sprintf(logRequestFilter, indexJocasta, "workNumber", workNumber, "workNumber", workNumber) +
+		fmt.Sprintf(logRequestFilterMethod, indexJocasta) + logRequestFilterMethodEnd +
+		fmt.Sprintf(logRequestEnd, indexJocasta) + logRequestEnd2
+	return URL
 }

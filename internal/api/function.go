@@ -28,22 +28,22 @@ import (
 )
 
 func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessage) error {
-	log := ae.Log
+	log := ae.Log.WithField("funcName", "FunctionReturnHandler").
+		WithField("stepID", message.TaskID).
+		WithField("method", "kafka")
+
+	ctx = logger.WithLogger(ctx, log)
 
 	messageTmp, err := json.Marshal(message)
 	if err != nil {
-		log.WithField("taskID", message.TaskID).
-			WithError(err).
+		log.WithError(err).
 			Error("error marshaling message from kafka")
 	}
 
 	messageString := string(messageTmp)
 
-	log.WithField("funcName", "FunctionReturnHandler").
-		WithField("body", messageString).
+	log.WithField("body", messageString).
 		Info("start handle message from kafka")
-
-	ctx = logger.WithLogger(ctx, log)
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -61,9 +61,10 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 		return nil
 	}
 
-	log = log.WithField("step.WorkNumber", st.WorkNumber).
-		WithField("step.Name", st.Name).
-		WithField("taskID", message.TaskID)
+	log = log.WithField("WorkNumber", st.WorkNumber).
+		WithField("stepName", st.Name).
+		WithField("workID", st.WorkID)
+	ctx = logger.WithLogger(ctx, log)
 
 	if st.IsPaused {
 		log.Error("block is paused")
@@ -136,10 +137,6 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 
 	workFinished, blockErr := pipeline.ProcessBlockWithEndMapping(ctx, st.Name, blockFunc, runCtx, true)
 	if blockErr != nil {
-		log.WithField("funcName", "ProcessBlockWithEndMapping").
-			WithError(blockErr).
-			Error("process block with end mapping")
-
 		return nil
 	}
 
@@ -201,7 +198,7 @@ func (ae *Env) NotifyNewFunctionVersion(w http.ResponseWriter, r *http.Request) 
 	for login, v := range versions {
 		emailToNotify, err := ae.People.GetUserEmail(ctx, login)
 		if err != nil {
-			log.WithField("failed to get mail for this login", login).Error(err)
+			log.WithField("login", login).WithError(err).Error("failed to get mail for this login")
 
 			continue
 		}

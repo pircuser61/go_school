@@ -870,7 +870,7 @@ func (ae *Env) GetTaskMeanSolveTime(w http.ResponseWriter, req *http.Request, pi
 	ctx, s := trace.StartSpan(req.Context(), "get_task_mean_solve_time")
 	defer s.End()
 
-	log := logger.GetLogger(ctx).WithField("pipelineId", pipelineID)
+	log := logger.GetLogger(ctx).WithField("pipelineID", pipelineID)
 	errorHandler := newHTTPErrorHandler(log, w)
 
 	taskTimeIntervals, intervalsErr := ae.DB.GetMeanTaskSolveTime(ctx, pipelineID) // it returns ordered by created_at

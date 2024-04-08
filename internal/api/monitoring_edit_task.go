@@ -28,7 +28,9 @@ func (ae *Env) EditTaskBlockData(w http.ResponseWriter, r *http.Request, blockId
 	ctx, span := trace.StartSpan(r.Context(), "monitoring_edit_task_block_data")
 	defer span.End()
 
-	log := logger.GetLogger(ctx)
+	log := logger.GetLogger(ctx).
+		WithField("funcName", "EditTaskBlockData").
+		WithField("stepID", blockId)
 	errorHandler := newHTTPErrorHandler(log, w)
 
 	b, err := io.ReadAll(r.Body)
@@ -83,6 +85,11 @@ func (ae *Env) EditTaskBlockData(w http.ResponseWriter, r *http.Request, blockId
 
 		return
 	}
+
+	log = log.WithField("stepName", dbStep.Name).
+		WithField("workID", dbStep.WorkID).
+		WithField("workNumber", dbStep.WorkNumber)
+	ctx = logger.WithLogger(ctx, log)
 
 	editBlockData, editErr := ae.editGoBlock(ctx, blockUUID, dbStep.Type, dbStep.Name, data, req.ChangeType)
 	if editErr != nil {
