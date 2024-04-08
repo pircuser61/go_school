@@ -55,10 +55,12 @@ func GetEffectiveUserInfoFromCtx(ctx context.Context) (*sso.UserInfo, error) {
 
 func SetUserInfoToCtx(ctx context.Context, ui *sso.UserInfo) context.Context {
 	log := logger.GetLogger(ctx).WithField("requestLogin", ui.Username)
+
 	return logger.WithLogger(context.WithValue(ctx, userInfoCtx{}, ui), log)
 }
 
 func SetAsOtherUserInfoToCtx(ctx context.Context, ui *sso.UserInfo) context.Context {
 	log := logger.GetLogger(ctx).WithField("X-As-Other", ui.Username)
+
 	return logger.WithLogger(context.WithValue(ctx, asOtherUserInfoCtx{}, ui), log)
 }

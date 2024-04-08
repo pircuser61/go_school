@@ -1124,6 +1124,7 @@ func (ae *Env) toMonitoringTaskEventsResponse(ctx context.Context, events []enti
 	return res
 }
 
+//nolint:all // ok
 func (ae *Env) getErrorDescription() string {
 	return `Для просмотра ошибок по данному блоку: 
 	1. Получите права доступ к индексу Jocasta на https://dashboards.obs.mts.ru/, для этого можно обратиться к Немировой Екатерине (eonemir1@mts.ru), Королеву Владиславу (vvkorolev1@mts.ru)
