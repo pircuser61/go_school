@@ -28,6 +28,9 @@ import (
 )
 
 func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessage) error {
+	ctx, span := trace.StartSpan(ctx, "FunctionReturnHandler")
+	defer span.End()
+
 	log := ae.Log.WithField("funcName", "FunctionReturnHandler").
 		WithField("stepID", message.TaskID).
 		WithField("method", "kafka")
