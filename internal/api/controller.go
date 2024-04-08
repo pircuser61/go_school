@@ -54,6 +54,7 @@ type Env struct {
 	Forms                   *forms.Service
 	IncludePlaceholderBlock bool
 	HostURL                 string
+	LogIndex                string
 }
 
 type ServerParam struct {

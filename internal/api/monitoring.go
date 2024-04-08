@@ -462,8 +462,8 @@ func (ae *Env) GetBlockError(w http.ResponseWriter, r *http.Request, blockID str
 		WithField("workNumber", taskStep.WorkNumber).
 		WithField("stepName", taskStep.Name)
 
-	desc := fmt.Sprintf(getErrorDescription(), blockID, taskStep.WorkNumber)
-	urlError := getErrorURL(taskStep.WorkNumber, blockID)
+	desc := fmt.Sprintf(ae.getErrorDescription(), blockID, taskStep.WorkNumber)
+	urlError := ae.getErrorURL(taskStep.WorkNumber, blockID)
 
 	if err = sendResponse(w, http.StatusOK, BlockErrorResponse{
 		Description: desc,
@@ -1113,7 +1113,7 @@ func (ae *Env) toMonitoringTaskEventsResponse(ctx context.Context, events []enti
 	return res
 }
 
-func getErrorDescription() string {
+func (ae *Env) getErrorDescription() string {
 	return `Для просмотра ошибок по данному блоку: 
 	1. Получите права доступ к индексу Jocasta на https://dashboards.obs.mts.ru/, для этого можно обратиться к Немировой Екатерине (eonemir1@mts.ru), Королеву Владиславу (vvkorolev1@mts.ru)
 	2. Войдите на https://dashboards.obs.mts.ru/
@@ -1125,11 +1125,9 @@ func getErrorDescription() string {
 	или воспользуйтесь предлагаемой ссылкой`
 }
 
-func getErrorURL(workNumber, stepID string) string {
+//nolint:all // ok
+func (ae *Env) getErrorURL(workNumber, stepID string) string {
 	var (
-		// indexJocasta              = `jocasta-prod-s1-0000-s1-k8s-cmn-inside-01`
-		indexJocasta = `jocasta-dev-jocasta-dev-ocean-0000-s1-k8s-cmn-inside-01`
-
 		logRequestStart           = `https://dashboards.obs.mts.ru/app/discoverLegacy#/?_a=(columns:!(_source),discover:(columns:!(_source),isDirty:!f,sort:!()),filters:!(`
 		logRequestFilter          = `('$state':(store:appState),meta:(alias:!n,disabled:!f,index:%s,key:%s,negate:!f,params:(query:'%s'),type:phrase),query:(match_phrase:(%s:'%s'))),`
 		logRequestFilterMethod    = `('$state':(store:appState),meta:(alias:!n,disabled:!f,index:%s,key:method,negate:!f,params:!(POST,PUT,kafka,faas),type:phrases,value:'POST,PUT,kafka,faas'),`
@@ -1137,6 +1135,8 @@ func getErrorURL(workNumber, stepID string) string {
 		logRequestEnd             = `index:%s,interval:auto,metadata:(indexPattern:aggregated-index-pattern-for-tenant,view:discover),query:(language:kuery,query:''),`
 		logRequestEnd2            = `sort:!())&_g=(filters:!(),refreshInterval:(pause:!t,value:0),time:(from:now-20d,to:now))&_q=(filters:!(),query:(language:kuery,query:''))`
 	)
+
+	indexJocasta := ae.LogIndex
 
 	URL := logRequestStart +
 		fmt.Sprintf(logRequestFilter, indexJocasta, "level", "error", "level", "error") +
