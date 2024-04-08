@@ -517,7 +517,7 @@ func (runCtx *BlockRunContext) GetAttachmentFiles(desc *om.OrderedMap, addAttach
 		return nil, err
 	}
 
-	if len(filesAttach) != 0 || len(filesAttachLinks) != 0 || attachments != nil {
+	if len(filesAttach) != 0 || len(filesAttachLinks) != 0 || len(attachments.AttachLinks) != 0 || len(attachments.AttachmentsList) != 0 {
 		attachments.AttachLinks = append(attachments.AttachLinks, filesAttachLinks...)
 
 		desc.Set(attachLinksKey, attachments.AttachLinks)
