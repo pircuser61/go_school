@@ -26,7 +26,9 @@ import (
 )
 
 const (
-	hiddenUserLogin = "hidden_user"
+	hiddenUserLogin        = "hidden_user"
+	executionBaseGroupName = "группа исполнителей"
+	executionNotInGroup    = "Не групповая заявка"
 )
 
 type taskResp struct {
@@ -579,6 +581,14 @@ func (ae *Env) GetTasks(w http.ResponseWriter, req *http.Request, params GetTask
 		if len(mapApprovalLists) > 0 {
 			resp.Tasks[i].ApprovalList = mapApprovalLists
 		}
+
+		if resp.Tasks[i].CurrentExecutor.ExecutionGroupName == "" {
+			if resp.Tasks[i].CurrentExecutor.ExecutionGroupID == "" {
+				resp.Tasks[i].CurrentExecutor.ExecutionGroupName = executionNotInGroup
+				continue
+			}
+			resp.Tasks[i].CurrentExecutor.ExecutionGroupName = executionBaseGroupName
+		}
 	}
 
 	if err = sendResponse(w, http.StatusOK, resp); err != nil {
@@ -709,7 +719,8 @@ func selectAsValid(selectAs string) bool {
 		entity.SelectAsValGroupExecutor,
 		entity.SelectAsValFinishedGroupExecutor,
 		entity.SelectAsValQueueExecutor,
-		entity.SelectAsValInWorkExecutor:
+		entity.SelectAsValInWorkExecutor,
+		entity.SelectAsValFinishedExecutorV2:
 		return true
 	}
 
