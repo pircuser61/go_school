@@ -99,7 +99,9 @@ func (p *blockProcessor) ProcessBlock(ctx context.Context, its int) error {
 			return p.handleErrorWithRollback(ctx, log, err)
 		}
 
-		if p.bl.TypeID == "form" && p.runCtx.UpdateData != nil {
+		refillForm := p.bl.TypeID == "form" && p.runCtx.UpdateData != nil &&
+			p.runCtx.UpdateData.Action == string(entity.TaskUpdateActionRequestFillForm)
+		if refillForm && isStatusFiniteBeforeUpdate {
 			activeBlocks, getActiveBlockErr := p.runCtx.Services.Storage.GetTaskActiveBlock(ctx, p.runCtx.TaskID.String(), p.name)
 			if getActiveBlockErr != nil {
 				return p.handleErrorWithRollback(ctx, log, getActiveBlockErr)
@@ -110,6 +112,8 @@ func (p *blockProcessor) ProcessBlock(ctx context.Context, its int) error {
 			if processActiveErr != nil {
 				return processActiveErr
 			}
+
+			return nil
 		}
 	}
 

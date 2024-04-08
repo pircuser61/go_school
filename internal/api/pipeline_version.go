@@ -57,9 +57,9 @@ func (ae *Env) createPipelineVersion(ctx c.Context, in *e.EriusScenario, pID str
 		return nil, apiErr, err
 	}
 
-	ui, err := user.GetUserInfoFromCtx(ctx)
-	if err != nil {
-		log.WithError(err).Error("user failed")
+	ok, valErr := ae.validatePipeline(ctx, in)
+	if !ok {
+		log.WithField(funcName, "createPipelineVersion").Error(valErr)
 	}
 
 	updated, err := json.Marshal(in)
@@ -77,6 +77,11 @@ func (ae *Env) createPipelineVersion(ctx c.Context, in *e.EriusScenario, pID str
 	hasPrivateFunction, err := ae.hasPrivateFunction(ctx, executableFunctions)
 	if err != nil {
 		return nil, GetFunctionError, err
+	}
+
+	ui, err := user.GetUserInfoFromCtx(ctx)
+	if err != nil {
+		log.WithError(err).Error("couldn't get user")
 	}
 
 	err = ae.DB.CreateVersion(ctx, in, ui.Username, updated, oldVersionID, hasPrivateFunction)
@@ -689,6 +694,7 @@ func (ae *Env) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO) (
 	updateTaskDTO := db.NewUpdateEmptyTaskDTO(
 		dto.taskID,
 		dto.p.VersionID,
+		dto.authorName,
 		dto.realAuthorName,
 		parameters,
 		dto.runCtx,

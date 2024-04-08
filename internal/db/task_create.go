@@ -61,7 +61,6 @@ type CreateEmptyTaskDTO struct {
 	TaskID     uuid.UUID
 	WorkNumber string
 	Author     string
-	RealAuthor string
 	RunContext *entity.TaskRunContext
 }
 
@@ -85,7 +84,6 @@ func (db *PGCon) insertEmptyTask(ctx context.Context, task *CreateEmptyTaskDTO) 
 			started_at, 
 			status, 
 			author,
-			real_author,
 			run_context
 		)
 		VALUES (
@@ -93,8 +91,7 @@ func (db *PGCon) insertEmptyTask(ctx context.Context, task *CreateEmptyTaskDTO) 
 			$2, 
 			$3, 
 			$4, 
-			$5,
-			$6
+			$5
 		)
 	RETURNING work_number
 `
@@ -106,7 +103,6 @@ func (db *PGCon) insertEmptyTask(ctx context.Context, task *CreateEmptyTaskDTO) 
 		time.Now(),
 		RunStatusCreated,
 		task.Author,
-		task.RealAuthor,
 		task.RunContext,
 	)
 
@@ -134,7 +130,6 @@ func (db *PGCon) createEmptyTaskWithWorkID(ctx context.Context, task *CreateEmpt
 			status, 
 			author,
 			work_number,
-			real_author,
 			run_context
 		)
 		VALUES (
@@ -143,8 +138,7 @@ func (db *PGCon) createEmptyTaskWithWorkID(ctx context.Context, task *CreateEmpt
 			$3, 
 			$4,
 			$5,
-			$6,
-			$7
+			$6
 		)
 `
 
@@ -156,7 +150,6 @@ func (db *PGCon) createEmptyTaskWithWorkID(ctx context.Context, task *CreateEmpt
 		RunStatusCreated,
 		task.Author,
 		task.WorkNumber,
-		task.RealAuthor,
 		task.RunContext,
 	)
 	if err != nil {

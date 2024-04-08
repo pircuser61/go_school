@@ -113,6 +113,8 @@ func (gb *GoNotificationBlock) compileText(ctx context.Context) (*mail.Notif, []
 		return nil, nil, err
 	}
 
+	text = cleanUnexpectedSymbols(text)
+
 	tpl := &mail.Notif{
 		Title:       gb.State.Subject,
 		Body:        text,
@@ -122,6 +124,25 @@ func (gb *GoNotificationBlock) compileText(ctx context.Context) (*mail.Notif, []
 	}
 
 	return tpl, files, nil
+}
+
+func cleanUnexpectedSymbols(s string) string {
+	replacements := map[string]string{
+		"\\t":  "",
+		"\t":   "",
+		"\\n":  "",
+		"\n":   "",
+		"\r":   "",
+		"\\r":  "",
+		"\"\"": "",
+		"\"":   "''",
+	}
+
+	for old, news := range replacements {
+		s = strings.ReplaceAll(s, old, news)
+	}
+
+	return strings.ReplaceAll(s, "\\", "")
 }
 
 func (gb *GoNotificationBlock) notificationBlockText() (string, error) {
@@ -439,10 +460,10 @@ func sortAndFilterAttachments(files []file_registry.FileInfo) (requiredFiles []e
 	return requiredFiles, skippedFiles
 }
 
-func (gb *GoNotificationBlock) UpdateStateUsingOutput(ctx context.Context, data []byte) (state map[string]interface{}, err error) {
+func (gb *GoNotificationBlock) UpdateStateUsingOutput(context.Context, []byte) (state map[string]interface{}, err error) {
 	return nil, nil
 }
 
-func (gb *GoNotificationBlock) UpdateOutputUsingState(ctx context.Context) (output map[string]interface{}, err error) {
+func (gb *GoNotificationBlock) UpdateOutputUsingState(context.Context) (output map[string]interface{}, err error) {
 	return nil, nil
 }

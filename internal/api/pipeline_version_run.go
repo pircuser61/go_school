@@ -92,11 +92,6 @@ func (ae *Env) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	realAuthor, err := user.GetEffectiveUserInfoFromCtx(ctx)
-	if err != nil {
-		errorHandler.handleError(NoUserInContextError, err)
-	}
-
 	taskID := uuid.New()
 	log = log.WithField("workID", taskID)
 
@@ -104,7 +99,6 @@ func (ae *Env) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Request
 		TaskID:     taskID,
 		WorkNumber: req.WorkNumber,
 		Author:     usr.Username,
-		RealAuthor: realAuthor.Username,
 		RunContext: &entity.TaskRunContext{
 			InitialApplication: entity.InitialApplication{
 				Description:               req.Description,
@@ -297,19 +291,13 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	realAuthor, err := user.GetEffectiveUserInfoFromCtx(ctx)
-	if err != nil {
-		errorHandler.handleError(NoUserInContextError, err)
-	}
-
 	taskID := uuid.New()
 	log = log.WithField("workID", taskID)
 
 	workNumber, err := ae.createEmptyTask(ctx, storage,
 		&db.CreateEmptyTaskDTO{
-			TaskID:     taskID,
-			Author:     usr.Username,
-			RealAuthor: realAuthor.Username,
+			TaskID: taskID,
+			Author: usr.Username,
 			RunContext: &entity.TaskRunContext{
 				ClientID:   clientID,
 				PipelineID: req.PipelineID,
@@ -433,8 +421,7 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 func (ae *Env) handleStartApplicationParams(ctx c.Context, dto *requestStartParams) error {
 	hiddenFields, err := ae.getHiddenFields(ctx, dto.version)
 	if err != nil {
-		e := GetHiddenFieldsError
-		ae.Log.Error(e.errorMessage(err))
+		ae.Log.Error(GetHiddenFieldsError.errorMessage(err))
 	}
 
 	dto.hiddenFields = hiddenFields
@@ -600,6 +587,15 @@ func cleanKey(mapKeys interface{}) string {
 		return ""
 	}
 
+	keyStr, okStr := key.(string)
+	if !okStr {
+		return ""
+	}
+
+	return cleanUnexpectedSymbols(keyStr)
+}
+
+func cleanUnexpectedSymbols(s string) string {
 	replacements := map[string]string{
 		"\\t":  "",
 		"\t":   "",
@@ -611,16 +607,11 @@ func cleanKey(mapKeys interface{}) string {
 		"\"":   "''",
 	}
 
-	keyStr, okStr := key.(string)
-	if !okStr {
-		return ""
-	}
-
 	for old, news := range replacements {
-		keyStr = strings.ReplaceAll(keyStr, old, news)
+		s = strings.ReplaceAll(s, old, news)
 	}
 
-	return strings.ReplaceAll(keyStr, "\\", "")
+	return strings.ReplaceAll(s, "\\", "")
 }
 
 func (ae *Env) createEmptyTask(ctx c.Context, storage db.Database, emptyTask *db.CreateEmptyTaskDTO) (string, error) {

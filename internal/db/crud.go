@@ -2296,21 +2296,21 @@ func (db *PGCon) GetVersionByWorkNumber(c context.Context, workNumber string) (*
 	// nolint:gocritic
 	// language=PostgreSQL
 	const query = `
-		SELECT
-			version.id,
-			version.status,
-			version.pipeline_id,
-			version.created_at,
-			version.content,
-			version.comment_rejected,
-			version.comment,
-			version.author,
-			(SELECT MAX(date) FROM pipeline_history 
-				WHERE pipeline_id = version.pipeline_id
-			) AS last_approve
-		FROM works work
-			LEFT JOIN versions version ON version.id = work.version_id
-		WHERE work.work_number = $1 AND work.child_id IS NULL;
+		SELECT version.id,
+       version.status,
+       version.pipeline_id,
+       version.created_at,
+       version.content,
+       version.comment_rejected,
+       version.comment,
+       version.author,
+       (SELECT MAX(date)
+        FROM pipeline_history
+        WHERE pipeline_id = version.pipeline_id
+       ) AS last_approve
+FROM works work
+         JOIN versions version ON version.id = work.version_id
+WHERE work.work_number = $1;
 `
 
 	row := db.Connection.QueryRow(c, query, workNumber)
