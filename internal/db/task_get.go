@@ -61,6 +61,8 @@ func uniqueActionsByRole(loginsIn, stepType string, finished, acted bool) string
 		   END AS updated_at
          , timestamptz(vs.content -> 'State' -> vs.step_name ->> 'deadline')                AS node_deadline
          ,  vs.content -> 'State' -> vs.step_name ->> 'is_expired'		   					AS is_expired
+    	 , jsonb_object_keys(CASE WHEN vs.step_type = 'execution' THEN vs.content->'State' -> vs.step_name -> 'executors' END) AS executors
+         , jsonb_object_keys(CASE WHEN vs.step_type = 'approver' THEN vs.content->'State' -> vs.step_name -> 'executors' END) AS approvers
     FROM members m
              JOIN variable_storage vs on vs.id = m.block_id
              JOIN works w on vs.work_id = w.id
@@ -84,6 +86,8 @@ func uniqueActionsByRole(loginsIn, stepType string, finished, acted bool) string
          , min(actions.node_deadline)     	  		 	 AS node_deadline    
     	 , min(actions.node_start) 						 AS node_start
 	 	 , max(actions.is_expired)						 AS is_expired
+         , min(actions.executors) 						 AS executors
+         , min(actions.approvers) 						 AS approvers
     FROM actions
              JOIN filtered_actions fa ON fa.time = actions.node_start AND fa.block_id = actions.block_id
              LEFT JOIN LATERAL (SELECT jsonb_build_object(
@@ -349,7 +353,9 @@ func compileGetTasksMetaQuery(fl entity.TaskFilter, delegations []string) (q str
 		[with_variable_storage]
 		SELECT 
 			w.work_number,
-			v.content->'pipeline'->'blocks'->'servicedesk_application_0'->'params'->>'blueprint_id'
+			v.content->'pipeline'->'blocks'->'servicedesk_application_0'->'params'->>'blueprint_id',
+			concat(ua.executors, ua.approvers) as executors 
+
 		FROM works w 
 		JOIN versions v ON v.id = w.version_id
 		JOIN pipelines p ON p.id = v.pipeline_id
@@ -470,6 +476,15 @@ func (cq *compileGetTaskQueryMaker) addProcessingSteps() {
 	}
 }
 
+func (cq *compileGetTaskQueryMaker) addExecutorFilter(fl *entity.TaskFilter) {
+	if fl.Executor == nil {
+		return
+	}
+
+	cq.q = fmt.Sprintf("%s AND (ua.current_executor -> 'initial_people' @> '[%q]'::jsonb\n"+
+		"OR ua.current_executor ->> 'group_id' = '%s')", cq.q, *fl.Executor, *fl.Executor)
+}
+
 //nolint:gocyclo //it's ok
 func (cq *compileGetTaskQueryMaker) addOrderBy(order string, orderBy []string) {
 	if (order != "" && len(orderBy) == 0) || len(orderBy) == 0 {
@@ -566,6 +581,7 @@ func (cq *compileGetTaskQueryMaker) MakeQuery(
 	cq.addReceiver()
 	cq.addInitiator()
 	cq.addProcessingSteps()
+	cq.addExecutorFilter(fl)
 	cq.addOrderBy(order, orderBy)
 
 	if useLimitOffset {
@@ -1664,7 +1680,8 @@ func (db *PGCon) getTasksMeta(ctx c.Context, q string, args []interface{}) (*ent
 	defer span.End()
 
 	meta := entity.TasksMeta{
-		Blueprints: make(map[string][]string),
+		Blueprints:     make(map[string][]string),
+		ExecutorLogins: make([]string, 0),
 	}
 
 	rows, err := db.Connection.Query(ctx, q, args...)
@@ -1676,12 +1693,14 @@ func (db *PGCon) getTasksMeta(ctx c.Context, q string, args []interface{}) (*ent
 	var (
 		workNumber  string
 		blueprintID sql.NullString
+		executors   string
 	)
 
 	for rows.Next() {
 		err = rows.Scan(
 			&workNumber,
 			&blueprintID,
+			&executors,
 		)
 		if err != nil {
 			return nil, err
@@ -1689,6 +1708,10 @@ func (db *PGCon) getTasksMeta(ctx c.Context, q string, args []interface{}) (*ent
 
 		if !blueprintID.Valid || blueprintID.String == "" {
 			continue
+		}
+
+		if !utils.IsContainsInSlice(executors, meta.ExecutorLogins) {
+			meta.ExecutorLogins = append(meta.ExecutorLogins, executors)
 		}
 
 		ww, ok := meta.Blueprints[blueprintID.String]

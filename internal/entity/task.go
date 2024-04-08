@@ -44,7 +44,8 @@ type EriusTasks struct {
 }
 
 type TasksMeta struct {
-	Blueprints map[string][]string `json:"blueprints"` // SD blueprints: [workNumbers]
+	Blueprints     map[string][]string `json:"blueprints"` // SD blueprints: [workNumbers]
+	ExecutorLogins []string            `json:"executor_logins"`
 }
 
 type EriusTasksPage struct {
@@ -158,6 +159,7 @@ type GetTaskParams struct {
 	Order    *string     `json:"order"`
 	OrderBy  *[]string   `json:"order_by"`
 	Limit    *int        `json:"limit"`
+	Executor *string     `json:"executor"`
 	Offset   *int        `json:"offset"`
 	TaskIDs  *[]string   `json:"task_ids"`
 	SelectAs *string     `json:"select_as"`

@@ -2547,6 +2547,9 @@ type GetTasksParams struct {
 	// order for started_at
 	Order *string `json:"order,omitempty"`
 
+	// filter for executor or group
+	Executor *string `json:"executor,omitempty"`
+
 	// params for tasks ordering
 	OrderBy *[]string `json:"orderBy,omitempty"`
 
@@ -5222,6 +5225,17 @@ func (siw *ServerInterfaceWrapper) GetTasks(w http.ResponseWriter, r *http.Reque
 	err = runtime.BindQueryParameter("form", true, false, "order", r.URL.Query(), &params.Order)
 	if err != nil {
 		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "order", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "executor" -------------
+	if paramValue := r.URL.Query().Get("executor"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "executor", r.URL.Query(), &params.Executor)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "executor", Err: err})
 		return
 	}
 
