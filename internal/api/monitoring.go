@@ -458,10 +458,6 @@ func (ae *Env) GetBlockError(w http.ResponseWriter, r *http.Request, blockID str
 		errorHandler.sendError(e)
 	}
 
-	log = log.WithField("workID", taskStep.WorkID).
-		WithField("workNumber", taskStep.WorkNumber).
-		WithField("stepName", taskStep.Name)
-
 	desc := fmt.Sprintf(ae.getErrorDescription(), blockID, taskStep.WorkNumber)
 	urlError := ae.getErrorURL(taskStep.WorkNumber, blockID)
 
