@@ -17,7 +17,12 @@ import (
 )
 
 func (ae *Env) handleBreachSlA(ctx c.Context, item *db.StepBreachedSLA) {
-	log := logger.GetLogger(ctx)
+	log := logger.GetLogger(ctx).
+		WithField("funcName", "handleBreachSlA").
+		WithField("workID", "item.TaskID").
+		WithField("workNumber", "item.WorkNumber").
+		WithField("stepName", "item.StepName")
+	ctx = logger.WithLogger(ctx, log)
 
 	runCtx := &pipeline.BlockRunContext{
 		TaskID:     item.TaskID,
@@ -57,8 +62,6 @@ func (ae *Env) handleBreachSlA(ctx c.Context, item *db.StepBreachedSLA) {
 
 	workFinished, blockErr := pipeline.ProcessBlockWithEndMapping(ctx, item.StepName, item.BlockData, runCtx, true)
 	if blockErr != nil {
-		log.WithError(blockErr).Error("couldn't set SLA breach")
-
 		return
 	}
 

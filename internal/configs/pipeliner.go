@@ -60,6 +60,7 @@ type Pipeliner struct {
 	SchedulerTasks          scheduler.Config     `yaml:"scheduler_tasks"`
 	Forms                   forms.Config         `yaml:"forms"`
 	HostURL                 string               `yaml:"host_url"`
+	LogIndex                string               `yaml:"log_index"`
 }
 
 type RunEnv struct {
