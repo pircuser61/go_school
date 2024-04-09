@@ -443,6 +443,8 @@ func (gb *GoApproverBlock) notifyDecisionMadeByAdditionalApprover(ctx context.Co
 		return err
 	}
 
+	cleanName(files)
+
 	filesList := []string{tpl.Image, userImg}
 
 	iconFiles, iconEerr := gb.RunContext.GetIcons(filesList)
