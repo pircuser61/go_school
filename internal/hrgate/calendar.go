@@ -2,6 +2,7 @@ package hrgate
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"math"
 	"net/http"
@@ -19,6 +20,68 @@ const (
 	RussianFederation = "Российская Федерация"
 	maxRetries        = 15
 )
+
+func (s *ServiceWithCache) GetCalendars(ctx context.Context, params *GetCalendarsParams) ([]Calendar, error) {
+	key, err := json.Marshal(params)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal params: %s", err)
+	}
+
+	keyForCache := "calendar" + ":" + string(key)
+
+	valueFromCache, err := s.Cache.GetValue(ctx, keyForCache)
+	if err == nil {
+		calendars, ok := valueFromCache.([]Calendar)
+		if !ok {
+			return nil, fmt.Errorf("failed to cast value from cache to type []Calendar")
+		}
+
+		return calendars, nil
+	}
+
+	calendar, err := s.HRGate.GetCalendars(ctx, params)
+	if err != nil {
+		return nil, err
+	}
+
+	err = s.Cache.SetValue(ctx, keyForCache, calendar)
+	if err != nil {
+		return nil, fmt.Errorf("can't set calendars to cache: %s", err)
+	}
+
+	return calendar, nil
+}
+
+func (s *ServiceWithCache) GetCalendarDays(ctx context.Context, params *GetCalendarDaysParams) (*CalendarDays, error) {
+	key, err := json.Marshal(params)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal params: %s", err)
+	}
+
+	keyForCache := "calendarDays" + ":" + string(key)
+
+	valueFromCache, err := s.Cache.GetValue(ctx, keyForCache)
+	if err == nil {
+		calendarDays, ok := valueFromCache.(*CalendarDays)
+		if !ok {
+			return nil, fmt.Errorf("failed to cast value from cache to type CalendarDays")
+		}
+
+		return calendarDays, nil
+	}
+
+	calendarDays, err := s.HRGate.GetCalendarDays(ctx, params)
+	if err != nil {
+		return nil, err
+	}
+
+	err = s.Cache.SetValue(ctx, keyForCache, calendarDays)
+	if err != nil {
+		return nil, fmt.Errorf("can't set calendarDays to cache: %s", err)
+	}
+
+	return calendarDays, nil
+}
 
 func (s *Service) GetCalendars(ctx context.Context, params *GetCalendarsParams) ([]Calendar, error) {
 	ctx, span := trace.StartSpan(ctx, "hrgate.get_calendars")
