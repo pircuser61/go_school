@@ -202,6 +202,10 @@ func getUniqueActions(selectFilter string, logins []string) string {
 		)
 
 		return q
+	case entity.SelectAsValFinishedExecutorV2:
+		q := uniqueActionsByRole(loginsIn, "execution", true, false)
+
+		return q
 	case entity.SelectAsValSignerPhys:
 		q := uniqueActionsByRole(loginsIn, "sign", false, false)
 		q = strings.Replace(q,

@@ -1748,6 +1748,7 @@ paths:
               - finished_group_executor
               - queue_executor
               - in_work_executor
+              - finished_executor_v2
         - name: forCarousel
           in: query
           schema:
