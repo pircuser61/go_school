@@ -64,7 +64,7 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 		return nil
 	}
 
-	log = log.WithField("WorkNumber", st.WorkNumber).
+	log = log.WithField("workNumber", st.WorkNumber).
 		WithField("stepName", st.Name).
 		WithField("workID", st.WorkID)
 	ctx = logger.WithLogger(ctx, log)

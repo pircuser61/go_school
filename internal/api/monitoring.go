@@ -1128,7 +1128,7 @@ func (ae *Env) getErrorDescription() string {
 	3. Произвидите выборку записей по фильтрам
 		- stepID = %s
 		- workNumber = %s		
-		- method oneOf(POST, PUT, kafka,faas) 
+		- method oneOf(POST, PUT, kafka, faas) 
 		- level = error
 	или воспользуйтесь предлагаемой ссылкой`
 }
