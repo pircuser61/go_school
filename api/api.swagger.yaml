@@ -1696,6 +1696,11 @@ paths:
           deprecated: true
           schema:
             type: string
+        - name: expired
+          description: params for get expired applications
+          in: query
+          schema:
+            type: boolean
         - name: orderBy
           in: query
           description: params for tasks ordering

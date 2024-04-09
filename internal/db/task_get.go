@@ -474,6 +474,18 @@ func (cq *compileGetTaskQueryMaker) addProcessingSteps() {
 	}
 }
 
+func (cq *compileGetTaskQueryMaker) addIsExpiredFilter(isExpired *bool) {
+	if isExpired == nil {
+		return
+	}
+
+	if !*isExpired {
+		cq.q = fmt.Sprintf("%s AND (ua.node_deadline > now() OR coalesce(ua.is_expired::boolean, false)) ", cq.q)
+	} else {
+		cq.q = fmt.Sprintf("%s AND (ua.node_deadline < now() OR coalesce(ua.is_expired::boolean, true)) ", cq.q)
+	}
+}
+
 //nolint:gocyclo //it's ok
 func (cq *compileGetTaskQueryMaker) addOrderBy(order string, orderBy []string) {
 	if (order != "" && len(orderBy) == 0) || len(orderBy) == 0 {
@@ -570,6 +582,7 @@ func (cq *compileGetTaskQueryMaker) MakeQuery(
 	cq.addReceiver()
 	cq.addInitiator()
 	cq.addProcessingSteps()
+	cq.addIsExpiredFilter(fl.Expired)
 	cq.addOrderBy(order, orderBy)
 
 	if useLimitOffset {
