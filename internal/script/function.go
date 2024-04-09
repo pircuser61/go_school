@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/araddon/dateparse"
+	"golang.org/x/exp/slices"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/functions"
 )
@@ -123,22 +124,50 @@ type FunctionParam struct {
 	Options       string       `json:"options"`
 }
 
-func updateMappingIter(oldProps, newProps JSONSchemaProperties) {
-	for key := range oldProps {
+func updateMappingIter(oldProps, newProps JSONSchemaProperties, required []string) (bool, error) {
+	var returnErr error
+	for key := range newProps {
 		oldVal := oldProps[key]
+		if slices.Contains[string](required, key) {
+			returnErr = errors.New("required field is missing")
+		}
 
 		newVal, ok := newProps[key]
 		if !ok {
 			continue
 		}
 
-		if oldVal.Value != "" {
+		if oldVal.Type != "" && oldVal.Type != newVal.Type {
+			return false, returnErr
+		}
+
+		if newVal.Items != nil {
+			if oldVal.Items == nil || oldVal.Items.Type != newVal.Items.Type {
+				return false, returnErr
+			}
+
+			itemsOk, err := updateMappingIter(oldVal.Items.Properties, newVal.Items.Properties, []string{})
+			if err != nil {
+				return false, err
+			}
+
+			if !itemsOk {
+				return false, returnErr
+			}
+		}
+
+		ok, err := updateMappingIter(oldVal.Properties, newVal.Properties, newVal.Required)
+		if err != nil {
+			return false, err
+		}
+
+		if ok && oldVal.Value != "" {
 			newVal.Value = oldVal.Value
 			newProps[key] = newVal
 		}
-
-		updateMappingIter(oldVal.Properties, newVal.Properties)
 	}
+
+	return true, nil
 }
 
 func (a *ExecutableFunctionParams) GetMappingFromInput() (JSONSchemaProperties, error) {
@@ -147,9 +176,9 @@ func (a *ExecutableFunctionParams) GetMappingFromInput() (JSONSchemaProperties, 
 		return nil, err
 	}
 
-	updateMappingIter(a.Mapping, newMapping)
+	_, err = updateMappingIter(a.Mapping, newMapping, []string{})
 
-	return newMapping, nil
+	return newMapping, err
 }
 
 func (a *ExecutableFunctionParams) getSchemaPropertiesFromInput() (JSONSchemaProperties, error) {
