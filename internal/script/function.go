@@ -124,10 +124,12 @@ type FunctionParam struct {
 	Options       string       `json:"options"`
 }
 
+//nolint:gocognit //it's ok
 func updateMappingIter(oldProps, newProps JSONSchemaProperties, required []string) (bool, error) {
 	var returnErr error
 	for key := range newProps {
 		oldVal := oldProps[key]
+
 		if slices.Contains[string](required, key) {
 			returnErr = errors.New("required field is missing")
 		}
