@@ -127,6 +127,7 @@ type FunctionParam struct {
 //nolint:gocognit //it's ok
 func updateMappingIter(oldProps, newProps JSONSchemaProperties, required []string) (bool, error) {
 	var returnErr error
+
 	for key := range newProps {
 		oldVal := oldProps[key]
 
