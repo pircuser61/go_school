@@ -125,52 +125,64 @@ type FunctionParam struct {
 }
 
 //nolint:gocognit //it's ok
-func updateMappingIter(oldProps, newProps JSONSchemaProperties, required []string) (bool, error) {
-	var returnErr error
-
+func updateMappingIter(oldProps, newProps JSONSchemaProperties, required []string) (isError bool) {
 	for key := range newProps {
-		oldVal := oldProps[key]
+		newVal := newProps[key]
 
-		if slices.Contains[string](required, key) {
-			returnErr = errors.New("required field is missing")
+		oldVal, ok := oldProps[key]
+		if slices.Contains[string](required, key) && !ok {
+			isError = true
+
+			continue
 		}
 
-		newVal, ok := newProps[key]
 		if !ok {
 			continue
 		}
 
 		if oldVal.Type != "" && oldVal.Type != newVal.Type {
-			return false, returnErr
+			isError = true
+
+			continue
 		}
 
 		if newVal.Items != nil {
 			if oldVal.Items == nil || oldVal.Items.Type != newVal.Items.Type {
-				return false, returnErr
+				isError = true
+
+				continue
 			}
 
-			itemsOk, err := updateMappingIter(oldVal.Items.Properties, newVal.Items.Properties, []string{})
-			if err != nil {
-				return false, err
-			}
+			itemsError := updateMappingIter(oldVal.Items.Properties, newVal.Items.Properties, []string{})
+			if itemsError {
+				for prop := range newVal.Items.Properties {
+					childVal := newVal.Items.Properties[prop]
+					childVal.Value = ""
+					newVal.Items.Properties[prop] = childVal
+				}
 
-			if !itemsOk {
-				return false, returnErr
+				isError = true
+
+				continue
 			}
 		}
 
-		ok, err := updateMappingIter(oldVal.Properties, newVal.Properties, newVal.Required)
-		if err != nil {
-			return false, err
+		childError := updateMappingIter(oldVal.Properties, newVal.Properties, newVal.Required)
+		if childError {
+			for prop := range newVal.Properties {
+				childVal := newVal.Properties[prop]
+				childVal.Value = ""
+				newVal.Properties[prop] = childVal
+			}
 		}
 
-		if ok && oldVal.Value != "" {
+		if !childError && oldVal.Value != "" {
 			newVal.Value = oldVal.Value
 			newProps[key] = newVal
 		}
 	}
 
-	return true, nil
+	return isError
 }
 
 func (a *ExecutableFunctionParams) GetMappingFromInput() (JSONSchemaProperties, error) {
@@ -179,7 +191,7 @@ func (a *ExecutableFunctionParams) GetMappingFromInput() (JSONSchemaProperties, 
 		return nil, err
 	}
 
-	_, err = updateMappingIter(a.Mapping, newMapping, []string{})
+	updateMappingIter(a.Mapping, newMapping, []string{})
 
 	return newMapping, err
 }
