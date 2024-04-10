@@ -1123,9 +1123,9 @@ func (ae *Env) toMonitoringTaskEventsResponse(ctx context.Context, events []enti
 //nolint:all // ok
 func (ae *Env) getErrorDescription() string {
 	return `Для просмотра ошибок по данному блоку: 
-	1. Получите права доступ к индексу Jocasta на https://dashboards.obs.mts.ru/, для этого можно обратиться к Немировой Екатерине (eonemir1@mts.ru), Королеву Владиславу (vvkorolev1@mts.ru)
+	1. Получите права на доступ к индексу Jocasta на https://dashboards.obs.mts.ru/, для этого можно обратиться к Немировой Екатерине (eonemir1@mts.ru), Королеву Владиславу (vvkorolev1@mts.ru)
 	2. Войдите на https://dashboards.obs.mts.ru/
-	3. Произвидите выборку записей по фильтрам
+	3. Произведите выборку записей по фильтрам
 		- stepID = %s
 		- workNumber = %s		
 		- method oneOf(POST, PUT, kafka, faas) 
