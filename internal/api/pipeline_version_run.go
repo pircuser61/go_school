@@ -95,7 +95,7 @@ func (ae *Env) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Request
 	taskID := uuid.New()
 	log = log.WithField("workID", taskID)
 
-	workNumber, err := ae.createEmptyTask(ctx, ae.DB, &db.CreateEmptyTaskDTO{
+	err = ae.createEmptyTask(ctx, ae.DB, &db.CreateEmptyTaskDTO{
 		TaskID:     taskID,
 		WorkNumber: req.WorkNumber,
 		Author:     usr.Username,
@@ -208,6 +208,7 @@ func (ae *Env) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Request
 }
 
 type runVersionByPipelineIDRequest struct {
+	WorkNumber        string                `json:"-"`
 	ApplicationBody   orderedmap.OrderedMap `json:"application_body"`
 	Description       string                `json:"description"`
 	PipelineID        string                `json:"pipeline_id"`
@@ -291,13 +292,21 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	workNumber, err := ae.Sequence.GetWorkNumber()
+	if err != nil {
+		errorHandler.handleError(GetWorkNumberError, err)
+
+		return
+	}
+
 	taskID := uuid.New()
 	log = log.WithField("workID", taskID)
 
-	workNumber, err := ae.createEmptyTask(ctx, storage,
+	err = ae.createEmptyTask(ctx, storage,
 		&db.CreateEmptyTaskDTO{
-			TaskID: taskID,
-			Author: usr.Username,
+			TaskID:     taskID,
+			WorkNumber: workNumber,
+			Author:     usr.Username,
 			RunContext: &entity.TaskRunContext{
 				ClientID:   clientID,
 				PipelineID: req.PipelineID,
@@ -614,10 +623,10 @@ func cleanUnexpectedSymbols(s string) string {
 	return strings.ReplaceAll(s, "\\", "")
 }
 
-func (ae *Env) createEmptyTask(ctx c.Context, storage db.Database, emptyTask *db.CreateEmptyTaskDTO) (string, error) {
+func (ae *Env) createEmptyTask(ctx c.Context, storage db.Database, dto *db.CreateEmptyTaskDTO) error {
 	txStorage, err := storage.StartTransaction(ctx)
 	if err != nil {
-		return "", fmt.Errorf("failed start transaction, %w", err)
+		return fmt.Errorf("failed start transaction, %w", err)
 	}
 
 	defer func() {
@@ -627,15 +636,15 @@ func (ae *Env) createEmptyTask(ctx c.Context, storage db.Database, emptyTask *db
 		}
 	}()
 
-	workNumber, err := txStorage.CreateEmptyTask(ctx, emptyTask)
+	err = txStorage.CreateEmptyTask(ctx, dto)
 	if err != nil {
-		return "", fmt.Errorf("failed create empty task in database, %w", err)
+		return fmt.Errorf("failed create empty task in database, %w", err)
 	}
 
 	err = txStorage.CommitTransaction(ctx)
 	if err != nil {
-		return "", fmt.Errorf("failed commit transaction, %w", err)
+		return fmt.Errorf("failed commit transaction, %w", err)
 	}
 
-	return workNumber, nil
+	return nil
 }

@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sequence"
 	"os"
 	"os/signal"
 	"syscall"
@@ -183,6 +184,13 @@ func main() {
 		return
 	}
 
+	sequenceService, err := sequence.NewService(cfg.Sequence)
+	if err != nil {
+		log.WithError(err).Error("can't create sequence service")
+
+		return
+	}
+
 	slaService := sla.NewSLAService(hrgateService)
 
 	metrics.InitMetricsAuth(cfg.Prometheus)
@@ -213,6 +221,7 @@ func main() {
 		IncludePlaceholderBlock: includePlaceholderBlock,
 		SLAService:              slaService,
 		Forms:                   formsService,
+		Sequence:                sequenceService,
 		HostURL:                 cfg.HostURL,
 		LogIndex:                cfg.LogIndex,
 	}

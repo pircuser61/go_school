@@ -64,61 +64,13 @@ type CreateEmptyTaskDTO struct {
 	RunContext *entity.TaskRunContext
 }
 
-func (db *PGCon) CreateEmptyTask(ctx context.Context, task *CreateEmptyTaskDTO) (string, error) {
+func (db *PGCon) CreateEmptyTask(ctx context.Context, task *CreateEmptyTaskDTO) error {
 	ctx, span := trace.StartSpan(ctx, "pg_create_empty_task")
 	defer span.End()
 
-	if task.WorkNumber == "" {
-		return db.insertEmptyTask(ctx, task)
-	}
-
-	return db.createEmptyTaskWithWorkID(ctx, task)
-}
-
-func (db *PGCon) insertEmptyTask(ctx context.Context, task *CreateEmptyTaskDTO) (string, error) {
-	// nolint:gocritic
-	// language=PostgreSQL
-	const query = `
-		INSERT INTO works(
-			id, 
-			started_at, 
-			status, 
-			author,
-			run_context
-		)
-		VALUES (
-			$1, 
-			$2, 
-			$3, 
-			$4, 
-			$5
-		)
-	RETURNING work_number
-`
-
-	row := db.Connection.QueryRow(
-		ctx,
-		query,
-		task.TaskID,
-		time.Now(),
-		RunStatusCreated,
-		task.Author,
-		task.RunContext,
-	)
-
-	var worksNumber string
-
-	if err := row.Scan(&worksNumber); err != nil {
-		return "", err
-	}
-
-	return worksNumber, nil
-}
-
-func (db *PGCon) createEmptyTaskWithWorkID(ctx context.Context, task *CreateEmptyTaskDTO) (string, error) {
 	err := db.setTaskChild(ctx, task.WorkNumber, task.TaskID)
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	// nolint:gocritic
@@ -153,15 +105,15 @@ func (db *PGCon) createEmptyTaskWithWorkID(ctx context.Context, task *CreateEmpt
 		task.RunContext,
 	)
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	err = db.FinishTaskBlocks(ctx, task.TaskID, nil, true)
 	if err != nil {
-		return "", err
+		return err
 	}
 
-	return task.WorkNumber, nil
+	return nil
 }
 
 func (db *PGCon) CreateTask(c context.Context, dto *CreateTaskDTO) (*entity.EriusTask, error) {

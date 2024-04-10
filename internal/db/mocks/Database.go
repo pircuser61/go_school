@@ -581,22 +581,16 @@ func (_c *MockedDatabase_CopyTaskBlock_Call) RunAndReturn(run func(context.Conte
 }
 
 // CreateEmptyTask provides a mock function with given fields: ctx, task
-func (_m *MockedDatabase) CreateEmptyTask(ctx context.Context, task *db.CreateEmptyTaskDTO) (string, error) {
+func (_m *MockedDatabase) CreateEmptyTask(ctx context.Context, task *db.CreateEmptyTaskDTO) error {
 	ret := _m.Called(ctx, task)
 
 	if len(ret) == 0 {
 		panic("no return value specified for CreateEmptyTask")
 	}
 
-	var r0 string
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, *db.CreateEmptyTaskDTO) (string, error)); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, *db.CreateEmptyTaskDTO) error); ok {
 		return rf(ctx, task)
-	}
-	if rf, ok := ret.Get(0).(func(context.Context, *db.CreateEmptyTaskDTO) string); ok {
-		r0 = rf(ctx, task)
-	} else {
-		r0 = ret.Get(0).(string)
 	}
 
 	if rf, ok := ret.Get(1).(func(context.Context, *db.CreateEmptyTaskDTO) error); ok {
@@ -605,7 +599,7 @@ func (_m *MockedDatabase) CreateEmptyTask(ctx context.Context, task *db.CreateEm
 		r1 = ret.Error(1)
 	}
 
-	return r0, r1
+	return r1
 }
 
 // MockedDatabase_CreateEmptyTask_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CreateEmptyTask'

@@ -2,6 +2,7 @@ package configs
 
 import (
 	"fmt"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sequence"
 	"os"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
@@ -59,6 +60,7 @@ type Pipeliner struct {
 	IncludePlaceholderBlock bool                 `yaml:"include_placeholder_block"`
 	SchedulerTasks          scheduler.Config     `yaml:"scheduler_tasks"`
 	Forms                   forms.Config         `yaml:"forms"`
+	Sequence                sequence.Config      `yaml:"sequence"`
 	HostURL                 string               `yaml:"host_url"`
 	LogIndex                string               `yaml:"log_index"`
 }
