@@ -20,15 +20,19 @@ import (
 type Service struct {
 	log logger.Logger
 
-	producerSd *msgkit.Producer
-	producer   *msgkit.Producer
-	consumer   *msgkit.Consumer
+	producerSd  *msgkit.Producer
+	producerPln *msgkit.Producer
+	producer    *msgkit.Producer
+	consumer    *msgkit.Consumer
 
 	brokers       []string
 	topics        []string
 	serviceConfig Config
 
 	MessageHandler *msgkit.MessageHandler[RunnerInMessage]
+
+	ctxCancel   c.CancelFunc
+	isConsuming bool
 }
 
 const (
@@ -83,6 +87,13 @@ func NewService(log logger.Logger, cfg Config) (*Service, bool, error) {
 
 	s.producer = producer
 
+	producerPln, err := msgkit.NewProducer(saramaClient, cfg.ConsumerTopic)
+	if err != nil {
+		return s, true, err
+	}
+
+	s.producerPln = producerPln
+
 	consumer, err := msgkit.NewConsumer(saramaClient, cfg.ConsumerGroup, cfg.ConsumerTopic)
 	if err != nil {
 		return s, true, err
@@ -94,11 +105,19 @@ func NewService(log logger.Logger, cfg Config) (*Service, bool, error) {
 }
 
 func (s *Service) ProduceFuncMessage(ctx c.Context, message *RunnerOutMessage) error {
-	if s == nil || s.producer == nil {
+	if s == nil || s.producer == nil || s.producerPln == nil {
 		return errors.New("kafka service unavailable")
 	}
 
 	return s.producer.Produce(ctx, message)
+}
+
+func (s *Service) ProduceFuncResultMessage(ctx c.Context, message *RunnerInMessage) error {
+	if s == nil || s.producer == nil || s.producerPln == nil {
+		return errors.New("kafka service unavailable")
+	}
+
+	return s.producerPln.Produce(ctx, message)
 }
 
 //nolint:all //its ok here
@@ -130,7 +149,7 @@ func (s *Service) ProduceEventMessage(ctx c.Context, message *e.NodeKafkaEvent) 
 }
 
 func (s *Service) CloseProducer() error {
-	if s != nil && s.producer != nil {
+	if s != nil && s.producer != nil || s.producerPln == nil {
 		err := s.producer.Close()
 		if err != nil {
 			return err
@@ -156,17 +175,28 @@ func (s *Service) InitMessageHandler(handler func(c.Context, RunnerInMessage) er
 }
 
 func (s *Service) StartConsumer(ctx c.Context) {
-	if s == nil || s.consumer == nil {
+	if s == nil || s.consumer == nil || s.producerPln == nil || s.isConsuming {
 		return
 	}
 
+	serveCtx, cancel := c.WithCancel(ctx)
+	s.ctxCancel = cancel
+
 	go func() {
-		err := s.consumer.Serve(ctx, s.MessageHandler)
+		err := s.consumer.Serve(serveCtx, s.MessageHandler)
 		if err != nil {
 			s.consumer = nil
 			s.log.Error(err)
 		}
+
+		s.isConsuming = true
 	}()
+}
+
+func (s *Service) StopConsumer() {
+	s.ctxCancel()
+
+	s.isConsuming = false
 }
 
 // nolint:gocognit //its ok here
@@ -188,7 +218,7 @@ func (s *Service) checkHealth() {
 	saramaCfg.Net.DialTimeout = kafkaNetTimeout
 
 	admin, err := sarama.NewClusterAdmin(s.brokers, saramaCfg)
-	if err != nil || s.consumer == nil || s.producer == nil {
+	if err != nil || s.consumer == nil || s.producer == nil || s.producerPln == nil {
 		s.log.WithError(err).Error("couldn't connect to kafka! Trying to reconnect")
 
 		msg := s.MessageHandler

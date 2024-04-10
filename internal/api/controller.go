@@ -54,6 +54,7 @@ type Env struct {
 	Forms                   *forms.Service
 	IncludePlaceholderBlock bool
 	HostURL                 string
+	ResendToPlnTopicDelay   time.Duration
 }
 
 type ServerParam struct {
@@ -61,6 +62,10 @@ type ServerParam struct {
 	SSOService        *sso.Service
 	PeopleService     *people.Service
 	TimeoutMiddleware time.Duration
+	SvcsPingTimer     time.Duration
+	SvcsFailedCount   int
+	SvcsOkCount       int
+	ConsumerWorkerCnt int
 	ServerAddr        string
 
 	LivenessPath  string

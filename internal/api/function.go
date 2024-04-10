@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"time"
 
+	"golang.org/x/net/context"
+
 	"github.com/google/uuid"
 
 	"github.com/jackc/pgx/v4"
@@ -26,6 +28,12 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
+
+func (ae *Env) WorkFunctionHandler(ctx context.Context, jobs <-chan kafka.RunnerInMessage) {
+	for job := range jobs {
+		ae.FunctionReturnHandler(ctx, job) //nolint:errcheck // Все ошибки уже обрабатываются внутри
+	}
+}
 
 func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessage) error {
 	ctx, span := trace.StartSpan(ctx, "FunctionReturnHandler")
@@ -142,6 +150,19 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 		log.WithField("funcName", "ProcessBlockWithEndMapping").
 			WithError(blockErr).
 			Error("process block with end mapping")
+
+		time.Sleep(ae.ResendToPlnTopicDelay)
+
+		if kafkaErr := ae.Kafka.ProduceFuncResultMessage(ctx, &kafka.RunnerInMessage{
+			TaskID:          message.TaskID,
+			FunctionMapping: message.FunctionMapping,
+			Err:             message.Err,
+			DoRetry:         message.DoRetry,
+		}); kafkaErr != nil {
+			log.WithField("funcName", "ProduceFuncResultMessage").
+				WithError(kafkaErr).
+				Error("cannot send function message back to kafka")
+		}
 
 		return nil
 	}

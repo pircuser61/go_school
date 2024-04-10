@@ -214,6 +214,7 @@ func main() {
 		SLAService:              slaService,
 		Forms:                   formsService,
 		HostURL:                 cfg.HostURL,
+		ResendToPlnTopicDelay:   cfg.ResendToPlnTopicDelay,
 	}
 
 	serverParam := api.ServerParam{
@@ -224,11 +225,11 @@ func main() {
 		ServerAddr:        cfg.ServeAddr,
 		ReadinessPath:     cfg.Probes.Readiness,
 		LivenessPath:      cfg.Probes.Liveness,
+		SvcsPingTimer:     cfg.SvcsPingTimer,
+		SvcsFailedCount:   cfg.SvcsFailedCount,
+		SvcsOkCount:       cfg.SvcsOkCount,
+		ConsumerWorkerCnt: cfg.ConsumerWorkerCnt,
 	}
-
-	kafkaService.InitMessageHandler(APIEnv.FunctionReturnHandler)
-
-	go kafkaService.StartCheckHealth()
 
 	jr, err := jaeger.NewExporter(jaeger.Options{
 		CollectorEndpoint: cfg.Tracing.URL,
@@ -245,6 +246,10 @@ func main() {
 	}
 
 	s := server.NewServer(ctx, log, kafkaService, &serverParam)
+
+	kafkaService.InitMessageHandler(s.StartKafkaWorkers)
+	go kafkaService.StartCheckHealth()
+
 	s.Run(ctx)
 
 	sgnl := make(chan os.Signal, 1)

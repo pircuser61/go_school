@@ -10,6 +10,10 @@ timeout: '30s'
 faas: 'https://openfaas.dev.autobp.mts.ru/'
 scheduler: "http://scheduler"
 network_monitor: "http://network-monitor/api/netmon/v1/"
+services_ping_timer: 3s
+services_failed_times_count: 3
+services_available_times_count: 3
+consumer_worker_count: 10
 
 people:
   url: "https://dev.iga.mts.ru/api/archivist/v2"
@@ -51,6 +55,7 @@ kafka:
   consumer_group: "pipeliner"
   consumer_topic: "from.runner.to.pipeliner2"
   health_check_timeout: 30
+  resend_to_pln_topic_delay: 10s
 
 remedy: "http://remedy"
 

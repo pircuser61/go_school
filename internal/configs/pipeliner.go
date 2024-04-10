@@ -3,6 +3,7 @@ package configs
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
@@ -60,6 +61,11 @@ type Pipeliner struct {
 	SchedulerTasks          scheduler.Config     `yaml:"scheduler_tasks"`
 	Forms                   forms.Config         `yaml:"forms"`
 	HostURL                 string               `yaml:"host_url"`
+	ResendToPlnTopicDelay   time.Duration        `yaml:"resend_to_pln_topic_delay"`
+	SvcsPingTimer           time.Duration        `yaml:"services_ping_timer"`
+	SvcsFailedCount         int                  `yaml:"services_failed_times_count"`
+	SvcsOkCount             int                  `yaml:"services_available_times_count"`
+	ConsumerWorkerCnt       int                  `yaml:"consumer_worker_count"`
 }
 
 type RunEnv struct {

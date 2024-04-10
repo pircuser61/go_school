@@ -1,6 +1,8 @@
 package scheduler
 
 import (
+	"context"
+
 	"go.opencensus.io/plugin/ocgrpc"
 
 	"google.golang.org/grpc"
@@ -12,6 +14,12 @@ import (
 type Service struct {
 	c   *grpc.ClientConn
 	cli scheduler_v1.TaskServiceClient
+}
+
+func (s *Service) Ping(ctx context.Context) error {
+	_, err := s.cli.Ping(ctx)
+
+	return err
 }
 
 func NewService(cfg Config) (*Service, error) {
