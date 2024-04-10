@@ -2,18 +2,14 @@ package hrgate
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
+	openapi_types "github.com/deepmap/oapi-codegen/pkg/types"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
+	"go.opencensus.io/trace"
 	"math"
 	"net/http"
 	"time"
-
-	openapi_types "github.com/deepmap/oapi-codegen/pkg/types"
-
-	"go.opencensus.io/trace"
-
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
-	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
 const (
@@ -21,66 +17,14 @@ const (
 	maxRetries        = 15
 )
 
-func (s *ServiceWithCache) GetCalendars(ctx context.Context, params *GetCalendarsParams) ([]Calendar, error) {
-	key, err := json.Marshal(params)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal params: %s", err)
-	}
-
-	keyForCache := "calendar" + ":" + string(key)
-
-	valueFromCache, err := s.Cache.GetValue(ctx, keyForCache)
-	if err == nil {
-		calendars, ok := valueFromCache.([]Calendar)
-		if !ok {
-			return nil, fmt.Errorf("failed to cast value from cache to type []Calendar")
-		}
-
-		return calendars, nil
-	}
-
-	calendar, err := s.HRGate.GetCalendars(ctx, params)
-	if err != nil {
-		return nil, err
-	}
-
-	err = s.Cache.SetValue(ctx, keyForCache, calendar)
-	if err != nil {
-		return nil, fmt.Errorf("can't set calendars to cache: %s", err)
-	}
-
-	return calendar, nil
-}
-
-func (s *ServiceWithCache) GetCalendarDays(ctx context.Context, params *GetCalendarDaysParams) (*CalendarDays, error) {
-	key, err := json.Marshal(params)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal params: %s", err)
-	}
-
-	keyForCache := "calendarDays" + ":" + string(key)
-
-	valueFromCache, err := s.Cache.GetValue(ctx, keyForCache)
-	if err == nil {
-		calendarDays, ok := valueFromCache.(*CalendarDays)
-		if !ok {
-			return nil, fmt.Errorf("failed to cast value from cache to type CalendarDays")
-		}
-
-		return calendarDays, nil
-	}
-
-	calendarDays, err := s.HRGate.GetCalendarDays(ctx, params)
-	if err != nil {
-		return nil, err
-	}
-
-	err = s.Cache.SetValue(ctx, keyForCache, calendarDays)
-	if err != nil {
-		return nil, fmt.Errorf("can't set calendarDays to cache: %s", err)
-	}
-
-	return calendarDays, nil
+type HRGateInterface interface {
+	GetCalendars(ctx context.Context, params *GetCalendarsParams) ([]Calendar, error)
+	GetPrimaryRussianFederationCalendarOrFirst(ctx context.Context, params *GetCalendarsParams) (*Calendar, error)
+	GetCalendarDays(ctx context.Context, params *GetCalendarDaysParams) (*CalendarDays, error)
+	FillDefaultUnitID(ctx context.Context) error
+	GetDefaultUnitID() string
+	GetDefaultCalendar(ctx context.Context) (*Calendar, error)
+	GetDefaultCalendarDaysForGivenTimeIntervals(ctx context.Context, taskTimeIntervals []entity.TaskCompletionInterval) (*CalendarDays, error)
 }
 
 func (s *Service) GetCalendars(ctx context.Context, params *GetCalendarsParams) ([]Calendar, error) {
@@ -118,27 +62,6 @@ func (s *Service) GetCalendars(ctx context.Context, params *GetCalendarsParams) 
 	return *response.JSON200, err
 }
 
-func (s *Service) GetPrimaryRussianFederationCalendarOrFirst(ctx context.Context, params *GetCalendarsParams) (*Calendar, error) {
-	ctx, span := trace.StartSpan(ctx, "hrgate.get_primary_calendar_or_first")
-	defer span.End()
-
-	calendars, getCalendarsErr := s.GetCalendars(ctx, params)
-
-	if getCalendarsErr != nil {
-		return nil, getCalendarsErr
-	}
-
-	for calendarIdx := range calendars {
-		calendar := calendars[calendarIdx]
-
-		if calendar.Primary != nil && *calendar.Primary && calendar.HolidayCalendar == RussianFederation {
-			return &calendar, nil
-		}
-	}
-
-	return &calendars[0], nil
-}
-
 func (s *Service) GetCalendarDays(ctx context.Context, params *GetCalendarDaysParams) (*CalendarDays, error) {
 	ctx, span := trace.StartSpan(ctx, "hrgate.get_calendar_days")
 	defer span.End()
@@ -166,6 +89,27 @@ func (s *Service) GetCalendarDays(ctx context.Context, params *GetCalendarDaysPa
 	}
 
 	return &res, nil
+}
+
+func (s *Service) GetPrimaryRussianFederationCalendarOrFirst(ctx context.Context, params *GetCalendarsParams) (*Calendar, error) {
+	ctx, span := trace.StartSpan(ctx, "hrgate.get_primary_calendar_or_first")
+	defer span.End()
+
+	calendars, getCalendarsErr := s.GetCalendars(ctx, params)
+
+	if getCalendarsErr != nil {
+		return nil, getCalendarsErr
+	}
+
+	for calendarIdx := range calendars {
+		calendar := calendars[calendarIdx]
+
+		if calendar.Primary != nil && *calendar.Primary && calendar.HolidayCalendar == RussianFederation {
+			return &calendar, nil
+		}
+	}
+
+	return &calendars[0], nil
 }
 
 func (s *Service) FillDefaultUnitID(ctx context.Context) error {
@@ -267,6 +211,10 @@ func (s *Service) GetDefaultCalendarDaysForGivenTimeIntervals(
 	}
 
 	return calendarDays, nil
+}
+
+func (s *Service) GetLocation() time.Location {
+	return s.Location
 }
 
 // fibonacci function for calculating Fibonacci numbers

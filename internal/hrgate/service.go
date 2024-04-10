@@ -1,8 +1,6 @@
 package hrgate
 
 import (
-	"context"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"net/http"
 	"time"
 
@@ -13,19 +11,9 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 )
 
-type ServiceInterface interface {
-	GetCalendars(ctx context.Context, params *GetCalendarsParams) ([]Calendar, error)
-	GetPrimaryRussianFederationCalendarOrFirst(ctx context.Context, params *GetCalendarsParams) (*Calendar, error)
-	GetCalendarDays(ctx context.Context, params *GetCalendarDaysParams) (*CalendarDays, error)
-	FillDefaultUnitID(ctx context.Context) error
-	GetDefaultUnitID() string
-	GetDefaultCalendar(ctx context.Context) (*Calendar, error)
-	GetDefaultCalendarDaysForGivenTimeIntervals(ctx context.Context, taskTimeIntervals []entity.TaskCompletionInterval) (*CalendarDays, error)
-}
-
 type ServiceWithCache struct {
 	Cache  cachekit.Cache
-	HRGate Service
+	HRGate HRGateInterface
 }
 
 type Service struct {
@@ -36,7 +24,24 @@ type Service struct {
 	Cache                 cachekit.Cache
 }
 
-func NewService(cfg *Config, ssoS *sso.Service) (*Service, error) {
+func NewServiceWithCache(cfg Config, ssoS *sso.Service) (HRGateInterface, error) {
+	service, err := NewService(cfg, ssoS)
+	if err != nil {
+		return nil, err
+	}
+
+	cache, cacheErr := cachekit.CreateCache(cachekit.Config(cfg.CacheConfig))
+	if cacheErr != nil {
+		return nil, cacheErr
+	}
+
+	return &ServiceWithCache{
+		HRGate: service,
+		Cache:  cache,
+	}, nil
+}
+
+func NewService(cfg Config, ssoS *sso.Service) (HRGateInterface, error) {
 	httpClient := &http.Client{}
 	tr := TransportForHrGate{
 		transport: ochttp.Transport{
@@ -58,42 +63,9 @@ func NewService(cfg *Config, ssoS *sso.Service) (*Service, error) {
 		return nil, getLocationErr
 	}
 
-	cache, cacheErr := cachekit.CreateCache(cachekit.Config(CacheConfig{
-		TTL:     time.Second * 5,
-		Type:    "",
-		Address: "redis-pipeliner:6379",
-		DB:      0,
-		Pass:    "pass",
-	}))
-	if cacheErr != nil {
-		return nil, cacheErr
-	}
-
-	s := &Service{
+	return &Service{
 		Cli:       newCli,
 		HRGateURL: cfg.HRGateURL,
 		Location:  *location,
-		Cache:     cache,
-	}
-
-	return s, nil
-}
-
-type TransportForHrGate struct {
-	transport ochttp.Transport
-	sso       *sso.Service
-	scope     string
-}
-
-func (t *TransportForHrGate) RoundTrip(req *http.Request) (*http.Response, error) {
-	err := t.sso.BindAuthHeader(req.Context(), req, t.scope)
-	if err != nil {
-		return nil, err
-	}
-
-	return t.transport.RoundTrip(req)
-}
-
-func (s *Service) GetLocation() time.Location {
-	return s.Location
+	}, nil
 }

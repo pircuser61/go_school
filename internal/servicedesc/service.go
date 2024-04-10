@@ -1,6 +1,7 @@
 package servicedesc
 
 import (
+	cachekit "gitlab.services.mts.ru/jocasta/cache-kit"
 	"net/http"
 
 	"go.opencensus.io/plugin/ochttp"
@@ -10,12 +11,35 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 )
 
+type ServiceWithCache struct {
+	Cache       cachekit.Cache
+	Servicedesc ServicedescInterface
+}
+
 type Service struct {
 	SdURL string
 	Cli   *http.Client
+	Cache cachekit.Cache
 }
 
-func NewService(cfg Config, ssoS *sso.Service) (*Service, error) {
+func NewServiceWithCache(cfg Config, ssoS *sso.Service) (ServicedescInterface, error) {
+	service, err := NewService(cfg, ssoS)
+	if err != nil {
+		return nil, err
+	}
+
+	cache, cacheErr := cachekit.CreateCache(cachekit.Config(cfg.CacheConfig))
+	if cacheErr != nil {
+		return nil, cacheErr
+	}
+
+	return &ServiceWithCache{
+		Cache:       cache,
+		Servicedesc: service,
+	}, nil
+}
+
+func NewService(cfg Config, ssoS *sso.Service) (ServicedescInterface, error) {
 	newCli := &http.Client{}
 
 	tr := TransportForPeople{
@@ -28,25 +52,8 @@ func NewService(cfg Config, ssoS *sso.Service) (*Service, error) {
 	}
 	newCli.Transport = &tr
 
-	s := &Service{
+	return &Service{
 		Cli:   newCli,
 		SdURL: cfg.ServicedeskURL,
-	}
-
-	return s, nil
-}
-
-type TransportForPeople struct {
-	transport ochttp.Transport
-	sso       *sso.Service
-	scope     string
-}
-
-func (t *TransportForPeople) RoundTrip(req *http.Request) (*http.Response, error) {
-	err := t.sso.BindAuthHeader(req.Context(), req, t.scope)
-	if err != nil {
-		return nil, err
-	}
-
-	return t.transport.RoundTrip(req)
+	}, nil
 }

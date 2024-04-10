@@ -52,14 +52,14 @@ type RunContextServices struct {
 	Storage       db.Database
 	Sender        *mail.Service
 	Kafka         *kafka.Service
-	People        *people.Service
-	ServiceDesc   *servicedesc.Service
+	People        people.PeopleInterface
+	ServiceDesc   servicedesc.ServicedescInterface
 	FunctionStore *functions.Service
-	HumanTasks    *human_tasks.Service
+	HumanTasks    human_tasks.HumantasksInterface
 	Integrations  *integrations.Service
 	FileRegistry  *file_registry.Service
 	FaaS          string
-	HrGate        *hrgate.Service
+	HrGate        hrgate.HRGateInterface
 	Scheduler     *scheduler.Service
 	SLAService    sla.Service
 }

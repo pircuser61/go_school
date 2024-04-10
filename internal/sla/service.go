@@ -13,10 +13,10 @@ import (
 )
 
 type service struct {
-	HrGate *hrgate.Service
+	HrGate hrgate.HRGateInterface
 }
 
-func NewSLAService(hrGate *hrgate.Service) Service {
+func NewSLAService(hrGate hrgate.HRGateInterface) Service {
 	return &service{
 		HrGate: hrGate,
 	}
