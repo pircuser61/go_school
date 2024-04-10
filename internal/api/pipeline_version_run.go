@@ -166,7 +166,7 @@ func (ae *Env) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Request
 		w:           w,
 		req:         r,
 		makeNewWork: true,
-		workNumber:  workNumber,
+		workNumber:  req.WorkNumber,
 		taskID:      taskID,
 		runCtx: entity.TaskRunContext{
 			InitialApplication: entity.InitialApplication{
@@ -292,7 +292,7 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	workNumber, err := ae.Sequence.GetWorkNumber()
+	workNumber, err := ae.Sequence.GetWorkNumber(ctx)
 	if err != nil {
 		errorHandler.handleError(GetWorkNumberError, err)
 
