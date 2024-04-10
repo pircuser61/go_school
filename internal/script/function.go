@@ -191,9 +191,9 @@ func (a *ExecutableFunctionParams) GetMappingFromInput() (JSONSchemaProperties, 
 		return nil, err
 	}
 
-	updateMappingIter(a.Mapping, newMapping, []string{})
+	_ = updateMappingIter(a.Mapping, newMapping, a.Function.RequiredInput)
 
-	return newMapping, err
+	return newMapping, nil
 }
 
 func (a *ExecutableFunctionParams) getSchemaPropertiesFromInput() (JSONSchemaProperties, error) {
