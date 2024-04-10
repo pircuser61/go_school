@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/araddon/dateparse"
+	"golang.org/x/exp/slices"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/functions"
 )
@@ -123,22 +124,65 @@ type FunctionParam struct {
 	Options       string       `json:"options"`
 }
 
-func updateMappingIter(oldProps, newProps JSONSchemaProperties) {
-	for key := range oldProps {
-		oldVal := oldProps[key]
+//nolint:gocognit //it's ok
+func updateMappingIter(oldProps, newProps JSONSchemaProperties, required []string) (isError bool) {
+	for key := range newProps {
+		newVal := newProps[key]
 
-		newVal, ok := newProps[key]
+		oldVal, ok := oldProps[key]
+		if slices.Contains[string](required, key) && !ok {
+			isError = true
+
+			continue
+		}
+
 		if !ok {
 			continue
 		}
 
-		if oldVal.Value != "" {
+		if oldVal.Type != "" && oldVal.Type != newVal.Type {
+			isError = true
+
+			continue
+		}
+
+		if newVal.Items != nil {
+			if oldVal.Items == nil || oldVal.Items.Type != newVal.Items.Type {
+				isError = true
+
+				continue
+			}
+
+			itemsError := updateMappingIter(oldVal.Items.Properties, newVal.Items.Properties, []string{})
+			if itemsError {
+				for prop := range newVal.Items.Properties {
+					childVal := newVal.Items.Properties[prop]
+					childVal.Value = ""
+					newVal.Items.Properties[prop] = childVal
+				}
+
+				isError = true
+
+				continue
+			}
+		}
+
+		childError := updateMappingIter(oldVal.Properties, newVal.Properties, newVal.Required)
+		if childError {
+			for prop := range newVal.Properties {
+				childVal := newVal.Properties[prop]
+				childVal.Value = ""
+				newVal.Properties[prop] = childVal
+			}
+		}
+
+		if !childError && oldVal.Value != "" {
 			newVal.Value = oldVal.Value
 			newProps[key] = newVal
 		}
-
-		updateMappingIter(oldVal.Properties, newVal.Properties)
 	}
+
+	return isError
 }
 
 func (a *ExecutableFunctionParams) GetMappingFromInput() (JSONSchemaProperties, error) {
@@ -147,7 +191,7 @@ func (a *ExecutableFunctionParams) GetMappingFromInput() (JSONSchemaProperties, 
 		return nil, err
 	}
 
-	updateMappingIter(a.Mapping, newMapping)
+	_ = updateMappingIter(a.Mapping, newMapping, a.Function.RequiredInput)
 
 	return newMapping, nil
 }
