@@ -335,6 +335,7 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 	version, err := storage.GetVersionByPipelineID(ctx, req.PipelineID)
 	if err != nil {
 		errorHandler.handleError(GetVersionsByBlueprintIDError, err)
+		_ = ae.DB.UpdateTaskStatus(ctx, taskID, db.RunStatusError, GetVersionsByBlueprintIDError.error(), "")
 
 		return
 	}
@@ -348,6 +349,7 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 	externalSystem, err = ae.getExternalSystem(ctx, storage, clientID, req.PipelineID, version.VersionID.String())
 	if err != nil {
 		errorHandler.handleError(GetExternalSystemsError, err)
+		_ = ae.DB.UpdateTaskStatus(ctx, taskID, db.RunStatusError, GetExternalSystemsError.error(), "")
 
 		return
 	}
@@ -360,12 +362,14 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 	mappedApplicationBody, err := ae.processMappings(externalSystem, version, req.ApplicationBody)
 	if err != nil {
 		errorHandler.handleError(MappingError, err)
+		_ = ae.DB.UpdateTaskStatus(ctx, taskID, db.RunStatusError, MappingError.error(), "")
 
 		return
 	}
 
 	if err = version.FillEntryPointOutput(); err != nil {
 		errorHandler.handleError(GetEntryPointOutputError, err)
+		_ = ae.DB.UpdateTaskStatus(ctx, taskID, db.RunStatusError, GetEntryPointOutputError.error(), "")
 
 		return
 	}

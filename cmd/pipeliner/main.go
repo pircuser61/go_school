@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"flag"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sequence"
 	"os"
 	"os/signal"
 	"syscall"
@@ -31,6 +30,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/scheduler"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sequence"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/server"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
@@ -237,6 +237,7 @@ func main() {
 	}
 
 	kafkaService.InitMessageHandler(APIEnv.FunctionReturnHandler)
+	kafkaService.InitMessageHandler(APIEnv.RunTaskHandler)
 
 	go kafkaService.StartCheckHealth()
 

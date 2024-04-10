@@ -20,15 +20,17 @@ import (
 type Service struct {
 	log logger.Logger
 
-	producerSd *msgkit.Producer
-	producer   *msgkit.Producer
-	consumer   *msgkit.Consumer
+	producerSd         *msgkit.Producer
+	producer           *msgkit.Producer
+	consumerFunctions  *msgkit.Consumer
+	consumerTaskRunner *msgkit.Consumer
 
 	brokers       []string
 	topics        []string
 	serviceConfig Config
 
-	MessageHandler *msgkit.MessageHandler[RunnerInMessage]
+	FuncMessageHandler       *msgkit.MessageHandler[RunnerInMessage]
+	TaskRunnerMessageHandler *msgkit.MessageHandler[RunnerInMessage]
 }
 
 const (
@@ -44,7 +46,7 @@ func NewService(log logger.Logger, cfg Config) (*Service, bool, error) {
 		serviceConfig: cfg,
 	}
 
-	topics := []string{cfg.ProducerTopic, cfg.ProducerTopicSD, cfg.ConsumerTopic}
+	topics := []string{cfg.ProducerTopic, cfg.ProducerTopicSD, cfg.ConsumerFunctionsTopic, cfg.ConsumerTaskRunnerTopic}
 
 	if len(cfg.Brokers) == 0 || len(topics) == 0 {
 		return s, false, errors.New("brokers or topics is empty")
@@ -83,12 +85,18 @@ func NewService(log logger.Logger, cfg Config) (*Service, bool, error) {
 
 	s.producer = producer
 
-	consumer, err := msgkit.NewConsumer(saramaClient, cfg.ConsumerGroup, cfg.ConsumerTopic)
+	consumerFunctions, err := msgkit.NewConsumer(saramaClient, cfg.ConsumerGroup, cfg.ConsumerFunctionsTopic)
 	if err != nil {
 		return s, true, err
 	}
 
-	s.consumer = consumer
+	consumerRunner, err := msgkit.NewConsumer(saramaClient, cfg.ConsumerGroup, cfg.ConsumerTaskRunnerTopic)
+	if err != nil {
+		return s, true, err
+	}
+
+	s.consumerFunctions = consumerFunctions
+	s.consumerTaskRunner = consumerRunner
 
 	return s, true, nil
 }
@@ -152,18 +160,27 @@ func (s *Service) InitMessageHandler(handler func(c.Context, RunnerInMessage) er
 		return
 	}
 
-	s.MessageHandler = msgkit.NewMessageHandler[RunnerInMessage](s.log, handler, "function_return")
+	s.FuncMessageHandler = msgkit.NewMessageHandler[RunnerInMessage](s.log, handler, "function_return")
+	s.TaskRunnerMessageHandler = msgkit.NewMessageHandler[RunnerInMessage](s.log, handler, "run_task")
 }
 
 func (s *Service) StartConsumer(ctx c.Context) {
-	if s == nil || s.consumer == nil {
+	if s == nil || s.consumerFunctions == nil || s.consumerTaskRunner == nil {
 		return
 	}
 
 	go func() {
-		err := s.consumer.Serve(ctx, s.MessageHandler)
+		err := s.consumerFunctions.Serve(ctx, s.FuncMessageHandler)
 		if err != nil {
-			s.consumer = nil
+			s.consumerFunctions = nil
+			s.log.Error(err)
+		}
+	}()
+
+	go func() {
+		err := s.consumerFunctions.Serve(ctx, s.TaskRunnerMessageHandler)
+		if err != nil {
+			s.consumerTaskRunner = nil
 			s.log.Error(err)
 		}
 	}()
@@ -188,14 +205,14 @@ func (s *Service) checkHealth() {
 	saramaCfg.Net.DialTimeout = kafkaNetTimeout
 
 	admin, err := sarama.NewClusterAdmin(s.brokers, saramaCfg)
-	if err != nil || s.consumer == nil || s.producer == nil {
+	if err != nil || s.consumerFunctions == nil || s.producer == nil {
 		s.log.WithError(err).Error("couldn't connect to kafka! Trying to reconnect")
 
-		msg := s.MessageHandler
+		msg := s.FuncMessageHandler
 
 		newService, _, reconnectErr := NewService(s.log, s.serviceConfig)
 		*s = *newService
-		s.MessageHandler = msg
+		s.FuncMessageHandler = msg
 
 		if reconnectErr != nil {
 			s.log.WithError(reconnectErr).Error("failed to reconnect to kafka")

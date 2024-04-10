@@ -49,7 +49,8 @@ kafka:
     - 10.73.138.117:9094
   producer_topic: "from.pipeliner.to.runner"
   consumer_group: "pipeliner"
-  consumer_topic: "from.runner.to.pipeliner2"
+  consumer_functions_topic: "from.runner.to.pipeliner2"
+  consumer_task_runner_topic: "from.pipeline-runner.to.pipeliner"
   health_check_timeout: 30
 
 remedy: "http://remedy"
