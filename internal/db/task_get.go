@@ -61,8 +61,6 @@ func uniqueActionsByRole(loginsIn, stepType string, finished, acted bool) string
 		   END AS updated_at
          , timestamptz(vs.content -> 'State' -> vs.step_name ->> 'deadline')                AS node_deadline
          ,  vs.content -> 'State' -> vs.step_name ->> 'is_expired'		   					AS is_expired
-    	 , jsonb_object_keys(CASE WHEN vs.step_type = 'execution' THEN vs.content->'State' -> vs.step_name -> 'executors' END) AS executors
-         , jsonb_object_keys(CASE WHEN vs.step_type = 'approver' THEN vs.content->'State' -> vs.step_name -> 'executors' END) AS approvers
     FROM members m
              JOIN variable_storage vs on vs.id = m.block_id
              JOIN works w on vs.work_id = w.id
@@ -86,8 +84,6 @@ func uniqueActionsByRole(loginsIn, stepType string, finished, acted bool) string
          , min(actions.node_deadline)     	  		 	 AS node_deadline    
     	 , min(actions.node_start) 						 AS node_start
 	 	 , max(actions.is_expired)						 AS is_expired
-         , min(actions.executors) 						 AS executors
-         , min(actions.approvers) 						 AS approvers
     FROM actions
              JOIN filtered_actions fa ON fa.time = actions.node_start AND fa.block_id = actions.block_id
              LEFT JOIN LATERAL (SELECT jsonb_build_object(
@@ -354,12 +350,13 @@ func compileGetTasksMetaQuery(fl entity.TaskFilter, delegations []string) (q str
 		SELECT 
 			w.work_number,
 			v.content->'pipeline'->'blocks'->'servicedesk_application_0'->'params'->>'blueprint_id',
-			concat(ua.executors, ua.approvers) as executors 
-
+    		vs.current_executor->'initial_people',
+    		vs.current_executor->>'group_name'    		
 		FROM works w 
 		JOIN versions v ON v.id = w.version_id
 		JOIN pipelines p ON p.id = v.pipeline_id
-		JOIN unique_actions ua ON ua.work_id = w.id
+        JOIN variable_storage vs on w.id = vs.work_id
+        JOIN unique_actions ua on w.id = ua.work_id
 		[join_variable_storage]
 		WHERE w.child_id IS NULL`
 
@@ -1693,7 +1690,8 @@ func (db *PGCon) getTasksMeta(ctx c.Context, q string, args []interface{}) (*ent
 	var (
 		workNumber  string
 		blueprintID sql.NullString
-		executors   string
+		executors   *[]string
+		group       *string
 	)
 
 	for rows.Next() {
@@ -1701,6 +1699,7 @@ func (db *PGCon) getTasksMeta(ctx c.Context, q string, args []interface{}) (*ent
 			&workNumber,
 			&blueprintID,
 			&executors,
+			&group,
 		)
 		if err != nil {
 			return nil, err
@@ -1710,8 +1709,18 @@ func (db *PGCon) getTasksMeta(ctx c.Context, q string, args []interface{}) (*ent
 			continue
 		}
 
-		if !utils.IsContainsInSlice(executors, meta.ExecutorLogins) {
-			meta.ExecutorLogins = append(meta.ExecutorLogins, executors)
+		if executors != nil {
+			for _, v := range *executors {
+				if !utils.IsContainsInSlice(v, meta.ExecutorLogins) {
+					meta.ExecutorLogins = append(meta.ExecutorLogins, v)
+				}
+			}
+		}
+
+		if group != nil {
+			if !utils.IsContainsInSlice(*group, meta.ExecutorLogins) && *group != "" {
+				meta.ExecutorLogins = append(meta.ExecutorLogins, *group)
+			}
 		}
 
 		ww, ok := meta.Blueprints[blueprintID.String]
