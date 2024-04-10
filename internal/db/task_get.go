@@ -50,8 +50,8 @@ func uniqueActionsByRole(loginsIn, stepType string, finished, acted bool) string
 	return fmt.Sprintf(`WITH actions AS (
     SELECT vs.work_id                                                                       AS work_id
          , vs.step_name                                                                     AS block_id
-         , CASE WHEN vs.status IN ('running', 'idle') THEN m.actions ELSE '{}' END AS action
-         , CASE WHEN vs.status IN ('running', 'idle') THEN m.params ELSE '{}' END  AS params
+         , CASE WHEN (vs.status IN ('running', 'idle')  AND vs.is_paused = false) THEN m.actions ELSE '{}' END AS action
+         , CASE WHEN (vs.status IN ('running', 'idle')  AND vs.is_paused = false) THEN m.params ELSE '{}' END  AS params
          , vs.current_executor                                                              AS current_executor
          , CASE WHEN vs.step_type = 'execution' THEN vs.time END                            AS exec_start_time
 		 , CASE WHEN vs.step_type = 'approver' THEN vs.time END                          	AS appr_start_time
