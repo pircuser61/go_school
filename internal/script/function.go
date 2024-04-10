@@ -155,12 +155,6 @@ func updateMappingIter(oldProps, newProps JSONSchemaProperties, required []strin
 
 			itemsError := updateMappingIter(oldVal.Items.Properties, newVal.Items.Properties, []string{})
 			if itemsError {
-				for prop := range newVal.Items.Properties {
-					childVal := newVal.Items.Properties[prop]
-					childVal.Value = ""
-					newVal.Items.Properties[prop] = childVal
-				}
-
 				isError = true
 
 				continue
@@ -168,14 +162,6 @@ func updateMappingIter(oldProps, newProps JSONSchemaProperties, required []strin
 		}
 
 		childError := updateMappingIter(oldVal.Properties, newVal.Properties, newVal.Required)
-		if childError {
-			for prop := range newVal.Properties {
-				childVal := newVal.Properties[prop]
-				childVal.Value = ""
-				newVal.Properties[prop] = childVal
-			}
-		}
-
 		if !childError && oldVal.Value != "" {
 			newVal.Value = oldVal.Value
 			newProps[key] = newVal

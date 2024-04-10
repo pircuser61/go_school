@@ -915,6 +915,7 @@ func Test_GetMappingFromInput(t *testing.T) {
 							Items: &ArrayItems{
 								Type: "number",
 							},
+							Value: "form_0.e",
 						},
 					},
 				},
@@ -984,6 +985,7 @@ func Test_GetMappingFromInput(t *testing.T) {
 							Description: "param3.1 name",
 							Type:        "string",
 							Format:      "date-time",
+							Value:       "form_0.d",
 						},
 						"param3.2": {
 							Description: "param3.2 name",
@@ -1080,6 +1082,7 @@ func Test_GetMappingFromInput(t *testing.T) {
 							Description: "param3.1 name",
 							Type:        "string",
 							Format:      "date-time",
+							Value:       "form_0.d",
 						},
 						"param3.2": {
 							Description: "param3.2 name",
@@ -1091,6 +1094,7 @@ func Test_GetMappingFromInput(t *testing.T) {
 										Description: "param4.1 name",
 										Type:        "string",
 										Format:      "date-time",
+										Value:       "form_0.f",
 									},
 									"param4.2": {
 										Description: "param4.2 name",
@@ -1241,6 +1245,7 @@ func Test_GetMappingFromInput(t *testing.T) {
 							Description: "param3.1 name",
 							Type:        "string",
 							Format:      "date-time",
+							Value:       "form_0.d",
 						},
 						"param3.2": {
 							Description: "param3.2 name",
