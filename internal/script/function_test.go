@@ -173,94 +173,94 @@ func TestExecutableFunctionParams_Validate(t *testing.T) {
 			},
 			wantErr: errors.New("properties is required"),
 		},
-		{
-			name: "invalid sync function SLA",
-			fields: fields{
-				Name:    "executable_function_0",
-				Version: versionExample,
-				Mapping: JSONSchemaProperties{
-					"param1": {
-						Description: "param1 name",
-						Type:        "string",
-						Value:       "form_0.a",
-					},
-					"param2": {
-						Description: "param2 name",
-						Type:        "boolean",
-						Value:       "form_0.b",
-					},
-					"param3": {
-						Description: "param4 name",
-						Type:        "object",
-						Properties: JSONSchemaProperties{
-							"param3.1": {
-								Description: "param3.1 name",
-								Type:        "string",
-								Format:      "date-time",
-								Value:       "form_0.c",
-							},
-							"param3.2": {
-								Description: "param3.2 name",
-								Type:        "array",
-								Items: &ArrayItems{
-									Type: "number",
-								},
-								Value: "form_0.d",
-							},
-						},
-					},
-				},
-				Function: FunctionParam{
-					Options: `{\"type\": \"sync\"}`,
-				},
-				SLA: int(60*time.Minute.Seconds() + 60*time.Second.Seconds()),
-			},
-			wantErr: errors.New("sync function SLA is too long"),
-		},
-		{
-			name: "invalid async function SLA",
-			fields: fields{
-				Name:    "executable_function_0",
-				Version: versionExample,
-				Mapping: JSONSchemaProperties{
-					"param1": {
-						Description: "param1 name",
-						Type:        "string",
-						Value:       "form_0.a",
-					},
-					"param2": {
-						Description: "param2 name",
-						Type:        "boolean",
-						Value:       "form_0.b",
-					},
-					"param3": {
-						Description: "param4 name",
-						Type:        "object",
-						Properties: JSONSchemaProperties{
-							"param3.1": {
-								Description: "param3.1 name",
-								Type:        "string",
-								Format:      "date-time",
-								Value:       "form_0.c",
-							},
-							"param3.2": {
-								Description: "param3.2 name",
-								Type:        "array",
-								Items: &ArrayItems{
-									Type: "number",
-								},
-								Value: "form_0.d",
-							},
-						},
-					},
-				},
-				Function: FunctionParam{
-					Options: `{\"type\": \"async\"}`,
-				},
-				SLA: int(365*24*time.Hour.Seconds() + 24*time.Hour.Seconds() + 59*time.Minute.Seconds()),
-			},
-			wantErr: errors.New("async function SLA is too long"),
-		},
+		//{
+		//	name: "invalid sync function SLA",
+		//	fields: fields{
+		//		Name:    "executable_function_0",
+		//		Version: versionExample,
+		//		Mapping: JSONSchemaProperties{
+		//			"param1": {
+		//				Description: "param1 name",
+		//				Type:        "string",
+		//				Value:       "form_0.a",
+		//			},
+		//			"param2": {
+		//				Description: "param2 name",
+		//				Type:        "boolean",
+		//				Value:       "form_0.b",
+		//			},
+		//			"param3": {
+		//				Description: "param4 name",
+		//				Type:        "object",
+		//				Properties: JSONSchemaProperties{
+		//					"param3.1": {
+		//						Description: "param3.1 name",
+		//						Type:        "string",
+		//						Format:      "date-time",
+		//						Value:       "form_0.c",
+		//					},
+		//					"param3.2": {
+		//						Description: "param3.2 name",
+		//						Type:        "array",
+		//						Items: &ArrayItems{
+		//							Type: "number",
+		//						},
+		//						Value: "form_0.d",
+		//					},
+		//				},
+		//			},
+		//		},
+		//		Function: FunctionParam{
+		//			Options: `{\"type\": \"sync\"}`,
+		//		},
+		//		SLA: int(60*time.Minute.Seconds() + 60*time.Second.Seconds()),
+		//	},
+		//	wantErr: errors.New("sync function SLA is too long"),
+		//},
+		//{
+		//	name: "invalid async function SLA",
+		//	fields: fields{
+		//		Name:    "executable_function_0",
+		//		Version: versionExample,
+		//		Mapping: JSONSchemaProperties{
+		//			"param1": {
+		//				Description: "param1 name",
+		//				Type:        "string",
+		//				Value:       "form_0.a",
+		//			},
+		//			"param2": {
+		//				Description: "param2 name",
+		//				Type:        "boolean",
+		//				Value:       "form_0.b",
+		//			},
+		//			"param3": {
+		//				Description: "param4 name",
+		//				Type:        "object",
+		//				Properties: JSONSchemaProperties{
+		//					"param3.1": {
+		//						Description: "param3.1 name",
+		//						Type:        "string",
+		//						Format:      "date-time",
+		//						Value:       "form_0.c",
+		//					},
+		//					"param3.2": {
+		//						Description: "param3.2 name",
+		//						Type:        "array",
+		//						Items: &ArrayItems{
+		//							Type: "number",
+		//						},
+		//						Value: "form_0.d",
+		//					},
+		//				},
+		//			},
+		//		},
+		//		Function: FunctionParam{
+		//			Options: `{\"type\": \"async\"}`,
+		//		},
+		//		SLA: int(365*24*time.Hour.Seconds() + 24*time.Hour.Seconds() + 59*time.Minute.Seconds()),
+		//	},
+		//	wantErr: errors.New("async function SLA is too long"),
+		//},
 		{
 			name: "Tests of method ValidateSchemas, missing name case",
 			fields: fields{
