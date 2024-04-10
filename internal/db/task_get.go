@@ -343,22 +343,24 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 
 //nolint:gocritic //изначально было без поинтера
 func compileGetTasksMetaQuery(fl entity.TaskFilter, delegations []string) (q string, args []interface{}) {
+	stepType := getStepTypeBySelectForFilter(*fl.SelectAs)
+
 	// nolint:gocritic
 	// language=PostgreSQL
-	q = `
+	q = fmt.Sprintf(`
 		[with_variable_storage]
 		SELECT 
 			w.work_number,
 			v.content->'pipeline'->'blocks'->'servicedesk_application_0'->'params'->>'blueprint_id',
-    		vs.current_executor->'initial_people',
-    		vs.current_executor->>'group_name'    		
+    		var.current_executor->'people',
+    		var.current_executor->>'group_name'    		
 		FROM works w 
 		JOIN versions v ON v.id = w.version_id
 		JOIN pipelines p ON p.id = v.pipeline_id
-        JOIN variable_storage vs on w.id = vs.work_id
-        JOIN unique_actions ua on w.id = ua.work_id
+		JOIN unique_actions ua on w.id = ua.work_id
+		JOIN variable_storage var on w.id = var.work_id and var.step_type='%s'
 		[join_variable_storage]
-		WHERE w.child_id IS NULL`
+		WHERE w.child_id IS NULL`, stepType)
 
 	var order string
 	if fl.Order != nil {
@@ -478,7 +480,7 @@ func (cq *compileGetTaskQueryMaker) addExecutorFilter(fl *entity.TaskFilter) {
 		return
 	}
 
-	cq.q = fmt.Sprintf("%s AND (ua.current_executor -> 'initial_people' @> '[%q]'::jsonb\n"+
+	cq.q = fmt.Sprintf("%s AND (ua.current_executor -> 'people' @> '[%q]'::jsonb\n"+
 		"OR ua.current_executor ->> 'group_id' = '%s')", cq.q, *fl.Executor, *fl.Executor)
 }
 
@@ -600,7 +602,7 @@ func replaceStorageVariable(q string) string {
 
 func getProcessingSteps(q string, fl *entity.TaskFilter) string {
 	varStorage := `, var_storage as (
-		SELECT DISTINCT work_id FROM variable_storage
+		SELECT DISTINCT work_id, current_executor FROM variable_storage
 		WHERE work_id IS NOT NULL`
 
 	varStorage = addAssignType(varStorage, fl.CurrentUser, fl.ExecutorTypeAssigned)
@@ -650,11 +652,10 @@ func addProcessingLogins(q string, selectAs *string, logins *[]string) string {
 	stepType := getStepTypeBySelectForFilter(*selectAs)
 
 	return fmt.Sprintf(`
-		%s AND step_type = '%s' AND content -> 'State' -> step_name -> '%s' ?| '%s'`,
+		%s AND step_type = '%s' AND current_executor -> 'people'  @> '[%q]'::jsonb`,
 		q,
 		stepType,
-		getActorsNameByStepType(stepType),
-		"{"+strings.Join(ls, ",")+"}",
+		strings.Join(ls, ","),
 	)
 }
 
@@ -663,17 +664,16 @@ func addProcessingGroups(q string, selectAs *string, groupIds *[]string) string 
 		return q
 	}
 
-	ids := *groupIds
-	for i := range ids {
-		ids[i] = fmt.Sprintf("'%s'", ids[i])
+	ids := make([]string, 0)
+	for _, v := range *groupIds {
+		ids = append(ids, fmt.Sprintf("'%s'", v))
 	}
 
 	stepType := getStepTypeBySelectForFilter(*selectAs)
 
-	return fmt.Sprintf(`%s AND step_type = '%s' AND content -> 'State' -> step_name ->> '%s'::varchar IN(%s)`,
+	return fmt.Sprintf(`%s AND step_type = '%s' AND current_executor ->> 'group_id' IN(%s)`,
 		q,
 		stepType,
-		getGroupActorsNameByStepType(stepType),
 		strings.Join(ids, ","),
 	)
 }
@@ -682,32 +682,6 @@ func getStepTypeBySelectForFilter(selectFor string) string {
 	switch selectFor {
 	case "queue_executor", "in_work_executor", "finished_executor", "group_executor", "finished_group_executor":
 		return "execution"
-	}
-
-	return ""
-}
-
-func getActorsNameByStepType(stepName string) string {
-	const executorsString = "executors"
-
-	switch stepName {
-	case "execution":
-		return executorsString
-	case "approver":
-		return "approvers"
-	case "form":
-		return executorsString
-	}
-
-	return ""
-}
-
-func getGroupActorsNameByStepType(stepName string) string {
-	switch stepName {
-	case "execution":
-		return "executors_group_id"
-	case "approver":
-		return "approvers_group_id"
 	}
 
 	return ""
@@ -1705,10 +1679,6 @@ func (db *PGCon) getTasksMeta(ctx c.Context, q string, args []interface{}) (*ent
 			return nil, err
 		}
 
-		if !blueprintID.Valid || blueprintID.String == "" {
-			continue
-		}
-
 		if executors != nil {
 			for _, v := range *executors {
 				if !utils.IsContainsInSlice(v, meta.ExecutorLogins) {
@@ -1721,6 +1691,10 @@ func (db *PGCon) getTasksMeta(ctx c.Context, q string, args []interface{}) (*ent
 			if !utils.IsContainsInSlice(*group, meta.ExecutorLogins) && *group != "" {
 				meta.ExecutorLogins = append(meta.ExecutorLogins, *group)
 			}
+		}
+
+		if !blueprintID.Valid || blueprintID.String == "" {
+			continue
 		}
 
 		ww, ok := meta.Blueprints[blueprintID.String]
