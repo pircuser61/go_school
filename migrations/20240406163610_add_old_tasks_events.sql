@@ -3,7 +3,7 @@
 CREATE TABLE if not exists old_events AS
     (SELECT st.start_ids, st.started_at,pi.pause_ids,pi.fat, w.author
      FROM works w join
-          (SELECT works.id as start_ids, works.started_at from works left join task_events te on works.id = te.work_id AND te.event_type = 'start' AND te.params = '{"steps": []}' where te.id is null)  st on w.id = st.start_ids join
+          (SELECT works.id as start_ids, works.started_at from works left join task_events te on works.id = te.work_id AND te.event_type = 'start' AND te.params = '{"steps": []}' where te.id is null)  st on w.id = st.start_ids left join
           (SELECT works.id pause_ids, works.finished_at+interval '1 minute' as fat from works left join task_events te on works.id = te.work_id AND  te.event_type =  'pause' AND  te.params = '{"steps": []}'where te.id is null AND works.finished_at is not null) pi on pause_ids = start_ids);
 
 INSERT INTO task_events (id, work_id, author, event_type, params, created_at)
