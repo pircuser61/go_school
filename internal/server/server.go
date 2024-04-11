@@ -42,6 +42,7 @@ func NewServer(
 		logger:            log,
 		httpServer:        httpServer,
 		kafka:             kf,
+		consumerWorkerCh:  make(chan kafka.RunnerInMessage),
 		svcsPingTimer:     serverParam.SvcsPingTimer,
 		svcsFailedCount:   serverParam.SvcsFailedCount,
 		svcsOkCount:       serverParam.SvcsOkCount,
