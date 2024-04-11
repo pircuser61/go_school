@@ -233,32 +233,17 @@ func (s *Service) GetUserEmail(ctx context.Context, username string) (string, er
 	ctxLocal, span := trace.StartSpan(ctx, "GetUserEmail")
 	defer span.End()
 
-	if sso.IsServiceUserName(username) {
-		return "", nil
-	}
-
-	users, err := s.getUser(ctxLocal, username, true)
+	user, err := s.GetUser(ctxLocal, username)
 	if err != nil {
 		return "", err
 	}
 
-	for _, u := range users {
-		uname, ok := u["username"]
-		if !ok {
-			return "", errors.New("couldn't find user")
-		}
-
-		if uname == username {
-			typed, err := u.ToSSOUserTyped()
-			if err != nil {
-				return "", errors.Wrap(err, "couldn't convert user")
-			}
-
-			return typed.Email, nil
-		}
+	typed, err := user.ToSSOUserTyped()
+	if err != nil {
+		return "", errors.Wrap(err, "couldn't convert user")
 	}
 
-	return "", errors.New("couldn't find user")
+	return typed.Email, nil
 }
 
 func (s *Service) GetUser(ctx context.Context, username string) (SSOUser, error) {
@@ -289,7 +274,7 @@ func (s *Service) GetUser(ctx context.Context, username string) (SSOUser, error)
 }
 
 func (s *Service) GetUsers(ctx context.Context, username string, limit *int, filter []string) ([]SSOUser, error) {
-	ctxLocal, span := trace.StartSpan(ctx, "GetUser")
+	ctxLocal, span := trace.StartSpan(ctx, "GetUsers")
 	defer span.End()
 
 	maxLimit := 0

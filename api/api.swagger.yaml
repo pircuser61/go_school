@@ -2310,7 +2310,7 @@ paths:
       operationId: MonitoringTaskAction
       tags:
         - monitoring
-      summary:  Действия с заявкой в мониторинге
+      summary: Действия с заявкой в мониторинге
       description: Действия с заявкой в мониторинге
       parameters:
         - name: workNumber
@@ -2368,7 +2368,7 @@ paths:
       operationId: GetMonitoringTaskEvents
       tags:
         - monitoring
-      summary:  Ивенты заяви в мониторинге
+      summary: Ивенты заяви в мониторинге
       description: Ивенты заяви в мониторинге
       parameters:
         - name: workNumber

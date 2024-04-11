@@ -3,6 +3,7 @@ package people
 import (
 	"context"
 	"fmt"
+	"github.com/pkg/errors"
 
 	cachekit "gitlab.services.mts.ru/jocasta/cache-kit"
 )
@@ -44,7 +45,7 @@ func (s *ServiceWithCache) GetUser(ctx context.Context, search string) (SSOUser,
 }
 
 // TODO создать ключ
-func (s *ServiceWithCache) GetUsers(ctx context.Context, search string, limit int, filter []string) ([]SSOUser, error) {
+func (s *ServiceWithCache) GetUsers(ctx context.Context, search string, limit *int, filter []string) ([]SSOUser, error) {
 	keyForCache := usersKeyPrefix + search
 
 	valueFromCache, err := s.Cache.GetValue(ctx, keyForCache)
@@ -74,6 +75,17 @@ func (s *ServiceWithCache) PathBuilder(mainpath, subpath string) (string, error)
 	return s.People.PathBuilder(mainpath, subpath)
 }
 
+//TODO: делаем span'ы (GetUsers (with cache))
 func (s *ServiceWithCache) GetUserEmail(ctx context.Context, username string) (string, error) {
-	return s.People.GetUserEmail(ctx, username)
+	user, err := s.GetUser(ctx, username)
+	if err != nil {
+		return "", err
+	}
+
+	typed, err := user.ToSSOUserTyped()
+	if err != nil {
+		return "", errors.Wrap(err, "couldn't convert user")
+	}
+
+	return typed.Email, nil
 }
