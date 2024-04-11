@@ -80,14 +80,14 @@ func main() {
 		return
 	}
 
-	peopleService, err := people.NewServiceWithCache(cfg.People, ssoService)
+	peopleService, err := people.NewServiceWithCache(&cfg.People, ssoService)
 	if err != nil {
 		log.WithError(err).Error("can't create people service")
 
 		return
 	}
 
-	serviceDescService, err := servicedesc.NewServiceWithCache(cfg.ServiceDesc, ssoService)
+	serviceDescService, err := servicedesc.NewServiceWithCache(&cfg.ServiceDesc, ssoService)
 	if err != nil {
 		log.WithError(err).Error("can't create servicedesc service")
 
@@ -136,7 +136,7 @@ func main() {
 		return
 	}
 
-	humanTasksService, err := human_tasks.NewServiceWithCache(cfg.HumanTasks)
+	humanTasksService, err := human_tasks.NewServiceWithCache(&cfg.HumanTasks)
 	if err != nil {
 		log.WithError(err).Error("can't create human tasks service")
 
@@ -147,7 +147,7 @@ func main() {
 	if err != nil {
 		log.WithError(err).Error("can't create mail fetcher service")
 
-		//return
+		return
 	}
 
 	integrationsService, err := integrations.NewService(cfg.Integrations)
@@ -157,7 +157,7 @@ func main() {
 		return
 	}
 
-	hrgateService, err := hrgate.NewServiceWithCache(cfg.HrGate, ssoService)
+	hrgateService, err := hrgate.NewServiceWithCache(&cfg.HrGate, ssoService)
 	if err != nil {
 		log.WithError(err).Error("can't create hrgate service")
 
@@ -228,7 +228,7 @@ func main() {
 
 	kafkaService.InitMessageHandler(APIEnv.FunctionReturnHandler)
 
-	//go kafkaService.StartCheckHealth()
+	go kafkaService.StartCheckHealth()
 
 	jr, err := jaeger.NewExporter(jaeger.Options{
 		CollectorEndpoint: cfg.Tracing.URL,
