@@ -3,8 +3,8 @@ package humantasks
 import "time"
 
 type Config struct {
-	URL string `yaml:"url"`
-	CacheConfig
+	URL   string      `yaml:"url"`
+	Cache CacheConfig `yaml:"cache"`
 }
 
 type CacheConfig struct {

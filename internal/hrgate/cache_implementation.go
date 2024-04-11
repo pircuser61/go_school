@@ -4,6 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
+	"time"
+
+	openapi_types "github.com/deepmap/oapi-codegen/pkg/types"
+	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
+	"go.opencensus.io/trace"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
@@ -22,6 +28,9 @@ type ServiceWithCache struct {
 }
 
 func (s *ServiceWithCache) GetCalendars(ctx context.Context, params *GetCalendarsParams) ([]Calendar, error) {
+	ctx, span := trace.StartSpan(ctx, "hrgate.get_calendars")
+	defer span.End()
+
 	log := logger.CreateLogger(nil)
 
 	key, err := json.Marshal(params)
@@ -34,14 +43,14 @@ func (s *ServiceWithCache) GetCalendars(ctx context.Context, params *GetCalendar
 	valueFromCache, err := s.Cache.GetValue(ctx, keyForCache)
 	if err == nil {
 		calendars, ok := valueFromCache.([]Calendar)
-		if ok {
-			return calendars, nil
+		if !ok {
+			err = s.Cache.DeleteValue(ctx, keyForCache)
+			if err != nil {
+				log.WithError(err).Error("can't delete key from cache")
+			}
 		}
 
-		err = s.Cache.DeleteValue(ctx, keyForCache)
-		if err != nil {
-			log.WithError(err).Error("can't delete key from cache")
-		}
+		return calendars, nil
 	}
 
 	calendar, err := s.HRGate.GetCalendars(ctx, params)
@@ -58,6 +67,11 @@ func (s *ServiceWithCache) GetCalendars(ctx context.Context, params *GetCalendar
 }
 
 func (s *ServiceWithCache) GetCalendarDays(ctx context.Context, params *GetCalendarDaysParams) (*CalendarDays, error) {
+	ctx, span := trace.StartSpan(ctx, "hrgate.get_calendar_days")
+	defer span.End()
+
+	log := logger.CreateLogger(nil)
+
 	key, err := json.Marshal(params)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal params: %s", err)
@@ -69,7 +83,10 @@ func (s *ServiceWithCache) GetCalendarDays(ctx context.Context, params *GetCalen
 	if err == nil {
 		calendarDays, ok := valueFromCache.(*CalendarDays)
 		if !ok {
-			return nil, fmt.Errorf("failed to cast value from cache to type CalendarDays")
+			err = s.Cache.DeleteValue(ctx, keyForCache)
+			if err != nil {
+				log.WithError(err).Error("can't delete key from cache")
+			}
 		}
 
 		return calendarDays, nil
@@ -88,9 +105,25 @@ func (s *ServiceWithCache) GetCalendarDays(ctx context.Context, params *GetCalen
 	return calendarDays, nil
 }
 
-// TODO скопировать с сервиса
 func (s *ServiceWithCache) GetPrimaryRussianFederationCalendarOrFirst(ctx context.Context, params *GetCalendarsParams) (*Calendar, error) {
-	return s.HRGate.GetPrimaryRussianFederationCalendarOrFirst(ctx, params)
+	ctx, span := trace.StartSpan(ctx, "hrgate.get_primary_calendar_or_first")
+	defer span.End()
+
+	calendars, getCalendarsErr := s.GetCalendars(ctx, params)
+
+	if getCalendarsErr != nil {
+		return nil, getCalendarsErr
+	}
+
+	for calendarIdx := range calendars {
+		calendar := calendars[calendarIdx]
+
+		if calendar.Primary != nil && *calendar.Primary && calendar.HolidayCalendar == RussianFederation {
+			return &calendar, nil
+		}
+	}
+
+	return &calendars[0], nil
 }
 
 func (s *ServiceWithCache) FillDefaultUnitID(ctx context.Context) error {
@@ -101,15 +134,54 @@ func (s *ServiceWithCache) GetDefaultUnitID() string {
 	return s.HRGate.GetDefaultUnitID()
 }
 
-// TODO удалить из интерфейса
-func (s *ServiceWithCache) GetDefaultCalendar(ctx context.Context) (*Calendar, error) {
-	return s.HRGate.GetDefaultCalendar(ctx)
-}
-
-// TODO скопировать с сервиса
 func (s *ServiceWithCache) GetDefaultCalendarDaysForGivenTimeIntervals(
 	ctx context.Context,
 	taskTimeIntervals []entity.TaskCompletionInterval,
 ) (*CalendarDays, error) {
-	return s.HRGate.GetDefaultCalendarDaysForGivenTimeIntervals(ctx, taskTimeIntervals)
+	ctx, span := trace.StartSpan(ctx, "hrgate.get_default_calendar_days_for_given_time_intervals")
+	defer span.End()
+
+	unitID := s.GetDefaultUnitID()
+
+	calendar, getCalendarsErr := s.GetPrimaryRussianFederationCalendarOrFirst(ctx, &GetCalendarsParams{
+		UnitIDs: &UnitIDs{unitID},
+	})
+
+	if getCalendarsErr != nil {
+		return nil, getCalendarsErr
+	}
+
+	minIntervalTime, err := utils.FindMin(taskTimeIntervals, func(a, b entity.TaskCompletionInterval) bool {
+		return a.StartedAt.Unix() < b.StartedAt.Unix()
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	minIntervalTime.StartedAt = minIntervalTime.StartedAt.Add(-time.Hour * 24 * 7)
+
+	maxIntervalTime, err := utils.FindMax(taskTimeIntervals, func(a, b entity.TaskCompletionInterval) bool {
+		return a.StartedAt.Unix() < b.StartedAt.Unix()
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	maxIntervalTime.FinishedAt = minIntervalTime.FinishedAt.Add(time.Hour * 24 * 7) // just taking more time
+
+	calendarDays, getCalendarDaysErr := s.GetCalendarDays(ctx, &GetCalendarDaysParams{
+		QueryFilters: &QueryFilters{
+			WithDeleted: utils.GetAddressOfValue(false),
+			Limit: utils.GetAddressOfValue(int(math.Ceil(utils.GetDateUnitNumBetweenDates(minIntervalTime.StartedAt,
+				maxIntervalTime.FinishedAt, utils.Day)))),
+		},
+		Calendar: &IDsList{string(calendar.Id)},
+		DateFrom: &openapi_types.Date{Time: minIntervalTime.StartedAt},
+		DateTo:   &openapi_types.Date{Time: maxIntervalTime.FinishedAt},
+	})
+	if getCalendarDaysErr != nil {
+		return nil, err
+	}
+
+	return calendarDays, nil
 }

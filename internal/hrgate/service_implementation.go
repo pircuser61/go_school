@@ -146,24 +146,6 @@ func (s *Service) GetDefaultUnitID() string {
 	return *s.DefaultCalendarUnitID
 }
 
-func (s *Service) GetDefaultCalendar(ctx context.Context) (*Calendar, error) {
-	ctx, span := trace.StartSpan(ctx, "hrgate.get_default_calendar")
-	defer span.End()
-
-	unitID := s.GetDefaultUnitID()
-
-	calendars, getCalendarsErr := s.GetCalendars(ctx, &GetCalendarsParams{
-		QueryFilters: nil,
-		UnitIDs:      &UnitIDs{unitID},
-	})
-
-	if getCalendarsErr != nil {
-		return nil, getCalendarsErr
-	}
-
-	return &calendars[0], nil
-}
-
 func (s *Service) GetDefaultCalendarDaysForGivenTimeIntervals(
 	ctx context.Context,
 	taskTimeIntervals []entity.TaskCompletionInterval,

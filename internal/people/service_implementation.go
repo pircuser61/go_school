@@ -232,7 +232,7 @@ func (s *Service) PathBuilder(mainpath, subpath string) (string, error) {
 }
 
 func (s *Service) GetUserEmail(ctx context.Context, username string) (string, error) {
-	ctxLocal, span := trace.StartSpan(ctx, "GetUserEmail")
+	ctxLocal, span := trace.StartSpan(ctx, "people.get_user_email")
 	defer span.End()
 
 	user, err := s.GetUser(ctxLocal, username)
@@ -249,7 +249,7 @@ func (s *Service) GetUserEmail(ctx context.Context, username string) (string, er
 }
 
 func (s *Service) GetUser(ctx context.Context, username string) (SSOUser, error) {
-	ctxLocal, span := trace.StartSpan(ctx, "GetUser")
+	ctxLocal, span := trace.StartSpan(ctx, "people.get_user")
 	defer span.End()
 
 	if sso.IsServiceUserName(username) {
@@ -276,7 +276,7 @@ func (s *Service) GetUser(ctx context.Context, username string) (SSOUser, error)
 }
 
 func (s *Service) GetUsers(ctx context.Context, username string, limit *int, filter []string) ([]SSOUser, error) {
-	ctxLocal, span := trace.StartSpan(ctx, "GetUsers")
+	ctxLocal, span := trace.StartSpan(ctx, "people.get_users")
 	defer span.End()
 
 	maxLimit := 0

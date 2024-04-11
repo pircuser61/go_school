@@ -2,8 +2,13 @@ package servicedesc
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
+
+	"gitlab.services.mts.ru/abp/myosotis/logger"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
+	"go.opencensus.io/trace"
 
 	cachekit "gitlab.services.mts.ru/jocasta/cache-kit"
 )
@@ -20,13 +25,21 @@ type ServiceWithCache struct {
 }
 
 func (s *ServiceWithCache) GetWorkGroup(ctx context.Context, groupID string) (*WorkGroup, error) {
+	ctx, span := trace.StartSpan(ctx, "servicedesc.get_work_group")
+	defer span.End()
+
+	log := logger.CreateLogger(nil)
+
 	keyForCache := workGroupKeyPrefix + groupID
 
 	valueFromCache, err := s.Cache.GetValue(ctx, keyForCache)
 	if err == nil {
 		resources, ok := valueFromCache.(*WorkGroup)
 		if !ok {
-			return nil, fmt.Errorf("failed to cast value from cache to type *WorkGroup")
+			err = s.Cache.DeleteValue(ctx, keyForCache)
+			if err != nil {
+				log.WithError(err).Error("can't delete key from cache")
+			}
 		}
 
 		return resources, nil
@@ -46,13 +59,21 @@ func (s *ServiceWithCache) GetWorkGroup(ctx context.Context, groupID string) (*W
 }
 
 func (s *ServiceWithCache) GetSchemaByID(ctx context.Context, schemaID string) (map[string]interface{}, error) {
+	ctx, span := trace.StartSpan(ctx, "servicedesc.get_schema_by_id")
+	defer span.End()
+
+	log := logger.CreateLogger(nil)
+
 	keyForCache := schemaIDKeyPrefix + schemaID
 
 	valueFromCache, err := s.Cache.GetValue(ctx, keyForCache)
 	if err == nil {
 		schema, ok := valueFromCache.(map[string]interface{})
 		if !ok {
-			return nil, fmt.Errorf("failed to cast value from cache to type schema")
+			err = s.Cache.DeleteValue(ctx, keyForCache)
+			if err != nil {
+				log.WithError(err).Error("can't delete key from cache")
+			}
 		}
 
 		return schema, nil
@@ -72,13 +93,21 @@ func (s *ServiceWithCache) GetSchemaByID(ctx context.Context, schemaID string) (
 }
 
 func (s *ServiceWithCache) GetSchemaByBlueprintID(ctx context.Context, blueprintID string) (map[string]interface{}, error) {
+	ctx, span := trace.StartSpan(ctx, "servicedesc.get_schema_by_blueprint_id")
+	defer span.End()
+
+	log := logger.CreateLogger(nil)
+
 	keyForCache := schemaBlueprintIDKeyPrefix + blueprintID
 
 	valueFromCache, err := s.Cache.GetValue(ctx, keyForCache)
 	if err == nil {
 		blueprint, ok := valueFromCache.(map[string]interface{})
 		if !ok {
-			return nil, fmt.Errorf("failed to cast value from cache to type blueprint")
+			err = s.Cache.DeleteValue(ctx, keyForCache)
+			if err != nil {
+				log.WithError(err).Error("can't delete key from cache")
+			}
 		}
 
 		return blueprint, nil
@@ -97,9 +126,44 @@ func (s *ServiceWithCache) GetSchemaByBlueprintID(ctx context.Context, blueprint
 	return blueprint, nil
 }
 
-// TODO добавить кеш
 func (s *ServiceWithCache) GetSsoPerson(ctx context.Context, username string) (*SsoPerson, error) {
-	return s.Servicedesc.GetSsoPerson(ctx, username)
+	ctxLocal, span := trace.StartSpan(ctx, "servicedesc.get_sso_person")
+	defer span.End()
+
+	if sso.IsServiceUserName(username) {
+		return &SsoPerson{
+			Username: username,
+		}, nil
+	}
+
+	sdURL := s.GetSdURL()
+
+	reqURL := fmt.Sprintf("%s%s", sdURL, fmt.Sprintf(getUserInfo, username))
+
+	req, err := http.NewRequestWithContext(ctxLocal, http.MethodGet, reqURL, http.NoBody)
+	if err != nil {
+		return nil, err
+	}
+
+	cli := s.GetCli()
+
+	resp, err := cli.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("bad status code from sso: %d, username: %s", resp.StatusCode, username)
+	}
+
+	res := &SsoPerson{}
+	if unmErr := json.NewDecoder(resp.Body).Decode(&res); unmErr != nil {
+		return nil, unmErr
+	}
+
+	return res, nil
 }
 
 func (s *ServiceWithCache) GetSdURL() string {

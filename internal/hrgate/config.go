@@ -3,9 +3,9 @@ package hrgate
 import "time"
 
 type Config struct {
-	HRGateURL string `yaml:"hr_gate_url"`
-	Scope     string `yaml:"scope"`
-	CacheConfig
+	HRGateURL string      `yaml:"hr_gate_url"`
+	Scope     string      `yaml:"scope"`
+	Cache     CacheConfig `yaml:"cache"`
 }
 
 type CacheConfig struct {

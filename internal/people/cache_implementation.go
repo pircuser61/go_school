@@ -2,7 +2,10 @@ package people
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"gitlab.services.mts.ru/abp/myosotis/logger"
+	"go.opencensus.io/trace"
 
 	"github.com/pkg/errors"
 
@@ -20,13 +23,21 @@ type ServiceWithCache struct {
 }
 
 func (s *ServiceWithCache) GetUser(ctx context.Context, search string) (SSOUser, error) {
+	log := logger.CreateLogger(nil)
+
+	ctx, span := trace.StartSpan(ctx, "people.get_user")
+	defer span.End()
+
 	keyForCache := userKeyPrefix + search
 
 	valueFromCache, err := s.Cache.GetValue(ctx, keyForCache)
 	if err == nil {
 		resources, ok := valueFromCache.(SSOUser)
 		if !ok {
-			return nil, fmt.Errorf("failed to cast value from cache to type []SSOUser")
+			err = s.Cache.DeleteValue(ctx, keyForCache)
+			if err != nil {
+				log.WithError(err).Error("can't delete key from cache")
+			}
 		}
 
 		return resources, nil
@@ -45,15 +56,27 @@ func (s *ServiceWithCache) GetUser(ctx context.Context, search string) (SSOUser,
 	return resources, nil
 }
 
-// TODO создать ключ
 func (s *ServiceWithCache) GetUsers(ctx context.Context, search string, limit *int, filter []string) ([]SSOUser, error) {
-	keyForCache := usersKeyPrefix + search
+	log := logger.CreateLogger(nil)
+
+	ctx, span := trace.StartSpan(ctx, "people.get_users")
+	defer span.End()
+
+	f, err := json.Marshal(filter)
+	if err != nil {
+		log.WithError(err).Error("can't marshal filter")
+	}
+
+	keyForCache := usersKeyPrefix + search + string(rune(*limit)) + string(f)
 
 	valueFromCache, err := s.Cache.GetValue(ctx, keyForCache)
 	if err == nil {
 		resources, ok := valueFromCache.([]SSOUser)
 		if !ok {
-			return nil, fmt.Errorf("failed to cast value from cache to type []SSOUser")
+			err = s.Cache.DeleteValue(ctx, keyForCache)
+			if err != nil {
+				log.WithError(err).Error("can't delete key from cache")
+			}
 		}
 
 		return resources, nil
@@ -76,8 +99,10 @@ func (s *ServiceWithCache) PathBuilder(mainpath, subpath string) (string, error)
 	return s.People.PathBuilder(mainpath, subpath)
 }
 
-// TODO: делаем span'ы (GetUsers (with cache))
 func (s *ServiceWithCache) GetUserEmail(ctx context.Context, username string) (string, error) {
+	ctx, span := trace.StartSpan(ctx, "people.get_user_email")
+	defer span.End()
+
 	user, err := s.GetUser(ctx, username)
 	if err != nil {
 		return "", err

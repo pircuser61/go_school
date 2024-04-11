@@ -16,7 +16,7 @@ func NewServiceWithCache(cfg *Config) (ServiceInterface, error) {
 		return nil, err
 	}
 
-	cache, cacheErr := cachekit.CreateCache(cachekit.Config(cfg.CacheConfig))
+	cache, cacheErr := cachekit.CreateCache(cachekit.Config(cfg.Cache))
 	if cacheErr != nil {
 		return nil, cacheErr
 	}

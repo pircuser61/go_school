@@ -49,7 +49,7 @@ type SsoPerson struct {
 }
 
 func (s *Service) GetSsoPerson(ctx context.Context, username string) (*SsoPerson, error) {
-	ctxLocal, span := trace.StartSpan(ctx, "get_sso_person")
+	ctxLocal, span := trace.StartSpan(ctx, "servicedesc.get_sso_person")
 	defer span.End()
 
 	if sso.IsServiceUserName(username) {
@@ -86,7 +86,7 @@ func (s *Service) GetSsoPerson(ctx context.Context, username string) (*SsoPerson
 
 //nolint:dupl //its not duplicate
 func (s *Service) GetWorkGroup(ctx context.Context, groupID string) (*WorkGroup, error) {
-	ctxLocal, span := trace.StartSpan(ctx, "get_work_group")
+	ctxLocal, span := trace.StartSpan(ctx, "servicedesc.get_work_group")
 	defer span.End()
 
 	reqURL := fmt.Sprintf("%s%s%s", s.SdURL, getWorkGroup, groupID)
@@ -119,7 +119,7 @@ func (s *Service) GetWorkGroup(ctx context.Context, groupID string) (*WorkGroup,
 }
 
 func (s *Service) GetSchemaByID(ctx context.Context, schemaID string) (map[string]interface{}, error) {
-	ctxLocal, span := trace.StartSpan(ctx, "get_schema_by_id")
+	ctxLocal, span := trace.StartSpan(ctx, "servicedesc.get_schema_by_id")
 	defer span.End()
 
 	reqURL := fmt.Sprintf("%s%s%s", s.SdURL, getSchemaByID, schemaID)
@@ -149,7 +149,7 @@ func (s *Service) GetSchemaByID(ctx context.Context, schemaID string) (map[strin
 }
 
 func (s *Service) GetSchemaByBlueprintID(ctx context.Context, blueprintID string) (map[string]interface{}, error) {
-	ctxLocal, span := trace.StartSpan(ctx, "get_schema_by_blueprint_id")
+	ctxLocal, span := trace.StartSpan(ctx, "servicedesc.get_schema_by_blueprint_id")
 	defer span.End()
 
 	reqURL := fmt.Sprintf("%s%s%s%s", s.SdURL, getSchemaByBlueprintID, blueprintID, "/json")

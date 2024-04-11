@@ -12,6 +12,5 @@ type ServiceInterface interface {
 	GetCalendarDays(ctx context.Context, params *GetCalendarDaysParams) (*CalendarDays, error)
 	FillDefaultUnitID(ctx context.Context) error
 	GetDefaultUnitID() string
-	GetDefaultCalendar(ctx context.Context) (*Calendar, error)
 	GetDefaultCalendarDaysForGivenTimeIntervals(ctx context.Context, taskTimeIntervals []entity.TaskCompletionInterval) (*CalendarDays, error)
 }

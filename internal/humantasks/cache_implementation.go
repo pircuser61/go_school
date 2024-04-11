@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"strings"
 
+	"go.opencensus.io/trace"
+
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	cachekit "gitlab.services.mts.ru/jocasta/cache-kit"
@@ -22,6 +24,9 @@ type ServiceWithCache struct {
 }
 
 func (s *ServiceWithCache) GetDelegations(ctx c.Context, req *d.GetDelegationsRequest) (Delegations, error) {
+	ctx, span := trace.StartSpan(ctx, "humantasks.get_delegations")
+	defer span.End()
+
 	log := logger.CreateLogger(nil)
 
 	key, err := json.Marshal(req)
@@ -58,6 +63,9 @@ func (s *ServiceWithCache) GetDelegations(ctx c.Context, req *d.GetDelegationsRe
 }
 
 func (s *ServiceWithCache) GetDelegationsFromLogin(ctx c.Context, login string) (Delegations, error) {
+	ctx, span := trace.StartSpan(ctx, "humantasks.get_delegations_from_login")
+	defer span.End()
+
 	req := &d.GetDelegationsRequest{
 		FilterBy:  FromLoginFilter,
 		FromLogin: login,
@@ -72,6 +80,9 @@ func (s *ServiceWithCache) GetDelegationsFromLogin(ctx c.Context, login string) 
 }
 
 func (s *ServiceWithCache) GetDelegationsToLogin(ctx c.Context, login string) (Delegations, error) {
+	ctx, span := trace.StartSpan(ctx, "humantasks.get_delegations_to_login")
+	defer span.End()
+
 	req := &d.GetDelegationsRequest{
 		FilterBy: ToLoginFilter,
 		ToLogin:  login,
@@ -86,6 +97,9 @@ func (s *ServiceWithCache) GetDelegationsToLogin(ctx c.Context, login string) (D
 }
 
 func (s *ServiceWithCache) GetDelegationsToLogins(ctx c.Context, logins []string) (Delegations, error) {
+	ctx, span := trace.StartSpan(ctx, "humantasks.get_delegations_to_logins")
+	defer span.End()
+
 	var sb strings.Builder
 
 	for i, login := range logins {
@@ -110,6 +124,9 @@ func (s *ServiceWithCache) GetDelegationsToLogins(ctx c.Context, logins []string
 }
 
 func (s *ServiceWithCache) GetDelegationsByLogins(ctx c.Context, logins []string) (Delegations, error) {
+	ctx, span := trace.StartSpan(ctx, "humantasks.get_delegations_by_logins")
+	defer span.End()
+
 	var sb strings.Builder
 
 	for i, login := range logins {

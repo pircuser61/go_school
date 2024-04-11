@@ -3,9 +3,9 @@ package servicedesc
 import "time"
 
 type Config struct {
-	ServicedeskURL string `yaml:"servicedesk_url"`
-	Scope          string `yaml:"scope"`
-	CacheConfig
+	ServicedeskURL string      `yaml:"servicedesk_url"`
+	Scope          string      `yaml:"scope"`
+	Cache          CacheConfig `yaml:"cache"`
 }
 
 type CacheConfig struct {
