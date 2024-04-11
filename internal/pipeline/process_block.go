@@ -526,18 +526,18 @@ func ProcessBlockWithEndMapping(
 
 	updDeadlineErr := blockProcessor.updateTaskExecDeadline(ctx)
 	if updDeadlineErr != nil {
-		return failedBlock, false, updDeadlineErr
+		return "", false, updDeadlineErr
 	}
 
 	intStatus, stringStatus, err := runCtx.Services.Storage.GetTaskStatusWithReadableString(ctx, runCtx.TaskID)
 	if err != nil {
 		log.WithError(err).Error("couldn't get task status after processing ")
 
-		return failedBlock, false, nil
+		return "", false, nil
 	}
 
 	if intStatus != 2 && intStatus != 4 {
-		return failedBlock, false, nil
+		return "", false, nil
 	}
 
 	if intStatus == 2 && statusBefore != 2 {
@@ -557,7 +557,7 @@ func ProcessBlockWithEndMapping(
 			Params:    jsonParams,
 		})
 		if err != nil {
-			return failedBlock, false, err
+			return "", false, err
 		}
 	}
 
@@ -566,7 +566,7 @@ func ProcessBlockWithEndMapping(
 		log.WithError(endErr).Error("couldn't send process end notification")
 	}
 
-	return failedBlock, true, nil
+	return "", true, nil
 }
 
 func processBlockEnd(ctx c.Context, status string, runCtx *BlockRunContext) (err error) {
