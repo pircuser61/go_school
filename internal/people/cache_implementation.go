@@ -43,6 +43,7 @@ func (s *ServiceWithCache) GetUser(ctx context.Context, search string, onlyEnabl
 	return resources, nil
 }
 
+// TODO создать ключ
 func (s *ServiceWithCache) GetUsers(ctx context.Context, search string, limit int, filter []string) ([]SSOUser, error) {
 	keyForCache := usersKeyPrefix + search
 
