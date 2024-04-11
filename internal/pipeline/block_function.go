@@ -68,11 +68,11 @@ type ExecutableFunction struct {
 }
 
 type FunctionUpdateParams struct {
-	Action  string                 `json:"action"`
-	Mapping map[string]interface{} `json:"mapping"`
-	Err     string                 `json:"err"`
-	DoRetry bool                   `json:"do_retry"`
-	IsAck   bool                   `json:"is_ack"`
+	Action        string                 `json:"action"`
+	Mapping       map[string]interface{} `json:"mapping"`
+	Err           string                 `json:"err"`
+	DoRetry       bool                   `json:"do_retry"`
+	IsAsyncResult bool                   `json:"is_async_result"`
 }
 
 type ExecutableFunctionBlock struct {
@@ -419,8 +419,10 @@ func (gb *ExecutableFunctionBlock) createExpectedEvents(
 }
 
 func (gb *ExecutableFunctionBlock) setStateByResponse(ctx context.Context, log logger.Logger, updateData *FunctionUpdateParams) error {
-	if gb.State.Async && gb.State.HasAck && updateData.IsAck {
-		return errors.New("function has ack")
+	if gb.State.Async && gb.State.HasAck && !updateData.IsAsyncResult {
+		log.Warning("repeating ack message")
+
+		return nil
 	}
 
 	//nolint:nestif //it's ok
