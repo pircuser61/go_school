@@ -577,7 +577,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 					Reentered:          true,
 					WorkType:           &workTypeVal,
 					SLA:                &slaVal,
-					Deadline:           time.Date(0o001, 0o1, 0o1, 14, 0o0, 0o0, 0o0, time.UTC),
+					Deadline:           time.Date(0001, 01, 01, 14, 00, 00, 00, time.UTC),
 				},
 				RunContext: &BlockRunContext{
 					TaskID:      uuid.MustParse("00000000-0000-0000-0000-000000000000"),
@@ -704,7 +704,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 					Reentered:          true,
 					WorkType:           &workTypeVal,
 					SLA:                &slaVal,
-					Deadline:           time.Date(0o001, 0o1, 0o1, 14, 0o0, 0o0, 0o0, time.UTC),
+					Deadline:           time.Date(0001, 01, 01, 14, 00, 00, 00, time.UTC),
 				},
 				RunContext: &BlockRunContext{
 					TaskID:      uuid.MustParse("00000000-0000-0000-0000-000000000000"),
@@ -855,7 +855,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 					},
 					WorkType: &workTypeVal,
 					SLA:      &slaVal,
-					Deadline: time.Date(0o001, 0o1, 0o1, 14, 0o0, 0o0, 0o0, time.UTC),
+					Deadline: time.Date(0001, 01, 01, 14, 00, 00, 00, time.UTC),
 				},
 				RunContext: &BlockRunContext{
 					TaskID:      uuid.MustParse("00000000-0000-0000-0000-000000000000"),
@@ -989,7 +989,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 					Reentered:          true,
 					WorkType:           &workTypeVal,
 					SLA:                &slaVal,
-					Deadline:           time.Date(0o001, 0o1, 0o1, 14, 0o0, 0o0, 0o0, time.UTC),
+					Deadline:           time.Date(0001, 01, 01, 14, 00, 00, 00, time.UTC),
 				},
 				RunContext: &BlockRunContext{
 					TaskID:      uuid.MustParse("00000000-0000-0000-0000-000000000000"),
@@ -1116,7 +1116,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 					Reentered:          true,
 					WorkType:           &workTypeVal,
 					SLA:                &slaVal,
-					Deadline:           time.Date(0o001, 0o1, 0o1, 14, 0o0, 0o0, 0o0, time.UTC),
+					Deadline:           time.Date(0001, 01, 01, 14, 00, 00, 00, time.UTC),
 				},
 				RunContext: &BlockRunContext{
 					TaskID:      uuid.MustParse("00000000-0000-0000-0000-000000000000"),
@@ -1267,7 +1267,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 					Reentered:          true,
 					WorkType:           &workTypeVal,
 					SLA:                &slaVal,
-					Deadline:           time.Date(0o001, 0o1, 0o1, 14, 0o0, 0o0, 0o0, time.UTC),
+					Deadline:           time.Date(0001, 01, 01, 14, 00, 00, 00, time.UTC),
 				},
 				RunContext: &BlockRunContext{
 					TaskID:      uuid.MustParse("00000000-0000-0000-0000-000000000000"),
@@ -1575,7 +1575,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 					Reentered:          true,
 					WorkType:           &workTypeVal,
 					SLA:                &slaVal,
-					Deadline:           time.Date(0o001, 0o1, 0o1, 14, 0o0, 0o0, 0o0, time.UTC),
+					Deadline:           time.Date(0001, 01, 01, 14, 00, 00, 00, time.UTC),
 				},
 				RunContext: &BlockRunContext{
 					TaskID:      uuid.MustParse("00000000-0000-0000-0000-000000000000"),
@@ -1718,7 +1718,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 					Reentered:          true,
 					WorkType:           &workTypeVal,
 					SLA:                &slaVal,
-					Deadline:           time.Date(0o001, 0o1, 0o1, 14, 0o0, 0o0, 0o0, time.UTC),
+					Deadline:           time.Date(0001, 01, 01, 14, 00, 00, 00, time.UTC),
 				},
 				RunContext: &BlockRunContext{
 					TaskID:      uuid.MustParse("00000000-0000-0000-0000-000000000000"),
@@ -1852,7 +1852,7 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 					Reentered:          true,
 					WorkType:           &workTypeVal,
 					SLA:                &slaVal,
-					Deadline:           time.Date(0o001, 0o1, 0o1, 14, 0o0, 0o0, 0o0, time.UTC),
+					Deadline:           time.Date(0001, 01, 01, 14, 00, 00, 00, time.UTC),
 				},
 				RunContext: &BlockRunContext{
 					TaskID:      uuid.MustParse("00000000-0000-0000-0000-000000000000"),

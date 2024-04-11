@@ -3,11 +3,11 @@ package servicedesc
 import (
 	"net/http"
 
-	cachekit "gitlab.services.mts.ru/jocasta/cache-kit"
 	"go.opencensus.io/plugin/ochttp"
 
 	"gitlab.services.mts.ru/abp/myosotis/observability"
 
+	cachekit "gitlab.services.mts.ru/jocasta/cache-kit"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 )
 

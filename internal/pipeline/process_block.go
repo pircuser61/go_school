@@ -582,7 +582,7 @@ func processBlockEnd(ctx c.Context, status string, runCtx *BlockRunContext) (err
 		return versErr
 	}
 
-	systemsIDs, sysIDErr := runCtx.Services.Storage.GetExternalSystemsIDs(ctx, version.VersionID.String())
+	systemsIds, sysIDErr := runCtx.Services.Storage.GetExternalSystemsIDs(ctx, version.VersionID.String())
 	if sysIDErr != nil {
 		return sysIDErr
 	}
@@ -592,7 +592,7 @@ func processBlockEnd(ctx c.Context, status string, runCtx *BlockRunContext) (err
 		return contextErr
 	}
 
-	systemsClients, namesErr := runCtx.Services.Integrations.GetSystemsClients(ctx, systemsIDs)
+	systemsClients, namesErr := runCtx.Services.Integrations.GetSystemsClients(ctx, systemsIds)
 	if namesErr != nil {
 		return namesErr
 	}

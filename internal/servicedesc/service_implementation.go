@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"net/http"
 
+	"go.opencensus.io/trace"
+
 	"gitlab.services.mts.ru/abp/myosotis/logger"
+
 	cachekit "gitlab.services.mts.ru/jocasta/cache-kit"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
-	"go.opencensus.io/trace"
 )
 
 const (

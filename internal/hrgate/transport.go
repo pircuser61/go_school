@@ -3,8 +3,9 @@ package hrgate
 import (
 	"net/http"
 
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 	"go.opencensus.io/plugin/ochttp"
+
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 )
 
 type TransportForHrGate struct {
