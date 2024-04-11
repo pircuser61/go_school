@@ -350,12 +350,12 @@ func Test_createGoApproverBlock(t *testing.T) {
 		{
 			ID:           DefaultSocketID,
 			Title:        script.DefaultSocketTitle,
-			NextBlockIDs: []string{"next_0"},
+			NextBlockIds: []string{"next_0"},
 		},
 		{
 			ID:           rejectedSocketID,
 			Title:        script.RejectSocketTitle,
-			NextBlockIDs: []string{"next_1"},
+			NextBlockIds: []string{"next_1"},
 		},
 	}
 

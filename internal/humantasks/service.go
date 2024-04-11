@@ -1,11 +1,12 @@
 package humantasks
 
 import (
-	cachekit "gitlab.services.mts.ru/jocasta/cache-kit"
 	"go.opencensus.io/plugin/ocgrpc"
+
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
+	cachekit "gitlab.services.mts.ru/jocasta/cache-kit"
 	d "gitlab.services.mts.ru/jocasta/human-tasks/pkg/proto/gen/proto/go/delegation"
 )
 

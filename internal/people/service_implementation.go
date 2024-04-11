@@ -12,11 +12,13 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	cachekit "gitlab.services.mts.ru/jocasta/cache-kit"
+
 	"go.opencensus.io/trace"
+
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 
+	cachekit "gitlab.services.mts.ru/jocasta/cache-kit"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 )
 

@@ -5,9 +5,10 @@ import (
 	"strings"
 	"time"
 
+	"google.golang.org/grpc"
+
 	cachekit "gitlab.services.mts.ru/jocasta/cache-kit"
 	d "gitlab.services.mts.ru/jocasta/human-tasks/pkg/proto/gen/proto/go/delegation"
-	"google.golang.org/grpc"
 )
 
 const (

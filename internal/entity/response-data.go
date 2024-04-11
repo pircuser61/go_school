@@ -663,7 +663,7 @@ func ConvertSocket(sockets []Socket) []script.Socket {
 		result = append(result, script.Socket{
 			ID:           socket.ID,
 			Title:        socket.Title,
-			NextBlockIDs: socket.NextBlockIDs,
+			NextBlockIds: socket.NextBlockIds,
 		})
 	}
 

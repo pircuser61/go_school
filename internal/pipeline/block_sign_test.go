@@ -412,12 +412,12 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 		{
 			ID:           DefaultSocketID,
 			Title:        script.DefaultSocketTitle,
-			NextBlockIDs: []string{"next_0"},
+			NextBlockIds: []string{"next_0"},
 		},
 		{
 			ID:           rejectedSocketID,
 			Title:        script.RejectSocketTitle,
-			NextBlockIDs: []string{"next_1"},
+			NextBlockIds: []string{"next_1"},
 		},
 	}
 
@@ -553,13 +553,13 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 					{
 						ID:           "default",
 						Title:        "Выход по умолчанию",
-						NextBlockIDs: []string{"next_0"},
+						NextBlockIds: []string{"next_0"},
 						ActionType:   "",
 					},
 					{
 						ID:           "rejected",
 						Title:        "Отклонить",
-						NextBlockIDs: []string{"next_1"},
+						NextBlockIds: []string{"next_1"},
 						ActionType:   "",
 					},
 				},
@@ -680,13 +680,13 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 					{
 						ID:           "default",
 						Title:        "Выход по умолчанию",
-						NextBlockIDs: []string{"next_0"},
+						NextBlockIds: []string{"next_0"},
 						ActionType:   "",
 					},
 					{
 						ID:           "rejected",
 						Title:        "Отклонить",
-						NextBlockIDs: []string{"next_1"},
+						NextBlockIds: []string{"next_1"},
 						ActionType:   "",
 					},
 				},
@@ -818,13 +818,13 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 					{
 						ID:           "default",
 						Title:        "Выход по умолчанию",
-						NextBlockIDs: []string{"next_0"},
+						NextBlockIds: []string{"next_0"},
 						ActionType:   "",
 					},
 					{
 						ID:           "rejected",
 						Title:        "Отклонить",
-						NextBlockIDs: []string{"next_1"},
+						NextBlockIds: []string{"next_1"},
 						ActionType:   "",
 					},
 				},
@@ -965,13 +965,13 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 					{
 						ID:           "default",
 						Title:        "Выход по умолчанию",
-						NextBlockIDs: []string{"next_0"},
+						NextBlockIds: []string{"next_0"},
 						ActionType:   "",
 					},
 					{
 						ID:           "rejected",
 						Title:        "Отклонить",
-						NextBlockIDs: []string{"next_1"},
+						NextBlockIds: []string{"next_1"},
 						ActionType:   "",
 					},
 				},
@@ -1092,13 +1092,13 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 					{
 						ID:           "default",
 						Title:        "Выход по умолчанию",
-						NextBlockIDs: []string{"next_0"},
+						NextBlockIds: []string{"next_0"},
 						ActionType:   "",
 					},
 					{
 						ID:           "rejected",
 						Title:        "Отклонить",
-						NextBlockIDs: []string{"next_1"},
+						NextBlockIds: []string{"next_1"},
 						ActionType:   "",
 					},
 				},
@@ -1230,13 +1230,13 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 					{
 						ID:           "default",
 						Title:        "Выход по умолчанию",
-						NextBlockIDs: []string{"next_0"},
+						NextBlockIds: []string{"next_0"},
 						ActionType:   "",
 					},
 					{
 						ID:           "rejected",
 						Title:        "Отклонить",
-						NextBlockIDs: []string{"next_1"},
+						NextBlockIds: []string{"next_1"},
 						ActionType:   "",
 					},
 				},
@@ -1551,13 +1551,13 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 					{
 						ID:           "default",
 						Title:        "Выход по умолчанию",
-						NextBlockIDs: []string{"next_0"},
+						NextBlockIds: []string{"next_0"},
 						ActionType:   "",
 					},
 					{
 						ID:           "rejected",
 						Title:        "Отклонить",
-						NextBlockIDs: []string{"next_1"},
+						NextBlockIds: []string{"next_1"},
 						ActionType:   "",
 					},
 				},
@@ -1689,13 +1689,13 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 					{
 						ID:           "default",
 						Title:        "Выход по умолчанию",
-						NextBlockIDs: []string{"next_0"},
+						NextBlockIds: []string{"next_0"},
 						ActionType:   "",
 					},
 					{
 						ID:           "rejected",
 						Title:        "Отклонить",
-						NextBlockIDs: []string{"next_1"},
+						NextBlockIds: []string{"next_1"},
 						ActionType:   "",
 					},
 				},
@@ -1828,13 +1828,13 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 					{
 						ID:           "default",
 						Title:        "Выход по умолчанию",
-						NextBlockIDs: []string{"next_0"},
+						NextBlockIds: []string{"next_0"},
 						ActionType:   "",
 					},
 					{
 						ID:           "rejected",
 						Title:        "Отклонить",
-						NextBlockIDs: []string{"next_1"},
+						NextBlockIds: []string{"next_1"},
 						ActionType:   "",
 					},
 				},
@@ -3129,12 +3129,12 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 		{
 			ID:           DefaultSocketID,
 			Title:        script.DefaultSocketTitle,
-			NextBlockIDs: []string{"next_0"},
+			NextBlockIds: []string{"next_0"},
 		},
 		{
 			ID:           rejectedSocketID,
 			Title:        script.RejectSocketTitle,
-			NextBlockIDs: []string{"next_1"},
+			NextBlockIds: []string{"next_1"},
 		},
 	}
 

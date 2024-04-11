@@ -53,7 +53,7 @@ func Test_createGoFormBlock(t *testing.T) {
 		{
 			ID:           DefaultSocketID,
 			Title:        script.DefaultSocketTitle,
-			NextBlockIDs: []string{"next"},
+			NextBlockIds: []string{"next"},
 		},
 	}
 
@@ -708,7 +708,7 @@ func TestGoFormBlock_Update(t *testing.T) {
 		{
 			ID:           DefaultSocketID,
 			Title:        script.DefaultSocketTitle,
-			NextBlockIDs: []string{"next"},
+			NextBlockIds: []string{"next"},
 		},
 	}
 
@@ -1255,7 +1255,7 @@ func TestGoFormBlock_Next(t *testing.T) {
 					{
 						ID:           DefaultSocketID,
 						Title:        script.DefaultSocketTitle,
-						NextBlockIDs: []string{blockID},
+						NextBlockIds: []string{blockID},
 					},
 					script.DefaultSocket,
 				},
