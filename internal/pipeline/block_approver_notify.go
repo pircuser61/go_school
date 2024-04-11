@@ -132,7 +132,7 @@ func (gb *GoApproverBlock) handleNotifications(ctx context.Context) error {
 			continue
 		}
 
-		author, autorErr := gb.RunContext.Services.People.GetUser(ctx, gb.RunContext.Initiator)
+		author, autorErr := gb.RunContext.Services.People.GettingUser(ctx, gb.RunContext.Initiator)
 		if autorErr != nil {
 			return autorErr
 		}
@@ -307,7 +307,7 @@ func (gb *GoApproverBlock) notifyAdditionalApprovers(ctx context.Context, logins
 		return err
 	}
 
-	author, authorErr := gb.RunContext.Services.People.GetUser(ctx, gb.RunContext.Initiator)
+	author, authorErr := gb.RunContext.Services.People.GettingUser(ctx, gb.RunContext.Initiator)
 	if authorErr != nil {
 		return authorErr
 	}
@@ -412,7 +412,7 @@ func (gb *GoApproverBlock) notifyDecisionMadeByAdditionalApprover(ctx context.Co
 		emailsToNotify = append(emailsToNotify, emailToNotify)
 	}
 
-	user, err := gb.RunContext.Services.People.GetUser(ctx, gb.RunContext.UpdateData.ByLogin)
+	user, err := gb.RunContext.Services.People.GettingUser(ctx, gb.RunContext.UpdateData.ByLogin)
 	if err != nil {
 		return err
 	}

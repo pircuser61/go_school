@@ -133,7 +133,6 @@ func (s *service) parseEmail(ctx c.Context, r *mail.Reader, sn map[*imap.BodySec
 		if comment != nil {
 			action.Comment = comment.Body
 			action.Attachments, err = s.getAttachments(ctx, sn)
-
 			if err != nil {
 				log.WithError(err).Error("can't parse message body: " + action.WorkNumber)
 			}

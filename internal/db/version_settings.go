@@ -180,7 +180,6 @@ func (db *PGCon) SaveVersionSettings(ctx context.Context, settings e.ProcessSett
 			settings.EndSchema,
 			settings.StartSchemaRaw,
 		)
-
 		if err != nil {
 			return err
 		}

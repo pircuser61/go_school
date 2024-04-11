@@ -250,7 +250,7 @@ func (gb *GoExecutionBlock) setMailTemplates(
 				},
 			)
 		} else {
-			author, errAuthor := gb.RunContext.Services.People.GetUser(ctx, gb.RunContext.Initiator)
+			author, errAuthor := gb.RunContext.Services.People.GettingUser(ctx, gb.RunContext.Initiator)
 			if errAuthor != nil {
 				return nil, errAuthor
 			}

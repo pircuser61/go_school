@@ -4,18 +4,18 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"github.com/hrishin/httpmock"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 	"os"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/hrishin/httpmock"
 	"github.com/stretchr/testify/assert"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 )
 
 func TestValidation_EndExists(t *testing.T) {

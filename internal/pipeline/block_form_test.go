@@ -303,7 +303,7 @@ func Test_createGoFormBlock(t *testing.T) {
 					IsTakenInWork:      true,
 					InitialExecutors:   map[string]struct{}{executor: {}},
 					HiddenFields:       make([]string, 0),
-					Deadline:           time.Date(0001, 01, 01, 14, 00, 00, 00, time.UTC),
+					Deadline:           time.Date(0o001, 0o1, 0o1, 14, 0o0, 0o0, 0o0, time.UTC),
 					SLA:                slaVal,
 					WorkType:           workTypeVal,
 				},
@@ -1192,7 +1192,7 @@ func TestGoFormBlock_Update(t *testing.T) {
 				ChangesLog:       []ChangesLogItem{},
 				WorkType:         "8/5",
 				SLA:              workingHours,
-				Deadline:         time.Date(0001, 01, 01, 14, 00, 00, 00, time.UTC),
+				Deadline:         time.Date(0o001, 0o1, 0o1, 14, 0o0, 0o0, 0o0, time.UTC),
 			},
 		},
 	}
@@ -1325,7 +1325,8 @@ func TestGoFormActions(t *testing.T) {
 				data: nil,
 			},
 			wantActions: []MemberAction{
-				{ID: "form_executor_start_work", Type: "primary", Params: map[string]interface{}(nil)}},
+				{ID: "form_executor_start_work", Type: "primary", Params: map[string]interface{}(nil)},
+			},
 		},
 		{
 			name: "one form ReadWrite",
@@ -1343,7 +1344,8 @@ func TestGoFormActions(t *testing.T) {
 							AccessType:  "ReadWrite",
 							Description: "форма",
 						},
-					}},
+					},
+				},
 				RunContext: &BlockRunContext{
 					skipNotifications: false,
 					VarStore: func() *store.VariableStore {
@@ -1428,7 +1430,8 @@ func TestGoFormActions(t *testing.T) {
 				},
 			},
 			wantActions: []MemberAction{
-				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": []string{"form_0", "form_1", "exec"}}}},
+				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": []string{"form_0", "form_1", "exec"}}},
+			},
 		},
 		{
 			name: "Two form is filled true - ok (ReadWrite & RequiredFill)",
@@ -1475,7 +1478,8 @@ func TestGoFormActions(t *testing.T) {
 								})
 
 								return marshalForm
-							}()}
+							}(),
+						}
 						return s
 					}(),
 					Services: RunContextServices{
@@ -1532,7 +1536,8 @@ func TestGoFormActions(t *testing.T) {
 				},
 			},
 			wantActions: []MemberAction{
-				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": []string{"form_0", "form_1", "exec"}}}},
+				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": []string{"form_0", "form_1", "exec"}}},
+			},
 		},
 		{
 			name: "Two form is filled true - ok (ReadWrite & RequiredFill)",
@@ -1574,7 +1579,8 @@ func TestGoFormActions(t *testing.T) {
 								})
 
 								return marshalForm
-							}()}
+							}(),
+						}
 						return s
 					}(),
 					Services: RunContextServices{
@@ -1632,7 +1638,8 @@ func TestGoFormActions(t *testing.T) {
 			},
 			wantActions: []MemberAction{
 				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": []string{"form_0", "form_1"}}},
-				{ID: "fill_form_disabled", Type: "custom", Params: map[string]interface{}{"disabled": true, "form_name": []string{"exec"}}}},
+				{ID: "fill_form_disabled", Type: "custom", Params: map[string]interface{}{"disabled": true, "form_name": []string{"exec"}}},
+			},
 		},
 		{
 			name: "Two form is filled false (ReadWrite & RequiredFill)",
@@ -1671,7 +1678,8 @@ func TestGoFormActions(t *testing.T) {
 								})
 
 								return marshalForm
-							}()}
+							}(),
+						}
 						return s
 					}(),
 					Services: RunContextServices{
@@ -1729,7 +1737,8 @@ func TestGoFormActions(t *testing.T) {
 			},
 			wantActions: []MemberAction{
 				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": []string{"form_0", "form_1"}}},
-				{ID: "fill_form_disabled", Type: "custom", Params: map[string]interface{}{"disabled": true, "form_name": []string{"exec"}}}},
+				{ID: "fill_form_disabled", Type: "custom", Params: map[string]interface{}{"disabled": true, "form_name": []string{"exec"}}},
+			},
 		},
 		{
 			name: "Two form is filled (RequiredFill)",
@@ -1791,7 +1800,8 @@ func TestGoFormActions(t *testing.T) {
 								})
 
 								return marshalForm
-							}()}
+							}(),
+						}
 						return s
 					}(),
 					Services: RunContextServices{
@@ -1848,7 +1858,8 @@ func TestGoFormActions(t *testing.T) {
 				},
 			},
 			wantActions: []MemberAction{
-				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": []string{"form_0", "form_1", "exec"}}}},
+				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": []string{"form_0", "form_1", "exec"}}},
+			},
 		},
 		{
 			name: "Two form is filled and not filled (RequiredFill)",
@@ -1905,7 +1916,8 @@ func TestGoFormActions(t *testing.T) {
 								})
 
 								return marshalForm
-							}()}
+							}(),
+						}
 						return s
 					}(),
 					Services: RunContextServices{
@@ -1963,7 +1975,8 @@ func TestGoFormActions(t *testing.T) {
 			},
 			wantActions: []MemberAction{
 				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": []string{"form_0", "form_1"}}},
-				{ID: "fill_form_disabled", Type: "custom", Params: map[string]interface{}{"disabled": true, "form_name": []string{"exec"}}}},
+				{ID: "fill_form_disabled", Type: "custom", Params: map[string]interface{}{"disabled": true, "form_name": []string{"exec"}}},
+			},
 		},
 		{
 			name: "Two form - not filled (RequiredFill)",
@@ -2025,7 +2038,8 @@ func TestGoFormActions(t *testing.T) {
 								})
 
 								return marshalForm
-							}()}
+							}(),
+						}
 						return s
 					}(),
 					Services: RunContextServices{
@@ -2082,7 +2096,8 @@ func TestGoFormActions(t *testing.T) {
 			},
 			wantActions: []MemberAction{
 				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": []string{"form_0", "form_1"}}},
-				{ID: "fill_form_disabled", Type: "custom", Params: map[string]interface{}{"disabled": true, "form_name": []string{"exec"}}}},
+				{ID: "fill_form_disabled", Type: "custom", Params: map[string]interface{}{"disabled": true, "form_name": []string{"exec"}}},
+			},
 		},
 	}
 

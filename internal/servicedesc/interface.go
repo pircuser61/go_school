@@ -4,7 +4,7 @@ import (
 	"context"
 )
 
-type ServicedescInterface interface {
+type ServiceInterface interface {
 	GetWorkGroup(ctx context.Context, groupID string) (*WorkGroup, error)
 	GetSsoPerson(ctx context.Context, username string) (*SsoPerson, error)
 	GetSchemaByID(ctx context.Context, schemaID string) (map[string]interface{}, error)

@@ -1,22 +1,23 @@
 package people
 
 import (
+	"net/http"
+
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 	"go.opencensus.io/plugin/ochttp"
-	"net/http"
 )
 
 type TransportForPeople struct {
-	transport ochttp.Transport
-	sso       *sso.Service
-	scope     string
+	Transport ochttp.Transport
+	Sso       *sso.Service
+	Scope     string
 }
 
 func (t *TransportForPeople) RoundTrip(req *http.Request) (*http.Response, error) {
-	err := t.sso.BindAuthHeader(req.Context(), req, t.scope)
+	err := t.Sso.BindAuthHeader(req.Context(), req, t.Scope)
 	if err != nil {
 		return nil, err
 	}
 
-	return t.transport.RoundTrip(req)
+	return t.Transport.RoundTrip(req)
 }

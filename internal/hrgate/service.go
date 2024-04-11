@@ -11,20 +11,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 )
 
-type ServiceWithCache struct {
-	Cache  cachekit.Cache
-	HRGate HRGateInterface
-}
-
-type Service struct {
-	HRGateURL             string
-	DefaultCalendarUnitID *string
-	Location              time.Location
-	Cli                   *ClientWithResponses
-	Cache                 cachekit.Cache
-}
-
-func NewServiceWithCache(cfg Config, ssoS *sso.Service) (HRGateInterface, error) {
+func NewServiceWithCache(cfg *Config, ssoS *sso.Service) (ServiceInterface, error) {
 	service, err := NewService(cfg, ssoS)
 	if err != nil {
 		return nil, err
@@ -41,7 +28,7 @@ func NewServiceWithCache(cfg Config, ssoS *sso.Service) (HRGateInterface, error)
 	}, nil
 }
 
-func NewService(cfg Config, ssoS *sso.Service) (HRGateInterface, error) {
+func NewService(cfg *Config, ssoS *sso.Service) (ServiceInterface, error) {
 	httpClient := &http.Client{}
 	tr := TransportForHrGate{
 		transport: ochttp.Transport{

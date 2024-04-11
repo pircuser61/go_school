@@ -1,9 +1,9 @@
 package servicedesc
 
 import (
-	cachekit "gitlab.services.mts.ru/jocasta/cache-kit"
 	"net/http"
 
+	cachekit "gitlab.services.mts.ru/jocasta/cache-kit"
 	"go.opencensus.io/plugin/ochttp"
 
 	"gitlab.services.mts.ru/abp/myosotis/observability"
@@ -11,18 +11,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 )
 
-type ServiceWithCache struct {
-	Cache       cachekit.Cache
-	Servicedesc ServicedescInterface
-}
-
-type Service struct {
-	SdURL string
-	Cli   *http.Client
-	Cache cachekit.Cache
-}
-
-func NewServiceWithCache(cfg Config, ssoS *sso.Service) (ServicedescInterface, error) {
+func NewServiceWithCache(cfg *Config, ssoS *sso.Service) (ServiceInterface, error) {
 	service, err := NewService(cfg, ssoS)
 	if err != nil {
 		return nil, err
@@ -39,7 +28,7 @@ func NewServiceWithCache(cfg Config, ssoS *sso.Service) (ServicedescInterface, e
 	}, nil
 }
 
-func NewService(cfg Config, ssoS *sso.Service) (ServicedescInterface, error) {
+func NewService(cfg *Config, ssoS *sso.Service) (ServiceInterface, error) {
 	newCli := &http.Client{}
 
 	tr := TransportForPeople{

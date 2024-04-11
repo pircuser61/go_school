@@ -857,7 +857,6 @@ func Test_GetMappingFromInput(t *testing.T) {
 			newMapping, _ := params.GetMappingFromInput()
 			assert.Equal(t, tt.want, newMapping,
 				fmt.Sprintf("Incorrect result. GetMappingFromInput() method. Expect result %v, got %v", tt.want, newMapping))
-
 		})
 	}
 }

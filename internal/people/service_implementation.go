@@ -2,21 +2,25 @@ package people
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
-	"github.com/pkg/errors"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
-	"go.opencensus.io/trace"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
+	"net/http"
 	"net/url"
 	"path"
 	"regexp"
+	"strconv"
 	"strings"
+
+	"github.com/pkg/errors"
+	cachekit "gitlab.services.mts.ru/jocasta/cache-kit"
+	"go.opencensus.io/trace"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
+
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 )
 
 const (
-	searchPath = "search/attributes"
-
 	limitParam  = "limit"
 	filterParam = "filter"
 	sortByParam = "sortBy"
@@ -100,68 +104,121 @@ func defineFilter(input string, oneWord bool, filter []string) string {
 	return newStringRm.ReplaceAllString(q, " ")
 }
 
-type PeopleInterface interface {
-	pathBuilder(mainpath, subpath string) (string, error)
-	GetUserEmail(ctx context.Context, username string) (string, error)
-	GetUser(ctx context.Context, username string) (SSOUser, error)
-	GetUsers(ctx context.Context, username string, limit *int, filter []string) ([]SSOUser, error)
-	getUser(ctx context.Context, search string, onlyEnabled bool) ([]SSOUser, error)
-	getUsers(ctx context.Context, search string, limit int, filter []string) ([]SSOUser, error)
+type Service struct {
+	SearchURL string
+
+	Cli   *http.Client `json:"-"`
+	Sso   *sso.Service
+	Cache cachekit.Cache
 }
 
-func (s *Service) getUser(ctx context.Context, search string, onlyEnabled bool) ([]SSOUser, error) {
-	keyForCache := "user" + ":" + search
-
-	valueFromCache, err := s.Cache.GetValue(ctx, keyForCache)
-	if err == nil {
-		resources, ok := valueFromCache.([]SSOUser)
-		if !ok {
-			return nil, fmt.Errorf("failed to cast value from cache to type []SSOUser")
-		}
-
-		return resources, nil
+func (s *Service) GetUser(ctx context.Context, search string, onlyEnabled bool) ([]SSOUser, error) {
+	search = strings.TrimSpace(search)
+	if search == "" {
+		return make([]SSOUser, 0), nil
 	}
 
-	resources, err := s.getUser(ctx, search, onlyEnabled)
+	ctxLocal, span := trace.StartSpan(ctx, "getUser")
+	defer span.End()
+
+	var (
+		req *http.Request
+		err error
+	)
+
+	req, err = http.NewRequestWithContext(ctxLocal, http.MethodGet, s.SearchURL, http.NoBody)
 	if err != nil {
 		return nil, err
 	}
 
-	err = s.Cache.SetValue(ctx, keyForCache, resources)
-	if err != nil {
-		return nil, fmt.Errorf("can't set resources to cache: %s", err)
+	query := req.URL.Query()
+
+	f := strings.Replace(usernameEqFilter, usernamePH, search, 1)
+	if onlyEnabled {
+		f = strings.Replace(usernameEqOnlyEnabledFilter, usernamePH, search, 1)
 	}
 
-	return resources, nil
-}
+	query.Add(filterParam, f)
+	query.Add(limitParam, "1")
+	query.Add(sortByParam, sortByVal)
 
-func (s *Service) getUsers(ctx context.Context, search string, limit int, filter []string) ([]SSOUser, error) {
-	keyForCache := "users" + ":" + search
+	req.URL.RawQuery = query.Encode()
 
-	valueFromCache, err := s.Cache.GetValue(ctx, keyForCache)
-	if err == nil {
-		resources, ok := valueFromCache.([]SSOUser)
-		if !ok {
-			return nil, fmt.Errorf("failed to cast value from cache to type []SSOUser")
-		}
-
-		return resources, nil
-	}
-
-	resources, err := s.getUsers(ctx, search, limit, filter)
+	resp, err := s.Cli.Do(req)
 	if err != nil {
 		return nil, err
 	}
 
-	err = s.Cache.SetValue(ctx, keyForCache, resources)
-	if err != nil {
-		return nil, fmt.Errorf("can't set resources to cache: %s", err)
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("got bad status code: %d for login: %s", resp.StatusCode, search)
 	}
 
-	return resources, nil
+	var res SearchUsersResp
+
+	if unmErr := json.NewDecoder(resp.Body).Decode(&res); unmErr != nil {
+		return nil, unmErr
+	}
+
+	return res.Resources, nil
 }
 
-func (s *Service) pathBuilder(mainpath, subpath string) (string, error) {
+func (s *Service) GetUsers(ctx context.Context, search string, limit int, filter []string) ([]SSOUser, error) {
+	search = strings.TrimSpace(search)
+	if search == "" {
+		return make([]SSOUser, 0), nil
+	}
+
+	ctxLocal, span := trace.StartSpan(ctx, "getUsers")
+	defer span.End()
+
+	var (
+		req *http.Request
+		err error
+	)
+
+	req, err = http.NewRequestWithContext(ctxLocal, http.MethodGet, s.SearchURL, http.NoBody)
+	if err != nil {
+		return nil, err
+	}
+
+	const maxLimit = 100
+
+	query := req.URL.Query()
+
+	if limit > maxLimit {
+		limit = maxLimit
+	}
+
+	f := defineFilter(search, false, filter)
+
+	query.Add(filterParam, f)
+	query.Add(limitParam, strconv.Itoa(limit))
+	query.Add(sortByParam, sortByVal)
+
+	req.URL.RawQuery = query.Encode()
+
+	resp, err := s.Cli.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("got bad status code: %d for login: %s", resp.StatusCode, search)
+	}
+
+	var res SearchUsersResp
+	if unmErr := json.NewDecoder(resp.Body).Decode(&res); unmErr != nil {
+		return nil, unmErr
+	}
+
+	return res.Resources, nil
+}
+
+func (s *Service) PathBuilder(mainpath, subpath string) (string, error) {
 	mu, err := url.Parse(mainpath)
 	if err != nil {
 		return "", err
@@ -180,7 +237,7 @@ func (s *Service) GetUserEmail(ctx context.Context, username string) (string, er
 		return "", nil
 	}
 
-	users, err := s.getUser(ctxLocal, username, true)
+	users, err := s.GetUser(ctxLocal, username, true)
 	if err != nil {
 		return "", err
 	}
@@ -204,7 +261,7 @@ func (s *Service) GetUserEmail(ctx context.Context, username string) (string, er
 	return "", errors.New("couldn't find user")
 }
 
-func (s *Service) GetUser(ctx context.Context, username string) (SSOUser, error) {
+func (s *Service) GettingUser(ctx context.Context, username string) (SSOUser, error) {
 	ctxLocal, span := trace.StartSpan(ctx, "GetUser")
 	defer span.End()
 
@@ -212,7 +269,7 @@ func (s *Service) GetUser(ctx context.Context, username string) (SSOUser, error)
 		return map[string]interface{}{"username": username}, nil
 	}
 
-	users, err := s.getUser(ctxLocal, username, false)
+	users, err := s.GetUser(ctxLocal, username, false)
 	if err != nil {
 		return nil, err
 	}
@@ -231,7 +288,7 @@ func (s *Service) GetUser(ctx context.Context, username string) (SSOUser, error)
 	return nil, errors.New("couldn't find user")
 }
 
-func (s *Service) GetUsers(ctx context.Context, username string, limit *int, filter []string) ([]SSOUser, error) {
+func (s *Service) GettingUsers(ctx context.Context, username string, limit *int, filter []string) ([]SSOUser, error) {
 	ctxLocal, span := trace.StartSpan(ctx, "GetUser")
 	defer span.End()
 
@@ -240,7 +297,7 @@ func (s *Service) GetUsers(ctx context.Context, username string, limit *int, fil
 		maxLimit = *limit
 	}
 
-	users, err := s.getUsers(ctxLocal, username, maxLimit, filter)
+	users, err := s.GetUsers(ctxLocal, username, maxLimit, filter)
 	if err != nil {
 		return nil, err
 	}

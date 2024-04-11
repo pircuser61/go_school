@@ -83,7 +83,7 @@ func WithUserInfo(ssoS *sso.Service, log logger.Logger) func(next http.Handler) 
 	}
 }
 
-func WithAsOtherUserInfo(ps people.PeopleInterface, log logger.Logger) func(next http.Handler) http.Handler {
+func WithAsOtherUserInfo(ps people.ServiceInterface, log logger.Logger) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
@@ -92,7 +92,7 @@ func WithAsOtherUserInfo(ps people.PeopleInterface, log logger.Logger) func(next
 			username := r.Header.Get(AsOtherHeader)
 
 			if username != "" {
-				u, err := ps.GetUser(ctx, strings.ToLower(username))
+				u, err := ps.GettingUser(ctx, strings.ToLower(username))
 				if err != nil {
 					errorHandler.handleError(GetUserinfoErr, err)
 

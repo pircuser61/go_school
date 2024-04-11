@@ -62,7 +62,7 @@ func (ae *Env) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 	token := req.Header.Get(AuthorizationHeader)
 
 	for i := range emails {
-		usr, errGetUser := ae.People.GetUser(ctx, emails[i].Action.Login)
+		usr, errGetUser := ae.People.GettingUser(ctx, emails[i].Action.Login)
 		if errGetUser != nil {
 			log.WithField("workNumber", emails[i].Action.WorkNumber).
 				WithField("login", emails[i].Action.Login).Error(errGetUser)

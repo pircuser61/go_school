@@ -3,10 +3,23 @@ package servicedesc
 import (
 	"context"
 	"fmt"
+
+	cachekit "gitlab.services.mts.ru/jocasta/cache-kit"
 )
 
+const (
+	workGroupKeyPrefix         = "workGroup:"
+	schemaIDKeyPrefix          = "schemaID:"
+	schemaBlueprintIDKeyPrefix = "schemaBlueprintID:"
+)
+
+type ServiceWithCache struct {
+	Cache       cachekit.Cache
+	Servicedesc ServiceInterface
+}
+
 func (s *ServiceWithCache) GetWorkGroup(ctx context.Context, groupID string) (*WorkGroup, error) {
-	keyForCache := "workGroup" + ":" + groupID
+	keyForCache := workGroupKeyPrefix + groupID
 
 	valueFromCache, err := s.Cache.GetValue(ctx, keyForCache)
 	if err == nil {
@@ -17,6 +30,7 @@ func (s *ServiceWithCache) GetWorkGroup(ctx context.Context, groupID string) (*W
 
 		return resources, nil
 	}
+
 	workGroup, err := s.Servicedesc.GetWorkGroup(ctx, groupID)
 	if err != nil {
 		return nil, err
@@ -31,7 +45,7 @@ func (s *ServiceWithCache) GetWorkGroup(ctx context.Context, groupID string) (*W
 }
 
 func (s *ServiceWithCache) GetSchemaByID(ctx context.Context, schemaID string) (map[string]interface{}, error) {
-	keyForCache := "schemaID" + ":" + schemaID
+	keyForCache := schemaIDKeyPrefix + schemaID
 
 	valueFromCache, err := s.Cache.GetValue(ctx, keyForCache)
 	if err == nil {
@@ -57,7 +71,7 @@ func (s *ServiceWithCache) GetSchemaByID(ctx context.Context, schemaID string) (
 }
 
 func (s *ServiceWithCache) GetSchemaByBlueprintID(ctx context.Context, blueprintID string) (map[string]interface{}, error) {
-	keyForCache := "schemaBlueprintID" + ":" + blueprintID
+	keyForCache := schemaBlueprintIDKeyPrefix + blueprintID
 
 	valueFromCache, err := s.Cache.GetValue(ctx, keyForCache)
 	if err == nil {

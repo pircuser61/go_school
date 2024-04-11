@@ -2,9 +2,12 @@ package humantasks
 
 import (
 	c "context"
-	d "gitlab.services.mts.ru/jocasta/human-tasks/pkg/proto/gen/proto/go/delegation"
 	"strings"
 	"time"
+
+	cachekit "gitlab.services.mts.ru/jocasta/cache-kit"
+	d "gitlab.services.mts.ru/jocasta/human-tasks/pkg/proto/gen/proto/go/delegation"
+	"google.golang.org/grpc"
 )
 
 const (
@@ -14,15 +17,13 @@ const (
 	ToLoginsFilter   = "toLogins"
 )
 
-type HumantasksInterface interface {
-	getDelegationsInternal(ctx c.Context, req *d.GetDelegationsRequest) (ds Delegations, err error)
-	GetDelegationsFromLogin(ctx c.Context, login string) (ds Delegations, err error)
-	GetDelegationsToLogin(ctx c.Context, login string) (ds Delegations, err error)
-	GetDelegationsToLogins(ctx c.Context, logins []string) (ds Delegations, err error)
-	GetDelegationsByLogins(ctx c.Context, logins []string) (ds Delegations, err error)
+type Service struct {
+	C     *grpc.ClientConn
+	Cli   d.DelegationServiceClient
+	Cache cachekit.Cache
 }
 
-func (s *Service) getDelegationsInternal(ctx c.Context, req *d.GetDelegationsRequest) (ds Delegations, err error) {
+func (s *Service) GetDelegations(ctx c.Context, req *d.GetDelegationsRequest) (ds Delegations, err error) {
 	if s.Cli == nil || s.C == nil {
 		return make([]Delegation, 0), nil
 	}
@@ -71,7 +72,7 @@ func (s *Service) GetDelegationsFromLogin(ctx c.Context, login string) (ds Deleg
 		FromLogin: login,
 	}
 
-	res, err := s.getDelegationsInternal(ctx, req)
+	res, err := s.GetDelegations(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -85,7 +86,7 @@ func (s *Service) GetDelegationsToLogin(ctx c.Context, login string) (ds Delegat
 		ToLogin:  login,
 	}
 
-	res, err := s.getDelegationsInternal(ctx, req)
+	res, err := s.GetDelegations(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -109,7 +110,7 @@ func (s *Service) GetDelegationsToLogins(ctx c.Context, logins []string) (ds Del
 		ToLogins: sb.String(),
 	}
 
-	res, err := s.getDelegationsInternal(ctx, req)
+	res, err := s.GetDelegations(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -133,7 +134,7 @@ func (s *Service) GetDelegationsByLogins(ctx c.Context, logins []string) (ds Del
 		FromLogins: sb.String(),
 	}
 
-	res, err := s.getDelegationsInternal(ctx, req)
+	res, err := s.GetDelegations(ctx, req)
 	if err != nil {
 		return nil, err
 	}

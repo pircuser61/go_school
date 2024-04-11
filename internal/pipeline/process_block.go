@@ -52,14 +52,14 @@ type RunContextServices struct {
 	Storage       db.Database
 	Sender        *mail.Service
 	Kafka         *kafka.Service
-	People        people.PeopleInterface
-	ServiceDesc   servicedesc.ServicedescInterface
+	People        people.ServiceInterface
+	ServiceDesc   servicedesc.ServiceInterface
 	FunctionStore *functions.Service
-	HumanTasks    human_tasks.HumantasksInterface
+	HumanTasks    human_tasks.ServiceInterface
 	Integrations  *integrations.Service
 	FileRegistry  *file_registry.Service
 	FaaS          string
-	HrGate        hrgate.HRGateInterface
+	HrGate        hrgate.ServiceInterface
 	Scheduler     *scheduler.Service
 	SLAService    sla.Service
 }
@@ -580,7 +580,7 @@ func processBlockEnd(ctx c.Context, status string, runCtx *BlockRunContext) (err
 		return versErr
 	}
 
-	systemsIds, sysIDErr := runCtx.Services.Storage.GetExternalSystemsIDs(ctx, version.VersionID.String())
+	systemsIDs, sysIDErr := runCtx.Services.Storage.GetExternalSystemsIDs(ctx, version.VersionID.String())
 	if sysIDErr != nil {
 		return sysIDErr
 	}
@@ -590,7 +590,7 @@ func processBlockEnd(ctx c.Context, status string, runCtx *BlockRunContext) (err
 		return contextErr
 	}
 
-	systemsClients, namesErr := runCtx.Services.Integrations.GetSystemsClients(ctx, systemsIds)
+	systemsClients, namesErr := runCtx.Services.Integrations.GetSystemsClients(ctx, systemsIDs)
 	if namesErr != nil {
 		return namesErr
 	}

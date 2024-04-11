@@ -40,7 +40,7 @@ func (ae *Env) validatePipeline(ctx context.Context, p *entity.EriusScenario) (v
 		return false, entity.PipelineValidateError
 	}
 
-	return p.Pipeline.Blocks.Validate(ctx, ae.ServiceDesc, log)
+	return p.Pipeline.Blocks.Validate(ctx, log)
 }
 
 func validateMappingAndResetIfNotValid(bt entity.BlocksType, log logger.Logger) bool {

@@ -3,10 +3,22 @@ package people
 import (
 	"context"
 	"fmt"
+
+	cachekit "gitlab.services.mts.ru/jocasta/cache-kit"
 )
 
-func (s *ServiceWithCache) getUser(ctx context.Context, search string, onlyEnabled bool) ([]SSOUser, error) {
-	keyForCache := "user" + ":" + search
+const (
+	userKeyPrefix  = "user:"
+	usersKeyPrefix = "users:"
+)
+
+type ServiceWithCache struct {
+	Cache  cachekit.Cache
+	People ServiceInterface
+}
+
+func (s *ServiceWithCache) GetUser(ctx context.Context, search string, onlyEnabled bool) ([]SSOUser, error) {
+	keyForCache := userKeyPrefix + search
 
 	valueFromCache, err := s.Cache.GetValue(ctx, keyForCache)
 	if err == nil {
@@ -18,7 +30,7 @@ func (s *ServiceWithCache) getUser(ctx context.Context, search string, onlyEnabl
 		return resources, nil
 	}
 
-	resources, err := s.People.getUser(ctx, search, onlyEnabled)
+	resources, err := s.People.GetUser(ctx, search, onlyEnabled)
 	if err != nil {
 		return nil, err
 	}
@@ -31,8 +43,8 @@ func (s *ServiceWithCache) getUser(ctx context.Context, search string, onlyEnabl
 	return resources, nil
 }
 
-func (s *ServiceWithCache) getUsers(ctx context.Context, search string, limit int, filter []string) ([]SSOUser, error) {
-	keyForCache := "users" + ":" + search
+func (s *ServiceWithCache) GetUsers(ctx context.Context, search string, limit int, filter []string) ([]SSOUser, error) {
+	keyForCache := usersKeyPrefix + search
 
 	valueFromCache, err := s.Cache.GetValue(ctx, keyForCache)
 	if err == nil {
@@ -44,7 +56,7 @@ func (s *ServiceWithCache) getUsers(ctx context.Context, search string, limit in
 		return resources, nil
 	}
 
-	resources, err := s.People.getUsers(ctx, search, limit, filter)
+	resources, err := s.People.GetUsers(ctx, search, limit, filter)
 	if err != nil {
 		return nil, err
 	}
@@ -57,18 +69,18 @@ func (s *ServiceWithCache) getUsers(ctx context.Context, search string, limit in
 	return resources, nil
 }
 
-func (s *ServiceWithCache) pathBuilder(mainpath, subpath string) (string, error) {
-	return s.People.pathBuilder(mainpath, subpath)
+func (s *ServiceWithCache) PathBuilder(mainpath, subpath string) (string, error) {
+	return s.People.PathBuilder(mainpath, subpath)
 }
 
 func (s *ServiceWithCache) GetUserEmail(ctx context.Context, username string) (string, error) {
 	return s.People.GetUserEmail(ctx, username)
 }
 
-func (s *ServiceWithCache) GetUser(ctx context.Context, username string) (SSOUser, error) {
-	return s.People.GetUser(ctx, username)
+func (s *ServiceWithCache) GettingUser(ctx context.Context, username string) (SSOUser, error) {
+	return s.People.GettingUser(ctx, username)
 }
 
-func (s *ServiceWithCache) GetUsers(ctx context.Context, username string, limit *int, filter []string) ([]SSOUser, error) {
-	return s.People.GetUsers(ctx, username, limit, filter)
+func (s *ServiceWithCache) GettingUsers(ctx context.Context, username string, limit *int, filter []string) ([]SSOUser, error) {
+	return s.People.GettingUsers(ctx, username, limit, filter)
 }

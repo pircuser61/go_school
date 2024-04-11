@@ -10,7 +10,7 @@ import (
 )
 
 type SyncData struct {
-	IncomingBlockIds []string `json:"incoming_block_ids"`
+	IncomingBlockIDs []string `json:"incoming_block_ids"`
 	Done             bool     `json:"done"`
 }
 
@@ -95,7 +95,7 @@ func (gb *GoWaitForAllInputsBlock) Update(ctx context.Context) (interface{}, err
 	}
 
 	variableStorage, err := gb.RunContext.Services.Storage.GetMergedVariableStorage(ctx, gb.RunContext.TaskID,
-		gb.State.IncomingBlockIds)
+		gb.State.IncomingBlockIDs)
 	if err != nil {
 		return nil, err
 	}
@@ -238,7 +238,7 @@ func (gb *GoWaitForAllInputsBlock) createState(ctx context.Context) error {
 		return err
 	}
 
-	gb.State = &SyncData{IncomingBlockIds: steps}
+	gb.State = &SyncData{IncomingBlockIDs: steps}
 
 	return nil
 }

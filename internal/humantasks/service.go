@@ -3,25 +3,13 @@ package humantasks
 import (
 	cachekit "gitlab.services.mts.ru/jocasta/cache-kit"
 	"go.opencensus.io/plugin/ocgrpc"
-
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
 	d "gitlab.services.mts.ru/jocasta/human-tasks/pkg/proto/gen/proto/go/delegation"
 )
 
-type ServiceWithCache struct {
-	Cache      cachekit.Cache
-	Humantasks HumantasksInterface
-}
-
-type Service struct {
-	C     *grpc.ClientConn
-	Cli   d.DelegationServiceClient
-	Cache cachekit.Cache
-}
-
-func NewServiceWithCache(cfg Config) (HumantasksInterface, error) {
+func NewServiceWithCache(cfg *Config) (ServiceInterface, error) {
 	service, err := NewService(cfg)
 	if err != nil {
 		return nil, err
@@ -33,12 +21,12 @@ func NewServiceWithCache(cfg Config) (HumantasksInterface, error) {
 	}
 
 	return &ServiceWithCache{
-		Humantasks: service,
 		Cache:      cache,
+		Humantasks: service,
 	}, nil
 }
 
-func NewService(cfg Config) (HumantasksInterface, error) {
+func NewService(cfg *Config) (ServiceInterface, error) {
 	if cfg.URL == "" {
 		return &ServiceWithCache{}, nil
 	}

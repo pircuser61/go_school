@@ -79,7 +79,7 @@ const (
 	ParallelPathIntersected       = "ParallelPathIntersected"
 )
 
-func (bt *BlocksType) Validate(ctx context.Context, sd *servicedesc.Service, log logger.Logger) (valid bool, textErr string) {
+func (bt *BlocksType) Validate(ctx context.Context, log logger.Logger) (valid bool, textErr string) {
 	if !bt.EndExists(log) {
 		return false, PipelineValidateError
 	}
@@ -89,7 +89,7 @@ func (bt *BlocksType) Validate(ctx context.Context, sd *servicedesc.Service, log
 		return false, filledErr
 	}
 
-	if !bt.IsSdBlueprintFilled(ctx, sd) {
+	if !bt.IsSdBlueprintFilled(ctx, &servicedesc.Service{}) {
 		log.WithField("funcName", "Validate").Error(errors.New("blueprint is not filled"))
 
 		return false, PipelineValidateError

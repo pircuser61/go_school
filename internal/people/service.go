@@ -1,28 +1,20 @@
 package people
 
 import (
+	"net/http"
+
 	"gitlab.services.mts.ru/abp/myosotis/observability"
 	cachekit "gitlab.services.mts.ru/jocasta/cache-kit"
 	"go.opencensus.io/plugin/ochttp"
-	"net/http"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 )
 
-type ServiceWithCache struct {
-	Cache  cachekit.Cache
-	People PeopleInterface
-}
+const (
+	searchPath = "search/attributes"
+)
 
-type Service struct {
-	SearchURL string
-
-	Cli   *http.Client `json:"-"`
-	Sso   *sso.Service
-	Cache cachekit.Cache
-}
-
-func NewServiceWithCache(cfg Config, ssoS *sso.Service) (PeopleInterface, error) {
+func NewServiceWithCache(cfg *Config, ssoS *sso.Service) (ServiceInterface, error) {
 	service, err := NewService(cfg, ssoS)
 	if err != nil {
 		return nil, err
@@ -39,16 +31,16 @@ func NewServiceWithCache(cfg Config, ssoS *sso.Service) (PeopleInterface, error)
 	}, nil
 }
 
-func NewService(c Config, ssoS *sso.Service) (PeopleInterface, error) {
+func NewService(c *Config, ssoS *sso.Service) (ServiceInterface, error) {
 	newCli := &http.Client{}
 
 	tr := TransportForPeople{
-		transport: ochttp.Transport{
+		Transport: ochttp.Transport{
 			Base:        newCli.Transport,
 			Propagation: observability.NewHTTPFormat(),
 		},
-		sso:   ssoS,
-		scope: "",
+		Sso:   ssoS,
+		Scope: "",
 	}
 	newCli.Transport = &tr
 
@@ -57,7 +49,7 @@ func NewService(c Config, ssoS *sso.Service) (PeopleInterface, error) {
 		Sso: ssoS,
 	}
 
-	search, err := service.pathBuilder(c.URL, searchPath)
+	search, err := service.PathBuilder(c.URL, searchPath)
 	if err != nil {
 		return nil, err
 	}

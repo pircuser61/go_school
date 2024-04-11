@@ -41,14 +41,14 @@ type Env struct {
 	Statistic               *statistic.Statistic
 	Mail                    *mail.Service
 	Kafka                   *kafka.Service
-	People                  people.PeopleInterface
-	ServiceDesc             servicedesc.ServicedescInterface
+	People                  people.ServiceInterface
+	ServiceDesc             servicedesc.ServiceInterface
 	FunctionStore           *functions.Service
-	HumanTasks              human_tasks.HumantasksInterface
+	HumanTasks              human_tasks.ServiceInterface
 	MailFetcher             mail_fetcher.Service
 	FileRegistry            *file_registry.Service
 	Integrations            *integrations.Service
-	HrGate                  hrgate.HRGateInterface
+	HrGate                  hrgate.ServiceInterface
 	Scheduler               *scheduler.Service
 	SLAService              sla.Service
 	Forms                   *forms.Service
@@ -59,7 +59,7 @@ type Env struct {
 type ServerParam struct {
 	APIEnv            *Env
 	SSOService        *sso.Service
-	PeopleService     people.PeopleInterface
+	PeopleService     people.ServiceInterface
 	TimeoutMiddleware time.Duration
 	ServerAddr        string
 

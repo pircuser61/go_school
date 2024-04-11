@@ -4,9 +4,21 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+
 	"gitlab.services.mts.ru/abp/myosotis/logger"
+	cachekit "gitlab.services.mts.ru/jocasta/cache-kit"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 )
+
+const (
+	calendarsKeyPrefix    = "calendar:"
+	calendarDaysKeyPrefix = "calendarDays:"
+)
+
+type ServiceWithCache struct {
+	Cache  cachekit.Cache
+	HRGate ServiceInterface
+}
 
 func (s *ServiceWithCache) GetCalendars(ctx context.Context, params *GetCalendarsParams) ([]Calendar, error) {
 	log := logger.CreateLogger(nil)
@@ -16,7 +28,7 @@ func (s *ServiceWithCache) GetCalendars(ctx context.Context, params *GetCalendar
 		return nil, fmt.Errorf("failed to marshal params: %s", err)
 	}
 
-	keyForCache := "calendar" + ":" + string(key)
+	keyForCache := calendarsKeyPrefix + string(key)
 
 	valueFromCache, err := s.Cache.GetValue(ctx, keyForCache)
 	if err == nil {
@@ -50,7 +62,7 @@ func (s *ServiceWithCache) GetCalendarDays(ctx context.Context, params *GetCalen
 		return nil, fmt.Errorf("failed to marshal params: %s", err)
 	}
 
-	keyForCache := "calendarDays" + ":" + string(key)
+	keyForCache := calendarDaysKeyPrefix + string(key)
 
 	valueFromCache, err := s.Cache.GetValue(ctx, keyForCache)
 	if err == nil {
@@ -91,6 +103,9 @@ func (s *ServiceWithCache) GetDefaultCalendar(ctx context.Context) (*Calendar, e
 	return s.HRGate.GetDefaultCalendar(ctx)
 }
 
-func (s *ServiceWithCache) GetDefaultCalendarDaysForGivenTimeIntervals(ctx context.Context, taskTimeIntervals []entity.TaskCompletionInterval) (*CalendarDays, error) {
+func (s *ServiceWithCache) GetDefaultCalendarDaysForGivenTimeIntervals(
+	ctx context.Context,
+	taskTimeIntervals []entity.TaskCompletionInterval,
+) (*CalendarDays, error) {
 	return s.HRGate.GetDefaultCalendarDaysForGivenTimeIntervals(ctx, taskTimeIntervals)
 }
