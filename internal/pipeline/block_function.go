@@ -420,8 +420,6 @@ func (gb *ExecutableFunctionBlock) createExpectedEvents(
 
 func (gb *ExecutableFunctionBlock) setStateByResponse(ctx context.Context, log logger.Logger, updateData *FunctionUpdateParams) error {
 	if gb.State.Async && gb.State.HasAck && updateData.IsAck {
-		log.Error("function already has ack")
-
 		return errors.New("function has ack")
 	}
 
