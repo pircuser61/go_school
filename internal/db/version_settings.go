@@ -172,6 +172,7 @@ func (db *PGCon) SaveVersionSettings(ctx context.Context, settings e.ProcessSett
 			SET start_schema = excluded.start_schema, 
 				end_schema = excluded.end_schema,
 				raw_start_schema = excluded.raw_start_schema`
+
 		commandTag, err = db.Connection.Exec(ctx,
 			query,
 			uuid.New(),

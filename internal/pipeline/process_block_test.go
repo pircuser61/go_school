@@ -258,7 +258,7 @@ func TestProcessBlock(t *testing.T) {
 									Sockets: []entity.Socket{
 										{
 											ID:           DefaultSocketID,
-											NextBlockIds: []string{"servicedesk_application_0"},
+											NextBlockIDs: []string{"servicedesk_application_0"},
 										},
 									},
 								}, nil,
@@ -281,7 +281,7 @@ func TestProcessBlock(t *testing.T) {
 									Sockets: []entity.Socket{
 										{
 											ID:           DefaultSocketID,
-											NextBlockIds: []string{"end_0"},
+											NextBlockIDs: []string{"end_0"},
 										},
 									},
 									Params: sdAppParams,
@@ -301,7 +301,7 @@ func TestProcessBlock(t *testing.T) {
 									Sockets: []entity.Socket{
 										{
 											ID:           DefaultSocketID,
-											NextBlockIds: []string{"end_0"},
+											NextBlockIDs: []string{"end_0"},
 										},
 									},
 									Params: sdAppParams,
@@ -449,7 +449,7 @@ func TestProcessBlock(t *testing.T) {
 									Sockets: []entity.Socket{
 										{
 											ID:           DefaultSocketID,
-											NextBlockIds: []string{"servicedesk_application_0"},
+											NextBlockIDs: []string{"servicedesk_application_0"},
 										},
 									},
 								}, nil,
@@ -472,7 +472,7 @@ func TestProcessBlock(t *testing.T) {
 									Sockets: []entity.Socket{
 										{
 											ID:           DefaultSocketID,
-											NextBlockIds: []string{"start_parallel_0"},
+											NextBlockIDs: []string{"start_parallel_0"},
 										},
 									},
 									Params: sdAppParams,
@@ -492,7 +492,7 @@ func TestProcessBlock(t *testing.T) {
 									Sockets: []entity.Socket{
 										{
 											ID:           DefaultSocketID,
-											NextBlockIds: []string{"start_parallel_0"},
+											NextBlockIDs: []string{"start_parallel_0"},
 										},
 									},
 									Params: sdAppParams,
@@ -534,7 +534,7 @@ func TestProcessBlock(t *testing.T) {
 									Sockets: []entity.Socket{
 										{
 											ID:           DefaultSocketID,
-											NextBlockIds: []string{"approver_0", "execution_0"},
+											NextBlockIDs: []string{"approver_0", "execution_0"},
 										},
 									},
 								}, nil,
@@ -553,7 +553,7 @@ func TestProcessBlock(t *testing.T) {
 									Sockets: []entity.Socket{
 										{
 											ID:           DefaultSocketID,
-											NextBlockIds: []string{"approver_0", "execution_0"},
+											NextBlockIDs: []string{"approver_0", "execution_0"},
 										},
 									},
 								}, nil,
@@ -593,7 +593,7 @@ func TestProcessBlock(t *testing.T) {
 									Sockets: []entity.Socket{
 										{
 											ID:           "approve",
-											NextBlockIds: []string{"end_parallel_0"},
+											NextBlockIDs: []string{"end_parallel_0"},
 										},
 									},
 									Params: approveParams,
@@ -612,7 +612,7 @@ func TestProcessBlock(t *testing.T) {
 									Sockets: []entity.Socket{
 										{
 											ID:           "approve",
-											NextBlockIds: []string{"end_parallel_0"},
+											NextBlockIDs: []string{"end_parallel_0"},
 										},
 									},
 									Params: approveParams,
@@ -631,7 +631,7 @@ func TestProcessBlock(t *testing.T) {
 									Sockets: []entity.Socket{
 										{
 											ID:           executedSocketID,
-											NextBlockIds: []string{"end_parallel_0"},
+											NextBlockIDs: []string{"end_parallel_0"},
 										},
 									},
 									Params: execParams,
@@ -650,7 +650,7 @@ func TestProcessBlock(t *testing.T) {
 									Sockets: []entity.Socket{
 										{
 											ID:           executedSocketID,
-											NextBlockIds: []string{"end_parallel_0"},
+											NextBlockIDs: []string{"end_parallel_0"},
 										},
 									},
 									Params: execParams,
@@ -692,7 +692,7 @@ func TestProcessBlock(t *testing.T) {
 									Sockets: []entity.Socket{
 										{
 											ID:           DefaultSocketID,
-											NextBlockIds: []string{"end_0"},
+											NextBlockIDs: []string{"end_0"},
 										},
 									},
 								}, nil,
@@ -711,7 +711,7 @@ func TestProcessBlock(t *testing.T) {
 									Sockets: []entity.Socket{
 										{
 											ID:           DefaultSocketID,
-											NextBlockIds: []string{"end_0"},
+											NextBlockIDs: []string{"end_0"},
 										},
 									},
 								}, nil,
@@ -809,7 +809,7 @@ func TestProcessBlock(t *testing.T) {
 										Sockets: []entity.Socket{
 											{
 												ID:           "approve",
-												NextBlockIds: []string{"end_parallel_0"},
+												NextBlockIDs: []string{"end_parallel_0"},
 											},
 										},
 										Params: approveParams,
@@ -828,7 +828,7 @@ func TestProcessBlock(t *testing.T) {
 										Sockets: []entity.Socket{
 											{
 												ID:           "approve",
-												NextBlockIds: []string{"end_parallel_0"},
+												NextBlockIDs: []string{"end_parallel_0"},
 											},
 										},
 										Params: approveParams,
@@ -863,7 +863,7 @@ func TestProcessBlock(t *testing.T) {
 									Sockets: []entity.Socket{
 										{
 											ID:           executedSocketID,
-											NextBlockIds: []string{"end_parallel_0"},
+											NextBlockIDs: []string{"end_parallel_0"},
 										},
 									},
 									Params: execParams,
@@ -882,7 +882,7 @@ func TestProcessBlock(t *testing.T) {
 									Sockets: []entity.Socket{
 										{
 											ID:           executedSocketID,
-											NextBlockIds: []string{"end_parallel_0"},
+											NextBlockIDs: []string{"end_parallel_0"},
 										},
 									},
 									Params: execParams,
@@ -903,7 +903,7 @@ func TestProcessBlock(t *testing.T) {
 									Sockets: []entity.Socket{
 										{
 											ID:           executedSocketID,
-											NextBlockIds: []string{"end_parallel_0"},
+											NextBlockIDs: []string{"end_parallel_0"},
 										},
 									},
 									Params: execParams,
@@ -922,7 +922,7 @@ func TestProcessBlock(t *testing.T) {
 									Sockets: []entity.Socket{
 										{
 											ID:           executedSocketID,
-											NextBlockIds: []string{"end_parallel_0"},
+											NextBlockIDs: []string{"end_parallel_0"},
 										},
 									},
 									Params: execParams,
@@ -1118,7 +1118,7 @@ func expectParallelBlockProcessing(
 			Sockets: []entity.Socket{
 				{
 					ID:           DefaultSocketID,
-					NextBlockIds: []string{"end_0"},
+					NextBlockIDs: []string{"end_0"},
 				},
 			},
 		}, nil,
@@ -1137,7 +1137,7 @@ func expectParallelBlockProcessing(
 			Sockets: []entity.Socket{
 				{
 					ID:           DefaultSocketID,
-					NextBlockIds: []string{"end_0"},
+					NextBlockIDs: []string{"end_0"},
 				},
 			},
 		}, nil,
@@ -1195,7 +1195,7 @@ func expectParallelBlockProcessing(
 			Sockets: []entity.Socket{
 				{
 					ID:           DefaultSocketID,
-					NextBlockIds: []string{"end_0"},
+					NextBlockIDs: []string{"end_0"},
 				},
 			},
 		}, nil,

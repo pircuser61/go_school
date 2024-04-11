@@ -601,7 +601,7 @@ type EriusFunc struct {
 type Socket struct {
 	ID           string   `json:"id"`
 	Title        string   `json:"title"`
-	NextBlockIds []string `json:"nextBlockIds,omitempty"`
+	NextBlockIDs []string `json:"nextBlockIDs,omitempty"`
 	ActionType   string   `json:"actionType"`
 }
 
@@ -663,7 +663,7 @@ func ConvertSocket(sockets []Socket) []script.Socket {
 		result = append(result, script.Socket{
 			ID:           socket.ID,
 			Title:        socket.Title,
-			NextBlockIds: socket.NextBlockIds,
+			NextBlockIDs: socket.NextBlockIDs,
 		})
 	}
 

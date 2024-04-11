@@ -32,7 +32,7 @@ type ActionPayload struct {
 	Decision       string                    `json:"decision"`
 	Comment        string                    `json:"comment"`
 	Login          string                    `json:"login"`
-	AttachmentsIds []entity.Attachment       `json:"attachments"`
+	AttachmentsIDs []entity.Attachment       `json:"attachments"`
 	Attachments    map[string]AttachmentData `json:"-"`
 }
 
@@ -132,6 +132,7 @@ func (s *service) parseEmail(ctx c.Context, r *mail.Reader, sn map[*imap.BodySec
 
 		if comment != nil {
 			action.Comment = comment.Body
+
 			action.Attachments, err = s.getAttachments(ctx, sn)
 			if err != nil {
 				log.WithError(err).Error("can't parse message body: " + action.WorkNumber)

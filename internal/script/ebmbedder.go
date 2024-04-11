@@ -64,7 +64,7 @@ type FunctionValueModel struct {
 type Socket struct {
 	ID           string   `json:"id"`
 	Title        string   `json:"title"`
-	NextBlockIds []string `json:"nextBlockIds"`
+	NextBlockIDs []string `json:"nextBlockIDs"`
 	ActionType   string   `json:"actionType"`
 }
 
@@ -140,14 +140,14 @@ var (
 func NewSocket(id string, nexts []string) Socket {
 	return Socket{
 		ID:           id,
-		NextBlockIds: nexts,
+		NextBlockIDs: nexts,
 	}
 }
 
 func GetNexts(from []Socket, socketID string) ([]string, bool) {
 	for _, socket := range from {
 		if socket.ID == socketID {
-			return socket.NextBlockIds, true
+			return socket.NextBlockIDs, true
 		}
 	}
 

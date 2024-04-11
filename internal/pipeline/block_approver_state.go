@@ -415,6 +415,7 @@ func (a *ApproverData) getFinalGroupDecision(ds ApproverDecision) (res ApproverD
 		if log.LogType != ApproverLogDecision {
 			continue
 		}
+
 		decisionsCount++
 
 		if log.Decision != ApproverDecisionRejected {

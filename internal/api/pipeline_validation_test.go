@@ -316,7 +316,7 @@ func TestValidation_ParallelNodes(t *testing.T) {
 								{
 									ID:           script.DefaultSocketID,
 									Title:        script.DefaultSocketTitle,
-									NextBlockIds: []string{"begin_parallel_task_0"},
+									NextBlockIDs: []string{"begin_parallel_task_0"},
 								},
 							},
 						},
@@ -327,7 +327,7 @@ func TestValidation_ParallelNodes(t *testing.T) {
 								{
 									ID:           script.DefaultSocketID,
 									Title:        script.DefaultSocketTitle,
-									NextBlockIds: []string{"approver_1", "approver_2"},
+									NextBlockIDs: []string{"approver_1", "approver_2"},
 								},
 							},
 						},
@@ -341,12 +341,12 @@ func TestValidation_ParallelNodes(t *testing.T) {
 								{
 									ID:           "approve",
 									Title:        "Согласовать",
-									NextBlockIds: []string{"wait_for_all_inputs_0"},
+									NextBlockIDs: []string{"wait_for_all_inputs_0"},
 								},
 								{
 									ID:           "reject",
 									Title:        "Отклонить",
-									NextBlockIds: []string{"wait_for_all_inputs_0"},
+									NextBlockIDs: []string{"wait_for_all_inputs_0"},
 								},
 							},
 						},
@@ -360,12 +360,12 @@ func TestValidation_ParallelNodes(t *testing.T) {
 								{
 									ID:           "approve",
 									Title:        "Согласовать",
-									NextBlockIds: []string{"approver_3"},
+									NextBlockIDs: []string{"approver_3"},
 								},
 								{
 									ID:           "reject",
 									Title:        "Отклонить",
-									NextBlockIds: []string{"approver_3"},
+									NextBlockIDs: []string{"approver_3"},
 								},
 							},
 						},
@@ -379,12 +379,12 @@ func TestValidation_ParallelNodes(t *testing.T) {
 								{
 									ID:           "approve",
 									Title:        "Согласовать",
-									NextBlockIds: []string{"approver_2"},
+									NextBlockIDs: []string{"approver_2"},
 								},
 								{
 									ID:           "reject",
 									Title:        "Отклонить",
-									NextBlockIds: []string{"wait_for_all_inputs_0"},
+									NextBlockIDs: []string{"wait_for_all_inputs_0"},
 								},
 							},
 						},
@@ -395,7 +395,7 @@ func TestValidation_ParallelNodes(t *testing.T) {
 								{
 									ID:           script.DefaultSocketID,
 									Title:        script.DefaultSocketTitle,
-									NextBlockIds: []string{"end_0"},
+									NextBlockIDs: []string{"end_0"},
 								},
 							},
 						},
@@ -405,7 +405,7 @@ func TestValidation_ParallelNodes(t *testing.T) {
 								{
 									ID:           script.DefaultSocketID,
 									Title:        script.DefaultSocketTitle,
-									NextBlockIds: []string{},
+									NextBlockIDs: []string{},
 								},
 							},
 						},
@@ -426,7 +426,7 @@ func TestValidation_ParallelNodes(t *testing.T) {
 								{
 									ID:           script.DefaultSocketID,
 									Title:        script.DefaultSocketTitle,
-									NextBlockIds: []string{"begin_parallel_task_0"},
+									NextBlockIDs: []string{"begin_parallel_task_0"},
 								},
 							},
 						},
@@ -437,7 +437,7 @@ func TestValidation_ParallelNodes(t *testing.T) {
 								{
 									ID:           script.DefaultSocketID,
 									Title:        script.DefaultSocketTitle,
-									NextBlockIds: []string{"approver_1", "approver_2"},
+									NextBlockIDs: []string{"approver_1", "approver_2"},
 								},
 							},
 						},
@@ -451,12 +451,12 @@ func TestValidation_ParallelNodes(t *testing.T) {
 								{
 									ID:           "approve",
 									Title:        "Согласовать",
-									NextBlockIds: []string{"wait_for_all_inputs_0"},
+									NextBlockIDs: []string{"wait_for_all_inputs_0"},
 								},
 								{
 									ID:           "reject",
 									Title:        "Отклонить",
-									NextBlockIds: []string{"wait_for_all_inputs_1"},
+									NextBlockIDs: []string{"wait_for_all_inputs_1"},
 								},
 							},
 						},
@@ -470,12 +470,12 @@ func TestValidation_ParallelNodes(t *testing.T) {
 								{
 									ID:           "approve",
 									Title:        "Согласовать",
-									NextBlockIds: []string{"approver_3"},
+									NextBlockIDs: []string{"approver_3"},
 								},
 								{
 									ID:           "reject",
 									Title:        "Отклонить",
-									NextBlockIds: []string{"approver_3"},
+									NextBlockIDs: []string{"approver_3"},
 								},
 							},
 						},
@@ -489,12 +489,12 @@ func TestValidation_ParallelNodes(t *testing.T) {
 								{
 									ID:           "approve",
 									Title:        "Согласовать",
-									NextBlockIds: []string{"approver_2"},
+									NextBlockIDs: []string{"approver_2"},
 								},
 								{
 									ID:           "reject",
 									Title:        "Отклонить",
-									NextBlockIds: []string{"wait_for_all_inputs_0"},
+									NextBlockIDs: []string{"wait_for_all_inputs_0"},
 								},
 							},
 						},
@@ -505,7 +505,7 @@ func TestValidation_ParallelNodes(t *testing.T) {
 								{
 									ID:           script.DefaultSocketID,
 									Title:        script.DefaultSocketTitle,
-									NextBlockIds: []string{"end_0"},
+									NextBlockIDs: []string{"end_0"},
 								},
 							},
 						},
@@ -516,7 +516,7 @@ func TestValidation_ParallelNodes(t *testing.T) {
 								{
 									ID:           script.DefaultSocketID,
 									Title:        script.DefaultSocketTitle,
-									NextBlockIds: []string{"end_0"},
+									NextBlockIDs: []string{"end_0"},
 								},
 							},
 						},
@@ -526,7 +526,7 @@ func TestValidation_ParallelNodes(t *testing.T) {
 								{
 									ID:           script.DefaultSocketID,
 									Title:        script.DefaultSocketTitle,
-									NextBlockIds: []string{},
+									NextBlockIDs: []string{},
 								},
 							},
 						},

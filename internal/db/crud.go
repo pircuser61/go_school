@@ -775,6 +775,7 @@ func (db *PGCon) CreateVersion(c context.Context,
 		if err != nil {
 			return err
 		}
+
 		err = db.SaveSLAVersionSettings(c, p.VersionID.String(), entity.SLAVersionSettings{
 			Author:   author,
 			WorkType: "8/5",

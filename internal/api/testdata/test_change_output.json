@@ -98,7 +98,7 @@
             "id": "default",
             "title": "Выход по умолчанию",
             "actionType": "",
-            "nextBlockIds": [
+            "nextBlockIDs": [
               "approver_0"
             ]
           }
@@ -183,7 +183,7 @@
             "id": "signed",
             "title": "Подписано",
             "actionType": "",
-            "nextBlockIds": [
+            "nextBlockIDs": [
               "end_0"
             ]
           },
@@ -191,7 +191,7 @@
             "id": "rejected",
             "title": "Отклонено",
             "actionType": "",
-            "nextBlockIds": [
+            "nextBlockIDs": [
               "end_0"
             ]
           },
@@ -199,7 +199,7 @@
             "id": "error",
             "title": "Ошибка",
             "actionType": "",
-            "nextBlockIds": [
+            "nextBlockIDs": [
               "end_0"
             ]
           }
@@ -268,7 +268,7 @@
             "id": "default",
             "title": "Выход по умолчанию",
             "actionType": "",
-            "nextBlockIds": [
+            "nextBlockIDs": [
               "form_0"
             ]
           }
@@ -337,7 +337,7 @@
             "id": "approve",
             "title": "Согласовать",
             "actionType": "primary",
-            "nextBlockIds": [
+            "nextBlockIDs": [
               "execution_0"
             ]
           },
@@ -345,7 +345,7 @@
             "id": "reject",
             "title": "Отклонить",
             "actionType": "secondary",
-            "nextBlockIds": [
+            "nextBlockIDs": [
               "execution_0"
             ]
           }
@@ -416,7 +416,7 @@
             "id": "executed",
             "title": "Исполнено",
             "actionType": "",
-            "nextBlockIds": [
+            "nextBlockIDs": [
               "sign_0"
             ]
           },
@@ -424,7 +424,7 @@
             "id": "not_executed",
             "title": "Не исполнено",
             "actionType": "",
-            "nextBlockIds": [
+            "nextBlockIDs": [
               "sign_0"
             ]
           }

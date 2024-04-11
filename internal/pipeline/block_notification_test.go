@@ -59,12 +59,12 @@ func Test_createGoNotificationBlock(t *testing.T) {
 		{
 			ID:           DefaultSocketID,
 			Title:        script.DefaultSocketTitle,
-			NextBlockIds: []string{"next_0"},
+			NextBlockIDs: []string{"next_0"},
 		},
 		{
 			ID:           rejectedSocketID,
 			Title:        script.RejectSocketTitle,
-			NextBlockIds: []string{"next_1"},
+			NextBlockIDs: []string{"next_1"},
 		},
 	}
 

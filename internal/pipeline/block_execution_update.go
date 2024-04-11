@@ -1253,7 +1253,7 @@ func (gb *GoExecutionBlock) toEditApplication(ctx c.Context) (err error) {
 func (gb *GoExecutionBlock) isNextBlockServiceDesk() bool {
 	for i := range gb.Sockets {
 		if gb.Sockets[i].ID == executionEditAppSocketID &&
-			utils.IsContainsInSlice("servicedesk_application_0", gb.Sockets[i].NextBlockIds) {
+			utils.IsContainsInSlice("servicedesk_application_0", gb.Sockets[i].NextBlockIDs) {
 			return true
 		}
 	}

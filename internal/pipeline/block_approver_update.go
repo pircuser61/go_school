@@ -656,7 +656,7 @@ func (gb *GoApproverBlock) toEditApplication(ctx context.Context, updateParams a
 func (gb *GoApproverBlock) isNextBlockServiceDesk() bool {
 	for i := range gb.Sockets {
 		if gb.Sockets[i].ID == approverEditAppSocketID &&
-			utils.IsContainsInSlice("servicedesk_application_0", gb.Sockets[i].NextBlockIds) {
+			utils.IsContainsInSlice("servicedesk_application_0", gb.Sockets[i].NextBlockIDs) {
 			return true
 		}
 	}
@@ -1017,7 +1017,8 @@ func (gb *GoApproverBlock) handleTaskUpdateAction(ctx context.Context) error {
 }
 
 func (gb *GoApproverBlock) addApprovers(ctx context.Context, u addApproversParams) error {
-	logApprovers := []string{}
+	var logApprovers []string
+
 	delegateFor, isDelegate := gb.State.userIsDelegate(gb.RunContext.UpdateData.ByLogin, gb.RunContext.Delegations)
 
 	if !(gb.State.userIsAnyApprover(gb.RunContext.UpdateData.ByLogin) || isDelegate) {

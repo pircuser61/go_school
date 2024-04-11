@@ -249,7 +249,7 @@ type Database interface {
 	GetBlockOutputs(ctx c.Context, blockID, blockName string) (e.BlockOutputs, error)
 	GetBlockInputs(ctx c.Context, blockName, workNumber string) (e.BlockInputs, error)
 	CheckBlockForHiddenFlag(ctx c.Context, blockID string) (bool, error)
-	GetMergedVariableStorage(ctx c.Context, workID uuid.UUID, blockIds []string) (*store.VariableStore, error)
+	GetMergedVariableStorage(ctx c.Context, workID uuid.UUID, blockIDs []string) (*store.VariableStore, error)
 	CheckTaskForHiddenFlag(ctx c.Context, workNumber string) (bool, error)
 	GetBlockStateForMonitoring(ctx c.Context, blockID string) (e.BlockState, error)
 	GetBlockState(ctx c.Context, blockID string) ([]byte, error)
@@ -288,7 +288,7 @@ type Database interface {
 	CreateTaskEvent(ctx c.Context, dto *e.CreateTaskEvent) (eventID string, err error)
 	GetTaskEvents(ctx c.Context, workID string) (events []e.TaskEvent, err error)
 	SetTaskPaused(ctx c.Context, workID string, isPaused bool) error
-	PauseTaskBlocks(ctx c.Context, workID string, stepIDS []string) (updatedIDS []string, err error)
+	PauseTaskBlocks(ctx c.Context, workID string, stepIDs []string) (updatedIDs []string, err error)
 	IsTaskPaused(ctx c.Context, workID uuid.UUID) (isPaused bool, err error)
 	IsBlockResumable(ctx c.Context, workID, stepID uuid.UUID) (isResumable bool, startTime time.Time, err error)
 	UnpauseTaskBlock(ctx c.Context, workID, stepID uuid.UUID) (err error)

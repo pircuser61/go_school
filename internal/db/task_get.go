@@ -464,7 +464,7 @@ func (cq *compileGetTaskQueryMaker) addInitiator() {
 }
 
 func (cq *compileGetTaskQueryMaker) addProcessingSteps() {
-	if (cq.fl.ProcessingLogins != nil || cq.fl.ProcessingGroupIds != nil) ||
+	if (cq.fl.ProcessingLogins != nil || cq.fl.ProcessingGroupIDs != nil) ||
 		cq.fl.ExecutorTypeAssigned != nil {
 		cq.q = getProcessingSteps(cq.q, cq.fl)
 	}
@@ -592,7 +592,7 @@ func getProcessingSteps(q string, fl *entity.TaskFilter) string {
 
 	varStorage = addAssignType(varStorage, fl.CurrentUser, fl.ExecutorTypeAssigned)
 	varStorage = addProcessingLogins(varStorage, fl.SelectAs, fl.ProcessingLogins)
-	varStorage = addProcessingGroups(varStorage, fl.SelectAs, fl.ProcessingGroupIds)
+	varStorage = addProcessingGroups(varStorage, fl.SelectAs, fl.ProcessingGroupIDs)
 
 	varStorage += ")"
 
@@ -645,12 +645,12 @@ func addProcessingLogins(q string, selectAs *string, logins *[]string) string {
 	)
 }
 
-func addProcessingGroups(q string, selectAs *string, groupIds *[]string) string {
-	if selectAs == nil || groupIds == nil || len(*groupIds) == 0 {
+func addProcessingGroups(q string, selectAs *string, groupIDs *[]string) string {
+	if selectAs == nil || groupIDs == nil || len(*groupIDs) == 0 {
 		return q
 	}
 
-	ids := *groupIds
+	ids := *groupIDs
 	for i := range ids {
 		ids[i] = fmt.Sprintf("'%s'", ids[i])
 	}
@@ -1379,7 +1379,7 @@ func (db *PGCon) computeActions(
 
 	var (
 		computedActions   = make([]entity.TaskAction, 0)
-		computedActionIds = make([]string, 0)
+		computedActionIDs = make([]string, 0)
 		actionsToIgnore   = getActionsToIgnoreIfOtherExist()
 	)
 
@@ -1435,7 +1435,7 @@ func (db *PGCon) computeActions(
 			}
 
 			computedActions = append(computedActions, computedAction)
-			computedActionIds = append(computedActionIds, computedAction.ID)
+			computedActionIDs = append(computedActionIDs, computedAction.ID)
 		}
 	}
 
@@ -1447,7 +1447,7 @@ func (db *PGCon) computeActions(
 			a.ButtonType = "other"
 		}
 
-		ignoreAction := db.ignoreAction(&a, actionsToIgnore, computedActionIds)
+		ignoreAction := db.ignoreAction(&a, actionsToIgnore, computedActionIDs)
 		if !ignoreAction {
 			result = append(result, a)
 		}
@@ -1480,9 +1480,9 @@ func replaceFormID(id string) string {
 	return strings.Replace(id, "fill_form_disabled", "fill_form", 1)
 }
 
-func (db *PGCon) ignoreAction(a *entity.TaskAction, actionsToIgnore []IgnoreActionRule, computedActionIds []string) bool {
+func (db *PGCon) ignoreAction(a *entity.TaskAction, actionsToIgnore []IgnoreActionRule, computedActionIDs []string) bool {
 	for _, actionRule := range actionsToIgnore {
-		if a.ID == actionRule.IgnoreActionID && slices.Contains(computedActionIds, actionRule.ExistingActionID) {
+		if a.ID == actionRule.IgnoreActionID && slices.Contains(computedActionIDs, actionRule.ExistingActionID) {
 			return true
 		}
 	}
@@ -2085,7 +2085,7 @@ func (db *PGCon) GetBlocksOutputs(ctx c.Context, blockID string) (entity.BlockOu
 	return blockOutputs, nil
 }
 
-func (db *PGCon) GetMergedVariableStorage(ctx c.Context, workID uuid.UUID, blockIds []string) (*store.VariableStore, error) {
+func (db *PGCon) GetMergedVariableStorage(ctx c.Context, workID uuid.UUID, blockIDs []string) (*store.VariableStore, error) {
 	ctx, span := trace.StartSpan(ctx, "get_merged_variable_storage")
 	defer span.End()
 
@@ -2095,7 +2095,7 @@ func (db *PGCon) GetMergedVariableStorage(ctx c.Context, workID uuid.UUID, block
     	WHERE work_id = '%s' AND step_name IN %s AND
     	  vs.time = (SELECT max(time) FROM variable_storage WHERE work_id = vs.work_id AND step_name = vs.step_name)`
 
-	query := fmt.Sprintf(q, workID, buildInExpression(blockIds))
+	query := fmt.Sprintf(q, workID, buildInExpression(blockIDs))
 
 	var content []byte
 	if err := db.Connection.QueryRow(ctx, query).Scan(&content); err != nil {
