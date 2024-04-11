@@ -28,7 +28,6 @@ type FunctionDecision string
 const (
 	keyOutputFunctionDecision = "decision"
 
-	ErrorKey     = "error"
 	KeyDelimiter = "."
 
 	SimpleFunctionRetryPolicy FunctionRetryPolicy = "simple"

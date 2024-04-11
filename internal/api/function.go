@@ -58,6 +58,7 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 	st, err := ae.getTaskStepWithRetry(ctx, message.TaskID)
 	if err != nil {
 		log.WithField("funcName", "GetTaskStepById").
+			WithField("step_id", message.TaskID).
 			WithError(err).
 			Error("get task step by id")
 
