@@ -643,7 +643,6 @@ func (p *GetTasksParams) toEntity(req *http.Request) (entity.TaskFilter, error) 
 		Created:              p.Created.toEntity(),
 		Order:                p.Order,
 		OrderBy:              p.OrderBy,
-		Executor:             p.Executor,
 		Limit:                &limit,
 		Offset:               &offset,
 		TaskIDs:              p.TaskIDs,

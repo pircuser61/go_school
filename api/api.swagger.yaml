@@ -1696,11 +1696,6 @@ paths:
           deprecated: true
           schema:
             type: string
-        - name: executor
-          description: filter for executor or group
-          in: query
-          schema:
-            type: string
         - name: orderBy
           in: query
           description: params for tasks ordering
