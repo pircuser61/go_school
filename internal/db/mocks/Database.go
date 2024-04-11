@@ -4763,6 +4763,66 @@ func (_c *MockedDatabase_GetTasksCount_Call) RunAndReturn(run func(context.Conte
 	return _c
 }
 
+// GetTasksExecutors provides a mock function with given fields: ctx, filters, delegations
+func (_m *MockedDatabase) GetTasksExecutors(ctx context.Context, filters entity.TaskFilter, delegations []string) ([]string, error) {
+	ret := _m.Called(ctx, filters, delegations)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetTasksExecutors")
+	}
+
+	var r0 []string
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, entity.TaskFilter, []string) ([]string, error)); ok {
+		return rf(ctx, filters, delegations)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, entity.TaskFilter, []string) []string); ok {
+		r0 = rf(ctx, filters, delegations)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]string)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, entity.TaskFilter, []string) error); ok {
+		r1 = rf(ctx, filters, delegations)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockedDatabase_GetTasksExecutors_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetTasksExecutors'
+type MockedDatabase_GetTasksExecutors_Call struct {
+	*mock.Call
+}
+
+// GetTasksExecutors is a helper method to define mock.On call
+//   - ctx context.Context
+//   - filters entity.TaskFilter
+//   - delegations []string
+func (_e *MockedDatabase_Expecter) GetTasksExecutors(ctx interface{}, filters interface{}, delegations interface{}) *MockedDatabase_GetTasksExecutors_Call {
+	return &MockedDatabase_GetTasksExecutors_Call{Call: _e.mock.On("GetTasksExecutors", ctx, filters, delegations)}
+}
+
+func (_c *MockedDatabase_GetTasksExecutors_Call) Run(run func(ctx context.Context, filters entity.TaskFilter, delegations []string)) *MockedDatabase_GetTasksExecutors_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(entity.TaskFilter), args[2].([]string))
+	})
+	return _c
+}
+
+func (_c *MockedDatabase_GetTasksExecutors_Call) Return(_a0 []string, _a1 error) *MockedDatabase_GetTasksExecutors_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockedDatabase_GetTasksExecutors_Call) RunAndReturn(run func(context.Context, entity.TaskFilter, []string) ([]string, error)) *MockedDatabase_GetTasksExecutors_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetTasksForMonitoring provides a mock function with given fields: ctx, filters
 func (_m *MockedDatabase) GetTasksForMonitoring(ctx context.Context, filters *entity.TasksForMonitoringFilters) (*entity.TasksForMonitoring, error) {
 	ret := _m.Called(ctx, filters)

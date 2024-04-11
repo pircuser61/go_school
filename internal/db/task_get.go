@@ -342,6 +342,37 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 
 //nolint:gocritic //изначально было без поинтера
 func compileGetTasksMetaQuery(fl entity.TaskFilter, delegations []string) (q string, args []interface{}) {
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	q = `
+		[with_variable_storage]
+		SELECT 
+			w.work_number,
+			v.content->'pipeline'->'blocks'->'servicedesk_application_0'->'params'->>'blueprint_id' 		
+		FROM works w 
+		JOIN versions v ON v.id = w.version_id
+		JOIN pipelines p ON p.id = v.pipeline_id
+		JOIN unique_actions ua on w.id = ua.work_id
+		[join_variable_storage]
+		WHERE w.child_id IS NULL`
+
+	var order string
+	if fl.Order != nil {
+		order = *fl.Order
+	}
+
+	var orderBy []string
+	if fl.OrderBy != nil {
+		orderBy = *fl.OrderBy
+	}
+
+	var queryMaker compileGetTaskQueryMaker
+
+	return queryMaker.MakeQuery(&fl, q, delegations, args, order, orderBy, false)
+}
+
+func compileGetUniquePersonsQuery(fl entity.TaskFilter, delegations []string) (q string, args []interface{}) {
 	stepType := getStepTypeBySelectForFilter(*fl.SelectAs)
 
 	// nolint:gocritic
@@ -349,17 +380,17 @@ func compileGetTasksMetaQuery(fl entity.TaskFilter, delegations []string) (q str
 	q = fmt.Sprintf(`
 		[with_variable_storage]
 		SELECT 
-			w.work_number,
-			v.content->'pipeline'->'blocks'->'servicedesk_application_0'->'params'->>'blueprint_id',
     		var.current_executor->'people',
     		var.current_executor->>'group_name'    		
 		FROM works w 
 		JOIN versions v ON v.id = w.version_id
 		JOIN pipelines p ON p.id = v.pipeline_id
 		JOIN unique_actions ua on w.id = ua.work_id
-		JOIN variable_storage var on w.id = var.work_id and var.step_type='%s'
+		JOIN variable_storage var on w.id = var.work_id and var.step_type= '%s'
 		[join_variable_storage]
 		WHERE w.child_id IS NULL`, stepType)
+
+	//args = append(args, stepType)
 
 	var order string
 	if fl.Order != nil {
@@ -731,7 +762,7 @@ func getActorsNameByStepType(stepName string) string {
 
 func getStepTypeBySelectForFilter(selectFor string) string {
 	switch selectFor {
-	case "queue_executor", "in_work_executor", "finished_executor", "group_executor", "finished_group_executor":
+	case "executor", "queue_executor", "in_work_executor", "finished_executor", "group_executor", "finished_group_executor":
 		return "execution"
 	}
 
@@ -979,6 +1010,17 @@ func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter, delegations 
 		Total:     tasks.Tasks[0].Total,
 		TasksMeta: *meta,
 	}, nil
+}
+
+func (db *PGCon) GetTasksExecutors(ctx c.Context, filters entity.TaskFilter, delegations []string) ([]string, error) {
+	ctx, span := trace.StartSpan(ctx, "db.pg_get_tasks_persons")
+	defer span.End()
+
+	qMeta, args := compileGetUniquePersonsQuery(filters, delegations)
+
+	persons, metaErr := db.getTaskUniquePersons(ctx, qMeta, args)
+
+	return persons, metaErr
 }
 
 func (db *PGCon) GetDeadline(ctx c.Context, workNumber string) (time.Time, error) {
@@ -1702,8 +1744,7 @@ func (db *PGCon) getTasksMeta(ctx c.Context, q string, args []interface{}) (*ent
 	defer span.End()
 
 	meta := entity.TasksMeta{
-		Blueprints:     make(map[string][]string),
-		ExecutorLogins: make([]string, 0),
+		Blueprints: make(map[string][]string),
 	}
 
 	rows, err := db.Connection.Query(ctx, q, args...)
@@ -1715,33 +1756,15 @@ func (db *PGCon) getTasksMeta(ctx c.Context, q string, args []interface{}) (*ent
 	var (
 		workNumber  string
 		blueprintID sql.NullString
-		executors   *[]string
-		group       *string
 	)
 
 	for rows.Next() {
 		err = rows.Scan(
 			&workNumber,
 			&blueprintID,
-			&executors,
-			&group,
 		)
 		if err != nil {
 			return nil, err
-		}
-
-		if executors != nil {
-			for _, v := range *executors {
-				if !utils.IsContainsInSlice(v, meta.ExecutorLogins) {
-					meta.ExecutorLogins = append(meta.ExecutorLogins, v)
-				}
-			}
-		}
-
-		if group != nil {
-			if !utils.IsContainsInSlice(*group, meta.ExecutorLogins) && *group != "" {
-				meta.ExecutorLogins = append(meta.ExecutorLogins, *group)
-			}
 		}
 
 		if !blueprintID.Valid || blueprintID.String == "" {
@@ -1766,6 +1789,52 @@ func (db *PGCon) getTasksMeta(ctx c.Context, q string, args []interface{}) (*ent
 	}
 
 	return &meta, nil
+}
+
+func (db *PGCon) getTaskUniquePersons(ctx c.Context, q string, args []interface{}) ([]string, error) {
+	ctx, span := trace.StartSpan(ctx, "db.pg_get_tasks_meta")
+	defer span.End()
+
+	executorLogins := make([]string, 0)
+
+	rows, err := db.Connection.Query(ctx, q, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var (
+		executors *[]string
+		group     *string
+	)
+
+	for rows.Next() {
+		if err = rows.Scan(&executors, &group); err != nil {
+			return nil, err
+		}
+
+		if executors != nil {
+			for _, v := range *executors {
+				if !utils.IsContainsInSlice(v, executorLogins) {
+					executorLogins = append(executorLogins, v)
+				}
+			}
+		}
+
+		if group == nil {
+			continue
+		}
+
+		if !utils.IsContainsInSlice(*group, executorLogins) && *group != "" {
+			executorLogins = append(executorLogins, *group)
+		}
+	}
+
+	if rowsErr := rows.Err(); rowsErr != nil {
+		return nil, rowsErr
+	}
+
+	return executorLogins, nil
 }
 
 func (db *PGCon) GetTaskSteps(ctx c.Context, id uuid.UUID) (entity.TaskSteps, error) {

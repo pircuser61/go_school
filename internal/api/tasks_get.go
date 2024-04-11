@@ -588,7 +588,151 @@ func (ae *Env) GetTasks(w http.ResponseWriter, req *http.Request, params GetTask
 	}
 }
 
+func (ae *Env) GetTasksExecutors(w http.ResponseWriter, req *http.Request, params GetTasksExecutorsParams) {
+	start := time.Now()
+	ctx, s := trace.StartSpan(req.Context(), "get_tasks_persons")
+
+	requestInfo := metrics.NewGetRequestInfo(getTasksPath)
+
+	defer func() {
+		s.End()
+
+		requestInfo.Duration = time.Since(start)
+
+		ae.Metrics.RequestsIncrease(requestInfo)
+	}()
+
+	log := logger.GetLogger(ctx)
+	errorHandler := newHTTPErrorHandler(log, w)
+	errorHandler.setMetricsRequestInfo(requestInfo)
+
+	filters, err := params.toEntity(req)
+	if err != nil {
+		errorHandler.handleError(BadFiltersError, err)
+
+		return
+	}
+
+	delegations, err := ae.HumanTasks.GetDelegationsToLogin(ctx, filters.CurrentUser)
+	if err != nil {
+		errorHandler.handleError(GetDelegationsError, err)
+
+		return
+	}
+
+	if filters.SelectAs != nil {
+		switch *filters.SelectAs {
+		case entity.SelectAsValApprover:
+			delegations = delegations.FilterByType("approvement")
+		case entity.SelectAsValExecutor, entity.SelectAsValQueueExecutor, entity.SelectAsValInWorkExecutor:
+			delegations = delegations.FilterByType("execution")
+		default:
+			delegations = delegations[:0]
+		}
+	} else {
+		delegations = delegations[:0]
+	}
+
+	users := delegations.GetUserInArrayWithDelegators([]string{filters.CurrentUser})
+
+	if filters.Status != nil {
+		handleFilterStatus(&filters)
+	}
+
+	resp, err := ae.DB.GetTasksExecutors(ctx, filters, users)
+	if err != nil {
+		errorHandler.handleError(GetTasksError, err)
+
+		return
+	}
+
+	if err = sendResponse(w, http.StatusOK, resp); err != nil {
+		errorHandler.handleError(UnknownError, err)
+
+		return
+
+	}
+	return
+}
+
 func (p *GetTasksParams) toEntity(req *http.Request) (entity.TaskFilter, error) {
+	var filters entity.TaskFilter
+
+	var typeAssigned *string
+
+	if p.ExecutorTypeAssigned != nil {
+		at := string(*p.ExecutorTypeAssigned)
+
+		typeAssigned = &at
+		if *typeAssigned != entity.AssignedToMe && *typeAssigned != entity.AssignedByMe {
+			return filters, errors.New("invalid value in typeAssigned filter")
+		}
+	}
+
+	var signatureCarrier *string
+
+	if p.SignatureCarrier != nil {
+		at := string(*p.SignatureCarrier)
+
+		signatureCarrier = &at
+		if *signatureCarrier != entity.SignatureCarrierCloud &&
+			*signatureCarrier != entity.SignatureCarrierToken &&
+			*signatureCarrier != entity.SignatureCarrierAll {
+			return filters, errors.New("invalid value in SignatureCarrier filter")
+		}
+	}
+
+	var selectAs string
+
+	if p.SelectAs != nil {
+		selectAs = string(*p.SelectAs)
+
+		valid := selectAsValid(selectAs)
+		if !valid {
+			return filters, errors.New("invalid value in SelectAs filter")
+		}
+	}
+
+	ui, err := user.GetEffectiveUserInfoFromCtx(req.Context())
+	if err != nil {
+		return filters, err
+	}
+
+	filters.CurrentUser = ui.Username
+
+	limit, offset := parseLimitOffsetWithDefault(p.Limit, p.Offset)
+	if limit > 1000 {
+		limit = 1000
+	}
+
+	filters.GetTaskParams = entity.GetTaskParams{
+		Name:                 p.Name,
+		Created:              p.Created.toEntity(),
+		Order:                p.Order,
+		OrderBy:              p.OrderBy,
+		Limit:                &limit,
+		Offset:               &offset,
+		TaskIDs:              p.TaskIDs,
+		SelectAs:             &selectAs,
+		Archived:             p.Archived,
+		ForCarousel:          p.ForCarousel,
+		Status:               statusToEntity(p.Status),
+		Receiver:             p.Receiver,
+		HasAttachments:       p.HasAttachments,
+		Initiator:            p.Initiator,
+		InitiatorLogins:      p.InitiatorLogins,
+		ProcessingLogins:     p.ProcessingLogins,
+		ProcessingGroupIds:   p.ProcessingGroupIds,
+		ExecutorLogins:       p.ExecutorLogins,
+		ExecutorGroupIds:     p.ExecutorGroupIds,
+		ExecutorTypeAssigned: typeAssigned,
+		SignatureCarrier:     signatureCarrier,
+	}
+
+	return filters, nil
+}
+
+func (p *GetTasksExecutorsParams) toEntity(req *http.Request) (entity.TaskFilter, error) {
 	var filters entity.TaskFilter
 
 	var typeAssigned *string

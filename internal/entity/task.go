@@ -44,8 +44,7 @@ type EriusTasks struct {
 }
 
 type TasksMeta struct {
-	Blueprints     map[string][]string `json:"blueprints"` // SD blueprints: [workNumbers]
-	ExecutorLogins []string            `json:"executor_logins"`
+	Blueprints map[string][]string `json:"blueprints"` // SD blueprints: [workNumbers]
 }
 
 type EriusTasksPage struct {
