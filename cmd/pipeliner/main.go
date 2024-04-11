@@ -247,7 +247,7 @@ func main() {
 
 	s := server.NewServer(ctx, log, kafkaService, &serverParam)
 
-	kafkaService.InitMessageHandler(s.StartKafkaWorkers)
+	kafkaService.InitMessageHandler(s.SendMessageToWorkers)
 	go kafkaService.StartCheckHealth()
 
 	s.Run(ctx)

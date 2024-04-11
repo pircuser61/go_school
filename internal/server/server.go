@@ -20,6 +20,7 @@ type Server struct {
 	kafka *kafka.Service
 	svcs  *api.Env
 
+	consumerWorkerCh  chan kafka.RunnerInMessage
 	svcsPingTimer     time.Duration
 	svcsFailedCount   int
 	svcsOkCount       int
@@ -46,6 +47,8 @@ func NewServer(
 		svcsOkCount:       serverParam.SvcsOkCount,
 		consumerWorkerCnt: serverParam.ConsumerWorkerCnt,
 	}
+
+	s.startKafkaWorkers(ctx)
 
 	go s.checkSvcsAvailability(ctx)
 
@@ -78,14 +81,14 @@ func (s *Server) Stop(ctx context.Context) {
 	}
 }
 
-func (s *Server) StartKafkaWorkers(ctx context.Context, message kafka.RunnerInMessage) error {
-	messageCh := make(chan kafka.RunnerInMessage)
-
+func (s *Server) startKafkaWorkers(ctx context.Context) {
 	for i := 0; i < s.consumerWorkerCnt; i++ {
-		go s.svcs.WorkFunctionHandler(ctx, messageCh)
+		go s.svcs.WorkFunctionHandler(ctx, s.consumerWorkerCh)
 	}
+}
 
-	messageCh <- message
+func (s *Server) SendMessageToWorkers(_ context.Context, message kafka.RunnerInMessage) error {
+	s.consumerWorkerCh <- message
 
 	return nil
 }
