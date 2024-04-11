@@ -310,12 +310,14 @@ func (ae *Env) runVersion(ctx c.Context, log logger.Logger, run *runVersionsDTO)
 		return nil, errors.Wrap(err, NoUserInContextError.error())
 	}
 
-	workNumber, err := ae.Sequence.GetWorkNumber(ctx)
-	if err != nil {
-		return nil, errors.Wrap(err, GetWorkNumberError.error())
+	if run.WorkNumber == "" {
+		run.WorkNumber, err = ae.Sequence.GetWorkNumber(ctx)
+		if err != nil {
+			return nil, errors.Wrap(err, GetWorkNumberError.error())
+		}
 	}
 
-	log = log.WithField("workNumber", workNumber)
+	log = log.WithField("workNumber", run.WorkNumber)
 
 	workID := uuid.New()
 	log = log.WithField("workID", workID)
@@ -323,7 +325,7 @@ func (ae *Env) runVersion(ctx c.Context, log logger.Logger, run *runVersionsDTO)
 	err = ae.createEmptyTask(ctx, storage,
 		&db.CreateEmptyTaskDTO{
 			WorkID:     workID,
-			WorkNumber: workNumber,
+			WorkNumber: run.WorkNumber,
 			Author:     usr.Username,
 			RunContext: &entity.TaskRunContext{
 				ClientID:   clientID,
@@ -400,7 +402,7 @@ func (ae *Env) runVersion(ctx c.Context, log logger.Logger, run *runVersionsDTO)
 		version:          version,
 		withStop:         false,
 		allowRunAsOthers: allowRunAsOthers,
-		workNumber:       workNumber,
+		workNumber:       run.WorkNumber,
 		workID:           workID,
 		requestID:        run.RequestID,
 		runCtx: entity.TaskRunContext{
