@@ -85,6 +85,7 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 		Mapping:       message.FunctionMapping,
 		DoRetry:       message.DoRetry,
 		IsAsyncResult: message.IsAsyncResult,
+		Err:           message.Err,
 	}
 
 	mapping, err := json.Marshal(functionMapping)
