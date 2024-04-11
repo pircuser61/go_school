@@ -208,12 +208,10 @@ func initBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *BlockRu
 	}
 
 	if !exists {
-		log := logger.CreateLogger(nil)
-
-		log.
+		logger.GetLogger(ctx).
 			WithFields(logger.Fields{
 				"funcName": "initBlock",
-				"taskID":   runCtx.TaskID.String(),
+				"workID":   runCtx.TaskID.String(),
 				"stepName": name,
 			}).
 			Warning("block is not exists")
@@ -506,7 +504,7 @@ func ProcessBlockWithEndMapping(
 	ctx, s := trace.StartSpan(ctx, "process_block_with_end_mapping")
 	defer s.End()
 
-	log := logger.GetLogger(ctx).WithField("workNumber", runCtx.WorkNumber)
+	log := logger.GetLogger(ctx).WithField("funcName", "ProcessBlockWithEndMapping")
 
 	statusBefore, _, err := runCtx.Services.Storage.GetTaskStatusWithReadableString(ctx, runCtx.TaskID)
 	if err != nil {
@@ -526,6 +524,8 @@ func ProcessBlockWithEndMapping(
 
 	updDeadlineErr := blockProcessor.updateTaskExecDeadline(ctx)
 	if updDeadlineErr != nil {
+		log.WithError(updDeadlineErr).Error("couldn't update task deadline")
+
 		return false, updDeadlineErr
 	}
 
@@ -557,6 +557,8 @@ func ProcessBlockWithEndMapping(
 			Params:    jsonParams,
 		})
 		if err != nil {
+			log.WithError(updDeadlineErr).Error("couldn't create task event")
+
 			return false, err
 		}
 	}

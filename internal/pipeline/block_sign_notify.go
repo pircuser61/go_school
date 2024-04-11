@@ -4,6 +4,7 @@ import (
 	c "context"
 	"time"
 
+	"gitlab.services.mts.ru/abp/mail/pkg/email"
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
@@ -160,30 +161,45 @@ func (gb *GoSignBlock) notifyDecisionMadeByAdditionalApprover(ctx c.Context, log
 	}
 
 	latestDecisionLog := gb.State.SignLog[len(gb.State.SignLog)-1]
-	tpl := mail.NewDecisionMadeByAdditionalApprover(
-		gb.RunContext.WorkNumber,
-		gb.RunContext.NotifName,
-		latestDecisionLog.Decision.ToRuString(),
-		latestDecisionLog.Comment,
-		gb.RunContext.Services.Sender.SdAddress,
-		userInfo,
-	)
 
-	files, err := gb.RunContext.Services.FileRegistry.GetAttachments(
-		ctx,
-		latestDecisionLog.Attachments,
-		gb.RunContext.WorkNumber,
-		gb.RunContext.ClientID,
-	)
+	files := make([]email.Attachment, 0)
+
+	filesAttach, _, err := gb.RunContext.makeNotificationAttachment()
 	if err != nil {
 		return err
 	}
 
+	attach, err := gb.RunContext.GetAttach(filesAttach)
+	if err != nil {
+		return err
+	}
+
+	files = append(files, attach.AttachmentsList...)
+
+	cleanName(files)
+
+	tpl := mail.NewDecisionMadeByAdditionalApprover(
+		&mail.ReviewTemplate{
+			ID:          gb.RunContext.WorkNumber,
+			Name:        gb.RunContext.NotifName,
+			Decision:    latestDecisionLog.Decision.ToRuString(),
+			Comment:     latestDecisionLog.Comment,
+			SdURL:       gb.RunContext.Services.Sender.SdAddress,
+			Author:      userInfo,
+			AttachLinks: attach.AttachLinks,
+			AttachExist: attach.AttachExists,
+		},
+	)
+
 	filesList := []string{tpl.Image, userImg}
 
-	iconFiles, iconEerr := gb.RunContext.GetIcons(filesList)
-	if iconEerr != nil {
-		return iconEerr
+	if len(attach.AttachLinks) != 0 {
+		filesList = append(filesList, downloadImg)
+	}
+
+	iconFiles, iconErr := gb.RunContext.GetIcons(filesList)
+	if iconErr != nil {
+		return iconErr
 	}
 
 	files = append(files, iconFiles...)

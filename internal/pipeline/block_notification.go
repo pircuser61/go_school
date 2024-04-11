@@ -113,6 +113,8 @@ func (gb *GoNotificationBlock) compileText(ctx context.Context) (*mail.Notif, []
 		return nil, nil, err
 	}
 
+	text = cleanUnexpectedSymbols(text)
+
 	tpl := &mail.Notif{
 		Title:       gb.State.Subject,
 		Body:        text,
@@ -122,6 +124,25 @@ func (gb *GoNotificationBlock) compileText(ctx context.Context) (*mail.Notif, []
 	}
 
 	return tpl, files, nil
+}
+
+func cleanUnexpectedSymbols(s string) string {
+	replacements := map[string]string{
+		"\\t":  "",
+		"\t":   "",
+		"\\n":  "",
+		"\n":   "",
+		"\r":   "",
+		"\\r":  "",
+		"\"\"": "",
+		"\"":   "''",
+	}
+
+	for old, news := range replacements {
+		s = strings.ReplaceAll(s, old, news)
+	}
+
+	return strings.ReplaceAll(s, "\\", "")
 }
 
 func (gb *GoNotificationBlock) notificationBlockText() (string, error) {

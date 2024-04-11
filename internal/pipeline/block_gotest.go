@@ -193,10 +193,10 @@ func createGoTestBlock(
 	return b, reEntry, nil
 }
 
-func (gb *GoTestBlock) UpdateStateUsingOutput(ctx context.Context, data []byte) (state map[string]interface{}, err error) {
+func (gb *GoTestBlock) UpdateStateUsingOutput(context.Context, []byte) (state map[string]interface{}, err error) {
 	return state, nil
 }
 
-func (gb *GoTestBlock) UpdateOutputUsingState(ctx context.Context) (output map[string]interface{}, err error) {
+func (gb *GoTestBlock) UpdateOutputUsingState(context.Context) (output map[string]interface{}, err error) {
 	return output, nil
 }

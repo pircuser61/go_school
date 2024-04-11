@@ -588,7 +588,8 @@ func (ae *Env) execVersion(ctx c.Context, dto *execVersionDTO) (*e.RunResponse, 
 	usr, err := user.GetUserInfoFromCtx(ctxLocal)
 	if err != nil {
 		errCustom := NoUserInContextError
-		log.Error(errCustom.errorMessage(err))
+		log.WithField("funcName", "GetUserInfoFromCtx").
+			Error(errCustom.errorMessage(err))
 
 		return nil, errors.Wrap(err, errCustom.error())
 	}
@@ -601,7 +602,8 @@ func (ae *Env) execVersion(ctx c.Context, dto *execVersionDTO) (*e.RunResponse, 
 		if err != nil {
 			errCustom := NoUserInContextError
 
-			log.Error(errCustom.errorMessage(err))
+			log.WithField("funcName", "GetEffectiveUserInfoFromCtx").
+				Error(errCustom.errorMessage(err))
 
 			return nil, errors.Wrap(err, errCustom.error())
 		}
@@ -623,8 +625,6 @@ func (ae *Env) execVersion(ctx c.Context, dto *execVersionDTO) (*e.RunResponse, 
 
 	errCustom, err := ae.execVersionInternal(ctxLocal, execVersionInternalDTO)
 	if err != nil {
-		log.Error(errCustom.errorMessage(err))
-
 		return nil, errors.Wrap(err, errCustom.error())
 	}
 
@@ -661,7 +661,7 @@ func (ae *Env) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO) (
 	ctx, span := trace.StartSpan(ctx, "exec_version_internal")
 	defer span.End()
 
-	log := logger.GetLogger(ctx).WithField("mainFuncName", "execVersionInternal")
+	log := logger.GetLogger(ctx).WithField("funcName", "execVersionInternal")
 
 	txStorage, transactionErr := dto.storage.StartTransaction(ctx)
 	if transactionErr != nil {
@@ -684,8 +684,7 @@ func (ae *Env) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO) (
 	parameters, err := json.Marshal(dto.vars)
 	if err != nil {
 		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
-			log.WithField("funcName", "marshal vars").
-				WithError(errors.New("couldn't rollback tx")).
+			log.WithError(errors.New("couldn't rollback tx")).
 				Error(txErr)
 		}
 
@@ -704,7 +703,7 @@ func (ae *Env) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO) (
 	err = txStorage.FillEmptyTask(ctx, &updateTaskDTO)
 	if err != nil {
 		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
-			log.WithField("funcName", "UpdateTask").
+			log.WithField("funcName", "FillEmptyTask").
 				WithError(errors.New("couldn't rollback tx")).
 				Error(txErr)
 		}
@@ -772,15 +771,15 @@ func (ae *Env) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO) (
 		Params:    jsonParams,
 	})
 	if err != nil {
-		log.Error(err)
+		log.WithField("funcName", "CreateTaskEvent").Error(err)
 	}
 
 	err = pipeline.InitBlockInDB(ctx, pipeline.BlockGoFirstStart, blockData.TypeID, runCtx)
 	if err != nil {
 		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
-			log.WithField("funcName", "pipelne.InitBlock").
-				WithError(errors.New("couldn't rollback tx")).
-				Error(txErr)
+			log.WithField("funcName", "InitBlockInDB").
+				WithError(txErr).
+				Error(errors.New("couldn't rollback tx"))
 		}
 
 		return PipelineRunError, err
@@ -791,6 +790,9 @@ func (ae *Env) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO) (
 		return PipelineRunError, err
 	}
 
+	log = log.WithField("stepName", pipeline.BlockGoFirstStart)
+	ctx = logger.WithLogger(ctx, log)
+
 	workFinished, err := pipeline.ProcessBlockWithEndMapping(ctx, pipeline.BlockGoFirstStart, blockData, runCtx, false)
 	if err != nil {
 		return PipelineRunError, err
@@ -799,7 +801,8 @@ func (ae *Env) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO) (
 	if workFinished {
 		err = ae.Scheduler.DeleteAllTasksByWorkID(ctx, dto.taskID)
 		if err != nil {
-			log.WithError(err).Error("failed delete all tasks by work id in scheduler")
+			log.WithField("funcName", "DeleteAllTasksByWorkID").
+				WithError(err).Error("failed delete all tasks by work id in scheduler")
 		}
 	}
 

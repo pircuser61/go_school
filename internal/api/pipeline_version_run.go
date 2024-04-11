@@ -56,7 +56,8 @@ func (ae *Env) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Request
 	ctx, s := trace.StartSpan(r.Context(), "run_new_version_by_prev_version")
 	defer s.End()
 
-	log := logger.GetLogger(ctx)
+	log := logger.GetLogger(ctx).
+		WithField("funcName", "RunNewVersionByPrevVersion")
 	errorHandler := newHTTPErrorHandler(log, w)
 
 	body, err := io.ReadAll(r.Body)
@@ -76,6 +77,8 @@ func (ae *Env) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	log = log.WithField("workNumber", req.WorkNumber)
+
 	if req.WorkNumber == "" {
 		errorHandler.handleError(ValidationError, errors.New("workNumber is empty"))
 
@@ -90,6 +93,7 @@ func (ae *Env) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Request
 	}
 
 	taskID := uuid.New()
+	log = log.WithField("workID", taskID)
 
 	workNumber, err := ae.createEmptyTask(ctx, ae.DB, &db.CreateEmptyTaskDTO{
 		TaskID:     taskID,
@@ -139,6 +143,10 @@ func (ae *Env) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Request
 
 		return
 	}
+
+	log = log.WithField("versionID", version.VersionID).
+		WithField("pipelineID", version.PipelineID)
+	ctx = logger.WithLogger(ctx, log)
 
 	reqParams := &requestStartParams{
 		version:          version,
@@ -224,7 +232,8 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 		ae.Metrics.RequestsIncrease(requestInfo)
 	}()
 
-	log := logger.GetLogger(ctx)
+	log := logger.GetLogger(ctx).
+		WithField("funcName", "RunVersionsByPipelineId")
 	errorHandler := newHTTPErrorHandler(log, w)
 	errorHandler.setMetricsRequestInfo(requestInfo)
 
@@ -245,6 +254,9 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	log = log.WithField("pipelineID", req.PipelineID).
+		WithField("funcName", "RunVersionsByPipelineId")
+
 	requestInfo.PipelineID = req.PipelineID
 
 	if req.PipelineID == "" {
@@ -253,7 +265,7 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Info("RunVersionsByPipelineId pipeline_id:", req.PipelineID)
+	log.WithField("body", req).Info("RunVersionsByPipelineId pipeline_id:", req.PipelineID)
 
 	clientID, err := ae.getClientIDFromToken(r.Header.Get(AuthorizationHeader))
 	if err != nil {
@@ -262,6 +274,7 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	log = log.WithField("clientID", clientID)
 	requestInfo.ClientID = clientID
 
 	storage, acquireErr := ae.DB.Acquire(ctx)
@@ -279,6 +292,7 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 	}
 
 	taskID := uuid.New()
+	log = log.WithField("workID", taskID)
 
 	workNumber, err := ae.createEmptyTask(ctx, storage,
 		&db.CreateEmptyTaskDTO{
@@ -304,6 +318,8 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	log = log.WithField("workNumber", workNumber)
+
 	//nolint:errcheck // нецелесообразно отслеживать подобные ошибки в defer
 	defer storage.Release(ctx)
 
@@ -315,6 +331,8 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 	}
 
 	requestInfo.VersionID = version.VersionID.String()
+	log = log.WithField("versionID", requestInfo.VersionID)
+	ctx = logger.WithLogger(ctx, log)
 
 	var externalSystem *entity.ExternalSystem
 
@@ -403,8 +421,7 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 func (ae *Env) handleStartApplicationParams(ctx c.Context, dto *requestStartParams) error {
 	hiddenFields, err := ae.getHiddenFields(ctx, dto.version)
 	if err != nil {
-		e := GetHiddenFieldsError
-		ae.Log.Error(e.errorMessage(err))
+		ae.Log.Error(GetHiddenFieldsError.errorMessage(err))
 	}
 
 	dto.hiddenFields = hiddenFields
@@ -570,6 +587,15 @@ func cleanKey(mapKeys interface{}) string {
 		return ""
 	}
 
+	keyStr, okStr := key.(string)
+	if !okStr {
+		return ""
+	}
+
+	return cleanUnexpectedSymbols(keyStr)
+}
+
+func cleanUnexpectedSymbols(s string) string {
 	replacements := map[string]string{
 		"\\t":  "",
 		"\t":   "",
@@ -581,16 +607,11 @@ func cleanKey(mapKeys interface{}) string {
 		"\"":   "''",
 	}
 
-	keyStr, okStr := key.(string)
-	if !okStr {
-		return ""
-	}
-
 	for old, news := range replacements {
-		keyStr = strings.ReplaceAll(keyStr, old, news)
+		s = strings.ReplaceAll(s, old, news)
 	}
 
-	return strings.ReplaceAll(keyStr, "\\", "")
+	return strings.ReplaceAll(s, "\\", "")
 }
 
 func (ae *Env) createEmptyTask(ctx c.Context, storage db.Database, emptyTask *db.CreateEmptyTaskDTO) (string, error) {

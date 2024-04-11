@@ -39,7 +39,7 @@ func (ae *Env) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), funcName)
 	defer s.End()
 
-	log := logger.GetLogger(ctx)
+	log := logger.GetLogger(ctx).WithField("funcName", "UpdateTasksByMails")
 	errorHandler := newHTTPErrorHandler(log, w)
 
 	log.Info(funcName, ", started")
@@ -62,10 +62,12 @@ func (ae *Env) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 	token := req.Header.Get(AuthorizationHeader)
 
 	for i := range emails {
+		log = log.WithField("workNumber", emails[i].Action.WorkNumber).
+			WithField("login", emails[i].Action.Login)
+
 		usr, errGetUser := ae.People.GetUser(ctx, emails[i].Action.Login)
 		if errGetUser != nil {
-			log.WithField("workNumber", emails[i].Action.WorkNumber).
-				WithField("login", emails[i].Action.Login).Error(errGetUser)
+			log.Error(errGetUser)
 
 			continue
 		}
@@ -77,11 +79,12 @@ func (ae *Env) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 			continue
 		}
 
+		log = log.WithField("userEmailByLogin", useInfo.Email).
+			WithField("emailFromEmail", emails[i].From).
+			WithField("proxyEmails", useInfo.ProxyEmails)
+
 		if !strings.EqualFold(useInfo.Email, emails[i].From) && !utils.IsContainsInSlice(emails[i].From, useInfo.ProxyEmails) {
-			log.WithField("userEmailByLogin", useInfo.Email).
-				WithField("emailFromEmail", emails[i].From).
-				WithField("proxyEmails", useInfo.ProxyEmails).
-				Error(errors.New("login from email not eq or not in proxyAddresses"))
+			log.Error(errors.New("login from email not eq or not in proxyAddresses"))
 
 			continue
 		}
@@ -91,12 +94,12 @@ func (ae *Env) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 			log.WithError(err).Info("failed to get client id for file registry metrics")
 		}
 
+		log = log.WithField("clientID", clientID)
+
 		for fileName, fileData := range emails[i].Action.Attachments {
 			id, errSave := ae.FileRegistry.SaveFile(ctx, token, clientID, fileName, fileData.Raw, emails[i].Action.WorkNumber)
 			if errSave != nil {
-				log.WithField("workNumber", emails[i].Action.WorkNumber).
-					WithField("fileName", fileName).
-					Error(errSave)
+				log.WithField("fileName", fileName).Error(errSave)
 
 				continue
 			}
@@ -106,7 +109,7 @@ func (ae *Env) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 
 		jsonBody, errParse := json.Marshal(emails[i].Action)
 		if errParse != nil {
-			log.WithField("workNumber", emails[i].Action.WorkNumber).Error(errParse)
+			log.Error(errParse)
 
 			continue
 		}
@@ -118,10 +121,6 @@ func (ae *Env) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 
 		errUpdate := ae.updateTaskBlockInternal(ctx, emails[i].Action.WorkNumber, emails[i].Action.Login, &updateData)
 		if errUpdate != nil {
-			log.WithField("action", *emails[i].Action).
-				WithField("workNumber", emails[i].Action.WorkNumber).
-				Error(errUpdate)
-
 			continue
 		}
 	}
@@ -169,7 +168,7 @@ func (ae *Env) UpdateTask(w http.ResponseWriter, req *http.Request, workNumber s
 
 	var updateData entity.TaskUpdate
 	if err = json.Unmarshal(b, &updateData); err != nil {
-		e := newHTTPErrorHandler(log.WithField("updateData", string(b)), w)
+		e := newHTTPErrorHandler(log.WithField("body", string(b)), w)
 		e.setMetricsRequestInfo(requestInfo)
 		e.handleError(UpdateTaskParsingError, err)
 
@@ -183,14 +182,10 @@ func (ae *Env) UpdateTask(w http.ResponseWriter, req *http.Request, workNumber s
 		return
 	}
 
-	log = log.
-		WithField("workNumber", workNumber).
-		WithField("login", ui.Username).
-		WithField("body", string(b))
-
-	log.Info("updating block")
-
+	log = log.WithField("workNumber", workNumber)
 	ctx = logger.WithLogger(ctx, log)
+
+	log.WithField("body", string(b)).Info("updating block")
 
 	err = ae.updateTask(ctx, workNumber, ui.Username, &updateData)
 	if err != nil {
@@ -223,24 +218,33 @@ func (ae *Env) updateTaskBlockBySchedulerRequest(ctx context.Context, workNumber
 	ctxLocal, span := trace.StartSpan(ctx, "update_task_block_by_scheduler_request")
 	defer span.End()
 
-	log := logger.GetLogger(ctx)
+	log := logger.GetLogger(ctx).
+		WithField("funcName", "updateTaskBlockBySchedulerRequest")
 
 	delegations, getDelegationsErr := ae.HumanTasks.GetDelegationsToLogin(ctxLocal, userLogin)
 	if getDelegationsErr != nil {
+		log.Error(getDelegationsErr)
+
 		return getDelegationsErr
 	}
 
 	if validateErr := in.Validate(); validateErr != nil {
+		log.Error(validateErr)
+
 		return validateErr
 	}
 
 	stepTypes := getTaskStepNameByAction(in.Action)
 	if len(stepTypes) == 0 {
+		log.Error(errors.New("stepTypes is empty"))
+
 		return errors.New("stepTypes is empty")
 	}
 
 	dbTask, err := ae.GetTaskForUpdate(ctxLocal, workNumber)
 	if err != nil {
+		log.Error(err)
+
 		return GetTaskError.Join(err)
 	}
 
@@ -252,6 +256,8 @@ func (ae *Env) updateTaskBlockBySchedulerRequest(ctx context.Context, workNumber
 
 	scenario, err := ae.DB.GetPipelineVersion(ctxLocal, dbTask.VersionID, false)
 	if err != nil {
+		log.Error(err)
+
 		return GetVersionError.Join(err)
 	}
 
@@ -265,6 +271,8 @@ func (ae *Env) updateTaskBlockBySchedulerRequest(ctx context.Context, workNumber
 			StepNames: in.StepNames,
 		})
 		if stepErr != nil {
+			log.Error(stepErr)
+
 			return GetTaskError.Join(stepErr)
 		}
 
@@ -298,6 +306,8 @@ func (ae *Env) updateTaskBlockBySchedulerRequest(ctx context.Context, workNumber
 	}
 
 	if !couldUpdateOne {
+		log.Error(UpdateBlockError.JoinString("couldn't update work"))
+
 		return UpdateBlockError.JoinString("couldn't update work")
 	}
 
@@ -308,31 +318,48 @@ func (ae *Env) updateTaskBlockInternal(ctx context.Context, workNumber, userLogi
 	ctxLocal, span := trace.StartSpan(ctx, "update_task_block_internal")
 	defer span.End()
 
+	log := logger.GetLogger(ctx).WithField("funcName", "updateTaskBlockInternal")
+
 	delegations, getDelegationsErr := ae.HumanTasks.GetDelegationsToLogin(ctxLocal, userLogin)
 	if getDelegationsErr != nil {
+		log.WithField("funcName", "GetDelegationsToLogin").Error(getDelegationsErr)
+
 		return getDelegationsErr
 	}
 
 	if validateErr := in.Validate(); validateErr != nil {
+		log.Error(validateErr)
+
 		return validateErr
 	}
 
 	stepTypes := getTaskStepNameByAction(in.Action)
 	if len(stepTypes) == 0 {
+		log.Error(errors.New("stepTypes is empty"))
+
 		return errors.New("stepTypes is empty")
 	}
 
 	dbTask, err := ae.GetTaskForUpdate(ctxLocal, workNumber)
 	if err != nil {
+		log.WithField("funcName", "GetTaskForUpdate").Error(err)
+
 		return GetTaskError.Join(err)
 	}
 
+	log = log.WithField("workID", dbTask.ID).
+		WithField("versionID", dbTask.VersionID)
+
 	if !dbTask.IsRun() {
+		log.Error(UpdateNotRunningTaskError.JoinString("task is not running"))
+
 		return UpdateNotRunningTaskError.JoinString("task is not running")
 	}
 
 	scenario, err := ae.DB.GetPipelineVersion(ctxLocal, dbTask.VersionID, false)
 	if err != nil {
+		log.Error(err)
+
 		return GetVersionError.Join(err)
 	}
 
@@ -346,6 +373,8 @@ func (ae *Env) updateTaskBlockInternal(ctx context.Context, workNumber, userLogi
 			StepNames: in.StepNames,
 		})
 		if stepErr != nil {
+			log.Error(stepErr)
+
 			return GetTaskError.Join(stepErr)
 		}
 
@@ -353,10 +382,14 @@ func (ae *Env) updateTaskBlockInternal(ctx context.Context, workNumber, userLogi
 	}
 
 	if len(steps) == 0 {
+		log.Error(GetTaskError.JoinString("zero length task steps"))
+
 		return GetTaskError.JoinString("zero length task steps")
 	}
 
 	couldUpdateOne := false
+
+	ctxLocal = logger.WithLogger(ctxLocal, log)
 
 	for _, item := range steps {
 		success := ae.updateStepInternal(
@@ -377,6 +410,8 @@ func (ae *Env) updateTaskBlockInternal(ctx context.Context, workNumber, userLogi
 	}
 
 	if !couldUpdateOne {
+		log.Error(GetTaskError.JoinString("couldn't update work"))
+
 		return UpdateBlockError.JoinString("couldn't update work")
 	}
 
@@ -394,7 +429,7 @@ type updateStepData struct {
 }
 
 func (ae *Env) updateStepInternal(ctx context.Context, data *updateStepData) bool {
-	log := logger.GetLogger(ctx)
+	log := logger.GetLogger(ctx).WithField("funcName", "updateStepInternal")
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -415,6 +450,8 @@ func (ae *Env) updateStepInternal(ctx context.Context, data *updateStepData) boo
 		TaskID:      data.task.ID,
 		WorkNumber:  data.workNumber,
 		WorkTitle:   data.task.Name,
+		PipelineID:  data.scenario.PipelineID,
+		VersionID:   data.scenario.VersionID,
 		Initiator:   data.task.Author,
 		VarStore:    storage,
 		Delegations: data.delegations,
@@ -461,8 +498,6 @@ func (ae *Env) updateStepInternal(ctx context.Context, data *updateStepData) boo
 
 	workFinished, blockErr := pipeline.ProcessBlockWithEndMapping(ctx, data.step.Name, blockFunc, runCtx, true)
 	if blockErr != nil {
-		log.WithError(blockErr).Error("couldn't update block")
-
 		return false
 	}
 
@@ -546,7 +581,7 @@ func (ae *Env) updateTaskInternal(ctx context.Context, workNumber, userLogin str
 	ctxLocal, span := trace.StartSpan(ctx, "update_task_internal")
 	defer span.End()
 
-	log := ae.Log.WithField("mainFuncName", "updateTaskInternal")
+	log := ae.Log.WithField("funcName", "updateTaskInternal")
 
 	dbTask, err := ae.DB.GetTask(ctxLocal, []string{userLogin}, []string{userLogin}, userLogin, workNumber)
 	if err != nil {

@@ -26,7 +26,9 @@ import (
 )
 
 const (
-	hiddenUserLogin = "hidden_user"
+	hiddenUserLogin        = "hidden_user"
+	executionBaseGroupName = "группа исполнителей"
+	executionNotInGroup    = "Не групповая заявка"
 )
 
 type taskResp struct {
@@ -579,6 +581,16 @@ func (ae *Env) GetTasks(w http.ResponseWriter, req *http.Request, params GetTask
 		if len(mapApprovalLists) > 0 {
 			resp.Tasks[i].ApprovalList = mapApprovalLists
 		}
+
+		if resp.Tasks[i].CurrentExecutor.ExecutionGroupName == "" {
+			if resp.Tasks[i].CurrentExecutor.ExecutionGroupID == "" {
+				resp.Tasks[i].CurrentExecutor.ExecutionGroupName = executionNotInGroup
+
+				continue
+			}
+
+			resp.Tasks[i].CurrentExecutor.ExecutionGroupName = executionBaseGroupName
+		}
 	}
 
 	if err = sendResponse(w, http.StatusOK, resp); err != nil {
@@ -643,6 +655,7 @@ func (p *GetTasksParams) toEntity(req *http.Request) (entity.TaskFilter, error) 
 		Created:              p.Created.toEntity(),
 		Order:                p.Order,
 		OrderBy:              p.OrderBy,
+		Expired:              p.Expired,
 		Limit:                &limit,
 		Offset:               &offset,
 		TaskIDs:              p.TaskIDs,
@@ -709,7 +722,8 @@ func selectAsValid(selectAs string) bool {
 		entity.SelectAsValGroupExecutor,
 		entity.SelectAsValFinishedGroupExecutor,
 		entity.SelectAsValQueueExecutor,
-		entity.SelectAsValInWorkExecutor:
+		entity.SelectAsValInWorkExecutor,
+		entity.SelectAsValFinishedExecutorV2:
 		return true
 	}
 
@@ -870,7 +884,7 @@ func (ae *Env) GetTaskMeanSolveTime(w http.ResponseWriter, req *http.Request, pi
 	ctx, s := trace.StartSpan(req.Context(), "get_task_mean_solve_time")
 	defer s.End()
 
-	log := logger.GetLogger(ctx).WithField("pipelineId", pipelineID)
+	log := logger.GetLogger(ctx).WithField("pipelineID", pipelineID)
 	errorHandler := newHTTPErrorHandler(log, w)
 
 	taskTimeIntervals, intervalsErr := ae.DB.GetMeanTaskSolveTime(ctx, pipelineID) // it returns ordered by created_at

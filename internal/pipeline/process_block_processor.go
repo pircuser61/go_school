@@ -37,6 +37,16 @@ func newBlockProcessor(name string, bl *entity.EriusFunc, runCtx *BlockRunContex
 
 //nolint:gocognit,gocyclo,nestif //it's ok
 func (p *blockProcessor) ProcessBlock(ctx context.Context, its int) error {
+	log := logger.GetLogger(ctx).
+		WithField("funcName", "ProcessBlock").
+		WithField("pipelineID", p.runCtx.PipelineID).
+		WithField("versionID", p.runCtx.VersionID).
+		WithField("workNumber", p.runCtx.WorkNumber).
+		WithField("workID", p.runCtx.TaskID).
+		WithField("clientID", p.runCtx.ClientID).
+		WithField("stepName", p.name)
+	ctx = logger.WithLogger(ctx, log)
+
 	its++
 	if its > 10 {
 		return errors.New("took too long")
@@ -44,8 +54,6 @@ func (p *blockProcessor) ProcessBlock(ctx context.Context, its int) error {
 
 	ctx, s := trace.StartSpan(ctx, "process_block")
 	defer s.End()
-
-	log := logger.GetLogger(ctx).WithField("workNumber", p.runCtx.WorkNumber)
 
 	err := p.startTx(ctx)
 	if err != nil {
@@ -68,6 +76,9 @@ func (p *blockProcessor) ProcessBlock(ctx context.Context, its int) error {
 	if initErr != nil {
 		return p.handleErrorWithRollback(ctx, log, initErr)
 	}
+
+	log = log.WithField("stepID", id)
+	ctx = logger.WithLogger(ctx, log)
 
 	if block == nil {
 		err = p.commitTx(ctx)
@@ -262,7 +273,7 @@ func (runCtx *BlockRunContext) updateStatusByStep(ctx context.Context, status Ta
 
 // эта функция уже будет обрабатывать ошибку, ошибку которую она вернула не нужно обрабатывать повторно
 func (p *blockProcessor) processActiveBlocks(ctx context.Context, activeBlocks []string, its int, updateVarStore bool) error {
-	log := logger.GetLogger(ctx).WithField("workNumber", p.runCtx.WorkNumber)
+	log := logger.GetLogger(ctx).WithField("funcName", "processActiveBlocks")
 
 	for _, blockName := range activeBlocks {
 		blockData, blockErr := p.runCtx.Services.Storage.GetBlockDataFromVersion(ctx, p.runCtx.WorkNumber, blockName)

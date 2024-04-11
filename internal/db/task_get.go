@@ -50,8 +50,8 @@ func uniqueActionsByRole(loginsIn, stepType string, finished, acted bool) string
 	return fmt.Sprintf(`WITH actions AS (
     SELECT vs.work_id                                                                       AS work_id
          , vs.step_name                                                                     AS block_id
-         , CASE WHEN vs.status IN ('running', 'idle') THEN m.actions ELSE '{}' END AS action
-         , CASE WHEN vs.status IN ('running', 'idle') THEN m.params ELSE '{}' END  AS params
+         , CASE WHEN (vs.status IN ('running', 'idle')  AND vs.is_paused = false) THEN m.actions ELSE '{}' END AS action
+         , CASE WHEN (vs.status IN ('running', 'idle')  AND vs.is_paused = false) THEN m.params ELSE '{}' END  AS params
          , vs.current_executor                                                              AS current_executor
          , CASE WHEN vs.step_type = 'execution' THEN vs.time END                            AS exec_start_time
 		 , CASE WHEN vs.step_type = 'approver' THEN vs.time END                          	AS appr_start_time
@@ -200,6 +200,10 @@ func getUniqueActions(selectFilter string, logins []string) string {
 			"AND vs.content -> 'State' -> vs.step_name ->> 'is_taken_in_work' = 'true' --unique-actions-filter--",
 			replaceCount,
 		)
+
+		return q
+	case entity.SelectAsValFinishedExecutorV2:
+		q := uniqueActionsByRole(loginsIn, "execution", true, false)
 
 		return q
 	case entity.SelectAsValSignerPhys:
@@ -470,6 +474,18 @@ func (cq *compileGetTaskQueryMaker) addProcessingSteps() {
 	}
 }
 
+func (cq *compileGetTaskQueryMaker) addIsExpiredFilter(isExpired *bool) {
+	if isExpired == nil {
+		return
+	}
+
+	if !*isExpired {
+		cq.q = fmt.Sprintf("%s AND (ua.node_deadline > now() OR coalesce(ua.is_expired::boolean, false)) ", cq.q)
+	} else {
+		cq.q = fmt.Sprintf("%s AND (ua.node_deadline < now() OR coalesce(ua.is_expired::boolean, true)) ", cq.q)
+	}
+}
+
 //nolint:gocyclo //it's ok
 func (cq *compileGetTaskQueryMaker) addOrderBy(order string, orderBy []string) {
 	if (order != "" && len(orderBy) == 0) || len(orderBy) == 0 {
@@ -566,6 +582,7 @@ func (cq *compileGetTaskQueryMaker) MakeQuery(
 	cq.addReceiver()
 	cq.addInitiator()
 	cq.addProcessingSteps()
+	cq.addIsExpiredFilter(fl.Expired)
 	cq.addOrderBy(order, orderBy)
 
 	if useLimitOffset {

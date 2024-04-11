@@ -214,6 +214,7 @@ func main() {
 		SLAService:              slaService,
 		Forms:                   formsService,
 		HostURL:                 cfg.HostURL,
+		LogIndex:                cfg.LogIndex,
 	}
 
 	serverParam := api.ServerParam{
