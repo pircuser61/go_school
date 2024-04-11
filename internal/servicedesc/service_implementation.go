@@ -175,3 +175,11 @@ func (s *Service) GetSchemaByBlueprintID(ctx context.Context, blueprintID string
 
 	return schema, nil
 }
+
+func (s *Service) GetSdUrl() string {
+	return s.SdURL
+}
+
+func (s *Service) GetCli() *http.Client {
+	return s.Cli
+}

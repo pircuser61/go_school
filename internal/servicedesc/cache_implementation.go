@@ -3,6 +3,7 @@ package servicedesc
 import (
 	"context"
 	"fmt"
+	"net/http"
 
 	cachekit "gitlab.services.mts.ru/jocasta/cache-kit"
 )
@@ -99,4 +100,12 @@ func (s *ServiceWithCache) GetSchemaByBlueprintID(ctx context.Context, blueprint
 // TODO добавить кеш
 func (s *ServiceWithCache) GetSsoPerson(ctx context.Context, username string) (*SsoPerson, error) {
 	return s.Servicedesc.GetSsoPerson(ctx, username)
+}
+
+func (s *ServiceWithCache) GetSdUrl() string {
+	return s.Servicedesc.GetSdUrl()
+}
+
+func (s *ServiceWithCache) GetCli() *http.Client {
+	return s.Servicedesc.GetCli()
 }

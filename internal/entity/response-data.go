@@ -154,14 +154,14 @@ func (bt *BlocksType) IsSdBlueprintFilled(ctx context.Context, sd servicedesc.Se
 		return false
 	}
 
-	checkURL := sd.SdURL + checkSdBlueprint + params.BlueprintID
+	checkURL := sd.GetSdUrl() + checkSdBlueprint + params.BlueprintID
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, checkURL, http.NoBody)
 	if err != nil {
 		return false
 	}
 
-	resp, err := sd.Cli.Do(req)
+	resp, err := sd.GetCli().Do(req)
 	if err != nil {
 		return false
 	}
