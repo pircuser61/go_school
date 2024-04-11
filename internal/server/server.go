@@ -106,6 +106,8 @@ func (s *Server) checkSvcsAvailability(ctx context.Context) {
 			} else {
 				s.kafka.StartConsumer(ctx)
 			}
+		default:
+			continue
 		}
 
 		time.Sleep(s.svcsPingTimer)
