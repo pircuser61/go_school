@@ -152,24 +152,24 @@ func (ae *Env) GetVersionSettings(w http.ResponseWriter, req *http.Request, vers
 	processSettings.SLA = slaSettings.SLA
 	processSettings.WorkType = slaSettings.WorkType
 
-	externalSystemsIDs, err := ae.DB.GetExternalSystemsIDs(ctx, versionID)
+	externalSystemsIds, err := ae.DB.GetExternalSystemsIDs(ctx, versionID)
 	if err != nil {
 		errorHandler.handleError(GetExternalSystemsError, err)
 
 		return
 	}
 
-	systemsNames, err := ae.Integrations.GetSystemsNames(ctx, externalSystemsIDs)
+	systemsNames, err := ae.Integrations.GetSystemsNames(ctx, externalSystemsIds)
 	if err != nil {
 		errorHandler.handleError(GetExternalSystemsNamesError, err)
 
 		return
 	}
 
-	externalSystems := make([]e.ExternalSystem, 0, len(externalSystemsIDs))
-	externalSystemsTaskSubs := make([]e.ExternalSystemSubscriptionParams, 0, len(externalSystemsIDs))
+	externalSystems := make([]e.ExternalSystem, 0, len(externalSystemsIds))
+	externalSystemsTaskSubs := make([]e.ExternalSystemSubscriptionParams, 0, len(externalSystemsIds))
 
-	for _, id := range externalSystemsIDs {
+	for _, id := range externalSystemsIds {
 		externalSystemSettings, systemSettingsErr := ae.DB.GetExternalSystemSettings(ctx, versionID, id.String())
 		if systemSettingsErr != nil {
 			errorHandler.handleError(GetExternalSystemSettingsError, err)

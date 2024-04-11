@@ -399,7 +399,7 @@ func (db *PGCon) PauseTaskBlocks(ctx c.Context, workID string, steps []string) (
 
 	defer rows.Close()
 
-	updatedIDs := make([]string, 0)
+	updatedIds := make([]string, 0)
 
 	for rows.Next() {
 		var id string
@@ -408,10 +408,10 @@ func (db *PGCon) PauseTaskBlocks(ctx c.Context, workID string, steps []string) (
 			return nil, scanErr
 		}
 
-		updatedIDs = append(updatedIDs, id)
+		updatedIds = append(updatedIds, id)
 	}
 
-	return updatedIDs, nil
+	return updatedIds, nil
 }
 
 func (db *PGCon) UnpauseTaskBlock(ctx c.Context, workID, stepID uuid.UUID) (err error) {

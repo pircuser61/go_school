@@ -1,8 +1,6 @@
 module gitlab.services.mts.ru/jocasta/pipeliner
 
-go 1.22
-
-toolchain go1.22.2
+go 1.18
 
 require (
 	contrib.go.opencensus.io/exporter/jaeger v0.2.1
@@ -39,7 +37,7 @@ require (
 	gitlab.services.mts.ru/jocasta/human-tasks v1.0.0-alpha.3
 	gitlab.services.mts.ru/jocasta/integrations v1.9.0
 	gitlab.services.mts.ru/jocasta/msg-kit v0.1.4
-	gitlab.services.mts.ru/jocasta/scheduler v1.10.1-0.20240410123954-7546a2497878
+	gitlab.services.mts.ru/jocasta/scheduler v1.10.1-0.20240411105447-0c6a180ab838
 	gitlab.services.mts.ru/prodboard/infra v0.3.0
 	go.opencensus.io v0.24.0
 	golang.org/x/exp v0.0.0-20230206171751-46f607a40771

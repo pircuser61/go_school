@@ -32,7 +32,7 @@ type ActionPayload struct {
 	Decision       string                    `json:"decision"`
 	Comment        string                    `json:"comment"`
 	Login          string                    `json:"login"`
-	AttachmentsIDs []entity.Attachment       `json:"attachments"`
+	AttachmentsIds []entity.Attachment       `json:"attachments"`
 	Attachments    map[string]AttachmentData `json:"-"`
 }
 

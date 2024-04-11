@@ -102,8 +102,8 @@ func (s *ServiceWithCache) GetSsoPerson(ctx context.Context, username string) (*
 	return s.Servicedesc.GetSsoPerson(ctx, username)
 }
 
-func (s *ServiceWithCache) GetSdUrl() string {
-	return s.Servicedesc.GetSdUrl()
+func (s *ServiceWithCache) GetSdURL() string {
+	return s.Servicedesc.GetSdURL()
 }
 
 func (s *ServiceWithCache) GetCli() *http.Client {

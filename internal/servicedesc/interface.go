@@ -10,6 +10,6 @@ type ServiceInterface interface {
 	GetSsoPerson(ctx context.Context, username string) (*SsoPerson, error)
 	GetSchemaByID(ctx context.Context, schemaID string) (map[string]interface{}, error)
 	GetSchemaByBlueprintID(ctx context.Context, blueprintID string) (map[string]interface{}, error)
-	GetSdUrl() string
+	GetSdURL() string
 	GetCli() *http.Client
 }

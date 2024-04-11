@@ -3,6 +3,7 @@ package people
 import (
 	"context"
 	"fmt"
+
 	"github.com/pkg/errors"
 
 	cachekit "gitlab.services.mts.ru/jocasta/cache-kit"
@@ -75,7 +76,7 @@ func (s *ServiceWithCache) PathBuilder(mainpath, subpath string) (string, error)
 	return s.People.PathBuilder(mainpath, subpath)
 }
 
-//TODO: делаем span'ы (GetUsers (with cache))
+// TODO: делаем span'ы (GetUsers (with cache))
 func (s *ServiceWithCache) GetUserEmail(ctx context.Context, username string) (string, error) {
 	user, err := s.GetUser(ctx, username)
 	if err != nil {

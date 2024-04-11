@@ -176,7 +176,7 @@ func (s *Service) GetSchemaByBlueprintID(ctx context.Context, blueprintID string
 	return schema, nil
 }
 
-func (s *Service) GetSdUrl() string {
+func (s *Service) GetSdURL() string {
 	return s.SdURL
 }
 

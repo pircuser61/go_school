@@ -104,7 +104,7 @@ func (ae *Env) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 				continue
 			}
 
-			emails[i].Action.AttachmentsIDs = append(emails[i].Action.AttachmentsIDs, entity.Attachment{FileID: id})
+			emails[i].Action.AttachmentsIds = append(emails[i].Action.AttachmentsIds, entity.Attachment{FileID: id})
 		}
 
 		jsonBody, errParse := json.Marshal(emails[i].Action)

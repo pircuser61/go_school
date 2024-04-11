@@ -154,7 +154,7 @@ func (bt *BlocksType) IsSdBlueprintFilled(ctx context.Context, sd servicedesc.Se
 		return false
 	}
 
-	checkURL := sd.GetSdUrl() + checkSdBlueprint + params.BlueprintID
+	checkURL := sd.GetSdURL() + checkSdBlueprint + params.BlueprintID
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, checkURL, http.NoBody)
 	if err != nil {
@@ -601,7 +601,7 @@ type EriusFunc struct {
 type Socket struct {
 	ID           string   `json:"id"`
 	Title        string   `json:"title"`
-	NextBlockIDs []string `json:"nextBlockIDs,omitempty"`
+	NextBlockIds []string `json:"nextBlockIds,omitempty"`
 	ActionType   string   `json:"actionType"`
 }
 
