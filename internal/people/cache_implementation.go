@@ -43,7 +43,8 @@ func (s *ServiceWithCache) GetUser(ctx context.Context, search string) (SSOUser,
 	return resources, nil
 }
 
-func (s *ServiceWithCache) GetUsers(ctx context.Context, search string, limit *int, filter []string) ([]SSOUser, error) {
+// TODO создать ключ
+func (s *ServiceWithCache) GetUsers(ctx context.Context, search string, limit int, filter []string) ([]SSOUser, error) {
 	keyForCache := usersKeyPrefix + search
 
 	valueFromCache, err := s.Cache.GetValue(ctx, keyForCache)

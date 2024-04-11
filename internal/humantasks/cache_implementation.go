@@ -4,6 +4,7 @@ import (
 	c "context"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 	cachekit "gitlab.services.mts.ru/jocasta/cache-kit"
@@ -56,17 +57,77 @@ func (s *ServiceWithCache) GetDelegations(ctx c.Context, req *d.GetDelegationsRe
 }
 
 func (s *ServiceWithCache) GetDelegationsFromLogin(ctx c.Context, login string) (Delegations, error) {
-	return s.Humantasks.GetDelegationsFromLogin(ctx, login)
+	req := &d.GetDelegationsRequest{
+		FilterBy:  FromLoginFilter,
+		FromLogin: login,
+	}
+
+	res, err := s.GetDelegations(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
 }
 
 func (s *ServiceWithCache) GetDelegationsToLogin(ctx c.Context, login string) (Delegations, error) {
-	return s.Humantasks.GetDelegationsToLogin(ctx, login)
+	req := &d.GetDelegationsRequest{
+		FilterBy: ToLoginFilter,
+		ToLogin:  login,
+	}
+
+	res, err := s.GetDelegations(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
 }
 
 func (s *ServiceWithCache) GetDelegationsToLogins(ctx c.Context, logins []string) (Delegations, error) {
-	return s.Humantasks.GetDelegationsToLogins(ctx, logins)
+	var sb strings.Builder
+
+	for i, login := range logins {
+		sb.WriteString(login)
+
+		if i < len(logins)-1 {
+			sb.WriteString(",")
+		}
+	}
+
+	req := &d.GetDelegationsRequest{
+		FilterBy: ToLoginsFilter,
+		ToLogins: sb.String(),
+	}
+
+	res, err := s.GetDelegations(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
 }
 
 func (s *ServiceWithCache) GetDelegationsByLogins(ctx c.Context, logins []string) (Delegations, error) {
-	return s.Humantasks.GetDelegationsByLogins(ctx, logins)
+	var sb strings.Builder
+
+	for i, login := range logins {
+		sb.WriteString(login)
+
+		if i < len(logins)-1 {
+			sb.WriteString(",")
+		}
+	}
+
+	req := &d.GetDelegationsRequest{
+		FilterBy:   FromLoginsFilter,
+		FromLogins: sb.String(),
+	}
+
+	res, err := s.GetDelegations(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
 }
