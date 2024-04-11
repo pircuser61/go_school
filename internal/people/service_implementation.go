@@ -112,7 +112,7 @@ type Service struct {
 	Cache cachekit.Cache
 }
 
-func (s *Service) GetUser(ctx context.Context, search string, onlyEnabled bool) ([]SSOUser, error) {
+func (s *Service) getUser(ctx context.Context, search string, onlyEnabled bool) ([]SSOUser, error) {
 	search = strings.TrimSpace(search)
 	if search == "" {
 		return make([]SSOUser, 0), nil
@@ -164,7 +164,7 @@ func (s *Service) GetUser(ctx context.Context, search string, onlyEnabled bool) 
 	return res.Resources, nil
 }
 
-func (s *Service) GetUsers(ctx context.Context, search string, limit int, filter []string) ([]SSOUser, error) {
+func (s *Service) getUsers(ctx context.Context, search string, limit int, filter []string) ([]SSOUser, error) {
 	search = strings.TrimSpace(search)
 	if search == "" {
 		return make([]SSOUser, 0), nil
@@ -237,7 +237,7 @@ func (s *Service) GetUserEmail(ctx context.Context, username string) (string, er
 		return "", nil
 	}
 
-	users, err := s.GetUser(ctxLocal, username, true)
+	users, err := s.getUser(ctxLocal, username, true)
 	if err != nil {
 		return "", err
 	}
@@ -261,7 +261,7 @@ func (s *Service) GetUserEmail(ctx context.Context, username string) (string, er
 	return "", errors.New("couldn't find user")
 }
 
-func (s *Service) GettingUser(ctx context.Context, username string) (SSOUser, error) {
+func (s *Service) GetUser(ctx context.Context, username string) (SSOUser, error) {
 	ctxLocal, span := trace.StartSpan(ctx, "GetUser")
 	defer span.End()
 
@@ -269,7 +269,7 @@ func (s *Service) GettingUser(ctx context.Context, username string) (SSOUser, er
 		return map[string]interface{}{"username": username}, nil
 	}
 
-	users, err := s.GetUser(ctxLocal, username, false)
+	users, err := s.getUser(ctxLocal, username, false)
 	if err != nil {
 		return nil, err
 	}
@@ -288,7 +288,7 @@ func (s *Service) GettingUser(ctx context.Context, username string) (SSOUser, er
 	return nil, errors.New("couldn't find user")
 }
 
-func (s *Service) GettingUsers(ctx context.Context, username string, limit *int, filter []string) ([]SSOUser, error) {
+func (s *Service) GetUsers(ctx context.Context, username string, limit *int, filter []string) ([]SSOUser, error) {
 	ctxLocal, span := trace.StartSpan(ctx, "GetUser")
 	defer span.End()
 
@@ -297,7 +297,7 @@ func (s *Service) GettingUsers(ctx context.Context, username string, limit *int,
 		maxLimit = *limit
 	}
 
-	users, err := s.GetUsers(ctxLocal, username, maxLimit, filter)
+	users, err := s.getUsers(ctxLocal, username, maxLimit, filter)
 	if err != nil {
 		return nil, err
 	}

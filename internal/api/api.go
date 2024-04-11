@@ -2581,7 +2581,7 @@ type GetTasksParams struct {
 	ProcessingLogins *[]string `json:"processingLogins,omitempty"`
 
 	// filter in process by group ids
-	ProcessingGroupIDs *[]string `json:"processingGroupIds,omitempty"`
+	ProcessingGroupIds *[]string `json:"processingGroupIds,omitempty"`
 
 	// filter type assigned
 	ExecutorTypeAssigned *GetTasksParamsExecutorTypeAssigned `json:"executorTypeAssigned,omitempty"`
@@ -5376,7 +5376,7 @@ func (siw *ServerInterfaceWrapper) GetTasks(w http.ResponseWriter, r *http.Reque
 
 	}
 
-	err = runtime.BindQueryParameter("form", true, false, "processingGroupIds", r.URL.Query(), &params.ProcessingGroupIDs)
+	err = runtime.BindQueryParameter("form", true, false, "processingGroupIds", r.URL.Query(), &params.ProcessingGroupIds)
 	if err != nil {
 		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "processingGroupIds", Err: err})
 		return

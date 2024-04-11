@@ -76,11 +76,3 @@ func (s *ServiceWithCache) PathBuilder(mainpath, subpath string) (string, error)
 func (s *ServiceWithCache) GetUserEmail(ctx context.Context, username string) (string, error) {
 	return s.People.GetUserEmail(ctx, username)
 }
-
-func (s *ServiceWithCache) GettingUser(ctx context.Context, username string) (SSOUser, error) {
-	return s.People.GettingUser(ctx, username)
-}
-
-func (s *ServiceWithCache) GettingUsers(ctx context.Context, username string, limit *int, filter []string) ([]SSOUser, error) {
-	return s.People.GettingUsers(ctx, username, limit, filter)
-}
