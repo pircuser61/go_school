@@ -96,6 +96,7 @@ func (s *ServiceWithCache) GetSchemaByBlueprintID(ctx context.Context, blueprint
 	return blueprint, nil
 }
 
+// TODO добавить кеш
 func (s *ServiceWithCache) GetSsoPerson(ctx context.Context, username string) (*SsoPerson, error) {
 	return s.Servicedesc.GetSsoPerson(ctx, username)
 }

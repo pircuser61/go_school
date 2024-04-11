@@ -23,6 +23,7 @@ type Service struct {
 	Cache cachekit.Cache
 }
 
+// TODO добавить спаны
 func (s *Service) GetDelegations(ctx c.Context, req *d.GetDelegationsRequest) (ds Delegations, err error) {
 	if s.Cli == nil || s.C == nil {
 		return make([]Delegation, 0), nil

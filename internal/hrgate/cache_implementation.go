@@ -33,14 +33,14 @@ func (s *ServiceWithCache) GetCalendars(ctx context.Context, params *GetCalendar
 	valueFromCache, err := s.Cache.GetValue(ctx, keyForCache)
 	if err == nil {
 		calendars, ok := valueFromCache.([]Calendar)
-		if !ok {
-			err = s.Cache.DeleteValue(ctx, keyForCache)
-			if err != nil {
-				log.WithError(err).Error("can't delete key from cache")
-			}
+		if ok {
+			return calendars, nil
 		}
 
-		return calendars, nil
+		err = s.Cache.DeleteValue(ctx, keyForCache)
+		if err != nil {
+			log.WithError(err).Error("can't delete key from cache")
+		}
 	}
 
 	calendar, err := s.HRGate.GetCalendars(ctx, params)
@@ -87,6 +87,7 @@ func (s *ServiceWithCache) GetCalendarDays(ctx context.Context, params *GetCalen
 	return calendarDays, nil
 }
 
+// TODO скопировать с сервиса
 func (s *ServiceWithCache) GetPrimaryRussianFederationCalendarOrFirst(ctx context.Context, params *GetCalendarsParams) (*Calendar, error) {
 	return s.HRGate.GetPrimaryRussianFederationCalendarOrFirst(ctx, params)
 }
@@ -99,10 +100,12 @@ func (s *ServiceWithCache) GetDefaultUnitID() string {
 	return s.HRGate.GetDefaultUnitID()
 }
 
+// TODO удалить из интерфейса
 func (s *ServiceWithCache) GetDefaultCalendar(ctx context.Context) (*Calendar, error) {
 	return s.HRGate.GetDefaultCalendar(ctx)
 }
 
+// TODO скопировать с сервиса
 func (s *ServiceWithCache) GetDefaultCalendarDaysForGivenTimeIntervals(
 	ctx context.Context,
 	taskTimeIntervals []entity.TaskCompletionInterval,
