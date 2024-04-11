@@ -72,6 +72,7 @@ type FunctionUpdateParams struct {
 	Mapping map[string]interface{} `json:"mapping"`
 	Err     string                 `json:"err"`
 	DoRetry bool                   `json:"do_retry"`
+	IsAck   bool                   `json:"is_ack"`
 }
 
 type ExecutableFunctionBlock struct {
@@ -418,6 +419,12 @@ func (gb *ExecutableFunctionBlock) createExpectedEvents(
 }
 
 func (gb *ExecutableFunctionBlock) setStateByResponse(ctx context.Context, log logger.Logger, updateData *FunctionUpdateParams) error {
+	if gb.State.Async && gb.State.HasAck && updateData.IsAck {
+		log.Error("function already has ack")
+
+		return errors.New("function has ack")
+	}
+
 	//nolint:nestif //it's ok
 	if updateData.DoRetry && gb.State.RetryCount > 0 {
 		if gb.State.CurrRetryCount >= gb.State.RetryCount {

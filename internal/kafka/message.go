@@ -17,6 +17,7 @@ type RunnerOutMessage struct {
 
 type RunnerInMessage struct {
 	TaskID          uuid.UUID              `json:"task_id"`
+	IsAck           bool                   `json:"is_ack"`
 	FunctionMapping map[string]interface{} `json:"function_mapping"`
 	Err             string                 `json:"err"`
 	DoRetry         bool                   `json:"do_retry"`
