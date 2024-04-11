@@ -24,7 +24,7 @@ type runVersionsDTO struct {
 	Authorization     string
 	RequestID         string
 
-	ApplicationBody orderedmap.OrderedMap `json:"application_body"`
+	ApplicationBody orderedmap.OrderedMap
 }
 
 func (ae *Env) RunTaskHandler(ctx c.Context, message kafka.RunTaskMessage) error {

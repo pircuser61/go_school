@@ -4,12 +4,12 @@ import (
 	c "context"
 	"encoding/json"
 	"fmt"
-	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 	"io"
 	"net/http"
 	"time"
 
 	"github.com/google/uuid"
+
 	"github.com/iancoleman/orderedmap"
 
 	"github.com/pkg/errors"
@@ -25,6 +25,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
+	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
 const (
