@@ -20,9 +20,10 @@ type Server struct {
 	kafka *kafka.Service
 	svcs  *api.Env
 
-	SvcsPingTimer   time.Duration
-	SvcsFailedCount int
-	SvcsOkCount     int
+	svcsPingTimer     time.Duration
+	svcsFailedCount   int
+	svcsOkCount       int
+	consumerWorkerCnt int
 }
 
 func NewServer(
@@ -37,9 +38,13 @@ func NewServer(
 	}
 
 	s := &Server{
-		logger:     log,
-		httpServer: httpServer,
-		kafka:      kf,
+		logger:            log,
+		httpServer:        httpServer,
+		kafka:             kf,
+		svcsPingTimer:     serverParam.SvcsPingTimer,
+		svcsFailedCount:   serverParam.SvcsFailedCount,
+		svcsOkCount:       serverParam.SvcsOkCount,
+		consumerWorkerCnt: serverParam.ConsumerWorkerCnt,
 	}
 
 	go s.checkSvcsAvailability(ctx)
@@ -76,7 +81,7 @@ func (s *Server) Stop(ctx context.Context) {
 func (s *Server) StartKafkaWorkers(ctx context.Context, message kafka.RunnerInMessage) error {
 	messageCh := make(chan kafka.RunnerInMessage)
 
-	for i := 0; i < 10; i++ {
+	for i := 0; i < s.consumerWorkerCnt; i++ {
 		go s.svcs.WorkFunctionHandler(ctx, messageCh)
 	}
 
@@ -100,7 +105,7 @@ func (s *Server) checkSvcsAvailability(ctx context.Context) {
 			}
 		}
 
-		time.Sleep(s.SvcsPingTimer)
+		time.Sleep(s.svcsPingTimer)
 	}
 }
 
@@ -110,13 +115,13 @@ func (s *Server) PingSvcs(ctx context.Context, failedCh chan bool) {
 	var okCount int
 
 	for {
-		time.Sleep(s.SvcsPingTimer)
+		time.Sleep(s.svcsPingTimer)
 
 		err := s.svcs.DB.Ping(ctx)
 		err = s.svcs.Scheduler.Ping(ctx)
 
 		if err != nil {
-			if failedCount < s.SvcsFailedCount {
+			if failedCount < s.svcsFailedCount {
 				failedCount++
 			}
 			okCount = 0
@@ -133,7 +138,7 @@ func (s *Server) PingSvcs(ctx context.Context, failedCh chan bool) {
 		}
 
 		okCount++
-		if okCount < s.SvcsOkCount {
+		if okCount < s.svcsOkCount {
 			continue
 		}
 
