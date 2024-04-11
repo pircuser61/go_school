@@ -1,14 +1,12 @@
 tracing:
-#  url: 'http://jaeger-prod-collector.observability:14268/api/traces'
-#  url: 'http://localhost:14268/api/traces'
-  url: ''
+  url: 'http://jaeger-prod-collector.observability:14268/api/traces'
   sample_fraction: 1.0
 
 serve_addr: ':8000'
 probes:
   liveness: "/alive"
   readiness: "/ready"
-timeout: '9000s'
+timeout: '30s'
 faas: 'https://openfaas.dev.autobp.mts.ru/'
 scheduler: "http://scheduler"
 network_monitor: "http://network-monitor/api/netmon/v1/"
@@ -19,7 +17,7 @@ people:
 database:
   kind: postgres
   host: localhost
-  port: 5434
+  port: 5432
   user_env_key: "DB_USER"
   pass_env_key: "DB_PASS"
   dbname: 'pipeliner'
@@ -36,7 +34,7 @@ sso:
 mail:
   broker: "redis"
   host: "localhost"
-  port: 6380
+  port: 6379
   queue: "mail"
   database: "0"
   from:
@@ -49,7 +47,7 @@ mail:
 kafka:
   brokers:
     - 10.73.138.117:9094
-  producer_topic: "from.pipeliner.to.runner2"
+  producer_topic: "from.pipeliner.to.runner"
   consumer_group: "pipeliner"
   consumer_topic: "from.runner.to.pipeliner2"
   health_check_timeout: 30
@@ -90,18 +88,20 @@ log:
     filename:
       sourceField: 'sourcelog'
 
+log_index: 'jocasta-dev-jocasta-dev-ocean-0000-s1-k8s-cmn-inside-01'
+
 servicedesc:
   servicedesk_url: 'https://dev.servicedesk.mts.ru'
   scope: 'servicedesk-develop-aud'
 
 function_store:
-  url: 'localhost:9094'
+  url: 'functions:90'
 
 scheduler_tasks:
-  url: 'localhost:9092'
+  url: 'scheduler:90'
 
 human_tasks:
-  url: 'localhost:9095'
+  url: 'human-tasks:90'
 
 imap:
   imap_connection: "mail.inside.mts.ru:993"
@@ -110,10 +110,10 @@ imap:
   imap_mail_box: "Inbox"
 
 integrations:
-  url: 'localhost:9097'
+  url: 'integrations:90'
 
 forms:
-  url: 'localhost:9091'
+  url: 'forms:90'
 
 hrgate:
   hr_gate_url: "https://hr-gate.stage.autobp.mts.ru"

@@ -110,7 +110,7 @@
           {
             "id": "approve",
             "title": "Согласовать",
-            "nextBlockIDs": [
+            "nextBlockIds": [
               "execution_0"
             ],
             "actionType": "primary"
@@ -118,7 +118,7 @@
           {
             "id": "reject",
             "title": "Отклонить",
-            "nextBlockIDs": [
+            "nextBlockIds": [
               "approver_1"
             ],
             "actionType": "secondary"
@@ -229,12 +229,12 @@
             "id": "approve",
             "title": "Согласовать",
             "actionType": "primary",
-            "nextBlockIDs": []
+            "nextBlockIds": []
           },
           {
             "id": "reject",
             "title": "Отклонить",
-            "nextBlockIDs": [
+            "nextBlockIds": [
               "execution_1"
             ],
             "actionType": "secondary"
@@ -435,7 +435,7 @@
           {
             "id": "default",
             "title": "Выполнено",
-            "nextBlockIDs": [
+            "nextBlockIds": [
               "form_1"
             ],
             "actionType": ""
@@ -544,7 +544,7 @@
           {
             "id": "executed",
             "title": "Исполнено",
-            "nextBlockIDs": [
+            "nextBlockIds": [
               "form_0"
             ],
             "actionType": ""
@@ -552,7 +552,7 @@
           {
             "id": "not_executed",
             "title": "Не исполнено",
-            "nextBlockIDs": [
+            "nextBlockIds": [
               "form_0"
             ],
             "actionType": ""
@@ -662,7 +662,7 @@
           {
             "id": "executed",
             "title": "Исполнено",
-            "nextBlockIDs": [
+            "nextBlockIds": [
               "sign_0"
             ],
             "actionType": ""
@@ -670,7 +670,7 @@
           {
             "id": "not_executed",
             "title": "Не исполнено",
-            "nextBlockIDs": [
+            "nextBlockIds": [
               "form_2"
             ],
             "actionType": ""
@@ -723,7 +723,7 @@
           {
             "id":"executed",
             "title":"Исполнено",
-            "nextBlockIDs":[
+            "nextBlockIds":[
               "end_1"
             ],
             "actionType":""
@@ -731,7 +731,7 @@
           {
             "id":"not_executed",
             "title":"Не исполнено",
-            "nextBlockIDs":[
+            "nextBlockIds":[
               "end_1"
             ],
             "actionType":""
@@ -854,7 +854,7 @@
           {
             "id": "default",
             "title": "Выход по умолчанию",
-            "nextBlockIDs": [
+            "nextBlockIds": [
               "sign_0"
             ],
             "actionType": ""
@@ -1203,7 +1203,7 @@
           {
             "id": "default",
             "title": "Выход по умолчанию",
-            "nextBlockIDs": [
+            "nextBlockIds": [
               "approver_0"
             ],
             "actionType": ""
@@ -1308,7 +1308,7 @@
           {
             "id": "default",
             "title": "Выход по умолчанию",
-            "nextBlockIDs": [
+            "nextBlockIds": [
               "sign_1"
             ],
             "actionType": ""
@@ -1430,7 +1430,7 @@
           {
             "id": "default",
             "title": "Выход по умолчанию",
-            "nextBlockIDs": [
+            "nextBlockIds": [
               "end_1"
             ],
             "actionType": ""
@@ -1496,12 +1496,12 @@
             "id": "default",
             "title": "Выход по умолчанию",
             "actionType": "",
-            "nextBlockIDs": []
+            "nextBlockIds": []
           },
           {
             "id": "new_condition_group_0",
             "title": "Новая группа",
-            "nextBlockIDs": [
+            "nextBlockIds": [
               "notification_0"
             ],
             "actionType": ""
@@ -1534,7 +1534,7 @@
           {
             "id": "default",
             "title": "Выход по умолчанию",
-            "nextBlockIDs": [
+            "nextBlockIds": [
               "form_3"
             ],
             "actionType": ""
@@ -1719,7 +1719,7 @@
           {
             "id": "signed",
             "title": "Подписано",
-            "nextBlockIDs": [
+            "nextBlockIds": [
               "if_0"
             ],
             "actionType": ""
@@ -1727,7 +1727,7 @@
           {
             "id": "rejected",
             "title": "Отклонено",
-            "nextBlockIDs": [
+            "nextBlockIds": [
               "if_0"
             ],
             "actionType": ""
@@ -1735,7 +1735,7 @@
           {
             "id": "error",
             "title": "Ошибка",
-            "nextBlockIDs": [
+            "nextBlockIds": [
               "if_0"
             ],
             "actionType": ""
@@ -1916,7 +1916,7 @@
           {
             "id": "signed",
             "title": "Подписано",
-            "nextBlockIDs": [
+            "nextBlockIds": [
               "notification_0"
             ],
             "actionType": ""
@@ -1924,7 +1924,7 @@
           {
             "id": "rejected",
             "title": "Отклонено",
-            "nextBlockIDs": [
+            "nextBlockIds": [
               "notification_0"
             ],
             "actionType": ""
@@ -1932,7 +1932,7 @@
           {
             "id": "error",
             "title": "Ошибка",
-            "nextBlockIDs": [
+            "nextBlockIds": [
               "executable_function_2"
             ],
             "actionType": ""
@@ -2076,7 +2076,7 @@
           {
             "id": "default",
             "title": "Выход по умолчанию",
-            "nextBlockIDs": [
+            "nextBlockIds": [
               "executable_function_0"
             ],
             "actionType": ""
@@ -2260,7 +2260,7 @@
           {
             "id": "default",
             "title": "Выполнено",
-            "nextBlockIDs": [
+            "nextBlockIds": [
               "end_1"
             ],
             "actionType": ""

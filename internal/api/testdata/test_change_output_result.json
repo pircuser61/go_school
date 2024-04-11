@@ -218,7 +218,7 @@
             "id": "signed",
             "title": "Подписано",
             "actionType": "",
-            "nextBlockIDs": [
+            "nextBlockIds": [
               "end_0"
             ]
           },
@@ -226,7 +226,7 @@
             "id": "rejected",
             "title": "Отклонено",
             "actionType": "",
-            "nextBlockIDs": [
+            "nextBlockIds": [
               "end_0"
             ]
           },
@@ -234,7 +234,7 @@
             "id": "error",
             "title": "Ошибка",
             "actionType": "",
-            "nextBlockIDs": [
+            "nextBlockIds": [
               "end_0"
             ]
           }
@@ -303,7 +303,7 @@
             "id": "default",
             "title": "Выход по умолчанию",
             "actionType": "",
-            "nextBlockIDs": [
+            "nextBlockIds": [
               "form_0"
             ]
           }
