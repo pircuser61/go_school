@@ -30,7 +30,7 @@ type Service struct {
 	serviceConfig Config
 
 	FuncMessageHandler       *msgkit.MessageHandler[RunnerInMessage]
-	TaskRunnerMessageHandler *msgkit.MessageHandler[RunnerInMessage]
+	TaskRunnerMessageHandler *msgkit.MessageHandler[RunTaskMessage]
 }
 
 const (
@@ -155,13 +155,16 @@ func (s *Service) CloseProducer() error {
 	return nil
 }
 
-func (s *Service) InitMessageHandler(handler func(c.Context, RunnerInMessage) error) {
+func (s *Service) InitMessageHandler(
+	handlerFunc func(c.Context, RunnerInMessage) error,
+	handlerRunTask func(c.Context, RunTaskMessage) error,
+) {
 	if s == nil {
 		return
 	}
 
-	s.FuncMessageHandler = msgkit.NewMessageHandler[RunnerInMessage](s.log, handler, "function_return")
-	s.TaskRunnerMessageHandler = msgkit.NewMessageHandler[RunnerInMessage](s.log, handler, "run_task")
+	s.FuncMessageHandler = msgkit.NewMessageHandler[RunnerInMessage](s.log, handlerFunc, "function_return")
+	s.TaskRunnerMessageHandler = msgkit.NewMessageHandler[RunTaskMessage](s.log, handlerRunTask, "run_task")
 }
 
 func (s *Service) StartConsumer(ctx c.Context) {
@@ -178,7 +181,7 @@ func (s *Service) StartConsumer(ctx c.Context) {
 	}()
 
 	go func() {
-		err := s.consumerFunctions.Serve(ctx, s.TaskRunnerMessageHandler)
+		err := s.consumerTaskRunner.Serve(ctx, s.TaskRunnerMessageHandler)
 		if err != nil {
 			s.consumerTaskRunner = nil
 			s.log.Error(err)
@@ -205,14 +208,16 @@ func (s *Service) checkHealth() {
 	saramaCfg.Net.DialTimeout = kafkaNetTimeout
 
 	admin, err := sarama.NewClusterAdmin(s.brokers, saramaCfg)
-	if err != nil || s.consumerFunctions == nil || s.producer == nil {
+	if err != nil || s.consumerFunctions == nil || s.consumerTaskRunner == nil || s.producer == nil {
 		s.log.WithError(err).Error("couldn't connect to kafka! Trying to reconnect")
 
-		msg := s.FuncMessageHandler
+		msgFunc := s.FuncMessageHandler
+		msgRun := s.TaskRunnerMessageHandler
 
 		newService, _, reconnectErr := NewService(s.log, s.serviceConfig)
 		*s = *newService
-		s.FuncMessageHandler = msg
+		s.FuncMessageHandler = msgFunc
+		s.TaskRunnerMessageHandler = msgRun
 
 		if reconnectErr != nil {
 			s.log.WithError(reconnectErr).Error("failed to reconnect to kafka")

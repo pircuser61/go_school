@@ -236,8 +236,7 @@ func main() {
 		LivenessPath:      cfg.Probes.Liveness,
 	}
 
-	kafkaService.InitMessageHandler(APIEnv.FunctionReturnHandler)
-	kafkaService.InitMessageHandler(APIEnv.RunTaskHandler)
+	kafkaService.InitMessageHandler(APIEnv.FunctionReturnHandler, APIEnv.RunTaskHandler)
 
 	go kafkaService.StartCheckHealth()
 

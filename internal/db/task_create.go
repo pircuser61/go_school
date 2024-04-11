@@ -58,7 +58,7 @@ func (db *PGCon) SetLastRunID(c context.Context, taskID, versionID uuid.UUID) er
 }
 
 type CreateEmptyTaskDTO struct {
-	TaskID     uuid.UUID
+	WorkID     uuid.UUID
 	WorkNumber string
 	Author     string
 	RunContext *entity.TaskRunContext
@@ -68,7 +68,7 @@ func (db *PGCon) CreateEmptyTask(ctx context.Context, task *CreateEmptyTaskDTO) 
 	ctx, span := trace.StartSpan(ctx, "pg_create_empty_task")
 	defer span.End()
 
-	err := db.setTaskChild(ctx, task.WorkNumber, task.TaskID)
+	err := db.setTaskChild(ctx, task.WorkNumber, task.WorkID)
 	if err != nil {
 		return err
 	}
@@ -97,7 +97,7 @@ func (db *PGCon) CreateEmptyTask(ctx context.Context, task *CreateEmptyTaskDTO) 
 	_, err = db.Connection.Exec(
 		ctx,
 		query,
-		task.TaskID,
+		task.WorkID,
 		time.Now(),
 		RunStatusCreated,
 		task.Author,
@@ -108,7 +108,7 @@ func (db *PGCon) CreateEmptyTask(ctx context.Context, task *CreateEmptyTaskDTO) 
 		return err
 	}
 
-	err = db.FinishTaskBlocks(ctx, task.TaskID, nil, true)
+	err = db.FinishTaskBlocks(ctx, task.WorkID, nil, true)
 	if err != nil {
 		return err
 	}

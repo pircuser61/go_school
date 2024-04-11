@@ -4,9 +4,9 @@ import (
 	c "context"
 	"encoding/json"
 	"fmt"
+	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 	"io"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -92,11 +92,11 @@ func (ae *Env) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	taskID := uuid.New()
-	log = log.WithField("workID", taskID)
+	workID := uuid.New()
+	log = log.WithField("workID", workID)
 
 	err = ae.createEmptyTask(ctx, ae.DB, &db.CreateEmptyTaskDTO{
-		TaskID:     taskID,
+		WorkID:     workID,
 		WorkNumber: req.WorkNumber,
 		Author:     usr.Username,
 		RunContext: &entity.TaskRunContext{
@@ -117,7 +117,7 @@ func (ae *Env) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	workID, err := ae.DB.GetWorkIDByWorkNumber(ctx, req.WorkNumber)
+	workID, err = ae.DB.GetWorkIDByWorkNumber(ctx, req.WorkNumber)
 	if err != nil {
 		errorHandler.handleError(ValidationError, err)
 
@@ -163,11 +163,10 @@ func (ae *Env) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Request
 	started, execErr := ae.execVersion(ctx, &execVersionDTO{
 		storage:     ae.DB,
 		version:     version,
-		w:           w,
-		req:         r,
 		makeNewWork: true,
 		workNumber:  req.WorkNumber,
-		taskID:      taskID,
+		workID:      workID,
+		requestID:   r.Header.Get(XRequestIDHeader),
 		runCtx: entity.TaskRunContext{
 			InitialApplication: entity.InitialApplication{
 				Description:               req.Description,
@@ -220,23 +219,10 @@ type runVersionByPipelineIDRequest struct {
 
 //nolint:revive,stylecheck //need to implement interface in api.go
 func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
-	start := time.Now()
-	ctx, s := trace.StartSpan(r.Context(), "run_version_by_pipeline_id")
-
-	requestInfo := metrics.NewPostRequestInfo(runByPipelineIDPath)
-
-	defer func() {
-		s.End()
-
-		requestInfo.Duration = time.Since(start)
-
-		ae.Metrics.RequestsIncrease(requestInfo)
-	}()
-
-	log := logger.GetLogger(ctx).
+	log := logger.GetLogger(r.Context()).
 		WithField("funcName", "RunVersionsByPipelineId")
+
 	errorHandler := newHTTPErrorHandler(log, w)
-	errorHandler.setMetricsRequestInfo(requestInfo)
 
 	body, err := io.ReadAll(r.Body)
 	defer r.Body.Close()
@@ -255,89 +241,115 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log = log.WithField("pipelineID", req.PipelineID).
-		WithField("funcName", "RunVersionsByPipelineId")
-
-	requestInfo.PipelineID = req.PipelineID
-
 	if req.PipelineID == "" {
 		errorHandler.handleError(ValidationError, errors.New("pipelineID is empty"))
 
 		return
 	}
 
-	log.WithField("body", req).Info("RunVersionsByPipelineId pipeline_id:", req.PipelineID)
+	log = log.WithField("pipelineID", req.PipelineID).
+		WithField("funcName", "RunVersionsByPipelineId")
 
-	clientID, err := ae.getClientIDFromToken(r.Header.Get(AuthorizationHeader))
+	run := &runVersionsDTO{
+		WorkNumber:        req.WorkNumber,
+		Description:       req.Description,
+		PipelineID:        req.PipelineID,
+		AttachmentFields:  req.AttachmentFields,
+		Keys:              req.Keys,
+		IsTestApplication: req.IsTestApplication,
+		CustomTitle:       req.CustomTitle,
+		ApplicationBody:   req.ApplicationBody,
+		RequestID:         r.Header.Get(XRequestIDHeader),
+		Authorization:     r.Header.Get(AuthorizationHeader),
+	}
+
+	res, err := ae.runVersion(r.Context(), log, run)
 	if err != nil {
-		errorHandler.handleError(GetClientIDError, err)
+		errorHandler.handleError(PipelineExecutionError, err)
 
 		return
+	}
+
+	if err = sendResponse(w, http.StatusOK, []*entity.RunResponse{res}); err != nil {
+		errorHandler.handleError(UnknownError, err)
+
+		return
+	}
+}
+
+func (ae *Env) runVersion(ctx c.Context, log logger.Logger, run *runVersionsDTO) (*entity.RunResponse, error) {
+	start := time.Now()
+	ctx, s := trace.StartSpan(ctx, "run_version")
+
+	requestInfo := metrics.NewPostRequestInfo(runByPipelineIDPath)
+
+	defer func() {
+		s.End()
+		requestInfo.Duration = time.Since(start)
+		ae.Metrics.RequestsIncrease(requestInfo)
+	}()
+
+	requestInfo.PipelineID = run.PipelineID
+
+	clientID, err := ae.getClientIDFromToken(run.Authorization)
+	if err != nil {
+		return nil, errors.Wrap(err, GetClientIDError.error())
 	}
 
 	log = log.WithField("clientID", clientID)
 	requestInfo.ClientID = clientID
 
-	storage, acquireErr := ae.DB.Acquire(ctx)
-	if acquireErr != nil {
-		errorHandler.handleError(PipelineExecutionError, acquireErr)
-
-		return
+	storage, err := ae.DB.Acquire(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, PipelineExecutionError.error())
 	}
 
 	usr, err := user.GetUserInfoFromCtx(ctx)
 	if err != nil {
-		errorHandler.handleError(NoUserInContextError, err)
-
-		return
+		return nil, errors.Wrap(err, NoUserInContextError.error())
 	}
 
 	workNumber, err := ae.Sequence.GetWorkNumber(ctx)
 	if err != nil {
-		errorHandler.handleError(GetWorkNumberError, err)
-
-		return
+		return nil, errors.Wrap(err, GetWorkNumberError.error())
 	}
 
-	taskID := uuid.New()
-	log = log.WithField("workID", taskID)
+	log = log.WithField("workNumber", workNumber)
+
+	workID := uuid.New()
+	log = log.WithField("workID", workID)
 
 	err = ae.createEmptyTask(ctx, storage,
 		&db.CreateEmptyTaskDTO{
-			TaskID:     taskID,
+			WorkID:     workID,
 			WorkNumber: workNumber,
 			Author:     usr.Username,
 			RunContext: &entity.TaskRunContext{
 				ClientID:   clientID,
-				PipelineID: req.PipelineID,
+				PipelineID: run.PipelineID,
 				InitialApplication: entity.InitialApplication{
-					Description:               req.Description,
-					Keys:                      req.Keys,
-					AttachmentFields:          req.AttachmentFields,
-					IsTestApplication:         req.IsTestApplication,
-					ApplicationBodyFromSystem: req.ApplicationBody,
-					CustomTitle:               req.CustomTitle,
+					Description:               run.Description,
+					Keys:                      run.Keys,
+					AttachmentFields:          run.AttachmentFields,
+					IsTestApplication:         run.IsTestApplication,
+					ApplicationBodyFromSystem: run.ApplicationBody,
+					CustomTitle:               run.CustomTitle,
 				},
 			},
 		},
 	)
 	if err != nil {
-		errorHandler.handleError(PipelineCreateError, err)
-
-		return
+		return nil, errors.Wrap(err, PipelineCreateError.error())
 	}
-
-	log = log.WithField("workNumber", workNumber)
 
 	//nolint:errcheck // нецелесообразно отслеживать подобные ошибки в defer
 	defer storage.Release(ctx)
 
-	version, err := storage.GetVersionByPipelineID(ctx, req.PipelineID)
+	version, err := storage.GetVersionByPipelineID(ctx, run.PipelineID)
 	if err != nil {
-		errorHandler.handleError(GetVersionsByBlueprintIDError, err)
-		_ = ae.DB.UpdateTaskStatus(ctx, taskID, db.RunStatusError, GetVersionsByBlueprintIDError.error(), "")
+		_ = ae.DB.UpdateTaskStatus(ctx, workID, db.RunStatusError, GetVersionsByBlueprintIDError.error(), "")
 
-		return
+		return nil, errors.Wrap(err, GetVersionsByBlueprintIDError.error())
 	}
 
 	requestInfo.VersionID = version.VersionID.String()
@@ -346,12 +358,11 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 
 	var externalSystem *entity.ExternalSystem
 
-	externalSystem, err = ae.getExternalSystem(ctx, storage, clientID, req.PipelineID, version.VersionID.String())
+	externalSystem, err = ae.getExternalSystem(ctx, storage, clientID, run.PipelineID, version.VersionID.String())
 	if err != nil {
-		errorHandler.handleError(GetExternalSystemsError, err)
-		_ = ae.DB.UpdateTaskStatus(ctx, taskID, db.RunStatusError, GetExternalSystemsError.error(), "")
+		_ = ae.DB.UpdateTaskStatus(ctx, workID, db.RunStatusError, GetExternalSystemsError.error(), "")
 
-		return
+		return nil, errors.Wrap(err, GetExternalSystemsError.error())
 	}
 
 	var allowRunAsOthers bool
@@ -359,76 +370,64 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 		allowRunAsOthers = externalSystem.AllowRunAsOthers
 	}
 
-	mappedApplicationBody, err := ae.processMappings(externalSystem, version, req.ApplicationBody)
+	mappedApplicationBody, err := ae.processMappings(externalSystem, version, run.ApplicationBody)
 	if err != nil {
-		errorHandler.handleError(MappingError, err)
-		_ = ae.DB.UpdateTaskStatus(ctx, taskID, db.RunStatusError, MappingError.error(), "")
+		_ = ae.DB.UpdateTaskStatus(ctx, workID, db.RunStatusError, MappingError.error(), "")
 
-		return
+		return nil, errors.Wrap(err, MappingError.error())
 	}
 
 	if err = version.FillEntryPointOutput(); err != nil {
-		errorHandler.handleError(GetEntryPointOutputError, err)
-		_ = ae.DB.UpdateTaskStatus(ctx, taskID, db.RunStatusError, GetEntryPointOutputError.error(), "")
+		_ = ae.DB.UpdateTaskStatus(ctx, workID, db.RunStatusError, GetEntryPointOutputError.error(), "")
 
-		return
+		return nil, errors.Wrap(err, GetEntryPointOutputError.error())
 	}
 
 	reqParams := &requestStartParams{
 		version:          version,
-		keys:             req.Keys,
-		attachmentFields: req.AttachmentFields,
+		keys:             run.Keys,
+		attachmentFields: run.AttachmentFields,
 	}
 
 	paramsErr := ae.handleStartApplicationParams(ctx, reqParams)
 	if paramsErr != nil {
-		e := GetHiddenFieldsError
-		log.Error(e.errorMessage(err))
+		log.Error(GetHiddenFieldsError.errorMessage(paramsErr))
 	}
 
-	v, execErr := ae.execVersion(ctx, &execVersionDTO{
+	runRes, execErr := ae.execVersion(ctx, &execVersionDTO{
 		storage:          storage,
 		version:          version,
 		withStop:         false,
-		w:                w,
-		req:              r,
 		allowRunAsOthers: allowRunAsOthers,
 		workNumber:       workNumber,
-		taskID:           taskID,
+		workID:           workID,
+		requestID:        run.RequestID,
 		runCtx: entity.TaskRunContext{
 			ClientID:   clientID,
-			PipelineID: req.PipelineID,
+			PipelineID: run.PipelineID,
 			InitialApplication: entity.InitialApplication{
-				Description:               req.Description,
+				Description:               run.Description,
 				ApplicationBody:           mappedApplicationBody,
 				Keys:                      reqParams.keys,
 				AttachmentFields:          reqParams.attachmentFields,
-				IsTestApplication:         req.IsTestApplication,
-				ApplicationBodyFromSystem: req.ApplicationBody,
-				CustomTitle:               req.CustomTitle,
+				IsTestApplication:         run.IsTestApplication,
+				ApplicationBodyFromSystem: run.ApplicationBody,
+				CustomTitle:               run.CustomTitle,
 				HiddenFields:              reqParams.hiddenFields,
 			},
 		},
 	})
 	if execErr != nil {
-		errorHandler.handleError(PipelineExecutionError, execErr)
-
-		return
+		return nil, errors.Wrap(execErr, PipelineCreateError.error())
 	}
 
-	if v == nil {
-		errorHandler.handleError(PipelineExecutionError, errors.New("run_version_by_pipeline_id execution error"))
-
-		return
+	if runRes == nil {
+		return nil, errors.New(PipelineExecutionError.error())
 	}
 
-	requestInfo.WorkNumber = v.WorkNumber
+	requestInfo.WorkNumber = runRes.WorkNumber
 
-	if err = sendResponse(w, http.StatusOK, []*entity.RunResponse{v}); err != nil {
-		errorHandler.handleError(UnknownError, err)
-
-		return
-	}
+	return runRes, nil
 }
 
 func (ae *Env) handleStartApplicationParams(ctx c.Context, dto *requestStartParams) error {
@@ -605,26 +604,7 @@ func cleanKey(mapKeys interface{}) string {
 		return ""
 	}
 
-	return cleanUnexpectedSymbols(keyStr)
-}
-
-func cleanUnexpectedSymbols(s string) string {
-	replacements := map[string]string{
-		"\\t":  "",
-		"\t":   "",
-		"\\n":  "",
-		"\n":   "",
-		"\r":   "",
-		"\\r":  "",
-		"\"\"": "",
-		"\"":   "''",
-	}
-
-	for old, news := range replacements {
-		s = strings.ReplaceAll(s, old, news)
-	}
-
-	return strings.ReplaceAll(s, "\\", "")
+	return utils.CleanUnexpectedSymbols(keyStr)
 }
 
 func (ae *Env) createEmptyTask(ctx c.Context, storage db.Database, dto *db.CreateEmptyTaskDTO) error {
@@ -634,9 +614,9 @@ func (ae *Env) createEmptyTask(ctx c.Context, storage db.Database, dto *db.Creat
 	}
 
 	defer func() {
-		rollbackerr := txStorage.RollbackTransaction(ctx)
-		if rollbackerr != nil {
-			ae.Log.WithError(rollbackerr).Error("failed rollback transaction")
+		rollBackErr := txStorage.RollbackTransaction(ctx)
+		if rollBackErr != nil {
+			ae.Log.WithError(rollBackErr).Error("failed rollback transaction")
 		}
 	}()
 

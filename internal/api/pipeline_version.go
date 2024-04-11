@@ -557,19 +557,16 @@ func statusGroups(p *e.EriusScenario) (groups []*e.NodeGroup, err error) {
 }
 
 type execVersionDTO struct {
-	version  *e.EriusScenario
-	withStop bool
-
-	storage db.Database
-
-	w   http.ResponseWriter
-	req *http.Request
-
+	workID           uuid.UUID
+	withStop         bool
 	makeNewWork      bool
 	allowRunAsOthers bool
 	workNumber       string
-	taskID           uuid.UUID
-	runCtx           e.TaskRunContext
+	requestID        string
+
+	runCtx  e.TaskRunContext
+	storage db.Database
+	version *e.EriusScenario
 }
 
 func (ae *Env) execVersion(ctx c.Context, dto *execVersionDTO) (*e.RunResponse, error) {
@@ -577,9 +574,6 @@ func (ae *Env) execVersion(ctx c.Context, dto *execVersionDTO) (*e.RunResponse, 
 	defer s.End()
 
 	log := logger.GetLogger(ctxLocal)
-	reqID := dto.req.Header.Get(XRequestIDHeader)
-
-	defer dto.req.Body.Close()
 
 	var pipelineVars map[string]interface{}
 
@@ -588,8 +582,7 @@ func (ae *Env) execVersion(ctx c.Context, dto *execVersionDTO) (*e.RunResponse, 
 	usr, err := user.GetUserInfoFromCtx(ctxLocal)
 	if err != nil {
 		errCustom := NoUserInContextError
-		log.WithField("funcName", "GetUserInfoFromCtx").
-			Error(errCustom.errorMessage(err))
+		log.WithField("funcName", "GetUserInfoFromCtx").Error(errCustom.errorMessage(err))
 
 		return nil, errors.Wrap(err, errCustom.error())
 	}
@@ -609,9 +602,9 @@ func (ae *Env) execVersion(ctx c.Context, dto *execVersionDTO) (*e.RunResponse, 
 		}
 	}
 
-	execVersionInternalDTO := &execVersionInternalDTO{
+	execVersion := &execVersionInternalDTO{
 		storage:        dto.storage,
-		reqID:          reqID,
+		reqID:          dto.requestID,
 		p:              dto.version,
 		vars:           pipelineVars,
 		syncExecution:  dto.withStop,
@@ -620,10 +613,10 @@ func (ae *Env) execVersion(ctx c.Context, dto *execVersionDTO) (*e.RunResponse, 
 		makeNewWork:    dto.makeNewWork,
 		workNumber:     dto.workNumber,
 		runCtx:         dto.runCtx,
-		taskID:         dto.taskID,
+		taskID:         dto.workID,
 	}
 
-	errCustom, err := ae.execVersionInternal(ctxLocal, execVersionInternalDTO)
+	errCustom, err := ae.execVersionInternal(ctxLocal, execVersion)
 	if err != nil {
 		return nil, errors.Wrap(err, errCustom.error())
 	}

@@ -48,3 +48,22 @@ func GetAttachmentsIds(text string) []string {
 
 	return res
 }
+
+func CleanUnexpectedSymbols(s string) string {
+	replacements := map[string]string{
+		"\\t":  "",
+		"\t":   "",
+		"\\n":  "",
+		"\n":   "",
+		"\r":   "",
+		"\\r":  "",
+		"\"\"": "",
+		"\"":   "''",
+	}
+
+	for old, news := range replacements {
+		s = strings.ReplaceAll(s, old, news)
+	}
+
+	return strings.ReplaceAll(s, "\\", "")
+}

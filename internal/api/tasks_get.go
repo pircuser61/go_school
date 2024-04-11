@@ -29,6 +29,7 @@ const (
 	hiddenUserLogin        = "hidden_user"
 	executionBaseGroupName = "группа исполнителей"
 	executionNotInGroup    = "Не групповая заявка"
+	taskPath               = "/tasks/{workNumber}"
 )
 
 type taskResp struct {
@@ -210,8 +211,6 @@ func (ae *Env) GetTaskFormSchema(w http.ResponseWriter, req *http.Request, workN
 	}
 }
 
-const taskPath = "/tasks/{workNumber}"
-
 func (ae *Env) GetTask(w http.ResponseWriter, req *http.Request, workNumber string) {
 	start := time.Now()
 	ctx, s := trace.StartSpan(req.Context(), "get_task")
@@ -252,25 +251,22 @@ func (ae *Env) GetTask(w http.ResponseWriter, req *http.Request, workNumber stri
 		return
 	}
 
-	delegationsByApprovement := delegations.FilterByType("approvement")
-	delegationsByExecution := delegations.FilterByType("execution")
+	dApprove := delegations.FilterByType("approvement")
+	dExecution := delegations.FilterByType("execution")
 
-	dbTask, err := ae.DB.GetTask(
-		ctx,
-		delegationsByApprovement.GetUserInArrayWithDelegators([]string{ui.Username}),
-		delegationsByExecution.GetUserInArrayWithDelegators([]string{ui.Username}),
-		ui.Username,
-		workNumber,
-	)
+	dApprovers := dApprove.GetUserInArrayWithDelegators([]string{ui.Username})
+	dExecutors := dExecution.GetUserInArrayWithDelegators([]string{ui.Username})
+
+	dbTask, err := ae.DB.GetTask(ctx, dApprovers, dExecutors, ui.Username, workNumber)
 	if err != nil {
 		errorHandler.handleError(GetTaskError, err)
 
 		return
 	}
 
-	var parsedContent EriusScenario
+	var version EriusScenario
 
-	err = json.Unmarshal([]byte(dbTask.VersionContent), &parsedContent)
+	err = json.Unmarshal([]byte(dbTask.VersionContent), &version)
 	if err != nil {
 		errorHandler.handleError(PipelineParseError, err)
 
@@ -293,7 +289,7 @@ func (ae *Env) GetTask(w http.ResponseWriter, req *http.Request, workNumber stri
 		return
 	}
 
-	shortNameMap := shortNameMap(parsedContent.Pipeline.Blocks.AdditionalProperties)
+	shortNames := shortNameMap(version.Pipeline.Blocks.AdditionalProperties)
 
 	dbTask.Steps = steps
 
@@ -351,10 +347,7 @@ func (ae *Env) GetTask(w http.ResponseWriter, req *http.Request, workNumber stri
 		WorkType: sla.WorkHourType(versionSettings.WorkType),
 	}
 
-	slaInfoPtr, getSLAInfoErr := ae.SLAService.GetSLAInfoPtr(
-		ctx,
-		slaInfoDTO,
-	)
+	slaInfoPtr, getSLAInfoErr := ae.SLAService.GetSLAInfoPtr(ctx, slaInfoDTO)
 	if getSLAInfoErr != nil {
 		errorHandler.handleError(UnknownError, getSLAInfoErr)
 
@@ -375,7 +368,7 @@ func (ae *Env) GetTask(w http.ResponseWriter, req *http.Request, workNumber stri
 	toResponse := &taskToResponseDTO{
 		task:         dbTask,
 		usrDegSteps:  currentUserDelegateSteps,
-		sNames:       shortNameMap,
+		sNames:       shortNames,
 		dln:          deadline,
 		approvalList: approvalLists,
 	}
@@ -387,17 +380,17 @@ func (ae *Env) GetTask(w http.ResponseWriter, req *http.Request, workNumber stri
 }
 
 func shortNameMap(additionalProperties map[string]EriusFunc) map[string]string {
-	shortNameMap := make(map[string]string, len(additionalProperties))
+	shortNames := make(map[string]string, len(additionalProperties))
 
 	for key, val := range additionalProperties {
 		if val.ShortTitle != nil {
-			shortNameMap[key] = *val.ShortTitle
+			shortNames[key] = *val.ShortTitle
 		} else {
-			shortNameMap[key] = ""
+			shortNames[key] = ""
 		}
 	}
 
-	return shortNameMap
+	return shortNames
 }
 
 func (ae *Env) handleZeroTaskNodeGroup(ctx context.Context, dbTask *entity.EriusTask) error {
