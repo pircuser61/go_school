@@ -657,6 +657,8 @@ func (p *GetTasksParams) toEntity(req *http.Request) (entity.TaskFilter, error) 
 		InitiatorLogins:      p.InitiatorLogins,
 		ProcessingLogins:     p.ProcessingLogins,
 		ProcessingGroupIds:   p.ProcessingGroupIds,
+		ExecutorLogins:       p.ExecutorLogins,
+		ExecutorGroupIds:     p.ExecutorGroupIds,
 		ExecutorTypeAssigned: typeAssigned,
 		SignatureCarrier:     signatureCarrier,
 	}

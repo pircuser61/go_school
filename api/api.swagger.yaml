@@ -1803,6 +1803,20 @@ paths:
             items:
               type: string
           description: filter in process by group ids
+        - name: executorLogins
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+          description: filter in process by logins
+        - name: executorGroupIds
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+          description: filter in process by group ids
         - name: executorTypeAssigned
           in: query
           schema:

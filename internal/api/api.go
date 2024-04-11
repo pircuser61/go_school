@@ -2586,6 +2586,12 @@ type GetTasksParams struct {
 	// filter in process by group ids
 	ProcessingGroupIds *[]string `json:"processingGroupIds,omitempty"`
 
+	// filter in process by logins
+	ExecutorLogins *[]string `json:"executorLogins,omitempty"`
+
+	// filter in process by group ids
+	ExecutorGroupIds *[]string `json:"executorGroupIds,omitempty"`
+
 	// filter type assigned
 	ExecutorTypeAssigned *GetTasksParamsExecutorTypeAssigned `json:"executorTypeAssigned,omitempty"`
 
@@ -5393,6 +5399,28 @@ func (siw *ServerInterfaceWrapper) GetTasks(w http.ResponseWriter, r *http.Reque
 	err = runtime.BindQueryParameter("form", true, false, "processingGroupIds", r.URL.Query(), &params.ProcessingGroupIds)
 	if err != nil {
 		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "processingGroupIds", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "executorLogins" -------------
+	if paramValue := r.URL.Query().Get("executorLogins"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "executorLogins", r.URL.Query(), &params.ExecutorLogins)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "executorLogins", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "executorGroupIds" -------------
+	if paramValue := r.URL.Query().Get("executorGroupIds"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "executorGroupIds", r.URL.Query(), &params.ExecutorGroupIds)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "executorGroupIds", Err: err})
 		return
 	}
 

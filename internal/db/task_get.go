@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-
 	"github.com/jackc/pgx/v4"
 
 	"github.com/pkg/errors"
@@ -471,17 +470,14 @@ func (cq *compileGetTaskQueryMaker) addInitiator() {
 func (cq *compileGetTaskQueryMaker) addProcessingSteps() {
 	if (cq.fl.ProcessingLogins != nil || cq.fl.ProcessingGroupIds != nil) ||
 		cq.fl.ExecutorTypeAssigned != nil {
-		cq.q = getProcessingSteps(cq.q, cq.fl)
+		cq.q = getProcessingSteps(cq.q, cq.fl, false)
 	}
 }
 
-func (cq *compileGetTaskQueryMaker) addExecutorFilter(fl *entity.TaskFilter) {
-	if fl.Executor == nil {
-		return
+func (cq *compileGetTaskQueryMaker) addExecutorFilter() {
+	if cq.fl.ExecutorLogins != nil || cq.fl.ExecutorGroupIds != nil {
+		cq.q = getProcessingSteps(cq.q, cq.fl, true)
 	}
-
-	cq.q = fmt.Sprintf("%s AND (ua.current_executor -> 'people' @> '[%q]'::jsonb\n"+
-		"OR ua.current_executor ->> 'group_id' = '%s')", cq.q, *fl.Executor, *fl.Executor)
 }
 
 //nolint:gocyclo //it's ok
@@ -580,7 +576,7 @@ func (cq *compileGetTaskQueryMaker) MakeQuery(
 	cq.addReceiver()
 	cq.addInitiator()
 	cq.addProcessingSteps()
-	cq.addExecutorFilter(fl)
+	cq.addExecutorFilter()
 	cq.addOrderBy(order, orderBy)
 
 	if useLimitOffset {
@@ -600,14 +596,20 @@ func replaceStorageVariable(q string) string {
 	return q
 }
 
-func getProcessingSteps(q string, fl *entity.TaskFilter) string {
+func getProcessingSteps(q string, fl *entity.TaskFilter, isExecutorFilter bool) string {
 	varStorage := `, var_storage as (
 		SELECT DISTINCT work_id, current_executor FROM variable_storage
 		WHERE work_id IS NOT NULL`
 
 	varStorage = addAssignType(varStorage, fl.CurrentUser, fl.ExecutorTypeAssigned)
-	varStorage = addProcessingLogins(varStorage, fl.SelectAs, fl.ProcessingLogins)
-	varStorage = addProcessingGroups(varStorage, fl.SelectAs, fl.ProcessingGroupIds)
+
+	if isExecutorFilter {
+		varStorage = addProcessingLogins(varStorage, fl.SelectAs, fl.ExecutorLogins, isExecutorFilter)
+		varStorage = addProcessingGroups(varStorage, fl.SelectAs, fl.ExecutorGroupIds, isExecutorFilter)
+	} else {
+		varStorage = addProcessingLogins(varStorage, fl.SelectAs, fl.ProcessingLogins, isExecutorFilter)
+		varStorage = addProcessingGroups(varStorage, fl.SelectAs, fl.ProcessingGroupIds, isExecutorFilter)
+	}
 
 	varStorage += ")"
 
@@ -641,7 +643,7 @@ func addAssignType(q, login string, typeAssign *string) string {
 	return q
 }
 
-func addProcessingLogins(q string, selectAs *string, logins *[]string) string {
+func addProcessingLogins(q string, selectAs *string, logins *[]string, isExecutorFilter bool) string {
 	if selectAs == nil || logins == nil || len(*logins) == 0 {
 		return q
 	}
@@ -651,15 +653,27 @@ func addProcessingLogins(q string, selectAs *string, logins *[]string) string {
 
 	stepType := getStepTypeBySelectForFilter(*selectAs)
 
-	return fmt.Sprintf(`
-		%s AND step_type = '%s' AND current_executor -> 'people'  @> '[%q]'::jsonb`,
-		q,
-		stepType,
-		strings.Join(ls, ","),
-	)
+	if isExecutorFilter {
+		login := make([]string, 0, len(*logins))
+		for _, v := range *logins {
+			login = append(login, fmt.Sprintf("%q", v))
+		}
+
+		q = fmt.Sprintf(
+			`%s AND step_type = '%s' AND current_executor -> 'people'  @> '[%s]'::jsonb`,
+			q, stepType, strings.Join(login, ","),
+		)
+	} else {
+		q = fmt.Sprintf(
+			`%s AND step_type = '%s' AND content -> 'State' -> step_name -> '%s' ?| '%s'`,
+			q, stepType, getActorsNameByStepType(stepType), "{"+strings.Join(ls, ",")+"}",
+		)
+	}
+
+	return q
 }
 
-func addProcessingGroups(q string, selectAs *string, groupIds *[]string) string {
+func addProcessingGroups(q string, selectAs *string, groupIds *[]string, isExecutorFilter bool) string {
 	if selectAs == nil || groupIds == nil || len(*groupIds) == 0 {
 		return q
 	}
@@ -671,11 +685,48 @@ func addProcessingGroups(q string, selectAs *string, groupIds *[]string) string 
 
 	stepType := getStepTypeBySelectForFilter(*selectAs)
 
-	return fmt.Sprintf(`%s AND step_type = '%s' AND current_executor ->> 'group_id' IN(%s)`,
-		q,
-		stepType,
-		strings.Join(ids, ","),
-	)
+	if isExecutorFilter {
+		q = fmt.Sprintf(`%s AND step_type = '%s' AND current_executor ->> 'group_id' IN(%s)`,
+			q,
+			stepType,
+			strings.Join(ids, ","),
+		)
+	} else {
+		q = fmt.Sprintf(`%s AND step_type = '%s' AND content -> 'State' -> step_name ->> '%s'::varchar IN(%s)`,
+			q,
+			stepType,
+			getGroupActorsNameByStepType(stepType),
+			strings.Join(ids, ","),
+		)
+	}
+
+	return q
+}
+
+func getGroupActorsNameByStepType(stepName string) string {
+	switch stepName {
+	case "execution":
+		return "executors_group_id"
+	case "approver":
+		return "approvers_group_id"
+	}
+
+	return ""
+}
+
+func getActorsNameByStepType(stepName string) string {
+	const executorsString = "executors"
+
+	switch stepName {
+	case "execution":
+		return executorsString
+	case "approver":
+		return "approvers"
+	case "form":
+		return executorsString
+	}
+
+	return ""
 }
 
 func getStepTypeBySelectForFilter(selectFor string) string {
