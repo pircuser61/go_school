@@ -145,23 +145,25 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 		return nil
 	}
 
-	workFinished, blockErr := pipeline.ProcessBlockWithEndMapping(ctx, st.Name, blockFunc, runCtx, true)
+	errBlock, workFinished, blockErr := pipeline.ProcessBlockWithEndMapping(ctx, st.Name, blockFunc, runCtx, true)
 	if blockErr != nil {
 		log.WithField("funcName", "ProcessBlockWithEndMapping").
 			WithError(blockErr).
 			Error("process block with end mapping")
 
-		time.Sleep(ae.ResendToPlnTopicDelay)
+		if st.Name == errBlock {
+			<-time.After(ae.FuncMsgResendDelay)
 
-		if kafkaErr := ae.Kafka.ProduceFuncResultMessage(ctx, &kafka.RunnerInMessage{
-			TaskID:          message.TaskID,
-			FunctionMapping: message.FunctionMapping,
-			Err:             message.Err,
-			DoRetry:         message.DoRetry,
-		}); kafkaErr != nil {
-			log.WithField("funcName", "ProduceFuncResultMessage").
-				WithError(kafkaErr).
-				Error("cannot send function message back to kafka")
+			if kafkaErr := ae.Kafka.ProduceFuncResultMessage(ctx, &kafka.RunnerInMessage{
+				TaskID:          message.TaskID,
+				FunctionMapping: message.FunctionMapping,
+				Err:             message.Err,
+				DoRetry:         message.DoRetry,
+			}); kafkaErr != nil {
+				log.WithField("funcName", "ProduceFuncResultMessage").
+					WithError(kafkaErr).
+					Error("cannot send function message back to kafka")
+			}
 		}
 
 		return nil

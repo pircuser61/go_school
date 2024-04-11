@@ -17,14 +17,15 @@ type Server struct {
 
 	httpServer *http.Server
 
-	kafka *kafka.Service
-	svcs  *api.Env
+	kafka  *kafka.Service
+	apiEnv *api.Env
 
 	consumerWorkerCh  chan kafka.RunnerInMessage
-	svcsPingTimer     time.Duration
-	svcsFailedCount   int
-	svcsOkCount       int
 	consumerWorkerCnt int
+
+	pingTimer    time.Duration
+	maxFailedCnt int
+	maxOkCnt     int
 }
 
 func NewServer(
@@ -39,14 +40,17 @@ func NewServer(
 	}
 
 	s := &Server{
-		logger:            log,
-		httpServer:        httpServer,
-		kafka:             kf,
+		logger:     log,
+		httpServer: httpServer,
+		kafka:      kf,
+		apiEnv:     serverParam.APIEnv,
+
 		consumerWorkerCh:  make(chan kafka.RunnerInMessage),
-		svcsPingTimer:     serverParam.SvcsPingTimer,
-		svcsFailedCount:   serverParam.SvcsFailedCount,
-		svcsOkCount:       serverParam.SvcsOkCount,
 		consumerWorkerCnt: serverParam.ConsumerWorkerCnt,
+
+		pingTimer:    serverParam.PingTimer,
+		maxFailedCnt: serverParam.MaxFailedCnt,
+		maxOkCnt:     serverParam.MaxOkCnt,
 	}
 
 	s.startKafkaWorkers(ctx)
@@ -84,7 +88,7 @@ func (s *Server) Stop(ctx context.Context) {
 
 func (s *Server) startKafkaWorkers(ctx context.Context) {
 	for i := 0; i < s.consumerWorkerCnt; i++ {
-		go s.svcs.WorkFunctionHandler(ctx, s.consumerWorkerCh)
+		go s.apiEnv.WorkFunctionHandler(ctx, s.consumerWorkerCh)
 	}
 }
 
@@ -111,7 +115,7 @@ func (s *Server) checkSvcsAvailability(ctx context.Context) {
 			continue
 		}
 
-		time.Sleep(s.svcsPingTimer)
+		<-time.After(s.pingTimer)
 	}
 }
 
@@ -121,36 +125,39 @@ func (s *Server) PingSvcs(ctx context.Context, failedCh chan bool) {
 	var okCount int
 
 	for {
-		time.Sleep(s.svcsPingTimer)
+		<-time.After(s.pingTimer)
 
-		err := s.svcs.DB.Ping(ctx)
-		err = s.svcs.Scheduler.Ping(ctx)
+		dbErr := s.apiEnv.DB.Ping(ctx)
+		sdlErr := s.apiEnv.Scheduler.Ping(ctx)
 
-		if err != nil {
-			if failedCount < s.svcsFailedCount {
-				failedCount++
-			}
-			okCount = 0
-
+		if dbErr != nil || sdlErr != nil {
 			if kafkaStopped {
 				continue
 			}
 
-			kafkaStopped = true
+			okCount = 0
 
+			if failedCount++; failedCount < s.maxFailedCnt {
+				continue
+			}
+
+			kafkaStopped = true
 			failedCh <- true
 
 			continue
 		}
 
-		okCount++
-		if okCount < s.svcsOkCount {
+		if !kafkaStopped {
+			continue
+		}
+
+		if okCount++; okCount < s.maxOkCnt {
 			continue
 		}
 
 		failedCount = 0
-		kafkaStopped = false
 
+		kafkaStopped = false
 		failedCh <- false
 	}
 }

@@ -17,7 +17,7 @@ type Service struct {
 }
 
 func (s *Service) Ping(ctx context.Context) error {
-	_, err := s.cli.Ping(ctx)
+	_, err := s.cli.Ping(ctx, &scheduler_v1.PingRequest{})
 
 	return err
 }

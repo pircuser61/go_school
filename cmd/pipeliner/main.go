@@ -214,7 +214,7 @@ func main() {
 		SLAService:              slaService,
 		Forms:                   formsService,
 		HostURL:                 cfg.HostURL,
-		ResendToPlnTopicDelay:   cfg.ResendToPlnTopicDelay,
+		FuncMsgResendDelay:      cfg.Kafka.FuncMessageResendDelay,
 	}
 
 	serverParam := api.ServerParam{
@@ -225,9 +225,9 @@ func main() {
 		ServerAddr:        cfg.ServeAddr,
 		ReadinessPath:     cfg.Probes.Readiness,
 		LivenessPath:      cfg.Probes.Liveness,
-		SvcsPingTimer:     cfg.SvcsPingTimer,
-		SvcsFailedCount:   cfg.SvcsFailedCount,
-		SvcsOkCount:       cfg.SvcsOkCount,
+		PingTimer:         cfg.Services.PingTimer,
+		MaxFailedCnt:      cfg.Services.MaxFailedCnt,
+		MaxOkCnt:          cfg.Services.MaxOkCnt,
 		ConsumerWorkerCnt: cfg.ConsumerWorkerCnt,
 	}
 

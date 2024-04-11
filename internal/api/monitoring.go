@@ -871,7 +871,7 @@ func (ae *Env) restartNode(
 		return "", getErr
 	}
 
-	_, processErr := pipeline.ProcessBlockWithEndMapping(ctx, dbStep.Name, blockData, &pipeline.BlockRunContext{
+	_, _, processErr := pipeline.ProcessBlockWithEndMapping(ctx, dbStep.Name, blockData, &pipeline.BlockRunContext{
 		TaskID:      task.ID,
 		WorkNumber:  workNumber,
 		WorkTitle:   task.Name,

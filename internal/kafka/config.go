@@ -1,5 +1,7 @@
 package kafka
 
+import "time"
+
 type Config struct {
 	Brokers []string `yaml:"brokers"`
 
@@ -9,5 +11,6 @@ type Config struct {
 	ConsumerGroup string `yaml:"consumer_group"`
 	ConsumerTopic string `yaml:"consumer_topic"`
 
-	HealthCheckTimeout int `yaml:"health_check_timeout"`
+	HealthCheckTimeout     int           `yaml:"health_check_timeout"`
+	FuncMessageResendDelay time.Duration `yaml:"function_message_resend_delay"`
 }
