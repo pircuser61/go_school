@@ -342,7 +342,6 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 
 //nolint:gocritic //изначально было без поинтера
 func compileGetTasksMetaQuery(fl entity.TaskFilter, delegations []string) (q string, args []interface{}) {
-
 	// nolint:gocritic
 	// language=PostgreSQL
 	q = `
@@ -372,6 +371,7 @@ func compileGetTasksMetaQuery(fl entity.TaskFilter, delegations []string) (q str
 	return queryMaker.MakeQuery(&fl, q, delegations, args, order, orderBy, false)
 }
 
+//nolint:gocritic //изначально было без поинтера
 func compileGetUniquePersonsQuery(fl entity.TaskFilter, delegations []string) (q string, args []interface{}) {
 	stepType := getStepTypeBySelectForFilter(*fl.SelectAs)
 
@@ -389,8 +389,6 @@ func compileGetUniquePersonsQuery(fl entity.TaskFilter, delegations []string) (q
 		JOIN variable_storage var on w.id = var.work_id and var.step_type= '%s'
 		[join_variable_storage]
 		WHERE w.child_id IS NULL`, stepType)
-
-	//args = append(args, stepType)
 
 	var order string
 	if fl.Order != nil {
@@ -1012,6 +1010,7 @@ func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter, delegations 
 	}, nil
 }
 
+//nolint:gocritic //в этом проекте не принято использовать поинтеры
 func (db *PGCon) GetTasksExecutors(ctx c.Context, filters entity.TaskFilter, delegations []string) ([]string, error) {
 	ctx, span := trace.StartSpan(ctx, "db.pg_get_tasks_persons")
 	defer span.End()
@@ -1809,7 +1808,8 @@ func (db *PGCon) getTaskUniquePersons(ctx c.Context, q string, args []interface{
 	)
 
 	for rows.Next() {
-		if err = rows.Scan(&executors, &group); err != nil {
+		err = rows.Scan(&executors, &group)
+		if err != nil {
 			return nil, err
 		}
 

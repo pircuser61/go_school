@@ -588,6 +588,7 @@ func (ae *Env) GetTasks(w http.ResponseWriter, req *http.Request, params GetTask
 	}
 }
 
+//nolint:dupl,gocritic //its not duplicate // params без поинтера нужен для интерфейса
 func (ae *Env) GetTasksExecutors(w http.ResponseWriter, req *http.Request, params GetTasksExecutorsParams) {
 	start := time.Now()
 	ctx, s := trace.StartSpan(req.Context(), "get_tasks_persons")
@@ -650,11 +651,10 @@ func (ae *Env) GetTasksExecutors(w http.ResponseWriter, req *http.Request, param
 		errorHandler.handleError(UnknownError, err)
 
 		return
-
 	}
-	return
 }
 
+//nolint:dupl //Нужно для /tasks
 func (p *GetTasksParams) toEntity(req *http.Request) (entity.TaskFilter, error) {
 	var filters entity.TaskFilter
 
@@ -732,6 +732,7 @@ func (p *GetTasksParams) toEntity(req *http.Request) (entity.TaskFilter, error) 
 	return filters, nil
 }
 
+//nolint:dupl //Нужно для /tasks/executors
 func (p *GetTasksExecutorsParams) toEntity(req *http.Request) (entity.TaskFilter, error) {
 	var filters entity.TaskFilter
 
