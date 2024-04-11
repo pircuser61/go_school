@@ -97,9 +97,10 @@ func (ae *Env) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Request
 	log = log.WithField("workID", workID)
 
 	err = ae.createEmptyTask(ctx, ae.DB, &db.CreateEmptyTaskDTO{
-		WorkID:     workID,
-		WorkNumber: req.WorkNumber,
-		Author:     usr.Username,
+		WorkID:        workID,
+		WorkNumber:    req.WorkNumber,
+		Author:        usr.Username,
+		ByPrevVersion: true,
 		RunContext: &entity.TaskRunContext{
 			InitialApplication: entity.InitialApplication{
 				Description:               req.Description,
@@ -279,6 +280,7 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 }
 
 func (ae *Env) runVersion(ctx c.Context, log logger.Logger, run *runVersionsDTO) (*entity.RunResponse, error) {
+	var err error
 	start := time.Now()
 	ctx, s := trace.StartSpan(ctx, "run_version")
 
@@ -292,13 +294,15 @@ func (ae *Env) runVersion(ctx c.Context, log logger.Logger, run *runVersionsDTO)
 
 	requestInfo.PipelineID = run.PipelineID
 
-	clientID, err := ae.getClientIDFromToken(run.Authorization)
-	if err != nil {
-		return nil, errors.Wrap(err, GetClientIDError.error())
+	if run.ClientID == "" {
+		run.ClientID, err = ae.getClientIDFromToken(run.Authorization)
+		if err != nil {
+			return nil, errors.Wrap(err, GetClientIDError.error())
+		}
 	}
 
-	log = log.WithField("clientID", clientID)
-	requestInfo.ClientID = clientID
+	log = log.WithField("clientID", run.ClientID)
+	requestInfo.ClientID = run.ClientID
 
 	storage, err := ae.DB.Acquire(ctx)
 	if err != nil {
@@ -324,11 +328,12 @@ func (ae *Env) runVersion(ctx c.Context, log logger.Logger, run *runVersionsDTO)
 
 	err = ae.createEmptyTask(ctx, storage,
 		&db.CreateEmptyTaskDTO{
-			WorkID:     workID,
-			WorkNumber: run.WorkNumber,
-			Author:     usr.Username,
+			WorkID:        workID,
+			WorkNumber:    run.WorkNumber,
+			Author:        usr.Username,
+			ByPrevVersion: false,
 			RunContext: &entity.TaskRunContext{
-				ClientID:   clientID,
+				ClientID:   run.ClientID,
 				PipelineID: run.PipelineID,
 				InitialApplication: entity.InitialApplication{
 					Description:               run.Description,
@@ -361,7 +366,7 @@ func (ae *Env) runVersion(ctx c.Context, log logger.Logger, run *runVersionsDTO)
 
 	var externalSystem *entity.ExternalSystem
 
-	externalSystem, err = ae.getExternalSystem(ctx, storage, clientID, run.PipelineID, version.VersionID.String())
+	externalSystem, err = ae.getExternalSystem(ctx, storage, run.ClientID, run.PipelineID, version.VersionID.String())
 	if err != nil {
 		_ = ae.DB.UpdateTaskStatus(ctx, workID, db.RunStatusError, GetExternalSystemsError.error(), "")
 
@@ -406,7 +411,7 @@ func (ae *Env) runVersion(ctx c.Context, log logger.Logger, run *runVersionsDTO)
 		workID:           workID,
 		requestID:        run.RequestID,
 		runCtx: entity.TaskRunContext{
-			ClientID:   clientID,
+			ClientID:   run.ClientID,
 			PipelineID: run.PipelineID,
 			InitialApplication: entity.InitialApplication{
 				Description:               run.Description,

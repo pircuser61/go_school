@@ -3,6 +3,10 @@ package api
 import (
 	c "context"
 	"encoding/json"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
+	"strings"
 
 	"github.com/iancoleman/orderedmap"
 
@@ -23,6 +27,7 @@ type runVersionsDTO struct {
 	CustomTitle       string
 	Authorization     string
 	RequestID         string
+	ClientID          string
 
 	ApplicationBody orderedmap.OrderedMap
 }
@@ -44,14 +49,45 @@ func (ae *Env) RunTaskHandler(ctx c.Context, message kafka.RunTaskMessage) error
 
 	messageString := string(messageTmp)
 
-	log.WithField("body", messageString).
-		Info("start handle message from kafka")
+	log.WithField("body", messageString).Info("start handle message from kafka")
 
 	defer func() {
 		if r := recover(); r != nil {
 			log.WithField("funcName", "recover").Error(r)
 		}
 	}()
+
+	if message.Username != "" {
+		var u people.SSOUser
+		u, err = ae.People.GetUser(ctx, strings.ToLower(message.Username))
+		if err != nil {
+			log.WithField("username", message.Username).Error(err)
+		}
+
+		var ui *sso.UserInfo
+		ui, err = u.ToUserinfo()
+		if err != nil {
+			log.WithField("username", message.Username).Error(err)
+		}
+
+		ctx = user.SetUserInfoToCtx(ctx, ui)
+	}
+
+	if message.XasOther != "" {
+		var u people.SSOUser
+		u, err = ae.People.GetUser(ctx, strings.ToLower(message.XasOther))
+		if err != nil {
+			log.WithField("xAsOther", message.XasOther).Error(err)
+		}
+
+		var ui *sso.UserInfo
+		ui, err = u.ToUserinfo()
+		if err != nil {
+			log.WithField("xAsOther", message.XasOther).Error(err)
+		}
+
+		ctx = user.SetAsOtherUserInfoToCtx(ctx, ui)
+	}
 
 	run := &runVersionsDTO{
 		WorkNumber:        message.WorkNumber,
@@ -62,6 +98,7 @@ func (ae *Env) RunTaskHandler(ctx c.Context, message kafka.RunTaskMessage) error
 		IsTestApplication: message.IsTestApplication,
 		CustomTitle:       message.CustomTitle,
 		ApplicationBody:   message.ApplicationBody,
+		ClientID:          message.ClientID,
 	}
 
 	_, err = ae.runVersion(ctx, log, run)

@@ -35,5 +35,9 @@ type RunTaskMessage struct {
 	IsTestApplication bool              `json:"is_test_application"`
 	CustomTitle       string            `json:"custom_title"`
 
+	ClientID string `json:"client_id"`
+	Username string `json:"user_name"`
+	XasOther string `json:"x_as_other"`
+
 	ApplicationBody orderedmap.OrderedMap `json:"application_body"`
 }
