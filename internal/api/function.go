@@ -84,8 +84,9 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 	}
 
 	functionMapping := pipeline.FunctionUpdateParams{
-		Mapping: message.FunctionMapping,
-		DoRetry: message.DoRetry,
+		Mapping:       message.FunctionMapping,
+		DoRetry:       message.DoRetry,
+		IsAsyncResult: message.IsAsyncResult,
 	}
 
 	mapping, err := json.Marshal(functionMapping)
