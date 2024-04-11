@@ -92,7 +92,7 @@ func WithAsOtherUserInfo(ps people.ServiceInterface, log logger.Logger) func(nex
 			username := r.Header.Get(AsOtherHeader)
 
 			if username != "" {
-				u, err := ps.GettingUser(ctx, strings.ToLower(username))
+				u, err := ps.GetUser(ctx, strings.ToLower(username))
 				if err != nil {
 					errorHandler.handleError(GetUserinfoErr, err)
 

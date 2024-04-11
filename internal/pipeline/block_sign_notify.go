@@ -80,7 +80,7 @@ func (gb *GoSignBlock) notifyAdditionalApprovers(ctx c.Context, logins []string,
 		return err
 	}
 
-	author, authorErr := gb.RunContext.Services.People.GettingUser(ctx, gb.RunContext.Initiator)
+	author, authorErr := gb.RunContext.Services.People.GetUser(ctx, gb.RunContext.Initiator)
 	if authorErr != nil {
 		return authorErr
 	}
@@ -149,7 +149,7 @@ func (gb *GoSignBlock) notifyDecisionMadeByAdditionalApprover(ctx c.Context, log
 		emailsToNotify = append(emailsToNotify, emailToNotify)
 	}
 
-	user, err := gb.RunContext.Services.People.GettingUser(ctx, gb.RunContext.UpdateData.ByLogin)
+	user, err := gb.RunContext.Services.People.GetUser(ctx, gb.RunContext.UpdateData.ByLogin)
 	if err != nil {
 		return err
 	}

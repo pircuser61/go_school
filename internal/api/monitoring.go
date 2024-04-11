@@ -123,7 +123,7 @@ func (ae *Env) GetTasksForMonitoring(w http.ResponseWriter, r *http.Request, par
 }
 
 func (ae *Env) getUserFullName(ctx context.Context, username string) (string, error) {
-	initiatorUserInfo, getUserErr := ae.People.GettingUser(ctx, username)
+	initiatorUserInfo, getUserErr := ae.People.GetUser(ctx, username)
 	if getUserErr != nil {
 		return "", getUserErr
 	}

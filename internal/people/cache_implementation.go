@@ -17,12 +17,12 @@ type ServiceWithCache struct {
 	People ServiceInterface
 }
 
-func (s *ServiceWithCache) GetUser(ctx context.Context, search string, onlyEnabled bool) ([]SSOUser, error) {
+func (s *ServiceWithCache) GetUser(ctx context.Context, search string) (SSOUser, error) {
 	keyForCache := userKeyPrefix + search
 
 	valueFromCache, err := s.Cache.GetValue(ctx, keyForCache)
 	if err == nil {
-		resources, ok := valueFromCache.([]SSOUser)
+		resources, ok := valueFromCache.(SSOUser)
 		if !ok {
 			return nil, fmt.Errorf("failed to cast value from cache to type []SSOUser")
 		}
@@ -30,7 +30,7 @@ func (s *ServiceWithCache) GetUser(ctx context.Context, search string, onlyEnabl
 		return resources, nil
 	}
 
-	resources, err := s.People.GetUser(ctx, search, onlyEnabled)
+	resources, err := s.People.GetUser(ctx, search)
 	if err != nil {
 		return nil, err
 	}
@@ -43,7 +43,7 @@ func (s *ServiceWithCache) GetUser(ctx context.Context, search string, onlyEnabl
 	return resources, nil
 }
 
-func (s *ServiceWithCache) GetUsers(ctx context.Context, search string, limit int, filter []string) ([]SSOUser, error) {
+func (s *ServiceWithCache) GetUsers(ctx context.Context, search string, limit *int, filter []string) ([]SSOUser, error) {
 	keyForCache := usersKeyPrefix + search
 
 	valueFromCache, err := s.Cache.GetValue(ctx, keyForCache)

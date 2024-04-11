@@ -93,7 +93,7 @@ func (gb *GoNotificationBlock) GetTaskHumanStatus() (status TaskHumanStatus, com
 }
 
 func (gb *GoNotificationBlock) compileText(ctx context.Context) (*mail.Notif, []email.Attachment, error) {
-	author, err := gb.RunContext.Services.People.GettingUser(ctx, gb.RunContext.Initiator)
+	author, err := gb.RunContext.Services.People.GetUser(ctx, gb.RunContext.Initiator)
 	if err != nil {
 		return nil, nil, err
 	}
