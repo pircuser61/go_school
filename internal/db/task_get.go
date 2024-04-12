@@ -398,7 +398,6 @@ func compileGetTasksMetaQuery(fl entity.TaskFilter, delegations []string) (q str
 
 //nolint:gocritic //изначально было без поинтера
 func compileGetUniquePersonsQuery(fl entity.TaskFilter, delegations []string) (q string, args []interface{}) {
-
 	args = append(args, getStepTypeBySelectForFilter(*fl.SelectAs))
 
 	// nolint:gocritic
@@ -666,6 +665,8 @@ func replaceStorageVariable(q string) string {
 }
 
 func getProcessingSteps(q string, fl *entity.TaskFilter) string {
+	// nolint:gocritic,goconst
+	// language=PostgreSQL
 	varStorage := `, var_storage as (
 		SELECT DISTINCT work_id, current_executor FROM variable_storage
 		WHERE work_id IS NOT NULL`
@@ -743,9 +744,6 @@ func addExecutorsLogins(q string, selectAs *string, logins *[]string) string {
 	if selectAs == nil || logins == nil || len(*logins) == 0 {
 		return q
 	}
-
-	ls := *logins
-	ls = utils.UniqueStrings(ls)
 
 	stepType := getStepTypeBySelectForFilter(*selectAs)
 

@@ -22,6 +22,7 @@ func parseLimitOffsetWithDefault(limit, offset *int) (lim, off int) {
 	return lim, off
 }
 
+//nolint:gocritic // params без поинтера нужен для интерфейса
 func convertTaskUserParams(up GetTasksUsersParams) (*GetTasksParams, error) {
 	var selectAs string
 
@@ -57,5 +58,4 @@ func convertTaskUserParams(up GetTasksUsersParams) (*GetTasksParams, error) {
 		ExecutorLogins:     up.ExecutorLogins,
 		ExecutorGroupIds:   up.ExecutorGroupIds,
 	}, nil
-
 }
