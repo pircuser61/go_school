@@ -69,6 +69,7 @@ func (s *ServiceWithCache) GetWorkGroup(ctx context.Context, groupID string) (*W
 	return workGroup, nil
 }
 
+//nolint:dupl //так нужно
 func (s *ServiceWithCache) GetSchemaByID(ctx context.Context, schemaID string) (map[string]interface{}, error) {
 	ctx, span := trace.StartSpan(ctx, "servicedesc.get_schema_by_id(cached)")
 	defer span.End()
@@ -113,6 +114,7 @@ func (s *ServiceWithCache) GetSchemaByID(ctx context.Context, schemaID string) (
 	return schema, nil
 }
 
+//nolint:dupl //так нужно
 func (s *ServiceWithCache) GetSchemaByBlueprintID(ctx context.Context, blueprintID string) (map[string]interface{}, error) {
 	ctx, span := trace.StartSpan(ctx, "servicedesc.get_schema_by_blueprint_id(cached)")
 	defer span.End()
