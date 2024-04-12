@@ -44,7 +44,8 @@ func (p *blockProcessor) ProcessBlock(ctx context.Context, its int) (string, err
 		WithField("workNumber", p.runCtx.WorkNumber).
 		WithField("workID", p.runCtx.TaskID).
 		WithField("clientID", p.runCtx.ClientID).
-		WithField("stepName", p.name)
+		WithField("stepName", p.name).
+		WithField("stepID", "")
 	ctx = logger.WithLogger(ctx, log)
 
 	its++
@@ -78,6 +79,8 @@ func (p *blockProcessor) ProcessBlock(ctx context.Context, its int) (string, err
 
 	block, id, initErr := initBlock(ctx, p.name, p.bl, p.runCtx)
 	if initErr != nil {
+		log = log.WithField("stepID", id)
+
 		return p.name, p.handleErrorWithRollback(ctx, log, initErr)
 	}
 
