@@ -3,9 +3,6 @@ package api
 import (
 	c "context"
 	"encoding/json"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 	"strings"
 
 	"github.com/iancoleman/orderedmap"
@@ -15,6 +12,9 @@ import (
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/kafka"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 )
 
 type runVersionsDTO struct {
@@ -62,32 +62,42 @@ func (ae *Env) RunTaskHandler(ctx c.Context, message kafka.RunTaskMessage) error
 		u, err = ae.People.GetUser(ctx, strings.ToLower(message.Username))
 		if err != nil {
 			log.WithField("username", message.Username).Error(err)
+
+			return err
 		}
 
 		var ui *sso.UserInfo
 		ui, err = u.ToUserinfo()
 		if err != nil {
 			log.WithField("username", message.Username).Error(err)
+
+			return err
 		}
 
 		ctx = user.SetUserInfoToCtx(ctx, ui)
 	}
 
-	if message.XasOther != "" {
+	if message.XAsOther != "" {
 		var u people.SSOUser
-		u, err = ae.People.GetUser(ctx, strings.ToLower(message.XasOther))
+		u, err = ae.People.GetUser(ctx, strings.ToLower(message.XAsOther))
 		if err != nil {
-			log.WithField("xAsOther", message.XasOther).Error(err)
+			log.WithField("XAsOther", message.XAsOther).Error(err)
+
+			goto skipXAsOther
 		}
 
 		var ui *sso.UserInfo
 		ui, err = u.ToUserinfo()
 		if err != nil {
-			log.WithField("xAsOther", message.XasOther).Error(err)
+			log.WithField("XAsOther", message.XAsOther).Error(err)
+
+			goto skipXAsOther
 		}
 
 		ctx = user.SetAsOtherUserInfoToCtx(ctx, ui)
 	}
+
+skipXAsOther:
 
 	run := &runVersionsDTO{
 		WorkNumber:        message.WorkNumber,
