@@ -223,7 +223,7 @@ func getUniqueActions(selectFilter string, logins []string, isPersonFilter bool)
 
 		return q
 	case entity.SelectAsValFinishedExecutorV2:
-		q := uniqueActionsByRole(loginsIn, "execution", true, false)
+		q := uniqueActionsByRole(loginsIn, "execution", true, false, isPersonFilter)
 
 		return q
 	case entity.SelectAsValSignerPhys:
