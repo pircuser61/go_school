@@ -190,7 +190,6 @@ func (s *Service) StartConsumer(ctx c.Context) {
 
 		err := s.consumer.Serve(serveCtx, s.MessageHandler)
 		if err != nil {
-			s.consumer = nil
 			s.log.Error(err)
 		}
 
