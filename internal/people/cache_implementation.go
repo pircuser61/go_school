@@ -4,10 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"gitlab.services.mts.ru/abp/myosotis/logger"
+
 	"go.opencensus.io/trace"
 
 	"github.com/pkg/errors"
+
+	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	cachekit "gitlab.services.mts.ru/jocasta/cache-kit"
 )
@@ -23,24 +25,26 @@ type ServiceWithCache struct {
 }
 
 func (s *ServiceWithCache) GetUser(ctx context.Context, username string) (SSOUser, error) {
-	log := logger.CreateLogger(nil)
-
-	ctx, span := trace.StartSpan(ctx, "people.get_user")
+	ctx, span := trace.StartSpan(ctx, "people.get_user(cached)")
 	defer span.End()
+
+	log := logger.GetLogger(ctx)
 
 	keyForCache := userKeyPrefix + username
 
 	valueFromCache, err := s.Cache.GetValue(ctx, keyForCache)
 	if err == nil {
 		resources, ok := valueFromCache.(SSOUser)
-		if !ok {
-			err = s.Cache.DeleteValue(ctx, keyForCache)
-			if err != nil {
-				log.WithError(err).Error("can't delete key from cache")
-			}
+		if ok {
+			log.Info("got resources from cache")
+
+			return resources, nil
 		}
 
-		return resources, nil
+		err = s.Cache.DeleteValue(ctx, keyForCache)
+		if err != nil {
+			log.WithError(err).Error("can't delete key from cache")
+		}
 	}
 
 	resources, err := s.People.GetUser(ctx, username)
@@ -57,29 +61,31 @@ func (s *ServiceWithCache) GetUser(ctx context.Context, username string) (SSOUse
 }
 
 func (s *ServiceWithCache) GetUsers(ctx context.Context, username string, limit *int, filter []string) ([]SSOUser, error) {
-	log := logger.CreateLogger(nil)
-
-	ctx, span := trace.StartSpan(ctx, "people.get_users")
+	ctx, span := trace.StartSpan(ctx, "people.get_users(cached)")
 	defer span.End()
+
+	log := logger.GetLogger(ctx)
 
 	f, err := json.Marshal(filter)
 	if err != nil {
 		log.WithError(err).Error("can't marshal filter")
 	}
 
-	keyForCache := usersKeyPrefix + username + string(rune(*limit)) + string(f)
+	keyForCache := fmt.Sprintf("%s%s%d%s", usersKeyPrefix, username, *limit, f)
 
 	valueFromCache, err := s.Cache.GetValue(ctx, keyForCache)
 	if err == nil {
 		resources, ok := valueFromCache.([]SSOUser)
-		if !ok {
-			err = s.Cache.DeleteValue(ctx, keyForCache)
-			if err != nil {
-				log.WithError(err).Error("can't delete key from cache")
-			}
+		if ok {
+			log.Info("got resources from cache")
+
+			return resources, nil
 		}
 
-		return resources, nil
+		err = s.Cache.DeleteValue(ctx, keyForCache)
+		if err != nil {
+			log.WithError(err).Error("can't delete key from cache")
+		}
 	}
 
 	resources, err := s.People.GetUsers(ctx, username, limit, filter)
@@ -100,7 +106,7 @@ func (s *ServiceWithCache) PathBuilder(mainpath, subpath string) (string, error)
 }
 
 func (s *ServiceWithCache) GetUserEmail(ctx context.Context, username string) (string, error) {
-	ctx, span := trace.StartSpan(ctx, "people.get_user_email")
+	ctx, span := trace.StartSpan(ctx, "people.get_user_email(cached)")
 	defer span.End()
 
 	user, err := s.GetUser(ctx, username)

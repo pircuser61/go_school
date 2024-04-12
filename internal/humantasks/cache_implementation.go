@@ -24,10 +24,10 @@ type ServiceWithCache struct {
 }
 
 func (s *ServiceWithCache) GetDelegations(ctx c.Context, req *d.GetDelegationsRequest) (Delegations, error) {
-	ctx, span := trace.StartSpan(ctx, "humantasks.get_delegations")
+	ctx, span := trace.StartSpan(ctx, "humantasks.get_delegations(cached)")
 	defer span.End()
 
-	log := logger.CreateLogger(nil)
+	log := logger.GetLogger(ctx)
 
 	key, err := json.Marshal(req)
 	if err != nil {
@@ -39,14 +39,16 @@ func (s *ServiceWithCache) GetDelegations(ctx c.Context, req *d.GetDelegationsRe
 	valueFromCache, err := s.Cache.GetValue(ctx, keyForCache)
 	if err == nil {
 		delegations, ok := valueFromCache.(Delegations)
-		if !ok {
-			err = s.Cache.DeleteValue(ctx, keyForCache)
-			if err != nil {
-				log.WithError(err).Error("can't delete key from cache")
-			}
+		if ok {
+			log.Info("got delegations from cache")
+
+			return delegations, nil
 		}
 
-		return delegations, nil
+		err = s.Cache.DeleteValue(ctx, keyForCache)
+		if err != nil {
+			log.WithError(err).Error("can't delete key from cache")
+		}
 	}
 
 	delegations, err := s.Humantasks.GetDelegations(ctx, req)
@@ -63,7 +65,7 @@ func (s *ServiceWithCache) GetDelegations(ctx c.Context, req *d.GetDelegationsRe
 }
 
 func (s *ServiceWithCache) GetDelegationsFromLogin(ctx c.Context, login string) (Delegations, error) {
-	ctx, span := trace.StartSpan(ctx, "humantasks.get_delegations_from_login")
+	ctx, span := trace.StartSpan(ctx, "humantasks.get_delegations_from_login(cached)")
 	defer span.End()
 
 	req := &d.GetDelegationsRequest{
@@ -80,7 +82,7 @@ func (s *ServiceWithCache) GetDelegationsFromLogin(ctx c.Context, login string) 
 }
 
 func (s *ServiceWithCache) GetDelegationsToLogin(ctx c.Context, login string) (Delegations, error) {
-	ctx, span := trace.StartSpan(ctx, "humantasks.get_delegations_to_login")
+	ctx, span := trace.StartSpan(ctx, "humantasks.get_delegations_to_login(cached)")
 	defer span.End()
 
 	req := &d.GetDelegationsRequest{
@@ -97,7 +99,7 @@ func (s *ServiceWithCache) GetDelegationsToLogin(ctx c.Context, login string) (D
 }
 
 func (s *ServiceWithCache) GetDelegationsToLogins(ctx c.Context, logins []string) (Delegations, error) {
-	ctx, span := trace.StartSpan(ctx, "humantasks.get_delegations_to_logins")
+	ctx, span := trace.StartSpan(ctx, "humantasks.get_delegations_to_logins(cached)")
 	defer span.End()
 
 	var sb strings.Builder
@@ -124,7 +126,7 @@ func (s *ServiceWithCache) GetDelegationsToLogins(ctx c.Context, logins []string
 }
 
 func (s *ServiceWithCache) GetDelegationsByLogins(ctx c.Context, logins []string) (Delegations, error) {
-	ctx, span := trace.StartSpan(ctx, "humantasks.get_delegations_by_logins")
+	ctx, span := trace.StartSpan(ctx, "humantasks.get_delegations_by_logins(cached)")
 	defer span.End()
 
 	var sb strings.Builder

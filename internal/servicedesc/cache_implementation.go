@@ -6,11 +6,12 @@ import (
 	"fmt"
 	"net/http"
 
-	"gitlab.services.mts.ru/abp/myosotis/logger"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 	"go.opencensus.io/trace"
 
+	"gitlab.services.mts.ru/abp/myosotis/logger"
+
 	cachekit "gitlab.services.mts.ru/jocasta/cache-kit"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 )
 
 const (
@@ -25,24 +26,26 @@ type ServiceWithCache struct {
 }
 
 func (s *ServiceWithCache) GetWorkGroup(ctx context.Context, groupID string) (*WorkGroup, error) {
-	ctx, span := trace.StartSpan(ctx, "servicedesc.get_work_group")
+	ctx, span := trace.StartSpan(ctx, "servicedesc.get_work_group(cached)")
 	defer span.End()
 
-	log := logger.CreateLogger(nil)
+	log := logger.GetLogger(ctx)
 
 	keyForCache := workGroupKeyPrefix + groupID
 
 	valueFromCache, err := s.Cache.GetValue(ctx, keyForCache)
 	if err == nil {
 		resources, ok := valueFromCache.(*WorkGroup)
-		if !ok {
-			err = s.Cache.DeleteValue(ctx, keyForCache)
-			if err != nil {
-				log.WithError(err).Error("can't delete key from cache")
-			}
+		if ok {
+			log.Info("got resources from cache")
+
+			return resources, nil
 		}
 
-		return resources, nil
+		err = s.Cache.DeleteValue(ctx, keyForCache)
+		if err != nil {
+			log.WithError(err).Error("can't delete key from cache")
+		}
 	}
 
 	workGroup, err := s.Servicedesc.GetWorkGroup(ctx, groupID)
@@ -59,24 +62,26 @@ func (s *ServiceWithCache) GetWorkGroup(ctx context.Context, groupID string) (*W
 }
 
 func (s *ServiceWithCache) GetSchemaByID(ctx context.Context, schemaID string) (map[string]interface{}, error) {
-	ctx, span := trace.StartSpan(ctx, "servicedesc.get_schema_by_id")
+	ctx, span := trace.StartSpan(ctx, "servicedesc.get_schema_by_id(cached)")
 	defer span.End()
 
-	log := logger.CreateLogger(nil)
+	log := logger.GetLogger(ctx)
 
 	keyForCache := schemaIDKeyPrefix + schemaID
 
 	valueFromCache, err := s.Cache.GetValue(ctx, keyForCache)
 	if err == nil {
 		schema, ok := valueFromCache.(map[string]interface{})
-		if !ok {
-			err = s.Cache.DeleteValue(ctx, keyForCache)
-			if err != nil {
-				log.WithError(err).Error("can't delete key from cache")
-			}
+		if ok {
+			log.Info("got schema from cache")
+
+			return schema, nil
 		}
 
-		return schema, nil
+		err = s.Cache.DeleteValue(ctx, keyForCache)
+		if err != nil {
+			log.WithError(err).Error("can't delete key from cache")
+		}
 	}
 
 	schema, err := s.Servicedesc.GetSchemaByID(ctx, schemaID)
@@ -93,24 +98,26 @@ func (s *ServiceWithCache) GetSchemaByID(ctx context.Context, schemaID string) (
 }
 
 func (s *ServiceWithCache) GetSchemaByBlueprintID(ctx context.Context, blueprintID string) (map[string]interface{}, error) {
-	ctx, span := trace.StartSpan(ctx, "servicedesc.get_schema_by_blueprint_id")
+	ctx, span := trace.StartSpan(ctx, "servicedesc.get_schema_by_blueprint_id(cached)")
 	defer span.End()
 
-	log := logger.CreateLogger(nil)
+	log := logger.GetLogger(ctx)
 
 	keyForCache := schemaBlueprintIDKeyPrefix + blueprintID
 
 	valueFromCache, err := s.Cache.GetValue(ctx, keyForCache)
 	if err == nil {
 		blueprint, ok := valueFromCache.(map[string]interface{})
-		if !ok {
-			err = s.Cache.DeleteValue(ctx, keyForCache)
-			if err != nil {
-				log.WithError(err).Error("can't delete key from cache")
-			}
+		if ok {
+			log.Info("got blueprint from cache")
+
+			return blueprint, nil
 		}
 
-		return blueprint, nil
+		err = s.Cache.DeleteValue(ctx, keyForCache)
+		if err != nil {
+			log.WithError(err).Error("can't delete key from cache")
+		}
 	}
 
 	blueprint, err := s.Servicedesc.GetSchemaByBlueprintID(ctx, blueprintID)
@@ -127,7 +134,7 @@ func (s *ServiceWithCache) GetSchemaByBlueprintID(ctx context.Context, blueprint
 }
 
 func (s *ServiceWithCache) GetSsoPerson(ctx context.Context, username string) (*SsoPerson, error) {
-	ctxLocal, span := trace.StartSpan(ctx, "servicedesc.get_sso_person")
+	ctxLocal, span := trace.StartSpan(ctx, "servicedesc.get_sso_person(cached)")
 	defer span.End()
 
 	if sso.IsServiceUserName(username) {

@@ -7,14 +7,15 @@ import (
 	"math"
 	"time"
 
-	openapi_types "github.com/deepmap/oapi-codegen/pkg/types"
-	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 	"go.opencensus.io/trace"
+
+	openapi_types "github.com/deepmap/oapi-codegen/pkg/types"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	cachekit "gitlab.services.mts.ru/jocasta/cache-kit"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
 const (
@@ -28,10 +29,10 @@ type ServiceWithCache struct {
 }
 
 func (s *ServiceWithCache) GetCalendars(ctx context.Context, params *GetCalendarsParams) ([]Calendar, error) {
-	ctx, span := trace.StartSpan(ctx, "hrgate.get_calendars")
+	ctx, span := trace.StartSpan(ctx, "hrgate.get_calendars(cached)")
 	defer span.End()
 
-	log := logger.CreateLogger(nil)
+	log := logger.GetLogger(ctx)
 
 	key, err := json.Marshal(params)
 	if err != nil {
@@ -43,14 +44,16 @@ func (s *ServiceWithCache) GetCalendars(ctx context.Context, params *GetCalendar
 	valueFromCache, err := s.Cache.GetValue(ctx, keyForCache)
 	if err == nil {
 		calendars, ok := valueFromCache.([]Calendar)
-		if !ok {
-			err = s.Cache.DeleteValue(ctx, keyForCache)
-			if err != nil {
-				log.WithError(err).Error("can't delete key from cache")
-			}
+		if ok {
+			log.Info("got calendars from cache")
+
+			return calendars, nil
 		}
 
-		return calendars, nil
+		err = s.Cache.DeleteValue(ctx, keyForCache)
+		if err != nil {
+			log.WithError(err).Error("can't delete key from cache")
+		}
 	}
 
 	calendar, err := s.HRGate.GetCalendars(ctx, params)
@@ -67,10 +70,10 @@ func (s *ServiceWithCache) GetCalendars(ctx context.Context, params *GetCalendar
 }
 
 func (s *ServiceWithCache) GetCalendarDays(ctx context.Context, params *GetCalendarDaysParams) (*CalendarDays, error) {
-	ctx, span := trace.StartSpan(ctx, "hrgate.get_calendar_days")
+	ctx, span := trace.StartSpan(ctx, "hrgate.get_calendar_days(cached)")
 	defer span.End()
 
-	log := logger.CreateLogger(nil)
+	log := logger.GetLogger(ctx)
 
 	key, err := json.Marshal(params)
 	if err != nil {
@@ -82,14 +85,16 @@ func (s *ServiceWithCache) GetCalendarDays(ctx context.Context, params *GetCalen
 	valueFromCache, err := s.Cache.GetValue(ctx, keyForCache)
 	if err == nil {
 		calendarDays, ok := valueFromCache.(*CalendarDays)
-		if !ok {
-			err = s.Cache.DeleteValue(ctx, keyForCache)
-			if err != nil {
-				log.WithError(err).Error("can't delete key from cache")
-			}
+		if ok {
+			log.Info("got calendarDays from cache")
+
+			return calendarDays, nil
 		}
 
-		return calendarDays, nil
+		err = s.Cache.DeleteValue(ctx, keyForCache)
+		if err != nil {
+			log.WithError(err).Error("can't delete key from cache")
+		}
 	}
 
 	calendarDays, err := s.HRGate.GetCalendarDays(ctx, params)
@@ -106,7 +111,7 @@ func (s *ServiceWithCache) GetCalendarDays(ctx context.Context, params *GetCalen
 }
 
 func (s *ServiceWithCache) GetPrimaryRussianFederationCalendarOrFirst(ctx context.Context, params *GetCalendarsParams) (*Calendar, error) {
-	ctx, span := trace.StartSpan(ctx, "hrgate.get_primary_calendar_or_first")
+	ctx, span := trace.StartSpan(ctx, "hrgate.get_primary_calendar_or_first(cached)")
 	defer span.End()
 
 	calendars, getCalendarsErr := s.GetCalendars(ctx, params)
@@ -138,7 +143,7 @@ func (s *ServiceWithCache) GetDefaultCalendarDaysForGivenTimeIntervals(
 	ctx context.Context,
 	taskTimeIntervals []entity.TaskCompletionInterval,
 ) (*CalendarDays, error) {
-	ctx, span := trace.StartSpan(ctx, "hrgate.get_default_calendar_days_for_given_time_intervals")
+	ctx, span := trace.StartSpan(ctx, "hrgate.get_default_calendar_days_for_given_time_intervals(cached)")
 	defer span.End()
 
 	unitID := s.GetDefaultUnitID()
