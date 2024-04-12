@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"time"
 
+	"golang.org/x/net/context"
+
 	"github.com/google/uuid"
 
 	"github.com/jackc/pgx/v4"
@@ -27,6 +29,12 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
+func (ae *Env) WorkFunctionHandler(ctx context.Context, jobs <-chan kafka.RunnerInMessage) {
+	for job := range jobs {
+		ae.FunctionReturnHandler(ctx, job) //nolint:errcheck // Все ошибки уже обрабатываются внутри
+	}
+}
+
 func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessage) error {
 	ctx, span := trace.StartSpan(ctx, "FunctionReturnHandler")
 	defer span.End()
@@ -46,6 +54,8 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 
 	log.WithField("body", messageString).
 		Info("start handle message from kafka")
+
+	ctx = logger.WithLogger(ctx, log)
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -154,8 +164,27 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 		return nil
 	}
 
-	workFinished, blockErr := pipeline.ProcessBlockWithEndMapping(ctx, st.Name, blockFunc, runCtx, true)
+	errBlock, workFinished, blockErr := pipeline.ProcessBlockWithEndMapping(ctx, st.Name, blockFunc, runCtx, true)
 	if blockErr != nil {
+		log.WithField("funcName", "ProcessBlockWithEndMapping").
+			WithError(blockErr).
+			Error("process block with end mapping")
+
+		if st.Name == errBlock {
+			<-time.After(ae.FuncMsgResendDelay)
+
+			if kafkaErr := ae.Kafka.ProduceFuncResultMessage(ctx, &kafka.RunnerInMessage{
+				TaskID:          message.TaskID,
+				FunctionMapping: message.FunctionMapping,
+				Err:             message.Err,
+				DoRetry:         message.DoRetry,
+			}); kafkaErr != nil {
+				log.WithField("funcName", "ProduceFuncResultMessage").
+					WithError(kafkaErr).
+					Error("cannot send function message back to kafka")
+			}
+		}
+
 		return nil
 	}
 
@@ -217,7 +246,7 @@ func (ae *Env) NotifyNewFunctionVersion(w http.ResponseWriter, r *http.Request) 
 	for login, v := range versions {
 		emailToNotify, err := ae.People.GetUserEmail(ctx, login)
 		if err != nil {
-			log.WithField("login", login).WithError(err).Error("failed to get mail for this login")
+			log.WithField("failed to get mail for this login", login).Error(err)
 
 			continue
 		}

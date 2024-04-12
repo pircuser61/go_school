@@ -561,11 +561,7 @@ func (gb *GoApproverBlock) notifyNewInfoReceived(ctx context.Context, approverLo
 		return err
 	}
 
-	if notifErr := gb.RunContext.Services.Sender.SendNotification(ctx, emails, iconFiles, tpl); notifErr != nil {
-		return notifErr
-	}
-
-	return nil
+	return gb.RunContext.Services.Sender.SendNotification(ctx, emails, iconFiles, tpl)
 }
 
 func (gb *GoApproverBlock) notifyNeedMoreInfo(ctx context.Context) error {

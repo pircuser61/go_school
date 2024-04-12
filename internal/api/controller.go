@@ -11,6 +11,7 @@ import (
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 	"gitlab.services.mts.ru/abp/myosotis/observability"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/configs"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	file_registry "gitlab.services.mts.ru/jocasta/pipeliner/internal/fileregistry"
@@ -55,6 +56,7 @@ type Env struct {
 	IncludePlaceholderBlock bool
 	HostURL                 string
 	LogIndex                string
+	FuncMsgResendDelay      time.Duration
 }
 
 type ServerParam struct {
@@ -63,6 +65,10 @@ type ServerParam struct {
 	PeopleService     people.ServiceInterface
 	TimeoutMiddleware time.Duration
 	ServerAddr        string
+
+	ConsumerWorkerCnt int
+
+	SvcsPing *configs.ServicesPing
 
 	LivenessPath  string
 	ReadinessPath string

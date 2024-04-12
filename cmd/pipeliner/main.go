@@ -215,6 +215,7 @@ func main() {
 		Forms:                   formsService,
 		HostURL:                 cfg.HostURL,
 		LogIndex:                cfg.LogIndex,
+		FuncMsgResendDelay:      cfg.Kafka.FuncMessageResendDelay,
 	}
 
 	serverParam := api.ServerParam{
@@ -225,6 +226,12 @@ func main() {
 		ServerAddr:        cfg.ServeAddr,
 		ReadinessPath:     cfg.Probes.Readiness,
 		LivenessPath:      cfg.Probes.Liveness,
+		ConsumerWorkerCnt: cfg.ConsumerWorkerCnt,
+		SvcsPing: &configs.ServicesPing{
+			PingTimer:    cfg.ServicesPing.PingTimer,
+			MaxFailedCnt: cfg.ServicesPing.MaxFailedCnt,
+			MaxOkCnt:     cfg.ServicesPing.MaxOkCnt,
+		},
 	}
 
 	kafkaService.InitMessageHandler(APIEnv.FunctionReturnHandler)
@@ -246,6 +253,11 @@ func main() {
 	}
 
 	s := server.NewServer(ctx, log, kafkaService, &serverParam)
+
+	kafkaService.InitMessageHandler(s.SendMessageToWorkers)
+
+	go kafkaService.StartCheckHealth()
+
 	s.Run(ctx)
 
 	sgnl := make(chan os.Signal, 1)
