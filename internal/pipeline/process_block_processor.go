@@ -77,6 +77,8 @@ func (p *blockProcessor) ProcessBlock(ctx context.Context, its int) error {
 
 	block, id, initErr := initBlock(ctx, p.name, p.bl, p.runCtx)
 	if initErr != nil {
+		log = log.WithField("stepID", id)
+
 		return p.handleErrorWithRollback(ctx, log, initErr)
 	}
 
