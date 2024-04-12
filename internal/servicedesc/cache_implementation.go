@@ -35,11 +35,16 @@ func (s *ServiceWithCache) GetWorkGroup(ctx context.Context, groupID string) (*W
 
 	valueFromCache, err := s.Cache.GetValue(ctx, keyForCache)
 	if err == nil {
-		resources, ok := valueFromCache.(*WorkGroup)
+		resources, ok := valueFromCache.(string)
 		if ok {
-			log.Info("got resources from cache")
+			var data *WorkGroup
 
-			return resources, nil
+			unmErr := json.Unmarshal([]byte(resources), &data)
+			if unmErr == nil {
+				log.Info("got groupResources from cache")
+
+				return data, nil
+			}
 		}
 
 		err = s.Cache.DeleteValue(ctx, keyForCache)
@@ -53,9 +58,12 @@ func (s *ServiceWithCache) GetWorkGroup(ctx context.Context, groupID string) (*W
 		return nil, err
 	}
 
-	err = s.Cache.SetValue(ctx, keyForCache, workGroup)
-	if err != nil {
-		return nil, fmt.Errorf("can't set resources to cache: %s", err)
+	workGroupData, err := json.Marshal(workGroup)
+	if err == nil {
+		err = s.Cache.SetValue(ctx, keyForCache, string(workGroupData))
+		if err != nil {
+			return nil, fmt.Errorf("can't set resources to cache: %s", err)
+		}
 	}
 
 	return workGroup, nil
@@ -71,11 +79,16 @@ func (s *ServiceWithCache) GetSchemaByID(ctx context.Context, schemaID string) (
 
 	valueFromCache, err := s.Cache.GetValue(ctx, keyForCache)
 	if err == nil {
-		schema, ok := valueFromCache.(map[string]interface{})
+		schema, ok := valueFromCache.(string)
 		if ok {
-			log.Info("got schema from cache")
+			var data map[string]interface{}
 
-			return schema, nil
+			unmErr := json.Unmarshal([]byte(schema), &data)
+			if unmErr == nil {
+				log.Info("got schema from cache")
+
+				return data, nil
+			}
 		}
 
 		err = s.Cache.DeleteValue(ctx, keyForCache)
@@ -89,9 +102,12 @@ func (s *ServiceWithCache) GetSchemaByID(ctx context.Context, schemaID string) (
 		return nil, err
 	}
 
-	err = s.Cache.SetValue(ctx, keyForCache, schema)
-	if err != nil {
-		return nil, fmt.Errorf("can't set resources to cache: %s", err)
+	schemaData, err := json.Marshal(schema)
+	if err == nil {
+		err = s.Cache.SetValue(ctx, keyForCache, string(schemaData))
+		if err != nil {
+			return nil, fmt.Errorf("can't set resources to cache: %s", err)
+		}
 	}
 
 	return schema, nil
@@ -107,11 +123,16 @@ func (s *ServiceWithCache) GetSchemaByBlueprintID(ctx context.Context, blueprint
 
 	valueFromCache, err := s.Cache.GetValue(ctx, keyForCache)
 	if err == nil {
-		blueprint, ok := valueFromCache.(map[string]interface{})
+		blueprint, ok := valueFromCache.(string)
 		if ok {
-			log.Info("got blueprint from cache")
+			var data map[string]interface{}
 
-			return blueprint, nil
+			unmErr := json.Unmarshal([]byte(blueprint), &data)
+			if unmErr == nil {
+				log.Info("got blueprint from cache")
+
+				return data, nil
+			}
 		}
 
 		err = s.Cache.DeleteValue(ctx, keyForCache)
@@ -125,9 +146,12 @@ func (s *ServiceWithCache) GetSchemaByBlueprintID(ctx context.Context, blueprint
 		return nil, err
 	}
 
-	err = s.Cache.SetValue(ctx, keyForCache, blueprint)
-	if err != nil {
-		return nil, fmt.Errorf("can't set resources to cache: %s", err)
+	blueprintData, err := json.Marshal(blueprint)
+	if err == nil {
+		err = s.Cache.SetValue(ctx, keyForCache, string(blueprintData))
+		if err != nil {
+			return nil, fmt.Errorf("can't set resources to cache: %s", err)
+		}
 	}
 
 	return blueprint, nil

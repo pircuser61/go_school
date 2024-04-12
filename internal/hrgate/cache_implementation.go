@@ -43,11 +43,16 @@ func (s *ServiceWithCache) GetCalendars(ctx context.Context, params *GetCalendar
 
 	valueFromCache, err := s.Cache.GetValue(ctx, keyForCache)
 	if err == nil {
-		calendars, ok := valueFromCache.([]Calendar)
+		calendars, ok := valueFromCache.(string)
 		if ok {
-			log.Info("got calendars from cache")
+			var data []Calendar
 
-			return calendars, nil
+			unmErr := json.Unmarshal([]byte(calendars), &data)
+			if unmErr == nil {
+				log.Info("got calendars from cache")
+
+				return data, nil
+			}
 		}
 
 		err = s.Cache.DeleteValue(ctx, keyForCache)
@@ -61,9 +66,12 @@ func (s *ServiceWithCache) GetCalendars(ctx context.Context, params *GetCalendar
 		return nil, err
 	}
 
-	err = s.Cache.SetValue(ctx, keyForCache, calendar)
-	if err != nil {
-		log.WithError(err).Error("can't send data to cache")
+	calendarData, err := json.Marshal(calendar)
+	if err == nil {
+		err = s.Cache.SetValue(ctx, keyForCache, string(calendarData))
+		if err != nil {
+			log.WithError(err).Error("can't send data to cache")
+		}
 	}
 
 	return calendar, nil
@@ -84,11 +92,16 @@ func (s *ServiceWithCache) GetCalendarDays(ctx context.Context, params *GetCalen
 
 	valueFromCache, err := s.Cache.GetValue(ctx, keyForCache)
 	if err == nil {
-		calendarDays, ok := valueFromCache.(*CalendarDays)
+		calendarDays, ok := valueFromCache.(string)
 		if ok {
-			log.Info("got calendarDays from cache")
+			var data *CalendarDays
 
-			return calendarDays, nil
+			unmErr := json.Unmarshal([]byte(calendarDays), &data)
+			if unmErr == nil {
+				log.Info("got calendarDays from cache")
+
+				return data, nil
+			}
 		}
 
 		err = s.Cache.DeleteValue(ctx, keyForCache)
@@ -102,9 +115,12 @@ func (s *ServiceWithCache) GetCalendarDays(ctx context.Context, params *GetCalen
 		return nil, err
 	}
 
-	err = s.Cache.SetValue(ctx, keyForCache, calendarDays)
-	if err != nil {
-		return nil, fmt.Errorf("can't set calendarDays to cache: %s", err)
+	calendarDaysData, err := json.Marshal(calendarDays)
+	if err == nil {
+		err = s.Cache.SetValue(ctx, keyForCache, string(calendarDaysData))
+		if err != nil {
+			return nil, fmt.Errorf("can't set calendarDays to cache: %s", err)
+		}
 	}
 
 	return calendarDays, nil

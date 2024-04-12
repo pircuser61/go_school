@@ -38,11 +38,16 @@ func (s *ServiceWithCache) GetDelegations(ctx c.Context, req *d.GetDelegationsRe
 
 	valueFromCache, err := s.Cache.GetValue(ctx, keyForCache)
 	if err == nil {
-		delegations, ok := valueFromCache.(Delegations)
+		delegations, ok := valueFromCache.(string)
 		if ok {
-			log.Info("got delegations from cache")
+			var data Delegations
 
-			return delegations, nil
+			unmErr := json.Unmarshal([]byte(delegations), &data)
+			if unmErr == nil {
+				log.Info("got delegations from cache")
+
+				return data, nil
+			}
 		}
 
 		err = s.Cache.DeleteValue(ctx, keyForCache)
@@ -56,9 +61,12 @@ func (s *ServiceWithCache) GetDelegations(ctx c.Context, req *d.GetDelegationsRe
 		return nil, err
 	}
 
-	err = s.Cache.SetValue(ctx, keyForCache, delegations)
-	if err != nil {
-		log.WithError(err).Error("can't send data to cache")
+	delegationsData, err := json.Marshal(delegations)
+	if err == nil {
+		err = s.Cache.SetValue(ctx, keyForCache, string(delegationsData))
+		if err != nil {
+			log.WithError(err).Error("can't send data to cache")
+		}
 	}
 
 	return delegations, nil

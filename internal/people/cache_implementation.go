@@ -34,11 +34,16 @@ func (s *ServiceWithCache) GetUser(ctx context.Context, username string) (SSOUse
 
 	valueFromCache, err := s.Cache.GetValue(ctx, keyForCache)
 	if err == nil {
-		resources, ok := valueFromCache.(SSOUser)
+		resources, ok := valueFromCache.(string)
 		if ok {
-			log.Info("got resources from cache")
+			var data SSOUser
 
-			return resources, nil
+			unmErr := json.Unmarshal([]byte(resources), &data)
+			if unmErr == nil {
+				log.Info("got resources from cache")
+
+				return data, nil
+			}
 		}
 
 		err = s.Cache.DeleteValue(ctx, keyForCache)
@@ -52,9 +57,12 @@ func (s *ServiceWithCache) GetUser(ctx context.Context, username string) (SSOUse
 		return nil, err
 	}
 
-	err = s.Cache.SetValue(ctx, keyForCache, resources)
-	if err != nil {
-		return nil, fmt.Errorf("can't set resources to cache: %s", err)
+	resourcesData, err := json.Marshal(resources)
+	if err == nil {
+		err = s.Cache.SetValue(ctx, keyForCache, string(resourcesData))
+		if err != nil {
+			return nil, fmt.Errorf("can't set resources to cache: %s", err)
+		}
 	}
 
 	return resources, nil
@@ -75,11 +83,16 @@ func (s *ServiceWithCache) GetUsers(ctx context.Context, username string, limit 
 
 	valueFromCache, err := s.Cache.GetValue(ctx, keyForCache)
 	if err == nil {
-		resources, ok := valueFromCache.([]SSOUser)
+		resources, ok := valueFromCache.(string)
 		if ok {
-			log.Info("got resources from cache")
+			var data []SSOUser
 
-			return resources, nil
+			unmErr := json.Unmarshal([]byte(resources), &data)
+			if unmErr == nil {
+				log.Info("got resources from cache")
+
+				return data, nil
+			}
 		}
 
 		err = s.Cache.DeleteValue(ctx, keyForCache)
@@ -93,9 +106,12 @@ func (s *ServiceWithCache) GetUsers(ctx context.Context, username string, limit 
 		return nil, err
 	}
 
-	err = s.Cache.SetValue(ctx, keyForCache, resources)
-	if err != nil {
-		return nil, fmt.Errorf("can't set resources to cache: %s", err)
+	resourcesData, err := json.Marshal(resources)
+	if err == nil {
+		err = s.Cache.SetValue(ctx, keyForCache, string(resourcesData))
+		if err != nil {
+			return nil, fmt.Errorf("can't set resources to cache: %s", err)
+		}
 	}
 
 	return resources, nil
