@@ -179,6 +179,8 @@ type StepBreachedSLA struct {
 	TaskID      uuid.UUID
 	WorkNumber  string
 	WorkTitle   string
+	PipelineID  uuid.UUID
+	VersionID   uuid.UUID
 	Initiator   string
 	VarStore    *store.VariableStore
 	BlockData   *e.EriusFunc

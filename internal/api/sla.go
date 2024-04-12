@@ -102,15 +102,8 @@ func (ae *Env) CheckBreachSLA(w http.ResponseWriter, r *http.Request) {
 	//nolint:gocritic //глобальная тема, лучше не трогать
 	for i := range steps {
 		item := steps[i]
-
-		pipelineID, versionID, err := ae.DB.GetPipelineIDByWorkID(ctx, item.TaskID.String())
-		if err != nil {
-			err := errors.New("couldn't get pipelineID for step")
-			errorhandler.handleError(UpdateBlockError, err)
-		}
-
-		log = log.WithField("pipelineID", pipelineID).
-			WithField("versionID", versionID).
+		log = log.WithField("pipelineID", item.PipelineID).
+			WithField("versionID", item.VersionID).
 			WithField("workID", item.TaskID).
 			WithField("stepName", item.StepName)
 
