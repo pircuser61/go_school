@@ -19,9 +19,9 @@ import (
 func (ae *Env) handleBreachSlA(ctx c.Context, item *db.StepBreachedSLA) {
 	log := logger.GetLogger(ctx).
 		WithField("funcName", "handleBreachSlA").
-		WithField("workID", "item.TaskID").
-		WithField("workNumber", "item.WorkNumber").
-		WithField("stepName", "item.StepName")
+		WithField("workID", item.TaskID).
+		WithField("workNumber", item.WorkNumber).
+		WithField("stepName", item.StepName)
 	ctx = logger.WithLogger(ctx, log)
 
 	runCtx := &pipeline.BlockRunContext{
@@ -102,10 +102,17 @@ func (ae *Env) CheckBreachSLA(w http.ResponseWriter, r *http.Request) {
 	//nolint:gocritic //глобальная тема, лучше не трогать
 	for i := range steps {
 		item := steps[i]
-		log = log.WithFields(map[string]interface{}{
-			"taskID":   item.TaskID,
-			"stepName": item.StepName,
-		})
+
+		pipelineID, versionID, err := ae.DB.GetPipelineIDByWorkID(ctx, item.TaskID.String())
+		if err != nil {
+			err := errors.New("couldn't get pipelineID for step")
+			errorhandler.handleError(UpdateBlockError, err)
+		}
+
+		log = log.WithField("pipelineID", pipelineID).
+			WithField("versionID", versionID).
+			WithField("workID", item.TaskID).
+			WithField("stepName", item.StepName)
 
 		ae.handleBreachSlA(logger.WithLogger(processCtx, log), &item)
 	}

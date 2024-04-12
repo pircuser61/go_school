@@ -1950,6 +1950,29 @@ func (db *PGCon) GetWorkIDByWorkNumber(ctx c.Context, workNumber string) (uuid.U
 	return workID, nil
 }
 
+func (db *PGCon) GetPipelineIDByWorkID(ctx c.Context, taskID string) (uuid.UUID, uuid.UUID, error) {
+	ctx, span := trace.StartSpan(ctx, "get_pipeline_id_by_task_id")
+	defer span.End()
+
+	const q = `
+		SELECT v.pipeline_id, 
+		       w.version_id
+		FROM works w 
+		  JOIN versions v ON v.id = w.version_id
+		WHERE w.id=$1`
+
+	var (
+		pipelineID uuid.UUID
+		versionID  uuid.UUID
+	)
+
+	if err := db.Connection.QueryRow(ctx, q, taskID).Scan(&pipelineID, &versionID); err != nil {
+		return uuid.UUID{}, uuid.UUID{}, err
+	}
+
+	return pipelineID, versionID, nil
+}
+
 func (db *PGCon) getActionsMap(ctx c.Context) (actions map[string]entity.TaskAction, err error) {
 	const q = `
 		SELECT 

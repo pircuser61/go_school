@@ -49,6 +49,8 @@ func (p *blockProcessor) ProcessBlock(ctx context.Context, its int) error {
 
 	its++
 	if its > 10 {
+		log.Error("took too long")
+
 		return errors.New("took too long")
 	}
 

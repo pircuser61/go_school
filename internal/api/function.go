@@ -32,10 +32,9 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 	defer span.End()
 
 	log := ae.Log.WithField("funcName", "FunctionReturnHandler").
+		WithField("mainFuncName", "FunctionReturnHandler").
 		WithField("stepID", message.TaskID).
 		WithField("method", "kafka")
-
-	ctx = logger.WithLogger(ctx, log)
 
 	messageTmp, err := json.Marshal(message)
 	if err != nil {
@@ -97,11 +96,25 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 		return nil
 	}
 
+	pipelineID, versionID, err := ae.DB.GetPipelineIDByWorkID(ctx, st.WorkID.String())
+	if err != nil {
+		log.WithError(err).
+			Error("can't get pipelineID")
+
+		return nil
+	}
+
+	log = log.WithField("pipelineID", pipelineID).
+		WithField("versionID", versionID)
+	ctx = logger.WithLogger(ctx, log)
+
 	runCtx := &pipeline.BlockRunContext{
 		TaskID:     st.WorkID,
 		WorkNumber: st.WorkNumber,
 		Initiator:  st.Initiator,
 		VarStore:   storage,
+		PipelineID: pipelineID,
+		VersionID:  versionID,
 		Services: pipeline.RunContextServices{
 			HTTPClient:    ae.HTTPClient,
 			Storage:       ae.DB,

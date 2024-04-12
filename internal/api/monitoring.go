@@ -925,10 +925,22 @@ func (ae *Env) restartNode(
 		return "", getErr
 	}
 
+	pipelineID, versionID, err := ae.DB.GetPipelineIDByWorkID(ctx, task.ID.String())
+	if err != nil {
+		return "", err
+	}
+
+	log := logger.GetLogger(ctx).WithField("pipelineID", pipelineID).
+		WithField("versionID", versionID).
+		WithField("pipelineID", pipelineID)
+	ctx = logger.WithLogger(ctx, log)
+
 	_, processErr := pipeline.ProcessBlockWithEndMapping(ctx, dbStep.Name, blockData, &pipeline.BlockRunContext{
 		TaskID:      task.ID,
 		WorkNumber:  workNumber,
 		WorkTitle:   task.Name,
+		PipelineID:  pipelineID,
+		VersionID:   versionID,
 		Initiator:   task.Author,
 		VarStore:    storage,
 		Delegations: human_tasks.Delegations{},
