@@ -6,12 +6,12 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/middleware"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/configs"
 
 	"github.com/go-chi/chi/v5"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 	"gitlab.services.mts.ru/abp/myosotis/observability"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/configs"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	file_registry "gitlab.services.mts.ru/jocasta/pipeliner/internal/fileregistry"
