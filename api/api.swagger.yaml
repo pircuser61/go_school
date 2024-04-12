@@ -1859,14 +1859,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
-  /tasks/executors:
+  /tasks/users:
     get:
       tags:
         - pipeline
         - tasks
       summary: Get
       description: Получить уникальных исполнителей/инициаторов/названия групп для фильтра
-      operationId: get-tasks-executors
+      operationId: get-tasks-users
       parameters:
         - name: name
           in: query

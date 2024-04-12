@@ -45,46 +45,9 @@ func uniqueActionsByRole(loginsIn, stepType string, finished, acted, isPersonsFi
 		memberActed = "AND m.is_acted = true"
 	}
 
-	q := ""
-
-	if isPersonsFilter {
-		// nolint:gocritic
-		// language=PostgreSQL
-		q = fmt.Sprintf(`WITH actions AS (
-    SELECT vs.work_id                                                                       AS work_id
-         , vs.step_name                                                                     AS block_id
-         , CASE WHEN vs.status IN ('running', 'idle') THEN m.actions ELSE '{}' END AS action
-         , CASE WHEN vs.status IN ('running', 'idle') THEN m.params ELSE '{}' END  AS params
-         , vs.time                                                                          AS node_start
-    FROM members m
-             JOIN variable_storage vs on vs.id = m.block_id
-             JOIN works w on vs.work_id = w.id
-    WHERE m.login IN %s
-      AND vs.step_type = '%s'
-      AND %s 
-      AND w.child_id IS NULL
-		%s
-      --unique-actions-filter--
-)
-   , filtered_actions AS (SELECT a.work_id, block_id, max(node_start) AS time
-                          FROM actions a
-                          GROUP BY block_id, a.work_id)
-   , unique_actions AS (
-    SELECT actions.work_id                  	  		 AS work_id
-         , JSONB_AGG(jsonb_actions.actions) 	         AS actions
-    	 , min(actions.node_start) 						 AS node_start
-    FROM actions
-             JOIN filtered_actions fa ON fa.time = actions.node_start AND fa.block_id = actions.block_id
-             LEFT JOIN LATERAL (SELECT jsonb_build_object(
-                                               'block_id', actions.block_id,
-                                               'actions', actions.action,
-                                               'params', actions.params) as actions) jsonb_actions ON TRUE
-    GROUP BY actions.work_id)
-`, loginsIn, stepType, statuses, memberActed)
-	} else {
-		// nolint:gocritic
-		// language=PostgreSQL
-		q = fmt.Sprintf(`WITH actions AS (
+	// nolint:gocritic
+	// language=PostgreSQL
+	q := fmt.Sprintf(`WITH actions AS (
     SELECT vs.work_id                                                                       AS work_id
          , vs.step_name                                                                     AS block_id
          , CASE WHEN vs.status IN ('running', 'idle') THEN m.actions ELSE '{}' END AS action
@@ -112,26 +75,43 @@ func uniqueActionsByRole(loginsIn, stepType string, finished, acted, isPersonsFi
                           FROM actions a
                           GROUP BY block_id, a.work_id)
    , unique_actions AS (
-    SELECT actions.work_id                  	  		 AS work_id
-         , JSONB_AGG(jsonb_actions.actions) 	         AS actions
-         , max(actions.current_executor::text)::jsonb    AS current_executor
-         , min(actions.exec_start_time)     	  		 AS exec_start_time
-         , min(actions.appr_start_time)     	  		 AS appr_start_time
-         , max(actions.updated_at)     	  		 		 AS updated_at
-         , min(actions.node_deadline)     	  		 	 AS node_deadline    
-    	 , min(actions.node_start) 						 AS node_start
-	 	 , max(actions.is_expired)						 AS is_expired
-    FROM actions
-             JOIN filtered_actions fa ON fa.time = actions.node_start AND fa.block_id = actions.block_id
-             LEFT JOIN LATERAL (SELECT jsonb_build_object(
-                                               'block_id', actions.block_id,
-                                               'actions', actions.action,
-                                               'params', actions.params) as actions) jsonb_actions ON TRUE
-    GROUP BY actions.work_id)
-`, loginsIn, stepType, statuses, memberActed)
-	}
+      	 SELECT actions.work_id                  	  		 AS work_id
+			%s
+		FROM actions
+				 JOIN filtered_actions fa ON fa.time = actions.node_start AND fa.block_id = actions.block_id
+				 LEFT JOIN LATERAL (SELECT jsonb_build_object(
+												   'block_id', actions.block_id,
+												   'actions', actions.action,
+												   'params', actions.params) as actions) jsonb_actions ON TRUE
+		GROUP BY actions.work_id
+   )
+`, loginsIn, stepType, statuses, memberActed, getUniqueActionsSelect(isPersonsFilter))
 
 	return q
+}
+
+func getUniqueActionsSelect(isPerson bool) string {
+	// nolint:gocritic
+	// language=PostgreSQL
+	actions := `
+			 , JSONB_AGG(jsonb_actions.actions) 	         AS actions
+			 , max(actions.current_executor::text)::jsonb    AS current_executor
+			 , min(actions.exec_start_time)     	  		 AS exec_start_time
+			 , min(actions.appr_start_time)     	  		 AS appr_start_time
+			 , max(actions.updated_at)     	  		 		 AS updated_at
+			 , min(actions.node_deadline)     	  		 	 AS node_deadline    
+			 , min(actions.node_start) 						 AS node_start
+			 , max(actions.is_expired)						 AS is_expired`
+
+	if isPerson {
+		// nolint:gocritic
+		// language=PostgreSQL
+		actions = `
+			, JSONB_AGG(jsonb_actions.actions) 	         AS actions
+			, min(actions.node_start) 					 AS node_start`
+	}
+
+	return actions
 }
 
 func uniqueActiveActions(approverLogins, executionLogins []string, currentUser, workNumber string) string {
@@ -414,7 +394,8 @@ func compileGetTasksMetaQuery(fl entity.TaskFilter, delegations []string) (q str
 
 //nolint:gocritic //изначально было без поинтера
 func compileGetUniquePersonsQuery(fl entity.TaskFilter, delegations []string) (q string, args []interface{}) {
-	stepType := getStepTypeBySelectForFilter(*fl.SelectAs)
+
+	args = append(args, getStepTypeBySelectForFilter(*fl.SelectAs))
 
 	// nolint:gocritic
 	// language=PostgreSQL
@@ -427,9 +408,9 @@ func compileGetUniquePersonsQuery(fl entity.TaskFilter, delegations []string) (q
 		JOIN versions v ON v.id = w.version_id
 		JOIN pipelines p ON p.id = v.pipeline_id
 		JOIN unique_actions ua on w.id = ua.work_id
-		JOIN variable_storage var on w.id = var.work_id and var.step_type= '%s'
+		JOIN variable_storage var on w.id = var.work_id and var.step_type= $%d
 		[join_variable_storage]
-		WHERE w.child_id IS NULL`, stepType)
+		WHERE w.child_id IS NULL`, len(args))
 
 	var order string
 	if fl.Order != nil {
@@ -540,13 +521,13 @@ func (cq *compileGetTaskQueryMaker) addInitiator() {
 func (cq *compileGetTaskQueryMaker) addProcessingSteps() {
 	if (cq.fl.ProcessingLogins != nil || cq.fl.ProcessingGroupIds != nil) ||
 		cq.fl.ExecutorTypeAssigned != nil {
-		cq.q = getProcessingSteps(cq.q, cq.fl, false)
+		cq.q = getProcessingSteps(cq.q, cq.fl)
 	}
 }
 
 func (cq *compileGetTaskQueryMaker) addExecutorFilter() {
 	if cq.fl.ExecutorLogins != nil || cq.fl.ExecutorGroupIds != nil {
-		cq.q = getProcessingSteps(cq.q, cq.fl, true)
+		cq.q = getExecutors(cq.q, cq.fl)
 	}
 }
 
@@ -667,20 +648,31 @@ func replaceStorageVariable(q string) string {
 	return q
 }
 
-func getProcessingSteps(q string, fl *entity.TaskFilter, isExecutorFilter bool) string {
+func getProcessingSteps(q string, fl *entity.TaskFilter) string {
 	varStorage := `, var_storage as (
 		SELECT DISTINCT work_id, current_executor FROM variable_storage
 		WHERE work_id IS NOT NULL`
 
 	varStorage = addAssignType(varStorage, fl.CurrentUser, fl.ExecutorTypeAssigned)
+	varStorage = addProcessingLogins(varStorage, fl.SelectAs, fl.ProcessingLogins)
+	varStorage = addProcessingGroups(varStorage, fl.SelectAs, fl.ProcessingGroupIds)
 
-	if isExecutorFilter {
-		varStorage = addProcessingLogins(varStorage, fl.SelectAs, fl.ExecutorLogins, isExecutorFilter)
-		varStorage = addProcessingGroups(varStorage, fl.SelectAs, fl.ExecutorGroupIds, isExecutorFilter)
-	} else {
-		varStorage = addProcessingLogins(varStorage, fl.SelectAs, fl.ProcessingLogins, isExecutorFilter)
-		varStorage = addProcessingGroups(varStorage, fl.SelectAs, fl.ProcessingGroupIds, isExecutorFilter)
-	}
+	varStorage += ")"
+
+	q = strings.Replace(q, "[with_variable_storage]", varStorage, 1)
+	q = strings.Replace(q, "[join_variable_storage]", "JOIN var_storage vs ON vs.work_id = w.id ", 1)
+
+	return q
+}
+
+func getExecutors(q string, fl *entity.TaskFilter) string {
+	varStorage := `, var_storage as (
+		SELECT DISTINCT work_id, current_executor FROM variable_storage
+		WHERE work_id IS NOT NULL`
+
+	varStorage = addAssignType(varStorage, fl.CurrentUser, fl.ExecutorTypeAssigned)
+	varStorage = addExecutorsLogins(varStorage, fl.SelectAs, fl.ExecutorLogins)
+	varStorage = addExecutorGroups(varStorage, fl.SelectAs, fl.ExecutorGroupIds)
 
 	varStorage += ")"
 
@@ -714,7 +706,7 @@ func addAssignType(q, login string, typeAssign *string) string {
 	return q
 }
 
-func addProcessingLogins(q string, selectAs *string, logins *[]string, isExecutorFilter bool) string {
+func addProcessingLogins(q string, selectAs *string, logins *[]string) string {
 	if selectAs == nil || logins == nil || len(*logins) == 0 {
 		return q
 	}
@@ -724,27 +716,36 @@ func addProcessingLogins(q string, selectAs *string, logins *[]string, isExecuto
 
 	stepType := getStepTypeBySelectForFilter(*selectAs)
 
-	if isExecutorFilter {
-		login := make([]string, 0, len(*logins))
-		for _, v := range *logins {
-			login = append(login, fmt.Sprintf("%q", v))
-		}
+	return fmt.Sprintf(
+		`%s AND step_type = '%s' AND content -> 'State' -> step_name -> '%s' ?| '%s'`,
+		q, stepType, getActorsNameByStepType(stepType), "{"+strings.Join(ls, ",")+"}",
+	)
+}
 
-		q = fmt.Sprintf(
-			`%s AND step_type = '%s' AND current_executor -> 'people'  @> '[%s]'::jsonb`,
-			q, stepType, strings.Join(login, ","),
-		)
-	} else {
-		q = fmt.Sprintf(
-			`%s AND step_type = '%s' AND content -> 'State' -> step_name -> '%s' ?| '%s'`,
-			q, stepType, getActorsNameByStepType(stepType), "{"+strings.Join(ls, ",")+"}",
-		)
+func addExecutorsLogins(q string, selectAs *string, logins *[]string) string {
+	if selectAs == nil || logins == nil || len(*logins) == 0 {
+		return q
 	}
+
+	ls := *logins
+	ls = utils.UniqueStrings(ls)
+
+	stepType := getStepTypeBySelectForFilter(*selectAs)
+
+	login := make([]string, 0, len(*logins))
+	for _, v := range *logins {
+		login = append(login, fmt.Sprintf("%q", v))
+	}
+
+	q = fmt.Sprintf(
+		`%s AND step_type = '%s' AND current_executor -> 'people'  @> '[%s]'::jsonb`,
+		q, stepType, strings.Join(login, ","),
+	)
 
 	return q
 }
 
-func addProcessingGroups(q string, selectAs *string, groupIds *[]string, isExecutorFilter bool) string {
+func addProcessingGroups(q string, selectAs *string, groupIds *[]string) string {
 	if selectAs == nil || groupIds == nil || len(*groupIds) == 0 {
 		return q
 	}
@@ -756,22 +757,31 @@ func addProcessingGroups(q string, selectAs *string, groupIds *[]string, isExecu
 
 	stepType := getStepTypeBySelectForFilter(*selectAs)
 
-	if isExecutorFilter {
-		q = fmt.Sprintf(`%s AND step_type = '%s' AND current_executor ->> 'group_id' IN(%s)`,
-			q,
-			stepType,
-			strings.Join(ids, ","),
-		)
-	} else {
-		q = fmt.Sprintf(`%s AND step_type = '%s' AND content -> 'State' -> step_name ->> '%s'::varchar IN(%s)`,
-			q,
-			stepType,
-			getGroupActorsNameByStepType(stepType),
-			strings.Join(ids, ","),
-		)
+	return fmt.Sprintf(`%s AND step_type = '%s' AND content -> 'State' -> step_name ->> '%s'::varchar IN(%s)`,
+		q,
+		stepType,
+		getGroupActorsNameByStepType(stepType),
+		strings.Join(ids, ","),
+	)
+}
+
+func addExecutorGroups(q string, selectAs *string, groupIds *[]string) string {
+	if selectAs == nil || groupIds == nil || len(*groupIds) == 0 {
+		return q
 	}
 
-	return q
+	ids := make([]string, 0)
+	for _, v := range *groupIds {
+		ids = append(ids, fmt.Sprintf("'%s'", v))
+	}
+
+	stepType := getStepTypeBySelectForFilter(*selectAs)
+
+	return fmt.Sprintf(`%s AND step_type = '%s' AND current_executor ->> 'group_id' IN(%s)`,
+		q,
+		stepType,
+		strings.Join(ids, ","),
+	)
 }
 
 func getGroupActorsNameByStepType(stepName string) string {
@@ -1053,7 +1063,7 @@ func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter, delegations 
 }
 
 //nolint:gocritic //в этом проекте не принято использовать поинтеры
-func (db *PGCon) GetTasksExecutors(ctx c.Context, filters entity.TaskFilter, delegations []string) ([]string, error) {
+func (db *PGCon) GetTasksUsers(ctx c.Context, filters entity.TaskFilter, delegations []string) ([]string, error) {
 	ctx, span := trace.StartSpan(ctx, "db.pg_get_tasks_persons")
 	defer span.End()
 

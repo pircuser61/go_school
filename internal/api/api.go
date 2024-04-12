@@ -2605,8 +2605,11 @@ type GetTasksParamsExecutorTypeAssigned string
 // GetTasksParamsSignatureCarrier defines parameters for GetTasks.
 type GetTasksParamsSignatureCarrier string
 
-// GetTasksExecutorsParams defines parameters for GetTasksExecutors.
-type GetTasksExecutorsParams struct {
+// StopTasksJSONBody defines parameters for StopTasks.
+type StopTasksJSONBody TasksStop
+
+// GetTasksUsersParams defines parameters for GetTasksUsers.
+type GetTasksUsersParams struct {
 	// Pipeline name
 	Name *string `json:"name,omitempty"`
 
@@ -2623,10 +2626,10 @@ type GetTasksExecutorsParams struct {
 	Limit *int `json:"limit,omitempty"`
 
 	// Offset
-	Offset   *int                             `json:"offset,omitempty"`
-	Created  *Created                         `json:"created,omitempty"`
-	Archived *bool                            `json:"archived,omitempty"`
-	SelectAs *GetTasksExecutorsParamsSelectAs `json:"selectAs,omitempty"`
+	Offset   *int                         `json:"offset,omitempty"`
+	Created  *Created                     `json:"created,omitempty"`
+	Archived *bool                        `json:"archived,omitempty"`
+	SelectAs *GetTasksUsersParamsSelectAs `json:"selectAs,omitempty"`
 
 	// get tasks with status wait or done
 	ForCarousel *bool `json:"forCarousel,omitempty"`
@@ -2659,23 +2662,20 @@ type GetTasksExecutorsParams struct {
 	ExecutorGroupIds *[]string `json:"executorGroupIds,omitempty"`
 
 	// filter type assigned
-	ExecutorTypeAssigned *GetTasksExecutorsParamsExecutorTypeAssigned `json:"executorTypeAssigned,omitempty"`
+	ExecutorTypeAssigned *GetTasksUsersParamsExecutorTypeAssigned `json:"executorTypeAssigned,omitempty"`
 
 	// signature carrier (used for selectAs = signer_jur)
-	SignatureCarrier *GetTasksExecutorsParamsSignatureCarrier `json:"signatureCarrier,omitempty"`
+	SignatureCarrier *GetTasksUsersParamsSignatureCarrier `json:"signatureCarrier,omitempty"`
 }
 
-// GetTasksExecutorsParamsSelectAs defines parameters for GetTasksExecutors.
-type GetTasksExecutorsParamsSelectAs string
+// GetTasksUsersParamsSelectAs defines parameters for GetTasksUsers.
+type GetTasksUsersParamsSelectAs string
 
-// GetTasksExecutorsParamsExecutorTypeAssigned defines parameters for GetTasksExecutors.
-type GetTasksExecutorsParamsExecutorTypeAssigned string
+// GetTasksUsersParamsExecutorTypeAssigned defines parameters for GetTasksUsers.
+type GetTasksUsersParamsExecutorTypeAssigned string
 
-// GetTasksExecutorsParamsSignatureCarrier defines parameters for GetTasksExecutors.
-type GetTasksExecutorsParamsSignatureCarrier string
-
-// StopTasksJSONBody defines parameters for StopTasks.
-type StopTasksJSONBody TasksStop
+// GetTasksUsersParamsSignatureCarrier defines parameters for GetTasksUsers.
+type GetTasksUsersParamsSignatureCarrier string
 
 // UpdateTaskJSONBody defines parameters for UpdateTask.
 type UpdateTaskJSONBody TaskUpdate
@@ -3745,15 +3745,15 @@ type ServerInterface interface {
 	// Get amount of tasks
 	// (GET /tasks/count)
 	GetTasksCount(w http.ResponseWriter, r *http.Request)
-	// Get
-	// (GET /tasks/executors)
-	GetTasksExecutors(w http.ResponseWriter, r *http.Request, params GetTasksExecutorsParams)
 	// Get Task Mean Solve time
 	// (GET /tasks/mean/{pipelineId})
 	GetTaskMeanSolveTime(w http.ResponseWriter, r *http.Request, pipelineId string)
 	// Stop tasks by work number
 	// (POST /tasks/stop)
 	StopTasks(w http.ResponseWriter, r *http.Request)
+	// Get
+	// (GET /tasks/users)
+	GetTasksUsers(w http.ResponseWriter, r *http.Request, params GetTasksUsersParams)
 	// Get Task
 	// (GET /tasks/{workNumber})
 	GetTask(w http.ResponseWriter, r *http.Request, workNumber string)
@@ -5545,14 +5545,55 @@ func (siw *ServerInterfaceWrapper) GetTasksCount(w http.ResponseWriter, r *http.
 	handler(w, r.WithContext(ctx))
 }
 
-// GetTasksExecutors operation middleware
-func (siw *ServerInterfaceWrapper) GetTasksExecutors(w http.ResponseWriter, r *http.Request) {
+// GetTaskMeanSolveTime operation middleware
+func (siw *ServerInterfaceWrapper) GetTaskMeanSolveTime(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "pipelineId" -------------
+	var pipelineId string
+
+	err = runtime.BindStyledParameter("simple", false, "pipelineId", chi.URLParam(r, "pipelineId"), &pipelineId)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "pipelineId", Err: err})
+		return
+	}
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetTaskMeanSolveTime(w, r, pipelineId)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
+// StopTasks operation middleware
+func (siw *ServerInterfaceWrapper) StopTasks(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.StopTasks(w, r)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
+// GetTasksUsers operation middleware
+func (siw *ServerInterfaceWrapper) GetTasksUsers(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	var err error
 
 	// Parameter object where we will unmarshal all parameters from the context
-	var params GetTasksExecutorsParams
+	var params GetTasksUsersParams
 
 	// ------------- Optional query parameter "name" -------------
 	if paramValue := r.URL.Query().Get("name"); paramValue != "" {
@@ -5789,48 +5830,7 @@ func (siw *ServerInterfaceWrapper) GetTasksExecutors(w http.ResponseWriter, r *h
 	}
 
 	var handler = func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetTasksExecutors(w, r, params)
-	}
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler(w, r.WithContext(ctx))
-}
-
-// GetTaskMeanSolveTime operation middleware
-func (siw *ServerInterfaceWrapper) GetTaskMeanSolveTime(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	var err error
-
-	// ------------- Path parameter "pipelineId" -------------
-	var pipelineId string
-
-	err = runtime.BindStyledParameter("simple", false, "pipelineId", chi.URLParam(r, "pipelineId"), &pipelineId)
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "pipelineId", Err: err})
-		return
-	}
-
-	var handler = func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetTaskMeanSolveTime(w, r, pipelineId)
-	}
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler(w, r.WithContext(ctx))
-}
-
-// StopTasks operation middleware
-func (siw *ServerInterfaceWrapper) StopTasks(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	var handler = func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.StopTasks(w, r)
+		siw.Handler.GetTasksUsers(w, r, params)
 	}
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -6197,13 +6197,13 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/tasks/count", wrapper.GetTasksCount)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/tasks/executors", wrapper.GetTasksExecutors)
-	})
-	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/tasks/mean/{pipelineId}", wrapper.GetTaskMeanSolveTime)
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/tasks/stop", wrapper.StopTasks)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/tasks/users", wrapper.GetTasksUsers)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/tasks/{workNumber}", wrapper.GetTask)

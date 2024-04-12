@@ -502,7 +502,10 @@ func (ae *Env) getCurrentUserInDelegatesForSteps(
 	return userInDelegates, nil
 }
 
-const getTasksPath = "/tasks"
+const (
+	getTasksPath      = "/tasks"
+	getTasksUsersPath = "/tasks/users"
+)
 
 //nolint:dupl,gocritic //its not duplicate // params без поинтера нужен для интерфейса
 func (ae *Env) GetTasks(w http.ResponseWriter, req *http.Request, params GetTasksParams) {
@@ -589,11 +592,11 @@ func (ae *Env) GetTasks(w http.ResponseWriter, req *http.Request, params GetTask
 }
 
 //nolint:dupl,gocritic //its not duplicate // params без поинтера нужен для интерфейса
-func (ae *Env) GetTasksExecutors(w http.ResponseWriter, req *http.Request, params GetTasksExecutorsParams) {
+func (ae *Env) GetTasksUsers(w http.ResponseWriter, req *http.Request, params GetTasksUsersParams) {
 	start := time.Now()
-	ctx, s := trace.StartSpan(req.Context(), "get_tasks_persons")
+	ctx, s := trace.StartSpan(req.Context(), "get_tasks_users")
 
-	requestInfo := metrics.NewGetRequestInfo(getTasksPath)
+	requestInfo := metrics.NewGetRequestInfo(getTasksUsersPath)
 
 	defer func() {
 		s.End()
@@ -607,7 +610,14 @@ func (ae *Env) GetTasksExecutors(w http.ResponseWriter, req *http.Request, param
 	errorHandler := newHTTPErrorHandler(log, w)
 	errorHandler.setMetricsRequestInfo(requestInfo)
 
-	filters, err := params.toEntity(req)
+	newParams, err := convertTaskUserParams(params)
+	if err != nil {
+		errorHandler.handleError(BadFiltersError, err)
+
+		return
+	}
+
+	filters, err := newParams.toEntity(req)
 	if err != nil {
 		errorHandler.handleError(BadFiltersError, err)
 
@@ -640,7 +650,7 @@ func (ae *Env) GetTasksExecutors(w http.ResponseWriter, req *http.Request, param
 		handleFilterStatus(&filters)
 	}
 
-	resp, err := ae.DB.GetTasksExecutors(ctx, filters, users)
+	resp, err := ae.DB.GetTasksUsers(ctx, filters, users)
 	if err != nil {
 		errorHandler.handleError(GetTasksError, err)
 
@@ -656,84 +666,6 @@ func (ae *Env) GetTasksExecutors(w http.ResponseWriter, req *http.Request, param
 
 //nolint:dupl //Нужно для /tasks
 func (p *GetTasksParams) toEntity(req *http.Request) (entity.TaskFilter, error) {
-	var filters entity.TaskFilter
-
-	var typeAssigned *string
-
-	if p.ExecutorTypeAssigned != nil {
-		at := string(*p.ExecutorTypeAssigned)
-
-		typeAssigned = &at
-		if *typeAssigned != entity.AssignedToMe && *typeAssigned != entity.AssignedByMe {
-			return filters, errors.New("invalid value in typeAssigned filter")
-		}
-	}
-
-	var signatureCarrier *string
-
-	if p.SignatureCarrier != nil {
-		at := string(*p.SignatureCarrier)
-
-		signatureCarrier = &at
-		if *signatureCarrier != entity.SignatureCarrierCloud &&
-			*signatureCarrier != entity.SignatureCarrierToken &&
-			*signatureCarrier != entity.SignatureCarrierAll {
-			return filters, errors.New("invalid value in SignatureCarrier filter")
-		}
-	}
-
-	var selectAs string
-
-	if p.SelectAs != nil {
-		selectAs = string(*p.SelectAs)
-
-		valid := selectAsValid(selectAs)
-		if !valid {
-			return filters, errors.New("invalid value in SelectAs filter")
-		}
-	}
-
-	ui, err := user.GetEffectiveUserInfoFromCtx(req.Context())
-	if err != nil {
-		return filters, err
-	}
-
-	filters.CurrentUser = ui.Username
-
-	limit, offset := parseLimitOffsetWithDefault(p.Limit, p.Offset)
-	if limit > 1000 {
-		limit = 1000
-	}
-
-	filters.GetTaskParams = entity.GetTaskParams{
-		Name:                 p.Name,
-		Created:              p.Created.toEntity(),
-		Order:                p.Order,
-		OrderBy:              p.OrderBy,
-		Limit:                &limit,
-		Offset:               &offset,
-		TaskIDs:              p.TaskIDs,
-		SelectAs:             &selectAs,
-		Archived:             p.Archived,
-		ForCarousel:          p.ForCarousel,
-		Status:               statusToEntity(p.Status),
-		Receiver:             p.Receiver,
-		HasAttachments:       p.HasAttachments,
-		Initiator:            p.Initiator,
-		InitiatorLogins:      p.InitiatorLogins,
-		ProcessingLogins:     p.ProcessingLogins,
-		ProcessingGroupIds:   p.ProcessingGroupIds,
-		ExecutorLogins:       p.ExecutorLogins,
-		ExecutorGroupIds:     p.ExecutorGroupIds,
-		ExecutorTypeAssigned: typeAssigned,
-		SignatureCarrier:     signatureCarrier,
-	}
-
-	return filters, nil
-}
-
-//nolint:dupl //Нужно для /tasks/executors
-func (p *GetTasksExecutorsParams) toEntity(req *http.Request) (entity.TaskFilter, error) {
 	var filters entity.TaskFilter
 
 	var typeAssigned *string
