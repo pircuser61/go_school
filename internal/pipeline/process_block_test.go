@@ -973,8 +973,8 @@ func TestProcessBlock(t *testing.T) {
 
 							return slaMock
 						}(),
-						HumanTasks: func() *human_tasks.Service {
-							service, _ := human_tasks.NewService(human_tasks.Config{})
+						HumanTasks: func() human_tasks.ServiceInterface {
+							service, _ := human_tasks.NewService(&human_tasks.Config{})
 
 							return service
 						}(),

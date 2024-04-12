@@ -13,6 +13,12 @@ network_monitor: "http://network-monitor/api/netmon/v1/"
 
 people:
   url: "https://dev.iga.mts.ru/api/archivist/v2"
+  cache:
+    type: "default"
+    address: ""
+    db: ""
+    pass: ""
+    ttl: ""
 
 database:
   kind: postgres
@@ -91,8 +97,14 @@ log:
 log_index: 'jocasta-dev-jocasta-dev-ocean-0000-s1-k8s-cmn-inside-01'
 
 servicedesc:
-  servicedesk_url: 'https://dev.servicedesk.mts.ru'
-  scope: 'servicedesk-develop-aud'
+  servicedesk_url: "https://dev.servicedesk.mts.ru"
+  scope: "servicedesk-develop-aud"
+  cache:
+    type: "default"
+    address: ""
+    db: ""
+    pass: ""
+    ttl: ""
 
 function_store:
   url: 'functions:90'
@@ -101,7 +113,13 @@ scheduler_tasks:
   url: 'scheduler:90'
 
 human_tasks:
-  url: 'human-tasks:90'
+  url: "human-tasks:90"
+  cache:
+    type: "default"
+    address: ""
+    db: ""
+    pass: ""
+    ttl: ""
 
 imap:
   imap_connection: "mail.inside.mts.ru:993"
@@ -118,6 +136,12 @@ forms:
 hrgate:
   hr_gate_url: "https://hr-gate.stage.autobp.mts.ru"
   scope: "hr-gate"
+  cache:
+    type: "default"
+    address: ""
+    db: ""
+    pass: ""
+    ttl: ""
 
 minio:
   addr: "minio:9000"

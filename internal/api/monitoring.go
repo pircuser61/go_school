@@ -790,7 +790,7 @@ func (ae *Env) startTask(ctx context.Context, dto *startNodesParams) error {
 		filteredSteps[(*dto.params.Steps)[i]] = nil
 	}
 
-	sort.Slice(steps, func(i, j int) bool {
+	sort.Slice(steps, func(i, _ int) bool {
 		return strings.Contains(steps[i], "wait_for_all_inputs")
 	})
 

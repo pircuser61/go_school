@@ -2293,7 +2293,8 @@ func TestGoExecutionActions(t *testing.T) {
 				data: nil,
 			},
 			wantActions: []MemberAction{
-				{ID: "executor_start_work", Type: "primary", Params: map[string]interface{}(nil)}},
+				{ID: "executor_start_work", Type: "primary", Params: map[string]interface{}(nil)},
+			},
 		},
 		{
 			name: "one form ReadWrite",
@@ -2312,7 +2313,8 @@ func TestGoExecutionActions(t *testing.T) {
 							AccessType:  "ReadWrite",
 							Description: "форма",
 						},
-					}},
+					},
+				},
 				RunContext: &BlockRunContext{
 					skipNotifications: false,
 					VarStore: func() *store.VariableStore {
@@ -2346,7 +2348,8 @@ func TestGoExecutionActions(t *testing.T) {
 				{ID: "decline", Type: "secondary", Params: map[string]interface{}(nil)},
 				{ID: "change_executor", Type: "other", Params: map[string]interface{}(nil)},
 				{ID: "request_execution_info", Type: "other", Params: map[string]interface{}(nil)},
-				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": []string{"form_0"}}}},
+				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": []string{"form_0"}}},
+			},
 		},
 		{
 			name: "two form (ReadWrite)",
@@ -2407,7 +2410,8 @@ func TestGoExecutionActions(t *testing.T) {
 				{ID: "decline", Type: "secondary", Params: map[string]interface{}(nil)},
 				{ID: "change_executor", Type: "other", Params: map[string]interface{}(nil)},
 				{ID: "request_execution_info", Type: "other", Params: map[string]interface{}(nil)},
-				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": []string{"form_0", "form_1"}}}},
+				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": []string{"form_0", "form_1"}}},
+			},
 		},
 		{
 			name: "Two form is filled true - ok (ReadWrite & RequiredFill)",
@@ -2455,7 +2459,8 @@ func TestGoExecutionActions(t *testing.T) {
 								})
 
 								return marshalForm
-							}()}
+							}(),
+						}
 						return s
 					}(),
 					Services: RunContextServices{
@@ -2516,7 +2521,8 @@ func TestGoExecutionActions(t *testing.T) {
 				{ID: "decline", Type: "secondary", Params: map[string]interface{}(nil)},
 				{ID: "change_executor", Type: "other", Params: map[string]interface{}(nil)},
 				{ID: "request_execution_info", Type: "other", Params: map[string]interface{}(nil)},
-				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": []string{"form_0", "form_1"}}}},
+				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": []string{"form_0", "form_1"}}},
+			},
 		},
 		{
 			name: "Two form is filled true - bad (ReadWrite & RequiredFill)",
@@ -2560,7 +2566,8 @@ func TestGoExecutionActions(t *testing.T) {
 								})
 
 								return marshalForm
-							}()}
+							}(),
+						}
 						return s
 					}(),
 					Services: RunContextServices{
@@ -2621,7 +2628,8 @@ func TestGoExecutionActions(t *testing.T) {
 				{ID: "decline", Type: "secondary", Params: map[string]interface{}(nil)},
 				{ID: "change_executor", Type: "other", Params: map[string]interface{}(nil)},
 				{ID: "request_execution_info", Type: "other", Params: map[string]interface{}(nil)},
-				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": []string{"form_0", "form_1"}}}},
+				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": []string{"form_0", "form_1"}}},
+			},
 		},
 		{
 			name: "Two form - is filled false (ReadWrite & RequiredFill)",
@@ -2661,7 +2669,8 @@ func TestGoExecutionActions(t *testing.T) {
 								})
 
 								return marshalForm
-							}()}
+							}(),
+						}
 						return s
 					}(),
 					Services: RunContextServices{
@@ -2722,7 +2731,8 @@ func TestGoExecutionActions(t *testing.T) {
 				{ID: "decline", Type: "secondary", Params: map[string]interface{}(nil)},
 				{ID: "change_executor", Type: "other", Params: map[string]interface{}(nil)},
 				{ID: "request_execution_info", Type: "other", Params: map[string]interface{}(nil)},
-				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": []string{"form_0", "form_1"}}}},
+				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": []string{"form_0", "form_1"}}},
+			},
 		},
 		{
 			name: "Two form is filled (RequiredFill)",
@@ -2785,7 +2795,8 @@ func TestGoExecutionActions(t *testing.T) {
 								})
 
 								return marshalForm
-							}()}
+							}(),
+						}
 						return s
 					}(),
 					Services: RunContextServices{
@@ -2846,7 +2857,8 @@ func TestGoExecutionActions(t *testing.T) {
 				{ID: "decline", Type: "secondary", Params: map[string]interface{}(nil)},
 				{ID: "change_executor", Type: "other", Params: map[string]interface{}(nil)},
 				{ID: "request_execution_info", Type: "other", Params: map[string]interface{}(nil)},
-				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": []string{"form_0", "form_1"}}}},
+				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": []string{"form_0", "form_1"}}},
+			},
 		},
 		{
 			name: "Two form is filled and not filled (RequiredFill)",
@@ -2904,7 +2916,8 @@ func TestGoExecutionActions(t *testing.T) {
 								})
 
 								return marshalForm
-							}()}
+							}(),
+						}
 						return s
 					}(),
 					Services: RunContextServices{
@@ -2965,7 +2978,8 @@ func TestGoExecutionActions(t *testing.T) {
 				{ID: "decline", Type: "secondary", Params: map[string]interface{}(nil)},
 				{ID: "change_executor", Type: "other", Params: map[string]interface{}(nil)},
 				{ID: "request_execution_info", Type: "other", Params: map[string]interface{}(nil)},
-				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": []string{"form_0", "form_1"}}}},
+				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": []string{"form_0", "form_1"}}},
+			},
 		},
 		{
 			name: "Two form - not filled (RequiredFill)",
@@ -3018,7 +3032,8 @@ func TestGoExecutionActions(t *testing.T) {
 								})
 
 								return marshalForm
-							}()}
+							}(),
+						}
 						return s
 					}(),
 					Services: RunContextServices{
@@ -3079,7 +3094,8 @@ func TestGoExecutionActions(t *testing.T) {
 				{ID: "decline", Type: "secondary", Params: map[string]interface{}(nil)},
 				{ID: "change_executor", Type: "other", Params: map[string]interface{}(nil)},
 				{ID: "request_execution_info", Type: "other", Params: map[string]interface{}(nil)},
-				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": []string{"form_0", "form_1"}}}},
+				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": []string{"form_0", "form_1"}}},
+			},
 		},
 	}
 
