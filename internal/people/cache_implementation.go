@@ -74,30 +74,30 @@ func (s *ServiceWithCache) GetUsers(ctx context.Context, username string, limit 
 
 	log := logger.GetLogger(ctx)
 
+	var keyForCache string
+
 	f, err := json.Marshal(filter)
-	if err != nil {
-		log.WithError(err).Error("can't marshal filter")
-	}
+	if err == nil { //nolint:nestif //так нужно
+		keyForCache = fmt.Sprintf("%s%s%d%s", usersKeyPrefix, username, *limit, f)
 
-	keyForCache := fmt.Sprintf("%s%s%d%s", usersKeyPrefix, username, *limit, f)
+		valueFromCache, err := s.Cache.GetValue(ctx, keyForCache) //nolint:govet //ничего страшного
+		if err == nil {
+			resources, ok := valueFromCache.(string)
+			if ok {
+				var data []SSOUser
 
-	valueFromCache, err := s.Cache.GetValue(ctx, keyForCache)
-	if err == nil {
-		resources, ok := valueFromCache.(string)
-		if ok {
-			var data []SSOUser
+				unmErr := json.Unmarshal([]byte(resources), &data)
+				if unmErr == nil {
+					log.Info("got resources from cache")
 
-			unmErr := json.Unmarshal([]byte(resources), &data)
-			if unmErr == nil {
-				log.Info("got resources from cache")
-
-				return data, nil
+					return data, nil
+				}
 			}
-		}
 
-		err = s.Cache.DeleteValue(ctx, keyForCache)
-		if err != nil {
-			log.WithError(err).Error("can't delete key from cache")
+			err = s.Cache.DeleteValue(ctx, keyForCache)
+			if err != nil {
+				log.WithError(err).Error("can't delete key from cache")
+			}
 		}
 	}
 

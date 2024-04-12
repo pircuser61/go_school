@@ -34,30 +34,30 @@ func (s *ServiceWithCache) GetCalendars(ctx context.Context, params *GetCalendar
 
 	log := logger.GetLogger(ctx)
 
+	var keyForCache string
+
 	key, err := json.Marshal(params)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal params: %s", err)
-	}
+	if err == nil { //nolint:nestif //так нужно
+		keyForCache = calendarsKeyPrefix + string(key)
 
-	keyForCache := calendarsKeyPrefix + string(key)
+		valueFromCache, err := s.Cache.GetValue(ctx, keyForCache) //nolint:govet //ничего страшного
+		if err == nil {
+			calendars, ok := valueFromCache.(string)
+			if ok {
+				var data []Calendar
 
-	valueFromCache, err := s.Cache.GetValue(ctx, keyForCache)
-	if err == nil {
-		calendars, ok := valueFromCache.(string)
-		if ok {
-			var data []Calendar
+				unmErr := json.Unmarshal([]byte(calendars), &data)
+				if unmErr == nil {
+					log.Info("got calendars from cache")
 
-			unmErr := json.Unmarshal([]byte(calendars), &data)
-			if unmErr == nil {
-				log.Info("got calendars from cache")
-
-				return data, nil
+					return data, nil
+				}
 			}
-		}
 
-		err = s.Cache.DeleteValue(ctx, keyForCache)
-		if err != nil {
-			log.WithError(err).Error("can't delete key from cache")
+			err = s.Cache.DeleteValue(ctx, keyForCache)
+			if err != nil {
+				log.WithError(err).Error("can't delete key from cache")
+			}
 		}
 	}
 
@@ -67,7 +67,7 @@ func (s *ServiceWithCache) GetCalendars(ctx context.Context, params *GetCalendar
 	}
 
 	calendarData, err := json.Marshal(calendar)
-	if err == nil {
+	if err == nil && keyForCache != "" {
 		err = s.Cache.SetValue(ctx, keyForCache, string(calendarData))
 		if err != nil {
 			log.WithError(err).Error("can't send data to cache")
@@ -83,30 +83,30 @@ func (s *ServiceWithCache) GetCalendarDays(ctx context.Context, params *GetCalen
 
 	log := logger.GetLogger(ctx)
 
+	var keyForCache string
+
 	key, err := json.Marshal(params)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal params: %s", err)
-	}
+	if err == nil { //nolint:nestif //так нужно
+		keyForCache = calendarDaysKeyPrefix + string(key)
 
-	keyForCache := calendarDaysKeyPrefix + string(key)
+		valueFromCache, err := s.Cache.GetValue(ctx, keyForCache) //nolint:govet //ничего страшного
+		if err == nil {
+			calendarDays, ok := valueFromCache.(string)
+			if ok {
+				var data *CalendarDays
 
-	valueFromCache, err := s.Cache.GetValue(ctx, keyForCache)
-	if err == nil {
-		calendarDays, ok := valueFromCache.(string)
-		if ok {
-			var data *CalendarDays
+				unmErr := json.Unmarshal([]byte(calendarDays), &data)
+				if unmErr == nil {
+					log.Info("got calendarDays from cache")
 
-			unmErr := json.Unmarshal([]byte(calendarDays), &data)
-			if unmErr == nil {
-				log.Info("got calendarDays from cache")
-
-				return data, nil
+					return data, nil
+				}
 			}
-		}
 
-		err = s.Cache.DeleteValue(ctx, keyForCache)
-		if err != nil {
-			log.WithError(err).Error("can't delete key from cache")
+			err = s.Cache.DeleteValue(ctx, keyForCache)
+			if err != nil {
+				log.WithError(err).Error("can't delete key from cache")
+			}
 		}
 	}
 
@@ -155,6 +155,7 @@ func (s *ServiceWithCache) GetDefaultUnitID() string {
 	return s.HRGate.GetDefaultUnitID()
 }
 
+// nolint:dupl //так нужно!
 func (s *ServiceWithCache) GetDefaultCalendarDaysForGivenTimeIntervals(
 	ctx context.Context,
 	taskTimeIntervals []entity.TaskCompletionInterval,

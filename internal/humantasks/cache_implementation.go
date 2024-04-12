@@ -3,7 +3,6 @@ package humantasks
 import (
 	c "context"
 	"encoding/json"
-	"fmt"
 	"strings"
 
 	"go.opencensus.io/trace"
@@ -29,30 +28,30 @@ func (s *ServiceWithCache) GetDelegations(ctx c.Context, req *d.GetDelegationsRe
 
 	log := logger.GetLogger(ctx)
 
+	var keyForCache string
+
 	key, err := json.Marshal(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal params: %s", err)
-	}
+	if err == nil { //nolint:nestif //так нужно
+		keyForCache = delegationsKeyPrefix + string(key)
 
-	keyForCache := delegationsKeyPrefix + string(key)
+		valueFromCache, err := s.Cache.GetValue(ctx, keyForCache) //nolint:govet //ничего страшного
+		if err == nil {
+			delegations, ok := valueFromCache.(string)
+			if ok {
+				var data Delegations
 
-	valueFromCache, err := s.Cache.GetValue(ctx, keyForCache)
-	if err == nil {
-		delegations, ok := valueFromCache.(string)
-		if ok {
-			var data Delegations
+				unmErr := json.Unmarshal([]byte(delegations), &data)
+				if unmErr == nil {
+					log.Info("got delegations from cache")
 
-			unmErr := json.Unmarshal([]byte(delegations), &data)
-			if unmErr == nil {
-				log.Info("got delegations from cache")
-
-				return data, nil
+					return data, nil
+				}
 			}
-		}
 
-		err = s.Cache.DeleteValue(ctx, keyForCache)
-		if err != nil {
-			log.WithError(err).Error("can't delete key from cache")
+			err = s.Cache.DeleteValue(ctx, keyForCache)
+			if err != nil {
+				log.WithError(err).Error("can't delete key from cache")
+			}
 		}
 	}
 

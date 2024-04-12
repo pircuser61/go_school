@@ -146,6 +146,7 @@ func (s *Service) GetDefaultUnitID() string {
 	return *s.DefaultCalendarUnitID
 }
 
+// nolint:dupl //так нужно!
 func (s *Service) GetDefaultCalendarDaysForGivenTimeIntervals(
 	ctx context.Context,
 	taskTimeIntervals []entity.TaskCompletionInterval,
