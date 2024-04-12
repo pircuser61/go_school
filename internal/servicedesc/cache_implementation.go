@@ -11,13 +11,13 @@ import (
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	cachekit "gitlab.services.mts.ru/jocasta/cache-kit"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 )
 
 const (
 	workGroupKeyPrefix         = "workGroup:"
 	schemaIDKeyPrefix          = "schemaID:"
 	schemaBlueprintIDKeyPrefix = "schemaBlueprintID:"
+	ssoPersonKeyPrefix         = "ssoPerson:"
 )
 
 type ServiceWithCache struct {
@@ -25,6 +25,7 @@ type ServiceWithCache struct {
 	Servicedesc ServiceInterface
 }
 
+//nolint:dupl //так нужно
 func (s *ServiceWithCache) GetWorkGroup(ctx context.Context, groupID string) (*WorkGroup, error) {
 	ctx, span := trace.StartSpan(ctx, "servicedesc.get_work_group(cached)")
 	defer span.End()
@@ -160,43 +161,47 @@ func (s *ServiceWithCache) GetSchemaByBlueprintID(ctx context.Context, blueprint
 }
 
 func (s *ServiceWithCache) GetSsoPerson(ctx context.Context, username string) (*SsoPerson, error) {
-	ctxLocal, span := trace.StartSpan(ctx, "servicedesc.get_sso_person(cached)")
+	ctx, span := trace.StartSpan(ctx, "servicedesc.get_sso_person(cached)")
 	defer span.End()
 
-	if sso.IsServiceUserName(username) {
-		return &SsoPerson{
-			Username: username,
-		}, nil
+	log := logger.GetLogger(ctx)
+
+	keyForCache := ssoPersonKeyPrefix + username
+
+	valueFromCache, err := s.Cache.GetValue(ctx, keyForCache)
+	if err == nil {
+		person, ok := valueFromCache.(string)
+		if ok {
+			var data *SsoPerson
+
+			unmErr := json.Unmarshal([]byte(person), &data)
+			if unmErr == nil {
+				log.Info("got res from cache")
+
+				return data, nil
+			}
+		}
+
+		err = s.Cache.DeleteValue(ctx, keyForCache)
+		if err != nil {
+			log.WithError(err).Error("can't delete key from cache")
+		}
 	}
 
-	sdURL := s.GetSdURL()
-
-	reqURL := fmt.Sprintf("%s%s", sdURL, fmt.Sprintf(getUserInfo, username))
-
-	req, err := http.NewRequestWithContext(ctxLocal, http.MethodGet, reqURL, http.NoBody)
+	person, err := s.Servicedesc.GetSsoPerson(ctx, username)
 	if err != nil {
 		return nil, err
 	}
 
-	cli := s.GetCli()
-
-	resp, err := cli.Do(req)
-	if err != nil {
-		return nil, err
+	personData, err := json.Marshal(person)
+	if err == nil && keyForCache != "" {
+		err = s.Cache.SetValue(ctx, keyForCache, string(personData))
+		if err != nil {
+			return nil, fmt.Errorf("can't set res to cache: %s", err)
+		}
 	}
 
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("bad status code from sso: %d, username: %s", resp.StatusCode, username)
-	}
-
-	res := &SsoPerson{}
-	if unmErr := json.NewDecoder(resp.Body).Decode(&res); unmErr != nil {
-		return nil, unmErr
-	}
-
-	return res, nil
+	return person, nil
 }
 
 func (s *ServiceWithCache) GetSdURL() string {
