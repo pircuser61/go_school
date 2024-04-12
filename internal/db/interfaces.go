@@ -58,6 +58,7 @@ type TaskStorager interface {
 	GetExecutorsFromPrevExecutionBlockRun(ctx c.Context, taskID uuid.UUID, name string) (exec map[string]struct{}, err error)
 	GetExecutorsFromPrevWorkVersionExecutionBlockRun(ctx c.Context, workNumber, name string) (exec map[string]struct{}, err error)
 	GetWorkIDByWorkNumber(ctx c.Context, workNumber string) (uuid.UUID, error)
+	GetPipelineIDByWorkID(ctx c.Context, taskID string) (uuid.UUID, uuid.UUID, error)
 
 	GetTaskForMonitoring(ctx c.Context, workNumber string, fromEventID, toEventID *string) ([]e.MonitoringTaskNode, error)
 	GetTasksForMonitoring(ctx c.Context, filters *e.TasksForMonitoringFilters) (*e.TasksForMonitoring, error)
@@ -178,6 +179,8 @@ type StepBreachedSLA struct {
 	TaskID      uuid.UUID
 	WorkNumber  string
 	WorkTitle   string
+	PipelineID  uuid.UUID
+	VersionID   uuid.UUID
 	Initiator   string
 	VarStore    *store.VariableStore
 	BlockData   *e.EriusFunc

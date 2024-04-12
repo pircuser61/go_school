@@ -205,7 +205,7 @@ func (gb *GoSdApplicationBlock) BlockAttachments() []string {
 func createGoSdApplicationBlock(ctx context.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext,
 	expectedEvents map[string]struct{},
 ) (*GoSdApplicationBlock, bool, error) {
-	log := logger.CreateLogger(nil)
+	log := logger.GetLogger(ctx).WithField("funcName", "createGoSdApplicationBlock")
 	log.WithField("params", string(ef.Params)).Info("sd_application parameters")
 
 	const reEntry = false

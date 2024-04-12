@@ -84,6 +84,17 @@ type ExecutorNotifTemplate struct {
 	Deadline    string
 }
 
+type ReviewTemplate struct {
+	ID          string
+	Name        string
+	Decision    string
+	Comment     string
+	SdURL       string
+	Author      *sso.UserInfo
+	AttachLinks []file_registry.AttachInfo
+	AttachExist bool
+}
+
 type LastWork struct {
 	WorkNumber string `json:"work_number"`
 	Name       string `json:"work_title"`
@@ -819,25 +830,29 @@ func NewAddApproversTpl(in *NewAppPersonStatusTpl, recipientEmail string) (Templ
 	}, buttons
 }
 
-func NewDecisionMadeByAdditionalApprover(id, name, decision, comment, sdURL string, author *sso.UserInfo) Template {
+func NewDecisionMadeByAdditionalApprover(tmpl *ReviewTemplate) Template {
 	return Template{
-		Subject:  fmt.Sprintf("Получена рецензия по Заявке № %s %s", id, name),
+		Subject:  fmt.Sprintf("Получена рецензия по Заявке № %s %s", tmpl.ID, tmpl.Name),
 		Template: "internal/mail/template/18reviewReceived-template.html",
 		Image:    "18_poluchena_recenziya.png",
 		Variables: struct {
-			ID       string `json:"id"`
-			Name     string `json:"name"`
-			Link     string `json:"link"`
-			Decision string `json:"decision"`
-			Comment  string `json:"comment"`
-			Author   *sso.UserInfo
+			ID          string                     `json:"id"`
+			Name        string                     `json:"name"`
+			Link        string                     `json:"link"`
+			Decision    string                     `json:"decision"`
+			Comment     string                     `json:"comment"`
+			Author      *sso.UserInfo              `json:"author"`
+			AttachLinks []file_registry.AttachInfo `json:"attachLinks"`
+			AttachExist bool                       `json:"attachExist"`
 		}{
-			ID:       id,
-			Name:     name,
-			Decision: decision,
-			Comment:  comment,
-			Link:     fmt.Sprintf(TaskURLTemplate, sdURL, id),
-			Author:   author,
+			ID:          tmpl.ID,
+			Name:        tmpl.Name,
+			Decision:    tmpl.Decision,
+			Comment:     tmpl.Comment,
+			Link:        fmt.Sprintf(TaskURLTemplate, tmpl.SdURL, tmpl.ID),
+			Author:      tmpl.Author,
+			AttachLinks: tmpl.AttachLinks,
+			AttachExist: tmpl.AttachExist,
 		},
 	}
 }

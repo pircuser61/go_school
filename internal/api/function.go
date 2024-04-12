@@ -39,19 +39,20 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 	ctx, span := trace.StartSpan(ctx, "FunctionReturnHandler")
 	defer span.End()
 
-	log := ae.Log
+	log := ae.Log.WithField("funcName", "FunctionReturnHandler").
+		WithField("mainFuncName", "FunctionReturnHandler").
+		WithField("stepID", message.TaskID).
+		WithField("method", "kafka")
 
 	messageTmp, err := json.Marshal(message)
 	if err != nil {
-		log.WithField("taskID", message.TaskID).
-			WithError(err).
+		log.WithError(err).
 			Error("error marshaling message from kafka")
 	}
 
 	messageString := string(messageTmp)
 
-	log.WithField("funcName", "FunctionReturnHandler").
-		WithField("body", messageString).
+	log.WithField("body", messageString).
 		Info("start handle message from kafka")
 
 	ctx = logger.WithLogger(ctx, log)
@@ -66,15 +67,17 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 	st, err := ae.getTaskStepWithRetry(ctx, message.TaskID)
 	if err != nil {
 		log.WithField("funcName", "GetTaskStepById").
+			WithField("step_id", message.TaskID).
 			WithError(err).
 			Error("get task step by id")
 
 		return nil
 	}
 
-	log = log.WithField("step.WorkNumber", st.WorkNumber).
-		WithField("step.Name", st.Name).
-		WithField("taskID", message.TaskID)
+	log = log.WithField("workNumber", st.WorkNumber).
+		WithField("stepName", st.Name).
+		WithField("workID", st.WorkID)
+	ctx = logger.WithLogger(ctx, log)
 
 	if st.IsPaused {
 		log.Error("block is paused")
@@ -90,8 +93,10 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 	}
 
 	functionMapping := pipeline.FunctionUpdateParams{
-		Mapping: message.FunctionMapping,
-		DoRetry: message.DoRetry,
+		Mapping:       message.FunctionMapping,
+		DoRetry:       message.DoRetry,
+		IsAsyncResult: message.IsAsyncResult,
+		Err:           message.Err,
 	}
 
 	mapping, err := json.Marshal(functionMapping)
@@ -104,11 +109,25 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 		return nil
 	}
 
+	pipelineID, versionID, err := ae.DB.GetPipelineIDByWorkID(ctx, st.WorkID.String())
+	if err != nil {
+		log.WithError(err).
+			Error("can't get pipelineID")
+
+		return nil
+	}
+
+	log = log.WithField("pipelineID", pipelineID).
+		WithField("versionID", versionID)
+	ctx = logger.WithLogger(ctx, log)
+
 	runCtx := &pipeline.BlockRunContext{
 		TaskID:     st.WorkID,
 		WorkNumber: st.WorkNumber,
 		Initiator:  st.Initiator,
 		VarStore:   storage,
+		PipelineID: pipelineID,
+		VersionID:  versionID,
 		Services: pipeline.RunContextServices{
 			HTTPClient:    ae.HTTPClient,
 			Storage:       ae.DB,

@@ -61,6 +61,7 @@ type Pipeliner struct {
 	SchedulerTasks          scheduler.Config     `yaml:"scheduler_tasks"`
 	Forms                   forms.Config         `yaml:"forms"`
 	HostURL                 string               `yaml:"host_url"`
+	LogIndex                string               `yaml:"log_index"`
 	Services                Services             `yaml:"services"`
 	ConsumerWorkerCnt       int                  `yaml:"consumer_worker_count"`
 }

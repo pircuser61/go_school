@@ -95,6 +95,8 @@ log:
     filename:
       sourceField: 'sourcelog'
 
+log_index: 'jocasta-dev-jocasta-dev-ocean-0000-s1-k8s-cmn-inside-01'
+
 servicedesc:
   servicedesk_url: 'https://dev.servicedesk.mts.ru'
   scope: 'servicedesk-develop-aud'

@@ -23,4 +23,5 @@ const (
 	SelectAsValFinishedGroupExecutor = "finished_group_executor"
 	SelectAsValQueueExecutor         = "queue_executor"
 	SelectAsValInWorkExecutor        = "in_work_executor"
+	SelectAsValFinishedExecutorV2    = "finished_executor_v2"
 )

@@ -424,30 +424,44 @@ func (gb *GoApproverBlock) notifyDecisionMadeByAdditionalApprover(ctx context.Co
 
 	latestDecisonLog := gb.State.ApproverLog[len(gb.State.ApproverLog)-1]
 
-	tpl := mail.NewDecisionMadeByAdditionalApprover(
-		gb.RunContext.WorkNumber,
-		gb.RunContext.NotifName,
-		latestDecisonLog.Decision.ToRuString(),
-		latestDecisonLog.Comment,
-		gb.RunContext.Services.Sender.SdAddress,
-		userInfo,
-	)
+	files := make([]email.Attachment, 0)
 
-	files, err := gb.RunContext.Services.FileRegistry.GetAttachments(
-		ctx,
-		latestDecisonLog.Attachments,
-		gb.RunContext.WorkNumber,
-		gb.RunContext.ClientID,
-	)
+	filesAttach, _, err := gb.RunContext.makeNotificationAttachment()
 	if err != nil {
 		return err
 	}
 
+	attach, err := gb.RunContext.GetAttach(filesAttach)
+	if err != nil {
+		return err
+	}
+
+	files = append(files, attach.AttachmentsList...)
+
+	cleanName(files)
+
+	tpl := mail.NewDecisionMadeByAdditionalApprover(
+		&mail.ReviewTemplate{
+			ID:          gb.RunContext.WorkNumber,
+			Name:        gb.RunContext.NotifName,
+			Decision:    latestDecisonLog.Decision.ToRuString(),
+			Comment:     latestDecisonLog.Comment,
+			SdURL:       gb.RunContext.Services.Sender.SdAddress,
+			Author:      userInfo,
+			AttachLinks: attach.AttachLinks,
+			AttachExist: attach.AttachExists,
+		},
+	)
+
 	filesList := []string{tpl.Image, userImg}
 
-	iconFiles, iconEerr := gb.RunContext.GetIcons(filesList)
-	if iconEerr != nil {
-		return iconEerr
+	if len(attach.AttachLinks) != 0 {
+		filesList = append(filesList, downloadImg)
+	}
+
+	iconFiles, iconErr := gb.RunContext.GetIcons(filesList)
+	if iconErr != nil {
+		return iconErr
 	}
 
 	files = append(files, iconFiles...)

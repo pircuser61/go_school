@@ -214,6 +214,7 @@ func main() {
 		SLAService:              slaService,
 		Forms:                   formsService,
 		HostURL:                 cfg.HostURL,
+		LogIndex:                cfg.LogIndex,
 		FuncMsgResendDelay:      cfg.Kafka.FuncMessageResendDelay,
 	}
 
@@ -230,6 +231,10 @@ func main() {
 		MaxOkCnt:          cfg.Services.MaxOkCnt,
 		ConsumerWorkerCnt: cfg.ConsumerWorkerCnt,
 	}
+
+	kafkaService.InitMessageHandler(APIEnv.FunctionReturnHandler)
+
+	go kafkaService.StartCheckHealth()
 
 	jr, err := jaeger.NewExporter(jaeger.Options{
 		CollectorEndpoint: cfg.Tracing.URL,
