@@ -109,6 +109,7 @@ skipXAsOther:
 		CustomTitle:       message.CustomTitle,
 		ApplicationBody:   message.ApplicationBody,
 		ClientID:          message.ClientID,
+		RequestID:         message.RequestID,
 	}
 
 	_, err = ae.runVersion(ctx, log, run)
