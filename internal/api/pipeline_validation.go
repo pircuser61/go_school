@@ -926,6 +926,7 @@ func searchVariableInJSONSchema(properties script.JSONSchemaProperties, path []s
 	return searchVariableInJSONSchema(param.Properties, path)
 }
 
+//nolint:gocognit //it's ok
 func isTypeValid(propertySchema, targetSchema *script.JSONSchemaPropertiesValue) bool {
 	if propertySchema == nil || targetSchema == nil {
 		return false
