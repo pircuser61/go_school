@@ -213,6 +213,7 @@ func initBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *BlockRu
 				"funcName": "initBlock",
 				"workID":   runCtx.TaskID.String(),
 				"stepName": name,
+				"stepID":   "",
 			}).
 			Warning("block is not exists")
 	}
@@ -220,6 +221,8 @@ func initBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *BlockRu
 	if !runCtx.Productive {
 		return nil, id, nil
 	}
+
+	ctx = logger.WithLogger(ctx, logger.GetLogger(ctx).WithField("stepID", id))
 
 	block, isReEntry, err := CreateBlock(ctx, name, bl, runCtx)
 	if err != nil {
