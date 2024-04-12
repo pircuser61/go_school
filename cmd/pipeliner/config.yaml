@@ -22,9 +22,9 @@ people:
   cache:
     type: "default"
     address: ""
-    db: ""
+    db: 0
     pass: ""
-    ttl: ""
+    ttl: "1s"
 
 database:
   kind: postgres
@@ -109,9 +109,9 @@ servicedesc:
   cache:
     type: "default"
     address: ""
-    db: ""
+    db: 0
     pass: ""
-    ttl: ""
+    ttl: 1s
 
 function_store:
   url: 'functions:90'
@@ -124,9 +124,9 @@ human_tasks:
   cache:
     type: "default"
     address: ""
-    db: ""
+    db: 0
     pass: ""
-    ttl: ""
+    ttl: 1s
 
 imap:
   imap_connection: "mail.inside.mts.ru:993"
@@ -146,9 +146,9 @@ hrgate:
   cache:
     type: "default"
     address: ""
-    db: ""
+    db: 0
     pass: ""
-    ttl: ""
+    ttl: 1s
 
 minio:
   addr: "minio:9000"
