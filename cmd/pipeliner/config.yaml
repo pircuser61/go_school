@@ -10,9 +10,21 @@ timeout: '30s'
 faas: 'https://openfaas.dev.autobp.mts.ru/'
 scheduler: "http://scheduler"
 network_monitor: "http://network-monitor/api/netmon/v1/"
+consumer_worker_count: 10
+
+services_ping:
+  ping_timer: 3s
+  max_failed_count: 3
+  max_ok_count: 3
 
 people:
   url: "https://dev.iga.mts.ru/api/archivist/v2"
+  cache:
+    type: "default"
+    address: ""
+    db: 0
+    pass: ""
+    ttl: "1s"
 
 database:
   kind: postgres
@@ -51,6 +63,7 @@ kafka:
   consumer_group: "pipeliner"
   consumer_topic: "from.runner.to.pipeliner2"
   health_check_timeout: 30
+  function_message_resend_delay: 10s
 
 remedy: "http://remedy"
 
@@ -91,8 +104,14 @@ log:
 log_index: 'jocasta-dev-jocasta-dev-ocean-0000-s1-k8s-cmn-inside-01'
 
 servicedesc:
-  servicedesk_url: 'https://dev.servicedesk.mts.ru'
-  scope: 'servicedesk-develop-aud'
+  servicedesk_url: "https://dev.servicedesk.mts.ru"
+  scope: "servicedesk-develop-aud"
+  cache:
+    type: "default"
+    address: ""
+    db: 0
+    pass: ""
+    ttl: 1s
 
 function_store:
   url: 'functions:90'
@@ -101,7 +120,13 @@ scheduler_tasks:
   url: 'scheduler:90'
 
 human_tasks:
-  url: 'human-tasks:90'
+  url: "human-tasks:90"
+  cache:
+    type: "default"
+    address: ""
+    db: 0
+    pass: ""
+    ttl: 1s
 
 imap:
   imap_connection: "mail.inside.mts.ru:993"
@@ -118,6 +143,12 @@ forms:
 hrgate:
   hr_gate_url: "https://hr-gate.stage.autobp.mts.ru"
   scope: "hr-gate"
+  cache:
+    type: "default"
+    address: ""
+    db: 0
+    pass: ""
+    ttl: 1s
 
 minio:
   addr: "minio:9000"

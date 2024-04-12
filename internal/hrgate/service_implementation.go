@@ -7,10 +7,11 @@ import (
 	"net/http"
 	"time"
 
-	openapi_types "github.com/deepmap/oapi-codegen/pkg/types"
-
 	"go.opencensus.io/trace"
 
+	openapi_types "github.com/deepmap/oapi-codegen/pkg/types"
+
+	cachekit "gitlab.services.mts.ru/jocasta/cache-kit"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
@@ -18,7 +19,16 @@ import (
 const (
 	RussianFederation = "Российская Федерация"
 	maxRetries        = 15
+	defaultLogin      = "gvshestako"
 )
+
+type Service struct {
+	HRGateURL             string
+	DefaultCalendarUnitID *string
+	Location              time.Location
+	Cli                   *ClientWithResponses
+	Cache                 cachekit.Cache
+}
 
 func (s *Service) GetCalendars(ctx context.Context, params *GetCalendarsParams) ([]Calendar, error) {
 	ctx, span := trace.StartSpan(ctx, "hrgate.get_calendars")
@@ -55,27 +65,6 @@ func (s *Service) GetCalendars(ctx context.Context, params *GetCalendarsParams) 
 	return *response.JSON200, err
 }
 
-func (s *Service) GetPrimaryRussianFederationCalendarOrFirst(ctx context.Context, params *GetCalendarsParams) (*Calendar, error) {
-	ctx, span := trace.StartSpan(ctx, "hrgate.get_primary_calendar_or_first")
-	defer span.End()
-
-	calendars, getCalendarsErr := s.GetCalendars(ctx, params)
-
-	if getCalendarsErr != nil {
-		return nil, getCalendarsErr
-	}
-
-	for calendarIdx := range calendars {
-		calendar := calendars[calendarIdx]
-
-		if calendar.Primary != nil && *calendar.Primary && calendar.HolidayCalendar == RussianFederation {
-			return &calendar, nil
-		}
-	}
-
-	return &calendars[0], nil
-}
-
 func (s *Service) GetCalendarDays(ctx context.Context, params *GetCalendarDaysParams) (*CalendarDays, error) {
 	ctx, span := trace.StartSpan(ctx, "hrgate.get_calendar_days")
 	defer span.End()
@@ -103,6 +92,27 @@ func (s *Service) GetCalendarDays(ctx context.Context, params *GetCalendarDaysPa
 	}
 
 	return &res, nil
+}
+
+func (s *Service) GetPrimaryRussianFederationCalendarOrFirst(ctx context.Context, params *GetCalendarsParams) (*Calendar, error) {
+	ctx, span := trace.StartSpan(ctx, "hrgate.get_primary_calendar_or_first")
+	defer span.End()
+
+	calendars, getCalendarsErr := s.GetCalendars(ctx, params)
+
+	if getCalendarsErr != nil {
+		return nil, getCalendarsErr
+	}
+
+	for calendarIdx := range calendars {
+		calendar := calendars[calendarIdx]
+
+		if calendar.Primary != nil && *calendar.Primary && calendar.HolidayCalendar == RussianFederation {
+			return &calendar, nil
+		}
+	}
+
+	return &calendars[0], nil
 }
 
 func (s *Service) FillDefaultUnitID(ctx context.Context) error {
@@ -136,24 +146,7 @@ func (s *Service) GetDefaultUnitID() string {
 	return *s.DefaultCalendarUnitID
 }
 
-func (s *Service) GetDefaultCalendar(ctx context.Context) (*Calendar, error) {
-	ctx, span := trace.StartSpan(ctx, "hrgate.get_default_calendar")
-	defer span.End()
-
-	unitID := s.GetDefaultUnitID()
-
-	calendars, getCalendarsErr := s.GetCalendars(ctx, &GetCalendarsParams{
-		QueryFilters: nil,
-		UnitIDs:      &UnitIDs{unitID},
-	})
-
-	if getCalendarsErr != nil {
-		return nil, getCalendarsErr
-	}
-
-	return &calendars[0], nil
-}
-
+// nolint:dupl //так нужно!
 func (s *Service) GetDefaultCalendarDaysForGivenTimeIntervals(
 	ctx context.Context,
 	taskTimeIntervals []entity.TaskCompletionInterval,
@@ -204,6 +197,48 @@ func (s *Service) GetDefaultCalendarDaysForGivenTimeIntervals(
 	}
 
 	return calendarDays, nil
+}
+
+func (s *Service) GetEmployeeByLogin(ctx context.Context, username string) (*Employee, error) {
+	ctx, span := trace.StartSpan(ctx, "hrgate.get_employee_by_login")
+	defer span.End()
+
+	response, err := s.Cli.GetEmployeesWithResponse(ctx, &GetEmployeesParams{
+		Logins: &[]string{username},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if response.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("invalid response code on gettings employee by login: %d", response.StatusCode())
+	}
+
+	if len(*response.JSON200) == 0 {
+		return nil, fmt.Errorf("cant get employee by login")
+	}
+
+	return &(*response.JSON200)[0], err
+}
+
+func (s *Service) GetOrganizationByID(ctx context.Context, organizationID string) (*Organization, error) {
+	ctx, span := trace.StartSpan(ctx, "hrgate.get_organization_by_id")
+	defer span.End()
+
+	response, err := s.Cli.GetOrganizationsIdWithResponse(ctx, UUIDPathObjectID(organizationID))
+	if err != nil {
+		return nil, err
+	}
+
+	if response.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("invalid response code on gettings organization on id: %d", response.StatusCode())
+	}
+
+	return response.JSON200, nil
+}
+
+func (s *Service) GetLocation() time.Location {
+	return s.Location
 }
 
 // fibonacci function for calculating Fibonacci numbers

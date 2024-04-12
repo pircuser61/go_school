@@ -973,8 +973,8 @@ func TestProcessBlock(t *testing.T) {
 
 							return slaMock
 						}(),
-						HumanTasks: func() *human_tasks.Service {
-							service, _ := human_tasks.NewService(human_tasks.Config{})
+						HumanTasks: func() human_tasks.ServiceInterface {
+							service, _ := human_tasks.NewService(&human_tasks.Config{})
 
 							return service
 						}(),
@@ -1027,7 +1027,7 @@ func TestProcessBlock(t *testing.T) {
 				t.Fatal(blockErr)
 			}
 
-			if _, procErr := ProcessBlockWithEndMapping(
+			if _, _, procErr := ProcessBlockWithEndMapping(
 				context.Background(),
 				tt.fields.Entrypoint,
 				entrypointData,
@@ -1045,7 +1045,7 @@ func TestProcessBlock(t *testing.T) {
 
 				tt.fields.RunContext.UpdateData = &tt.fields.Updates[i].UpdateParams
 
-				_, procErr := ProcessBlockWithEndMapping(
+				_, _, procErr := ProcessBlockWithEndMapping(
 					context.Background(),
 					tt.fields.Updates[i].BlockName,
 					blockData,

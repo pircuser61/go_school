@@ -226,11 +226,7 @@ func (a *ExecutableFunctionParams) Validate() error {
 		return slaErr
 	}
 
-	if retryErr := a.validateRetryParam(); retryErr != nil {
-		return retryErr
-	}
-
-	return nil
+	return a.validateRetryParam()
 }
 
 func (a *ExecutableFunctionParams) validateRetryParam() error {

@@ -52,14 +52,14 @@ type RunContextServices struct {
 	Storage       db.Database
 	Sender        *mail.Service
 	Kafka         *kafka.Service
-	People        *people.Service
-	ServiceDesc   *servicedesc.Service
+	People        people.ServiceInterface
+	ServiceDesc   servicedesc.ServiceInterface
 	FunctionStore *functions.Service
-	HumanTasks    *human_tasks.Service
+	HumanTasks    human_tasks.ServiceInterface
 	Integrations  *integrations.Service
 	FileRegistry  *file_registry.Service
 	FaaS          string
-	HrGate        *hrgate.Service
+	HrGate        hrgate.ServiceInterface
 	Scheduler     *scheduler.Service
 	SLAService    sla.Service
 }
@@ -503,7 +503,7 @@ func ProcessBlockWithEndMapping(
 	bl *entity.EriusFunc,
 	runCtx *BlockRunContext,
 	manual bool,
-) (bool, error) {
+) (blockName string, finished bool, err error) {
 	ctx, s := trace.StartSpan(ctx, "process_block_with_end_mapping")
 	defer s.End()
 
@@ -513,34 +513,34 @@ func ProcessBlockWithEndMapping(
 	if err != nil {
 		log.WithError(err).Error("couldn't get task status before processing")
 
-		return false, nil
+		return "", false, nil
 	}
 
 	runCtx.BlockRunResults = &BlockRunResults{}
 
 	blockProcessor := newBlockProcessor(name, bl, runCtx, manual)
 
-	pErr := blockProcessor.ProcessBlock(ctx, 0)
+	failedBlock, pErr := blockProcessor.ProcessBlock(ctx, 0)
 	if pErr != nil {
-		return false, pErr
+		return failedBlock, false, pErr
 	}
 
 	updDeadlineErr := blockProcessor.updateTaskExecDeadline(ctx)
 	if updDeadlineErr != nil {
 		log.WithError(updDeadlineErr).Error("couldn't update task deadline")
 
-		return false, updDeadlineErr
+		return "", false, updDeadlineErr
 	}
 
 	intStatus, stringStatus, err := runCtx.Services.Storage.GetTaskStatusWithReadableString(ctx, runCtx.TaskID)
 	if err != nil {
 		log.WithError(err).Error("couldn't get task status after processing ")
 
-		return false, nil
+		return "", false, nil
 	}
 
 	if intStatus != 2 && intStatus != 4 {
-		return false, nil
+		return "", false, nil
 	}
 
 	if intStatus == 2 && statusBefore != 2 {
@@ -562,7 +562,7 @@ func ProcessBlockWithEndMapping(
 		if err != nil {
 			log.WithError(updDeadlineErr).Error("couldn't create task event")
 
-			return false, err
+			return "", false, err
 		}
 	}
 
@@ -571,7 +571,7 @@ func ProcessBlockWithEndMapping(
 		log.WithError(endErr).Error("couldn't send process end notification")
 	}
 
-	return true, nil
+	return "", true, nil
 }
 
 func processBlockEnd(ctx c.Context, status string, runCtx *BlockRunContext) (err error) {

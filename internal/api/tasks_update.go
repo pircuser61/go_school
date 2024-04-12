@@ -496,7 +496,7 @@ func (ae *Env) updateStepInternal(ctx context.Context, data *updateStepData) boo
 
 	runCtx.SetTaskEvents(ctx)
 
-	workFinished, blockErr := pipeline.ProcessBlockWithEndMapping(ctx, data.step.Name, blockFunc, runCtx, true)
+	_, workFinished, blockErr := pipeline.ProcessBlockWithEndMapping(ctx, data.step.Name, blockFunc, runCtx, true)
 	if blockErr != nil {
 		return false
 	}
