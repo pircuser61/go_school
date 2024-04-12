@@ -22,13 +22,13 @@ type ServiceWithCache struct {
 	People ServiceInterface
 }
 
-func (s *ServiceWithCache) GetUser(ctx context.Context, search string) (SSOUser, error) {
+func (s *ServiceWithCache) GetUser(ctx context.Context, username string) (SSOUser, error) {
 	log := logger.CreateLogger(nil)
 
 	ctx, span := trace.StartSpan(ctx, "people.get_user")
 	defer span.End()
 
-	keyForCache := userKeyPrefix + search
+	keyForCache := userKeyPrefix + username
 
 	valueFromCache, err := s.Cache.GetValue(ctx, keyForCache)
 	if err == nil {
@@ -43,7 +43,7 @@ func (s *ServiceWithCache) GetUser(ctx context.Context, search string) (SSOUser,
 		return resources, nil
 	}
 
-	resources, err := s.People.GetUser(ctx, search)
+	resources, err := s.People.GetUser(ctx, username)
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +56,7 @@ func (s *ServiceWithCache) GetUser(ctx context.Context, search string) (SSOUser,
 	return resources, nil
 }
 
-func (s *ServiceWithCache) GetUsers(ctx context.Context, search string, limit *int, filter []string) ([]SSOUser, error) {
+func (s *ServiceWithCache) GetUsers(ctx context.Context, username string, limit *int, filter []string) ([]SSOUser, error) {
 	log := logger.CreateLogger(nil)
 
 	ctx, span := trace.StartSpan(ctx, "people.get_users")
@@ -67,7 +67,7 @@ func (s *ServiceWithCache) GetUsers(ctx context.Context, search string, limit *i
 		log.WithError(err).Error("can't marshal filter")
 	}
 
-	keyForCache := usersKeyPrefix + search + string(rune(*limit)) + string(f)
+	keyForCache := usersKeyPrefix + username + string(rune(*limit)) + string(f)
 
 	valueFromCache, err := s.Cache.GetValue(ctx, keyForCache)
 	if err == nil {
@@ -82,7 +82,7 @@ func (s *ServiceWithCache) GetUsers(ctx context.Context, search string, limit *i
 		return resources, nil
 	}
 
-	resources, err := s.People.GetUsers(ctx, search, limit, filter)
+	resources, err := s.People.GetUsers(ctx, username, limit, filter)
 	if err != nil {
 		return nil, err
 	}
