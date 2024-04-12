@@ -16,10 +16,10 @@ import (
 )
 
 const (
-	objectOrArrayType = "objectOrArray"
-	objectType        = "object"
-	arrayType         = "array"
-	stringType        = "string"
+	objectOrArrayOrStringType = "objectOrArrayOrString"
+	objectType                = "object"
+	arrayType                 = "array"
+	stringType                = "string"
 
 	conditionGroupsField = "conditionGroups"
 	conditionsField      = "conditions"
@@ -175,7 +175,7 @@ func validateApproverBlock(bt entity.BlocksType, block *entity.EriusFunc, blockN
 		approverVars := strings.Split(blockApprover.Approver, ";")
 		for _, approverVar := range approverVars {
 			schema := &script.JSONSchemaPropertiesValue{
-				Type:       objectOrArrayType,
+				Type:       objectOrArrayOrStringType,
 				Properties: people.GetSsoPersonSchemaProperties(),
 				Value:      approverVar,
 			}
@@ -258,7 +258,7 @@ func validateExecutionBlock(bt entity.BlocksType, block *entity.EriusFunc, block
 		executorVars := strings.Split(blockExecution.Executors, ";")
 		for _, executorVar := range executorVars {
 			schema := &script.JSONSchemaPropertiesValue{
-				Type:       objectOrArrayType,
+				Type:       objectOrArrayOrStringType,
 				Properties: people.GetSsoPersonSchemaProperties(),
 				Value:      executorVar,
 			}
@@ -353,7 +353,7 @@ func validateFormBlock(bt entity.BlocksType, block *entity.EriusFunc, blockName 
 		executorVars := strings.Split(blockForm.Executor, ";")
 		for _, executorVar := range executorVars {
 			schema := &script.JSONSchemaPropertiesValue{
-				Type:       objectOrArrayType,
+				Type:       objectOrArrayOrStringType,
 				Properties: people.GetSsoPersonSchemaProperties(),
 				Value:      executorVar,
 			}
@@ -441,7 +441,7 @@ func validateSignBlock(bt entity.BlocksType, block *entity.EriusFunc, blockName 
 		signerVars := strings.Split(blockSign.Signer, ";")
 		for _, signerVar := range signerVars {
 			schema := &script.JSONSchemaPropertiesValue{
-				Type:       objectOrArrayType,
+				Type:       objectOrArrayOrStringType,
 				Properties: people.GetSsoPersonSchemaProperties(),
 				Value:      signerVar,
 			}
@@ -755,7 +755,7 @@ func validateNotificationBlock(bt entity.BlocksType, block *entity.EriusFunc, bl
 
 	for _, path := range paths {
 		schema := &script.JSONSchemaPropertiesValue{
-			Type:       objectOrArrayType,
+			Type:       objectOrArrayOrStringType,
 			Properties: people.GetSsoPersonSchemaProperties(),
 			Value:      path,
 		}
@@ -932,11 +932,12 @@ func isTypeValid(propertySchema, targetSchema *script.JSONSchemaPropertiesValue)
 	}
 
 	if propertySchema.Type != targetSchema.Type &&
-		!(propertySchema.Type == objectOrArrayType && (targetSchema.Type == objectType || targetSchema.Type == arrayType)) {
+		!(propertySchema.Type == objectOrArrayOrStringType &&
+			(targetSchema.Type == objectType || targetSchema.Type == arrayType || targetSchema.Type == stringType)) {
 		return false
 	}
 
-	if propertySchema.Type == objectType || (propertySchema.Type == objectOrArrayType && targetSchema.Type == objectType) {
+	if propertySchema.Type == objectType || (propertySchema.Type == objectOrArrayOrStringType && targetSchema.Type == objectType) {
 		if !isObjectValid(propertySchema, targetSchema) {
 			return false
 		}
@@ -948,7 +949,7 @@ func isTypeValid(propertySchema, targetSchema *script.JSONSchemaPropertiesValue)
 		}
 	}
 
-	if propertySchema.Type == objectOrArrayType && targetSchema.Type == arrayType {
+	if propertySchema.Type == objectOrArrayOrStringType && targetSchema.Type == arrayType {
 		items := &script.ArrayItems{
 			Type:       objectType,
 			Format:     "ssoperson",
