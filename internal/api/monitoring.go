@@ -935,7 +935,7 @@ func (ae *Env) restartNode(
 		WithField("pipelineID", pipelineID)
 	ctx = logger.WithLogger(ctx, log)
 
-	_, processErr := pipeline.ProcessBlockWithEndMapping(ctx, dbStep.Name, blockData, &pipeline.BlockRunContext{
+	_, _, processErr := pipeline.ProcessBlockWithEndMapping(ctx, dbStep.Name, blockData, &pipeline.BlockRunContext{
 		TaskID:      task.ID,
 		WorkNumber:  workNumber,
 		WorkTitle:   task.Name,

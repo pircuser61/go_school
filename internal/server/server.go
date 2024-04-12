@@ -120,9 +120,11 @@ func (s *Server) checkSvcsAvailability(ctx context.Context) {
 }
 
 func (s *Server) PingSvcs(ctx context.Context, failedCh chan bool) {
-	var kafkaStopped bool
-	var failedCount int
-	var okCount int
+	var (
+		kafkaStopped bool
+		failedCount  int
+		okCount      int
+	)
 
 	for {
 		<-time.After(s.pingTimer)
@@ -137,7 +139,8 @@ func (s *Server) PingSvcs(ctx context.Context, failedCh chan bool) {
 
 			okCount = 0
 
-			if failedCount++; failedCount < s.maxFailedCnt {
+			failedCount++
+			if failedCount < s.maxFailedCnt {
 				continue
 			}
 
@@ -151,7 +154,8 @@ func (s *Server) PingSvcs(ctx context.Context, failedCh chan bool) {
 			continue
 		}
 
-		if okCount++; okCount < s.maxOkCnt {
+		okCount++
+		if okCount < s.maxOkCnt {
 			continue
 		}
 
