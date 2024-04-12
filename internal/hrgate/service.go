@@ -8,17 +8,28 @@ import (
 
 	"gitlab.services.mts.ru/abp/myosotis/observability"
 
+	cachekit "gitlab.services.mts.ru/jocasta/cache-kit"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 )
 
-type Service struct {
-	HRGateURL             string
-	DefaultCalendarUnitID *string
-	Location              time.Location
-	Cli                   *ClientWithResponses
+func NewServiceWithCache(cfg *Config, ssoS *sso.Service) (ServiceInterface, error) {
+	service, err := NewService(cfg, ssoS)
+	if err != nil {
+		return nil, err
+	}
+
+	cache, cacheErr := cachekit.CreateCache(cachekit.Config(cfg.Cache))
+	if cacheErr != nil {
+		return nil, cacheErr
+	}
+
+	return &ServiceWithCache{
+		HRGate: service,
+		Cache:  cache,
+	}, nil
 }
 
-func NewService(cfg Config, ssoS *sso.Service) (*Service, error) {
+func NewService(cfg *Config, ssoS *sso.Service) (ServiceInterface, error) {
 	httpClient := &http.Client{}
 	tr := TransportForHrGate{
 		transport: ochttp.Transport{
@@ -40,30 +51,9 @@ func NewService(cfg Config, ssoS *sso.Service) (*Service, error) {
 		return nil, getLocationErr
 	}
 
-	s := &Service{
+	return &Service{
 		Cli:       newCli,
 		HRGateURL: cfg.HRGateURL,
 		Location:  *location,
-	}
-
-	return s, nil
-}
-
-type TransportForHrGate struct {
-	transport ochttp.Transport
-	sso       *sso.Service
-	scope     string
-}
-
-func (t *TransportForHrGate) RoundTrip(req *http.Request) (*http.Response, error) {
-	err := t.sso.BindAuthHeader(req.Context(), req, t.scope)
-	if err != nil {
-		return nil, err
-	}
-
-	return t.transport.RoundTrip(req)
-}
-
-func (s *Service) GetLocation() time.Location {
-	return s.Location
+	}, nil
 }

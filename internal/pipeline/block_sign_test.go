@@ -5376,7 +5376,8 @@ func TestGoSignActions(t *testing.T) {
 			wantActions: []MemberAction{
 				{ID: "sign_sign", Type: "primary", Params: map[string]interface{}{"signature_type": script.SignatureTypeUNEP}},
 				{ID: "sign_reject", Type: "secondary", Params: map[string]interface{}(nil)},
-				{ID: "add_approvers", Type: "other", Params: map[string]interface{}(nil)}},
+				{ID: "add_approvers", Type: "other", Params: map[string]interface{}(nil)},
+			},
 		},
 		{
 			name: "one form ReadWrite",
@@ -5395,7 +5396,8 @@ func TestGoSignActions(t *testing.T) {
 							AccessType:  "ReadWrite",
 							Description: "форма",
 						},
-					}},
+					},
+				},
 				RunContext: &BlockRunContext{
 					skipNotifications: false,
 					VarStore: func() *store.VariableStore {
@@ -5428,7 +5430,8 @@ func TestGoSignActions(t *testing.T) {
 				{ID: "sign_sign", Type: "primary", Params: map[string]interface{}{"signature_type": script.SignatureTypeUNEP}},
 				{ID: "sign_reject", Type: "secondary", Params: map[string]interface{}(nil)},
 				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": []string{"form_0"}}},
-				{ID: "add_approvers", Type: "other", Params: map[string]interface{}(nil)}},
+				{ID: "add_approvers", Type: "other", Params: map[string]interface{}(nil)},
+			},
 		},
 		{
 			name: "two form (ReadWrite)",
@@ -5488,7 +5491,8 @@ func TestGoSignActions(t *testing.T) {
 				{ID: "sign_sign", Type: "primary", Params: map[string]interface{}{"signature_type": script.SignatureTypeUNEP}},
 				{ID: "sign_reject", Type: "secondary", Params: map[string]interface{}(nil)},
 				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": []string{"form_0", "form_1"}}},
-				{ID: "add_approvers", Type: "other", Params: map[string]interface{}(nil)}},
+				{ID: "add_approvers", Type: "other", Params: map[string]interface{}(nil)},
+			},
 		},
 		{
 			name: "Two form is filled true - ok (ReadWrite & RequiredFill)",
@@ -5536,7 +5540,8 @@ func TestGoSignActions(t *testing.T) {
 								})
 
 								return marshalForm
-							}()}
+							}(),
+						}
 						return s
 					}(),
 					Services: RunContextServices{
@@ -5596,7 +5601,8 @@ func TestGoSignActions(t *testing.T) {
 				{ID: "sign_sign", Type: "primary", Params: map[string]interface{}{"signature_type": script.SignatureTypeUNEP}},
 				{ID: "sign_reject", Type: "secondary", Params: map[string]interface{}(nil)},
 				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": []string{"form_0", "form_1"}}},
-				{ID: "add_approvers", Type: "other", Params: map[string]interface{}(nil)}},
+				{ID: "add_approvers", Type: "other", Params: map[string]interface{}(nil)},
+			},
 		},
 		{
 			name: "Two form is filled true and not exist ChangeLog - bad (ReadWrite & RequiredFill)",
@@ -5639,7 +5645,8 @@ func TestGoSignActions(t *testing.T) {
 								})
 
 								return marshalForm
-							}()}
+							}(),
+						}
 						return s
 					}(),
 					Services: RunContextServices{
@@ -5699,7 +5706,8 @@ func TestGoSignActions(t *testing.T) {
 				{ID: "sign_sign", Type: "primary", Params: map[string]interface{}{"disabled": true}},
 				{ID: "sign_reject", Type: "secondary", Params: map[string]interface{}(nil)},
 				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": []string{"form_0", "form_1"}}},
-				{ID: "add_approvers", Type: "other", Params: map[string]interface{}(nil)}},
+				{ID: "add_approvers", Type: "other", Params: map[string]interface{}(nil)},
+			},
 		},
 		{
 			name: "Two form - is filled false (ReadWrite & RequiredFill)",
@@ -5739,7 +5747,8 @@ func TestGoSignActions(t *testing.T) {
 								})
 
 								return marshalForm
-							}()}
+							}(),
+						}
 						return s
 					}(),
 					Services: RunContextServices{
@@ -5799,7 +5808,8 @@ func TestGoSignActions(t *testing.T) {
 				{ID: "sign_sign", Type: "primary", Params: map[string]interface{}{"disabled": true}},
 				{ID: "sign_reject", Type: "secondary", Params: map[string]interface{}(nil)},
 				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": []string{"form_0", "form_1"}}},
-				{ID: "add_approvers", Type: "other", Params: map[string]interface{}(nil)}},
+				{ID: "add_approvers", Type: "other", Params: map[string]interface{}(nil)},
+			},
 		},
 		{
 			name: "Two form is filled (RequiredFill)",
@@ -5862,7 +5872,8 @@ func TestGoSignActions(t *testing.T) {
 								})
 
 								return marshalForm
-							}()}
+							}(),
+						}
 						return s
 					}(),
 					Services: RunContextServices{
@@ -5922,7 +5933,8 @@ func TestGoSignActions(t *testing.T) {
 				{ID: "sign_sign", Type: "primary", Params: map[string]interface{}{"signature_type": script.SignatureTypeUNEP}},
 				{ID: "sign_reject", Type: "secondary", Params: map[string]interface{}(nil)},
 				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": []string{"form_0", "form_1"}}},
-				{ID: "add_approvers", Type: "other", Params: map[string]interface{}(nil)}},
+				{ID: "add_approvers", Type: "other", Params: map[string]interface{}(nil)},
+			},
 		},
 		{
 			name: "Two form is filled and not filled (RequiredFill)",
@@ -5980,7 +5992,8 @@ func TestGoSignActions(t *testing.T) {
 								})
 
 								return marshalForm
-							}()}
+							}(),
+						}
 						return s
 					}(),
 					Services: RunContextServices{
@@ -6040,7 +6053,8 @@ func TestGoSignActions(t *testing.T) {
 				{ID: "sign_sign", Type: "primary", Params: map[string]interface{}{"disabled": true}},
 				{ID: "sign_reject", Type: "secondary", Params: map[string]interface{}(nil)},
 				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": []string{"form_0", "form_1"}}},
-				{ID: "add_approvers", Type: "other", Params: map[string]interface{}(nil)}},
+				{ID: "add_approvers", Type: "other", Params: map[string]interface{}(nil)},
+			},
 		},
 		{
 			name: "Two form - not filled (RequiredFill)",
@@ -6103,7 +6117,8 @@ func TestGoSignActions(t *testing.T) {
 								})
 
 								return marshalForm
-							}()}
+							}(),
+						}
 						return s
 					}(),
 					Services: RunContextServices{
@@ -6163,7 +6178,8 @@ func TestGoSignActions(t *testing.T) {
 				{ID: "sign_sign", Type: "primary", Params: map[string]interface{}{"disabled": true}},
 				{ID: "sign_reject", Type: "secondary", Params: map[string]interface{}(nil)},
 				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": []string{"form_0", "form_1"}}},
-				{ID: "add_approvers", Type: "other", Params: map[string]interface{}(nil)}},
+				{ID: "add_approvers", Type: "other", Params: map[string]interface{}(nil)},
+			},
 		},
 	}
 

@@ -8,10 +8,11 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/hrishin/httpmock"
 	"github.com/stretchr/testify/assert"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
+
+	"github.com/hrishin/httpmock"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"

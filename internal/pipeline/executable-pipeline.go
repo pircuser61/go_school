@@ -245,10 +245,10 @@ func (gb *ExecutablePipeline) BlockAttachments() (ids []string) {
 	return ids
 }
 
-func (gb *ExecutablePipeline) UpdateStateUsingOutput(c.Context, []byte) (state map[string]interface{}, err error) {
+func (gb *ExecutablePipeline) UpdateStateUsingOutput(_ c.Context, _ []byte) (state map[string]interface{}, err error) {
 	return nil, nil
 }
 
-func (gb *ExecutablePipeline) UpdateOutputUsingState(c.Context) (output map[string]interface{}, err error) {
+func (gb *ExecutablePipeline) UpdateOutputUsingState(_ c.Context) (output map[string]interface{}, err error) {
 	return nil, nil
 }

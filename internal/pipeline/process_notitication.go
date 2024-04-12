@@ -581,6 +581,7 @@ func GetConvertDesc(descriptions om.OrderedMap, keys map[string]string, hiddenFi
 
 		if _, existKey := newDesc.Get(ruKey); existKey {
 			newDesc.Set(fmt.Sprintf("%s %-*s", ruKey, spaceCount, " "), v)
+
 			spaceCount++
 
 			continue

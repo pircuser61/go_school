@@ -147,7 +147,6 @@ func (gb *ExecutableFunctionBlock) runFunction(ctx context.Context, log logger.L
 				FunctionVersion: gb.State.Version,
 			},
 		)
-
 		if err != nil {
 			return err
 		}
