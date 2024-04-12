@@ -281,7 +281,6 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 
 func (ae *Env) runVersion(ctx c.Context, log logger.Logger, run *runVersionsDTO) (*entity.RunResponse, error) {
 	var err error
-	start := time.Now()
 	ctx, s := trace.StartSpan(ctx, "run_version")
 
 	requestInfo := metrics.NewPostRequestInfo(runByPipelineIDPath)
@@ -289,7 +288,7 @@ func (ae *Env) runVersion(ctx c.Context, log logger.Logger, run *runVersionsDTO)
 	defer func() {
 		s.End()
 
-		requestInfo.Duration = time.Since(start)
+		requestInfo.Duration = time.Since(time.Now())
 
 		ae.Metrics.RequestsIncrease(requestInfo)
 	}()
