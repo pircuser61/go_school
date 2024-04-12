@@ -1961,8 +1961,8 @@ func (db *PGCon) GetPipelineIDByWorkID(ctx c.Context, taskID string) (pipelineID
 		  JOIN versions v ON v.id = w.version_id
 		WHERE w.id=$1`
 
-	if err = db.Connection.QueryRow(ctx, q, taskID).Scan(&pipelineID, &versionID); err != nil {
-		return uuid.UUID{}, uuid.UUID{}, err
+	if errReq := db.Connection.QueryRow(ctx, q, taskID).Scan(&pipelineID, &versionID); errReq != nil {
+		return uuid.UUID{}, uuid.UUID{}, errReq
 	}
 
 	return pipelineID, versionID, nil
