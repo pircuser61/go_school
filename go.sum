@@ -254,6 +254,8 @@ github.com/google/renameio v0.1.0/go.mod h1:KWCgfxg9yswjAJkECMjeO8J8rahYeXnNhOm4
 github.com/google/uuid v0.0.0-20161128191214-064e2069ce9c/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
 github.com/google/uuid v1.1.2/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
 github.com/google/uuid v1.2.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
+github.com/google/uuid v1.4.0 h1:MtMxsa51/r9yyhkyLsVeVt0B+BGQZzpQiTQ4eHZ8bc4=
+github.com/google/uuid v1.4.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
 github.com/google/uuid v1.6.0 h1:NIvaJDMOsjHA8n1jAhLSgzrAzy1Hgr+hNrb57e+94F0=
 github.com/google/uuid v1.6.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
 github.com/googleapis/gax-go/v2 v2.0.4/go.mod h1:0Wqv26UfaUD9n4G6kQubkQ+KchISgw+vpHVxEJEs9eg=
@@ -599,6 +601,8 @@ github.com/yuin/goldmark v1.4.13/go.mod h1:6yULJ656Px+3vBD8DxQVa3kxgyrAnzto9xy5t
 github.com/zenazn/goji v0.9.0/go.mod h1:7S9M489iMyHBNxwZnk9/EHS098H4/F6TATF2mIxtB1Q=
 gitlab.services.mts.ru/abp/mail/pkg v1.19.0 h1:DNccIRhUuijQYAq3v9gnY5AC7xi51UjHixHYudxFOXU=
 gitlab.services.mts.ru/abp/mail/pkg v1.19.0/go.mod h1:YE2ngC0lCO90yQG+eeT8F6343VuR1pi/VuxvqTLDwYE=
+gitlab.services.mts.ru/abp/myosotis v1.4.4 h1:De8ST0tK1aZKnVFvOd1a3FReloOh3hl6G34so5e1Vcs=
+gitlab.services.mts.ru/abp/myosotis v1.4.4/go.mod h1:x1TTaEJ+kgNbCkQViA5eWgnNLAprspL6qJWJWkhVZFE=
 gitlab.services.mts.ru/abp/myosotis v1.4.5 h1:jcuFnCdsyO/A6FN09npLFWZzFuvuHqB/NxutNSctrxM=
 gitlab.services.mts.ru/abp/myosotis v1.4.5/go.mod h1:uF2046pLHEKQDPXR/gvom0SVlvA7Ww1br8R3nm+M4zk=
 gitlab.services.mts.ru/jocasta/conditions-kit v1.0.10 h1:K2WNbKX+2vDgAENax9YGs5ePhRLpOCvNwGfCMfnWdeA=
@@ -615,10 +619,10 @@ gitlab.services.mts.ru/jocasta/integrations v1.9.0 h1:TVPQPTLLNZmRzwLPen33UjfPuS
 gitlab.services.mts.ru/jocasta/integrations v1.9.0/go.mod h1:9rKUlXs3NW0eWoWKkEMtVYNZwS71L4gu04UTtoRoG4Q=
 gitlab.services.mts.ru/jocasta/msg-kit v0.1.4 h1:c/aTJ5f8uRMnpYEK5p+/AIjwz9WxeEhtqzHK9WYIpG4=
 gitlab.services.mts.ru/jocasta/msg-kit v0.1.4/go.mod h1:yXp0u760CmAViHEQ6ZgIRZl/fO7oblf98t3N1O+IYac=
-gitlab.services.mts.ru/jocasta/scheduler v1.6.1-0.20240208115625-18ca89318e84 h1:ovquJ/+mSk4B3PlnQtXlRXp+EM74qmKCFwBphgVW2UI=
-gitlab.services.mts.ru/jocasta/scheduler v1.6.1-0.20240208115625-18ca89318e84/go.mod h1:Ri3G/AocVrNrWn1q1bxQNWadhCfaOoNdKY8RC4wyg90=
-gitlab.services.mts.ru/jocasta/sequence v0.0.0-20240409131838-2d51914d4daf h1:XRRn5XU1XmEXNbT5Vb0oioBOuX/i+BlqXMLnonkT7Y0=
-gitlab.services.mts.ru/jocasta/sequence v0.0.0-20240409131838-2d51914d4daf/go.mod h1:ZL/2D7yQZoggKaAzCaaR6CpLLpdFkp7bmI/7bMfjusQ=
+gitlab.services.mts.ru/jocasta/scheduler v1.10.1-0.20240411102016-05e370096ac6 h1:+iyopEfs2tel3Kfq+NFOMk5NYF1GKI0UaW/O4pVea9M=
+gitlab.services.mts.ru/jocasta/scheduler v1.10.1-0.20240411102016-05e370096ac6/go.mod h1:VpXgPUo4a3tCoKtHWWlgdwF+RaLUSi7DyBIcHF4lRVE=
+gitlab.services.mts.ru/jocasta/sequence v0.0.0-20240412075820-b2b08d23367a h1:RL2MRlvhniT+Gg61jJaG/wHBBx4qlgY1qjTBFeCleyU=
+gitlab.services.mts.ru/jocasta/sequence v0.0.0-20240412075820-b2b08d23367a/go.mod h1:WGE+Fo9RItfVp7tkpH8UkyzKqCszu9me9v4rEVlkFoc=
 gitlab.services.mts.ru/prodboard/infra v0.3.0 h1:i1owlG5nvYcyNHx7fjTKvaeQm+aW3KeyxHbrapVgxFk=
 gitlab.services.mts.ru/prodboard/infra v0.3.0/go.mod h1:qhvIauTZaXNwzGqQhrHxvs7j+nr9LIcTFoZqNnveOdo=
 go.opencensus.io v0.21.0/go.mod h1:mSImk1erAIZhrmZN+AvHh14ztQfjbGwt4TtuofqLduU=
@@ -995,6 +999,8 @@ google.golang.org/grpc v1.33.2/go.mod h1:JMHMWHQWaTccqQQlmk3MJZS+GWXOdAesneDmEnv
 google.golang.org/grpc v1.36.0/go.mod h1:qjiiYl8FncCW8feJPdyg3v6XW24KsRHe+dy9BAGRRjU=
 google.golang.org/grpc v1.38.0/go.mod h1:NREThFqKR1f3iQ6oBuvc5LadQuXVGo9rkm5ZGrQdJfM=
 google.golang.org/grpc v1.39.0/go.mod h1:PImNr+rS9TWYb2O4/emRugxiyHZ5JyHW5F+RPnDzfrE=
+google.golang.org/grpc v1.61.2 h1:TzJay21lXCf7BiNFKl7mSskt5DlkKAumAYTs52SpJeo=
+google.golang.org/grpc v1.61.2/go.mod h1:VUbo7IFqmF1QtCAstipjG0GIoq49KvMe9+h1jFLBNJs=
 google.golang.org/grpc v1.63.0 h1:WjKe+dnvABXyPJMD7KDNLxtoGk5tgk+YFWN6cBWjZE8=
 google.golang.org/grpc v1.63.0/go.mod h1:WAX/8DgncnokcFUldAxq7GeB5DXHDbMF+lLvDomNkRA=
 google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.1.0/go.mod h1:6Kw0yEErY5E/yWrBtf03jp27GLLJujG4z/JK95pnjjw=

@@ -1,8 +1,6 @@
 module gitlab.services.mts.ru/jocasta/pipeliner
 
-go 1.22.1
-
-toolchain go1.22.2
+go 1.18
 
 require (
 	contrib.go.opencensus.io/exporter/jaeger v0.2.1
@@ -30,7 +28,7 @@ require (
 	github.com/stretchr/testify v1.8.4
 	github.com/xeipuuv/gojsonschema v1.2.0
 	gitlab.services.mts.ru/abp/mail/pkg v1.19.0
-	gitlab.services.mts.ru/abp/myosotis v1.4.5
+	gitlab.services.mts.ru/abp/myosotis v1.4.4
 	gitlab.services.mts.ru/jocasta/conditions-kit v1.0.10
 	gitlab.services.mts.ru/jocasta/file-registry v1.4.0
 	gitlab.services.mts.ru/jocasta/forms v1.7.0-rc.1.0.20240301073647-dad697e5b82d
@@ -38,15 +36,14 @@ require (
 	gitlab.services.mts.ru/jocasta/human-tasks v1.0.0-alpha.3
 	gitlab.services.mts.ru/jocasta/integrations v1.9.0
 	gitlab.services.mts.ru/jocasta/msg-kit v0.1.4
-	gitlab.services.mts.ru/jocasta/scheduler v1.6.1-0.20240208115625-18ca89318e84
-	gitlab.services.mts.ru/jocasta/sequence v0.0.0-20240409131838-2d51914d4daf
+	gitlab.services.mts.ru/jocasta/scheduler v1.10.1-0.20240411102016-05e370096ac6
 	gitlab.services.mts.ru/prodboard/infra v0.3.0
 	go.opencensus.io v0.24.0
 	golang.org/x/exp v0.0.0-20230206171751-46f607a40771
 	golang.org/x/net v0.21.0
 	golang.org/x/sync v0.6.0
 	golang.org/x/text v0.14.0
-	google.golang.org/grpc v1.63.0
+	google.golang.org/grpc v1.61.2
 	gopkg.in/square/go-jose.v2 v2.6.0
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -104,6 +101,7 @@ require (
 	github.com/uber/jaeger-client-go v2.25.0+incompatible // indirect
 	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect
 	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect
+	gitlab.services.mts.ru/jocasta/sequence v0.0.0-20240412075820-b2b08d23367a // indirect
 	golang.org/x/crypto v0.19.0 // indirect
 	golang.org/x/sys v0.17.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect

@@ -23,7 +23,7 @@ func NewService(cfg Config) (*Service, error) {
 		grpc.WithStatsHandler(&ocgrpc.ClientHandler{}),
 	}
 
-	conn, err := grpc.NewClient(cfg.URL, opts...)
+	conn, err := grpc.Dial(cfg.URL, opts...)
 	if err != nil {
 		return nil, err
 	}
