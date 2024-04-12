@@ -31,8 +31,9 @@ type Service struct {
 
 	MessageHandler *msgkit.MessageHandler[RunnerInMessage]
 
-	ctxCancel   c.CancelFunc
-	isConsuming bool
+	ctxCancel     c.CancelFunc
+	isConsuming   bool
+	stoppedByPing bool
 }
 
 const (
@@ -46,6 +47,7 @@ func NewService(log logger.Logger, cfg Config) (*Service, bool, error) {
 
 		brokers:       cfg.Brokers,
 		serviceConfig: cfg,
+		stoppedByPing: false,
 	}
 
 	topics := []string{cfg.ProducerTopic, cfg.ProducerTopicSD, cfg.ConsumerTopic}
@@ -183,20 +185,23 @@ func (s *Service) StartConsumer(ctx c.Context) {
 	s.ctxCancel = cancel
 
 	go func() {
+		s.isConsuming = true
+		s.stoppedByPing = false
+
 		err := s.consumer.Serve(serveCtx, s.MessageHandler)
 		if err != nil {
 			s.consumer = nil
 			s.log.Error(err)
 		}
 
-		s.isConsuming = true
+		s.isConsuming = false
 	}()
 }
 
 func (s *Service) StopConsumer() {
 	s.ctxCancel()
 
-	s.isConsuming = false
+	s.stoppedByPing = true
 }
 
 // nolint:gocognit //its ok here
@@ -218,7 +223,7 @@ func (s *Service) checkHealth() {
 	saramaCfg.Net.DialTimeout = kafkaNetTimeout
 
 	admin, err := sarama.NewClusterAdmin(s.brokers, saramaCfg)
-	if err != nil || s.consumer == nil || s.producer == nil || s.producerFuncResult == nil {
+	if err != nil || (!s.isConsuming && !s.stoppedByPing) || s.producer == nil || s.producerFuncResult == nil {
 		s.log.WithError(err).Error("couldn't connect to kafka! Trying to reconnect")
 
 		msg := s.MessageHandler

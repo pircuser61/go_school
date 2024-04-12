@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/configs"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/api"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/kafka"
@@ -20,12 +21,10 @@ type Server struct {
 	kafka  *kafka.Service
 	apiEnv *api.Env
 
+	svcsPing *configs.ServicesPing
+
 	consumerWorkerCh  chan kafka.RunnerInMessage
 	consumerWorkerCnt int
-
-	pingTimer    time.Duration
-	maxFailedCnt int
-	maxOkCnt     int
 }
 
 func NewServer(
@@ -48,9 +47,11 @@ func NewServer(
 		consumerWorkerCh:  make(chan kafka.RunnerInMessage),
 		consumerWorkerCnt: serverParam.ConsumerWorkerCnt,
 
-		pingTimer:    serverParam.PingTimer,
-		maxFailedCnt: serverParam.MaxFailedCnt,
-		maxOkCnt:     serverParam.MaxOkCnt,
+		svcsPing: &configs.ServicesPing{
+			PingTimer:    serverParam.SvcsPing.PingTimer,
+			MaxFailedCnt: serverParam.SvcsPing.MaxFailedCnt,
+			MaxOkCnt:     serverParam.SvcsPing.MaxOkCnt,
+		},
 	}
 
 	s.startKafkaWorkers(ctx)
@@ -115,7 +116,7 @@ func (s *Server) checkSvcsAvailability(ctx context.Context) {
 			continue
 		}
 
-		<-time.After(s.pingTimer)
+		<-time.After(s.svcsPing.PingTimer)
 	}
 }
 
@@ -127,7 +128,7 @@ func (s *Server) PingSvcs(ctx context.Context, failedCh chan bool) {
 	)
 
 	for {
-		<-time.After(s.pingTimer)
+		<-time.After(s.svcsPing.PingTimer)
 
 		dbErr := s.apiEnv.DB.Ping(ctx)
 		sdlErr := s.apiEnv.Scheduler.Ping(ctx)
@@ -140,7 +141,7 @@ func (s *Server) PingSvcs(ctx context.Context, failedCh chan bool) {
 			okCount = 0
 
 			failedCount++
-			if failedCount < s.maxFailedCnt {
+			if failedCount < s.svcsPing.MaxFailedCnt {
 				continue
 			}
 
@@ -155,7 +156,7 @@ func (s *Server) PingSvcs(ctx context.Context, failedCh chan bool) {
 		}
 
 		okCount++
-		if okCount < s.maxOkCnt {
+		if okCount < s.svcsPing.MaxOkCnt {
 			continue
 		}
 

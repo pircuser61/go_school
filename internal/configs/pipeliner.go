@@ -62,7 +62,7 @@ type Pipeliner struct {
 	Forms                   forms.Config         `yaml:"forms"`
 	HostURL                 string               `yaml:"host_url"`
 	LogIndex                string               `yaml:"log_index"`
-	Services                Services             `yaml:"services"`
+	ServicesPing            ServicesPing         `yaml:"services_ping"`
 	ConsumerWorkerCnt       int                  `yaml:"consumer_worker_count"`
 }
 
@@ -95,7 +95,7 @@ type PrometheusConfig struct {
 	Push  PushConfig `yaml:"push"`
 }
 
-type Services struct {
+type ServicesPing struct {
 	PingTimer    time.Duration `yaml:"ping_timer"`
 	MaxFailedCnt int           `yaml:"max_failed_count"`
 	MaxOkCnt     int           `yaml:"max_ok_count"`

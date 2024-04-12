@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/middleware"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/configs"
 
 	"github.com/go-chi/chi/v5"
 
@@ -67,9 +68,7 @@ type ServerParam struct {
 
 	ConsumerWorkerCnt int
 
-	PingTimer    time.Duration
-	MaxFailedCnt int
-	MaxOkCnt     int
+	SvcsPing *configs.ServicesPing
 
 	LivenessPath  string
 	ReadinessPath string

@@ -12,7 +12,7 @@ scheduler: "http://scheduler"
 network_monitor: "http://network-monitor/api/netmon/v1/"
 consumer_worker_count: 10
 
-services:
+services_ping:
   ping_timer: 3s
   max_failed_count: 3
   max_ok_count: 3

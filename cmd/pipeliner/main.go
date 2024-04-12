@@ -226,10 +226,12 @@ func main() {
 		ServerAddr:        cfg.ServeAddr,
 		ReadinessPath:     cfg.Probes.Readiness,
 		LivenessPath:      cfg.Probes.Liveness,
-		PingTimer:         cfg.Services.PingTimer,
-		MaxFailedCnt:      cfg.Services.MaxFailedCnt,
-		MaxOkCnt:          cfg.Services.MaxOkCnt,
 		ConsumerWorkerCnt: cfg.ConsumerWorkerCnt,
+		SvcsPing: &configs.ServicesPing{
+			PingTimer:    cfg.ServicesPing.PingTimer,
+			MaxFailedCnt: cfg.ServicesPing.MaxFailedCnt,
+			MaxOkCnt:     cfg.ServicesPing.MaxOkCnt,
+		},
 	}
 
 	kafkaService.InitMessageHandler(APIEnv.FunctionReturnHandler)
