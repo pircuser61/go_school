@@ -1950,7 +1950,7 @@ func (db *PGCon) GetWorkIDByWorkNumber(ctx c.Context, workNumber string) (uuid.U
 	return workID, nil
 }
 
-func (db *PGCon) GetPipelineIDByWorkID(ctx c.Context, taskID string) (uuid.UUID, uuid.UUID, error) {
+func (db *PGCon) GetPipelineIDByWorkID(ctx c.Context, taskID string) (pipelineID uuid.UUID, versionID uuid.UUID, err error) {
 	ctx, span := trace.StartSpan(ctx, "get_pipeline_id_by_task_id")
 	defer span.End()
 
@@ -1961,12 +1961,7 @@ func (db *PGCon) GetPipelineIDByWorkID(ctx c.Context, taskID string) (uuid.UUID,
 		  JOIN versions v ON v.id = w.version_id
 		WHERE w.id=$1`
 
-	var (
-		pipelineID uuid.UUID
-		versionID  uuid.UUID
-	)
-
-	if err := db.Connection.QueryRow(ctx, q, taskID).Scan(&pipelineID, &versionID); err != nil {
+	if err = db.Connection.QueryRow(ctx, q, taskID).Scan(&pipelineID, &versionID); err != nil {
 		return uuid.UUID{}, uuid.UUID{}, err
 	}
 
