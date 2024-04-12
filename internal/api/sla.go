@@ -30,6 +30,8 @@ func (ae *Env) handleBreachSlA(ctx c.Context, item *db.StepBreachedSLA) {
 		WorkTitle:  item.WorkTitle,
 		Initiator:  item.Initiator,
 		VarStore:   item.VarStore,
+		PipelineID: item.PipelineID,
+		VersionID:  item.VersionID,
 
 		Services: pipeline.RunContextServices{
 			HTTPClient:    ae.HTTPClient,
