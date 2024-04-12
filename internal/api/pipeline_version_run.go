@@ -281,6 +281,7 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 
 func (ae *Env) runVersion(ctx c.Context, log logger.Logger, run *runVersionsDTO) (*entity.RunResponse, error) {
 	var err error
+
 	ctx, s := trace.StartSpan(ctx, "run_version")
 
 	requestInfo := metrics.NewPostRequestInfo(runByPipelineIDPath)
