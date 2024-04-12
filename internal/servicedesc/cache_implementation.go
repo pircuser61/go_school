@@ -59,7 +59,7 @@ func (s *ServiceWithCache) GetWorkGroup(ctx context.Context, groupID string) (*W
 	}
 
 	workGroupData, err := json.Marshal(workGroup)
-	if err == nil {
+	if err == nil && keyForCache != "" {
 		err = s.Cache.SetValue(ctx, keyForCache, string(workGroupData))
 		if err != nil {
 			return nil, fmt.Errorf("can't set resources to cache: %s", err)
@@ -103,7 +103,7 @@ func (s *ServiceWithCache) GetSchemaByID(ctx context.Context, schemaID string) (
 	}
 
 	schemaData, err := json.Marshal(schema)
-	if err == nil {
+	if err == nil && keyForCache != "" {
 		err = s.Cache.SetValue(ctx, keyForCache, string(schemaData))
 		if err != nil {
 			return nil, fmt.Errorf("can't set resources to cache: %s", err)
@@ -147,7 +147,7 @@ func (s *ServiceWithCache) GetSchemaByBlueprintID(ctx context.Context, blueprint
 	}
 
 	blueprintData, err := json.Marshal(blueprint)
-	if err == nil {
+	if err == nil && keyForCache != "" {
 		err = s.Cache.SetValue(ctx, keyForCache, string(blueprintData))
 		if err != nil {
 			return nil, fmt.Errorf("can't set resources to cache: %s", err)

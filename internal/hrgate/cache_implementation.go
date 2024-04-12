@@ -116,7 +116,7 @@ func (s *ServiceWithCache) GetCalendarDays(ctx context.Context, params *GetCalen
 	}
 
 	calendarDaysData, err := json.Marshal(calendarDays)
-	if err == nil {
+	if err == nil && keyForCache != "" {
 		err = s.Cache.SetValue(ctx, keyForCache, string(calendarDaysData))
 		if err != nil {
 			return nil, fmt.Errorf("can't set calendarDays to cache: %s", err)

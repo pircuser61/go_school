@@ -58,7 +58,7 @@ func (s *ServiceWithCache) GetUser(ctx context.Context, username string) (SSOUse
 	}
 
 	resourcesData, err := json.Marshal(resources)
-	if err == nil {
+	if err == nil && keyForCache != "" {
 		err = s.Cache.SetValue(ctx, keyForCache, string(resourcesData))
 		if err != nil {
 			return nil, fmt.Errorf("can't set resources to cache: %s", err)
@@ -107,7 +107,7 @@ func (s *ServiceWithCache) GetUsers(ctx context.Context, username string, limit 
 	}
 
 	resourcesData, err := json.Marshal(resources)
-	if err == nil {
+	if err == nil && keyForCache != "" {
 		err = s.Cache.SetValue(ctx, keyForCache, string(resourcesData))
 		if err != nil {
 			return nil, fmt.Errorf("can't set resources to cache: %s", err)

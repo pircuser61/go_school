@@ -61,7 +61,7 @@ func (s *ServiceWithCache) GetDelegations(ctx c.Context, req *d.GetDelegationsRe
 	}
 
 	delegationsData, err := json.Marshal(delegations)
-	if err == nil {
+	if err == nil && keyForCache != "" {
 		err = s.Cache.SetValue(ctx, keyForCache, string(delegationsData))
 		if err != nil {
 			log.WithError(err).Error("can't send data to cache")
