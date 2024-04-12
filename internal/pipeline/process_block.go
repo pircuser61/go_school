@@ -500,7 +500,7 @@ func ProcessBlockWithEndMapping(
 	bl *entity.EriusFunc,
 	runCtx *BlockRunContext,
 	manual bool,
-) (string, bool, error) {
+) (blockName string, finished bool, err error) {
 	ctx, s := trace.StartSpan(ctx, "process_block_with_end_mapping")
 	defer s.End()
 
