@@ -288,7 +288,9 @@ func (ae *Env) runVersion(ctx c.Context, log logger.Logger, run *runVersionsDTO)
 
 	defer func() {
 		s.End()
+
 		requestInfo.Duration = time.Since(start)
+
 		ae.Metrics.RequestsIncrease(requestInfo)
 	}()
 

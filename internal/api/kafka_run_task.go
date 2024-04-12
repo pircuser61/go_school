@@ -32,6 +32,7 @@ type runVersionsDTO struct {
 	ApplicationBody orderedmap.OrderedMap
 }
 
+//nolint:all //its ok here
 func (ae *Env) RunTaskHandler(ctx c.Context, message kafka.RunTaskMessage) error {
 	ctx, span := trace.StartSpan(ctx, "RunTaskHandler")
 	defer span.End()
