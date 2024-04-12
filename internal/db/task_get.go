@@ -50,8 +50,8 @@ func uniqueActionsByRole(loginsIn, stepType string, finished, acted, isPersonsFi
 	q := fmt.Sprintf(`WITH actions AS (
     SELECT vs.work_id                                                                       AS work_id
          , vs.step_name                                                                     AS block_id
-         , CASE WHEN vs.status IN ('running', 'idle') THEN m.actions ELSE '{}' END AS action
-         , CASE WHEN vs.status IN ('running', 'idle') THEN m.params ELSE '{}' END  AS params
+         , CASE WHEN (vs.status IN ('running', 'idle')  AND vs.is_paused = false) THEN m.actions ELSE '{}' END AS action
+         , CASE WHEN (vs.status IN ('running', 'idle')  AND vs.is_paused = false) THEN m.params ELSE '{}' END  AS params
          , vs.current_executor                                                              AS current_executor
          , CASE WHEN vs.step_type = 'execution' THEN vs.time END                            AS exec_start_time
 		 , CASE WHEN vs.step_type = 'approver' THEN vs.time END                          	AS appr_start_time
@@ -220,6 +220,10 @@ func getUniqueActions(selectFilter string, logins []string, isPersonFilter bool)
 			"AND vs.content -> 'State' -> vs.step_name ->> 'is_taken_in_work' = 'true' --unique-actions-filter--",
 			replaceCount,
 		)
+
+		return q
+	case entity.SelectAsValFinishedExecutorV2:
+		q := uniqueActionsByRole(loginsIn, "execution", true, false)
 
 		return q
 	case entity.SelectAsValSignerPhys:
@@ -525,6 +529,18 @@ func (cq *compileGetTaskQueryMaker) addProcessingSteps() {
 	}
 }
 
+func (cq *compileGetTaskQueryMaker) addIsExpiredFilter(isExpired *bool) {
+	if isExpired == nil {
+		return
+	}
+
+	if !*isExpired {
+		cq.q = fmt.Sprintf("%s AND (ua.node_deadline > now() OR coalesce(ua.is_expired::boolean, false)) ", cq.q)
+	} else {
+		cq.q = fmt.Sprintf("%s AND (ua.node_deadline < now() OR coalesce(ua.is_expired::boolean, true)) ", cq.q)
+	}
+}
+
 func (cq *compileGetTaskQueryMaker) addExecutorFilter() {
 	if cq.fl.ExecutorLogins != nil || cq.fl.ExecutorGroupIds != nil {
 		cq.q = getExecutors(cq.q, cq.fl)
@@ -629,6 +645,7 @@ func (cq *compileGetTaskQueryMaker) MakeQuery(
 	cq.addInitiator()
 	cq.addProcessingSteps()
 	cq.addExecutorFilter()
+	cq.addIsExpiredFilter(fl.Expired)
 	cq.addOrderBy(order, orderBy)
 
 	if useLimitOffset {
@@ -2109,6 +2126,24 @@ func (db *PGCon) GetWorkIDByWorkNumber(ctx c.Context, workNumber string) (uuid.U
 	}
 
 	return workID, nil
+}
+
+func (db *PGCon) GetPipelineIDByWorkID(ctx c.Context, taskID string) (pipelineID, versionID uuid.UUID, err error) {
+	ctx, span := trace.StartSpan(ctx, "get_pipeline_id_by_task_id")
+	defer span.End()
+
+	const q = `
+		SELECT v.pipeline_id, 
+		       w.version_id
+		FROM works w 
+		  JOIN versions v ON v.id = w.version_id
+		WHERE w.id=$1`
+
+	if errReq := db.Connection.QueryRow(ctx, q, taskID).Scan(&pipelineID, &versionID); errReq != nil {
+		return uuid.UUID{}, uuid.UUID{}, errReq
+	}
+
+	return pipelineID, versionID, nil
 }
 
 func (db *PGCon) getActionsMap(ctx c.Context) (actions map[string]entity.TaskAction, err error) {

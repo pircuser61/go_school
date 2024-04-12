@@ -59,6 +59,7 @@ type TaskStorager interface {
 	GetExecutorsFromPrevExecutionBlockRun(ctx c.Context, taskID uuid.UUID, name string) (exec map[string]struct{}, err error)
 	GetExecutorsFromPrevWorkVersionExecutionBlockRun(ctx c.Context, workNumber, name string) (exec map[string]struct{}, err error)
 	GetWorkIDByWorkNumber(ctx c.Context, workNumber string) (uuid.UUID, error)
+	GetPipelineIDByWorkID(ctx c.Context, taskID string) (uuid.UUID, uuid.UUID, error)
 
 	GetTaskForMonitoring(ctx c.Context, workNumber string, fromEventID, toEventID *string) ([]e.MonitoringTaskNode, error)
 	GetTasksForMonitoring(ctx c.Context, filters *e.TasksForMonitoringFilters) (*e.TasksForMonitoring, error)
@@ -179,6 +180,8 @@ type StepBreachedSLA struct {
 	TaskID      uuid.UUID
 	WorkNumber  string
 	WorkTitle   string
+	PipelineID  uuid.UUID
+	VersionID   uuid.UUID
 	Initiator   string
 	VarStore    *store.VariableStore
 	BlockData   *e.EriusFunc
@@ -289,7 +292,7 @@ type Database interface {
 	CreateTaskEvent(ctx c.Context, dto *e.CreateTaskEvent) (eventID string, err error)
 	GetTaskEvents(ctx c.Context, workID string) (events []e.TaskEvent, err error)
 	SetTaskPaused(ctx c.Context, workID string, isPaused bool) error
-	PauseTaskBlocks(ctx c.Context, workID string, stepIDS []string) (updatedIDS []string, err error)
+	PauseTaskBlocks(ctx c.Context, workID string, stepIds []string) (updatedIds []string, err error)
 	IsTaskPaused(ctx c.Context, workID uuid.UUID) (isPaused bool, err error)
 	IsBlockResumable(ctx c.Context, workID, stepID uuid.UUID) (isResumable bool, startTime time.Time, err error)
 	UnpauseTaskBlock(ctx c.Context, workID, stepID uuid.UUID) (err error)

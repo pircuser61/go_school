@@ -775,6 +775,7 @@ func (db *PGCon) CreateVersion(c context.Context,
 		if err != nil {
 			return err
 		}
+
 		err = db.SaveSLAVersionSettings(c, p.VersionID.String(), entity.SLAVersionSettings{
 			Author:   author,
 			WorkType: "8/5",
@@ -2801,7 +2802,9 @@ func (db *PGCon) GetBlocksBreachedSLA(ctx context.Context) ([]StepBreachedSLA, e
 			    	WHEN w.run_context -> 'initial_application' -> 'custom_title' IS NULL
 			        	THEN ''
 			        	ELSE w.run_context -> 'initial_application' ->> 'custom_title'
-				END as customTitle
+				END as customTitle,
+				w.version_id,
+				v.pipeline_id
 		FROM variable_storage vs 
 		    JOIN works w on vs.work_id = w.id 
 		    JOIN versions v on w.version_id = v.id
@@ -2841,6 +2844,8 @@ func (db *PGCon) GetBlocksBreachedSLA(ctx context.Context) ([]StepBreachedSLA, e
 			&item.Action,
 			&item.IsTest,
 			&item.CustomTitle,
+			&item.VersionID,
+			&item.PipelineID,
 		); scanErr != nil {
 			return nil, scanErr
 		}

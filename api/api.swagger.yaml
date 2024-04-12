@@ -1696,6 +1696,11 @@ paths:
           deprecated: true
           schema:
             type: string
+        - name: expired
+          description: params for get expired applications
+          in: query
+          schema:
+            type: boolean
         - name: orderBy
           in: query
           description: params for tasks ordering
@@ -1748,6 +1753,7 @@ paths:
               - finished_group_executor
               - queue_executor
               - in_work_executor
+              - finished_executor_v2
         - name: forCarousel
           in: query
           schema:
@@ -2516,7 +2522,7 @@ paths:
       operationId: MonitoringTaskAction
       tags:
         - monitoring
-      summary:  Действия с заявкой в мониторинге
+      summary: Действия с заявкой в мониторинге
       description: Действия с заявкой в мониторинге
       parameters:
         - name: workNumber
@@ -2574,7 +2580,7 @@ paths:
       operationId: GetMonitoringTaskEvents
       tags:
         - monitoring
-      summary:  Ивенты заяви в мониторинге
+      summary: Ивенты заяви в мониторинге
       description: Ивенты заяви в мониторинге
       parameters:
         - name: workNumber
@@ -2831,6 +2837,57 @@ paths:
               schema:
                 $ref: '#/components/schemas/httpError'
       x-codegen-request-body-name: variables
+  /monitoring/tasks/block/{blockId}/error:
+    get:
+      operationId: GetBlockError
+      tags:
+        - monitoring
+      summary: Получение ошибок блока
+      description: Получение ошибок блока
+      parameters:
+        - name: blockId
+          in: path
+          description: block ID
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/BlockErrorResponse'
+                  status_code:
+                    type: integer
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        403:
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+      x-codegen-request-body-name: variables    
   /monitoring/tasks:
     get:
       tags:
@@ -5713,6 +5770,18 @@ components:
           description: Стейт блока
           additionalProperties:
             $ref: '#/components/schemas/MonitoringBlockState'
+    BlockErrorResponse:
+      type: object
+      properties:        
+        url:
+          type: string
+          description: Ссылка на OpenSearch
+        description:
+          type: string
+          description: Описание способа просмотра ошибок
+      required:
+        - description
+        - url
     MonitoringBlockOutput:
       type: object
       properties:
@@ -5764,7 +5833,7 @@ components:
         - name
         - type
         - description
-        - value
+        - value      
     MonitoringParamsResponse:
       type: object
       properties:

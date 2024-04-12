@@ -7,15 +7,28 @@ import (
 
 	"gitlab.services.mts.ru/abp/myosotis/observability"
 
+	cachekit "gitlab.services.mts.ru/jocasta/cache-kit"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 )
 
-type Service struct {
-	SdURL string
-	Cli   *http.Client
+func NewServiceWithCache(cfg *Config, ssoS *sso.Service) (ServiceInterface, error) {
+	service, err := NewService(cfg, ssoS)
+	if err != nil {
+		return nil, err
+	}
+
+	cache, cacheErr := cachekit.CreateCache(cachekit.Config(cfg.Cache))
+	if cacheErr != nil {
+		return nil, cacheErr
+	}
+
+	return &ServiceWithCache{
+		Cache:       cache,
+		Servicedesc: service,
+	}, nil
 }
 
-func NewService(cfg Config, ssoS *sso.Service) (*Service, error) {
+func NewService(cfg *Config, ssoS *sso.Service) (ServiceInterface, error) {
 	newCli := &http.Client{}
 
 	tr := TransportForPeople{
@@ -28,25 +41,8 @@ func NewService(cfg Config, ssoS *sso.Service) (*Service, error) {
 	}
 	newCli.Transport = &tr
 
-	s := &Service{
+	return &Service{
 		Cli:   newCli,
 		SdURL: cfg.ServicedeskURL,
-	}
-
-	return s, nil
-}
-
-type TransportForPeople struct {
-	transport ochttp.Transport
-	sso       *sso.Service
-	scope     string
-}
-
-func (t *TransportForPeople) RoundTrip(req *http.Request) (*http.Response, error) {
-	err := t.sso.BindAuthHeader(req.Context(), req, t.scope)
-	if err != nil {
-		return nil, err
-	}
-
-	return t.transport.RoundTrip(req)
+	}, nil
 }

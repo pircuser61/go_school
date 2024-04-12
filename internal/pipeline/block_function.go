@@ -28,7 +28,6 @@ type FunctionDecision string
 const (
 	keyOutputFunctionDecision = "decision"
 
-	ErrorKey     = "error"
 	KeyDelimiter = "."
 
 	SimpleFunctionRetryPolicy FunctionRetryPolicy = "simple"
@@ -68,10 +67,11 @@ type ExecutableFunction struct {
 }
 
 type FunctionUpdateParams struct {
-	Action  string                 `json:"action"`
-	Mapping map[string]interface{} `json:"mapping"`
-	Err     string                 `json:"err"`
-	DoRetry bool                   `json:"do_retry"`
+	Action        string                 `json:"action"`
+	Mapping       map[string]interface{} `json:"mapping"`
+	Err           string                 `json:"err"`
+	DoRetry       bool                   `json:"do_retry"`
+	IsAsyncResult bool                   `json:"is_async_result"`
 }
 
 type ExecutableFunctionBlock struct {
@@ -418,6 +418,12 @@ func (gb *ExecutableFunctionBlock) createExpectedEvents(
 }
 
 func (gb *ExecutableFunctionBlock) setStateByResponse(ctx context.Context, log logger.Logger, updateData *FunctionUpdateParams) error {
+	if gb.State.Async && gb.State.HasAck && !updateData.IsAsyncResult {
+		log.Warning("repeating ack message")
+
+		return nil
+	}
+
 	//nolint:nestif //it's ok
 	if updateData.DoRetry && gb.State.RetryCount > 0 {
 		if gb.State.CurrRetryCount >= gb.State.RetryCount {
@@ -521,10 +527,10 @@ func (gb *ExecutableFunctionBlock) isFirstStart(ctx context.Context, workID uuid
 	return countRunFunc > 1, firstRun, nil
 }
 
-func (gb *ExecutableFunctionBlock) UpdateStateUsingOutput(ctx context.Context, data []byte) (state map[string]interface{}, err error) {
+func (gb *ExecutableFunctionBlock) UpdateStateUsingOutput(context.Context, []byte) (state map[string]interface{}, err error) {
 	return nil, nil
 }
 
-func (gb *ExecutableFunctionBlock) UpdateOutputUsingState(ctx context.Context) (output map[string]interface{}, err error) {
+func (gb *ExecutableFunctionBlock) UpdateOutputUsingState(context.Context) (output map[string]interface{}, err error) {
 	return nil, nil
 }

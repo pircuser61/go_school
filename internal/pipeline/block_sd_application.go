@@ -205,7 +205,7 @@ func (gb *GoSdApplicationBlock) BlockAttachments() []string {
 func createGoSdApplicationBlock(ctx context.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext,
 	expectedEvents map[string]struct{},
 ) (*GoSdApplicationBlock, bool, error) {
-	log := logger.CreateLogger(nil)
+	log := logger.GetLogger(ctx).WithField("funcName", "createGoSdApplicationBlock")
 	log.WithField("params", string(ef.Params)).Info("sd_application parameters")
 
 	const reEntry = false
@@ -277,7 +277,7 @@ type SDOutput struct {
 	BlueprintID     string
 }
 
-func (gb *GoSdApplicationBlock) UpdateStateUsingOutput(ctx context.Context, data []byte) (state map[string]interface{}, err error) {
+func (gb *GoSdApplicationBlock) UpdateStateUsingOutput(_ context.Context, data []byte) (state map[string]interface{}, err error) {
 	sdOutput := SDOutput{}
 
 	unmErr := json.Unmarshal(data, &sdOutput)
@@ -305,7 +305,7 @@ func (gb *GoSdApplicationBlock) UpdateStateUsingOutput(ctx context.Context, data
 	return state, nil
 }
 
-func (gb *GoSdApplicationBlock) UpdateOutputUsingState(ctx context.Context) (res map[string]interface{}, err error) {
+func (gb *GoSdApplicationBlock) UpdateOutputUsingState(context.Context) (res map[string]interface{}, err error) {
 	output := map[string]interface{}{}
 
 	output[keyOutputBlueprintID] = gb.State.BlueprintID

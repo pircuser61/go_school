@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"time"
 
+	"golang.org/x/net/context"
+
 	"github.com/google/uuid"
 
 	"github.com/jackc/pgx/v4"
@@ -27,23 +29,30 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
+func (ae *Env) WorkFunctionHandler(ctx context.Context, jobs <-chan kafka.RunnerInMessage) {
+	for job := range jobs {
+		ae.FunctionReturnHandler(ctx, job) //nolint:errcheck // Все ошибки уже обрабатываются внутри
+	}
+}
+
 func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessage) error {
 	ctx, span := trace.StartSpan(ctx, "FunctionReturnHandler")
 	defer span.End()
 
-	log := ae.Log
+	log := ae.Log.WithField("funcName", "FunctionReturnHandler").
+		WithField("mainFuncName", "FunctionReturnHandler").
+		WithField("stepID", message.TaskID).
+		WithField("method", "kafka")
 
 	messageTmp, err := json.Marshal(message)
 	if err != nil {
-		log.WithField("taskID", message.TaskID).
-			WithError(err).
+		log.WithError(err).
 			Error("error marshaling message from kafka")
 	}
 
 	messageString := string(messageTmp)
 
-	log.WithField("funcName", "FunctionReturnHandler").
-		WithField("body", messageString).
+	log.WithField("body", messageString).
 		Info("start handle message from kafka")
 
 	ctx = logger.WithLogger(ctx, log)
@@ -58,15 +67,17 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 	st, err := ae.getTaskStepWithRetry(ctx, message.TaskID)
 	if err != nil {
 		log.WithField("funcName", "GetTaskStepById").
+			WithField("step_id", message.TaskID).
 			WithError(err).
 			Error("get task step by id")
 
 		return nil
 	}
 
-	log = log.WithField("step.WorkNumber", st.WorkNumber).
-		WithField("step.Name", st.Name).
-		WithField("taskID", message.TaskID)
+	log = log.WithField("workNumber", st.WorkNumber).
+		WithField("stepName", st.Name).
+		WithField("workID", st.WorkID)
+	ctx = logger.WithLogger(ctx, log)
 
 	if st.IsPaused {
 		log.Error("block is paused")
@@ -82,8 +93,10 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 	}
 
 	functionMapping := pipeline.FunctionUpdateParams{
-		Mapping: message.FunctionMapping,
-		DoRetry: message.DoRetry,
+		Mapping:       message.FunctionMapping,
+		DoRetry:       message.DoRetry,
+		IsAsyncResult: message.IsAsyncResult,
+		Err:           message.Err,
 	}
 
 	mapping, err := json.Marshal(functionMapping)
@@ -96,11 +109,25 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 		return nil
 	}
 
+	pipelineID, versionID, err := ae.DB.GetPipelineIDByWorkID(ctx, st.WorkID.String())
+	if err != nil {
+		log.WithError(err).
+			Error("can't get pipelineID")
+
+		return nil
+	}
+
+	log = log.WithField("pipelineID", pipelineID).
+		WithField("versionID", versionID)
+	ctx = logger.WithLogger(ctx, log)
+
 	runCtx := &pipeline.BlockRunContext{
 		TaskID:     st.WorkID,
 		WorkNumber: st.WorkNumber,
 		Initiator:  st.Initiator,
 		VarStore:   storage,
+		PipelineID: pipelineID,
+		VersionID:  versionID,
 		Services: pipeline.RunContextServices{
 			HTTPClient:    ae.HTTPClient,
 			Storage:       ae.DB,
@@ -137,11 +164,26 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 		return nil
 	}
 
-	workFinished, blockErr := pipeline.ProcessBlockWithEndMapping(ctx, st.Name, blockFunc, runCtx, true)
+	errBlock, workFinished, blockErr := pipeline.ProcessBlockWithEndMapping(ctx, st.Name, blockFunc, runCtx, true)
 	if blockErr != nil {
 		log.WithField("funcName", "ProcessBlockWithEndMapping").
 			WithError(blockErr).
 			Error("process block with end mapping")
+
+		if st.Name == errBlock {
+			<-time.After(ae.FuncMsgResendDelay)
+
+			if kafkaErr := ae.Kafka.ProduceFuncResultMessage(ctx, &kafka.RunnerInMessage{
+				TaskID:          message.TaskID,
+				FunctionMapping: message.FunctionMapping,
+				Err:             message.Err,
+				DoRetry:         message.DoRetry,
+			}); kafkaErr != nil {
+				log.WithField("funcName", "ProduceFuncResultMessage").
+					WithError(kafkaErr).
+					Error("cannot send function message back to kafka")
+			}
+		}
 
 		return nil
 	}

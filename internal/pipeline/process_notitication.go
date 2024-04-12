@@ -34,9 +34,9 @@ const (
 
 	filesType = "files"
 
-	attachLinks = "attachLinks"
-	attachExist = "attachExist"
-	attachList  = "attachList"
+	attachLinksKey = "attachLinks"
+	attachExistKey = "attachExist"
+	attachListKey  = "attachList"
 )
 
 func (runCtx *BlockRunContext) handleInitiatorNotify(ctx c.Context, params handleInitiatorNotifyParams) error {
@@ -115,7 +115,7 @@ func (runCtx *BlockRunContext) handleInitiatorNotify(ctx c.Context, params handl
 	iconsName := []string{tmpl.Image}
 
 	for _, v := range description {
-		links, link := v.Get(attachLinks)
+		links, link := v.Get(attachLinksKey)
 		if link {
 			attachFiles, ok := links.([]fileregistry.AttachInfo)
 			if ok && len(attachFiles) != 0 {
@@ -517,12 +517,12 @@ func (runCtx *BlockRunContext) GetAttachmentFiles(desc *om.OrderedMap, addAttach
 		return nil, err
 	}
 
-	if len(attachments.AttachmentsList) != 0 || len(attachments.AttachLinks) != 0 {
+	if len(filesAttach) != 0 || len(filesAttachLinks) != 0 || len(attachments.AttachLinks) != 0 || len(attachments.AttachmentsList) != 0 {
 		attachments.AttachLinks = append(attachments.AttachLinks, filesAttachLinks...)
 
-		desc.Set(attachLinks, attachments.AttachLinks)
-		desc.Set(attachExist, attachments.AttachExists)
-		desc.Set(attachList, attachments.AttachmentsList)
+		desc.Set(attachLinksKey, attachments.AttachLinks)
+		desc.Set(attachExistKey, attachments.AttachExists)
+		desc.Set(attachListKey, attachments.AttachmentsList)
 	}
 
 	return attachments.AttachmentsList, nil
@@ -548,7 +548,7 @@ func GetConvertDesc(descriptions om.OrderedMap, keys map[string]string, hiddenFi
 		}
 
 		if len(keysSplit) == 0 {
-			if k == attachLinks || k == attachExist || k == attachList {
+			if k == attachLinksKey || k == attachExistKey || k == attachListKey {
 				newDesc.Set(k, v)
 
 				continue
@@ -581,6 +581,7 @@ func GetConvertDesc(descriptions om.OrderedMap, keys map[string]string, hiddenFi
 
 		if _, existKey := newDesc.Get(ruKey); existKey {
 			newDesc.Set(fmt.Sprintf("%s %-*s", ruKey, spaceCount, " "), v)
+
 			spaceCount++
 
 			continue

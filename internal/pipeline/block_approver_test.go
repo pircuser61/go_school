@@ -1180,7 +1180,8 @@ func TestGoApproverBlock_Actions(t *testing.T) {
 			wantActions: []MemberAction{
 				{ID: "approve", Type: "", Params: map[string]interface{}(nil)},
 				{ID: "add_approvers", Type: "other", Params: map[string]interface{}(nil)},
-				{ID: "request_add_info", Type: "other", Params: map[string]interface{}(nil)}},
+				{ID: "request_add_info", Type: "other", Params: map[string]interface{}(nil)},
+			},
 		},
 		{
 			name: "one form (ReadWrite)",
@@ -1227,7 +1228,8 @@ func TestGoApproverBlock_Actions(t *testing.T) {
 				{ID: "approve", Type: "", Params: map[string]interface{}(nil)},
 				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": []string{"form_0"}}},
 				{ID: "add_approvers", Type: "other", Params: map[string]interface{}(nil)},
-				{ID: "request_add_info", Type: "other", Params: map[string]interface{}(nil)}},
+				{ID: "request_add_info", Type: "other", Params: map[string]interface{}(nil)},
+			},
 		},
 		{
 			name: "Two forms ReadWrite",
@@ -1286,7 +1288,8 @@ func TestGoApproverBlock_Actions(t *testing.T) {
 				{ID: "approve", Type: "", Params: map[string]interface{}(nil)},
 				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": []string{"form_0", "form_1"}}},
 				{ID: "add_approvers", Type: "other", Params: map[string]interface{}(nil)},
-				{ID: "request_add_info", Type: "other", Params: map[string]interface{}(nil)}},
+				{ID: "request_add_info", Type: "other", Params: map[string]interface{}(nil)},
+			},
 		},
 		{
 			name: "Two forms - not exist ChangeLog (ReadWrite && RequiredFill)",
@@ -1335,7 +1338,8 @@ func TestGoApproverBlock_Actions(t *testing.T) {
 								})
 
 								return marshalForm
-							}()}
+							}(),
+						}
 						return s
 					}(), Services: RunContextServices{
 						HumanTasks: func() *humanTasks.Service {
@@ -1384,7 +1388,8 @@ func TestGoApproverBlock_Actions(t *testing.T) {
 				{ID: "approve", Type: "", Params: map[string]interface{}{"disabled": true}},
 				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": []string{"form_0", "form_1"}}},
 				{ID: "add_approvers", Type: "other", Params: map[string]interface{}(nil)},
-				{ID: "request_add_info", Type: "other", Params: map[string]interface{}(nil)}},
+				{ID: "request_add_info", Type: "other", Params: map[string]interface{}(nil)},
+			},
 		},
 		{
 			name: "Two forms - ok (ReadWrite && RequiredFill)",
@@ -1483,7 +1488,8 @@ func TestGoApproverBlock_Actions(t *testing.T) {
 				{ID: "approve", Type: "", Params: map[string]interface{}(nil)},
 				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": []string{"form_0", "form_1"}}},
 				{ID: "add_approvers", Type: "other", Params: map[string]interface{}(nil)},
-				{ID: "request_add_info", Type: "other", Params: map[string]interface{}(nil)}},
+				{ID: "request_add_info", Type: "other", Params: map[string]interface{}(nil)},
+			},
 		},
 		{
 			name: "Required Fill - false filled",
@@ -1570,7 +1576,8 @@ func TestGoApproverBlock_Actions(t *testing.T) {
 				{ID: "approve", Type: "", Params: map[string]interface{}{"disabled": true}},
 				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": []string{"form_0"}}},
 				{ID: "add_approvers", Type: "other", Params: map[string]interface{}(nil)},
-				{ID: "request_add_info", Type: "other", Params: map[string]interface{}(nil)}},
+				{ID: "request_add_info", Type: "other", Params: map[string]interface{}(nil)},
+			},
 		},
 		{
 			name: "Two forms - ok (RequiredFill && RequiredFill)",
@@ -1687,7 +1694,8 @@ func TestGoApproverBlock_Actions(t *testing.T) {
 				{ID: "approve", Type: "", Params: map[string]interface{}(nil)},
 				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": []string{"form_0", "form_1"}}},
 				{ID: "add_approvers", Type: "other", Params: map[string]interface{}(nil)},
-				{ID: "request_add_info", Type: "other", Params: map[string]interface{}(nil)}},
+				{ID: "request_add_info", Type: "other", Params: map[string]interface{}(nil)},
+			},
 		},
 	}
 

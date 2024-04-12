@@ -107,6 +107,7 @@ func (gb *TimerBlock) Update(ctx context.Context) (interface{}, error) {
 		if errStart := gb.startTimer(ctx); errStart != nil {
 			return nil, errStart
 		}
+
 		gb.State.Started = true
 	}
 
@@ -302,10 +303,10 @@ func (gb *TimerBlock) createState(ef *entity.EriusFunc) error {
 	return nil
 }
 
-func (gb *TimerBlock) UpdateStateUsingOutput(ctx context.Context, data []byte) (state map[string]interface{}, err error) {
+func (gb *TimerBlock) UpdateStateUsingOutput(context.Context, []byte) (state map[string]interface{}, err error) {
 	return nil, nil
 }
 
-func (gb *TimerBlock) UpdateOutputUsingState(ctx context.Context) (output map[string]interface{}, err error) {
+func (gb *TimerBlock) UpdateOutputUsingState(context.Context) (output map[string]interface{}, err error) {
 	return nil, nil
 }

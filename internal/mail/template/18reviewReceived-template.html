@@ -475,6 +475,185 @@
                       >&nbsp;</span
                       >
                     </p>
+                    {{ if .AttachLinks }}
+
+                    <div>
+                      <p style="
+                          margin: 0;
+                          padding: 0;
+                          font-family: MTS Compact, sans-serif, serif, EmojiFont;
+                          font-size: 14px;
+                          font-weight: 400;
+                          line-height: 15pt;
+                          color: #626c77;
+                        "> Файлы </p>
+                      {{ range .AttachLinks }}
+                      <table
+                              cellpadding="0"
+                              cellspacing="0"
+                              style="
+                          width: 488px;
+                          border-radius: 8px;
+                          margin-top: 4px;
+                          margin-bottom: 4px;
+                          padding-right: 12px;
+                          padding-left: 12px;
+                        "
+                      >
+                        <tr>
+                          <td style="border-collapse: collapse; width: 34px">
+                            <a
+                                    align="left"
+                                    download
+                                    href="{{.ExternalLink}}"
+                                    style="
+                                display: block;
+                                width: 24px;
+                                margin: 0;
+                                text-decoration: none;
+                                font-family: MTS Compact, sans-serif, serif,
+                                  EmojiFont;
+                                font-size: 17px;
+                                font-weight: 400;
+                                line-height: 18pt;
+                                color: #1d2023;
+                              "
+                            >
+                              <img
+                                      src="cid:iconDownload.png"
+                                      style="
+                                  margin: 0;
+                                  padding: 0;
+                                  outline: none;
+                                  text-decoration: none;
+                                  border: none;
+                                  -ms-interpolation-mode: bicubic;
+                                  width: 24px;
+                                  height: 24px;
+                                  display: table-cell;
+                                  vertical-align: middle;
+                                "
+                                      alt="Скачать"
+                              />
+                            </a>
+                          </td>
+                          <td style="border-collapse: collapse; width: 430px">
+                            <div
+                                    style="
+                                margin: 0;
+                                padding: 0;
+                                font-family: MTS Compact, sans-serif, serif,
+                                  EmojiFont;
+                                font-size: 17px;
+                                font-weight: 400;
+                                line-height: 18pt;
+                                color: #1d2023;
+                                display: table-cell;
+                                vertical-align: middle;
+                                width: 420px;
+                                overflow: hidden;
+                              "
+                            >
+                              <p
+                                      style="
+                                  margin: 0;
+                                  padding: 0;
+                                  font-family: MTS Compact, sans-serif, serif,
+                                    EmojiFont, EmojiFont;
+                                  font-size: 17px;
+                                  font-weight: 400;
+                                  line-height: 18pt;
+                                  color: #1d2023;
+                                  word-break: break-all;
+                                "
+                              >
+                                {{ .Name }}
+                              </p>
+                              <p
+                                      style="
+                                  margin: 0;
+                                  padding: 0;
+                                  font-family: MTS Compact, sans-serif, serif,
+                                    EmojiFont, EmojiFont;
+                                  font-size: 12px;
+                                  font-weight: 400;
+                                  line-height: 12pt;
+                                  color: #626c77;
+                                "
+                              >
+                                {{ toMbyte .Size }} MB
+                              </p>
+                            </div>
+                          </td>
+                        </tr>
+                      </table>
+                      {{ end }}
+                    </div>
+                    <!-- пустая линия -->
+                    <p
+                            style="
+                        margin: 0cm;
+                        padding: 0;
+                        line-height: 9pt;
+                        vertical-align: baseline;
+                      "
+                    >
+                      <span
+                              style="
+                          font-size: 10pt;
+                          font-family: 'MTS Text', sans-serif, serif, EmojiFont;
+                          color: transparent;
+                        "
+                      >&nbsp;</span
+                      >
+                    </p>
+                    <!-- конец пустой линии -->
+                    {{ end }}
+                    {{ if .AttachExist }}
+                    <div>
+                      <p
+                              style="
+                          margin: 0;
+                          padding: 0;
+                          font-family: MTS Compact, sans-serif, serif, EmojiFont;
+                          font-size: 14px;
+                          font-weight: 400;
+                          line-height: 15pt;
+                          color: #626c77;
+                          margin-bottom: 4px;
+                        "
+                      >
+                        Файлы
+                      </p>
+                      <p
+                              style="
+                          margin: 0;
+                          padding: 0;
+                          font-family: MTS Compact, sans-serif, serif, EmojiFont;
+                          font-size: 17px;
+                          font-weight: 400;
+                          line-height: 18pt;
+                          color: #1d2023;
+                        "
+                      >
+                        Файлы находятся во вложении к письму
+                      </p>
+                    </div>
+                    <!-- пустая линия -->
+                    <p style="
+                        margin: 0cm;
+                        padding: 0;
+                        line-height: 7pt;
+                        vertical-align: baseline;
+                      ">
+                      <span style="
+                          font-size: 10pt;
+                          font-family: 'MTS Text', sans-serif, serif, EmojiFont;
+                          color: transparent;
+                        ">&nbsp;</span>
+                    </p>
+                    <!-- конец пустой линии -->
+                    {{ end }}
                     <!-- конец пустой линии -->
                     {{ end }}
                   </td>

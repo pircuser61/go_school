@@ -9,8 +9,7 @@ import (
 	"time"
 
 	"github.com/araddon/dateparse"
-
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/functions"
+	"golang.org/x/exp/slices"
 )
 
 const (
@@ -123,22 +122,51 @@ type FunctionParam struct {
 	Options       string       `json:"options"`
 }
 
-func updateMappingIter(oldProps, newProps JSONSchemaProperties) {
-	for key := range oldProps {
-		oldVal := oldProps[key]
+//nolint:gocognit //it's ok
+func updateMappingIter(oldProps, newProps JSONSchemaProperties, required []string) (isError bool) {
+	for key := range newProps {
+		newVal := newProps[key]
 
-		newVal, ok := newProps[key]
+		oldVal, ok := oldProps[key]
+		if slices.Contains[string](required, key) && !ok {
+			isError = true
+
+			continue
+		}
+
 		if !ok {
 			continue
 		}
 
-		if oldVal.Value != "" {
+		if oldVal.Type != "" && oldVal.Type != newVal.Type {
+			isError = true
+
+			continue
+		}
+
+		if newVal.Items != nil {
+			if oldVal.Items == nil || oldVal.Items.Type != newVal.Items.Type {
+				isError = true
+
+				continue
+			}
+
+			itemsError := updateMappingIter(oldVal.Items.Properties, newVal.Items.Properties, []string{})
+			if itemsError {
+				isError = true
+
+				continue
+			}
+		}
+
+		childError := updateMappingIter(oldVal.Properties, newVal.Properties, newVal.Required)
+		if !childError && oldVal.Value != "" {
 			newVal.Value = oldVal.Value
 			newProps[key] = newVal
 		}
-
-		updateMappingIter(oldVal.Properties, newVal.Properties)
 	}
+
+	return isError
 }
 
 func (a *ExecutableFunctionParams) GetMappingFromInput() (JSONSchemaProperties, error) {
@@ -147,7 +175,7 @@ func (a *ExecutableFunctionParams) GetMappingFromInput() (JSONSchemaProperties, 
 		return nil, err
 	}
 
-	updateMappingIter(a.Mapping, newMapping)
+	_ = updateMappingIter(a.Mapping, newMapping, a.Function.RequiredInput)
 
 	return newMapping, nil
 }
@@ -198,11 +226,7 @@ func (a *ExecutableFunctionParams) Validate() error {
 		return slaErr
 	}
 
-	if retryErr := a.validateRetryParam(); retryErr != nil {
-		return retryErr
-	}
-
-	return nil
+	return a.validateRetryParam()
 }
 
 func (a *ExecutableFunctionParams) validateRetryParam() error {
@@ -229,43 +253,45 @@ func (a *ExecutableFunctionParams) validateRetryParam() error {
 	return nil
 }
 
+//nolint:gocritic,wsl //its ok
 func (a *ExecutableFunctionParams) validateSLA() error {
-	funcType, err := a.getFuncType()
-	if err != nil {
-		return err
-	}
-
-	switch funcType {
-	case functions.SyncFlag:
-		if a.SLA > int(60*time.Minute.Seconds()+59*time.Second.Seconds()) {
-			return errors.New("sync function SLA is too long")
-		}
-	case functions.AsyncFlag:
-		if a.SLA > int(365*24*time.Hour.Seconds()+23*time.Hour.Seconds()+59*time.Minute.Seconds()) {
-			return errors.New("async function SLA is too long")
-		}
-	}
+	//funcType, err := a.getFuncType()
+	//if err != nil {
+	//	return err
+	//}
+	//
+	//switch funcType {
+	//case functions.SyncFlag:
+	//	if a.SLA > int(60*time.Minute.Seconds()+59*time.Second.Seconds()) {
+	//		return errors.New("sync function SLA is too long")
+	//	}
+	//case functions.AsyncFlag:
+	//	if a.SLA > int(365*24*time.Hour.Seconds()+23*time.Hour.Seconds()+59*time.Minute.Seconds()) {
+	//		return errors.New("async function SLA is too long")
+	//	}
+	//}
 
 	return nil
 }
 
-func (a *ExecutableFunctionParams) getFuncType() (string, error) {
-	validBody := strings.Replace(a.Function.Options, "\\", "", -1)
-
-	options := struct {
-		Type string `json:"type"`
-	}{}
-
-	if err := json.Unmarshal([]byte(validBody), &options); err != nil {
-		return "", fmt.Errorf("cannot unmarshal function options: %w", err)
-	}
-
-	if options.Type != functions.SyncFlag && options.Type != functions.AsyncFlag {
-		return "", errors.New("invalid function type")
-	}
-
-	return options.Type, nil
-}
+//nolint:gocritic //its ok
+//func (a *ExecutableFunctionParams) getFuncType() (string, error) {
+//	validBody := strings.Replace(a.Function.Options, "\\", "", -1)
+//
+//	options := struct {
+//		Type string `json:"type"`
+//	}{}
+//
+//	if err := json.Unmarshal([]byte(validBody), &options); err != nil {
+//		return "", fmt.Errorf("cannot unmarshal function options: %w", err)
+//	}
+//
+//	if options.Type != functions.SyncFlag && options.Type != functions.AsyncFlag {
+//		return "", errors.New("invalid function type")
+//	}
+//
+//	return options.Type, nil
+//}
 
 func (js *JSONSchema) Validate() error {
 	if js == nil {

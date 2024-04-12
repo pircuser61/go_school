@@ -127,11 +127,7 @@ func (s *Service) SendNotification(ctx context.Context, to []string, files []ema
 
 	msg.Text = b.String()
 
-	if sendErr := s.cli.Send(msg); sendErr != nil {
-		return sendErr
-	}
-
-	return nil
+	return s.cli.Send(msg)
 }
 
 func getImages(path string) (map[string][]byte, error) {
