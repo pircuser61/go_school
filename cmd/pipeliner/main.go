@@ -228,15 +228,15 @@ func main() {
 	}
 
 	serverParam := api.ServerParam{
-		APIEnv:                 APIEnv,
-		SSOService:             ssoService,
-		PeopleService:          peopleService,
-		TimeoutMiddleware:      cfg.Timeout.Duration,
-		ServerAddr:             cfg.ServeAddr,
-		ReadinessPath:          cfg.Probes.Readiness,
-		LivenessPath:           cfg.Probes.Liveness,
-		ConsumerWorkerCnt:      cfg.ConsumerWorkerCnt,
-		ConsumerRunTaskWorkers: cfg.ConsumerRunTaskWorkers,
+		APIEnv:               APIEnv,
+		SSOService:           ssoService,
+		PeopleService:        peopleService,
+		TimeoutMiddleware:    cfg.Timeout.Duration,
+		ServerAddr:           cfg.ServeAddr,
+		ReadinessPath:        cfg.Probes.Readiness,
+		LivenessPath:         cfg.Probes.Liveness,
+		ConsumerFuncsWorkers: cfg.ConsumerFuncsWorkers,
+		ConsumerTasksWorkers: cfg.ConsumerTasksWorkers,
 		SvcsPing: &configs.ServicesPing{
 			PingTimer:    cfg.ServicesPing.PingTimer,
 			MaxFailedCnt: cfg.ServicesPing.MaxFailedCnt,

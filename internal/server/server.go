@@ -48,10 +48,10 @@ func NewServer(
 		apiEnv:     serverParam.APIEnv,
 
 		consumerWorkerCh:  make(chan kafka.RunnerInMessage),
-		consumerWorkerCnt: serverParam.ConsumerWorkerCnt,
+		consumerWorkerCnt: serverParam.ConsumerFuncsWorkers,
 
 		consumerRunTaskWorkerCh: make(chan kafka.RunTaskMessage),
-		consumerRunTaskWorkers:  serverParam.ConsumerRunTaskWorkers,
+		consumerRunTaskWorkers:  serverParam.ConsumerTasksWorkers,
 
 		svcsPing: &configs.ServicesPing{
 			PingTimer:    serverParam.SvcsPing.PingTimer,
