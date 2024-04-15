@@ -139,6 +139,7 @@ const (
 	SaveNodePrevContentError
 	SaveUpdatedBlockData
 	WrongMonitoringActionError
+	GetWorkNumberError
 )
 
 /*
@@ -266,6 +267,7 @@ var errorText = map[Err]string{
 	SaveNodePrevContentError:            "can't save node prev content",
 	SaveUpdatedBlockData:                "can't save updated block data",
 	WrongMonitoringActionError:          "wrong action for this handler",
+	GetWorkNumberError:                  "can`t get work number from sequence",
 }
 
 /*
@@ -393,6 +395,7 @@ var errorDescription = map[Err]string{
 	SaveNodePrevContentError:       "Не удалось сохранить предыдущий контент ноды",
 	SaveUpdatedBlockData:           "Не удалось сохранить обновленные данные блока",
 	WrongMonitoringActionError:     "Неправильное действие для этой ручки",
+	GetWorkNumberError:             "Не удалось получить номер заявки из сервиса очереди",
 }
 
 /*

@@ -1190,8 +1190,8 @@ func (db *PGCon) GetTask(
 			CASE WHEN ua.node_deadline > now() OR coalesce(ua.is_expired::boolean, false) THEN false ELSE true END as is_expired,
  			w.is_paused
 		FROM works w 
-		JOIN versions v ON v.id = w.version_id
-		JOIN pipelines p ON p.id = v.pipeline_id
+		LEFT JOIN versions v ON v.id = w.version_id
+		LEFT JOIN pipelines p ON p.id = v.pipeline_id
 		JOIN work_status ws ON w.status = ws.id
 		LEFT JOIN unique_actions ua ON ua.work_id = w.id
 		LEFT JOIN LATERAL (

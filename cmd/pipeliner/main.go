@@ -30,6 +30,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/scheduler"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sequence"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/server"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
@@ -183,6 +184,13 @@ func main() {
 		return
 	}
 
+	sequenceService, err := sequence.NewService(cfg.Sequence)
+	if err != nil {
+		log.WithError(err).Error("can't create sequence service")
+
+		return
+	}
+
 	slaService := sla.NewSLAService(hrgateService)
 
 	metrics.InitMetricsAuth(cfg.Prometheus)
@@ -213,6 +221,7 @@ func main() {
 		IncludePlaceholderBlock: includePlaceholderBlock,
 		SLAService:              slaService,
 		Forms:                   formsService,
+		Sequence:                sequenceService,
 		HostURL:                 cfg.HostURL,
 		LogIndex:                cfg.LogIndex,
 		FuncMsgResendDelay:      cfg.Kafka.FuncMessageResendDelay,
@@ -234,7 +243,7 @@ func main() {
 		},
 	}
 
-	kafkaService.InitMessageHandler(APIEnv.FunctionReturnHandler)
+	kafkaService.InitMessageHandler(APIEnv.FunctionReturnHandler, APIEnv.RunTaskHandler)
 
 	go kafkaService.StartCheckHealth()
 
@@ -254,7 +263,7 @@ func main() {
 
 	s := server.NewServer(ctx, log, kafkaService, &serverParam)
 
-	kafkaService.InitMessageHandler(s.SendMessageToWorkers)
+	kafkaService.InitMessageHandler(s.SendMessageToWorkers, s.SendMessageToTaskRunWorkers)
 
 	go kafkaService.StartCheckHealth()
 

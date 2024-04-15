@@ -1,6 +1,10 @@
 package kafka
 
-import "github.com/google/uuid"
+import (
+	"github.com/google/uuid"
+
+	"github.com/iancoleman/orderedmap"
+)
 
 type RunnerOutMessage struct {
 	TaskID          uuid.UUID              `json:"task_id"`
@@ -21,4 +25,21 @@ type RunnerInMessage struct {
 	FunctionMapping map[string]interface{} `json:"function_mapping"`
 	Err             string                 `json:"err"`
 	DoRetry         bool                   `json:"do_retry"`
+}
+
+type RunTaskMessage struct {
+	WorkNumber        string            `json:"work_number"`
+	Description       string            `json:"description"`
+	PipelineID        string            `json:"pipeline_id"`
+	AttachmentFields  []string          `json:"attachment_fields"`
+	Keys              map[string]string `json:"keys"`
+	IsTestApplication bool              `json:"is_test_application"`
+	CustomTitle       string            `json:"custom_title"`
+
+	ClientID  string `json:"client_id"`
+	RequestID string `json:"request_id"`
+	Username  string `json:"user_name"`
+	XAsOther  string `json:"x_as_other"`
+
+	ApplicationBody orderedmap.OrderedMap `json:"application_body"`
 }

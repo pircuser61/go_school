@@ -18,6 +18,7 @@ import (
 	mail_fetcher "gitlab.services.mts.ru/jocasta/pipeliner/internal/mail/fetcher"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/scheduler"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sequence"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 )
@@ -60,6 +61,7 @@ type Pipeliner struct {
 	IncludePlaceholderBlock bool                 `yaml:"include_placeholder_block"`
 	SchedulerTasks          scheduler.Config     `yaml:"scheduler_tasks"`
 	Forms                   forms.Config         `yaml:"forms"`
+	Sequence                sequence.Config      `yaml:"sequence"`
 	HostURL                 string               `yaml:"host_url"`
 	LogIndex                string               `yaml:"log_index"`
 	ServicesPing            ServicesPing         `yaml:"services_ping"`

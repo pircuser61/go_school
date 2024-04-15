@@ -25,6 +25,9 @@ type Server struct {
 
 	consumerWorkerCh  chan kafka.RunnerInMessage
 	consumerWorkerCnt int
+
+	consumerTaskRunnerWorkerCh  chan kafka.RunTaskMessage
+	consumerTaskRunnerWorkerCnt int
 }
 
 func NewServer(
@@ -46,6 +49,9 @@ func NewServer(
 
 		consumerWorkerCh:  make(chan kafka.RunnerInMessage),
 		consumerWorkerCnt: serverParam.ConsumerWorkerCnt,
+
+		consumerTaskRunnerWorkerCh:  make(chan kafka.RunTaskMessage),
+		consumerTaskRunnerWorkerCnt: serverParam.ConsumerWorkerCnt,
 
 		svcsPing: &configs.ServicesPing{
 			PingTimer:    serverParam.SvcsPing.PingTimer,
@@ -93,8 +99,16 @@ func (s *Server) startKafkaWorkers(ctx context.Context) {
 	}
 }
 
+//nolint:all // ok
 func (s *Server) SendMessageToWorkers(_ context.Context, message kafka.RunnerInMessage) error {
 	s.consumerWorkerCh <- message
+
+	return nil
+}
+
+//nolint:all // ok
+func (s *Server) SendMessageToTaskRunWorkers(_ context.Context, message kafka.RunTaskMessage) error {
+	s.consumerTaskRunnerWorkerCh <- message
 
 	return nil
 }
