@@ -98,12 +98,12 @@ func NewService(log logger.Logger, cfg Config) (*Service, bool, error) {
 
 	s.producerFuncResult = producerFuncResult
 
-	consumerFunctions, err := msgkit.NewConsumer(saramaClient, cfg.ConsumerGroup, cfg.ConsumerFunctionsTopic)
+	consumerFunctions, err := msgkit.NewConsumer(saramaClient, cfg.ConsumerGroupFunctions, cfg.ConsumerFunctionsTopic)
 	if err != nil {
 		return s, true, err
 	}
 
-	consumerRunner, err := msgkit.NewConsumer(saramaClient, cfg.ConsumerGroup, cfg.ConsumerTaskRunnerTopic)
+	consumerRunner, err := msgkit.NewConsumer(saramaClient, cfg.ConsumerGroupTaskRunner, cfg.ConsumerTaskRunnerTopic)
 	if err != nil {
 		return s, true, err
 	}
