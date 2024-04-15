@@ -8,7 +8,8 @@ type Config struct {
 	ProducerTopic   string `yaml:"producer_topic"`
 	ProducerTopicSD string `yaml:"producer_topic_sd"`
 
-	ConsumerGroup           string `yaml:"consumer_group"`
+	ConsumerGroupFunctions  string `yaml:"consumer_group_functions"`
+	ConsumerGroupTaskRunner string `yaml:"consumer_group_task_runner"`
 	ConsumerFunctionsTopic  string `yaml:"consumer_functions_topic"`
 	ConsumerTaskRunnerTopic string `yaml:"consumer_task_runner_topic"`
 
