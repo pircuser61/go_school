@@ -32,6 +32,12 @@ type runVersionsDTO struct {
 	ApplicationBody orderedmap.OrderedMap
 }
 
+func (ae *Env) WorkRunTaskHandler(ctx c.Context, jobs <-chan kafka.RunTaskMessage) {
+	for job := range jobs {
+		ae.RunTaskHandler(ctx, job) //nolint:errcheck // Все ошибки уже обрабатываются внутри
+	}
+}
+
 //nolint:all //its ok here
 func (ae *Env) RunTaskHandler(ctx c.Context, message kafka.RunTaskMessage) error {
 	ctx, span := trace.StartSpan(ctx, "RunTaskHandler")
