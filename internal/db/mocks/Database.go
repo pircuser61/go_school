@@ -3211,6 +3211,74 @@ func (_c *MockedDatabase_GetPipeline_Call) RunAndReturn(run func(context.Context
 	return _c
 }
 
+// GetPipelineIDByWorkID provides a mock function with given fields: ctx, taskID
+func (_m *MockedDatabase) GetPipelineIDByWorkID(ctx context.Context, taskID string) (uuid.UUID, uuid.UUID, error) {
+	ret := _m.Called(ctx, taskID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetPipelineIDByWorkID")
+	}
+
+	var r0 uuid.UUID
+	var r1 uuid.UUID
+	var r2 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) (uuid.UUID, uuid.UUID, error)); ok {
+		return rf(ctx, taskID)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string) uuid.UUID); ok {
+		r0 = rf(ctx, taskID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(uuid.UUID)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string) uuid.UUID); ok {
+		r1 = rf(ctx, taskID)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(uuid.UUID)
+		}
+	}
+
+	if rf, ok := ret.Get(2).(func(context.Context, string) error); ok {
+		r2 = rf(ctx, taskID)
+	} else {
+		r2 = ret.Error(2)
+	}
+
+	return r0, r1, r2
+}
+
+// MockedDatabase_GetPipelineIDByWorkID_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetPipelineIDByWorkID'
+type MockedDatabase_GetPipelineIDByWorkID_Call struct {
+	*mock.Call
+}
+
+// GetPipelineIDByWorkID is a helper method to define mock.On call
+//   - ctx context.Context
+//   - taskID string
+func (_e *MockedDatabase_Expecter) GetPipelineIDByWorkID(ctx interface{}, taskID interface{}) *MockedDatabase_GetPipelineIDByWorkID_Call {
+	return &MockedDatabase_GetPipelineIDByWorkID_Call{Call: _e.mock.On("GetPipelineIDByWorkID", ctx, taskID)}
+}
+
+func (_c *MockedDatabase_GetPipelineIDByWorkID_Call) Run(run func(ctx context.Context, taskID string)) *MockedDatabase_GetPipelineIDByWorkID_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string))
+	})
+	return _c
+}
+
+func (_c *MockedDatabase_GetPipelineIDByWorkID_Call) Return(_a0 uuid.UUID, _a1 uuid.UUID, _a2 error) *MockedDatabase_GetPipelineIDByWorkID_Call {
+	_c.Call.Return(_a0, _a1, _a2)
+	return _c
+}
+
+func (_c *MockedDatabase_GetPipelineIDByWorkID_Call) RunAndReturn(run func(context.Context, string) (uuid.UUID, uuid.UUID, error)) *MockedDatabase_GetPipelineIDByWorkID_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetPipelineVersion provides a mock function with given fields: ctx, id, checkNotDeleted
 func (_m *MockedDatabase) GetPipelineVersion(ctx context.Context, id uuid.UUID, checkNotDeleted bool) (*entity.EriusScenario, error) {
 	ret := _m.Called(ctx, id, checkNotDeleted)

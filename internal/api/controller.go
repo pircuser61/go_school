@@ -11,6 +11,7 @@ import (
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 	"gitlab.services.mts.ru/abp/myosotis/observability"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/configs"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	file_registry "gitlab.services.mts.ru/jocasta/pipeliner/internal/fileregistry"
@@ -42,14 +43,14 @@ type Env struct {
 	Statistic               *statistic.Statistic
 	Mail                    *mail.Service
 	Kafka                   *kafka.Service
-	People                  *people.Service
-	ServiceDesc             *servicedesc.Service
+	People                  people.ServiceInterface
+	ServiceDesc             servicedesc.ServiceInterface
 	FunctionStore           *functions.Service
-	HumanTasks              *human_tasks.Service
+	HumanTasks              human_tasks.ServiceInterface
 	MailFetcher             mail_fetcher.Service
 	FileRegistry            *file_registry.Service
 	Integrations            *integrations.Service
-	HrGate                  *hrgate.Service
+	HrGate                  hrgate.ServiceInterface
 	Scheduler               *scheduler.Service
 	SLAService              sla.Service
 	Forms                   *forms.Service
@@ -57,14 +58,19 @@ type Env struct {
 	IncludePlaceholderBlock bool
 	HostURL                 string
 	LogIndex                string
+	FuncMsgResendDelay      time.Duration
 }
 
 type ServerParam struct {
 	APIEnv            *Env
 	SSOService        *sso.Service
-	PeopleService     *people.Service
+	PeopleService     people.ServiceInterface
 	TimeoutMiddleware time.Duration
 	ServerAddr        string
+
+	ConsumerWorkerCnt int
+
+	SvcsPing *configs.ServicesPing
 
 	LivenessPath  string
 	ReadinessPath string

@@ -50,8 +50,8 @@ func uniqueActionsByRole(loginsIn, stepType string, finished, acted bool) string
 	return fmt.Sprintf(`WITH actions AS (
     SELECT vs.work_id                                                                       AS work_id
          , vs.step_name                                                                     AS block_id
-         , CASE WHEN vs.status IN ('running', 'idle') THEN m.actions ELSE '{}' END AS action
-         , CASE WHEN vs.status IN ('running', 'idle') THEN m.params ELSE '{}' END  AS params
+         , CASE WHEN (vs.status IN ('running', 'idle')  AND vs.is_paused = false) THEN m.actions ELSE '{}' END AS action
+         , CASE WHEN (vs.status IN ('running', 'idle')  AND vs.is_paused = false) THEN m.params ELSE '{}' END  AS params
          , vs.current_executor                                                              AS current_executor
          , CASE WHEN vs.step_type = 'execution' THEN vs.time END                            AS exec_start_time
 		 , CASE WHEN vs.step_type = 'approver' THEN vs.time END                          	AS appr_start_time
@@ -1948,6 +1948,24 @@ func (db *PGCon) GetWorkIDByWorkNumber(ctx c.Context, workNumber string) (uuid.U
 	}
 
 	return workID, nil
+}
+
+func (db *PGCon) GetPipelineIDByWorkID(ctx c.Context, taskID string) (pipelineID, versionID uuid.UUID, err error) {
+	ctx, span := trace.StartSpan(ctx, "get_pipeline_id_by_task_id")
+	defer span.End()
+
+	const q = `
+		SELECT v.pipeline_id, 
+		       w.version_id
+		FROM works w 
+		  JOIN versions v ON v.id = w.version_id
+		WHERE w.id=$1`
+
+	if errReq := db.Connection.QueryRow(ctx, q, taskID).Scan(&pipelineID, &versionID); errReq != nil {
+		return uuid.UUID{}, uuid.UUID{}, errReq
+	}
+
+	return pipelineID, versionID, nil
 }
 
 func (db *PGCon) getActionsMap(ctx c.Context) (actions map[string]entity.TaskAction, err error) {

@@ -790,7 +790,7 @@ func (ae *Env) startTask(ctx context.Context, dto *startNodesParams) error {
 		filteredSteps[(*dto.params.Steps)[i]] = nil
 	}
 
-	sort.Slice(steps, func(i, j int) bool {
+	sort.Slice(steps, func(i, _ int) bool {
 		return strings.Contains(steps[i], "wait_for_all_inputs")
 	})
 
@@ -925,10 +925,22 @@ func (ae *Env) restartNode(
 		return "", getErr
 	}
 
-	_, processErr := pipeline.ProcessBlockWithEndMapping(ctx, dbStep.Name, blockData, &pipeline.BlockRunContext{
+	pipelineID, versionID, err := ae.DB.GetPipelineIDByWorkID(ctx, task.ID.String())
+	if err != nil {
+		return "", err
+	}
+
+	log := logger.GetLogger(ctx).WithField("pipelineID", pipelineID).
+		WithField("versionID", versionID).
+		WithField("pipelineID", pipelineID)
+	ctx = logger.WithLogger(ctx, log)
+
+	_, _, processErr := pipeline.ProcessBlockWithEndMapping(ctx, dbStep.Name, blockData, &pipeline.BlockRunContext{
 		TaskID:      task.ID,
 		WorkNumber:  workNumber,
 		WorkTitle:   task.Name,
+		PipelineID:  pipelineID,
+		VersionID:   versionID,
 		Initiator:   task.Author,
 		VarStore:    storage,
 		Delegations: human_tasks.Delegations{},
@@ -1123,9 +1135,9 @@ func (ae *Env) toMonitoringTaskEventsResponse(ctx context.Context, events []enti
 //nolint:all // ok
 func (ae *Env) getErrorDescription() string {
 	return `Для просмотра ошибок по данному блоку: 
-	1. Получите права доступ к индексу Jocasta на https://dashboards.obs.mts.ru/, для этого можно обратиться к Немировой Екатерине (eonemir1@mts.ru), Королеву Владиславу (vvkorolev1@mts.ru)
+	1. Получите права на доступ к индексу Jocasta на https://dashboards.obs.mts.ru/, для этого можно обратиться к Немировой Екатерине (eonemir1@mts.ru), Королеву Владиславу (vvkorolev1@mts.ru)
 	2. Войдите на https://dashboards.obs.mts.ru/
-	3. Произвидите выборку записей по фильтрам
+	3. Произведите выборку записей по фильтрам
 		- stepID = %s
 		- workNumber = %s		
 		- method oneOf(POST, PUT, kafka, faas) 

@@ -1017,7 +1017,8 @@ func (gb *GoApproverBlock) handleTaskUpdateAction(ctx context.Context) error {
 }
 
 func (gb *GoApproverBlock) addApprovers(ctx context.Context, u addApproversParams) error {
-	logApprovers := []string{}
+	var logApprovers []string
+
 	delegateFor, isDelegate := gb.State.userIsDelegate(gb.RunContext.UpdateData.ByLogin, gb.RunContext.Delegations)
 
 	if !(gb.State.userIsAnyApprover(gb.RunContext.UpdateData.ByLogin) || isDelegate) {

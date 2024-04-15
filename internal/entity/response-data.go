@@ -79,7 +79,7 @@ const (
 	ParallelPathIntersected       = "ParallelPathIntersected"
 )
 
-func (bt *BlocksType) Validate(ctx context.Context, sd *servicedesc.Service, log logger.Logger) (valid bool, textErr string) {
+func (bt *BlocksType) Validate(ctx context.Context, sd servicedesc.ServiceInterface, log logger.Logger) (valid bool, textErr string) {
 	if !bt.EndExists(log) {
 		return false, PipelineValidateError
 	}
@@ -139,7 +139,7 @@ func (bt *BlocksType) IsSocketsFilled(log logger.Logger) (valid bool, textErr st
 	return true, ""
 }
 
-func (bt *BlocksType) IsSdBlueprintFilled(ctx context.Context, sd *servicedesc.Service) bool {
+func (bt *BlocksType) IsSdBlueprintFilled(ctx context.Context, sd servicedesc.ServiceInterface) bool {
 	sdNodes := bt.getNodesByType(BlockSDName)
 	if len(sdNodes) == 0 {
 		return true
@@ -154,14 +154,14 @@ func (bt *BlocksType) IsSdBlueprintFilled(ctx context.Context, sd *servicedesc.S
 		return false
 	}
 
-	checkURL := sd.SdURL + checkSdBlueprint + params.BlueprintID
+	checkURL := sd.GetSdURL() + checkSdBlueprint + params.BlueprintID
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, checkURL, http.NoBody)
 	if err != nil {
 		return false
 	}
 
-	resp, err := sd.Cli.Do(req)
+	resp, err := sd.GetCli().Do(req)
 	if err != nil {
 		return false
 	}

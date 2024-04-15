@@ -786,7 +786,7 @@ func (ae *Env) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO) (
 	log = log.WithField("stepName", pipeline.BlockGoFirstStart)
 	ctx = logger.WithLogger(ctx, log)
 
-	workFinished, err := pipeline.ProcessBlockWithEndMapping(ctx, pipeline.BlockGoFirstStart, blockData, runCtx, false)
+	_, workFinished, err := pipeline.ProcessBlockWithEndMapping(ctx, pipeline.BlockGoFirstStart, blockData, runCtx, false)
 	if err != nil {
 		return PipelineRunError, err
 	}

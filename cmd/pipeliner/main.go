@@ -46,7 +46,7 @@ const serviceName = "jocasta.pipeliner"
 // @host localhost:8181
 // @BasePath /api/pipeliner/v1
 //
-//nolint:gocyclo //its ok here
+//nolint:gocyclo //it's ok here
 func main() {
 	configPath := flag.String("c", "cmd/pipeliner/config.yaml", "path to config")
 	flag.Parse()
@@ -81,14 +81,14 @@ func main() {
 		return
 	}
 
-	peopleService, err := people.NewService(cfg.People, ssoService)
+	peopleService, err := people.NewServiceWithCache(&cfg.People, ssoService)
 	if err != nil {
 		log.WithError(err).Error("can't create people service")
 
 		return
 	}
 
-	serviceDescService, err := servicedesc.NewService(cfg.ServiceDesc, ssoService)
+	serviceDescService, err := servicedesc.NewServiceWithCache(&cfg.ServiceDesc, ssoService)
 	if err != nil {
 		log.WithError(err).Error("can't create servicedesc service")
 
@@ -137,7 +137,7 @@ func main() {
 		return
 	}
 
-	humanTasksService, err := human_tasks.NewService(cfg.HumanTasks)
+	humanTasksService, err := human_tasks.NewServiceWithCache(&cfg.HumanTasks)
 	if err != nil {
 		log.WithError(err).Error("can't create human tasks service")
 
@@ -158,7 +158,7 @@ func main() {
 		return
 	}
 
-	hrgateService, err := hrgate.NewService(cfg.HrGate, ssoService)
+	hrgateService, err := hrgate.NewServiceWithCache(&cfg.HrGate, ssoService)
 	if err != nil {
 		log.WithError(err).Error("can't create hrgate service")
 
@@ -224,6 +224,7 @@ func main() {
 		Sequence:                sequenceService,
 		HostURL:                 cfg.HostURL,
 		LogIndex:                cfg.LogIndex,
+		FuncMsgResendDelay:      cfg.Kafka.FuncMessageResendDelay,
 	}
 
 	serverParam := api.ServerParam{
@@ -234,6 +235,12 @@ func main() {
 		ServerAddr:        cfg.ServeAddr,
 		ReadinessPath:     cfg.Probes.Readiness,
 		LivenessPath:      cfg.Probes.Liveness,
+		ConsumerWorkerCnt: cfg.ConsumerWorkerCnt,
+		SvcsPing: &configs.ServicesPing{
+			PingTimer:    cfg.ServicesPing.PingTimer,
+			MaxFailedCnt: cfg.ServicesPing.MaxFailedCnt,
+			MaxOkCnt:     cfg.ServicesPing.MaxOkCnt,
+		},
 	}
 
 	kafkaService.InitMessageHandler(APIEnv.FunctionReturnHandler, APIEnv.RunTaskHandler)
@@ -255,6 +262,11 @@ func main() {
 	}
 
 	s := server.NewServer(ctx, log, kafkaService, &serverParam)
+
+	kafkaService.InitMessageHandler(s.SendMessageToWorkers, s.SendMessageToTaskRunWorkers)
+
+	go kafkaService.StartCheckHealth()
+
 	s.Run(ctx)
 
 	sgnl := make(chan os.Signal, 1)

@@ -3,6 +3,7 @@ package configs
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
@@ -63,6 +64,8 @@ type Pipeliner struct {
 	Sequence                sequence.Config      `yaml:"sequence"`
 	HostURL                 string               `yaml:"host_url"`
 	LogIndex                string               `yaml:"log_index"`
+	ServicesPing            ServicesPing         `yaml:"services_ping"`
+	ConsumerWorkerCnt       int                  `yaml:"consumer_worker_count"`
 }
 
 type RunEnv struct {
@@ -92,6 +95,12 @@ type PushConfig struct {
 type PrometheusConfig struct {
 	Stand string     `json:"stand"`
 	Push  PushConfig `yaml:"push"`
+}
+
+type ServicesPing struct {
+	PingTimer    time.Duration `yaml:"ping_timer"`
+	MaxFailedCnt int           `yaml:"max_failed_count"`
+	MaxOkCnt     int           `yaml:"max_ok_count"`
 }
 
 func (d *Database) String() string {

@@ -162,7 +162,7 @@ func (db *PGCon) UpdateTaskStatus(ctx c.Context, taskID uuid.UUID, status int, c
 	}
 
 	switch status {
-	case RunStatusCanceled, RunStatusFinished, RunStatusStopped, RunStatusError:
+	case RunStatusCanceled, RunStatusFinished, RunStatusError:
 		if delErr := db.deleteFinishedPipelineDeadlines(ctx, taskID); delErr != nil {
 			return delErr
 		}
@@ -399,7 +399,7 @@ func (db *PGCon) PauseTaskBlocks(ctx c.Context, workID string, steps []string) (
 
 	defer rows.Close()
 
-	updatedIDS := make([]string, 0)
+	updatedIds := make([]string, 0)
 
 	for rows.Next() {
 		var id string
@@ -408,10 +408,10 @@ func (db *PGCon) PauseTaskBlocks(ctx c.Context, workID string, steps []string) (
 			return nil, scanErr
 		}
 
-		updatedIDS = append(updatedIDS, id)
+		updatedIds = append(updatedIds, id)
 	}
 
-	return updatedIDS, nil
+	return updatedIds, nil
 }
 
 func (db *PGCon) UnpauseTaskBlock(ctx c.Context, workID, stepID uuid.UUID) (err error) {
