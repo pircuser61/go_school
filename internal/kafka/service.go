@@ -196,16 +196,20 @@ func (s *Service) StartConsumer(ctx c.Context) {
 	serveCtx, cancel := c.WithCancel(ctx)
 	s.ctxCancel = cancel
 
-	go func() {
-		s.isConsuming = true
-		s.stoppedByPing = false
+	s.isConsuming = true
+	s.stoppedByPing = false
 
+	go func() {
 		err := s.consumerFunctions.Serve(serveCtx, s.FuncMessageHandler)
 		if err != nil {
 			s.log.Error(err)
 		}
 
-		err = s.consumerTaskRunner.Serve(serveCtx, s.TaskRunnerMessageHandler)
+		s.isConsuming = false
+	}()
+
+	go func() {
+		err := s.consumerTaskRunner.Serve(serveCtx, s.TaskRunnerMessageHandler)
 		if err != nil {
 			s.log.Error(err)
 		}
