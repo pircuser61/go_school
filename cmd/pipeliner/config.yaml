@@ -59,10 +59,12 @@ mail:
 kafka:
   brokers:
     - 10.73.138.117:9094
+  producer_topic_sd: "from.pipeliner.to.sd"
   producer_topic: "from.pipeliner.to.runner"
-  consumer_group: "pipeliner"
-  consumer_functions_topic: "from.runner.to.pipeliner2"
-  consumer_task_runner_topic: "from.pipeline-runner.to.pipeliner"
+  consumer_group_functions:  "pipeliner-function-local2"
+  consumer_group_task_runner: "pipeliner-tasks-local2"
+  consumer_functions_topic: "from.runner.to.pipeliner-local"
+  consumer_task_runner_topic: "from.pipeline-runner.to.pipeliner-local"
   health_check_timeout: 30
   function_message_resend_delay: 10s
 
@@ -118,7 +120,10 @@ function_store:
   url: 'functions:90'
 
 scheduler_tasks:
-  url: 'scheduler:90'
+  url: 'localhost:9001'
+
+sequence:
+  url: 'localhost:9002'
 
 human_tasks:
   url: "human-tasks:90"
