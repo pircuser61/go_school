@@ -106,13 +106,6 @@ func (s *Server) SendMessageToWorkers(_ context.Context, message kafka.RunnerInM
 	return nil
 }
 
-//nolint:all // ok
-func (s *Server) SendMessageToTaskRunWorkers(_ context.Context, message kafka.RunTaskMessage) error {
-	s.consumerTaskRunnerWorkerCh <- message
-
-	return nil
-}
-
 func (s *Server) checkSvcsAvailability(ctx context.Context) {
 	failedCh := make(chan bool)
 
