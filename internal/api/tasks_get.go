@@ -497,7 +497,10 @@ func (ae *Env) getCurrentUserInDelegatesForSteps(
 	return userInDelegates, nil
 }
 
-const getTasksPath = "/tasks"
+const (
+	getTasksPath      = "/tasks"
+	getTasksUsersPath = "/tasks/users"
+)
 
 //nolint:dupl,gocritic //its not duplicate // params без поинтера нужен для интерфейса
 func (ae *Env) GetTasks(w http.ResponseWriter, req *http.Request, params GetTasksParams) {
@@ -593,6 +596,80 @@ func (ae *Env) GetTasks(w http.ResponseWriter, req *http.Request, params GetTask
 	}
 }
 
+//nolint:dupl,gocritic //its not duplicate // params без поинтера нужен для интерфейса
+func (ae *Env) GetTasksUsers(w http.ResponseWriter, req *http.Request, params GetTasksUsersParams) {
+	start := time.Now()
+	ctx, s := trace.StartSpan(req.Context(), "get_tasks_users")
+
+	requestInfo := metrics.NewGetRequestInfo(getTasksUsersPath)
+
+	defer func() {
+		s.End()
+
+		requestInfo.Duration = time.Since(start)
+
+		ae.Metrics.RequestsIncrease(requestInfo)
+	}()
+
+	log := logger.GetLogger(ctx)
+	errorHandler := newHTTPErrorHandler(log, w)
+	errorHandler.setMetricsRequestInfo(requestInfo)
+
+	newParams, err := convertTaskUserParams(params)
+	if err != nil {
+		errorHandler.handleError(BadFiltersError, err)
+
+		return
+	}
+
+	filters, err := newParams.toEntity(req)
+	if err != nil {
+		errorHandler.handleError(BadFiltersError, err)
+
+		return
+	}
+
+	delegations, err := ae.HumanTasks.GetDelegationsToLogin(ctx, filters.CurrentUser)
+	if err != nil {
+		errorHandler.handleError(GetDelegationsError, err)
+
+		return
+	}
+
+	if filters.SelectAs != nil {
+		switch *filters.SelectAs {
+		case entity.SelectAsValApprover:
+			delegations = delegations.FilterByType("approvement")
+		case entity.SelectAsValExecutor, entity.SelectAsValQueueExecutor, entity.SelectAsValInWorkExecutor:
+			delegations = delegations.FilterByType("execution")
+		default:
+			delegations = delegations[:0]
+		}
+	} else {
+		delegations = delegations[:0]
+	}
+
+	users := delegations.GetUserInArrayWithDelegators([]string{filters.CurrentUser})
+
+	if filters.Status != nil {
+		handleFilterStatus(&filters)
+	}
+
+	resp, err := ae.DB.GetTasksUsers(ctx, filters, users)
+	if err != nil {
+		errorHandler.handleError(GetTasksError, err)
+
+		return
+	}
+
+	if err = sendResponse(w, http.StatusOK, resp); err != nil {
+		errorHandler.handleError(UnknownError, err)
+
+		return
+	}
+}
+
+//nolint:dupl //Нужно для /tasks
 func (p *GetTasksParams) toEntity(req *http.Request) (entity.TaskFilter, error) {
 	var filters entity.TaskFilter
 
@@ -662,6 +739,8 @@ func (p *GetTasksParams) toEntity(req *http.Request) (entity.TaskFilter, error) 
 		InitiatorLogins:      p.InitiatorLogins,
 		ProcessingLogins:     p.ProcessingLogins,
 		ProcessingGroupIds:   p.ProcessingGroupIds,
+		ExecutorLogins:       p.ExecutorLogins,
+		ExecutorGroupIds:     p.ExecutorGroupIds,
 		ExecutorTypeAssigned: typeAssigned,
 		SignatureCarrier:     signatureCarrier,
 	}

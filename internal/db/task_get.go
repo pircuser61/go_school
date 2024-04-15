@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-
 	"github.com/jackc/pgx/v4"
 
 	"github.com/pkg/errors"
@@ -33,7 +32,7 @@ const (
 	ascOrder = "ASC"
 )
 
-func uniqueActionsByRole(loginsIn, stepType string, finished, acted bool) string {
+func uniqueActionsByRole(loginsIn, stepType string, finished, acted, isPersonsFilter bool) string {
 	statuses := "(vs.status IN ('running', 'idle') AND m.finished = false)"
 
 	if finished {
@@ -45,9 +44,10 @@ func uniqueActionsByRole(loginsIn, stepType string, finished, acted bool) string
 	if acted {
 		memberActed = "AND m.is_acted = true"
 	}
+
 	// nolint:gocritic
 	// language=PostgreSQL
-	return fmt.Sprintf(`WITH actions AS (
+	q := fmt.Sprintf(`WITH actions AS (
     SELECT vs.work_id                                                                       AS work_id
          , vs.step_name                                                                     AS block_id
          , CASE WHEN (vs.status IN ('running', 'idle')  AND vs.is_paused = false) THEN m.actions ELSE '{}' END AS action
@@ -75,23 +75,43 @@ func uniqueActionsByRole(loginsIn, stepType string, finished, acted bool) string
                           FROM actions a
                           GROUP BY block_id, a.work_id)
    , unique_actions AS (
-    SELECT actions.work_id                  	  		 AS work_id
-         , JSONB_AGG(jsonb_actions.actions) 	         AS actions
-         , max(actions.current_executor::text)::jsonb    AS current_executor
-         , min(actions.exec_start_time)     	  		 AS exec_start_time
-         , min(actions.appr_start_time)     	  		 AS appr_start_time
-         , max(actions.updated_at)     	  		 		 AS updated_at
-         , min(actions.node_deadline)     	  		 	 AS node_deadline    
-    	 , min(actions.node_start) 						 AS node_start
-	 	 , max(actions.is_expired)						 AS is_expired
-    FROM actions
-             JOIN filtered_actions fa ON fa.time = actions.node_start AND fa.block_id = actions.block_id
-             LEFT JOIN LATERAL (SELECT jsonb_build_object(
-                                               'block_id', actions.block_id,
-                                               'actions', actions.action,
-                                               'params', actions.params) as actions) jsonb_actions ON TRUE
-    GROUP BY actions.work_id)
-`, loginsIn, stepType, statuses, memberActed)
+      	 SELECT actions.work_id                  	  		 AS work_id
+			%s
+		FROM actions
+				 JOIN filtered_actions fa ON fa.time = actions.node_start AND fa.block_id = actions.block_id
+				 LEFT JOIN LATERAL (SELECT jsonb_build_object(
+												   'block_id', actions.block_id,
+												   'actions', actions.action,
+												   'params', actions.params) as actions) jsonb_actions ON TRUE
+		GROUP BY actions.work_id
+   )
+`, loginsIn, stepType, statuses, memberActed, getUniqueActionsSelect(isPersonsFilter))
+
+	return q
+}
+
+func getUniqueActionsSelect(isPerson bool) string {
+	// nolint:gocritic
+	// language=PostgreSQL
+	actions := `
+			 , JSONB_AGG(jsonb_actions.actions) 	         AS actions
+			 , max(actions.current_executor::text)::jsonb    AS current_executor
+			 , min(actions.exec_start_time)     	  		 AS exec_start_time
+			 , min(actions.appr_start_time)     	  		 AS appr_start_time
+			 , max(actions.updated_at)     	  		 		 AS updated_at
+			 , min(actions.node_deadline)     	  		 	 AS node_deadline    
+			 , min(actions.node_start) 						 AS node_start
+			 , max(actions.is_expired)						 AS is_expired`
+
+	if isPerson {
+		// nolint:gocritic
+		// language=PostgreSQL
+		actions = `
+			, JSONB_AGG(jsonb_actions.actions) 	         AS actions
+			, min(actions.node_start) 					 AS node_start`
+	}
+
+	return actions
 }
 
 func uniqueActiveActions(approverLogins, executionLogins []string, currentUser, workNumber string) string {
@@ -158,22 +178,22 @@ func buildInExpression(items []string) string {
 	return sb.String()
 }
 
-func getUniqueActions(selectFilter string, logins []string) string {
+func getUniqueActions(selectFilter string, logins []string, isPersonFilter bool) string {
 	const replaceCount = 1
 
 	loginsIn := buildInExpression(logins)
 
 	switch selectFilter {
 	case entity.SelectAsValApprover:
-		return uniqueActionsByRole(loginsIn, "approver", false, false)
+		return uniqueActionsByRole(loginsIn, "approver", false, false, isPersonFilter)
 	case entity.SelectAsValFinishedApprover:
-		return uniqueActionsByRole(loginsIn, "approver", true, true)
+		return uniqueActionsByRole(loginsIn, "approver", true, true, isPersonFilter)
 	case entity.SelectAsValExecutor:
-		return uniqueActionsByRole(loginsIn, "execution", false, false)
+		return uniqueActionsByRole(loginsIn, "execution", false, false, isPersonFilter)
 	case entity.SelectAsValFinishedExecutor:
-		return uniqueActionsByRole(loginsIn, "execution", true, true)
+		return uniqueActionsByRole(loginsIn, "execution", true, true, isPersonFilter)
 	case entity.SelectAsValFormExecutor:
-		q := uniqueActionsByRole(loginsIn, "form", false, false)
+		q := uniqueActionsByRole(loginsIn, "form", false, false, isPersonFilter)
 		q = strings.Replace(q,
 			"--unique-actions-filter--",
 			"AND ((vs.content -> 'State' -> vs.step_name ->> 'is_reentry' = 'true' "+
@@ -183,9 +203,9 @@ func getUniqueActions(selectFilter string, logins []string) string {
 
 		return q
 	case entity.SelectAsValFinishedFormExecutor:
-		return uniqueActionsByRole(loginsIn, "form", true, true)
+		return uniqueActionsByRole(loginsIn, "form", true, true, isPersonFilter)
 	case entity.SelectAsValQueueExecutor:
-		q := uniqueActionsByRole(loginsIn, "execution", false, false)
+		q := uniqueActionsByRole(loginsIn, "execution", false, false, isPersonFilter)
 		q = strings.Replace(q,
 			"--unique-actions-filter--",
 			"AND vs.content -> 'State' -> vs.step_name ->> 'is_taken_in_work' = 'false' --unique-actions-filter--",
@@ -194,7 +214,7 @@ func getUniqueActions(selectFilter string, logins []string) string {
 
 		return q
 	case entity.SelectAsValInWorkExecutor:
-		q := uniqueActionsByRole(loginsIn, "execution", false, false)
+		q := uniqueActionsByRole(loginsIn, "execution", false, false, isPersonFilter)
 		q = strings.Replace(q,
 			"--unique-actions-filter--",
 			"AND vs.content -> 'State' -> vs.step_name ->> 'is_taken_in_work' = 'true' --unique-actions-filter--",
@@ -203,11 +223,11 @@ func getUniqueActions(selectFilter string, logins []string) string {
 
 		return q
 	case entity.SelectAsValFinishedExecutorV2:
-		q := uniqueActionsByRole(loginsIn, "execution", true, false)
+		q := uniqueActionsByRole(loginsIn, "execution", true, false, isPersonFilter)
 
 		return q
 	case entity.SelectAsValSignerPhys:
-		q := uniqueActionsByRole(loginsIn, "sign", false, false)
+		q := uniqueActionsByRole(loginsIn, "sign", false, false, isPersonFilter)
 		q = strings.Replace(q,
 			"--unique-actions-filter--",
 			"AND vs.content -> 'State' -> vs.step_name ->> 'signature_type' in ('pep', 'unep') --unique-actions-filter--",
@@ -216,7 +236,7 @@ func getUniqueActions(selectFilter string, logins []string) string {
 
 		return q
 	case entity.SelectAsValFinishedSignerPhys:
-		q := uniqueActionsByRole(loginsIn, "sign", true, true)
+		q := uniqueActionsByRole(loginsIn, "sign", true, true, isPersonFilter)
 		q = strings.Replace(q,
 			"--unique-actions-filter--",
 			"AND vs.content -> 'State' -> vs.step_name ->> 'signature_type' in ('pep', 'unep') --unique-actions-filter--",
@@ -225,7 +245,7 @@ func getUniqueActions(selectFilter string, logins []string) string {
 
 		return q
 	case entity.SelectAsValSignerJur:
-		q := uniqueActionsByRole(loginsIn, "sign", false, false)
+		q := uniqueActionsByRole(loginsIn, "sign", false, false, isPersonFilter)
 		q = strings.Replace(q,
 			"--unique-actions-filter--",
 			"AND vs.content -> 'State' -> vs.step_name ->> 'signature_type' = 'ukep' --unique-actions-filter--",
@@ -234,7 +254,7 @@ func getUniqueActions(selectFilter string, logins []string) string {
 
 		return q
 	case entity.SelectAsValFinishedSignerJur:
-		q := uniqueActionsByRole(loginsIn, "sign", true, true)
+		q := uniqueActionsByRole(loginsIn, "sign", true, true, isPersonFilter)
 		q = strings.Replace(q,
 			"--unique-actions-filter--",
 			"AND vs.content -> 'State' -> vs.step_name ->> 'signature_type' = 'ukep' --unique-actions-filter--",
@@ -252,11 +272,11 @@ func getUniqueActions(selectFilter string, logins []string) string {
 			loginsIn,
 		)
 	case entity.SelectAsValGroupExecutor:
-		q := uniqueActionsByRole(loginsIn, "execution", false, false)
+		q := uniqueActionsByRole(loginsIn, "execution", false, false, isPersonFilter)
 
 		return strings.Replace(q, "--unique-actions-filter--", "AND m.execution_group_member = true", replaceCount)
 	case entity.SelectAsValFinishedGroupExecutor:
-		q := uniqueActionsByRole(loginsIn, "execution", true, false)
+		q := uniqueActionsByRole(loginsIn, "execution", true, false, isPersonFilter)
 
 		return strings.Replace(q, "--unique-actions-filter--", "AND m.execution_group_member = true", replaceCount)
 	default:
@@ -342,7 +362,7 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 
 	var queryMaker compileGetTaskQueryMaker
 
-	return queryMaker.MakeQuery(&fl, q, delegations, args, order, orderBy, true)
+	return queryMaker.MakeQuery(&fl, q, delegations, args, order, orderBy, true, false)
 }
 
 //nolint:gocritic //изначально было без поинтера
@@ -353,11 +373,11 @@ func compileGetTasksMetaQuery(fl entity.TaskFilter, delegations []string) (q str
 		[with_variable_storage]
 		SELECT 
 			w.work_number,
-			v.content->'pipeline'->'blocks'->'servicedesk_application_0'->'params'->>'blueprint_id'
+			v.content->'pipeline'->'blocks'->'servicedesk_application_0'->'params'->>'blueprint_id' 		
 		FROM works w 
 		JOIN versions v ON v.id = w.version_id
 		JOIN pipelines p ON p.id = v.pipeline_id
-		JOIN unique_actions ua ON ua.work_id = w.id
+		JOIN unique_actions ua on w.id = ua.work_id
 		[join_variable_storage]
 		WHERE w.child_id IS NULL`
 
@@ -373,7 +393,41 @@ func compileGetTasksMetaQuery(fl entity.TaskFilter, delegations []string) (q str
 
 	var queryMaker compileGetTaskQueryMaker
 
-	return queryMaker.MakeQuery(&fl, q, delegations, args, order, orderBy, false)
+	return queryMaker.MakeQuery(&fl, q, delegations, args, order, orderBy, false, false)
+}
+
+//nolint:gocritic //изначально было без поинтера
+func compileGetUniquePersonsQuery(fl entity.TaskFilter, delegations []string) (q string, args []interface{}) {
+	args = append(args, getStepTypeBySelectForFilter(*fl.SelectAs))
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	q = fmt.Sprintf(`
+		[with_variable_storage]
+		SELECT 
+    		var.current_executor->'people',
+    		var.current_executor->>'group_name'    		
+		FROM works w 
+		JOIN versions v ON v.id = w.version_id
+		JOIN pipelines p ON p.id = v.pipeline_id
+		JOIN unique_actions ua on w.id = ua.work_id
+		JOIN variable_storage var on w.id = var.work_id and var.step_type= $%d
+		[join_variable_storage]
+		WHERE w.child_id IS NULL`, len(args))
+
+	var order string
+	if fl.Order != nil {
+		order = *fl.Order
+	}
+
+	var orderBy []string
+	if fl.OrderBy != nil {
+		orderBy = *fl.OrderBy
+	}
+
+	var queryMaker compileGetTaskQueryMaker
+
+	return queryMaker.MakeQuery(&fl, q, delegations, args, order, orderBy, false, true)
 }
 
 type compileGetTaskQueryMaker struct {
@@ -383,14 +437,14 @@ type compileGetTaskQueryMaker struct {
 	args        []any
 }
 
-func (cq *compileGetTaskQueryMaker) init() {
+func (cq *compileGetTaskQueryMaker) init(isPersonFilter bool) {
 	switch {
 	case cq.fl.InitiatorLogins != nil && len(*cq.fl.InitiatorLogins) > 0:
-		cq.q = fmt.Sprintf("%s %s", getUniqueActions("initiators", *cq.fl.InitiatorLogins), cq.q)
+		cq.q = fmt.Sprintf("%s %s", getUniqueActions("initiators", *cq.fl.InitiatorLogins, isPersonFilter), cq.q)
 	case cq.fl.SelectAs != nil:
-		cq.q = fmt.Sprintf("%s %s", getUniqueActions(*cq.fl.SelectAs, cq.delegations), cq.q)
+		cq.q = fmt.Sprintf("%s %s", getUniqueActions(*cq.fl.SelectAs, cq.delegations, isPersonFilter), cq.q)
 	default:
-		cq.q = fmt.Sprintf("%s %s", getUniqueActions("", cq.delegations), cq.q)
+		cq.q = fmt.Sprintf("%s %s", getUniqueActions("", cq.delegations, isPersonFilter), cq.q)
 	}
 }
 
@@ -486,6 +540,12 @@ func (cq *compileGetTaskQueryMaker) addIsExpiredFilter(isExpired *bool) {
 	}
 }
 
+func (cq *compileGetTaskQueryMaker) addExecutorFilter() {
+	if cq.fl.ExecutorLogins != nil || cq.fl.ExecutorGroupIds != nil {
+		cq.q = getExecutors(cq.q, cq.fl)
+	}
+}
+
 //nolint:gocyclo //it's ok
 func (cq *compileGetTaskQueryMaker) addOrderBy(order string, orderBy []string) {
 	if (order != "" && len(orderBy) == 0) || len(orderBy) == 0 {
@@ -565,13 +625,14 @@ func (cq *compileGetTaskQueryMaker) MakeQuery(
 	order string,
 	orderBy []string,
 	useLimitOffset bool,
+	isPersonFilter bool,
 ) (query string, resArgs []any) {
 	cq.fl = fl
 	cq.q = q
 	cq.delegations = delegations
 	cq.args = args
 
-	cq.init()
+	cq.init(isPersonFilter)
 	cq.replaceUniqueActionsFilter()
 	cq.addTaskID()
 	cq.addName()
@@ -582,6 +643,7 @@ func (cq *compileGetTaskQueryMaker) MakeQuery(
 	cq.addReceiver()
 	cq.addInitiator()
 	cq.addProcessingSteps()
+	cq.addExecutorFilter()
 	cq.addIsExpiredFilter(fl.Expired)
 	cq.addOrderBy(order, orderBy)
 
@@ -603,13 +665,32 @@ func replaceStorageVariable(q string) string {
 }
 
 func getProcessingSteps(q string, fl *entity.TaskFilter) string {
+	// nolint:gocritic,goconst
+	// language=PostgreSQL
 	varStorage := `, var_storage as (
-		SELECT DISTINCT work_id FROM variable_storage
+		SELECT DISTINCT work_id, current_executor FROM variable_storage
 		WHERE work_id IS NOT NULL`
 
 	varStorage = addAssignType(varStorage, fl.CurrentUser, fl.ExecutorTypeAssigned)
 	varStorage = addProcessingLogins(varStorage, fl.SelectAs, fl.ProcessingLogins)
 	varStorage = addProcessingGroups(varStorage, fl.SelectAs, fl.ProcessingGroupIds)
+
+	varStorage += ")"
+
+	q = strings.Replace(q, "[with_variable_storage]", varStorage, 1)
+	q = strings.Replace(q, "[join_variable_storage]", "JOIN var_storage vs ON vs.work_id = w.id ", 1)
+
+	return q
+}
+
+func getExecutors(q string, fl *entity.TaskFilter) string {
+	varStorage := `, var_storage as (
+		SELECT DISTINCT work_id, current_executor FROM variable_storage
+		WHERE work_id IS NOT NULL`
+
+	varStorage = addAssignType(varStorage, fl.CurrentUser, fl.ExecutorTypeAssigned)
+	varStorage = addExecutorsLogins(varStorage, fl.SelectAs, fl.ExecutorLogins)
+	varStorage = addExecutorGroups(varStorage, fl.SelectAs, fl.ExecutorGroupIds)
 
 	varStorage += ")"
 
@@ -653,13 +734,30 @@ func addProcessingLogins(q string, selectAs *string, logins *[]string) string {
 
 	stepType := getStepTypeBySelectForFilter(*selectAs)
 
-	return fmt.Sprintf(`
-		%s AND step_type = '%s' AND content -> 'State' -> step_name -> '%s' ?| '%s'`,
-		q,
-		stepType,
-		getActorsNameByStepType(stepType),
-		"{"+strings.Join(ls, ",")+"}",
+	return fmt.Sprintf(
+		`%s AND step_type = '%s' AND content -> 'State' -> step_name -> '%s' ?| '%s'`,
+		q, stepType, getActorsNameByStepType(stepType), "{"+strings.Join(ls, ",")+"}",
 	)
+}
+
+func addExecutorsLogins(q string, selectAs *string, logins *[]string) string {
+	if selectAs == nil || logins == nil || len(*logins) == 0 {
+		return q
+	}
+
+	stepType := getStepTypeBySelectForFilter(*selectAs)
+
+	login := make([]string, 0, len(*logins))
+	for _, v := range *logins {
+		login = append(login, fmt.Sprintf("%q", v))
+	}
+
+	q = fmt.Sprintf(
+		`%s AND step_type = '%s' AND current_executor -> 'people'  @> '[%s]'::jsonb`,
+		q, stepType, strings.Join(login, ","),
+	)
+
+	return q
 }
 
 func addProcessingGroups(q string, selectAs *string, groupIds *[]string) string {
@@ -667,9 +765,9 @@ func addProcessingGroups(q string, selectAs *string, groupIds *[]string) string 
 		return q
 	}
 
-	ids := *groupIds
-	for i := range ids {
-		ids[i] = fmt.Sprintf("'%s'", ids[i])
+	ids := make([]string, 0)
+	for _, v := range *groupIds {
+		ids = append(ids, fmt.Sprintf("'%s'", v))
 	}
 
 	stepType := getStepTypeBySelectForFilter(*selectAs)
@@ -682,10 +780,31 @@ func addProcessingGroups(q string, selectAs *string, groupIds *[]string) string 
 	)
 }
 
-func getStepTypeBySelectForFilter(selectFor string) string {
-	switch selectFor {
-	case "queue_executor", "in_work_executor", "finished_executor", "group_executor", "finished_group_executor":
-		return "execution"
+func addExecutorGroups(q string, selectAs *string, groupIds *[]string) string {
+	if selectAs == nil || groupIds == nil || len(*groupIds) == 0 {
+		return q
+	}
+
+	ids := make([]string, 0)
+	for _, v := range *groupIds {
+		ids = append(ids, fmt.Sprintf("'%s'", v))
+	}
+
+	stepType := getStepTypeBySelectForFilter(*selectAs)
+
+	return fmt.Sprintf(`%s AND step_type = '%s' AND current_executor ->> 'group_id' IN(%s)`,
+		q,
+		stepType,
+		strings.Join(ids, ","),
+	)
+}
+
+func getGroupActorsNameByStepType(stepName string) string {
+	switch stepName {
+	case "execution":
+		return "executors_group_id"
+	case "approver":
+		return "approvers_group_id"
 	}
 
 	return ""
@@ -706,12 +825,10 @@ func getActorsNameByStepType(stepName string) string {
 	return ""
 }
 
-func getGroupActorsNameByStepType(stepName string) string {
-	switch stepName {
-	case "execution":
-		return "executors_group_id"
-	case "approver":
-		return "approvers_group_id"
+func getStepTypeBySelectForFilter(selectFor string) string {
+	switch selectFor {
+	case "executor", "queue_executor", "in_work_executor", "finished_executor", "group_executor", "finished_group_executor":
+		return "execution"
 	}
 
 	return ""
@@ -958,6 +1075,18 @@ func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter, delegations 
 		Total:     tasks.Tasks[0].Total,
 		TasksMeta: *meta,
 	}, nil
+}
+
+//nolint:gocritic //в этом проекте не принято использовать поинтеры
+func (db *PGCon) GetTasksUsers(ctx c.Context, filters entity.TaskFilter, delegations []string) ([]string, error) {
+	ctx, span := trace.StartSpan(ctx, "db.pg_get_tasks_persons")
+	defer span.End()
+
+	qMeta, args := compileGetUniquePersonsQuery(filters, delegations)
+
+	persons, metaErr := db.getTaskUniquePersons(ctx, qMeta, args)
+
+	return persons, metaErr
 }
 
 func (db *PGCon) GetDeadline(ctx c.Context, workNumber string) (time.Time, error) {
@@ -1726,6 +1855,53 @@ func (db *PGCon) getTasksMeta(ctx c.Context, q string, args []interface{}) (*ent
 	}
 
 	return &meta, nil
+}
+
+func (db *PGCon) getTaskUniquePersons(ctx c.Context, q string, args []interface{}) ([]string, error) {
+	ctx, span := trace.StartSpan(ctx, "db.pg_get_tasks_meta")
+	defer span.End()
+
+	executorLogins := make([]string, 0)
+
+	rows, err := db.Connection.Query(ctx, q, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var (
+		executors *[]string
+		group     *string
+	)
+
+	for rows.Next() {
+		err = rows.Scan(&executors, &group)
+		if err != nil {
+			return nil, err
+		}
+
+		if executors != nil {
+			for _, v := range *executors {
+				if !utils.IsContainsInSlice(v, executorLogins) {
+					executorLogins = append(executorLogins, v)
+				}
+			}
+		}
+
+		if group == nil {
+			continue
+		}
+
+		if !utils.IsContainsInSlice(*group, executorLogins) && *group != "" {
+			executorLogins = append(executorLogins, *group)
+		}
+	}
+
+	if rowsErr := rows.Err(); rowsErr != nil {
+		return nil, rowsErr
+	}
+
+	return executorLogins, nil
 }
 
 func (db *PGCon) GetTaskSteps(ctx c.Context, id uuid.UUID) (entity.TaskSteps, error) {
