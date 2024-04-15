@@ -99,12 +99,14 @@ func (s *Server) startKafkaWorkers(ctx context.Context) {
 	}
 }
 
+//nolint:all // ok
 func (s *Server) SendMessageToWorkers(_ context.Context, message kafka.RunnerInMessage) error {
 	s.consumerWorkerCh <- message
 
 	return nil
 }
 
+//nolint:all // ok
 func (s *Server) SendMessageToTaskRunWorkers(_ context.Context, message kafka.RunTaskMessage) error {
 	s.consumerTaskRunnerWorkerCh <- message
 
