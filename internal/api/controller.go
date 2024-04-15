@@ -68,7 +68,8 @@ type ServerParam struct {
 	TimeoutMiddleware time.Duration
 	ServerAddr        string
 
-	ConsumerWorkerCnt int
+	ConsumerWorkerCnt      int
+	ConsumerRunTaskWorkers int
 
 	SvcsPing *configs.ServicesPing
 

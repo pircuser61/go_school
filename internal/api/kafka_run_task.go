@@ -3,6 +3,7 @@ package api
 import (
 	c "context"
 	"encoding/json"
+	"golang.org/x/net/context"
 	"strings"
 
 	"github.com/iancoleman/orderedmap"
@@ -30,6 +31,12 @@ type runVersionsDTO struct {
 	ClientID          string
 
 	ApplicationBody orderedmap.OrderedMap
+}
+
+func (ae *Env) WorkRunTaskHandler(ctx context.Context, jobs <-chan kafka.RunTaskMessage) {
+	for job := range jobs {
+		ae.RunTaskHandler(ctx, job) //nolint:errcheck // Все ошибки уже обрабатываются внутри
+	}
 }
 
 //nolint:all //its ok here

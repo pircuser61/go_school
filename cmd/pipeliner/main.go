@@ -228,14 +228,15 @@ func main() {
 	}
 
 	serverParam := api.ServerParam{
-		APIEnv:            APIEnv,
-		SSOService:        ssoService,
-		PeopleService:     peopleService,
-		TimeoutMiddleware: cfg.Timeout.Duration,
-		ServerAddr:        cfg.ServeAddr,
-		ReadinessPath:     cfg.Probes.Readiness,
-		LivenessPath:      cfg.Probes.Liveness,
-		ConsumerWorkerCnt: cfg.ConsumerWorkerCnt,
+		APIEnv:                 APIEnv,
+		SSOService:             ssoService,
+		PeopleService:          peopleService,
+		TimeoutMiddleware:      cfg.Timeout.Duration,
+		ServerAddr:             cfg.ServeAddr,
+		ReadinessPath:          cfg.Probes.Readiness,
+		LivenessPath:           cfg.Probes.Liveness,
+		ConsumerWorkerCnt:      cfg.ConsumerWorkerCnt,
+		ConsumerRunTaskWorkers: cfg.ConsumerRunTaskWorkers,
 		SvcsPing: &configs.ServicesPing{
 			PingTimer:    cfg.ServicesPing.PingTimer,
 			MaxFailedCnt: cfg.ServicesPing.MaxFailedCnt,
@@ -259,7 +260,7 @@ func main() {
 
 	s := server.NewServer(ctx, log, kafkaService, &serverParam)
 
-	kafkaService.InitMessageHandler(s.SendMessageToWorkers, APIEnv.RunTaskHandler)
+	kafkaService.InitMessageHandler(s.SendMessageToWorkers, s.SendRunTaskMessageToWorkers)
 
 	go kafkaService.StartCheckHealth()
 

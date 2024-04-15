@@ -11,6 +11,7 @@ faas: 'https://openfaas.dev.autobp.mts.ru/'
 scheduler: "http://scheduler"
 network_monitor: "http://network-monitor/api/netmon/v1/"
 consumer_worker_count: 10
+consumer_run_task_workers: 10
 
 services_ping:
   ping_timer: 3s
