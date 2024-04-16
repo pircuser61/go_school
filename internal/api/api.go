@@ -191,6 +191,8 @@ const (
 
 // Defines values for MonitoringTaskActionRequestAction.
 const (
+	MonitoringTaskActionRequestActionEdit MonitoringTaskActionRequestAction = "edit"
+
 	MonitoringTaskActionRequestActionPause MonitoringTaskActionRequestAction = "pause"
 
 	MonitoringTaskActionRequestActionStart MonitoringTaskActionRequestAction = "start"

@@ -21,8 +21,6 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
-const MonitoringTaskActionRequestActionEdit MonitoringTaskActionRequestAction = "edit"
-
 //nolint:revive,gocritic,stylecheck
 func (ae *Env) EditTaskBlockData(w http.ResponseWriter, r *http.Request, blockId string) {
 	ctx, span := trace.StartSpan(r.Context(), "monitoring_edit_task_block_data")
