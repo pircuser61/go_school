@@ -5566,6 +5566,7 @@ components:
             - pause
             - start
             - startByOne
+            - edit
           description: "Действия с заявкой"
         params:
           $ref: '#/components/schemas/MonitoringTaskActionParams'
