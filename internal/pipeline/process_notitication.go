@@ -215,6 +215,14 @@ func (runCtx *BlockRunContext) makeNotificationAttachment() ([]fileregistry.File
 				}
 			}
 		case om.OrderedMap:
+			if filesID, okGet := item.Get(fileIDKey); okGet {
+				attachmentsList = append(attachmentsList, entity.Attachment{FileID: filesID.(string)})
+			}
+
+			if fileLink, isFileLink := item.Get(fileLinkKey); isFileLink {
+				attachmentsLinks = append(attachmentsLinks, fileregistry.AttachInfo{ExternalLink: fileLink.(string)})
+			}
+
 			for keys, values := range item.Values() {
 				if utils.IsContainsInSlice(keys, task.InitialApplication.HiddenFields) {
 					continue
@@ -245,6 +253,14 @@ func (runCtx *BlockRunContext) makeNotificationAttachment() ([]fileregistry.File
 						}
 					}
 				}
+			}
+		default:
+			if filesID, okGet := task.InitialApplication.ApplicationBody.Get(fileIDKey); okGet {
+				attachmentsList = append(attachmentsList, entity.Attachment{FileID: filesID.(string)})
+			}
+
+			if fileLink, isFileLink := task.InitialApplication.ApplicationBody.Get(fileLinkKey); isFileLink {
+				attachmentsLinks = append(attachmentsLinks, fileregistry.AttachInfo{ExternalLink: fileLink.(string)})
 			}
 		}
 	}
