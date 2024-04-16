@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
+	redisdb "gitlab.services.mts.ru/jocasta/pipeliner/internal/redis"
 
 	file_registry "gitlab.services.mts.ru/jocasta/pipeliner/internal/fileregistry"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/forms"
@@ -37,6 +38,7 @@ type Pipeliner struct {
 	Probes                  Probes               `yaml:"probes"`
 	MetricsAddr             string               `yaml:"metrics_addr"`
 	DB                      Database             `yaml:"database"`
+	Redis                   *redisdb.Config      `yaml:"redis"`
 	Remedy                  string               `yaml:"remedy"`
 	FaaS                    string               `yaml:"faas"`
 	RunEnv                  RunEnv               `yaml:"run_env"`

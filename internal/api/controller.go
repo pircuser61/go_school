@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/middleware"
+	redisdb "gitlab.services.mts.ru/jocasta/pipeliner/internal/redis"
 
 	"github.com/go-chi/chi/v5"
 
@@ -37,6 +38,7 @@ type Env struct {
 	Log                     logger.Logger
 	Metrics                 metrics.Metrics
 	DB                      db.Database
+	Rdb                     *redisdb.DB
 	Remedy                  string
 	FaaS                    string
 	HTTPClient              *http.Client

@@ -3,7 +3,9 @@ package server
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
@@ -11,6 +13,7 @@ import (
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/api"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/kafka"
+	redisdb "gitlab.services.mts.ru/jocasta/pipeliner/internal/redis"
 )
 
 type Server struct {
@@ -80,6 +83,10 @@ func (s *Server) Run(ctx context.Context) {
 		}
 	}()
 
+	if err := s.rerunUnfinishedFunctions(ctx); err != nil {
+		s.logger.WithError(err).Error("cannot rerun unfinished functions")
+	}
+
 	s.kafka.StartConsumer(ctx)
 }
 
@@ -91,11 +98,13 @@ func (s *Server) Stop(ctx context.Context) {
 	if err := s.kafka.CloseProducer(); err != nil {
 		s.logger.WithError(err).Error("error on producer shutdown")
 	}
+
+	s.kafka.StopConsumer()
 }
 
 func (s *Server) startKafkaWorkers(ctx context.Context) {
 	for i := 0; i < s.consumerWorkerCnt; i++ {
-		go s.apiEnv.WorkFunctionHandler(ctx, s.consumerWorkerCh)
+		go s.apiEnv.WorkFunctionHandler(ctx, strconv.Itoa(i), s.consumerWorkerCh)
 	}
 }
 
@@ -172,4 +181,22 @@ func (s *Server) PingSvcs(ctx context.Context, failedCh chan bool) {
 		kafkaStopped = false
 		failedCh <- false
 	}
+}
+
+func (s *Server) rerunUnfinishedFunctions(ctx context.Context) error {
+	keys, keysErr := s.apiEnv.Rdb.Keys(ctx, redisdb.RunnerInMsgPrefix+"*").Result()
+	if keysErr != nil {
+		return fmt.Errorf("cannot get unfinished functions keys: %w", keysErr)
+	}
+
+	for _, k := range keys {
+		msg, getErr := s.apiEnv.Rdb.GetRunnerInMsg(ctx, k)
+		if getErr != nil {
+			return fmt.Errorf("cannot get unfinished function result: %w", getErr)
+		}
+
+		s.apiEnv.FunctionReturnHandler(ctx, msg) //nolint:errcheck // Все ошибки уже обрабатываются внутри
+	}
+
+	return nil
 }

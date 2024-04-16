@@ -29,6 +29,7 @@ import (
 	mail_fetcher "gitlab.services.mts.ru/jocasta/pipeliner/internal/mail/fetcher"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
+	redisdb "gitlab.services.mts.ru/jocasta/pipeliner/internal/redis"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/scheduler"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sequence"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/server"
@@ -71,6 +72,12 @@ func main() {
 
 		return
 	}
+
+	rdb := redisdb.New(&redisdb.Config{
+		Host:           cfg.Redis.Host,
+		Port:           cfg.Redis.Port,
+		TTLRunnerInMsg: cfg.Redis.TTLRunnerInMsg,
+	})
 
 	httpClient := httpclient.HTTPClient(cfg.HTTPClientConfig)
 
@@ -203,6 +210,7 @@ func main() {
 		Log:                     log,
 		Metrics:                 m,
 		DB:                      &dbConn,
+		Rdb:                     rdb,
 		Remedy:                  cfg.Remedy,
 		FaaS:                    cfg.FaaS,
 		HTTPClient:              httpClient,

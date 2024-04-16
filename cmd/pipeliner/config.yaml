@@ -36,6 +36,11 @@ database:
   max_connections: 50
   timeout: 10
 
+redis:
+  host: localhost
+  port: 6380
+  ttl_runner_in_msg: 7200s
+
 sso:
   address: "https://isso-dev.mts.ru"
   client_secret_env_key: "SSO_SECRET"
