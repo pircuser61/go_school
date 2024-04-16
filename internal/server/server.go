@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"sync"
 	"time"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
@@ -14,6 +15,10 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/api"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/kafka"
 	redisdb "gitlab.services.mts.ru/jocasta/pipeliner/internal/redis"
+)
+
+const (
+	redisMaxScanCount int64 = 100
 )
 
 type Server struct {
@@ -29,7 +34,7 @@ type Server struct {
 	consumerWorkerCh  chan kafka.TimedRunnerInMessage
 	consumerWorkerCnt int
 
-	consumerRunTaskWorkerCh chan kafka.RunTaskMessage
+	consumerRunTaskWorkerCh chan kafka.TimedRunTaskMessage
 	consumerRunTaskWorkers  int
 }
 
@@ -51,9 +56,9 @@ func NewServer(
 		apiEnv:     serverParam.APIEnv,
 
 		consumerWorkerCh:  make(chan kafka.TimedRunnerInMessage),
-		consumerWorkerCnt: serverParam.ConsumerWorkerCnt,
+		consumerWorkerCnt: serverParam.ConsumerFuncsWorkers,
 
-		consumerRunTaskWorkerCh: make(chan kafka.RunTaskMessage),
+		consumerRunTaskWorkerCh: make(chan kafka.TimedRunTaskMessage),
 		consumerRunTaskWorkers:  serverParam.ConsumerTasksWorkers,
 
 		svcsPing: &configs.ServicesPing{
@@ -83,9 +88,26 @@ func (s *Server) Run(ctx context.Context) {
 		}
 	}()
 
-	if err := s.rerunUnfinishedFunctions(ctx); err != nil {
-		s.logger.WithError(err).Error("cannot rerun unfinished functions")
-	}
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	go func() {
+		defer wg.Done()
+
+		if err := s.rerunUnfinishedFunctions(ctx); err != nil {
+			s.logger.WithError(err).Error("cannot rerun unfinished functions")
+		}
+	}()
+
+	go func() {
+		defer wg.Done()
+
+		if err := s.rerunUnfinishedTasks(ctx); err != nil {
+			s.logger.WithError(err).Error("cannot rerun unfinished functions")
+		}
+	}()
+
+	wg.Wait()
 
 	s.kafka.StartConsumer(ctx)
 }
@@ -129,8 +151,17 @@ func (s *Server) SendMessageToWorkers(ctx context.Context, message kafka.RunnerI
 }
 
 //nolint:all // ok
-func (s *Server) SendRunTaskMessageToWorkers(_ context.Context, message kafka.RunTaskMessage) error {
-	s.consumerRunTaskWorkerCh <- message
+func (s *Server) SendRunTaskMessageToWorkers(ctx context.Context, message kafka.RunTaskMessage) error {
+	timedMsg := kafka.TimedRunTaskMessage{
+		Msg:     message,
+		TimeNow: time.Now(),
+	}
+
+	if err := s.apiEnv.Rdb.SetRunTaskMsg(ctx, timedMsg.TimeNow.String(), message); err != nil {
+		s.logger.WithField("workNumber", message.WorkNumber).WithError(err).Error("cannot marshal message from kafka")
+	}
+
+	s.consumerRunTaskWorkerCh <- timedMsg
 
 	return nil
 }
@@ -204,18 +235,40 @@ func (s *Server) PingSvcs(ctx context.Context, failedCh chan bool) {
 }
 
 func (s *Server) rerunUnfinishedFunctions(ctx context.Context) error {
-	keys, keysErr := s.apiEnv.Rdb.Cli.Keys(ctx, redisdb.RunnerInMsgPrefix+"*").Result()
-	if keysErr != nil {
-		return fmt.Errorf("cannot get unfinished functions keys: %w", keysErr)
-	}
+	iter := s.apiEnv.Rdb.Cli.Scan(ctx, 0, redisdb.RunnerInMsgPrefix+"*", redisMaxScanCount).Iterator()
+	for iter.Next(ctx) {
+		key := iter.Val()
 
-	for _, k := range keys {
-		msg, getErr := s.apiEnv.Rdb.GetRunnerInMsg(ctx, k)
+		msg, getErr := s.apiEnv.Rdb.GetRunnerInMsg(ctx, key)
 		if getErr != nil {
 			return fmt.Errorf("cannot get unfinished function result: %w", getErr)
 		}
 
+		s.logger.Info("restored unfinished function message")
+
 		s.apiEnv.FunctionReturnHandler(ctx, msg) //nolint:errcheck // Все ошибки уже обрабатываются внутри
+	}
+	if err := iter.Err(); err != nil {
+		return fmt.Errorf("got error from iter.Err(): %w", err)
+	}
+
+	return nil
+}
+
+func (s *Server) rerunUnfinishedTasks(ctx context.Context) error {
+	iter := s.apiEnv.Rdb.Cli.Scan(ctx, 0, redisdb.RunTaskMsgPrefix+"*", redisMaxScanCount).Iterator()
+	for iter.Next(ctx) {
+		key := iter.Val()
+
+		msg, getErr := s.apiEnv.Rdb.GetRunTaskMsg(ctx, key)
+		if getErr != nil {
+			return fmt.Errorf("cannot get unfinished function result: %w", getErr)
+		}
+
+		s.apiEnv.RunTaskHandler(ctx, msg) //nolint:errcheck // Все ошибки уже обрабатываются внутри
+	}
+	if err := iter.Err(); err != nil {
+		return fmt.Errorf("got error from iter.Err(): %w", err)
 	}
 
 	return nil

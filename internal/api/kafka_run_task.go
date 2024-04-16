@@ -32,9 +32,15 @@ type runVersionsDTO struct {
 	ApplicationBody orderedmap.OrderedMap
 }
 
-func (ae *Env) WorkRunTaskHandler(ctx c.Context, jobs <-chan kafka.RunTaskMessage) {
+func (ae *Env) WorkRunTaskHandler(ctx c.Context, jobs <-chan kafka.TimedRunTaskMessage) {
+	log := ae.Log.WithField("funcName", "WorkRunTaskHandler")
+
 	for job := range jobs {
-		ae.RunTaskHandler(ctx, job) //nolint:errcheck // Все ошибки уже обрабатываются внутри
+		ae.RunTaskHandler(ctx, job.Msg) //nolint:errcheck // Все ошибки уже обрабатываются внутри
+
+		if err := ae.Rdb.DelRunTaskMsg(ctx, job.TimeNow.String()); err != nil {
+			log.WithField("workNumber", job.Msg.WorkNumber).WithError(err).Error("cannot delete function message from redis")
+		}
 	}
 }
 

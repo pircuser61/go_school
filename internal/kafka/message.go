@@ -35,6 +35,12 @@ type RunnerInMessage struct {
 	DoRetry         bool                   `json:"do_retry"`
 }
 
+type TimedRunTaskMessage struct {
+	Msg RunTaskMessage
+
+	TimeNow time.Time
+}
+
 type RunTaskMessage struct {
 	WorkNumber        string            `json:"work_number"`
 	Description       string            `json:"description"`
