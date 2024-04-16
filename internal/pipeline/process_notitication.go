@@ -26,8 +26,8 @@ type handleInitiatorNotifyParams struct {
 }
 
 const (
-	fileIDKey       = "file_id"
-	externalLinkKey = "external_link"
+	fileIDKey   = "file_id"
+	fileLinkKey = "external_link"
 
 	decisionAttachmentsKey = "decision_attachments"
 	attachmentsKey         = "attachments"
@@ -193,45 +193,53 @@ func (runCtx *BlockRunContext) makeNotificationAttachment() ([]fileregistry.File
 		return nil, nil, getUpdateParamsErr
 	}
 
-	notHiddenAttachmentFields := filterHiddenAttachmentFields(task.InitialApplication.AttachmentFields, task.InitialApplication.HiddenFields)
-
-	for _, v := range notHiddenAttachmentFields {
-		filesAttach, ok := task.InitialApplication.ApplicationBody.Get(v)
-		if ok {
-			switch data := filesAttach.(type) {
-			case om.OrderedMap:
-				if filesID, get := data.Get(fileIDKey); get {
-					attachmentsList = append(attachmentsList, entity.Attachment{FileID: filesID.(string)})
-				}
-			case []interface{}:
-				for _, vv := range data {
-					fileMap, isMap := vv.(om.OrderedMap)
-					if !isMap {
-						continue
-					}
-
-					if filesID, oks := fileMap.Get(fileIDKey); oks {
-						attachmentsList = append(attachmentsList, entity.Attachment{FileID: filesID.(string)})
-					}
-				}
-			}
+	for key, val := range task.InitialApplication.ApplicationBody.Values() {
+		if utils.IsContainsInSlice(key, task.InitialApplication.HiddenFields) {
+			continue
 		}
 
-		for _, val := range task.InitialApplication.ApplicationBody.Values() {
-			group, oks := val.(om.OrderedMap)
-			if !oks {
-				continue
+		switch item := val.(type) {
+		case []interface{}:
+			for _, value := range item {
+				fileMap, isMap := value.(om.OrderedMap)
+				if !isMap {
+					continue
+				}
+
+				if filesID, isFileID := fileMap.Get(fileIDKey); isFileID {
+					attachmentsList = append(attachmentsList, entity.Attachment{FileID: filesID.(string)})
+				}
+
+				if fileLink, isFileLink := fileMap.Get(fileLinkKey); isFileLink {
+					attachmentsLinks = append(attachmentsLinks, fileregistry.AttachInfo{ExternalLink: fileLink.(string)})
+				}
+			}
+		case om.OrderedMap:
+			if filesID, okGet := item.Get(fileIDKey); okGet {
+				attachmentsList = append(attachmentsList, entity.Attachment{FileID: filesID.(string)})
 			}
 
-			for _, vss := range group.Values() {
-				switch field := vss.(type) {
+			if fileLink, isFileLink := item.Get(fileLinkKey); isFileLink {
+				attachmentsLinks = append(attachmentsLinks, fileregistry.AttachInfo{ExternalLink: fileLink.(string)})
+			}
+
+			for keys, values := range item.Values() {
+				if utils.IsContainsInSlice(keys, task.InitialApplication.HiddenFields) {
+					continue
+				}
+
+				switch field := values.(type) {
 				case om.OrderedMap:
 					if fieldsID, okGet := field.Get(fileIDKey); okGet {
 						attachmentsList = append(attachmentsList, entity.Attachment{FileID: fieldsID.(string)})
 					}
+
+					if fileLink, isFileLink := field.Get(fileLinkKey); isFileLink {
+						attachmentsLinks = append(attachmentsLinks, fileregistry.AttachInfo{ExternalLink: fileLink.(string)})
+					}
 				case []interface{}:
-					for _, vv := range field {
-						fileMap, isMap := vv.(om.OrderedMap)
+					for _, value := range field {
+						fileMap, isMap := value.(om.OrderedMap)
 						if !isMap {
 							continue
 						}
@@ -239,8 +247,20 @@ func (runCtx *BlockRunContext) makeNotificationAttachment() ([]fileregistry.File
 						if filesID, okGet := fileMap.Get(fileIDKey); okGet {
 							attachmentsList = append(attachmentsList, entity.Attachment{FileID: filesID.(string)})
 						}
+
+						if fileLink, isFileLink := fileMap.Get(fileLinkKey); isFileLink {
+							attachmentsLinks = append(attachmentsLinks, fileregistry.AttachInfo{ExternalLink: fileLink.(string)})
+						}
 					}
 				}
+			}
+		default:
+			if filesID, okGet := task.InitialApplication.ApplicationBody.Get(fileIDKey); okGet {
+				attachmentsList = append(attachmentsList, entity.Attachment{FileID: filesID.(string)})
+			}
+
+			if fileLink, isFileLink := task.InitialApplication.ApplicationBody.Get(fileLinkKey); isFileLink {
+				attachmentsLinks = append(attachmentsLinks, fileregistry.AttachInfo{ExternalLink: fileLink.(string)})
 			}
 		}
 	}
@@ -294,7 +314,7 @@ func (runCtx *BlockRunContext) getUpdateParamsAttachments(attachmentsList *[]ent
 			*attachmentsList = append(*attachmentsList, entity.Attachment{FileID: filesID.(string)})
 		}
 
-		externalLink, isExternalLink := attachItem[externalLinkKey]
+		externalLink, isExternalLink := attachItem[fileLinkKey]
 		if isExternalLink {
 			*attachmentsLinks = append(*attachmentsLinks, fileregistry.AttachInfo{ExternalLink: externalLink.(string)})
 		}
@@ -345,7 +365,7 @@ func (runCtx *BlockRunContext) getEmailAttachments(attachmentsList *[]entity.Att
 				*attachmentsList = append(*attachmentsList, entity.Attachment{FileID: filesID.(string)})
 			}
 
-			externalLink, isExternalLink := attachItem[externalLinkKey]
+			externalLink, isExternalLink := attachItem[fileLinkKey]
 			if isExternalLink {
 				*attachmentsLinks = append(*attachmentsLinks, fileregistry.AttachInfo{ExternalLink: externalLink.(string)})
 			}
@@ -666,19 +686,32 @@ func checkGroup(schema om.OrderedMap) om.OrderedMap {
 	return schema
 }
 
-func flatArray(v om.OrderedMap) om.OrderedMap {
+func flatArray(desc om.OrderedMap) om.OrderedMap {
 	res := om.New()
-	keys := v.Keys()
-	values := v.Values()
 
-	for _, k := range keys {
-		vv, ok := values[k].([]interface{})
+	for key, value := range desc.Values() {
+		if key == fileLinkKey || key == fileIDKey {
+			continue
+		}
+
+		array, ok := value.([]interface{})
 		if ok {
-			for i, v := range vv {
-				res.Set(k+"("+strconv.Itoa(i)+")", v)
+			for ky, vl := range array {
+				switch item := vl.(type) {
+				case om.OrderedMap:
+					for k, v := range item.Values() {
+						if k == fileLinkKey || k == fileIDKey {
+							continue
+						}
+
+						res.Set(fmt.Sprintf("%s(%s)", key, k), v)
+					}
+				default:
+					res.Set(key+"("+strconv.Itoa(ky)+")", value)
+				}
 			}
 		} else {
-			res.Set(k, values[k])
+			res.Set(key, value)
 		}
 	}
 
