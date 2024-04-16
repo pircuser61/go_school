@@ -1,8 +1,12 @@
 package kafka
 
-import "time"
+import (
+	"time"
+)
 
 type Config struct {
+	Cache *CacheConfig `yaml:"cache"`
+
 	Brokers []string `yaml:"brokers"`
 
 	ProducerTopic   string `yaml:"producer_topic"`
@@ -15,4 +19,11 @@ type Config struct {
 
 	HealthCheckTimeout     int           `yaml:"health_check_timeout"`
 	FuncMessageResendDelay time.Duration `yaml:"function_message_resend_delay"`
+}
+
+type CacheConfig struct {
+	Address string `yaml:"address"`
+	Pass    string `yaml:"pass"`
+
+	TTLRunnerInMsg time.Duration `yaml:"ttl_runner_in_msg"`
 }

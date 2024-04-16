@@ -26,7 +26,7 @@ type Server struct {
 
 	svcsPing *configs.ServicesPing
 
-	consumerWorkerCh  chan kafka.RunnerInMessage
+	consumerWorkerCh  chan kafka.TimedRunnerInMessage
 	consumerWorkerCnt int
 
 	consumerTaskRunnerWorkerCh  chan kafka.RunTaskMessage
@@ -50,7 +50,7 @@ func NewServer(
 		kafka:      kf,
 		apiEnv:     serverParam.APIEnv,
 
-		consumerWorkerCh:  make(chan kafka.RunnerInMessage),
+		consumerWorkerCh:  make(chan kafka.TimedRunnerInMessage),
 		consumerWorkerCnt: serverParam.ConsumerWorkerCnt,
 
 		consumerTaskRunnerWorkerCh:  make(chan kafka.RunTaskMessage),
@@ -109,8 +109,17 @@ func (s *Server) startKafkaWorkers(ctx context.Context) {
 }
 
 //nolint:all // ok
-func (s *Server) SendMessageToWorkers(_ context.Context, message kafka.RunnerInMessage) error {
-	s.consumerWorkerCh <- message
+func (s *Server) SendMessageToWorkers(ctx context.Context, message kafka.RunnerInMessage) error {
+	timedMsg := kafka.TimedRunnerInMessage{
+		Msg:     message,
+		TimeNow: time.Now(),
+	}
+
+	if err := s.apiEnv.Rdb.SetRunnerInMsg(ctx, timedMsg.TimeNow.String(), message); err != nil {
+		s.logger.WithField("stepID", message.TaskID).WithError(err).Error("cannot marshal message from kafka")
+	}
+
+	s.consumerWorkerCh <- timedMsg
 
 	return nil
 }

@@ -29,18 +29,14 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
-func (ae *Env) WorkFunctionHandler(ctx context.Context, idx string, jobs <-chan kafka.RunnerInMessage) {
+func (ae *Env) WorkFunctionHandler(ctx context.Context, idx string, jobs <-chan kafka.TimedRunnerInMessage) {
 	log := ae.Log.WithField("funcName", "WorkFunctionHandler")
 
 	for job := range jobs {
-		if err := ae.Rdb.SetRunnerInMsg(ctx, idx, job); err != nil {
-			log.WithField("stepID", job.TaskID).WithError(err).Error("cannot marshal message from kafka")
-		}
+		ae.FunctionReturnHandler(ctx, job.Msg) //nolint:errcheck // Все ошибки уже обрабатываются внутри
 
-		ae.FunctionReturnHandler(ctx, job) //nolint:errcheck // Все ошибки уже обрабатываются внутри
-
-		if err := ae.Rdb.DelRunnerInMsg(ctx, idx); err != nil {
-			log.WithField("stepID", job.TaskID).WithError(err).Error("cannot delete function message from redis")
+		if err := ae.Rdb.DelRunnerInMsg(ctx, job.TimeNow.String()); err != nil {
+			log.WithField("stepID", job.Msg.TaskID).WithError(err).Error("cannot delete function message from redis")
 		}
 	}
 }

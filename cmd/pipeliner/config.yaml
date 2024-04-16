@@ -36,11 +36,6 @@ database:
   max_connections: 50
   timeout: 10
 
-redis:
-  host: localhost
-  port: 6380
-  ttl_runner_in_msg: 7200s
-
 sso:
   address: "https://isso-dev.mts.ru"
   client_secret_env_key: "SSO_SECRET"
@@ -72,6 +67,12 @@ kafka:
   consumer_task_runner_topic: "from.pipeline-runner.to.pipeliner-local"
   health_check_timeout: 30
   function_message_resend_delay: 10s
+  cache:
+    type: "default"
+    address: ""
+    db: 0
+    pass: ""
+    ttl_runner_in_msg: "1s"
 
 remedy: "http://remedy"
 

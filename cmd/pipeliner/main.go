@@ -74,9 +74,9 @@ func main() {
 	}
 
 	rdb := redisdb.New(&redisdb.Config{
-		Host:           cfg.Redis.Host,
-		Port:           cfg.Redis.Port,
-		TTLRunnerInMsg: cfg.Redis.TTLRunnerInMsg,
+		Address:        cfg.Kafka.Cache.Address,
+		Pass:           cfg.Kafka.Cache.Pass,
+		TTLRunnerInMsg: cfg.Kafka.Cache.TTLRunnerInMsg,
 	})
 
 	httpClient := httpclient.HTTPClient(cfg.HTTPClientConfig)

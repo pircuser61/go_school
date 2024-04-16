@@ -3,8 +3,8 @@ package redisdb
 import "time"
 
 type Config struct {
-	Host string `yaml:"host"`
-	Port string `yaml:"port"`
+	Address string `yaml:"address"`
+	Pass    string `yaml:"pass"`
 
 	TTLRunnerInMsg time.Duration `yaml:"ttl_runner_in_msg"`
 }

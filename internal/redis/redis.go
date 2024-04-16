@@ -17,7 +17,11 @@ type DB struct {
 // New creates Redis client instance.
 func New(cfg *Config) *DB {
 	opts := &redis.Options{
-		Addr: cfg.Host + ":" + cfg.Port,
+		Addr: cfg.Address,
+	}
+
+	if cfg.Pass != "" {
+		opts.Password = cfg.Pass
 	}
 
 	rdb := redis.NewClient(opts)

@@ -1,6 +1,8 @@
 package kafka
 
 import (
+	"time"
+
 	"github.com/google/uuid"
 
 	"github.com/iancoleman/orderedmap"
@@ -17,6 +19,12 @@ type RunnerOutMessage struct {
 	FunctionName    string                 `json:"function_name"`
 	FunctionVersion string                 `json:"function_version"`
 	RetryPolicy     string                 `json:"retry_policy"`
+}
+
+type TimedRunnerInMessage struct {
+	Msg RunnerInMessage
+
+	TimeNow time.Time
 }
 
 type RunnerInMessage struct {
