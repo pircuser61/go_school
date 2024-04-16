@@ -14,7 +14,7 @@ const (
 func (db *DB) GetRunnerInMsg(ctx context.Context, key string) (kafka.RunnerInMessage, error) {
 	msg := kafka.RunnerInMessage{}
 
-	data, getErr := db.Get(ctx, key).Result()
+	data, getErr := db.Cli.Get(ctx, key).Result()
 	if getErr != nil {
 		return msg, getErr
 	}
@@ -32,7 +32,7 @@ func (db *DB) SetRunnerInMsg(ctx context.Context, key string, msg kafka.RunnerIn
 		return err
 	}
 
-	if status := db.Set(ctx, RunnerInMsgPrefix+key, data, db.ttlRunnerInMsg); status.Err() != nil {
+	if status := db.Cli.Set(ctx, RunnerInMsgPrefix+key, data, db.ttlRunnerInMsg); status.Err() != nil {
 		return status.Err()
 	}
 
@@ -40,7 +40,7 @@ func (db *DB) SetRunnerInMsg(ctx context.Context, key string, msg kafka.RunnerIn
 }
 
 func (db *DB) DelRunnerInMsg(ctx context.Context, key string) error {
-	if status := db.Del(ctx, RunnerInMsgPrefix+key); status.Err() != nil {
+	if status := db.Cli.Del(ctx, RunnerInMsgPrefix+key); status.Err() != nil {
 		return status.Err()
 	}
 

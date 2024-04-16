@@ -184,7 +184,7 @@ func (s *Server) PingSvcs(ctx context.Context, failedCh chan bool) {
 }
 
 func (s *Server) rerunUnfinishedFunctions(ctx context.Context) error {
-	keys, keysErr := s.apiEnv.Rdb.Keys(ctx, redisdb.RunnerInMsgPrefix+"*").Result()
+	keys, keysErr := s.apiEnv.Rdb.Cli.Keys(ctx, redisdb.RunnerInMsgPrefix+"*").Result()
 	if keysErr != nil {
 		return fmt.Errorf("cannot get unfinished functions keys: %w", keysErr)
 	}

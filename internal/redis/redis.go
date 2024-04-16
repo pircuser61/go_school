@@ -3,13 +3,13 @@ package redisdb
 import (
 	"time"
 
-	"github.com/redis/go-redis/v9"
+	"github.com/go-redis/redis/v8"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 )
 
 type DB struct {
-	*redis.Client
+	Cli *redis.Client
 
 	ttlRunnerInMsg time.Duration
 }
@@ -32,7 +32,7 @@ func New(cfg *Config) *DB {
 func (r *DB) Close() {
 	log := logger.CreateLogger(nil)
 
-	err := r.Client.Close()
+	err := r.Cli.Close()
 	if err != nil {
 		log.WithError(err).Error("Error during redis connection closure")
 	}

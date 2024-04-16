@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/middleware"
-	redisdb "gitlab.services.mts.ru/jocasta/pipeliner/internal/redis"
 
 	"github.com/go-chi/chi/v5"
 
@@ -26,6 +25,7 @@ import (
 	mail_fetcher "gitlab.services.mts.ru/jocasta/pipeliner/internal/mail/fetcher"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
+	redisdb "gitlab.services.mts.ru/jocasta/pipeliner/internal/redis"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/scheduler"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sequence"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
