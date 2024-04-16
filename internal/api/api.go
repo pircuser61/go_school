@@ -213,6 +213,8 @@ const (
 
 // Defines values for MonitoringTaskEventEventType.
 const (
+	MonitoringTaskEventEventTypeEdit MonitoringTaskEventEventType = "edit"
+
 	MonitoringTaskEventEventTypePause MonitoringTaskEventEventType = "pause"
 
 	MonitoringTaskEventEventTypeStart MonitoringTaskEventEventType = "start"

@@ -5664,6 +5664,7 @@ components:
             - pause
             - start
             - startByOne
+            - edit
           description: "тип ивента"
         params:
           $ref: '#/components/schemas/MonitoringTaskActionParams'
