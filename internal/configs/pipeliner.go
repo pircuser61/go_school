@@ -64,7 +64,8 @@ type Pipeliner struct {
 	HostURL                 string               `yaml:"host_url"`
 	LogIndex                string               `yaml:"log_index"`
 	ServicesPing            ServicesPing         `yaml:"services_ping"`
-	ConsumerWorkerCnt       int                  `yaml:"consumer_worker_count"`
+	ConsumerFuncsWorkers    int                  `yaml:"consumer_funcs_workers"`
+	ConsumerTasksWorkers    int                  `yaml:"consumer_tasks_workers"`
 }
 
 type RunEnv struct {

@@ -191,6 +191,8 @@ const (
 
 // Defines values for MonitoringTaskActionRequestAction.
 const (
+	MonitoringTaskActionRequestActionEdit MonitoringTaskActionRequestAction = "edit"
+
 	MonitoringTaskActionRequestActionPause MonitoringTaskActionRequestAction = "pause"
 
 	MonitoringTaskActionRequestActionStart MonitoringTaskActionRequestAction = "start"
@@ -211,6 +213,8 @@ const (
 
 // Defines values for MonitoringTaskEventEventType.
 const (
+	MonitoringTaskEventEventTypeEdit MonitoringTaskEventEventType = "edit"
+
 	MonitoringTaskEventEventTypePause MonitoringTaskEventEventType = "pause"
 
 	MonitoringTaskEventEventTypeStart MonitoringTaskEventEventType = "start"
