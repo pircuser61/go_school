@@ -89,6 +89,7 @@ func (s *Server) Run(ctx context.Context) {
 	}()
 
 	var wg sync.WaitGroup
+
 	wg.Add(2)
 
 	go func() {
@@ -248,6 +249,7 @@ func (s *Server) rerunUnfinishedFunctions(ctx context.Context) error {
 
 		s.apiEnv.FunctionReturnHandler(ctx, msg) //nolint:errcheck // Все ошибки уже обрабатываются внутри
 	}
+
 	if err := iter.Err(); err != nil {
 		return fmt.Errorf("got error from iter.Err(): %w", err)
 	}
@@ -267,6 +269,7 @@ func (s *Server) rerunUnfinishedTasks(ctx context.Context) error {
 
 		s.apiEnv.RunTaskHandler(ctx, msg) //nolint:errcheck // Все ошибки уже обрабатываются внутри
 	}
+
 	if err := iter.Err(); err != nil {
 		return fmt.Errorf("got error from iter.Err(): %w", err)
 	}

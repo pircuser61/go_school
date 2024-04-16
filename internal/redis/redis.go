@@ -33,10 +33,10 @@ func New(cfg *Config) *DB {
 }
 
 // Close gracefully closes all redis connections.
-func (r *DB) Close() {
+func (db *DB) Close() {
 	log := logger.CreateLogger(nil)
 
-	err := r.Cli.Close()
+	err := db.Cli.Close()
 	if err != nil {
 		log.WithError(err).Error("Error during redis connection closure")
 	}
