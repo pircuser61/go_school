@@ -103,7 +103,11 @@ func (ae *Env) EditTaskBlockData(w http.ResponseWriter, r *http.Request, blockId
 		Data       map[string]interface{} `json:"data"`
 		Steps      []uuid.UUID            `json:"steps"`
 		ChangeType string                 `json:"change_type"`
-	}{Data: data, Steps: []uuid.UUID{blockUUID}}
+	}{
+		Data:       data,
+		ChangeType: string(req.ChangeType),
+		Steps:      []uuid.UUID{blockUUID},
+	}
 
 	// nolint:ineffassign,staticcheck
 	jsonParams := json.RawMessage{}
