@@ -146,6 +146,7 @@ func (db *PGCon) GetTasksForMonitoring(ctx c.Context, dto *e.TasksForMonitoringF
 			eventType = &et
 			eventTime = &task.StartedAt
 		}
+
 		task.LastEventType, task.LastEventAt = eventType, eventTime
 
 		tasksForMonitoring.Tasks = append(tasksForMonitoring.Tasks, task)
@@ -302,6 +303,7 @@ func (db *PGCon) getLastEventForMonitoringByWorkID(ctx c.Context, workID uuid.UU
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil, nil
 		}
+
 		return nil, nil, err
 	}
 
