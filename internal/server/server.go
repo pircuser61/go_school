@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strconv"
 	"sync"
 	"time"
 
@@ -14,11 +13,6 @@ import (
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/api"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/kafka"
-	redisdb "gitlab.services.mts.ru/jocasta/pipeliner/internal/redis"
-)
-
-const (
-	redisMaxScanCount int64 = 100
 )
 
 type Server struct {
@@ -127,7 +121,7 @@ func (s *Server) Stop(ctx context.Context) {
 
 func (s *Server) startKafkaWorkers(ctx context.Context) {
 	for i := 0; i < s.consumerWorkerCnt; i++ {
-		go s.apiEnv.WorkFunctionHandler(ctx, strconv.Itoa(i), s.consumerWorkerCh)
+		go s.apiEnv.WorkFunctionHandler(ctx, s.consumerWorkerCh)
 	}
 
 	for i := 0; i < s.consumerRunTaskWorkers; i++ {
@@ -142,7 +136,7 @@ func (s *Server) SendMessageToWorkers(ctx context.Context, message kafka.RunnerI
 		TimeNow: time.Now(),
 	}
 
-	if err := s.apiEnv.Rdb.SetRunnerInMsg(ctx, timedMsg.TimeNow.String(), message); err != nil {
+	if err := s.kafka.SetRunnerInMsg(ctx, timedMsg.TimeNow.String(), message); err != nil {
 		s.logger.WithField("stepID", message.TaskID).WithError(err).Error("cannot marshal message from kafka")
 	}
 
@@ -158,7 +152,7 @@ func (s *Server) SendRunTaskMessageToWorkers(ctx context.Context, message kafka.
 		TimeNow: time.Now(),
 	}
 
-	if err := s.apiEnv.Rdb.SetRunTaskMsg(ctx, timedMsg.TimeNow.String(), message); err != nil {
+	if err := s.kafka.SetRunTaskMsg(ctx, timedMsg.TimeNow.String(), message); err != nil {
 		s.logger.WithField("workNumber", message.WorkNumber).WithError(err).Error("cannot marshal message from kafka")
 	}
 
@@ -236,11 +230,13 @@ func (s *Server) PingSvcs(ctx context.Context, failedCh chan bool) {
 }
 
 func (s *Server) rerunUnfinishedFunctions(ctx context.Context) error {
-	iter := s.apiEnv.Rdb.Cli.Scan(ctx, 0, redisdb.RunnerInMsgPrefix+"*", redisMaxScanCount).Iterator()
-	for iter.Next(ctx) {
-		key := iter.Val()
+	keys, keysErr := s.kafka.GetCachedKeys(ctx, kafka.RunnerInMsgPrefix+"*")
+	if keysErr != nil {
+		return fmt.Errorf("got error from GetCachedKeys: %w", keysErr)
+	}
 
-		msg, getErr := s.apiEnv.Rdb.GetRunnerInMsg(ctx, key)
+	for _, key := range keys {
+		msg, getErr := s.kafka.GetRunnerInMsg(ctx, key)
 		if getErr != nil {
 			return fmt.Errorf("cannot get unfinished function result: %w", getErr)
 		}
@@ -248,30 +244,32 @@ func (s *Server) rerunUnfinishedFunctions(ctx context.Context) error {
 		s.logger.Info("restored unfinished function message")
 
 		s.apiEnv.FunctionReturnHandler(ctx, msg) //nolint:errcheck // Все ошибки уже обрабатываются внутри
-	}
 
-	if err := iter.Err(); err != nil {
-		return fmt.Errorf("got error from iter.Err(): %w", err)
+		if delErr := s.kafka.DelRunnerInMsg(ctx, key); delErr != nil {
+			return fmt.Errorf("cannot get unfinished function result: %w", delErr)
+		}
 	}
 
 	return nil
 }
 
 func (s *Server) rerunUnfinishedTasks(ctx context.Context) error {
-	iter := s.apiEnv.Rdb.Cli.Scan(ctx, 0, redisdb.RunTaskMsgPrefix+"*", redisMaxScanCount).Iterator()
-	for iter.Next(ctx) {
-		key := iter.Val()
+	keys, keysErr := s.kafka.GetCachedKeys(ctx, kafka.RunTaskMsgPrefix+"*")
+	if keysErr != nil {
+		return fmt.Errorf("got error from GetCachedKeys: %w", keysErr)
+	}
 
-		msg, getErr := s.apiEnv.Rdb.GetRunTaskMsg(ctx, key)
+	for _, key := range keys {
+		msg, getErr := s.kafka.GetRunTaskMsg(ctx, key)
 		if getErr != nil {
 			return fmt.Errorf("cannot get unfinished function result: %w", getErr)
 		}
 
 		s.apiEnv.RunTaskHandler(ctx, msg) //nolint:errcheck // Все ошибки уже обрабатываются внутри
-	}
 
-	if err := iter.Err(); err != nil {
-		return fmt.Errorf("got error from iter.Err(): %w", err)
+		if delErr := s.kafka.DelRunTaskMsg(ctx, key); delErr != nil {
+			return fmt.Errorf("cannot get unfinished function result: %w", delErr)
+		}
 	}
 
 	return nil

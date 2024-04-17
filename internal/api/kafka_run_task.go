@@ -38,7 +38,7 @@ func (ae *Env) WorkRunTaskHandler(ctx c.Context, jobs <-chan kafka.TimedRunTaskM
 	for job := range jobs {
 		ae.RunTaskHandler(ctx, job.Msg) //nolint:errcheck // Все ошибки уже обрабатываются внутри
 
-		if err := ae.Rdb.DelRunTaskMsg(ctx, job.TimeNow.String()); err != nil {
+		if err := ae.Kafka.DelRunTaskMsg(ctx, job.TimeNow.String()); err != nil {
 			log.WithField("workNumber", job.Msg.WorkNumber).WithError(err).Error("cannot delete function message from redis")
 		}
 	}

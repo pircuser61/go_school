@@ -73,7 +73,7 @@ kafka:
     address: ""
     db: 0
     pass: ""
-    ttl_runner_in_msg: "1s"
+    ttl: "1s"
 
 remedy: "http://remedy"
 

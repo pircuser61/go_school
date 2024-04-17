@@ -29,7 +29,7 @@ require (
 	github.com/xeipuuv/gojsonschema v1.2.0
 	gitlab.services.mts.ru/abp/mail/pkg v1.19.0
 	gitlab.services.mts.ru/abp/myosotis v1.4.4
-	gitlab.services.mts.ru/jocasta/cache-kit v1.0.1-0.20240408094709-94d9b9545e24
+	gitlab.services.mts.ru/jocasta/cache-kit v1.2.0
 	gitlab.services.mts.ru/jocasta/conditions-kit v1.0.10
 	gitlab.services.mts.ru/jocasta/file-registry v1.4.0
 	gitlab.services.mts.ru/jocasta/forms v1.7.0-rc.1.0.20240301073647-dad697e5b82d

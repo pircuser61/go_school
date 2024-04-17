@@ -25,7 +25,6 @@ import (
 	mail_fetcher "gitlab.services.mts.ru/jocasta/pipeliner/internal/mail/fetcher"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
-	redisdb "gitlab.services.mts.ru/jocasta/pipeliner/internal/redis"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/scheduler"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sequence"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
@@ -38,7 +37,6 @@ type Env struct {
 	Log                     logger.Logger
 	Metrics                 metrics.Metrics
 	DB                      db.Database
-	Rdb                     *redisdb.DB
 	Remedy                  string
 	FaaS                    string
 	HTTPClient              *http.Client

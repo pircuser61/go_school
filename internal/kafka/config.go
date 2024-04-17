@@ -22,8 +22,9 @@ type Config struct {
 }
 
 type CacheConfig struct {
-	Address string `yaml:"address"`
-	Pass    string `yaml:"pass"`
-
-	TTLRunnerInMsg time.Duration `yaml:"ttl_runner_in_msg"`
+	Type    string        `yaml:"type"`
+	Address string        `yaml:"address"`
+	DB      int           `yaml:"db"`
+	Pass    string        `yaml:"pass"`
+	TTL     time.Duration `yaml:"ttl"`
 }
