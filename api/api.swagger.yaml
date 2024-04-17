@@ -5578,6 +5578,12 @@ components:
       type: object
       description: "Параметры действия"
       properties:
+        change_type:
+          type: string
+          description: "Что редактировалось 'Контекст', 'Состояние', 'Output'"
+        data:
+          type: object
+          description: "Данные которые редактировались"
         steps:
           type: array
           description: "ID блоков"
