@@ -137,7 +137,7 @@ func (s *Server) SendMessageToWorkers(ctx context.Context, message kafka.RunnerI
 	}
 
 	if err := s.kafka.SetRunnerInMsg(ctx, timedMsg.TimeNow.String(), &message); err != nil {
-		s.logger.WithField("stepID", message.TaskID).WithError(err).Error("cannot marshal message from kafka")
+		s.logger.WithField("stepID", message.TaskID).WithError(err).Error("cannot set function-result message to cache")
 	}
 
 	s.consumerWorkerCh <- timedMsg
@@ -153,7 +153,7 @@ func (s *Server) SendRunTaskMessageToWorkers(ctx context.Context, message kafka.
 	}
 
 	if err := s.kafka.SetRunTaskMsg(ctx, timedMsg.TimeNow.String(), &message); err != nil {
-		s.logger.WithField("workNumber", message.WorkNumber).WithError(err).Error("cannot marshal message from kafka")
+		s.logger.WithField("workNumber", message.WorkNumber).WithError(err).Error("cannot set run-task message to cache")
 	}
 
 	s.consumerRunTaskWorkerCh <- timedMsg
@@ -238,7 +238,9 @@ func (s *Server) rerunUnfinishedFunctions(ctx context.Context) error {
 	for _, key := range keys {
 		msg, getErr := s.kafka.GetRunnerInMsg(ctx, key)
 		if getErr != nil {
-			return fmt.Errorf("cannot get unfinished function result: %w", getErr)
+			s.logger.WithError(getErr).Error("cannot get unfinished function result")
+
+			continue
 		}
 
 		s.logger.Info("restored unfinished function message")
@@ -262,7 +264,9 @@ func (s *Server) rerunUnfinishedTasks(ctx context.Context) error {
 	for _, key := range keys {
 		msg, getErr := s.kafka.GetRunTaskMsg(ctx, key)
 		if getErr != nil {
-			return fmt.Errorf("cannot get unfinished function result: %w", getErr)
+			s.logger.WithError(getErr).Error("cannot get unfinished task")
+
+			continue
 		}
 
 		s.apiEnv.RunTaskHandler(ctx, msg) //nolint:errcheck // Все ошибки уже обрабатываются внутри

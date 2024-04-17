@@ -3,6 +3,8 @@ package kafka
 import (
 	"context"
 	"encoding/json"
+
+	"github.com/pkg/errors"
 )
 
 const (
@@ -18,9 +20,12 @@ func (s *Service) GetRunnerInMsg(ctx context.Context, key string) (RunnerInMessa
 		return msg, getErr
 	}
 
-	d := []byte(data.(string))
+	d, ok := data.(string)
+	if !ok {
+		return msg, errors.New("value from cache-kit - GetValue is not a string")
+	}
 
-	if jsonErr := json.Unmarshal(d, &msg); jsonErr != nil {
+	if jsonErr := json.Unmarshal([]byte(d), &msg); jsonErr != nil {
 		return msg, jsonErr
 	}
 
@@ -56,9 +61,12 @@ func (s *Service) GetRunTaskMsg(ctx context.Context, key string) (RunTaskMessage
 		return msg, getErr
 	}
 
-	d := []byte(data.(string))
+	d, ok := data.(string)
+	if !ok {
+		return msg, errors.New("value from cache-kit - GetValue is not a string")
+	}
 
-	if jsonErr := json.Unmarshal(d, &msg); jsonErr != nil {
+	if jsonErr := json.Unmarshal([]byte(d), &msg); jsonErr != nil {
 		return msg, jsonErr
 	}
 
