@@ -136,7 +136,7 @@ func (s *Server) SendMessageToWorkers(ctx context.Context, message kafka.RunnerI
 		TimeNow: time.Now(),
 	}
 
-	if err := s.kafka.SetRunnerInMsg(ctx, timedMsg.TimeNow.String(), message); err != nil {
+	if err := s.kafka.SetRunnerInMsg(ctx, timedMsg.TimeNow.String(), &message); err != nil {
 		s.logger.WithField("stepID", message.TaskID).WithError(err).Error("cannot marshal message from kafka")
 	}
 
@@ -152,7 +152,7 @@ func (s *Server) SendRunTaskMessageToWorkers(ctx context.Context, message kafka.
 		TimeNow: time.Now(),
 	}
 
-	if err := s.kafka.SetRunTaskMsg(ctx, timedMsg.TimeNow.String(), message); err != nil {
+	if err := s.kafka.SetRunTaskMsg(ctx, timedMsg.TimeNow.String(), &message); err != nil {
 		s.logger.WithField("workNumber", message.WorkNumber).WithError(err).Error("cannot marshal message from kafka")
 	}
 

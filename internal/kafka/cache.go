@@ -27,7 +27,7 @@ func (s *Service) GetRunnerInMsg(ctx context.Context, key string) (RunnerInMessa
 	return msg, nil
 }
 
-func (s *Service) SetRunnerInMsg(ctx context.Context, key string, msg RunnerInMessage) error {
+func (s *Service) SetRunnerInMsg(ctx context.Context, key string, msg *RunnerInMessage) error {
 	data, jsonErr := json.Marshal(msg)
 	if jsonErr != nil {
 		return jsonErr
@@ -65,7 +65,7 @@ func (s *Service) GetRunTaskMsg(ctx context.Context, key string) (RunTaskMessage
 	return msg, nil
 }
 
-func (s *Service) SetRunTaskMsg(ctx context.Context, key string, msg RunTaskMessage) error {
+func (s *Service) SetRunTaskMsg(ctx context.Context, key string, msg *RunTaskMessage) error {
 	data, jsonErr := json.Marshal(msg)
 	if jsonErr != nil {
 		return jsonErr
