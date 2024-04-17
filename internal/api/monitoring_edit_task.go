@@ -85,7 +85,7 @@ func (ae *Env) EditTaskBlockData(w http.ResponseWriter, r *http.Request, blockId
 
 	editBlockData, editErr := ae.editGoBlock(ctx, blockUUID, dbStep.Type, dbStep.Name, data, req.ChangeType)
 	if editErr != nil {
-		errorHandler.handleError(EditMonitoringBlockError, err)
+		errorHandler.handleError(EditMonitoringBlockError, editErr)
 		ae.rollbackTransaction(ctx, txStorage)
 
 		return
@@ -100,8 +100,9 @@ func (ae *Env) EditTaskBlockData(w http.ResponseWriter, r *http.Request, blockId
 	}
 
 	eventData := struct {
-		Data  map[string]interface{} `json:"data"`
-		Steps []uuid.UUID            `json:"steps"`
+		Data       map[string]interface{} `json:"data"`
+		Steps      []uuid.UUID            `json:"steps"`
+		ChangeType string                 `json:"change_type"`
 	}{Data: data, Steps: []uuid.UUID{blockUUID}}
 
 	// nolint:ineffassign,staticcheck
@@ -161,13 +162,13 @@ func (ae *Env) EditTaskBlockData(w http.ResponseWriter, r *http.Request, blockId
 	}
 }
 
-func convertReqEditData(reqData map[string]MonitoringEditBlockData) (res map[string]interface{}) {
-	convertedData := map[string]interface{}{}
-	for key, val := range reqData {
-		convertedData[key] = val.Value
+func convertReqEditData(in map[string]MonitoringEditBlockData) (res map[string]interface{}) {
+	res = map[string]interface{}{}
+	for key, val := range in {
+		res[key] = val.Value
 	}
 
-	return convertedData
+	return res
 }
 
 func (ae *Env) rollbackTransaction(ctx context.Context, tx db.Database) {
