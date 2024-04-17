@@ -16,9 +16,9 @@ import (
 )
 
 type TimerData struct {
-	Duration time.Duration
-	Started  bool
-	Expired  bool
+	Duration time.Duration `json:"duration"`
+	Started  bool          `json:"started"`
+	Expired  bool          `json:"expired"`
 }
 
 type TimerBlock struct {
