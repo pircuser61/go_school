@@ -517,6 +517,7 @@ func (ae *Env) startEditBlock(ctx context.Context, stepID uuid.UUID, stepName st
 			output := blockOutputs[i]
 			startOutputs[output.Name] = output.Value
 		}
+
 		return []EditBlock{{State: data, Output: startOutputs, StepName: stepName, StepID: stepID}}, nil
 	}
 
@@ -567,8 +568,19 @@ func (ae *Env) endParallelEditBlock(ctx context.Context, stepID uuid.UUID, stepN
 		return ae.editBlockContext(ctx, stepID, data)
 	case MonitoringTaskEditBlockRequestChangeTypeInput:
 	case MonitoringTaskEditBlockRequestChangeTypeOutput:
-		// state- добавить
-		return []EditBlock{{State: map[string]interface{}{}, Output: data, StepName: stepName, StepID: stepID}}, nil
+		blockState, stateErr := ae.DB.GetBlockState(ctx, stepID.String())
+		if stateErr != nil {
+			return nil, stateErr
+		}
+
+		endParallelState := make(map[string]interface{})
+
+		unmErr := json.Unmarshal(blockState, &endParallelState)
+		if unmErr != nil {
+			return nil, unmErr
+		}
+
+		return []EditBlock{{State: endParallelState, Output: data, StepName: stepName, StepID: stepID}}, nil
 	case MonitoringTaskEditBlockRequestChangeTypeState:
 		return []EditBlock{{State: data, Output: map[string]interface{}{}, StepName: stepName, StepID: stepID}}, nil
 	}
@@ -755,6 +767,7 @@ func (ae *Env) notificationEditBlock(ctx context.Context, stepID uuid.UUID, step
 		if unmErr != nil {
 			return nil, unmErr
 		}
+
 		return []EditBlock{{State: notifState, Output: data, StepName: stepName, StepID: stepID}}, nil
 	case MonitoringTaskEditBlockRequestChangeTypeState:
 		return []EditBlock{{State: data, Output: map[string]interface{}{}, StepName: stepName, StepID: stepID}}, nil
@@ -925,6 +938,7 @@ func (ae *Env) timerEditBlock(ctx context.Context, stepID uuid.UUID, stepName st
 		if unmErr != nil {
 			return nil, unmErr
 		}
+
 		return []EditBlock{{State: timerState, Output: data, StepName: stepName, StepID: stepID}}, nil
 
 	case MonitoringTaskEditBlockRequestChangeTypeState:
