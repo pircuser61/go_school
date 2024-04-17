@@ -12,20 +12,25 @@ import (
 )
 
 const (
-	incomingRequests = "incoming_requests"
+	incomingRequests  = "incoming_requests"
+	kafkaAvailability = "kafka_availability"
 )
 
 type appMetrics struct {
 	registry *prometheus.Registry
 	stand    string
 
-	incomingRequests *prometheus.SummaryVec
+	incomingRequests  *prometheus.SummaryVec
+	kafkaAvailability prometheus.Gauge
 }
 
 type Metrics interface {
 	ServePrometheus() http.Handler
 	MustRegisterMetrics(registry *prometheus.Registry)
+
 	RequestsIncrease(label *RequestInfo)
+	KafkaAvailable()
+	KafkaUnavailable()
 }
 
 type RequestInfo struct {
@@ -66,6 +71,12 @@ func New(config configs.PrometheusConfig) Metrics {
 			Subsystem: "pipeliner",
 			Name:      incomingRequests,
 		}, []string{"method", "stand", "path", "pipeline_id", "version_id", "client_id", "work_number", "status"}),
+		kafkaAvailability: prometheus.NewGauge(prometheus.GaugeOpts{
+			Namespace: "jocasta",
+			Subsystem: "pipeliner",
+			Help:      "Indicates whether Kafka is available(1) or not(0)",
+			Name:      kafkaAvailability,
+		}),
 	}
 
 	m.MustRegisterMetrics(registry)
@@ -85,6 +96,7 @@ func (m *appMetrics) handleMetricsRequest(w http.ResponseWriter, r *http.Request
 func (m *appMetrics) MustRegisterMetrics(registry *prometheus.Registry) {
 	registry.MustRegister(
 		m.incomingRequests,
+		m.kafkaAvailability,
 	)
 }
 
@@ -99,4 +111,12 @@ func (m *appMetrics) RequestsIncrease(label *RequestInfo) {
 		label.WorkNumber,
 		strconv.Itoa(label.Status),
 	}...).Observe(label.Duration.Seconds())
+}
+
+func (m *appMetrics) KafkaAvailable() {
+	m.kafkaAvailability.Set(1)
+}
+
+func (m *appMetrics) KafkaUnavailable() {
+	m.kafkaAvailability.Set(0)
 }
