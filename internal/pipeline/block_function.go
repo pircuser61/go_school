@@ -527,10 +527,56 @@ func (gb *ExecutableFunctionBlock) isFirstStart(ctx context.Context, workID uuid
 	return countRunFunc > 1, firstRun, nil
 }
 
-func (gb *ExecutableFunctionBlock) UpdateStateUsingOutput(context.Context, []byte) (state map[string]interface{}, err error) {
-	return nil, nil
+func (gb *ExecutableFunctionBlock) UpdateStateUsingOutput(_ context.Context, data []byte) (state map[string]interface{}, err error) {
+	output := make(map[string]interface{})
+
+	unmErr := json.Unmarshal(data, &output)
+	if unmErr != nil {
+		return nil, fmt.Errorf("can't unmarshal into output struct")
+	}
+
+	decision, ok := output[keyOutputFunctionDecision]
+	if ok {
+		switch decision {
+		case string(TimeoutDecision):
+			gb.State.TimeExpired = true
+			gb.State.RetryCountExceeded = false
+			gb.State.HasResponse = false
+		case string(ExecutedDecision):
+			gb.State.TimeExpired = false
+			gb.State.RetryCountExceeded = false
+			gb.State.HasResponse = true
+		case string(RetryCountExceededDecision):
+			gb.State.TimeExpired = false
+			gb.State.RetryCountExceeded = true
+			gb.State.HasResponse = false
+		}
+	}
+
+	jsonState, marshErr := json.Marshal(gb.State)
+	if marshErr != nil {
+		return nil, marshErr
+	}
+
+	unmarshErr := json.Unmarshal(jsonState, &state)
+	if unmarshErr != nil {
+		return nil, unmarshErr
+	}
+
+	return state, nil
 }
 
 func (gb *ExecutableFunctionBlock) UpdateOutputUsingState(context.Context) (output map[string]interface{}, err error) {
-	return nil, nil
+	output = make(map[string]interface{})
+
+	switch {
+	case gb.State.TimeExpired:
+		output[keyOutputFunctionDecision] = TimeoutDecision
+	case gb.State.HasResponse:
+		output[keyOutputFunctionDecision] = ExecutedDecision
+	case gb.State.RetryCountExceeded:
+		output[keyOutputFunctionDecision] = RetryCountExceededDecision
+	}
+
+	return output, nil
 }
