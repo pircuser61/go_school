@@ -270,7 +270,6 @@ func (s *Service) checkHealth() {
 		s.StartConsumer(c.Background())
 
 		s.log.Info("the reconnection to kafka was successful")
-		s.metrics.KafkaAvailable()
 
 		return
 	}
