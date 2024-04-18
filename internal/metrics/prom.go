@@ -5,8 +5,6 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/push"
-
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/configs"
 )
 
 type NGSAStatus struct {
@@ -36,7 +34,7 @@ var (
 	Pusher   *push.Pusher
 )
 
-func InitMetricsAuth(config configs.PrometheusConfig) {
+func InitMetricsAuth(config PrometheusConfig) {
 	once.Do(func() {
 		Stats.NGSAPushes.Ok = prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "ngsa_push_ok_unixtime",

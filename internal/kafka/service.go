@@ -12,15 +12,16 @@ import (
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
+	cachekit "gitlab.services.mts.ru/jocasta/cache-kit"
 	msgkit "gitlab.services.mts.ru/jocasta/msg-kit"
 
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/configs"
 	e "gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 )
 
 type Service struct {
 	log     logger.Logger
+	cache   cachekit.Cache
 	metrics metrics.Metrics
 
 	producerSd         *msgkit.Producer
@@ -31,7 +32,7 @@ type Service struct {
 
 	brokers       []string
 	topics        []string
-	serviceConfig configs.KafkaConfig
+	serviceConfig Config
 
 	FuncMessageHandler       *msgkit.MessageHandler[RunnerInMessage]
 	TaskRunnerMessageHandler *msgkit.MessageHandler[RunTaskMessage]
@@ -46,7 +47,7 @@ const (
 )
 
 //nolint:gocritic //если тут удобно по значению значит пусть будет по значению
-func NewService(log logger.Logger, cfg configs.KafkaConfig, m metrics.Metrics) (*Service, bool, error) {
+func NewService(log logger.Logger, cfg Config, m metrics.Metrics) (*Service, bool, error) {
 	s := &Service{
 		log:     log,
 		metrics: m,
@@ -55,6 +56,19 @@ func NewService(log logger.Logger, cfg configs.KafkaConfig, m metrics.Metrics) (
 		serviceConfig: cfg,
 		stoppedByPing: false,
 	}
+
+	kafkaCache, err := cachekit.CreateCache(cachekit.Config{
+		Type:    cfg.Cache.Type,
+		Address: cfg.Cache.Address,
+		DB:      cfg.Cache.DB,
+		Pass:    cfg.Cache.Pass,
+		TTL:     cfg.Cache.TTL,
+	})
+	if err != nil {
+		return s, false, errors.New("can't create kafka cache")
+	}
+
+	s.cache = kafkaCache
 
 	topics := []string{cfg.ProducerTopic, cfg.ProducerTopicSD, cfg.ConsumerFunctionsTopic, cfg.ConsumerTaskRunnerTopic}
 

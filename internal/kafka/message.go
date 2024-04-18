@@ -1,6 +1,8 @@
 package kafka
 
 import (
+	"time"
+
 	"github.com/google/uuid"
 
 	"github.com/iancoleman/orderedmap"
@@ -19,12 +21,24 @@ type RunnerOutMessage struct {
 	RetryPolicy     string                 `json:"retry_policy"`
 }
 
+type TimedRunnerInMessage struct {
+	Msg RunnerInMessage
+
+	TimeNow time.Time
+}
+
 type RunnerInMessage struct {
 	TaskID          uuid.UUID              `json:"task_id"`
 	IsAsyncResult   bool                   `json:"is_async_result"`
 	FunctionMapping map[string]interface{} `json:"function_mapping"`
 	Err             string                 `json:"err"`
 	DoRetry         bool                   `json:"do_retry"`
+}
+
+type TimedRunTaskMessage struct {
+	Msg RunTaskMessage
+
+	TimeNow time.Time
 }
 
 type RunTaskMessage struct {

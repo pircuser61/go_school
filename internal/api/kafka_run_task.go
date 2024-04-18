@@ -3,6 +3,7 @@ package api
 import (
 	c "context"
 	"encoding/json"
+	"strconv"
 	"strings"
 
 	"github.com/iancoleman/orderedmap"
@@ -32,9 +33,15 @@ type runVersionsDTO struct {
 	ApplicationBody orderedmap.OrderedMap
 }
 
-func (ae *Env) WorkRunTaskHandler(ctx c.Context, jobs <-chan kafka.RunTaskMessage) {
+func (ae *Env) WorkRunTaskHandler(ctx c.Context, jobs <-chan kafka.TimedRunTaskMessage) {
+	log := ae.Log.WithField("funcName", "WorkRunTaskHandler")
+
 	for job := range jobs {
-		ae.RunTaskHandler(ctx, job) //nolint:errcheck // Все ошибки уже обрабатываются внутри
+		ae.RunTaskHandler(ctx, job.Msg) //nolint:errcheck // Все ошибки уже обрабатываются внутри
+
+		if err := ae.Kafka.DelRunTaskMsg(ctx, strconv.Itoa(int(job.TimeNow.Unix()))); err != nil {
+			log.WithField("workNumber", job.Msg.WorkNumber).WithError(err).Error("cannot delete function message from redis")
+		}
 	}
 }
 
