@@ -614,14 +614,21 @@ func (ae *Env) functionEditBlock(ctx context.Context, stepID uuid.UUID, stepName
 			return nil, stateErr
 		}
 
-		funcState := make(map[string]interface{})
+		funcState := pipeline.ExecutableFunction{}
 
 		unmErr := json.Unmarshal(blockState, &funcState)
 		if unmErr != nil {
 			return nil, unmErr
 		}
 
-		return []EditBlock{{State: funcState, Output: data, StepName: stepName, StepID: stepID}}, nil
+		block := pipeline.ExecutableFunctionBlock{State: &funcState}
+
+		updState, updErr := block.UpdateStateUsingOutput(ctx, marshData)
+		if updErr != nil {
+			return nil, updErr
+		}
+
+		return []EditBlock{{State: updState, Output: data, StepName: stepName, StepID: stepID}}, nil
 
 	case MonitoringTaskEditBlockRequestChangeTypeState:
 		blockOutputs, stateErr := ae.DB.GetBlockOutputs(ctx, stepID.String(), stepName)
@@ -634,6 +641,26 @@ func (ae *Env) functionEditBlock(ctx context.Context, stepID uuid.UUID, stepName
 		for i := range blockOutputs {
 			output := blockOutputs[i]
 			funcOutputs[output.Name] = output.Value
+		}
+
+		funcState := pipeline.ExecutableFunction{}
+
+		unmErr := json.Unmarshal(marshData, &funcState)
+		if unmErr != nil {
+			return nil, unmErr
+		}
+
+		block := pipeline.ExecutableFunctionBlock{
+			State: &funcState,
+		}
+
+		updOutput, updErr := block.UpdateOutputUsingState(ctx)
+		if updErr != nil {
+			return nil, updErr
+		}
+
+		for k, v := range updOutput {
+			funcOutputs[k] = v
 		}
 
 		return []EditBlock{{State: data, Output: funcOutputs, StepName: stepName, StepID: stepID}}, nil
