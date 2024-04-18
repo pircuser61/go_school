@@ -12,7 +12,6 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/hrgate"
 	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/integrations"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/kafka"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	mail_fetcher "gitlab.services.mts.ru/jocasta/pipeliner/internal/mail/fetcher"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
@@ -50,7 +49,7 @@ type Pipeliner struct {
 	GRPCGWPort              string               `yaml:"grpc_port"`
 	Mail                    mail.Config          `yaml:"mail"`
 	ServiceDesc             servicedesc.Config   `yaml:"servicedesc"`
-	Kafka                   kafka.Config         `yaml:"kafka"`
+	Kafka                   KafkaConfig          `yaml:"kafka"`
 	FunctionStore           functions.Config     `yaml:"function_store"`
 	HumanTasks              human_tasks.Config   `yaml:"human_tasks"`
 	MailFetcher             mail_fetcher.Config  `yaml:"imap"`
@@ -101,6 +100,21 @@ type ServicesPing struct {
 	PingTimer    time.Duration `yaml:"ping_timer"`
 	MaxFailedCnt int           `yaml:"max_failed_count"`
 	MaxOkCnt     int           `yaml:"max_ok_count"`
+}
+
+type KafkaConfig struct {
+	Brokers []string `yaml:"brokers"`
+
+	ProducerTopic   string `yaml:"producer_topic"`
+	ProducerTopicSD string `yaml:"producer_topic_sd"`
+
+	ConsumerGroupFunctions  string `yaml:"consumer_group_functions"`
+	ConsumerGroupTaskRunner string `yaml:"consumer_group_task_runner"`
+	ConsumerFunctionsTopic  string `yaml:"consumer_functions_topic"`
+	ConsumerTaskRunnerTopic string `yaml:"consumer_task_runner_topic"`
+
+	HealthCheckTimeout     int           `yaml:"health_check_timeout"`
+	FuncMessageResendDelay time.Duration `yaml:"function_message_resend_delay"`
 }
 
 func (d *Database) String() string {

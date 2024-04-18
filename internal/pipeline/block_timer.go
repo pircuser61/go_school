@@ -16,9 +16,9 @@ import (
 )
 
 type TimerData struct {
-	Duration time.Duration
-	Started  bool
-	Expired  bool
+	Duration time.Duration `json:"duration"`
+	Started  bool          `json:"started"`
+	Expired  bool          `json:"expired"`
 }
 
 type TimerBlock struct {
@@ -91,6 +91,10 @@ func (gb *TimerBlock) GetState() interface{} {
 }
 
 func (gb *TimerBlock) Update(ctx context.Context) (interface{}, error) {
+	if gb.RunContext.UpdateData != nil && gb.RunContext.UpdateData.Action == string(entity.TaskUpdateActionReload) {
+		return nil, nil
+	}
+
 	if gb.State.Started {
 		if err := gb.checkUserIsServiceAccount(ctx); err != nil {
 			return nil, err

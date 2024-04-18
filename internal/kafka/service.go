@@ -8,19 +8,22 @@ import (
 
 	"github.com/Shopify/sarama"
 
-	"github.com/rcrowley/go-metrics"
+	gometrics "github.com/rcrowley/go-metrics"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	cachekit "gitlab.services.mts.ru/jocasta/cache-kit"
 	msgkit "gitlab.services.mts.ru/jocasta/msg-kit"
 
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/configs"
 	e "gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 )
 
 type Service struct {
 	log   logger.Logger
 	cache cachekit.Cache
+	metrics metrics.Metrics
 
 	producerSd         *msgkit.Producer
 	producerFuncResult *msgkit.Producer
@@ -45,9 +48,10 @@ const (
 )
 
 //nolint:gocritic //если тут удобно по значению значит пусть будет по значению
-func NewService(log logger.Logger, cfg Config) (*Service, bool, error) {
+func NewService(log logger.Logger, cfg Config, m metrics.Metrics) (*Service, bool, error) {
 	s := &Service{
-		log: log,
+		log:     log,
+		metrics: m,
 
 		brokers:       cfg.Brokers,
 		serviceConfig: cfg,
@@ -79,11 +83,11 @@ func NewService(log logger.Logger, cfg Config) (*Service, bool, error) {
 
 	s.topics = topics
 
-	m := metrics.DefaultRegistry
-	m.UnregisterAll()
+	metricRegistry := gometrics.DefaultRegistry
+	metricRegistry.UnregisterAll()
 
 	saramaCfg := sarama.NewConfig()
-	saramaCfg.MetricRegistry = m
+	saramaCfg.MetricRegistry = metricRegistry
 	saramaCfg.Producer.Return.Successes = true // Producer.Return.Successes must be true to be used in a SyncProducer
 	saramaCfg.Net.DialTimeout = kafkaNetTimeout
 
@@ -125,6 +129,8 @@ func NewService(log logger.Logger, cfg Config) (*Service, bool, error) {
 
 	s.consumerFunctions = consumerFunctions
 	s.consumerTaskRunner = consumerRunner
+
+	m.KafkaAvailable()
 
 	return s, true, nil
 }
@@ -249,22 +255,23 @@ func (s *Service) StartCheckHealth() {
 }
 
 func (s *Service) checkHealth() {
-	m := metrics.DefaultRegistry
-	m.UnregisterAll()
+	metricRegistry := gometrics.DefaultRegistry
+	metricRegistry.UnregisterAll()
 
 	saramaCfg := sarama.NewConfig()
-	saramaCfg.MetricRegistry = m
+	saramaCfg.MetricRegistry = metricRegistry
 	saramaCfg.Producer.Return.Successes = true // Producer.Return.Successes must be true to be used in a SyncProducer
 	saramaCfg.Net.DialTimeout = kafkaNetTimeout
 
 	admin, err := sarama.NewClusterAdmin(s.brokers, saramaCfg)
 	if err != nil || (!s.isConsuming && !s.stoppedByPing) || s.producer == nil || s.producerFuncResult == nil {
 		s.log.WithError(err).Error("couldn't connect to kafka! Trying to reconnect")
+		s.metrics.KafkaUnavailable()
 
 		msgFunc := s.FuncMessageHandler
 		msgRun := s.TaskRunnerMessageHandler
 
-		newService, _, reconnectErr := NewService(s.log, s.serviceConfig)
+		newService, _, reconnectErr := NewService(s.log, s.serviceConfig, s.metrics)
 		*s = *newService
 		s.FuncMessageHandler = msgFunc
 		s.TaskRunnerMessageHandler = msgRun
@@ -278,6 +285,7 @@ func (s *Service) checkHealth() {
 		s.StartConsumer(c.Background())
 
 		s.log.Info("the reconnection to kafka was successful")
+		s.metrics.KafkaAvailable()
 
 		return
 	}

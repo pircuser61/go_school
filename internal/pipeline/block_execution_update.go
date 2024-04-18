@@ -932,6 +932,7 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 	delegates = delegates.FilterByType("execution")
 
 	loginsToNotify := delegates.GetUserInArrayWithDelegations(executors)
+	loginsToNotify = append(loginsToNotify, gb.RunContext.Initiator)
 
 	emails := gb.mapLoginsToEmails(ctx, loginsToNotify, loginTakenInWork)
 

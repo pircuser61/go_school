@@ -114,7 +114,11 @@ func main() {
 	// don't forget to update mock
 	var _ db.Database = (*mocks.MockedDatabase)(nil)
 
-	kafkaService, canRestart, err := kafka.NewService(log, cfg.Kafka)
+	metrics.InitMetricsAuth(cfg.Prometheus)
+
+	m := metrics.New(cfg.Prometheus)
+
+	kafkaService, canRestart, err := kafka.NewService(log, cfg.Kafka, m)
 	if err != nil {
 		log.WithError(err).Error("can't create kafka service")
 
@@ -192,10 +196,6 @@ func main() {
 	}
 
 	slaService := sla.NewSLAService(hrgateService)
-
-	metrics.InitMetricsAuth(cfg.Prometheus)
-
-	m := metrics.New(cfg.Prometheus)
 
 	includePlaceholderBlock := cfg.IncludePlaceholderBlock
 

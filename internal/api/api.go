@@ -1594,6 +1594,12 @@ type MonitoringTask struct {
 
 // Параметры действия
 type MonitoringTaskActionParams struct {
+	// Что редактировалось 'Контекст', 'Состояние', 'Output'
+	ChangeType *string `json:"change_type,omitempty"`
+
+	// Данные которые редактировались
+	Data *map[string]interface{} `json:"data,omitempty"`
+
 	// ID блоков
 	Steps *[]string `json:"steps,omitempty"`
 }

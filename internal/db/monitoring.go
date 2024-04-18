@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v4"
+	"github.com/pkg/errors"
 
 	e "gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 
@@ -134,10 +136,18 @@ func (db *PGCon) GetTasksForMonitoring(ctx c.Context, dto *e.TasksForMonitoringF
 			return nil, err
 		}
 
-		task.LastEventType, task.LastEventAt, err = db.getLastEventForMonitoringByWorkID(ctx, workID)
-		if err != nil {
-			return nil, err
+		eventType, eventTime, eventErr := db.getLastEventForMonitoringByWorkID(ctx, workID)
+		if eventErr != nil {
+			return nil, eventErr
 		}
+
+		if eventType == nil {
+			et := "start"
+			eventType = &et
+			eventTime = &task.StartedAt
+		}
+
+		task.LastEventType, task.LastEventAt = eventType, eventTime
 
 		tasksForMonitoring.Tasks = append(tasksForMonitoring.Tasks, task)
 	}
@@ -290,6 +300,10 @@ func (db *PGCon) getLastEventForMonitoringByWorkID(ctx c.Context, workID uuid.UU
 
 	err = row.Scan(&t, &eType)
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil, nil
+		}
+
 		return nil, nil, err
 	}
 

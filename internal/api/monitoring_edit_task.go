@@ -85,7 +85,7 @@ func (ae *Env) EditTaskBlockData(w http.ResponseWriter, r *http.Request, blockId
 
 	editBlockData, editErr := ae.editGoBlock(ctx, blockUUID, dbStep.Type, dbStep.Name, data, req.ChangeType)
 	if editErr != nil {
-		errorHandler.handleError(EditMonitoringBlockError, err)
+		errorHandler.handleError(EditMonitoringBlockError, editErr)
 		ae.rollbackTransaction(ctx, txStorage)
 
 		return
@@ -100,9 +100,14 @@ func (ae *Env) EditTaskBlockData(w http.ResponseWriter, r *http.Request, blockId
 	}
 
 	eventData := struct {
-		Data  map[string]interface{} `json:"data"`
-		Steps []uuid.UUID            `json:"steps"`
-	}{Data: data, Steps: []uuid.UUID{blockUUID}}
+		Data       map[string]interface{} `json:"data"`
+		Steps      []uuid.UUID            `json:"steps"`
+		ChangeType string                 `json:"change_type"`
+	}{
+		Data:       data,
+		ChangeType: string(req.ChangeType),
+		Steps:      []uuid.UUID{blockUUID},
+	}
 
 	// nolint:ineffassign,staticcheck
 	jsonParams := json.RawMessage{}
@@ -161,13 +166,13 @@ func (ae *Env) EditTaskBlockData(w http.ResponseWriter, r *http.Request, blockId
 	}
 }
 
-func convertReqEditData(reqData map[string]MonitoringEditBlockData) (res map[string]interface{}) {
-	convertedData := map[string]interface{}{}
-	for key, val := range reqData {
-		convertedData[key] = val.Value
+func convertReqEditData(in map[string]MonitoringEditBlockData) (res map[string]interface{}) {
+	res = map[string]interface{}{}
+	for key, val := range in {
+		res[key] = val.Value
 	}
 
-	return convertedData
+	return res
 }
 
 func (ae *Env) rollbackTransaction(ctx context.Context, tx db.Database) {
@@ -504,7 +509,19 @@ func (ae *Env) startEditBlock(ctx context.Context, stepID uuid.UUID, stepName st
 		return []EditBlock{{State: map[string]interface{}{}, Output: data, StepName: stepName, StepID: stepID}}, nil
 
 	case MonitoringTaskEditBlockRequestChangeTypeState:
-		return []EditBlock{{State: data, Output: map[string]interface{}{}, StepName: stepName, StepID: stepID}}, nil
+		blockOutputs, stateErr := ae.DB.GetBlockOutputs(ctx, stepID.String(), stepName)
+		if stateErr != nil {
+			return nil, stateErr
+		}
+
+		startOutputs := make(map[string]interface{})
+
+		for i := range blockOutputs {
+			output := blockOutputs[i]
+			startOutputs[output.Name] = output.Value
+		}
+
+		return []EditBlock{{State: data, Output: startOutputs, StepName: stepName, StepID: stepID}}, nil
 	}
 
 	return res, nil
@@ -554,7 +571,19 @@ func (ae *Env) endParallelEditBlock(ctx context.Context, stepID uuid.UUID, stepN
 		return ae.editBlockContext(ctx, stepID, data)
 	case MonitoringTaskEditBlockRequestChangeTypeInput:
 	case MonitoringTaskEditBlockRequestChangeTypeOutput:
-		return []EditBlock{{State: map[string]interface{}{}, Output: data, StepName: stepName, StepID: stepID}}, nil
+		blockState, stateErr := ae.DB.GetBlockState(ctx, stepID.String())
+		if stateErr != nil {
+			return nil, stateErr
+		}
+
+		endParallelState := make(map[string]interface{})
+
+		unmErr := json.Unmarshal(blockState, &endParallelState)
+		if unmErr != nil {
+			return nil, unmErr
+		}
+
+		return []EditBlock{{State: endParallelState, Output: data, StepName: stepName, StepID: stepID}}, nil
 	case MonitoringTaskEditBlockRequestChangeTypeState:
 		return []EditBlock{{State: data, Output: map[string]interface{}{}, StepName: stepName, StepID: stepID}}, nil
 	}
@@ -583,10 +612,61 @@ func (ae *Env) functionEditBlock(ctx context.Context, stepID uuid.UUID, stepName
 		}
 		// TODO no validate method
 	case MonitoringTaskEditBlockRequestChangeTypeOutput:
-		return []EditBlock{{State: map[string]interface{}{}, Output: data, StepName: stepName, StepID: stepID}}, nil
+		blockState, stateErr := ae.DB.GetBlockState(ctx, stepID.String())
+		if stateErr != nil {
+			return nil, stateErr
+		}
+
+		funcState := pipeline.ExecutableFunction{}
+
+		unmErr := json.Unmarshal(blockState, &funcState)
+		if unmErr != nil {
+			return nil, unmErr
+		}
+
+		block := pipeline.ExecutableFunctionBlock{State: &funcState}
+
+		updState, updErr := block.UpdateStateUsingOutput(ctx, marshData)
+		if updErr != nil {
+			return nil, updErr
+		}
+
+		return []EditBlock{{State: updState, Output: data, StepName: stepName, StepID: stepID}}, nil
 
 	case MonitoringTaskEditBlockRequestChangeTypeState:
-		return []EditBlock{{State: data, Output: map[string]interface{}{}, StepName: stepName, StepID: stepID}}, nil
+		blockOutputs, stateErr := ae.DB.GetBlockOutputs(ctx, stepID.String(), stepName)
+		if stateErr != nil {
+			return nil, stateErr
+		}
+
+		funcOutputs := make(map[string]interface{})
+
+		for i := range blockOutputs {
+			output := blockOutputs[i]
+			funcOutputs[output.Name] = output.Value
+		}
+
+		funcState := pipeline.ExecutableFunction{}
+
+		unmErr := json.Unmarshal(marshData, &funcState)
+		if unmErr != nil {
+			return nil, unmErr
+		}
+
+		block := pipeline.ExecutableFunctionBlock{
+			State: &funcState,
+		}
+
+		updOutput, updErr := block.UpdateOutputUsingState(ctx)
+		if updErr != nil {
+			return nil, updErr
+		}
+
+		for k, v := range updOutput {
+			funcOutputs[k] = v
+		}
+
+		return []EditBlock{{State: data, Output: funcOutputs, StepName: stepName, StepID: stepID}}, nil
 	}
 
 	return res, nil
@@ -706,7 +786,19 @@ func (ae *Env) notificationEditBlock(ctx context.Context, stepID uuid.UUID, step
 		}
 
 	case MonitoringTaskEditBlockRequestChangeTypeOutput:
-		return []EditBlock{{State: map[string]interface{}{}, Output: data, StepName: stepName, StepID: stepID}}, nil
+		blockState, stateErr := ae.DB.GetBlockState(ctx, stepID.String())
+		if stateErr != nil {
+			return nil, stateErr
+		}
+
+		notifState := make(map[string]interface{})
+
+		unmErr := json.Unmarshal(blockState, &notifState)
+		if unmErr != nil {
+			return nil, unmErr
+		}
+
+		return []EditBlock{{State: notifState, Output: data, StepName: stepName, StepID: stepID}}, nil
 	case MonitoringTaskEditBlockRequestChangeTypeState:
 		return []EditBlock{{State: data, Output: map[string]interface{}{}, StepName: stepName, StepID: stepID}}, nil
 	}
@@ -865,7 +957,19 @@ func (ae *Env) timerEditBlock(ctx context.Context, stepID uuid.UUID, stepName st
 		return ae.editBlockContext(ctx, stepID, data)
 	case MonitoringTaskEditBlockRequestChangeTypeInput:
 	case MonitoringTaskEditBlockRequestChangeTypeOutput:
-		return []EditBlock{{State: map[string]interface{}{}, Output: data, StepName: stepName, StepID: stepID}}, nil
+		blockState, stateErr := ae.DB.GetBlockState(ctx, stepID.String())
+		if stateErr != nil {
+			return nil, stateErr
+		}
+
+		timerState := make(map[string]interface{})
+
+		unmErr := json.Unmarshal(blockState, &timerState)
+		if unmErr != nil {
+			return nil, unmErr
+		}
+
+		return []EditBlock{{State: timerState, Output: data, StepName: stepName, StepID: stepID}}, nil
 
 	case MonitoringTaskEditBlockRequestChangeTypeState:
 		return []EditBlock{{State: data, Output: map[string]interface{}{}, StepName: stepName, StepID: stepID}}, nil
