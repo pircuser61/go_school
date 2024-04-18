@@ -6,14 +6,17 @@ import (
 	"time"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
+
 	file_registry "gitlab.services.mts.ru/jocasta/pipeliner/internal/fileregistry"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/forms"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/functions"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/hrgate"
 	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/integrations"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/kafka"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	mail_fetcher "gitlab.services.mts.ru/jocasta/pipeliner/internal/mail/fetcher"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/scheduler"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sequence"
@@ -27,44 +30,44 @@ type Probes struct {
 }
 
 type Pipeliner struct {
-	Tracing                 TracingConfig        `yaml:"tracing"`
-	Timeout                 Duration             `yaml:"timeout"`
-	Proxy                   string               `yaml:"proxy"`
-	Log                     *logger.Config       `yaml:"log"`
-	ServeAddr               string               `yaml:"serve_addr"`
-	Probes                  Probes               `yaml:"probes"`
-	MetricsAddr             string               `yaml:"metrics_addr"`
-	DB                      Database             `yaml:"database"`
-	Remedy                  string               `yaml:"remedy"`
-	FaaS                    string               `yaml:"faas"`
-	RunEnv                  RunEnv               `yaml:"run_env"`
-	AuthBaseURL             *URL                 `yaml:"auth"`
-	SchedulerBaseURL        *URL                 `yaml:"scheduler"`
-	NetworkMonitorBaseURL   *URL                 `yaml:"network_monitor"`
-	Prometheus              PrometheusConfig     `yaml:"prometheus"`
-	HTTPClientConfig        *HTTPClient          `yaml:"http_client_config"`
-	SSO                     sso.Config           `yaml:"sso"`
-	People                  people.Config        `yaml:"people"`
-	GRPCPort                string               `yaml:"grpc_gw_port"`
-	GRPCGWPort              string               `yaml:"grpc_port"`
-	Mail                    mail.Config          `yaml:"mail"`
-	ServiceDesc             servicedesc.Config   `yaml:"servicedesc"`
-	Kafka                   KafkaConfig          `yaml:"kafka"`
-	FunctionStore           functions.Config     `yaml:"function_store"`
-	HumanTasks              human_tasks.Config   `yaml:"human_tasks"`
-	MailFetcher             mail_fetcher.Config  `yaml:"imap"`
-	Integrations            integrations.Config  `yaml:"integrations"`
-	HrGate                  hrgate.Config        `yaml:"hrgate"`
-	FileRegistry            file_registry.Config `yaml:"file_registry"`
-	IncludePlaceholderBlock bool                 `yaml:"include_placeholder_block"`
-	SchedulerTasks          scheduler.Config     `yaml:"scheduler_tasks"`
-	Forms                   forms.Config         `yaml:"forms"`
-	Sequence                sequence.Config      `yaml:"sequence"`
-	HostURL                 string               `yaml:"host_url"`
-	LogIndex                string               `yaml:"log_index"`
-	ServicesPing            ServicesPing         `yaml:"services_ping"`
-	ConsumerFuncsWorkers    int                  `yaml:"consumer_funcs_workers"`
-	ConsumerTasksWorkers    int                  `yaml:"consumer_tasks_workers"`
+	Tracing                 TracingConfig            `yaml:"tracing"`
+	Timeout                 Duration                 `yaml:"timeout"`
+	Proxy                   string                   `yaml:"proxy"`
+	Log                     *logger.Config           `yaml:"log"`
+	ServeAddr               string                   `yaml:"serve_addr"`
+	Probes                  Probes                   `yaml:"probes"`
+	MetricsAddr             string                   `yaml:"metrics_addr"`
+	DB                      Database                 `yaml:"database"`
+	Remedy                  string                   `yaml:"remedy"`
+	FaaS                    string                   `yaml:"faas"`
+	RunEnv                  RunEnv                   `yaml:"run_env"`
+	AuthBaseURL             *URL                     `yaml:"auth"`
+	SchedulerBaseURL        *URL                     `yaml:"scheduler"`
+	NetworkMonitorBaseURL   *URL                     `yaml:"network_monitor"`
+	Prometheus              metrics.PrometheusConfig `yaml:"prometheus"`
+	HTTPClientConfig        *HTTPClient              `yaml:"http_client_config"`
+	SSO                     sso.Config               `yaml:"sso"`
+	People                  people.Config            `yaml:"people"`
+	GRPCPort                string                   `yaml:"grpc_gw_port"`
+	GRPCGWPort              string                   `yaml:"grpc_port"`
+	Mail                    mail.Config              `yaml:"mail"`
+	ServiceDesc             servicedesc.Config       `yaml:"servicedesc"`
+	Kafka                   kafka.Config             `yaml:"kafka"`
+	FunctionStore           functions.Config         `yaml:"function_store"`
+	HumanTasks              human_tasks.Config       `yaml:"human_tasks"`
+	MailFetcher             mail_fetcher.Config      `yaml:"imap"`
+	Integrations            integrations.Config      `yaml:"integrations"`
+	HrGate                  hrgate.Config            `yaml:"hrgate"`
+	FileRegistry            file_registry.Config     `yaml:"file_registry"`
+	IncludePlaceholderBlock bool                     `yaml:"include_placeholder_block"`
+	SchedulerTasks          scheduler.Config         `yaml:"scheduler_tasks"`
+	Forms                   forms.Config             `yaml:"forms"`
+	Sequence                sequence.Config          `yaml:"sequence"`
+	HostURL                 string                   `yaml:"host_url"`
+	LogIndex                string                   `yaml:"log_index"`
+	ServicesPing            ServicesPing             `yaml:"services_ping"`
+	ConsumerFuncsWorkers    int                      `yaml:"consumer_funcs_workers"`
+	ConsumerTasksWorkers    int                      `yaml:"consumer_tasks_workers"`
 }
 
 type RunEnv struct {
@@ -86,35 +89,10 @@ type Database struct {
 	Timeout        int    `yaml:"timeout"`
 }
 
-type PushConfig struct {
-	URL string `yaml:"url"`
-	Job string `yaml:"job"`
-}
-
-type PrometheusConfig struct {
-	Stand string     `json:"stand"`
-	Push  PushConfig `yaml:"push"`
-}
-
 type ServicesPing struct {
 	PingTimer    time.Duration `yaml:"ping_timer"`
 	MaxFailedCnt int           `yaml:"max_failed_count"`
 	MaxOkCnt     int           `yaml:"max_ok_count"`
-}
-
-type KafkaConfig struct {
-	Brokers []string `yaml:"brokers"`
-
-	ProducerTopic   string `yaml:"producer_topic"`
-	ProducerTopicSD string `yaml:"producer_topic_sd"`
-
-	ConsumerGroupFunctions  string `yaml:"consumer_group_functions"`
-	ConsumerGroupTaskRunner string `yaml:"consumer_group_task_runner"`
-	ConsumerFunctionsTopic  string `yaml:"consumer_functions_topic"`
-	ConsumerTaskRunnerTopic string `yaml:"consumer_task_runner_topic"`
-
-	HealthCheckTimeout     int           `yaml:"health_check_timeout"`
-	FuncMessageResendDelay time.Duration `yaml:"function_message_resend_delay"`
 }
 
 func (d *Database) String() string {

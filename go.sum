@@ -599,8 +599,6 @@ gitlab.services.mts.ru/abp/mail/pkg v1.19.0 h1:DNccIRhUuijQYAq3v9gnY5AC7xi51UjHi
 gitlab.services.mts.ru/abp/mail/pkg v1.19.0/go.mod h1:YE2ngC0lCO90yQG+eeT8F6343VuR1pi/VuxvqTLDwYE=
 gitlab.services.mts.ru/abp/myosotis v1.4.4 h1:De8ST0tK1aZKnVFvOd1a3FReloOh3hl6G34so5e1Vcs=
 gitlab.services.mts.ru/abp/myosotis v1.4.4/go.mod h1:x1TTaEJ+kgNbCkQViA5eWgnNLAprspL6qJWJWkhVZFE=
-gitlab.services.mts.ru/jocasta/cache-kit v1.0.1-0.20240408094709-94d9b9545e24 h1:0VJGmA4m+d+rjHYFWPVDFZwKcZ5GR0YVl2O5FGcRdmU=
-gitlab.services.mts.ru/jocasta/cache-kit v1.0.1-0.20240408094709-94d9b9545e24/go.mod h1:T2vBOst8ChxrwJaHqd+SkLd5HbZT08mxsdnZuIpjEKc=
 gitlab.services.mts.ru/jocasta/cache-kit v1.2.0 h1:BHzYoRHt7Kz/fysRH6jMuX83IbBtez8GdDYdl7NT0vc=
 gitlab.services.mts.ru/jocasta/cache-kit v1.2.0/go.mod h1:T2vBOst8ChxrwJaHqd+SkLd5HbZT08mxsdnZuIpjEKc=
 gitlab.services.mts.ru/jocasta/conditions-kit v1.0.10 h1:K2WNbKX+2vDgAENax9YGs5ePhRLpOCvNwGfCMfnWdeA=

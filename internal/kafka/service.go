@@ -15,14 +15,13 @@ import (
 	cachekit "gitlab.services.mts.ru/jocasta/cache-kit"
 	msgkit "gitlab.services.mts.ru/jocasta/msg-kit"
 
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/configs"
 	e "gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 )
 
 type Service struct {
-	log   logger.Logger
-	cache cachekit.Cache
+	log     logger.Logger
+	cache   cachekit.Cache
 	metrics metrics.Metrics
 
 	producerSd         *msgkit.Producer

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
 	"golang.org/x/net/context"
@@ -35,7 +36,7 @@ func (ae *Env) WorkFunctionHandler(ctx context.Context, jobs <-chan kafka.TimedR
 	for job := range jobs {
 		ae.FunctionReturnHandler(ctx, job.Msg) //nolint:errcheck // Все ошибки уже обрабатываются внутри
 
-		if err := ae.Kafka.DelRunnerInMsg(ctx, job.TimeNow.String()); err != nil {
+		if err := ae.Kafka.DelRunnerInMsg(ctx, strconv.Itoa(int(job.TimeNow.Unix()))); err != nil {
 			log.WithField("stepID", job.Msg.TaskID).WithError(err).Error("cannot delete function message from redis")
 		}
 	}

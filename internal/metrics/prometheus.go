@@ -7,8 +7,6 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/configs"
 )
 
 const (
@@ -31,6 +29,16 @@ type Metrics interface {
 	RequestsIncrease(label *RequestInfo)
 	KafkaAvailable()
 	KafkaUnavailable()
+}
+
+type PushConfig struct {
+	URL string `yaml:"url"`
+	Job string `yaml:"job"`
+}
+
+type PrometheusConfig struct {
+	Stand string     `json:"stand"`
+	Push  PushConfig `yaml:"push"`
 }
 
 type RequestInfo struct {
@@ -60,7 +68,7 @@ func NewGetRequestInfo(path string) *RequestInfo {
 	}
 }
 
-func New(config configs.PrometheusConfig) Metrics {
+func New(config PrometheusConfig) Metrics {
 	registry := prometheus.NewRegistry()
 
 	m := &appMetrics{

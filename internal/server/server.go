@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -136,7 +138,7 @@ func (s *Server) SendMessageToWorkers(ctx context.Context, message kafka.RunnerI
 		TimeNow: time.Now(),
 	}
 
-	if err := s.kafka.SetRunnerInMsg(ctx, timedMsg.TimeNow.String(), &message); err != nil {
+	if err := s.kafka.SetRunnerInMsg(ctx, strconv.Itoa(int(timedMsg.TimeNow.Unix())), &message); err != nil {
 		s.logger.WithField("stepID", message.TaskID).WithError(err).Error("cannot set function-result message to cache")
 	}
 
@@ -152,7 +154,7 @@ func (s *Server) SendRunTaskMessageToWorkers(ctx context.Context, message kafka.
 		TimeNow: time.Now(),
 	}
 
-	if err := s.kafka.SetRunTaskMsg(ctx, timedMsg.TimeNow.String(), &message); err != nil {
+	if err := s.kafka.SetRunTaskMsg(ctx, strconv.Itoa(int(timedMsg.TimeNow.Unix())), &message); err != nil {
 		s.logger.WithField("workNumber", message.WorkNumber).WithError(err).Error("cannot set run-task message to cache")
 	}
 
@@ -235,7 +237,14 @@ func (s *Server) rerunUnfinishedFunctions(ctx context.Context) error {
 		return fmt.Errorf("got error from GetCachedKeys: %w", keysErr)
 	}
 
-	for _, key := range keys {
+	for _, fullkey := range keys {
+		keyParts := strings.Split(fullkey, ":")
+		if len(keyParts) == 1 {
+			continue
+		}
+
+		key := keyParts[1]
+
 		msg, getErr := s.kafka.GetRunnerInMsg(ctx, key)
 		if getErr != nil {
 			s.logger.WithError(getErr).Error("cannot get unfinished function result")
@@ -261,7 +270,14 @@ func (s *Server) rerunUnfinishedTasks(ctx context.Context) error {
 		return fmt.Errorf("got error from GetCachedKeys: %w", keysErr)
 	}
 
-	for _, key := range keys {
+	for _, fullkey := range keys {
+		keyParts := strings.Split(fullkey, ":")
+		if len(keyParts) == 1 {
+			continue
+		}
+
+		key := keyParts[1]
+
 		msg, getErr := s.kafka.GetRunTaskMsg(ctx, key)
 		if getErr != nil {
 			s.logger.WithError(getErr).Error("cannot get unfinished task")
