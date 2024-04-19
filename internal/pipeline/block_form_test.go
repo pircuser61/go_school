@@ -1638,7 +1638,7 @@ func TestGoFormActions(t *testing.T) {
 			},
 			wantActions: []MemberAction{
 				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": []string{"form_0", "form_1"}}},
-				{ID: "fill_form_disabled", Type: "custom", Params: map[string]interface{}{"disabled": true, "form_name": []string{"exec"}}},
+				{ID: "fill_form_disabled", Type: "custom", Params: map[string]interface{}{"disabled": true, "form_name": []string{"exec"}, "hint_description": "Для продолжения работы над заявкой, необходимо {fill_form}"}},
 			},
 		},
 		{
@@ -1737,7 +1737,7 @@ func TestGoFormActions(t *testing.T) {
 			},
 			wantActions: []MemberAction{
 				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": []string{"form_0", "form_1"}}},
-				{ID: "fill_form_disabled", Type: "custom", Params: map[string]interface{}{"disabled": true, "form_name": []string{"exec"}}},
+				{ID: "fill_form_disabled", Type: "custom", Params: map[string]interface{}{"disabled": true, "form_name": []string{"exec"}, "hint_description": "Для продолжения работы над заявкой, необходимо {fill_form}"}},
 			},
 		},
 		{
@@ -1975,7 +1975,7 @@ func TestGoFormActions(t *testing.T) {
 			},
 			wantActions: []MemberAction{
 				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": []string{"form_0", "form_1"}}},
-				{ID: "fill_form_disabled", Type: "custom", Params: map[string]interface{}{"disabled": true, "form_name": []string{"exec"}}},
+				{ID: "fill_form_disabled", Type: "custom", Params: map[string]interface{}{"disabled": true, "form_name": []string{"exec"}, "hint_description": "Для продолжения работы над заявкой, необходимо {fill_form}"}},
 			},
 		},
 		{
@@ -2096,7 +2096,7 @@ func TestGoFormActions(t *testing.T) {
 			},
 			wantActions: []MemberAction{
 				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": []string{"form_0", "form_1"}}},
-				{ID: "fill_form_disabled", Type: "custom", Params: map[string]interface{}{"disabled": true, "form_name": []string{"exec"}}},
+				{ID: "fill_form_disabled", Type: "custom", Params: map[string]interface{}{"disabled": true, "form_name": []string{"exec"}, "hint_description": "Для продолжения работы над заявкой, необходимо {fill_form}"}},
 			},
 		},
 	}
