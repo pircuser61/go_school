@@ -2140,6 +2140,12 @@ type TimerParams struct {
 	Duration string `json:"duration"`
 }
 
+// UniquePersons defines model for UniquePersons.
+type UniquePersons struct {
+	Groups *[]string `json:"groups,omitempty"`
+	Logins *[]string `json:"logins,omitempty"`
+}
+
 // Update approval list settings
 type UpdateApprovalListSettings struct {
 	// Представляет из себя набор ключ-значение, где ключ - это название переменной/поля объекта, а значение - это структура, которая описывает переменную(или поле объекта). Причём, если переменная - это объект, тогда должно быть заполнено поле propeties(описание полей). Если переменная - массив, тогда должно быть заполнено поле items(описание типа, который хранится в массиве).

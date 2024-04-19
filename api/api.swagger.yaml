@@ -2036,7 +2036,7 @@ paths:
                 type: object
                 properties:
                   data:
-                    $ref: '#/components/schemas/EriusTasksPage'
+                    $ref: '#/components/schemas/UniquePersons'
                   status_code:
                     type: integer
         400:
@@ -3678,6 +3678,22 @@ components:
             type: string
       required:
         - persons
+    UniquePersons:
+      type: object
+      properties:
+        logins:
+          type: array
+          items:
+            type: string
+        groups:
+          type: array
+          items:
+            type: string
+
+      required:
+        - tasks
+        - total
+        - tasks_meta
     EriusTasksPage:
       type: object
       properties:
