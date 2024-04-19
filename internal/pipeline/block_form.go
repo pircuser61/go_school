@@ -29,10 +29,12 @@ const (
 
 const (
 	disabled                   = "disabled"
+	description                = "hint_description"
 	formName                   = "form_name"
 	formFillFormAction         = "fill_form"
 	formFillFormDisabledAction = "fill_form_disabled"
 	formStartWorkAction        = "form_executor_start_work"
+	fillFormMessage            = "Для продолжения работы над заявкой, необходимо {fill_form}"
 )
 
 const AutoFillUser = "auto_fill"
@@ -170,8 +172,9 @@ func (gb *GoFormBlock) formActions() []MemberAction {
 				ID:   formFillFormDisabledAction,
 				Type: ActionTypeCustom,
 				Params: map[string]interface{}{
-					formName: []string{gb.Name},
-					disabled: true,
+					formName:    []string{gb.Name},
+					disabled:    true,
+					description: fillFormMessage,
 				},
 			},
 		}...)

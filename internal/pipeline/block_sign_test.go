@@ -5703,7 +5703,7 @@ func TestGoSignActions(t *testing.T) {
 				},
 			},
 			wantActions: []MemberAction{
-				{ID: "sign_sign", Type: "primary", Params: map[string]interface{}{"disabled": true}},
+				{ID: "sign_sign", Type: "primary", Params: map[string]interface{}{"disabled": true, "hint_description": "Для продолжения работы над заявкой, необходимо {fill_form}"}},
 				{ID: "sign_reject", Type: "secondary", Params: map[string]interface{}(nil)},
 				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": []string{"form_0", "form_1"}}},
 				{ID: "add_approvers", Type: "other", Params: map[string]interface{}(nil)},
@@ -5805,7 +5805,7 @@ func TestGoSignActions(t *testing.T) {
 				},
 			},
 			wantActions: []MemberAction{
-				{ID: "sign_sign", Type: "primary", Params: map[string]interface{}{"disabled": true}},
+				{ID: "sign_sign", Type: "primary", Params: map[string]interface{}{"disabled": true, "hint_description": "Для продолжения работы над заявкой, необходимо {fill_form}"}},
 				{ID: "sign_reject", Type: "secondary", Params: map[string]interface{}(nil)},
 				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": []string{"form_0", "form_1"}}},
 				{ID: "add_approvers", Type: "other", Params: map[string]interface{}(nil)},
@@ -6050,7 +6050,7 @@ func TestGoSignActions(t *testing.T) {
 				},
 			},
 			wantActions: []MemberAction{
-				{ID: "sign_sign", Type: "primary", Params: map[string]interface{}{"disabled": true}},
+				{ID: "sign_sign", Type: "primary", Params: map[string]interface{}{"disabled": true, "hint_description": "Для продолжения работы над заявкой, необходимо {fill_form}"}},
 				{ID: "sign_reject", Type: "secondary", Params: map[string]interface{}(nil)},
 				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": []string{"form_0", "form_1"}}},
 				{ID: "add_approvers", Type: "other", Params: map[string]interface{}(nil)},
@@ -6175,7 +6175,7 @@ func TestGoSignActions(t *testing.T) {
 				},
 			},
 			wantActions: []MemberAction{
-				{ID: "sign_sign", Type: "primary", Params: map[string]interface{}{"disabled": true}},
+				{ID: "sign_sign", Type: "primary", Params: map[string]interface{}{"disabled": true, "hint_description": "Для продолжения работы над заявкой, необходимо {fill_form}"}},
 				{ID: "sign_reject", Type: "secondary", Params: map[string]interface{}(nil)},
 				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": []string{"form_0", "form_1"}}},
 				{ID: "add_approvers", Type: "other", Params: map[string]interface{}(nil)},

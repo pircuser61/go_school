@@ -1385,7 +1385,7 @@ func TestGoApproverBlock_Actions(t *testing.T) {
 				ctx: context.Background(),
 			},
 			wantActions: []MemberAction{
-				{ID: "approve", Type: "", Params: map[string]interface{}{"disabled": true}},
+				{ID: "approve", Type: "", Params: map[string]interface{}{"disabled": true, "hint_description": "Для продолжения работы над заявкой, необходимо {fill_form}"}},
 				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": []string{"form_0", "form_1"}}},
 				{ID: "add_approvers", Type: "other", Params: map[string]interface{}(nil)},
 				{ID: "request_add_info", Type: "other", Params: map[string]interface{}(nil)},
@@ -1573,7 +1573,7 @@ func TestGoApproverBlock_Actions(t *testing.T) {
 				ctx: context.Background(),
 			},
 			wantActions: []MemberAction{
-				{ID: "approve", Type: "", Params: map[string]interface{}{"disabled": true}},
+				{ID: "approve", Type: "", Params: map[string]interface{}{"disabled": true, "hint_description": "Для продолжения работы над заявкой, необходимо {fill_form}"}},
 				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": []string{"form_0"}}},
 				{ID: "add_approvers", Type: "other", Params: map[string]interface{}(nil)},
 				{ID: "request_add_info", Type: "other", Params: map[string]interface{}(nil)},

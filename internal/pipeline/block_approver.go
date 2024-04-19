@@ -255,7 +255,10 @@ func (gb *GoApproverBlock) approvementBaseActions(login string) []MemberAction {
 				continue
 			}
 
-			item.Params = map[string]interface{}{"disabled": true}
+			item.Params = map[string]interface{}{
+				"disabled":  true,
+				description: fillFormMessage,
+			}
 		}
 	}
 

@@ -2624,7 +2624,7 @@ func TestGoExecutionActions(t *testing.T) {
 				},
 			},
 			wantActions: []MemberAction{
-				{ID: "execution", Type: "primary", Params: map[string]interface{}{"disabled": true}},
+				{ID: "execution", Type: "primary", Params: map[string]interface{}{"disabled": true, "hint_description": "Для продолжения работы над заявкой, необходимо {fill_form}"}},
 				{ID: "decline", Type: "secondary", Params: map[string]interface{}(nil)},
 				{ID: "change_executor", Type: "other", Params: map[string]interface{}(nil)},
 				{ID: "request_execution_info", Type: "other", Params: map[string]interface{}(nil)},
@@ -2727,7 +2727,7 @@ func TestGoExecutionActions(t *testing.T) {
 				},
 			},
 			wantActions: []MemberAction{
-				{ID: "execution", Type: "primary", Params: map[string]interface{}{"disabled": true}},
+				{ID: "execution", Type: "primary", Params: map[string]interface{}{"disabled": true, "hint_description": "Для продолжения работы над заявкой, необходимо {fill_form}"}},
 				{ID: "decline", Type: "secondary", Params: map[string]interface{}(nil)},
 				{ID: "change_executor", Type: "other", Params: map[string]interface{}(nil)},
 				{ID: "request_execution_info", Type: "other", Params: map[string]interface{}(nil)},
@@ -2974,7 +2974,7 @@ func TestGoExecutionActions(t *testing.T) {
 				},
 			},
 			wantActions: []MemberAction{
-				{ID: "execution", Type: "primary", Params: map[string]interface{}{"disabled": true}},
+				{ID: "execution", Type: "primary", Params: map[string]interface{}{"disabled": true, "hint_description": "Для продолжения работы над заявкой, необходимо {fill_form}"}},
 				{ID: "decline", Type: "secondary", Params: map[string]interface{}(nil)},
 				{ID: "change_executor", Type: "other", Params: map[string]interface{}(nil)},
 				{ID: "request_execution_info", Type: "other", Params: map[string]interface{}(nil)},
@@ -3090,7 +3090,7 @@ func TestGoExecutionActions(t *testing.T) {
 				},
 			},
 			wantActions: []MemberAction{
-				{ID: "execution", Type: "primary", Params: map[string]interface{}{"disabled": true}},
+				{ID: "execution", Type: "primary", Params: map[string]interface{}{"disabled": true, "hint_description": "Для продолжения работы над заявкой, необходимо {fill_form}"}},
 				{ID: "decline", Type: "secondary", Params: map[string]interface{}(nil)},
 				{ID: "change_executor", Type: "other", Params: map[string]interface{}(nil)},
 				{ID: "request_execution_info", Type: "other", Params: map[string]interface{}(nil)},
