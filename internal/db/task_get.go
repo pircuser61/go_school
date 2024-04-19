@@ -1862,6 +1862,8 @@ type UniquePersons struct {
 	Logins []string `json:"logins"`
 }
 
+const potentialPersonsCapacity = 100
+
 func (db *PGCon) getTaskUniquePersons(ctx c.Context, q string, args []interface{}) (*UniquePersons, error) {
 	ctx, span := trace.StartSpan(ctx, "db.pg_get_tasks_meta")
 	defer span.End()
@@ -1872,33 +1874,38 @@ func (db *PGCon) getTaskUniquePersons(ctx c.Context, q string, args []interface{
 	}
 	defer rows.Close()
 
-	up := UniquePersons{}
-
 	var (
 		executors *[]string
 		group     *string
 	)
 
+	up := UniquePersons{
+		Logins: make([]string, 0, potentialPersonsCapacity),
+		Groups: make([]string, 0, potentialPersonsCapacity),
+	}
+
+	check := make(map[string]struct{}, potentialPersonsCapacity*2)
+
 	for rows.Next() {
-		err = rows.Scan(&executors, &group)
-		if err != nil {
+		if err = rows.Scan(&executors, &group); err != nil {
 			return nil, err
 		}
 
 		if executors != nil {
 			for _, v := range *executors {
-				if !utils.IsContainsInSlice(v, up.Logins) {
+				if _, ok := check[v]; !ok {
+					check[v] = struct{}{}
+
 					up.Logins = append(up.Logins, v)
 				}
 			}
 		}
 
-		if group == nil {
-			continue
-		}
-
-		if !utils.IsContainsInSlice(*group, up.Groups) && *group != "" {
-			up.Groups = append(up.Groups, *group)
+		if group != nil {
+			if _, ok := check[*group]; !ok {
+				check[*group] = struct{}{}
+				up.Groups = append(up.Groups, *group)
+			}
 		}
 	}
 
