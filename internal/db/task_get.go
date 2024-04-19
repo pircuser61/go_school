@@ -1887,8 +1887,8 @@ func (db *PGCon) getTaskUniquePersons(ctx c.Context, q string, args []interface{
 	check := make(map[string]struct{}, potentialPersonsCapacity*2)
 
 	for rows.Next() {
-		if err = rows.Scan(&executors, &group); err != nil {
-			return nil, err
+		if scanErr := rows.Scan(&executors, &group); scanErr != nil {
+			return nil, scanErr
 		}
 
 		if executors != nil {
@@ -1904,6 +1904,7 @@ func (db *PGCon) getTaskUniquePersons(ctx c.Context, q string, args []interface{
 		if group != nil {
 			if _, ok := check[*group]; !ok {
 				check[*group] = struct{}{}
+
 				up.Groups = append(up.Groups, *group)
 			}
 		}
