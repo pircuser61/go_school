@@ -125,15 +125,27 @@ servicedesc:
 
 function_store:
   url: 'functions:90'
+  max_retries: 3
+  retry_delay: 1s
+  timeout: 2s
 
 scheduler_tasks:
   url: 'localhost:9001'
+  max_retries: 3
+  retry_delay: 1s
+  timeout: 2s
 
 sequence:
   url: 'localhost:9002'
+  max_retries: 3
+  retry_delay: 1s
+  timeout: 2s
 
 human_tasks:
   url: "human-tasks:90"
+  max_retries: 3
+  retry_delay: 1s
+  timeout: 2s
   cache:
     type: "default"
     address: ""
@@ -149,9 +161,15 @@ imap:
 
 integrations:
   url: 'integrations:90'
+  max_retries: 3
+  retry_delay: 1s
+  timeout: 2s
 
 forms:
   url: 'forms:90'
+  max_retries: 3
+  retry_delay: 1s
+  timeout: 2s
 
 hrgate:
   hr_gate_url: "https://hr-gate.stage.autobp.mts.ru"
@@ -173,5 +191,8 @@ minio:
 file_registry:
   rest: 'file-registry:8000'
   grpc: 'file-registry:90'
+  max_retries: 3
+  retry_delay: 1s
+  timeout: 2s
 
 host_url: 'https://dev.ap.mts.ru'

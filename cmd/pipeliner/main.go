@@ -127,21 +127,21 @@ func main() {
 		}
 	}
 
-	schedulerService, err := scheduler.NewService(cfg.SchedulerTasks)
+	schedulerService, err := scheduler.NewService(cfg.SchedulerTasks, log)
 	if err != nil {
 		log.WithError(err).Error("can't create scheduler service")
 
 		return
 	}
 
-	functionsService, err := functions.NewService(cfg.FunctionStore)
+	functionsService, err := functions.NewService(cfg.FunctionStore, log)
 	if err != nil {
 		log.WithError(err).Error("can't create functions service")
 
 		return
 	}
 
-	humanTasksService, err := human_tasks.NewServiceWithCache(&cfg.HumanTasks)
+	humanTasksService, err := human_tasks.NewServiceWithCache(&cfg.HumanTasks, log)
 	if err != nil {
 		log.WithError(err).Error("can't create human tasks service")
 
@@ -155,7 +155,7 @@ func main() {
 		return
 	}
 
-	integrationsService, err := integrations.NewService(cfg.Integrations)
+	integrationsService, err := integrations.NewService(cfg.Integrations, log)
 	if err != nil {
 		log.WithError(err).Error("can't create integrations service")
 
@@ -174,21 +174,21 @@ func main() {
 		log.WithError(fillErr).Error("can't fill default unit id")
 	}
 
-	fileRegistryService, err := file_registry.NewService(cfg.FileRegistry)
+	fileRegistryService, err := file_registry.NewService(cfg.FileRegistry, log)
 	if err != nil {
 		log.WithError(err).Error("can't create file-registry service")
 
 		return
 	}
 
-	formsService, err := forms.NewService(cfg.Forms)
+	formsService, err := forms.NewService(cfg.Forms, log)
 	if err != nil {
 		log.WithError(err).Error("can't create forms service")
 
 		return
 	}
 
-	sequenceService, err := sequence.NewService(cfg.Sequence)
+	sequenceService, err := sequence.NewService(cfg.Sequence, log)
 	if err != nil {
 		log.WithError(err).Error("can't create sequence service")
 
