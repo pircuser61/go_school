@@ -251,9 +251,10 @@ func (ae *Env) GetMonitoringTask(w http.ResponseWriter, req *http.Request, workN
 }
 
 const (
-	cancel   = "cancel"
-	skipped  = "skipped"
-	finished = "finished"
+	cancel    = "cancel"
+	skipped   = "skipped"
+	finished  = "finished"
+	noSuccess = "no_success"
 )
 
 func getMonitoringStatus(status string) MonitoringHistoryStatus {
@@ -880,7 +881,7 @@ func (ae *Env) restartNode(
 		return "", stepErr
 	}
 
-	isFinished := dbStep.Status == finished || dbStep.Status == skipped || dbStep.Status == cancel
+	isFinished := dbStep.Status == finished || dbStep.Status == skipped || dbStep.Status == cancel || dbStep.Status == noSuccess
 
 	isResumable, _, resumableErr := txStorage.IsBlockResumable(ctx, workID, dbStep.ID)
 	if resumableErr != nil {
