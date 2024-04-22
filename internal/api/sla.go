@@ -64,6 +64,8 @@ func (ae *Env) handleBreachSlA(ctx c.Context, item *db.StepBreachedSLA) {
 
 	_, workFinished, blockErr := pipeline.ProcessBlockWithEndMapping(ctx, item.StepName, item.BlockData, runCtx, true)
 	if blockErr != nil {
+		runCtx.NotifyEvents(ctx) // events for successfully processed nodes
+
 		return
 	}
 

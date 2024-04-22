@@ -498,6 +498,8 @@ func (ae *Env) updateStepInternal(ctx context.Context, data *updateStepData) boo
 
 	_, workFinished, blockErr := pipeline.ProcessBlockWithEndMapping(ctx, data.step.Name, blockFunc, runCtx, true)
 	if blockErr != nil {
+		runCtx.NotifyEvents(ctx) // events for successfully processed nodes
+
 		return false
 	}
 

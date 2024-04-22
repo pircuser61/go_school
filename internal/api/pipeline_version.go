@@ -788,6 +788,8 @@ func (ae *Env) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO) (
 
 	_, workFinished, err := pipeline.ProcessBlockWithEndMapping(ctx, pipeline.BlockGoFirstStart, blockData, runCtx, false)
 	if err != nil {
+		runCtx.NotifyEvents(ctx) // events for successfully processed nodes
+
 		return PipelineRunError, err
 	}
 

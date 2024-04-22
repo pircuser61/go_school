@@ -177,6 +177,8 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 			WithError(blockErr).
 			Error("process block with end mapping")
 
+		runCtx.NotifyEvents(ctx) // events for successfully processed nodes
+
 		if st.Name == errBlock {
 			<-time.After(ae.FuncMsgResendDelay)
 
