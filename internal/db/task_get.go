@@ -2646,7 +2646,7 @@ func (db *PGCon) IsBlockResumable(ctx c.Context, workID, stepID uuid.UUID) (isRe
 		return false, time.Time{}, err
 	}
 
-	isFinished := status == "finished" || status == "skipped" || status == "cancel"
+	isFinished := status == "finished" || status == "skipped" || status == "cancel" || status == "no_success"
 
 	return isFinished || isPaused, t, nil
 }
