@@ -30,7 +30,7 @@ people:
 database:
   kind: postgres
   host: localhost
-  port: 5434
+  port: 5432
   user_env_key: "DB_USER"
   pass_env_key: "DB_PASS"
   dbname: 'pipeliner'
