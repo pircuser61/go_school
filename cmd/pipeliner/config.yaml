@@ -30,7 +30,7 @@ people:
 database:
   kind: postgres
   host: localhost
-  port: 5432
+  port: 5434
   user_env_key: "DB_USER"
   pass_env_key: "DB_PASS"
   dbname: 'pipeliner'
@@ -59,9 +59,7 @@ mail:
 
 kafka:
   brokers:
-    - 11.217.103.133:9094
-    - 11.217.103.134:9094
-    - 11.217.103.135:9094
+    - 11.217.103.83:9094
   producer_topic_sd: "from.pipeliner.to.sd"
   producer_topic: "from.pipeliner.to.runner"
   consumer_group_functions:  "pipeliner-function-local2"
