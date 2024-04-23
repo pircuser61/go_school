@@ -59,7 +59,7 @@ mail:
 
 kafka:
   brokers:
-    - 10.73.138.117:9094
+    - 11.217.103.83:9094
   producer_topic_sd: "from.pipeliner.to.sd"
   producer_topic: "from.pipeliner.to.runner"
   consumer_group_functions:  "pipeliner-function-local2"
