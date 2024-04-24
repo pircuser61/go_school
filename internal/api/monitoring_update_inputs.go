@@ -3,7 +3,6 @@ package api
 import (
 	"encoding/json"
 	"fmt"
-	conditions_kit "gitlab.services.mts.ru/jocasta/conditions-kit"
 	"io"
 	"net/http"
 	"regexp"
@@ -11,6 +10,8 @@ import (
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"go.opencensus.io/trace"
+
+	conditions_kit "gitlab.services.mts.ru/jocasta/conditions-kit"
 
 	e "gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
