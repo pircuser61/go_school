@@ -163,7 +163,7 @@ func validateInputs(stepName string, inputs map[string]interface{}) (err error) 
 		pipeline.BlockGoIfID:                &defaultInputsValidator{},
 	}
 
-	stepType := regexp.MustCompile(`_[0-9]+`).ReplaceAllString(stepName, "")
+	stepType := regexp.MustCompile(`_\d+`).ReplaceAllString(stepName, "")
 	if _, ok := blocksInputs[stepType]; !ok {
 		return fmt.Errorf("unknown block type %s", stepType)
 	}
