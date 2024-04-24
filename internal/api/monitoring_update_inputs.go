@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 	"io"
 	"net/http"
 
@@ -17,6 +18,7 @@ import (
 //nolint:revive,gocritic,stylecheck
 func (ae *Env) MonitoringUpdateBlockInputs(w http.ResponseWriter, r *http.Request) {
 	const fn = "MonitoringUpdateBlockInputs"
+
 	ctx, span := trace.StartSpan(r.Context(), "monitoring_update_block_inputs")
 	defer span.End()
 
@@ -118,8 +120,30 @@ func (ae *Env) MonitoringUpdateBlockInputs(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	err = sendResponse(w, http.StatusOK, nil)
-	if err != nil {
-		errorHandler.handleError(UnknownError, err)
+	var getErr Err = -1
+	getErr = ae.returnInput(w, req.Inputs)
+
+	if getErr != -1 {
+		errorHandler.sendError(getErr)
 	}
+}
+
+func (ae *Env) returnInput(w http.ResponseWriter, in map[string]interface{}) (getErr Err) {
+	inputs := make(map[string]MonitoringEditBlockData, 0)
+
+	for k, v := range in {
+		inputs[k] = MonitoringEditBlockData{
+			Name:  k,
+			Value: v,
+			Type:  utils.GetJSONType(v),
+		}
+	}
+
+	if err := sendResponse(w, http.StatusOK, BlockEditResponse{
+		Blocks: &BlockEditResponse_Blocks{AdditionalProperties: inputs},
+	}); err != nil {
+		return UnknownError
+	}
+
+	return -1
 }

@@ -23,6 +23,7 @@ import (
 //nolint:revive,gocritic,stylecheck
 func (ae *Env) MonitoringUpdateTaskBlockData(w http.ResponseWriter, r *http.Request, blockId string) {
 	const fn = "MonitoringUpdateTaskBlockData"
+
 	ctx, span := trace.StartSpan(r.Context(), "monitoring_update_task_block_data")
 	defer span.End()
 
@@ -252,31 +253,6 @@ func (ae *Env) returnContext(ctx c.Context, blockID string, w http.ResponseWrite
 		Blocks: &BlockEditResponse_Blocks{blocks},
 	})
 	if err != nil {
-		return UnknownError
-	}
-
-	return -1
-}
-
-func (ae *Env) returnInput(ctx c.Context, w http.ResponseWriter, step *entity.Step) (getErr Err) {
-	blockInputs, err := ae.DB.GetBlockInputs(ctx, step.Name, step.WorkNumber)
-	if err != nil {
-		return GetBlockContextError
-	}
-
-	inputs := make(map[string]MonitoringEditBlockData, 0)
-
-	for _, bo := range blockInputs {
-		inputs[bo.Name] = MonitoringEditBlockData{
-			Name:  bo.Name,
-			Value: bo.Value,
-			Type:  utils.GetJSONType(bo.Value),
-		}
-	}
-
-	if err := sendResponse(w, http.StatusOK, BlockEditResponse{
-		Blocks: &BlockEditResponse_Blocks{AdditionalProperties: inputs},
-	}); err != nil {
 		return UnknownError
 	}
 

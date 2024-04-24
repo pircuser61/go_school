@@ -690,6 +690,7 @@ func getRunsByEvents(events []entity.TaskEvent) []MonitoringTaskRun {
 
 func (ae *Env) pauseTask(ctx context.Context, author string, workID uuid.UUID, params *MonitoringTaskActionParams) error {
 	const fn = "pauseTask"
+
 	txStorage, err := ae.DB.StartTransaction(ctx)
 	if err != nil {
 		return fmt.Errorf("failed start transaction, %w", err)
@@ -757,6 +758,7 @@ func (ae *Env) pauseTask(ctx context.Context, author string, workID uuid.UUID, p
 
 func (ae *Env) startTask(ctx context.Context, dto *startNodesParams) error {
 	const fn = "startTask"
+
 	txStorage, err := ae.DB.StartTransaction(ctx)
 	if err != nil {
 		return fmt.Errorf("failed start transaction, %w", err)
