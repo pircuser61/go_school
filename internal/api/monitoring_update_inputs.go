@@ -2,7 +2,6 @@ package api
 
 import (
 	"encoding/json"
-	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 	"io"
 	"net/http"
 
@@ -13,6 +12,7 @@ import (
 
 	e "gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
+	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
 //nolint:revive,gocritic,stylecheck
@@ -120,8 +120,7 @@ func (ae *Env) MonitoringUpdateBlockInputs(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	var getErr Err = -1
-	getErr = ae.returnInput(w, req.Inputs)
+	getErr := ae.returnInput(w, req.Inputs)
 
 	if getErr != -1 {
 		errorHandler.sendError(getErr)

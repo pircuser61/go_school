@@ -683,7 +683,6 @@ func (ae *Env) ifEditBlock(ctx c.Context, stepID uuid.UUID, stepName string, dat
 func (ae *Env) notificationEditBlock(ctx c.Context, stepID uuid.UUID, stepName string, data map[string]interface{},
 	updateType MonitoringTaskUpdateBlockRequestChangeType,
 ) (res []EditBlock, err error) {
-	
 	switch updateType {
 	case MonitoringTaskUpdateBlockRequestChangeTypeContext:
 		return ae.editBlockContext(ctx, stepID, data)
