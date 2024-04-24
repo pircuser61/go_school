@@ -4,6 +4,10 @@ import (
 	"encoding/json"
 )
 
+type BlockInputsValidator interface {
+	Validate() error
+}
+
 type AuthorizationHeader struct{}
 
 type BlockUpdateData struct {

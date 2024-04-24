@@ -6246,6 +6246,11 @@ func (_m *MockedDatabase) RemoveExternalSystem(ctx context.Context, versionID st
 	return r0
 }
 
+// RemoveExternalSystem provides a mock function with given fields: ctx, versionID, systemID
+func (_m *MockedDatabase) CreateTaskStepsInputs(ctx context.Context, in *entity.CreateUpdatesInputsHistory) error {
+	return nil
+}
+
 // MockedDatabase_RemoveExternalSystem_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'RemoveExternalSystem'
 type MockedDatabase_RemoveExternalSystem_Call struct {
 	*mock.Call
