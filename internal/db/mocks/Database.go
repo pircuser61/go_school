@@ -6247,7 +6247,7 @@ func (_m *MockedDatabase) RemoveExternalSystem(ctx context.Context, versionID st
 }
 
 // RemoveExternalSystem provides a mock function with given fields: ctx, versionID, systemID
-func (_m *MockedDatabase) CreateUpdatesInputsHistory(ctx context.Context, in *entity.CreateUpdatesInputsHistory) error {
+func (_m *MockedDatabase) CreateTaskStepsInputs(ctx context.Context, in *entity.CreateUpdatesInputsHistory) error {
 	return nil
 }
 

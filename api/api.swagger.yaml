@@ -5687,6 +5687,8 @@ components:
         inputs:
           type: object
           description: "Мапа инпутов"
+          additionalProperties:
+            $ref: '#/components/schemas/MonitoringEditBlockData'
       required:
         - work_id
         - step_name

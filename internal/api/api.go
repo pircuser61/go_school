@@ -1688,13 +1688,18 @@ type MonitoringTasksPage struct {
 // MonitoringUpdateBlockInputsRequest defines model for MonitoringUpdateBlockInputsRequest.
 type MonitoringUpdateBlockInputsRequest struct {
 	// Мапа инпутов
-	Inputs map[string]interface{} `json:"inputs"`
+	Inputs MonitoringUpdateBlockInputsRequest_Inputs `json:"inputs"`
 
 	// Имя блока
 	StepName string `json:"step_name"`
 
 	// uuid таски
 	WorkId string `json:"work_id"`
+}
+
+// Мапа инпутов
+type MonitoringUpdateBlockInputsRequest_Inputs struct {
+	AdditionalProperties map[string]MonitoringEditBlockData `json:"-"`
 }
 
 // NameExists defines model for NameExists.
@@ -3355,6 +3360,59 @@ func (a *MonitoringTaskUpdateBlockRequest_ChangeData) UnmarshalJSON(b []byte) er
 
 // Override default JSON handling for MonitoringTaskUpdateBlockRequest_ChangeData to handle AdditionalProperties
 func (a MonitoringTaskUpdateBlockRequest_ChangeData) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, errors.Wrap(err, fmt.Sprintf("error marshaling '%s'", fieldName))
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for MonitoringUpdateBlockInputsRequest_Inputs. Returns the specified
+// element and whether it was found
+func (a MonitoringUpdateBlockInputsRequest_Inputs) Get(fieldName string) (value MonitoringEditBlockData, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for MonitoringUpdateBlockInputsRequest_Inputs
+func (a *MonitoringUpdateBlockInputsRequest_Inputs) Set(fieldName string, value MonitoringEditBlockData) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]MonitoringEditBlockData)
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for MonitoringUpdateBlockInputsRequest_Inputs to handle AdditionalProperties
+func (a *MonitoringUpdateBlockInputsRequest_Inputs) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]MonitoringEditBlockData)
+		for fieldName, fieldBuf := range object {
+			var fieldVal MonitoringEditBlockData
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return errors.Wrap(err, fmt.Sprintf("error unmarshaling field %s", fieldName))
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for MonitoringUpdateBlockInputsRequest_Inputs to handle AdditionalProperties
+func (a MonitoringUpdateBlockInputsRequest_Inputs) MarshalJSON() ([]byte, error) {
 	var err error
 	object := make(map[string]json.RawMessage)
 

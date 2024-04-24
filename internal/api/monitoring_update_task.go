@@ -63,7 +63,7 @@ func (ae *Env) MonitoringUpdateTaskBlockData(w http.ResponseWriter, r *http.Requ
 
 	data := convertReqEditData(req.ChangeData.AdditionalProperties)
 
-	blockUUID, parseIDErr := uuid.Parse(blockId)
+	blockID, parseIDErr := uuid.Parse(blockId)
 	if parseIDErr != nil {
 		errorHandler.handleError(UUIDParsingError, parseIDErr)
 		ae.rollbackTransaction(ctx, txStorage, fn)
@@ -71,7 +71,7 @@ func (ae *Env) MonitoringUpdateTaskBlockData(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	dbStep, getStepErr := ae.DB.GetTaskStepByID(ctx, blockUUID)
+	dbStep, getStepErr := ae.DB.GetTaskStepByID(ctx, blockID)
 	if getStepErr != nil {
 		errorHandler.handleError(GetTaskStepError, getStepErr)
 		ae.rollbackTransaction(ctx, txStorage, fn)
@@ -84,9 +84,15 @@ func (ae *Env) MonitoringUpdateTaskBlockData(w http.ResponseWriter, r *http.Requ
 		WithField("workNumber", dbStep.WorkNumber)
 	ctx = logger.WithLogger(ctx, log)
 
-	editBlockData, editErr := ae.editGoBlock(ctx, blockUUID, dbStep.Type, dbStep.Name, data, req.ChangeType)
-	if editErr != nil {
-		errorHandler.handleError(EditMonitoringBlockError, editErr)
+	editBlockData, err := ae.editGoBlock(ctx, &editGoBlockDTO{
+		stepID:     blockID,
+		stepType:   dbStep.Type,
+		stepName:   dbStep.Name,
+		data:       data,
+		updateType: req.ChangeType,
+	})
+	if err != nil {
+		errorHandler.handleError(EditMonitoringBlockError, err)
 		ae.rollbackTransaction(ctx, txStorage, fn)
 
 		return
@@ -107,7 +113,7 @@ func (ae *Env) MonitoringUpdateTaskBlockData(w http.ResponseWriter, r *http.Requ
 	}{
 		Data:       data,
 		ChangeType: string(req.ChangeType),
-		Steps:      []uuid.UUID{blockUUID},
+		Steps:      []uuid.UUID{blockID},
 	}
 
 	// nolint:ineffassign,staticcheck
@@ -290,38 +296,44 @@ type EditBlock struct {
 	State, Output map[string]interface{}
 }
 
-func (ae *Env) editGoBlock(ctx c.Context, stepID uuid.UUID, stepType, stepName string, data map[string]interface{},
-	updateType MonitoringTaskUpdateBlockRequestChangeType,
-) (res []EditBlock, err error) {
-	switch stepType {
+type editGoBlockDTO struct {
+	stepID     uuid.UUID
+	stepType   string
+	stepName   string
+	data       map[string]interface{}
+	updateType MonitoringTaskUpdateBlockRequestChangeType
+}
+
+func (ae *Env) editGoBlock(ctx c.Context, in *editGoBlockDTO) (res []EditBlock, err error) {
+	switch in.stepType {
 	case pipeline.BlockGoApproverID:
-		res, err = ae.approverEditBlock(ctx, stepID, stepName, data, updateType)
+		res, err = ae.approverEditBlock(ctx, in.stepID, in.stepName, in.data, in.updateType)
 	case pipeline.BlockGoExecutionID:
-		res, err = ae.executorEditBlock(ctx, stepID, stepName, data, updateType)
+		res, err = ae.executorEditBlock(ctx, in.stepID, in.stepName, in.data, in.updateType)
 	case pipeline.BlockGoStartID:
-		res, err = ae.startEditBlock(ctx, stepID, stepName, data, updateType)
+		res, err = ae.startEditBlock(ctx, in.stepID, in.stepName, in.data, in.updateType)
 	case pipeline.BlockGoEndID:
-		res, err = ae.endEditBlock(ctx, stepID, stepName, data, updateType)
+		res, err = ae.endEditBlock(ctx, in.stepID, in.stepName, in.data, in.updateType)
 	case pipeline.BlockGoBeginParallelTaskID:
-		res, err = ae.startParallelEditBlock(ctx, stepID, stepName, data, updateType)
+		res, err = ae.startParallelEditBlock(ctx, in.stepID, in.stepName, in.data, in.updateType)
 	case pipeline.BlockWaitForAllInputsID:
-		res, err = ae.endParallelEditBlock(ctx, stepID, stepName, data, updateType)
+		res, err = ae.endParallelEditBlock(ctx, in.stepID, in.stepName, in.data, in.updateType)
 	case pipeline.BlockExecutableFunctionID:
-		res, err = ae.functionEditBlock(ctx, stepID, stepName, data, updateType)
+		res, err = ae.functionEditBlock(ctx, in.stepID, in.stepName, in.data, in.updateType)
 	case pipeline.BlockGoFormID:
-		res, err = ae.formEditBlock(ctx, stepID, stepName, data, updateType)
+		res, err = ae.formEditBlock(ctx, in.stepID, in.stepName, in.data, in.updateType)
 	case pipeline.BlockGoIfID:
-		res, err = ae.ifEditBlock(ctx, stepID, stepName, data, updateType)
+		res, err = ae.ifEditBlock(ctx, in.stepID, in.stepName, in.data, in.updateType)
 	case pipeline.BlockGoNotificationID:
-		res, err = ae.notificationEditBlock(ctx, stepID, stepName, data, updateType)
+		res, err = ae.notificationEditBlock(ctx, in.stepID, in.stepName, in.data, in.updateType)
 	case pipeline.BlockGoSdApplicationID:
-		res, err = ae.sdEditBlock(ctx, stepID, stepName, data, updateType)
+		res, err = ae.sdEditBlock(ctx, in.stepID, in.stepName, in.data, in.updateType)
 	case pipeline.BlockGoSignID:
-		res, err = ae.signEditBlock(ctx, stepID, stepName, data, updateType)
+		res, err = ae.signEditBlock(ctx, in.stepID, in.stepName, in.data, in.updateType)
 	case pipeline.BlockTimerID:
-		res, err = ae.timerEditBlock(ctx, stepID, stepName, data, updateType)
+		res, err = ae.timerEditBlock(ctx, in.stepID, in.stepName, in.data, in.updateType)
 	default:
-		err = fmt.Errorf("unknown block type")
+		err = fmt.Errorf("unknown block type %s", in.stepType)
 	}
 
 	return res, err
@@ -856,15 +868,15 @@ func (ae *Env) editBlockContext(ctx c.Context, stepID uuid.UUID, data map[string
 	contextParams := map[string]map[string]interface{}{}
 
 	for key, val := range data {
-		splitedCtxParam := strings.Split(key, ".")
-		if len(splitedCtxParam) < 2 {
+		splitCtxParam := strings.Split(key, ".")
+		if len(splitCtxParam) < 2 {
 			continue
 		}
 
-		if _, ok := contextParams[splitedCtxParam[0]]; ok {
-			contextParams[splitedCtxParam[0]][splitedCtxParam[1]] = val
+		if _, ok := contextParams[splitCtxParam[0]]; ok {
+			contextParams[splitCtxParam[0]][splitCtxParam[1]] = val
 		} else {
-			contextParams[splitedCtxParam[0]] = map[string]interface{}{splitedCtxParam[1]: val}
+			contextParams[splitCtxParam[0]] = map[string]interface{}{splitCtxParam[1]: val}
 		}
 	}
 
@@ -874,13 +886,18 @@ func (ae *Env) editBlockContext(ctx c.Context, stepID uuid.UUID, data map[string
 	}
 
 	for paramKey, paramVal := range contextParams {
-		innerStep, inerStepErr := ae.DB.GetTaskStepByNameForCtxEditing(ctx, taskStep.WorkID, paramKey, taskStep.Time)
-		if inerStepErr != nil {
-			return nil, inerStepErr
+		dbStep, dbErr := ae.DB.GetTaskStepByNameForCtxEditing(ctx, taskStep.WorkID, paramKey, taskStep.Time)
+		if dbErr != nil {
+			return nil, dbErr
 		}
 
-		blockRes, contextErr := ae.editGoBlock(ctx,
-			innerStep.ID, innerStep.Type, paramKey, paramVal, MonitoringTaskUpdateBlockRequestChangeTypeOutput)
+		blockRes, contextErr := ae.editGoBlock(ctx, &editGoBlockDTO{
+			stepID:     dbStep.ID,
+			stepType:   dbStep.Type,
+			stepName:   paramKey,
+			data:       paramVal,
+			updateType: MonitoringTaskUpdateBlockRequestChangeTypeOutput,
+		})
 		if contextErr != nil {
 			return nil, contextErr
 		}

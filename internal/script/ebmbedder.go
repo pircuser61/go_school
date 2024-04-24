@@ -54,6 +54,10 @@ type FunctionParams struct {
 	Params interface{} `json:"params,omitempty"`
 }
 
+func (a *FunctionParams) Validate() error {
+	return nil
+}
+
 type FunctionValueModel struct {
 	Name    string `json:"name"`
 	Type    string `json:"type"`

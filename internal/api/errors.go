@@ -140,7 +140,7 @@ const (
 	SaveUpdatedBlockData
 	WrongMonitoringActionError
 	GetWorkNumberError
-	CreateUpdatesInputsHistoryError
+	CreateTaskStepInputsError
 )
 
 /*
@@ -259,17 +259,17 @@ var errorText = map[Err]string{
 	CheckIsTaskPausedError:              "can`t check task is paused",
 	MonitoringTaskActionParseError:      "can`t parse monitoring task action request",
 	UnpauseTaskError:                    "error when unpausing task",
-	MonitoringEditBlockParseError:       "can't parse params for block data editing",
-	GetTaskStepError:                    "can't get step data from DB",
-	EditMonitoringBlockError:            "can't edit block data",
-	GetTaskEventsError:                  "can`t get task events",
-	MarshalEventParamsError:             "can't marshal event params",
-	CreateTaskEventError:                "can't create task event",
-	SaveNodePrevContentError:            "can't save node prev content",
-	SaveUpdatedBlockData:                "can't save updated block data",
-	WrongMonitoringActionError:          "wrong action for this handler",
-	GetWorkNumberError:                  "can`t get work number from sequence",
-	CreateUpdatesInputsHistoryError:     "can`t create update inputs history",
+	MonitoringEditBlockParseError: "can't parse params for block data editing",
+	GetTaskStepError:              "can't get step data from DB",
+	EditMonitoringBlockError:      "can't edit block data",
+	GetTaskEventsError:            "can`t get task events",
+	MarshalEventParamsError:       "can't marshal event params",
+	CreateTaskEventError:          "can't create task event",
+	SaveNodePrevContentError:      "can't save node prev content",
+	SaveUpdatedBlockData:          "can't save updated block data",
+	WrongMonitoringActionError:    "wrong action for this handler",
+	GetWorkNumberError:            "can`t get work number from sequence",
+	CreateTaskStepInputsError:     "can`t create update inputs history",
 }
 
 /*
@@ -388,17 +388,17 @@ var errorDescription = map[Err]string{
 	CheckIsTaskPausedError:          "Не удалось проверить флаг паузы у таски",
 	MonitoringTaskActionParseError:  "Не удалось распарсить запрос на действие с таской",
 	UnpauseTaskError:                "Ошибка при возобновлении заявки",
-	MonitoringEditBlockParseError:   "Не удалось распарсить параметры для редактирования блока",
-	GetTaskStepError:                "Не удалось получить информацию о блоке из базы данных",
-	EditMonitoringBlockError:        "Не удалось редактировать данные в блоке",
-	GetTaskEventsError:              "Не удалось получить события по заявке",
-	MarshalEventParamsError:         "Не удалось замаршалить параметры ивента",
-	CreateTaskEventError:            "Не удалось создать ивент",
-	SaveNodePrevContentError:        "Не удалось сохранить предыдущий контент ноды",
-	SaveUpdatedBlockData:            "Не удалось сохранить обновленные данные блока",
-	WrongMonitoringActionError:      "Неправильное действие для этой ручки",
-	GetWorkNumberError:              "Не удалось получить номер заявки из сервиса очереди",
-	CreateUpdatesInputsHistoryError: "Не удалось создать запись о изменении инпутов блока",
+	MonitoringEditBlockParseError: "Не удалось распарсить параметры для редактирования блока",
+	GetTaskStepError:              "Не удалось получить информацию о блоке из базы данных",
+	EditMonitoringBlockError:      "Не удалось редактировать данные в блоке",
+	GetTaskEventsError:            "Не удалось получить события по заявке",
+	MarshalEventParamsError:       "Не удалось замаршалить параметры ивента",
+	CreateTaskEventError:          "Не удалось создать ивент",
+	SaveNodePrevContentError:      "Не удалось сохранить предыдущий контент ноды",
+	SaveUpdatedBlockData:          "Не удалось сохранить обновленные данные блока",
+	WrongMonitoringActionError:    "Неправильное действие для этой ручки",
+	GetWorkNumberError:            "Не удалось получить номер заявки из сервиса очереди",
+	CreateTaskStepInputsError:     "Не удалось создать запись о изменении инпутов блока",
 }
 
 /*

@@ -2,15 +2,18 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
+	"regexp"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
-	"github.com/google/uuid"
 	"go.opencensus.io/trace"
 
 	e "gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
@@ -50,7 +53,15 @@ func (ae *Env) MonitoringUpdateBlockInputs(w http.ResponseWriter, r *http.Reques
 	err = json.Unmarshal(b, req)
 	if err != nil {
 		errorHandler.handleError(MonitoringEditBlockParseError, err)
-		ae.rollbackTransaction(ctx, txStorage, fn)
+
+		return
+	}
+
+	data := convertReqEditData(req.Inputs.AdditionalProperties)
+
+	err = validateInputs(req.StepName, data)
+	if err != nil {
+		errorHandler.handleError(MonitoringEditBlockParseError, err)
 
 		return
 	}
@@ -62,17 +73,16 @@ func (ae *Env) MonitoringUpdateBlockInputs(w http.ResponseWriter, r *http.Reques
 	ui, err := user.GetUserInfoFromCtx(ctx)
 	if err != nil {
 		errorHandler.handleError(NoUserInContextError, err)
-		ae.rollbackTransaction(ctx, txStorage, fn)
 
 		return
 	}
 
 	eventData := struct {
-		Data  map[string]interface{} `json:"data"`
-		Steps []uuid.UUID            `json:"steps"`
+		Data      map[string]interface{} `json:"data"`
+		StepNames []string               `json:"step_names"`
 	}{
-		Data:  req.Inputs,
-		Steps: []uuid.UUID{},
+		Data:      data,
+		StepNames: []string{req.StepName},
 	}
 
 	// nolint:ineffassign,staticcheck
@@ -81,7 +91,6 @@ func (ae *Env) MonitoringUpdateBlockInputs(w http.ResponseWriter, r *http.Reques
 	jsonParams, err = json.Marshal(eventData)
 	if err != nil {
 		errorHandler.handleError(MarshalEventParamsError, err)
-		ae.rollbackTransaction(ctx, txStorage, fn)
 
 		return
 	}
@@ -99,15 +108,15 @@ func (ae *Env) MonitoringUpdateBlockInputs(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	err = txStorage.CreateUpdatesInputsHistory(ctx, &e.CreateUpdatesInputsHistory{
+	err = txStorage.CreateTaskStepsInputs(ctx, &e.CreateUpdatesInputsHistory{
 		WorkID:   req.WorkId,
 		EventID:  eventID,
 		StepName: req.StepName,
 		Author:   ui.Username,
-		Inputs:   req.Inputs,
+		Inputs:   data,
 	})
 	if err != nil {
-		errorHandler.handleError(CreateUpdatesInputsHistoryError, err)
+		errorHandler.handleError(CreateTaskStepInputsError, err)
 		ae.rollbackTransaction(ctx, txStorage, fn)
 
 		return
@@ -120,11 +129,58 @@ func (ae *Env) MonitoringUpdateBlockInputs(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	getErr := ae.returnInput(w, req.Inputs)
+	getErr := ae.returnInput(w, data)
 
 	if getErr != -1 {
 		errorHandler.sendError(getErr)
 	}
+}
+
+type defaultInputsValidator struct{}
+
+func (defaultInputsValidator) Validate() error {
+	return nil
+}
+
+func validateInputs(stepName string, inputs map[string]interface{}) (err error) {
+	marshData, marshErr := json.Marshal(inputs)
+	if marshErr != nil {
+		return marshErr
+	}
+
+	blocksInputs := map[string]script.BlockInputsValidator{
+		pipeline.BlockGoApproverID:          &script.ApproverParams{},
+		pipeline.BlockGoExecutionID:         &script.ExecutionParams{},
+		pipeline.BlockExecutableFunctionID:  &script.FunctionParams{},
+		pipeline.BlockGoFormID:              &script.FormParams{},
+		pipeline.BlockGoNotificationID:      &script.NotificationParams{},
+		pipeline.BlockGoSdApplicationID:     &script.SdApplicationParams{},
+		pipeline.BlockGoSignID:              &script.SignParams{},
+		pipeline.BlockGoStartID:             &defaultInputsValidator{},
+		pipeline.BlockGoEndID:               &defaultInputsValidator{},
+		pipeline.BlockGoBeginParallelTaskID: &defaultInputsValidator{},
+		pipeline.BlockWaitForAllInputsID:    &defaultInputsValidator{},
+		pipeline.BlockGoIfID:                &defaultInputsValidator{},
+	}
+
+	stepType := regexp.MustCompile(`_[0-9]+`).ReplaceAllString(stepName, "")
+	if _, ok := blocksInputs[stepType]; !ok {
+		return fmt.Errorf("unknown block type %s", stepType)
+	}
+
+	stepParams := blocksInputs[stepType]
+
+	err = json.Unmarshal(marshData, &stepParams)
+	if err != nil {
+		return err
+	}
+
+	err = stepParams.Validate()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (ae *Env) returnInput(w http.ResponseWriter, in map[string]interface{}) (getErr Err) {

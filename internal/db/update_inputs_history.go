@@ -8,14 +8,14 @@ import (
 	"go.opencensus.io/trace"
 )
 
-func (db *PGCon) CreateUpdatesInputsHistory(ctx c.Context, in *e.CreateUpdatesInputsHistory) (err error) {
-	ctx, span := trace.StartSpan(ctx, "create_updates_inputs_history")
+func (db *PGCon) CreateTaskStepsInputs(ctx c.Context, in *e.CreateUpdatesInputsHistory) (err error) {
+	ctx, span := trace.StartSpan(ctx, "create_task_step_inputs")
 	defer span.End()
 
 	// nolint:gocritic
 	// language=PostgreSQL
 	const q = `
-		INSERT INTO update_inputs_history (
+		INSERT INTO task_steps_inputs (
 			work_id, 
 			event_id, 
 			step_name, 
