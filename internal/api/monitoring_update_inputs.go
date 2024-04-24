@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	conditions_kit "gitlab.services.mts.ru/jocasta/conditions-kit"
 	"io"
 	"net/http"
 	"regexp"
@@ -39,15 +40,6 @@ func (ae *Env) MonitoringUpdateBlockInputs(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	txStorage, transactionErr := ae.DB.StartTransaction(ctx)
-	if transactionErr != nil {
-		log.WithError(transactionErr).Error("couldn't start transaction")
-
-		errorHandler.sendError(UnknownError)
-
-		return
-	}
-
 	req := &MonitoringUpdateBlockInputsRequest{}
 
 	err = json.Unmarshal(b, req)
@@ -78,11 +70,13 @@ func (ae *Env) MonitoringUpdateBlockInputs(w http.ResponseWriter, r *http.Reques
 	}
 
 	eventData := struct {
-		Data      map[string]interface{} `json:"data"`
-		StepNames []string               `json:"step_names"`
+		Data       map[string]interface{} `json:"data"`
+		ChangeType string                 `json:"change_type"`
+		StepNames  []string               `json:"step_names"`
 	}{
-		Data:      data,
-		StepNames: []string{req.StepName},
+		Data:       data,
+		ChangeType: "inputs",
+		StepNames:  []string{req.StepName},
 	}
 
 	// nolint:ineffassign,staticcheck
@@ -91,6 +85,15 @@ func (ae *Env) MonitoringUpdateBlockInputs(w http.ResponseWriter, r *http.Reques
 	jsonParams, err = json.Marshal(eventData)
 	if err != nil {
 		errorHandler.handleError(MarshalEventParamsError, err)
+
+		return
+	}
+
+	txStorage, transactionErr := ae.DB.StartTransaction(ctx)
+	if transactionErr != nil {
+		log.WithError(transactionErr).Error("couldn't start transaction")
+
+		errorHandler.sendError(UnknownError)
 
 		return
 	}
@@ -160,7 +163,7 @@ func validateInputs(stepName string, inputs map[string]interface{}) (err error) 
 		pipeline.BlockGoEndID:               &defaultInputsValidator{},
 		pipeline.BlockGoBeginParallelTaskID: &defaultInputsValidator{},
 		pipeline.BlockWaitForAllInputsID:    &defaultInputsValidator{},
-		pipeline.BlockGoIfID:                &defaultInputsValidator{},
+		pipeline.BlockGoIfID:                &conditions_kit.ConditionParams{},
 	}
 
 	stepType := regexp.MustCompile(`_\d+`).ReplaceAllString(stepName, "")
