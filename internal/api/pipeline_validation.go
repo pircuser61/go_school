@@ -385,7 +385,8 @@ func validateFormBlock(bt entity.BlocksType, block *entity.EriusFunc, blockName 
 	}
 
 	if len(blockForm.Constants) != 0 {
-		if !validateConstants(blockForm.Constants, blockForm.Mapping, log) {
+		appBody, ok := block.Output.Properties[keyApplicationBody]
+		if ok && !validateConstants(blockForm.Constants, appBody.Properties, log) {
 			isValid = false
 		}
 	}
