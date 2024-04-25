@@ -3733,19 +3733,31 @@ components:
     UniquePersons:
       type: object
       properties:
-        logins:
+        users:
           type: array
           items:
-            type: string
+            $ref: '#/components/schemas/UniqueUser'
         groups:
           type: array
           items:
             type: string
-
       required:
         - tasks
         - total
         - tasks_meta
+    UniqueUser:
+      type: object
+      properties:
+        username:
+          type: string
+        tab_num:
+          type: string
+        full_name:
+          type: string
+      required:
+        - username
+        - tab_num
+        - full_name
     EriusTasksPage:
       type: object
       properties:
