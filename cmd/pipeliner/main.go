@@ -72,7 +72,9 @@ func main() {
 		return
 	}
 
-	httpClient := httpclient.HTTPClient(cfg.HTTPClientConfig)
+	httpClient := httpclient.HTTPClientWithRetries(
+		httpclient.HTTPClient(cfg.HTTPClientConfig), log, cfg.HTTPClientConfig.MaxRetries, cfg.HTTPClientConfig.RetryDelay,
+	)
 
 	ssoService, err := sso.NewService(cfg.SSO, httpClient)
 	if err != nil {
@@ -231,7 +233,7 @@ func main() {
 		APIEnv:               APIEnv,
 		SSOService:           ssoService,
 		PeopleService:        peopleService,
-		TimeoutMiddleware:    cfg.Timeout.Duration,
+		TimeoutMiddleware:    cfg.Timeout,
 		ServerAddr:           cfg.ServeAddr,
 		ReadinessPath:        cfg.Probes.Readiness,
 		LivenessPath:         cfg.Probes.Liveness,

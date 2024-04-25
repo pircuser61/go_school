@@ -3,7 +3,10 @@ package people
 import "time"
 
 type Config struct {
-	URL   string      `yaml:"url"`
+	URL        string        `yaml:"url"`
+	MaxRetries uint          `yaml:"max_retries"`
+	RetryDelay time.Duration `yaml:"retry_delay"`
+
 	Cache CacheConfig `yaml:"cache"`
 }
 

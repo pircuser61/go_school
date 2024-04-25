@@ -18,7 +18,6 @@ import (
 
 const (
 	RussianFederation = "Российская Федерация"
-	maxRetries        = 15
 	defaultLogin      = "gvshestako"
 )
 
@@ -34,22 +33,7 @@ func (s *Service) GetCalendars(ctx context.Context, params *GetCalendarsParams) 
 	ctx, span := trace.StartSpan(ctx, "hrgate.get_calendars")
 	defer span.End()
 
-	var retryDelay time.Duration
-
 	response, err := s.Cli.GetCalendarsWithResponse(ctx, params)
-	if err != nil || response.StatusCode() != http.StatusOK {
-		for retryCount := 0; retryCount < maxRetries; retryCount++ {
-			retryDelay = time.Duration(fibonacci(retryCount)) * time.Second
-
-			<-time.After(retryDelay)
-
-			response, err = s.Cli.GetCalendarsWithResponse(ctx, params)
-			if err == nil && response.StatusCode() == http.StatusOK {
-				break
-			}
-		}
-	}
-
 	if err != nil {
 		return nil, err
 	}
@@ -239,13 +223,4 @@ func (s *Service) GetOrganizationByID(ctx context.Context, organizationID string
 
 func (s *Service) GetLocation() time.Location {
 	return s.Location
-}
-
-// fibonacci function for calculating Fibonacci numbers
-func fibonacci(n int) int {
-	if n <= 1 {
-		return n
-	}
-
-	return fibonacci(n-1) + fibonacci(n-2)
 }

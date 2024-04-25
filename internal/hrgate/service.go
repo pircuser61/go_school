@@ -4,11 +4,14 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/hashicorp/go-retryablehttp"
+
 	"go.opencensus.io/plugin/ochttp"
 
 	"gitlab.services.mts.ru/abp/myosotis/observability"
 
 	cachekit "gitlab.services.mts.ru/jocasta/cache-kit"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/httpclient"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 )
 
@@ -39,9 +42,12 @@ func NewService(cfg *Config, ssoS *sso.Service) (ServiceInterface, error) {
 		sso:   ssoS,
 		scope: cfg.Scope,
 	}
-	httpClient.Transport = &tr
 
-	newCli, createClientErr := NewClientWithResponses(cfg.HRGateURL, WithHTTPClient(httpClient), WithBaseURL(cfg.HRGateURL))
+	httpClient.Transport = &tr
+	retryableCli := httpclient.HTTPClientWithRetries(httpClient, nil, cfg.MaxRetries, cfg.RetryDelay)
+	wrappedRetryableCli := httpRequestDoer{retryableCli}
+
+	newCli, createClientErr := NewClientWithResponses(cfg.HRGateURL, WithHTTPClient(wrappedRetryableCli), WithBaseURL(cfg.HRGateURL))
 	if createClientErr != nil {
 		return nil, createClientErr
 	}
@@ -56,4 +62,17 @@ func NewService(cfg *Config, ssoS *sso.Service) (ServiceInterface, error) {
 		HRGateURL: cfg.HRGateURL,
 		Location:  *location,
 	}, nil
+}
+
+type httpRequestDoer struct {
+	*retryablehttp.Client
+}
+
+func (h httpRequestDoer) Do(req *http.Request) (*http.Response, error) {
+	wrappedRequest, err := retryablehttp.FromRequest(req)
+	if err != nil {
+		return nil, err
+	}
+
+	return h.Client.Do(wrappedRequest)
 }

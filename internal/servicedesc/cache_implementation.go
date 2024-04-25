@@ -4,7 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
+
+	"github.com/hashicorp/go-retryablehttp"
 
 	"go.opencensus.io/trace"
 
@@ -208,6 +209,6 @@ func (s *ServiceWithCache) GetSdURL() string {
 	return s.Servicedesc.GetSdURL()
 }
 
-func (s *ServiceWithCache) GetCli() *http.Client {
+func (s *ServiceWithCache) GetCli() *retryablehttp.Client {
 	return s.Servicedesc.GetCli()
 }

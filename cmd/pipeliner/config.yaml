@@ -20,6 +20,8 @@ services_ping:
 
 people:
   url: "https://dev.iga.mts.ru/api/archivist/v2"
+  max_retries: 3
+  retry_delay: 1s
   cache:
     type: "default"
     address: ""
@@ -91,6 +93,8 @@ http_client_config:
   tls_handshake_timeout: '10s'
   expect_continue_timeout: '1s'
   proxy_url: ''
+  max_retries: 3
+  retry_delay: 1s
 
 monitoring:
   addr: 'http://monitoring:9000/api/monitoring/v1/pipeliner'
@@ -116,6 +120,8 @@ log_index: 'jocasta-dev-jocasta-dev-ocean-0000-s1-k8s-cmn-inside-01'
 servicedesc:
   servicedesk_url: "https://dev.servicedesk.mts.ru"
   scope: "servicedesk-develop-aud"
+  max_retries: 3
+  retry_delay: 1s
   cache:
     type: "default"
     address: ""
@@ -174,6 +180,8 @@ forms:
 hrgate:
   hr_gate_url: "https://hr-gate.stage.autobp.mts.ru"
   scope: "hr-gate"
+  max_retries: 3
+  retry_delay: 1s
   cache:
     type: "default"
     address: ""

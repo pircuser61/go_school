@@ -8,6 +8,7 @@ import (
 	"gitlab.services.mts.ru/abp/myosotis/observability"
 
 	cachekit "gitlab.services.mts.ru/jocasta/cache-kit"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/httpclient"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 )
 
@@ -29,17 +30,19 @@ func NewServiceWithCache(cfg *Config, ssoS *sso.Service) (ServiceInterface, erro
 }
 
 func NewService(cfg *Config, ssoS *sso.Service) (ServiceInterface, error) {
-	newCli := &http.Client{}
+	httpClient := &http.Client{}
 
 	tr := TransportForPeople{
 		transport: ochttp.Transport{
-			Base:        newCli.Transport,
+			Base:        httpClient.Transport,
 			Propagation: observability.NewHTTPFormat(),
 		},
 		sso:   ssoS,
 		scope: cfg.Scope,
 	}
-	newCli.Transport = &tr
+
+	httpClient.Transport = &tr
+	newCli := httpclient.HTTPClientWithRetries(httpClient, nil, cfg.MaxRetries, cfg.RetryDelay)
 
 	return &Service{
 		Cli:   newCli,
