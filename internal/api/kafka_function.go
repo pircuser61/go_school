@@ -162,9 +162,9 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 
 	runCtx.SetTaskEvents(ctx)
 
-	blockFunc, err := ae.DB.GetBlockDataFromVersion(ctx, st.WorkNumber, st.Name)
+	blockFunc, err := ae.DB.GetStepDataFromVersion(ctx, st.WorkNumber, st.Name)
 	if err != nil {
-		log.WithField("funcName", "GetBlockDataFromVersion").
+		log.WithField("funcName", "GetStepDataFromVersion").
 			WithError(err).
 			Error("get block data from pipeline version")
 

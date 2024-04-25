@@ -288,7 +288,7 @@ func (ae *Env) GetMonitoringTasksBlockBlockIdParams(w http.ResponseWriter, req *
 		errorHandler.sendError(e)
 	}
 
-	blockInputs, err := ae.DB.GetBlockInputs(ctx, taskStep.Name, taskStep.WorkNumber)
+	blockInputs, err := ae.DB.GetStepInputs(ctx, taskStep.Name, taskStep.WorkNumber)
 	if err != nil {
 		e := GetBlockContextError
 
@@ -896,7 +896,7 @@ func (ae *Env) restartNode(
 		return "", fmt.Errorf("can't unpause running task block: %s", sid)
 	}
 
-	blockData, blockErr := txStorage.GetBlockDataFromVersion(ctx, workNumber, dbStep.Name)
+	blockData, blockErr := txStorage.GetStepDataFromVersion(ctx, workNumber, dbStep.Name)
 	if blockErr != nil {
 		return "", blockErr
 	}
@@ -1002,7 +1002,7 @@ func (ae *Env) getNodesToSkip(ctx context.Context, nextNodes map[string][]string
 			nodeList = append(nodeList, next)
 			viewedNodes[next] = struct{}{}
 
-			blockData, blockErr := ae.DB.GetBlockDataFromVersion(ctx, workNumber, next)
+			blockData, blockErr := ae.DB.GetStepDataFromVersion(ctx, workNumber, next)
 			if blockErr != nil {
 				return nil, blockErr
 			}

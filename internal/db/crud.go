@@ -1171,29 +1171,22 @@ func (db *PGCon) IsStepExist(ctx context.Context, workID, stepName string, hasUp
 	return id != uuid.Nil, id, t, nil
 }
 
-func (db *PGCon) InitTaskBlock(
-	ctx context.Context,
-	dto *SaveStepRequest,
-	isPaused, hasUpdData bool,
-) (id uuid.UUID, startTime time.Time, err error) {
-	ctx, span := trace.StartSpan(ctx, "pg_init_task_block")
+func (db *PGCon) CreateTaskBlock(ctx context.Context, dto *SaveStepRequest) error {
+	ctx, span := trace.StartSpan(ctx, "pg_create_task_block")
 	defer span.End()
 
-	exists, stepID, t, existErr := db.IsStepExist(ctx, dto.WorkID.String(), dto.StepName, hasUpdData)
-	if existErr != nil {
-		return uuid.Nil, time.Time{}, existErr
+	exists, _, _, err := db.IsStepExist(ctx, dto.WorkID.String(), dto.StepName, dto.HasUpdData)
+	if err != nil {
+		return err
 	}
 
 	if exists {
-		return stepID, t, nil
+		return nil
 	}
 
-	id = uuid.New()
-
-	timestamp := time.Now()
 	// nolint:gocritic
 	// language=PostgreSQL
-	query := `
+	const q = `
 		INSERT INTO variable_storage (
 			id, 
 			work_id, 
@@ -1226,26 +1219,23 @@ func (db *PGCon) InitTaskBlock(
 		)
 `
 	args := []interface{}{
-		id,
+		uuid.New(),
 		dto.WorkID,
 		dto.StepType,
 		dto.StepName,
 		dto.Content,
-		timestamp,
+		time.Now(),
 		dto.BreakPoints,
 		dto.HasError,
 		dto.Status,
 		dto.Attachments,
 		dto.CurrentExecutor,
-		isPaused,
+		dto.IsPaused,
 	}
 
-	_, err = db.Connection.Exec(ctx, query, args...)
-	if err != nil {
-		return uuid.Nil, time.Time{}, err
-	}
+	_, err = db.Connection.Exec(ctx, q, args...)
 
-	return id, timestamp, nil
+	return err
 }
 
 func (db *PGCon) CopyTaskBlock(ctx context.Context, stepID uuid.UUID) (newStepID uuid.UUID, err error) {
@@ -2591,28 +2581,6 @@ func (db *PGCon) GetTaskRunContext(ctx context.Context, workNumber string) (enti
 	}
 
 	return runCtx, nil
-}
-
-func (db *PGCon) GetBlockDataFromVersion(ctx context.Context, workNumber, stepName string) (*entity.EriusFunc, error) {
-	ctx, span := trace.StartSpan(ctx, "get_block_data_from_version")
-	defer span.End()
-
-	q := `
-		SELECT content->'pipeline'->'blocks'->$1 FROM versions
-    	JOIN works w ON versions.id = w.version_id
-		WHERE w.work_number = $2 AND w.child_id IS NULL`
-
-	var f *entity.EriusFunc
-
-	if scanErr := db.Connection.QueryRow(ctx, q, stepName, workNumber).Scan(&f); scanErr != nil {
-		return nil, scanErr
-	}
-
-	if f == nil {
-		return nil, errors.New("couldn't find block data")
-	}
-
-	return f, nil
 }
 
 func (db *PGCon) StopTaskBlocks(ctx context.Context, taskID uuid.UUID) error {
