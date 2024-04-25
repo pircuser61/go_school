@@ -1216,8 +1216,8 @@ func (db *PGCon) CreateTaskBlock(ctx context.Context, dto *SaveStepRequest) erro
 		    $11,
 		    true,
 		    $12
-		)
-`
+		)`
+
 	args := []interface{}{
 		uuid.New(),
 		dto.WorkID,

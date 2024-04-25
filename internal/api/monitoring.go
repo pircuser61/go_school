@@ -274,25 +274,25 @@ func (ae *Env) GetMonitoringTasksBlockBlockIdParams(w http.ResponseWriter, req *
 	log := logger.GetLogger(ctx)
 	errorHandler := newHTTPErrorHandler(log, w)
 
-	blockIDUUID, err := uuid.Parse(blockID)
+	stepID, err := uuid.Parse(blockID)
 	if err != nil {
 		errorHandler.handleError(UUIDParsingError, err)
 	}
 
-	taskStep, err := ae.DB.GetTaskStepByID(ctx, blockIDUUID)
+	taskStep, err := ae.DB.GetTaskStepByID(ctx, stepID)
 	if err != nil {
 		e := UnknownError
 
-		log.WithField("stepID", blockID).
+		log.WithField("stepID", stepID).
 			Error(e.errorMessage(err))
 		errorHandler.sendError(e)
 	}
 
-	blockInputs, err := ae.DB.GetStepInputs(ctx, taskStep.Name, taskStep.WorkNumber)
+	stepInputs, err := ae.DB.GetStepInputs(ctx, taskStep.Name, taskStep.WorkNumber, taskStep.Time)
 	if err != nil {
 		e := GetBlockContextError
 
-		log.WithField("stepID", blockID).
+		log.WithField("stepID", stepID).
 			WithField("stepName", taskStep.Name).
 			Error(e.errorMessage(err))
 		errorHandler.sendError(e)
@@ -302,7 +302,7 @@ func (ae *Env) GetMonitoringTasksBlockBlockIdParams(w http.ResponseWriter, req *
 
 	inputs := make(map[string]MonitoringBlockParam, 0)
 
-	for _, bo := range blockInputs {
+	for _, bo := range stepInputs {
 		inputs[bo.Name] = MonitoringBlockParam{
 			Name:  bo.Name,
 			Value: bo.Value,
@@ -357,7 +357,7 @@ func (ae *Env) GetMonitoringTasksBlockBlockIdParams(w http.ResponseWriter, req *
 		finishedAt = taskStep.UpdatedAt.String()
 	}
 
-	if err := sendResponse(w, http.StatusOK, MonitoringParamsResponse{
+	if err = sendResponse(w, http.StatusOK, MonitoringParamsResponse{
 		StartedAt:  &startedAt,
 		FinishedAt: &finishedAt,
 		Inputs:     &MonitoringParamsResponse_Inputs{AdditionalProperties: inputs},
