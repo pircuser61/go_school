@@ -1221,7 +1221,6 @@
       "keys": null,
       "constants": {
         "field-uuid-2": {},
-        "field-uuid-3.fullname": "Test",
         "field-uuid-4": "some string"
       }
     },

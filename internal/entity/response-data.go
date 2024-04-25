@@ -729,6 +729,10 @@ func (bt *BlocksType) GetGroups() (nodeGroups []*NodeGroup, err error) {
 			nodeGroups = append(nodeGroups, parallelGroup)
 			endNode := (*bt)[exitParallelIdx]
 
+			if endNode == nil {
+				return nil, fmt.Errorf("end node for %s not found", nodeKey)
+			}
+
 			for _, socketOutNodes := range endNode.Next {
 				for _, socketOutNode := range socketOutNodes {
 					_, ok := visitedNodes[socketOutNode]

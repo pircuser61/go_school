@@ -86,6 +86,12 @@ func NewService(log logger.Logger, cfg Config, m metrics.Metrics) (*Service, boo
 	metricRegistry.UnregisterAll()
 
 	saramaCfg := sarama.NewConfig()
+
+	// Required configs for exactly once delivery
+	saramaCfg.Producer.Idempotent = true
+	saramaCfg.Producer.RequiredAcks = sarama.WaitForAll
+	saramaCfg.Net.MaxOpenRequests = 1
+
 	saramaCfg.MetricRegistry = metricRegistry
 	saramaCfg.Producer.Return.Successes = true // Producer.Return.Successes must be true to be used in a SyncProducer
 	saramaCfg.Net.DialTimeout = kafkaNetTimeout
