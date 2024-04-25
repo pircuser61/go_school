@@ -467,6 +467,8 @@ func (ae *Env) updatePipelineVersion(ctx c.Context, in *e.EriusScenario) (*e.Eri
 
 	groups, err := statusGroups(in)
 	if err != nil {
+		log.WithField(funcName, "statusGroups").Error(err)
+
 		return nil, UnknownError, err
 	}
 
