@@ -245,6 +245,14 @@ func TestProcessBlock(t *testing.T) {
 						Storage: func() db.Database {
 							res := makeStorage()
 
+							res.On("GetNewStepInputs",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								"start_0",
+								mock.MatchedBy(func(workNumber string) bool { return true }),
+							).Return(
+								make(entity.BlockInputs, 0), nil,
+							)
+
 							res.On("GetStepDataFromVersion",
 								mock.MatchedBy(func(ctx context.Context) bool { return true }),
 								mock.MatchedBy(func(workNumber string) bool { return true }),

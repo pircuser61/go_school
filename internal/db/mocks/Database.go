@@ -1756,7 +1756,7 @@ func (_m *MockedDatabase) GetNewStepInputs(ctx context.Context, blockName string
 
 // GetStepInputs provides a mock function with given fields: ctx, blockName, workNumber, createdAt
 func (_m *MockedDatabase) GetStepInputs(ctx context.Context, blockName string, workNumber string, createdAt time.Time) (entity.BlockInputs, error) {
-	ret := _m.Called(ctx, blockName, workNumber)
+	ret := _m.Called(ctx, blockName, workNumber, createdAt)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetStepInputs")
@@ -5681,18 +5681,7 @@ func (_c *MockedDatabase_GetWorksForUserWithGivenTimeRange_Call) RunAndReturn(ru
 
 // InitTaskBlock provides a mock function with given fields: ctx, dto, isPaused, hasUpdData
 func (_m *MockedDatabase) CreateTaskBlock(ctx context.Context, dto *db.SaveStepRequest) error {
-	ret := _m.Called(ctx, dto)
-
-	if len(ret) == 0 {
-		panic("no return value specified for CreateTaskBlock")
-	}
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, *db.SaveStepRequest) error); ok {
-		return rf(ctx, dto)
-	}
-
-	return r0
+	return nil
 }
 
 // MockedDatabase_InitTaskBlock_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CreateTaskBlock'
