@@ -198,6 +198,14 @@ func (s *Server) PingSvcs(ctx context.Context, failedCh chan bool) {
 		sdlErr := s.apiEnv.Scheduler.Ping(ctx)
 
 		if dbErr != nil || sdlErr != nil {
+			if dbErr != nil {
+				s.logger.WithError(dbErr).Error("DB not accessible")
+			}
+
+			if sdlErr != nil {
+				s.logger.WithError(sdlErr).Error("scheduler not accessible")
+			}
+
 			if kafkaStopped {
 				continue
 			}
@@ -211,6 +219,8 @@ func (s *Server) PingSvcs(ctx context.Context, failedCh chan bool) {
 
 			kafkaStopped = true
 			failedCh <- true
+
+			s.logger.Error("kafka consume stop")
 
 			continue
 		}
@@ -228,6 +238,8 @@ func (s *Server) PingSvcs(ctx context.Context, failedCh chan bool) {
 
 		kafkaStopped = false
 		failedCh <- false
+
+		s.logger.Info("kafka consume start")
 	}
 }
 
