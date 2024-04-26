@@ -83,14 +83,14 @@ func main() {
 		return
 	}
 
-	peopleService, err := people.NewServiceWithCache(&cfg.People, ssoService)
+	peopleService, err := people.NewService(&cfg.People, ssoService)
 	if err != nil {
 		log.WithError(err).Error("can't create people service")
 
 		return
 	}
 
-	serviceDescService, err := servicedesc.NewServiceWithCache(&cfg.ServiceDesc, ssoService)
+	serviceDescService, err := servicedesc.NewService(&cfg.ServiceDesc, ssoService)
 	if err != nil {
 		log.WithError(err).Error("can't create servicedesc service")
 
@@ -143,7 +143,7 @@ func main() {
 		return
 	}
 
-	humanTasksService, err := human_tasks.NewServiceWithCache(&cfg.HumanTasks, log)
+	humanTasksService, err := human_tasks.NewService(&cfg.HumanTasks, log)
 	if err != nil {
 		log.WithError(err).Error("can't create human tasks service")
 
@@ -164,7 +164,7 @@ func main() {
 		return
 	}
 
-	hrgateService, err := hrgate.NewServiceWithCache(&cfg.HrGate, ssoService)
+	hrgateService, err := hrgate.NewService(&cfg.HrGate, ssoService)
 	if err != nil {
 		log.WithError(err).Error("can't create hrgate service")
 
