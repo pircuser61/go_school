@@ -1774,6 +1774,14 @@ func (db *PGCon) getTasks(ctx c.Context, filters *entity.TaskFilter,
 			}
 		}
 
+		if et.FinishedAt != nil {
+			finish := *et.FinishedAt
+
+			if finish.Before(et.ProcessDeadline) {
+				et.IsExpired = false
+			}
+		}
+
 		et.CurrentExecutor.People = currExecutorData.People
 		et.CurrentExecutor.InitialPeople = currExecutorData.InitialPeople
 		et.CurrentExecutor.ExecutionGroupID = currExecutorData.GroupID
