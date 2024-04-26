@@ -655,12 +655,33 @@ func (ae *Env) GetTasksUsers(w http.ResponseWriter, req *http.Request, params Ge
 		handleFilterStatus(&filters)
 	}
 
-	resp, err := ae.DB.GetTasksUsers(ctx, filters, users)
+	dbResp, err := ae.DB.GetTasksUsers(ctx, filters, users)
 	if err != nil {
 		errorHandler.handleError(GetTasksError, err)
 
 		return
 	}
+
+	resp := UniquePersons{Groups: &dbResp.Groups, Logins: &dbResp.Logins}
+
+	respUsers := make([]UniqueUser, 0)
+
+	for i := range dbResp.Logins {
+		ssoUser, sdErr := ae.ServiceDesc.GetSsoPerson(ctx, dbResp.Logins[i])
+		if err != nil {
+			errorHandler.handleError(GetUserinfoErr, sdErr)
+
+			return
+		}
+
+		respUsers = append(respUsers, UniqueUser{
+			FullName: ssoUser.Fullname,
+			TabNum:   ssoUser.Tabnum,
+			Username: ssoUser.Username,
+		})
+	}
+
+	resp.Users = &respUsers
 
 	if err = sendResponse(w, http.StatusOK, resp); err != nil {
 		errorHandler.handleError(UnknownError, err)
