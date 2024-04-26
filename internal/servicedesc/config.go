@@ -3,9 +3,12 @@ package servicedesc
 import "time"
 
 type Config struct {
-	ServicedeskURL string      `yaml:"servicedesk_url"`
-	Scope          string      `yaml:"scope"`
-	Cache          CacheConfig `yaml:"cache"`
+	ServicedeskURL string        `yaml:"servicedesk_url"`
+	Scope          string        `yaml:"scope"`
+	MaxRetries     uint          `yaml:"max_retries"`
+	RetryDelay     time.Duration `yaml:"retry_delay"`
+
+	Cache CacheConfig `yaml:"cache"`
 }
 
 type CacheConfig struct {

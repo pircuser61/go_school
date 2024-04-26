@@ -10,6 +10,8 @@ import (
 	"net/http"
 	"regexp"
 
+	"github.com/hashicorp/go-retryablehttp"
+
 	"go.opencensus.io/plugin/ocgrpc"
 	"go.opencensus.io/trace"
 
@@ -25,6 +27,7 @@ import (
 	fileregistry "gitlab.services.mts.ru/jocasta/file-registry/pkg/proto/gen/file-registry/v1"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/httpclient"
 )
 
 const (
@@ -35,7 +38,7 @@ const (
 )
 
 type Service struct {
-	restCli *http.Client
+	restCli *retryablehttp.Client
 	restURL string
 
 	c       *grpc.ClientConn
@@ -69,7 +72,7 @@ func NewService(cfg Config, log logger.Logger) (*Service, error) {
 
 	return &Service{
 		c:       conn,
-		restCli: &http.Client{},
+		restCli: httpclient.NewClient(&http.Client{}, log, cfg.MaxRetries, cfg.RetryDelay),
 		restURL: cfg.REST,
 		grpcCLi: client,
 	}, nil
@@ -145,7 +148,7 @@ func (s *Service) getAttachment(ctx context.Context, fileID, workNumber, clientI
 
 	reqURL := s.restURL + getFileByID + fileID
 
-	req, err := http.NewRequestWithContext(ctxLocal, http.MethodGet, reqURL, http.NoBody)
+	req, err := retryablehttp.NewRequestWithContext(ctxLocal, http.MethodGet, reqURL, http.NoBody)
 	if err != nil {
 		return email.Attachment{}, err
 	}
@@ -225,7 +228,7 @@ func (s *Service) SaveFile(ctx context.Context, token, clientID, name string, fi
 
 	reqURL := s.restURL + saveFile
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, reqURL, buf)
+	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodPost, reqURL, buf)
 	if err != nil {
 		return "", err
 	}

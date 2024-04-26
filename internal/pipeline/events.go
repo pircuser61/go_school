@@ -10,6 +10,8 @@ import (
 	"path"
 	"time"
 
+	"github.com/hashicorp/go-retryablehttp"
+
 	"github.com/fatih/structs"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
@@ -122,7 +124,7 @@ func (runCtx *BlockRunContext) notifyEvents(ctx c.Context, log logger.Logger) {
 			continue
 		}
 
-		req, reqErr := http.NewRequestWithContext(ctx, runCtx.TaskSubscriptionData.Method, reqURL.String(),
+		req, reqErr := retryablehttp.NewRequestWithContext(ctx, runCtx.TaskSubscriptionData.Method, reqURL.String(),
 			bytes.NewBuffer(body))
 		if reqErr != nil {
 			log.WithError(reqErr).Error("couldn't create request")

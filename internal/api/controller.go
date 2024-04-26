@@ -6,13 +6,14 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/middleware"
-
 	"github.com/go-chi/chi/v5"
+
+	"github.com/hashicorp/go-retryablehttp"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 	"gitlab.services.mts.ru/abp/myosotis/observability"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/configs"
 
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/configs"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	file_registry "gitlab.services.mts.ru/jocasta/pipeliner/internal/fileregistry"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/forms"
@@ -39,7 +40,7 @@ type Env struct {
 	DB                      db.Database
 	Remedy                  string
 	FaaS                    string
-	HTTPClient              *http.Client
+	HTTPClient              *retryablehttp.Client
 	Statistic               *statistic.Statistic
 	Mail                    *mail.Service
 	Kafka                   *kafka.Service

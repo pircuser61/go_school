@@ -2,6 +2,7 @@ package script
 
 import (
 	"encoding/json"
+	"net/url"
 
 	"github.com/google/uuid"
 
@@ -108,4 +109,21 @@ func MapToOrderedMap(m map[string]interface{}) (orderedmap.OrderedMap, error) {
 	}
 
 	return *om, nil
+}
+
+type URL struct {
+	*url.URL
+}
+
+func (u *URL) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	stringURL := ""
+
+	err := unmarshal(&stringURL)
+	if err != nil {
+		return err
+	}
+
+	u.URL, err = url.Parse(stringURL)
+
+	return err
 }

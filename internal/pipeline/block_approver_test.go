@@ -19,6 +19,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/httpclient"
 	humanTasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks"
 	htMocks "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
@@ -809,6 +810,8 @@ func TestGoApproverBlock_Update(t *testing.T) {
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
+
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
@@ -826,7 +829,7 @@ func TestGoApproverBlock_Update(t *testing.T) {
 							}
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							sdMock.Cli = httpClient
+							sdMock.Cli = retryableHttpClient
 
 							return &sdMock
 						}(),
@@ -919,6 +922,8 @@ func TestGoApproverBlock_Update(t *testing.T) {
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
+
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
@@ -936,7 +941,7 @@ func TestGoApproverBlock_Update(t *testing.T) {
 							}
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							sdMock.Cli = httpClient
+							sdMock.Cli = retryableHttpClient
 
 							return &sdMock
 						}(),
@@ -1026,6 +1031,7 @@ func TestGoApproverBlock_Update(t *testing.T) {
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
@@ -1043,7 +1049,7 @@ func TestGoApproverBlock_Update(t *testing.T) {
 							}
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							sdMock.Cli = httpClient
+							sdMock.Cli = retryableHttpClient
 
 							return &sdMock
 						}(),
