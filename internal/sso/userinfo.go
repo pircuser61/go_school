@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/go-retryablehttp"
+
 	"github.com/pkg/errors"
 
 	"go.opencensus.io/trace"
@@ -112,7 +114,7 @@ func (s *Service) getUserinfo(ctx context.Context, r *http.Request) (*UserInfo, 
 		}, nil
 	}
 
-	req, err := http.NewRequestWithContext(ctxLocal, http.MethodGet, s.userinfoURL, http.NoBody)
+	req, err := retryablehttp.NewRequestWithContext(ctxLocal, http.MethodGet, s.userinfoURL, http.NoBody)
 	if err != nil {
 		return nil, err
 	}

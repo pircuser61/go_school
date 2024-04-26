@@ -2036,7 +2036,7 @@ paths:
                 type: object
                 properties:
                   data:
-                    $ref: '#/components/schemas/EriusTasksPage'
+                    $ref: '#/components/schemas/UniquePersons'
                   status_code:
                     type: integer
         400:
@@ -2628,7 +2628,7 @@ paths:
 
   /monitoring/tasks/block/{blockId}:
     put:
-      operationId: EditTaskBlockData
+      operationId: MonitoringUpdateTaskBlockData
       tags:
         - monitoring
       summary: Редактирование данных блока в мониторинге
@@ -2645,7 +2645,59 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/MonitoringTaskEditBlockRequest'
+              $ref: '#/components/schemas/MonitoringTaskUpdateBlockRequest'
+        required: true
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/BlockEditResponse'
+                  status_code:
+                    type: integer
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        403:
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+      x-codegen-request-body-name: variables
+
+  /monitoring/tasks/block/inputs:
+    put:
+      operationId: MonitoringUpdateBlockInputs
+      tags:
+        - monitoring
+      summary: Редактирование инпутов блока в мониторинге
+      description: Редактирование инпутов блока в мониторинге
+      requestBody:
+        description: updated data
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MonitoringUpdateBlockInputsRequest'
         required: true
       responses:
         200:
@@ -3678,6 +3730,38 @@ components:
             type: string
       required:
         - persons
+    UniquePersons:
+      type: object
+      properties:
+        users:
+          type: array
+          items:
+            $ref: '#/components/schemas/UniqueUser'
+        logins:
+          type: array
+          items:
+            type: string
+        groups:
+          type: array
+          items:
+            type: string
+      required:
+        - tasks
+        - total
+        - tasks_meta
+    UniqueUser:
+      type: object
+      properties:
+        username:
+          type: string
+        tab_num:
+          type: string
+        full_name:
+          type: string
+      required:
+        - username
+        - tab_num
+        - full_name
     EriusTasksPage:
       type: object
       properties:
@@ -5590,12 +5674,12 @@ components:
           items:
             type: string
 
-    MonitoringTaskEditBlockRequest:
+    MonitoringTaskUpdateBlockRequest:
       type: object
       properties:
         change_type:
           type: string
-          enum: [ "state", "output", "context", "input" ]
+          enum: [ "state", "output", "context"]
           description: "Переменные в какой части блока редактируем"
         change_data:
           type: object
@@ -5605,6 +5689,26 @@ components:
       required:
         - change_type
         - change_data
+
+    MonitoringUpdateBlockInputsRequest:
+      type: object
+      properties:
+        work_id:
+          type: string
+          description: "uuid таски"
+        step_name:
+          type: string
+          description: "Имя блока"
+          example: "approver_0"
+        inputs:
+          type: object
+          description: "Мапа инпутов"
+          additionalProperties:
+            $ref: '#/components/schemas/MonitoringEditBlockData'
+      required:
+        - work_id
+        - step_name
+        - inputs
 
     MonitoringTask:
       type: object

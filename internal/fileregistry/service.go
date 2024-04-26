@@ -10,17 +10,24 @@ import (
 	"net/http"
 	"regexp"
 
+	"github.com/hashicorp/go-retryablehttp"
+
 	"go.opencensus.io/plugin/ocgrpc"
 	"go.opencensus.io/trace"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
 
 	"gitlab.services.mts.ru/abp/mail/pkg/email"
+	"gitlab.services.mts.ru/abp/myosotis/logger"
+
+	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/retry"
 
 	fileregistry "gitlab.services.mts.ru/jocasta/file-registry/pkg/proto/gen/file-registry/v1"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/httpclient"
 )
 
 const (
@@ -31,17 +38,29 @@ const (
 )
 
 type Service struct {
-	restCli *http.Client
+	restCli *retryablehttp.Client
 	restURL string
 
 	c       *grpc.ClientConn
 	grpcCLi fileregistry.FileServiceClient
 }
 
-func NewService(cfg Config) (*Service, error) {
+func NewService(cfg Config, log logger.Logger) (*Service, error) {
 	opts := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithStatsHandler(&ocgrpc.ClientHandler{}),
+	}
+
+	if cfg.MaxRetries != 0 {
+		opts = append(opts, grpc.WithUnaryInterceptor(grpc_retry.UnaryClientInterceptor(
+			grpc_retry.WithMax(cfg.MaxRetries),
+			grpc_retry.WithBackoff(grpc_retry.BackoffLinear(cfg.RetryDelay)),
+			grpc_retry.WithPerRetryTimeout(cfg.Timeout),
+			grpc_retry.WithCodes(codes.Unavailable, codes.ResourceExhausted, codes.DataLoss, codes.DeadlineExceeded, codes.Unknown),
+			grpc_retry.WithOnRetryCallback(func(ctx context.Context, attempt uint, err error) {
+				log.WithError(err).WithField("attempt", attempt).Error("failed to reconnect to fileregistry")
+			}),
+		)))
 	}
 
 	conn, err := grpc.Dial(cfg.GRPC, opts...)
@@ -53,7 +72,7 @@ func NewService(cfg Config) (*Service, error) {
 
 	return &Service{
 		c:       conn,
-		restCli: &http.Client{},
+		restCli: httpclient.NewClient(&http.Client{}, log, cfg.MaxRetries, cfg.RetryDelay),
 		restURL: cfg.REST,
 		grpcCLi: client,
 	}, nil
@@ -129,7 +148,7 @@ func (s *Service) getAttachment(ctx context.Context, fileID, workNumber, clientI
 
 	reqURL := s.restURL + getFileByID + fileID
 
-	req, err := http.NewRequestWithContext(ctxLocal, http.MethodGet, reqURL, http.NoBody)
+	req, err := retryablehttp.NewRequestWithContext(ctxLocal, http.MethodGet, reqURL, http.NoBody)
 	if err != nil {
 		return email.Attachment{}, err
 	}
@@ -209,7 +228,7 @@ func (s *Service) SaveFile(ctx context.Context, token, clientID, name string, fi
 
 	reqURL := s.restURL + saveFile
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, reqURL, buf)
+	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodPost, reqURL, buf)
 	if err != nil {
 		return "", err
 	}

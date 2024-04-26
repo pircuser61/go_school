@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/hashicorp/go-retryablehttp"
+
 	"go.opencensus.io/trace"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
@@ -23,7 +25,7 @@ const (
 
 type Service struct {
 	SdURL string
-	Cli   *http.Client
+	Cli   *retryablehttp.Client
 	Cache cachekit.Cache
 }
 
@@ -60,7 +62,7 @@ func (s *Service) GetSsoPerson(ctx context.Context, username string) (*SsoPerson
 
 	reqURL := fmt.Sprintf("%s%s", s.SdURL, fmt.Sprintf(getUserInfo, username))
 
-	req, err := http.NewRequestWithContext(ctxLocal, http.MethodGet, reqURL, http.NoBody)
+	req, err := retryablehttp.NewRequestWithContext(ctxLocal, http.MethodGet, reqURL, http.NoBody)
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +93,7 @@ func (s *Service) GetWorkGroup(ctx context.Context, groupID string) (*WorkGroup,
 
 	reqURL := fmt.Sprintf("%s%s%s", s.SdURL, getWorkGroup, groupID)
 
-	req, err := http.NewRequestWithContext(ctxLocal, http.MethodGet, reqURL, http.NoBody)
+	req, err := retryablehttp.NewRequestWithContext(ctxLocal, http.MethodGet, reqURL, http.NoBody)
 	if err != nil {
 		return nil, err
 	}
@@ -124,7 +126,7 @@ func (s *Service) GetSchemaByID(ctx context.Context, schemaID string) (map[strin
 
 	reqURL := fmt.Sprintf("%s%s%s", s.SdURL, getSchemaByID, schemaID)
 
-	req, err := http.NewRequestWithContext(ctxLocal, http.MethodGet, reqURL, http.NoBody)
+	req, err := retryablehttp.NewRequestWithContext(ctxLocal, http.MethodGet, reqURL, http.NoBody)
 	if err != nil {
 		return nil, err
 	}
@@ -154,7 +156,7 @@ func (s *Service) GetSchemaByBlueprintID(ctx context.Context, blueprintID string
 
 	reqURL := fmt.Sprintf("%s%s%s%s", s.SdURL, getSchemaByBlueprintID, blueprintID, "/json")
 
-	req, err := http.NewRequestWithContext(ctxLocal, http.MethodGet, reqURL, http.NoBody)
+	req, err := retryablehttp.NewRequestWithContext(ctxLocal, http.MethodGet, reqURL, http.NoBody)
 	if err != nil {
 		return nil, err
 	}
@@ -182,6 +184,6 @@ func (s *Service) GetSdURL() string {
 	return s.SdURL
 }
 
-func (s *Service) GetCli() *http.Client {
+func (s *Service) GetCli() *retryablehttp.Client {
 	return s.Cli
 }

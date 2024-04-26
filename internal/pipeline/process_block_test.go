@@ -18,6 +18,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/httpclient"
 	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
@@ -400,6 +401,8 @@ func TestProcessBlock(t *testing.T) {
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
+
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
@@ -416,7 +419,7 @@ func TestProcessBlock(t *testing.T) {
 							}
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							sdMock.Cli = httpClient
+							sdMock.Cli = retryableHttpClient
 
 							return &sdMock
 						}(),
@@ -948,6 +951,8 @@ func TestProcessBlock(t *testing.T) {
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
+
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
@@ -964,7 +969,7 @@ func TestProcessBlock(t *testing.T) {
 							}
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							sdMock.Cli = httpClient
+							sdMock.Cli = retryableHttpClient
 
 							return &sdMock
 						}(),
@@ -974,7 +979,7 @@ func TestProcessBlock(t *testing.T) {
 							return slaMock
 						}(),
 						HumanTasks: func() human_tasks.ServiceInterface {
-							service, _ := human_tasks.NewService(&human_tasks.Config{})
+							service, _ := human_tasks.NewService(&human_tasks.Config{}, nil)
 
 							return service
 						}(),

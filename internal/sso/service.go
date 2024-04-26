@@ -13,6 +13,8 @@ import (
 	"go.opencensus.io/trace"
 
 	"gopkg.in/square/go-jose.v2/jwt"
+
+	"github.com/hashicorp/go-retryablehttp"
 )
 
 const (
@@ -81,11 +83,11 @@ type Service struct {
 	userInfoCache         map[string]*cachedUserInfo
 	userInfoMutex         *sync.RWMutex
 
-	cli *http.Client
+	cli *retryablehttp.Client
 }
 
 // nolint:gocritic // it's more comfortable to work with config as a value
-func NewService(c Config, cli *http.Client) (*Service, error) {
+func NewService(c Config, cli *retryablehttp.Client) (*Service, error) {
 	refreshFD := url.Values{
 		grantTypeKey: []string{grantTypeRefreshValue},
 		clientIDKey:  []string{c.ClientID},

@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/hashicorp/go-retryablehttp"
+
 	"github.com/google/uuid"
 
 	"github.com/pkg/errors"
@@ -156,7 +158,7 @@ func (bt *BlocksType) IsSdBlueprintFilled(ctx context.Context, sd servicedesc.Se
 
 	checkURL := sd.GetSdURL() + checkSdBlueprint + params.BlueprintID
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, checkURL, http.NoBody)
+	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodGet, checkURL, http.NoBody)
 	if err != nil {
 		return false
 	}
@@ -747,6 +749,10 @@ func (bt *BlocksType) GetGroups() (nodeGroups []*NodeGroup, err error) {
 			}
 			nodeGroups = append(nodeGroups, parallelGroup)
 			endNode := (*bt)[exitParallelIdx]
+
+			if endNode == nil {
+				return nil, fmt.Errorf("end node for %s not found", nodeKey)
+			}
 
 			for _, socketOutNodes := range endNode.Next {
 				for _, socketOutNode := range socketOutNodes {

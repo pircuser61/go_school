@@ -467,6 +467,8 @@ func (ae *Env) updatePipelineVersion(ctx c.Context, in *e.EriusScenario) (*e.Eri
 
 	groups, err := statusGroups(in)
 	if err != nil {
+		log.WithField(funcName, "statusGroups").Error(err)
+
 		return nil, UnknownError, err
 	}
 
@@ -788,6 +790,8 @@ func (ae *Env) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO) (
 
 	_, workFinished, err := pipeline.ProcessBlockWithEndMapping(ctx, pipeline.BlockGoFirstStart, blockData, runCtx, false)
 	if err != nil {
+		runCtx.NotifyEvents(ctx) // events for successfully processed nodes
+
 		return PipelineRunError, err
 	}
 

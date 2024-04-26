@@ -588,18 +588,14 @@ func (_m *MockedDatabase) CreateEmptyTask(ctx context.Context, task *db.CreateEm
 		panic("no return value specified for CreateEmptyTask")
 	}
 
-	var r1 error
+	var r0 error
 	if rf, ok := ret.Get(0).(func(context.Context, *db.CreateEmptyTaskDTO) error); ok {
-		return rf(ctx, task)
-	}
-
-	if rf, ok := ret.Get(1).(func(context.Context, *db.CreateEmptyTaskDTO) error); ok {
-		r1 = rf(ctx, task)
+		r0 = rf(ctx, task)
 	} else {
-		r1 = ret.Error(1)
+		r0 = ret.Error(0)
 	}
 
-	return r1
+	return r0
 }
 
 // MockedDatabase_CreateEmptyTask_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CreateEmptyTask'
@@ -621,12 +617,12 @@ func (_c *MockedDatabase_CreateEmptyTask_Call) Run(run func(ctx context.Context,
 	return _c
 }
 
-func (_c *MockedDatabase_CreateEmptyTask_Call) Return(_a0 string, _a1 error) *MockedDatabase_CreateEmptyTask_Call {
-	_c.Call.Return(_a0, _a1)
+func (_c *MockedDatabase_CreateEmptyTask_Call) Return(_a0 error) *MockedDatabase_CreateEmptyTask_Call {
+	_c.Call.Return(_a0)
 	return _c
 }
 
-func (_c *MockedDatabase_CreateEmptyTask_Call) RunAndReturn(run func(context.Context, *db.CreateEmptyTaskDTO) (string, error)) *MockedDatabase_CreateEmptyTask_Call {
+func (_c *MockedDatabase_CreateEmptyTask_Call) RunAndReturn(run func(context.Context, *db.CreateEmptyTaskDTO) error) *MockedDatabase_CreateEmptyTask_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -4885,24 +4881,22 @@ func (_c *MockedDatabase_GetTasksForMonitoring_Call) RunAndReturn(run func(conte
 }
 
 // GetTasksUsers provides a mock function with given fields: ctx, filters, delegations
-func (_m *MockedDatabase) GetTasksUsers(ctx context.Context, filters entity.TaskFilter, delegations []string) ([]string, error) {
+func (_m *MockedDatabase) GetTasksUsers(ctx context.Context, filters entity.TaskFilter, delegations []string) (db.UniquePersons, error) {
 	ret := _m.Called(ctx, filters, delegations)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetTasksUsers")
 	}
 
-	var r0 []string
+	var r0 db.UniquePersons
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, entity.TaskFilter, []string) ([]string, error)); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, entity.TaskFilter, []string) (db.UniquePersons, error)); ok {
 		return rf(ctx, filters, delegations)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, entity.TaskFilter, []string) []string); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, entity.TaskFilter, []string) db.UniquePersons); ok {
 		r0 = rf(ctx, filters, delegations)
 	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]string)
-		}
+		r0 = ret.Get(0).(db.UniquePersons)
 	}
 
 	if rf, ok := ret.Get(1).(func(context.Context, entity.TaskFilter, []string) error); ok {
@@ -4934,12 +4928,12 @@ func (_c *MockedDatabase_GetTasksUsers_Call) Run(run func(ctx context.Context, f
 	return _c
 }
 
-func (_c *MockedDatabase_GetTasksUsers_Call) Return(_a0 []string, _a1 error) *MockedDatabase_GetTasksUsers_Call {
+func (_c *MockedDatabase_GetTasksUsers_Call) Return(_a0 db.UniquePersons, _a1 error) *MockedDatabase_GetTasksUsers_Call {
 	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
-func (_c *MockedDatabase_GetTasksUsers_Call) RunAndReturn(run func(context.Context, entity.TaskFilter, []string) ([]string, error)) *MockedDatabase_GetTasksUsers_Call {
+func (_c *MockedDatabase_GetTasksUsers_Call) RunAndReturn(run func(context.Context, entity.TaskFilter, []string) (db.UniquePersons, error)) *MockedDatabase_GetTasksUsers_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -5978,9 +5972,9 @@ func (_c *MockedDatabase_ParallelIsFinished_Call) RunAndReturn(run func(context.
 	return _c
 }
 
-// PauseTaskBlocks provides a mock function with given fields: ctx, workID, stepIDS
-func (_m *MockedDatabase) PauseTaskBlocks(ctx context.Context, workID string, stepIDS []string) ([]string, error) {
-	ret := _m.Called(ctx, workID, stepIDS)
+// PauseTaskBlocks provides a mock function with given fields: ctx, workID, stepIds
+func (_m *MockedDatabase) PauseTaskBlocks(ctx context.Context, workID string, stepIds []string) ([]string, error) {
+	ret := _m.Called(ctx, workID, stepIds)
 
 	if len(ret) == 0 {
 		panic("no return value specified for PauseTaskBlocks")
@@ -5989,10 +5983,10 @@ func (_m *MockedDatabase) PauseTaskBlocks(ctx context.Context, workID string, st
 	var r0 []string
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, string, []string) ([]string, error)); ok {
-		return rf(ctx, workID, stepIDS)
+		return rf(ctx, workID, stepIds)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, string, []string) []string); ok {
-		r0 = rf(ctx, workID, stepIDS)
+		r0 = rf(ctx, workID, stepIds)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]string)
@@ -6000,7 +5994,7 @@ func (_m *MockedDatabase) PauseTaskBlocks(ctx context.Context, workID string, st
 	}
 
 	if rf, ok := ret.Get(1).(func(context.Context, string, []string) error); ok {
-		r1 = rf(ctx, workID, stepIDS)
+		r1 = rf(ctx, workID, stepIds)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -6016,20 +6010,20 @@ type MockedDatabase_PauseTaskBlocks_Call struct {
 // PauseTaskBlocks is a helper method to define mock.On call
 //   - ctx context.Context
 //   - workID string
-//   - stepIDS []string
-func (_e *MockedDatabase_Expecter) PauseTaskBlocks(ctx interface{}, workID interface{}, stepIDS interface{}) *MockedDatabase_PauseTaskBlocks_Call {
-	return &MockedDatabase_PauseTaskBlocks_Call{Call: _e.mock.On("PauseTaskBlocks", ctx, workID, stepIDS)}
+//   - stepIds []string
+func (_e *MockedDatabase_Expecter) PauseTaskBlocks(ctx interface{}, workID interface{}, stepIds interface{}) *MockedDatabase_PauseTaskBlocks_Call {
+	return &MockedDatabase_PauseTaskBlocks_Call{Call: _e.mock.On("PauseTaskBlocks", ctx, workID, stepIds)}
 }
 
-func (_c *MockedDatabase_PauseTaskBlocks_Call) Run(run func(ctx context.Context, workID string, stepIDS []string)) *MockedDatabase_PauseTaskBlocks_Call {
+func (_c *MockedDatabase_PauseTaskBlocks_Call) Run(run func(ctx context.Context, workID string, stepIds []string)) *MockedDatabase_PauseTaskBlocks_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		run(args[0].(context.Context), args[1].(string), args[2].([]string))
 	})
 	return _c
 }
 
-func (_c *MockedDatabase_PauseTaskBlocks_Call) Return(updatedIDS []string, err error) *MockedDatabase_PauseTaskBlocks_Call {
-	_c.Call.Return(updatedIDS, err)
+func (_c *MockedDatabase_PauseTaskBlocks_Call) Return(updatedIds []string, err error) *MockedDatabase_PauseTaskBlocks_Call {
+	_c.Call.Return(updatedIds, err)
 	return _c
 }
 
@@ -6250,6 +6244,11 @@ func (_m *MockedDatabase) RemoveExternalSystem(ctx context.Context, versionID st
 	}
 
 	return r0
+}
+
+// RemoveExternalSystem provides a mock function with given fields: ctx, versionID, systemID
+func (_m *MockedDatabase) CreateTaskStepsInputs(ctx context.Context, in *entity.CreateUpdatesInputsHistory) error {
+	return nil
 }
 
 // MockedDatabase_RemoveExternalSystem_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'RemoveExternalSystem'

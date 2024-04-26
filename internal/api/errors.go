@@ -140,6 +140,7 @@ const (
 	SaveUpdatedBlockData
 	WrongMonitoringActionError
 	GetWorkNumberError
+	CreateTaskStepInputsError
 )
 
 /*
@@ -268,6 +269,7 @@ var errorText = map[Err]string{
 	SaveUpdatedBlockData:                "can't save updated block data",
 	WrongMonitoringActionError:          "wrong action for this handler",
 	GetWorkNumberError:                  "can`t get work number from sequence",
+	CreateTaskStepInputsError:           "can`t create update inputs history",
 }
 
 /*
@@ -396,6 +398,7 @@ var errorDescription = map[Err]string{
 	SaveUpdatedBlockData:           "Не удалось сохранить обновленные данные блока",
 	WrongMonitoringActionError:     "Неправильное действие для этой ручки",
 	GetWorkNumberError:             "Не удалось получить номер заявки из сервиса очереди",
+	CreateTaskStepInputsError:      "Не удалось создать запись о изменении инпутов блока",
 }
 
 /*

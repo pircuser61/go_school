@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/go-retryablehttp"
+
 	"github.com/pkg/errors"
 
 	"go.opencensus.io/trace"
@@ -140,7 +142,7 @@ func (s *Service) getTokens(ctx context.Context, scopeName string) error {
 	sc := s.scopes[scopeName]
 	s.scopesMutex.RUnlock()
 
-	req, err := http.NewRequestWithContext(ctxLocal, http.MethodPost, s.tokensURL, strings.NewReader(sc.getTokensFormData.Encode()))
+	req, err := retryablehttp.NewRequestWithContext(ctxLocal, http.MethodPost, s.tokensURL, strings.NewReader(sc.getTokensFormData.Encode()))
 	if err != nil {
 		return err
 	}
@@ -197,7 +199,7 @@ func (s *Service) refreshTokens(ctx context.Context, scopeName string) error {
 	formData := s.refreshTokensFormData
 	formData.Add(refreshTokenKey, sc.refreshToken)
 
-	req, err := http.NewRequestWithContext(ctxLocal, http.MethodPost, s.tokensURL, strings.NewReader(sc.getTokensFormData.Encode()))
+	req, err := retryablehttp.NewRequestWithContext(ctxLocal, http.MethodPost, s.tokensURL, strings.NewReader(sc.getTokensFormData.Encode()))
 	if err != nil {
 		return err
 	}

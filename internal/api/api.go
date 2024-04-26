@@ -200,17 +200,6 @@ const (
 	MonitoringTaskActionRequestActionStartByOne MonitoringTaskActionRequestAction = "startByOne"
 )
 
-// Defines values for MonitoringTaskEditBlockRequestChangeType.
-const (
-	MonitoringTaskEditBlockRequestChangeTypeContext MonitoringTaskEditBlockRequestChangeType = "context"
-
-	MonitoringTaskEditBlockRequestChangeTypeInput MonitoringTaskEditBlockRequestChangeType = "input"
-
-	MonitoringTaskEditBlockRequestChangeTypeOutput MonitoringTaskEditBlockRequestChangeType = "output"
-
-	MonitoringTaskEditBlockRequestChangeTypeState MonitoringTaskEditBlockRequestChangeType = "state"
-)
-
 // Defines values for MonitoringTaskEventEventType.
 const (
 	MonitoringTaskEventEventTypeEdit MonitoringTaskEventEventType = "edit"
@@ -220,6 +209,15 @@ const (
 	MonitoringTaskEventEventTypeStart MonitoringTaskEventEventType = "start"
 
 	MonitoringTaskEventEventTypeStartByOne MonitoringTaskEventEventType = "startByOne"
+)
+
+// Defines values for MonitoringTaskUpdateBlockRequestChangeType.
+const (
+	MonitoringTaskUpdateBlockRequestChangeTypeContext MonitoringTaskUpdateBlockRequestChangeType = "context"
+
+	MonitoringTaskUpdateBlockRequestChangeTypeOutput MonitoringTaskUpdateBlockRequestChangeType = "output"
+
+	MonitoringTaskUpdateBlockRequestChangeTypeState MonitoringTaskUpdateBlockRequestChangeType = "state"
 )
 
 // Defines values for NodeEvent.
@@ -1616,23 +1614,6 @@ type MonitoringTaskActionRequest struct {
 // Действия с заявкой
 type MonitoringTaskActionRequestAction string
 
-// MonitoringTaskEditBlockRequest defines model for MonitoringTaskEditBlockRequest.
-type MonitoringTaskEditBlockRequest struct {
-	// Стейт блока
-	ChangeData MonitoringTaskEditBlockRequest_ChangeData `json:"change_data"`
-
-	// Переменные в какой части блока редактируем
-	ChangeType MonitoringTaskEditBlockRequestChangeType `json:"change_type"`
-}
-
-// Стейт блока
-type MonitoringTaskEditBlockRequest_ChangeData struct {
-	AdditionalProperties map[string]MonitoringEditBlockData `json:"-"`
-}
-
-// Переменные в какой части блока редактируем
-type MonitoringTaskEditBlockRequestChangeType string
-
 // MonitoringTaskEvent defines model for MonitoringTaskEvent.
 type MonitoringTaskEvent struct {
 	// имя автора ивента
@@ -1678,12 +1659,46 @@ type MonitoringTaskRun struct {
 	StartEventId string `json:"start_event_id"`
 }
 
+// MonitoringTaskUpdateBlockRequest defines model for MonitoringTaskUpdateBlockRequest.
+type MonitoringTaskUpdateBlockRequest struct {
+	// Стейт блока
+	ChangeData MonitoringTaskUpdateBlockRequest_ChangeData `json:"change_data"`
+
+	// Переменные в какой части блока редактируем
+	ChangeType MonitoringTaskUpdateBlockRequestChangeType `json:"change_type"`
+}
+
+// Стейт блока
+type MonitoringTaskUpdateBlockRequest_ChangeData struct {
+	AdditionalProperties map[string]MonitoringEditBlockData `json:"-"`
+}
+
+// Переменные в какой части блока редактируем
+type MonitoringTaskUpdateBlockRequestChangeType string
+
 // MonitoringTasksPage defines model for MonitoringTasksPage.
 type MonitoringTasksPage struct {
 	Tasks []MonitoringTableTask `json:"tasks"`
 
 	// total number of tasks
 	Total int `json:"total"`
+}
+
+// MonitoringUpdateBlockInputsRequest defines model for MonitoringUpdateBlockInputsRequest.
+type MonitoringUpdateBlockInputsRequest struct {
+	// Мапа инпутов
+	Inputs MonitoringUpdateBlockInputsRequest_Inputs `json:"inputs"`
+
+	// Имя блока
+	StepName string `json:"step_name"`
+
+	// uuid таски
+	WorkId string `json:"work_id"`
+}
+
+// Мапа инпутов
+type MonitoringUpdateBlockInputsRequest_Inputs struct {
+	AdditionalProperties map[string]MonitoringEditBlockData `json:"-"`
 }
 
 // NameExists defines model for NameExists.
@@ -2140,6 +2155,20 @@ type TimerParams struct {
 	Duration string `json:"duration"`
 }
 
+// UniquePersons defines model for UniquePersons.
+type UniquePersons struct {
+	Groups *[]string     `json:"groups,omitempty"`
+	Logins *[]string     `json:"logins,omitempty"`
+	Users  *[]UniqueUser `json:"users,omitempty"`
+}
+
+// UniqueUser defines model for UniqueUser.
+type UniqueUser struct {
+	FullName string `json:"full_name"`
+	TabNum   string `json:"tab_num"`
+	Username string `json:"username"`
+}
+
 // Update approval list settings
 type UpdateApprovalListSettings struct {
 	// Представляет из себя набор ключ-значение, где ключ - это название переменной/поля объекта, а значение - это структура, которая описывает переменную(или поле объекта). Причём, если переменная - это объект, тогда должно быть заполнено поле propeties(описание полей). Если переменная - массив, тогда должно быть заполнено поле items(описание типа, который хранится в массиве).
@@ -2433,8 +2462,11 @@ type GetTasksForMonitoringParamsSortOrder string
 // GetTasksForMonitoringParamsStatus defines parameters for GetTasksForMonitoring.
 type GetTasksForMonitoringParamsStatus string
 
-// EditTaskBlockDataJSONBody defines parameters for EditTaskBlockData.
-type EditTaskBlockDataJSONBody MonitoringTaskEditBlockRequest
+// MonitoringUpdateBlockInputsJSONBody defines parameters for MonitoringUpdateBlockInputs.
+type MonitoringUpdateBlockInputsJSONBody MonitoringUpdateBlockInputsRequest
+
+// MonitoringUpdateTaskBlockDataJSONBody defines parameters for MonitoringUpdateTaskBlockData.
+type MonitoringUpdateTaskBlockDataJSONBody MonitoringTaskUpdateBlockRequest
 
 // GetMonitoringTaskParams defines parameters for GetMonitoringTask.
 type GetMonitoringTaskParams struct {
@@ -2705,8 +2737,11 @@ type UpdateTaskJSONBody TaskUpdate
 // RateApplicationJSONRequestBody defines body for RateApplication for application/json ContentType.
 type RateApplicationJSONRequestBody RateApplicationJSONBody
 
-// EditTaskBlockDataJSONRequestBody defines body for EditTaskBlockData for application/json ContentType.
-type EditTaskBlockDataJSONRequestBody EditTaskBlockDataJSONBody
+// MonitoringUpdateBlockInputsJSONRequestBody defines body for MonitoringUpdateBlockInputs for application/json ContentType.
+type MonitoringUpdateBlockInputsJSONRequestBody MonitoringUpdateBlockInputsJSONBody
+
+// MonitoringUpdateTaskBlockDataJSONRequestBody defines body for MonitoringUpdateTaskBlockData for application/json ContentType.
+type MonitoringUpdateTaskBlockDataJSONRequestBody MonitoringUpdateTaskBlockDataJSONBody
 
 // MonitoringTaskActionJSONRequestBody defines body for MonitoringTaskAction for application/json ContentType.
 type MonitoringTaskActionJSONRequestBody MonitoringTaskActionJSONBody
@@ -3291,25 +3326,25 @@ func (a MonitoringParamsResponse_Outputs) MarshalJSON() ([]byte, error) {
 	return json.Marshal(object)
 }
 
-// Getter for additional properties for MonitoringTaskEditBlockRequest_ChangeData. Returns the specified
+// Getter for additional properties for MonitoringTaskUpdateBlockRequest_ChangeData. Returns the specified
 // element and whether it was found
-func (a MonitoringTaskEditBlockRequest_ChangeData) Get(fieldName string) (value MonitoringEditBlockData, found bool) {
+func (a MonitoringTaskUpdateBlockRequest_ChangeData) Get(fieldName string) (value MonitoringEditBlockData, found bool) {
 	if a.AdditionalProperties != nil {
 		value, found = a.AdditionalProperties[fieldName]
 	}
 	return
 }
 
-// Setter for additional properties for MonitoringTaskEditBlockRequest_ChangeData
-func (a *MonitoringTaskEditBlockRequest_ChangeData) Set(fieldName string, value MonitoringEditBlockData) {
+// Setter for additional properties for MonitoringTaskUpdateBlockRequest_ChangeData
+func (a *MonitoringTaskUpdateBlockRequest_ChangeData) Set(fieldName string, value MonitoringEditBlockData) {
 	if a.AdditionalProperties == nil {
 		a.AdditionalProperties = make(map[string]MonitoringEditBlockData)
 	}
 	a.AdditionalProperties[fieldName] = value
 }
 
-// Override default JSON handling for MonitoringTaskEditBlockRequest_ChangeData to handle AdditionalProperties
-func (a *MonitoringTaskEditBlockRequest_ChangeData) UnmarshalJSON(b []byte) error {
+// Override default JSON handling for MonitoringTaskUpdateBlockRequest_ChangeData to handle AdditionalProperties
+func (a *MonitoringTaskUpdateBlockRequest_ChangeData) UnmarshalJSON(b []byte) error {
 	object := make(map[string]json.RawMessage)
 	err := json.Unmarshal(b, &object)
 	if err != nil {
@@ -3330,8 +3365,61 @@ func (a *MonitoringTaskEditBlockRequest_ChangeData) UnmarshalJSON(b []byte) erro
 	return nil
 }
 
-// Override default JSON handling for MonitoringTaskEditBlockRequest_ChangeData to handle AdditionalProperties
-func (a MonitoringTaskEditBlockRequest_ChangeData) MarshalJSON() ([]byte, error) {
+// Override default JSON handling for MonitoringTaskUpdateBlockRequest_ChangeData to handle AdditionalProperties
+func (a MonitoringTaskUpdateBlockRequest_ChangeData) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for MonitoringUpdateBlockInputsRequest_Inputs. Returns the specified
+// element and whether it was found
+func (a MonitoringUpdateBlockInputsRequest_Inputs) Get(fieldName string) (value MonitoringEditBlockData, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for MonitoringUpdateBlockInputsRequest_Inputs
+func (a *MonitoringUpdateBlockInputsRequest_Inputs) Set(fieldName string, value MonitoringEditBlockData) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]MonitoringEditBlockData)
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for MonitoringUpdateBlockInputsRequest_Inputs to handle AdditionalProperties
+func (a *MonitoringUpdateBlockInputsRequest_Inputs) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]MonitoringEditBlockData)
+		for fieldName, fieldBuf := range object {
+			var fieldVal MonitoringEditBlockData
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for MonitoringUpdateBlockInputsRequest_Inputs to handle AdditionalProperties
+func (a MonitoringUpdateBlockInputsRequest_Inputs) MarshalJSON() ([]byte, error) {
 	var err error
 	object := make(map[string]json.RawMessage)
 
@@ -3641,9 +3729,12 @@ type ServerInterface interface {
 	// Get tasks for monitoring
 	// (GET /monitoring/tasks)
 	GetTasksForMonitoring(w http.ResponseWriter, r *http.Request, params GetTasksForMonitoringParams)
+	// Редактирование инпутов блока в мониторинге
+	// (PUT /monitoring/tasks/block/inputs)
+	MonitoringUpdateBlockInputs(w http.ResponseWriter, r *http.Request)
 	// Редактирование данных блока в мониторинге
 	// (PUT /monitoring/tasks/block/{blockId})
-	EditTaskBlockData(w http.ResponseWriter, r *http.Request, blockId string)
+	MonitoringUpdateTaskBlockData(w http.ResponseWriter, r *http.Request, blockId string)
 	// Получение контекста блоков
 	// (GET /monitoring/tasks/block/{blockId}/context)
 	GetBlockContext(w http.ResponseWriter, r *http.Request, blockId string)
@@ -4086,8 +4177,23 @@ func (siw *ServerInterfaceWrapper) GetTasksForMonitoring(w http.ResponseWriter, 
 	handler(w, r.WithContext(ctx))
 }
 
-// EditTaskBlockData operation middleware
-func (siw *ServerInterfaceWrapper) EditTaskBlockData(w http.ResponseWriter, r *http.Request) {
+// MonitoringUpdateBlockInputs operation middleware
+func (siw *ServerInterfaceWrapper) MonitoringUpdateBlockInputs(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.MonitoringUpdateBlockInputs(w, r)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
+// MonitoringUpdateTaskBlockData operation middleware
+func (siw *ServerInterfaceWrapper) MonitoringUpdateTaskBlockData(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	var err error
@@ -4102,7 +4208,7 @@ func (siw *ServerInterfaceWrapper) EditTaskBlockData(w http.ResponseWriter, r *h
 	}
 
 	var handler = func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.EditTaskBlockData(w, r, blockId)
+		siw.Handler.MonitoringUpdateTaskBlockData(w, r, blockId)
 	}
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -6133,7 +6239,10 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/monitoring/tasks", wrapper.GetTasksForMonitoring)
 	})
 	r.Group(func(r chi.Router) {
-		r.Put(options.BaseURL+"/monitoring/tasks/block/{blockId}", wrapper.EditTaskBlockData)
+		r.Put(options.BaseURL+"/monitoring/tasks/block/inputs", wrapper.MonitoringUpdateBlockInputs)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/monitoring/tasks/block/{blockId}", wrapper.MonitoringUpdateTaskBlockData)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/monitoring/tasks/block/{blockId}/context", wrapper.GetBlockContext)

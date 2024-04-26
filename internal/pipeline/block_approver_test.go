@@ -19,6 +19,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/httpclient"
 	humanTasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks"
 	htMocks "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
@@ -809,6 +810,8 @@ func TestGoApproverBlock_Update(t *testing.T) {
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
+
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
@@ -826,7 +829,7 @@ func TestGoApproverBlock_Update(t *testing.T) {
 							}
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							sdMock.Cli = httpClient
+							sdMock.Cli = retryableHttpClient
 
 							return &sdMock
 						}(),
@@ -919,6 +922,8 @@ func TestGoApproverBlock_Update(t *testing.T) {
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
+
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
@@ -936,7 +941,7 @@ func TestGoApproverBlock_Update(t *testing.T) {
 							}
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							sdMock.Cli = httpClient
+							sdMock.Cli = retryableHttpClient
 
 							return &sdMock
 						}(),
@@ -1026,6 +1031,7 @@ func TestGoApproverBlock_Update(t *testing.T) {
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
@@ -1043,7 +1049,7 @@ func TestGoApproverBlock_Update(t *testing.T) {
 							}
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							sdMock.Cli = httpClient
+							sdMock.Cli = retryableHttpClient
 
 							return &sdMock
 						}(),
@@ -1385,7 +1391,7 @@ func TestGoApproverBlock_Actions(t *testing.T) {
 				ctx: context.Background(),
 			},
 			wantActions: []MemberAction{
-				{ID: "approve", Type: "", Params: map[string]interface{}{"disabled": true}},
+				{ID: "approve", Type: "", Params: map[string]interface{}{"disabled": true, "hint_description": "Для продолжения работы над заявкой, необходимо {fill_form}"}},
 				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": []string{"form_0", "form_1"}}},
 				{ID: "add_approvers", Type: "other", Params: map[string]interface{}(nil)},
 				{ID: "request_add_info", Type: "other", Params: map[string]interface{}(nil)},
@@ -1573,7 +1579,7 @@ func TestGoApproverBlock_Actions(t *testing.T) {
 				ctx: context.Background(),
 			},
 			wantActions: []MemberAction{
-				{ID: "approve", Type: "", Params: map[string]interface{}{"disabled": true}},
+				{ID: "approve", Type: "", Params: map[string]interface{}{"disabled": true, "hint_description": "Для продолжения работы над заявкой, необходимо {fill_form}"}},
 				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": []string{"form_0"}}},
 				{ID: "add_approvers", Type: "other", Params: map[string]interface{}(nil)},
 				{ID: "request_add_info", Type: "other", Params: map[string]interface{}(nil)},

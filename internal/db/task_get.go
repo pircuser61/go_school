@@ -1078,7 +1078,7 @@ func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter, delegations 
 }
 
 //nolint:gocritic //в этом проекте не принято использовать поинтеры
-func (db *PGCon) GetTasksUsers(ctx c.Context, filters entity.TaskFilter, delegations []string) ([]string, error) {
+func (db *PGCon) GetTasksUsers(ctx c.Context, filters entity.TaskFilter, delegations []string) (UniquePersons, error) {
 	ctx, span := trace.StartSpan(ctx, "db.pg_get_tasks_persons")
 	defer span.End()
 
@@ -1086,7 +1086,7 @@ func (db *PGCon) GetTasksUsers(ctx c.Context, filters entity.TaskFilter, delegat
 
 	persons, metaErr := db.getTaskUniquePersons(ctx, qMeta, args)
 
-	return persons, metaErr
+	return *persons, metaErr
 }
 
 func (db *PGCon) GetDeadline(ctx c.Context, workNumber string) (time.Time, error) {
@@ -1857,11 +1857,16 @@ func (db *PGCon) getTasksMeta(ctx c.Context, q string, args []interface{}) (*ent
 	return &meta, nil
 }
 
-func (db *PGCon) getTaskUniquePersons(ctx c.Context, q string, args []interface{}) ([]string, error) {
+type UniquePersons struct {
+	Groups []string `json:"groups"`
+	Logins []string `json:"logins"`
+}
+
+const potentialPersonsCapacity = 100
+
+func (db *PGCon) getTaskUniquePersons(ctx c.Context, q string, args []interface{}) (*UniquePersons, error) {
 	ctx, span := trace.StartSpan(ctx, "db.pg_get_tasks_meta")
 	defer span.End()
-
-	executorLogins := make([]string, 0)
 
 	rows, err := db.Connection.Query(ctx, q, args...)
 	if err != nil {
@@ -1874,26 +1879,34 @@ func (db *PGCon) getTaskUniquePersons(ctx c.Context, q string, args []interface{
 		group     *string
 	)
 
+	up := UniquePersons{
+		Logins: make([]string, 0, potentialPersonsCapacity),
+		Groups: make([]string, 0, potentialPersonsCapacity),
+	}
+
+	check := make(map[string]struct{}, potentialPersonsCapacity*2)
+
 	for rows.Next() {
-		err = rows.Scan(&executors, &group)
-		if err != nil {
-			return nil, err
+		if scanErr := rows.Scan(&executors, &group); scanErr != nil {
+			return nil, scanErr
 		}
 
 		if executors != nil {
 			for _, v := range *executors {
-				if !utils.IsContainsInSlice(v, executorLogins) {
-					executorLogins = append(executorLogins, v)
+				if _, ok := check[v]; !ok {
+					check[v] = struct{}{}
+
+					up.Logins = append(up.Logins, v)
 				}
 			}
 		}
 
-		if group == nil {
-			continue
-		}
+		if group != nil {
+			if _, ok := check[*group]; !ok {
+				check[*group] = struct{}{}
 
-		if !utils.IsContainsInSlice(*group, executorLogins) && *group != "" {
-			executorLogins = append(executorLogins, *group)
+				up.Groups = append(up.Groups, *group)
+			}
 		}
 	}
 
@@ -1901,7 +1914,7 @@ func (db *PGCon) getTaskUniquePersons(ctx c.Context, q string, args []interface{
 		return nil, rowsErr
 	}
 
-	return executorLogins, nil
+	return &up, nil
 }
 
 func (db *PGCon) GetTaskSteps(ctx c.Context, id uuid.UUID) (entity.TaskSteps, error) {

@@ -23,6 +23,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	dbMocks "gitlab.services.mts.ru/jocasta/pipeliner/internal/db/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/httpclient"
 	humanTasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
@@ -222,6 +223,8 @@ func Test_createGoFormBlock(t *testing.T) {
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
+
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
@@ -243,7 +246,7 @@ func Test_createGoFormBlock(t *testing.T) {
 
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							sdMock.Cli = httpClient
+							sdMock.Cli = retryableHttpClient
 
 							return &sdMock
 						}(),
@@ -383,6 +386,8 @@ func Test_createGoFormBlock(t *testing.T) {
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
+
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
@@ -404,7 +409,7 @@ func Test_createGoFormBlock(t *testing.T) {
 
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							sdMock.Cli = httpClient
+							sdMock.Cli = retryableHttpClient
 
 							return &sdMock
 						}(),
@@ -562,6 +567,8 @@ func Test_createGoFormBlock(t *testing.T) {
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
+
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
@@ -583,7 +590,7 @@ func Test_createGoFormBlock(t *testing.T) {
 
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							sdMock.Cli = httpClient
+							sdMock.Cli = retryableHttpClient
 
 							return &sdMock
 						}(),
@@ -771,7 +778,7 @@ func TestGoFormBlock_Update(t *testing.T) {
 	)
 
 	serviceDesc := &servicedesc.Service{
-		Cli:   &http.Client{},
+		Cli:   httpclient.NewClient(&http.Client{}, nil, 0, 0),
 		SdURL: "https://dev.servicedesk.mts.ru",
 	}
 
@@ -888,6 +895,8 @@ func TestGoFormBlock_Update(t *testing.T) {
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
+
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
@@ -906,7 +915,7 @@ func TestGoFormBlock_Update(t *testing.T) {
 							}
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							sdMock.Cli = httpClient
+							sdMock.Cli = retryableHttpClient
 
 							return &sdMock
 						}(),
@@ -999,6 +1008,8 @@ func TestGoFormBlock_Update(t *testing.T) {
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
+
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
@@ -1016,7 +1027,7 @@ func TestGoFormBlock_Update(t *testing.T) {
 							}
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							sdMock.Cli = httpClient
+							sdMock.Cli = retryableHttpClient
 
 							return &sdMock
 						}(),
@@ -1638,7 +1649,7 @@ func TestGoFormActions(t *testing.T) {
 			},
 			wantActions: []MemberAction{
 				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": []string{"form_0", "form_1"}}},
-				{ID: "fill_form_disabled", Type: "custom", Params: map[string]interface{}{"disabled": true, "form_name": []string{"exec"}}},
+				{ID: "fill_form_disabled", Type: "custom", Params: map[string]interface{}{"disabled": true, "form_name": []string{"exec"}, "hint_description": "Для продолжения работы над заявкой, необходимо {fill_form}"}},
 			},
 		},
 		{
@@ -1737,7 +1748,7 @@ func TestGoFormActions(t *testing.T) {
 			},
 			wantActions: []MemberAction{
 				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": []string{"form_0", "form_1"}}},
-				{ID: "fill_form_disabled", Type: "custom", Params: map[string]interface{}{"disabled": true, "form_name": []string{"exec"}}},
+				{ID: "fill_form_disabled", Type: "custom", Params: map[string]interface{}{"disabled": true, "form_name": []string{"exec"}, "hint_description": "Для продолжения работы над заявкой, необходимо {fill_form}"}},
 			},
 		},
 		{
@@ -1975,7 +1986,7 @@ func TestGoFormActions(t *testing.T) {
 			},
 			wantActions: []MemberAction{
 				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": []string{"form_0", "form_1"}}},
-				{ID: "fill_form_disabled", Type: "custom", Params: map[string]interface{}{"disabled": true, "form_name": []string{"exec"}}},
+				{ID: "fill_form_disabled", Type: "custom", Params: map[string]interface{}{"disabled": true, "form_name": []string{"exec"}, "hint_description": "Для продолжения работы над заявкой, необходимо {fill_form}"}},
 			},
 		},
 		{
@@ -2096,7 +2107,7 @@ func TestGoFormActions(t *testing.T) {
 			},
 			wantActions: []MemberAction{
 				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": []string{"form_0", "form_1"}}},
-				{ID: "fill_form_disabled", Type: "custom", Params: map[string]interface{}{"disabled": true, "form_name": []string{"exec"}}},
+				{ID: "fill_form_disabled", Type: "custom", Params: map[string]interface{}{"disabled": true, "form_name": []string{"exec"}, "hint_description": "Для продолжения работы над заявкой, необходимо {fill_form}"}},
 			},
 		},
 	}
