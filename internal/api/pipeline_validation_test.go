@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/httpclient"
 	"os"
 	"testing"
 
@@ -285,8 +286,10 @@ func TestValidation_SdBlueprintFilled(t *testing.T) {
 		},
 	}
 
+	retryableHttpClient := httpclient.HTTPClientWithRetries(httpmock.Client(&mockResponse), nil, 0, 0)
+
 	sdAPI := &servicedesc.Service{
-		Cli:   httpmock.Client(&mockResponse),
+		Cli:   retryableHttpClient,
 		SdURL: "https://dev.servicedesk.mts.ru",
 	}
 

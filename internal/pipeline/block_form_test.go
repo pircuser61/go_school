@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/httpclient"
 	"io"
 	"net/http"
 	"testing"
@@ -222,6 +223,8 @@ func Test_createGoFormBlock(t *testing.T) {
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
+							retryableHttpClient := httpclient.HTTPClientWithRetries(httpClient, nil, 0, 0)
+
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
@@ -243,7 +246,7 @@ func Test_createGoFormBlock(t *testing.T) {
 
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							sdMock.Cli = httpClient
+							sdMock.Cli = retryableHttpClient
 
 							return &sdMock
 						}(),
@@ -383,6 +386,8 @@ func Test_createGoFormBlock(t *testing.T) {
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
+							retryableHttpClient := httpclient.HTTPClientWithRetries(httpClient, nil, 0, 0)
+
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
@@ -404,7 +409,7 @@ func Test_createGoFormBlock(t *testing.T) {
 
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							sdMock.Cli = httpClient
+							sdMock.Cli = retryableHttpClient
 
 							return &sdMock
 						}(),
@@ -562,6 +567,8 @@ func Test_createGoFormBlock(t *testing.T) {
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
+							retryableHttpClient := httpclient.HTTPClientWithRetries(httpClient, nil, 0, 0)
+
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
@@ -583,7 +590,7 @@ func Test_createGoFormBlock(t *testing.T) {
 
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							sdMock.Cli = httpClient
+							sdMock.Cli = retryableHttpClient
 
 							return &sdMock
 						}(),
@@ -771,7 +778,7 @@ func TestGoFormBlock_Update(t *testing.T) {
 	)
 
 	serviceDesc := &servicedesc.Service{
-		Cli:   &http.Client{},
+		Cli:   httpclient.HTTPClientWithRetries(&http.Client{}, nil, 0, 0),
 		SdURL: "https://dev.servicedesk.mts.ru",
 	}
 
@@ -888,6 +895,8 @@ func TestGoFormBlock_Update(t *testing.T) {
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
+							retryableHttpClient := httpclient.HTTPClientWithRetries(httpClient, nil, 0, 0)
+
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
@@ -906,7 +915,7 @@ func TestGoFormBlock_Update(t *testing.T) {
 							}
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							sdMock.Cli = httpClient
+							sdMock.Cli = retryableHttpClient
 
 							return &sdMock
 						}(),
@@ -999,6 +1008,8 @@ func TestGoFormBlock_Update(t *testing.T) {
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
+							retryableHttpClient := httpclient.HTTPClientWithRetries(httpClient, nil, 0, 0)
+
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
@@ -1016,7 +1027,7 @@ func TestGoFormBlock_Update(t *testing.T) {
 							}
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							sdMock.Cli = httpClient
+							sdMock.Cli = retryableHttpClient
 
 							return &sdMock
 						}(),
