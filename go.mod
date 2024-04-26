@@ -15,6 +15,7 @@ require (
 	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/google/go-cmp v0.6.0
 	github.com/google/uuid v1.6.0
+	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.1.0
 	github.com/hrishin/httpmock v0.0.2
 	github.com/iancoleman/orderedmap v0.3.0
 	github.com/jackc/pgconn v1.14.0
@@ -41,7 +42,7 @@ require (
 	gitlab.services.mts.ru/jocasta/sequence v0.0.0-20240412094937-d4b3accaf9cd
 	gitlab.services.mts.ru/prodboard/infra v0.3.0
 	go.opencensus.io v0.24.0
-	golang.org/x/exp v0.0.0-20230206171751-46f607a40771
+	golang.org/x/exp v0.0.0-20230522175609-2e198f4a06a1
 	golang.org/x/net v0.21.0
 	golang.org/x/sync v0.6.0
 	golang.org/x/text v0.14.0
