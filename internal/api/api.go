@@ -2158,6 +2158,7 @@ type TimerParams struct {
 // UniquePersons defines model for UniquePersons.
 type UniquePersons struct {
 	Groups *[]string     `json:"groups,omitempty"`
+	Logins *[]string     `json:"logins,omitempty"`
 	Users  *[]UniqueUser `json:"users,omitempty"`
 }
 
