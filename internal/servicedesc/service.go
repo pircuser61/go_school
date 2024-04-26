@@ -42,7 +42,7 @@ func NewService(cfg *Config, ssoS *sso.Service) (ServiceInterface, error) {
 	}
 
 	httpClient.Transport = &tr
-	newCli := httpclient.HTTPClientWithRetries(httpClient, nil, cfg.MaxRetries, cfg.RetryDelay)
+	newCli := httpclient.NewClient(httpClient, nil, cfg.MaxRetries, cfg.RetryDelay)
 
 	return &Service{
 		Cli:   newCli,

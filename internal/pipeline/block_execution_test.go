@@ -5,7 +5,6 @@ import (
 	c "context"
 	"encoding/json"
 	"fmt"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/httpclient"
 	"io"
 	"net/http"
 	"testing"
@@ -21,6 +20,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/httpclient"
 	humanTasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks"
 	mocks2 "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
@@ -755,7 +755,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
-							retryableHttpClient := httpclient.HTTPClientWithRetries(httpClient, nil, 0, 0)
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
@@ -825,7 +825,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
-							retryableHttpClient := httpclient.HTTPClientWithRetries(httpClient, nil, 0, 0)
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
@@ -894,7 +894,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
-							retryableHttpClient := httpclient.HTTPClientWithRetries(httpClient, nil, 0, 0)
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
@@ -964,7 +964,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
-							retryableHttpClient := httpclient.HTTPClientWithRetries(httpClient, nil, 0, 0)
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
@@ -1034,7 +1034,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
-							retryableHttpClient := httpclient.HTTPClientWithRetries(httpClient, nil, 0, 0)
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
@@ -1104,7 +1104,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
-							retryableHttpClient := httpclient.HTTPClientWithRetries(httpClient, nil, 0, 0)
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
@@ -1174,7 +1174,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
-							retryableHttpClient := httpclient.HTTPClientWithRetries(httpClient, nil, 0, 0)
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
@@ -1272,7 +1272,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
-							retryableHttpClient := httpclient.HTTPClientWithRetries(httpClient, nil, 0, 0)
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
@@ -1342,7 +1342,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
-							retryableHttpClient := httpclient.HTTPClientWithRetries(httpClient, nil, 0, 0)
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
@@ -1447,7 +1447,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
-							retryableHttpClient := httpclient.HTTPClientWithRetries(httpClient, nil, 0, 0)
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
@@ -1509,7 +1509,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
-							retryableHttpClient := httpclient.HTTPClientWithRetries(httpClient, nil, 0, 0)
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
@@ -1579,7 +1579,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
-							retryableHttpClient := httpclient.HTTPClientWithRetries(httpClient, nil, 0, 0)
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
@@ -1640,7 +1640,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
-							retryableHttpClient := httpclient.HTTPClientWithRetries(httpClient, nil, 0, 0)
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
@@ -1702,7 +1702,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
-							retryableHttpClient := httpclient.HTTPClientWithRetries(httpClient, nil, 0, 0)
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
@@ -1764,7 +1764,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
-							retryableHttpClient := httpclient.HTTPClientWithRetries(httpClient, nil, 0, 0)
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
@@ -1832,7 +1832,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
-							retryableHttpClient := httpclient.HTTPClientWithRetries(httpClient, nil, 0, 0)
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
@@ -1894,7 +1894,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
-							retryableHttpClient := httpclient.HTTPClientWithRetries(httpClient, nil, 0, 0)
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
@@ -1963,7 +1963,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
-							retryableHttpClient := httpclient.HTTPClientWithRetries(httpClient, nil, 0, 0)
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
@@ -2030,7 +2030,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
-							retryableHttpClient := httpclient.HTTPClientWithRetries(httpClient, nil, 0, 0)
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
@@ -2121,7 +2121,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
-							retryableHttpClient := httpclient.HTTPClientWithRetries(httpClient, nil, 0, 0)
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
@@ -2190,7 +2190,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
-							retryableHttpClient := httpclient.HTTPClientWithRetries(httpClient, nil, 0, 0)
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {

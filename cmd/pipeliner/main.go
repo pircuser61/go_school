@@ -72,7 +72,7 @@ func main() {
 		return
 	}
 
-	httpClient := httpclient.HTTPClientWithRetries(
+	httpClient := httpclient.NewClient(
 		httpclient.HTTPClient(cfg.HTTPClientConfig), log, cfg.HTTPClientConfig.MaxRetries, cfg.HTTPClientConfig.RetryDelay,
 	)
 

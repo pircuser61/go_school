@@ -5,7 +5,6 @@ import (
 	c "context"
 	"encoding/json"
 	"fmt"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/httpclient"
 	"io"
 	"net/http"
 	"os"
@@ -22,6 +21,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/httpclient"
 	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks"
 	mocks2 "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
@@ -1983,7 +1983,7 @@ func TestGoSignBlock_Update(t *testing.T) {
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
-							retryableHttpClient := httpclient.HTTPClientWithRetries(httpClient, nil, 0, 0)
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
@@ -2050,7 +2050,7 @@ func TestGoSignBlock_Update(t *testing.T) {
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
-							retryableHttpClient := httpclient.HTTPClientWithRetries(httpClient, nil, 0, 0)
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
@@ -2118,7 +2118,7 @@ func TestGoSignBlock_Update(t *testing.T) {
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
-							retryableHttpClient := httpclient.HTTPClientWithRetries(httpClient, nil, 0, 0)
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
@@ -2185,7 +2185,7 @@ func TestGoSignBlock_Update(t *testing.T) {
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
-							retryableHttpClient := httpclient.HTTPClientWithRetries(httpClient, nil, 0, 0)
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
@@ -2252,7 +2252,7 @@ func TestGoSignBlock_Update(t *testing.T) {
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
-							retryableHttpClient := httpclient.HTTPClientWithRetries(httpClient, nil, 0, 0)
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
@@ -2316,7 +2316,7 @@ func TestGoSignBlock_Update(t *testing.T) {
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
-							retryableHttpClient := httpclient.HTTPClientWithRetries(httpClient, nil, 0, 0)
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
@@ -2382,7 +2382,7 @@ func TestGoSignBlock_Update(t *testing.T) {
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
-							retryableHttpClient := httpclient.HTTPClientWithRetries(httpClient, nil, 0, 0)
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
@@ -2447,7 +2447,7 @@ func TestGoSignBlock_Update(t *testing.T) {
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
-							retryableHttpClient := httpclient.HTTPClientWithRetries(httpClient, nil, 0, 0)
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
@@ -2512,7 +2512,7 @@ func TestGoSignBlock_Update(t *testing.T) {
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
-							retryableHttpClient := httpclient.HTTPClientWithRetries(httpClient, nil, 0, 0)
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
@@ -2577,7 +2577,7 @@ func TestGoSignBlock_Update(t *testing.T) {
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
-							retryableHttpClient := httpclient.HTTPClientWithRetries(httpClient, nil, 0, 0)
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
@@ -2642,7 +2642,7 @@ func TestGoSignBlock_Update(t *testing.T) {
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
-							retryableHttpClient := httpclient.HTTPClientWithRetries(httpClient, nil, 0, 0)
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
@@ -2707,7 +2707,7 @@ func TestGoSignBlock_Update(t *testing.T) {
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
-							retryableHttpClient := httpclient.HTTPClientWithRetries(httpClient, nil, 0, 0)
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
@@ -2773,7 +2773,7 @@ func TestGoSignBlock_Update(t *testing.T) {
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
-							retryableHttpClient := httpclient.HTTPClientWithRetries(httpClient, nil, 0, 0)
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
@@ -2839,7 +2839,7 @@ func TestGoSignBlock_Update(t *testing.T) {
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
-							retryableHttpClient := httpclient.HTTPClientWithRetries(httpClient, nil, 0, 0)
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
@@ -2907,7 +2907,7 @@ func TestGoSignBlock_Update(t *testing.T) {
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
-							retryableHttpClient := httpclient.HTTPClientWithRetries(httpClient, nil, 0, 0)
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
@@ -2999,7 +2999,7 @@ func TestGoSignBlock_Update(t *testing.T) {
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
-							retryableHttpClient := httpclient.HTTPClientWithRetries(httpClient, nil, 0, 0)
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
@@ -3066,7 +3066,7 @@ func TestGoSignBlock_Update(t *testing.T) {
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
-							retryableHttpClient := httpclient.HTTPClientWithRetries(httpClient, nil, 0, 0)
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(servicedesc.SsoPerson{})
@@ -3222,7 +3222,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 						People: func() *people.Service {
 							plMock := people.Service{}
 							httpClient := http.DefaultClient
-							retryableHttpClient := httpclient.HTTPClientWithRetries(httpClient, nil, 0, 0)
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(people.Service{})
@@ -3302,7 +3302,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 						People: func() *people.Service {
 							plMock := people.Service{}
 							httpClient := http.DefaultClient
-							retryableHttpClient := httpclient.HTTPClientWithRetries(httpClient, nil, 0, 0)
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(people.Service{})
@@ -3382,7 +3382,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 						People: func() *people.Service {
 							plMock := people.Service{}
 							httpClient := http.DefaultClient
-							retryableHttpClient := httpclient.HTTPClientWithRetries(httpClient, nil, 0, 0)
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(people.Service{})
@@ -3462,7 +3462,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 						People: func() *people.Service {
 							plMock := people.Service{}
 							httpClient := http.DefaultClient
-							retryableHttpClient := httpclient.HTTPClientWithRetries(httpClient, nil, 0, 0)
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(people.Service{})
@@ -3542,7 +3542,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 						People: func() *people.Service {
 							plMock := people.Service{}
 							httpClient := http.DefaultClient
-							retryableHttpClient := httpclient.HTTPClientWithRetries(httpClient, nil, 0, 0)
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(people.Service{})
@@ -3622,7 +3622,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 						People: func() *people.Service {
 							plMock := people.Service{}
 							httpClient := http.DefaultClient
-							retryableHttpClient := httpclient.HTTPClientWithRetries(httpClient, nil, 0, 0)
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(people.Service{})
@@ -3702,7 +3702,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 						People: func() *people.Service {
 							plMock := people.Service{}
 							httpClient := http.DefaultClient
-							retryableHttpClient := httpclient.HTTPClientWithRetries(httpClient, nil, 0, 0)
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(people.Service{})
@@ -3782,7 +3782,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 						People: func() *people.Service {
 							plMock := people.Service{}
 							httpClient := http.DefaultClient
-							retryableHttpClient := httpclient.HTTPClientWithRetries(httpClient, nil, 0, 0)
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(people.Service{})
@@ -3862,7 +3862,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 						People: func() *people.Service {
 							plMock := people.Service{}
 							httpClient := http.DefaultClient
-							retryableHttpClient := httpclient.HTTPClientWithRetries(httpClient, nil, 0, 0)
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(people.Service{})
@@ -3942,7 +3942,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 						People: func() *people.Service {
 							plMock := people.Service{}
 							httpClient := http.DefaultClient
-							retryableHttpClient := httpclient.HTTPClientWithRetries(httpClient, nil, 0, 0)
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(people.Service{})
@@ -4009,7 +4009,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 						People: func() *people.Service {
 							plMock := people.Service{}
 							httpClient := http.DefaultClient
-							retryableHttpClient := httpclient.HTTPClientWithRetries(httpClient, nil, 0, 0)
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(people.Service{})
@@ -4076,7 +4076,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 						People: func() *people.Service {
 							plMock := people.Service{}
 							httpClient := http.DefaultClient
-							retryableHttpClient := httpclient.HTTPClientWithRetries(httpClient, nil, 0, 0)
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(people.Service{})
@@ -4163,7 +4163,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 						People: func() *people.Service {
 							plMock := people.Service{}
 							httpClient := http.DefaultClient
-							retryableHttpClient := httpclient.HTTPClientWithRetries(httpClient, nil, 0, 0)
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(people.Service{})
@@ -4235,7 +4235,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 						People: func() *people.Service {
 							plMock := people.Service{}
 							httpClient := http.DefaultClient
-							retryableHttpClient := httpclient.HTTPClientWithRetries(httpClient, nil, 0, 0)
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(people.Service{})
@@ -4302,7 +4302,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 						People: func() *people.Service {
 							plMock := people.Service{}
 							httpClient := http.DefaultClient
-							retryableHttpClient := httpclient.HTTPClientWithRetries(httpClient, nil, 0, 0)
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(people.Service{})
@@ -4369,7 +4369,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 						People: func() *people.Service {
 							plMock := people.Service{}
 							httpClient := http.DefaultClient
-							retryableHttpClient := httpclient.HTTPClientWithRetries(httpClient, nil, 0, 0)
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(people.Service{})
@@ -4436,7 +4436,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 						People: func() *people.Service {
 							plMock := people.Service{}
 							httpClient := http.DefaultClient
-							retryableHttpClient := httpclient.HTTPClientWithRetries(httpClient, nil, 0, 0)
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(people.Service{})
@@ -4516,7 +4516,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 						People: func() *people.Service {
 							plMock := people.Service{}
 							httpClient := http.DefaultClient
-							retryableHttpClient := httpclient.HTTPClientWithRetries(httpClient, nil, 0, 0)
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(people.Service{})
@@ -4596,7 +4596,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 						People: func() *people.Service {
 							plMock := people.Service{}
 							httpClient := http.DefaultClient
-							retryableHttpClient := httpclient.HTTPClientWithRetries(httpClient, nil, 0, 0)
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(people.Service{})
@@ -4676,7 +4676,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 						People: func() *people.Service {
 							plMock := people.Service{}
 							httpClient := http.DefaultClient
-							retryableHttpClient := httpclient.HTTPClientWithRetries(httpClient, nil, 0, 0)
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(people.Service{})
@@ -4743,7 +4743,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 						People: func() *people.Service {
 							plMock := people.Service{}
 							httpClient := http.DefaultClient
-							retryableHttpClient := httpclient.HTTPClientWithRetries(httpClient, nil, 0, 0)
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(people.Service{})
@@ -4830,7 +4830,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 						People: func() *people.Service {
 							plMock := people.Service{}
 							httpClient := http.DefaultClient
-							retryableHttpClient := httpclient.HTTPClientWithRetries(httpClient, nil, 0, 0)
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(people.Service{})
@@ -4921,7 +4921,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 						People: func() *people.Service {
 							plMock := people.Service{}
 							httpClient := http.DefaultClient
-							retryableHttpClient := httpclient.HTTPClientWithRetries(httpClient, nil, 0, 0)
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(people.Service{})
@@ -5012,7 +5012,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 						People: func() *people.Service {
 							plMock := people.Service{}
 							httpClient := http.DefaultClient
-							retryableHttpClient := httpclient.HTTPClientWithRetries(httpClient, nil, 0, 0)
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(people.Service{})
@@ -5100,7 +5100,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 						People: func() *people.Service {
 							plMock := people.Service{}
 							httpClient := http.DefaultClient
-							retryableHttpClient := httpclient.HTTPClientWithRetries(httpClient, nil, 0, 0)
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(people.Service{})
@@ -5192,7 +5192,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 						People: func() *people.Service {
 							plMock := people.Service{}
 							httpClient := http.DefaultClient
-							retryableHttpClient := httpclient.HTTPClientWithRetries(httpClient, nil, 0, 0)
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
 								b, _ := json.Marshal(people.Service{})

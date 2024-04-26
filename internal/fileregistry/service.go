@@ -72,7 +72,7 @@ func NewService(cfg Config, log logger.Logger) (*Service, error) {
 
 	return &Service{
 		c:       conn,
-		restCli: httpclient.HTTPClientWithRetries(&http.Client{}, log, cfg.MaxRetries, cfg.RetryDelay),
+		restCli: httpclient.NewClient(&http.Client{}, log, cfg.MaxRetries, cfg.RetryDelay),
 		restURL: cfg.REST,
 		grpcCLi: client,
 	}, nil

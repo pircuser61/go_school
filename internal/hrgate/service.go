@@ -44,7 +44,7 @@ func NewService(cfg *Config, ssoS *sso.Service) (ServiceInterface, error) {
 	}
 
 	httpClient.Transport = &tr
-	retryableCli := httpclient.HTTPClientWithRetries(httpClient, nil, cfg.MaxRetries, cfg.RetryDelay)
+	retryableCli := httpclient.NewClient(httpClient, nil, cfg.MaxRetries, cfg.RetryDelay)
 	wrappedRetryableCli := httpRequestDoer{retryableCli}
 
 	newCli, createClientErr := NewClientWithResponses(cfg.HRGateURL, WithHTTPClient(wrappedRetryableCli), WithBaseURL(cfg.HRGateURL))

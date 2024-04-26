@@ -56,7 +56,7 @@ func HTTPClient(config *Config) *http.Client {
 	}
 }
 
-func HTTPClientWithRetries(client *http.Client, log logger.Logger, maxRetries uint, retryDelay time.Duration) *retryablehttp.Client {
+func NewClient(client *http.Client, log logger.Logger, maxRetries uint, retryDelay time.Duration) *retryablehttp.Client {
 	return &retryablehttp.Client{
 		HTTPClient: client,
 		Logger:     log,

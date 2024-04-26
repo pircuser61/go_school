@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/httpclient"
 	"io"
 	"net/http"
 	"testing"
@@ -24,6 +23,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	dbMocks "gitlab.services.mts.ru/jocasta/pipeliner/internal/db/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/httpclient"
 	humanTasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
@@ -223,7 +223,7 @@ func Test_createGoFormBlock(t *testing.T) {
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
-							retryableHttpClient := httpclient.HTTPClientWithRetries(httpClient, nil, 0, 0)
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
@@ -386,7 +386,7 @@ func Test_createGoFormBlock(t *testing.T) {
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
-							retryableHttpClient := httpclient.HTTPClientWithRetries(httpClient, nil, 0, 0)
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
@@ -567,7 +567,7 @@ func Test_createGoFormBlock(t *testing.T) {
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
-							retryableHttpClient := httpclient.HTTPClientWithRetries(httpClient, nil, 0, 0)
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
@@ -778,7 +778,7 @@ func TestGoFormBlock_Update(t *testing.T) {
 	)
 
 	serviceDesc := &servicedesc.Service{
-		Cli:   httpclient.HTTPClientWithRetries(&http.Client{}, nil, 0, 0),
+		Cli:   httpclient.NewClient(&http.Client{}, nil, 0, 0),
 		SdURL: "https://dev.servicedesk.mts.ru",
 	}
 
@@ -895,7 +895,7 @@ func TestGoFormBlock_Update(t *testing.T) {
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
-							retryableHttpClient := httpclient.HTTPClientWithRetries(httpClient, nil, 0, 0)
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
@@ -1008,7 +1008,7 @@ func TestGoFormBlock_Update(t *testing.T) {
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
-							retryableHttpClient := httpclient.HTTPClientWithRetries(httpClient, nil, 0, 0)
+							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
