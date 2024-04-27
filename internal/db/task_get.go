@@ -298,7 +298,7 @@ func getUniqueActions(selectFilter string, logins []string, isPersonFilter bool)
 
 //nolint:gocritic //изначально было без поинтера
 func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string, args []interface{}) {
-	// nolint:gocritic
+	// nolint:gocritic,lll
 	// language=PostgreSQL
 	q = `
 		[with_variable_storage]
