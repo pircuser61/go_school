@@ -180,6 +180,7 @@ func (db *PGCon) GetEditedStepInputs(ctx c.Context, stepName, workNumber string,
 		query = fmt.Sprintf("%s %s", query, `AND ts.created_at > $3`)
 	}
 
+	// nolint:ineffassign, тут всё заебись
 	query += getInputsQueryOrder
 
 	err := db.Connection.QueryRow(ctx, getInputsQuery, workNumber, stepName, updatedAt).Scan(&inputs)
