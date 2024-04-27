@@ -417,6 +417,8 @@ func (gb *ExecutableFunctionBlock) createExpectedEvents(
 	return nil
 }
 
+var ErrMessageFromKafkaHasError = errors.New("message from kafka has error")
+
 func (gb *ExecutableFunctionBlock) setStateByResponse(ctx context.Context, log logger.Logger, updateData *FunctionUpdateParams) error {
 	if gb.State.Async && gb.State.HasAck && !updateData.IsAsyncResult {
 		log.Warning("repeating ack message")
@@ -451,12 +453,13 @@ func (gb *ExecutableFunctionBlock) setStateByResponse(ctx context.Context, log l
 		log.WithField("message.Err", updateData.Err).
 			Error("message from kafka has error")
 
-		return errors.New("message from kafka has error")
+		return ErrMessageFromKafkaHasError
 	}
 
-	if gb.State.Async && !gb.State.HasAck {
+	if gb.State.Async && !gb.State.HasAck && !updateData.IsAsyncResult {
 		gb.State.HasAck = true
 	} else {
+		gb.State.HasAck = true
 		gb.State.HasResponse = true
 	}
 
