@@ -45,6 +45,8 @@ sso:
   client_id: "jocasta-dev"
   realm: "mts"
   access_cookie_name: "kc-access"
+  max_retries: 3
+  retry_delay: 1s
 
 mail:
   broker: "redis"
