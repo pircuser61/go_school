@@ -1724,36 +1724,6 @@ func (_c *MockedDatabase_GetBlockDataFromVersion_Call) RunAndReturn(run func(con
 	return _c
 }
 
-// GetNewStepInputs provides a mock function with given fields: ctx, blockName, workNumber
-func (_m *MockedDatabase) GetNewStepInputs(ctx context.Context, blockName string, workNumber string) (entity.BlockInputs, error) {
-	ret := _m.Called(ctx, blockName, workNumber)
-
-	if len(ret) == 0 {
-		panic("no return value specified for GetNewStepInputs")
-	}
-
-	var r0 entity.BlockInputs
-	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, string) (entity.BlockInputs, error)); ok {
-		return rf(ctx, blockName, workNumber)
-	}
-	if rf, ok := ret.Get(0).(func(context.Context, string, string) entity.BlockInputs); ok {
-		r0 = rf(ctx, blockName, workNumber)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(entity.BlockInputs)
-		}
-	}
-
-	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
-		r1 = rf(ctx, blockName, workNumber)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
 // GetStepInputs provides a mock function with given fields: ctx, blockName, workNumber, createdAt
 func (_m *MockedDatabase) GetStepInputs(ctx context.Context, blockName string, workNumber string, createdAt time.Time) (entity.BlockInputs, error) {
 	ret := _m.Called(ctx, blockName, workNumber, createdAt)
@@ -1784,7 +1754,7 @@ func (_m *MockedDatabase) GetStepInputs(ctx context.Context, blockName string, w
 	return r0, r1
 }
 
-// MockedDatabase_GetBlockInputs_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetNewStepInputs'
+// MockedDatabase_GetBlockInputs_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method
 type MockedDatabase_GetBlockInputs_Call struct {
 	*mock.Call
 }
@@ -1794,7 +1764,7 @@ type MockedDatabase_GetBlockInputs_Call struct {
 //   - blockName string
 //   - workNumber string
 func (_e *MockedDatabase_Expecter) GetBlockInputs(ctx interface{}, blockName interface{}, workNumber interface{}) *MockedDatabase_GetBlockInputs_Call {
-	return &MockedDatabase_GetBlockInputs_Call{Call: _e.mock.On("GetNewStepInputs", ctx, blockName, workNumber)}
+	return &MockedDatabase_GetBlockInputs_Call{Call: _e.mock.On("GetStepInputs", ctx, blockName, workNumber)}
 }
 
 func (_c *MockedDatabase_GetBlockInputs_Call) Run(run func(ctx context.Context, blockName string, workNumber string)) *MockedDatabase_GetBlockInputs_Call {
