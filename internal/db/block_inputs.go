@@ -109,6 +109,8 @@ const getInputsQuery = `
 	WHERE ts.work_id = (SELECT id FROM works WHERE work_number = $1 AND child_id IS NULL LIMIT 1) AND 
 		ts.step_name = $2`
 
+const getInputsQueryOrder = " ORDER BY ts.created_at DESC LIMIT 1"
+
 func (db *PGCon) GetStepInputs(ctx c.Context, stepName, workNumber string, createdAt time.Time) (e.BlockInputs, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_step_inputs")
 	defer span.End()
@@ -129,7 +131,7 @@ func (db *PGCon) GetStepInputs(ctx c.Context, stepName, workNumber string, creat
 		queryParams = append(queryParams, createdAt)
 	}
 
-	query += "ORDER BY ts.created_at DESC LIMIT 1"
+	query += getInputsQueryOrder
 
 	err := db.Connection.QueryRow(ctx, query, queryParams...).Scan(&inputs)
 	if err != nil {
@@ -178,7 +180,7 @@ func (db *PGCon) GetEditedStepInputs(ctx c.Context, stepName, workNumber string,
 		query = fmt.Sprintf("%s %s", query, `AND ts.created_at > $3`)
 	}
 
-	query += "ORDER BY ts.created_at DESC LIMIT 1"
+	query += getInputsQueryOrder
 
 	err := db.Connection.QueryRow(ctx, getInputsQuery, workNumber, stepName, updatedAt).Scan(&inputs)
 	if err != nil {
