@@ -1,8 +1,9 @@
 package sso
 
 import (
-	"go.opencensus.io/plugin/ochttp"
 	"net/http"
+
+	"go.opencensus.io/plugin/ochttp"
 )
 
 type TransportForSso struct {
