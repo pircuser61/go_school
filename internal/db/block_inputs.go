@@ -129,7 +129,7 @@ func (db *PGCon) GetStepInputs(ctx c.Context, stepName, workNumber string, creat
 		queryParams = append(queryParams, createdAt)
 	}
 
-	query = query + "ORDER BY ts.created_at DESC LIMIT 1"
+	query += "ORDER BY ts.created_at DESC LIMIT 1"
 
 	err := db.Connection.QueryRow(ctx, query, queryParams...).Scan(&inputs)
 	if err != nil {
@@ -178,7 +178,7 @@ func (db *PGCon) GetEditedStepInputs(ctx c.Context, stepName, workNumber string,
 		query = fmt.Sprintf("%s %s", query, `AND ts.created_at > $3`)
 	}
 
-	query = query + "ORDER BY ts.created_at DESC LIMIT 1"
+	query += "ORDER BY ts.created_at DESC LIMIT 1"
 
 	err := db.Connection.QueryRow(ctx, getInputsQuery, workNumber, stepName, updatedAt).Scan(&inputs)
 	if err != nil {
