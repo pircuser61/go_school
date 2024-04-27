@@ -454,9 +454,10 @@ func (gb *ExecutableFunctionBlock) setStateByResponse(ctx context.Context, log l
 		return errors.New("message from kafka has error")
 	}
 
-	if gb.State.Async && !gb.State.HasAck {
+	if gb.State.Async && !gb.State.HasAck && !updateData.IsAsyncResult {
 		gb.State.HasAck = true
 	} else {
+		gb.State.HasAck = true
 		gb.State.HasResponse = true
 	}
 
