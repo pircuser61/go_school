@@ -851,6 +851,53 @@ func (_c *MockedDatabase_CreateTaskEvent_Call) RunAndReturn(run func(context.Con
 	return _c
 }
 
+// CreateTaskStepsInputs provides a mock function with given fields: ctx, in
+func (_m *MockedDatabase) CreateTaskStepsInputs(ctx context.Context, in *entity.CreateUpdatesInputsHistory) error {
+	ret := _m.Called(ctx, in)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CreateTaskStepsInputs")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, *entity.CreateUpdatesInputsHistory) error); ok {
+		r0 = rf(ctx, in)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// MockedDatabase_CreateTaskStepsInputs_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CreateTaskStepsInputs'
+type MockedDatabase_CreateTaskStepsInputs_Call struct {
+	*mock.Call
+}
+
+// CreateTaskStepsInputs is a helper method to define mock.On call
+//   - ctx context.Context
+//   - in *entity.CreateUpdatesInputsHistory
+func (_e *MockedDatabase_Expecter) CreateTaskStepsInputs(ctx interface{}, in interface{}) *MockedDatabase_CreateTaskStepsInputs_Call {
+	return &MockedDatabase_CreateTaskStepsInputs_Call{Call: _e.mock.On("CreateTaskStepsInputs", ctx, in)}
+}
+
+func (_c *MockedDatabase_CreateTaskStepsInputs_Call) Run(run func(ctx context.Context, in *entity.CreateUpdatesInputsHistory)) *MockedDatabase_CreateTaskStepsInputs_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(*entity.CreateUpdatesInputsHistory))
+	})
+	return _c
+}
+
+func (_c *MockedDatabase_CreateTaskStepsInputs_Call) Return(_a0 error) *MockedDatabase_CreateTaskStepsInputs_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *MockedDatabase_CreateTaskStepsInputs_Call) RunAndReturn(run func(context.Context, *entity.CreateUpdatesInputsHistory) error) *MockedDatabase_CreateTaskStepsInputs_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // CreateVersion provides a mock function with given fields: ctx, p, author, pipelineData, oldVersionID, hasPrivateFunction
 func (_m *MockedDatabase) CreateVersion(ctx context.Context, p *entity.EriusScenario, author string, pipelineData []byte, oldVersionID uuid.UUID, hasPrivateFunction bool) error {
 	ret := _m.Called(ctx, p, author, pipelineData, oldVersionID, hasPrivateFunction)
@@ -4880,6 +4927,66 @@ func (_c *MockedDatabase_GetTasksForMonitoring_Call) RunAndReturn(run func(conte
 	return _c
 }
 
+// GetTasksSchemas provides a mock function with given fields: ctx, filters, delegations
+func (_m *MockedDatabase) GetTasksSchemas(ctx context.Context, filters entity.TaskFilter, delegations []string) ([]entity.BlueprintSchemas, error) {
+	ret := _m.Called(ctx, filters, delegations)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetTasksSchemas")
+	}
+
+	var r0 []entity.BlueprintSchemas
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, entity.TaskFilter, []string) ([]entity.BlueprintSchemas, error)); ok {
+		return rf(ctx, filters, delegations)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, entity.TaskFilter, []string) []entity.BlueprintSchemas); ok {
+		r0 = rf(ctx, filters, delegations)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]entity.BlueprintSchemas)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, entity.TaskFilter, []string) error); ok {
+		r1 = rf(ctx, filters, delegations)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockedDatabase_GetTasksSchemas_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetTasksSchemas'
+type MockedDatabase_GetTasksSchemas_Call struct {
+	*mock.Call
+}
+
+// GetTasksSchemas is a helper method to define mock.On call
+//   - ctx context.Context
+//   - filters entity.TaskFilter
+//   - delegations []string
+func (_e *MockedDatabase_Expecter) GetTasksSchemas(ctx interface{}, filters interface{}, delegations interface{}) *MockedDatabase_GetTasksSchemas_Call {
+	return &MockedDatabase_GetTasksSchemas_Call{Call: _e.mock.On("GetTasksSchemas", ctx, filters, delegations)}
+}
+
+func (_c *MockedDatabase_GetTasksSchemas_Call) Run(run func(ctx context.Context, filters entity.TaskFilter, delegations []string)) *MockedDatabase_GetTasksSchemas_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(entity.TaskFilter), args[2].([]string))
+	})
+	return _c
+}
+
+func (_c *MockedDatabase_GetTasksSchemas_Call) Return(_a0 []entity.BlueprintSchemas, _a1 error) *MockedDatabase_GetTasksSchemas_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockedDatabase_GetTasksSchemas_Call) RunAndReturn(run func(context.Context, entity.TaskFilter, []string) ([]entity.BlueprintSchemas, error)) *MockedDatabase_GetTasksSchemas_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetTasksUsers provides a mock function with given fields: ctx, filters, delegations
 func (_m *MockedDatabase) GetTasksUsers(ctx context.Context, filters entity.TaskFilter, delegations []string) (db.UniquePersons, error) {
 	ret := _m.Called(ctx, filters, delegations)
@@ -6244,11 +6351,6 @@ func (_m *MockedDatabase) RemoveExternalSystem(ctx context.Context, versionID st
 	}
 
 	return r0
-}
-
-// RemoveExternalSystem provides a mock function with given fields: ctx, versionID, systemID
-func (_m *MockedDatabase) CreateTaskStepsInputs(ctx context.Context, in *entity.CreateUpdatesInputsHistory) error {
-	return nil
 }
 
 // MockedDatabase_RemoveExternalSystem_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'RemoveExternalSystem'

@@ -34,6 +34,7 @@ type TaskStorager interface {
 	GetDeadline(ctx c.Context, workID string) (time.Time, error)
 	GetTasks(ctx c.Context, filters e.TaskFilter, delegations []string) (*e.EriusTasksPage, error)
 	GetTasksUsers(ctx c.Context, filters e.TaskFilter, delegations []string) (UniquePersons, error)
+	GetTasksSchemas(ctx c.Context, filters e.TaskFilter, delegations []string) ([]e.BlueprintSchemas, error)
 	GetTasksCount(ctx c.Context, currentUser string, delegationsByApprovement, delegationsByExecution []string) (*e.CountTasks, error)
 	GetTask(ctx c.Context, delegationsApprover, delegationsExecution []string, currentUser, workNumber string) (*e.EriusTask, error)
 	GetTaskSteps(ctx c.Context, id uuid.UUID) (e.TaskSteps, error)
