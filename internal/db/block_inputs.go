@@ -162,3 +162,39 @@ func (db *PGCon) GetStepInputs(ctx c.Context, stepName, workNumber string, creat
 
 	return res, nil
 }
+
+func (db *PGCon) GetEditedStepInputs(ctx c.Context, stepName, workNumber string, updatedAt time.Time) (e.BlockInputs, error) {
+	ctx, span := trace.StartSpan(ctx, "pg_get_edited_step_inputs")
+	defer span.End()
+
+	res := make(e.BlockInputs, 0)
+	inputs := make(map[string]interface{}, 0)
+
+	getInputsQuery := `
+		SELECT content
+		FROM task_steps_inputs ts
+		WHERE ts.work_id = (SELECT id FROM works WHERE work_number = $1 AND child_id IS NULL LIMIT 1) AND 
+			ts.step_name = $2`
+
+	if !updatedAt.IsZero() {
+		getInputsQuery = fmt.Sprintf("%s %s", getInputsQuery, `AND ts.created_at > $3`)
+	}
+
+	getInputsQuery = getInputsQuery + "ORDER BY ts.created_at DESC LIMIT 1"
+
+	err := db.Connection.QueryRow(ctx, getInputsQuery, workNumber, stepName, updatedAt).Scan(&inputs)
+	if err != nil {
+		if !errors.Is(err, pgx.ErrNoRows) {
+			return res, nil
+		}
+	}
+
+	for i := range inputs {
+		res = append(res, e.BlockInputValue{
+			Name:  i,
+			Value: inputs[i],
+		})
+	}
+
+	return res, nil
+}

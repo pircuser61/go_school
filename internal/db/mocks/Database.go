@@ -1754,6 +1754,37 @@ func (_m *MockedDatabase) GetStepInputs(ctx context.Context, blockName string, w
 	return r0, r1
 }
 
+
+// GetStepInputs provides a mock function with given fields: ctx, blockName, workNumber, createdAt
+func (_m *MockedDatabase) GetEditedStepInputs(ctx context.Context, blockName string, workNumber string, updatedAt time.Time) (entity.BlockInputs, error) {
+	ret := _m.Called(ctx, blockName, workNumber, updatedAt)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetEditedStepInputs")
+	}
+
+	var r0 entity.BlockInputs
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, time.Time) (entity.BlockInputs, error)); ok {
+		return rf(ctx, blockName, workNumber, updatedAt)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, time.Time) entity.BlockInputs); ok {
+		r0 = rf(ctx, blockName, workNumber, updatedAt)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(entity.BlockInputs)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string, string, time.Time) error); ok {
+		r1 = rf(ctx, blockName, workNumber, updatedAt)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // MockedDatabase_GetBlockInputs_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method
 type MockedDatabase_GetBlockInputs_Call struct {
 	*mock.Call

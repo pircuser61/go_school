@@ -279,7 +279,7 @@ func (ae *Env) GetMonitoringTasksBlockBlockIdParams(w http.ResponseWriter, req *
 		errorHandler.handleError(UUIDParsingError, err)
 	}
 
-	taskStep, err := ae.DB.GetTaskStepByID(ctx, stepID)
+	dbStep, err := ae.DB.GetTaskStepByID(ctx, stepID)
 	if err != nil {
 		e := UnknownError
 
@@ -288,34 +288,40 @@ func (ae *Env) GetMonitoringTasksBlockBlockIdParams(w http.ResponseWriter, req *
 		errorHandler.sendError(e)
 	}
 
-	stepInputs, err := ae.DB.GetStepInputs(ctx, taskStep.Name, taskStep.WorkNumber, taskStep.Time)
+	dbWhileRunningInputs, err := ae.DB.GetStepInputs(ctx, dbStep.Name, dbStep.WorkNumber, dbStep.Time)
 	if err != nil {
 		e := GetBlockContextError
 
 		log.WithField("stepID", stepID).
-			WithField("stepName", taskStep.Name).
+			WithField("stepName", dbStep.Name).
 			Error(e.errorMessage(err))
 		errorHandler.sendError(e)
 
 		return
 	}
 
-	inputs := make(map[string]MonitoringBlockParam, 0)
+	var dbEditedInputs entity.BlockInputs
 
-	for _, bo := range stepInputs {
-		inputs[bo.Name] = MonitoringBlockParam{
-			Name:  bo.Name,
-			Value: bo.Value,
-			Type:  utils.GetJSONType(bo.Value),
+	if dbStep.UpdatedAt != nil {
+		dbEditedInputs, err = ae.DB.GetEditedStepInputs(ctx, dbStep.Name, dbStep.WorkNumber, *dbStep.UpdatedAt)
+		if err != nil {
+			e := GetBlockContextError
+
+			log.WithField("stepID", stepID).
+				WithField("stepName", dbStep.Name).
+				Error(e.errorMessage(err))
+			errorHandler.sendError(e)
+
+			return
 		}
 	}
 
-	blockOutputs, err := ae.DB.GetBlockOutputs(ctx, blockID, taskStep.Name)
+	blockOutputs, err := ae.DB.GetBlockOutputs(ctx, blockID, dbStep.Name)
 	if err != nil {
 		e := GetBlockContextError
 
 		log.WithField("stepID", blockID).
-			WithField("stepName", taskStep.Name).
+			WithField("stepName", dbStep.Name).
 			Error(e.errorMessage(err))
 		errorHandler.sendError(e)
 
@@ -327,7 +333,7 @@ func (ae *Env) GetMonitoringTasksBlockBlockIdParams(w http.ResponseWriter, req *
 		e := CheckForHiddenError
 
 		log.WithField("stepID", blockID).
-			WithField("stepName", taskStep.Name).
+			WithField("stepName", dbStep.Name).
 			Error(e.errorMessage(err))
 		errorHandler.sendError(e)
 
@@ -350,21 +356,35 @@ func (ae *Env) GetMonitoringTasksBlockBlockIdParams(w http.ResponseWriter, req *
 		}
 	}
 
-	startedAt := taskStep.Time.String()
+	startedAt := dbStep.Time.String()
 	finishedAt := ""
 
-	if taskStep.Status == string(MonitoringHistoryStatusFinished) && taskStep.UpdatedAt != nil {
-		finishedAt = taskStep.UpdatedAt.String()
+	if dbStep.Status == string(MonitoringHistoryStatusFinished) && dbStep.UpdatedAt != nil {
+		finishedAt = dbStep.UpdatedAt.String()
 	}
 
 	if err = sendResponse(w, http.StatusOK, MonitoringParamsResponse{
-		StartedAt:  &startedAt,
-		FinishedAt: &finishedAt,
-		Inputs:     &MonitoringParamsResponse_Inputs{AdditionalProperties: inputs},
-		Outputs:    &MonitoringParamsResponse_Outputs{AdditionalProperties: outputs},
+		StartedAt:    &startedAt,
+		FinishedAt:   &finishedAt,
+		WhileRunning: &MonitoringParamsResponse_WhileRunning{AdditionalProperties: toMonitoringInputs(dbWhileRunningInputs)},
+		Edited:       &MonitoringParamsResponse_Edited{AdditionalProperties: toMonitoringInputs(dbEditedInputs)},
+		Outputs:      &MonitoringParamsResponse_Outputs{AdditionalProperties: outputs},
 	}); err != nil {
 		errorHandler.handleError(UnknownError, err)
 	}
+}
+
+func toMonitoringInputs(in entity.BlockInputs) map[string]MonitoringBlockParam {
+	res := make(map[string]MonitoringBlockParam)
+	for _, bo := range in {
+		res[bo.Name] = MonitoringBlockParam{
+			Name:  bo.Name,
+			Value: bo.Value,
+			Type:  utils.GetJSONType(bo.Value),
+		}
+	}
+
+	return res
 }
 
 func (ae *Env) GetBlockState(w http.ResponseWriter, r *http.Request, blockID string) {

@@ -1517,23 +1517,30 @@ type MonitoringHistoryStatus string
 
 // MonitoringParamsResponse defines model for MonitoringParamsResponse.
 type MonitoringParamsResponse struct {
-	FinishedAt *string `json:"finished_at,omitempty"`
-
 	// Входные параметы
-	Inputs *MonitoringParamsResponse_Inputs `json:"inputs,omitempty"`
+	Edited     *MonitoringParamsResponse_Edited `json:"edited,omitempty"`
+	FinishedAt *string                          `json:"finished_at,omitempty"`
 
 	// Выходные параметы
 	Outputs   *MonitoringParamsResponse_Outputs `json:"outputs,omitempty"`
 	StartedAt *string                           `json:"started_at,omitempty"`
+
+	// Входные параметы
+	WhileRunning *MonitoringParamsResponse_WhileRunning `json:"while_running,omitempty"`
 }
 
 // Входные параметы
-type MonitoringParamsResponse_Inputs struct {
+type MonitoringParamsResponse_Edited struct {
 	AdditionalProperties map[string]MonitoringBlockParam `json:"-"`
 }
 
 // Выходные параметы
 type MonitoringParamsResponse_Outputs struct {
+	AdditionalProperties map[string]MonitoringBlockParam `json:"-"`
+}
+
+// Входные параметы
+type MonitoringParamsResponse_WhileRunning struct {
 	AdditionalProperties map[string]MonitoringBlockParam `json:"-"`
 }
 
@@ -3213,25 +3220,25 @@ func (a JSONSchemaProperties) MarshalJSON() ([]byte, error) {
 	return json.Marshal(object)
 }
 
-// Getter for additional properties for MonitoringParamsResponse_Inputs. Returns the specified
+// Getter for additional properties for MonitoringParamsResponse_Edited. Returns the specified
 // element and whether it was found
-func (a MonitoringParamsResponse_Inputs) Get(fieldName string) (value MonitoringBlockParam, found bool) {
+func (a MonitoringParamsResponse_Edited) Get(fieldName string) (value MonitoringBlockParam, found bool) {
 	if a.AdditionalProperties != nil {
 		value, found = a.AdditionalProperties[fieldName]
 	}
 	return
 }
 
-// Setter for additional properties for MonitoringParamsResponse_Inputs
-func (a *MonitoringParamsResponse_Inputs) Set(fieldName string, value MonitoringBlockParam) {
+// Setter for additional properties for MonitoringParamsResponse_Edited
+func (a *MonitoringParamsResponse_Edited) Set(fieldName string, value MonitoringBlockParam) {
 	if a.AdditionalProperties == nil {
 		a.AdditionalProperties = make(map[string]MonitoringBlockParam)
 	}
 	a.AdditionalProperties[fieldName] = value
 }
 
-// Override default JSON handling for MonitoringParamsResponse_Inputs to handle AdditionalProperties
-func (a *MonitoringParamsResponse_Inputs) UnmarshalJSON(b []byte) error {
+// Override default JSON handling for MonitoringParamsResponse_Edited to handle AdditionalProperties
+func (a *MonitoringParamsResponse_Edited) UnmarshalJSON(b []byte) error {
 	object := make(map[string]json.RawMessage)
 	err := json.Unmarshal(b, &object)
 	if err != nil {
@@ -3252,8 +3259,8 @@ func (a *MonitoringParamsResponse_Inputs) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-// Override default JSON handling for MonitoringParamsResponse_Inputs to handle AdditionalProperties
-func (a MonitoringParamsResponse_Inputs) MarshalJSON() ([]byte, error) {
+// Override default JSON handling for MonitoringParamsResponse_Edited to handle AdditionalProperties
+func (a MonitoringParamsResponse_Edited) MarshalJSON() ([]byte, error) {
 	var err error
 	object := make(map[string]json.RawMessage)
 
@@ -3307,6 +3314,59 @@ func (a *MonitoringParamsResponse_Outputs) UnmarshalJSON(b []byte) error {
 
 // Override default JSON handling for MonitoringParamsResponse_Outputs to handle AdditionalProperties
 func (a MonitoringParamsResponse_Outputs) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, errors.Wrap(err, fmt.Sprintf("error marshaling '%s'", fieldName))
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for MonitoringParamsResponse_WhileRunning. Returns the specified
+// element and whether it was found
+func (a MonitoringParamsResponse_WhileRunning) Get(fieldName string) (value MonitoringBlockParam, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for MonitoringParamsResponse_WhileRunning
+func (a *MonitoringParamsResponse_WhileRunning) Set(fieldName string, value MonitoringBlockParam) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]MonitoringBlockParam)
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for MonitoringParamsResponse_WhileRunning to handle AdditionalProperties
+func (a *MonitoringParamsResponse_WhileRunning) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]MonitoringBlockParam)
+		for fieldName, fieldBuf := range object {
+			var fieldVal MonitoringBlockParam
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return errors.Wrap(err, fmt.Sprintf("error unmarshaling field %s", fieldName))
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for MonitoringParamsResponse_WhileRunning to handle AdditionalProperties
+func (a MonitoringParamsResponse_WhileRunning) MarshalJSON() ([]byte, error) {
 	var err error
 	object := make(map[string]json.RawMessage)
 

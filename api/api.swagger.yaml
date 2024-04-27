@@ -5939,7 +5939,12 @@ components:
         finished_at:
           type: string
           example: 2020-07-16T17:10:25.112704+03:00
-        inputs:
+        while_running:
+          type: object
+          description: Входные параметы
+          additionalProperties:
+            $ref: '#/components/schemas/MonitoringBlockParam'
+        edited:
           type: object
           description: Входные параметы
           additionalProperties:
