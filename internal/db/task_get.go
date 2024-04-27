@@ -539,9 +539,9 @@ func (cq *compileGetTaskQueryMaker) addIsExpiredFilter(isExpired *bool) {
 
 	//nolint:lll //it's ok
 	if !*isExpired {
-		cq.q = fmt.Sprintf("%s AND ua.updated_at < COALESCE(NULLIF(ua.node_deadline, '0001-01-01T00:00:00Z'), w.exec_deadline) and (coalesce(ua.is_expired::boolean, false) = false OR  ua.node_deadline > now())", cq.q)
-	} else {
 		cq.q = fmt.Sprintf("%s AND ua.updated_at > COALESCE(NULLIF(ua.node_deadline, '0001-01-01T00:00:00Z'), w.exec_deadline) and (coalesce(ua.is_expired::boolean, false) = true OR  ua.node_deadline < now())", cq.q)
+	} else {
+		cq.q = fmt.Sprintf("%s AND ua.updated_at < COALESCE(NULLIF(ua.node_deadline, '0001-01-01T00:00:00Z'), w.exec_deadline) and (coalesce(ua.is_expired::boolean, false) = false OR  ua.node_deadline > now())", cq.q)
 	}
 }
 
