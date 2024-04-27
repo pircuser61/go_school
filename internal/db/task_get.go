@@ -645,6 +645,7 @@ func (cq *compileGetTaskQueryMaker) MakeQuery(
 	cq.addProcessingSteps()
 	cq.addExecutorFilter()
 	cq.addIsExpiredFilter(fl.Expired)
+	cq.addFieldsFilter(fl)
 	cq.addOrderBy(order, orderBy)
 
 	if useLimitOffset {
@@ -662,6 +663,28 @@ func replaceStorageVariable(q string) string {
 	q = strings.Replace(q, "[join_variable_storage]", "", 1)
 
 	return q
+}
+
+func (cq *compileGetTaskQueryMaker) addFieldsFilter(fl *entity.TaskFilter) {
+	if fl.Fields == nil || len(*fl.Fields) == 0 {
+		return
+	}
+
+	find := make([]string, 0)
+	for _, v := range *fl.Fields {
+		fields := strings.Split(v, ":")
+		if len(fields) == 1 {
+			continue
+		}
+
+		find = append(find, fmt.Sprintf("@.%q == %q", fields[0], fields[1]))
+	}
+
+	out := strings.Join(find, " && ")
+
+	cq.q = strings.Replace(cq.q, "[join_variable_storage]", "JOIN variable_storage vs ON vs.work_id =w.id", 1)
+
+	cq.q = fmt.Sprintf("%s AND jsonb_path_exists((vs.content -> 'State' -> vs.step_name -> 'application_body')::jsonb, '$.** ? (%v)')", cq.q, out)
 }
 
 func getProcessingSteps(q string, fl *entity.TaskFilter) string {

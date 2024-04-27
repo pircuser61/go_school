@@ -1710,6 +1710,15 @@ paths:
               example: "started_at:desc"
               description: param consist of field and order parts, divided with a colon - field:order
               type: string
+        - name: fields
+          in: query
+          description: fields for tasks ordering
+          schema:
+            type: array
+            items:
+              example: "field-uuid-2:author"
+              description: param for search fields
+              type: string
         - name: limit
           in: query
           description: Limit

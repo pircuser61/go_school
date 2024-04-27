@@ -748,6 +748,7 @@ func (p *GetTasksParams) toEntity(req *http.Request) (entity.TaskFilter, error) 
 		OrderBy:              p.OrderBy,
 		Expired:              p.Expired,
 		Limit:                &limit,
+		Fields:               p.Fields,
 		Offset:               &offset,
 		TaskIDs:              p.TaskIDs,
 		SelectAs:             &selectAs,
