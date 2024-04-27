@@ -334,7 +334,7 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 			CASE 
 			    WHEN ua.node_deadline > now() 
 			    	OR coalesce(ua.is_expired::boolean, false) 
-			    	OR ua.updated_at > COALESCE(NULLIF(ua.node_deadline, '0001-01-01T00:00:00Z'), w.exec_deadline)
+			    	OR ua.updated_at < COALESCE(NULLIF(ua.node_deadline, '0001-01-01T00:00:00Z'), w.exec_deadline)
 				THEN false 
 			    ELSE true 
 			END as is_expired,
