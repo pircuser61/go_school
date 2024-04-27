@@ -2889,6 +2889,62 @@ paths:
               schema:
                 $ref: '#/components/schemas/httpError'
       x-codegen-request-body-name: variables
+  /monitoring/tasks/block/{workNumber}/{stepName}/params:
+    get:
+      tags:
+        - monitoring
+      summary: Get inputs and outputs of block that is not created yet
+      description: Получить инпуты и аутпуты блока которого ещё нет
+      parameters:
+        - name: workNumber
+          in: path
+          description: workNumber таски
+          required: true
+          schema:
+            type: string
+        - name: stepName
+          in: path
+          description: имя блока
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/MonitoringParamsResponse'
+                  status_code:
+                    type: integer
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        403:
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+      x-codegen-request-body-name: variables
   /monitoring/tasks/block/{blockId}/error:
     get:
       operationId: GetBlockError

@@ -3800,6 +3800,9 @@ type ServerInterface interface {
 	// Получение стейта блока
 	// (GET /monitoring/tasks/block/{blockId}/state)
 	GetBlockState(w http.ResponseWriter, r *http.Request, blockId string)
+	// Get inputs and outputs of block that is not created yet
+	// (GET /monitoring/tasks/block/{workNumber}/{stepName}/params)
+	GetMonitoringTasksBlockWorkNumberStepNameParams(w http.ResponseWriter, r *http.Request, workNumber string, stepName string)
 	// Get task for monitoring
 	// (GET /monitoring/tasks/{workNumber})
 	GetMonitoringTask(w http.ResponseWriter, r *http.Request, workNumber string, params GetMonitoringTaskParams)
@@ -4365,6 +4368,41 @@ func (siw *ServerInterfaceWrapper) GetBlockState(w http.ResponseWriter, r *http.
 
 	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetBlockState(w, r, blockId)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
+// GetMonitoringTasksBlockWorkNumberStepNameParams operation middleware
+func (siw *ServerInterfaceWrapper) GetMonitoringTasksBlockWorkNumberStepNameParams(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "workNumber" -------------
+	var workNumber string
+
+	err = runtime.BindStyledParameter("simple", false, "workNumber", chi.URLParam(r, "workNumber"), &workNumber)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Invalid format for parameter workNumber: %s", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Path parameter "stepName" -------------
+	var stepName string
+
+	err = runtime.BindStyledParameter("simple", false, "stepName", chi.URLParam(r, "stepName"), &stepName)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Invalid format for parameter stepName: %s", err), http.StatusBadRequest)
+		return
+	}
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetMonitoringTasksBlockWorkNumberStepNameParams(w, r, workNumber, stepName)
 	}
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -6231,6 +6269,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/monitoring/tasks/block/{blockId}/state", wrapper.GetBlockState)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/monitoring/tasks/block/{workNumber}/{stepName}/params", wrapper.GetMonitoringTasksBlockWorkNumberStepNameParams)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/monitoring/tasks/{workNumber}", wrapper.GetMonitoringTask)

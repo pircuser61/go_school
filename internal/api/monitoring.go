@@ -374,6 +374,33 @@ func (ae *Env) GetMonitoringTasksBlockBlockIdParams(w http.ResponseWriter, req *
 	}
 }
 
+//nolint:revive,stylecheck //need to implement interface in api.go
+func (ae *Env) GetMonitoringTasksBlockWorkNumberStepNameParams(w http.ResponseWriter, req *http.Request, workNumber, stepName string) {
+	ctx, span := trace.StartSpan(req.Context(), "get_monitoring_tasks_work_number_step_name_params")
+	defer span.End()
+
+	log := logger.GetLogger(ctx)
+	errorHandler := newHTTPErrorHandler(log, w)
+
+	dbInputs, err := ae.DB.GetEditedStepInputs(ctx, stepName, workNumber, time.Time{})
+	if err != nil {
+		e := GetBlockContextError
+
+		log.WithField("workNumber", workNumber).
+			WithField("stepName", stepName).
+			Error(e.errorMessage(err))
+		errorHandler.sendError(e)
+
+		return
+	}
+
+	if err = sendResponse(w, http.StatusOK, MonitoringParamsResponse{
+		Edited: &MonitoringParamsResponse_Edited{AdditionalProperties: toMonitoringInputs(dbInputs)},
+	}); err != nil {
+		errorHandler.handleError(UnknownError, err)
+	}
+}
+
 func toMonitoringInputs(in entity.BlockInputs) map[string]MonitoringBlockParam {
 	res := make(map[string]MonitoringBlockParam)
 	for _, bo := range in {
