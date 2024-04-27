@@ -331,7 +331,13 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 		    ua.current_executor,
 		    ua.exec_start_time,
 		    ua.appr_start_time,
-			CASE WHEN ua.node_deadline > now() OR coalesce(ua.is_expired::boolean, false) THEN false ELSE true END as is_expired,
+			CASE 
+			    WHEN ua.node_deadline > now() 
+			    	OR coalesce(ua.is_expired::boolean, false) 
+			    	OR ua.updated_at > COALESCE(NULLIF(ua.node_deadline, '0001-01-01T00:00:00Z'), w.exec_deadline)
+				THEN false 
+			    ELSE true 
+			END as is_expired,
 		    w.is_paused,
 		    w.finished_at
 		FROM works w 
@@ -534,9 +540,9 @@ func (cq *compileGetTaskQueryMaker) addIsExpiredFilter(isExpired *bool) {
 	}
 
 	if !*isExpired {
-		cq.q = fmt.Sprintf("%s AND (ua.node_deadline > now() OR coalesce(ua.is_expired::boolean, false)) ", cq.q)
+		cq.q = fmt.Sprintf("%s AND (ua.node_deadline > now() OR coalesce(ua.is_expired::boolean, false)) OR ua.updated_at > COALESCE(NULLIF(ua.node_deadline, '0001-01-01T00:00:00Z'), w.exec_deadline)", cq.q)
 	} else {
-		cq.q = fmt.Sprintf("%s AND (ua.node_deadline < now() OR coalesce(ua.is_expired::boolean, true)) ", cq.q)
+		cq.q = fmt.Sprintf("%s AND (ua.node_deadline < now() OR coalesce(ua.is_expired::boolean, true)) OR ua.updated_at < COALESCE(NULLIF(ua.node_deadline, '0001-01-01T00:00:00Z'), w.exec_deadline)", cq.q)
 	}
 }
 
