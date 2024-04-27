@@ -852,6 +852,43 @@ func (ae *Env) SearchPipelines(w http.ResponseWriter, req *http.Request, params 
 	}
 }
 
+func (ae *Env) SearchPipelinesFields(w http.ResponseWriter, req *http.Request, params SearchPipelinesFieldsParams) {
+	ctx, s := trace.StartSpan(req.Context(), "search_pipelines_fields")
+	defer s.End()
+
+	log := logger.GetLogger(ctx)
+	errorHandler := newHTTPErrorHandler(log, w)
+
+	if params.PipelineId == nil {
+		errorHandler.handleError(ValidationPipelineSearchError, errors.New("name and id are empty"))
+
+		return
+	}
+
+	param := toDBSearchPipelinesFieldsParams(&params)
+
+	res, err := ae.DB.GetPipelinesFields(ctx, param)
+	if err != nil {
+		errorHandler.handleError(GetPipelinesSearchError, err)
+
+		return
+	}
+
+	err = sendResponse(w, http.StatusOK, res)
+	if err != nil {
+		errorHandler.handleError(UnknownError, err)
+
+		return
+	}
+}
+
+func toDBSearchPipelinesFieldsParams(in *SearchPipelinesFieldsParams) (out *db.SearchPipelinesFieldsParams) {
+	return &db.SearchPipelinesFieldsParams{
+		PipelineID: in.PipelineId,
+		Fields:     in.Fields,
+	}
+}
+
 func toDBSearchPipelinesParams(in *SearchPipelinesParams) (out *db.SearchPipelineRequest) {
 	var (
 		page    = defaultPage

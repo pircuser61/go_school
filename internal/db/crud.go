@@ -26,6 +26,8 @@ import (
 
 	"golang.org/x/exp/slices"
 
+	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
+
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/configs"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
@@ -2468,6 +2470,228 @@ func (db *PGCon) GetPipelinesByNameOrID(ctx context.Context, dto *SearchPipeline
 		}
 
 		res = append(res, s)
+	}
+
+	return res, nil
+}
+
+type NodeContent struct {
+	SchemaID *string                   `json:"schema_id"`
+	Content  map[string]*[]interface{} `json:"content"`
+}
+
+func (db *PGCon) GetPipelinesFields(ctx context.Context, dto *SearchPipelinesFieldsParams) (map[string]map[string]*NodeContent, error) {
+	c, span := trace.StartSpan(ctx, "pg_get_pipelines_fields")
+	defer span.End()
+
+	if dto.PipelineID != nil {
+		worksID, worksErr := db.getWorksID(c, dto)
+		if worksErr != nil {
+			return nil, worksErr
+		}
+
+		accessForms, accessError := db.getFormsAccessibility(c, worksID)
+		if accessError != nil {
+			return nil, accessError
+		}
+
+		data, getDataWorkErr := db.getDataByWorkID(c, worksID, accessForms, dto)
+		if getDataWorkErr != nil {
+			return nil, getDataWorkErr
+		}
+
+		return data, nil
+	}
+
+	return nil, nil
+}
+
+type AccessField struct {
+	Name        string `json:"name"`
+	NodeID      string `json:"node_id"`
+	AccessType  string `json:"accessType"`
+	Description string `json:"description"`
+}
+
+//nolint:gocognit,lll //Так надо
+func (db *PGCon) getDataByWorkID(c context.Context, worksID map[string][]string, accessForms map[string]string, params *SearchPipelinesFieldsParams) (map[string]map[string]*NodeContent, error) {
+	res := make(map[string]map[string]*NodeContent, 0)
+
+	for k, v := range worksID {
+		// nolint:gocritic,lll
+		// language=PostgreSQL
+		q := `SELECT vs.step_name, vs.work_id as work_id, vs.id as node_id, vs.content -> 'State' -> vs.step_name -> 'application_body' as body, 
+				vs.content -> 'State' -> vs.step_name ->> 'schema_id' as schema_id 
+			 FROM variable_storage as vs WHERE work_id = any($1) AND step_type = 'form' AND (vs.content -> 'State' -> vs.step_name -> 'application_body' is not null or vs.content -> 'State' -> vs.step_name -> 'forms_accessibility' is not null)`
+
+		q = filterForFields(params, q)
+
+		rows, err := db.Connection.Query(c, q, v)
+		if err != nil {
+			return res, err
+		}
+
+		//nolint:gocritic //Только так и работает
+		defer rows.Close()
+
+		var (
+			StepName        string
+			WorkID          string
+			NodeID          string
+			ApplicationBody *map[string]interface{}
+			SchemaID        *string
+		)
+
+		nodes := make(map[string]*NodeContent, 0)
+
+		for rows.Next() {
+			if scanErr := rows.Scan(&StepName, &WorkID, &NodeID, &ApplicationBody, &SchemaID); scanErr != nil {
+				rows.Close()
+
+				return res, scanErr
+			}
+
+			if _, ok := accessForms[StepName]; ok {
+				continue
+			}
+
+			if ApplicationBody == nil || len(*ApplicationBody) == 0 {
+				continue
+			}
+
+			node, nodeExist := nodes[StepName]
+			if !nodeExist {
+				bodySlices := make(map[string]*[]interface{}, 0)
+				for key, val := range *ApplicationBody {
+					bodySlices[key] = &[]interface{}{val}
+				}
+
+				nodes[StepName] = &NodeContent{
+					SchemaID: SchemaID,
+					Content:  bodySlices,
+				}
+
+				continue
+			}
+
+			for key, val := range *ApplicationBody {
+				arr, exists := node.Content[key]
+				if !exists {
+					node.Content[key] = &[]interface{}{val}
+
+					continue
+				}
+
+				if !utils.IsContainsInSliceInterface(val, *arr) {
+					*arr = append(*arr, val)
+					node.Content[key] = arr
+				}
+			}
+		}
+
+		res[k] = nodes
+	}
+
+	return res, nil
+}
+
+func filterForFields(params *SearchPipelinesFieldsParams, q string) string {
+	if params.Fields == nil {
+		return q
+	}
+
+	for _, v := range *params.Fields {
+		fields := strings.Split(v, ":")
+		if len(fields) == 1 {
+			continue
+		}
+
+		q = fmt.Sprintf("%s\nAND vs.content -> 'State' -> vs.step_name -> 'application_body' @> '{%q:%q}'", q, fields[0], fields[1])
+	}
+
+	return q
+}
+
+func (db *PGCon) getWorksID(c context.Context, dto *SearchPipelinesFieldsParams) (map[string][]string, error) {
+	// nolint:gocritic
+	// language=PostgreSQL
+	q := `
+		SELECT w.id as work_id, p.id as pipeline_id 
+    	FROM pipelines p
+             JOIN versions v on v.pipeline_id = p.id
+             JOIN works w on w.version_id = v.id
+             JOIN variable_storage vs on w.id = vs.work_id and vs.step_type = 'form'
+		WHERE p.id = $1
+    	`
+
+	rows, err := db.Connection.Query(c, q, *dto.PipelineID)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	var (
+		WorkID     string
+		PipelineID string
+	)
+
+	res := make(map[string][]string, 0)
+	pipelines := make([]string, 0)
+
+	for rows.Next() {
+		if scanErr := rows.Scan(&WorkID, &PipelineID); scanErr != nil {
+			return nil, scanErr
+		}
+
+		if _, ok := res[PipelineID]; ok {
+			pipelines = append(pipelines, WorkID)
+
+			continue
+		}
+
+		res[PipelineID] = []string{WorkID}
+	}
+
+	res[PipelineID] = pipelines
+
+	return res, nil
+}
+
+func (db *PGCon) getFormsAccessibility(c context.Context, worksID map[string][]string) (map[string]string, error) {
+	res := make(map[string]string, 0)
+
+	for v := range worksID {
+		// nolint:gocritic
+		// language=PostgreSQL
+		q := `SELECT vs.work_id, vs.content -> 'State' -> vs.step_name -> 'forms_accessibility' as access
+				FROM variable_storage as vs WHERE work_id = any($1)
+                AND vs.content -> 'State' -> vs.step_name -> 'forms_accessibility' is not null`
+
+		rows, err := db.Connection.Query(c, q, v)
+		if err != nil {
+			return res, err
+		}
+
+		//nolint:gocritic //Только так и работает
+		defer rows.Close()
+
+		var (
+			WorkID      string
+			FormsAccess []AccessField
+		)
+
+		for rows.Next() {
+			if scanErr := rows.Scan(&WorkID, &FormsAccess); scanErr != nil {
+				return nil, scanErr
+			}
+
+			for _, form := range FormsAccess {
+				if form.AccessType == "None" {
+					res[WorkID] = form.NodeID
+				}
+			}
+		}
 	}
 
 	return res, nil

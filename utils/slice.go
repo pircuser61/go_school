@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 
 	"golang.org/x/exp/slices"
@@ -68,4 +69,14 @@ func FindMax[arrEl any, K []arrEl](arr K, less func(a, b arrEl) bool) (max arrEl
 	slices.SortFunc(sortedSlice, less)
 
 	return sortedSlice[len(sortedSlice)-1], nil
+}
+
+func IsContainsInSliceInterface(value interface{}, in []interface{}) bool {
+	for i := range in {
+		if reflect.DeepEqual(in[i], value) {
+			return true
+		}
+	}
+
+	return false
 }

@@ -148,6 +148,11 @@ type SaveStepRequest struct {
 	BlockStart      time.Time
 }
 
+type SearchPipelinesFieldsParams struct {
+	PipelineID *string
+	Fields     *[]string
+}
+
 type UpdateStepRequest struct {
 	ID              uuid.UUID
 	StepName        string
@@ -248,6 +253,7 @@ type Database interface {
 	GetVersionByWorkNumber(ctx c.Context, workNumber string) (*e.EriusScenario, error)
 	GetPipelinesByNameOrID(ctx c.Context, dto *SearchPipelineRequest) ([]e.SearchPipeline, error)
 	GetVersionsByFunction(ctx c.Context, functionID, versionID string) ([]e.EriusScenario, error)
+	GetPipelinesFields(ctx c.Context, dto *SearchPipelinesFieldsParams) (map[string]map[string]*NodeContent, error)
 
 	GetBlocksOutputs(ctx c.Context, blockID string) (e.BlockOutputs, error)
 	GetBlockOutputs(ctx c.Context, blockID, blockName string) (e.BlockOutputs, error)
