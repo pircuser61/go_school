@@ -671,6 +671,7 @@ func (cq *compileGetTaskQueryMaker) addFieldsFilter(fl *entity.TaskFilter) {
 	}
 
 	find := make([]string, 0)
+
 	for _, v := range *fl.Fields {
 		fields := strings.Split(v, ":")
 		if len(fields) == 1 {
@@ -684,6 +685,7 @@ func (cq *compileGetTaskQueryMaker) addFieldsFilter(fl *entity.TaskFilter) {
 
 	cq.q = strings.Replace(cq.q, "[join_variable_storage]", "JOIN variable_storage vs ON vs.work_id =w.id", 1)
 
+	//nolint:lll //Такая и должна быть строка
 	cq.q = fmt.Sprintf("%s AND jsonb_path_exists((vs.content -> 'State' -> vs.step_name -> 'application_body')::jsonb, '$.** ? (%v)')", cq.q, out)
 }
 
