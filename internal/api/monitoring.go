@@ -463,6 +463,8 @@ func (ae *Env) GetBlockState(w http.ResponseWriter, r *http.Request, blockID str
 
 	if err = sendResponse(w, http.StatusOK, BlockStateResponse{
 		State: &BlockStateResponse_State{params},
+		//WHILE_RUNNING State: &BlockStateResponse_State{params}, если не завершена
+		//EDITED: &BlockStateResponse_State{params}, если завершена State сюда если нашел в хистори её в WHILE_RUNNING
 	}); err != nil {
 		errorHandler.handleError(UnknownError, err)
 
