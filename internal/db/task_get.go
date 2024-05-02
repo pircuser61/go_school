@@ -298,7 +298,7 @@ func getUniqueActions(selectFilter string, logins []string, isPersonFilter bool)
 
 //nolint:gocritic //изначально было без поинтера
 func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string, args []interface{}) {
-	// nolint:gocritic
+	// nolint:gocritic,lll
 	// language=PostgreSQL
 	q = `
 		[with_variable_storage]
@@ -331,7 +331,13 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 		    ua.current_executor,
 		    ua.exec_start_time,
 		    ua.appr_start_time,
-			CASE WHEN ua.node_deadline > now() OR coalesce(ua.is_expired::boolean, false) THEN false ELSE true END as is_expired,
+		   CASE
+				WHEN coalesce(ua.is_expired::boolean, FALSE) OR 
+				     (ua.updated_at IS NOT NULL AND COALESCE(NULLIF(ua.node_deadline, '0001-01-01T00:00:00Z'), w.exec_deadline) < ua.updated_at ) OR
+				     COALESCE(NULLIF(ua.node_deadline, '0001-01-01T00:00:00Z'), w.exec_deadline) > now()
+				THEN false
+				ELSE true
+			END as is_expired,
 		    w.is_paused,
 		    w.finished_at
 		FROM works w 
@@ -528,15 +534,32 @@ func (cq *compileGetTaskQueryMaker) addProcessingSteps() {
 	}
 }
 
-func (cq *compileGetTaskQueryMaker) addIsExpiredFilter(isExpired *bool) {
+func (cq *compileGetTaskQueryMaker) addIsExpiredFilter(isExpired *bool, selectAs string) {
 	if isExpired == nil {
 		return
 	}
 
-	if !*isExpired {
-		cq.q = fmt.Sprintf("%s AND (ua.node_deadline > now() OR coalesce(ua.is_expired::boolean, false)) ", cq.q)
+	// nolint:lll //Это для проверки по getTasks
+	finished := []string{"finished_executor", "finished_approver", "finished_form_executor", "finished_signer_phys", "finished_signer_jur", "finished_group_executor", "finished_executor_v2"}
+
+	//nolint:lll //it's ok
+	// true - просроченные задачи
+	if *isExpired {
+		if utils.IsContainsInSlice(selectAs, finished) {
+			cq.q = fmt.Sprintf("%s and (ua.updated_at is not null and ua.updated_at > COALESCE(NULLIF(ua.node_deadline, '0001-01-01T00:00:00Z'), w.exec_deadline) AND now() > COALESCE(NULLIF(ua.node_deadline, '0001-01-01T00:00:00Z'), w.exec_deadline))", cq.q)
+
+			return
+		}
+
+		cq.q = fmt.Sprintf("%s AND COALESCE(NULLIF(ua.node_deadline, '0001-01-01T00:00:00Z'), w.exec_deadline) < now() OR (ua.updated_at is not null and COALESCE(NULLIF(ua.node_deadline, '0001-01-01T00:00:00Z'), w.exec_deadline) < ua.updated_at ) AND coalesce(ua.is_expired::boolean, false) = TRUE", cq.q)
 	} else {
-		cq.q = fmt.Sprintf("%s AND (ua.node_deadline < now() OR coalesce(ua.is_expired::boolean, true)) ", cq.q)
+		if utils.IsContainsInSlice(selectAs, finished) {
+			cq.q = fmt.Sprintf("%s and (ua.updated_at is not null and ua.updated_at < COALESCE(NULLIF(ua.node_deadline, '0001-01-01T00:00:00Z'), w.exec_deadline) AND now() < COALESCE(NULLIF(ua.node_deadline, '0001-01-01T00:00:00Z'), w.exec_deadline))", cq.q)
+
+			return
+		}
+
+		cq.q = fmt.Sprintf("%s AND COALESCE(NULLIF(ua.node_deadline, '0001-01-01T00:00:00Z'), w.exec_deadline) > now() OR (ua.updated_at is not null and COALESCE(NULLIF(ua.node_deadline, '0001-01-01T00:00:00Z'), w.exec_deadline) > ua.updated_at ) AND coalesce(ua.is_expired::boolean, false) = FALSE", cq.q)
 	}
 }
 
@@ -644,7 +667,7 @@ func (cq *compileGetTaskQueryMaker) MakeQuery(
 	cq.addInitiator()
 	cq.addProcessingSteps()
 	cq.addExecutorFilter()
-	cq.addIsExpiredFilter(fl.Expired)
+	cq.addIsExpiredFilter(fl.Expired, *fl.SelectAs)
 	cq.addOrderBy(order, orderBy)
 
 	if useLimitOffset {
@@ -1697,6 +1720,9 @@ func (db *PGCon) getTasks(ctx c.Context, filters *entity.TaskFilter,
 		return &entity.EriusTasks{}, getActionsErr
 	}
 
+	// nolint:lll //Это для проверки по getTasks
+	finished := []string{"finished_executor", "finished_approver", "finished_form_executor", "finished_signer_phys", "finished_signer_jur", "finished_group_executor", "finished_executor_v2"}
+
 	for rows.Next() {
 		et := entity.EriusTask{}
 
@@ -1783,6 +1809,16 @@ func (db *PGCon) getTasks(ctx c.Context, filters *entity.TaskFilter,
 		if len(actionData) != 0 {
 			if unmErr := json.Unmarshal(actionData, &actions); unmErr != nil {
 				return nil, unmErr
+			}
+		}
+
+		if utils.IsContainsInSlice(*filters.SelectAs, finished) {
+			if et.LastChangedAt == nil {
+				continue
+			}
+
+			if et.ProcessDeadline.Before(*et.LastChangedAt) {
+				et.IsExpired = true
 			}
 		}
 
