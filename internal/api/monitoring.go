@@ -629,6 +629,7 @@ func toMonitoringTaskResponse(nodes []entity.MonitoringTaskNode, events []entity
 	}
 	res.VersionId = nodes[0].VersionID
 	res.WorkNumber = nodes[0].WorkNumber
+	res.WorkId = nodes[0].WorkID
 	res.IsPaused = nodes[0].IsPaused
 	res.TaskRuns = getRunsByEvents(events)
 	res.IsFinished = nodes[0].WorkStatus == finished || nodes[0].WorkStatus == canceled

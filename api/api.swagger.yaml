@@ -5721,6 +5721,9 @@ components:
         work_number:
           type: string
           description: "Номер заявки для мониторинга"
+        work_id:
+          type: string
+          description: "UUID заявки"
         is_finished:
           type: boolean
           description: "Признак завершенности"
@@ -5739,6 +5742,7 @@ components:
             $ref: '#/components/schemas/MonitoringTaskRun'
       required:
         - version_id
+        - work_id
         - work_number
         - scenario_info
         - history
