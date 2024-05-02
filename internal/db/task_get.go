@@ -32,8 +32,6 @@ const (
 	ascOrder = "ASC"
 )
 
-var finished = []string{"finished_executor", "finished_approver", "finished_form_executor", "finished_signer_phys", "finished_signer_jur", "finished_group_executor", "finished_executor_v2"}
-
 func uniqueActionsByRole(loginsIn, stepType string, finished, acted, isPersonsFilter bool) string {
 	statuses := "(vs.status IN ('running', 'idle') AND m.finished = false)"
 
@@ -540,6 +538,9 @@ func (cq *compileGetTaskQueryMaker) addIsExpiredFilter(isExpired *bool, selectAs
 	if isExpired == nil {
 		return
 	}
+
+	// nolint:lll //Это для проверки по getTasks
+	finished := []string{"finished_executor", "finished_approver", "finished_form_executor", "finished_signer_phys", "finished_signer_jur", "finished_group_executor", "finished_executor_v2"}
 
 	//nolint:lll //it's ok
 	// true - просроченные задачи
@@ -1718,6 +1719,9 @@ func (db *PGCon) getTasks(ctx c.Context, filters *entity.TaskFilter,
 	if getActionsErr != nil {
 		return &entity.EriusTasks{}, getActionsErr
 	}
+
+	// nolint:lll //Это для проверки по getTasks
+	finished := []string{"finished_executor", "finished_approver", "finished_form_executor", "finished_signer_phys", "finished_signer_jur", "finished_group_executor", "finished_executor_v2"}
 
 	for rows.Next() {
 		et := entity.EriusTask{}
