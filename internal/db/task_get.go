@@ -332,11 +332,11 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 		    ua.exec_start_time,
 		    ua.appr_start_time,
 		   CASE
-				WHEN coalesce(ua.is_expired::boolean, FALSE) OR 
-				     (ua.updated_at IS NOT NULL AND COALESCE(NULLIF(ua.node_deadline, '0001-01-01T00:00:00Z'), w.exec_deadline) < ua.updated_at ) OR
-				     COALESCE(NULLIF(ua.node_deadline, '0001-01-01T00:00:00Z'), w.exec_deadline) > now()
-				THEN false
-				ELSE true
+        		WHEN coalesce(ua.is_expired::boolean, FALSE) OR
+				 (ua.updated_at IS NOT NULL AND COALESCE(NULLIF(ua.node_deadline, '0001-01-01T00:00:00Z'), w.exec_deadline) < ua.updated_at ) OR
+				 (ua.updated_at IS null and COALESCE(NULLIF(ua.node_deadline, '0001-01-01T00:00:00Z'), w.exec_deadline) < now())
+				THEN true
+			ELSE false
 			END as is_expired,
 		    w.is_paused,
 		    w.finished_at
