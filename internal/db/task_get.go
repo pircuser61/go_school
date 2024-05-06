@@ -69,8 +69,8 @@ func uniqueActionsByRole(loginsIn, stepType string, finished, acted, isPersonsFi
          , CASE 
              WHEN vs.status in ('finished', 'no_success') AND vs.step_type in ('execution', 'approver', 'form', 'sign') THEN vs.updated_at 
 		   END AS updated_at
-         , timestamptz(vs.content -> 'State' -> vs.step_name ->> 'deadline')                AS node_deadline
-         ,  vs.content -> 'State' -> vs.step_name ->> 'is_expired'		   					AS is_expired
+		 , COALESCE(NULLIF(timestamptz(vs.content -> 'State' -> vs.step_name ->> 'deadline'), '0001-01-01T00:00:00Z'), w.exec_deadline) AS node_deadline
+         , vs.content -> 'State' -> vs.step_name ->> 'is_expired'		   					AS is_expired
     FROM members m
              JOIN variable_storage vs on vs.id = m.block_id
              JOIN works w on vs.work_id = w.id
@@ -337,7 +337,7 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 			w.rate,
 			w.rate_comment,
 		    ua.actions,
-		    COALESCE(NULLIF(ua.node_deadline, '0001-01-01T00:00:00Z'), w.exec_deadline),
+		    ua.node_deadline,
 		    ua.current_executor,
 		    ua.exec_start_time,
 		    ua.appr_start_time,
