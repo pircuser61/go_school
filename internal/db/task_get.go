@@ -343,8 +343,8 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 		    ua.appr_start_time,
 		   CASE
         		WHEN coalesce(ua.is_expired::boolean, FALSE) OR
-				 (ua.updated_at IS NOT NULL AND COALESCE(NULLIF(ua.node_deadline, '0001-01-01T00:00:00Z'), w.exec_deadline) < ua.updated_at ) OR
-				 (ua.updated_at IS null and COALESCE(NULLIF(ua.node_deadline, '0001-01-01T00:00:00Z'), w.exec_deadline) < now())
+				 (ua.updated_at IS NOT NULL AND date_trunc('minute', COALESCE(NULLIF(ua.node_deadline, '0001-01-01T00:00:00Z'), w.exec_deadline)) < date_trunc('minute', ua.updated_at)) OR
+     			 (ua.updated_at IS null and date_trunc('minute',COALESCE(NULLIF(ua.node_deadline, '0001-01-01T00:00:00Z'), w.exec_deadline)) < date_trunc('minute',now()))
 				THEN true
 			ELSE false
 			END as is_expired,
@@ -556,20 +556,20 @@ func (cq *compileGetTaskQueryMaker) addIsExpiredFilter(isExpired *bool, selectAs
 	// true - просроченные задачи
 	if *isExpired {
 		if utils.IsContainsInSlice(selectAs, finished) {
-			cq.q = fmt.Sprintf("%s and (ua.updated_at is not null and ua.updated_at > COALESCE(NULLIF(ua.node_deadline, '0001-01-01T00:00:00Z'), w.exec_deadline) AND now() > COALESCE(NULLIF(ua.node_deadline, '0001-01-01T00:00:00Z'), w.exec_deadline))", cq.q)
+			cq.q = fmt.Sprintf("%s and (ua.updated_at is not null and date_trunc('minute',ua.updated_at) > date_trunc('minute',COALESCE(NULLIF(ua.node_deadline, '0001-01-01T00:00:00Z'), w.exec_deadline)) AND date_trunc('minute',now()) > date_trunc('minute',COALESCE(NULLIF(ua.node_deadline, '0001-01-01T00:00:00Z'), w.exec_deadline)))", cq.q)
 
 			return
 		}
 
-		cq.q = fmt.Sprintf("%s AND COALESCE(NULLIF(ua.node_deadline, '0001-01-01T00:00:00Z'), w.exec_deadline) < now() OR (ua.updated_at is not null and COALESCE(NULLIF(ua.node_deadline, '0001-01-01T00:00:00Z'), w.exec_deadline) < ua.updated_at ) AND coalesce(ua.is_expired::boolean, false) = TRUE", cq.q)
+		cq.q = fmt.Sprintf("%s AND date_trunc('minute',COALESCE(NULLIF(ua.node_deadline, '0001-01-01T00:00:00Z'), w.exec_deadline)) < date_trunc('minute',now()) OR (ua.updated_at is not null and date_trunc('minute',COALESCE(NULLIF(ua.node_deadline, '0001-01-01T00:00:00Z'), w.exec_deadline)) < date_trunc('minute',ua.updated_at)) AND coalesce(ua.is_expired::boolean, false) = TRUE", cq.q)
 	} else {
 		if utils.IsContainsInSlice(selectAs, finished) {
-			cq.q = fmt.Sprintf("%s and (ua.updated_at is not null and ua.updated_at < COALESCE(NULLIF(ua.node_deadline, '0001-01-01T00:00:00Z'), w.exec_deadline) AND now() < COALESCE(NULLIF(ua.node_deadline, '0001-01-01T00:00:00Z'), w.exec_deadline))", cq.q)
+			cq.q = fmt.Sprintf("%s and (ua.updated_at is not null and date_trunc('minute',ua.updated_at) < date_trunc('minute',COALESCE(NULLIF(ua.node_deadline, '0001-01-01T00:00:00Z'), w.exec_deadline)) AND date_trunc('minute',now()) < date_trunc('minute',COALESCE(NULLIF(ua.node_deadline, '0001-01-01T00:00:00Z'), w.exec_deadline)))", cq.q)
 
 			return
 		}
 
-		cq.q = fmt.Sprintf("%s AND COALESCE(NULLIF(ua.node_deadline, '0001-01-01T00:00:00Z'), w.exec_deadline) > now() OR (ua.updated_at is not null and COALESCE(NULLIF(ua.node_deadline, '0001-01-01T00:00:00Z'), w.exec_deadline) > ua.updated_at ) AND coalesce(ua.is_expired::boolean, false) = FALSE", cq.q)
+		cq.q = fmt.Sprintf("%s AND date_trunc('minute',COALESCE(NULLIF(ua.node_deadline, '0001-01-01T00:00:00Z'), w.exec_deadline)) > date_trunc('minute',now()) OR (ua.updated_at is not null and date_trunc('minute',COALESCE(NULLIF(ua.node_deadline, '0001-01-01T00:00:00Z'), w.exec_deadline)) > date_trunc('minute',ua.updated_at)) AND coalesce(ua.is_expired::boolean, false) = FALSE", cq.q)
 	}
 }
 
@@ -1730,9 +1730,6 @@ func (db *PGCon) getTasks(ctx c.Context, filters *entity.TaskFilter,
 		return &entity.EriusTasks{}, getActionsErr
 	}
 
-	// nolint:lll //Это для проверки по getTasks
-	finished := []string{"finished_executor", "finished_approver", "finished_form_executor", "finished_signer_phys", "finished_signer_jur", "finished_group_executor", "finished_executor_v2"}
-
 	for rows.Next() {
 		et := entity.EriusTask{}
 
@@ -1819,16 +1816,6 @@ func (db *PGCon) getTasks(ctx c.Context, filters *entity.TaskFilter,
 		if len(actionData) != 0 {
 			if unmErr := json.Unmarshal(actionData, &actions); unmErr != nil {
 				return nil, unmErr
-			}
-		}
-
-		if utils.IsContainsInSlice(*filters.SelectAs, finished) {
-			if et.LastChangedAt == nil {
-				continue
-			}
-
-			if et.ProcessDeadline.Before(*et.LastChangedAt) {
-				et.IsExpired = true
 			}
 		}
 
