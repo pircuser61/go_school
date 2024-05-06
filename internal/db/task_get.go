@@ -45,14 +45,24 @@ func uniqueActionsByRole(loginsIn, stepType string, finished, acted, isPersonsFi
 		memberActed = "AND m.is_acted = true"
 	}
 
-	// nolint:gocritic
+	// nolint:gocritic,lll //В старых заявках нет пользователя и из-за этого приходится их забирать из других полей, где они есть там
 	// language=PostgreSQL
 	q := fmt.Sprintf(`WITH actions AS (
     SELECT vs.work_id                                                                       AS work_id
          , vs.step_name                                                                     AS block_id
          , CASE WHEN (vs.status IN ('running', 'idle')  AND vs.is_paused = false) THEN m.actions ELSE '{}' END AS action
          , CASE WHEN (vs.status IN ('running', 'idle')  AND vs.is_paused = false) THEN m.params ELSE '{}' END  AS params
-         , vs.current_executor                                                              AS current_executor
+		 , CASE WHEN vs.current_executor is not null and vs.current_executor <> '{}'
+		 	THEN vs.current_executor
+			ELSE jsonb_build_object(
+					'people', (
+						SELECT jsonb_agg(key)
+						FROM (SELECT jsonb_object_keys(vs.content -> 'State' -> vs.step_name -> 'executors') as key) as people),
+					'group_name', vs.content -> 'State' -> vs.step_name -> 'executors_group_name',
+					'group_id', coalesce(vs.content -> 'State' -> vs.step_name -> 'execution_group_id', vs.content -> 'State' -> vs.step_name -> 'executors_group_id'),
+					'initial_people', array[vs.content -> 'State' -> vs.step_name -> 'actual_executor']
+				)
+		 END     																			AS current_executor
          , CASE WHEN vs.step_type = 'execution' THEN vs.time END                            AS exec_start_time
 		 , CASE WHEN vs.step_type = 'approver' THEN vs.time END                          	AS appr_start_time
          , vs.time                                                                          AS node_start
@@ -1819,6 +1829,12 @@ func (db *PGCon) getTasks(ctx c.Context, filters *entity.TaskFilter,
 
 			if et.ProcessDeadline.Before(*et.LastChangedAt) {
 				et.IsExpired = true
+			}
+		}
+
+		if len(et.CurrentExecutor.InitialPeople) == 1 {
+			if et.CurrentExecutor.InitialPeople[0] == "" {
+				et.CurrentExecutor.InitialPeople = et.CurrentExecutor.People
 			}
 		}
 
