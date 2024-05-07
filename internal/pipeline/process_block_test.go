@@ -141,7 +141,7 @@ func makeStorage() *mocks.MockedDatabase {
 		mock.MatchedBy(func(blockName string) bool { return true }),
 	).Return(nil)
 
-	res.On("CreateTaskBlock",
+	res.On("InitTaskBlock",
 		mock.MatchedBy(func(ctx context.Context) bool { return true }),
 		mock.MatchedBy(func(data *db.SaveStepRequest) bool { return true }),
 		mock.MatchedBy(func(isPaused bool) bool { return true }),
@@ -246,16 +246,7 @@ func TestProcessBlock(t *testing.T) {
 						Storage: func() db.Database {
 							res := makeStorage()
 
-							res.On("GetStepInputs",
-								mock.MatchedBy(func(ctx context.Context) bool { return true }),
-								"start_0",
-								mock.MatchedBy(func(workNumber string) bool { return true }),
-								time.Time{},
-							).Return(
-								make(entity.BlockInputs, 0), nil,
-							)
-
-							res.On("GetStepDataFromVersion",
+							res.On("GetBlockDataFromVersion",
 								mock.MatchedBy(func(ctx context.Context) bool { return true }),
 								mock.MatchedBy(func(workNumber string) bool { return true }),
 								"start_0",
@@ -278,7 +269,7 @@ func TestProcessBlock(t *testing.T) {
 
 							res.EXPECT().StartTransaction(mock.Anything).Return(txStorage, nil).Once()
 
-							res.On("GetStepDataFromVersion",
+							res.On("GetBlockDataFromVersion",
 								mock.MatchedBy(func(ctx context.Context) bool { return true }),
 								mock.MatchedBy(func(workNumber string) bool { return true }),
 								"servicedesk_application_0",
@@ -298,7 +289,7 @@ func TestProcessBlock(t *testing.T) {
 								}, nil,
 							)
 
-							txStorage.On("GetStepDataFromVersion",
+							txStorage.On("GetBlockDataFromVersion",
 								mock.MatchedBy(func(ctx context.Context) bool { return true }),
 								mock.MatchedBy(func(workNumber string) bool { return true }),
 								"servicedesk_application_0",
@@ -339,7 +330,7 @@ func TestProcessBlock(t *testing.T) {
 
 							res.EXPECT().StartTransaction(mock.Anything).Return(txStorage, nil).Once()
 
-							res.On("GetStepDataFromVersion",
+							res.On("GetBlockDataFromVersion",
 								mock.MatchedBy(func(ctx context.Context) bool { return true }),
 								mock.MatchedBy(func(workNumber string) bool { return true }),
 								"end_0",
@@ -352,7 +343,7 @@ func TestProcessBlock(t *testing.T) {
 								}, nil,
 							)
 
-							txStorage.On("GetStepDataFromVersion",
+							txStorage.On("GetBlockDataFromVersion",
 								mock.MatchedBy(func(ctx context.Context) bool { return true }),
 								mock.MatchedBy(func(workNumber string) bool { return true }),
 								"end_0",
@@ -448,7 +439,7 @@ func TestProcessBlock(t *testing.T) {
 						Storage: func() db.Database {
 							res := makeStorage()
 
-							res.On("GetStepDataFromVersion",
+							res.On("GetBlockDataFromVersion",
 								mock.MatchedBy(func(ctx context.Context) bool { return true }),
 								mock.MatchedBy(func(workNumber string) bool { return true }),
 								"start_0",
@@ -471,7 +462,7 @@ func TestProcessBlock(t *testing.T) {
 
 							res.EXPECT().StartTransaction(mock.Anything).Return(txStorage, nil).Once()
 
-							res.On("GetStepDataFromVersion",
+							res.On("GetBlockDataFromVersion",
 								mock.MatchedBy(func(ctx context.Context) bool { return true }),
 								mock.MatchedBy(func(workNumber string) bool { return true }),
 								"servicedesk_application_0",
@@ -491,7 +482,7 @@ func TestProcessBlock(t *testing.T) {
 								}, nil,
 							)
 
-							txStorage.On("GetStepDataFromVersion",
+							txStorage.On("GetBlockDataFromVersion",
 								mock.MatchedBy(func(ctx context.Context) bool { return true }),
 								mock.MatchedBy(func(workNumber string) bool { return true }),
 								"servicedesk_application_0",
@@ -533,7 +524,7 @@ func TestProcessBlock(t *testing.T) {
 
 							res.EXPECT().StartTransaction(mock.Anything).Return(txStorage, nil).Once()
 
-							res.On("GetStepDataFromVersion",
+							res.On("GetBlockDataFromVersion",
 								mock.MatchedBy(func(ctx context.Context) bool { return true }),
 								mock.MatchedBy(func(workNumber string) bool { return true }),
 								"start_parallel_0",
@@ -552,7 +543,7 @@ func TestProcessBlock(t *testing.T) {
 								}, nil,
 							)
 
-							txStorage.On("GetStepDataFromVersion",
+							txStorage.On("GetBlockDataFromVersion",
 								mock.MatchedBy(func(ctx context.Context) bool { return true }),
 								mock.MatchedBy(func(workNumber string) bool { return true }),
 								"start_parallel_0",
@@ -593,7 +584,7 @@ func TestProcessBlock(t *testing.T) {
 
 							res.EXPECT().StartTransaction(mock.Anything).Return(txStorage, nil).Once()
 
-							res.On("GetStepDataFromVersion",
+							res.On("GetBlockDataFromVersion",
 								mock.MatchedBy(func(ctx context.Context) bool { return true }),
 								mock.MatchedBy(func(workNumber string) bool { return true }),
 								"approver_0",
@@ -612,7 +603,7 @@ func TestProcessBlock(t *testing.T) {
 								}, nil,
 							)
 
-							txStorage.On("GetStepDataFromVersion",
+							txStorage.On("GetBlockDataFromVersion",
 								mock.MatchedBy(func(ctx context.Context) bool { return true }),
 								mock.MatchedBy(func(workNumber string) bool { return true }),
 								"approver_0",
@@ -631,7 +622,7 @@ func TestProcessBlock(t *testing.T) {
 								}, nil,
 							)
 
-							res.On("GetStepDataFromVersion",
+							res.On("GetBlockDataFromVersion",
 								mock.MatchedBy(func(ctx context.Context) bool { return true }),
 								mock.MatchedBy(func(workNumber string) bool { return true }),
 								"execution_0",
@@ -650,7 +641,7 @@ func TestProcessBlock(t *testing.T) {
 								}, nil,
 							)
 
-							txStorage.On("GetStepDataFromVersion",
+							txStorage.On("GetBlockDataFromVersion",
 								mock.MatchedBy(func(ctx context.Context) bool { return true }),
 								mock.MatchedBy(func(workNumber string) bool { return true }),
 								"execution_0",
@@ -691,7 +682,7 @@ func TestProcessBlock(t *testing.T) {
 
 							res.EXPECT().StartTransaction(mock.Anything).Return(txStorage, nil).Once()
 
-							res.On("GetStepDataFromVersion",
+							res.On("GetBlockDataFromVersion",
 								mock.MatchedBy(func(ctx context.Context) bool { return true }),
 								mock.MatchedBy(func(workNumber string) bool { return true }),
 								"end_parallel_0",
@@ -710,7 +701,7 @@ func TestProcessBlock(t *testing.T) {
 								}, nil,
 							)
 
-							txStorage.On("GetStepDataFromVersion",
+							txStorage.On("GetBlockDataFromVersion",
 								mock.MatchedBy(func(ctx context.Context) bool { return true }),
 								mock.MatchedBy(func(workNumber string) bool { return true }),
 								"end_parallel_0",
@@ -783,7 +774,7 @@ func TestProcessBlock(t *testing.T) {
 									},
 								).Maybe()
 
-							res.On("GetStepDataFromVersion",
+							res.On("GetBlockDataFromVersion",
 								mock.MatchedBy(func(ctx context.Context) bool { return true }),
 								mock.MatchedBy(func(workNumber string) bool { return true }),
 								"end_0",
@@ -796,7 +787,7 @@ func TestProcessBlock(t *testing.T) {
 								}, nil,
 							)
 
-							txStorage.On("GetStepDataFromVersion",
+							txStorage.On("GetBlockDataFromVersion",
 								mock.MatchedBy(func(ctx context.Context) bool { return true }),
 								mock.MatchedBy(func(workNumber string) bool { return true }),
 								"end_0",
@@ -863,7 +854,7 @@ func TestProcessBlock(t *testing.T) {
 
 							expectParallelBlockProcessing(res, shortTitle, f, parallelIsFinished)
 
-							res.On("GetStepDataFromVersion",
+							res.On("GetBlockDataFromVersion",
 								mock.MatchedBy(func(ctx context.Context) bool { return true }),
 								mock.MatchedBy(func(workNumber string) bool { return true }),
 								"execution_0",
@@ -882,7 +873,7 @@ func TestProcessBlock(t *testing.T) {
 								}, nil,
 							)
 
-							txStorage.On("GetStepDataFromVersion",
+							txStorage.On("GetBlockDataFromVersion",
 								mock.MatchedBy(func(ctx context.Context) bool { return true }),
 								mock.MatchedBy(func(workNumber string) bool { return true }),
 								"execution_0",
@@ -903,7 +894,7 @@ func TestProcessBlock(t *testing.T) {
 
 							expectParallelBlockProcessing(res, shortTitle, f, parallelIsFinished)
 
-							res.On("GetStepDataFromVersion",
+							res.On("GetBlockDataFromVersion",
 								mock.MatchedBy(func(ctx context.Context) bool { return true }),
 								mock.MatchedBy(func(workNumber string) bool { return true }),
 								"execution_0",
@@ -922,7 +913,7 @@ func TestProcessBlock(t *testing.T) {
 								}, nil,
 							)
 
-							txStorage.On("GetStepDataFromVersion",
+							txStorage.On("GetBlockDataFromVersion",
 								mock.MatchedBy(func(ctx context.Context) bool { return true }),
 								mock.MatchedBy(func(workNumber string) bool { return true }),
 								"execution_0",
@@ -1032,7 +1023,7 @@ func TestProcessBlock(t *testing.T) {
 
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
-			entrypointData, blockErr := tt.fields.RunContext.Services.Storage.GetStepDataFromVersion(
+			entrypointData, blockErr := tt.fields.RunContext.Services.Storage.GetBlockDataFromVersion(
 				ctx,
 				"",
 				tt.fields.Entrypoint,
@@ -1052,7 +1043,7 @@ func TestProcessBlock(t *testing.T) {
 			}
 
 			for i := range tt.fields.Updates {
-				blockData, updateErr := tt.fields.RunContext.Services.Storage.GetStepDataFromVersion(ctx, "", tt.fields.Updates[i].BlockName)
+				blockData, updateErr := tt.fields.RunContext.Services.Storage.GetBlockDataFromVersion(ctx, "", tt.fields.Updates[i].BlockName)
 				if updateErr != nil {
 					t.Fatal(updateErr)
 				}
@@ -1119,7 +1110,7 @@ func expectParallelBlockProcessing(
 		Run(f).
 		Return(nil)
 
-	res.On("GetStepDataFromVersion",
+	res.On("GetBlockDataFromVersion",
 		mock.MatchedBy(func(ctx context.Context) bool { return true }),
 		mock.MatchedBy(func(workNumber string) bool { return true }),
 		"end_parallel_0",
@@ -1138,7 +1129,7 @@ func expectParallelBlockProcessing(
 		}, nil,
 	)
 
-	txStorage.On("GetStepDataFromVersion",
+	txStorage.On("GetBlockDataFromVersion",
 		mock.MatchedBy(func(ctx context.Context) bool { return true }),
 		mock.MatchedBy(func(workNumber string) bool { return true }),
 		"end_parallel_0",
@@ -1196,7 +1187,7 @@ func expectParallelBlockProcessing(
 		Run(f).
 		Return(nil)
 
-	txStorage.On("GetStepDataFromVersion",
+	txStorage.On("GetBlockDataFromVersion",
 		mock.MatchedBy(func(ctx context.Context) bool { return true }),
 		mock.MatchedBy(func(workNumber string) bool { return true }),
 		"end_parallel_0",
@@ -1251,7 +1242,7 @@ func expectParallelBlockProcessingEnd(
 		Run(f).
 		Return(nil)
 
-	res.On("GetStepDataFromVersion",
+	res.On("GetBlockDataFromVersion",
 		mock.MatchedBy(func(ctx context.Context) bool { return true }),
 		mock.MatchedBy(func(workNumber string) bool { return true }),
 		"end_0",
@@ -1264,7 +1255,7 @@ func expectParallelBlockProcessingEnd(
 		}, nil,
 	)
 
-	txStorage.On("GetStepDataFromVersion",
+	txStorage.On("GetBlockDataFromVersion",
 		mock.MatchedBy(func(ctx context.Context) bool { return true }),
 		mock.MatchedBy(func(workNumber string) bool { return true }),
 		"end_0",
