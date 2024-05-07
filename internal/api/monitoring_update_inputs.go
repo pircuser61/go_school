@@ -112,7 +112,7 @@ func (ae *Env) MonitoringUpdateBlockInputs(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	err = txStorage.CreateTaskStepInputs(ctx, &e.CreateTaskStepInputs{
+	err = txStorage.CreateTaskStepsInputs(ctx, &e.CreateUpdatesInputsHistory{
 		WorkID:   req.WorkId,
 		EventID:  eventID,
 		StepName: req.StepName,

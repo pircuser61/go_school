@@ -2839,13 +2839,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/httpError'
       x-codegen-request-body-name: variables
-  /monitoring/tasks/block/{blockId}/inputs:
+  /monitoring/tasks/block/{blockId}/params:
     get:
-      operationId: MonitoringGetBlockInputs
       tags:
         - monitoring
-      summary: Get inputs of block
-      description: Получить инпуты блока
+      summary: Get inputs and outputs of block
+      description: Получить инпуты и аутпуты блока
       parameters:
         - name: blockId
           in: path
@@ -2862,115 +2861,7 @@ paths:
                 type: object
                 properties:
                   data:
-                    $ref: '#/components/schemas/MonitoringInputsResponse'
-                  status_code:
-                    type: integer
-        400:
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-        403:
-          description: Forbidden
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-        500:
-          description: Internal Server Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-      x-codegen-request-body-name: variables
-  /monitoring/tasks/block/{blockId}/outputs:
-    get:
-      operationId: MonitoringGetBlockOutputs
-      tags:
-        - monitoring
-      summary: Get outputs of block
-      description: Получить аутпуты блока
-      parameters:
-        - name: blockId
-          in: path
-          description: block ID
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    $ref: '#/components/schemas/MonitoringOutputsResponse'
-                  status_code:
-                    type: integer
-        400:
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-        403:
-          description: Forbidden
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-        500:
-          description: Internal Server Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-      x-codegen-request-body-name: variables
-  /monitoring/tasks/block/{workNumber}/{stepName}/params:
-    get:
-      operationId: MonitoringGetNotCreatedBlockInputs
-      tags:
-        - monitoring
-      summary: Get inputs of block that is not created yet
-      description: Получить инпуты блока которого ещё нет
-      parameters:
-        - name: workNumber
-          in: path
-          description: workNumber таски
-          required: true
-          schema:
-            type: string
-        - name: stepName
-          in: path
-          description: имя блока
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    $ref: '#/components/schemas/MonitoringInputsResponse'
+                    $ref: '#/components/schemas/MonitoringParamsResponse'
                   status_code:
                     type: integer
         400:
@@ -3048,7 +2939,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
-      x-codegen-request-body-name: variables
+      x-codegen-request-body-name: variables    
   /monitoring/tasks:
     get:
       tags:
@@ -5990,12 +5881,7 @@ components:
     BlockStateResponse:
       type: object
       properties:
-        whyle_running:
-          type: object
-          description: Стейт блока
-          additionalProperties:
-            $ref: '#/components/schemas/MonitoringBlockState'
-        edited:
+        state:
           type: object
           description: Стейт блока
           additionalProperties:
@@ -6064,7 +5950,7 @@ components:
         - type
         - description
         - value      
-    MonitoringInputsResponse:
+    MonitoringParamsResponse:
       type: object
       properties:
         started_at:
@@ -6073,25 +5959,11 @@ components:
         finished_at:
           type: string
           example: 2020-07-16T17:10:25.112704+03:00
-        while_running:
+        inputs:
           type: object
-          description: Входные параметы с которыми запускался блок
+          description: Входные параметы
           additionalProperties:
             $ref: '#/components/schemas/MonitoringBlockParam'
-        edited:
-          type: object
-          description: Входные параметы которые были изменены
-          additionalProperties:
-            $ref: '#/components/schemas/MonitoringBlockParam'
-    MonitoringOutputsResponse:
-      type: object
-      properties:
-        started_at:
-          type: string
-          example: 2020-07-16T17:10:25.112704+03:00
-        finished_at:
-          type: string
-          example: 2020-07-16T17:10:25.112704+03:00
         outputs:
           type: object
           description: Выходные параметы
