@@ -1,6 +1,6 @@
 package entity
 
-type CreateUpdatesInputsHistory struct {
+type CreateTaskStepInputs struct {
 	WorkID   string
 	EventID  string
 	StepName string
