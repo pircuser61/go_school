@@ -5995,6 +5995,11 @@ components:
           description: Стейт блока
           additionalProperties:
             $ref: '#/components/schemas/MonitoringBlockState'
+        edited:
+          type: object
+          description: Стейт блока
+          additionalProperties:
+            $ref: '#/components/schemas/MonitoringBlockState'
     BlockErrorResponse:
       type: object
       properties:        

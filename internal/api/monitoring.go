@@ -267,7 +267,7 @@ func getMonitoringStatus(status string) MonitoringHistoryStatus {
 }
 
 func (ae *Env) GetBlockState(w http.ResponseWriter, r *http.Request, blockID string) {
-	ctx, span := trace.StartSpan(r.Context(), "start get block state")
+	ctx, span := trace.StartSpan(r.Context(), "get_block_state")
 	defer span.End()
 
 	log := logger.GetLogger(ctx)
@@ -315,8 +315,7 @@ func (ae *Env) GetBlockState(w http.ResponseWriter, r *http.Request, blockID str
 
 	if err = sendResponse(w, http.StatusOK, BlockStateResponse{
 		WhyleRunning: &BlockStateResponse_WhyleRunning{params},
-		//WHILE_RUNNING State: &BlockStateResponse_State{params}, если не завершена
-		//EDITED: &BlockStateResponse_State{params}, если завершена State сюда если нашел в хистори её в WHILE_RUNNING
+		Edited:       nil,
 	}); err != nil {
 		errorHandler.handleError(UnknownError, err)
 

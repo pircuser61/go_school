@@ -759,7 +759,15 @@ type BlockErrorResponse struct {
 // BlockStateResponse defines model for BlockStateResponse.
 type BlockStateResponse struct {
 	// Стейт блока
+	Edited *BlockStateResponse_Edited `json:"edited,omitempty"`
+
+	// Стейт блока
 	WhyleRunning *BlockStateResponse_WhyleRunning `json:"whyle_running,omitempty"`
+}
+
+// Стейт блока
+type BlockStateResponse_Edited struct {
+	AdditionalProperties map[string]MonitoringBlockState `json:"-"`
 }
 
 // Стейт блока
@@ -2911,6 +2919,59 @@ func (a *BlockEditResponse_Blocks) UnmarshalJSON(b []byte) error {
 
 // Override default JSON handling for BlockEditResponse_Blocks to handle AdditionalProperties
 func (a BlockEditResponse_Blocks) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, errors.Wrap(err, fmt.Sprintf("error marshaling '%s'", fieldName))
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for BlockStateResponse_Edited. Returns the specified
+// element and whether it was found
+func (a BlockStateResponse_Edited) Get(fieldName string) (value MonitoringBlockState, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for BlockStateResponse_Edited
+func (a *BlockStateResponse_Edited) Set(fieldName string, value MonitoringBlockState) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]MonitoringBlockState)
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for BlockStateResponse_Edited to handle AdditionalProperties
+func (a *BlockStateResponse_Edited) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]MonitoringBlockState)
+		for fieldName, fieldBuf := range object {
+			var fieldVal MonitoringBlockState
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return errors.Wrap(err, fmt.Sprintf("error unmarshaling field %s", fieldName))
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for BlockStateResponse_Edited to handle AdditionalProperties
+func (a BlockStateResponse_Edited) MarshalJSON() ([]byte, error) {
 	var err error
 	object := make(map[string]json.RawMessage)
 
