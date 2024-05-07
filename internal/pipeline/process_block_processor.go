@@ -283,14 +283,14 @@ func (p *blockProcessor) processActiveBlocks(ctx context.Context, activeBlocks [
 	log := logger.GetLogger(ctx).WithField("funcName", "processActiveBlocks")
 
 	for _, blockName := range activeBlocks {
-		blockData, blockErr := p.runCtx.Services.Storage.GetBlockDataFromVersion(ctx, p.runCtx.WorkNumber, blockName)
+		blockData, blockErr := p.runCtx.Services.Storage.GetStepDataFromVersion(ctx, p.runCtx.WorkNumber, blockName)
 		if blockErr != nil {
 			return p.name, p.handleErrorWithRollback(ctx, log, blockErr)
 		}
 
 		tmpCtx := p.runCtx.Copy()
 
-		err := InitBlockInDB(ctx, blockName, blockData.TypeID, tmpCtx)
+		err := CreateBlockInDB(ctx, blockName, blockData.TypeID, tmpCtx)
 		if err != nil {
 			return p.name, p.handleErrorWithRollback(ctx, log, err)
 		}
@@ -304,7 +304,7 @@ func (p *blockProcessor) processActiveBlocks(ctx context.Context, activeBlocks [
 	}
 
 	for _, blockName := range activeBlocks {
-		blockData, blockErr := p.runCtx.Services.Storage.GetBlockDataFromVersion(ctx, p.runCtx.WorkNumber, blockName)
+		blockData, blockErr := p.runCtx.Services.Storage.GetStepDataFromVersion(ctx, p.runCtx.WorkNumber, blockName)
 		if blockErr != nil {
 			return blockName, p.handleErrorWithRollback(ctx, log, blockErr)
 		}

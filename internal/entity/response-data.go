@@ -608,29 +608,10 @@ type Socket struct {
 }
 
 type EriusFunctionValue struct {
-	Name   string `json:"name" example:"some_data"`
-	Type   string `json:"type" example:"string"`
-	Global string `json:"global,omitempty" example:"block.some_data"`
-	Format string `json:"format" example:"string"`
-}
-
-type UsageResponse struct {
-	Name      string   `json:"name"` // Имя блока
-	Used      bool     `json:"used"`
-	Pipelines []UsedBy `json:"pipelines"`
-}
-
-type AllUsageResponse struct {
-	Functions map[string][]string `json:"pipelines"`
-}
-
-type UsedBy struct {
-	Name string    `json:"name"` // Имя сценария
-	ID   uuid.UUID `json:"id"`   // ID сценария
-}
-
-type Shapes struct {
-	Shapes []script.ShapeEntity `json:"shapes"`
+	Name   string `json:"name"`
+	Type   string `json:"type"`
+	Global string `json:"global,omitempty"`
+	Format string `json:"format"`
 }
 
 type RunResponse struct {
