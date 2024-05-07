@@ -759,11 +759,11 @@ type BlockErrorResponse struct {
 // BlockStateResponse defines model for BlockStateResponse.
 type BlockStateResponse struct {
 	// Стейт блока
-	State *BlockStateResponse_State `json:"state,omitempty"`
+	WhyleRunning *BlockStateResponse_WhyleRunning `json:"whyle_running,omitempty"`
 }
 
 // Стейт блока
-type BlockStateResponse_State struct {
+type BlockStateResponse_WhyleRunning struct {
 	AdditionalProperties map[string]MonitoringBlockState `json:"-"`
 }
 
@@ -1515,32 +1515,38 @@ type MonitoringHistory struct {
 // Статус ноды
 type MonitoringHistoryStatus string
 
-// MonitoringParamsResponse defines model for MonitoringParamsResponse.
-type MonitoringParamsResponse struct {
-	// Входные параметы
-	Edited     *MonitoringParamsResponse_Edited `json:"edited,omitempty"`
+// MonitoringInputsResponse defines model for MonitoringInputsResponse.
+type MonitoringInputsResponse struct {
+	// Входные параметы которые были изменены
+	Edited     *MonitoringInputsResponse_Edited `json:"edited,omitempty"`
 	FinishedAt *string                          `json:"finished_at,omitempty"`
+	StartedAt  *string                          `json:"started_at,omitempty"`
 
-	// Выходные параметы
-	Outputs   *MonitoringParamsResponse_Outputs `json:"outputs,omitempty"`
-	StartedAt *string                           `json:"started_at,omitempty"`
-
-	// Входные параметы
-	WhileRunning *MonitoringParamsResponse_WhileRunning `json:"while_running,omitempty"`
+	// Входные параметы с которыми запускался блок
+	WhileRunning *MonitoringInputsResponse_WhileRunning `json:"while_running,omitempty"`
 }
 
-// Входные параметы
-type MonitoringParamsResponse_Edited struct {
+// Входные параметы которые были изменены
+type MonitoringInputsResponse_Edited struct {
 	AdditionalProperties map[string]MonitoringBlockParam `json:"-"`
+}
+
+// Входные параметы с которыми запускался блок
+type MonitoringInputsResponse_WhileRunning struct {
+	AdditionalProperties map[string]MonitoringBlockParam `json:"-"`
+}
+
+// MonitoringOutputsResponse defines model for MonitoringOutputsResponse.
+type MonitoringOutputsResponse struct {
+	FinishedAt *string `json:"finished_at,omitempty"`
+
+	// Выходные параметы
+	Outputs   *MonitoringOutputsResponse_Outputs `json:"outputs,omitempty"`
+	StartedAt *string                            `json:"started_at,omitempty"`
 }
 
 // Выходные параметы
-type MonitoringParamsResponse_Outputs struct {
-	AdditionalProperties map[string]MonitoringBlockParam `json:"-"`
-}
-
-// Входные параметы
-type MonitoringParamsResponse_WhileRunning struct {
+type MonitoringOutputsResponse_Outputs struct {
 	AdditionalProperties map[string]MonitoringBlockParam `json:"-"`
 }
 
@@ -2917,25 +2923,25 @@ func (a BlockEditResponse_Blocks) MarshalJSON() ([]byte, error) {
 	return json.Marshal(object)
 }
 
-// Getter for additional properties for BlockStateResponse_State. Returns the specified
+// Getter for additional properties for BlockStateResponse_WhyleRunning. Returns the specified
 // element and whether it was found
-func (a BlockStateResponse_State) Get(fieldName string) (value MonitoringBlockState, found bool) {
+func (a BlockStateResponse_WhyleRunning) Get(fieldName string) (value MonitoringBlockState, found bool) {
 	if a.AdditionalProperties != nil {
 		value, found = a.AdditionalProperties[fieldName]
 	}
 	return
 }
 
-// Setter for additional properties for BlockStateResponse_State
-func (a *BlockStateResponse_State) Set(fieldName string, value MonitoringBlockState) {
+// Setter for additional properties for BlockStateResponse_WhyleRunning
+func (a *BlockStateResponse_WhyleRunning) Set(fieldName string, value MonitoringBlockState) {
 	if a.AdditionalProperties == nil {
 		a.AdditionalProperties = make(map[string]MonitoringBlockState)
 	}
 	a.AdditionalProperties[fieldName] = value
 }
 
-// Override default JSON handling for BlockStateResponse_State to handle AdditionalProperties
-func (a *BlockStateResponse_State) UnmarshalJSON(b []byte) error {
+// Override default JSON handling for BlockStateResponse_WhyleRunning to handle AdditionalProperties
+func (a *BlockStateResponse_WhyleRunning) UnmarshalJSON(b []byte) error {
 	object := make(map[string]json.RawMessage)
 	err := json.Unmarshal(b, &object)
 	if err != nil {
@@ -2956,8 +2962,8 @@ func (a *BlockStateResponse_State) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-// Override default JSON handling for BlockStateResponse_State to handle AdditionalProperties
-func (a BlockStateResponse_State) MarshalJSON() ([]byte, error) {
+// Override default JSON handling for BlockStateResponse_WhyleRunning to handle AdditionalProperties
+func (a BlockStateResponse_WhyleRunning) MarshalJSON() ([]byte, error) {
 	var err error
 	object := make(map[string]json.RawMessage)
 
@@ -3231,25 +3237,25 @@ func (a JSONSchemaProperties) MarshalJSON() ([]byte, error) {
 	return json.Marshal(object)
 }
 
-// Getter for additional properties for MonitoringParamsResponse_Edited. Returns the specified
+// Getter for additional properties for MonitoringInputsResponse_Edited. Returns the specified
 // element and whether it was found
-func (a MonitoringParamsResponse_Edited) Get(fieldName string) (value MonitoringBlockParam, found bool) {
+func (a MonitoringInputsResponse_Edited) Get(fieldName string) (value MonitoringBlockParam, found bool) {
 	if a.AdditionalProperties != nil {
 		value, found = a.AdditionalProperties[fieldName]
 	}
 	return
 }
 
-// Setter for additional properties for MonitoringParamsResponse_Edited
-func (a *MonitoringParamsResponse_Edited) Set(fieldName string, value MonitoringBlockParam) {
+// Setter for additional properties for MonitoringInputsResponse_Edited
+func (a *MonitoringInputsResponse_Edited) Set(fieldName string, value MonitoringBlockParam) {
 	if a.AdditionalProperties == nil {
 		a.AdditionalProperties = make(map[string]MonitoringBlockParam)
 	}
 	a.AdditionalProperties[fieldName] = value
 }
 
-// Override default JSON handling for MonitoringParamsResponse_Edited to handle AdditionalProperties
-func (a *MonitoringParamsResponse_Edited) UnmarshalJSON(b []byte) error {
+// Override default JSON handling for MonitoringInputsResponse_Edited to handle AdditionalProperties
+func (a *MonitoringInputsResponse_Edited) UnmarshalJSON(b []byte) error {
 	object := make(map[string]json.RawMessage)
 	err := json.Unmarshal(b, &object)
 	if err != nil {
@@ -3270,8 +3276,8 @@ func (a *MonitoringParamsResponse_Edited) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-// Override default JSON handling for MonitoringParamsResponse_Edited to handle AdditionalProperties
-func (a MonitoringParamsResponse_Edited) MarshalJSON() ([]byte, error) {
+// Override default JSON handling for MonitoringInputsResponse_Edited to handle AdditionalProperties
+func (a MonitoringInputsResponse_Edited) MarshalJSON() ([]byte, error) {
 	var err error
 	object := make(map[string]json.RawMessage)
 
@@ -3284,25 +3290,25 @@ func (a MonitoringParamsResponse_Edited) MarshalJSON() ([]byte, error) {
 	return json.Marshal(object)
 }
 
-// Getter for additional properties for MonitoringParamsResponse_Outputs. Returns the specified
+// Getter for additional properties for MonitoringInputsResponse_WhileRunning. Returns the specified
 // element and whether it was found
-func (a MonitoringParamsResponse_Outputs) Get(fieldName string) (value MonitoringBlockParam, found bool) {
+func (a MonitoringInputsResponse_WhileRunning) Get(fieldName string) (value MonitoringBlockParam, found bool) {
 	if a.AdditionalProperties != nil {
 		value, found = a.AdditionalProperties[fieldName]
 	}
 	return
 }
 
-// Setter for additional properties for MonitoringParamsResponse_Outputs
-func (a *MonitoringParamsResponse_Outputs) Set(fieldName string, value MonitoringBlockParam) {
+// Setter for additional properties for MonitoringInputsResponse_WhileRunning
+func (a *MonitoringInputsResponse_WhileRunning) Set(fieldName string, value MonitoringBlockParam) {
 	if a.AdditionalProperties == nil {
 		a.AdditionalProperties = make(map[string]MonitoringBlockParam)
 	}
 	a.AdditionalProperties[fieldName] = value
 }
 
-// Override default JSON handling for MonitoringParamsResponse_Outputs to handle AdditionalProperties
-func (a *MonitoringParamsResponse_Outputs) UnmarshalJSON(b []byte) error {
+// Override default JSON handling for MonitoringInputsResponse_WhileRunning to handle AdditionalProperties
+func (a *MonitoringInputsResponse_WhileRunning) UnmarshalJSON(b []byte) error {
 	object := make(map[string]json.RawMessage)
 	err := json.Unmarshal(b, &object)
 	if err != nil {
@@ -3323,8 +3329,8 @@ func (a *MonitoringParamsResponse_Outputs) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-// Override default JSON handling for MonitoringParamsResponse_Outputs to handle AdditionalProperties
-func (a MonitoringParamsResponse_Outputs) MarshalJSON() ([]byte, error) {
+// Override default JSON handling for MonitoringInputsResponse_WhileRunning to handle AdditionalProperties
+func (a MonitoringInputsResponse_WhileRunning) MarshalJSON() ([]byte, error) {
 	var err error
 	object := make(map[string]json.RawMessage)
 
@@ -3337,25 +3343,25 @@ func (a MonitoringParamsResponse_Outputs) MarshalJSON() ([]byte, error) {
 	return json.Marshal(object)
 }
 
-// Getter for additional properties for MonitoringParamsResponse_WhileRunning. Returns the specified
+// Getter for additional properties for MonitoringOutputsResponse_Outputs. Returns the specified
 // element and whether it was found
-func (a MonitoringParamsResponse_WhileRunning) Get(fieldName string) (value MonitoringBlockParam, found bool) {
+func (a MonitoringOutputsResponse_Outputs) Get(fieldName string) (value MonitoringBlockParam, found bool) {
 	if a.AdditionalProperties != nil {
 		value, found = a.AdditionalProperties[fieldName]
 	}
 	return
 }
 
-// Setter for additional properties for MonitoringParamsResponse_WhileRunning
-func (a *MonitoringParamsResponse_WhileRunning) Set(fieldName string, value MonitoringBlockParam) {
+// Setter for additional properties for MonitoringOutputsResponse_Outputs
+func (a *MonitoringOutputsResponse_Outputs) Set(fieldName string, value MonitoringBlockParam) {
 	if a.AdditionalProperties == nil {
 		a.AdditionalProperties = make(map[string]MonitoringBlockParam)
 	}
 	a.AdditionalProperties[fieldName] = value
 }
 
-// Override default JSON handling for MonitoringParamsResponse_WhileRunning to handle AdditionalProperties
-func (a *MonitoringParamsResponse_WhileRunning) UnmarshalJSON(b []byte) error {
+// Override default JSON handling for MonitoringOutputsResponse_Outputs to handle AdditionalProperties
+func (a *MonitoringOutputsResponse_Outputs) UnmarshalJSON(b []byte) error {
 	object := make(map[string]json.RawMessage)
 	err := json.Unmarshal(b, &object)
 	if err != nil {
@@ -3376,8 +3382,8 @@ func (a *MonitoringParamsResponse_WhileRunning) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-// Override default JSON handling for MonitoringParamsResponse_WhileRunning to handle AdditionalProperties
-func (a MonitoringParamsResponse_WhileRunning) MarshalJSON() ([]byte, error) {
+// Override default JSON handling for MonitoringOutputsResponse_Outputs to handle AdditionalProperties
+func (a MonitoringOutputsResponse_Outputs) MarshalJSON() ([]byte, error) {
 	var err error
 	object := make(map[string]json.RawMessage)
 
@@ -3805,15 +3811,18 @@ type ServerInterface interface {
 	// Получение ошибок блока
 	// (GET /monitoring/tasks/block/{blockId}/error)
 	GetBlockError(w http.ResponseWriter, r *http.Request, blockId string)
-	// Get inputs and outputs of block
-	// (GET /monitoring/tasks/block/{blockId}/params)
-	GetMonitoringTasksBlockBlockIdParams(w http.ResponseWriter, r *http.Request, blockId string)
+	// Get inputs of block
+	// (GET /monitoring/tasks/block/{blockId}/inputs)
+	MonitoringGetBlockInputs(w http.ResponseWriter, r *http.Request, blockId string)
+	// Get outputs of block
+	// (GET /monitoring/tasks/block/{blockId}/outputs)
+	MonitoringGetBlockOutputs(w http.ResponseWriter, r *http.Request, blockId string)
 	// Получение стейта блока
 	// (GET /monitoring/tasks/block/{blockId}/state)
 	GetBlockState(w http.ResponseWriter, r *http.Request, blockId string)
-	// Get inputs and outputs of block that is not created yet
+	// Get inputs of block that is not created yet
 	// (GET /monitoring/tasks/block/{workNumber}/{stepName}/params)
-	GetMonitoringTasksBlockWorkNumberStepNameParams(w http.ResponseWriter, r *http.Request, workNumber string, stepName string)
+	MonitoringGetNotCreatedBlockInputs(w http.ResponseWriter, r *http.Request, workNumber string, stepName string)
 	// Get task for monitoring
 	// (GET /monitoring/tasks/{workNumber})
 	GetMonitoringTask(w http.ResponseWriter, r *http.Request, workNumber string, params GetMonitoringTaskParams)
@@ -4336,8 +4345,8 @@ func (siw *ServerInterfaceWrapper) GetBlockError(w http.ResponseWriter, r *http.
 	handler(w, r.WithContext(ctx))
 }
 
-// GetMonitoringTasksBlockBlockIdParams operation middleware
-func (siw *ServerInterfaceWrapper) GetMonitoringTasksBlockBlockIdParams(w http.ResponseWriter, r *http.Request) {
+// MonitoringGetBlockInputs operation middleware
+func (siw *ServerInterfaceWrapper) MonitoringGetBlockInputs(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	var err error
@@ -4352,7 +4361,33 @@ func (siw *ServerInterfaceWrapper) GetMonitoringTasksBlockBlockIdParams(w http.R
 	}
 
 	var handler = func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetMonitoringTasksBlockBlockIdParams(w, r, blockId)
+		siw.Handler.MonitoringGetBlockInputs(w, r, blockId)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
+// MonitoringGetBlockOutputs operation middleware
+func (siw *ServerInterfaceWrapper) MonitoringGetBlockOutputs(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "blockId" -------------
+	var blockId string
+
+	err = runtime.BindStyledParameter("simple", false, "blockId", chi.URLParam(r, "blockId"), &blockId)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Invalid format for parameter blockId: %s", err), http.StatusBadRequest)
+		return
+	}
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.MonitoringGetBlockOutputs(w, r, blockId)
 	}
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -4388,8 +4423,8 @@ func (siw *ServerInterfaceWrapper) GetBlockState(w http.ResponseWriter, r *http.
 	handler(w, r.WithContext(ctx))
 }
 
-// GetMonitoringTasksBlockWorkNumberStepNameParams operation middleware
-func (siw *ServerInterfaceWrapper) GetMonitoringTasksBlockWorkNumberStepNameParams(w http.ResponseWriter, r *http.Request) {
+// MonitoringGetNotCreatedBlockInputs operation middleware
+func (siw *ServerInterfaceWrapper) MonitoringGetNotCreatedBlockInputs(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	var err error
@@ -4413,7 +4448,7 @@ func (siw *ServerInterfaceWrapper) GetMonitoringTasksBlockWorkNumberStepNamePara
 	}
 
 	var handler = func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetMonitoringTasksBlockWorkNumberStepNameParams(w, r, workNumber, stepName)
+		siw.Handler.MonitoringGetNotCreatedBlockInputs(w, r, workNumber, stepName)
 	}
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -6276,13 +6311,16 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/monitoring/tasks/block/{blockId}/error", wrapper.GetBlockError)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/monitoring/tasks/block/{blockId}/params", wrapper.GetMonitoringTasksBlockBlockIdParams)
+		r.Get(options.BaseURL+"/monitoring/tasks/block/{blockId}/inputs", wrapper.MonitoringGetBlockInputs)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/monitoring/tasks/block/{blockId}/outputs", wrapper.MonitoringGetBlockOutputs)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/monitoring/tasks/block/{blockId}/state", wrapper.GetBlockState)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/monitoring/tasks/block/{workNumber}/{stepName}/params", wrapper.GetMonitoringTasksBlockWorkNumberStepNameParams)
+		r.Get(options.BaseURL+"/monitoring/tasks/block/{workNumber}/{stepName}/params", wrapper.MonitoringGetNotCreatedBlockInputs)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/monitoring/tasks/{workNumber}", wrapper.GetMonitoringTask)
