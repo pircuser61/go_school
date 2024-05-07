@@ -20,6 +20,8 @@ services_ping:
 
 people:
   url: "https://dev.iga.mts.ru/api/archivist/v2"
+  max_retries: 3
+  retry_delay: 1s
   cache:
     type: "default"
     address: ""
@@ -43,6 +45,8 @@ sso:
   client_id: "jocasta-dev"
   realm: "mts"
   access_cookie_name: "kc-access"
+  max_retries: 3
+  retry_delay: 1s
 
 mail:
   broker: "redis"
@@ -91,6 +95,8 @@ http_client_config:
   tls_handshake_timeout: '10s'
   expect_continue_timeout: '1s'
   proxy_url: ''
+  max_retries: 3
+  retry_delay: 1s
 
 monitoring:
   addr: 'http://monitoring:9000/api/monitoring/v1/pipeliner'
@@ -116,6 +122,8 @@ log_index: 'jocasta-dev-jocasta-dev-ocean-0000-s1-k8s-cmn-inside-01'
 servicedesc:
   servicedesk_url: "https://dev.servicedesk.mts.ru"
   scope: "servicedesk-develop-aud"
+  max_retries: 3
+  retry_delay: 1s
   cache:
     type: "default"
     address: ""
@@ -125,15 +133,27 @@ servicedesc:
 
 function_store:
   url: 'functions:90'
+  max_retries: 3
+  retry_delay: 1s
+  timeout: 2s
 
 scheduler_tasks:
   url: 'localhost:9001'
+  max_retries: 3
+  retry_delay: 1s
+  timeout: 2s
 
 sequence:
   url: 'localhost:9002'
+  max_retries: 3
+  retry_delay: 1s
+  timeout: 2s
 
 human_tasks:
   url: "human-tasks:90"
+  max_retries: 3
+  retry_delay: 1s
+  timeout: 2s
   cache:
     type: "default"
     address: ""
@@ -149,13 +169,21 @@ imap:
 
 integrations:
   url: 'integrations:90'
+  max_retries: 3
+  retry_delay: 1s
+  timeout: 2s
 
 forms:
   url: 'forms:90'
+  max_retries: 3
+  retry_delay: 1s
+  timeout: 2s
 
 hrgate:
   hr_gate_url: "https://hr-gate.stage.autobp.mts.ru"
   scope: "hr-gate"
+  max_retries: 3
+  retry_delay: 1s
   cache:
     type: "default"
     address: ""
@@ -173,5 +201,8 @@ minio:
 file_registry:
   rest: 'file-registry:8000'
   grpc: 'file-registry:90'
+  max_retries: 3
+  retry_delay: 1s
+  timeout: 2s
 
 host_url: 'https://dev.ap.mts.ru'

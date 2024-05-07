@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/hashicorp/go-retryablehttp"
+
 	"github.com/google/uuid"
 
 	"github.com/pkg/errors"
@@ -48,7 +50,7 @@ type TaskSubscriptionData struct {
 }
 
 type RunContextServices struct {
-	HTTPClient    *http.Client
+	HTTPClient    *retryablehttp.Client
 	Storage       db.Database
 	Sender        *mail.Service
 	Kafka         *kafka.Service

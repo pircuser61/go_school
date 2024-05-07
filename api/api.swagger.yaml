@@ -3789,6 +3789,10 @@ components:
     UniquePersons:
       type: object
       properties:
+        users:
+          type: array
+          items:
+            $ref: '#/components/schemas/UniqueUser'
         logins:
           type: array
           items:
@@ -3797,11 +3801,23 @@ components:
           type: array
           items:
             type: string
-
       required:
         - tasks
         - total
         - tasks_meta
+    UniqueUser:
+      type: object
+      properties:
+        username:
+          type: string
+        tab_num:
+          type: string
+        full_name:
+          type: string
+      required:
+        - username
+        - tab_num
+        - full_name
     EriusTasksPage:
       type: object
       properties:
@@ -5761,6 +5777,9 @@ components:
         work_number:
           type: string
           description: "Номер заявки для мониторинга"
+        work_id:
+          type: string
+          description: "UUID заявки"
         is_finished:
           type: boolean
           description: "Признак завершенности"
@@ -5779,6 +5798,7 @@ components:
             $ref: '#/components/schemas/MonitoringTaskRun'
       required:
         - version_id
+        - work_id
         - work_number
         - scenario_info
         - history

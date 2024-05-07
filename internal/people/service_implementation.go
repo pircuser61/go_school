@@ -11,6 +11,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/hashicorp/go-retryablehttp"
+
 	"github.com/pkg/errors"
 
 	"go.opencensus.io/trace"
@@ -109,7 +111,7 @@ func defineFilter(input string, oneWord bool, filter []string) string {
 type Service struct {
 	SearchURL string
 
-	Cli   *http.Client `json:"-"`
+	Cli   *retryablehttp.Client `json:"-"`
 	Sso   *sso.Service
 	Cache cachekit.Cache
 }
@@ -123,12 +125,7 @@ func (s *Service) getUser(ctx context.Context, search string, onlyEnabled bool) 
 	ctxLocal, span := trace.StartSpan(ctx, "getUser")
 	defer span.End()
 
-	var (
-		req *http.Request
-		err error
-	)
-
-	req, err = http.NewRequestWithContext(ctxLocal, http.MethodGet, s.SearchURL, http.NoBody)
+	req, err := retryablehttp.NewRequestWithContext(ctxLocal, http.MethodGet, s.SearchURL, http.NoBody)
 	if err != nil {
 		return nil, err
 	}
@@ -176,11 +173,11 @@ func (s *Service) getUsers(ctx context.Context, search string, limit int, filter
 	defer span.End()
 
 	var (
-		req *http.Request
+		req *retryablehttp.Request
 		err error
 	)
 
-	req, err = http.NewRequestWithContext(ctxLocal, http.MethodGet, s.SearchURL, http.NoBody)
+	req, err = retryablehttp.NewRequestWithContext(ctxLocal, http.MethodGet, s.SearchURL, http.NoBody)
 	if err != nil {
 		return nil, err
 	}

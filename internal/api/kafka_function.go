@@ -179,7 +179,7 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 
 		runCtx.NotifyEvents(ctx) // events for successfully processed nodes
 
-		if st.Name == errBlock {
+		if st.Name == errBlock && !errors.Is(blockErr, pipeline.ErrMessageFromKafkaHasError) {
 			<-time.After(ae.FuncMsgResendDelay)
 
 			if kafkaErr := ae.Kafka.ProduceFuncResultMessage(ctx, &kafka.RunnerInMessage{

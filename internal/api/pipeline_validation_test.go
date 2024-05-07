@@ -15,6 +15,7 @@ import (
 	"github.com/hrishin/httpmock"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/httpclient"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 )
@@ -285,8 +286,10 @@ func TestValidation_SdBlueprintFilled(t *testing.T) {
 		},
 	}
 
+	retryableHttpClient := httpclient.NewClient(httpmock.Client(&mockResponse), nil, 0, 0)
+
 	sdAPI := &servicedesc.Service{
-		Cli:   httpmock.Client(&mockResponse),
+		Cli:   retryableHttpClient,
 		SdURL: "https://dev.servicedesk.mts.ru",
 	}
 

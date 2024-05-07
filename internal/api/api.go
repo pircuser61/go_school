@@ -1594,6 +1594,9 @@ type MonitoringTask struct {
 	// Айди версии сценария для мониторинга
 	VersionId string `json:"version_id"`
 
+	// UUID заявки
+	WorkId string `json:"work_id"`
+
 	// Номер заявки для мониторинга
 	WorkNumber string `json:"work_number"`
 }
@@ -2165,8 +2168,16 @@ type TimerParams struct {
 
 // UniquePersons defines model for UniquePersons.
 type UniquePersons struct {
-	Groups *[]string `json:"groups,omitempty"`
-	Logins *[]string `json:"logins,omitempty"`
+	Groups *[]string     `json:"groups,omitempty"`
+	Logins *[]string     `json:"logins,omitempty"`
+	Users  *[]UniqueUser `json:"users,omitempty"`
+}
+
+// UniqueUser defines model for UniqueUser.
+type UniqueUser struct {
+	FullName string `json:"full_name"`
+	TabNum   string `json:"tab_num"`
+	Username string `json:"username"`
 }
 
 // Update approval list settings

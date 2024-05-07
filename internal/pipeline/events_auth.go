@@ -3,7 +3,8 @@ package pipeline
 import (
 	c "context"
 	"encoding/json"
-	"net/http"
+
+	"github.com/hashicorp/go-retryablehttp"
 
 	microservice_v1 "gitlab.services.mts.ru/jocasta/integrations/pkg/proto/gen/microservice/v1"
 )
@@ -16,7 +17,7 @@ type SSOToken struct {
 }
 
 //nolint:gocritic //поинтер изначально не был предусмотрен
-func (runCtx BlockRunContext) addAuthHeader(ctx c.Context, r *http.Request) error {
+func (runCtx BlockRunContext) addAuthHeader(ctx c.Context, r *retryablehttp.Request) error {
 	jsonbody, err := json.Marshal(runCtx.TaskSubscriptionData.MicroserviceSecrets)
 	if err != nil {
 		return err
