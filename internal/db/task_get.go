@@ -2395,42 +2395,6 @@ func getWorksStatusQuery(statusFilter []string) *string {
 	return &statusQuery
 }
 
-func (db *PGCon) GetBlockInputs(ctx c.Context, blockName, workNumber string) (entity.BlockInputs, error) {
-	ctx, span := trace.StartSpan(ctx, "pg_get_block_inputs")
-	defer span.End()
-
-	blockInputs := make(entity.BlockInputs, 0)
-	params := make(map[string]interface{}, 0)
-
-	version, err := db.GetVersionByWorkNumber(ctx, workNumber)
-	if err != nil {
-		return blockInputs, nil
-	}
-
-	const q = `
-		SELECT content -> 'pipeline' -> 'blocks' -> $1 -> 'params'
-		FROM versions
-		WHERE id = $2;
-	`
-
-	if err = db.Connection.QueryRow(ctx, q, blockName, version.VersionID).Scan(&params); err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return blockInputs, nil
-		}
-
-		return nil, err
-	}
-
-	for i := range params {
-		blockInputs = append(blockInputs, entity.BlockInputValue{
-			Name:  i,
-			Value: params[i],
-		})
-	}
-
-	return blockInputs, nil
-}
-
 func (db *PGCon) GetBlockOutputs(ctx c.Context, blockID, blockName string) (entity.BlockOutputs, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_block_outputs")
 	defer span.End()

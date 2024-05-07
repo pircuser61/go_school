@@ -63,7 +63,7 @@ func TestGetNodesToSkip(t *testing.T) {
 		DB: func() db.Database {
 			res := &mocks.MockedDatabase{}
 
-			res.On("GetBlockDataFromVersion",
+			res.On("GetStepDataFromVersion",
 				mock.MatchedBy(func(ctx context.Context) bool { return true }),
 				mock.MatchedBy(func(workNumber string) bool { return true }),
 				"start_0",
@@ -78,7 +78,7 @@ func TestGetNodesToSkip(t *testing.T) {
 				}, nil,
 			)
 
-			res.On("GetBlockDataFromVersion",
+			res.On("GetStepDataFromVersion",
 				mock.MatchedBy(func(ctx context.Context) bool { return true }),
 				mock.MatchedBy(func(workNumber string) bool { return true }),
 				"servicedesk_application_0",
@@ -94,7 +94,7 @@ func TestGetNodesToSkip(t *testing.T) {
 				}, nil,
 			)
 
-			res.On("GetBlockDataFromVersion",
+			res.On("GetStepDataFromVersion",
 				mock.MatchedBy(func(ctx context.Context) bool { return true }),
 				mock.MatchedBy(func(workNumber string) bool { return true }),
 				"execution_0",
@@ -111,7 +111,7 @@ func TestGetNodesToSkip(t *testing.T) {
 				}, nil,
 			)
 
-			res.On("GetBlockDataFromVersion",
+			res.On("GetStepDataFromVersion",
 				mock.MatchedBy(func(ctx context.Context) bool { return true }),
 				mock.MatchedBy(func(workNumber string) bool { return true }),
 				"execution_1",
@@ -127,7 +127,7 @@ func TestGetNodesToSkip(t *testing.T) {
 				}, nil,
 			)
 
-			res.On("GetBlockDataFromVersion",
+			res.On("GetStepDataFromVersion",
 				mock.MatchedBy(func(ctx context.Context) bool { return true }),
 				mock.MatchedBy(func(workNumber string) bool { return true }),
 				"execution_2",
@@ -143,7 +143,7 @@ func TestGetNodesToSkip(t *testing.T) {
 				}, nil,
 			)
 
-			res.On("GetBlockDataFromVersion",
+			res.On("GetStepDataFromVersion",
 				mock.MatchedBy(func(ctx context.Context) bool { return true }),
 				mock.MatchedBy(func(workNumber string) bool { return true }),
 				"end_0",
