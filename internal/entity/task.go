@@ -116,7 +116,7 @@ type EriusTask struct {
 	StatusComment          string              `json:"status_comment"`
 	StatusAuthor           string              `json:"status_author"`
 
-	ProcessDeadline         time.Time           `json:"process_deadline"`
+	ProcessDeadline         *time.Time          `json:"process_deadline"`
 	NodeGroup               []*NodeGroup        `json:"node_group"`
 	ApprovalList            map[string]string   `json:"approval_list"`
 	CurrentExecutor         CurrentExecutorData `json:"current_executor"`

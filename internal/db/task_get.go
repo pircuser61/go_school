@@ -1737,6 +1737,7 @@ func (db *PGCon) getTasks(ctx c.Context, filters *entity.TaskFilter,
 			nullStringParameters sql.NullString
 			nullExecTime         sql.NullTime
 			nullApprTime         sql.NullTime
+			nullDeadlineTime     sql.NullTime
 			actionData           []byte
 			execData             []byte
 		)
@@ -1761,7 +1762,7 @@ func (db *PGCon) getTasks(ctx c.Context, filters *entity.TaskFilter,
 			&et.Rate,
 			&et.RateComment,
 			&actionData,
-			&et.ProcessDeadline,
+			&nullDeadlineTime,
 			&execData,
 			&nullExecTime,
 			&nullApprTime,
@@ -1782,7 +1783,11 @@ func (db *PGCon) getTasks(ctx c.Context, filters *entity.TaskFilter,
 			}
 		}
 
-		et.ProcessDeadline = et.ProcessDeadline.UTC()
+		if nullDeadlineTime.Valid {
+			t := nullDeadlineTime.Time.UTC()
+
+			et.ProcessDeadline = &t
+		}
 
 		if nullExecTime.Valid {
 			t := nullExecTime.Time.UTC()
