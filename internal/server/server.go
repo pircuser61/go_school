@@ -138,7 +138,7 @@ func (s *Server) SendMessageToWorkers(ctx context.Context, message kafka.RunnerI
 		TimeNow: time.Now(),
 	}
 
-	s.logger.Info("Получено сообщение из functions: ", message.TaskID) // TODO: DEV ONLY. DELETE
+	s.logger.Info("Получено сообщение из functions: ", message.TaskID) // TODO: DEV-STAGE only
 
 	if err := s.kafka.SetRunnerInMsg(ctx, strconv.Itoa(int(timedMsg.TimeNow.Unix())), &message); err != nil {
 		s.logger.WithField("stepID", message.TaskID).WithError(err).Error("cannot set function-result message to cache")
