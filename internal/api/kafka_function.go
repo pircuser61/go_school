@@ -162,9 +162,9 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 
 	runCtx.SetTaskEvents(ctx)
 
-	blockFunc, err := ae.DB.GetBlockDataFromVersion(ctx, st.WorkNumber, st.Name)
+	blockFunc, err := ae.DB.GetStepDataFromVersion(ctx, st.WorkNumber, st.Name)
 	if err != nil {
-		log.WithField("funcName", "GetBlockDataFromVersion").
+		log.WithField("funcName", "GetStepDataFromVersion").
 			WithError(err).
 			Error("get block data from pipeline version")
 
@@ -179,7 +179,7 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 
 		runCtx.NotifyEvents(ctx) // events for successfully processed nodes
 
-		if st.Name == errBlock {
+		if st.Name == errBlock && !errors.Is(blockErr, pipeline.ErrMessageFromKafkaHasError) {
 			<-time.After(ae.FuncMsgResendDelay)
 
 			if kafkaErr := ae.Kafka.ProduceFuncResultMessage(ctx, &kafka.RunnerInMessage{

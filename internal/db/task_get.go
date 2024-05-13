@@ -45,22 +45,32 @@ func uniqueActionsByRole(loginsIn, stepType string, finished, acted, isPersonsFi
 		memberActed = "AND m.is_acted = true"
 	}
 
-	// nolint:gocritic
+	// nolint:gocritic,lll //В старых заявках нет пользователя и из-за этого приходится их забирать из других полей, где они есть там
 	// language=PostgreSQL
 	q := fmt.Sprintf(`WITH actions AS (
     SELECT vs.work_id                                                                       AS work_id
          , vs.step_name                                                                     AS block_id
          , CASE WHEN (vs.status IN ('running', 'idle')  AND vs.is_paused = false) THEN m.actions ELSE '{}' END AS action
          , CASE WHEN (vs.status IN ('running', 'idle')  AND vs.is_paused = false) THEN m.params ELSE '{}' END  AS params
-         , vs.current_executor                                                              AS current_executor
+		 , CASE WHEN vs.current_executor is not null and vs.current_executor <> '{}'
+		 	THEN vs.current_executor
+			ELSE jsonb_build_object(
+					'people', (
+						SELECT jsonb_agg(key)
+						FROM (SELECT jsonb_object_keys(vs.content -> 'State' -> vs.step_name -> 'executors') as key) as people),
+					'group_name', vs.content -> 'State' -> vs.step_name -> 'executors_group_name',
+					'group_id', coalesce(vs.content -> 'State' -> vs.step_name -> 'execution_group_id', vs.content -> 'State' -> vs.step_name -> 'executors_group_id'),
+					'initial_people', array[vs.content -> 'State' -> vs.step_name -> 'actual_executor']
+				)
+		 END     																			AS current_executor
          , CASE WHEN vs.step_type = 'execution' THEN vs.time END                            AS exec_start_time
 		 , CASE WHEN vs.step_type = 'approver' THEN vs.time END                          	AS appr_start_time
          , vs.time                                                                          AS node_start
          , CASE 
              WHEN vs.status in ('finished', 'no_success') AND vs.step_type in ('execution', 'approver', 'form', 'sign') THEN vs.updated_at 
 		   END AS updated_at
-         , timestamptz(vs.content -> 'State' -> vs.step_name ->> 'deadline')                AS node_deadline
-         ,  vs.content -> 'State' -> vs.step_name ->> 'is_expired'		   					AS is_expired
+		 , COALESCE(NULLIF(timestamptz(vs.content -> 'State' -> vs.step_name ->> 'deadline'), '0001-01-01T00:00:00Z'), w.exec_deadline) AS node_deadline
+         , vs.content -> 'State' -> vs.step_name ->> 'is_expired'		   					AS is_expired
     FROM members m
              JOIN variable_storage vs on vs.id = m.block_id
              JOIN works w on vs.work_id = w.id
@@ -298,7 +308,7 @@ func getUniqueActions(selectFilter string, logins []string, isPersonFilter bool)
 
 //nolint:gocritic //изначально было без поинтера
 func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string, args []interface{}) {
-	// nolint:gocritic
+	// nolint:gocritic,lll
 	// language=PostgreSQL
 	q = `
 		[with_variable_storage]
@@ -327,11 +337,17 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 			w.rate,
 			w.rate_comment,
 		    ua.actions,
-		    COALESCE(NULLIF(ua.node_deadline, '0001-01-01T00:00:00Z'), w.exec_deadline),
+		    ua.node_deadline,
 		    ua.current_executor,
 		    ua.exec_start_time,
 		    ua.appr_start_time,
-			CASE WHEN ua.node_deadline > now() OR coalesce(ua.is_expired::boolean, false) THEN false ELSE true END as is_expired,
+		   CASE
+        		WHEN coalesce(ua.is_expired::boolean, FALSE) OR
+				 (ua.updated_at IS NOT NULL AND date_trunc('minute', COALESCE(NULLIF(ua.node_deadline, '0001-01-01T00:00:00Z'), w.exec_deadline)) < date_trunc('minute', ua.updated_at)) OR
+     			 (ua.updated_at IS null and date_trunc('minute',COALESCE(NULLIF(ua.node_deadline, '0001-01-01T00:00:00Z'), w.exec_deadline)) < date_trunc('minute',now()))
+				THEN true
+			ELSE false
+			END as is_expired,
 		    w.is_paused,
 		    w.finished_at
 		FROM works w 
@@ -528,15 +544,32 @@ func (cq *compileGetTaskQueryMaker) addProcessingSteps() {
 	}
 }
 
-func (cq *compileGetTaskQueryMaker) addIsExpiredFilter(isExpired *bool) {
+func (cq *compileGetTaskQueryMaker) addIsExpiredFilter(isExpired *bool, selectAs string) {
 	if isExpired == nil {
 		return
 	}
 
-	if !*isExpired {
-		cq.q = fmt.Sprintf("%s AND (ua.node_deadline > now() OR coalesce(ua.is_expired::boolean, false)) ", cq.q)
+	// nolint:lll //Это для проверки по getTasks
+	finished := []string{"finished_executor", "finished_approver", "finished_form_executor", "finished_signer_phys", "finished_signer_jur", "finished_group_executor", "finished_executor_v2"}
+
+	//nolint:lll //it's ok
+	// true - просроченные задачи
+	if *isExpired {
+		if utils.IsContainsInSlice(selectAs, finished) {
+			cq.q = fmt.Sprintf("%s and (ua.updated_at is not null and date_trunc('minute',ua.updated_at) > date_trunc('minute',COALESCE(NULLIF(ua.node_deadline, '0001-01-01T00:00:00Z'), w.exec_deadline)) AND date_trunc('minute',now()) > date_trunc('minute',COALESCE(NULLIF(ua.node_deadline, '0001-01-01T00:00:00Z'), w.exec_deadline)))", cq.q)
+
+			return
+		}
+
+		cq.q = fmt.Sprintf("%s AND date_trunc('minute',COALESCE(NULLIF(ua.node_deadline, '0001-01-01T00:00:00Z'), w.exec_deadline)) < date_trunc('minute',now()) OR (ua.updated_at is not null and date_trunc('minute',COALESCE(NULLIF(ua.node_deadline, '0001-01-01T00:00:00Z'), w.exec_deadline)) < date_trunc('minute',ua.updated_at)) AND coalesce(ua.is_expired::boolean, false) = TRUE", cq.q)
 	} else {
-		cq.q = fmt.Sprintf("%s AND (ua.node_deadline < now() OR coalesce(ua.is_expired::boolean, true)) ", cq.q)
+		if utils.IsContainsInSlice(selectAs, finished) {
+			cq.q = fmt.Sprintf("%s and (ua.updated_at is not null and date_trunc('minute',ua.updated_at) < date_trunc('minute',COALESCE(NULLIF(ua.node_deadline, '0001-01-01T00:00:00Z'), w.exec_deadline)) AND date_trunc('minute',now()) < date_trunc('minute',COALESCE(NULLIF(ua.node_deadline, '0001-01-01T00:00:00Z'), w.exec_deadline)))", cq.q)
+
+			return
+		}
+
+		cq.q = fmt.Sprintf("%s AND date_trunc('minute',COALESCE(NULLIF(ua.node_deadline, '0001-01-01T00:00:00Z'), w.exec_deadline)) > date_trunc('minute',now()) OR (ua.updated_at is not null and date_trunc('minute',COALESCE(NULLIF(ua.node_deadline, '0001-01-01T00:00:00Z'), w.exec_deadline)) > date_trunc('minute',ua.updated_at)) AND coalesce(ua.is_expired::boolean, false) = FALSE", cq.q)
 	}
 }
 
@@ -644,8 +677,8 @@ func (cq *compileGetTaskQueryMaker) MakeQuery(
 	cq.addInitiator()
 	cq.addProcessingSteps()
 	cq.addExecutorFilter()
-	cq.addIsExpiredFilter(fl.Expired)
 	cq.addFieldsFilter(fl)
+	cq.addIsExpiredFilter(fl.Expired, *fl.SelectAs)
 	cq.addOrderBy(order, orderBy)
 
 	if useLimitOffset {
@@ -1748,6 +1781,7 @@ func (db *PGCon) getTasks(ctx c.Context, filters *entity.TaskFilter,
 			nullStringParameters sql.NullString
 			nullExecTime         sql.NullTime
 			nullApprTime         sql.NullTime
+			nullDeadlineTime     sql.NullTime
 			actionData           []byte
 			execData             []byte
 		)
@@ -1772,7 +1806,7 @@ func (db *PGCon) getTasks(ctx c.Context, filters *entity.TaskFilter,
 			&et.Rate,
 			&et.RateComment,
 			&actionData,
-			&et.ProcessDeadline,
+			&nullDeadlineTime,
 			&execData,
 			&nullExecTime,
 			&nullApprTime,
@@ -1793,7 +1827,11 @@ func (db *PGCon) getTasks(ctx c.Context, filters *entity.TaskFilter,
 			}
 		}
 
-		et.ProcessDeadline = et.ProcessDeadline.UTC()
+		if nullDeadlineTime.Valid {
+			t := nullDeadlineTime.Time.UTC()
+
+			et.ProcessDeadline = &t
+		}
 
 		if nullExecTime.Valid {
 			t := nullExecTime.Time.UTC()
@@ -1827,6 +1865,12 @@ func (db *PGCon) getTasks(ctx c.Context, filters *entity.TaskFilter,
 		if len(actionData) != 0 {
 			if unmErr := json.Unmarshal(actionData, &actions); unmErr != nil {
 				return nil, unmErr
+			}
+		}
+
+		if len(et.CurrentExecutor.InitialPeople) == 1 {
+			if et.CurrentExecutor.InitialPeople[0] == "" {
+				et.CurrentExecutor.InitialPeople = et.CurrentExecutor.People
 			}
 		}
 
@@ -2398,42 +2442,6 @@ func getWorksStatusQuery(statusFilter []string) *string {
 	statusQuery = fmt.Sprintf(statusQuery, v)
 
 	return &statusQuery
-}
-
-func (db *PGCon) GetBlockInputs(ctx c.Context, blockName, workNumber string) (entity.BlockInputs, error) {
-	ctx, span := trace.StartSpan(ctx, "pg_get_block_inputs")
-	defer span.End()
-
-	blockInputs := make(entity.BlockInputs, 0)
-	params := make(map[string]interface{}, 0)
-
-	version, err := db.GetVersionByWorkNumber(ctx, workNumber)
-	if err != nil {
-		return blockInputs, nil
-	}
-
-	const q = `
-		SELECT content -> 'pipeline' -> 'blocks' -> $1 -> 'params'
-		FROM versions
-		WHERE id = $2;
-	`
-
-	if err = db.Connection.QueryRow(ctx, q, blockName, version.VersionID).Scan(&params); err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return blockInputs, nil
-		}
-
-		return nil, err
-	}
-
-	for i := range params {
-		blockInputs = append(blockInputs, entity.BlockInputValue{
-			Name:  i,
-			Value: params[i],
-		})
-	}
-
-	return blockInputs, nil
 }
 
 func (db *PGCon) GetBlockOutputs(ctx c.Context, blockID, blockName string) (entity.BlockOutputs, error) {

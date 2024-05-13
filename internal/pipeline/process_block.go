@@ -182,25 +182,21 @@ func createGoBlock(ctx c.Context, ef *entity.EriusFunc, name string, runCtx *Blo
 	return nil, false, errors.New("unknown go-block type: " + ef.TypeID)
 }
 
-func InitBlockInDB(ctx c.Context, name, stepType string, runCtx *BlockRunContext) error {
-	storageData, errSerialize := json.Marshal(runCtx.VarStore)
-	if errSerialize != nil {
-		return errSerialize
-	}
-
-	_, _, err := runCtx.Services.Storage.InitTaskBlock(ctx, &db.SaveStepRequest{
-		WorkID:   runCtx.TaskID,
-		StepName: name,
-		StepType: stepType,
-		Status:   string(StatusReady),
-		Content:  storageData,
-	}, runCtx.OnceProductive,
-		runCtx.UpdateData != nil)
+func CreateBlockInDB(ctx c.Context, name, stepType string, runCtx *BlockRunContext) error {
+	storageData, err := json.Marshal(runCtx.VarStore)
 	if err != nil {
 		return err
 	}
 
-	return nil
+	return runCtx.Services.Storage.CreateTaskBlock(ctx, &db.SaveStepRequest{
+		WorkID:     runCtx.TaskID,
+		StepName:   name,
+		StepType:   stepType,
+		Status:     string(StatusReady),
+		Content:    storageData,
+		IsPaused:   runCtx.OnceProductive,
+		HasUpdData: runCtx.UpdateData != nil,
+	})
 }
 
 func initBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *BlockRunContext) (Runner, uuid.UUID, error) {
@@ -520,14 +516,16 @@ func ProcessBlockWithEndMapping(
 
 	runCtx.BlockRunResults = &BlockRunResults{}
 
-	blockProcessor := newBlockProcessor(name, bl, runCtx, manual)
+	processor := newBlockProcessor(name, bl, runCtx, manual)
 
-	failedBlock, pErr := blockProcessor.ProcessBlock(ctx, 0)
+	failedBlock, pErr := processor.ProcessBlock(ctx, 0)
 	if pErr != nil {
+		log.WithError(pErr).Error("couldn't process block with end mapping, ProcessBlock")
+
 		return failedBlock, false, pErr
 	}
 
-	updDeadlineErr := blockProcessor.updateTaskExecDeadline(ctx)
+	updDeadlineErr := processor.updateTaskExecDeadline(ctx)
 	if updDeadlineErr != nil {
 		log.WithError(updDeadlineErr).Error("couldn't update task deadline")
 
@@ -536,12 +534,14 @@ func ProcessBlockWithEndMapping(
 
 	intStatus, stringStatus, err := runCtx.Services.Storage.GetTaskStatusWithReadableString(ctx, runCtx.TaskID)
 	if err != nil {
-		log.WithError(err).Error("couldn't get task status after processing ")
+		log.WithError(err).Error("couldn't get task status after processing")
 
 		return "", false, nil
 	}
 
 	if intStatus != 2 && intStatus != 4 {
+		log.Error(fmt.Errorf("can`t update block %s with status %d", name, intStatus))
+
 		return "", false, nil
 	}
 
