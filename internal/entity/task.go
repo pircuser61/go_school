@@ -157,6 +157,7 @@ type GetTaskParams struct {
 	Created  *TimePeriod `json:"created"`
 	Order    *string     `json:"order"`
 	OrderBy  *[]string   `json:"order_by"`
+	Fields   *[]string   `json:"fields"`
 	Expired  *bool       `json:"expired"`
 	Limit    *int        `json:"limit"`
 	Offset   *int        `json:"offset"`
