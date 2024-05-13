@@ -501,7 +501,7 @@ func (ae *Env) updateStepInternal(ctx context.Context, data *updateStepData) boo
 		log.
 			WithError(blockErr).
 			Error("couldn't process block with end mapping")
-		
+
 		runCtx.NotifyEvents(ctx) // events for successfully processed nodes
 
 		return false
