@@ -3,7 +3,7 @@ package api
 import (
 	"github.com/google/uuid"
 	"go.opencensus.io/trace"
-	
+
 	"net/http"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
