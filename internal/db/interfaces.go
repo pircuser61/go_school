@@ -254,7 +254,7 @@ type Database interface {
 	GetBlocksOutputs(ctx c.Context, blockID string) (e.BlockOutputs, error)
 	GetBlockOutputs(ctx c.Context, blockID, blockName string) (e.BlockOutputs, error)
 	GetStepInputs(ctx c.Context, stepName, workNumber string, createdAt time.Time) (e.BlockInputs, error)
-	GetEditedStepInputs(ctx c.Context, stepName, workNumber string, updatedAt time.Time) (e.BlockInputs, error)
+	GetEditedStepInputs(ctx c.Context, stepName, workNumber string, updatedAt *time.Time) (e.BlockInputs, error)
 	CheckBlockForHiddenFlag(ctx c.Context, blockID string) (bool, error)
 	GetMergedVariableStorage(ctx c.Context, workID uuid.UUID, blockIds []string) (*store.VariableStore, error)
 	CheckTaskForHiddenFlag(ctx c.Context, workNumber string) (bool, error)

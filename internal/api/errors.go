@@ -141,6 +141,7 @@ const (
 	WrongMonitoringActionError
 	GetWorkNumberError
 	CreateTaskStepInputsError
+	GetBlockInputsError
 )
 
 /*
@@ -270,6 +271,7 @@ var errorText = map[Err]string{
 	WrongMonitoringActionError:          "wrong action for this handler",
 	GetWorkNumberError:                  "can`t get work number from sequence",
 	CreateTaskStepInputsError:           "can`t create update inputs history",
+	GetBlockInputsError:                 "can`t get block inputs",
 }
 
 /*
@@ -399,6 +401,7 @@ var errorDescription = map[Err]string{
 	WrongMonitoringActionError:     "Неправильное действие для этой ручки",
 	GetWorkNumberError:             "Не удалось получить номер заявки из сервиса очереди",
 	CreateTaskStepInputsError:      "Не удалось создать запись о изменении инпутов блока",
+	GetBlockInputsError:            "Не удалось получить инпуты блока",
 }
 
 /*

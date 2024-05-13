@@ -1756,7 +1756,7 @@ func (_m *MockedDatabase) GetStepInputs(ctx context.Context, blockName string, w
 
 
 // GetStepInputs provides a mock function with given fields: ctx, blockName, workNumber, createdAt
-func (_m *MockedDatabase) GetEditedStepInputs(ctx context.Context, blockName string, workNumber string, updatedAt time.Time) (entity.BlockInputs, error) {
+func (_m *MockedDatabase) GetEditedStepInputs(ctx context.Context, blockName string, workNumber string, updatedAt *time.Time) (entity.BlockInputs, error) {
 	ret := _m.Called(ctx, blockName, workNumber, updatedAt)
 
 	if len(ret) == 0 {
@@ -1765,10 +1765,10 @@ func (_m *MockedDatabase) GetEditedStepInputs(ctx context.Context, blockName str
 
 	var r0 entity.BlockInputs
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, string, time.Time) (entity.BlockInputs, error)); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, *time.Time) (entity.BlockInputs, error)); ok {
 		return rf(ctx, blockName, workNumber, updatedAt)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, string, string, time.Time) entity.BlockInputs); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, *time.Time) entity.BlockInputs); ok {
 		r0 = rf(ctx, blockName, workNumber, updatedAt)
 	} else {
 		if ret.Get(0) != nil {
@@ -1776,7 +1776,7 @@ func (_m *MockedDatabase) GetEditedStepInputs(ctx context.Context, blockName str
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string, string, time.Time) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, string, string, *time.Time) error); ok {
 		r1 = rf(ctx, blockName, workNumber, updatedAt)
 	} else {
 		r1 = ret.Error(1)
