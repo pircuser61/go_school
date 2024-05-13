@@ -728,7 +728,7 @@ func (cq *compileGetTaskQueryMaker) addFieldsFilter(fl *entity.TaskFilter) {
 		findFields[variable] = strings.Join(fields[:length-2], ".")
 	}
 
-	cq.q = strings.Replace(cq.q, "[join_variable_storage]", "JOIN variable_storage vs ON vs.work_id =w.id", 1)
+	cq.q = strings.Replace(cq.q, "[join_variable_storage]", "JOIN variable_storage vs ON vs.work_id = w.id", 1)
 
 	for k, v := range findFields {
 		subPath := "$."
