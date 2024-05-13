@@ -328,6 +328,8 @@ func (p *blockProcessor) processActiveBlocks(ctx context.Context, activeBlocks [
 
 		failedBlock, err := processor.ProcessBlock(ctx, its)
 		if err != nil {
+			log.WithError(err).Error("could`t process active blocks")
+
 			return failedBlock, err
 		}
 
