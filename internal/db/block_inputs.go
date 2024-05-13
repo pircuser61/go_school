@@ -191,7 +191,7 @@ func (db *PGCon) GetEditedStepInputs(ctx c.Context, stepName, workNumber string,
 	//nolint:all // ok
 	query += getInputsQueryOrder
 
-	err := db.Connection.QueryRow(ctx, getInputsQuery, workNumber, stepName, updatedAt).Scan(&inputs)
+	err := db.Connection.QueryRow(ctx, query, workNumber, stepName, updatedAt).Scan(&inputs)
 	if err != nil {
 		if !errors.Is(err, pgx.ErrNoRows) {
 			return res, nil
