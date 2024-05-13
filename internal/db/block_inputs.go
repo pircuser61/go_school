@@ -134,7 +134,7 @@ func (db *PGCon) GetStepInputs(ctx c.Context, stepName, workNumber string, creat
 	query := getInputsQuery
 
 	if !createdAt.IsZero() {
-		query = fmt.Sprintf("%s %s", query, `AND ts.created_at > $3`)
+		query = fmt.Sprintf("%s %s", query, `AND ts.created_at < $3`)
 
 		queryParams = append(queryParams, createdAt)
 	}
