@@ -63,18 +63,6 @@ func (ae *Env) MonitoringGetBlockInputs(w http.ResponseWriter, req *http.Request
 		}
 	}
 
-	blockOutputs, err := ae.DB.GetBlockOutputs(ctx, blockID, dbStep.Name)
-	if err != nil {
-		e := GetBlockContextError
-
-		log.WithField("stepID", blockID).
-			WithField("stepName", dbStep.Name).
-			Error(e.errorMessage(err))
-		errorHandler.sendError(e)
-
-		return
-	}
-
 	blockIsHidden, err := ae.DB.CheckBlockForHiddenFlag(ctx, blockID)
 	if err != nil {
 		e := CheckForHiddenError
@@ -91,16 +79,6 @@ func (ae *Env) MonitoringGetBlockInputs(w http.ResponseWriter, req *http.Request
 		errorHandler.handleError(ForbiddenError, err)
 
 		return
-	}
-
-	outputs := make(map[string]MonitoringBlockParam, 0)
-
-	for _, bo := range blockOutputs {
-		outputs[bo.Name] = MonitoringBlockParam{
-			Name:  bo.Name,
-			Value: bo.Value,
-			Type:  utils.GetJSONType(bo.Value),
-		}
 	}
 
 	startedAt := dbStep.Time.String()
