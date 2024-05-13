@@ -1,10 +1,11 @@
 package api
 
 import (
-	"github.com/google/uuid"
-	"go.opencensus.io/trace"
-
 	"net/http"
+
+	"github.com/google/uuid"
+
+	"go.opencensus.io/trace"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
