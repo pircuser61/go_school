@@ -136,7 +136,7 @@ func (ae *Env) getUserFullName(ctx context.Context, username string) (string, er
 	return initiatorSSOUser.GetFullName(), nil
 }
 
-func (ae *Env) GetBlockContext(w http.ResponseWriter, r *http.Request, blockID string) {
+func (ae *Env) MonitoringGetBlockContext(w http.ResponseWriter, r *http.Request, blockID string) {
 	ctx, span := trace.StartSpan(r.Context(), "start get block context")
 	defer span.End()
 
@@ -182,7 +182,8 @@ func (ae *Env) GetBlockContext(w http.ResponseWriter, r *http.Request, blockID s
 	}
 
 	err = sendResponse(w, http.StatusOK, BlockContextResponse{
-		Blocks: &BlockContextResponse_Blocks{blocks},
+		WhileRunning: &BlockContextResponse_WhileRunning{blocks},
+		Edited:       &BlockContextResponse_Edited{blocks},
 	})
 	if err != nil {
 		errorHandler.handleError(UnknownError, err)
@@ -266,7 +267,7 @@ func getMonitoringStatus(status string) MonitoringHistoryStatus {
 	}
 }
 
-func (ae *Env) GetBlockState(w http.ResponseWriter, r *http.Request, blockID string) {
+func (ae *Env) MonitoringGetBlockState(w http.ResponseWriter, r *http.Request, blockID string) {
 	ctx, span := trace.StartSpan(r.Context(), "get_block_state")
 	defer span.End()
 
@@ -314,8 +315,8 @@ func (ae *Env) GetBlockState(w http.ResponseWriter, r *http.Request, blockID str
 	}
 
 	if err = sendResponse(w, http.StatusOK, BlockStateResponse{
-		WhyleRunning: &BlockStateResponse_WhyleRunning{params},
-		Edited:       nil,
+		WhileRunning: &BlockStateResponse_WhileRunning{params},
+		Edited:       &BlockStateResponse_Edited{params},
 	}); err != nil {
 		errorHandler.handleError(UnknownError, err)
 
