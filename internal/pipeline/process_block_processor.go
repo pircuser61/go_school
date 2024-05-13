@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -80,6 +81,7 @@ func (p *blockProcessor) ProcessBlock(ctx context.Context, its int) (string, err
 	block, id, initErr := initBlock(ctx, p.name, p.bl, p.runCtx)
 	if initErr != nil {
 		log = log.WithField("stepID", id)
+		log.WithError(initErr).Error("couldn't init block " + p.name)
 
 		return p.name, p.handleErrorWithRollback(ctx, log, initErr)
 	}
@@ -117,6 +119,8 @@ func (p *blockProcessor) ProcessBlock(ctx context.Context, its int) (string, err
 			// эта функция уже будет обрабатывать ошибку, ошибку которую она вернула не нужно обрабатывать повторно
 			failedBlock, processActiveErr := p.processActiveBlocks(ctx, activeBlocks, its, true)
 			if processActiveErr != nil {
+				log.WithError(initErr).Error("couldn't process active blocks " + strings.Join(activeBlocks, ","))
+
 				return failedBlock, processActiveErr
 			}
 
@@ -173,6 +177,8 @@ func (p *blockProcessor) ProcessBlock(ctx context.Context, its int) (string, err
 		},
 	)
 	if err != nil {
+		log.WithError(err).Error("couldn't handle initiator notify")
+
 		return p.name, p.handleErrorWithRollback(ctx, log, err)
 	}
 
@@ -198,6 +204,8 @@ func (p *blockProcessor) ProcessBlock(ctx context.Context, its int) (string, err
 	// эта функция уже будет обрабатывать ошибку, ошибку которую она вернула не нужно обрабатывать повторно
 	failedBlock, err := p.processActiveBlocks(ctx, activeBlocks, its, false)
 	if err != nil {
+		log.WithError(err).Error("couldn't ProcessBlock active blocks " + strings.Join(activeBlocks, ","))
+
 		return failedBlock, err
 	}
 
@@ -283,14 +291,14 @@ func (p *blockProcessor) processActiveBlocks(ctx context.Context, activeBlocks [
 	log := logger.GetLogger(ctx).WithField("funcName", "processActiveBlocks")
 
 	for _, blockName := range activeBlocks {
-		blockData, blockErr := p.runCtx.Services.Storage.GetBlockDataFromVersion(ctx, p.runCtx.WorkNumber, blockName)
+		blockData, blockErr := p.runCtx.Services.Storage.GetStepDataFromVersion(ctx, p.runCtx.WorkNumber, blockName)
 		if blockErr != nil {
 			return p.name, p.handleErrorWithRollback(ctx, log, blockErr)
 		}
 
 		tmpCtx := p.runCtx.Copy()
 
-		err := InitBlockInDB(ctx, blockName, blockData.TypeID, tmpCtx)
+		err := CreateBlockInDB(ctx, blockName, blockData.TypeID, tmpCtx)
 		if err != nil {
 			return p.name, p.handleErrorWithRollback(ctx, log, err)
 		}
@@ -304,7 +312,7 @@ func (p *blockProcessor) processActiveBlocks(ctx context.Context, activeBlocks [
 	}
 
 	for _, blockName := range activeBlocks {
-		blockData, blockErr := p.runCtx.Services.Storage.GetBlockDataFromVersion(ctx, p.runCtx.WorkNumber, blockName)
+		blockData, blockErr := p.runCtx.Services.Storage.GetStepDataFromVersion(ctx, p.runCtx.WorkNumber, blockName)
 		if blockErr != nil {
 			return blockName, p.handleErrorWithRollback(ctx, log, blockErr)
 		}
@@ -328,6 +336,8 @@ func (p *blockProcessor) processActiveBlocks(ctx context.Context, activeBlocks [
 
 		failedBlock, err := processor.ProcessBlock(ctx, its)
 		if err != nil {
+			log.WithError(err).Error("could`t process active blocks")
+
 			return failedBlock, err
 		}
 

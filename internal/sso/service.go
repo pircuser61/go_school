@@ -15,6 +15,9 @@ import (
 	"gopkg.in/square/go-jose.v2/jwt"
 
 	"github.com/hashicorp/go-retryablehttp"
+	"gitlab.services.mts.ru/abp/myosotis/observability"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/httpclient"
+	"go.opencensus.io/plugin/ochttp"
 )
 
 const (
@@ -87,7 +90,19 @@ type Service struct {
 }
 
 // nolint:gocritic // it's more comfortable to work with config as a value
-func NewService(c Config, cli *retryablehttp.Client) (*Service, error) {
+func NewService(c Config) (*Service, error) {
+	httpClient := &http.Client{}
+
+	tr := TransportForSso{
+		Transport: ochttp.Transport{
+			Base:        httpClient.Transport,
+			Propagation: observability.NewHTTPFormat(),
+		},
+		Scope: "",
+	}
+	httpClient.Transport = &tr
+	newCli := httpclient.NewClient(httpClient, nil, c.MaxRetries, c.RetryDelay)
+
 	refreshFD := url.Values{
 		grantTypeKey: []string{grantTypeRefreshValue},
 		clientIDKey:  []string{c.ClientID},
@@ -100,7 +115,7 @@ func NewService(c Config, cli *retryablehttp.Client) (*Service, error) {
 		clientSecret:          os.Getenv(c.ClientSecretEnvKey),
 		clientID:              c.ClientID,
 		accessTokenCookieName: c.AccessTokenCookieName,
-		cli:                   cli,
+		cli:                   newCli,
 		refreshTokensFormData: refreshFD,
 		userInfoCache:         map[string]*cachedUserInfo{},
 		userInfoMutex:         &sync.RWMutex{},

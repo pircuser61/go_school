@@ -163,6 +163,7 @@ func (db *PGCon) GetTaskForMonitoring(ctx c.Context, workNumber string, fromEven
 	// language=PostgreSQL
 	q := `
 		SELECT w.status,
+			   w.id as work_id,
 			   w.work_number,
 			   w.version_id,
 			   w.is_paused task_is_paused,
@@ -254,6 +255,7 @@ func (db *PGCon) GetTaskForMonitoring(ctx c.Context, workNumber string, fromEven
 		item := e.MonitoringTaskNode{}
 		if scanErr := rows.Scan(
 			&item.WorkStatus,
+			&item.WorkID,
 			&item.WorkNumber,
 			&item.VersionID,
 			&item.IsPaused,

@@ -266,109 +266,8 @@ func getMonitoringStatus(status string) MonitoringHistoryStatus {
 	}
 }
 
-//nolint:revive,stylecheck //need to implement interface in api.go
-func (ae *Env) GetMonitoringTasksBlockBlockIdParams(w http.ResponseWriter, req *http.Request, blockID string) {
-	ctx, span := trace.StartSpan(req.Context(), "get_monitoring_tasks_block_blockId_params")
-	defer span.End()
-
-	log := logger.GetLogger(ctx)
-	errorHandler := newHTTPErrorHandler(log, w)
-
-	blockIDUUID, err := uuid.Parse(blockID)
-	if err != nil {
-		errorHandler.handleError(UUIDParsingError, err)
-	}
-
-	taskStep, err := ae.DB.GetTaskStepByID(ctx, blockIDUUID)
-	if err != nil {
-		e := UnknownError
-
-		log.WithField("stepID", blockID).
-			Error(e.errorMessage(err))
-		errorHandler.sendError(e)
-	}
-
-	blockInputs, err := ae.DB.GetBlockInputs(ctx, taskStep.Name, taskStep.WorkNumber)
-	if err != nil {
-		e := GetBlockContextError
-
-		log.WithField("stepID", blockID).
-			WithField("stepName", taskStep.Name).
-			Error(e.errorMessage(err))
-		errorHandler.sendError(e)
-
-		return
-	}
-
-	inputs := make(map[string]MonitoringBlockParam, 0)
-
-	for _, bo := range blockInputs {
-		inputs[bo.Name] = MonitoringBlockParam{
-			Name:  bo.Name,
-			Value: bo.Value,
-			Type:  utils.GetJSONType(bo.Value),
-		}
-	}
-
-	blockOutputs, err := ae.DB.GetBlockOutputs(ctx, blockID, taskStep.Name)
-	if err != nil {
-		e := GetBlockContextError
-
-		log.WithField("stepID", blockID).
-			WithField("stepName", taskStep.Name).
-			Error(e.errorMessage(err))
-		errorHandler.sendError(e)
-
-		return
-	}
-
-	blockIsHidden, err := ae.DB.CheckBlockForHiddenFlag(ctx, blockID)
-	if err != nil {
-		e := CheckForHiddenError
-
-		log.WithField("stepID", blockID).
-			WithField("stepName", taskStep.Name).
-			Error(e.errorMessage(err))
-		errorHandler.sendError(e)
-
-		return
-	}
-
-	if blockIsHidden {
-		errorHandler.handleError(ForbiddenError, err)
-
-		return
-	}
-
-	outputs := make(map[string]MonitoringBlockParam, 0)
-
-	for _, bo := range blockOutputs {
-		outputs[bo.Name] = MonitoringBlockParam{
-			Name:  bo.Name,
-			Value: bo.Value,
-			Type:  utils.GetJSONType(bo.Value),
-		}
-	}
-
-	startedAt := taskStep.Time.String()
-	finishedAt := ""
-
-	if taskStep.Status == string(MonitoringHistoryStatusFinished) && taskStep.UpdatedAt != nil {
-		finishedAt = taskStep.UpdatedAt.String()
-	}
-
-	if err := sendResponse(w, http.StatusOK, MonitoringParamsResponse{
-		StartedAt:  &startedAt,
-		FinishedAt: &finishedAt,
-		Inputs:     &MonitoringParamsResponse_Inputs{AdditionalProperties: inputs},
-		Outputs:    &MonitoringParamsResponse_Outputs{AdditionalProperties: outputs},
-	}); err != nil {
-		errorHandler.handleError(UnknownError, err)
-	}
-}
-
 func (ae *Env) GetBlockState(w http.ResponseWriter, r *http.Request, blockID string) {
-	ctx, span := trace.StartSpan(r.Context(), "start get block state")
+	ctx, span := trace.StartSpan(r.Context(), "get_block_state")
 	defer span.End()
 
 	log := logger.GetLogger(ctx)
@@ -415,7 +314,8 @@ func (ae *Env) GetBlockState(w http.ResponseWriter, r *http.Request, blockID str
 	}
 
 	if err = sendResponse(w, http.StatusOK, BlockStateResponse{
-		State: &BlockStateResponse_State{params},
+		WhyleRunning: &BlockStateResponse_WhyleRunning{params},
+		Edited:       nil,
 	}); err != nil {
 		errorHandler.handleError(UnknownError, err)
 
@@ -629,6 +529,7 @@ func toMonitoringTaskResponse(nodes []entity.MonitoringTaskNode, events []entity
 	}
 	res.VersionId = nodes[0].VersionID
 	res.WorkNumber = nodes[0].WorkNumber
+	res.WorkId = nodes[0].WorkID
 	res.IsPaused = nodes[0].IsPaused
 	res.TaskRuns = getRunsByEvents(events)
 	res.IsFinished = nodes[0].WorkStatus == finished || nodes[0].WorkStatus == canceled
@@ -896,7 +797,7 @@ func (ae *Env) restartNode(
 		return "", fmt.Errorf("can't unpause running task block: %s", sid)
 	}
 
-	blockData, blockErr := txStorage.GetBlockDataFromVersion(ctx, workNumber, dbStep.Name)
+	blockData, blockErr := txStorage.GetStepDataFromVersion(ctx, workNumber, dbStep.Name)
 	if blockErr != nil {
 		return "", blockErr
 	}
@@ -1002,7 +903,7 @@ func (ae *Env) getNodesToSkip(ctx context.Context, nextNodes map[string][]string
 			nodeList = append(nodeList, next)
 			viewedNodes[next] = struct{}{}
 
-			blockData, blockErr := ae.DB.GetBlockDataFromVersion(ctx, workNumber, next)
+			blockData, blockErr := ae.DB.GetStepDataFromVersion(ctx, workNumber, next)
 			if blockErr != nil {
 				return nil, blockErr
 			}
