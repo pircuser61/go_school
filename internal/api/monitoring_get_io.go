@@ -190,9 +190,10 @@ func (ae *Env) MonitoringGetBlockOutputs(w http.ResponseWriter, req *http.Reques
 	}
 
 	if err = sendResponse(w, http.StatusOK, MonitoringOutputsResponse{
-		StartedAt:  &startedAt,
-		FinishedAt: &finishedAt,
-		Outputs:    &MonitoringOutputsResponse_Outputs{AdditionalProperties: outputs},
+		StartedAt:    &startedAt,
+		FinishedAt:   &finishedAt,
+		WhileRunning: &MonitoringOutputsResponse_WhileRunning{AdditionalProperties: outputs},
+		Edited:       &MonitoringOutputsResponse_Edited{AdditionalProperties: outputs},
 	}); err != nil {
 		errorHandler.handleError(UnknownError, err)
 	}
