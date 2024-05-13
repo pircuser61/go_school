@@ -80,6 +80,10 @@ func (db *PGCon) GetStepDataFromVersion(ctx c.Context, workNumber, stepName stri
 }
 
 func trySetNewParams(stepParams json.RawMessage, inputs e.BlockInputs) (json.RawMessage, error) {
+	if inputs == nil {
+		return stepParams, nil
+	}
+
 	inputsFromVersion := make(map[string]interface{}, 0)
 
 	err := json.Unmarshal(stepParams, &inputsFromVersion)
