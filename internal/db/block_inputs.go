@@ -191,6 +191,7 @@ func (db *PGCon) GetEditedStepInputs(ctx c.Context, stepName, workNumber string,
 
 	if updatedAt != nil && !updatedAt.IsZero() {
 		query = fmt.Sprintf("%s %s", query, `AND ts.created_at < $3`)
+
 		queryParams = append(queryParams, updatedAt)
 	}
 
