@@ -516,14 +516,14 @@ func ProcessBlockWithEndMapping(
 
 	runCtx.BlockRunResults = &BlockRunResults{}
 
-	blockProcessor := newBlockProcessor(name, bl, runCtx, manual)
+	processor := newBlockProcessor(name, bl, runCtx, manual)
 
-	failedBlock, pErr := blockProcessor.ProcessBlock(ctx, 0)
+	failedBlock, pErr := processor.ProcessBlock(ctx, 0)
 	if pErr != nil {
 		return failedBlock, false, pErr
 	}
 
-	updDeadlineErr := blockProcessor.updateTaskExecDeadline(ctx)
+	updDeadlineErr := processor.updateTaskExecDeadline(ctx)
 	if updDeadlineErr != nil {
 		log.WithError(updDeadlineErr).Error("couldn't update task deadline")
 
@@ -532,12 +532,14 @@ func ProcessBlockWithEndMapping(
 
 	intStatus, stringStatus, err := runCtx.Services.Storage.GetTaskStatusWithReadableString(ctx, runCtx.TaskID)
 	if err != nil {
-		log.WithError(err).Error("couldn't get task status after processing ")
+		log.WithError(err).Error("couldn't get task status after processing")
 
 		return "", false, nil
 	}
 
 	if intStatus != 2 && intStatus != 4 {
+		log.Error(fmt.Errorf("can`t update block %s with status %d", name, intStatus))
+
 		return "", false, nil
 	}
 
