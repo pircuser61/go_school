@@ -5689,7 +5689,7 @@ func (siw *ServerInterfaceWrapper) GetTasks(w http.ResponseWriter, r *http.Reque
 
 	err = runtime.BindQueryParameter("form", true, false, "fields", r.URL.Query(), &params.Fields)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "fields", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter fields: %s", err), http.StatusBadRequest)
 		return
 	}
 
