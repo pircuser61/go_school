@@ -15,6 +15,8 @@ func Test_trySetNewParams(t *testing.T) {
 	}
 
 	stepParams := []byte(`{"sla":1,"approver":"ivan","otherParam":true}`)
+	var stepParamsEmpty []byte
+
 	inputs := entity.BlockInputs{
 		{
 			Name:  "sla",
@@ -43,6 +45,15 @@ func Test_trySetNewParams(t *testing.T) {
 				"approver": "gogen",
 				"otherParam": true,
 			},
+			wantErr: false,
+		},
+		{
+			name: "empty step params",
+			args: args{
+				stepParams: stepParamsEmpty,
+				inputs:     inputs,
+			},
+			want:    map[string]interface{} {},
 			wantErr: false,
 		},
 	}

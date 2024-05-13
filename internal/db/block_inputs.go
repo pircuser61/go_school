@@ -66,11 +66,25 @@ func (db *PGCon) GetStepDataFromVersion(ctx c.Context, workNumber, stepName stri
 		return nil, errors.New("couldn't find step data")
 	}
 
+	inputs, err := db.GetStepInputs(ctx, stepName, workNumber, time.Time{})
+	if err != nil {
+		return nil, err
+	}
+
+	step.Params, err = trySetNewParams(step.Params, inputs)
+	if err != nil {
+		return nil, err
+	}
+
 	return step, nil
 }
 
 func trySetNewParams(stepParams json.RawMessage, inputs e.BlockInputs) (json.RawMessage, error) {
 	if inputs == nil {
+		return stepParams, nil
+	}
+
+	if len(stepParams) == 0 {
 		return stepParams, nil
 	}
 
