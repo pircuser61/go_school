@@ -520,6 +520,8 @@ func ProcessBlockWithEndMapping(
 
 	failedBlock, pErr := processor.ProcessBlock(ctx, 0)
 	if pErr != nil {
+		log.WithError(pErr).Error("couldn't process block with end mapping, ProcessBlock")
+
 		return failedBlock, false, pErr
 	}
 
