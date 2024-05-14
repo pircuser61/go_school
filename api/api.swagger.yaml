@@ -5973,6 +5973,11 @@ components:
           description: "ID блоков"
           items:
             type: string
+        step_names:
+          type: array
+          description: "Названия блоков"
+          items:
+            type: string
 
     MonitoringTaskUpdateBlockRequest:
       type: object
