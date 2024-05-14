@@ -61,7 +61,7 @@ type TaskStorager interface {
 	GetWorkIDByWorkNumber(ctx c.Context, workNumber string) (uuid.UUID, error)
 	GetPipelineIDByWorkID(ctx c.Context, taskID string) (uuid.UUID, uuid.UUID, error)
 
-	GetTaskForMonitoring(ctx c.Context, workNumber string, fromEventID, toEventID *string) ([]e.MonitoringTaskNode, error)
+	GetTaskForMonitoring(ctx c.Context, workNumber string, fromEventID, toEventID *string) ([]e.MonitoringTaskStep, error)
 	GetTasksForMonitoring(ctx c.Context, filters *e.TasksForMonitoringFilters) (*e.TasksForMonitoring, error)
 	GetTaskStepByNameForCtxEditing(ctx c.Context, workID uuid.UUID, stepName string, time time.Time) (*e.Step, error)
 

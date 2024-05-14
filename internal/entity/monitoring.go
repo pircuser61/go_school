@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-type MonitoringTaskNode struct {
+type MonitoringTaskStep struct {
 	WorkStatus    int        `json:"work_status"`
 	WorkNumber    string     `json:"work_number"`
 	WorkID        string     `json:"work_id"`

@@ -1,12 +1,11 @@
 package api
 
 import (
-	"context"
+	c "context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
-	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -25,237 +24,15 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
-	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
-
-const (
-	monitoringTimeLayout = "2006-01-02T15:04:05-0700"
-)
-
-func (ae *Env) GetTasksForMonitoring(w http.ResponseWriter, r *http.Request, params GetTasksForMonitoringParams) {
-	ctx, span := trace.StartSpan(r.Context(), "get_tasks_for_monitoring")
-	defer span.End()
-
-	log := logger.GetLogger(ctx)
-	errorHandler := newHTTPErrorHandler(log, w)
-
-	statusFilter := make([]string, 0)
-
-	if params.Status != nil {
-		for i := range *params.Status {
-			statusFilter = append(statusFilter, string((*params.Status)[i]))
-		}
-	}
-
-	dbTasks, err := ae.DB.GetTasksForMonitoring(ctx, &entity.TasksForMonitoringFilters{
-		PerPage:      params.PerPage,
-		Page:         params.Page,
-		SortColumn:   (*string)(params.SortColumn),
-		SortOrder:    (*string)(params.SortOrder),
-		Filter:       params.Filter,
-		FromDate:     params.FromDate,
-		ToDate:       params.ToDate,
-		StatusFilter: statusFilter,
-	})
-	if err != nil {
-		errorHandler.handleError(GetTasksForMonitoringError, err)
-
-		return
-	}
-
-	initiatorsFullNameCache := make(map[string]string)
-
-	responseTasks := make([]MonitoringTableTask, 0, len(dbTasks.Tasks))
-
-	for i := range dbTasks.Tasks {
-		t := dbTasks.Tasks[i]
-
-		if _, ok := initiatorsFullNameCache[t.Initiator]; !ok {
-			userLog := log.WithField("username", t.Initiator)
-
-			userFullName, getUserErr := ae.getUserFullName(ctx, t.Initiator)
-			if getUserErr != nil {
-				e := GetTasksForMonitoringGetUserError
-				userLog.Error(e.errorMessage(getUserErr))
-			}
-
-			initiatorsFullNameCache[t.Initiator] = userFullName
-		}
-
-		var processName string
-
-		if t.ProcessDeletedAt != nil {
-			const regexpString = "^(.+)(_deleted_at_\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}.+)$"
-
-			regexCompiled := regexp.MustCompile(regexpString)
-			processName = regexCompiled.ReplaceAllString(t.ProcessName, "$1")
-		} else {
-			processName = t.ProcessName
-		}
-
-		monitoringTableTask := MonitoringTableTask{
-			Initiator:         t.Initiator,
-			InitiatorFullname: initiatorsFullNameCache[t.Initiator],
-			ProcessName:       processName,
-			StartedAt:         t.StartedAt.Format(monitoringTimeLayout),
-			Status:            MonitoringTableTaskStatus(t.Status),
-			WorkNumber:        t.WorkNumber,
-		}
-
-		if t.FinishedAt != nil {
-			monitoringTableTask.FinishedAt = t.FinishedAt.Format(monitoringTimeLayout)
-		}
-
-		if t.LastEventAt != nil && t.LastEventType != nil && *t.LastEventType == string(MonitoringTaskActionRequestActionPause) {
-			monitoringTableTask.PausedAt = t.LastEventAt.Format(monitoringTimeLayout)
-		}
-
-		responseTasks = append(responseTasks, monitoringTableTask)
-	}
-
-	err = sendResponse(w, http.StatusOK, MonitoringTasksPage{
-		Tasks: responseTasks,
-		Total: dbTasks.Total,
-	})
-	if err != nil {
-		errorHandler.handleError(UnknownError, err)
-	}
-}
-
-func (ae *Env) getUserFullName(ctx context.Context, username string) (string, error) {
-	initiatorUserInfo, getUserErr := ae.People.GetUser(ctx, username)
-	if getUserErr != nil {
-		return "", getUserErr
-	}
-
-	initiatorSSOUser, typedErr := initiatorUserInfo.ToSSOUserTyped()
-	if typedErr != nil {
-		return "", typedErr
-	}
-
-	return initiatorSSOUser.GetFullName(), nil
-}
-
-func (ae *Env) MonitoringGetBlockContext(w http.ResponseWriter, r *http.Request, blockID string) {
-	ctx, span := trace.StartSpan(r.Context(), "start get block context")
-	defer span.End()
-
-	log := logger.GetLogger(ctx)
-	errorHandler := newHTTPErrorHandler(log, w)
-
-	blockIsHidden, err := ae.DB.CheckBlockForHiddenFlag(ctx, blockID)
-	if err != nil {
-		e := newHTTPErrorHandler(log.WithField("blockId", blockID), w)
-		e.handleError(CheckForHiddenError, err)
-
-		return
-	}
-
-	if blockIsHidden {
-		errorHandler.handleError(ForbiddenError, nil)
-
-		return
-	}
-
-	blocksOutputs, err := ae.DB.GetBlocksOutputs(ctx, blockID)
-	if err != nil {
-		errorHandler.handleError(GetBlockContextError, err)
-
-		return
-	}
-
-	blocks := make(map[string]MonitoringBlockOutput, len(blocksOutputs))
-
-	for _, bo := range blocksOutputs {
-		prefix := bo.StepName + "."
-
-		if strings.HasPrefix(bo.Name, prefix) {
-			continue
-		}
-
-		blocks[bo.Name] = MonitoringBlockOutput{
-			Name:        bo.Name,
-			Value:       bo.Value,
-			Description: "",
-			Type:        utils.GetJSONType(bo.Value),
-		}
-	}
-
-	err = sendResponse(w, http.StatusOK, BlockContextResponse{
-		WhileRunning: &BlockContextResponse_WhileRunning{blocks},
-		Edited:       &BlockContextResponse_Edited{blocks},
-	})
-	if err != nil {
-		errorHandler.handleError(UnknownError, err)
-	}
-}
-
-func (ae *Env) GetMonitoringTask(w http.ResponseWriter, req *http.Request, workNumber string, params GetMonitoringTaskParams) {
-	ctx, s := trace.StartSpan(req.Context(), "get_monitoring_task")
-	defer s.End()
-
-	log := logger.GetLogger(ctx)
-	errorHandler := newHTTPErrorHandler(log, w)
-
-	if workNumber == "" {
-		err := errors.New("workNumber is empty")
-		errorHandler.handleError(UUIDParsingError, err)
-
-		return
-	}
-
-	taskIsHidden, err := ae.DB.CheckTaskForHiddenFlag(ctx, workNumber)
-	if err != nil {
-		errorHandler.handleError(CheckForHiddenError, err)
-
-		return
-	}
-
-	if taskIsHidden {
-		errorHandler.handleError(ForbiddenError, nil)
-
-		return
-	}
-
-	workID, err := ae.DB.GetWorkIDByWorkNumber(ctx, workNumber)
-	if err != nil {
-		errorHandler.handleError(GetTaskError, err)
-
-		return
-	}
-
-	events, err := ae.DB.GetTaskEvents(ctx, workID.String())
-	if err != nil {
-		errorHandler.handleError(GetTaskEventsError, err)
-
-		return
-	}
-
-	nodes, err := ae.DB.GetTaskForMonitoring(ctx, workNumber, params.FromEventId, params.ToEventId)
-	if err != nil {
-		errorHandler.handleError(GetMonitoringNodesError, err)
-
-		return
-	}
-
-	if len(nodes) == 0 {
-		errorHandler.handleError(NoProcessNodesForMonitoringError, errors.New("No process nodes for monitoring"))
-
-		return
-	}
-
-	if err = sendResponse(w, http.StatusOK, toMonitoringTaskResponse(nodes, events)); err != nil {
-		errorHandler.handleError(UnknownError, err)
-
-		return
-	}
-}
 
 const (
 	cancel    = "cancel"
 	skipped   = "skipped"
 	finished  = "finished"
 	noSuccess = "no_success"
+
+	monitoringTimeLayout = "2006-01-02T15:04:05-0700"
 )
 
 func getMonitoringStatus(status string) MonitoringHistoryStatus {
@@ -267,113 +44,7 @@ func getMonitoringStatus(status string) MonitoringHistoryStatus {
 	}
 }
 
-func (ae *Env) MonitoringGetBlockState(w http.ResponseWriter, r *http.Request, blockID string) {
-	ctx, span := trace.StartSpan(r.Context(), "get_block_state")
-	defer span.End()
-
-	log := logger.GetLogger(ctx)
-	errorHandler := newHTTPErrorHandler(log, w)
-
-	id, err := uuid.Parse(blockID)
-	if err != nil {
-		errorHandler.handleError(UnknownError, err)
-
-		return
-	}
-
-	blockIsHidden, err := ae.DB.CheckBlockForHiddenFlag(ctx, blockID)
-	if err != nil {
-		e := CheckForHiddenError
-		log.
-			WithField("stepID", blockID).
-			Error(e.errorMessage(err))
-		errorHandler.sendError(e)
-
-		return
-	}
-
-	if blockIsHidden {
-		errorHandler.handleError(ForbiddenError, nil)
-
-		return
-	}
-
-	state, err := ae.DB.GetBlockStateForMonitoring(ctx, id.String())
-	if err != nil {
-		errorHandler.handleError(GetBlockStateError, err)
-
-		return
-	}
-
-	params := make(map[string]MonitoringBlockState, len(state))
-	for _, bo := range state {
-		params[bo.Name] = MonitoringBlockState{
-			Name:  bo.Name,
-			Value: bo.Value,
-			Type:  utils.GetJSONType(bo.Value),
-		}
-	}
-
-	if err = sendResponse(w, http.StatusOK, BlockStateResponse{
-		WhileRunning: &BlockStateResponse_WhileRunning{params},
-		Edited:       &BlockStateResponse_Edited{params},
-	}); err != nil {
-		errorHandler.handleError(UnknownError, err)
-
-		return
-	}
-}
-
-func (ae *Env) GetBlockError(w http.ResponseWriter, r *http.Request, blockID string) {
-	ctx, span := trace.StartSpan(r.Context(), "start get block state")
-	defer span.End()
-
-	log := logger.GetLogger(ctx).
-		WithField("stepID", blockID)
-	errorHandler := newHTTPErrorHandler(log, w)
-
-	blockIsHidden, err := ae.DB.CheckBlockForHiddenFlag(ctx, blockID)
-	if err != nil {
-		e := CheckForHiddenError
-		log.Error(e.errorMessage(err))
-		errorHandler.sendError(e)
-
-		return
-	}
-
-	if blockIsHidden {
-		errorHandler.handleError(ForbiddenError, nil)
-
-		return
-	}
-
-	blockIDUUID, err := uuid.Parse(blockID)
-	if err != nil {
-		errorHandler.handleError(UUIDParsingError, err)
-	}
-
-	taskStep, err := ae.DB.GetTaskStepByID(ctx, blockIDUUID)
-	if err != nil {
-		e := UnknownError
-
-		log.Error(e.errorMessage(err))
-		errorHandler.sendError(e)
-	}
-
-	desc := fmt.Sprintf(ae.getErrorDescription(), blockID, taskStep.WorkNumber)
-	urlError := ae.getErrorURL(taskStep.WorkNumber, blockID)
-
-	if err = sendResponse(w, http.StatusOK, BlockErrorResponse{
-		Description: desc,
-		Url:         urlError,
-	}); err != nil {
-		errorHandler.handleError(UnknownError, err)
-
-		return
-	}
-}
-
-type startNodesParams struct {
+type startStepsDTO struct {
 	workID             uuid.UUID
 	author, workNumber string
 	byOne              bool
@@ -450,7 +121,7 @@ func (ae *Env) MonitoringTaskAction(w http.ResponseWriter, r *http.Request, work
 		}
 
 	case MonitoringTaskActionRequestActionStart:
-		err = ae.startTask(ctx, &startNodesParams{
+		err = ae.startTask(ctx, &startStepsDTO{
 			workID:     workID,
 			author:     ui.Username,
 			workNumber: workNumber,
@@ -464,7 +135,7 @@ func (ae *Env) MonitoringTaskAction(w http.ResponseWriter, r *http.Request, work
 		}
 
 	case MonitoringTaskActionRequestActionStartByOne:
-		err = ae.startTask(ctx, &startNodesParams{
+		err = ae.startTask(ctx, &startStepsDTO{
 			workID:     workID,
 			author:     ui.Username,
 			workNumber: workNumber,
@@ -491,68 +162,25 @@ func (ae *Env) MonitoringTaskAction(w http.ResponseWriter, r *http.Request, work
 		return
 	}
 
-	nodes, err := ae.DB.GetTaskForMonitoring(ctx, workNumber, nil, nil)
+	steps, err := ae.DB.GetTaskForMonitoring(ctx, workNumber, nil, nil)
 	if err != nil {
 		errorHandler.handleError(GetMonitoringNodesError, err)
 
 		return
 	}
 
-	if len(nodes) == 0 {
-		errorHandler.handleError(NoProcessNodesForMonitoringError, errors.New("No process nodes for monitoring"))
+	if len(steps) == 0 {
+		errorHandler.handleError(NoProcessNodesForMonitoringError, errors.New("No process steps for monitoring"))
 
 		return
 	}
 
-	err = sendResponse(w, http.StatusOK, toMonitoringTaskResponse(nodes, events))
+	err = sendResponse(w, http.StatusOK, toMonitoringTaskResponse(steps, events))
 	if err != nil {
 		errorHandler.handleError(UnknownError, err)
 
 		return
 	}
-}
-
-//nolint:all // ok
-func toMonitoringTaskResponse(nodes []entity.MonitoringTaskNode, events []entity.TaskEvent) *MonitoringTask {
-	const (
-		finished = 2
-		canceled = 6
-	)
-
-	res := &MonitoringTask{
-		History:  make([]MonitoringHistory, 0),
-		TaskRuns: make([]MonitoringTaskRun, 0),
-	}
-	res.ScenarioInfo = MonitoringScenarioInfo{
-		Author:       nodes[0].Author,
-		CreationTime: nodes[0].CreationTime,
-		ScenarioName: nodes[0].ScenarioName,
-	}
-	res.VersionId = nodes[0].VersionID
-	res.WorkNumber = nodes[0].WorkNumber
-	res.WorkId = nodes[0].WorkID
-	res.IsPaused = nodes[0].IsPaused
-	res.TaskRuns = getRunsByEvents(events)
-	res.IsFinished = nodes[0].WorkStatus == finished || nodes[0].WorkStatus == canceled
-
-	for i := range nodes {
-		monitoringHistory := MonitoringHistory{
-			BlockId:  nodes[i].BlockID,
-			RealName: nodes[i].RealName,
-			Status:   getMonitoringStatus(nodes[i].Status),
-			NodeId:   nodes[i].NodeID,
-			IsPaused: nodes[i].BlockIsPaused,
-		}
-
-		if nodes[i].BlockDateInit != nil {
-			formattedTime := nodes[i].BlockDateInit.Format(monitoringTimeLayout)
-			monitoringHistory.BlockDateInit = &formattedTime
-		}
-
-		res.History = append(res.History, monitoringHistory)
-	}
-
-	return res
 }
 
 func getRunsByEvents(events []entity.TaskEvent) []MonitoringTaskRun {
@@ -590,7 +218,7 @@ func getRunsByEvents(events []entity.TaskEvent) []MonitoringTaskRun {
 	return res
 }
 
-func (ae *Env) pauseTask(ctx context.Context, author string, workID uuid.UUID, params *MonitoringTaskActionParams) error {
+func (ae *Env) pauseTask(ctx c.Context, author string, workID uuid.UUID, params *MonitoringTaskActionParams) error {
 	const fn = "pauseTask"
 
 	txStorage, err := ae.DB.StartTransaction(ctx)
@@ -658,7 +286,7 @@ func (ae *Env) pauseTask(ctx context.Context, author string, workID uuid.UUID, p
 	return nil
 }
 
-func (ae *Env) startTask(ctx context.Context, dto *startNodesParams) error {
+func (ae *Env) startTask(ctx c.Context, dto *startStepsDTO) error {
 	const fn = "startTask"
 
 	txStorage, err := ae.DB.StartTransaction(ctx)
@@ -770,13 +398,7 @@ func (ae *Env) startTask(ctx context.Context, dto *startNodesParams) error {
 	return nil
 }
 
-func (ae *Env) restartNode(
-	ctx context.Context,
-	txStorage db.Database,
-	workID uuid.UUID,
-	workNumber, stepID, login string,
-	byOne bool,
-) (string, error) {
+func (ae *Env) restartNode(ctx c.Context, txStorage db.Database, workID uuid.UUID, workNumber, stepID, login string, byOne bool) (string, error) {
 	sid, parseErr := uuid.Parse(stepID)
 	if parseErr != nil {
 		return "", parseErr
@@ -888,40 +510,40 @@ func (ae *Env) restartNode(
 	return dbStep.ID.String(), nil
 }
 
-func (ae *Env) getNodesToSkip(ctx context.Context, nextNodes map[string][]string,
-	workNumber string, steps map[string]bool, viewedNodes map[string]struct{},
-) (nodeList []string, err error) {
-	for _, val := range nextNodes {
+func (ae *Env) getStepsToSkip(ctx c.Context, nextSteps map[string][]string,
+	workNumber string, steps map[string]bool, viewedSteps map[string]struct{},
+) (stepList []string, err error) {
+	for _, val := range nextSteps {
 		for _, next := range val {
 			if _, ok := steps[next]; !ok {
 				continue
 			}
 
-			if _, ok := viewedNodes[next]; ok {
+			if _, ok := viewedSteps[next]; ok {
 				continue
 			}
 
-			nodeList = append(nodeList, next)
-			viewedNodes[next] = struct{}{}
+			stepList = append(stepList, next)
+			viewedSteps[next] = struct{}{}
 
 			blockData, blockErr := ae.DB.GetStepDataFromVersion(ctx, workNumber, next)
 			if blockErr != nil {
 				return nil, blockErr
 			}
 
-			nodes, recErr := ae.getNodesToSkip(ctx, blockData.Next, workNumber, steps, viewedNodes)
+			nodes, recErr := ae.getStepsToSkip(ctx, blockData.Next, workNumber, steps, viewedSteps)
 			if recErr != nil {
 				return nil, recErr
 			}
 
-			nodeList = append(nodeList, nodes...)
+			stepList = append(stepList, nodes...)
 		}
 	}
 
-	return nodeList, nil
+	return stepList, nil
 }
 
-func (ae *Env) skipTaskBlocksAfterRestart(ctx context.Context, steps *entity.TaskSteps, blockStartTime time.Time,
+func (ae *Env) skipTaskBlocksAfterRestart(ctx c.Context, steps *entity.TaskSteps, blockStartTime time.Time,
 	nextNodes map[string][]string, workNumber string, workID uuid.UUID, tx db.Database,
 ) (err error) {
 	dbSteps := make(map[string]bool, 0)
@@ -934,7 +556,7 @@ func (ae *Env) skipTaskBlocksAfterRestart(ctx context.Context, steps *entity.Tas
 		dbSteps[(*steps)[i].Name] = true
 	}
 
-	nodesToSkip, skipErr := ae.getNodesToSkip(ctx, nextNodes, workNumber, dbSteps, map[string]struct{}{})
+	nodesToSkip, skipErr := ae.getStepsToSkip(ctx, nextNodes, workNumber, dbSteps, map[string]struct{}{})
 	if skipErr != nil {
 		return skipErr
 	}
@@ -983,7 +605,7 @@ func (ae *Env) GetMonitoringTaskEvents(w http.ResponseWriter, req *http.Request,
 	}
 }
 
-func (ae *Env) toMonitoringTaskEventsResponse(ctx context.Context, events []entity.TaskEvent) *MonitoringTaskEvents {
+func (ae *Env) toMonitoringTaskEventsResponse(ctx c.Context, events []entity.TaskEvent) *MonitoringTaskEvents {
 	res := &MonitoringTaskEvents{
 		Events: make([]MonitoringTaskEvent, 0, len(events)),
 	}
@@ -1037,39 +659,4 @@ func (ae *Env) toMonitoringTaskEventsResponse(ctx context.Context, events []enti
 	}
 
 	return res
-}
-
-//nolint:all // ok
-func (ae *Env) getErrorDescription() string {
-	return `Для просмотра ошибок по данному блоку: 
-	1. Получите права на доступ к индексу Jocasta на https://dashboards.obs.mts.ru/, для этого можно обратиться к Немировой Екатерине (eonemir1@mts.ru), Королеву Владиславу (vvkorolev1@mts.ru)
-	2. Войдите на https://dashboards.obs.mts.ru/
-	3. Произведите выборку записей по фильтрам
-		- stepID = %s
-		- workNumber = %s		
-		- method oneOf(POST, PUT, kafka, faas) 
-		- level = error
-	или воспользуйтесь предлагаемой ссылкой`
-}
-
-//nolint:all // ok
-func (ae *Env) getErrorURL(workNumber, stepID string) string {
-	var (
-		logRequestStart           = `https://dashboards.obs.mts.ru/app/discoverLegacy#/?_a=(columns:!(_source),discover:(columns:!(_source),isDirty:!f,sort:!()),filters:!(`
-		logRequestFilter          = `('$state':(store:appState),meta:(alias:!n,disabled:!f,index:%s,key:%s,negate:!f,params:(query:'%s'),type:phrase),query:(match_phrase:(%s:'%s'))),`
-		logRequestFilterMethod    = `('$state':(store:appState),meta:(alias:!n,disabled:!f,index:%s,key:method,negate:!f,params:!(POST,PUT,kafka,faas),type:phrases,value:'POST,PUT,kafka,faas'),`
-		logRequestFilterMethodEnd = `query:(bool:(minimum_should_match:1,should:!((match_phrase:(method:POST)),(match_phrase:(method:PUT)),(match_phrase:(method:kafka)),(match_phrase:(method:faas))))))),`
-		logRequestEnd             = `index:%s,interval:auto,metadata:(indexPattern:aggregated-index-pattern-for-tenant,view:discover),query:(language:kuery,query:''),`
-		logRequestEnd2            = `sort:!())&_g=(filters:!(),refreshInterval:(pause:!t,value:0),time:(from:now-20d,to:now))&_q=(filters:!(),query:(language:kuery,query:''))`
-	)
-
-	indexJocasta := ae.LogIndex
-
-	URL := logRequestStart +
-		fmt.Sprintf(logRequestFilter, indexJocasta, "level", "error", "level", "error") +
-		fmt.Sprintf(logRequestFilter, indexJocasta, "stepID", stepID, "stepID", stepID) +
-		fmt.Sprintf(logRequestFilter, indexJocasta, "workNumber", workNumber, "workNumber", workNumber) +
-		fmt.Sprintf(logRequestFilterMethod, indexJocasta) + logRequestFilterMethodEnd +
-		fmt.Sprintf(logRequestEnd, indexJocasta) + logRequestEnd2
-	return URL
 }

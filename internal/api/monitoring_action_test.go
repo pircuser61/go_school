@@ -161,7 +161,7 @@ func TestGetNodesToSkip(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
-			nodes, err := ae.getNodesToSkip(ctx, tt.params.nextNodes, tt.params.workNumber, tt.params.steps, map[string]struct{}{})
+			nodes, err := ae.getStepsToSkip(ctx, tt.params.nextNodes, tt.params.workNumber, tt.params.steps, map[string]struct{}{})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -174,7 +174,7 @@ func TestGetNodesToSkip(t *testing.T) {
 
 func Test_toMonitoringTaskResponse(t *testing.T) {
 	type args struct {
-		nodes  []entity.MonitoringTaskNode
+		nodes  []entity.MonitoringTaskStep
 		events []entity.TaskEvent
 	}
 
@@ -193,7 +193,7 @@ func Test_toMonitoringTaskResponse(t *testing.T) {
 		{
 			name: "success",
 			args: args{
-				nodes: []entity.MonitoringTaskNode{
+				nodes: []entity.MonitoringTaskStep{
 					{
 						WorkNumber:    "J666",
 						VersionID:     "6969",
