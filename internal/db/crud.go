@@ -3305,32 +3305,26 @@ func (db *PGCon) GetTaskStepByNameForCtxEditing(ctx context.Context, workID uuid
 	return &s, nil
 }
 
-func (db *PGCon) SaveNodePreviousContent(ctx context.Context, stepID, eventID string) error {
-	ctx, span := trace.StartSpan(ctx, "pg_save_node_previous_content")
+func (db *PGCon) CreateStepPreviousContent(ctx context.Context, stepID, eventID string) error {
+	ctx, span := trace.StartSpan(ctx, "pg_create_step_previous_content")
 	defer span.End()
-
-	id := uuid.New()
 
 	// nolint:gocritic
 	// language=PostgreSQL
-	q := `
-	INSERT INTO edit_nodes_history (
-		id,
-		event_id,
-		step_id,
-		content                                                           
-	)
-	VALUES (
-		$1, 
-		$2, 
-		$3, 
-		(
-		    SELECT content FROM variable_storage 
-		                   WHERE id = $3
+	const q = `INSERT INTO edit_nodes_history (
+			id,
+			event_id,
+			step_id,
+			content                                                           
 		)
-	)`
+		VALUES (
+			$1, 
+			$2, 
+			$3, 
+			(SELECT content FROM variable_storage WHERE id = $3)
+		)`
 
-	_, err := db.Connection.Exec(ctx, q, id, eventID, stepID)
+	_, err := db.Connection.Exec(ctx, q, uuid.New(), eventID, stepID)
 	if err != nil {
 		return err
 	}
@@ -3338,10 +3332,10 @@ func (db *PGCon) SaveNodePreviousContent(ctx context.Context, stepID, eventID st
 	return nil
 }
 
-func (db *PGCon) UpdateNodeContent(ctx context.Context, stepID, workID,
+func (db *PGCon) UpdateStepContent(ctx context.Context, stepID, workID,
 	stepName string, state, output map[string]interface{},
 ) error {
-	ctx, span := trace.StartSpan(ctx, "pg_update_node_content")
+	ctx, span := trace.StartSpan(ctx, "pg_update_step_content")
 	defer span.End()
 
 	// nolint:gocritic
