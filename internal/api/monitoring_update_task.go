@@ -191,14 +191,14 @@ func (ae *Env) rollbackTransaction(ctx c.Context, tx db.Database, fn string) {
 
 func (ae *Env) UpdateContent(ctx c.Context, txStorage db.Database, data []EditBlock, workID, eventID string) (err Err) {
 	for i := range data {
-		savePrevErr := txStorage.SaveNodePreviousContent(ctx, data[i].StepID.String(), eventID)
+		savePrevErr := txStorage.CreateStepPreviousContent(ctx, data[i].StepID.String(), eventID)
 		if savePrevErr != nil {
 			return SaveNodePrevContentError
 		}
 	}
 
 	for i := range data {
-		saveErr := txStorage.UpdateNodeContent(ctx, data[i].StepID.String(), workID, data[i].StepName,
+		saveErr := txStorage.UpdateStepContent(ctx, data[i].StepID.String(), workID, data[i].StepName,
 			data[i].State, data[i].Output)
 		if saveErr != nil {
 			return SaveUpdatedBlockData

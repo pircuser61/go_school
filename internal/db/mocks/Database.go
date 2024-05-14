@@ -4086,23 +4086,23 @@ func (_c *MockedDatabase_GetTaskEventsParamsByWorkNumber_Call) RunAndReturn(run 
 }
 
 // GetTaskForMonitoring provides a mock function with given fields: ctx, workNumber, fromEventID, toEventID
-func (_m *MockedDatabase) GetTaskForMonitoring(ctx context.Context, workNumber string, fromEventID *string, toEventID *string) ([]entity.MonitoringTaskNode, error) {
+func (_m *MockedDatabase) GetTaskForMonitoring(ctx context.Context, workNumber string, fromEventID *string, toEventID *string) ([]entity.MonitoringTaskStep, error) {
 	ret := _m.Called(ctx, workNumber, fromEventID, toEventID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetTaskForMonitoring")
 	}
 
-	var r0 []entity.MonitoringTaskNode
+	var r0 []entity.MonitoringTaskStep
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, *string, *string) ([]entity.MonitoringTaskNode, error)); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, string, *string, *string) ([]entity.MonitoringTaskStep, error)); ok {
 		return rf(ctx, workNumber, fromEventID, toEventID)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, string, *string, *string) []entity.MonitoringTaskNode); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, string, *string, *string) []entity.MonitoringTaskStep); ok {
 		r0 = rf(ctx, workNumber, fromEventID, toEventID)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]entity.MonitoringTaskNode)
+			r0 = ret.Get(0).([]entity.MonitoringTaskStep)
 		}
 	}
 
@@ -4136,12 +4136,12 @@ func (_c *MockedDatabase_GetTaskForMonitoring_Call) Run(run func(ctx context.Con
 	return _c
 }
 
-func (_c *MockedDatabase_GetTaskForMonitoring_Call) Return(_a0 []entity.MonitoringTaskNode, _a1 error) *MockedDatabase_GetTaskForMonitoring_Call {
+func (_c *MockedDatabase_GetTaskForMonitoring_Call) Return(_a0 []entity.MonitoringTaskStep, _a1 error) *MockedDatabase_GetTaskForMonitoring_Call {
 	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
-func (_c *MockedDatabase_GetTaskForMonitoring_Call) RunAndReturn(run func(context.Context, string, *string, *string) ([]entity.MonitoringTaskNode, error)) *MockedDatabase_GetTaskForMonitoring_Call {
+func (_c *MockedDatabase_GetTaskForMonitoring_Call) RunAndReturn(run func(context.Context, string, *string, *string) ([]entity.MonitoringTaskStep, error)) *MockedDatabase_GetTaskForMonitoring_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -6816,11 +6816,11 @@ func (_c *MockedDatabase_SaveExternalSystemSubscriptionParams_Call) RunAndReturn
 }
 
 // SaveNodePreviousContent provides a mock function with given fields: ctx, stepID, eventID
-func (_m *MockedDatabase) SaveNodePreviousContent(ctx context.Context, stepID string, eventID string) error {
+func (_m *MockedDatabase) CreateStepPreviousContent(ctx context.Context, stepID string, eventID string) error {
 	ret := _m.Called(ctx, stepID, eventID)
 
 	if len(ret) == 0 {
-		panic("no return value specified for SaveNodePreviousContent")
+		panic("no return value specified for CreateStepPreviousContent")
 	}
 
 	var r0 error
@@ -6833,7 +6833,7 @@ func (_m *MockedDatabase) SaveNodePreviousContent(ctx context.Context, stepID st
 	return r0
 }
 
-// MockedDatabase_SaveNodePreviousContent_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SaveNodePreviousContent'
+// MockedDatabase_SaveNodePreviousContent_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CreateStepPreviousContent'
 type MockedDatabase_SaveNodePreviousContent_Call struct {
 	*mock.Call
 }
@@ -6843,7 +6843,7 @@ type MockedDatabase_SaveNodePreviousContent_Call struct {
 //   - stepID string
 //   - eventID string
 func (_e *MockedDatabase_Expecter) SaveNodePreviousContent(ctx interface{}, stepID interface{}, eventID interface{}) *MockedDatabase_SaveNodePreviousContent_Call {
-	return &MockedDatabase_SaveNodePreviousContent_Call{Call: _e.mock.On("SaveNodePreviousContent", ctx, stepID, eventID)}
+	return &MockedDatabase_SaveNodePreviousContent_Call{Call: _e.mock.On("CreateStepPreviousContent", ctx, stepID, eventID)}
 }
 
 func (_c *MockedDatabase_SaveNodePreviousContent_Call) Run(run func(ctx context.Context, stepID string, eventID string)) *MockedDatabase_SaveNodePreviousContent_Call {
@@ -7944,11 +7944,11 @@ func (_c *MockedDatabase_UpdateGroupsForEmptyVersions_Call) RunAndReturn(run fun
 }
 
 // UpdateNodeContent provides a mock function with given fields: ctx, stepID, workID, stepName, state, output
-func (_m *MockedDatabase) UpdateNodeContent(ctx context.Context, stepID string, workID string, stepName string, state map[string]interface{}, output map[string]interface{}) error {
+func (_m *MockedDatabase) UpdateStepContent(ctx context.Context, stepID string, workID string, stepName string, state map[string]interface{}, output map[string]interface{}) error {
 	ret := _m.Called(ctx, stepID, workID, stepName, state, output)
 
 	if len(ret) == 0 {
-		panic("no return value specified for UpdateNodeContent")
+		panic("no return value specified for UpdateStepContent")
 	}
 
 	var r0 error
@@ -7961,7 +7961,7 @@ func (_m *MockedDatabase) UpdateNodeContent(ctx context.Context, stepID string, 
 	return r0
 }
 
-// MockedDatabase_UpdateNodeContent_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdateNodeContent'
+// MockedDatabase_UpdateNodeContent_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdateStepContent'
 type MockedDatabase_UpdateNodeContent_Call struct {
 	*mock.Call
 }
@@ -7974,7 +7974,7 @@ type MockedDatabase_UpdateNodeContent_Call struct {
 //   - state map[string]interface{}
 //   - output map[string]interface{}
 func (_e *MockedDatabase_Expecter) UpdateNodeContent(ctx interface{}, stepID interface{}, workID interface{}, stepName interface{}, state interface{}, output interface{}) *MockedDatabase_UpdateNodeContent_Call {
-	return &MockedDatabase_UpdateNodeContent_Call{Call: _e.mock.On("UpdateNodeContent", ctx, stepID, workID, stepName, state, output)}
+	return &MockedDatabase_UpdateNodeContent_Call{Call: _e.mock.On("UpdateStepContent", ctx, stepID, workID, stepName, state, output)}
 }
 
 func (_c *MockedDatabase_UpdateNodeContent_Call) Run(run func(ctx context.Context, stepID string, workID string, stepName string, state map[string]interface{}, output map[string]interface{})) *MockedDatabase_UpdateNodeContent_Call {

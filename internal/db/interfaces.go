@@ -62,7 +62,7 @@ type TaskStorager interface {
 	GetWorkIDByWorkNumber(ctx c.Context, workNumber string) (uuid.UUID, error)
 	GetPipelineIDByWorkID(ctx c.Context, taskID string) (uuid.UUID, uuid.UUID, error)
 
-	GetTaskForMonitoring(ctx c.Context, workNumber string, fromEventID, toEventID *string) ([]e.MonitoringTaskNode, error)
+	GetTaskForMonitoring(ctx c.Context, workNumber string, fromEventID, toEventID *string) ([]e.MonitoringTaskStep, error)
 	GetTasksForMonitoring(ctx c.Context, filters *e.TasksForMonitoringFilters) (*e.TasksForMonitoring, error)
 	GetTaskStepByNameForCtxEditing(ctx c.Context, workID uuid.UUID, stepName string, time time.Time) (*e.Step, error)
 
@@ -86,8 +86,8 @@ type TaskStorager interface {
 	UpdateTaskStatus(ctx c.Context, taskID uuid.UUID, status int, comment, author string) error
 	UpdateBlockStateInOthers(ctx c.Context, blockName, taskID string, blockState []byte) error
 	UpdateBlockVariablesInOthers(ctx c.Context, taskID string, values map[string]interface{}) error
-	SaveNodePreviousContent(ctx c.Context, stepID, eventID string) error
-	UpdateNodeContent(ctx c.Context, stepID, workID, stepName string, state, output map[string]interface{}) error
+	CreateStepPreviousContent(ctx c.Context, stepID, eventID string) error
+	UpdateStepContent(ctx c.Context, stepID, workID, stepName string, state, output map[string]interface{}) error
 }
 
 type UpdateTaskRate struct {

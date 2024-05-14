@@ -2481,12 +2481,12 @@ type GetFormsChangelogParams struct {
 	BlockId string `json:"block_id"`
 }
 
-// GetTasksForMonitoringParams defines parameters for GetTasksForMonitoring.
-type GetTasksForMonitoringParams struct {
-	PerPage    *int                                   `json:"per_page,omitempty"`
-	Page       *int                                   `json:"page,omitempty"`
-	SortColumn *GetTasksForMonitoringParamsSortColumn `json:"sort.column,omitempty"`
-	SortOrder  *GetTasksForMonitoringParamsSortOrder  `json:"sort.order,omitempty"`
+// MonitoringGetTasksParams defines parameters for MonitoringGetTasks.
+type MonitoringGetTasksParams struct {
+	PerPage    *int                                `json:"per_page,omitempty"`
+	Page       *int                                `json:"page,omitempty"`
+	SortColumn *MonitoringGetTasksParamsSortColumn `json:"sort.column,omitempty"`
+	SortOrder  *MonitoringGetTasksParamsSortOrder  `json:"sort.order,omitempty"`
 
 	// Фильтр по work_number, наименованию процесса, логину инициатора
 	Filter *string `json:"filter,omitempty"`
@@ -2498,17 +2498,17 @@ type GetTasksForMonitoringParams struct {
 	ToDate *string `json:"to_date,omitempty"`
 
 	// Фильтровать по статусу заявки
-	Status *[]GetTasksForMonitoringParamsStatus `json:"status,omitempty"`
+	Status *[]MonitoringGetTasksParamsStatus `json:"status,omitempty"`
 }
 
-// GetTasksForMonitoringParamsSortColumn defines parameters for GetTasksForMonitoring.
-type GetTasksForMonitoringParamsSortColumn string
+// MonitoringGetTasksParamsSortColumn defines parameters for MonitoringGetTasks.
+type MonitoringGetTasksParamsSortColumn string
 
-// GetTasksForMonitoringParamsSortOrder defines parameters for GetTasksForMonitoring.
-type GetTasksForMonitoringParamsSortOrder string
+// MonitoringGetTasksParamsSortOrder defines parameters for MonitoringGetTasks.
+type MonitoringGetTasksParamsSortOrder string
 
-// GetTasksForMonitoringParamsStatus defines parameters for GetTasksForMonitoring.
-type GetTasksForMonitoringParamsStatus string
+// MonitoringGetTasksParamsStatus defines parameters for MonitoringGetTasks.
+type MonitoringGetTasksParamsStatus string
 
 // MonitoringUpdateBlockInputsJSONBody defines parameters for MonitoringUpdateBlockInputs.
 type MonitoringUpdateBlockInputsJSONBody MonitoringUpdateBlockInputsRequest
@@ -2516,8 +2516,8 @@ type MonitoringUpdateBlockInputsJSONBody MonitoringUpdateBlockInputsRequest
 // MonitoringUpdateTaskBlockDataJSONBody defines parameters for MonitoringUpdateTaskBlockData.
 type MonitoringUpdateTaskBlockDataJSONBody MonitoringTaskUpdateBlockRequest
 
-// GetMonitoringTaskParams defines parameters for GetMonitoringTask.
-type GetMonitoringTaskParams struct {
+// MonitoringGetTaskParams defines parameters for MonitoringGetTask.
+type MonitoringGetTaskParams struct {
 	// id ивента с которого нужно взять блоки
 	FromEventId *string `json:"from_event_id,omitempty"`
 
@@ -4048,7 +4048,7 @@ type ServerInterface interface {
 	GetModules(w http.ResponseWriter, r *http.Request)
 	// Get tasks for monitoring
 	// (GET /monitoring/tasks)
-	GetTasksForMonitoring(w http.ResponseWriter, r *http.Request, params GetTasksForMonitoringParams)
+	MonitoringGetTasks(w http.ResponseWriter, r *http.Request, params MonitoringGetTasksParams)
 	// Редактирование инпутов блока в мониторинге
 	// (PUT /monitoring/tasks/block/inputs)
 	MonitoringUpdateBlockInputs(w http.ResponseWriter, r *http.Request)
@@ -4060,7 +4060,7 @@ type ServerInterface interface {
 	MonitoringGetBlockContext(w http.ResponseWriter, r *http.Request, blockId string)
 	// Получение ошибок блока
 	// (GET /monitoring/tasks/block/{blockId}/error)
-	GetBlockError(w http.ResponseWriter, r *http.Request, blockId string)
+	MonitoringGetBlockError(w http.ResponseWriter, r *http.Request, blockId string)
 	// Get inputs of block
 	// (GET /monitoring/tasks/block/{blockId}/inputs)
 	MonitoringGetBlockInputs(w http.ResponseWriter, r *http.Request, blockId string)
@@ -4075,7 +4075,7 @@ type ServerInterface interface {
 	MonitoringGetNotCreatedBlockInputs(w http.ResponseWriter, r *http.Request, workNumber string, stepName string)
 	// Get task for monitoring
 	// (GET /monitoring/tasks/{workNumber})
-	GetMonitoringTask(w http.ResponseWriter, r *http.Request, workNumber string, params GetMonitoringTaskParams)
+	MonitoringGetTask(w http.ResponseWriter, r *http.Request, workNumber string, params MonitoringGetTaskParams)
 	// Действия с заявкой в мониторинге
 	// (PUT /monitoring/tasks/{workNumber}/action)
 	MonitoringTaskAction(w http.ResponseWriter, r *http.Request, workNumber string)
@@ -4397,14 +4397,14 @@ func (siw *ServerInterfaceWrapper) GetModules(w http.ResponseWriter, r *http.Req
 	handler(w, r.WithContext(ctx))
 }
 
-// GetTasksForMonitoring operation middleware
-func (siw *ServerInterfaceWrapper) GetTasksForMonitoring(w http.ResponseWriter, r *http.Request) {
+// MonitoringGetTasks operation middleware
+func (siw *ServerInterfaceWrapper) MonitoringGetTasks(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	var err error
 
 	// Parameter object where we will unmarshal all parameters from the context
-	var params GetTasksForMonitoringParams
+	var params MonitoringGetTasksParams
 
 	// ------------- Optional query parameter "per_page" -------------
 	if paramValue := r.URL.Query().Get("per_page"); paramValue != "" {
@@ -4495,7 +4495,7 @@ func (siw *ServerInterfaceWrapper) GetTasksForMonitoring(w http.ResponseWriter, 
 	}
 
 	var handler = func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetTasksForMonitoring(w, r, params)
+		siw.Handler.MonitoringGetTasks(w, r, params)
 	}
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -4572,8 +4572,8 @@ func (siw *ServerInterfaceWrapper) MonitoringGetBlockContext(w http.ResponseWrit
 	handler(w, r.WithContext(ctx))
 }
 
-// GetBlockError operation middleware
-func (siw *ServerInterfaceWrapper) GetBlockError(w http.ResponseWriter, r *http.Request) {
+// MonitoringGetBlockError operation middleware
+func (siw *ServerInterfaceWrapper) MonitoringGetBlockError(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	var err error
@@ -4588,7 +4588,7 @@ func (siw *ServerInterfaceWrapper) GetBlockError(w http.ResponseWriter, r *http.
 	}
 
 	var handler = func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetBlockError(w, r, blockId)
+		siw.Handler.MonitoringGetBlockError(w, r, blockId)
 	}
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -4711,8 +4711,8 @@ func (siw *ServerInterfaceWrapper) MonitoringGetNotCreatedBlockInputs(w http.Res
 	handler(w, r.WithContext(ctx))
 }
 
-// GetMonitoringTask operation middleware
-func (siw *ServerInterfaceWrapper) GetMonitoringTask(w http.ResponseWriter, r *http.Request) {
+// MonitoringGetTask operation middleware
+func (siw *ServerInterfaceWrapper) MonitoringGetTask(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	var err error
@@ -4727,7 +4727,7 @@ func (siw *ServerInterfaceWrapper) GetMonitoringTask(w http.ResponseWriter, r *h
 	}
 
 	// Parameter object where we will unmarshal all parameters from the context
-	var params GetMonitoringTaskParams
+	var params MonitoringGetTaskParams
 
 	// ------------- Optional query parameter "from_event_id" -------------
 	if paramValue := r.URL.Query().Get("from_event_id"); paramValue != "" {
@@ -4752,7 +4752,7 @@ func (siw *ServerInterfaceWrapper) GetMonitoringTask(w http.ResponseWriter, r *h
 	}
 
 	var handler = func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetMonitoringTask(w, r, workNumber, params)
+		siw.Handler.MonitoringGetTask(w, r, workNumber, params)
 	}
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -6770,7 +6770,7 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/modules", wrapper.GetModules)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/monitoring/tasks", wrapper.GetTasksForMonitoring)
+		r.Get(options.BaseURL+"/monitoring/tasks", wrapper.MonitoringGetTasks)
 	})
 	r.Group(func(r chi.Router) {
 		r.Put(options.BaseURL+"/monitoring/tasks/block/inputs", wrapper.MonitoringUpdateBlockInputs)
@@ -6782,7 +6782,7 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/monitoring/tasks/block/{blockId}/context", wrapper.MonitoringGetBlockContext)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/monitoring/tasks/block/{blockId}/error", wrapper.GetBlockError)
+		r.Get(options.BaseURL+"/monitoring/tasks/block/{blockId}/error", wrapper.MonitoringGetBlockError)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/monitoring/tasks/block/{blockId}/inputs", wrapper.MonitoringGetBlockInputs)
@@ -6797,7 +6797,7 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/monitoring/tasks/block/{workNumber}/{stepName}/params", wrapper.MonitoringGetNotCreatedBlockInputs)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/monitoring/tasks/{workNumber}", wrapper.GetMonitoringTask)
+		r.Get(options.BaseURL+"/monitoring/tasks/{workNumber}", wrapper.MonitoringGetTask)
 	})
 	r.Group(func(r chi.Router) {
 		r.Put(options.BaseURL+"/monitoring/tasks/{workNumber}/action", wrapper.MonitoringTaskAction)
