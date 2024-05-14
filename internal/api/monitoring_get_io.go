@@ -191,7 +191,7 @@ func (ae *Env) MonitoringGetNotCreatedBlockInputs(w http.ResponseWriter, req *ht
 
 	if err = sendResponse(w, http.StatusOK, MonitoringInputsResponse{
 		WhileRunning: &MonitoringInputsResponse_WhileRunning{AdditionalProperties: map[string]MonitoringBlockParam{}},
-		Edited: &MonitoringInputsResponse_Edited{AdditionalProperties: toMonitoringInputs(dbInputs)},
+		Edited:       &MonitoringInputsResponse_Edited{AdditionalProperties: toMonitoringInputs(dbInputs)},
 	}); err != nil {
 		errorHandler.handleError(UnknownError, err)
 	}
