@@ -735,6 +735,54 @@ func (_c *MockedDatabase_CreatePipeline_Call) RunAndReturn(run func(context.Cont
 	return _c
 }
 
+// CreateStepPreviousContent provides a mock function with given fields: ctx, stepID, eventID
+func (_m *MockedDatabase) CreateStepPreviousContent(ctx context.Context, stepID string, eventID string) error {
+	ret := _m.Called(ctx, stepID, eventID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CreateStepPreviousContent")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) error); ok {
+		r0 = rf(ctx, stepID, eventID)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// MockedDatabase_CreateStepPreviousContent_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CreateStepPreviousContent'
+type MockedDatabase_CreateStepPreviousContent_Call struct {
+	*mock.Call
+}
+
+// CreateStepPreviousContent is a helper method to define mock.On call
+//   - ctx context.Context
+//   - stepID string
+//   - eventID string
+func (_e *MockedDatabase_Expecter) CreateStepPreviousContent(ctx interface{}, stepID interface{}, eventID interface{}) *MockedDatabase_CreateStepPreviousContent_Call {
+	return &MockedDatabase_CreateStepPreviousContent_Call{Call: _e.mock.On("CreateStepPreviousContent", ctx, stepID, eventID)}
+}
+
+func (_c *MockedDatabase_CreateStepPreviousContent_Call) Run(run func(ctx context.Context, stepID string, eventID string)) *MockedDatabase_CreateStepPreviousContent_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string), args[2].(string))
+	})
+	return _c
+}
+
+func (_c *MockedDatabase_CreateStepPreviousContent_Call) Return(_a0 error) *MockedDatabase_CreateStepPreviousContent_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *MockedDatabase_CreateStepPreviousContent_Call) RunAndReturn(run func(context.Context, string, string) error) *MockedDatabase_CreateStepPreviousContent_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // CreateTask provides a mock function with given fields: ctx, dto
 func (_m *MockedDatabase) CreateTask(ctx context.Context, dto *db.CreateTaskDTO) (*entity.EriusTask, error) {
 	ret := _m.Called(ctx, dto)
@@ -941,53 +989,6 @@ func (_c *MockedDatabase_CreateTaskStepInputs_Call) Return(_a0 error) *MockedDat
 }
 
 func (_c *MockedDatabase_CreateTaskStepInputs_Call) RunAndReturn(run func(context.Context, *entity.CreateTaskStepInputs) error) *MockedDatabase_CreateTaskStepInputs_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// CreateTaskStepsInputs provides a mock function with given fields: ctx, in
-func (_m *MockedDatabase) CreateTaskStepsInputs(ctx context.Context, in *entity.CreateUpdatesInputsHistory) error {
-	ret := _m.Called(ctx, in)
-
-	if len(ret) == 0 {
-		panic("no return value specified for CreateTaskStepsInputs")
-	}
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, *entity.CreateUpdatesInputsHistory) error); ok {
-		r0 = rf(ctx, in)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
-// MockedDatabase_CreateTaskStepsInputs_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CreateTaskStepsInputs'
-type MockedDatabase_CreateTaskStepsInputs_Call struct {
-	*mock.Call
-}
-
-// CreateTaskStepsInputs is a helper method to define mock.On call
-//   - ctx context.Context
-//   - in *entity.CreateUpdatesInputsHistory
-func (_e *MockedDatabase_Expecter) CreateTaskStepsInputs(ctx interface{}, in interface{}) *MockedDatabase_CreateTaskStepsInputs_Call {
-	return &MockedDatabase_CreateTaskStepsInputs_Call{Call: _e.mock.On("CreateTaskStepsInputs", ctx, in)}
-}
-
-func (_c *MockedDatabase_CreateTaskStepsInputs_Call) Run(run func(ctx context.Context, in *entity.CreateUpdatesInputsHistory)) *MockedDatabase_CreateTaskStepsInputs_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(*entity.CreateUpdatesInputsHistory))
-	})
-	return _c
-}
-
-func (_c *MockedDatabase_CreateTaskStepsInputs_Call) Return(_a0 error) *MockedDatabase_CreateTaskStepsInputs_Call {
-	_c.Call.Return(_a0)
-	return _c
-}
-
-func (_c *MockedDatabase_CreateTaskStepsInputs_Call) RunAndReturn(run func(context.Context, *entity.CreateUpdatesInputsHistory) error) *MockedDatabase_CreateTaskStepsInputs_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -6921,54 +6922,6 @@ func (_c *MockedDatabase_SaveExternalSystemSubscriptionParams_Call) RunAndReturn
 	return _c
 }
 
-// SaveNodePreviousContent provides a mock function with given fields: ctx, stepID, eventID
-func (_m *MockedDatabase) CreateStepPreviousContent(ctx context.Context, stepID string, eventID string) error {
-	ret := _m.Called(ctx, stepID, eventID)
-
-	if len(ret) == 0 {
-		panic("no return value specified for CreateStepPreviousContent")
-	}
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, string) error); ok {
-		r0 = rf(ctx, stepID, eventID)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
-// MockedDatabase_SaveNodePreviousContent_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CreateStepPreviousContent'
-type MockedDatabase_SaveNodePreviousContent_Call struct {
-	*mock.Call
-}
-
-// SaveNodePreviousContent is a helper method to define mock.On call
-//   - ctx context.Context
-//   - stepID string
-//   - eventID string
-func (_e *MockedDatabase_Expecter) SaveNodePreviousContent(ctx interface{}, stepID interface{}, eventID interface{}) *MockedDatabase_SaveNodePreviousContent_Call {
-	return &MockedDatabase_SaveNodePreviousContent_Call{Call: _e.mock.On("CreateStepPreviousContent", ctx, stepID, eventID)}
-}
-
-func (_c *MockedDatabase_SaveNodePreviousContent_Call) Run(run func(ctx context.Context, stepID string, eventID string)) *MockedDatabase_SaveNodePreviousContent_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(string), args[2].(string))
-	})
-	return _c
-}
-
-func (_c *MockedDatabase_SaveNodePreviousContent_Call) Return(_a0 error) *MockedDatabase_SaveNodePreviousContent_Call {
-	_c.Call.Return(_a0)
-	return _c
-}
-
-func (_c *MockedDatabase_SaveNodePreviousContent_Call) RunAndReturn(run func(context.Context, string, string) error) *MockedDatabase_SaveNodePreviousContent_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
 // SaveSLAVersionSettings provides a mock function with given fields: ctx, versionID, s
 func (_m *MockedDatabase) SaveSLAVersionSettings(ctx context.Context, versionID string, s entity.SLAVersionSettings) error {
 	ret := _m.Called(ctx, versionID, s)
@@ -8049,7 +8002,7 @@ func (_c *MockedDatabase_UpdateGroupsForEmptyVersions_Call) RunAndReturn(run fun
 	return _c
 }
 
-// UpdateNodeContent provides a mock function with given fields: ctx, stepID, workID, stepName, state, output
+// UpdateStepContent provides a mock function with given fields: ctx, stepID, workID, stepName, state, output
 func (_m *MockedDatabase) UpdateStepContent(ctx context.Context, stepID string, workID string, stepName string, state map[string]interface{}, output map[string]interface{}) error {
 	ret := _m.Called(ctx, stepID, workID, stepName, state, output)
 
@@ -8067,35 +8020,35 @@ func (_m *MockedDatabase) UpdateStepContent(ctx context.Context, stepID string, 
 	return r0
 }
 
-// MockedDatabase_UpdateNodeContent_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdateStepContent'
-type MockedDatabase_UpdateNodeContent_Call struct {
+// MockedDatabase_UpdateStepContent_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdateStepContent'
+type MockedDatabase_UpdateStepContent_Call struct {
 	*mock.Call
 }
 
-// UpdateNodeContent is a helper method to define mock.On call
+// UpdateStepContent is a helper method to define mock.On call
 //   - ctx context.Context
 //   - stepID string
 //   - workID string
 //   - stepName string
 //   - state map[string]interface{}
 //   - output map[string]interface{}
-func (_e *MockedDatabase_Expecter) UpdateNodeContent(ctx interface{}, stepID interface{}, workID interface{}, stepName interface{}, state interface{}, output interface{}) *MockedDatabase_UpdateNodeContent_Call {
-	return &MockedDatabase_UpdateNodeContent_Call{Call: _e.mock.On("UpdateStepContent", ctx, stepID, workID, stepName, state, output)}
+func (_e *MockedDatabase_Expecter) UpdateStepContent(ctx interface{}, stepID interface{}, workID interface{}, stepName interface{}, state interface{}, output interface{}) *MockedDatabase_UpdateStepContent_Call {
+	return &MockedDatabase_UpdateStepContent_Call{Call: _e.mock.On("UpdateStepContent", ctx, stepID, workID, stepName, state, output)}
 }
 
-func (_c *MockedDatabase_UpdateNodeContent_Call) Run(run func(ctx context.Context, stepID string, workID string, stepName string, state map[string]interface{}, output map[string]interface{})) *MockedDatabase_UpdateNodeContent_Call {
+func (_c *MockedDatabase_UpdateStepContent_Call) Run(run func(ctx context.Context, stepID string, workID string, stepName string, state map[string]interface{}, output map[string]interface{})) *MockedDatabase_UpdateStepContent_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		run(args[0].(context.Context), args[1].(string), args[2].(string), args[3].(string), args[4].(map[string]interface{}), args[5].(map[string]interface{}))
 	})
 	return _c
 }
 
-func (_c *MockedDatabase_UpdateNodeContent_Call) Return(_a0 error) *MockedDatabase_UpdateNodeContent_Call {
+func (_c *MockedDatabase_UpdateStepContent_Call) Return(_a0 error) *MockedDatabase_UpdateStepContent_Call {
 	_c.Call.Return(_a0)
 	return _c
 }
 
-func (_c *MockedDatabase_UpdateNodeContent_Call) RunAndReturn(run func(context.Context, string, string, string, map[string]interface{}, map[string]interface{}) error) *MockedDatabase_UpdateNodeContent_Call {
+func (_c *MockedDatabase_UpdateStepContent_Call) RunAndReturn(run func(context.Context, string, string, string, map[string]interface{}, map[string]interface{}) error) *MockedDatabase_UpdateStepContent_Call {
 	_c.Call.Return(run)
 	return _c
 }

@@ -1576,7 +1576,7 @@ paths:
       tags:
         - pipeline
       summary: search list of pipelines
-      description: get form values from pipelines id
+      description: поиск списка сценариев по айди или названию
       operationId: search-pipelines
       parameters:
         - name: pipelineId
@@ -1587,6 +1587,12 @@ paths:
             type: string
             format: uuid
             example: 916ad995-8d13-49fb-82ee-edd4f97649e2
+        - name: pipelineName
+          in: query
+          description: имя пайплайна
+          required: false
+          schema:
+            type: string
         - name: page
           in: query
           description: страница для отображения
