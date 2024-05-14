@@ -783,6 +783,14 @@ type BlockStateResponse_WhileRunning struct {
 	AdditionalProperties map[string]MonitoringBlockState `json:"-"`
 }
 
+// BlueprintsParams defines model for BlueprintsParams.
+type BlueprintsParams struct {
+	ApplicationIds *[]string `json:"applicationIds,omitempty"`
+	Id             *string   `json:"id,omitempty"`
+	Name           *string   `json:"name,omitempty"`
+	SchemaIds      *[]string `json:"schemaIds,omitempty"`
+}
+
 // Basic boolean operand, can provide working compare types for this type
 type BooleanOperand struct {
 	DataType    BooleanOperandDataType    `json:"dataType"`
@@ -2702,6 +2710,63 @@ type GetTasksParamsExecutorTypeAssigned string
 // GetTasksParamsSignatureCarrier defines parameters for GetTasks.
 type GetTasksParamsSignatureCarrier string
 
+// GetTasksSchemasParams defines parameters for GetTasksSchemas.
+type GetTasksSchemasParams struct {
+	// Pipeline name
+	Name *string `json:"name,omitempty"`
+
+	// Task IDs
+	TaskIDs *[]string `json:"taskIDs,omitempty"`
+
+	// order for started_at
+	Order *string `json:"order,omitempty"`
+
+	// params for tasks ordering
+	OrderBy  *[]string                      `json:"orderBy,omitempty"`
+	Created  *Created                       `json:"created,omitempty"`
+	Archived *bool                          `json:"archived,omitempty"`
+	SelectAs *GetTasksSchemasParamsSelectAs `json:"selectAs,omitempty"`
+
+	// get tasks with status wait or done
+	ForCarousel *bool `json:"forCarousel,omitempty"`
+
+	// get tasks with different statuses
+	Status *[]string `json:"status,omitempty"`
+
+	// receiver login
+	Receiver *string `json:"receiver,omitempty"`
+
+	// filter for attachments
+	HasAttachments *bool `json:"hasAttachments,omitempty"`
+
+	// filter for initiators
+	Initiator *[]string `json:"initiator,omitempty"`
+
+	// filter for initiators
+	InitiatorLogins *[]string `json:"initiatorLogins,omitempty"`
+
+	// filter in process by logins
+	ProcessingLogins *[]string `json:"processingLogins,omitempty"`
+
+	// filter in process by group ids
+	ProcessingGroupIds *[]string `json:"processingGroupIds,omitempty"`
+
+	// filter type assigned
+	ExecutorTypeAssigned *GetTasksSchemasParamsExecutorTypeAssigned `json:"executorTypeAssigned,omitempty"`
+
+	// signature carrier (used for selectAs = signer_jur)
+	SignatureCarrier *GetTasksSchemasParamsSignatureCarrier `json:"signatureCarrier,omitempty"`
+}
+
+// GetTasksSchemasParamsSelectAs defines parameters for GetTasksSchemas.
+type GetTasksSchemasParamsSelectAs string
+
+// GetTasksSchemasParamsExecutorTypeAssigned defines parameters for GetTasksSchemas.
+type GetTasksSchemasParamsExecutorTypeAssigned string
+
+// GetTasksSchemasParamsSignatureCarrier defines parameters for GetTasksSchemas.
+type GetTasksSchemasParamsSignatureCarrier string
+
 // StopTasksJSONBody defines parameters for StopTasks.
 type StopTasksJSONBody TasksStop
 
@@ -4125,6 +4190,9 @@ type ServerInterface interface {
 	// Get Task Mean Solve time
 	// (GET /tasks/mean/{pipelineId})
 	GetTaskMeanSolveTime(w http.ResponseWriter, r *http.Request, pipelineId string)
+	// Get Schemas for filter
+	// (GET /tasks/schemas)
+	GetTasksSchemas(w http.ResponseWriter, r *http.Request, params GetTasksSchemasParams)
 	// Stop tasks by work number
 	// (POST /tasks/stop)
 	StopTasks(w http.ResponseWriter, r *http.Request)
@@ -6071,6 +6139,216 @@ func (siw *ServerInterfaceWrapper) GetTaskMeanSolveTime(w http.ResponseWriter, r
 	handler(w, r.WithContext(ctx))
 }
 
+// GetTasksSchemas operation middleware
+func (siw *ServerInterfaceWrapper) GetTasksSchemas(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetTasksSchemasParams
+
+	// ------------- Optional query parameter "name" -------------
+	if paramValue := r.URL.Query().Get("name"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "name", r.URL.Query(), &params.Name)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Invalid format for parameter name: %s", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "taskIDs" -------------
+	if paramValue := r.URL.Query().Get("taskIDs"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", false, false, "taskIDs", r.URL.Query(), &params.TaskIDs)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Invalid format for parameter taskIDs: %s", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "order" -------------
+	if paramValue := r.URL.Query().Get("order"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "order", r.URL.Query(), &params.Order)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Invalid format for parameter order: %s", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "orderBy" -------------
+	if paramValue := r.URL.Query().Get("orderBy"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "orderBy", r.URL.Query(), &params.OrderBy)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Invalid format for parameter orderBy: %s", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "created" -------------
+	if paramValue := r.URL.Query().Get("created"); paramValue != "" {
+
+		var value Created
+		err = json.Unmarshal([]byte(paramValue), &value)
+		if err != nil {
+			http.Error(w, "Error unmarshaling parameter 'created' as JSON", http.StatusBadRequest)
+			return
+		}
+
+		params.Created = &value
+
+	}
+
+	// ------------- Optional query parameter "archived" -------------
+	if paramValue := r.URL.Query().Get("archived"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "archived", r.URL.Query(), &params.Archived)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Invalid format for parameter archived: %s", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "selectAs" -------------
+	if paramValue := r.URL.Query().Get("selectAs"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "selectAs", r.URL.Query(), &params.SelectAs)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Invalid format for parameter selectAs: %s", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "forCarousel" -------------
+	if paramValue := r.URL.Query().Get("forCarousel"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "forCarousel", r.URL.Query(), &params.ForCarousel)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Invalid format for parameter forCarousel: %s", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "status" -------------
+	if paramValue := r.URL.Query().Get("status"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "status", r.URL.Query(), &params.Status)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Invalid format for parameter status: %s", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "receiver" -------------
+	if paramValue := r.URL.Query().Get("receiver"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "receiver", r.URL.Query(), &params.Receiver)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Invalid format for parameter receiver: %s", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "hasAttachments" -------------
+	if paramValue := r.URL.Query().Get("hasAttachments"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "hasAttachments", r.URL.Query(), &params.HasAttachments)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Invalid format for parameter hasAttachments: %s", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "initiator" -------------
+	if paramValue := r.URL.Query().Get("initiator"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "initiator", r.URL.Query(), &params.Initiator)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Invalid format for parameter initiator: %s", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "initiatorLogins" -------------
+	if paramValue := r.URL.Query().Get("initiatorLogins"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "initiatorLogins", r.URL.Query(), &params.InitiatorLogins)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Invalid format for parameter initiatorLogins: %s", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "processingLogins" -------------
+	if paramValue := r.URL.Query().Get("processingLogins"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "processingLogins", r.URL.Query(), &params.ProcessingLogins)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Invalid format for parameter processingLogins: %s", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "processingGroupIds" -------------
+	if paramValue := r.URL.Query().Get("processingGroupIds"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "processingGroupIds", r.URL.Query(), &params.ProcessingGroupIds)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Invalid format for parameter processingGroupIds: %s", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "executorTypeAssigned" -------------
+	if paramValue := r.URL.Query().Get("executorTypeAssigned"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "executorTypeAssigned", r.URL.Query(), &params.ExecutorTypeAssigned)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Invalid format for parameter executorTypeAssigned: %s", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "signatureCarrier" -------------
+	if paramValue := r.URL.Query().Get("signatureCarrier"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "signatureCarrier", r.URL.Query(), &params.SignatureCarrier)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Invalid format for parameter signatureCarrier: %s", err), http.StatusBadRequest)
+		return
+	}
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetTasksSchemas(w, r, params)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
 // StopTasks operation middleware
 func (siw *ServerInterfaceWrapper) StopTasks(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -6634,6 +6912,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/tasks/mean/{pipelineId}", wrapper.GetTaskMeanSolveTime)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/tasks/schemas", wrapper.GetTasksSchemas)
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/tasks/stop", wrapper.StopTasks)

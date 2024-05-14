@@ -144,9 +144,7 @@ func makeStorage() *mocks.MockedDatabase {
 	res.On("CreateTaskBlock",
 		mock.MatchedBy(func(ctx context.Context) bool { return true }),
 		mock.MatchedBy(func(data *db.SaveStepRequest) bool { return true }),
-		mock.MatchedBy(func(isPaused bool) bool { return true }),
-		mock.MatchedBy(func(hasUpdData bool) bool { return true }),
-	).Return(uuid.UUID{}, time.Now(), nil)
+	).Return(nil)
 
 	res.EXPECT().IsStepExist(mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(true, uuid.Nil, time.Now(), nil)
 
@@ -811,8 +809,7 @@ func TestProcessBlock(t *testing.T) {
 
 							txStorage.EXPECT().CommitTransaction(mock.Anything).Return(nil).Once()
 
-							res.EXPECT().
-								GetBlockDataFromVersion(mock.Anything, mock.Anything, "approver_0").
+							res.EXPECT().GetStepDataFromVersion(mock.Anything, mock.Anything, "approver_0").
 								Return(
 									&entity.EriusFunc{
 										TypeID:     BlockGoApproverID,
@@ -831,7 +828,7 @@ func TestProcessBlock(t *testing.T) {
 								Once()
 
 							txStorage.EXPECT().
-								GetBlockDataFromVersion(mock.Anything, mock.Anything, "approver_0").
+								GetStepDataFromVersion(mock.Anything, mock.Anything, "approver_0").
 								Return(
 									&entity.EriusFunc{
 										TypeID:     BlockGoApproverID,

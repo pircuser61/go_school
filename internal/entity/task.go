@@ -53,6 +53,13 @@ type EriusTasksPage struct {
 	TasksMeta TasksMeta   `json:"tasks_meta"`
 }
 
+type BlueprintSchemas struct {
+	ApplicationIDs []string `json:"applicationIds"`
+	ID             string   `json:"pipeline_id"`
+	Name           string   `json:"pipeline_name"`
+	SchemasIDs     []string `json:"schemaIds"`
+}
+
 type CountTasks struct {
 	TotalActive       int `json:"active"`
 	TotalApprover     int `json:"approve"`

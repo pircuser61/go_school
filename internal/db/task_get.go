@@ -581,6 +581,10 @@ func (cq *compileGetTaskQueryMaker) addExecutorFilter() {
 
 //nolint:gocyclo //it's ok
 func (cq *compileGetTaskQueryMaker) addOrderBy(order string, orderBy []string) {
+	if order == "schemas" {
+		return
+	}
+
 	if (order != "" && len(orderBy) == 0) || len(orderBy) == 0 {
 		cq.q = fmt.Sprintf("%s\n ORDER BY w.started_at %s", cq.q, order)
 
@@ -1152,6 +1156,122 @@ func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter, delegations 
 		Total:     tasks.Tasks[0].Total,
 		TasksMeta: *meta,
 	}, nil
+}
+
+//nolint:gocritic //в этом проекте не принято использовать поинтеры
+func (db *PGCon) GetTasksSchemas(ctx c.Context, filters entity.TaskFilter, delegations []string) ([]entity.BlueprintSchemas, error) {
+	ctx, span := trace.StartSpan(ctx, "db.pg_get_tasks_schemas")
+	defer span.End()
+
+	filters.Limit = nil
+	q, args := compileGetTasksSchemasQuery(filters, delegations)
+
+	tasks, getTasksErr := db.getTasksSchemas(ctx, q, args)
+	if getTasksErr != nil {
+		return nil, getTasksErr
+	}
+
+	return tasks, nil
+}
+
+//nolint:gocyclo,gocognit //its ok here
+func (db *PGCon) getTasksSchemas(ctx c.Context, q string, args []interface{},
+) ([]entity.BlueprintSchemas, error) {
+	ctx, span := trace.StartSpan(ctx, "db.pg_get_tasks_schemas")
+	defer span.End()
+
+	ets := make([]entity.BlueprintSchemas, 0)
+
+	rows, err := db.Connection.Query(ctx, q, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+newRow:
+	for rows.Next() {
+		bs := entity.BlueprintSchemas{}
+
+		var (
+			applicationID string
+			schemaID      string
+			customName    *string
+			isTest        bool
+		)
+
+		err = rows.Scan(
+			&applicationID,
+			&bs.ID,
+			&bs.Name,
+			&schemaID,
+			&customName,
+			&isTest,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		for k, v := range ets {
+			if v.Name == bs.Name && v.ID == bs.ID {
+				if !utils.IsContainsInSlice(applicationID, v.ApplicationIDs) {
+					ets[k].ApplicationIDs = append(ets[k].ApplicationIDs, applicationID)
+				}
+
+				if !utils.IsContainsInSlice(schemaID, v.SchemasIDs) {
+					ets[k].SchemasIDs = append(ets[k].SchemasIDs, schemaID)
+				}
+
+				continue newRow
+			}
+		}
+
+		if customName == nil {
+			*customName = ""
+		}
+
+		bs.Name = utils.MakeTaskTitle(bs.Name, *customName, isTest)
+		bs.ApplicationIDs = append(bs.ApplicationIDs, applicationID)
+		bs.SchemasIDs = append(bs.SchemasIDs, schemaID)
+
+		ets = append(ets, bs)
+	}
+
+	rowsErr := rows.Err()
+	if rowsErr != nil {
+		return nil, rowsErr
+	}
+
+	return ets, nil
+}
+
+//nolint:gocritic //изначально было без поинтера
+func compileGetTasksSchemasQuery(fl entity.TaskFilter, delegations []string) (q string, args []interface{}) {
+	// nolint:gocritic
+	// language=PostgreSQL
+	q = `
+		[with_variable_storage]
+		SELECT 
+			w.work_number,
+			p.id,
+			p.name,
+			vs.content -> 'State' -> vs.step_name ->> 'schema_id',
+	    	CASE
+        		WHEN w.run_context -> 'initial_application' -> 'custom_title' IS NULL
+            THEN ''
+        		ELSE w.run_context -> 'initial_application' ->> 'custom_title'
+    		END,
+    		w.run_context -> 'initial_application' -> 'is_test_application'
+		FROM works w
+		 JOIN versions v ON v.id = w.version_id
+		 JOIN pipelines p ON p.id = v.pipeline_id
+		 JOIN work_status ws ON w.status = ws.id
+		 JOIN unique_actions ua ON ua.work_id = w.id
+		 JOIN variable_storage vs on w.id = vs.work_id
+		WHERE w.child_id IS NULL AND vs.step_type = 'form'`
+
+	var queryMaker compileGetTaskQueryMaker
+
+	return queryMaker.MakeQuery(&fl, q, delegations, args, "schemas", nil, true, true)
 }
 
 //nolint:gocritic //в этом проекте не принято использовать поинтеры
