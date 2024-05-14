@@ -1751,6 +1751,15 @@ paths:
               example: "started_at:desc"
               description: param consist of field and order parts, divided with a colon - field:order
               type: string
+        - name: fields
+          in: query
+          description: fields for tasks ordering
+          schema:
+            type: array
+            items:
+              example: "field-uuid-2:author"
+              description: param for search fields
+              type: string
         - name: limit
           in: query
           description: Limit
@@ -2094,6 +2103,173 @@ paths:
                 $ref: '#/components/schemas/httpError'
         500:
           description: Internal Server Errors
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+  /tasks/schemas:
+    get:
+      tags:
+        - pipeline
+        - tasks
+      summary: Get Schemas for filter
+      description: Получить объект с данными схем для фильтра по шаблонам
+      operationId: get-tasks-schemas
+      parameters:
+        - name: name
+          in: query
+          description: Pipeline name
+          schema:
+            type: string
+        - name: taskIDs
+          in: query
+          description: Task IDs
+          style: form
+          explode: false
+          schema:
+            type: array
+            items:
+              type: string
+        - name: order
+          description: order for started_at
+          in: query
+          deprecated: true
+          schema:
+            type: string
+        - name: orderBy
+          in: query
+          description: params for tasks ordering
+          schema:
+            type: array
+            items:
+              example: "started_at:desc"
+              description: param consist of field and order parts, divided with a colon - field:order
+              type: string
+        - name: created
+          in: query
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Created'
+        - name: archived
+          in: query
+          schema:
+            type: boolean
+        - name: selectAs
+          in: query
+          schema:
+            type: string
+            enum:
+              - approver
+              - finished_approver
+              - executor
+              - finished_executor
+              - form_executor
+              - finished_form_executor
+              - signer_phys
+              - finished_signer_phys
+              - signer_jur
+              - finished_signer_jur
+              - initiators
+              - group_executor
+              - finished_group_executor
+              - queue_executor
+              - in_work_executor
+        - name: forCarousel
+          in: query
+          schema:
+            type: boolean
+          description: get tasks with status wait or done
+        - name: status
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+          description: get tasks with different statuses
+        - name: receiver
+          in: query
+          schema:
+            type: string
+          description: receiver login
+        - name: hasAttachments
+          in: query
+          schema:
+            type: boolean
+          description: filter for attachments
+        - name: initiator
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+          description: filter for initiators
+        - name: initiatorLogins
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+          description: filter for initiators
+        - name: processingLogins
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+          description: filter in process by logins
+        - name: processingGroupIds
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+          description: filter in process by group ids
+        - name: executorTypeAssigned
+          in: query
+          schema:
+            type: string
+            enum:
+              - assigned_to_me
+              - assigned_by_me
+          description: filter type assigned
+        - name: signatureCarrier
+          in: query
+          schema:
+            type: string
+            enum:
+              - cloud
+              - token
+              - all
+          description: signature carrier (used for selectAs = signer_jur)
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  blueprints:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BlueprintsParams'
+                  status_code:
+                    type: integer
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
           content:
             application/json:
               schema:
@@ -2780,7 +2956,7 @@ paths:
 
   /monitoring/tasks/block/{blockId}/context:
     get:
-      operationId: GetBlockContext
+      operationId: MonitoringGetBlockContext
       tags:
         - monitoring
       summary: Получение контекста блоков
@@ -2831,7 +3007,7 @@ paths:
       x-codegen-request-body-name: variables
   /monitoring/tasks/block/{blockId}/state:
     get:
-      operationId: GetBlockState
+      operationId: MonitoringGetBlockState
       tags:
         - monitoring
       summary: Получение стейта блока
@@ -2880,12 +3056,13 @@ paths:
               schema:
                 $ref: '#/components/schemas/httpError'
       x-codegen-request-body-name: variables
-  /monitoring/tasks/block/{blockId}/params:
+  /monitoring/tasks/block/{blockId}/inputs:
     get:
+      operationId: MonitoringGetBlockInputs
       tags:
         - monitoring
-      summary: Get inputs and outputs of block
-      description: Получить инпуты и аутпуты блока
+      summary: Get inputs of block
+      description: Получить инпуты блока
       parameters:
         - name: blockId
           in: path
@@ -2902,7 +3079,115 @@ paths:
                 type: object
                 properties:
                   data:
-                    $ref: '#/components/schemas/MonitoringParamsResponse'
+                    $ref: '#/components/schemas/MonitoringInputsResponse'
+                  status_code:
+                    type: integer
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        403:
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+      x-codegen-request-body-name: variables
+  /monitoring/tasks/block/{blockId}/outputs:
+    get:
+      operationId: MonitoringGetBlockOutputs
+      tags:
+        - monitoring
+      summary: Get outputs of block
+      description: Получить аутпуты блока
+      parameters:
+        - name: blockId
+          in: path
+          description: block ID
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/MonitoringOutputsResponse'
+                  status_code:
+                    type: integer
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        403:
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+      x-codegen-request-body-name: variables
+  /monitoring/tasks/block/{workNumber}/{stepName}/params:
+    get:
+      operationId: MonitoringGetNotCreatedBlockInputs
+      tags:
+        - monitoring
+      summary: Get inputs of block that is not created yet
+      description: Получить инпуты блока которого ещё нет
+      parameters:
+        - name: workNumber
+          in: path
+          description: workNumber таски
+          required: true
+          schema:
+            type: string
+        - name: stepName
+          in: path
+          description: имя блока
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/MonitoringInputsResponse'
                   status_code:
                     type: integer
         400:
@@ -2932,7 +3217,7 @@ paths:
       x-codegen-request-body-name: variables
   /monitoring/tasks/block/{blockId}/error:
     get:
-      operationId: GetBlockError
+      operationId: MonitoringGetBlockError
       tags:
         - monitoring
       summary: Получение ошибок блока
@@ -2980,14 +3265,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
-      x-codegen-request-body-name: variables    
+      x-codegen-request-body-name: variables
   /monitoring/tasks:
     get:
       tags:
         - monitoring
       summary: Get tasks for monitoring
       description: Получить заявки для таблицы мониторинга
-      operationId: GetTasksForMonitoring
+      operationId: MonitoringGetTasks
       parameters:
         - name: per_page
           in: query
@@ -3088,7 +3373,7 @@ paths:
       tags:
         - monitoring
       summary: Get task for monitoring
-      operationId: get-monitoring-task
+      operationId: MonitoringGetTask
       parameters:
         - name: workNumber
           in: path
@@ -3822,6 +4107,21 @@ components:
         - username
         - tab_num
         - full_name
+    BlueprintsParams:
+      type: object
+      properties:
+        applicationIds:
+          type: array
+          items:
+            type: string
+        id:
+          type: string
+        name:
+          type: string
+        schemaIds:
+          type: array
+          items:
+            type: string
     EriusTasksPage:
       type: object
       properties:
@@ -5733,6 +6033,11 @@ components:
           description: "ID блоков"
           items:
             type: string
+        step_names:
+          type: array
+          description: "Названия блоков"
+          items:
+            type: string
 
     MonitoringTaskUpdateBlockRequest:
       type: object
@@ -5781,6 +6086,9 @@ components:
         work_number:
           type: string
           description: "Номер заявки для мониторинга"
+        work_id:
+          type: string
+          description: "UUID заявки"
         is_finished:
           type: boolean
           description: "Признак завершенности"
@@ -5799,6 +6107,7 @@ components:
             $ref: '#/components/schemas/MonitoringTaskRun'
       required:
         - version_id
+        - work_id
         - work_number
         - scenario_info
         - history
@@ -5929,17 +6238,27 @@ components:
     BlockContextResponse:
       type: object
       properties:
-        blocks:
+        while_running:
           type: object
           description: Ноды
+          additionalProperties:
+            $ref: '#/components/schemas/MonitoringBlockOutput'
+        edited:
+          type: object
+          description: Отредактированны ноды
           additionalProperties:
             $ref: '#/components/schemas/MonitoringBlockOutput'
     BlockStateResponse:
       type: object
       properties:
-        state:
+        while_running:
           type: object
           description: Стейт блока
+          additionalProperties:
+            $ref: '#/components/schemas/MonitoringBlockState'
+        edited:
+          type: object
+          description: Отредактированный стейт блока
           additionalProperties:
             $ref: '#/components/schemas/MonitoringBlockState'
     BlockErrorResponse:
@@ -6006,7 +6325,7 @@ components:
         - type
         - description
         - value      
-    MonitoringParamsResponse:
+    MonitoringInputsResponse:
       type: object
       properties:
         started_at:
@@ -6015,12 +6334,31 @@ components:
         finished_at:
           type: string
           example: 2020-07-16T17:10:25.112704+03:00
-        inputs:
+        while_running:
           type: object
-          description: Входные параметы
+          description: Входные параметы с которыми запускался блок
           additionalProperties:
             $ref: '#/components/schemas/MonitoringBlockParam'
-        outputs:
+        edited:
+          type: object
+          description: Входные параметы которые были изменены
+          additionalProperties:
+            $ref: '#/components/schemas/MonitoringBlockParam'
+    MonitoringOutputsResponse:
+      type: object
+      properties:
+        started_at:
+          type: string
+          example: 2020-07-16T17:10:25.112704+03:00
+        finished_at:
+          type: string
+          example: 2020-07-16T17:10:25.112704+03:00
+        while_running:
+          type: object
+          description: Выходные параметы
+          additionalProperties:
+            $ref: '#/components/schemas/MonitoringBlockParam'
+        edited:
           type: object
           description: Выходные параметы
           additionalProperties:

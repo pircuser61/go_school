@@ -76,7 +76,7 @@ func main() {
 		httpclient.HTTPClient(cfg.HTTPClientConfig), log, cfg.HTTPClientConfig.MaxRetries, cfg.HTTPClientConfig.RetryDelay,
 	)
 
-	ssoService, err := sso.NewService(cfg.SSO, httpClient)
+	ssoService, err := sso.NewService(cfg.SSO)
 	if err != nil {
 		log.WithError(err).Error("can't create sso service")
 

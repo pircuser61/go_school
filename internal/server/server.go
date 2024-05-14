@@ -11,9 +11,9 @@ import (
 	"time"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/configs"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/api"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/configs"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/kafka"
 )
 
@@ -137,6 +137,8 @@ func (s *Server) SendMessageToWorkers(ctx context.Context, message kafka.RunnerI
 		Msg:     message,
 		TimeNow: time.Now(),
 	}
+
+	s.logger.Info("Получено сообщение из functions: ", message.TaskID) // TODO: DEV-STAGE only
 
 	if err := s.kafka.SetRunnerInMsg(ctx, strconv.Itoa(int(timedMsg.TimeNow.Unix())), &message); err != nil {
 		s.logger.WithField("stepID", message.TaskID).WithError(err).Error("cannot set function-result message to cache")

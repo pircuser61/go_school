@@ -159,7 +159,7 @@ func (db *PGCon) GetTasksForMonitoring(ctx c.Context, dto *e.TasksForMonitoringF
 	return tasksForMonitoring, nil
 }
 
-func (db *PGCon) GetTaskForMonitoring(ctx c.Context, workNumber string, fromEventID, toEventID *string) ([]e.MonitoringTaskNode, error) {
+func (db *PGCon) GetTaskForMonitoring(ctx c.Context, workNumber string, fromEventID, toEventID *string) ([]e.MonitoringTaskStep, error) {
 	ctx, span := trace.StartSpan(ctx, "get_task_for_monitoring")
 	defer span.End()
 
@@ -167,6 +167,7 @@ func (db *PGCon) GetTaskForMonitoring(ctx c.Context, workNumber string, fromEven
 	// language=PostgreSQL
 	q := `
 		SELECT w.status,
+			   w.id as work_id,
 			   w.work_number,
 			   w.version_id,
 			   w.is_paused task_is_paused,
@@ -252,12 +253,13 @@ func (db *PGCon) GetTaskForMonitoring(ctx c.Context, workNumber string, fromEven
 
 	defer rows.Close()
 
-	res := make([]e.MonitoringTaskNode, 0)
+	res := make([]e.MonitoringTaskStep, 0)
 
 	for rows.Next() {
-		item := e.MonitoringTaskNode{}
+		item := e.MonitoringTaskStep{}
 		if scanErr := rows.Scan(
 			&item.WorkStatus,
+			&item.WorkID,
 			&item.WorkNumber,
 			&item.VersionID,
 			&item.IsPaused,

@@ -53,6 +53,13 @@ type EriusTasksPage struct {
 	TasksMeta TasksMeta   `json:"tasks_meta"`
 }
 
+type BlueprintSchemas struct {
+	ApplicationIDs []string `json:"applicationIds"`
+	ID             string   `json:"pipeline_id"`
+	Name           string   `json:"pipeline_name"`
+	SchemasIDs     []string `json:"schemaIds"`
+}
+
 type CountTasks struct {
 	TotalActive       int `json:"active"`
 	TotalApprover     int `json:"approve"`
@@ -116,7 +123,7 @@ type EriusTask struct {
 	StatusComment          string              `json:"status_comment"`
 	StatusAuthor           string              `json:"status_author"`
 
-	ProcessDeadline         time.Time           `json:"process_deadline"`
+	ProcessDeadline         *time.Time          `json:"process_deadline"`
 	NodeGroup               []*NodeGroup        `json:"node_group"`
 	ApprovalList            map[string]string   `json:"approval_list"`
 	CurrentExecutor         CurrentExecutorData `json:"current_executor"`
@@ -157,6 +164,7 @@ type GetTaskParams struct {
 	Created  *TimePeriod `json:"created"`
 	Order    *string     `json:"order"`
 	OrderBy  *[]string   `json:"order_by"`
+	Fields   *[]string   `json:"fields"`
 	Expired  *bool       `json:"expired"`
 	Limit    *int        `json:"limit"`
 	Offset   *int        `json:"offset"`

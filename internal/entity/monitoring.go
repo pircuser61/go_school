@@ -4,9 +4,10 @@ import (
 	"time"
 )
 
-type MonitoringTaskNode struct {
+type MonitoringTaskStep struct {
 	WorkStatus    int        `json:"work_status"`
 	WorkNumber    string     `json:"work_number"`
+	WorkID        string     `json:"work_id"`
 	VersionID     string     `json:"version_id"`
 	IsPaused      bool       `json:"task_is_paused"`
 	Author        string     `json:"author"`

@@ -59,3 +59,37 @@ func convertTaskUserParams(up GetTasksUsersParams) (*GetTasksParams, error) {
 		ExecutorGroupIds:   up.ExecutorGroupIds,
 	}, nil
 }
+
+//nolint:gocritic // params без поинтера нужен для интерфейса
+func convertParamsTaskToSchema(up GetTasksSchemasParams) (*GetTasksParams, error) {
+	var selectAs string
+
+	if up.SelectAs != nil {
+		selectAs = string(*up.SelectAs)
+
+		valid := selectAsValid(selectAs)
+		if !valid {
+			return nil, errors.New("invalid value in SelectAs filter")
+		}
+	}
+
+	selectAsParams := GetTasksParamsSelectAs(selectAs)
+
+	return &GetTasksParams{
+		Name:               up.Name,
+		TaskIDs:            up.TaskIDs,
+		Order:              up.Order,
+		OrderBy:            up.OrderBy,
+		Created:            up.Created,
+		Archived:           up.Archived,
+		SelectAs:           &selectAsParams,
+		ForCarousel:        up.ForCarousel,
+		Status:             up.Status,
+		Receiver:           up.Receiver,
+		HasAttachments:     up.HasAttachments,
+		Initiator:          up.Initiator,
+		InitiatorLogins:    up.InitiatorLogins,
+		ProcessingLogins:   up.ProcessingLogins,
+		ProcessingGroupIds: up.ProcessingGroupIds,
+	}, nil
+}

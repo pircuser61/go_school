@@ -769,10 +769,10 @@ func (ae *Env) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO) (
 		log.WithField("funcName", "CreateTaskEvent").Error(err)
 	}
 
-	err = pipeline.InitBlockInDB(ctx, pipeline.BlockGoFirstStart, blockData.TypeID, runCtx)
+	err = pipeline.CreateBlockInDB(ctx, pipeline.BlockGoFirstStart, blockData.TypeID, runCtx)
 	if err != nil {
 		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
-			log.WithField("funcName", "InitBlockInDB").
+			log.WithField("funcName", "CreateBlockInDB").
 				WithError(txErr).
 				Error(errors.New("couldn't rollback tx"))
 		}

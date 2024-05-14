@@ -34,6 +34,7 @@ type TaskStorager interface {
 	GetDeadline(ctx c.Context, workID string) (time.Time, error)
 	GetTasks(ctx c.Context, filters e.TaskFilter, delegations []string) (*e.EriusTasksPage, error)
 	GetTasksUsers(ctx c.Context, filters e.TaskFilter, delegations []string) (UniquePersons, error)
+	GetTasksSchemas(ctx c.Context, filters e.TaskFilter, delegations []string) ([]e.BlueprintSchemas, error)
 	GetTasksCount(ctx c.Context, currentUser string, delegationsByApprovement, delegationsByExecution []string) (*e.CountTasks, error)
 	GetTask(ctx c.Context, delegationsApprover, delegationsExecution []string, currentUser, workNumber string) (*e.EriusTask, error)
 	GetTaskSteps(ctx c.Context, id uuid.UUID) (e.TaskSteps, error)
@@ -49,7 +50,7 @@ type TaskStorager interface {
 	GetTaskStatusWithReadableString(ctx c.Context, taskID uuid.UUID) (int, string, error)
 	GetTaskStepsToWait(ctx c.Context, workNumber, blockName string) ([]string, error)
 	GetTaskRunContext(ctx c.Context, workNumber string) (e.TaskRunContext, error)
-	GetBlockDataFromVersion(ctx c.Context, workNumber, stepName string) (*e.EriusFunc, error)
+	GetStepDataFromVersion(ctx c.Context, workNumber, stepName string) (*e.EriusFunc, error)
 	GetVariableStorageForStep(ctx c.Context, taskID uuid.UUID, stepName string) (*store.VariableStore, error)
 	GetVariableStorageForStepByID(ctx c.Context, stepID uuid.UUID) (*store.VariableStore, error)
 	GetVariableStorage(ctx c.Context, workNumber string) (*store.VariableStore, error)
@@ -61,7 +62,7 @@ type TaskStorager interface {
 	GetWorkIDByWorkNumber(ctx c.Context, workNumber string) (uuid.UUID, error)
 	GetPipelineIDByWorkID(ctx c.Context, taskID string) (uuid.UUID, uuid.UUID, error)
 
-	GetTaskForMonitoring(ctx c.Context, workNumber string, fromEventID, toEventID *string) ([]e.MonitoringTaskNode, error)
+	GetTaskForMonitoring(ctx c.Context, workNumber string, fromEventID, toEventID *string) ([]e.MonitoringTaskStep, error)
 	GetTasksForMonitoring(ctx c.Context, filters *e.TasksForMonitoringFilters) (*e.TasksForMonitoring, error)
 	GetTaskStepByNameForCtxEditing(ctx c.Context, workID uuid.UUID, stepName string, time time.Time) (*e.Step, error)
 
@@ -69,7 +70,7 @@ type TaskStorager interface {
 	FillEmptyTask(ctx c.Context, updateTask *UpdateEmptyTaskDTO) error
 	IsStepExist(ctx c.Context, workID, stepName string, hasUpdData bool) (bool, uuid.UUID, time.Time, error)
 	CreateEmptyTask(ctx c.Context, task *CreateEmptyTaskDTO) error
-	CreateTaskStepsInputs(ctx c.Context, in *e.CreateUpdatesInputsHistory) error
+	CreateTaskStepInputs(ctx c.Context, in *e.CreateTaskStepInputs) error
 
 	CheckUserCanEditForm(ctx c.Context, workNumber string, stepName string, login string) (bool, error)
 	SendTaskToArchive(ctx c.Context, taskID uuid.UUID) (err error)
@@ -85,8 +86,8 @@ type TaskStorager interface {
 	UpdateTaskStatus(ctx c.Context, taskID uuid.UUID, status int, comment, author string) error
 	UpdateBlockStateInOthers(ctx c.Context, blockName, taskID string, blockState []byte) error
 	UpdateBlockVariablesInOthers(ctx c.Context, taskID string, values map[string]interface{}) error
-	SaveNodePreviousContent(ctx c.Context, stepID, eventID string) error
-	UpdateNodeContent(ctx c.Context, stepID, workID, stepName string, state, output map[string]interface{}) error
+	CreateStepPreviousContent(ctx c.Context, stepID, eventID string) error
+	UpdateStepContent(ctx c.Context, stepID, workID, stepName string, state, output map[string]interface{}) error
 }
 
 type UpdateTaskRate struct {
@@ -146,6 +147,8 @@ type SaveStepRequest struct {
 	Attachments     int
 	CurrentExecutor CurrentExecutorData
 	BlockStart      time.Time
+	IsPaused        bool
+	HasUpdData      bool
 }
 
 type SearchPipelinesFieldsParams struct {
@@ -257,7 +260,8 @@ type Database interface {
 
 	GetBlocksOutputs(ctx c.Context, blockID string) (e.BlockOutputs, error)
 	GetBlockOutputs(ctx c.Context, blockID, blockName string) (e.BlockOutputs, error)
-	GetBlockInputs(ctx c.Context, blockName, workNumber string) (e.BlockInputs, error)
+	GetStepInputs(ctx c.Context, stepName, workNumber string, createdAt time.Time) (e.BlockInputs, error)
+	GetEditedStepInputs(ctx c.Context, stepName, workNumber string, updatedAt *time.Time) (e.BlockInputs, error)
 	CheckBlockForHiddenFlag(ctx c.Context, blockID string) (bool, error)
 	GetMergedVariableStorage(ctx c.Context, workID uuid.UUID, blockIds []string) (*store.VariableStore, error)
 	CheckTaskForHiddenFlag(ctx c.Context, workNumber string) (bool, error)
@@ -303,7 +307,7 @@ type Database interface {
 	IsBlockResumable(ctx c.Context, workID, stepID uuid.UUID) (isResumable bool, startTime time.Time, err error)
 	UnpauseTaskBlock(ctx c.Context, workID, stepID uuid.UUID) (err error)
 	TryUnpauseTask(ctx c.Context, workID uuid.UUID) (err error)
-	InitTaskBlock(ctx c.Context, dto *SaveStepRequest, isPaused, hasUpdData bool) (id uuid.UUID, startTime time.Time, err error)
+	CreateTaskBlock(ctx c.Context, dto *SaveStepRequest) (err error)
 	CopyTaskBlock(ctx c.Context, stepID uuid.UUID) (newStepID uuid.UUID, err error)
 	SkipBlocksAfterRestarted(ctx c.Context, workID uuid.UUID, startTime time.Time, blocks []string) (err error)
 
