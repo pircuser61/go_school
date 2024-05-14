@@ -152,6 +152,10 @@ func (db *PGCon) GetTasksForMonitoring(ctx c.Context, dto *e.TasksForMonitoringF
 		tasksForMonitoring.Tasks = append(tasksForMonitoring.Tasks, task)
 	}
 
+	if rowsErr := rows.Err(); rowsErr != nil {
+		return nil, rowsErr
+	}
+
 	return tasksForMonitoring, nil
 }
 

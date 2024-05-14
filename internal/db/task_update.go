@@ -411,6 +411,10 @@ func (db *PGCon) PauseTaskBlocks(ctx c.Context, workID string, steps []string) (
 		updatedIds = append(updatedIds, id)
 	}
 
+	if rowsErr := rows.Err(); rowsErr != nil {
+		return nil, rowsErr
+	}
+
 	return updatedIds, nil
 }
 

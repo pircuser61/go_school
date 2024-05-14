@@ -1988,6 +1988,10 @@ func (db *PGCon) GetTaskSteps(ctx c.Context, id uuid.UUID) (entity.TaskSteps, er
 		res = append(res, &s)
 	}
 
+	if rowsErr := rows.Err(); rowsErr != nil {
+		return nil, rowsErr
+	}
+
 	return res, nil
 }
 

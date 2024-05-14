@@ -1576,15 +1576,9 @@ paths:
       tags:
         - pipeline
       summary: search list of pipelines
-      description: Получить п
+      description: get form values from pipelines id
       operationId: search-pipelines
       parameters:
-        - name: pipelineName
-          in: query
-          description: имя пайплайна
-          required: false
-          schema:
-            type: string
         - name: pipelineId
           in: query
           description: id пайплайна
@@ -3341,7 +3335,7 @@ components:
           additionalProperties:
             type: object
             properties:
-              form_id:
+              formID:
                 type: object
                 properties:
                   schemaID:

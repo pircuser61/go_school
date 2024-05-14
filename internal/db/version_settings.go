@@ -460,6 +460,10 @@ func (db *PGCon) GetApprovalListsSettings(ctx context.Context, versionID string)
 		res = append(res, al)
 	}
 
+	if rowsErr := rows.Err(); rowsErr != nil {
+		return nil, rowsErr
+	}
+
 	return res, nil
 }
 

@@ -860,7 +860,7 @@ func (ae *Env) SearchPipelinesFields(w http.ResponseWriter, req *http.Request, p
 	errorHandler := newHTTPErrorHandler(log, w)
 
 	if params.PipelineId == nil {
-		errorHandler.handleError(ValidationPipelineSearchError, errors.New("name and id are empty"))
+		errorHandler.handleError(ValidationPipelineSearchError, errors.New("pipeline id is empty"))
 
 		return
 	}
