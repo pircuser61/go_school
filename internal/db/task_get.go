@@ -681,6 +681,7 @@ func (cq *compileGetTaskQueryMaker) MakeQuery(
 	cq.addInitiator()
 	cq.addProcessingSteps()
 	cq.addExecutorFilter()
+	cq.addFieldsFilter(fl)
 	cq.addIsExpiredFilter(fl.Expired, *fl.SelectAs)
 	cq.addOrderBy(order, orderBy)
 
@@ -699,6 +700,49 @@ func replaceStorageVariable(q string) string {
 	q = strings.Replace(q, "[join_variable_storage]", "", 1)
 
 	return q
+}
+
+func (cq *compileGetTaskQueryMaker) addFieldsFilter(fl *entity.TaskFilter) {
+	if fl.Fields == nil || len(*fl.Fields) == 0 {
+		return
+	}
+
+	findFields := make(map[string]string, 0)
+
+	for _, v := range *fl.Fields {
+		fields := strings.Split(v, ".")
+
+		length := len(fields)
+		if length == 1 {
+			continue
+		}
+
+		variable := fmt.Sprintf("@.%q == %q", fields[length-2], fields[length-1])
+
+		if (length - 2) == 0 {
+			findFields[variable] = ""
+
+			continue
+		}
+
+		for i := 0; i < length-2; i++ {
+			fields[i] = fmt.Sprintf("%q", fields[i])
+		}
+
+		findFields[variable] = strings.Join(fields[:length-2], ".")
+	}
+
+	cq.q = strings.Replace(cq.q, "[join_variable_storage]", "JOIN variable_storage vs ON vs.work_id = w.id", 1)
+
+	for k, v := range findFields {
+		subPath := "$."
+		if v == "" {
+			subPath = "$"
+		}
+
+		//nolint:lll //Такая и должна быть строка
+		cq.q = fmt.Sprintf("%s AND w.child_id IS NULL AND jsonb_path_exists((vs.content -> 'State' -> vs.step_name -> 'application_body')::jsonb, '%v%s[*] ? (%v)')", cq.q, subPath, v, k)
+	}
 }
 
 func getProcessingSteps(q string, fl *entity.TaskFilter) string {

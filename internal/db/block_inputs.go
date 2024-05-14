@@ -84,6 +84,10 @@ func trySetNewParams(stepParams json.RawMessage, inputs e.BlockInputs) (json.Raw
 		return stepParams, nil
 	}
 
+	if len(stepParams) == 0 {
+		return stepParams, nil
+	}
+
 	inputsFromVersion := make(map[string]interface{}, 0)
 
 	err := json.Unmarshal(stepParams, &inputsFromVersion)
@@ -171,23 +175,30 @@ func (db *PGCon) GetStepInputs(ctx c.Context, stepName, workNumber string, creat
 	return res, nil
 }
 
-func (db *PGCon) GetEditedStepInputs(ctx c.Context, stepName, workNumber string, updatedAt time.Time) (e.BlockInputs, error) {
+func (db *PGCon) GetEditedStepInputs(ctx c.Context, stepName, workNumber string, updatedAt *time.Time) (e.BlockInputs, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_edited_step_inputs")
 	defer span.End()
 
 	res := make(e.BlockInputs, 0)
 	inputs := make(map[string]interface{}, 0)
 
+	queryParams := []interface{}{
+		workNumber,
+		stepName,
+	}
+
 	query := getInputsQuery
 
-	if !updatedAt.IsZero() {
-		query = fmt.Sprintf("%s %s", query, `AND ts.created_at > $3`)
+	if updatedAt != nil && !updatedAt.IsZero() {
+		query = fmt.Sprintf("%s %s", query, `AND ts.created_at < $3`)
+
+		queryParams = append(queryParams, updatedAt)
 	}
 
 	//nolint:all // ok
 	query += getInputsQueryOrder
 
-	err := db.Connection.QueryRow(ctx, getInputsQuery, workNumber, stepName, updatedAt).Scan(&inputs)
+	err := db.Connection.QueryRow(ctx, query, queryParams...).Scan(&inputs)
 	if err != nil {
 		if !errors.Is(err, pgx.ErrNoRows) {
 			return res, nil

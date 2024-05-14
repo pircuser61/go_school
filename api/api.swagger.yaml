@@ -1710,6 +1710,15 @@ paths:
               example: "started_at:desc"
               description: param consist of field and order parts, divided with a colon - field:order
               type: string
+        - name: fields
+          in: query
+          description: fields for tasks ordering
+          schema:
+            type: array
+            items:
+              example: "field-uuid-2:author"
+              description: param for search fields
+              type: string
         - name: limit
           in: query
           description: Limit
@@ -2906,7 +2915,7 @@ paths:
 
   /monitoring/tasks/block/{blockId}/context:
     get:
-      operationId: GetBlockContext
+      operationId: MonitoringGetBlockContext
       tags:
         - monitoring
       summary: Получение контекста блоков
@@ -2957,7 +2966,7 @@ paths:
       x-codegen-request-body-name: variables
   /monitoring/tasks/block/{blockId}/state:
     get:
-      operationId: GetBlockState
+      operationId: MonitoringGetBlockState
       tags:
         - monitoring
       summary: Получение стейта блока
@@ -6164,22 +6173,27 @@ components:
     BlockContextResponse:
       type: object
       properties:
-        blocks:
+        while_running:
           type: object
           description: Ноды
+          additionalProperties:
+            $ref: '#/components/schemas/MonitoringBlockOutput'
+        edited:
+          type: object
+          description: Отредактированны ноды
           additionalProperties:
             $ref: '#/components/schemas/MonitoringBlockOutput'
     BlockStateResponse:
       type: object
       properties:
-        whyle_running:
+        while_running:
           type: object
           description: Стейт блока
           additionalProperties:
             $ref: '#/components/schemas/MonitoringBlockState'
         edited:
           type: object
-          description: Стейт блока
+          description: Отредактированный стейт блока
           additionalProperties:
             $ref: '#/components/schemas/MonitoringBlockState'
     BlockErrorResponse:
@@ -6274,7 +6288,12 @@ components:
         finished_at:
           type: string
           example: 2020-07-16T17:10:25.112704+03:00
-        outputs:
+        while_running:
+          type: object
+          description: Выходные параметы
+          additionalProperties:
+            $ref: '#/components/schemas/MonitoringBlockParam'
+        edited:
           type: object
           description: Выходные параметы
           additionalProperties:

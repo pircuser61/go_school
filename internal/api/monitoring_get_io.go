@@ -2,9 +2,9 @@ package api
 
 import (
 	"net/http"
-	"time"
 
 	"github.com/google/uuid"
+
 	"go.opencensus.io/trace"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
@@ -35,13 +35,13 @@ func (ae *Env) MonitoringGetBlockInputs(w http.ResponseWriter, req *http.Request
 		errorHandler.sendError(e)
 	}
 
+	log = log.WithField("stepID", stepID).
+		WithField("stepName", dbStep.Name)
+
 	dbWhileRunningInputs, err := ae.DB.GetStepInputs(ctx, dbStep.Name, dbStep.WorkNumber, dbStep.Time)
 	if err != nil {
-		e := GetBlockContextError
-
-		log.WithField("stepID", stepID).
-			WithField("stepName", dbStep.Name).
-			Error(e.errorMessage(err))
+		e := GetBlockInputsError
+		log.Error(e.errorMessage(err))
 		errorHandler.sendError(e)
 
 		return
@@ -49,27 +49,10 @@ func (ae *Env) MonitoringGetBlockInputs(w http.ResponseWriter, req *http.Request
 
 	var dbEditedInputs entity.BlockInputs
 
-	if dbStep.UpdatedAt != nil {
-		dbEditedInputs, err = ae.DB.GetEditedStepInputs(ctx, dbStep.Name, dbStep.WorkNumber, *dbStep.UpdatedAt)
-		if err != nil {
-			e := GetBlockContextError
-
-			log.WithField("stepID", stepID).
-				WithField("stepName", dbStep.Name).
-				Error(e.errorMessage(err))
-			errorHandler.sendError(e)
-
-			return
-		}
-	}
-
-	blockOutputs, err := ae.DB.GetBlockOutputs(ctx, blockID, dbStep.Name)
+	dbEditedInputs, err = ae.DB.GetEditedStepInputs(ctx, dbStep.Name, dbStep.WorkNumber, dbStep.UpdatedAt)
 	if err != nil {
-		e := GetBlockContextError
-
-		log.WithField("stepID", blockID).
-			WithField("stepName", dbStep.Name).
-			Error(e.errorMessage(err))
+		e := GetBlockInputsError
+		log.Error(e.errorMessage(err))
 		errorHandler.sendError(e)
 
 		return
@@ -78,10 +61,7 @@ func (ae *Env) MonitoringGetBlockInputs(w http.ResponseWriter, req *http.Request
 	blockIsHidden, err := ae.DB.CheckBlockForHiddenFlag(ctx, blockID)
 	if err != nil {
 		e := CheckForHiddenError
-
-		log.WithField("stepID", blockID).
-			WithField("stepName", dbStep.Name).
-			Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		errorHandler.sendError(e)
 
 		return
@@ -91,16 +71,6 @@ func (ae *Env) MonitoringGetBlockInputs(w http.ResponseWriter, req *http.Request
 		errorHandler.handleError(ForbiddenError, err)
 
 		return
-	}
-
-	outputs := make(map[string]MonitoringBlockParam, 0)
-
-	for _, bo := range blockOutputs {
-		outputs[bo.Name] = MonitoringBlockParam{
-			Name:  bo.Name,
-			Value: bo.Value,
-			Type:  utils.GetJSONType(bo.Value),
-		}
 	}
 
 	startedAt := dbStep.Time.String()
@@ -190,9 +160,10 @@ func (ae *Env) MonitoringGetBlockOutputs(w http.ResponseWriter, req *http.Reques
 	}
 
 	if err = sendResponse(w, http.StatusOK, MonitoringOutputsResponse{
-		StartedAt:  &startedAt,
-		FinishedAt: &finishedAt,
-		Outputs:    &MonitoringOutputsResponse_Outputs{AdditionalProperties: outputs},
+		StartedAt:    &startedAt,
+		FinishedAt:   &finishedAt,
+		WhileRunning: &MonitoringOutputsResponse_WhileRunning{AdditionalProperties: outputs},
+		Edited:       &MonitoringOutputsResponse_Edited{AdditionalProperties: outputs},
 	}); err != nil {
 		errorHandler.handleError(UnknownError, err)
 	}
@@ -206,7 +177,7 @@ func (ae *Env) MonitoringGetNotCreatedBlockInputs(w http.ResponseWriter, req *ht
 	log := logger.GetLogger(ctx)
 	errorHandler := newHTTPErrorHandler(log, w)
 
-	dbInputs, err := ae.DB.GetEditedStepInputs(ctx, stepName, workNumber, time.Time{})
+	dbInputs, err := ae.DB.GetEditedStepInputs(ctx, stepName, workNumber, nil)
 	if err != nil {
 		e := GetBlockContextError
 

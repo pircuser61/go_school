@@ -11,9 +11,9 @@ import (
 	"time"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/configs"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/api"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/configs"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/kafka"
 )
 
