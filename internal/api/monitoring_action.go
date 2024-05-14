@@ -340,7 +340,7 @@ func (ae *Env) startTask(ctx c.Context, dto *startStepsDTO) error {
 	}
 
 	for i := range steps {
-		newStepID, restartErr := ae.restartNode(
+		newStepID, restartErr := ae.restartStep(
 			ctx,
 			txStorage,
 			dto.workID,
@@ -398,58 +398,58 @@ func (ae *Env) startTask(ctx c.Context, dto *startStepsDTO) error {
 	return nil
 }
 
-func (ae *Env) restartNode(ctx c.Context, txStorage db.Database, workID uuid.UUID, workNumber, stepID, login string, byOne bool) (string, error) {
+func (ae *Env) restartStep(ctx c.Context, tx db.Database, wID uuid.UUID, wNumber, stepID, login string, byOne bool) (string, error) {
 	sid, parseErr := uuid.Parse(stepID)
 	if parseErr != nil {
 		return "", parseErr
 	}
 
-	dbStep, stepErr := txStorage.GetTaskStepByID(ctx, sid)
+	dbStep, stepErr := tx.GetTaskStepByID(ctx, sid)
 	if stepErr != nil {
 		return "", stepErr
 	}
 
 	isFinished := dbStep.Status == finished || dbStep.Status == skipped || dbStep.Status == cancel || dbStep.Status == noSuccess
 
-	isResumable, _, resumableErr := txStorage.IsBlockResumable(ctx, workID, dbStep.ID)
-	if resumableErr != nil {
-		return "", resumableErr
+	isResemble, _, resembleErr := tx.IsBlockResumable(ctx, wID, dbStep.ID)
+	if resembleErr != nil {
+		return "", resembleErr
 	}
 
-	if !isResumable && !isFinished {
+	if !isResemble && !isFinished {
 		return "", fmt.Errorf("can't unpause running task block: %s", sid)
 	}
 
-	blockData, blockErr := txStorage.GetStepDataFromVersion(ctx, workNumber, dbStep.Name)
+	blockData, blockErr := tx.GetStepDataFromVersion(ctx, wNumber, dbStep.Name)
 	if blockErr != nil {
 		return "", blockErr
 	}
 
-	task, dbTaskErr := ae.GetTaskForUpdate(ctx, workNumber)
+	task, dbTaskErr := ae.GetTaskForUpdate(ctx, wNumber)
 	if dbTaskErr != nil {
 		return "", dbTaskErr
 	}
 
-	skipErr := ae.skipTaskBlocksAfterRestart(ctx, &task.Steps, dbStep.Time, blockData.Next, workNumber, workID, txStorage)
+	skipErr := ae.skipTaskBlocksAfterRestart(ctx, &task.Steps, dbStep.Time, blockData.Next, wNumber, wID, tx)
 	if skipErr != nil {
 		return "", skipErr
 	}
 
 	if isFinished {
 		var errCopy error
-		dbStep.ID, errCopy = txStorage.CopyTaskBlock(ctx, dbStep.ID)
+		dbStep.ID, errCopy = tx.CopyTaskBlock(ctx, dbStep.ID)
 
 		if errCopy != nil {
 			return "", errCopy
 		}
 	}
 
-	unpErr := txStorage.UnpauseTaskBlock(ctx, workID, dbStep.ID)
+	unpErr := tx.UnpauseTaskBlock(ctx, wID, dbStep.ID)
 	if unpErr != nil {
 		return "", unpErr
 	}
 
-	storage, getErr := txStorage.GetVariableStorageForStepByID(ctx, dbStep.ID)
+	storage, getErr := tx.GetVariableStorageForStepByID(ctx, dbStep.ID)
 	if getErr != nil {
 		return "", getErr
 	}
@@ -466,7 +466,7 @@ func (ae *Env) restartNode(ctx c.Context, txStorage db.Database, workID uuid.UUI
 
 	_, _, processErr := pipeline.ProcessBlockWithEndMapping(ctx, dbStep.Name, blockData, &pipeline.BlockRunContext{
 		TaskID:      task.ID,
-		WorkNumber:  workNumber,
+		WorkNumber:  wNumber,
 		WorkTitle:   task.Name,
 		PipelineID:  pipelineID,
 		VersionID:   versionID,
@@ -488,7 +488,7 @@ func (ae *Env) restartNode(ctx c.Context, txStorage db.Database, workID uuid.UUI
 			HrGate:        ae.HrGate,
 			Scheduler:     ae.Scheduler,
 			SLAService:    ae.SLAService,
-			Storage:       txStorage,
+			Storage:       tx,
 		},
 		BlockRunResults: &pipeline.BlockRunResults{},
 
