@@ -85,8 +85,8 @@ type TaskStorager interface {
 	UpdateTaskStatus(ctx c.Context, taskID uuid.UUID, status int, comment, author string) error
 	UpdateBlockStateInOthers(ctx c.Context, blockName, taskID string, blockState []byte) error
 	UpdateBlockVariablesInOthers(ctx c.Context, taskID string, values map[string]interface{}) error
-	SaveNodePreviousContent(ctx c.Context, stepID, eventID string) error
-	UpdateNodeContent(ctx c.Context, stepID, workID, stepName string, state, output map[string]interface{}) error
+	CreateStepPreviousContent(ctx c.Context, stepID, eventID string) error
+	UpdateStepContent(ctx c.Context, stepID, workID, stepName string, state, output map[string]interface{}) error
 }
 
 type UpdateTaskRate struct {
