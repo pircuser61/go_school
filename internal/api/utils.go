@@ -80,8 +80,6 @@ func convertParamsTaskToSchema(up GetTasksSchemasParams) (*GetTasksParams, error
 		TaskIDs:            up.TaskIDs,
 		Order:              up.Order,
 		OrderBy:            up.OrderBy,
-		Limit:              up.Limit,
-		Offset:             up.Offset,
 		Created:            up.Created,
 		Archived:           up.Archived,
 		SelectAs:           &selectAsParams,

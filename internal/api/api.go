@@ -2704,13 +2704,7 @@ type GetTasksSchemasParams struct {
 	Order *string `json:"order,omitempty"`
 
 	// params for tasks ordering
-	OrderBy *[]string `json:"orderBy,omitempty"`
-
-	// Limit
-	Limit *int `json:"limit,omitempty"`
-
-	// Offset
-	Offset   *int                           `json:"offset,omitempty"`
+	OrderBy  *[]string                      `json:"orderBy,omitempty"`
 	Created  *Created                       `json:"created,omitempty"`
 	Archived *bool                          `json:"archived,omitempty"`
 	SelectAs *GetTasksSchemasParamsSelectAs `json:"selectAs,omitempty"`
@@ -4072,7 +4066,7 @@ type ServerInterface interface {
 	// Get Task Mean Solve time
 	// (GET /tasks/mean/{pipelineId})
 	GetTaskMeanSolveTime(w http.ResponseWriter, r *http.Request, pipelineId string)
-	// Get Tasks Schemas
+	// Get Schemas for filter
 	// (GET /tasks/schemas)
 	GetTasksSchemas(w http.ResponseWriter, r *http.Request, params GetTasksSchemasParams)
 	// Stop tasks by work number
@@ -6026,7 +6020,7 @@ func (siw *ServerInterfaceWrapper) GetTasksSchemas(w http.ResponseWriter, r *htt
 
 	err = runtime.BindQueryParameter("form", true, false, "name", r.URL.Query(), &params.Name)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "name", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter name: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -6037,7 +6031,7 @@ func (siw *ServerInterfaceWrapper) GetTasksSchemas(w http.ResponseWriter, r *htt
 
 	err = runtime.BindQueryParameter("form", false, false, "taskIDs", r.URL.Query(), &params.TaskIDs)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "taskIDs", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter taskIDs: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -6048,7 +6042,7 @@ func (siw *ServerInterfaceWrapper) GetTasksSchemas(w http.ResponseWriter, r *htt
 
 	err = runtime.BindQueryParameter("form", true, false, "order", r.URL.Query(), &params.Order)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "order", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter order: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -6059,29 +6053,7 @@ func (siw *ServerInterfaceWrapper) GetTasksSchemas(w http.ResponseWriter, r *htt
 
 	err = runtime.BindQueryParameter("form", true, false, "orderBy", r.URL.Query(), &params.OrderBy)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "orderBy", Err: err})
-		return
-	}
-
-	// ------------- Optional query parameter "limit" -------------
-	if paramValue := r.URL.Query().Get("limit"); paramValue != "" {
-
-	}
-
-	err = runtime.BindQueryParameter("form", true, false, "limit", r.URL.Query(), &params.Limit)
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
-		return
-	}
-
-	// ------------- Optional query parameter "offset" -------------
-	if paramValue := r.URL.Query().Get("offset"); paramValue != "" {
-
-	}
-
-	err = runtime.BindQueryParameter("form", true, false, "offset", r.URL.Query(), &params.Offset)
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter orderBy: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -6091,7 +6063,7 @@ func (siw *ServerInterfaceWrapper) GetTasksSchemas(w http.ResponseWriter, r *htt
 		var value Created
 		err = json.Unmarshal([]byte(paramValue), &value)
 		if err != nil {
-			siw.ErrorHandlerFunc(w, r, &UnmarshalingParamError{ParamName: "created", Err: err})
+			http.Error(w, "Error unmarshaling parameter 'created' as JSON", http.StatusBadRequest)
 			return
 		}
 
@@ -6106,7 +6078,7 @@ func (siw *ServerInterfaceWrapper) GetTasksSchemas(w http.ResponseWriter, r *htt
 
 	err = runtime.BindQueryParameter("form", true, false, "archived", r.URL.Query(), &params.Archived)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "archived", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter archived: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -6117,7 +6089,7 @@ func (siw *ServerInterfaceWrapper) GetTasksSchemas(w http.ResponseWriter, r *htt
 
 	err = runtime.BindQueryParameter("form", true, false, "selectAs", r.URL.Query(), &params.SelectAs)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "selectAs", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter selectAs: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -6128,7 +6100,7 @@ func (siw *ServerInterfaceWrapper) GetTasksSchemas(w http.ResponseWriter, r *htt
 
 	err = runtime.BindQueryParameter("form", true, false, "forCarousel", r.URL.Query(), &params.ForCarousel)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "forCarousel", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter forCarousel: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -6139,7 +6111,7 @@ func (siw *ServerInterfaceWrapper) GetTasksSchemas(w http.ResponseWriter, r *htt
 
 	err = runtime.BindQueryParameter("form", true, false, "status", r.URL.Query(), &params.Status)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter status: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -6150,7 +6122,7 @@ func (siw *ServerInterfaceWrapper) GetTasksSchemas(w http.ResponseWriter, r *htt
 
 	err = runtime.BindQueryParameter("form", true, false, "receiver", r.URL.Query(), &params.Receiver)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "receiver", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter receiver: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -6161,7 +6133,7 @@ func (siw *ServerInterfaceWrapper) GetTasksSchemas(w http.ResponseWriter, r *htt
 
 	err = runtime.BindQueryParameter("form", true, false, "hasAttachments", r.URL.Query(), &params.HasAttachments)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "hasAttachments", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter hasAttachments: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -6172,7 +6144,7 @@ func (siw *ServerInterfaceWrapper) GetTasksSchemas(w http.ResponseWriter, r *htt
 
 	err = runtime.BindQueryParameter("form", true, false, "initiator", r.URL.Query(), &params.Initiator)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "initiator", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter initiator: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -6183,7 +6155,7 @@ func (siw *ServerInterfaceWrapper) GetTasksSchemas(w http.ResponseWriter, r *htt
 
 	err = runtime.BindQueryParameter("form", true, false, "initiatorLogins", r.URL.Query(), &params.InitiatorLogins)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "initiatorLogins", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter initiatorLogins: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -6194,7 +6166,7 @@ func (siw *ServerInterfaceWrapper) GetTasksSchemas(w http.ResponseWriter, r *htt
 
 	err = runtime.BindQueryParameter("form", true, false, "processingLogins", r.URL.Query(), &params.ProcessingLogins)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "processingLogins", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter processingLogins: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -6205,7 +6177,7 @@ func (siw *ServerInterfaceWrapper) GetTasksSchemas(w http.ResponseWriter, r *htt
 
 	err = runtime.BindQueryParameter("form", true, false, "processingGroupIds", r.URL.Query(), &params.ProcessingGroupIds)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "processingGroupIds", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter processingGroupIds: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -6216,7 +6188,7 @@ func (siw *ServerInterfaceWrapper) GetTasksSchemas(w http.ResponseWriter, r *htt
 
 	err = runtime.BindQueryParameter("form", true, false, "executorTypeAssigned", r.URL.Query(), &params.ExecutorTypeAssigned)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "executorTypeAssigned", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter executorTypeAssigned: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -6227,7 +6199,7 @@ func (siw *ServerInterfaceWrapper) GetTasksSchemas(w http.ResponseWriter, r *htt
 
 	err = runtime.BindQueryParameter("form", true, false, "signatureCarrier", r.URL.Query(), &params.SignatureCarrier)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "signatureCarrier", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter signatureCarrier: %s", err), http.StatusBadRequest)
 		return
 	}
 

@@ -1119,6 +1119,7 @@ func (db *PGCon) GetTasksSchemas(ctx c.Context, filters entity.TaskFilter, deleg
 	ctx, span := trace.StartSpan(ctx, "db.pg_get_tasks_schemas")
 	defer span.End()
 
+	filters.Limit = nil
 	q, args := compileGetTasksSchemasQuery(filters, delegations)
 
 	tasks, getTasksErr := db.getTasksSchemas(ctx, q, args)
@@ -1143,7 +1144,7 @@ func (db *PGCon) getTasksSchemas(ctx c.Context, q string, args []interface{},
 	}
 	defer rows.Close()
 
-label:
+newRow:
 	for rows.Next() {
 		bs := entity.BlueprintSchemas{}
 
@@ -1176,7 +1177,7 @@ label:
 					ets[k].SchemasIDs = append(ets[k].SchemasIDs, schemaID)
 				}
 
-				continue label
+				continue newRow
 			}
 		}
 
@@ -1205,7 +1206,7 @@ func compileGetTasksSchemasQuery(fl entity.TaskFilter, delegations []string) (q 
 	// language=PostgreSQL
 	q = `
 		[with_variable_storage]
-		SELECT DISTINCT
+		SELECT 
 			w.work_number,
 			p.id,
 			p.name,

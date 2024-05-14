@@ -2095,19 +2095,6 @@ paths:
               example: "started_at:desc"
               description: param consist of field and order parts, divided with a colon - field:order
               type: string
-        - name: limit
-          in: query
-          description: Limit
-          schema:
-            type: integer
-            default: 10
-            maximum: 1000
-        - name: offset
-          in: query
-          description: Offset
-          schema:
-            type: integer
-            default: 0
         - name: created
           in: query
           content:
