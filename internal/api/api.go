@@ -1638,6 +1638,9 @@ type MonitoringTaskActionParams struct {
 	// Данные которые редактировались
 	Data *map[string]interface{} `json:"data,omitempty"`
 
+	// Названия блоков
+	StepNames *[]string `json:"step_names,omitempty"`
+
 	// ID блоков
 	Steps *[]string `json:"steps,omitempty"`
 }
