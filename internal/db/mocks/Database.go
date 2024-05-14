@@ -1758,157 +1758,6 @@ func (_c *MockedDatabase_GetApprovedVersions_Call) RunAndReturn(run func(context
 	return _c
 }
 
-// GetBlockDataFromVersion provides a mock function with given fields: ctx, workNumber, stepName
-func (_m *MockedDatabase) GetStepDataFromVersion(ctx context.Context, workNumber string, stepName string) (*entity.EriusFunc, error) {
-	ret := _m.Called(ctx, workNumber, stepName)
-
-	if len(ret) == 0 {
-		panic("no return value specified for GetStepDataFromVersion")
-	}
-
-	var r0 *entity.EriusFunc
-	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, string) (*entity.EriusFunc, error)); ok {
-		return rf(ctx, workNumber, stepName)
-	}
-	if rf, ok := ret.Get(0).(func(context.Context, string, string) *entity.EriusFunc); ok {
-		r0 = rf(ctx, workNumber, stepName)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*entity.EriusFunc)
-		}
-	}
-
-	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
-		r1 = rf(ctx, workNumber, stepName)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// MockedDatabase_GetBlockDataFromVersion_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetStepDataFromVersion'
-type MockedDatabase_GetBlockDataFromVersion_Call struct {
-	*mock.Call
-}
-
-// GetBlockDataFromVersion is a helper method to define mock.On call
-//   - ctx context.Context
-//   - workNumber string
-//   - stepName string
-func (_e *MockedDatabase_Expecter) GetBlockDataFromVersion(ctx interface{}, workNumber interface{}, stepName interface{}) *MockedDatabase_GetBlockDataFromVersion_Call {
-	return &MockedDatabase_GetBlockDataFromVersion_Call{Call: _e.mock.On("GetStepDataFromVersion", ctx, workNumber, stepName)}
-}
-
-func (_c *MockedDatabase_GetBlockDataFromVersion_Call) Run(run func(ctx context.Context, workNumber string, stepName string)) *MockedDatabase_GetBlockDataFromVersion_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(string), args[2].(string))
-	})
-	return _c
-}
-
-func (_c *MockedDatabase_GetBlockDataFromVersion_Call) Return(_a0 *entity.EriusFunc, _a1 error) *MockedDatabase_GetBlockDataFromVersion_Call {
-	_c.Call.Return(_a0, _a1)
-	return _c
-}
-
-func (_c *MockedDatabase_GetBlockDataFromVersion_Call) RunAndReturn(run func(context.Context, string, string) (*entity.EriusFunc, error)) *MockedDatabase_GetBlockDataFromVersion_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// GetStepInputs provides a mock function with given fields: ctx, blockName, workNumber, createdAt
-func (_m *MockedDatabase) GetStepInputs(ctx context.Context, blockName string, workNumber string, createdAt time.Time) (entity.BlockInputs, error) {
-	ret := _m.Called(ctx, blockName, workNumber, createdAt)
-
-	if len(ret) == 0 {
-		panic("no return value specified for GetStepInputs")
-	}
-
-	var r0 entity.BlockInputs
-	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, string, time.Time) (entity.BlockInputs, error)); ok {
-		return rf(ctx, blockName, workNumber, createdAt)
-	}
-	if rf, ok := ret.Get(0).(func(context.Context, string, string, time.Time) entity.BlockInputs); ok {
-		r0 = rf(ctx, blockName, workNumber, createdAt)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(entity.BlockInputs)
-		}
-	}
-
-	if rf, ok := ret.Get(1).(func(context.Context, string, string, time.Time) error); ok {
-		r1 = rf(ctx, blockName, workNumber, createdAt)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-
-// GetStepInputs provides a mock function with given fields: ctx, blockName, workNumber, createdAt
-func (_m *MockedDatabase) GetEditedStepInputs(ctx context.Context, blockName string, workNumber string, updatedAt *time.Time) (entity.BlockInputs, error) {
-	ret := _m.Called(ctx, blockName, workNumber, updatedAt)
-
-	if len(ret) == 0 {
-		panic("no return value specified for GetEditedStepInputs")
-	}
-
-	var r0 entity.BlockInputs
-	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, string, *time.Time) (entity.BlockInputs, error)); ok {
-		return rf(ctx, blockName, workNumber, updatedAt)
-	}
-	if rf, ok := ret.Get(0).(func(context.Context, string, string, *time.Time) entity.BlockInputs); ok {
-		r0 = rf(ctx, blockName, workNumber, updatedAt)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(entity.BlockInputs)
-		}
-	}
-
-	if rf, ok := ret.Get(1).(func(context.Context, string, string, *time.Time) error); ok {
-		r1 = rf(ctx, blockName, workNumber, updatedAt)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// MockedDatabase_GetBlockInputs_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method
-type MockedDatabase_GetBlockInputs_Call struct {
-	*mock.Call
-}
-
-// GetBlockInputs is a helper method to define mock.On call
-//   - ctx context.Context
-//   - blockName string
-//   - workNumber string
-func (_e *MockedDatabase_Expecter) GetBlockInputs(ctx interface{}, blockName interface{}, workNumber interface{}) *MockedDatabase_GetBlockInputs_Call {
-	return &MockedDatabase_GetBlockInputs_Call{Call: _e.mock.On("GetStepInputs", ctx, blockName, workNumber)}
-}
-
-func (_c *MockedDatabase_GetBlockInputs_Call) Run(run func(ctx context.Context, blockName string, workNumber string)) *MockedDatabase_GetBlockInputs_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(string), args[2].(string))
-	})
-	return _c
-}
-
-func (_c *MockedDatabase_GetBlockInputs_Call) Return(_a0 entity.BlockInputs, _a1 error) *MockedDatabase_GetBlockInputs_Call {
-	_c.Call.Return(_a0, _a1)
-	return _c
-}
-
-func (_c *MockedDatabase_GetBlockInputs_Call) RunAndReturn(run func(context.Context, string, string) (entity.BlockInputs, error)) *MockedDatabase_GetBlockInputs_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
 // GetBlockOutputs provides a mock function with given fields: ctx, blockID, blockName
 func (_m *MockedDatabase) GetBlockOutputs(ctx context.Context, blockID string, blockName string) (entity.BlockOutputs, error) {
 	ret := _m.Called(ctx, blockID, blockName)
@@ -2380,7 +2229,7 @@ func (_c *MockedDatabase_GetDraftVersions_Call) RunAndReturn(run func(context.Co
 }
 
 // GetEditedStepInputs provides a mock function with given fields: ctx, stepName, workNumber, updatedAt
-func (_m *MockedDatabase) GetEditedStepInputs(ctx context.Context, stepName string, workNumber string, updatedAt time.Time) (entity.BlockInputs, error) {
+func (_m *MockedDatabase) GetEditedStepInputs(ctx context.Context, stepName string, workNumber string, updatedAt *time.Time) (entity.BlockInputs, error) {
 	ret := _m.Called(ctx, stepName, workNumber, updatedAt)
 
 	if len(ret) == 0 {
@@ -2389,10 +2238,10 @@ func (_m *MockedDatabase) GetEditedStepInputs(ctx context.Context, stepName stri
 
 	var r0 entity.BlockInputs
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, string, time.Time) (entity.BlockInputs, error)); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, *time.Time) (entity.BlockInputs, error)); ok {
 		return rf(ctx, stepName, workNumber, updatedAt)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, string, string, time.Time) entity.BlockInputs); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, *time.Time) entity.BlockInputs); ok {
 		r0 = rf(ctx, stepName, workNumber, updatedAt)
 	} else {
 		if ret.Get(0) != nil {
@@ -2400,7 +2249,7 @@ func (_m *MockedDatabase) GetEditedStepInputs(ctx context.Context, stepName stri
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string, string, time.Time) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, string, string, *time.Time) error); ok {
 		r1 = rf(ctx, stepName, workNumber, updatedAt)
 	} else {
 		r1 = ret.Error(1)
@@ -2418,14 +2267,14 @@ type MockedDatabase_GetEditedStepInputs_Call struct {
 //   - ctx context.Context
 //   - stepName string
 //   - workNumber string
-//   - updatedAt time.Time
+//   - updatedAt *time.Time
 func (_e *MockedDatabase_Expecter) GetEditedStepInputs(ctx interface{}, stepName interface{}, workNumber interface{}, updatedAt interface{}) *MockedDatabase_GetEditedStepInputs_Call {
 	return &MockedDatabase_GetEditedStepInputs_Call{Call: _e.mock.On("GetEditedStepInputs", ctx, stepName, workNumber, updatedAt)}
 }
 
-func (_c *MockedDatabase_GetEditedStepInputs_Call) Run(run func(ctx context.Context, stepName string, workNumber string, updatedAt time.Time)) *MockedDatabase_GetEditedStepInputs_Call {
+func (_c *MockedDatabase_GetEditedStepInputs_Call) Run(run func(ctx context.Context, stepName string, workNumber string, updatedAt *time.Time)) *MockedDatabase_GetEditedStepInputs_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(string), args[2].(string), args[3].(time.Time))
+		run(args[0].(context.Context), args[1].(string), args[2].(string), args[3].(*time.Time))
 	})
 	return _c
 }
@@ -2435,7 +2284,7 @@ func (_c *MockedDatabase_GetEditedStepInputs_Call) Return(_a0 entity.BlockInputs
 	return _c
 }
 
-func (_c *MockedDatabase_GetEditedStepInputs_Call) RunAndReturn(run func(context.Context, string, string, time.Time) (entity.BlockInputs, error)) *MockedDatabase_GetEditedStepInputs_Call {
+func (_c *MockedDatabase_GetEditedStepInputs_Call) RunAndReturn(run func(context.Context, string, string, *time.Time) (entity.BlockInputs, error)) *MockedDatabase_GetEditedStepInputs_Call {
 	_c.Call.Return(run)
 	return _c
 }
