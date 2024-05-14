@@ -3961,23 +3961,23 @@ func (_c *MockedDatabase_GetTaskEventsParamsByWorkNumber_Call) RunAndReturn(run 
 }
 
 // GetTaskForMonitoring provides a mock function with given fields: ctx, workNumber, fromEventID, toEventID
-func (_m *MockedDatabase) GetTaskForMonitoring(ctx context.Context, workNumber string, fromEventID *string, toEventID *string) ([]entity.MonitoringTaskNode, error) {
+func (_m *MockedDatabase) GetTaskForMonitoring(ctx context.Context, workNumber string, fromEventID *string, toEventID *string) ([]entity.MonitoringTaskStep, error) {
 	ret := _m.Called(ctx, workNumber, fromEventID, toEventID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetTaskForMonitoring")
 	}
 
-	var r0 []entity.MonitoringTaskNode
+	var r0 []entity.MonitoringTaskStep
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, *string, *string) ([]entity.MonitoringTaskNode, error)); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, string, *string, *string) ([]entity.MonitoringTaskStep, error)); ok {
 		return rf(ctx, workNumber, fromEventID, toEventID)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, string, *string, *string) []entity.MonitoringTaskNode); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, string, *string, *string) []entity.MonitoringTaskStep); ok {
 		r0 = rf(ctx, workNumber, fromEventID, toEventID)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]entity.MonitoringTaskNode)
+			r0 = ret.Get(0).([]entity.MonitoringTaskStep)
 		}
 	}
 
@@ -4011,12 +4011,12 @@ func (_c *MockedDatabase_GetTaskForMonitoring_Call) Run(run func(ctx context.Con
 	return _c
 }
 
-func (_c *MockedDatabase_GetTaskForMonitoring_Call) Return(_a0 []entity.MonitoringTaskNode, _a1 error) *MockedDatabase_GetTaskForMonitoring_Call {
+func (_c *MockedDatabase_GetTaskForMonitoring_Call) Return(_a0 []entity.MonitoringTaskStep, _a1 error) *MockedDatabase_GetTaskForMonitoring_Call {
 	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
-func (_c *MockedDatabase_GetTaskForMonitoring_Call) RunAndReturn(run func(context.Context, string, *string, *string) ([]entity.MonitoringTaskNode, error)) *MockedDatabase_GetTaskForMonitoring_Call {
+func (_c *MockedDatabase_GetTaskForMonitoring_Call) RunAndReturn(run func(context.Context, string, *string, *string) ([]entity.MonitoringTaskStep, error)) *MockedDatabase_GetTaskForMonitoring_Call {
 	_c.Call.Return(run)
 	return _c
 }

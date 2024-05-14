@@ -3009,7 +3009,7 @@ paths:
       x-codegen-request-body-name: variables
   /monitoring/tasks/block/{blockId}/error:
     get:
-      operationId: GetBlockError
+      operationId: MonitoringGetBlockError
       tags:
         - monitoring
       summary: Получение ошибок блока
@@ -3064,7 +3064,7 @@ paths:
         - monitoring
       summary: Get tasks for monitoring
       description: Получить заявки для таблицы мониторинга
-      operationId: GetTasksForMonitoring
+      operationId: MonitoringGetTasks
       parameters:
         - name: per_page
           in: query
@@ -3165,7 +3165,7 @@ paths:
       tags:
         - monitoring
       summary: Get task for monitoring
-      operationId: get-monitoring-task
+      operationId: MonitoringGetTask
       parameters:
         - name: workNumber
           in: path
