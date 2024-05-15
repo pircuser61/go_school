@@ -130,7 +130,6 @@ func (ae *Env) MonitoringGetBlockOutputs(w http.ResponseWriter, req *http.Reques
 		return
 	}
 
-
 	blockOutputs, err := ae.DB.GetBlockOutputs(ctx, blockID, dbStep.Name)
 	if err != nil {
 		e := GetBlockContextError
@@ -166,9 +165,9 @@ func (ae *Env) MonitoringGetBlockOutputs(w http.ResponseWriter, req *http.Reques
 	}
 
 	if isStepFinished(dbStep.Status) {
-		prevContent, err := ae.DB.GetStepPreviousContent(ctx, blockID, dbStep.Time)
-		if err != nil {
-			errorHandler.handleError(GetBlockStateError, err)
+		prevContent, errA := ae.DB.GetStepPreviousContent(ctx, blockID, dbStep.Time)
+		if errA != nil {
+			errorHandler.handleError(GetBlockStateError, errA)
 
 			return
 		}

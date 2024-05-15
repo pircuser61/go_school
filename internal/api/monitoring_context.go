@@ -75,9 +75,9 @@ func (ae *Env) MonitoringGetBlockContext(w http.ResponseWriter, r *http.Request,
 	var res BlockContextResponse
 
 	if isStepFinished(dbStep.Status) {
-		prevContent, err := ae.DB.GetStepPreviousContent(ctx, blockID, dbStep.Time)
-		if err != nil {
-			errorHandler.handleError(GetBlockStateError, err)
+		prevContent, errA := ae.DB.GetStepPreviousContent(ctx, blockID, dbStep.Time)
+		if errA != nil {
+			errorHandler.handleError(GetBlockStateError, errA)
 
 			return
 		}
