@@ -1,6 +1,7 @@
 package api
 
 import (
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -43,6 +44,13 @@ func (ae *Env) MonitoringGetBlockState(w http.ResponseWriter, r *http.Request, b
 		return
 	}
 
+	dbStep, getStepErr := ae.DB.GetTaskStepByID(ctx, id)
+	if getStepErr != nil {
+		errorHandler.handleError(GetTaskStepError, getStepErr)
+
+		return
+	}
+
 	state, err := ae.DB.GetBlockStateForMonitoring(ctx, id.String())
 	if err != nil {
 		errorHandler.handleError(GetBlockStateError, err)
@@ -59,10 +67,51 @@ func (ae *Env) MonitoringGetBlockState(w http.ResponseWriter, r *http.Request, b
 		}
 	}
 
-	if err = sendResponse(w, http.StatusOK, BlockStateResponse{
-		WhileRunning: &BlockStateResponse_WhileRunning{params},
-		Edited:       &BlockStateResponse_Edited{params},
-	}); err != nil {
+	var res BlockStateResponse
+
+	if isStepFinished(dbStep.Status) {
+		prevContent, err := ae.DB.GetStepPreviousContent(ctx, blockID, dbStep.Time)
+		if err != nil {
+			errorHandler.handleError(GetBlockStateError, err)
+
+			return
+		}
+
+		prevState := entity.BlockState{}
+
+		if len(prevContent) > 0 {
+			for i := range prevContent {
+				prevState = append(prevState, entity.BlockStateValue{
+					Name:  i,
+					Value: prevContent[i],
+				})
+			}
+
+			prevParams := make(map[string]MonitoringBlockState, len(state))
+			for _, bo := range prevState {
+				prevParams[bo.Name] = MonitoringBlockState{
+					Name:  bo.Name,
+					Value: bo.Value,
+					Type:  utils.GetJSONType(bo.Value),
+				}
+			}
+
+			res.WhileRunning = &BlockStateResponse_WhileRunning{prevParams}
+			res.Edited = &BlockStateResponse_Edited{params}
+		}
+
+		if len(prevContent) == 0 {
+			res.WhileRunning = &BlockStateResponse_WhileRunning{params}
+			res.Edited = &BlockStateResponse_Edited{params}
+		}
+	}
+
+	if !isStepFinished(dbStep.Status) {
+		res.WhileRunning = &BlockStateResponse_WhileRunning{params}
+		res.Edited = &BlockStateResponse_Edited{params}
+	}
+
+	if err = sendResponse(w, http.StatusOK, res); err != nil {
 		errorHandler.handleError(UnknownError, err)
 
 		return

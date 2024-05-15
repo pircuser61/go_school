@@ -4,10 +4,13 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/google/uuid"
+
 	"go.opencensus.io/trace"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
@@ -17,6 +20,13 @@ func (ae *Env) MonitoringGetBlockContext(w http.ResponseWriter, r *http.Request,
 
 	log := logger.GetLogger(ctx)
 	errorHandler := newHTTPErrorHandler(log, w)
+
+	id, err := uuid.Parse(blockID)
+	if err != nil {
+		errorHandler.handleError(UnknownError, err)
+
+		return
+	}
 
 	blockIsHidden, err := ae.DB.CheckBlockForHiddenFlag(ctx, blockID)
 	if err != nil {
@@ -28,6 +38,13 @@ func (ae *Env) MonitoringGetBlockContext(w http.ResponseWriter, r *http.Request,
 
 	if blockIsHidden {
 		errorHandler.handleError(ForbiddenError, nil)
+
+		return
+	}
+
+	dbStep, getStepErr := ae.DB.GetTaskStepByID(ctx, id)
+	if getStepErr != nil {
+		errorHandler.handleError(GetTaskStepError, getStepErr)
 
 		return
 	}
@@ -49,17 +66,57 @@ func (ae *Env) MonitoringGetBlockContext(w http.ResponseWriter, r *http.Request,
 		}
 
 		blocks[bo.Name] = MonitoringBlockOutput{
-			Name:        bo.Name,
-			Value:       bo.Value,
-			Description: "",
-			Type:        utils.GetJSONType(bo.Value),
+			Name:  bo.Name,
+			Value: bo.Value,
+			Type:  utils.GetJSONType(bo.Value),
 		}
 	}
 
-	err = sendResponse(w, http.StatusOK, BlockContextResponse{
-		WhileRunning: &BlockContextResponse_WhileRunning{blocks},
-		Edited:       &BlockContextResponse_Edited{blocks},
-	})
+	var res BlockContextResponse
+
+	if isStepFinished(dbStep.Status) {
+		prevContent, err := ae.DB.GetStepPreviousContent(ctx, blockID, dbStep.Time)
+		if err != nil {
+			errorHandler.handleError(GetBlockStateError, err)
+
+			return
+		}
+
+		prevContext := entity.BlockOutputs{}
+
+		if len(prevContent) > 0 {
+			for i := range prevContent {
+				prevContext = append(prevContext, entity.BlockOutputValue{
+					Name:  i,
+					Value: prevContent[i],
+				})
+			}
+
+			prevBlocks := make(map[string]MonitoringBlockOutput, len(blocks))
+			for _, bo := range prevContext {
+				prevBlocks[bo.Name] = MonitoringBlockOutput{
+					Name:  bo.Name,
+					Value: bo.Value,
+					Type:  utils.GetJSONType(bo.Value),
+				}
+			}
+
+			res.WhileRunning = &BlockContextResponse_WhileRunning{prevBlocks}
+			res.Edited = &BlockContextResponse_Edited{blocks}
+		}
+
+		if len(prevContent) == 0 {
+			res.WhileRunning = &BlockContextResponse_WhileRunning{blocks}
+			res.Edited = &BlockContextResponse_Edited{blocks}
+		}
+	}
+
+	if !isStepFinished(dbStep.Status) {
+		res.WhileRunning = &BlockContextResponse_WhileRunning{blocks}
+		res.Edited = &BlockContextResponse_Edited{blocks}
+	}
+
+	err = sendResponse(w, http.StatusOK, res)
 	if err != nil {
 		errorHandler.handleError(UnknownError, err)
 	}

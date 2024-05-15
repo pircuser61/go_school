@@ -2323,10 +2323,10 @@ func (db *PGCon) CheckIsArchived(ctx c.Context, taskID uuid.UUID) (bool, error) 
 }
 
 func (db *PGCon) GetBlocksOutputs(ctx c.Context, blockID string) (entity.BlockOutputs, error) {
-	ctx, span := trace.StartSpan(ctx, "pg_get_block_content")
+	ctx, span := trace.StartSpan(ctx, "pg_get_block_outputs")
 	defer span.End()
 
-	q := `
+	const q = `
 		SELECT step_name, content -> 'Values'
 		FROM variable_storage
 		WHERE id = $1;

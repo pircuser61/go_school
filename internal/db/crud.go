@@ -3332,6 +3332,33 @@ func (db *PGCon) CreateStepPreviousContent(ctx context.Context, stepID, eventID 
 	return nil
 }
 
+func (db *PGCon) GetStepPreviousContent(ctx context.Context, stepID string, stepCreatedAt time.Time) (map[string]interface{}, error) {
+	ctx, span := trace.StartSpan(ctx, "pg_get_step_previous_content")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	const q = `SELECT content
+       	FROM edit_nodes_history 
+		WHERE step_id = $1 AND created_at > $2
+		ORDER BY created_at 
+		LIMIT 1
+	`
+
+	content := make(map[string]interface{}, 0)
+
+	err := db.Connection.QueryRow(ctx, q, stepID, stepCreatedAt).Scan(&content)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return map[string]interface{}{}, nil
+		}
+
+		return nil, err
+	}
+
+	return content, nil
+}
+
 func (db *PGCon) UpdateStepContent(ctx context.Context, stepID, workID,
 	stepName string, state, output map[string]interface{},
 ) error {
