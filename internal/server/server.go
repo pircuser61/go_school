@@ -171,18 +171,12 @@ func (s *Server) checkSvcsAvailability(ctx context.Context) {
 	go s.PingSvcs(ctx, failedCh)
 
 	for {
-		select {
-		case areSvcsFailed := <-failedCh:
-			if areSvcsFailed {
-				s.kafka.StopConsumer()
-			} else {
-				s.kafka.StartConsumer(ctx)
-			}
-		default:
-			continue
+		areSvcsFailed := <-failedCh
+		if areSvcsFailed {
+			s.kafka.StopConsumer()
+		} else {
+			s.kafka.StartConsumer(ctx)
 		}
-
-		<-time.After(s.svcsPing.PingTimer)
 	}
 }
 
