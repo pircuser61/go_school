@@ -87,6 +87,7 @@ type TaskStorager interface {
 	UpdateBlockStateInOthers(ctx c.Context, blockName, taskID string, blockState []byte) error
 	UpdateBlockVariablesInOthers(ctx c.Context, taskID string, values map[string]interface{}) error
 	CreateStepPreviousContent(ctx c.Context, stepID, eventID string) error
+	GetStepPreviousContent(ctx c.Context, stepID string, stepCreatedAt time.Time) (map[string]interface{}, error)
 	UpdateStepContent(ctx c.Context, stepID, workID, stepName string, state, output map[string]interface{}) error
 }
 
@@ -209,27 +210,14 @@ type Database interface {
 	CommitTransaction(ctx c.Context) error
 	RollbackTransaction(ctx c.Context) error
 
-	GetPipelinesWithLatestVersion(
-		ctx c.Context,
-		authorLogin string,
-		published bool,
-		page, perPage *int,
-		filter string,
-	) ([]e.EriusScenarioInfo, error)
+	GetPipelinesWithLatestVersion(ctx c.Context, login string, p bool, page, perPage *int, f string) ([]e.EriusScenarioInfo, error)
 	GetApprovedVersions(ctx c.Context) ([]e.EriusScenarioInfo, error)
 	GetVersionsByStatus(ctx c.Context, status int, author string) ([]e.EriusScenarioInfo, error)
 	GetDraftVersions(ctx c.Context, author string) ([]e.EriusScenarioInfo, error)
 	GetOnApproveVersions(ctx c.Context) ([]e.EriusScenarioInfo, error)
 	SwitchApproved(ctx c.Context, pipelineID, versionID uuid.UUID, author string) error
 	VersionEditable(ctx c.Context, versionID uuid.UUID) (bool, error)
-	CreateVersion(
-		ctx c.Context,
-		p *e.EriusScenario,
-		author string,
-		pipelineData []byte,
-		oldVersionID uuid.UUID,
-		hasPrivateFunction bool,
-	) error
+	CreateVersion(ctx c.Context, p *e.EriusScenario, login string, data []byte, oldVID uuid.UUID, privateFunc bool) error
 	DeleteVersion(ctx c.Context, versionID uuid.UUID) error
 	GetPipelineVersion(ctx c.Context, id uuid.UUID, checkNotDeleted bool) (*e.EriusScenario, error)
 	GetPipelineVersions(ctx c.Context, id uuid.UUID) ([]e.EriusVersionInfo, error)

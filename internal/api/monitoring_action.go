@@ -409,14 +409,12 @@ func (ae *Env) restartStep(ctx c.Context, tx db.Database, wID uuid.UUID, wNumber
 		return "", stepErr
 	}
 
-	isFinished := dbStep.Status == finished || dbStep.Status == skipped || dbStep.Status == cancel || dbStep.Status == noSuccess
-
 	isResemble, _, resembleErr := tx.IsBlockResumable(ctx, wID, dbStep.ID)
 	if resembleErr != nil {
 		return "", resembleErr
 	}
 
-	if !isResemble && !isFinished {
+	if !isResemble && !isStepFinished(dbStep.Status) {
 		return "", fmt.Errorf("can't unpause running task block: %s", sid)
 	}
 
@@ -435,7 +433,7 @@ func (ae *Env) restartStep(ctx c.Context, tx db.Database, wID uuid.UUID, wNumber
 		return "", skipErr
 	}
 
-	if isFinished {
+	if isStepFinished(dbStep.Status) {
 		var errCopy error
 		dbStep.ID, errCopy = tx.CopyTaskBlock(ctx, dbStep.ID)
 
@@ -659,4 +657,8 @@ func (ae *Env) toMonitoringTaskEventsResponse(ctx c.Context, events []entity.Tas
 	}
 
 	return res
+}
+
+func isStepFinished(status string) bool {
+	return status == finished || status == skipped || status == cancel || status == noSuccess
 }

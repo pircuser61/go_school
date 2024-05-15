@@ -112,18 +112,6 @@ func (ae *Env) MonitoringGetBlockOutputs(w http.ResponseWriter, req *http.Reques
 		errorHandler.sendError(e)
 	}
 
-	blockOutputs, err := ae.DB.GetBlockOutputs(ctx, blockID, dbStep.Name)
-	if err != nil {
-		e := GetBlockContextError
-
-		log.WithField("stepID", blockID).
-			WithField("stepName", dbStep.Name).
-			Error(e.errorMessage(err))
-		errorHandler.sendError(e)
-
-		return
-	}
-
 	blockIsHidden, err := ae.DB.CheckBlockForHiddenFlag(ctx, blockID)
 	if err != nil {
 		e := CheckForHiddenError
@@ -138,6 +126,18 @@ func (ae *Env) MonitoringGetBlockOutputs(w http.ResponseWriter, req *http.Reques
 
 	if blockIsHidden {
 		errorHandler.handleError(ForbiddenError, err)
+
+		return
+	}
+
+	blockOutputs, err := ae.DB.GetBlockOutputs(ctx, blockID, dbStep.Name)
+	if err != nil {
+		e := GetBlockContextError
+
+		log.WithField("stepID", blockID).
+			WithField("stepName", dbStep.Name).
+			Error(e.errorMessage(err))
+		errorHandler.sendError(e)
 
 		return
 	}
@@ -159,12 +159,55 @@ func (ae *Env) MonitoringGetBlockOutputs(w http.ResponseWriter, req *http.Reques
 		finishedAt = dbStep.UpdatedAt.String()
 	}
 
-	if err = sendResponse(w, http.StatusOK, MonitoringOutputsResponse{
-		StartedAt:    &startedAt,
-		FinishedAt:   &finishedAt,
-		WhileRunning: &MonitoringOutputsResponse_WhileRunning{AdditionalProperties: outputs},
-		Edited:       &MonitoringOutputsResponse_Edited{AdditionalProperties: outputs},
-	}); err != nil {
+	res := MonitoringOutputsResponse{
+		StartedAt:  &startedAt,
+		FinishedAt: &finishedAt,
+	}
+
+	if isStepFinished(dbStep.Status) {
+		prevContent, errA := ae.DB.GetStepPreviousContent(ctx, blockID, dbStep.Time)
+		if errA != nil {
+			errorHandler.handleError(GetBlockStateError, errA)
+
+			return
+		}
+
+		prevContext := entity.BlockOutputs{}
+
+		if len(prevContent) > 0 {
+			for i := range prevContent {
+				prevContext = append(prevContext, entity.BlockOutputValue{
+					Name:  i,
+					Value: prevContent[i],
+				})
+			}
+
+			prevOutputs := make(map[string]MonitoringBlockParam, len(outputs))
+			for _, bo := range prevContext {
+				prevOutputs[bo.Name] = MonitoringBlockParam{
+					Name:  bo.Name,
+					Value: bo.Value,
+					Type:  utils.GetJSONType(bo.Value),
+				}
+			}
+
+			res.WhileRunning = &MonitoringOutputsResponse_WhileRunning{prevOutputs}
+			res.Edited = &MonitoringOutputsResponse_Edited{outputs}
+		}
+
+		if len(prevContent) == 0 {
+			res.WhileRunning = &MonitoringOutputsResponse_WhileRunning{outputs}
+			res.Edited = &MonitoringOutputsResponse_Edited{outputs}
+		}
+	}
+
+	if !isStepFinished(dbStep.Status) {
+		res.WhileRunning = &MonitoringOutputsResponse_WhileRunning{outputs}
+		res.Edited = &MonitoringOutputsResponse_Edited{outputs}
+	}
+
+	err = sendResponse(w, http.StatusOK, res)
+	if err != nil {
 		errorHandler.handleError(UnknownError, err)
 	}
 }

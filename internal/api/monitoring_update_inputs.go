@@ -28,7 +28,7 @@ func (ae *Env) MonitoringUpdateBlockInputs(w http.ResponseWriter, r *http.Reques
 	defer span.End()
 
 	log := logger.GetLogger(ctx).
-		WithField("funcName", fn)
+		WithField("funcName", "MonitoringUpdateBlockInputs")
 	errorHandler := newHTTPErrorHandler(log, w)
 
 	b, err := io.ReadAll(r.Body)

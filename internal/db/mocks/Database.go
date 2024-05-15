@@ -3,7 +3,7 @@
 package mocks
 
 import (
-	context "context"
+	"context"
 
 	db "gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	entity "gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
@@ -7715,6 +7715,11 @@ func (_m *MockedDatabase) UpdateBlockStateInOthers(ctx context.Context, blockNam
 	}
 
 	return r0
+}
+
+// GetStepPreviousContent GetStepPreviousContent
+func (_m *MockedDatabase) GetStepPreviousContent(ctx context.Context, stepID string, stepCreatedAt time.Time) (map[string]interface{}, error) {
+	return nil, nil
 }
 
 // MockedDatabase_UpdateBlockStateInOthers_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdateBlockStateInOthers'
