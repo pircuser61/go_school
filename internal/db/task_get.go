@@ -29,7 +29,8 @@ const (
 	ActionTypePrimary   = "primary"
 	ActionTypeSecondary = "secondary"
 
-	ascOrder = "ASC"
+	ascOrder     = "ASC"
+	skipOrderKey = "skip"
 )
 
 func uniqueActionsByRole(loginsIn, stepType string, finished, acted, isPersonsFilter bool) string {
@@ -581,7 +582,7 @@ func (cq *compileGetTaskQueryMaker) addExecutorFilter() {
 
 //nolint:gocyclo //it's ok
 func (cq *compileGetTaskQueryMaker) addOrderBy(order string, orderBy []string) {
-	if order == "schemas" {
+	if order == skipOrderKey {
 		return
 	}
 
@@ -1271,7 +1272,7 @@ func compileGetTasksSchemasQuery(fl entity.TaskFilter, delegations []string) (q 
 
 	var queryMaker compileGetTaskQueryMaker
 
-	return queryMaker.MakeQuery(&fl, q, delegations, args, "schemas", nil, true, true)
+	return queryMaker.MakeQuery(&fl, q, delegations, args, skipOrderKey, nil, true, true)
 }
 
 //nolint:gocritic //в этом проекте не принято использовать поинтеры
@@ -2194,6 +2195,10 @@ func (db *PGCon) GetTaskSteps(ctx c.Context, id uuid.UUID) (entity.TaskSteps, er
 		s.Errors = storage.Errors
 		s.Storage = storage.Values
 		res = append(res, &s)
+	}
+
+	if rowsErr := rows.Err(); rowsErr != nil {
+		return nil, rowsErr
 	}
 
 	return res, nil

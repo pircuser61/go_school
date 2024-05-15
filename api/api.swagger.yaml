@@ -257,6 +257,53 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
+  /pipelines/fields/search:
+    get:
+      tags:
+        - pipeline
+      summary: search list of pipelines
+      description: Получение списка нод по id pipeline и их уникальных ключей со значениями
+      operationId: search-pipelines-fields
+      parameters:
+        - name: pipelineId
+          in: query
+          description: pipeline id
+          required: false
+          schema:
+            type: string
+        - name: fields
+          in: query
+          description: name field for find in system
+          schema:
+            type: array
+            items:
+              example: "fields=field-uuid-2.test"
+              description: field for find in system
+              type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ResponsePipelineFieldsSearch'
+                  status_code:
+                    type: integer
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
   /pipelines/{pipelineID}:
     get:
       tags:
@@ -1532,12 +1579,6 @@ paths:
       description: поиск списка сценариев по айди или названию
       operationId: search-pipelines
       parameters:
-        - name: pipelineName
-          in: query
-          description: имя пайплайна
-          required: false
-          schema:
-            type: string
         - name: pipelineId
           in: query
           description: id пайплайна
@@ -1546,6 +1587,12 @@ paths:
             type: string
             format: uuid
             example: 916ad995-8d13-49fb-82ee-edd4f97649e2
+        - name: pipelineName
+          in: query
+          description: имя пайплайна
+          required: false
+          schema:
+            type: string
         - name: page
           in: query
           description: страница для отображения
@@ -3571,6 +3618,25 @@ components:
       required:
         - name
         - id
+    ResponsePipelineFieldsSearch:
+      type: object
+      properties:
+        pipeline_id:
+          type: object
+          additionalProperties:
+            type: object
+            properties:
+              form_id:
+                type: object
+                properties:
+                  schema_id:
+                    type: string
+                  content:
+                    type: array
+                    items:
+                      type: object
+      required:
+        - pipeline_id
     EriusScenario:
       type: object
       description: A single scenario with all content

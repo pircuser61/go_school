@@ -1910,6 +1910,21 @@ type RequestInfoUpdateParams struct {
 	ReqType RequestExecutionInfoType `json:"reqType"`
 }
 
+// ResponsePipelineFieldsSearch defines model for ResponsePipelineFieldsSearch.
+type ResponsePipelineFieldsSearch struct {
+	PipelineId ResponsePipelineFieldsSearch_PipelineId `json:"pipeline_id"`
+}
+
+// ResponsePipelineFieldsSearch_PipelineId defines model for ResponsePipelineFieldsSearch.PipelineId.
+type ResponsePipelineFieldsSearch_PipelineId struct {
+	AdditionalProperties map[string]struct {
+		FormId *struct {
+			Content  *[]map[string]interface{} `json:"content,omitempty"`
+			SchemaId *string                   `json:"schema_id,omitempty"`
+		} `json:"form_id,omitempty"`
+	} `json:"-"`
+}
+
 // ResponsePipelineSearch defines model for ResponsePipelineSearch.
 type ResponsePipelineSearch struct {
 	// list of pipelines
@@ -2554,6 +2569,15 @@ type CreatePipelineJSONBody EriusScenario
 // CopyPipelineJSONBody defines parameters for CopyPipeline.
 type CopyPipelineJSONBody EriusScenario
 
+// SearchPipelinesFieldsParams defines parameters for SearchPipelinesFields.
+type SearchPipelinesFieldsParams struct {
+	// pipeline id
+	PipelineId *string `json:"pipelineId,omitempty"`
+
+	// name field for find in system
+	Fields *[]string `json:"fields,omitempty"`
+}
+
 // PipelineNameExistsParams defines parameters for PipelineNameExists.
 type PipelineNameExistsParams struct {
 	// Pipeline Name
@@ -2571,11 +2595,11 @@ type NotifyNewFunctionVersionJSONBody struct {
 
 // SearchPipelinesParams defines parameters for SearchPipelines.
 type SearchPipelinesParams struct {
-	// имя пайплайна
-	PipelineName *string `json:"pipelineName,omitempty"`
-
 	// id пайплайна
 	PipelineId *string `json:"pipelineId,omitempty"`
+
+	// имя пайплайна
+	PipelineName *string `json:"pipelineName,omitempty"`
 
 	// страница для отображения
 	Page *int `json:"page,omitempty"`
@@ -3755,6 +3779,84 @@ func (a MonitoringUpdateBlockInputsRequest_Inputs) MarshalJSON() ([]byte, error)
 	return json.Marshal(object)
 }
 
+// Getter for additional properties for ResponsePipelineFieldsSearch_PipelineId. Returns the specified
+// element and whether it was found
+func (a ResponsePipelineFieldsSearch_PipelineId) Get(fieldName string) (value struct {
+	FormId *struct {
+		Content  *[]map[string]interface{} `json:"content,omitempty"`
+		SchemaId *string                   `json:"schema_id,omitempty"`
+	} `json:"form_id,omitempty"`
+}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for ResponsePipelineFieldsSearch_PipelineId
+func (a *ResponsePipelineFieldsSearch_PipelineId) Set(fieldName string, value struct {
+	FormId *struct {
+		Content  *[]map[string]interface{} `json:"content,omitempty"`
+		SchemaId *string                   `json:"schema_id,omitempty"`
+	} `json:"form_id,omitempty"`
+}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]struct {
+			FormId *struct {
+				Content  *[]map[string]interface{} `json:"content,omitempty"`
+				SchemaId *string                   `json:"schema_id,omitempty"`
+			} `json:"form_id,omitempty"`
+		})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for ResponsePipelineFieldsSearch_PipelineId to handle AdditionalProperties
+func (a *ResponsePipelineFieldsSearch_PipelineId) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]struct {
+			FormId *struct {
+				Content  *[]map[string]interface{} `json:"content,omitempty"`
+				SchemaId *string                   `json:"schema_id,omitempty"`
+			} `json:"form_id,omitempty"`
+		})
+		for fieldName, fieldBuf := range object {
+			var fieldVal struct {
+				FormId *struct {
+					Content  *[]map[string]interface{} `json:"content,omitempty"`
+					SchemaId *string                   `json:"schema_id,omitempty"`
+				} `json:"form_id,omitempty"`
+			}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return errors.Wrap(err, fmt.Sprintf("error unmarshaling field %s", fieldName))
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for ResponsePipelineFieldsSearch_PipelineId to handle AdditionalProperties
+func (a ResponsePipelineFieldsSearch_PipelineId) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, errors.Wrap(err, fmt.Sprintf("error marshaling '%s'", fieldName))
+		}
+	}
+	return json.Marshal(object)
+}
+
 // Getter for additional properties for RunNewVersionByPrevVersionRequest_Keys. Returns the specified
 // element and whether it was found
 func (a RunNewVersionByPrevVersionRequest_Keys) Get(fieldName string) (value string, found bool) {
@@ -4097,6 +4199,9 @@ type ServerInterface interface {
 	// Creates copy of pipeline
 	// (POST /pipelines/copy)
 	CopyPipeline(w http.ResponseWriter, r *http.Request)
+	// search list of pipelines
+	// (GET /pipelines/fields/search)
+	SearchPipelinesFields(w http.ResponseWriter, r *http.Request, params SearchPipelinesFieldsParams)
 	// Check if name of pipeline exists
 	// (GET /pipelines/name-exists)
 	PipelineNameExists(w http.ResponseWriter, r *http.Request, params PipelineNameExistsParams)
@@ -4948,6 +5053,48 @@ func (siw *ServerInterfaceWrapper) CopyPipeline(w http.ResponseWriter, r *http.R
 	handler(w, r.WithContext(ctx))
 }
 
+// SearchPipelinesFields operation middleware
+func (siw *ServerInterfaceWrapper) SearchPipelinesFields(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params SearchPipelinesFieldsParams
+
+	// ------------- Optional query parameter "pipelineId" -------------
+	if paramValue := r.URL.Query().Get("pipelineId"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "pipelineId", r.URL.Query(), &params.PipelineId)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Invalid format for parameter pipelineId: %s", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "fields" -------------
+	if paramValue := r.URL.Query().Get("fields"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "fields", r.URL.Query(), &params.Fields)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Invalid format for parameter fields: %s", err), http.StatusBadRequest)
+		return
+	}
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SearchPipelinesFields(w, r, params)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
 // PipelineNameExists operation middleware
 func (siw *ServerInterfaceWrapper) PipelineNameExists(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -5020,17 +5167,6 @@ func (siw *ServerInterfaceWrapper) SearchPipelines(w http.ResponseWriter, r *htt
 	// Parameter object where we will unmarshal all parameters from the context
 	var params SearchPipelinesParams
 
-	// ------------- Optional query parameter "pipelineName" -------------
-	if paramValue := r.URL.Query().Get("pipelineName"); paramValue != "" {
-
-	}
-
-	err = runtime.BindQueryParameter("form", true, false, "pipelineName", r.URL.Query(), &params.PipelineName)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Invalid format for parameter pipelineName: %s", err), http.StatusBadRequest)
-		return
-	}
-
 	// ------------- Optional query parameter "pipelineId" -------------
 	if paramValue := r.URL.Query().Get("pipelineId"); paramValue != "" {
 
@@ -5039,6 +5175,17 @@ func (siw *ServerInterfaceWrapper) SearchPipelines(w http.ResponseWriter, r *htt
 	err = runtime.BindQueryParameter("form", true, false, "pipelineId", r.URL.Query(), &params.PipelineId)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Invalid format for parameter pipelineId: %s", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "pipelineName" -------------
+	if paramValue := r.URL.Query().Get("pipelineName"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "pipelineName", r.URL.Query(), &params.PipelineName)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Invalid format for parameter pipelineName: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -6819,6 +6966,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/pipelines/copy", wrapper.CopyPipeline)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/pipelines/fields/search", wrapper.SearchPipelinesFields)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/pipelines/name-exists", wrapper.PipelineNameExists)

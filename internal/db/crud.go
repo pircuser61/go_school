@@ -26,6 +26,8 @@ import (
 
 	"golang.org/x/exp/slices"
 
+	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
+
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/configs"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
@@ -222,6 +224,10 @@ func parseRowsVersionList(c context.Context, rows pgx.Rows) ([]entity.EriusScena
 		versionInfoList = append(versionInfoList, e)
 	}
 
+	if rowsErr := rows.Err(); rowsErr != nil {
+		return nil, rowsErr
+	}
+
 	return versionInfoList, nil
 }
 
@@ -254,6 +260,10 @@ func parseRowsVersionHistoryList(c context.Context, rows pgx.Rows) ([]entity.Eri
 		e.Approver = approver.String
 
 		versionHistoryList = append(versionHistoryList, e)
+	}
+
+	if rowsErr := rows.Err(); rowsErr != nil {
+		return nil, rowsErr
 	}
 
 	return versionHistoryList, nil
@@ -332,6 +342,10 @@ WHERE pp.deleted_at IS NULL
 	res, err := parseRowsVersionList(c, rows)
 	if err != nil {
 		return nil, err
+	}
+
+	if rowsErr := rows.Err(); rowsErr != nil {
+		return nil, rowsErr
 	}
 
 	return res, nil
@@ -417,6 +431,10 @@ func (db *PGCon) findApproveDate(c context.Context, id uuid.UUID) (time.Time, er
 		return date, nil
 	}
 
+	if rowsErr := rows.Err(); rowsErr != nil {
+		return time.Time{}, rowsErr
+	}
+
 	return time.Time{}, nil
 }
 
@@ -463,6 +481,10 @@ func (db *PGCon) GetVersionsByStatus(c context.Context, status int, author strin
 	res, err := parseRowsVersionList(c, rows)
 	if err != nil {
 		return nil, err
+	}
+
+	if rowsErr := rows.Err(); rowsErr != nil {
+		return nil, rowsErr
 	}
 
 	return res, nil
@@ -542,6 +564,10 @@ func (db *PGCon) GetWorkedVersions(ctx context.Context) ([]entity.EriusScenario,
 		p.Status = s
 		p.Name = name
 		pipes = append(pipes, p)
+	}
+
+	if rowsErr := rows.Err(); rowsErr != nil {
+		return nil, rowsErr
 	}
 
 	return pipes, nil
@@ -654,6 +680,10 @@ func (db *PGCon) VersionEditable(c context.Context, versionID uuid.UUID) (bool, 
 		}
 	}
 
+	if rowsErr := rows.Err(); rowsErr != nil {
+		return false, rowsErr
+	}
+
 	return false, nil
 }
 
@@ -672,8 +702,7 @@ func (db *PGCon) PipelineRemovable(c context.Context, id uuid.UUID) (bool, error
 
 	count := 0
 
-	err := row.Scan(&count)
-	if err != nil {
+	if err := row.Scan(&count); err != nil {
 		return false, err
 	}
 
@@ -947,6 +976,10 @@ func (db *PGCon) GetPipeline(c context.Context, id uuid.UUID) (*entity.EriusScen
 		return &p, nil
 	}
 
+	if rowsErr := rows.Err(); rowsErr != nil {
+		return nil, rowsErr
+	}
+
 	return nil, errCantFindPipelineVersion
 }
 
@@ -1025,6 +1058,10 @@ func (db *PGCon) GetPipelineVersion(c context.Context, id uuid.UUID, checkNotDel
 		p.Author = a
 
 		return &p, nil
+	}
+
+	if rowsErr := rows.Err(); rowsErr != nil {
+		return nil, rowsErr
 	}
 
 	return nil, fmt.Errorf("%w: with id: %v", errCantFindPipelineVersion, id)
@@ -1607,6 +1644,10 @@ func (db *PGCon) GetExecutableScenarios(c context.Context) ([]entity.EriusScenar
 		pipes = append(pipes, p)
 	}
 
+	if rowsErr := rows.Err(); rowsErr != nil {
+		return nil, rowsErr
+	}
+
 	vMap := make(map[uuid.UUID]entity.EriusScenario)
 
 	for i := range pipes {
@@ -1689,6 +1730,10 @@ func (db *PGCon) GetExecutableByName(c context.Context, name string) (*entity.Er
 		p.Status = s
 
 		return &p, nil
+	}
+
+	if rowsErr := rows.Err(); rowsErr != nil {
+		return nil, rowsErr
 	}
 
 	return nil, nil
@@ -1796,6 +1841,10 @@ func (db *PGCon) GetUnfinishedTaskSteps(ctx context.Context, in *entity.GetUnfin
 		s.Storage = storage.Values
 
 		el = append(el, &s)
+	}
+
+	if rowsErr := rows.Err(); rowsErr != nil {
+		return nil, rowsErr
 	}
 
 	return el, nil
@@ -2277,6 +2326,10 @@ func (db *PGCon) getVersionHistory(c context.Context, id uuid.UUID, status int) 
 		return nil, err
 	}
 
+	if rowsErr := rows.Err(); rowsErr != nil {
+		return nil, rowsErr
+	}
+
 	return res, nil
 }
 
@@ -2460,7 +2513,254 @@ func (db *PGCon) GetPipelinesByNameOrID(ctx context.Context, dto *SearchPipeline
 		res = append(res, s)
 	}
 
+	if rowsErr := rows.Err(); rowsErr != nil {
+		return nil, rowsErr
+	}
+
 	return res, nil
+}
+
+type NodeContent struct {
+	SchemaID string `json:"schema_id"`
+
+	// Указатель на []interface{} нужен для изменения массива значений из формы, без указателя не изменяются
+	Content map[string]*[]interface{} `json:"content"`
+}
+
+func (db *PGCon) GetPipelinesFields(ctx context.Context, dto *SearchPipelinesFieldsParams) (map[string]map[string]*NodeContent, error) {
+	c, span := trace.StartSpan(ctx, "pg_get_pipelines_fields")
+	defer span.End()
+
+	if dto.PipelineID == nil {
+		return nil, errors.New("pipeline id is empty")
+	}
+
+	worksID, worksErr := db.getWorksID(c, dto)
+	if worksErr != nil {
+		return nil, worksErr
+	}
+
+	accessForms, accessError := db.getFormsAccessibility(c, worksID)
+	if accessError != nil {
+		return nil, accessError
+	}
+
+	data, getDataWorkErr := db.getDataByWorkID(c, worksID, accessForms, dto)
+	if getDataWorkErr != nil {
+		return nil, getDataWorkErr
+	}
+
+	return data, nil
+}
+
+type AccessField struct {
+	Name        string `json:"name"`
+	NodeID      string `json:"node_id"`
+	AccessType  string `json:"accessType"`
+	Description string `json:"description"`
+}
+
+//nolint:gocognit,lll //Так надо
+func (db *PGCon) getDataByWorkID(c context.Context, worksID map[string][]uuid.UUID, accessForms map[string]string, params *SearchPipelinesFieldsParams) (map[string]map[string]*NodeContent, error) {
+	res := make(map[string]map[string]*NodeContent, 0)
+
+	var rowsErr error
+
+	for k, v := range worksID {
+		// nolint:gocritic,lll
+		// language=PostgreSQL
+		q := `SELECT vs.step_name, vs.work_id as work_id, vs.id as node_id, vs.content -> 'State' -> vs.step_name -> 'application_body' as body, 
+				vs.content -> 'State' -> vs.step_name ->> 'schema_id' as schema_id 
+			 FROM variable_storage as vs WHERE work_id = any($1) AND step_type = 'form' AND (vs.content -> 'State' -> vs.step_name -> 'application_body' is not null or vs.content -> 'State' -> vs.step_name -> 'forms_accessibility' is not null)`
+
+		q = filterForFields(params, q)
+
+		rows, err := db.Connection.Query(c, q, v)
+		if err != nil {
+			rows.Close()
+
+			return res, err
+		}
+
+		var (
+			StepName        string
+			WorkID          string
+			NodeID          string
+			ApplicationBody *map[string]interface{}
+			SchemaID        *string
+		)
+
+		nodes := make(map[string]*NodeContent, 0)
+
+		for rows.Next() {
+			if scanErr := rows.Scan(&StepName, &WorkID, &NodeID, &ApplicationBody, &SchemaID); scanErr != nil {
+				rows.Close()
+
+				return res, scanErr
+			}
+
+			if _, ok := accessForms[StepName]; ok {
+				continue
+			}
+
+			if ApplicationBody == nil || len(*ApplicationBody) == 0 {
+				continue
+			}
+
+			node, nodeExist := nodes[StepName]
+			if !nodeExist {
+				bodySlices := make(map[string]*[]interface{}, 0)
+				for key, val := range *ApplicationBody {
+					bodySlices[key] = &[]interface{}{val}
+				}
+
+				nodes[StepName] = &NodeContent{
+					SchemaID: *SchemaID,
+					Content:  bodySlices,
+				}
+
+				continue
+			}
+
+			for key, val := range *ApplicationBody {
+				arr, exists := node.Content[key]
+				if !exists {
+					node.Content[key] = &[]interface{}{val}
+
+					continue
+				}
+
+				if !utils.IsContainsInSliceInterface(val, *arr) {
+					*arr = append(*arr, val)
+					node.Content[key] = arr
+				}
+			}
+		}
+
+		res[k] = nodes
+
+		if rowsErr = rows.Err(); rowsErr != nil {
+			rows.Close()
+
+			break
+		}
+
+		rows.Close()
+	}
+
+	return res, rowsErr
+}
+
+func filterForFields(params *SearchPipelinesFieldsParams, q string) string {
+	if params.Fields == nil {
+		return q
+	}
+
+	for _, v := range *params.Fields {
+		fields := strings.Split(v, ":")
+		if len(fields) == 1 {
+			continue
+		}
+
+		q = fmt.Sprintf("%s\nAND vs.content -> 'State' -> vs.step_name -> 'application_body' @> '{%q:%q}'", q, fields[0], fields[1])
+	}
+
+	return q
+}
+
+func (db *PGCon) getWorksID(c context.Context, dto *SearchPipelinesFieldsParams) (map[string][]uuid.UUID, error) {
+	// nolint:gocritic
+	// language=PostgreSQL
+	q := `
+		SELECT w.id as work_id, p.id as pipeline_id 
+    	FROM pipelines p
+             JOIN versions v on v.pipeline_id = p.id
+             JOIN works w on w.version_id = v.id
+             JOIN variable_storage vs on w.id = vs.work_id and vs.step_type = 'form'
+		WHERE p.id = $1
+    	`
+
+	rows, err := db.Connection.Query(c, q, *dto.PipelineID)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	var (
+		WorkID     uuid.UUID
+		PipelineID string
+	)
+
+	res := make(map[string][]uuid.UUID, 0)
+	pipelines := make([]uuid.UUID, 0)
+
+	for rows.Next() {
+		if scanErr := rows.Scan(&WorkID, &PipelineID); scanErr != nil {
+			return nil, scanErr
+		}
+
+		if _, ok := res[PipelineID]; ok {
+			pipelines = append(pipelines, WorkID)
+
+			continue
+		}
+
+		res[PipelineID] = []uuid.UUID{WorkID}
+	}
+
+	res[PipelineID] = pipelines
+
+	if rowsErr := rows.Err(); rowsErr != nil {
+		return nil, rowsErr
+	}
+
+	return res, nil
+}
+
+func (db *PGCon) getFormsAccessibility(c context.Context, worksID map[string][]uuid.UUID) (map[string]string, error) {
+	res := make(map[string]string, 0)
+
+	var rowsErr error
+
+	for _, v := range worksID {
+		// nolint:gocritic
+		// language=PostgreSQL
+		q := `SELECT vs.work_id, vs.content -> 'State' -> vs.step_name -> 'forms_accessibility' as access
+				FROM variable_storage as vs WHERE work_id = ANY($1)
+                AND vs.content -> 'State' -> vs.step_name -> 'forms_accessibility' is not null`
+
+		rows, err := db.Connection.Query(c, q, v)
+		if err != nil {
+			return res, err
+		}
+
+		//nolint:gocritic //Только так и работает
+		defer rows.Close()
+
+		var (
+			WorkID      string
+			FormsAccess []AccessField
+		)
+
+		for rows.Next() {
+			if scanErr := rows.Scan(&WorkID, &FormsAccess); scanErr != nil {
+				return nil, scanErr
+			}
+
+			for _, form := range FormsAccess {
+				if form.AccessType == "None" {
+					res[WorkID] = form.NodeID
+				}
+			}
+		}
+
+		if rowsErr = rows.Err(); rowsErr != nil {
+			break
+		}
+	}
+
+	return res, rowsErr
 }
 
 func (db *PGCon) CheckUserCanEditForm(ctx context.Context, workNumber, stepName, login string) (bool, error) {
