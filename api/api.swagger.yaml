@@ -277,7 +277,7 @@ paths:
           schema:
             type: array
             items:
-              example: "field=field-uuid-2"
+              example: "fields=field-uuid-2.test"
               description: field for find in system
               type: string
       responses:
@@ -3626,7 +3626,7 @@ components:
           additionalProperties:
             type: object
             properties:
-              formID:
+              form_id:
                 type: object
                 properties:
                   schemaID:

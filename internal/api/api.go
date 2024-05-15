@@ -1918,10 +1918,10 @@ type ResponsePipelineFieldsSearch struct {
 // ResponsePipelineFieldsSearch_PipelineId defines model for ResponsePipelineFieldsSearch.PipelineId.
 type ResponsePipelineFieldsSearch_PipelineId struct {
 	AdditionalProperties map[string]struct {
-		FormID *struct {
+		FormId *struct {
 			Content  *[]map[string]interface{} `json:"content,omitempty"`
 			SchemaID *string                   `json:"schemaID,omitempty"`
-		} `json:"formID,omitempty"`
+		} `json:"form_id,omitempty"`
 	} `json:"-"`
 }
 
@@ -3782,10 +3782,10 @@ func (a MonitoringUpdateBlockInputsRequest_Inputs) MarshalJSON() ([]byte, error)
 // Getter for additional properties for ResponsePipelineFieldsSearch_PipelineId. Returns the specified
 // element and whether it was found
 func (a ResponsePipelineFieldsSearch_PipelineId) Get(fieldName string) (value struct {
-	FormID *struct {
+	FormId *struct {
 		Content  *[]map[string]interface{} `json:"content,omitempty"`
 		SchemaID *string                   `json:"schemaID,omitempty"`
-	} `json:"formID,omitempty"`
+	} `json:"form_id,omitempty"`
 }, found bool) {
 	if a.AdditionalProperties != nil {
 		value, found = a.AdditionalProperties[fieldName]
@@ -3795,17 +3795,17 @@ func (a ResponsePipelineFieldsSearch_PipelineId) Get(fieldName string) (value st
 
 // Setter for additional properties for ResponsePipelineFieldsSearch_PipelineId
 func (a *ResponsePipelineFieldsSearch_PipelineId) Set(fieldName string, value struct {
-	FormID *struct {
+	FormId *struct {
 		Content  *[]map[string]interface{} `json:"content,omitempty"`
 		SchemaID *string                   `json:"schemaID,omitempty"`
-	} `json:"formID,omitempty"`
+	} `json:"form_id,omitempty"`
 }) {
 	if a.AdditionalProperties == nil {
 		a.AdditionalProperties = make(map[string]struct {
-			FormID *struct {
+			FormId *struct {
 				Content  *[]map[string]interface{} `json:"content,omitempty"`
 				SchemaID *string                   `json:"schemaID,omitempty"`
-			} `json:"formID,omitempty"`
+			} `json:"form_id,omitempty"`
 		})
 	}
 	a.AdditionalProperties[fieldName] = value
@@ -3821,17 +3821,17 @@ func (a *ResponsePipelineFieldsSearch_PipelineId) UnmarshalJSON(b []byte) error 
 
 	if len(object) != 0 {
 		a.AdditionalProperties = make(map[string]struct {
-			FormID *struct {
+			FormId *struct {
 				Content  *[]map[string]interface{} `json:"content,omitempty"`
 				SchemaID *string                   `json:"schemaID,omitempty"`
-			} `json:"formID,omitempty"`
+			} `json:"form_id,omitempty"`
 		})
 		for fieldName, fieldBuf := range object {
 			var fieldVal struct {
-				FormID *struct {
+				FormId *struct {
 					Content  *[]map[string]interface{} `json:"content,omitempty"`
 					SchemaID *string                   `json:"schemaID,omitempty"`
-				} `json:"formID,omitempty"`
+				} `json:"form_id,omitempty"`
 			}
 			err := json.Unmarshal(fieldBuf, &fieldVal)
 			if err != nil {

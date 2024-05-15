@@ -2577,11 +2577,10 @@ func (db *PGCon) getDataByWorkID(c context.Context, worksID map[string][]uuid.UU
 
 		rows, err := db.Connection.Query(c, q, v)
 		if err != nil {
+			rows.Close()
+
 			return res, err
 		}
-
-		//nolint:gocritic //Только так и работает
-		defer rows.Close()
 
 		var (
 			StepName        string
@@ -2641,8 +2640,12 @@ func (db *PGCon) getDataByWorkID(c context.Context, worksID map[string][]uuid.UU
 		res[k] = nodes
 
 		if rowsErr = rows.Err(); rowsErr != nil {
+			rows.Close()
+
 			break
 		}
+
+		rows.Close()
 	}
 
 	return res, rowsErr
