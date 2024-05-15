@@ -1920,7 +1920,7 @@ type ResponsePipelineFieldsSearch_PipelineId struct {
 	AdditionalProperties map[string]struct {
 		FormId *struct {
 			Content  *[]map[string]interface{} `json:"content,omitempty"`
-			SchemaID *string                   `json:"schemaID,omitempty"`
+			SchemaId *string                   `json:"schema_id,omitempty"`
 		} `json:"form_id,omitempty"`
 	} `json:"-"`
 }
@@ -3784,7 +3784,7 @@ func (a MonitoringUpdateBlockInputsRequest_Inputs) MarshalJSON() ([]byte, error)
 func (a ResponsePipelineFieldsSearch_PipelineId) Get(fieldName string) (value struct {
 	FormId *struct {
 		Content  *[]map[string]interface{} `json:"content,omitempty"`
-		SchemaID *string                   `json:"schemaID,omitempty"`
+		SchemaId *string                   `json:"schema_id,omitempty"`
 	} `json:"form_id,omitempty"`
 }, found bool) {
 	if a.AdditionalProperties != nil {
@@ -3797,14 +3797,14 @@ func (a ResponsePipelineFieldsSearch_PipelineId) Get(fieldName string) (value st
 func (a *ResponsePipelineFieldsSearch_PipelineId) Set(fieldName string, value struct {
 	FormId *struct {
 		Content  *[]map[string]interface{} `json:"content,omitempty"`
-		SchemaID *string                   `json:"schemaID,omitempty"`
+		SchemaId *string                   `json:"schema_id,omitempty"`
 	} `json:"form_id,omitempty"`
 }) {
 	if a.AdditionalProperties == nil {
 		a.AdditionalProperties = make(map[string]struct {
 			FormId *struct {
 				Content  *[]map[string]interface{} `json:"content,omitempty"`
-				SchemaID *string                   `json:"schemaID,omitempty"`
+				SchemaId *string                   `json:"schema_id,omitempty"`
 			} `json:"form_id,omitempty"`
 		})
 	}
@@ -3823,14 +3823,14 @@ func (a *ResponsePipelineFieldsSearch_PipelineId) UnmarshalJSON(b []byte) error 
 		a.AdditionalProperties = make(map[string]struct {
 			FormId *struct {
 				Content  *[]map[string]interface{} `json:"content,omitempty"`
-				SchemaID *string                   `json:"schemaID,omitempty"`
+				SchemaId *string                   `json:"schema_id,omitempty"`
 			} `json:"form_id,omitempty"`
 		})
 		for fieldName, fieldBuf := range object {
 			var fieldVal struct {
 				FormId *struct {
 					Content  *[]map[string]interface{} `json:"content,omitempty"`
-					SchemaID *string                   `json:"schemaID,omitempty"`
+					SchemaId *string                   `json:"schema_id,omitempty"`
 				} `json:"form_id,omitempty"`
 			}
 			err := json.Unmarshal(fieldBuf, &fieldVal)

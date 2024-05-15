@@ -3629,7 +3629,7 @@ components:
               form_id:
                 type: object
                 properties:
-                  schemaID:
+                  schema_id:
                     type: string
                   content:
                     type: array
