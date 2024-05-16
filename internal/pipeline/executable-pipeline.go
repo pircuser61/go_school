@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	c "context"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people/nocache"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -15,7 +16,6 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/integrations"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/kafka"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/scheduler"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
@@ -47,7 +47,7 @@ type ExecutablePipeline struct {
 	Remedy        string
 	Sender        *mail.Service
 	Kafka         *kafka.Service
-	People        *people.Service
+	People        *nocache.Service
 	ServiceDesc   *servicedesc.Service
 	FunctionStore *functions.Service
 	HumanTasks    *human_tasks.Service

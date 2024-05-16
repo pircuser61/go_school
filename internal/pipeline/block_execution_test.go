@@ -5,6 +5,7 @@ import (
 	c "context"
 	"encoding/json"
 	"fmt"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people/nocache"
 	"io"
 	"net/http"
 	"testing"
@@ -23,7 +24,6 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/httpclient"
 	humanTasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks"
 	mocks2 "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks/mocks"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 	serviceDeskMocks "gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc/mocks"
@@ -2113,8 +2113,8 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
-						People: func() *people.Service {
-							return &people.Service{}
+						People: func() *nocache.Service {
+							return &nocache.Service{}
 						}(),
 						ServiceDesc: func() *servicedesc.Service {
 							sdMock := servicedesc.Service{

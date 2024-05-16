@@ -1,4 +1,4 @@
-package people
+package cache
 
 import (
 	"context"
@@ -12,6 +12,10 @@ import (
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	cachekit "gitlab.services.mts.ru/jocasta/cache-kit"
+
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people/nocache"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 )
 
 const (
@@ -19,13 +23,30 @@ const (
 	usersKeyPrefix = "users:"
 )
 
-type ServiceWithCache struct {
+type service struct {
 	Cache  cachekit.Cache
-	People ServiceInterface
+	People people.ServiceInterface
 }
 
-func (s *ServiceWithCache) GetUser(ctx context.Context, username string) (SSOUser, error) {
-	ctx, span := trace.StartSpan(ctx, "people.get_user(cached)")
+func NewService(cfg *people.Config, ssoS *sso.Service) (people.ServiceInterface, error) {
+	srv, err := nocache.NewService(cfg, ssoS)
+	if err != nil {
+		return nil, err
+	}
+
+	cache, cacheErr := cachekit.CreateCache(cachekit.Config(cfg.Cache))
+	if cacheErr != nil {
+		return nil, cacheErr
+	}
+
+	return &service{
+		People: srv,
+		Cache:  cache,
+	}, nil
+}
+
+func (s *service) GetUser(ctx context.Context, username string) (people.SSOUser, error) {
+	ctx, span := trace.StartSpan(ctx, "people.cache.get_user")
 	defer span.End()
 
 	log := logger.GetLogger(ctx)
@@ -36,7 +57,7 @@ func (s *ServiceWithCache) GetUser(ctx context.Context, username string) (SSOUse
 	if err == nil {
 		resources, ok := valueFromCache.(string)
 		if ok {
-			var data SSOUser
+			var data people.SSOUser
 
 			unmErr := json.Unmarshal([]byte(resources), &data)
 			if unmErr == nil {
@@ -68,8 +89,8 @@ func (s *ServiceWithCache) GetUser(ctx context.Context, username string) (SSOUse
 	return resources, nil
 }
 
-func (s *ServiceWithCache) GetUsers(ctx context.Context, username string, limit *int, filter []string) ([]SSOUser, error) {
-	ctx, span := trace.StartSpan(ctx, "people.get_users(cached)")
+func (s *service) GetUsers(ctx context.Context, username string, limit *int, filter []string) ([]people.SSOUser, error) {
+	ctx, span := trace.StartSpan(ctx, "people.cache.get_users")
 	defer span.End()
 
 	log := logger.GetLogger(ctx)
@@ -84,7 +105,7 @@ func (s *ServiceWithCache) GetUsers(ctx context.Context, username string, limit 
 		if err == nil {
 			resources, ok := valueFromCache.(string)
 			if ok {
-				var data []SSOUser
+				var data []people.SSOUser
 
 				unmErr := json.Unmarshal([]byte(resources), &data)
 				if unmErr == nil {
@@ -117,12 +138,12 @@ func (s *ServiceWithCache) GetUsers(ctx context.Context, username string, limit 
 	return resources, nil
 }
 
-func (s *ServiceWithCache) PathBuilder(mainpath, subpath string) (string, error) {
+func (s *service) PathBuilder(mainpath, subpath string) (string, error) {
 	return s.People.PathBuilder(mainpath, subpath)
 }
 
-func (s *ServiceWithCache) GetUserEmail(ctx context.Context, username string) (string, error) {
-	ctx, span := trace.StartSpan(ctx, "people.get_user_email(cached)")
+func (s *service) GetUserEmail(ctx context.Context, username string) (string, error) {
+	ctx, span := trace.StartSpan(ctx, "people.cache.get_user_email")
 	defer span.End()
 
 	user, err := s.GetUser(ctx, username)

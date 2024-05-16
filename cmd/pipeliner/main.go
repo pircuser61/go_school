@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people/cache"
 	"os"
 	"os/signal"
 	"syscall"
@@ -28,7 +29,6 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	mail_fetcher "gitlab.services.mts.ru/jocasta/pipeliner/internal/mail/fetcher"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/scheduler"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sequence"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/server"
@@ -83,7 +83,7 @@ func main() {
 		return
 	}
 
-	peopleService, err := people.NewService(&cfg.People, ssoService)
+	peopleService, err := cache.NewService(&cfg.People, ssoService)
 	if err != nil {
 		log.WithError(err).Error("can't create people service")
 

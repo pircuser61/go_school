@@ -5,6 +5,7 @@ import (
 	c "context"
 	"encoding/json"
 	"fmt"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people/nocache"
 	"io"
 	"net/http"
 	"os"
@@ -24,7 +25,6 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/httpclient"
 	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks"
 	mocks2 "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks/mocks"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	peopleMocks "gitlab.services.mts.ru/jocasta/pipeliner/internal/people/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
@@ -3219,13 +3219,13 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 
 							return slaMock
 						}(),
-						People: func() *people.Service {
-							plMock := people.Service{}
+						People: func() *nocache.Service {
+							plMock := nocache.Service{}
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(people.Service{})
+								b, _ := json.Marshal(nocache.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -3299,13 +3299,13 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 
 							return slaMock
 						}(),
-						People: func() *people.Service {
-							plMock := people.Service{}
+						People: func() *nocache.Service {
+							plMock := nocache.Service{}
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(people.Service{})
+								b, _ := json.Marshal(nocache.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -3379,13 +3379,13 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 
 							return slaMock
 						}(),
-						People: func() *people.Service {
-							plMock := people.Service{}
+						People: func() *nocache.Service {
+							plMock := nocache.Service{}
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(people.Service{})
+								b, _ := json.Marshal(nocache.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -3459,13 +3459,13 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 
 							return slaMock
 						}(),
-						People: func() *people.Service {
-							plMock := people.Service{}
+						People: func() *nocache.Service {
+							plMock := nocache.Service{}
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(people.Service{})
+								b, _ := json.Marshal(nocache.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -3539,13 +3539,13 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 
 							return slaMock
 						}(),
-						People: func() *people.Service {
-							plMock := people.Service{}
+						People: func() *nocache.Service {
+							plMock := nocache.Service{}
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(people.Service{})
+								b, _ := json.Marshal(nocache.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -3619,13 +3619,13 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 
 							return slaMock
 						}(),
-						People: func() *people.Service {
-							plMock := people.Service{}
+						People: func() *nocache.Service {
+							plMock := nocache.Service{}
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(people.Service{})
+								b, _ := json.Marshal(nocache.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -3699,13 +3699,13 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 
 							return slaMock
 						}(),
-						People: func() *people.Service {
-							plMock := people.Service{}
+						People: func() *nocache.Service {
+							plMock := nocache.Service{}
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(people.Service{})
+								b, _ := json.Marshal(nocache.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -3779,13 +3779,13 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 
 							return slaMock
 						}(),
-						People: func() *people.Service {
-							plMock := people.Service{}
+						People: func() *nocache.Service {
+							plMock := nocache.Service{}
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(people.Service{})
+								b, _ := json.Marshal(nocache.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -3859,13 +3859,13 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 
 							return slaMock
 						}(),
-						People: func() *people.Service {
-							plMock := people.Service{}
+						People: func() *nocache.Service {
+							plMock := nocache.Service{}
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(people.Service{})
+								b, _ := json.Marshal(nocache.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -3939,13 +3939,13 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 
 							return slaMock
 						}(),
-						People: func() *people.Service {
-							plMock := people.Service{}
+						People: func() *nocache.Service {
+							plMock := nocache.Service{}
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(people.Service{})
+								b, _ := json.Marshal(nocache.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -4006,13 +4006,13 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 
 							return slaMock
 						}(),
-						People: func() *people.Service {
-							plMock := people.Service{}
+						People: func() *nocache.Service {
+							plMock := nocache.Service{}
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(people.Service{})
+								b, _ := json.Marshal(nocache.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -4073,13 +4073,13 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 
 							return slaMock
 						}(),
-						People: func() *people.Service {
-							plMock := people.Service{}
+						People: func() *nocache.Service {
+							plMock := nocache.Service{}
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(people.Service{})
+								b, _ := json.Marshal(nocache.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -4160,13 +4160,13 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 
 							return slaMock
 						}(),
-						People: func() *people.Service {
-							plMock := people.Service{}
+						People: func() *nocache.Service {
+							plMock := nocache.Service{}
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(people.Service{})
+								b, _ := json.Marshal(nocache.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -4232,13 +4232,13 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 
 							return slaMock
 						}(),
-						People: func() *people.Service {
-							plMock := people.Service{}
+						People: func() *nocache.Service {
+							plMock := nocache.Service{}
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(people.Service{})
+								b, _ := json.Marshal(nocache.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -4299,13 +4299,13 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 
 							return slaMock
 						}(),
-						People: func() *people.Service {
-							plMock := people.Service{}
+						People: func() *nocache.Service {
+							plMock := nocache.Service{}
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(people.Service{})
+								b, _ := json.Marshal(nocache.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -4366,13 +4366,13 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 
 							return slaMock
 						}(),
-						People: func() *people.Service {
-							plMock := people.Service{}
+						People: func() *nocache.Service {
+							plMock := nocache.Service{}
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(people.Service{})
+								b, _ := json.Marshal(nocache.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -4433,13 +4433,13 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 
 							return slaMock
 						}(),
-						People: func() *people.Service {
-							plMock := people.Service{}
+						People: func() *nocache.Service {
+							plMock := nocache.Service{}
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(people.Service{})
+								b, _ := json.Marshal(nocache.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -4513,13 +4513,13 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 
 							return slaMock
 						}(),
-						People: func() *people.Service {
-							plMock := people.Service{}
+						People: func() *nocache.Service {
+							plMock := nocache.Service{}
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(people.Service{})
+								b, _ := json.Marshal(nocache.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -4593,13 +4593,13 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 
 							return slaMock
 						}(),
-						People: func() *people.Service {
-							plMock := people.Service{}
+						People: func() *nocache.Service {
+							plMock := nocache.Service{}
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(people.Service{})
+								b, _ := json.Marshal(nocache.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -4673,13 +4673,13 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 
 							return slaMock
 						}(),
-						People: func() *people.Service {
-							plMock := people.Service{}
+						People: func() *nocache.Service {
+							plMock := nocache.Service{}
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(people.Service{})
+								b, _ := json.Marshal(nocache.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -4740,13 +4740,13 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 
 							return slaMock
 						}(),
-						People: func() *people.Service {
-							plMock := people.Service{}
+						People: func() *nocache.Service {
+							plMock := nocache.Service{}
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(people.Service{})
+								b, _ := json.Marshal(nocache.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -4827,13 +4827,13 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 
 							return slaMock
 						}(),
-						People: func() *people.Service {
-							plMock := people.Service{}
+						People: func() *nocache.Service {
+							plMock := nocache.Service{}
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(people.Service{})
+								b, _ := json.Marshal(nocache.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -4918,13 +4918,13 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 
 							return slaMock
 						}(),
-						People: func() *people.Service {
-							plMock := people.Service{}
+						People: func() *nocache.Service {
+							plMock := nocache.Service{}
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(people.Service{})
+								b, _ := json.Marshal(nocache.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -5009,13 +5009,13 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 
 							return slaMock
 						}(),
-						People: func() *people.Service {
-							plMock := people.Service{}
+						People: func() *nocache.Service {
+							plMock := nocache.Service{}
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(people.Service{})
+								b, _ := json.Marshal(nocache.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -5097,13 +5097,13 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 
 							return slaMock
 						}(),
-						People: func() *people.Service {
-							plMock := people.Service{}
+						People: func() *nocache.Service {
+							plMock := nocache.Service{}
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(people.Service{})
+								b, _ := json.Marshal(nocache.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -5189,13 +5189,13 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 
 							return slaMock
 						}(),
-						People: func() *people.Service {
-							plMock := people.Service{}
+						People: func() *nocache.Service {
+							plMock := nocache.Service{}
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(people.Service{})
+								b, _ := json.Marshal(nocache.Service{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
