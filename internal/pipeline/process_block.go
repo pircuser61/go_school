@@ -195,6 +195,7 @@ type Block struct {
 func (b *Block) FillFromRunContext(runCtx *BlockRunContext) {
 	b.DB = runCtx.Services.Storage
 	b.WorkID = runCtx.TaskID
+	b.VarStore = runCtx.VarStore
 	b.IsPaused = runCtx.OnceProductive
 	b.HasUpdateData = runCtx.UpdateData != nil
 }
