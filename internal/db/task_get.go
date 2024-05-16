@@ -2091,8 +2091,8 @@ func (db *PGCon) getTaskUniquePersons(ctx c.Context, q string, args []interface{
 
 	var (
 		executors *[]string
-		groupName *string
-		groupID   *string
+		groupName *sql.NullString
+		groupID   *sql.NullString
 	)
 
 	up := UniquePersons{
@@ -2117,9 +2117,9 @@ func (db *PGCon) getTaskUniquePersons(ctx c.Context, q string, args []interface{
 			}
 		}
 
-		if groupName != nil && groupID != nil {
-			if _, ok := check[*groupName]; !ok {
-				up.Groups[*groupName] = *groupID
+		if groupName.String != "" && groupID.String != "" {
+			if _, ok := check[groupName.String]; !ok {
+				up.Groups[groupName.String] = groupID.String
 			}
 		}
 	}
