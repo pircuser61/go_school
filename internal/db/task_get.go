@@ -2117,7 +2117,7 @@ func (db *PGCon) getTaskUniquePersons(ctx c.Context, q string, args []interface{
 			}
 		}
 
-		if groupName != nil && groupName != nil {
+		if groupName != nil && groupID != nil {
 			if _, ok := check[*groupName]; !ok {
 				up.Groups[*groupName] = *groupID
 			}
