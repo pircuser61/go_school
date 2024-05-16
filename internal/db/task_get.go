@@ -2091,8 +2091,8 @@ func (db *PGCon) getTaskUniquePersons(ctx c.Context, q string, args []interface{
 
 	var (
 		executors *[]string
-		groupName *sql.NullString
-		groupID   *sql.NullString
+		groupName sql.NullString
+		groupID   sql.NullString
 	)
 
 	up := UniquePersons{
