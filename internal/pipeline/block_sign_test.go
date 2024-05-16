@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people/nocache"
+	nocache2 "gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc/nocache"
 	"io"
 	"net/http"
 	"os"
@@ -27,7 +28,6 @@ import (
 	mocks2 "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks/mocks"
 	peopleMocks "gitlab.services.mts.ru/jocasta/pipeliner/internal/people/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 	serviceDeskMocks "gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
@@ -1978,8 +1978,8 @@ func TestGoSignBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
-						ServiceDesc: func() *servicedesc.Service {
-							sdMock := servicedesc.Service{
+						ServiceDesc: func() *nocache2.Service {
+							sdMock := nocache2.Service{
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
@@ -1987,7 +1987,7 @@ func TestGoSignBlock_Update(t *testing.T) {
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								b, _ := json.Marshal(nocache2.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 
 								defer body.Close()
@@ -2045,8 +2045,8 @@ func TestGoSignBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
-						ServiceDesc: func() *servicedesc.Service {
-							sdMock := servicedesc.Service{
+						ServiceDesc: func() *nocache2.Service {
+							sdMock := nocache2.Service{
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
@@ -2054,7 +2054,7 @@ func TestGoSignBlock_Update(t *testing.T) {
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								b, _ := json.Marshal(nocache2.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 
 								defer body.Close()
@@ -2113,15 +2113,15 @@ func TestGoSignBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
-						ServiceDesc: func() *servicedesc.Service {
-							sdMock := servicedesc.Service{
+						ServiceDesc: func() *nocache2.Service {
+							sdMock := nocache2.Service{
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								b, _ := json.Marshal(nocache2.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 
 								defer body.Close()
@@ -2180,15 +2180,15 @@ func TestGoSignBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
-						ServiceDesc: func() *servicedesc.Service {
-							sdMock := servicedesc.Service{
+						ServiceDesc: func() *nocache2.Service {
+							sdMock := nocache2.Service{
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								b, _ := json.Marshal(nocache2.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 
 								defer body.Close()
@@ -2247,15 +2247,15 @@ func TestGoSignBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
-						ServiceDesc: func() *servicedesc.Service {
-							sdMock := servicedesc.Service{
+						ServiceDesc: func() *nocache2.Service {
+							sdMock := nocache2.Service{
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								b, _ := json.Marshal(nocache2.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 
 								defer body.Close()
@@ -2311,15 +2311,15 @@ func TestGoSignBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
-						ServiceDesc: func() *servicedesc.Service {
-							sdMock := servicedesc.Service{
+						ServiceDesc: func() *nocache2.Service {
+							sdMock := nocache2.Service{
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								b, _ := json.Marshal(nocache2.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 
 								defer body.Close()
@@ -2377,15 +2377,15 @@ func TestGoSignBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
-						ServiceDesc: func() *servicedesc.Service {
-							sdMock := servicedesc.Service{
+						ServiceDesc: func() *nocache2.Service {
+							sdMock := nocache2.Service{
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								b, _ := json.Marshal(nocache2.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 
 								defer body.Close()
@@ -2442,15 +2442,15 @@ func TestGoSignBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
-						ServiceDesc: func() *servicedesc.Service {
-							sdMock := servicedesc.Service{
+						ServiceDesc: func() *nocache2.Service {
+							sdMock := nocache2.Service{
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								b, _ := json.Marshal(nocache2.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 
 								defer body.Close()
@@ -2507,15 +2507,15 @@ func TestGoSignBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
-						ServiceDesc: func() *servicedesc.Service {
-							sdMock := servicedesc.Service{
+						ServiceDesc: func() *nocache2.Service {
+							sdMock := nocache2.Service{
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								b, _ := json.Marshal(nocache2.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 
 								defer body.Close()
@@ -2572,15 +2572,15 @@ func TestGoSignBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
-						ServiceDesc: func() *servicedesc.Service {
-							sdMock := servicedesc.Service{
+						ServiceDesc: func() *nocache2.Service {
+							sdMock := nocache2.Service{
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								b, _ := json.Marshal(nocache2.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 
 								defer body.Close()
@@ -2637,15 +2637,15 @@ func TestGoSignBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
-						ServiceDesc: func() *servicedesc.Service {
-							sdMock := servicedesc.Service{
+						ServiceDesc: func() *nocache2.Service {
+							sdMock := nocache2.Service{
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								b, _ := json.Marshal(nocache2.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 
 								defer body.Close()
@@ -2702,15 +2702,15 @@ func TestGoSignBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
-						ServiceDesc: func() *servicedesc.Service {
-							sdMock := servicedesc.Service{
+						ServiceDesc: func() *nocache2.Service {
+							sdMock := nocache2.Service{
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								b, _ := json.Marshal(nocache2.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 
 								defer body.Close()
@@ -2768,15 +2768,15 @@ func TestGoSignBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
-						ServiceDesc: func() *servicedesc.Service {
-							sdMock := servicedesc.Service{
+						ServiceDesc: func() *nocache2.Service {
+							sdMock := nocache2.Service{
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								b, _ := json.Marshal(nocache2.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 
 								defer body.Close()
@@ -2834,15 +2834,15 @@ func TestGoSignBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
-						ServiceDesc: func() *servicedesc.Service {
-							sdMock := servicedesc.Service{
+						ServiceDesc: func() *nocache2.Service {
+							sdMock := nocache2.Service{
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								b, _ := json.Marshal(nocache2.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 
 								defer body.Close()
@@ -2902,15 +2902,15 @@ func TestGoSignBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
-						ServiceDesc: func() *servicedesc.Service {
-							sdMock := servicedesc.Service{
+						ServiceDesc: func() *nocache2.Service {
+							sdMock := nocache2.Service{
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								b, _ := json.Marshal(nocache2.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 
 								defer body.Close()
@@ -2994,15 +2994,15 @@ func TestGoSignBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
-						ServiceDesc: func() *servicedesc.Service {
-							sdMock := servicedesc.Service{
+						ServiceDesc: func() *nocache2.Service {
+							sdMock := nocache2.Service{
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								b, _ := json.Marshal(nocache2.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 
 								defer body.Close()
@@ -3061,15 +3061,15 @@ func TestGoSignBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
-						ServiceDesc: func() *servicedesc.Service {
-							sdMock := servicedesc.Service{
+						ServiceDesc: func() *nocache2.Service {
+							sdMock := nocache2.Service{
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								b, _ := json.Marshal(nocache2.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 
 								defer body.Close()

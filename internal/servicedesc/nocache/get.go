@@ -1,10 +1,11 @@
-package servicedesc
+package nocache
 
 import (
-	"context"
+	c "context"
 	"encoding/json"
 	"fmt"
 	"net/http"
+
 
 	"github.com/hashicorp/go-retryablehttp"
 
@@ -12,50 +13,16 @@ import (
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
-	cachekit "gitlab.services.mts.ru/jocasta/cache-kit"
+	sd "gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 )
 
-const (
-	getSchemaByID          = "/api/herald/v1/schema/"
-	getSchemaByBlueprintID = "/api/herald/v1/schema/"
-	getUserInfo            = "/api/herald/v1/externalData/user/single?search=%s"
-	getWorkGroup           = "/api/chainsmith/v1/workGroup/"
-)
-
-type Service struct {
-	SdURL string
-	Cli   *retryablehttp.Client
-	Cache cachekit.Cache
-}
-
-type GroupMember struct {
-	Login string `json:"login"`
-}
-
-type WorkGroup struct {
-	GroupID   string        `json:"groupID"`
-	GroupName string        `json:"groupName"`
-	People    []GroupMember `json:"people"`
-}
-
-type SsoPerson struct {
-	Fullname    string `json:"fullname"`
-	Username    string `json:"username"`
-	Email       string `json:"email"`
-	Mobile      string `json:"mobile"`
-	FullOrgUnit string `json:"fullOrgUnit"`
-	Position    string `json:"position"`
-	Phone       string `json:"phone"`
-	Tabnum      string `json:"tabnum"`
-}
-
-func (s *Service) GetSsoPerson(ctx context.Context, username string) (*SsoPerson, error) {
+func (s *service) GetSsoPerson(ctx c.Context, username string) (*sd.SsoPerson, error) {
 	ctxLocal, span := trace.StartSpan(ctx, "servicedesc.get_sso_person")
 	defer span.End()
 
 	if sso.IsServiceUserName(username) {
-		return &SsoPerson{
+		return &sd.SsoPerson{
 			Username: username,
 		}, nil
 	}
@@ -78,7 +45,7 @@ func (s *Service) GetSsoPerson(ctx context.Context, username string) (*SsoPerson
 		return nil, fmt.Errorf("bad status code from sso: %d, username: %s", resp.StatusCode, username)
 	}
 
-	res := &SsoPerson{}
+	res := &sd.SsoPerson{}
 	if unmErr := json.NewDecoder(resp.Body).Decode(&res); unmErr != nil {
 		return nil, unmErr
 	}
@@ -87,7 +54,7 @@ func (s *Service) GetSsoPerson(ctx context.Context, username string) (*SsoPerson
 }
 
 //nolint:dupl //its not duplicate
-func (s *Service) GetWorkGroup(ctx context.Context, groupID string) (*WorkGroup, error) {
+func (s *service) GetWorkGroup(ctx c.Context, groupID string) (*sd.WorkGroup, error) {
 	ctxLocal, span := trace.StartSpan(ctx, "servicedesc.get_work_group")
 	defer span.End()
 
@@ -109,7 +76,7 @@ func (s *Service) GetWorkGroup(ctx context.Context, groupID string) (*WorkGroup,
 		return nil, fmt.Errorf("got bad status code: %d", resp.StatusCode)
 	}
 
-	res := &WorkGroup{}
+	res := &sd.WorkGroup{}
 	if unmErr := json.NewDecoder(resp.Body).Decode(res); unmErr != nil {
 		return nil, unmErr
 	}
@@ -120,7 +87,7 @@ func (s *Service) GetWorkGroup(ctx context.Context, groupID string) (*WorkGroup,
 	return res, nil
 }
 
-func (s *Service) GetSchemaByID(ctx context.Context, schemaID string) (map[string]interface{}, error) {
+func (s *service) GetSchemaByID(ctx c.Context, schemaID string) (map[string]interface{}, error) {
 	ctxLocal, span := trace.StartSpan(ctx, "servicedesc.get_schema_by_id")
 	defer span.End()
 
@@ -150,7 +117,7 @@ func (s *Service) GetSchemaByID(ctx context.Context, schemaID string) (map[strin
 	return schema, nil
 }
 
-func (s *Service) GetSchemaByBlueprintID(ctx context.Context, blueprintID string) (map[string]interface{}, error) {
+func (s *service) GetSchemaByBlueprintID(ctx c.Context, blueprintID string) (map[string]interface{}, error) {
 	ctxLocal, span := trace.StartSpan(ctx, "servicedesc.get_schema_by_blueprint_id")
 	defer span.End()
 
@@ -180,10 +147,3 @@ func (s *Service) GetSchemaByBlueprintID(ctx context.Context, blueprintID string
 	return schema, nil
 }
 
-func (s *Service) GetSdURL() string {
-	return s.SdURL
-}
-
-func (s *Service) GetCli() *retryablehttp.Client {
-	return s.Cli
-}

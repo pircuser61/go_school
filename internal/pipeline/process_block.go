@@ -54,8 +54,8 @@ type RunContextServices struct {
 	Storage       db.Database
 	Sender        *mail.Service
 	Kafka         *kafka.Service
-	People        people.ServiceInterface
-	ServiceDesc   servicedesc.ServiceInterface
+	People        people.Service
+	ServiceDesc   servicedesc.Service
 	FunctionStore *functions.Service
 	HumanTasks    human_tasks.ServiceInterface
 	Integrations  *integrations.Service

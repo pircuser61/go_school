@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc/nocache"
 	"io"
 	"net/http"
 	"testing"
@@ -21,7 +22,6 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/httpclient"
 	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 	serviceDeskMocks "gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
@@ -403,8 +403,8 @@ func TestProcessBlock(t *testing.T) {
 
 							return res
 						}(),
-						ServiceDesc: func() *servicedesc.Service {
-							sdMock := servicedesc.Service{
+						ServiceDesc: func() *nocache.Service {
+							sdMock := nocache.Service{
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
@@ -412,7 +412,7 @@ func TestProcessBlock(t *testing.T) {
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								b, _ := json.Marshal(nocache.SsoPerson{})
 								body := bytes.NewReader(b)
 
 								return &http.Response{
@@ -952,8 +952,8 @@ func TestProcessBlock(t *testing.T) {
 
 							return res
 						}(),
-						ServiceDesc: func() *servicedesc.Service {
-							sdMock := servicedesc.Service{
+						ServiceDesc: func() *nocache.Service {
+							sdMock := nocache.Service{
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
@@ -961,7 +961,7 @@ func TestProcessBlock(t *testing.T) {
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								b, _ := json.Marshal(nocache.SsoPerson{})
 								body := bytes.NewReader(b)
 
 								return &http.Response{

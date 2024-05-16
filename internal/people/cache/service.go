@@ -26,10 +26,10 @@ const (
 
 type service struct {
 	Cache  cachekit.Cache
-	People people.ServiceInterface
+	People people.Service
 }
 
-func NewService(cfg *people.Config, ssoS *sso.Service, m metrics.Metrics) (people.ServiceInterface, error) {
+func NewService(cfg *people.Config, ssoS *sso.Service, m metrics.Metrics) (people.Service, error) {
 	srv, err := nocache.NewService(cfg, ssoS, m)
 	if err != nil {
 		return nil, err

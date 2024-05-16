@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc/nocache"
 	"io"
 	"net/http"
 	"testing"
@@ -27,7 +28,6 @@ import (
 	humanTasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 	serviceDeskMocks "gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
@@ -218,8 +218,8 @@ func Test_createGoFormBlock(t *testing.T) {
 							return slaMock
 						}(),
 						Storage: myStorage,
-						ServiceDesc: func() *servicedesc.Service {
-							sdMock := servicedesc.Service{
+						ServiceDesc: func() *nocache.Service {
+							sdMock := nocache.Service{
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
@@ -227,7 +227,7 @@ func Test_createGoFormBlock(t *testing.T) {
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								b, _ := json.Marshal(nocache.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 
 								defer body.Close()
@@ -381,8 +381,8 @@ func Test_createGoFormBlock(t *testing.T) {
 
 							return slaMock
 						}(),
-						ServiceDesc: func() *servicedesc.Service {
-							sdMock := servicedesc.Service{
+						ServiceDesc: func() *nocache.Service {
+							sdMock := nocache.Service{
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
@@ -390,7 +390,7 @@ func Test_createGoFormBlock(t *testing.T) {
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								b, _ := json.Marshal(nocache.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 
 								defer body.Close()
@@ -562,8 +562,8 @@ func Test_createGoFormBlock(t *testing.T) {
 
 							return slaMock
 						}(),
-						ServiceDesc: func() *servicedesc.Service {
-							sdMock := servicedesc.Service{
+						ServiceDesc: func() *nocache.Service {
+							sdMock := nocache.Service{
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
@@ -571,7 +571,7 @@ func Test_createGoFormBlock(t *testing.T) {
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								b, _ := json.Marshal(nocache.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 
 								defer body.Close()
@@ -777,7 +777,7 @@ func TestGoFormBlock_Update(t *testing.T) {
 		}
 	)
 
-	serviceDesc := &servicedesc.Service{
+	serviceDesc := &nocache.Service{
 		Cli:   httpclient.NewClient(&http.Client{}, nil, 0, 0),
 		SdURL: "https://dev.servicedesk.mts.ru",
 	}
@@ -890,8 +890,8 @@ func TestGoFormBlock_Update(t *testing.T) {
 							return slaMock
 						}(),
 						Storage: mockedDb,
-						ServiceDesc: func() *servicedesc.Service {
-							sdMock := servicedesc.Service{
+						ServiceDesc: func() *nocache.Service {
+							sdMock := nocache.Service{
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
@@ -899,7 +899,7 @@ func TestGoFormBlock_Update(t *testing.T) {
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								b, _ := json.Marshal(nocache.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -1003,8 +1003,8 @@ func TestGoFormBlock_Update(t *testing.T) {
 							return slaMock
 						}(),
 						Storage: mockedDb,
-						ServiceDesc: func() *servicedesc.Service {
-							sdMock := servicedesc.Service{
+						ServiceDesc: func() *nocache.Service {
+							sdMock := nocache.Service{
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
@@ -1012,7 +1012,7 @@ func TestGoFormBlock_Update(t *testing.T) {
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								b, _ := json.Marshal(nocache.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 
 								return &http.Response{

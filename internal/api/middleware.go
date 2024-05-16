@@ -83,7 +83,7 @@ func WithUserInfo(ssoS *sso.Service, log logger.Logger) func(next http.Handler) 
 	}
 }
 
-func WithAsOtherUserInfo(ps people.ServiceInterface, log logger.Logger) func(next http.Handler) http.Handler {
+func WithAsOtherUserInfo(ps people.Service, log logger.Logger) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()

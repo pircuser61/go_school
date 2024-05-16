@@ -27,7 +27,7 @@ type service struct {
 	cache cachekit.Cache
 }
 
-func NewService(cfg *people.Config, ssoS *sso.Service, m metrics.Metrics) (people.ServiceInterface, error) {
+func NewService(cfg *people.Config, ssoS *sso.Service, m metrics.Metrics) (people.Service, error) {
 	httpClient := &http.Client{}
 
 	tr := transport{

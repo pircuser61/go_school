@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	externalSystemName = "iga"
+	externalSystemName = "herald"
 	xRequestIDHeader   = "X-Request-Id"
 )
 

@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc/nocache"
 	"io"
 	"net/http"
 	"testing"
@@ -23,7 +24,6 @@ import (
 	humanTasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks"
 	htMocks "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 	serviceDeskMocks "gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
@@ -805,8 +805,8 @@ func TestGoApproverBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
-						ServiceDesc: func() *servicedesc.Service {
-							sdMock := servicedesc.Service{
+						ServiceDesc: func() *nocache.Service {
+							sdMock := nocache.Service{
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
@@ -814,7 +814,7 @@ func TestGoApproverBlock_Update(t *testing.T) {
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								b, _ := json.Marshal(nocache.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -917,8 +917,8 @@ func TestGoApproverBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
-						ServiceDesc: func() *servicedesc.Service {
-							sdMock := servicedesc.Service{
+						ServiceDesc: func() *nocache.Service {
+							sdMock := nocache.Service{
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
@@ -926,7 +926,7 @@ func TestGoApproverBlock_Update(t *testing.T) {
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								b, _ := json.Marshal(nocache.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -1026,15 +1026,15 @@ func TestGoApproverBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
-						ServiceDesc: func() *servicedesc.Service {
-							sdMock := servicedesc.Service{
+						ServiceDesc: func() *nocache.Service {
+							sdMock := nocache.Service{
 								SdURL: "",
 							}
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								b, _ := json.Marshal(nocache.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 

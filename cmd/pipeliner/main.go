@@ -32,7 +32,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/scheduler"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sequence"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/server"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
+	sd_cache "gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc/cache"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 	"gitlab.services.mts.ru/jocasta/pipeliner/statistic"
@@ -94,7 +94,7 @@ func main() {
 		return
 	}
 
-	serviceDescService, err := servicedesc.NewService(&cfg.ServiceDesc, ssoService)
+	serviceDescService, err := sd_cache.NewService(&cfg.ServiceDesc, ssoService)
 	if err != nil {
 		log.WithError(err).Error("can't create servicedesc service")
 

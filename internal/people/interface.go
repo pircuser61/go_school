@@ -4,7 +4,7 @@ import (
 	"context"
 )
 
-type ServiceInterface interface {
+type Service interface {
 	PathBuilder(mainpath, subpath string) (string, error)
 	GetUserEmail(ctx context.Context, username string) (string, error)
 	GetUser(ctx context.Context, search string) (SSOUser, error)

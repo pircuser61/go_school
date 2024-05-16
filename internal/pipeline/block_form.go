@@ -16,7 +16,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
+	sd "gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
@@ -443,7 +443,7 @@ func (gb *GoFormBlock) handleAutoFillForm() error {
 		return constErr
 	}
 
-	personData := &servicedesc.SsoPerson{
+	personData := &sd.SsoPerson{
 		Username: AutoFillUser,
 	}
 
@@ -565,7 +565,7 @@ func (gb *GoFormBlock) handleNotifications(ctx c.Context) error {
 }
 
 type FormOutput struct {
-	Executor        *servicedesc.SsoPerson
+	Executor        *sd.SsoPerson
 	ApplicationBody map[string]interface{}
 }
 

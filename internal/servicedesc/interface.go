@@ -1,16 +1,16 @@
 package servicedesc
 
 import (
-	"context"
+	c "context"
 
 	"github.com/hashicorp/go-retryablehttp"
 )
 
-type ServiceInterface interface {
-	GetWorkGroup(ctx context.Context, groupID string) (*WorkGroup, error)
-	GetSsoPerson(ctx context.Context, username string) (*SsoPerson, error)
-	GetSchemaByID(ctx context.Context, schemaID string) (map[string]interface{}, error)
-	GetSchemaByBlueprintID(ctx context.Context, blueprintID string) (map[string]interface{}, error)
+type Service interface {
+	GetWorkGroup(ctx c.Context, groupID string) (*WorkGroup, error)
+	GetSsoPerson(ctx c.Context, username string) (*SsoPerson, error)
+	GetSchemaByID(ctx c.Context, schemaID string) (map[string]interface{}, error)
+	GetSchemaByBlueprintID(ctx c.Context, blueprintID string) (map[string]interface{}, error)
 	GetSdURL() string
 	GetCli() *retryablehttp.Client
 }
