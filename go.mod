@@ -38,7 +38,7 @@ require (
 	gitlab.services.mts.ru/jocasta/functions v1.11.0-alpha.1
 	gitlab.services.mts.ru/jocasta/human-tasks v1.0.0-alpha.3
 	gitlab.services.mts.ru/jocasta/integrations v1.9.0
-	gitlab.services.mts.ru/jocasta/msg-kit v0.1.4
+	gitlab.services.mts.ru/jocasta/msg-kit v0.1.6
 	gitlab.services.mts.ru/jocasta/scheduler v1.10.1-0.20240411105447-0c6a180ab838
 	gitlab.services.mts.ru/jocasta/sequence v0.0.0-20240412094937-d4b3accaf9cd
 	gitlab.services.mts.ru/prodboard/infra v0.3.0
