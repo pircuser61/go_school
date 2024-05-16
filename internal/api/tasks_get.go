@@ -747,11 +747,13 @@ func (ae *Env) GetTasksUsers(w http.ResponseWriter, req *http.Request, params Ge
 			return
 		}
 
-		respUsers = append(respUsers, UniqueUser{
-			FullName: ssoUser.Fullname,
-			TabNum:   ssoUser.Tabnum,
-			Username: ssoUser.Username,
-		})
+		if ssoUser != nil {
+			respUsers = append(respUsers, UniqueUser{
+				FullName: ssoUser.Fullname,
+				TabNum:   ssoUser.Tabnum,
+				Username: ssoUser.Username,
+			})
+		}
 	}
 
 	resp.Users = &respUsers
