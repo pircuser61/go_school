@@ -735,7 +735,9 @@ func (ae *Env) GetTasksUsers(w http.ResponseWriter, req *http.Request, params Ge
 		return
 	}
 
-	resp := UniquePersons{Groups: &dbResp.Groups, Logins: &dbResp.Logins}
+	groups := &UniquePersons_Groups{dbResp.Groups}
+
+	resp := UniquePersons{Groups: groups, Logins: &dbResp.Logins}
 
 	respUsers := make([]UniqueUser, 0)
 

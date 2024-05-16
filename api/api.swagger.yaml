@@ -4093,8 +4093,8 @@ components:
           items:
             type: string
         groups:
-          type: array
-          items:
+          type: object
+          additionalProperties:
             type: string
       required:
         - tasks
