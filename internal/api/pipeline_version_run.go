@@ -229,10 +229,12 @@ type runVersionByPipelineIDRequest struct {
 
 //nolint:revive,stylecheck //need to implement interface in api.go
 func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
-	log := logger.GetLogger(r.Context()).
-		WithField("funcName", "RunVersionsByPipelineId")
-
-	errorHandler := newHTTPErrorHandler(log, w)
+	errorHandler := newHTTPErrorHandler(
+		logger.
+			GetLogger(r.Context()).
+			WithField("funcName", "RunVersionsByPipelineId"),
+		w,
+	)
 
 	body, err := io.ReadAll(r.Body)
 	defer r.Body.Close()
@@ -257,7 +259,7 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log = log.WithField("pipelineID", req.PipelineID).
+	errorHandler.log = errorHandler.log.WithField("pipelineID", req.PipelineID).
 		WithField("funcName", "RunVersionsByPipelineId")
 
 	run := &runVersionsDTO{
@@ -273,7 +275,7 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 		Authorization:     r.Header.Get(AuthorizationHeader),
 	}
 
-	res, err := ae.runVersion(r.Context(), log, run)
+	res, err := ae.runVersion(r.Context(), errorHandler.log, run)
 	if err != nil {
 		errorHandler.handleError(PipelineExecutionError, err)
 
