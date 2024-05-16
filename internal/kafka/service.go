@@ -145,7 +145,7 @@ func (s *Service) ProduceFuncMessage(ctx c.Context, message *RunnerOutMessage) e
 		return errors.New("kafka service unavailable")
 	}
 
-	return s.producer.Produce(ctx, message)
+	return s.producer.ProduceWithKey(ctx, message.TaskID.String(), message)
 }
 
 func (s *Service) ProduceFuncResultMessage(ctx c.Context, message *RunnerInMessage) error {
@@ -153,7 +153,7 @@ func (s *Service) ProduceFuncResultMessage(ctx c.Context, message *RunnerInMessa
 		return errors.New("kafka service unavailable")
 	}
 
-	return s.producerFuncResult.Produce(ctx, message)
+	return s.producerFuncResult.ProduceWithKey(ctx, message.TaskID.String(), message)
 }
 
 //nolint:all //its ok here
