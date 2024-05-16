@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"net/http"
 	"net/url"
 	"path"
@@ -17,6 +16,7 @@ import (
 
 	"go.opencensus.io/trace"
 
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 )
 

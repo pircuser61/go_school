@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 
 	"go.opencensus.io/trace"
 
@@ -14,6 +13,7 @@ import (
 
 	cachekit "gitlab.services.mts.ru/jocasta/cache-kit"
 
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people/nocache"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"

@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"github.com/hashicorp/go-retryablehttp"
 	cachekit "gitlab.services.mts.ru/jocasta/cache-kit"
 
 	sd "gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
@@ -29,3 +30,5 @@ func NewService(cfg *sd.Config, ssoS *sso.Service) (sd.Service, error) {
 		servicedesc: srv,
 	}, nil
 }
+
+func (s *service) SetCli(cla *retryablehttp.Client) {}

@@ -52,6 +52,10 @@ func (s *service) GetSdURL() string {
 	return s.SdURL
 }
 
+func (s *service) SetCli(cli *retryablehttp.Client) {
+	s.Cli = cli
+}
+
 func (s *service) GetCli() *retryablehttp.Client {
 	return s.Cli
 }

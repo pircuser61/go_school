@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc/nocache"
 	"os"
 	"testing"
 
@@ -18,6 +17,8 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/httpclient"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc/nocache"
 )
 
 func TestValidation_EndExists(t *testing.T) {
@@ -288,10 +289,8 @@ func TestValidation_SdBlueprintFilled(t *testing.T) {
 
 	retryableHttpClient := httpclient.NewClient(httpmock.Client(&mockResponse), nil, 0, 0)
 
-	sdAPI := &nocache.Service{
-		Cli:   retryableHttpClient,
-		SdURL: "https://dev.servicedesk.mts.ru",
-	}
+	sdAPI, _ := nocache.NewService(&servicedesc.Config{}, nil)
+	sdAPI.SetCli(retryableHttpClient)
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
