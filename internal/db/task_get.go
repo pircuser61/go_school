@@ -424,7 +424,8 @@ func compileGetUniquePersonsQuery(fl entity.TaskFilter, delegations []string) (q
 		[with_variable_storage]
 		SELECT 
     		var.current_executor->'people',
-    		var.current_executor->>'group_name'    		
+    		var.current_executor->>'group_name',  		
+    		var.current_executor->>'group_id'    		
 		FROM works w 
 		JOIN versions v ON v.id = w.version_id
 		JOIN pipelines p ON p.id = v.pipeline_id
@@ -2072,8 +2073,8 @@ func (db *PGCon) getTasksMeta(ctx c.Context, q string, args []interface{}) (*ent
 }
 
 type UniquePersons struct {
-	Groups []string `json:"groups"`
-	Logins []string `json:"logins"`
+	Groups map[string]string `json:"groups"`
+	Logins []string          `json:"logins"`
 }
 
 const potentialPersonsCapacity = 100
@@ -2090,18 +2091,19 @@ func (db *PGCon) getTaskUniquePersons(ctx c.Context, q string, args []interface{
 
 	var (
 		executors *[]string
-		group     *string
+		groupName *string
+		groupID   *string
 	)
 
 	up := UniquePersons{
 		Logins: make([]string, 0, potentialPersonsCapacity),
-		Groups: make([]string, 0, potentialPersonsCapacity),
+		Groups: make(map[string]string, 0),
 	}
 
 	check := make(map[string]struct{}, potentialPersonsCapacity*2)
 
 	for rows.Next() {
-		if scanErr := rows.Scan(&executors, &group); scanErr != nil {
+		if scanErr := rows.Scan(&executors, &groupName, &groupID); scanErr != nil {
 			return nil, scanErr
 		}
 
@@ -2115,11 +2117,9 @@ func (db *PGCon) getTaskUniquePersons(ctx c.Context, q string, args []interface{
 			}
 		}
 
-		if group != nil {
-			if _, ok := check[*group]; !ok {
-				check[*group] = struct{}{}
-
-				up.Groups = append(up.Groups, *group)
+		if groupName != nil && groupName != nil {
+			if _, ok := check[*groupName]; !ok {
+				up.Groups[*groupName] = *groupID
 			}
 		}
 	}

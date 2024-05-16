@@ -2223,9 +2223,14 @@ type TimerParams struct {
 
 // UniquePersons defines model for UniquePersons.
 type UniquePersons struct {
-	Groups *[]string     `json:"groups,omitempty"`
-	Logins *[]string     `json:"logins,omitempty"`
-	Users  *[]UniqueUser `json:"users,omitempty"`
+	Groups *UniquePersons_Groups `json:"groups,omitempty"`
+	Logins *[]string             `json:"logins,omitempty"`
+	Users  *[]UniqueUser         `json:"users,omitempty"`
+}
+
+// UniquePersons_Groups defines model for UniquePersons.Groups.
+type UniquePersons_Groups struct {
+	AdditionalProperties map[string]string `json:"-"`
 }
 
 // UniqueUser defines model for UniqueUser.
@@ -4004,6 +4009,59 @@ func (a *TasksMeta_Blueprints) UnmarshalJSON(b []byte) error {
 
 // Override default JSON handling for TasksMeta_Blueprints to handle AdditionalProperties
 func (a TasksMeta_Blueprints) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, errors.Wrap(err, fmt.Sprintf("error marshaling '%s'", fieldName))
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for UniquePersons_Groups. Returns the specified
+// element and whether it was found
+func (a UniquePersons_Groups) Get(fieldName string) (value string, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for UniquePersons_Groups
+func (a *UniquePersons_Groups) Set(fieldName string, value string) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]string)
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for UniquePersons_Groups to handle AdditionalProperties
+func (a *UniquePersons_Groups) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]string)
+		for fieldName, fieldBuf := range object {
+			var fieldVal string
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return errors.Wrap(err, fmt.Sprintf("error unmarshaling field %s", fieldName))
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for UniquePersons_Groups to handle AdditionalProperties
+func (a UniquePersons_Groups) MarshalJSON() ([]byte, error) {
 	var err error
 	object := make(map[string]json.RawMessage)
 
