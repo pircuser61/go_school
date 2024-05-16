@@ -298,7 +298,14 @@ func (p *blockProcessor) processActiveBlocks(ctx context.Context, activeBlocks [
 
 		tmpCtx := p.runCtx.Copy()
 
-		err := CreateBlockInDB(ctx, blockName, blockData.TypeID, tmpCtx)
+		block := Block{
+			Name:     blockName,
+			StepType: blockData.TypeID,
+		}
+
+		block.FillFromRunContext(tmpCtx)
+
+		err := block.CreateInDB(ctx)
 		if err != nil {
 			return p.name, p.handleErrorWithRollback(ctx, log, err)
 		}

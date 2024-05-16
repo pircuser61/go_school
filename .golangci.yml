@@ -82,3 +82,5 @@ run:
     - configs
     - templates
     - \.go
+  skip-files:
+    - main.go
