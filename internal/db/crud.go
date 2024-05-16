@@ -2560,7 +2560,7 @@ type AccessField struct {
 	Description string `json:"description"`
 }
 
-//nolint:gocognit,lll //Так надо
+//nolint:gocognit,lll,gocyclo //Так надо
 func (db *PGCon) getDataByWorkID(c context.Context, worksID map[string][]uuid.UUID, accessForms map[string]string, params *SearchPipelinesFieldsParams) (map[string]map[string]*NodeContent, error) {
 	res := make(map[string]map[string]*NodeContent, 0)
 
@@ -2569,9 +2569,10 @@ func (db *PGCon) getDataByWorkID(c context.Context, worksID map[string][]uuid.UU
 	for k, v := range worksID {
 		// nolint:gocritic,lll
 		// language=PostgreSQL
-		q := `SELECT vs.step_name, vs.work_id as work_id, vs.id as node_id, vs.content -> 'State' -> vs.step_name -> 'application_body' as body, 
+		q := `SELECT vs.step_name, vs.work_id as work_id, vs.id as node_id, vs.content -> 'State' -> vs.step_name -> 'application_body' as body,  vs.content -> 'State' -> vs.step_name -> 'keys' as keys,
 				vs.content -> 'State' -> vs.step_name ->> 'schema_id' as schema_id 
-			 FROM variable_storage as vs WHERE work_id = any($1) AND step_type = 'form' AND (vs.content -> 'State' -> vs.step_name -> 'application_body' is not null or vs.content -> 'State' -> vs.step_name -> 'forms_accessibility' is not null)`
+			 FROM variable_storage as vs 
+			 WHERE work_id = any($1) AND step_type = 'form' AND (vs.content -> 'State' -> vs.step_name -> 'application_body' is not null or vs.content -> 'State' -> vs.step_name -> 'forms_accessibility' is not null)`
 
 		q = filterForFields(params, q)
 
@@ -2587,13 +2588,14 @@ func (db *PGCon) getDataByWorkID(c context.Context, worksID map[string][]uuid.UU
 			WorkID          string
 			NodeID          string
 			ApplicationBody *map[string]interface{}
+			Keys            *map[string]string
 			SchemaID        *string
 		)
 
 		nodes := make(map[string]*NodeContent, 0)
 
 		for rows.Next() {
-			if scanErr := rows.Scan(&StepName, &WorkID, &NodeID, &ApplicationBody, &SchemaID); scanErr != nil {
+			if scanErr := rows.Scan(&StepName, &WorkID, &NodeID, &ApplicationBody, &Keys, &SchemaID); scanErr != nil {
 				rows.Close()
 
 				return res, scanErr
@@ -2610,7 +2612,19 @@ func (db *PGCon) getDataByWorkID(c context.Context, worksID map[string][]uuid.UU
 			node, nodeExist := nodes[StepName]
 			if !nodeExist {
 				bodySlices := make(map[string]*[]interface{}, 0)
+
 				for key, val := range *ApplicationBody {
+					if valMap, isMap := val.(map[string]interface{}); isMap && Keys != nil {
+						val = translateKey(valMap, *Keys)
+					}
+
+					if Keys != nil {
+						ruKeys := *Keys
+						if ruKey, ok := ruKeys[key]; ok && ruKey != "" {
+							key = ruKey
+						}
+					}
+
 					bodySlices[key] = &[]interface{}{val}
 				}
 
@@ -2623,6 +2637,19 @@ func (db *PGCon) getDataByWorkID(c context.Context, worksID map[string][]uuid.UU
 			}
 
 			for key, val := range *ApplicationBody {
+				if Keys != nil {
+					ruKeys := *Keys
+
+					if ruKey, ok := ruKeys[key]; ok && ruKey != "" {
+						key = ruKey
+					}
+				}
+
+				valMap, isMap := val.(map[string]interface{})
+				if isMap && Keys != nil {
+					val = translateKey(valMap, *Keys)
+				}
+
 				arr, exists := node.Content[key]
 				if !exists {
 					node.Content[key] = &[]interface{}{val}
@@ -2649,6 +2676,27 @@ func (db *PGCon) getDataByWorkID(c context.Context, worksID map[string][]uuid.UU
 	}
 
 	return res, rowsErr
+}
+
+func translateKey(body map[string]interface{}, ruKeys map[string]string) map[string]interface{} {
+	for key, value := range body {
+		ruKey, ruKeyExpired := ruKeys[key]
+		if ruKeyExpired {
+			delete(body, key)
+
+			if ruKey != "" {
+				key = ruKey
+			}
+		}
+
+		if val, isMap := value.(map[string]interface{}); isMap {
+			value = translateKey(val, ruKeys)
+		}
+
+		body[key] = value
+	}
+
+	return body
 }
 
 func filterForFields(params *SearchPipelinesFieldsParams, q string) string {
