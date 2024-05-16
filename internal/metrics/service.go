@@ -77,7 +77,7 @@ func (m *service) Request2ExternalSystem(label *ExternalRequestInfo) {
 		label.Method,
 		m.stand,
 		label.URL,
-		label.IntegrationName,
+		label.ExternalSystem,
 		strconv.Itoa(label.ResponseCode),
 		label.TraceID,
 	}...).Observe(label.Duration.Seconds())

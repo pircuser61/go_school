@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 
 	"go.opencensus.io/trace"
 
@@ -28,8 +29,8 @@ type service struct {
 	People people.ServiceInterface
 }
 
-func NewService(cfg *people.Config, ssoS *sso.Service) (people.ServiceInterface, error) {
-	srv, err := nocache.NewService(cfg, ssoS)
+func NewService(cfg *people.Config, ssoS *sso.Service, m metrics.Metrics) (people.ServiceInterface, error) {
+	srv, err := nocache.NewService(cfg, ssoS, m)
 	if err != nil {
 		return nil, err
 	}

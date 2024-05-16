@@ -27,17 +27,17 @@ type RequestInfo struct {
 }
 
 type ExternalRequestInfo struct {
-	IntegrationName string
-	Method          string
-	URL             string
-	TraceID         string
-	ResponseCode    int
-	Duration        time.Duration
+	ExternalSystem string
+	Method         string
+	URL            string
+	TraceID        string
+	ResponseCode   int
+	Duration       time.Duration
 }
 
 func NewExternalRequestInfo(name string) *ExternalRequestInfo {
 	return &ExternalRequestInfo{
-		IntegrationName: name,
+		ExternalSystem: name,
 	}
 }
 
