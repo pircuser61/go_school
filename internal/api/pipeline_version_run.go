@@ -655,7 +655,7 @@ func (ae *Env) createEmptyTask(
 
 	block := pipeline.Block{
 		DB:            txStorage,
-		Name:          pipeline.BlockGoStartID,
+		Name:          pipeline.BlockGoFirstStart,
 		StepType:      blockData.TypeID,
 		WorkID:        dto.WorkID,
 		VarStore:      store.NewStore(),
