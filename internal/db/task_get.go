@@ -911,7 +911,8 @@ func getActorsNameByStepType(stepName string) string {
 
 func getStepTypeBySelectForFilter(selectFor string) string {
 	switch selectFor {
-	case "executor", "queue_executor", "in_work_executor", "finished_executor", "group_executor", "finished_group_executor":
+	//nolint:lll // Так и должно быть
+	case "executor", "queue_executor", "in_work_executor", "finished_executor", "group_executor", "finished_group_executor", "finished_executor_v2":
 		return "execution"
 	}
 
