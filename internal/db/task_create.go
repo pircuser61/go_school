@@ -63,6 +63,7 @@ type CreateEmptyTaskDTO struct {
 	Author        string
 	RunContext    *entity.TaskRunContext
 	ByPrevVersion bool
+	VersionID     uuid.UUID
 }
 
 func (db *PGCon) CreateEmptyTask(ctx context.Context, task *CreateEmptyTaskDTO) error {
@@ -91,7 +92,8 @@ func (db *PGCon) CreateEmptyTask(ctx context.Context, task *CreateEmptyTaskDTO) 
 			author,
 			work_number,
 			run_context,
-			checkpoint
+			checkpoint,
+			version_id
 		)
 		VALUES (
 			$1, 
@@ -100,7 +102,8 @@ func (db *PGCon) CreateEmptyTask(ctx context.Context, task *CreateEmptyTaskDTO) 
 			$4,
 			$5,
 			$6,
-			$7
+			$7,
+			$8
 		)
 `
 
@@ -114,6 +117,7 @@ func (db *PGCon) CreateEmptyTask(ctx context.Context, task *CreateEmptyTaskDTO) 
 		task.WorkNumber,
 		task.RunContext,
 		entity.TaskInitCheckpoint,
+		task.VersionID,
 	)
 	if err != nil {
 		return err

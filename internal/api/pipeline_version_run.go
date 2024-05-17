@@ -120,6 +120,7 @@ func (ae *Env) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Request
 			WorkNumber:    req.WorkNumber,
 			Author:        usr.Username,
 			ByPrevVersion: true,
+			VersionID:     version.VersionID,
 			RunContext: &entity.TaskRunContext{
 				InitialApplication: entity.InitialApplication{
 					Description:               req.Description,
@@ -343,6 +344,8 @@ func (ae *Env) runVersion(ctx c.Context, log logger.Logger, run *runVersionsDTO)
 
 	version, err := storage.GetVersionByPipelineID(ctx, run.PipelineID)
 	if err != nil {
+		log.WithError(err).Error("GetVersionByPipelineID")
+
 		return nil, errors.Wrap(err, GetVersionsByBlueprintIDError.error())
 	}
 
@@ -359,6 +362,7 @@ func (ae *Env) runVersion(ctx c.Context, log logger.Logger, run *runVersionsDTO)
 			WorkNumber:    run.WorkNumber,
 			Author:        usr.Username,
 			ByPrevVersion: false,
+			VersionID:     version.VersionID,
 			RunContext: &entity.TaskRunContext{
 				ClientID:   run.ClientID,
 				PipelineID: run.PipelineID,
@@ -383,6 +387,8 @@ func (ae *Env) runVersion(ctx c.Context, log logger.Logger, run *runVersionsDTO)
 	if err != nil {
 		_ = ae.DB.UpdateTaskStatus(ctx, workID, db.RunStatusError, GetExternalSystemsError.error(), "")
 
+		log.WithError(err).Error("getExternalSystem")
+
 		return nil, errors.Wrap(err, GetExternalSystemsError.error())
 	}
 
@@ -395,11 +401,15 @@ func (ae *Env) runVersion(ctx c.Context, log logger.Logger, run *runVersionsDTO)
 	if err != nil {
 		_ = ae.DB.UpdateTaskStatus(ctx, workID, db.RunStatusError, MappingError.error(), "")
 
+		log.WithError(err).Error("processMappings")
+
 		return nil, errors.Wrap(err, MappingError.error())
 	}
 
 	if err = version.FillEntryPointOutput(); err != nil {
 		_ = ae.DB.UpdateTaskStatus(ctx, workID, db.RunStatusError, GetEntryPointOutputError.error(), "")
+
+		log.WithError(err).Error("entry")
 
 		return nil, errors.Wrap(err, GetEntryPointOutputError.error())
 	}
