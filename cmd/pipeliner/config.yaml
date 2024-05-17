@@ -72,6 +72,7 @@ kafka:
   consumer_task_runner_topic: "from.pipeline-runner.to.pipeliner-local"
   health_check_timeout: 30
   function_message_resend_delay: 10s
+  group_strategy: "sticky"
   cache:
     type: "default"
     address: ""
