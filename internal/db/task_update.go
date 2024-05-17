@@ -71,7 +71,8 @@ func (db *PGCon) FillEmptyTask(ctx c.Context, updateTask *UpdateEmptyTaskDTO) er
 			author = $5,
 			real_author = $6,
 			parameters = $7,
-			debug = $8
+			debug = $8,
+			status = $9
 			
 			WHERE id = $1 
 	`
@@ -87,6 +88,7 @@ func (db *PGCon) FillEmptyTask(ctx c.Context, updateTask *UpdateEmptyTaskDTO) er
 		updateTask.RealAuthor,
 		updateTask.Parameters,
 		updateTask.Debug,
+		RunStatusRunning,
 	)
 	if err != nil {
 		return fmt.Errorf("failed update task by work_id %s, %w", updateTask.WorkID, err)

@@ -2650,8 +2650,8 @@ func (db *PGCon) CheckBlockForHiddenFlag(ctx c.Context, blockID string) (bool, e
 	return res, nil
 }
 
-func (db *PGCon) CheckTaskForHiddenFlag(ctx c.Context, workNumber string) (bool, error) {
-	ctx, span := trace.StartSpan(ctx, "check_task_for_hidden_flag_monitoring")
+func (db *PGCon) CheckTaskForHiddenFlagIfExists(ctx c.Context, workNumber string) (bool, error) {
+	ctx, span := trace.StartSpan(ctx, "check_task_for_hidden_flag_monitoring_if_exists")
 	defer span.End()
 
 	// nolint:gocritic
@@ -2663,7 +2663,13 @@ func (db *PGCon) CheckTaskForHiddenFlag(ctx c.Context, workNumber string) (bool,
 		where w.work_number = $1 AND w.child_id is null`
 
 	var res bool
-	if err := db.Connection.QueryRow(ctx, q, workNumber).Scan(&res); err != nil {
+
+	err := db.Connection.QueryRow(ctx, q, workNumber).Scan(&res)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return false, nil
+	}
+
+	if err != nil {
 		return false, err
 	}
 

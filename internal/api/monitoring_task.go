@@ -118,7 +118,7 @@ func (ae *Env) MonitoringGetTask(w http.ResponseWriter, req *http.Request, workN
 		return
 	}
 
-	taskIsHidden, err := ae.DB.CheckTaskForHiddenFlag(ctx, workNumber)
+	taskIsHidden, err := ae.DB.CheckTaskForHiddenFlagIfExists(ctx, workNumber)
 	if err != nil {
 		errorHandler.handleError(CheckForHiddenError, err)
 
@@ -153,7 +153,7 @@ func (ae *Env) MonitoringGetTask(w http.ResponseWriter, req *http.Request, workN
 	}
 
 	if len(steps) == 0 {
-		errorHandler.handleError(NoProcessNodesForMonitoringError, errors.New("no process steps for monitoring"))
+		handleZeroSteps(w, &errorHandler, events, workNumber)
 
 		return
 	}
@@ -162,6 +162,19 @@ func (ae *Env) MonitoringGetTask(w http.ResponseWriter, req *http.Request, workN
 		errorHandler.handleError(UnknownError, err)
 
 		return
+	}
+}
+
+func handleZeroSteps(w http.ResponseWriter, errorHandler *httpErrorHandler, events []entity.TaskEvent, workNumber string) {
+	if len(events) == 0 {
+		errorHandler.handleError(NoProcessNodesForMonitoringError, errors.New("no process steps for monitoring"))
+
+		return
+	}
+
+	err := sendResponse(w, http.StatusOK, toMonitoringTaskResponseWithoutSteps(events, workNumber))
+	if err != nil {
+		errorHandler.handleError(UnknownError, err)
 	}
 }
 
@@ -218,6 +231,22 @@ func toMonitoringTaskResponse(steps []entity.MonitoringTaskStep, events []entity
 
 		res.History = append(res.History, monitoringHistory)
 	}
+
+	return res
+}
+
+func toMonitoringTaskResponseWithoutSteps(events []entity.TaskEvent, workNumber string) *MonitoringTask {
+	res := &MonitoringTask{
+		History:  make([]MonitoringHistory, 0),
+		TaskRuns: make([]MonitoringTaskRun, 0),
+	}
+	res.ScenarioInfo = MonitoringScenarioInfo{
+		Author: events[0].Author,
+	}
+
+	res.WorkId = events[0].WorkID
+	res.TaskRuns = getRunsByEvents(events)
+	res.WorkNumber = workNumber
 
 	return res
 }

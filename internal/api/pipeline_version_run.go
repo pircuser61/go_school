@@ -99,28 +99,13 @@ func (ae *Env) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Request
 	workID := uuid.New()
 	errorHandler.log = errorHandler.log.WithField("workID", workID)
 
-	version, err := ae.DB.GetVersionByWorkNumber(ctx, req.WorkNumber)
-	if err != nil {
-		errorHandler.handleError(GetVersionsByWorkNumberError, err)
-
-		return
-	}
-
-	errorHandler.log = errorHandler.log.
-		WithField("versionID", version.VersionID).
-		WithField("pipelineID", version.PipelineID)
-
-	ctx = logger.WithLogger(ctx, errorHandler.log)
-
 	err = ae.createEmptyTask(ctx,
 		ae.DB,
-		version,
 		&db.CreateEmptyTaskDTO{
 			WorkID:        workID,
 			WorkNumber:    req.WorkNumber,
 			Author:        usr.Username,
 			ByPrevVersion: true,
-			VersionID:     version.VersionID,
 			RunContext: &entity.TaskRunContext{
 				InitialApplication: entity.InitialApplication{
 					Description:               req.Description,
@@ -138,6 +123,19 @@ func (ae *Env) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Request
 
 		return
 	}
+
+	version, err := ae.DB.GetVersionByWorkNumber(ctx, req.WorkNumber)
+	if err != nil {
+		errorHandler.handleError(GetVersionsByWorkNumberError, err)
+
+		return
+	}
+
+	errorHandler.log = errorHandler.log.
+		WithField("versionID", version.VersionID).
+		WithField("pipelineID", version.PipelineID)
+
+	ctx = logger.WithLogger(ctx, errorHandler.log)
 
 	workID, err = ae.DB.GetWorkIDByWorkNumber(ctx, req.WorkNumber)
 	if err != nil {
@@ -167,8 +165,7 @@ func (ae *Env) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Request
 
 	err = ae.handleStartApplicationParams(ctx, reqParams)
 	if err != nil {
-		e := GetHiddenFieldsError
-		errorHandler.log.Error(e.errorMessage(err))
+		errorHandler.log.Error(GetHiddenFieldsError.errorMessage(err))
 	}
 
 	started, execErr := ae.execVersion(ctx, &execVersionDTO{
@@ -342,27 +339,14 @@ func (ae *Env) runVersion(ctx c.Context, log logger.Logger, run *runVersionsDTO)
 	workID := uuid.New()
 	log = log.WithField("workID", workID)
 
-	version, err := storage.GetVersionByPipelineID(ctx, run.PipelineID)
-	if err != nil {
-		log.WithError(err).Error("GetVersionByPipelineID")
-
-		return nil, errors.Wrap(err, GetVersionsByBlueprintIDError.error())
-	}
-
-	requestInfo.VersionID = version.VersionID.String()
-	log = log.WithField("versionID", requestInfo.VersionID)
-	ctx = logger.WithLogger(ctx, log)
-
 	err = ae.createEmptyTask(
 		ctx,
 		storage,
-		version,
 		&db.CreateEmptyTaskDTO{
 			WorkID:        workID,
 			WorkNumber:    run.WorkNumber,
 			Author:        usr.Username,
 			ByPrevVersion: false,
-			VersionID:     version.VersionID,
 			RunContext: &entity.TaskRunContext{
 				ClientID:   run.ClientID,
 				PipelineID: run.PipelineID,
@@ -380,6 +364,19 @@ func (ae *Env) runVersion(ctx c.Context, log logger.Logger, run *runVersionsDTO)
 	if err != nil {
 		return nil, errors.Wrap(err, PipelineCreateError.error())
 	}
+
+	version, err := storage.GetVersionByPipelineID(ctx, run.PipelineID)
+	if err != nil {
+		_ = ae.DB.UpdateTaskStatus(ctx, workID, db.RunStatusError, MappingError.error(), "")
+
+		log.WithError(err).Error("GetVersionByPipelineID")
+
+		return nil, errors.Wrap(err, GetVersionsByBlueprintIDError.error())
+	}
+
+	requestInfo.VersionID = version.VersionID.String()
+	log = log.WithField("versionID", requestInfo.VersionID)
+	ctx = logger.WithLogger(ctx, log)
 
 	var externalSystem *entity.ExternalSystem
 
@@ -641,7 +638,6 @@ func cleanKey(mapKeys interface{}) string {
 func (ae *Env) createEmptyTask(
 	ctx c.Context,
 	storage db.Database,
-	version *entity.EriusScenario,
 	dto *db.CreateEmptyTaskDTO,
 ) error {
 	txStorage, err := storage.StartTransaction(ctx)
@@ -661,26 +657,45 @@ func (ae *Env) createEmptyTask(
 		return fmt.Errorf("create empty task in database, %w", err)
 	}
 
-	blockData := version.Pipeline.Blocks[pipeline.BlockGoFirstStart]
-
-	block := pipeline.Block{
-		DB:            txStorage,
-		Name:          pipeline.BlockGoFirstStart,
-		StepType:      blockData.TypeID,
-		WorkID:        dto.WorkID,
-		VarStore:      store.NewStore(),
-		IsPaused:      false,
-		HasUpdateData: false,
-	}
-
-	err = block.CreateInDB(ctx)
+	err = createStartBlock(ctx, txStorage, dto.WorkID, dto.Author)
 	if err != nil {
-		return fmt.Errorf("create start block in db, %w", err)
+		return err
 	}
 
 	err = txStorage.CommitTransaction(ctx)
 	if err != nil {
 		return fmt.Errorf("commit transaction, %w", err)
+	}
+
+	return nil
+}
+
+func createStartBlock(ctx c.Context, tx db.Database, workID uuid.UUID, author string) error {
+	log := logger.GetLogger(ctx)
+
+	block := pipeline.Block{
+		DB:            tx,
+		Name:          pipeline.BlockGoFirstStart,
+		StepType:      pipeline.BlockGoStartID,
+		WorkID:        workID,
+		VarStore:      store.NewStore(),
+		IsPaused:      false,
+		HasUpdateData: false,
+	}
+
+	err := block.CreateInDB(ctx)
+	if err != nil {
+		return fmt.Errorf("create start block in db, %w", err)
+	}
+
+	_, err = tx.CreateTaskEvent(ctx, &entity.CreateTaskEvent{
+		WorkID:    workID.String(),
+		Author:    author,
+		EventType: string(MonitoringTaskActionRequestActionStart),
+		Params:    []byte(`{"steps":[]}`),
+	})
+	if err != nil {
+		log.WithField("funcName", "CreateTaskEvent").Error(err)
 	}
 
 	return nil

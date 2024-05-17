@@ -658,31 +658,8 @@ func (ae *Env) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO) (
 
 	log := logger.GetLogger(ctx).WithField("funcName", "execVersionInternal")
 
-	txStorage, transactionErr := dto.storage.StartTransaction(ctx)
-	if transactionErr != nil {
-		return PipelineRunError, transactionErr
-	}
-
-	defer func() {
-		if r := recover(); r != nil {
-			log = log.WithField("funcName", "execVersionInternal").
-				WithField("panic handle", true)
-			log.Error(r)
-
-			if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
-				log.WithError(errors.New("couldn't rollback tx")).
-					Error(txErr)
-			}
-		}
-	}()
-
 	parameters, err := json.Marshal(dto.vars)
 	if err != nil {
-		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
-			log.WithError(errors.New("couldn't rollback tx")).
-				Error(txErr)
-		}
-
 		return PipelineRunError, err
 	}
 
@@ -695,14 +672,8 @@ func (ae *Env) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO) (
 		dto.runCtx,
 	)
 
-	err = txStorage.FillEmptyTask(ctx, &updateTaskDTO)
+	err = ae.DB.FillEmptyTask(ctx, &updateTaskDTO)
 	if err != nil {
-		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
-			log.WithField("funcName", "FillEmptyTask").
-				WithError(errors.New("couldn't rollback tx")).
-				Error(txErr)
-		}
-
 		return PipelineRunError, err
 	}
 
@@ -747,32 +718,6 @@ func (ae *Env) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO) (
 	}
 
 	blockData := dto.p.Pipeline.Blocks[pipeline.BlockGoFirstStart]
-
-	runCtx.SetTaskEvents(ctx)
-
-	params := struct {
-		Steps []string `json:"steps"`
-	}{Steps: []string{}}
-
-	jsonParams, err := json.Marshal(params)
-	if err != nil {
-		log.Error(err)
-	}
-
-	_, err = ae.DB.CreateTaskEvent(ctx, &e.CreateTaskEvent{
-		WorkID:    dto.taskID.String(),
-		Author:    dto.authorName,
-		EventType: string(MonitoringTaskActionRequestActionStart),
-		Params:    jsonParams,
-	})
-	if err != nil {
-		log.WithField("funcName", "CreateTaskEvent").Error(err)
-	}
-
-	err = txStorage.CommitTransaction(ctx)
-	if err != nil {
-		return PipelineRunError, err
-	}
 
 	log = log.WithField("stepName", pipeline.BlockGoFirstStart)
 	ctx = logger.WithLogger(ctx, log)

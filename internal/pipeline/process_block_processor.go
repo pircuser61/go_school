@@ -36,6 +36,8 @@ func newBlockProcessor(name string, bl *entity.EriusFunc, runCtx *BlockRunContex
 	}
 }
 
+var ErrProcessCanceledBlock = errors.New("couldn't process canceled block")
+
 //nolint:gocognit,gocyclo,nestif //it's ok
 func (p *blockProcessor) ProcessBlock(ctx context.Context, its int) (string, error) {
 	log := logger.GetLogger(ctx).
@@ -73,9 +75,8 @@ func (p *blockProcessor) ProcessBlock(ctx context.Context, its int) (string, err
 		return p.name, p.handleErrorWithRollback(ctx, log, getErr)
 	}
 
-	err = p.handleStatus(ctx, status)
-	if err != nil {
-		return p.name, p.handleErrorWithRollback(ctx, log, err)
+	if status == db.RunStatusCanceled {
+		return p.name, p.handleErrorWithRollback(ctx, log, ErrProcessCanceledBlock)
 	}
 
 	block, id, initErr := initBlock(ctx, p.name, p.bl, p.runCtx)
@@ -393,18 +394,4 @@ func (p *blockProcessor) updateTaskExecDeadline(ctx context.Context) error {
 		slaInfoPtr)
 
 	return p.runCtx.Services.Storage.SetExecDeadline(ctx, p.runCtx.TaskID.String(), deadline)
-}
-
-func (p *blockProcessor) handleStatus(ctx context.Context, status int) error {
-	switch status {
-	case db.RunStatusCreated:
-		if changeErr := p.runCtx.updateTaskStatus(ctx, db.RunStatusRunning, "", db.SystemLogin); changeErr != nil {
-			return changeErr
-		}
-	case db.RunStatusRunning:
-	case db.RunStatusCanceled:
-		return errors.New("couldn't process canceled block")
-	}
-
-	return nil
 }

@@ -230,8 +230,6 @@ const (
 	TaskUpdateActionReload                     TaskUpdateAction = "reload"
 )
 
-const TaskInitCheckpoint = "new"
-
 type GetUnfinishedTaskSteps struct {
 	ID        uuid.UUID
 	StepType  string
