@@ -289,7 +289,7 @@ func TestValidation_SdBlueprintFilled(t *testing.T) {
 
 	retryableHttpClient := httpclient.NewClient(httpmock.Client(&mockResponse), nil, 0, 0)
 
-	sdAPI, _ := nocache.NewService(&servicedesc.Config{}, nil)
+	sdAPI, _ := nocache.NewService(&servicedesc.Config{}, nil, nil)
 	sdAPI.SetCli(retryableHttpClient)
 
 	for _, tt := range tests {
