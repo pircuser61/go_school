@@ -6,7 +6,6 @@ import (
 	"github.com/hashicorp/go-retryablehttp"
 )
 
-
 type httpRequestDoer struct {
 	*retryablehttp.Client
 }

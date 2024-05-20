@@ -9,8 +9,6 @@ import (
 
 	"gitlab.services.mts.ru/abp/myosotis/observability"
 
-	cachekit "gitlab.services.mts.ru/jocasta/cache-kit"
-
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/httpclient"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
@@ -27,27 +25,23 @@ const (
 type service struct {
 	SdURL string
 	Cli   *retryablehttp.Client
-	Cache cachekit.Cache
 }
 
 func NewService(cfg *servicedesc.Config, ssoS *sso.Service, m metrics.Metrics) (servicedesc.Service, error) {
 	httpClient := &http.Client{}
 
-	tr := transport{
+	httpClient.Transport = &transport{
 		next: ochttp.Transport{
 			Base:        httpClient.Transport,
 			Propagation: observability.NewHTTPFormat(),
 		},
-		sso:   ssoS,
-		scope: cfg.Scope,
+		sso:     ssoS,
+		scope:   cfg.Scope,
 		metrics: m,
 	}
 
-	httpClient.Transport = &tr
-	newCli := httpclient.NewClient(httpClient, nil, cfg.MaxRetries, cfg.RetryDelay)
-
 	return &service{
-		Cli:   newCli,
+		Cli:   httpclient.NewClient(httpClient, nil, cfg.MaxRetries, cfg.RetryDelay),
 		SdURL: cfg.ServicedeskURL,
 	}, nil
 }

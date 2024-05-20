@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+
 	"github.com/hashicorp/go-retryablehttp"
 
 	"go.opencensus.io/trace"
@@ -142,8 +143,8 @@ func (s *service) GetUsers(ctx context.Context, username string, limit *int, fil
 	return resources, nil
 }
 
-func (s *service) PathBuilder(mainpath, subpath string) (string, error) {
-	return s.People.PathBuilder(mainpath, subpath)
+func (s *service) PathBuilder(mainPath, subPath string) (string, error) {
+	return s.People.PathBuilder(mainPath, subPath)
 }
 
 func (s *service) GetUserEmail(ctx context.Context, username string) (string, error) {

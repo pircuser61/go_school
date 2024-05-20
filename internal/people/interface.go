@@ -9,7 +9,7 @@ import (
 type Service interface {
 	Setter
 
-	PathBuilder(mainpath, subpath string) (string, error)
+	PathBuilder(mainPath, subPath string) (string, error)
 	GetUserEmail(ctx c.Context, username string) (string, error)
 	GetUser(ctx c.Context, search string) (SSOUser, error)
 	GetUsers(ctx c.Context, search string, limit *int, filter []string) ([]SSOUser, error)
