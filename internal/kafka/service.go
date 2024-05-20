@@ -343,17 +343,26 @@ func (s *Service) getGroupStrategy(assignor string) []sarama.BalanceStrategy {
 	}
 }
 
+// getCacheDBIdx берет номер реплики пода из его идентификатора вида hostname-{число}.
 func (s *Service) getCacheDBIdx(cfg Config) int {
+	var podIdx string
+
 	hostname := os.Getenv(cfg.PodIdxEnvKey)
 
-	podIdx := hostname[len(hostname)-1]
+	for i := len(hostname) - 2; i > 0; i-- {
+		if hostname[i] < '0' || hostname[i] > '9' {
+			podIdx = hostname[i+1:]
 
-	dbIdx, err := strconv.Atoi(string(podIdx))
+			break
+		}
+	}
+
+	dbIdx, err := strconv.Atoi(podIdx)
 	if err != nil {
 		s.log.WithError(err).Error("invalid pod index value:", podIdx)
 
 		return cfg.Cache.DB
 	}
 
-	return dbIdx % cfg.PartitionsCnt
+	return dbIdx
 }
