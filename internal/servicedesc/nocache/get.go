@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 
-
 	"github.com/hashicorp/go-retryablehttp"
 
 	"go.opencensus.io/trace"
@@ -146,4 +145,3 @@ func (s *service) GetSchemaByBlueprintID(ctx c.Context, blueprintID string) (map
 
 	return schema, nil
 }
-

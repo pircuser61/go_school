@@ -11,7 +11,7 @@ import (
 
 	"go.opencensus.io/trace"
 
-	"github.com/hashicorp/go-retryablehttp"
+	rhttp "github.com/hashicorp/go-retryablehttp"
 
 	microservice "gitlab.services.mts.ru/jocasta/integrations/pkg/proto/gen/microservice/v1"
 )
@@ -58,7 +58,7 @@ func (s *Service) GetToken(ctx c.Context, scopes []string, clientSecret, clientI
 	ctxLocal, span := trace.StartSpan(ctx, "getToken")
 	defer span.End()
 
-	initedScopes := s.initScopes(scopes, clientSecret, clientID)
+	sc := s.initScopes(scopes, clientSecret, clientID)
 	path := mainSsoURL + tokensPath
 
 	switch stand {
@@ -70,7 +70,7 @@ func (s *Service) GetToken(ctx c.Context, scopes []string, clientSecret, clientI
 		return "", errors.New("wrong stand name")
 	}
 
-	req, err := retryablehttp.NewRequestWithContext(ctxLocal, http.MethodPost, path, strings.NewReader(initedScopes.getTokensFormData.Encode()))
+	req, err := rhttp.NewRequestWithContext(ctxLocal, http.MethodPost, path, strings.NewReader(sc.getTokensFormData.Encode()))
 	if err != nil {
 		return "", err
 	}
@@ -108,7 +108,7 @@ func (s *Service) initScopes(scopes []string, clientSecret, clientID string) *sc
 	}
 }
 
-func (s *Service) FillAuth(ctx c.Context, key string, pID, vID, wNumber, clientID string) (res *Auth, err error) {
+func (s *Service) FillAuth(ctx c.Context, key, pID, vID, wNumber, clientID string) (res *Auth, err error) {
 	cred, grpcErr := s.RPCMicrCli.GetCredentialsByKey(ctx,
 		&microservice.GetCredentialsByKeyRequest{
 			HumanReadableKey: key,

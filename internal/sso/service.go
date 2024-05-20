@@ -3,7 +3,6 @@ package sso
 import (
 	"context"
 	"fmt"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 	"net/http"
 	"net/url"
 	"os"
@@ -11,14 +10,18 @@ import (
 	"sync"
 	"time"
 
+	"go.opencensus.io/plugin/ochttp"
+
 	"go.opencensus.io/trace"
 
 	"gopkg.in/square/go-jose.v2/jwt"
 
 	"github.com/hashicorp/go-retryablehttp"
+
 	"gitlab.services.mts.ru/abp/myosotis/observability"
+
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/httpclient"
-	"go.opencensus.io/plugin/ochttp"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 )
 
 const (
@@ -94,16 +97,14 @@ type Service struct {
 func NewService(c Config, m metrics.Metrics) (*Service, error) {
 	httpClient := &http.Client{}
 
-	tr := transport{
+	httpClient.Transport = &transport{
 		next: ochttp.Transport{
 			Base:        httpClient.Transport,
 			Propagation: observability.NewHTTPFormat(),
 		},
-		Scope: "",
+		Scope:   "",
 		metrics: m,
 	}
-	httpClient.Transport = &tr
-	newCli := httpclient.NewClient(httpClient, nil, c.MaxRetries, c.RetryDelay)
 
 	refreshFD := url.Values{
 		grantTypeKey: []string{grantTypeRefreshValue},
@@ -117,7 +118,7 @@ func NewService(c Config, m metrics.Metrics) (*Service, error) {
 		clientSecret:          os.Getenv(c.ClientSecretEnvKey),
 		clientID:              c.ClientID,
 		accessTokenCookieName: c.AccessTokenCookieName,
-		cli:                   newCli,
+		cli:                   httpclient.NewClient(httpClient, nil, c.MaxRetries, c.RetryDelay),
 		refreshTokensFormData: refreshFD,
 		userInfoCache:         map[string]*cachedUserInfo{},
 		userInfoMutex:         &sync.RWMutex{},

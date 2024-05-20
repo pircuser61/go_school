@@ -18,7 +18,6 @@ import (
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/retry"
-	cachekit "gitlab.services.mts.ru/jocasta/cache-kit"
 	d "gitlab.services.mts.ru/jocasta/human-tasks/pkg/proto/gen/proto/go/delegation"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
@@ -34,9 +33,8 @@ const (
 )
 
 type service struct {
-	conn  *grpc.ClientConn
-	cli   d.DelegationServiceClient
-	cache cachekit.Cache
+	conn *grpc.ClientConn
+	cli  d.DelegationServiceClient
 }
 
 func NewService(cfg *Config, log logger.Logger, m metrics.Metrics) (ServiceInterface, error) {

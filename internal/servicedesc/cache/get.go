@@ -23,7 +23,7 @@ const (
 
 //nolint:dupl //так нужно
 func (s *service) GetWorkGroup(ctx context.Context, groupID string) (*sd.WorkGroup, error) {
-	ctx, span := trace.StartSpan(ctx, "servicedesc.get_work_group(cached)")
+	ctx, span := trace.StartSpan(ctx, "servicedesc.get_work_group")
 	defer span.End()
 
 	log := logger.GetLogger(ctx)
@@ -68,7 +68,7 @@ func (s *service) GetWorkGroup(ctx context.Context, groupID string) (*sd.WorkGro
 
 //nolint:dupl //так нужно
 func (s *service) GetSchemaByID(ctx context.Context, schemaID string) (map[string]interface{}, error) {
-	ctx, span := trace.StartSpan(ctx, "servicedesc.get_schema_by_id(cached)")
+	ctx, span := trace.StartSpan(ctx, "servicedesc.get_schema_by_id")
 	defer span.End()
 
 	log := logger.GetLogger(ctx)
@@ -113,7 +113,7 @@ func (s *service) GetSchemaByID(ctx context.Context, schemaID string) (map[strin
 
 //nolint:dupl //так нужно
 func (s *service) GetSchemaByBlueprintID(ctx context.Context, blueprintID string) (map[string]interface{}, error) {
-	ctx, span := trace.StartSpan(ctx, "servicedesc.get_schema_by_blueprint_id(cached)")
+	ctx, span := trace.StartSpan(ctx, "servicedesc.get_schema_by_blueprint_id")
 	defer span.End()
 
 	log := logger.GetLogger(ctx)
@@ -156,8 +156,9 @@ func (s *service) GetSchemaByBlueprintID(ctx context.Context, blueprintID string
 	return blueprint, nil
 }
 
+//nolint:dupl //так нужно
 func (s *service) GetSsoPerson(ctx context.Context, username string) (*sd.SsoPerson, error) {
-	ctx, span := trace.StartSpan(ctx, "servicedesc.get_sso_person(cached)")
+	ctx, span := trace.StartSpan(ctx, "servicedesc.get_sso_person")
 	defer span.End()
 
 	log := logger.GetLogger(ctx)

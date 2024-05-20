@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/hashicorp/go-retryablehttp"
 
 	"go.opencensus.io/trace"
 
@@ -45,6 +46,8 @@ func NewService(cfg *people.Config, ssoS *sso.Service, m metrics.Metrics) (peopl
 		Cache:  cache,
 	}, nil
 }
+
+func (s *service) SetCli(cli *retryablehttp.Client) {}
 
 func (s *service) GetUser(ctx context.Context, username string) (people.SSOUser, error) {
 	ctx, span := trace.StartSpan(ctx, "people.cache.get_user")

@@ -117,11 +117,11 @@ func (s *Service) GetSystemsClients(ctx c.Context, systemIDs []uuid.UUID) (map[s
 	return cc, nil
 }
 
-func (s *Service) GetMicroserviceHumanKey(ctx c.Context, microserviceID, pipelineID, versionID, workNumber, clientID string) (string, error) {
+func (s *Service) GetMicroserviceHumanKey(ctx c.Context, microSrvID, pID, vID, workNumber, clientID string) (string, error) {
 	res, err := s.RPCMicrCli.GetMicroservice(ctx, &microservice.GetMicroserviceRequest{
-		MicroserviceId: microserviceID,
-		PipelineId:     pipelineID,
-		VersionId:      versionID,
+		MicroserviceId: microSrvID,
+		PipelineId:     pID,
+		VersionId:      vID,
 		WorkNumber:     workNumber,
 		ClientId:       clientID,
 	})

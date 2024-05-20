@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc/nocache"
 	"io"
 	"net/http"
 	"testing"
@@ -22,7 +21,9 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/httpclient"
 	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 	serviceDeskMocks "gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc/mocks"
+	sd_nocache "gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc/nocache"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
@@ -403,16 +404,13 @@ func TestProcessBlock(t *testing.T) {
 
 							return res
 						}(),
-						ServiceDesc: func() *nocache.Service {
-							sdMock := nocache.Service{
-								SdURL: "",
-							}
+						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(nocache.SsoPerson{})
+								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := bytes.NewReader(b)
 
 								return &http.Response{
@@ -426,9 +424,11 @@ func TestProcessBlock(t *testing.T) {
 							}
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							sdMock.Cli = retryableHttpClient
 
-							return &sdMock
+							sdMock, _ := sd_nocache.NewService(&servicedesc.Config{}, nil, nil)
+							sdMock.SetCli(retryableHttpClient)
+
+							return sdMock
 						}(),
 					},
 				},
@@ -952,16 +952,13 @@ func TestProcessBlock(t *testing.T) {
 
 							return res
 						}(),
-						ServiceDesc: func() *nocache.Service {
-							sdMock := nocache.Service{
-								SdURL: "",
-							}
+						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(nocache.SsoPerson{})
+								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := bytes.NewReader(b)
 
 								return &http.Response{
@@ -975,9 +972,11 @@ func TestProcessBlock(t *testing.T) {
 							}
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							sdMock.Cli = retryableHttpClient
 
-							return &sdMock
+							sdMock, _ := sd_nocache.NewService(&servicedesc.Config{}, nil, nil)
+							sdMock.SetCli(retryableHttpClient)
+
+							return sdMock
 						}(),
 						SLAService: func() sla.Service {
 							slaMock := sla.NewSLAService(nil)
@@ -985,7 +984,7 @@ func TestProcessBlock(t *testing.T) {
 							return slaMock
 						}(),
 						HumanTasks: func() human_tasks.ServiceInterface {
-							service, _ := human_tasks.NewService(&human_tasks.Config{}, nil)
+							service, _ := human_tasks.NewService(&human_tasks.Config{}, nil, nil)
 
 							return service
 						}(),

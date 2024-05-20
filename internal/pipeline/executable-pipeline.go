@@ -2,7 +2,6 @@ package pipeline
 
 import (
 	c "context"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/integrations"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -14,6 +13,7 @@ import (
 	file_registry "gitlab.services.mts.ru/jocasta/pipeliner/internal/fileregistry"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/functions"
 	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/integrations"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/kafka"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"

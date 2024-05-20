@@ -9,8 +9,6 @@ import (
 
 	"gitlab.services.mts.ru/abp/myosotis/observability"
 
-	cachekit "gitlab.services.mts.ru/jocasta/cache-kit"
-
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/httpclient"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
@@ -23,7 +21,6 @@ type service struct {
 	searchURL string
 	cli       *retryablehttp.Client
 	sso       *sso.Service
-	cache     cachekit.Cache
 }
 
 func NewService(cfg *people.Config, ssoS *sso.Service, m metrics.Metrics) (people.Service, error) {
@@ -52,4 +49,8 @@ func NewService(cfg *people.Config, ssoS *sso.Service, m metrics.Metrics) (peopl
 	res.searchURL = search
 
 	return res, nil
+}
+
+func (s *service) SetCli(cli *retryablehttp.Client) {
+	s.cli = cli
 }
