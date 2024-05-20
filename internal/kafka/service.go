@@ -4,6 +4,8 @@ import (
 	c "context"
 	"errors"
 	"fmt"
+	"os"
+	"strconv"
 	"time"
 
 	"github.com/Shopify/sarama"
@@ -60,7 +62,7 @@ func NewService(log logger.Logger, cfg Config, m metrics.Metrics) (*Service, boo
 	kafkaCache, err := cachekit.CreateCache(cachekit.Config{
 		Type:    cfg.Cache.Type,
 		Address: cfg.Cache.Address,
-		DB:      cfg.Cache.DB,
+		DB:      s.getCacheDBIdx(cfg),
 		Pass:    cfg.Cache.Pass,
 		TTL:     cfg.Cache.TTL,
 	})
@@ -339,4 +341,19 @@ func (s *Service) getGroupStrategy(assignor string) []sarama.BalanceStrategy {
 
 		return []sarama.BalanceStrategy{sarama.BalanceStrategySticky}
 	}
+}
+
+func (s *Service) getCacheDBIdx(cfg Config) int {
+	hostname := os.Getenv(cfg.PodIdxEnvKey)
+
+	podIdx := hostname[len(hostname)-1]
+
+	dbIdx, err := strconv.Atoi(string(podIdx))
+	if err != nil {
+		s.log.WithError(err).Error("invalid pod index value:", podIdx)
+
+		return cfg.Cache.DB
+	}
+
+	return dbIdx % cfg.PartitionsCnt
 }
