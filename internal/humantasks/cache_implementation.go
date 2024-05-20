@@ -3,7 +3,6 @@ package humantasks
 import (
 	c "context"
 	"encoding/json"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 	"strings"
 
 	"go.opencensus.io/trace"
@@ -11,7 +10,10 @@ import (
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	cachekit "gitlab.services.mts.ru/jocasta/cache-kit"
+
 	d "gitlab.services.mts.ru/jocasta/human-tasks/pkg/proto/gen/proto/go/delegation"
+
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 )
 
 const (

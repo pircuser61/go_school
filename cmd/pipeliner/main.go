@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"flag"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/integrations"
 	"os"
 	"os/signal"
 	"syscall"
@@ -24,6 +23,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/hrgate"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/httpclient"
 	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/integrations"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/kafka"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	mail_fetcher "gitlab.services.mts.ru/jocasta/pipeliner/internal/mail/fetcher"
@@ -183,7 +183,7 @@ func main() {
 		return
 	}
 
-	formsService, err := forms.NewService(cfg.Forms, log)
+	formsService, err := forms.NewService(cfg.Forms, log, m)
 	if err != nil {
 		log.WithError(err).Error("can't create forms service")
 
