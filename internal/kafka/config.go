@@ -20,6 +20,7 @@ type Config struct {
 	HealthCheckTimeout     int           `yaml:"health_check_timeout"`
 	FuncMessageResendDelay time.Duration `yaml:"function_message_resend_delay"`
 	GroupStrategy          string        `yaml:"group_strategy"`
+	PodIdxEnvKey           string        `yaml:"pod_index_env_key"`
 }
 
 type CacheConfig struct {

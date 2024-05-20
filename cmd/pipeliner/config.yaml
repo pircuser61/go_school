@@ -73,6 +73,7 @@ kafka:
   health_check_timeout: 30
   function_message_resend_delay: 10s
   group_strategy: "sticky"
+  pod_index_env_key: HOSTNAME
   cache:
     type: "default"
     address: ""
