@@ -6,6 +6,8 @@ import (
 	"time"
 
 	g "google.golang.org/grpc"
+
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
 
 func GrpcMetrics(
@@ -16,7 +18,13 @@ func GrpcMetrics(
 		info := NewExternalRequestInfo(sysName)
 		info.Method = "grpc"
 		info.URL = md
-		info.TraceID = ""
+
+		reqID := ctx.Value(script.RequestID{})
+		if reqID == nil {
+			reqID = ""
+		}
+
+		info.TraceID = reqID.(string)
 
 		start := time.Now()
 

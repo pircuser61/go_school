@@ -33,6 +33,9 @@ func RequestIDMiddleware(next http.Handler) http.Handler {
 			r.Header.Set(XRequestIDHeader, reqID)
 		}
 
+		ctx := context.WithValue(r.Context(), script.RequestID{}, reqID)
+		r = r.WithContext(ctx)
+
 		next.ServeHTTP(w, r)
 	}
 

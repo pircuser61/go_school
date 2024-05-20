@@ -3,6 +3,8 @@ package api
 import (
 	c "context"
 	"encoding/json"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
+	"golang.org/x/net/context"
 	"strconv"
 	"strings"
 
@@ -55,6 +57,7 @@ func (ae *Env) RunTaskHandler(ctx c.Context, message kafka.RunTaskMessage) error
 		WithField("method", "kafka")
 
 	ctx = logger.WithLogger(ctx, log)
+	ctx = context.WithValue(ctx, script.RequestID{}, message.RequestID)
 
 	messageTmp, err := json.Marshal(message)
 	if err != nil {
