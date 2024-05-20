@@ -209,7 +209,8 @@ func getUniqueActions(selectFilter string, logins []string, isPersonFilter bool)
 			"--unique-actions-filter--",
 			"AND ((vs.content -> 'State' -> vs.step_name ->> 'is_reentry' = 'true' "+
 				"AND vs.content -> 'State' -> vs.step_name ->> 'form_executor_type' != 'initiator') "+
-				"OR (vs.content -> 'State' -> vs.step_name ->> 'is_reentry' != 'true')) --unique-actions-filter--",
+				"OR (vs.content -> 'State' -> vs.step_name ->> 'is_reentry' != 'true') "+
+				"OR vs.content -> 'State' -> vs.step_name ->> 'is_reentry' IS NULL) --unique-actions-filter--",
 			1)
 
 		return q
@@ -352,8 +353,8 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 		    w.is_paused,
 		    w.finished_at
 		FROM works w 
-		JOIN versions v ON v.id = w.version_id
-		JOIN pipelines p ON p.id = v.pipeline_id
+		LEFT JOIN versions v ON v.id = w.version_id
+		LEFT JOIN pipelines p ON p.id = v.pipeline_id
 		JOIN work_status ws ON w.status = ws.id
 		JOIN unique_actions ua ON ua.work_id = w.id
 		[join_variable_storage]
@@ -423,7 +424,8 @@ func compileGetUniquePersonsQuery(fl entity.TaskFilter, delegations []string) (q
 		[with_variable_storage]
 		SELECT 
     		var.current_executor->'people',
-    		var.current_executor->>'group_name'    		
+    		var.current_executor->>'group_name',  		
+    		var.current_executor->>'group_id'    		
 		FROM works w 
 		JOIN versions v ON v.id = w.version_id
 		JOIN pipelines p ON p.id = v.pipeline_id
@@ -909,7 +911,8 @@ func getActorsNameByStepType(stepName string) string {
 
 func getStepTypeBySelectForFilter(selectFor string) string {
 	switch selectFor {
-	case "executor", "queue_executor", "in_work_executor", "finished_executor", "group_executor", "finished_group_executor":
+	//nolint:lll // Так и должно быть
+	case "executor", "queue_executor", "in_work_executor", "finished_executor", "group_executor", "finished_group_executor", "finished_executor_v2":
 		return "execution"
 	}
 
@@ -1379,7 +1382,11 @@ WITH active_counts as (
     WHERE vs.status IN ('running', 'idle')
       AND m.login = $1
       AND vs.step_type = 'form'
-	  AND m.finished = false
+	  AND m.finished = false	  
+	  AND ((vs.content -> 'State' -> vs.step_name ->> 'is_reentry' = 'true'
+		    AND vs.content -> 'State' -> vs.step_name ->> 'form_executor_type' != 'initiator') 
+			OR (vs.content -> 'State' -> vs.step_name ->> 'is_reentry' != 'true')
+			OR vs.content -> 'State' -> vs.step_name ->> 'is_reentry' IS NULL)
     GROUP BY vs.work_id
     LIMIT 1
 )
@@ -2067,8 +2074,8 @@ func (db *PGCon) getTasksMeta(ctx c.Context, q string, args []interface{}) (*ent
 }
 
 type UniquePersons struct {
-	Groups []string `json:"groups"`
-	Logins []string `json:"logins"`
+	Groups map[string]string `json:"groups"`
+	Logins []string          `json:"logins"`
 }
 
 const potentialPersonsCapacity = 100
@@ -2085,18 +2092,19 @@ func (db *PGCon) getTaskUniquePersons(ctx c.Context, q string, args []interface{
 
 	var (
 		executors *[]string
-		group     *string
+		groupName sql.NullString
+		groupID   sql.NullString
 	)
 
 	up := UniquePersons{
 		Logins: make([]string, 0, potentialPersonsCapacity),
-		Groups: make([]string, 0, potentialPersonsCapacity),
+		Groups: make(map[string]string, 0),
 	}
 
 	check := make(map[string]struct{}, potentialPersonsCapacity*2)
 
 	for rows.Next() {
-		if scanErr := rows.Scan(&executors, &group); scanErr != nil {
+		if scanErr := rows.Scan(&executors, &groupName, &groupID); scanErr != nil {
 			return nil, scanErr
 		}
 
@@ -2110,11 +2118,9 @@ func (db *PGCon) getTaskUniquePersons(ctx c.Context, q string, args []interface{
 			}
 		}
 
-		if group != nil {
-			if _, ok := check[*group]; !ok {
-				check[*group] = struct{}{}
-
-				up.Groups = append(up.Groups, *group)
+		if groupName.String != "" && groupID.String != "" {
+			if _, ok := check[groupName.String]; !ok {
+				up.Groups[groupName.String] = groupID.String
 			}
 		}
 	}

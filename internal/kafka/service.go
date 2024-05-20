@@ -95,6 +95,7 @@ func NewService(log logger.Logger, cfg Config, m metrics.Metrics) (*Service, boo
 	saramaCfg.MetricRegistry = metricRegistry
 	saramaCfg.Producer.Return.Successes = true // Producer.Return.Successes must be true to be used in a SyncProducer
 	saramaCfg.Net.DialTimeout = kafkaNetTimeout
+	saramaCfg.Consumer.Group.Rebalance.GroupStrategies = s.getGroupStrategy(cfg.GroupStrategy)
 
 	saramaClient, err := sarama.NewClient(cfg.Brokers, saramaCfg)
 	if err != nil {
@@ -145,7 +146,7 @@ func (s *Service) ProduceFuncMessage(ctx c.Context, message *RunnerOutMessage) e
 		return errors.New("kafka service unavailable")
 	}
 
-	return s.producer.Produce(ctx, message)
+	return s.producer.ProduceWithKey(ctx, message.TaskID.String(), message)
 }
 
 func (s *Service) ProduceFuncResultMessage(ctx c.Context, message *RunnerInMessage) error {
@@ -153,7 +154,7 @@ func (s *Service) ProduceFuncResultMessage(ctx c.Context, message *RunnerInMessa
 		return errors.New("kafka service unavailable")
 	}
 
-	return s.producerFuncResult.Produce(ctx, message)
+	return s.producerFuncResult.ProduceWithKey(ctx, message.TaskID.String(), message)
 }
 
 //nolint:all //its ok here
@@ -322,5 +323,20 @@ func (s *Service) checkHealth() {
 	adminErr := admin.Close()
 	if adminErr != nil {
 		s.log.WithError(adminErr).Error("couldn't close admin client connection")
+	}
+}
+
+func (s *Service) getGroupStrategy(assignor string) []sarama.BalanceStrategy {
+	switch assignor {
+	case "range":
+		return []sarama.BalanceStrategy{sarama.BalanceStrategyRange}
+	case "round-robin":
+		return []sarama.BalanceStrategy{sarama.BalanceStrategyRoundRobin}
+	case "sticky":
+		return []sarama.BalanceStrategy{sarama.BalanceStrategySticky}
+	default:
+		s.log.Info("invalid kafka consumer group strategy in config. set default")
+
+		return []sarama.BalanceStrategy{sarama.BalanceStrategySticky}
 	}
 }

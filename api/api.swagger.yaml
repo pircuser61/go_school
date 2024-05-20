@@ -2002,6 +2002,7 @@ paths:
               - finished_group_executor
               - queue_executor
               - in_work_executor
+              - finished_executor_v2
         - name: forCarousel
           in: query
           schema:
@@ -4093,8 +4094,8 @@ components:
           items:
             type: string
         groups:
-          type: array
-          items:
+          type: object
+          additionalProperties:
             type: string
       required:
         - tasks
