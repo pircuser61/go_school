@@ -94,7 +94,7 @@ func main() {
 		return
 	}
 
-	serviceDescService, err := sd_cache.NewService(&cfg.ServiceDesc, ssoService)
+	serviceDescService, err := sd_cache.NewService(&cfg.ServiceDesc, ssoService, m)
 	if err != nil {
 		log.WithError(err).Error("can't create servicedesc service")
 
@@ -176,7 +176,7 @@ func main() {
 		log.WithError(fillErr).Error("can't fill default unit id")
 	}
 
-	fileRegistryService, err := file_registry.NewService(cfg.FileRegistry, log)
+	fileRegistryService, err := file_registry.NewService(cfg.FileRegistry, log, m)
 	if err != nil {
 		log.WithError(err).Error("can't create file-registry service")
 

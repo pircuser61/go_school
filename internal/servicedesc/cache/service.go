@@ -2,8 +2,10 @@ package cache
 
 import (
 	"github.com/hashicorp/go-retryablehttp"
+
 	cachekit "gitlab.services.mts.ru/jocasta/cache-kit"
 
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 	sd "gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc/nocache"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
@@ -14,8 +16,8 @@ type service struct {
 	servicedesc sd.Service
 }
 
-func NewService(cfg *sd.Config, ssoS *sso.Service) (sd.Service, error) {
-	srv, err := nocache.NewService(cfg, ssoS)
+func NewService(cfg *sd.Config, ssoS *sso.Service, m metrics.Metrics) (sd.Service, error) {
+	srv, err := nocache.NewService(cfg, ssoS, m)
 	if err != nil {
 		return nil, err
 	}

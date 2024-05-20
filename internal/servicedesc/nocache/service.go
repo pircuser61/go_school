@@ -8,8 +8,11 @@ import (
 	"github.com/hashicorp/go-retryablehttp"
 
 	"gitlab.services.mts.ru/abp/myosotis/observability"
+
 	cachekit "gitlab.services.mts.ru/jocasta/cache-kit"
+
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/httpclient"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 )
@@ -27,7 +30,7 @@ type service struct {
 	Cache cachekit.Cache
 }
 
-func NewService(cfg *servicedesc.Config, ssoS *sso.Service) (servicedesc.Service, error) {
+func NewService(cfg *servicedesc.Config, ssoS *sso.Service, m metrics.Metrics) (servicedesc.Service, error) {
 	httpClient := &http.Client{}
 
 	tr := transport{
@@ -37,6 +40,7 @@ func NewService(cfg *servicedesc.Config, ssoS *sso.Service) (servicedesc.Service
 		},
 		sso:   ssoS,
 		scope: cfg.Scope,
+		metrics: m,
 	}
 
 	httpClient.Transport = &tr
