@@ -2,7 +2,6 @@ package configs
 
 import (
 	"fmt"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/integrations"
 	"os"
 	"time"
 
@@ -14,6 +13,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/hrgate"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/httpclient"
 	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/integrations"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/kafka"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	mail_fetcher "gitlab.services.mts.ru/jocasta/pipeliner/internal/mail/fetcher"

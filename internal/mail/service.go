@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 	"net/http"
 	"net/mail"
 	"os"
@@ -18,6 +17,7 @@ import (
 	"gitlab.services.mts.ru/abp/mail/pkg/broker"
 	"gitlab.services.mts.ru/abp/mail/pkg/email"
 	"gitlab.services.mts.ru/abp/mail/pkg/mailclient"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 )
