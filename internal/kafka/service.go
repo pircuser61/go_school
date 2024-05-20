@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/Shopify/sarama"
@@ -345,21 +346,13 @@ func (s *Service) getGroupStrategy(assignor string) []sarama.BalanceStrategy {
 
 // getCacheDBIdx берет номер реплики пода из его идентификатора вида hostname-{число}.
 func (s *Service) getCacheDBIdx(cfg Config) int {
-	var podIdx string
-
 	hostname := os.Getenv(cfg.PodIdxEnvKey)
 
-	for i := len(hostname) - 2; i > 0; i-- {
-		if hostname[i] < '0' || hostname[i] > '9' {
-			podIdx = hostname[i+1:]
+	splittedStr := strings.Split(hostname, "-")
 
-			break
-		}
-	}
-
-	dbIdx, err := strconv.Atoi(podIdx)
+	dbIdx, err := strconv.Atoi(splittedStr[len(splittedStr)-1])
 	if err != nil {
-		s.log.WithError(err).Error("invalid pod index value:", podIdx)
+		s.log.WithError(err).Error("invalid pod index value:", splittedStr)
 
 		return cfg.Cache.DB
 	}
