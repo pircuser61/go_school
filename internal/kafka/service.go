@@ -63,7 +63,7 @@ func NewService(log logger.Logger, cfg Config, m metrics.Metrics) (*Service, boo
 	kafkaCache, err := cachekit.CreateCache(cachekit.Config{
 		Type:    cfg.Cache.Type,
 		Address: cfg.Cache.Address,
-		DB:      s.getCacheDBIdx(cfg),
+		DB:      s.getCacheDBIdx(&cfg),
 		Pass:    cfg.Cache.Pass,
 		TTL:     cfg.Cache.TTL,
 	})
@@ -345,7 +345,7 @@ func (s *Service) getGroupStrategy(assignor string) []sarama.BalanceStrategy {
 }
 
 // getCacheDBIdx берет номер реплики пода из его идентификатора вида hostname-{число}.
-func (s *Service) getCacheDBIdx(cfg Config) int {
+func (s *Service) getCacheDBIdx(cfg *Config) int {
 	hostname := os.Getenv(cfg.PodIdxEnvKey)
 
 	splittedStr := strings.Split(hostname, "-")
