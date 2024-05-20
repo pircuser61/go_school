@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/integrations"
 	"os"
 	"os/signal"
 	"syscall"
@@ -23,7 +24,6 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/hrgate"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/httpclient"
 	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/integrations"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/kafka"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	mail_fetcher "gitlab.services.mts.ru/jocasta/pipeliner/internal/mail/fetcher"
@@ -80,7 +80,7 @@ func main() {
 		httpclient.HTTPClient(cfg.HTTPClientConfig), log, cfg.HTTPClientConfig.MaxRetries, cfg.HTTPClientConfig.RetryDelay,
 	)
 
-	ssoService, err := sso.NewService(cfg.SSO)
+	ssoService, err := sso.NewService(cfg.SSO, m)
 	if err != nil {
 		log.WithError(err).Error("can't create sso service")
 
@@ -103,7 +103,7 @@ func main() {
 
 	cfg.Mail.FetchEmail = cfg.MailFetcher.ImapUserName
 
-	mailService, err := mail.NewService(cfg.Mail)
+	mailService, err := mail.NewService(cfg.Mail, m)
 	if err != nil {
 		log.WithError(err).Error("can't create mail service")
 
@@ -129,21 +129,21 @@ func main() {
 		}
 	}
 
-	schedulerService, err := scheduler.NewService(cfg.SchedulerTasks, log)
+	schedulerService, err := scheduler.NewService(cfg.SchedulerTasks, log, m)
 	if err != nil {
 		log.WithError(err).Error("can't create scheduler service")
 
 		return
 	}
 
-	functionsService, err := functions.NewService(cfg.FunctionStore, log)
+	functionsService, err := functions.NewService(cfg.FunctionStore, log, m)
 	if err != nil {
 		log.WithError(err).Error("can't create functions service")
 
 		return
 	}
 
-	humanTasksService, err := human_tasks.NewService(&cfg.HumanTasks, log)
+	humanTasksService, err := human_tasks.NewService(&cfg.HumanTasks, log, m)
 	if err != nil {
 		log.WithError(err).Error("can't create human tasks service")
 
@@ -157,21 +157,21 @@ func main() {
 		return
 	}
 
-	integrationsService, err := integrations.NewService(cfg.Integrations, log)
+	integrationsService, err := integrations.NewService(cfg.Integrations, log, m)
 	if err != nil {
 		log.WithError(err).Error("can't create integrations service")
 
 		return
 	}
 
-	hrgateService, err := hrgate.NewService(&cfg.HrGate, ssoService)
+	hrGateService, err := hrgate.NewService(&cfg.HrGate, ssoService, m)
 	if err != nil {
 		log.WithError(err).Error("can't create hrgate service")
 
 		return
 	}
 
-	fillErr := hrgateService.FillDefaultUnitID(ctx)
+	fillErr := hrGateService.FillDefaultUnitID(ctx)
 	if fillErr != nil {
 		log.WithError(fillErr).Error("can't fill default unit id")
 	}
@@ -197,7 +197,7 @@ func main() {
 		return
 	}
 
-	slaService := sla.NewSLAService(hrgateService)
+	slaService := sla.NewSLAService(hrGateService)
 
 	includePlaceholderBlock := cfg.IncludePlaceholderBlock
 
@@ -218,7 +218,7 @@ func main() {
 		MailFetcher:             mailFetcher,
 		FileRegistry:            fileRegistryService,
 		Integrations:            integrationsService,
-		HrGate:                  hrgateService,
+		HrGate:                  hrGateService,
 		Scheduler:               schedulerService,
 		IncludePlaceholderBlock: includePlaceholderBlock,
 		SLAService:              slaService,

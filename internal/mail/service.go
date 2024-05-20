@@ -4,12 +4,14 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 	"net/http"
 	"net/mail"
 	"os"
 	"regexp"
 	"strings"
 	"text/template"
+	"time"
 
 	"go.opencensus.io/trace"
 
@@ -27,17 +29,17 @@ const (
 )
 
 type Service struct {
-	cli *mailclient.Client
-
-	from *mail.Address
-
+	cli        *mailclient.Client
+	from       *mail.Address
 	Images     map[string][]byte
 	SdAddress  string
 	FetchEmail string
+	host       string
+	metrics    metrics.Metrics
 }
 
 // nolint:gocritic // it's more comfortable to work with config as a value
-func NewService(c Config) (*Service, error) {
+func NewService(c Config, m metrics.Metrics) (*Service, error) {
 	cfg := &broker.Config{
 		Broker:       broker.Kind(c.Broker),
 		Host:         c.Host,
@@ -67,6 +69,8 @@ func NewService(c Config) (*Service, error) {
 		Images:     images,
 		SdAddress:  c.SdAddress,
 		FetchEmail: c.FetchEmail,
+		host:       c.Host,
+		metrics:    m,
 	}
 
 	return &s, nil
@@ -77,6 +81,8 @@ func (s *Service) GetApplicationLink(applicationID string) string {
 }
 
 func (s *Service) SendNotification(ctx context.Context, to []string, files []email.Attachment, tmpl Template) error {
+	const externalSystemName = "mail.inside"
+
 	_, span := trace.StartSpan(ctx, "SendNotification")
 	defer span.End()
 
@@ -127,7 +133,26 @@ func (s *Service) SendNotification(ctx context.Context, to []string, files []ema
 
 	msg.Text = b.String()
 
-	return s.cli.Send(msg)
+	info := metrics.NewExternalRequestInfo(externalSystemName)
+	info.Method = "post"
+	info.URL = s.host
+	info.TraceID = span.SpanContext().TraceID.String()
+
+	start := time.Now()
+
+	err = s.cli.Send(msg)
+
+	statusCode := http.StatusOK
+	if err != nil {
+		statusCode = http.StatusInternalServerError
+	}
+
+	info.ResponseCode = statusCode
+	info.Duration = time.Since(start)
+
+	s.metrics.Request2ExternalSystem(info)
+
+	return err
 }
 
 func getImages(path string) (map[string][]byte, error) {

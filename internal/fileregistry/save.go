@@ -13,6 +13,8 @@ import (
 	"go.opencensus.io/trace"
 )
 
+const authorizationHeader = "Authorization"
+
 func (s *Service) SaveFile(ctx c.Context, token, clientID, name string, file []byte, workNumber string) (string, error) {
 	ctx, span := trace.StartSpan(ctx, "file_registry.save_file")
 	defer span.End()

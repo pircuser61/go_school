@@ -19,10 +19,9 @@ import (
 )
 
 const (
-	getFileByID         = "/api/fileregistry/v1/file/"
-	saveFile            = "/api/fileregistry/v1/file/upload"
-	dispositionHeader   = "Content-Disposition"
-	authorizationHeader = "Authorization"
+	getFileByID       = "/api/fileregistry/v1/file/"
+	saveFile          = "/api/fileregistry/v1/file/upload"
+	dispositionHeader = "Content-Disposition"
 )
 
 func (s *Service) GetAttachmentLink(ctx c.Context, attachments []AttachInfo) ([]AttachInfo, error) {

@@ -36,6 +36,7 @@ func NewService(cfg Config, log logger.Logger, m metrics.Metrics) (*Service, err
 	opts := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithStatsHandler(&ocgrpc.ClientHandler{}),
+		grpc.WithUnaryInterceptor(metrics.GrpcMetrics(externalSystemName, m)),
 	}
 
 	if cfg.MaxRetries != 0 {

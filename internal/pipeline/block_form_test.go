@@ -6,13 +6,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc/nocache"
 	"io"
 	"net/http"
 	"testing"
 	"time"
-
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 
 	"github.com/google/uuid"
 
@@ -28,7 +25,10 @@ import (
 	humanTasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 	serviceDeskMocks "gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc/mocks"
+	sd_nocache "gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc/nocache"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
@@ -218,16 +218,13 @@ func Test_createGoFormBlock(t *testing.T) {
 							return slaMock
 						}(),
 						Storage: myStorage,
-						ServiceDesc: func() *nocache.Service {
-							sdMock := nocache.Service{
-								SdURL: "",
-							}
+						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(nocache.SsoPerson{})
+								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 
 								defer body.Close()
@@ -246,9 +243,11 @@ func Test_createGoFormBlock(t *testing.T) {
 
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							sdMock.Cli = retryableHttpClient
 
-							return &sdMock
+							sdMock, _ := sd_nocache.NewService(&servicedesc.Config{}, nil, nil)
+							sdMock.SetCli(retryableHttpClient)
+
+							return sdMock
 						}(),
 					},
 					skipNotifications: true,
@@ -381,16 +380,13 @@ func Test_createGoFormBlock(t *testing.T) {
 
 							return slaMock
 						}(),
-						ServiceDesc: func() *nocache.Service {
-							sdMock := nocache.Service{
-								SdURL: "",
-							}
+						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(nocache.SsoPerson{})
+								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 
 								defer body.Close()
@@ -409,9 +405,11 @@ func Test_createGoFormBlock(t *testing.T) {
 
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							sdMock.Cli = retryableHttpClient
 
-							return &sdMock
+							sdMock, _ := sd_nocache.NewService(&servicedesc.Config{}, nil, nil)
+							sdMock.SetCli(retryableHttpClient)
+
+							return sdMock
 						}(),
 					},
 				},
@@ -562,16 +560,13 @@ func Test_createGoFormBlock(t *testing.T) {
 
 							return slaMock
 						}(),
-						ServiceDesc: func() *nocache.Service {
-							sdMock := nocache.Service{
-								SdURL: "",
-							}
+						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(nocache.SsoPerson{})
+								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 
 								defer body.Close()
@@ -590,9 +585,11 @@ func Test_createGoFormBlock(t *testing.T) {
 
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							sdMock.Cli = retryableHttpClient
 
-							return &sdMock
+							sdMock, _ := sd_nocache.NewService(&servicedesc.Config{}, nil, nil)
+							sdMock.SetCli(retryableHttpClient)
+
+							return sdMock
 						}(),
 					},
 				},
@@ -662,10 +659,12 @@ func Test_createGoFormBlock(t *testing.T) {
 			cli.On("GetDelegations", mock.Anything, mock.Anything).Return(&delegationht.GetDelegationsResponse{
 				Delegations: []*delegationht.Delegation{},
 			}, nil)
-			tt.args.runCtx.Services.HumanTasks = &humanTasks.Service{
-				C:   nil,
-				Cli: &cli,
-			}
+
+			ht, _ := humanTasks.NewService(&humanTasks.Config{}, nil, nil)
+			ht.SetCli(&cli)
+
+			tt.args.runCtx.Services.HumanTasks = ht
+
 
 			got, _, err := createGoFormBlock(ctx, tt.args.name, tt.args.ef, tt.args.runCtx, nil)
 			if got != nil {
@@ -777,10 +776,8 @@ func TestGoFormBlock_Update(t *testing.T) {
 		}
 	)
 
-	serviceDesc := &nocache.Service{
-		Cli:   httpclient.NewClient(&http.Client{}, nil, 0, 0),
-		SdURL: "https://dev.servicedesk.mts.ru",
-	}
+	serviceDesc, _ := sd_nocache.NewService(&servicedesc.Config{ServicedeskURL: "https://dev.servicedesk.mts.ru"}, nil, nil)
+	serviceDesc.SetCli(httpclient.NewClient(&http.Client{}, nil, 0, 0))
 
 	tests := []struct {
 		name      string
@@ -890,16 +887,13 @@ func TestGoFormBlock_Update(t *testing.T) {
 							return slaMock
 						}(),
 						Storage: mockedDb,
-						ServiceDesc: func() *nocache.Service {
-							sdMock := nocache.Service{
-								SdURL: "",
-							}
+						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(nocache.SsoPerson{})
+								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -915,9 +909,11 @@ func TestGoFormBlock_Update(t *testing.T) {
 							}
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							sdMock.Cli = retryableHttpClient
 
-							return &sdMock
+							sdMock, _ := sd_nocache.NewService(&servicedesc.Config{}, nil, nil)
+							sdMock.SetCli(retryableHttpClient)
+
+							return sdMock
 						}(),
 					},
 				},
@@ -1003,16 +999,13 @@ func TestGoFormBlock_Update(t *testing.T) {
 							return slaMock
 						}(),
 						Storage: mockedDb,
-						ServiceDesc: func() *nocache.Service {
-							sdMock := nocache.Service{
-								SdURL: "",
-							}
+						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(nocache.SsoPerson{})
+								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 
 								return &http.Response{
@@ -1027,9 +1020,11 @@ func TestGoFormBlock_Update(t *testing.T) {
 							}
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							sdMock.Cli = retryableHttpClient
 
-							return &sdMock
+							sdMock, _ := sd_nocache.NewService(&servicedesc.Config{}, nil, nil)
+							sdMock.SetCli(retryableHttpClient)
+
+							return sdMock
 						}(),
 					},
 				},
@@ -1499,8 +1494,7 @@ func TestGoFormActions(t *testing.T) {
 
 							return res
 						}(),
-						HumanTasks: func() *humanTasks.Service {
-							ht := humanTasks.Service{}
+						HumanTasks: func() humanTasks.ServiceInterface {
 							htMock := mocks.DelegationServiceClient{}
 
 							htMock.On("GetDelegationsFromLogin", context.Background(), "users1").Return(nil, humanTasks.Delegations{})
@@ -1527,12 +1521,10 @@ func TestGoFormActions(t *testing.T) {
 							})
 							htMock.On("GetDelegates", "users1").Return([]string{"a"})
 
-							ht = humanTasks.Service{
-								Cli: &htMock,
-								C:   nil,
-							}
+							ht, _ := humanTasks.NewService(&humanTasks.Config{}, nil, nil)
+							ht.SetCli(&htMock)
 
-							return &ht
+							return ht
 						}(),
 					},
 				},
@@ -1600,8 +1592,7 @@ func TestGoFormActions(t *testing.T) {
 
 							return res
 						}(),
-						HumanTasks: func() *humanTasks.Service {
-							ht := humanTasks.Service{}
+						HumanTasks: func() humanTasks.ServiceInterface {
 							htMock := mocks.DelegationServiceClient{}
 
 							htMock.On("GetDelegationsFromLogin", context.Background(), "users1").Return(nil, humanTasks.Delegations{})
@@ -1628,12 +1619,10 @@ func TestGoFormActions(t *testing.T) {
 							})
 							htMock.On("GetDelegates", "users1").Return([]string{"a"})
 
-							ht = humanTasks.Service{
-								Cli: &htMock,
-								C:   nil,
-							}
+							ht, _ := humanTasks.NewService(&humanTasks.Config{}, nil, nil)
+							ht.SetCli(&htMock)
 
-							return &ht
+							return ht
 						}(),
 					},
 				},
@@ -1699,8 +1688,7 @@ func TestGoFormActions(t *testing.T) {
 
 							return res
 						}(),
-						HumanTasks: func() *humanTasks.Service {
-							ht := humanTasks.Service{}
+						HumanTasks: func() humanTasks.ServiceInterface {
 							htMock := mocks.DelegationServiceClient{}
 
 							htMock.On("GetDelegationsFromLogin", context.Background(), "users1").Return(nil, humanTasks.Delegations{})
@@ -1727,12 +1715,10 @@ func TestGoFormActions(t *testing.T) {
 							})
 							htMock.On("GetDelegates", "users1").Return([]string{"a"})
 
-							ht = humanTasks.Service{
-								Cli: &htMock,
-								C:   nil,
-							}
+							ht, _ := humanTasks.NewService(&humanTasks.Config{}, nil, nil)
+							ht.SetCli(&htMock)
 
-							return &ht
+							return ht
 						}(),
 					},
 				},
@@ -1821,8 +1807,7 @@ func TestGoFormActions(t *testing.T) {
 
 							return res
 						}(),
-						HumanTasks: func() *humanTasks.Service {
-							ht := humanTasks.Service{}
+						HumanTasks: func() humanTasks.ServiceInterface {
 							htMock := mocks.DelegationServiceClient{}
 
 							htMock.On("GetDelegationsFromLogin", context.Background(), "users1").Return(nil, humanTasks.Delegations{})
@@ -1849,12 +1834,10 @@ func TestGoFormActions(t *testing.T) {
 							})
 							htMock.On("GetDelegates", "users1").Return([]string{"a"})
 
-							ht = humanTasks.Service{
-								Cli: &htMock,
-								C:   nil,
-							}
+							ht, _ := humanTasks.NewService(&humanTasks.Config{}, nil, nil)
+							ht.SetCli(&htMock)
 
-							return &ht
+							return ht
 						}(),
 					},
 				},
@@ -1937,8 +1920,7 @@ func TestGoFormActions(t *testing.T) {
 
 							return res
 						}(),
-						HumanTasks: func() *humanTasks.Service {
-							ht := humanTasks.Service{}
+						HumanTasks: func() humanTasks.ServiceInterface {
 							htMock := mocks.DelegationServiceClient{}
 
 							htMock.On("GetDelegationsFromLogin", context.Background(), "users1").Return(nil, humanTasks.Delegations{})
@@ -1965,12 +1947,10 @@ func TestGoFormActions(t *testing.T) {
 							})
 							htMock.On("GetDelegates", "users1").Return([]string{"a"})
 
-							ht = humanTasks.Service{
-								Cli: &htMock,
-								C:   nil,
-							}
+							ht, _ := humanTasks.NewService(&humanTasks.Config{}, nil, nil)
+							ht.SetCli(&htMock)
 
-							return &ht
+							return ht
 						}(),
 					},
 				},
@@ -2059,8 +2039,7 @@ func TestGoFormActions(t *testing.T) {
 
 							return res
 						}(),
-						HumanTasks: func() *humanTasks.Service {
-							ht := humanTasks.Service{}
+						HumanTasks: func() humanTasks.ServiceInterface {
 							htMock := mocks.DelegationServiceClient{}
 
 							htMock.On("GetDelegationsFromLogin", context.Background(), "users1").Return(nil, humanTasks.Delegations{})
@@ -2087,12 +2066,10 @@ func TestGoFormActions(t *testing.T) {
 							})
 							htMock.On("GetDelegates", "users1").Return([]string{"a"})
 
-							ht = humanTasks.Service{
-								Cli: &htMock,
-								C:   nil,
-							}
+							ht, _ := humanTasks.NewService(&humanTasks.Config{}, nil, nil)
+							ht.SetCli(&htMock)
 
-							return &ht
+							return ht
 						}(),
 					},
 				},

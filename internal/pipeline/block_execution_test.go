@@ -5,8 +5,6 @@ import (
 	c "context"
 	"encoding/json"
 	"fmt"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people/nocache"
-	nocache2 "gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc/nocache"
 	"io"
 	"net/http"
 	"testing"
@@ -25,8 +23,12 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/httpclient"
 	humanTasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks"
 	mocks2 "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks/mocks"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
+	people_nocache "gitlab.services.mts.ru/jocasta/pipeliner/internal/people/nocache"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 	serviceDeskMocks "gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc/mocks"
+	sd_nocache "gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc/nocache"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 
@@ -750,16 +752,13 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
-						ServiceDesc: func() *nocache2.Service {
-							sdMock := nocache2.Service{
-								SdURL: "",
-							}
+						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(nocache2.SsoPerson{})
+								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -774,9 +773,11 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 							}
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							sdMock.Cli = retryableHttpClient
 
-							return &sdMock
+							sdMock, _ := sd_nocache.NewService(&servicedesc.Config{}, nil, nil)
+							sdMock.SetCli(retryableHttpClient)
+
+							return sdMock
 						}(),
 						Storage: func() db.Database {
 							res := &mocks.MockedDatabase{}
@@ -820,16 +821,13 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
-						ServiceDesc: func() *nocache2.Service {
-							sdMock := nocache2.Service{
-								SdURL: "",
-							}
+						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(nocache2.SsoPerson{})
+								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -844,9 +842,11 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 							}
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							sdMock.Cli = retryableHttpClient
 
-							return &sdMock
+							sdMock, _ := sd_nocache.NewService(&servicedesc.Config{}, nil, nil)
+							sdMock.SetCli(retryableHttpClient)
+
+							return sdMock
 						}(),
 						Storage: func() db.Database {
 							res := &mocks.MockedDatabase{}
@@ -889,16 +889,13 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
-						ServiceDesc: func() *nocache2.Service {
-							sdMock := nocache2.Service{
-								SdURL: "",
-							}
+						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(nocache2.SsoPerson{})
+								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -913,9 +910,11 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 							}
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							sdMock.Cli = retryableHttpClient
 
-							return &sdMock
+							sdMock, _ := sd_nocache.NewService(&servicedesc.Config{}, nil, nil)
+							sdMock.SetCli(retryableHttpClient)
+
+							return sdMock
 						}(),
 						Storage: func() db.Database {
 							res := &mocks.MockedDatabase{}
@@ -959,16 +958,13 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
-						ServiceDesc: func() *nocache2.Service {
-							sdMock := nocache2.Service{
-								SdURL: "",
-							}
+						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(nocache2.SsoPerson{})
+								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -983,9 +979,11 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 							}
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							sdMock.Cli = retryableHttpClient
 
-							return &sdMock
+							sdMock, _ := sd_nocache.NewService(&servicedesc.Config{}, nil, nil)
+							sdMock.SetCli(retryableHttpClient)
+
+							return sdMock
 						}(),
 						Storage: func() db.Database {
 							res := &mocks.MockedDatabase{}
@@ -1029,16 +1027,13 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
-						ServiceDesc: func() *nocache2.Service {
-							sdMock := nocache2.Service{
-								SdURL: "",
-							}
+						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(nocache2.SsoPerson{})
+								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -1053,9 +1048,11 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 							}
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							sdMock.Cli = retryableHttpClient
 
-							return &sdMock
+							sdMock, _ := sd_nocache.NewService(&servicedesc.Config{}, nil, nil)
+							sdMock.SetCli(retryableHttpClient)
+
+							return sdMock
 						}(),
 						Storage: func() db.Database {
 							res := &mocks.MockedDatabase{}
@@ -1099,16 +1096,13 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
-						ServiceDesc: func() *nocache2.Service {
-							sdMock := nocache2.Service{
-								SdURL: "",
-							}
+						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(nocache2.SsoPerson{})
+								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -1123,9 +1117,11 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 							}
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							sdMock.Cli = retryableHttpClient
 
-							return &sdMock
+							sdMock, _ := sd_nocache.NewService(&servicedesc.Config{}, nil, nil)
+							sdMock.SetCli(retryableHttpClient)
+
+							return sdMock
 						}(),
 						Storage: func() db.Database {
 							res := &mocks.MockedDatabase{}
@@ -1169,16 +1165,13 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
-						ServiceDesc: func() *nocache2.Service {
-							sdMock := nocache2.Service{
-								SdURL: "",
-							}
+						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(nocache2.SsoPerson{})
+								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -1193,9 +1186,11 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 							}
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							sdMock.Cli = retryableHttpClient
 
-							return &sdMock
+							sdMock, _ := sd_nocache.NewService(&servicedesc.Config{}, nil, nil)
+							sdMock.SetCli(retryableHttpClient)
+
+							return sdMock
 						}(),
 						Storage: func() db.Database {
 							res := &mocks.MockedDatabase{}
@@ -1267,16 +1262,13 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 					skipNotifications: true,
 					VarStore:          store.NewStore(),
 					Services: RunContextServices{
-						ServiceDesc: func() *nocache2.Service {
-							sdMock := nocache2.Service{
-								SdURL: "",
-							}
+						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(nocache2.SsoPerson{})
+								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -1291,9 +1283,12 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 							}
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							sdMock.Cli = retryableHttpClient
 
-							return &sdMock
+							sdMock, _ := sd_nocache.NewService(&servicedesc.Config{}, nil, nil)
+							sdMock.SetCli(retryableHttpClient)
+
+							return sdMock
+
 						}(),
 						Storage: func() db.Database {
 							res := &mocks.MockedDatabase{}
@@ -1337,16 +1332,13 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
-						ServiceDesc: func() *nocache2.Service {
-							sdMock := nocache2.Service{
-								SdURL: "",
-							}
+						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(nocache2.SsoPerson{})
+								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -1361,9 +1353,11 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 							}
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							sdMock.Cli = retryableHttpClient
 
-							return &sdMock
+							sdMock, _ := sd_nocache.NewService(&servicedesc.Config{}, nil, nil)
+							sdMock.SetCli(retryableHttpClient)
+
+							return sdMock
 						}(),
 						Storage: func() db.Database {
 							res := &mocks.MockedDatabase{}
@@ -1442,16 +1436,13 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
-						ServiceDesc: func() *nocache2.Service {
-							sdMock := nocache2.Service{
-								SdURL: "",
-							}
+						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(nocache2.SsoPerson{})
+								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -1466,9 +1457,11 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 							}
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							sdMock.Cli = retryableHttpClient
 
-							return &sdMock
+							sdMock, _ := sd_nocache.NewService(&servicedesc.Config{}, nil, nil)
+							sdMock.SetCli(retryableHttpClient)
+
+							return sdMock
 						}(),
 						Storage: func() db.Database {
 							res := &mocks.MockedDatabase{}
@@ -1504,16 +1497,13 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 					skipNotifications: true,
 					VarStore:          store.NewStore(),
 					Services: RunContextServices{
-						ServiceDesc: func() *nocache2.Service {
-							sdMock := nocache2.Service{
-								SdURL: "",
-							}
+						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(nocache2.SsoPerson{})
+								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -1528,9 +1518,11 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 							}
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							sdMock.Cli = retryableHttpClient
 
-							return &sdMock
+							sdMock, _ := sd_nocache.NewService(&servicedesc.Config{}, nil, nil)
+							sdMock.SetCli(retryableHttpClient)
+
+							return sdMock
 						}(),
 						Storage: func() db.Database {
 							res := &mocks.MockedDatabase{}
@@ -1574,16 +1566,13 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
-						ServiceDesc: func() *nocache2.Service {
-							sdMock := nocache2.Service{
-								SdURL: "",
-							}
+						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(nocache2.SsoPerson{})
+								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -1598,9 +1587,11 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 							}
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							sdMock.Cli = retryableHttpClient
 
-							return &sdMock
+							sdMock, _ := sd_nocache.NewService(&servicedesc.Config{}, nil, nil)
+							sdMock.SetCli(retryableHttpClient)
+
+							return sdMock
 						}(),
 						Storage: func() db.Database {
 							res := &mocks.MockedDatabase{}
@@ -1635,16 +1626,13 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 					skipNotifications: true,
 					VarStore:          store.NewStore(),
 					Services: RunContextServices{
-						ServiceDesc: func() *nocache2.Service {
-							sdMock := nocache2.Service{
-								SdURL: "",
-							}
+						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(nocache2.SsoPerson{})
+								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -1659,9 +1647,11 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 							}
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							sdMock.Cli = retryableHttpClient
 
-							return &sdMock
+							sdMock, _ := sd_nocache.NewService(&servicedesc.Config{}, nil, nil)
+							sdMock.SetCli(retryableHttpClient)
+
+							return sdMock
 						}(),
 						Storage: func() db.Database {
 							res := &mocks.MockedDatabase{}
@@ -1697,16 +1687,13 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 					skipNotifications: true,
 					VarStore:          store.NewStore(),
 					Services: RunContextServices{
-						ServiceDesc: func() *nocache2.Service {
-							sdMock := nocache2.Service{
-								SdURL: "",
-							}
+						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(nocache2.SsoPerson{})
+								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -1721,9 +1708,11 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 							}
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							sdMock.Cli = retryableHttpClient
 
-							return &sdMock
+							sdMock, _ := sd_nocache.NewService(&servicedesc.Config{}, nil, nil)
+							sdMock.SetCli(retryableHttpClient)
+
+							return sdMock
 						}(),
 						Storage: func() db.Database {
 							res := &mocks.MockedDatabase{}
@@ -1759,16 +1748,13 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 					skipNotifications: true,
 					VarStore:          store.NewStore(),
 					Services: RunContextServices{
-						ServiceDesc: func() *nocache2.Service {
-							sdMock := nocache2.Service{
-								SdURL: "",
-							}
+						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(nocache2.SsoPerson{})
+								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -1783,9 +1769,11 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 							}
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							sdMock.Cli = retryableHttpClient
 
-							return &sdMock
+							sdMock, _ := sd_nocache.NewService(&servicedesc.Config{}, nil, nil)
+							sdMock.SetCli(retryableHttpClient)
+
+							return sdMock
 						}(),
 						Storage: func() db.Database {
 							res := &mocks.MockedDatabase{}
@@ -1827,16 +1815,13 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
-						ServiceDesc: func() *nocache2.Service {
-							sdMock := nocache2.Service{
-								SdURL: "",
-							}
+						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(nocache2.SsoPerson{})
+								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -1851,9 +1836,11 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 							}
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							sdMock.Cli = retryableHttpClient
 
-							return &sdMock
+							sdMock, _ := sd_nocache.NewService(&servicedesc.Config{}, nil, nil)
+							sdMock.SetCli(retryableHttpClient)
+
+							return sdMock
 						}(),
 						Storage: func() db.Database {
 							res := &mocks.MockedDatabase{}
@@ -1889,16 +1876,13 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 					skipNotifications: true,
 					VarStore:          store.NewStore(),
 					Services: RunContextServices{
-						ServiceDesc: func() *nocache2.Service {
-							sdMock := nocache2.Service{
-								SdURL: "",
-							}
+						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(nocache2.SsoPerson{})
+								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -1913,9 +1897,11 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 							}
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							sdMock.Cli = retryableHttpClient
 
-							return &sdMock
+							sdMock, _ := sd_nocache.NewService(&servicedesc.Config{}, nil, nil)
+							sdMock.SetCli(retryableHttpClient)
+
+							return sdMock
 						}(),
 						Storage: func() db.Database {
 							res := &mocks.MockedDatabase{}
@@ -1958,16 +1944,13 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
-						ServiceDesc: func() *nocache2.Service {
-							sdMock := nocache2.Service{
-								SdURL: "",
-							}
+						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(nocache2.SsoPerson{})
+								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -1982,9 +1965,11 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 							}
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							sdMock.Cli = retryableHttpClient
 
-							return &sdMock
+							sdMock, _ := sd_nocache.NewService(&servicedesc.Config{}, nil, nil)
+							sdMock.SetCli(retryableHttpClient)
+
+							return sdMock
 						}(),
 						Storage: func() db.Database {
 							res := &mocks.MockedDatabase{}
@@ -2025,16 +2010,13 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 					skipNotifications: true,
 					VarStore:          store.NewStore(),
 					Services: RunContextServices{
-						ServiceDesc: func() *nocache2.Service {
-							sdMock := nocache2.Service{
-								SdURL: "",
-							}
+						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(nocache2.SsoPerson{})
+								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -2049,9 +2031,11 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 							}
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							sdMock.Cli = retryableHttpClient
 
-							return &sdMock
+							sdMock, _ := sd_nocache.NewService(&servicedesc.Config{}, nil, nil)
+							sdMock.SetCli(retryableHttpClient)
+
+							return sdMock
 						}(),
 						Storage: func() db.Database {
 							res := &mocks.MockedDatabase{}
@@ -2113,19 +2097,17 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
-						People: func() *nocache.Service {
-							return &nocache.Service{}
+						People: func() people.Service {
+							pServ, _ := people_nocache.NewService(&people.Config{}, nil, nil)
+							return pServ
 						}(),
-						ServiceDesc: func() *nocache2.Service {
-							sdMock := nocache2.Service{
-								SdURL: "",
-							}
+						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(nocache2.SsoPerson{})
+								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -2140,9 +2122,11 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 							}
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							sdMock.Cli = retryableHttpClient
 
-							return &sdMock
+							sdMock, _ := sd_nocache.NewService(&servicedesc.Config{}, nil, nil)
+							sdMock.SetCli(retryableHttpClient)
+
+							return sdMock
 						}(),
 						Storage: func() db.Database {
 							res := &mocks.MockedDatabase{}
@@ -2185,16 +2169,13 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
-						ServiceDesc: func() *nocache2.Service {
-							sdMock := nocache2.Service{
-								SdURL: "",
-							}
+						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(nocache2.SsoPerson{})
+								b, _ := json.Marshal(servicedesc.SsoPerson{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -2209,9 +2190,11 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 							}
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							sdMock.Cli = retryableHttpClient
 
-							return &sdMock
+							sdMock, _ := sd_nocache.NewService(&servicedesc.Config{}, nil, nil)
+							sdMock.SetCli(retryableHttpClient)
+
+							return sdMock
 						}(),
 						Storage: func() db.Database {
 							res := &mocks.MockedDatabase{}
@@ -2512,8 +2495,7 @@ func TestGoExecutionActions(t *testing.T) {
 
 							return res
 						}(),
-						HumanTasks: func() *humanTasks.Service {
-							ht := humanTasks.Service{}
+						HumanTasks: func() humanTasks.ServiceInterface {
 							htMock := mocks2.DelegationServiceClient{}
 
 							htMock.On("GetDelegationsFromLogin", context.Background(), "users1").Return(nil, humanTasks.Delegations{})
@@ -2540,12 +2522,10 @@ func TestGoExecutionActions(t *testing.T) {
 							})
 							htMock.On("GetDelegates", "users1").Return([]string{"a"})
 
-							ht = humanTasks.Service{
-								Cli: &htMock,
-								C:   nil,
-							}
+							ht, _ := humanTasks.NewService(&humanTasks.Config{}, nil, nil)
+							ht.SetCli(&htMock)
 
-							return &ht
+							return ht
 						}(),
 					},
 				},
@@ -2619,8 +2599,7 @@ func TestGoExecutionActions(t *testing.T) {
 
 							return res
 						}(),
-						HumanTasks: func() *humanTasks.Service {
-							ht := humanTasks.Service{}
+						HumanTasks: func() humanTasks.ServiceInterface {
 							htMock := mocks2.DelegationServiceClient{}
 
 							htMock.On("GetDelegationsFromLogin", context.Background(), "users1").Return(nil, humanTasks.Delegations{})
@@ -2647,12 +2626,10 @@ func TestGoExecutionActions(t *testing.T) {
 							})
 							htMock.On("GetDelegates", "users1").Return([]string{"a"})
 
-							ht = humanTasks.Service{
-								Cli: &htMock,
-								C:   nil,
-							}
+							ht, _ := humanTasks.NewService(&humanTasks.Config{}, nil, nil)
+							ht.SetCli(&htMock)
 
-							return &ht
+							return ht
 						}(),
 					},
 				},
@@ -2722,8 +2699,7 @@ func TestGoExecutionActions(t *testing.T) {
 
 							return res
 						}(),
-						HumanTasks: func() *humanTasks.Service {
-							ht := humanTasks.Service{}
+						HumanTasks: func() humanTasks.ServiceInterface {
 							htMock := mocks2.DelegationServiceClient{}
 
 							htMock.On("GetDelegationsFromLogin", context.Background(), "users1").Return(nil, humanTasks.Delegations{})
@@ -2750,12 +2726,10 @@ func TestGoExecutionActions(t *testing.T) {
 							})
 							htMock.On("GetDelegates", "users1").Return([]string{"a"})
 
-							ht = humanTasks.Service{
-								Cli: &htMock,
-								C:   nil,
-							}
+							ht, _ := humanTasks.NewService(&humanTasks.Config{}, nil, nil)
+							ht.SetCli(&htMock)
 
-							return &ht
+							return ht
 						}(),
 					},
 				},
@@ -2848,8 +2822,7 @@ func TestGoExecutionActions(t *testing.T) {
 
 							return res
 						}(),
-						HumanTasks: func() *humanTasks.Service {
-							ht := humanTasks.Service{}
+						HumanTasks: func() humanTasks.ServiceInterface {
 							htMock := mocks2.DelegationServiceClient{}
 
 							htMock.On("GetDelegationsFromLogin", context.Background(), "users1").Return(nil, humanTasks.Delegations{})
@@ -2876,12 +2849,10 @@ func TestGoExecutionActions(t *testing.T) {
 							})
 							htMock.On("GetDelegates", "users1").Return([]string{"a"})
 
-							ht = humanTasks.Service{
-								Cli: &htMock,
-								C:   nil,
-							}
+							ht, _ := humanTasks.NewService(&humanTasks.Config{}, nil, nil)
+							ht.SetCli(&htMock)
 
-							return &ht
+							return ht
 						}(),
 					},
 				},
@@ -2969,8 +2940,7 @@ func TestGoExecutionActions(t *testing.T) {
 
 							return res
 						}(),
-						HumanTasks: func() *humanTasks.Service {
-							ht := humanTasks.Service{}
+						HumanTasks: func() humanTasks.ServiceInterface {
 							htMock := mocks2.DelegationServiceClient{}
 
 							htMock.On("GetDelegationsFromLogin", context.Background(), "users1").Return(nil, humanTasks.Delegations{})
@@ -2997,12 +2967,10 @@ func TestGoExecutionActions(t *testing.T) {
 							})
 							htMock.On("GetDelegates", "users1").Return([]string{"a"})
 
-							ht = humanTasks.Service{
-								Cli: &htMock,
-								C:   nil,
-							}
+							ht, _ := humanTasks.NewService(&humanTasks.Config{}, nil, nil)
+							ht.SetCli(&htMock)
 
-							return &ht
+							return ht
 						}(),
 					},
 				},
@@ -3085,8 +3053,7 @@ func TestGoExecutionActions(t *testing.T) {
 
 							return res
 						}(),
-						HumanTasks: func() *humanTasks.Service {
-							ht := humanTasks.Service{}
+						HumanTasks: func() humanTasks.ServiceInterface {
 							htMock := mocks2.DelegationServiceClient{}
 
 							htMock.On("GetDelegationsFromLogin", context.Background(), "users1").Return(nil, humanTasks.Delegations{})
@@ -3113,12 +3080,10 @@ func TestGoExecutionActions(t *testing.T) {
 							})
 							htMock.On("GetDelegates", "users1").Return([]string{"a"})
 
-							ht = humanTasks.Service{
-								Cli: &htMock,
-								C:   nil,
-							}
+							ht, _ := humanTasks.NewService(&humanTasks.Config{}, nil, nil)
+							ht.SetCli(&htMock)
 
-							return &ht
+							return ht
 						}(),
 					},
 				},

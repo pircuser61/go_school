@@ -2,6 +2,7 @@ package configs
 
 import (
 	"fmt"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/integrations"
 	"os"
 	"time"
 
@@ -13,7 +14,6 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/hrgate"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/httpclient"
 	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/integrations"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/kafka"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	mail_fetcher "gitlab.services.mts.ru/jocasta/pipeliner/internal/mail/fetcher"
@@ -57,9 +57,9 @@ type Pipeliner struct {
 	Kafka                   kafka.Config             `yaml:"kafka"`
 	FunctionStore           functions.Config         `yaml:"function_store"`
 	HumanTasks              human_tasks.Config       `yaml:"human_tasks"`
-	MailFetcher             mail_fetcher.Config      `yaml:"imap"`
-	Integrations            integrations.Config      `yaml:"integrations"`
-	HrGate                  hrgate.Config            `yaml:"hrgate"`
+	MailFetcher  mail_fetcher.Config `yaml:"imap"`
+	Integrations integrations.Config `yaml:"integrations"`
+	HrGate       hrgate.Config       `yaml:"hrgate"`
 	FileRegistry            file_registry.Config     `yaml:"file_registry"`
 	IncludePlaceholderBlock bool                     `yaml:"include_placeholder_block"`
 	SchedulerTasks          scheduler.Config         `yaml:"scheduler_tasks"`

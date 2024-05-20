@@ -7,12 +7,19 @@ import (
 	"net/http"
 	"time"
 
+	"go.opencensus.io/plugin/ochttp"
+
 	"go.opencensus.io/trace"
 
 	openapi_types "github.com/deepmap/oapi-codegen/pkg/types"
 
+	"gitlab.services.mts.ru/abp/myosotis/observability"
+
 	cachekit "gitlab.services.mts.ru/jocasta/cache-kit"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/httpclient"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
@@ -22,18 +29,51 @@ const (
 )
 
 type Service struct {
-	HRGateURL             string
+	hrGateURL             string
 	DefaultCalendarUnitID *string
-	Location              time.Location
-	Cli                   *ClientWithResponses
+	location              time.Location
+	cli                   *ClientWithResponses
 	Cache                 cachekit.Cache
+}
+
+func NewService(cfg *Config, ssoS *sso.Service, m metrics.Metrics) (ServiceInterface, error) {
+	httpClient := &http.Client{}
+	tr := transport{
+		next: ochttp.Transport{
+			Base:        httpClient.Transport,
+			Propagation: observability.NewHTTPFormat(),
+		},
+		sso:     ssoS,
+		scope:   cfg.Scope,
+		metrics: m,
+	}
+
+	httpClient.Transport = &tr
+	retryableCli := httpclient.NewClient(httpClient, nil, cfg.MaxRetries, cfg.RetryDelay)
+	wrappedRetryableCli := httpRequestDoer{retryableCli}
+
+	newCli, createClientErr := NewClientWithResponses(cfg.HRGateURL, WithHTTPClient(wrappedRetryableCli), WithBaseURL(cfg.HRGateURL))
+	if createClientErr != nil {
+		return nil, createClientErr
+	}
+
+	location, getLocationErr := time.LoadLocation("Europe/Moscow")
+	if getLocationErr != nil {
+		return nil, getLocationErr
+	}
+
+	return &Service{
+		cli:       newCli,
+		hrGateURL: cfg.HRGateURL,
+		location:  *location,
+	}, nil
 }
 
 func (s *Service) GetCalendars(ctx context.Context, params *GetCalendarsParams) ([]Calendar, error) {
 	ctx, span := trace.StartSpan(ctx, "hrgate.get_calendars")
 	defer span.End()
 
-	response, err := s.Cli.GetCalendarsWithResponse(ctx, params)
+	response, err := s.cli.GetCalendarsWithResponse(ctx, params)
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +97,7 @@ func (s *Service) GetCalendarDays(ctx context.Context, params *GetCalendarDaysPa
 		CalendarMap: make(map[int64]CalendarDayType),
 	}
 
-	resp, err := s.Cli.GetCalendarDaysWithResponse(ctx, params)
+	resp, err := s.cli.GetCalendarDaysWithResponse(ctx, params)
 	if err != nil {
 		return nil, err
 	}
@@ -187,7 +227,7 @@ func (s *Service) GetEmployeeByLogin(ctx context.Context, username string) (*Emp
 	ctx, span := trace.StartSpan(ctx, "hrgate.get_employee_by_login")
 	defer span.End()
 
-	response, err := s.Cli.GetEmployeesWithResponse(ctx, &GetEmployeesParams{
+	response, err := s.cli.GetEmployeesWithResponse(ctx, &GetEmployeesParams{
 		Logins: &[]string{username},
 	})
 	if err != nil {
@@ -209,7 +249,7 @@ func (s *Service) GetOrganizationByID(ctx context.Context, organizationID string
 	ctx, span := trace.StartSpan(ctx, "hrgate.get_organization_by_id")
 	defer span.End()
 
-	response, err := s.Cli.GetOrganizationsIdWithResponse(ctx, UUIDPathObjectID(organizationID))
+	response, err := s.cli.GetOrganizationsIdWithResponse(ctx, UUIDPathObjectID(organizationID))
 	if err != nil {
 		return nil, err
 	}
@@ -222,5 +262,5 @@ func (s *Service) GetOrganizationByID(ctx context.Context, organizationID string
 }
 
 func (s *Service) GetLocation() time.Location {
-	return s.Location
+	return s.location
 }

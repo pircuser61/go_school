@@ -14,7 +14,11 @@ import (
 	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/retry"
 
 	scheduler_v1 "gitlab.services.mts.ru/jocasta/scheduler/pkg/proto/gen/src/task/v1"
+
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 )
+
+const externalSystemName = "scheduler"
 
 type Service struct {
 	c   *grpc.ClientConn
@@ -27,10 +31,11 @@ func (s *Service) Ping(ctx context.Context) error {
 	return err
 }
 
-func NewService(cfg Config, log logger.Logger) (*Service, error) {
+func NewService(cfg Config, log logger.Logger, m metrics.Metrics) (*Service, error) {
 	opts := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithStatsHandler(&ocgrpc.ClientHandler{}),
+		grpc.WithUnaryInterceptor(metrics.GrpcMetrics(externalSystemName, m)),
 	}
 
 	if cfg.MaxRetries != 0 {

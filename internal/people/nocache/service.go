@@ -21,16 +21,15 @@ const searchPath = "search/attributes"
 
 type service struct {
 	searchURL string
-
-	cli   *retryablehttp.Client
-	sso   *sso.Service
-	cache cachekit.Cache
+	cli       *retryablehttp.Client
+	sso       *sso.Service
+	cache     cachekit.Cache
 }
 
 func NewService(cfg *people.Config, ssoS *sso.Service, m metrics.Metrics) (people.Service, error) {
 	httpClient := &http.Client{}
 
-	tr := transport{
+	httpClient.Transport = &transport{
 		next: ochttp.Transport{
 			Base:        httpClient.Transport,
 			Propagation: observability.NewHTTPFormat(),
@@ -40,11 +39,8 @@ func NewService(cfg *people.Config, ssoS *sso.Service, m metrics.Metrics) (peopl
 		metrics: m,
 	}
 
-	httpClient.Transport = &tr
-	newCli := httpclient.NewClient(httpClient, nil, cfg.MaxRetries, cfg.RetryDelay)
-
 	res := &service{
-		cli: newCli,
+		cli: httpclient.NewClient(httpClient, nil, cfg.MaxRetries, cfg.RetryDelay),
 		sso: ssoS,
 	}
 

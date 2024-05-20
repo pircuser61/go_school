@@ -1,4 +1,4 @@
-package sso
+package integrations
 
 import (
 	"net/http"
@@ -7,20 +7,24 @@ import (
 	"go.opencensus.io/plugin/ochttp"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 )
 
-const (
-	externalSystemName = "isso"
-	xRequestIDHeader   = "X-Request-Id"
-)
+const xRequestIDHeader = "X-Request-Id"
 
 type transport struct {
 	next    ochttp.Transport
+	sso     *sso.Service
+	scope   string
 	metrics metrics.Metrics
-	Scope   string
 }
 
 func (t *transport) RoundTrip(req *http.Request) (*http.Response, error) {
+	err := t.sso.BindAuthHeader(req.Context(), req, t.scope)
+	if err != nil {
+		return nil, err
+	}
+
 	info := metrics.NewExternalRequestInfo(externalSystemName)
 	info.Method = req.Method
 	info.URL = req.URL.String()

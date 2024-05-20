@@ -3,6 +3,7 @@ package sso
 import (
 	"context"
 	"fmt"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 	"net/http"
 	"net/url"
 	"os"
@@ -90,15 +91,16 @@ type Service struct {
 }
 
 // nolint:gocritic // it's more comfortable to work with config as a value
-func NewService(c Config) (*Service, error) {
+func NewService(c Config, m metrics.Metrics) (*Service, error) {
 	httpClient := &http.Client{}
 
-	tr := TransportForSso{
-		Transport: ochttp.Transport{
+	tr := transport{
+		next: ochttp.Transport{
 			Base:        httpClient.Transport,
 			Propagation: observability.NewHTTPFormat(),
 		},
 		Scope: "",
+		metrics: m,
 	}
 	httpClient.Transport = &tr
 	newCli := httpclient.NewClient(httpClient, nil, c.MaxRetries, c.RetryDelay)

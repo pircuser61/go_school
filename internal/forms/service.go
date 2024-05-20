@@ -3,6 +3,7 @@ package forms
 import (
 	c "context"
 	"encoding/json"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 
 	"go.opencensus.io/plugin/ocgrpc"
 
@@ -19,15 +20,18 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
 
+const externalSystemName = "forms"
+
 type Service struct {
-	c   *grpc.ClientConn
-	cli forms_v1.FormsServiceClient
+	conn *grpc.ClientConn
+	cli  forms_v1.FormsServiceClient
 }
 
-func NewService(cfg Config, log logger.Logger) (*Service, error) {
+func NewService(cfg Config, log logger.Logger, m metrics.Metrics) (*Service, error) {
 	opts := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithStatsHandler(&ocgrpc.ClientHandler{}),
+		grpc.WithUnaryInterceptor(metrics.GrpcMetrics(externalSystemName, m)),
 	}
 
 	if cfg.MaxRetries != 0 {
@@ -50,8 +54,8 @@ func NewService(cfg Config, log logger.Logger) (*Service, error) {
 	client := forms_v1.NewFormsServiceClient(conn)
 
 	return &Service{
-		c:   conn,
-		cli: client,
+		conn: conn,
+		cli:  client,
 	}, nil
 }
 

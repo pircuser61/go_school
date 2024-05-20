@@ -5,7 +5,6 @@ import (
 	c "context"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"time"
 
 	"github.com/hashicorp/go-retryablehttp"
@@ -56,7 +55,7 @@ type RunContextServices struct {
 	Kafka         *kafka.Service
 	People        people.Service
 	ServiceDesc   servicedesc.Service
-	FunctionStore *functions.Service
+	FunctionStore functions.Service
 	HumanTasks    human_tasks.ServiceInterface
 	Integrations  *integrations.Service
 	FileRegistry  *file_registry.Service
@@ -691,7 +690,7 @@ func sendEndingMapping(
 		return jsonErr
 	}
 
-	req, err := http.NewRequestWithContext(ctx, settings.Method, settings.URL, bytes.NewBuffer(body))
+	req, err := retryablehttp.NewRequestWithContext(ctx, settings.Method, settings.URL, bytes.NewBuffer(body))
 	if err != nil {
 		return err
 	}

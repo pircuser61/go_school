@@ -1,66 +1,66 @@
 package functions
 
 import (
-	"context"
+	c "context"
 	"encoding/json"
 	"fmt"
 
-	function_v1 "gitlab.services.mts.ru/jocasta/functions/pkg/proto/gen/function/v1"
+	function "gitlab.services.mts.ru/jocasta/functions/pkg/proto/gen/function/v1"
 )
 
-func (s *Service) GetFunctionVersion(ctx context.Context, functionID, versionID string) (result Function, err error) {
-	function, err := s.GetFunction(ctx, functionID)
+func (s *service) GetFunctionVersion(ctx c.Context, functionID, versionID string) (res Function, err error) {
+	fn, err := s.GetFunction(ctx, functionID)
 	if err != nil {
 		return Function{}, err
 	}
 
-	for index := range function.Versions {
-		if function.Versions[index].VersionID != versionID {
+	for index := range fn.Versions {
+		if fn.Versions[index].VersionID != versionID {
 			continue
 		}
 
-		input, inputConvertErr := convertToParamMetadata(function.Versions[index].Input)
+		input, inputConvertErr := convertToParamMetadata(fn.Versions[index].Input)
 		if inputConvertErr != nil {
 			return Function{}, inputConvertErr
 		}
 
-		output, outputConvertErr := convertToParamMetadata(function.Versions[index].Output)
+		output, outputConvertErr := convertToParamMetadata(fn.Versions[index].Output)
 		if outputConvertErr != nil {
 			return Function{}, outputConvertErr
 		}
 
 		var options Options
 
-		optionsUnmarshalErr := json.Unmarshal([]byte(function.Versions[index].Options), &options)
+		optionsUnmarshalErr := json.Unmarshal([]byte(fn.Versions[index].Options), &options)
 		if err != nil {
 			return Function{}, optionsUnmarshalErr
 		}
 
 		return Function{
-			Name:          function.Name,
-			FunctionID:    function.Versions[index].FunctionID,
-			VersionID:     function.Versions[index].VersionID,
-			Description:   function.Versions[index].Description,
-			Version:       function.Versions[index].Version,
-			Uses:          function.Uses,
+			Name:          fn.Name,
+			FunctionID:    fn.Versions[index].FunctionID,
+			VersionID:     fn.Versions[index].VersionID,
+			Description:   fn.Versions[index].Description,
+			Version:       fn.Versions[index].Version,
+			Uses:          fn.Uses,
 			Input:         input,
-			RequiredInput: function.Versions[index].RequiredInput,
+			RequiredInput: fn.Versions[index].RequiredInput,
 			Output:        output,
 			Options:       options,
-			Contracts:     function.Versions[index].Contracts,
-			CreatedAt:     function.Versions[index].CreatedAt,
-			DeletedAt:     function.Versions[index].DeletedAt,
-			UpdatedAt:     function.Versions[index].UpdatedAt,
-			Versions:      function.Versions,
+			Contracts:     fn.Versions[index].Contracts,
+			CreatedAt:     fn.Versions[index].CreatedAt,
+			DeletedAt:     fn.Versions[index].DeletedAt,
+			UpdatedAt:     fn.Versions[index].UpdatedAt,
+			Versions:      fn.Versions,
 		}, nil
 	}
 
 	return Function{}, fmt.Errorf("couldn't find function with id %s with version id %s", functionID, versionID)
 }
 
-func (s *Service) GetFunction(ctx context.Context, id string) (result Function, err error) {
+func (s *service) GetFunction(ctx c.Context, id string) (result Function, err error) {
 	res, err := s.cli.GetFunctionById(ctx,
-		&function_v1.GetFunctionRequest{
+		&function.GetFunctionRequest{
 			FunctionId: id,
 		},
 	)

@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/integrations"
 	"net/http"
 	"time"
 
@@ -20,7 +21,6 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/functions"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/hrgate"
 	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/integrations"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/kafka"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	mail_fetcher "gitlab.services.mts.ru/jocasta/pipeliner/internal/mail/fetcher"
@@ -46,7 +46,7 @@ type Env struct {
 	Kafka                   *kafka.Service
 	People                  people.Service
 	ServiceDesc             servicedesc.Service
-	FunctionStore           *functions.Service
+	FunctionStore           functions.Service
 	HumanTasks              human_tasks.ServiceInterface
 	MailFetcher             mail_fetcher.Service
 	FileRegistry            *file_registry.Service
