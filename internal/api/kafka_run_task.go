@@ -3,8 +3,6 @@ package api
 import (
 	c "context"
 	"encoding/json"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
-	"golang.org/x/net/context"
 	"strconv"
 	"strings"
 
@@ -16,6 +14,7 @@ import (
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/kafka"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 )
@@ -57,7 +56,7 @@ func (ae *Env) RunTaskHandler(ctx c.Context, message kafka.RunTaskMessage) error
 		WithField("method", "kafka")
 
 	ctx = logger.WithLogger(ctx, log)
-	ctx = context.WithValue(ctx, script.RequestID{}, message.RequestID)
+	ctx = c.WithValue(ctx, script.RequestID{}, message.RequestID)
 
 	messageTmp, err := json.Marshal(message)
 	if err != nil {
