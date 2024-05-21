@@ -69,7 +69,7 @@ type TaskStorager interface {
 	CreateTask(ctx c.Context, dto *CreateTaskDTO) (*e.EriusTask, error)
 	FillEmptyTask(ctx c.Context, updateTask *UpdateEmptyTaskDTO) error
 	IsStepExist(ctx c.Context, workID, stepName string, hasUpdData bool) (bool, uuid.UUID, time.Time, error)
-	CreateEmptyTask(ctx c.Context, task *CreateEmptyTaskDTO) error
+	CreateEmptyTask(ctx c.Context, task *EmptyTask) error
 	CreateTaskStepInputs(ctx c.Context, in *e.CreateTaskStepInputs) error
 
 	CheckUserCanEditForm(ctx c.Context, workNumber string, stepName string, login string) (bool, error)

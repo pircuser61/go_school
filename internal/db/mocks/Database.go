@@ -581,7 +581,7 @@ func (_c *MockedDatabase_CopyTaskBlock_Call) RunAndReturn(run func(context.Conte
 }
 
 // CreateEmptyTask provides a mock function with given fields: ctx, task
-func (_m *MockedDatabase) CreateEmptyTask(ctx context.Context, task *db.CreateEmptyTaskDTO) error {
+func (_m *MockedDatabase) CreateEmptyTask(ctx context.Context, task *db.EmptyTask) error {
 	ret := _m.Called(ctx, task)
 
 	if len(ret) == 0 {
@@ -589,7 +589,7 @@ func (_m *MockedDatabase) CreateEmptyTask(ctx context.Context, task *db.CreateEm
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, *db.CreateEmptyTaskDTO) error); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, *db.EmptyTask) error); ok {
 		r0 = rf(ctx, task)
 	} else {
 		r0 = ret.Error(0)
@@ -610,9 +610,9 @@ func (_e *MockedDatabase_Expecter) CreateEmptyTask(ctx interface{}, task interfa
 	return &MockedDatabase_CreateEmptyTask_Call{Call: _e.mock.On("CreateEmptyTask", ctx, task)}
 }
 
-func (_c *MockedDatabase_CreateEmptyTask_Call) Run(run func(ctx context.Context, task *db.CreateEmptyTaskDTO)) *MockedDatabase_CreateEmptyTask_Call {
+func (_c *MockedDatabase_CreateEmptyTask_Call) Run(run func(ctx context.Context, task *db.EmptyTask)) *MockedDatabase_CreateEmptyTask_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(*db.CreateEmptyTaskDTO))
+		run(args[0].(context.Context), args[1].(*db.EmptyTask))
 	})
 	return _c
 }
@@ -622,7 +622,7 @@ func (_c *MockedDatabase_CreateEmptyTask_Call) Return(_a0 error) *MockedDatabase
 	return _c
 }
 
-func (_c *MockedDatabase_CreateEmptyTask_Call) RunAndReturn(run func(context.Context, *db.CreateEmptyTaskDTO) error) *MockedDatabase_CreateEmptyTask_Call {
+func (_c *MockedDatabase_CreateEmptyTask_Call) RunAndReturn(run func(context.Context, *db.EmptyTask) error) *MockedDatabase_CreateEmptyTask_Call {
 	_c.Call.Return(run)
 	return _c
 }

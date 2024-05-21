@@ -126,7 +126,7 @@ skipXAsOther:
 		RequestID:         message.RequestID,
 	}
 
-	_, err = ae.runVersion(ctx, log, run)
+	err = ae.runVersion(ctx, log, run)
 	if err != nil {
 		log.Error(err)
 
