@@ -156,7 +156,7 @@ func (ae *Env) MonitoringGetTask(w http.ResponseWriter, req *http.Request, workN
 	case len(steps) == 0 && len(events) == 0:
 		errorHandler.handleError(NoProcessNodesForMonitoringError, errors.New("no process steps and events for monitoring"))
 	case len(steps) == 0:
-		err := sendResponse(w, http.StatusOK, toMonitoringTaskResponseWithoutSteps(events, workNumber))
+		err = sendResponse(w, http.StatusOK, toMonitoringTaskResponseWithoutSteps(events, workNumber))
 		if err != nil {
 			errorHandler.handleError(UnknownError, err)
 		}

@@ -409,6 +409,9 @@ func (ae *Env) processEmptyTask(
 	requestID string,
 	requestInfo *metrics.RequestInfo,
 ) error {
+	ctx, span := trace.StartSpan(ctx, "process_empty_task")
+	defer span.End()
+
 	log := logger.GetLogger(ctx)
 
 	version, err := storage.GetVersionByPipelineID(ctx, emptyTask.RunContext.PipelineID)
@@ -691,6 +694,9 @@ func (ae *Env) createEmptyTask(
 	storage db.Database,
 	dto *db.EmptyTask,
 ) error {
+	ctx, span := trace.StartSpan(ctx, "create_empty_task")
+	defer span.End()
+
 	txStorage, err := storage.StartTransaction(ctx)
 	if err != nil {
 		return fmt.Errorf("start transaction, %w", err)
