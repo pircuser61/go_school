@@ -571,7 +571,7 @@ type execVersionDTO struct {
 	version *e.EriusScenario
 }
 
-func (ae *Env) execVersion(ctx c.Context, dto *execVersionDTO) (*e.RunResponse, error) {
+func (ae *Env) execVersion(ctx c.Context, dto *execVersionDTO) error {
 	ctxLocal, s := trace.StartSpan(ctx, "exec_version")
 	defer s.End()
 
@@ -586,7 +586,7 @@ func (ae *Env) execVersion(ctx c.Context, dto *execVersionDTO) (*e.RunResponse, 
 		errCustom := NoUserInContextError
 		log.WithField("funcName", "GetUserInfoFromCtx").Error(errCustom.errorMessage(err))
 
-		return nil, errors.Wrap(err, errCustom.error())
+		return errors.Wrap(err, errCustom.error())
 	}
 
 	// if X-As-Other was used, then we will store the name of the real user here
@@ -600,7 +600,7 @@ func (ae *Env) execVersion(ctx c.Context, dto *execVersionDTO) (*e.RunResponse, 
 			log.WithField("funcName", "GetEffectiveUserInfoFromCtx").
 				Error(errCustom.errorMessage(err))
 
-			return nil, errors.Wrap(err, errCustom.error())
+			return errors.Wrap(err, errCustom.error())
 		}
 	}
 
@@ -620,14 +620,10 @@ func (ae *Env) execVersion(ctx c.Context, dto *execVersionDTO) (*e.RunResponse, 
 
 	errCustom, err := ae.execVersionInternal(ctxLocal, execVersion)
 	if err != nil {
-		return nil, errors.Wrap(err, errCustom.error())
+		return errors.Wrap(err, errCustom.error())
 	}
 
-	return &e.RunResponse{
-		PipelineID: dto.version.PipelineID,
-		WorkNumber: dto.workNumber,
-		Status:     statusRunned,
-	}, nil
+	return nil
 }
 
 func (dto *execVersionDTO) realAuthor(usr *sso.UserInfo) string {
@@ -658,31 +654,8 @@ func (ae *Env) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO) (
 
 	log := logger.GetLogger(ctx).WithField("funcName", "execVersionInternal")
 
-	txStorage, transactionErr := dto.storage.StartTransaction(ctx)
-	if transactionErr != nil {
-		return PipelineRunError, transactionErr
-	}
-
-	defer func() {
-		if r := recover(); r != nil {
-			log = log.WithField("funcName", "execVersionInternal").
-				WithField("panic handle", true)
-			log.Error(r)
-
-			if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
-				log.WithError(errors.New("couldn't rollback tx")).
-					Error(txErr)
-			}
-		}
-	}()
-
 	parameters, err := json.Marshal(dto.vars)
 	if err != nil {
-		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
-			log.WithError(errors.New("couldn't rollback tx")).
-				Error(txErr)
-		}
-
 		return PipelineRunError, err
 	}
 
@@ -695,12 +668,26 @@ func (ae *Env) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO) (
 		dto.runCtx,
 	)
 
+	txStorage, err := dto.storage.StartTransaction(ctx)
+	if err != nil {
+		return PipelineRunError, err
+	}
+
 	err = txStorage.FillEmptyTask(ctx, &updateTaskDTO)
 	if err != nil {
-		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
-			log.WithField("funcName", "FillEmptyTask").
-				WithError(errors.New("couldn't rollback tx")).
-				Error(txErr)
+		rollbackErr := txStorage.RollbackTransaction(ctx)
+		if rollbackErr != nil {
+			log.WithError(rollbackErr).Error("rollback transaction")
+		}
+
+		return PipelineRunError, err
+	}
+
+	err = txStorage.CommitTransaction(ctx)
+	if err != nil {
+		rollbackErr := txStorage.RollbackTransaction(ctx)
+		if rollbackErr != nil {
+			log.WithError(rollbackErr).Error("rollback transaction")
 		}
 
 		return PipelineRunError, err
@@ -732,7 +719,7 @@ func (ae *Env) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO) (
 			HrGate:        ae.HrGate,
 			Scheduler:     ae.Scheduler,
 			SLAService:    ae.SLAService,
-			Storage:       ae.DB,
+			Storage:       dto.storage,
 		},
 		BlockRunResults: &pipeline.BlockRunResults{},
 
@@ -747,43 +734,6 @@ func (ae *Env) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO) (
 	}
 
 	blockData := dto.p.Pipeline.Blocks[pipeline.BlockGoFirstStart]
-
-	runCtx.SetTaskEvents(ctx)
-
-	params := struct {
-		Steps []string `json:"steps"`
-	}{Steps: []string{}}
-
-	jsonParams, err := json.Marshal(params)
-	if err != nil {
-		log.Error(err)
-	}
-
-	_, err = ae.DB.CreateTaskEvent(ctx, &e.CreateTaskEvent{
-		WorkID:    dto.taskID.String(),
-		Author:    dto.authorName,
-		EventType: string(MonitoringTaskActionRequestActionStart),
-		Params:    jsonParams,
-	})
-	if err != nil {
-		log.WithField("funcName", "CreateTaskEvent").Error(err)
-	}
-
-	err = pipeline.CreateBlockInDB(ctx, pipeline.BlockGoFirstStart, blockData.TypeID, runCtx)
-	if err != nil {
-		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
-			log.WithField("funcName", "CreateBlockInDB").
-				WithError(txErr).
-				Error(errors.New("couldn't rollback tx"))
-		}
-
-		return PipelineRunError, err
-	}
-
-	err = txStorage.CommitTransaction(ctx)
-	if err != nil {
-		return PipelineRunError, err
-	}
 
 	log = log.WithField("stepName", pipeline.BlockGoFirstStart)
 	ctx = logger.WithLogger(ctx, log)

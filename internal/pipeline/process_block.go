@@ -181,20 +181,38 @@ func createGoBlock(ctx c.Context, ef *entity.EriusFunc, name string, runCtx *Blo
 	return nil, false, errors.New("unknown go-block type: " + ef.TypeID)
 }
 
-func CreateBlockInDB(ctx c.Context, name, stepType string, runCtx *BlockRunContext) error {
-	storageData, err := json.Marshal(runCtx.VarStore)
+type Block struct {
+	DB            db.Database
+	Name          string
+	StepType      string
+	WorkID        uuid.UUID
+	VarStore      *store.VariableStore
+	IsPaused      bool
+	HasUpdateData bool
+}
+
+func (b *Block) FillFromRunContext(runCtx *BlockRunContext) {
+	b.DB = runCtx.Services.Storage
+	b.WorkID = runCtx.TaskID
+	b.VarStore = runCtx.VarStore
+	b.IsPaused = runCtx.OnceProductive
+	b.HasUpdateData = runCtx.UpdateData != nil
+}
+
+func (b *Block) CreateInDB(ctx c.Context) error {
+	storageData, err := json.Marshal(b.VarStore)
 	if err != nil {
 		return err
 	}
 
-	return runCtx.Services.Storage.CreateTaskBlock(ctx, &db.SaveStepRequest{
-		WorkID:     runCtx.TaskID,
-		StepName:   name,
-		StepType:   stepType,
+	return b.DB.CreateTaskBlock(ctx, &db.SaveStepRequest{
+		WorkID:     b.WorkID,
+		StepName:   b.Name,
+		StepType:   b.StepType,
 		Status:     string(StatusReady),
 		Content:    storageData,
-		IsPaused:   runCtx.OnceProductive,
-		HasUpdData: runCtx.UpdateData != nil,
+		IsPaused:   b.IsPaused,
+		HasUpdData: b.HasUpdateData,
 	})
 }
 

@@ -463,6 +463,10 @@ func (c Err) error() string {
 	return errorText[UnknownError]
 }
 
+func (c Err) Error() string {
+	return c.error()
+}
+
 func (c Err) Status() int {
 	if s, ok := errorStatus[c]; ok {
 		return s

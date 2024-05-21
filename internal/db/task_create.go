@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"database/sql"
 	"time"
 
 	"github.com/google/uuid"
@@ -57,15 +58,16 @@ func (db *PGCon) SetLastRunID(c context.Context, taskID, versionID uuid.UUID) er
 	return nil
 }
 
-type CreateEmptyTaskDTO struct {
+type EmptyTask struct {
 	WorkID        uuid.UUID
+	VersionID     uuid.UUID
 	WorkNumber    string
 	Author        string
 	RunContext    *entity.TaskRunContext
 	ByPrevVersion bool
 }
 
-func (db *PGCon) CreateEmptyTask(ctx context.Context, task *CreateEmptyTaskDTO) error {
+func (db *PGCon) CreateEmptyTask(ctx context.Context, task *EmptyTask) error {
 	ctx, span := trace.StartSpan(ctx, "pg_create_empty_task")
 	defer span.End()
 
@@ -90,7 +92,8 @@ func (db *PGCon) CreateEmptyTask(ctx context.Context, task *CreateEmptyTaskDTO) 
 			status, 
 			author,
 			work_number,
-			run_context
+			run_context,
+			version_id
 		)
 		VALUES (
 			$1, 
@@ -98,7 +101,8 @@ func (db *PGCon) CreateEmptyTask(ctx context.Context, task *CreateEmptyTaskDTO) 
 			$3, 
 			$4,
 			$5,
-			$6
+			$6,
+			$7
 		)
 `
 
@@ -111,6 +115,7 @@ func (db *PGCon) CreateEmptyTask(ctx context.Context, task *CreateEmptyTaskDTO) 
 		task.Author,
 		task.WorkNumber,
 		task.RunContext,
+		sql.NullString{String: task.VersionID.String(), Valid: task.VersionID != uuid.Nil},
 	)
 	if err != nil {
 		return err
