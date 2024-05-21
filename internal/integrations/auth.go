@@ -1,7 +1,7 @@
 package integrations
 
 import (
-	"context"
+	c "context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,7 +11,9 @@ import (
 
 	"go.opencensus.io/trace"
 
-	microservice_v1 "gitlab.services.mts.ru/jocasta/integrations/pkg/proto/gen/microservice/v1"
+	rhttp "github.com/hashicorp/go-retryablehttp"
+
+	microservice "gitlab.services.mts.ru/jocasta/integrations/pkg/proto/gen/microservice/v1"
 )
 
 type SSOToken struct {
@@ -21,15 +23,16 @@ type SSOToken struct {
 	RefreshExpiresIn int    `json:"refresh_expires_in"`
 }
 
-type scope struct {
-	getTokensFormData url.Values
-}
 type Auth struct {
 	AuthType string `json:"auth"`
 	Login    string `json:"login,omitempty"`
 	Password string `json:"password,omitempty"`
 	Path     string `json:"path"`
 	Token    string `json:"token,omitempty"`
+}
+
+type scope struct {
+	getTokensFormData url.Values
 }
 
 const (
@@ -51,11 +54,11 @@ const (
 	mainSsoURL = "https://isso%s.mts.ru"
 )
 
-func (s *Service) GetToken(ctx context.Context, scopes []string, clientSecret, clientID, stand string) (token string, err error) {
+func (s *Service) GetToken(ctx c.Context, scopes []string, clientSecret, clientID, stand string) (token string, err error) {
 	ctxLocal, span := trace.StartSpan(ctx, "getToken")
 	defer span.End()
 
-	initedScopes := s.initScopes(scopes, clientSecret, clientID)
+	sc := s.initScopes(scopes, clientSecret, clientID)
 	path := mainSsoURL + tokensPath
 
 	switch stand {
@@ -67,7 +70,7 @@ func (s *Service) GetToken(ctx context.Context, scopes []string, clientSecret, c
 		return "", errors.New("wrong stand name")
 	}
 
-	req, err := http.NewRequestWithContext(ctxLocal, http.MethodPost, path, strings.NewReader(initedScopes.getTokensFormData.Encode()))
+	req, err := rhttp.NewRequestWithContext(ctxLocal, http.MethodPost, path, strings.NewReader(sc.getTokensFormData.Encode()))
 	if err != nil {
 		return "", err
 	}
@@ -82,7 +85,7 @@ func (s *Service) GetToken(ctx context.Context, scopes []string, clientSecret, c
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return "", errors.New("got bad status code")
+		return "", fmt.Errorf("got bad status code %d", resp.StatusCode)
 	}
 
 	var res SSOToken
@@ -105,50 +108,48 @@ func (s *Service) initScopes(scopes []string, clientSecret, clientID string) *sc
 	}
 }
 
-func (s *Service) FillAuth(
-	ctx context.Context, key string, pipelineID, versionID, workNumber, clientID string,
-) (result *Auth, err error) {
-	res, GRPCerr := s.RPCMicrCli.GetCredentialsByKey(ctx,
-		&microservice_v1.GetCredentialsByKeyRequest{
+func (s *Service) FillAuth(ctx c.Context, key, pID, vID, wNumber, clientID string) (res *Auth, err error) {
+	cred, grpcErr := s.RPCMicrCli.GetCredentialsByKey(ctx,
+		&microservice.GetCredentialsByKeyRequest{
 			HumanReadableKey: key,
-			PipelineId:       pipelineID,
-			VersionId:        versionID,
-			WorkNumber:       workNumber,
+			PipelineId:       pID,
+			VersionId:        vID,
+			WorkNumber:       wNumber,
 			ClientId:         clientID,
 		},
 	)
-	if GRPCerr != nil {
-		return nil, GRPCerr
+	if grpcErr != nil {
+		return nil, grpcErr
 	}
 
-	switch res.Auth.Type {
-	case microservice_v1.AuthType_basicAuth:
-		result = &Auth{
+	switch cred.Auth.Type {
+	case microservice.AuthType_basicAuth:
+		res = &Auth{
 			AuthType: "basicAuth",
-			Login:    res.Auth.GetBasic().Login,
-			Password: res.Auth.GetBasic().Pass,
-			Path:     res.Auth.Addr,
+			Login:    cred.Auth.GetBasic().Login,
+			Password: cred.Auth.GetBasic().Pass,
+			Path:     cred.Auth.Addr,
 		}
-	case microservice_v1.AuthType_oAuth2:
-		oauthGrpc := res.Auth.GetOAuth2()
+	case microservice.AuthType_oAuth2:
+		oauthGrpc := cred.Auth.GetOAuth2()
 
 		token, tokenErr := s.GetToken(ctx, oauthGrpc.Scopes, oauthGrpc.ClientSecret, oauthGrpc.ClientId, oauthGrpc.SSOStand)
 		if tokenErr != nil {
 			return nil, tokenErr
 		}
 
-		result = &Auth{
+		res = &Auth{
 			AuthType: "oAuth",
 			Token:    token,
-			Path:     res.Auth.Addr,
+			Path:     cred.Auth.Addr,
 		}
-	case microservice_v1.AuthType_bearerToken:
-		result = &Auth{
+	case microservice.AuthType_bearerToken:
+		res = &Auth{
 			AuthType: "bearerToken",
-			Token:    res.Auth.GetBearerToken().Token,
-			Path:     res.Auth.Addr,
+			Token:    cred.Auth.GetBearerToken().Token,
+			Path:     cred.Auth.Addr,
 		}
 	}
 
-	return result, nil
+	return res, nil
 }

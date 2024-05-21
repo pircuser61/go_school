@@ -7,10 +7,20 @@ import (
 
 	"go.opencensus.io/trace"
 
-	"google.golang.org/grpc"
+	"go.opencensus.io/plugin/ocgrpc"
 
-	cachekit "gitlab.services.mts.ru/jocasta/cache-kit"
+	"golang.org/x/net/context"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials/insecure"
+
+	"gitlab.services.mts.ru/abp/myosotis/logger"
+
+	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/retry"
 	d "gitlab.services.mts.ru/jocasta/human-tasks/pkg/proto/gen/proto/go/delegation"
+
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 )
 
 const (
@@ -18,23 +28,62 @@ const (
 	FromLoginsFilter = "fromLogins"
 	ToLoginFilter    = "toLogin"
 	ToLoginsFilter   = "toLogins"
+
+	externalSystemName = "human-tasks"
 )
 
-type Service struct {
-	C     *grpc.ClientConn
-	Cli   d.DelegationServiceClient
-	Cache cachekit.Cache
+type service struct {
+	conn *grpc.ClientConn
+	cli  d.DelegationServiceClient
 }
 
-func (s *Service) GetDelegations(ctx c.Context, req *d.GetDelegationsRequest) (ds Delegations, err error) {
+func NewService(cfg *Config, log logger.Logger, m metrics.Metrics) (ServiceInterface, error) {
+	if cfg.URL == "" {
+		return &ServiceWithCache{}, nil
+	}
+
+	opts := []grpc.DialOption{
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithStatsHandler(&ocgrpc.ClientHandler{}),
+		grpc.WithUnaryInterceptor(metrics.GrpcMetrics(externalSystemName, m)),
+	}
+
+	if cfg.MaxRetries != 0 {
+		opts = append(opts, grpc.WithUnaryInterceptor(grpc_retry.UnaryClientInterceptor(
+			grpc_retry.WithMax(cfg.MaxRetries),
+			grpc_retry.WithBackoff(grpc_retry.BackoffLinear(cfg.RetryDelay)),
+			grpc_retry.WithPerRetryTimeout(cfg.Timeout),
+			grpc_retry.WithCodes(codes.Unavailable, codes.ResourceExhausted, codes.DataLoss, codes.DeadlineExceeded, codes.Unknown),
+			grpc_retry.WithOnRetryCallback(func(ctx context.Context, attempt uint, err error) {
+				log.WithError(err).WithField("attempt", attempt).Error("failed to reconnect to humantasks")
+			}),
+		)))
+	}
+
+	conn, err := grpc.Dial(cfg.URL, opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	return &service{
+		conn: conn,
+		cli:  d.NewDelegationServiceClient(conn),
+	}, nil
+}
+
+func (s *service) SetCli(cli d.DelegationServiceClient) {
+	s.cli = cli
+}
+
+func (s *service) GetDelegations(ctx c.Context, req *d.GetDelegationsRequest) (ds Delegations, err error) {
 	ctx, span := trace.StartSpan(ctx, "humantasks.get_delegations")
 	defer span.End()
 
-	if s.Cli == nil || s.C == nil {
+	if s.cli == nil || s.conn == nil {
 		return make([]Delegation, 0), nil
 	}
 
-	res, reqErr := s.Cli.GetDelegations(ctx, req)
+	res, reqErr := s.cli.GetDelegations(ctx, req)
 	if reqErr != nil {
 		return nil, reqErr
 	}
@@ -72,7 +121,7 @@ func (s *Service) GetDelegations(ctx c.Context, req *d.GetDelegationsRequest) (d
 	return ds, nil
 }
 
-func (s *Service) GetDelegationsFromLogin(ctx c.Context, login string) (ds Delegations, err error) {
+func (s *service) GetDelegationsFromLogin(ctx c.Context, login string) (ds Delegations, err error) {
 	ctx, span := trace.StartSpan(ctx, "humantasks.get_delegations_from_login")
 	defer span.End()
 
@@ -89,7 +138,7 @@ func (s *Service) GetDelegationsFromLogin(ctx c.Context, login string) (ds Deleg
 	return res, nil
 }
 
-func (s *Service) GetDelegationsToLogin(ctx c.Context, login string) (ds Delegations, err error) {
+func (s *service) GetDelegationsToLogin(ctx c.Context, login string) (ds Delegations, err error) {
 	ctx, span := trace.StartSpan(ctx, "humantasks.get_delegations_to_login")
 	defer span.End()
 
@@ -106,7 +155,7 @@ func (s *Service) GetDelegationsToLogin(ctx c.Context, login string) (ds Delegat
 	return res, nil
 }
 
-func (s *Service) GetDelegationsToLogins(ctx c.Context, logins []string) (ds Delegations, err error) {
+func (s *service) GetDelegationsToLogins(ctx c.Context, logins []string) (ds Delegations, err error) {
 	ctx, span := trace.StartSpan(ctx, "humantasks.get_delegations_to_logins")
 	defer span.End()
 
@@ -133,7 +182,7 @@ func (s *Service) GetDelegationsToLogins(ctx c.Context, logins []string) (ds Del
 	return res, nil
 }
 
-func (s *Service) GetDelegationsByLogins(ctx c.Context, logins []string) (ds Delegations, err error) {
+func (s *service) GetDelegationsByLogins(ctx c.Context, logins []string) (ds Delegations, err error) {
 	ctx, span := trace.StartSpan(ctx, "humantasks.get_delegations_by_logins")
 	defer span.End()
 

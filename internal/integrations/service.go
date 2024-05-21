@@ -17,21 +17,33 @@ import (
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
-	integration_v1 "gitlab.services.mts.ru/jocasta/integrations/pkg/proto/gen/integration/v1"
-	microservice_v1 "gitlab.services.mts.ru/jocasta/integrations/pkg/proto/gen/microservice/v1"
+	"github.com/hashicorp/go-retryablehttp"
+
+	"gitlab.services.mts.ru/abp/myosotis/observability"
+
+	"go.opencensus.io/plugin/ochttp"
+
+	integration "gitlab.services.mts.ru/jocasta/integrations/pkg/proto/gen/integration/v1"
+	microservice "gitlab.services.mts.ru/jocasta/integrations/pkg/proto/gen/microservice/v1"
+
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/httpclient"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 )
 
+const externalSystemName = "integrations"
+
 type Service struct {
-	C          *grpc.ClientConn
-	RPCIntCli  integration_v1.IntegrationServiceClient
-	RPCMicrCli microservice_v1.MicroserviceServiceClient
-	Cli        *http.Client
+	conn       *grpc.ClientConn
+	RPCIntCli  integration.IntegrationServiceClient
+	RPCMicrCli microservice.MicroserviceServiceClient
+	Cli        *retryablehttp.Client
 }
 
-func NewService(cfg Config, log logger.Logger) (*Service, error) {
+func NewService(cfg Config, log logger.Logger, m metrics.Metrics) (*Service, error) {
 	opts := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithStatsHandler(&ocgrpc.ClientHandler{}),
+		grpc.WithUnaryInterceptor(metrics.GrpcMetrics(externalSystemName, m)),
 	}
 
 	if cfg.MaxRetries != 0 {
@@ -51,14 +63,22 @@ func NewService(cfg Config, log logger.Logger) (*Service, error) {
 		return nil, err
 	}
 
-	clientInt := integration_v1.NewIntegrationServiceClient(conn)
-	clientMic := microservice_v1.NewMicroserviceServiceClient(conn)
+	httpClient := &http.Client{}
+
+	httpClient.Transport = &transport{
+		next: ochttp.Transport{
+			Base:        httpClient.Transport,
+			Propagation: observability.NewHTTPFormat(),
+		},
+		scope:   "",
+		metrics: m,
+	}
 
 	return &Service{
-		C:          conn,
-		RPCIntCli:  clientInt,
-		RPCMicrCli: clientMic,
-		Cli:        &http.Client{},
+		conn:       conn,
+		RPCIntCli:  integration.NewIntegrationServiceClient(conn),
+		RPCMicrCli: microservice.NewMicroserviceServiceClient(conn),
+		Cli:        httpclient.NewClient(httpClient, nil, cfg.MaxRetries, cfg.RetryDelay),
 	}, nil
 }
 
@@ -68,7 +88,7 @@ func (s *Service) GetSystemsNames(ctx c.Context, systemIDs []uuid.UUID) (map[str
 		ids = append(ids, systemID.String())
 	}
 
-	res, err := s.RPCIntCli.GetIntegrationsNamesByIds(ctx, &integration_v1.GetIntegrationsNamesByIdsRequest{Ids: ids})
+	res, err := s.RPCIntCli.GetIntegrationsNamesByIds(ctx, &integration.GetIntegrationsNamesByIdsRequest{Ids: ids})
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +104,7 @@ func (s *Service) GetSystemsClients(ctx c.Context, systemIDs []uuid.UUID) (map[s
 	cc := make(map[string][]string)
 
 	for _, id := range systemIDs {
-		res, err := s.RPCIntCli.GetIntegrationById(ctx, &integration_v1.GetIntegrationByIdRequest{IntegrationId: id.String()})
+		res, err := s.RPCIntCli.GetIntegrationById(ctx, &integration.GetIntegrationByIdRequest{IntegrationId: id.String()})
 		if err != nil {
 			return nil, err
 		}
@@ -97,13 +117,11 @@ func (s *Service) GetSystemsClients(ctx c.Context, systemIDs []uuid.UUID) (map[s
 	return cc, nil
 }
 
-func (s *Service) GetMicroserviceHumanKey(
-	ctx c.Context, microserviceID, pipelineID, versionID, workNumber, clientID string,
-) (string, error) {
-	res, err := s.RPCMicrCli.GetMicroservice(ctx, &microservice_v1.GetMicroserviceRequest{
-		MicroserviceId: microserviceID,
-		PipelineId:     pipelineID,
-		VersionId:      versionID,
+func (s *Service) GetMicroserviceHumanKey(ctx c.Context, microSrvID, pID, vID, workNumber, clientID string) (string, error) {
+	res, err := s.RPCMicrCli.GetMicroservice(ctx, &microservice.GetMicroserviceRequest{
+		MicroserviceId: microSrvID,
+		PipelineId:     pID,
+		VersionId:      vID,
 		WorkNumber:     workNumber,
 		ClientId:       clientID,
 	})

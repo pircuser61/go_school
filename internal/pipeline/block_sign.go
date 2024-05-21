@@ -18,7 +18,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
+	sd "gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
@@ -1010,7 +1010,7 @@ type SignOutput struct {
 	Comment    *string
 	Decision   *SignDecision
 	Signatures []fileSignaturePair
-	Signer     *servicedesc.SsoPerson
+	Signer     *sd.SsoPerson
 }
 
 func (gb *GoSignBlock) UpdateStateUsingOutput(_ context.Context, data []byte) (state map[string]interface{}, err error) {

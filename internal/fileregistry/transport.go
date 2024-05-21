@@ -1,4 +1,4 @@
-package sso
+package fileregistry
 
 import (
 	"net/http"
@@ -10,14 +10,13 @@ import (
 )
 
 const (
-	externalSystemName = "isso"
+	externalSystemName = "file-registry"
 	xRequestIDHeader   = "X-Request-Id"
 )
 
 type transport struct {
 	next    ochttp.Transport
 	metrics metrics.Metrics
-	Scope   string
 }
 
 func (t *transport) RoundTrip(req *http.Request) (*http.Response, error) {

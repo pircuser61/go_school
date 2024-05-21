@@ -25,6 +25,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 	serviceDeskMocks "gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc/mocks"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc/nocache"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 
@@ -805,10 +806,9 @@ func TestGoApproverBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
-						ServiceDesc: func() *servicedesc.Service {
-							sdMock := servicedesc.Service{
-								SdURL: "",
-							}
+						ServiceDesc: func() servicedesc.Service {
+							sdMock, _ := nocache.NewService(&servicedesc.Config{}, nil, nil)
+
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
@@ -829,9 +829,9 @@ func TestGoApproverBlock_Update(t *testing.T) {
 							}
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							sdMock.Cli = retryableHttpClient
+							sdMock.SetCli(retryableHttpClient)
 
-							return &sdMock
+							return sdMock
 						}(),
 						Storage: func() db.Database {
 							res := &mocks.MockedDatabase{}
@@ -917,10 +917,8 @@ func TestGoApproverBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
-						ServiceDesc: func() *servicedesc.Service {
-							sdMock := servicedesc.Service{
-								SdURL: "",
-							}
+						ServiceDesc: func() servicedesc.Service {
+							sdMock, _ := nocache.NewService(&servicedesc.Config{}, nil, nil)
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
@@ -941,9 +939,9 @@ func TestGoApproverBlock_Update(t *testing.T) {
 							}
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							sdMock.Cli = retryableHttpClient
+							sdMock.SetCli(retryableHttpClient)
 
-							return &sdMock
+							return sdMock
 						}(),
 						Storage: func() db.Database {
 							res := &mocks.MockedDatabase{}
@@ -1026,10 +1024,8 @@ func TestGoApproverBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
-						ServiceDesc: func() *servicedesc.Service {
-							sdMock := servicedesc.Service{
-								SdURL: "",
-							}
+						ServiceDesc: func() servicedesc.Service {
+							sdMock, _ := nocache.NewService(&servicedesc.Config{}, nil, nil)
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := serviceDeskMocks.RoundTripper{}
@@ -1049,9 +1045,9 @@ func TestGoApproverBlock_Update(t *testing.T) {
 							}
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							sdMock.Cli = retryableHttpClient
+							sdMock.SetCli(retryableHttpClient)
 
-							return &sdMock
+							return sdMock
 						}(),
 						Storage: func() db.Database {
 							res := &mocks.MockedDatabase{}
@@ -1348,8 +1344,7 @@ func TestGoApproverBlock_Actions(t *testing.T) {
 						}
 						return s
 					}(), Services: RunContextServices{
-						HumanTasks: func() *humanTasks.Service {
-							ht := humanTasks.Service{}
+						HumanTasks: func() humanTasks.ServiceInterface {
 							htMock := htMocks.DelegationServiceClient{}
 
 							htMock.On("GetDelegationsFromLogin", context.Background(), "users1").Return(nil, humanTasks.Delegations{})
@@ -1376,12 +1371,10 @@ func TestGoApproverBlock_Actions(t *testing.T) {
 							})
 							htMock.On("GetDelegates", "users1").Return([]string{})
 
-							ht = humanTasks.Service{
-								Cli: &htMock,
-								C:   nil,
-							}
+							ht, _ := humanTasks.NewService(&humanTasks.Config{}, nil, nil)
+							ht.SetCli(&htMock)
 
-							return &ht
+							return ht
 						}(),
 					},
 				},
@@ -1459,8 +1452,7 @@ func TestGoApproverBlock_Actions(t *testing.T) {
 
 							return res
 						}(),
-						HumanTasks: func() *humanTasks.Service {
-							ht := humanTasks.Service{}
+						HumanTasks: func() humanTasks.ServiceInterface {
 							htMock := htMocks.DelegationServiceClient{}
 
 							htMock.On("GetDelegationsFromLogin", context.Background(), "users1").Return(humanTasks.Delegations{}, nil)
@@ -1476,12 +1468,10 @@ func TestGoApproverBlock_Actions(t *testing.T) {
 							})
 							htMock.On("GetDelegates", "users1").Return([]string{})
 
-							ht = humanTasks.Service{
-								Cli: &htMock,
-								C:   nil,
-							}
+							ht, _ := humanTasks.NewService(&humanTasks.Config{}, nil, nil)
+							ht.SetCli(&htMock)
 
-							return &ht
+							return ht
 						}(),
 					},
 				},
@@ -1547,8 +1537,7 @@ func TestGoApproverBlock_Actions(t *testing.T) {
 
 							return res
 						}(),
-						HumanTasks: func() *humanTasks.Service {
-							ht := humanTasks.Service{}
+						HumanTasks: func() humanTasks.ServiceInterface {
 							htMock := htMocks.DelegationServiceClient{}
 
 							htMock.On("GetDelegationsFromLogin", context.Background(), "users1").Return(humanTasks.Delegations{}, nil)
@@ -1564,12 +1553,10 @@ func TestGoApproverBlock_Actions(t *testing.T) {
 							})
 							htMock.On("GetDelegates", "users1").Return([]string{})
 
-							ht = humanTasks.Service{
-								Cli: &htMock,
-								C:   nil,
-							}
+							ht, _ := humanTasks.NewService(&humanTasks.Config{}, nil, nil)
+							ht.SetCli(&htMock)
 
-							return &ht
+							return ht
 						}(),
 					},
 				},
@@ -1662,8 +1649,7 @@ func TestGoApproverBlock_Actions(t *testing.T) {
 
 							return res
 						}(),
-						HumanTasks: func() *humanTasks.Service {
-							ht := humanTasks.Service{}
+						HumanTasks: func() humanTasks.ServiceInterface {
 							htMock := htMocks.DelegationServiceClient{}
 
 							htMock.On("GetDelegationsFromLogin", context.Background(), "users1").Return(humanTasks.Delegations{}, nil)
@@ -1682,12 +1668,10 @@ func TestGoApproverBlock_Actions(t *testing.T) {
 							delegates := []string{delLogin1}
 							htMock.On("GetDelegates", "users1").Return(delegates)
 
-							ht = humanTasks.Service{
-								Cli: &htMock,
-								C:   nil,
-							}
+							ht, _ := humanTasks.NewService(&humanTasks.Config{}, nil, nil)
+							ht.SetCli(&htMock)
 
-							return &ht
+							return ht
 						}(),
 					},
 				},

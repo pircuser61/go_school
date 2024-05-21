@@ -26,14 +26,29 @@ import (
 	mocks2 "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	peopleMocks "gitlab.services.mts.ru/jocasta/pipeliner/internal/people/mocks"
+	people_nocache "gitlab.services.mts.ru/jocasta/pipeliner/internal/people/nocache"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 	serviceDeskMocks "gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc/mocks"
+	sd_nocache "gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc/nocache"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
+
+	"github.com/hashicorp/go-retryablehttp"
+
+	cachekit "gitlab.services.mts.ru/jocasta/cache-kit"
 
 	delegationht "gitlab.services.mts.ru/jocasta/human-tasks/pkg/proto/gen/proto/go/delegation"
 )
+
+type PeopleServiceTest struct {
+	SearchURL string
+	Cli   *retryablehttp.Client `json:"-"`
+	Sso   *sso.Service
+	Cache cachekit.Cache
+}
+
 
 func getTaskRunContext() db.Database {
 	res := &mocks.MockedDatabase{}
@@ -1978,10 +1993,7 @@ func TestGoSignBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
-						ServiceDesc: func() *servicedesc.Service {
-							sdMock := servicedesc.Service{
-								SdURL: "",
-							}
+						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
@@ -2005,9 +2017,11 @@ func TestGoSignBlock_Update(t *testing.T) {
 
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							sdMock.Cli = retryableHttpClient
 
-							return &sdMock
+							sdMock, _ := sd_nocache.NewService(&servicedesc.Config{}, nil, nil)
+							sdMock.SetCli(retryableHttpClient)
+
+							return sdMock
 						}(),
 					},
 				},
@@ -2045,10 +2059,7 @@ func TestGoSignBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
-						ServiceDesc: func() *servicedesc.Service {
-							sdMock := servicedesc.Service{
-								SdURL: "",
-							}
+						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
@@ -2072,9 +2083,11 @@ func TestGoSignBlock_Update(t *testing.T) {
 
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							sdMock.Cli = retryableHttpClient
 
-							return &sdMock
+							sdMock, _ := sd_nocache.NewService(&servicedesc.Config{}, nil, nil)
+							sdMock.SetCli(retryableHttpClient)
+
+							return sdMock
 						}(),
 					},
 				},
@@ -2113,10 +2126,7 @@ func TestGoSignBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
-						ServiceDesc: func() *servicedesc.Service {
-							sdMock := servicedesc.Service{
-								SdURL: "",
-							}
+						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := serviceDeskMocks.RoundTripper{}
@@ -2139,9 +2149,10 @@ func TestGoSignBlock_Update(t *testing.T) {
 
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							sdMock.Cli = retryableHttpClient
+							sdMock, _ := sd_nocache.NewService(&servicedesc.Config{}, nil, nil)
+							sdMock.SetCli(retryableHttpClient)
 
-							return &sdMock
+							return sdMock
 						}(),
 					},
 				},
@@ -2180,10 +2191,7 @@ func TestGoSignBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
-						ServiceDesc: func() *servicedesc.Service {
-							sdMock := servicedesc.Service{
-								SdURL: "",
-							}
+						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := serviceDeskMocks.RoundTripper{}
@@ -2206,9 +2214,10 @@ func TestGoSignBlock_Update(t *testing.T) {
 
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							sdMock.Cli = retryableHttpClient
+							sdMock, _ := sd_nocache.NewService(&servicedesc.Config{}, nil, nil)
+							sdMock.SetCli(retryableHttpClient)
 
-							return &sdMock
+							return sdMock
 						}(),
 					},
 				},
@@ -2247,10 +2256,7 @@ func TestGoSignBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
-						ServiceDesc: func() *servicedesc.Service {
-							sdMock := servicedesc.Service{
-								SdURL: "",
-							}
+						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := serviceDeskMocks.RoundTripper{}
@@ -2272,9 +2278,10 @@ func TestGoSignBlock_Update(t *testing.T) {
 							}
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							sdMock.Cli = retryableHttpClient
+							sdMock, _ := sd_nocache.NewService(&servicedesc.Config{}, nil, nil)
+							sdMock.SetCli(retryableHttpClient)
 
-							return &sdMock
+							return sdMock
 						}(),
 					},
 				},
@@ -2311,10 +2318,7 @@ func TestGoSignBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
-						ServiceDesc: func() *servicedesc.Service {
-							sdMock := servicedesc.Service{
-								SdURL: "",
-							}
+						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := serviceDeskMocks.RoundTripper{}
@@ -2337,9 +2341,10 @@ func TestGoSignBlock_Update(t *testing.T) {
 
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							sdMock.Cli = retryableHttpClient
+							sdMock, _ := sd_nocache.NewService(&servicedesc.Config{}, nil, nil)
+							sdMock.SetCli(retryableHttpClient)
 
-							return &sdMock
+							return sdMock
 						}(),
 					},
 				},
@@ -2377,10 +2382,7 @@ func TestGoSignBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
-						ServiceDesc: func() *servicedesc.Service {
-							sdMock := servicedesc.Service{
-								SdURL: "",
-							}
+						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := serviceDeskMocks.RoundTripper{}
@@ -2402,9 +2404,10 @@ func TestGoSignBlock_Update(t *testing.T) {
 							}
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							sdMock.Cli = retryableHttpClient
+							sdMock, _ := sd_nocache.NewService(&servicedesc.Config{}, nil, nil)
+							sdMock.SetCli(retryableHttpClient)
 
-							return &sdMock
+							return sdMock
 						}(),
 					},
 				},
@@ -2442,10 +2445,7 @@ func TestGoSignBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
-						ServiceDesc: func() *servicedesc.Service {
-							sdMock := servicedesc.Service{
-								SdURL: "",
-							}
+						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := serviceDeskMocks.RoundTripper{}
@@ -2467,9 +2467,10 @@ func TestGoSignBlock_Update(t *testing.T) {
 							}
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							sdMock.Cli = retryableHttpClient
+							sdMock, _ := sd_nocache.NewService(&servicedesc.Config{}, nil, nil)
+							sdMock.SetCli(retryableHttpClient)
 
-							return &sdMock
+							return sdMock
 						}(),
 					},
 				},
@@ -2507,10 +2508,7 @@ func TestGoSignBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
-						ServiceDesc: func() *servicedesc.Service {
-							sdMock := servicedesc.Service{
-								SdURL: "",
-							}
+						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := serviceDeskMocks.RoundTripper{}
@@ -2532,9 +2530,10 @@ func TestGoSignBlock_Update(t *testing.T) {
 							}
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							sdMock.Cli = retryableHttpClient
+							sdMock, _ := sd_nocache.NewService(&servicedesc.Config{}, nil, nil)
+							sdMock.SetCli(retryableHttpClient)
 
-							return &sdMock
+							return sdMock
 						}(),
 					},
 				},
@@ -2572,10 +2571,7 @@ func TestGoSignBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
-						ServiceDesc: func() *servicedesc.Service {
-							sdMock := servicedesc.Service{
-								SdURL: "",
-							}
+						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := serviceDeskMocks.RoundTripper{}
@@ -2597,9 +2593,10 @@ func TestGoSignBlock_Update(t *testing.T) {
 							}
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							sdMock.Cli = retryableHttpClient
+							sdMock, _ := sd_nocache.NewService(&servicedesc.Config{}, nil, nil)
+							sdMock.SetCli(retryableHttpClient)
 
-							return &sdMock
+							return sdMock
 						}(),
 					},
 				},
@@ -2637,10 +2634,7 @@ func TestGoSignBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
-						ServiceDesc: func() *servicedesc.Service {
-							sdMock := servicedesc.Service{
-								SdURL: "",
-							}
+						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := serviceDeskMocks.RoundTripper{}
@@ -2662,9 +2656,10 @@ func TestGoSignBlock_Update(t *testing.T) {
 							}
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							sdMock.Cli = retryableHttpClient
+							sdMock, _ := sd_nocache.NewService(&servicedesc.Config{}, nil, nil)
+							sdMock.SetCli(retryableHttpClient)
 
-							return &sdMock
+							return sdMock
 						}(),
 					},
 				},
@@ -2702,10 +2697,7 @@ func TestGoSignBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
-						ServiceDesc: func() *servicedesc.Service {
-							sdMock := servicedesc.Service{
-								SdURL: "",
-							}
+						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := serviceDeskMocks.RoundTripper{}
@@ -2728,9 +2720,10 @@ func TestGoSignBlock_Update(t *testing.T) {
 
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							sdMock.Cli = retryableHttpClient
+							sdMock, _ := sd_nocache.NewService(&servicedesc.Config{}, nil, nil)
+							sdMock.SetCli(retryableHttpClient)
 
-							return &sdMock
+							return sdMock
 						}(),
 					},
 				},
@@ -2768,10 +2761,7 @@ func TestGoSignBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
-						ServiceDesc: func() *servicedesc.Service {
-							sdMock := servicedesc.Service{
-								SdURL: "",
-							}
+						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := serviceDeskMocks.RoundTripper{}
@@ -2794,9 +2784,10 @@ func TestGoSignBlock_Update(t *testing.T) {
 
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							sdMock.Cli = retryableHttpClient
+							sdMock, _ := sd_nocache.NewService(&servicedesc.Config{}, nil, nil)
+							sdMock.SetCli(retryableHttpClient)
 
-							return &sdMock
+							return sdMock
 						}(),
 					},
 				},
@@ -2834,10 +2825,7 @@ func TestGoSignBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
-						ServiceDesc: func() *servicedesc.Service {
-							sdMock := servicedesc.Service{
-								SdURL: "",
-							}
+						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := serviceDeskMocks.RoundTripper{}
@@ -2860,9 +2848,10 @@ func TestGoSignBlock_Update(t *testing.T) {
 
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							sdMock.Cli = retryableHttpClient
+							sdMock, _ := sd_nocache.NewService(&servicedesc.Config{}, nil, nil)
+							sdMock.SetCli(retryableHttpClient)
 
-							return &sdMock
+							return sdMock
 						}(),
 					},
 				},
@@ -2902,10 +2891,7 @@ func TestGoSignBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
-						ServiceDesc: func() *servicedesc.Service {
-							sdMock := servicedesc.Service{
-								SdURL: "",
-							}
+						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := serviceDeskMocks.RoundTripper{}
@@ -2928,9 +2914,11 @@ func TestGoSignBlock_Update(t *testing.T) {
 
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							sdMock.Cli = retryableHttpClient
 
-							return &sdMock
+							sdMock, _ := sd_nocache.NewService(&servicedesc.Config{}, nil, nil)
+							sdMock.SetCli(retryableHttpClient)
+
+							return sdMock
 						}(),
 					},
 				},
@@ -2994,10 +2982,7 @@ func TestGoSignBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
-						ServiceDesc: func() *servicedesc.Service {
-							sdMock := servicedesc.Service{
-								SdURL: "",
-							}
+						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := serviceDeskMocks.RoundTripper{}
@@ -3020,9 +3005,11 @@ func TestGoSignBlock_Update(t *testing.T) {
 
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							sdMock.Cli = retryableHttpClient
+							
+							sdMock, _ := sd_nocache.NewService(&servicedesc.Config{}, nil, nil)
+							sdMock.SetCli(retryableHttpClient)
 
-							return &sdMock
+							return sdMock
 						}(),
 					},
 				},
@@ -3061,10 +3048,7 @@ func TestGoSignBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
-						ServiceDesc: func() *servicedesc.Service {
-							sdMock := servicedesc.Service{
-								SdURL: "",
-							}
+						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := serviceDeskMocks.RoundTripper{}
@@ -3085,9 +3069,11 @@ func TestGoSignBlock_Update(t *testing.T) {
 							}
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							sdMock.Cli = retryableHttpClient
 
-							return &sdMock
+							sdMock, _ := sd_nocache.NewService(&servicedesc.Config{}, nil, nil)
+							sdMock.SetCli(retryableHttpClient)
+
+							return sdMock
 						}(),
 					},
 				},
@@ -3219,13 +3205,12 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 
 							return slaMock
 						}(),
-						People: func() *people.Service {
-							plMock := people.Service{}
+						People: func() people.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(people.Service{})
+								b, _ := json.Marshal(PeopleServiceTest{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -3240,9 +3225,11 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							}
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							plMock.Cli = retryableHttpClient
 
-							return &plMock
+							plMock, _ := people_nocache.NewService(&people.Config{}, nil, nil)
+							plMock.SetCli(retryableHttpClient)
+
+							return plMock
 						}(),
 						Storage: func() db.Database {
 							res := &mocks.MockedDatabase{}
@@ -3299,13 +3286,12 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 
 							return slaMock
 						}(),
-						People: func() *people.Service {
-							plMock := people.Service{}
+						People: func() people.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(people.Service{})
+								b, _ := json.Marshal(PeopleServiceTest{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -3320,9 +3306,11 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							}
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							plMock.Cli = retryableHttpClient
 
-							return &plMock
+							plMock, _ := people_nocache.NewService(&people.Config{}, nil, nil)
+							plMock.SetCli(retryableHttpClient)
+
+							return plMock
 						}(),
 						Storage: func() db.Database {
 							res := &mocks.MockedDatabase{}
@@ -3379,13 +3367,12 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 
 							return slaMock
 						}(),
-						People: func() *people.Service {
-							plMock := people.Service{}
+						People: func() people.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(people.Service{})
+								b, _ := json.Marshal(PeopleServiceTest{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -3400,9 +3387,11 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							}
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							plMock.Cli = retryableHttpClient
 
-							return &plMock
+							plMock, _ := people_nocache.NewService(&people.Config{}, nil, nil)
+							plMock.SetCli(retryableHttpClient)
+
+							return plMock
 						}(),
 						Storage: func() db.Database {
 							res := &mocks.MockedDatabase{}
@@ -3459,13 +3448,12 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 
 							return slaMock
 						}(),
-						People: func() *people.Service {
-							plMock := people.Service{}
+						People: func() people.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(people.Service{})
+								b, _ := json.Marshal(PeopleServiceTest{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -3480,9 +3468,11 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							}
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							plMock.Cli = retryableHttpClient
 
-							return &plMock
+							plMock, _ := people_nocache.NewService(&people.Config{}, nil, nil)
+							plMock.SetCli(retryableHttpClient)
+
+							return plMock
 						}(),
 						Storage: func() db.Database {
 							res := &mocks.MockedDatabase{}
@@ -3539,13 +3529,12 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 
 							return slaMock
 						}(),
-						People: func() *people.Service {
-							plMock := people.Service{}
+						People: func() people.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(people.Service{})
+								b, _ := json.Marshal(PeopleServiceTest{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -3560,9 +3549,11 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							}
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							plMock.Cli = retryableHttpClient
 
-							return &plMock
+							plMock, _ := people_nocache.NewService(&people.Config{}, nil, nil)
+							plMock.SetCli(retryableHttpClient)
+
+							return plMock
 						}(),
 						Storage: func() db.Database {
 							res := &mocks.MockedDatabase{}
@@ -3619,13 +3610,12 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 
 							return slaMock
 						}(),
-						People: func() *people.Service {
-							plMock := people.Service{}
+						People: func() people.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(people.Service{})
+								b, _ := json.Marshal(PeopleServiceTest{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -3640,9 +3630,11 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							}
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							plMock.Cli = retryableHttpClient
 
-							return &plMock
+							plMock, _ := people_nocache.NewService(&people.Config{}, nil, nil)
+							plMock.SetCli(retryableHttpClient)
+
+							return plMock
 						}(),
 						Storage: func() db.Database {
 							res := &mocks.MockedDatabase{}
@@ -3699,13 +3691,12 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 
 							return slaMock
 						}(),
-						People: func() *people.Service {
-							plMock := people.Service{}
+						People: func() people.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(people.Service{})
+								b, _ := json.Marshal(PeopleServiceTest{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -3720,9 +3711,11 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							}
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							plMock.Cli = retryableHttpClient
 
-							return &plMock
+							plMock, _ := people_nocache.NewService(&people.Config{}, nil, nil)
+							plMock.SetCli(retryableHttpClient)
+
+							return plMock
 						}(),
 						Storage: func() db.Database {
 							res := &mocks.MockedDatabase{}
@@ -3779,13 +3772,12 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 
 							return slaMock
 						}(),
-						People: func() *people.Service {
-							plMock := people.Service{}
+						People: func() people.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(people.Service{})
+								b, _ := json.Marshal(PeopleServiceTest{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -3800,9 +3792,11 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							}
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							plMock.Cli = retryableHttpClient
 
-							return &plMock
+							plMock, _ := people_nocache.NewService(&people.Config{}, nil, nil)
+							plMock.SetCli(retryableHttpClient)
+
+							return plMock
 						}(),
 						Storage: func() db.Database {
 							res := &mocks.MockedDatabase{}
@@ -3859,13 +3853,12 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 
 							return slaMock
 						}(),
-						People: func() *people.Service {
-							plMock := people.Service{}
+						People: func() people.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(people.Service{})
+								b, _ := json.Marshal(PeopleServiceTest{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -3880,9 +3873,11 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							}
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							plMock.Cli = retryableHttpClient
 
-							return &plMock
+							plMock, _ := people_nocache.NewService(&people.Config{}, nil, nil)
+							plMock.SetCli(retryableHttpClient)
+
+							return plMock
 						}(),
 						Storage: func() db.Database {
 							res := &mocks.MockedDatabase{}
@@ -3939,13 +3934,12 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 
 							return slaMock
 						}(),
-						People: func() *people.Service {
-							plMock := people.Service{}
+						People: func() people.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(people.Service{})
+								b, _ := json.Marshal(PeopleServiceTest{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -3960,9 +3954,11 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							}
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							plMock.Cli = retryableHttpClient
 
-							return &plMock
+							plMock, _ := people_nocache.NewService(&people.Config{}, nil, nil)
+							plMock.SetCli(retryableHttpClient)
+
+							return plMock
 						}(),
 						Storage: getTaskRunContext(),
 					},
@@ -4006,13 +4002,12 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 
 							return slaMock
 						}(),
-						People: func() *people.Service {
-							plMock := people.Service{}
+						People: func() people.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(people.Service{})
+								b, _ := json.Marshal(PeopleServiceTest{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -4027,9 +4022,11 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							}
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							plMock.Cli = retryableHttpClient
 
-							return &plMock
+							plMock, _ := people_nocache.NewService(&people.Config{}, nil, nil)
+							plMock.SetCli(retryableHttpClient)
+
+							return plMock
 						}(),
 						Storage: getTaskRunContext(),
 					},
@@ -4073,13 +4070,12 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 
 							return slaMock
 						}(),
-						People: func() *people.Service {
-							plMock := people.Service{}
+						People: func() people.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(people.Service{})
+								b, _ := json.Marshal(PeopleServiceTest{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -4094,9 +4090,11 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							}
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							plMock.Cli = retryableHttpClient
 
-							return &plMock
+							plMock, _ := people_nocache.NewService(&people.Config{}, nil, nil)
+							plMock.SetCli(retryableHttpClient)
+
+							return plMock
 						}(),
 						Storage: getTaskRunContext(),
 					},
@@ -4160,13 +4158,12 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 
 							return slaMock
 						}(),
-						People: func() *people.Service {
-							plMock := people.Service{}
+						People: func() people.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(people.Service{})
+								b, _ := json.Marshal(PeopleServiceTest{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -4181,9 +4178,11 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							}
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							plMock.Cli = retryableHttpClient
 
-							return &plMock
+							plMock, _ := people_nocache.NewService(&people.Config{}, nil, nil)
+							plMock.SetCli(retryableHttpClient)
+
+							return plMock
 						}(),
 						Storage: getTaskRunContext(),
 					},
@@ -4232,13 +4231,12 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 
 							return slaMock
 						}(),
-						People: func() *people.Service {
-							plMock := people.Service{}
+						People: func() people.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(people.Service{})
+								b, _ := json.Marshal(PeopleServiceTest{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -4253,9 +4251,11 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							}
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							plMock.Cli = retryableHttpClient
 
-							return &plMock
+							plMock, _ := people_nocache.NewService(&people.Config{}, nil, nil)
+							plMock.SetCli(retryableHttpClient)
+
+							return plMock
 						}(),
 						Storage: getTaskRunContext(),
 					},
@@ -4299,13 +4299,12 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 
 							return slaMock
 						}(),
-						People: func() *people.Service {
-							plMock := people.Service{}
+						People: func() people.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(people.Service{})
+								b, _ := json.Marshal(PeopleServiceTest{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -4320,9 +4319,11 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							}
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							plMock.Cli = retryableHttpClient
 
-							return &plMock
+							plMock, _ := people_nocache.NewService(&people.Config{}, nil, nil)
+							plMock.SetCli(retryableHttpClient)
+
+							return plMock
 						}(),
 						Storage: getTaskRunContext(),
 					},
@@ -4366,13 +4367,12 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 
 							return slaMock
 						}(),
-						People: func() *people.Service {
-							plMock := people.Service{}
+						People: func() people.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(people.Service{})
+								b, _ := json.Marshal(PeopleServiceTest{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -4387,9 +4387,11 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							}
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							plMock.Cli = retryableHttpClient
 
-							return &plMock
+							plMock, _ := people_nocache.NewService(&people.Config{}, nil, nil)
+							plMock.SetCli(retryableHttpClient)
+
+							return plMock
 						}(),
 						Storage: getTaskRunContext(),
 					},
@@ -4433,13 +4435,12 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 
 							return slaMock
 						}(),
-						People: func() *people.Service {
-							plMock := people.Service{}
+						People: func() people.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(people.Service{})
+								b, _ := json.Marshal(PeopleServiceTest{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -4454,9 +4455,11 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							}
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							plMock.Cli = retryableHttpClient
 
-							return &plMock
+							plMock, _ := people_nocache.NewService(&people.Config{}, nil, nil)
+							plMock.SetCli(retryableHttpClient)
+
+							return plMock
 						}(),
 						Storage: func() db.Database {
 							res := &mocks.MockedDatabase{}
@@ -4513,13 +4516,12 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 
 							return slaMock
 						}(),
-						People: func() *people.Service {
-							plMock := people.Service{}
+						People: func() people.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(people.Service{})
+								b, _ := json.Marshal(PeopleServiceTest{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -4534,9 +4536,11 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							}
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							plMock.Cli = retryableHttpClient
 
-							return &plMock
+							plMock, _ := people_nocache.NewService(&people.Config{}, nil, nil)
+							plMock.SetCli(retryableHttpClient)
+
+							return plMock
 						}(),
 						Storage: func() db.Database {
 							res := &mocks.MockedDatabase{}
@@ -4593,13 +4597,12 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 
 							return slaMock
 						}(),
-						People: func() *people.Service {
-							plMock := people.Service{}
+						People: func() people.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(people.Service{})
+								b, _ := json.Marshal(PeopleServiceTest{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -4614,9 +4617,11 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							}
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							plMock.Cli = retryableHttpClient
 
-							return &plMock
+							plMock, _ := people_nocache.NewService(&people.Config{}, nil, nil)
+							plMock.SetCli(retryableHttpClient)
+
+							return plMock
 						}(),
 						Storage: func() db.Database {
 							res := &mocks.MockedDatabase{}
@@ -4673,13 +4678,12 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 
 							return slaMock
 						}(),
-						People: func() *people.Service {
-							plMock := people.Service{}
+						People: func() people.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(people.Service{})
+								b, _ := json.Marshal(PeopleServiceTest{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -4694,9 +4698,11 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							}
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							plMock.Cli = retryableHttpClient
 
-							return &plMock
+							plMock, _ := people_nocache.NewService(&people.Config{}, nil, nil)
+							plMock.SetCli(retryableHttpClient)
+
+							return plMock
 						}(),
 						Storage: getTaskRunContext(),
 					},
@@ -4740,13 +4746,12 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 
 							return slaMock
 						}(),
-						People: func() *people.Service {
-							plMock := people.Service{}
+						People: func() people.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(people.Service{})
+								b, _ := json.Marshal(PeopleServiceTest{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -4761,9 +4766,11 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							}
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							plMock.Cli = retryableHttpClient
 
-							return &plMock
+							plMock, _ := people_nocache.NewService(&people.Config{}, nil, nil)
+							plMock.SetCli(retryableHttpClient)
+
+							return plMock
 						}(),
 						Storage: getTaskRunContext(),
 					},
@@ -4827,13 +4834,12 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 
 							return slaMock
 						}(),
-						People: func() *people.Service {
-							plMock := people.Service{}
+						People: func() people.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(people.Service{})
+								b, _ := json.Marshal(PeopleServiceTest{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -4848,9 +4854,11 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							}
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							plMock.Cli = retryableHttpClient
 
-							return &plMock
+							plMock, _ := people_nocache.NewService(&people.Config{}, nil, nil)
+							plMock.SetCli(retryableHttpClient)
+
+							return plMock
 						}(),
 						Storage: getTaskRunContext(),
 					},
@@ -4918,13 +4926,12 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 
 							return slaMock
 						}(),
-						People: func() *people.Service {
-							plMock := people.Service{}
+						People: func() people.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(people.Service{})
+								b, _ := json.Marshal(PeopleServiceTest{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -4939,9 +4946,11 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							}
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							plMock.Cli = retryableHttpClient
 
-							return &plMock
+							plMock, _ := people_nocache.NewService(&people.Config{}, nil, nil)
+							plMock.SetCli(retryableHttpClient)
+
+							return plMock
 						}(),
 						Storage: getTaskRunContext(),
 					},
@@ -5009,13 +5018,12 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 
 							return slaMock
 						}(),
-						People: func() *people.Service {
-							plMock := people.Service{}
+						People: func() people.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(people.Service{})
+								b, _ := json.Marshal(PeopleServiceTest{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -5030,9 +5038,11 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							}
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							plMock.Cli = retryableHttpClient
 
-							return &plMock
+							plMock, _ := people_nocache.NewService(&people.Config{}, nil, nil)
+							plMock.SetCli(retryableHttpClient)
+
+							return plMock
 						}(),
 						Storage: getTaskRunContext(),
 					},
@@ -5097,13 +5107,12 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 
 							return slaMock
 						}(),
-						People: func() *people.Service {
-							plMock := people.Service{}
+						People: func() people.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(people.Service{})
+								b, _ := json.Marshal(PeopleServiceTest{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -5118,9 +5127,11 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							}
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							plMock.Cli = retryableHttpClient
 
-							return &plMock
+							plMock, _ := people_nocache.NewService(&people.Config{}, nil, nil)
+							plMock.SetCli(retryableHttpClient)
+
+							return plMock
 						}(),
 						Storage: getTaskRunContext(),
 					},
@@ -5189,13 +5200,12 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 
 							return slaMock
 						}(),
-						People: func() *people.Service {
-							plMock := people.Service{}
+						People: func() people.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 							mockTransport := peopleMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(people.Service{})
+								b, _ := json.Marshal(PeopleServiceTest{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -5210,9 +5220,11 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							}
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							plMock.Cli = retryableHttpClient
 
-							return &plMock
+							plMock, _ := people_nocache.NewService(&people.Config{}, nil, nil)
+							plMock.SetCli(retryableHttpClient)
+
+							return plMock
 						}(),
 						Storage: getTaskRunContext(),
 					},
@@ -5361,12 +5373,12 @@ func TestGoSignBlock_LoadState(t *testing.T) {
 }
 
 func unmarshalFromTestFile(t *testing.T, in string) json.RawMessage {
-	bytes, err := os.ReadFile(in)
+	b, err := os.ReadFile(in)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	return bytes
+	return b
 }
 
 func TestGoSignActions(t *testing.T) {
@@ -5596,8 +5608,7 @@ func TestGoSignActions(t *testing.T) {
 
 							return res
 						}(),
-						HumanTasks: func() *human_tasks.Service {
-							ht := human_tasks.Service{}
+						HumanTasks: func() human_tasks.ServiceInterface {
 							htMock := mocks2.DelegationServiceClient{}
 
 							htMock.On("GetDelegationsFromLogin", context.Background(), "users1").Return(nil, human_tasks.Delegations{})
@@ -5624,12 +5635,10 @@ func TestGoSignActions(t *testing.T) {
 							})
 							htMock.On("GetDelegates", "users1").Return([]string{"a"})
 
-							ht = human_tasks.Service{
-								Cli: &htMock,
-								C:   nil,
-							}
+							ht, _ := human_tasks.NewService(&human_tasks.Config{}, nil, nil)
+							ht.SetCli(&htMock)
 
-							return &ht
+							return ht
 						}(),
 					},
 				},
@@ -5701,8 +5710,7 @@ func TestGoSignActions(t *testing.T) {
 
 							return res
 						}(),
-						HumanTasks: func() *human_tasks.Service {
-							ht := human_tasks.Service{}
+						HumanTasks: func() human_tasks.ServiceInterface {
 							htMock := mocks2.DelegationServiceClient{}
 
 							htMock.On("GetDelegationsFromLogin", context.Background(), "users1").Return(nil, human_tasks.Delegations{})
@@ -5729,12 +5737,10 @@ func TestGoSignActions(t *testing.T) {
 							})
 							htMock.On("GetDelegates", "users1").Return([]string{"a"})
 
-							ht = human_tasks.Service{
-								Cli: &htMock,
-								C:   nil,
-							}
+							ht, _ := human_tasks.NewService(&human_tasks.Config{}, nil, nil)
+							ht.SetCli(&htMock)
 
-							return &ht
+							return ht
 						}(),
 					},
 				},
@@ -5803,8 +5809,7 @@ func TestGoSignActions(t *testing.T) {
 
 							return res
 						}(),
-						HumanTasks: func() *human_tasks.Service {
-							ht := human_tasks.Service{}
+						HumanTasks: func() human_tasks.ServiceInterface {
 							htMock := mocks2.DelegationServiceClient{}
 
 							htMock.On("GetDelegationsFromLogin", context.Background(), "users1").Return(nil, human_tasks.Delegations{})
@@ -5831,12 +5836,10 @@ func TestGoSignActions(t *testing.T) {
 							})
 							htMock.On("GetDelegates", "users1").Return([]string{"a"})
 
-							ht = human_tasks.Service{
-								Cli: &htMock,
-								C:   nil,
-							}
+							ht, _ := human_tasks.NewService(&human_tasks.Config{}, nil, nil)
+							ht.SetCli(&htMock)
 
-							return &ht
+							return ht
 						}(),
 					},
 				},
@@ -5928,8 +5931,7 @@ func TestGoSignActions(t *testing.T) {
 
 							return res
 						}(),
-						HumanTasks: func() *human_tasks.Service {
-							ht := human_tasks.Service{}
+						HumanTasks: func() human_tasks.ServiceInterface {
 							htMock := mocks2.DelegationServiceClient{}
 
 							htMock.On("GetDelegationsFromLogin", context.Background(), "users1").Return(nil, human_tasks.Delegations{})
@@ -5956,12 +5958,10 @@ func TestGoSignActions(t *testing.T) {
 							})
 							htMock.On("GetDelegates", "users1").Return([]string{"a"})
 
-							ht = human_tasks.Service{
-								Cli: &htMock,
-								C:   nil,
-							}
+							ht, _ := human_tasks.NewService(&human_tasks.Config{}, nil, nil)
+							ht.SetCli(&htMock)
 
-							return &ht
+							return ht
 						}(),
 					},
 				},
@@ -6048,8 +6048,7 @@ func TestGoSignActions(t *testing.T) {
 
 							return res
 						}(),
-						HumanTasks: func() *human_tasks.Service {
-							ht := human_tasks.Service{}
+						HumanTasks: func() human_tasks.ServiceInterface {
 							htMock := mocks2.DelegationServiceClient{}
 
 							htMock.On("GetDelegationsFromLogin", context.Background(), "users1").Return(nil, human_tasks.Delegations{})
@@ -6076,12 +6075,10 @@ func TestGoSignActions(t *testing.T) {
 							})
 							htMock.On("GetDelegates", "users1").Return([]string{"a"})
 
-							ht = human_tasks.Service{
-								Cli: &htMock,
-								C:   nil,
-							}
+							ht, _ := human_tasks.NewService(&human_tasks.Config{}, nil, nil)
+							ht.SetCli(&htMock)
 
-							return &ht
+							return ht
 						}(),
 					},
 				},
@@ -6173,8 +6170,7 @@ func TestGoSignActions(t *testing.T) {
 
 							return res
 						}(),
-						HumanTasks: func() *human_tasks.Service {
-							ht := human_tasks.Service{}
+						HumanTasks: func() human_tasks.ServiceInterface {
 							htMock := mocks2.DelegationServiceClient{}
 
 							htMock.On("GetDelegationsFromLogin", context.Background(), "users1").Return(nil, human_tasks.Delegations{})
@@ -6201,12 +6197,10 @@ func TestGoSignActions(t *testing.T) {
 							})
 							htMock.On("GetDelegates", "users1").Return([]string{"a"})
 
-							ht = human_tasks.Service{
-								Cli: &htMock,
-								C:   nil,
-							}
+							ht, _ := human_tasks.NewService(&human_tasks.Config{}, nil, nil)
+							ht.SetCli(&htMock)
 
-							return &ht
+							return ht
 						}(),
 					},
 				},

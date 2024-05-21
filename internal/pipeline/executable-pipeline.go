@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
+
 	"go.opencensus.io/trace"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
@@ -18,7 +19,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/scheduler"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
+	sd "gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
@@ -47,10 +48,10 @@ type ExecutablePipeline struct {
 	Remedy        string
 	Sender        *mail.Service
 	Kafka         *kafka.Service
-	People        *people.Service
-	ServiceDesc   *servicedesc.Service
-	FunctionStore *functions.Service
-	HumanTasks    *human_tasks.Service
+	People        people.Service
+	ServiceDesc   sd.Service
+	FunctionStore functions.Service
+	HumanTasks    human_tasks.ServiceInterface
 	Integrations  *integrations.Service
 	FileRegistry  *file_registry.Service
 	Scheduler     *scheduler.Service

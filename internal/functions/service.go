@@ -13,18 +13,23 @@ import (
 
 	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/retry"
 
-	function_v1 "gitlab.services.mts.ru/jocasta/functions/pkg/proto/gen/function/v1"
+	function "gitlab.services.mts.ru/jocasta/functions/pkg/proto/gen/function/v1"
+
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 )
 
-type Service struct {
-	c   *grpc.ClientConn
-	cli function_v1.FunctionServiceClient
+const externalSystemName = "functions"
+
+type service struct {
+	conn *grpc.ClientConn
+	cli  function.FunctionServiceClient
 }
 
-func NewService(cfg Config, log logger.Logger) (*Service, error) {
+func NewService(cfg Config, log logger.Logger, m metrics.Metrics) (Service, error) {
 	opts := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithStatsHandler(&ocgrpc.ClientHandler{}),
+		grpc.WithUnaryInterceptor(metrics.GrpcMetrics(externalSystemName, m)),
 	}
 
 	if cfg.MaxRetries != 0 {
@@ -44,10 +49,8 @@ func NewService(cfg Config, log logger.Logger) (*Service, error) {
 		return nil, err
 	}
 
-	client := function_v1.NewFunctionServiceClient(conn)
-
-	return &Service{
-		c:   conn,
-		cli: client,
+	return &service{
+		conn: conn,
+		cli:  function.NewFunctionServiceClient(conn),
 	}, nil
 }

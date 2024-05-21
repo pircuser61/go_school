@@ -1,12 +1,20 @@
 package people
 
 import (
-	"context"
+	c "context"
+
+	"github.com/hashicorp/go-retryablehttp"
 )
 
-type ServiceInterface interface {
-	PathBuilder(mainpath, subpath string) (string, error)
-	GetUserEmail(ctx context.Context, username string) (string, error)
-	GetUser(ctx context.Context, search string) (SSOUser, error)
-	GetUsers(ctx context.Context, search string, limit *int, filter []string) ([]SSOUser, error)
+type Service interface {
+	Setter
+
+	PathBuilder(mainPath, subPath string) (string, error)
+	GetUserEmail(ctx c.Context, username string) (string, error)
+	GetUser(ctx c.Context, search string) (SSOUser, error)
+	GetUsers(ctx c.Context, search string, limit *int, filter []string) ([]SSOUser, error)
+}
+
+type Setter interface {
+	SetCli(cli *retryablehttp.Client)
 }

@@ -10,7 +10,10 @@ import (
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	cachekit "gitlab.services.mts.ru/jocasta/cache-kit"
+
 	d "gitlab.services.mts.ru/jocasta/human-tasks/pkg/proto/gen/proto/go/delegation"
+
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 )
 
 const (
@@ -21,6 +24,25 @@ type ServiceWithCache struct {
 	Cache      cachekit.Cache
 	Humantasks ServiceInterface
 }
+
+func NewServiceWithCache(cfg *Config, log logger.Logger, m metrics.Metrics) (ServiceInterface, error) {
+	srv, err := NewService(cfg, log, m)
+	if err != nil {
+		return nil, err
+	}
+
+	cache, cacheErr := cachekit.CreateCache(cachekit.Config(cfg.Cache))
+	if cacheErr != nil {
+		return nil, cacheErr
+	}
+
+	return &ServiceWithCache{
+		Cache:      cache,
+		Humantasks: srv,
+	}, nil
+}
+
+func (s *ServiceWithCache) SetCli(cli d.DelegationServiceClient) {}
 
 func (s *ServiceWithCache) GetDelegations(ctx c.Context, req *d.GetDelegationsRequest) (Delegations, error) {
 	ctx, span := trace.StartSpan(ctx, "humantasks.get_delegations(cached)")

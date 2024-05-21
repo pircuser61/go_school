@@ -7,9 +7,15 @@ import (
 )
 
 type ServiceInterface interface {
+	Setter
+
 	GetDelegations(ctx c.Context, req *d.GetDelegationsRequest) (ds Delegations, err error)
 	GetDelegationsFromLogin(ctx c.Context, login string) (ds Delegations, err error)
 	GetDelegationsToLogin(ctx c.Context, login string) (ds Delegations, err error)
 	GetDelegationsToLogins(ctx c.Context, logins []string) (ds Delegations, err error)
 	GetDelegationsByLogins(ctx c.Context, logins []string) (ds Delegations, err error)
+}
+
+type Setter interface {
+	SetCli(cli d.DelegationServiceClient)
 }

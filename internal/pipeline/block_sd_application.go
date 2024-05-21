@@ -12,7 +12,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
+	sd "gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
@@ -271,7 +271,7 @@ func createGoSdApplicationBlock(ctx context.Context, name string, ef *entity.Eri
 }
 
 type SDOutput struct {
-	Executor        servicedesc.SsoPerson
+	Executor        sd.SsoPerson
 	ApplicationBody map[string]interface{}
 	Description     string
 	BlueprintID     string

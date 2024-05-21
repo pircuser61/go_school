@@ -15,6 +15,8 @@ import (
 
 	cachekit "gitlab.services.mts.ru/jocasta/cache-kit"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
@@ -23,12 +25,29 @@ const (
 	calendarDaysKeyPrefix = "calendarDays:"
 )
 
-type ServiceWithCache struct {
+type serviceWithCache struct {
 	Cache  cachekit.Cache
 	HRGate ServiceInterface
 }
 
-func (s *ServiceWithCache) GetCalendars(ctx context.Context, params *GetCalendarsParams) ([]Calendar, error) {
+func NewServiceWithCache(cfg *Config, ssoS *sso.Service, m metrics.Metrics) (ServiceInterface, error) {
+	service, err := NewService(cfg, ssoS, m)
+	if err != nil {
+		return nil, err
+	}
+
+	cache, cacheErr := cachekit.CreateCache(cachekit.Config(cfg.Cache))
+	if cacheErr != nil {
+		return nil, cacheErr
+	}
+
+	return &serviceWithCache{
+		HRGate: service,
+		Cache:  cache,
+	}, nil
+}
+
+func (s *serviceWithCache) GetCalendars(ctx context.Context, params *GetCalendarsParams) ([]Calendar, error) {
 	ctx, span := trace.StartSpan(ctx, "hrgate.get_calendars(cached)")
 	defer span.End()
 
@@ -77,7 +96,7 @@ func (s *ServiceWithCache) GetCalendars(ctx context.Context, params *GetCalendar
 	return calendar, nil
 }
 
-func (s *ServiceWithCache) GetCalendarDays(ctx context.Context, params *GetCalendarDaysParams) (*CalendarDays, error) {
+func (s *serviceWithCache) GetCalendarDays(ctx context.Context, params *GetCalendarDaysParams) (*CalendarDays, error) {
 	ctx, span := trace.StartSpan(ctx, "hrgate.get_calendar_days(cached)")
 	defer span.End()
 
@@ -126,7 +145,7 @@ func (s *ServiceWithCache) GetCalendarDays(ctx context.Context, params *GetCalen
 	return calendarDays, nil
 }
 
-func (s *ServiceWithCache) GetPrimaryRussianFederationCalendarOrFirst(ctx context.Context, params *GetCalendarsParams) (*Calendar, error) {
+func (s *serviceWithCache) GetPrimaryRussianFederationCalendarOrFirst(ctx context.Context, params *GetCalendarsParams) (*Calendar, error) {
 	ctx, span := trace.StartSpan(ctx, "hrgate.get_primary_calendar_or_first(cached)")
 	defer span.End()
 
@@ -147,16 +166,16 @@ func (s *ServiceWithCache) GetPrimaryRussianFederationCalendarOrFirst(ctx contex
 	return &calendars[0], nil
 }
 
-func (s *ServiceWithCache) FillDefaultUnitID(ctx context.Context) error {
+func (s *serviceWithCache) FillDefaultUnitID(ctx context.Context) error {
 	return s.HRGate.FillDefaultUnitID(ctx)
 }
 
-func (s *ServiceWithCache) GetDefaultUnitID() string {
+func (s *serviceWithCache) GetDefaultUnitID() string {
 	return s.HRGate.GetDefaultUnitID()
 }
 
 // nolint:dupl //так нужно!
-func (s *ServiceWithCache) GetDefaultCalendarDaysForGivenTimeIntervals(
+func (s *serviceWithCache) GetDefaultCalendarDaysForGivenTimeIntervals(
 	ctx context.Context,
 	taskTimeIntervals []entity.TaskCompletionInterval,
 ) (*CalendarDays, error) {

@@ -28,11 +28,11 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	mail_fetcher "gitlab.services.mts.ru/jocasta/pipeliner/internal/mail/fetcher"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
+	iga_nocache "gitlab.services.mts.ru/jocasta/pipeliner/internal/people/nocache"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/scheduler"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sequence"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/server"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
+	sd_nocache "gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc/nocache"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 	"gitlab.services.mts.ru/jocasta/pipeliner/statistic"
@@ -63,6 +63,10 @@ func main() {
 	log = logger.CreateLogger(cfg.Log)
 	ctx := logger.WithLogger(context.Background(), log)
 
+	metrics.InitMetricsAuth(cfg.Prometheus)
+
+	m := metrics.New(cfg.Prometheus)
+
 	log.WithField("config", cfg).Info("started with config")
 
 	dbConn, err := db.ConnectPostgres(ctx, &cfg.DB)
@@ -76,21 +80,21 @@ func main() {
 		httpclient.HTTPClient(cfg.HTTPClientConfig), log, cfg.HTTPClientConfig.MaxRetries, cfg.HTTPClientConfig.RetryDelay,
 	)
 
-	ssoService, err := sso.NewService(cfg.SSO)
+	ssoService, err := sso.NewService(cfg.SSO, m)
 	if err != nil {
 		log.WithError(err).Error("can't create sso service")
 
 		return
 	}
 
-	peopleService, err := people.NewService(&cfg.People, ssoService)
+	peopleService, err := iga_nocache.NewService(&cfg.People, ssoService, m)
 	if err != nil {
 		log.WithError(err).Error("can't create people service")
 
 		return
 	}
 
-	serviceDescService, err := servicedesc.NewService(&cfg.ServiceDesc, ssoService)
+	serviceDescService, err := sd_nocache.NewService(&cfg.ServiceDesc, ssoService, m)
 	if err != nil {
 		log.WithError(err).Error("can't create servicedesc service")
 
@@ -99,7 +103,7 @@ func main() {
 
 	cfg.Mail.FetchEmail = cfg.MailFetcher.ImapUserName
 
-	mailService, err := mail.NewService(cfg.Mail)
+	mailService, err := mail.NewService(cfg.Mail, m)
 	if err != nil {
 		log.WithError(err).Error("can't create mail service")
 
@@ -116,10 +120,6 @@ func main() {
 	// don't forget to update mock
 	var _ db.Database = (*mocks.MockedDatabase)(nil)
 
-	metrics.InitMetricsAuth(cfg.Prometheus)
-
-	m := metrics.New(cfg.Prometheus)
-
 	kafkaService, canRestart, err := kafka.NewService(log, cfg.Kafka, m)
 	if err != nil {
 		log.WithError(err).Error("can't create kafka service")
@@ -129,21 +129,21 @@ func main() {
 		}
 	}
 
-	schedulerService, err := scheduler.NewService(cfg.SchedulerTasks, log)
+	schedulerService, err := scheduler.NewService(cfg.SchedulerTasks, log, m)
 	if err != nil {
 		log.WithError(err).Error("can't create scheduler service")
 
 		return
 	}
 
-	functionsService, err := functions.NewService(cfg.FunctionStore, log)
+	functionsService, err := functions.NewService(cfg.FunctionStore, log, m)
 	if err != nil {
 		log.WithError(err).Error("can't create functions service")
 
 		return
 	}
 
-	humanTasksService, err := human_tasks.NewService(&cfg.HumanTasks, log)
+	humanTasksService, err := human_tasks.NewService(&cfg.HumanTasks, log, m)
 	if err != nil {
 		log.WithError(err).Error("can't create human tasks service")
 
@@ -157,33 +157,33 @@ func main() {
 		return
 	}
 
-	integrationsService, err := integrations.NewService(cfg.Integrations, log)
+	integrationsService, err := integrations.NewService(cfg.Integrations, log, m)
 	if err != nil {
 		log.WithError(err).Error("can't create integrations service")
 
 		return
 	}
 
-	hrgateService, err := hrgate.NewService(&cfg.HrGate, ssoService)
+	hrGateService, err := hrgate.NewService(&cfg.HrGate, ssoService, m)
 	if err != nil {
 		log.WithError(err).Error("can't create hrgate service")
 
 		return
 	}
 
-	fillErr := hrgateService.FillDefaultUnitID(ctx)
+	fillErr := hrGateService.FillDefaultUnitID(ctx)
 	if fillErr != nil {
 		log.WithError(fillErr).Error("can't fill default unit id")
 	}
 
-	fileRegistryService, err := file_registry.NewService(cfg.FileRegistry, log)
+	fileRegistryService, err := file_registry.NewService(cfg.FileRegistry, log, m)
 	if err != nil {
 		log.WithError(err).Error("can't create file-registry service")
 
 		return
 	}
 
-	formsService, err := forms.NewService(cfg.Forms, log)
+	formsService, err := forms.NewService(cfg.Forms, log, m)
 	if err != nil {
 		log.WithError(err).Error("can't create forms service")
 
@@ -197,7 +197,7 @@ func main() {
 		return
 	}
 
-	slaService := sla.NewSLAService(hrgateService)
+	slaService := sla.NewSLAService(hrGateService)
 
 	includePlaceholderBlock := cfg.IncludePlaceholderBlock
 
@@ -218,7 +218,7 @@ func main() {
 		MailFetcher:             mailFetcher,
 		FileRegistry:            fileRegistryService,
 		Integrations:            integrationsService,
-		HrGate:                  hrgateService,
+		HrGate:                  hrGateService,
 		Scheduler:               schedulerService,
 		IncludePlaceholderBlock: includePlaceholderBlock,
 		SLAService:              slaService,
