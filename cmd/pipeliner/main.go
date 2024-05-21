@@ -28,7 +28,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	mail_fetcher "gitlab.services.mts.ru/jocasta/pipeliner/internal/mail/fetcher"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
-	iga_cache "gitlab.services.mts.ru/jocasta/pipeliner/internal/people/cache"
+	iga_nocache "gitlab.services.mts.ru/jocasta/pipeliner/internal/people/nocache"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/scheduler"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sequence"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/server"
@@ -87,7 +87,7 @@ func main() {
 		return
 	}
 
-	peopleService, err := iga_cache.NewService(&cfg.People, ssoService, m)
+	peopleService, err := iga_nocache.NewService(&cfg.People, ssoService, m)
 	if err != nil {
 		log.WithError(err).Error("can't create people service")
 
