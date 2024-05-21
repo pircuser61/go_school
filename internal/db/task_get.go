@@ -2650,7 +2650,7 @@ func (db *PGCon) CheckBlockForHiddenFlag(ctx c.Context, blockID string) (bool, e
 	return res, nil
 }
 
-func (db *PGCon) CheckTaskForHiddenFlagIfExists(ctx c.Context, workNumber string) (bool, error) {
+func (db *PGCon) CheckTaskForHiddenFlag(ctx c.Context, workNumber string) (bool, error) {
 	ctx, span := trace.StartSpan(ctx, "check_task_for_hidden_flag_monitoring_if_exists")
 	defer span.End()
 

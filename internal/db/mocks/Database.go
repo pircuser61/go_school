@@ -359,12 +359,12 @@ func (_c *MockedDatabase_CheckPipelineNameExists_Call) RunAndReturn(run func(con
 	return _c
 }
 
-// CheckTaskForHiddenFlagIfExists provides a mock function with given fields: ctx, workNumber
-func (_m *MockedDatabase) CheckTaskForHiddenFlagIfExists(ctx context.Context, workNumber string) (bool, error) {
+// CheckTaskForHiddenFlag provides a mock function with given fields: ctx, workNumber
+func (_m *MockedDatabase) CheckTaskForHiddenFlag(ctx context.Context, workNumber string) (bool, error) {
 	ret := _m.Called(ctx, workNumber)
 
 	if len(ret) == 0 {
-		panic("no return value specified for CheckTaskForHiddenFlagIfExists")
+		panic("no return value specified for CheckTaskForHiddenFlag")
 	}
 
 	var r0 bool
@@ -387,31 +387,31 @@ func (_m *MockedDatabase) CheckTaskForHiddenFlagIfExists(ctx context.Context, wo
 	return r0, r1
 }
 
-// MockedDatabase_CheckTaskForHiddenFlagIfExists_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CheckTaskForHiddenFlagIfExists'
-type MockedDatabase_CheckTaskForHiddenFlagIfExists_Call struct {
+// MockedDatabase_CheckTaskForHiddenFlag_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CheckTaskForHiddenFlag'
+type MockedDatabase_CheckTaskForHiddenFlag_Call struct {
 	*mock.Call
 }
 
-// CheckTaskForHiddenFlagIfExists is a helper method to define mock.On call
+// CheckTaskForHiddenFlag is a helper method to define mock.On call
 //   - ctx context.Context
 //   - workNumber string
-func (_e *MockedDatabase_Expecter) CheckTaskForHiddenFlagIfExists(ctx interface{}, workNumber interface{}) *MockedDatabase_CheckTaskForHiddenFlagIfExists_Call {
-	return &MockedDatabase_CheckTaskForHiddenFlagIfExists_Call{Call: _e.mock.On("CheckTaskForHiddenFlagIfExists", ctx, workNumber)}
+func (_e *MockedDatabase_Expecter) CheckTaskForHiddenFlag(ctx interface{}, workNumber interface{}) *MockedDatabase_CheckTaskForHiddenFlag_Call {
+	return &MockedDatabase_CheckTaskForHiddenFlag_Call{Call: _e.mock.On("CheckTaskForHiddenFlag", ctx, workNumber)}
 }
 
-func (_c *MockedDatabase_CheckTaskForHiddenFlagIfExists_Call) Run(run func(ctx context.Context, workNumber string)) *MockedDatabase_CheckTaskForHiddenFlagIfExists_Call {
+func (_c *MockedDatabase_CheckTaskForHiddenFlag_Call) Run(run func(ctx context.Context, workNumber string)) *MockedDatabase_CheckTaskForHiddenFlag_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		run(args[0].(context.Context), args[1].(string))
 	})
 	return _c
 }
 
-func (_c *MockedDatabase_CheckTaskForHiddenFlagIfExists_Call) Return(_a0 bool, _a1 error) *MockedDatabase_CheckTaskForHiddenFlagIfExists_Call {
+func (_c *MockedDatabase_CheckTaskForHiddenFlag_Call) Return(_a0 bool, _a1 error) *MockedDatabase_CheckTaskForHiddenFlag_Call {
 	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
-func (_c *MockedDatabase_CheckTaskForHiddenFlagIfExists_Call) RunAndReturn(run func(context.Context, string) (bool, error)) *MockedDatabase_CheckTaskForHiddenFlagIfExists_Call {
+func (_c *MockedDatabase_CheckTaskForHiddenFlag_Call) RunAndReturn(run func(context.Context, string) (bool, error)) *MockedDatabase_CheckTaskForHiddenFlag_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -605,7 +605,7 @@ type MockedDatabase_CreateEmptyTask_Call struct {
 
 // CreateEmptyTask is a helper method to define mock.On call
 //   - ctx context.Context
-//   - task *db.CreateEmptyTaskDTO
+//   - task *db.EmptyTask
 func (_e *MockedDatabase_Expecter) CreateEmptyTask(ctx interface{}, task interface{}) *MockedDatabase_CreateEmptyTask_Call {
 	return &MockedDatabase_CreateEmptyTask_Call{Call: _e.mock.On("CreateEmptyTask", ctx, task)}
 }

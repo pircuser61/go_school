@@ -394,7 +394,7 @@ func (ae *Env) runVersion(ctx c.Context, log logger.Logger, run *runVersionsDTO)
 		return errors.Join(err, PipelineCreateError)
 	}
 
-	err = ae.initializeEmptyTask(ctx, storage, emptyTask, run.RequestID, requestInfo)
+	err = ae.processEmptyTask(ctx, storage, emptyTask, run.RequestID, requestInfo)
 	if err != nil {
 		return err
 	}
@@ -402,7 +402,7 @@ func (ae *Env) runVersion(ctx c.Context, log logger.Logger, run *runVersionsDTO)
 	return nil
 }
 
-func (ae *Env) initializeEmptyTask(
+func (ae *Env) processEmptyTask(
 	ctx c.Context,
 	storage db.Database,
 	emptyTask *db.EmptyTask,
