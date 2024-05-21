@@ -30,6 +30,7 @@ import (
 
 const (
 	runByPipelineIDPath = "/run/versions/pipeline_id"
+	runByKafka          = "Kafka"
 
 	titleKey      = "title"
 	emailKey      = "email"
@@ -226,6 +227,18 @@ type runVersionByPipelineIDRequest struct {
 
 //nolint:revive,stylecheck //need to implement interface in api.go
 func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
+	start := time.Now()
+	ctx, s := trace.StartSpan(r.Context(), "run_version_by_pipeline_id")
+
+	requestInfo := metrics.NewPostRequestInfo(runByPipelineIDPath)
+	defer func() {
+		s.End()
+
+		requestInfo.Duration = time.Since(start)
+
+		ae.Metrics.RequestsIncrease(requestInfo)
+	}()
+
 	errorHandler := newHTTPErrorHandler(
 		logger.
 			GetLogger(r.Context()).
@@ -238,6 +251,7 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		errorHandler.handleError(RequestReadError, err)
+		requestInfo.Status = RequestReadError.Status()
 
 		return
 	}
@@ -246,15 +260,19 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 
 	if err = json.Unmarshal(body, req); err != nil {
 		errorHandler.handleError(BodyParseError, err)
+		requestInfo.Status = BodyParseError.Status()
 
 		return
 	}
 
 	if req.PipelineID == "" {
 		errorHandler.handleError(ValidationError, errors.New("pipelineID is empty"))
+		requestInfo.Status = ValidationError.Status()
 
 		return
 	}
+
+	requestInfo.PipelineID = req.PipelineID
 
 	errorHandler.log = errorHandler.log.WithField("pipelineID", req.PipelineID).
 		WithField("funcName", "RunVersionsByPipelineId")
@@ -263,10 +281,13 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 		req.WorkNumber, err = ae.Sequence.GetWorkNumber(r.Context())
 		if err != nil {
 			errorHandler.handleError(GetWorkNumberError, err)
+			requestInfo.Status = GetWorkNumberError.Status()
 
 			return
 		}
 	}
+
+	requestInfo.WorkNumber = req.WorkNumber
 
 	run := &runVersionsDTO{
 		WorkNumber:        req.WorkNumber,
@@ -281,9 +302,10 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 		Authorization:     r.Header.Get(AuthorizationHeader),
 	}
 
-	err = ae.runVersion(r.Context(), errorHandler.log, run)
+	err = ae.runVersion(ctx, errorHandler.log, run)
 	if err != nil {
 		errorHandler.handleError(PipelineExecutionError, err)
+		requestInfo.Status = PipelineExecutionError.Status()
 
 		return
 	}
@@ -298,6 +320,7 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 
 	if err = sendResponse(w, http.StatusOK, []*entity.RunResponse{resp}); err != nil {
 		errorHandler.handleError(UnknownError, err)
+		requestInfo.Status = UnknownError.Status()
 
 		return
 	}
@@ -307,18 +330,7 @@ func (ae *Env) runVersion(ctx c.Context, log logger.Logger, run *runVersionsDTO)
 	var err error
 
 	ctx, s := trace.StartSpan(ctx, "run_version")
-
-	requestInfo := metrics.NewPostRequestInfo(runByPipelineIDPath)
-
-	defer func() {
-		s.End()
-
-		requestInfo.Duration = time.Since(time.Now())
-
-		ae.Metrics.RequestsIncrease(requestInfo)
-	}()
-
-	requestInfo.PipelineID = run.PipelineID
+	defer s.End()
 
 	if run.ClientID == "" {
 		run.ClientID, err = ae.getClientIDFromToken(run.Authorization)
@@ -328,7 +340,7 @@ func (ae *Env) runVersion(ctx c.Context, log logger.Logger, run *runVersionsDTO)
 	}
 
 	log = log.WithField("clientID", run.ClientID)
-	requestInfo.ClientID = run.ClientID
+	run.requestInfo.ClientID = run.ClientID
 
 	storage, err := ae.DB.Acquire(ctx)
 	if err != nil {
@@ -394,7 +406,7 @@ func (ae *Env) runVersion(ctx c.Context, log logger.Logger, run *runVersionsDTO)
 		return errors.Join(err, PipelineCreateError)
 	}
 
-	err = ae.processEmptyTask(ctx, storage, emptyTask, run.RequestID, requestInfo)
+	err = ae.processEmptyTask(ctx, storage, emptyTask, run.RequestID, run.requestInfo)
 	if err != nil {
 		return err
 	}

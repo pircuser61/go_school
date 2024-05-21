@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/iancoleman/orderedmap"
 
@@ -13,6 +14,7 @@ import (
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/kafka"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
@@ -31,6 +33,8 @@ type runVersionsDTO struct {
 	RequestID         string
 	ClientID          string
 
+	requestInfo *metrics.RequestInfo
+
 	ApplicationBody orderedmap.OrderedMap
 }
 
@@ -48,12 +52,30 @@ func (ae *Env) WorkRunTaskHandler(ctx c.Context, jobs <-chan kafka.TimedRunTaskM
 
 //nolint:all //its ok here
 func (ae *Env) RunTaskHandler(ctx c.Context, message kafka.RunTaskMessage) error {
+	start := time.Now()
+
 	ctx, span := trace.StartSpan(ctx, "RunTaskHandler")
-	defer span.End()
+
+	requestInfo := metrics.NewPostRequestInfo(runByKafka)
 
 	log := ae.Log.WithField("funcName", "RunTaskHandler").
 		WithField("workNumber", message.WorkNumber).
 		WithField("method", "kafka")
+
+	defer func() {
+		span.End()
+
+		if r := recover(); r != nil {
+			log.WithField("funcName", "recover").Error(r)
+			requestInfo.Status = PipelineExecutionError.Status()
+		}
+
+		requestInfo.Duration = time.Since(start)
+		requestInfo.PipelineID = message.PipelineID
+		requestInfo.WorkNumber = message.WorkNumber
+
+		ae.Metrics.RequestsIncrease(requestInfo)
+	}()
 
 	ctx = logger.WithLogger(ctx, log)
 	ctx = c.WithValue(ctx, script.RequestID{}, message.RequestID)
@@ -66,12 +88,6 @@ func (ae *Env) RunTaskHandler(ctx c.Context, message kafka.RunTaskMessage) error
 	messageString := string(messageTmp)
 
 	log.WithField("body", messageString).Info("start handle message from kafka")
-
-	defer func() {
-		if r := recover(); r != nil {
-			log.WithField("funcName", "recover").Error(r)
-		}
-	}()
 
 	if message.Username != "" {
 		var u people.SSOUser
@@ -126,11 +142,14 @@ skipXAsOther:
 		ApplicationBody:   message.ApplicationBody,
 		ClientID:          message.ClientID,
 		RequestID:         message.RequestID,
+
+		requestInfo: requestInfo,
 	}
 
 	err = ae.runVersion(ctx, log, run)
 	if err != nil {
 		log.Error(err)
+		requestInfo.Status = PipelineExecutionError.Status()
 
 		return nil
 	}
