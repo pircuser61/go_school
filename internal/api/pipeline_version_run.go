@@ -3,6 +3,7 @@ package api
 import (
 	c "context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -11,8 +12,6 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/iancoleman/orderedmap"
-
-	"errors"
 
 	"go.opencensus.io/trace"
 
@@ -427,7 +426,13 @@ func (ae *Env) initializeEmptyTask(
 
 	var externalSystem *entity.ExternalSystem
 
-	externalSystem, err = ae.getExternalSystem(ctx, storage, emptyTask.RunContext.ClientID, emptyTask.RunContext.PipelineID, version.VersionID.String())
+	externalSystem, err = ae.getExternalSystem(
+		ctx,
+		storage,
+		emptyTask.RunContext.ClientID,
+		emptyTask.RunContext.PipelineID,
+		version.VersionID.String(),
+	)
 	if err != nil {
 		_ = storage.UpdateTaskStatus(ctx, emptyTask.WorkID, db.RunStatusError, GetExternalSystemsError.error(), "")
 
@@ -441,7 +446,11 @@ func (ae *Env) initializeEmptyTask(
 		allowRunAsOthers = externalSystem.AllowRunAsOthers
 	}
 
-	mappedApplicationBody, err := ae.processMappings(externalSystem, version, emptyTask.RunContext.InitialApplication.ApplicationBodyFromSystem)
+	mappedApplicationBody, err := ae.processMappings(
+		externalSystem,
+		version,
+		emptyTask.RunContext.InitialApplication.ApplicationBodyFromSystem,
+	)
 	if err != nil {
 		_ = storage.UpdateTaskStatus(ctx, emptyTask.WorkID, db.RunStatusError, MappingError.error(), "")
 
