@@ -180,7 +180,7 @@ func (s *serviceWithCache) GetDefaultUnitID() string {
 
 // nolint:dupl //так нужно!
 func (s *serviceWithCache) GetDefaultCalendarDaysForGivenTimeIntervals(
-ctx c.Context,
+	ctx c.Context,
 	taskTimeIntervals []entity.TaskCompletionInterval,
 ) (*CalendarDays, error) {
 	ctx, span := trace.StartSpan(ctx, "hrgate.get_default_calendar_days_for_given_time_intervals(cached)")

@@ -37,13 +37,13 @@ type server struct {
 	metrics metrics.Metrics
 }
 
-func NewServer(ctx c.Context, log logger.Logger, kf *kafka.Service, params *api.ServerParam, m metrics.Metrics) *server {
+func NewServer(ctx c.Context, log logger.Logger, kf *kafka.Service, params *api.ServerParam, m metrics.Metrics) server {
 	httpServer, err := api.NewServer(ctx, params)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	s := &server{
+	s := server{
 		logger:     log,
 		httpServer: httpServer,
 		kafka:      kf,

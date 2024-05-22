@@ -4,7 +4,6 @@ import (
 	c "context"
 	"encoding/json"
 	"fmt"
-	"golang.org/x/net/context"
 
 	"github.com/hashicorp/go-retryablehttp"
 
@@ -99,7 +98,7 @@ func (s *service) GetUser(ctx c.Context, username string) (people.SSOUser, error
 	return resources, nil
 }
 
-func (s *service) GetUsers(ctx context.Context, username string, limit *int, filter []string) ([]people.SSOUser, error) {
+func (s *service) GetUsers(ctx c.Context, username string, limit *int, filter []string) ([]people.SSOUser, error) {
 	ctx, span := trace.StartSpan(ctx, "people.cache.get_users")
 	defer span.End()
 
@@ -152,7 +151,7 @@ func (s *service) PathBuilder(mainPath, subPath string) (string, error) {
 	return s.People.PathBuilder(mainPath, subPath)
 }
 
-func (s *service) GetUserEmail(ctx context.Context, username string) (string, error) {
+func (s *service) GetUserEmail(ctx c.Context, username string) (string, error) {
 	ctx, span := trace.StartSpan(ctx, "people.cache.get_user_email")
 	defer span.End()
 
