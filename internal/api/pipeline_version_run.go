@@ -300,6 +300,7 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 		ApplicationBody:   req.ApplicationBody,
 		RequestID:         r.Header.Get(XRequestIDHeader),
 		Authorization:     r.Header.Get(AuthorizationHeader),
+		requestInfo:       requestInfo,
 	}
 
 	err = ae.runVersion(ctx, errorHandler.log, run)
@@ -340,6 +341,7 @@ func (ae *Env) runVersion(ctx c.Context, log logger.Logger, run *runVersionsDTO)
 	}
 
 	log = log.WithField("clientID", run.ClientID)
+
 	if run.requestInfo != nil {
 		run.requestInfo.ClientID = run.ClientID
 	}
