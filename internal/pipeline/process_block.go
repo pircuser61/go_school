@@ -57,8 +57,8 @@ type RunContextServices struct {
 	ServiceDesc   servicedesc.Service
 	FunctionStore functions.Service
 	HumanTasks    human_tasks.ServiceInterface
-	Integrations  *integrations.Service
-	FileRegistry  *file_registry.Service
+	Integrations  integrations.Service
+	FileRegistry  file_registry.Service
 	FaaS          string
 	HrGate        hrgate.ServiceInterface
 	Scheduler     *scheduler.Service
@@ -715,12 +715,14 @@ func sendEndingMapping(
 
 	req.Header.Set("Content-Type", "application/json")
 
+	integrationsCli := runCtx.Services.Integrations.GetCli()
+
 	if auth.AuthType == "oAuth" {
 		bearer := "Bearer " + auth.Token
 
 		req.Header.Add("Authorization", bearer)
 
-		resp, err := runCtx.Services.Integrations.Cli.Do(req)
+		resp, err := integrationsCli.Do(req)
 		if err != nil {
 			return err
 		}
@@ -729,7 +731,7 @@ func sendEndingMapping(
 	} else {
 		req.SetBasicAuth(auth.Login, auth.Password)
 
-		resp, err := runCtx.Services.Integrations.Cli.Do(req)
+		resp, err := integrationsCli.Do(req)
 		if err != nil {
 			return err
 		}

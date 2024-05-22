@@ -1,8 +1,9 @@
 package hrgate
 
 import (
-	"context"
+	c "context"
 	"fmt"
+	"golang.org/x/net/context"
 	"math"
 	"net/http"
 	"time"
@@ -38,7 +39,7 @@ type Service struct {
 
 func NewService(cfg *Config, ssoS *sso.Service, m metrics.Metrics) (ServiceInterface, error) {
 	httpClient := &http.Client{}
-	tr := transport{
+	httpClient.Transport = &transport{
 		next: ochttp.Transport{
 			Base:        httpClient.Transport,
 			Propagation: observability.NewHTTPFormat(),
@@ -48,13 +49,12 @@ func NewService(cfg *Config, ssoS *sso.Service, m metrics.Metrics) (ServiceInter
 		metrics: m,
 	}
 
-	httpClient.Transport = &tr
 	retryableCli := httpclient.NewClient(httpClient, nil, cfg.MaxRetries, cfg.RetryDelay)
 	wrappedRetryableCli := httpRequestDoer{retryableCli}
 
-	newCli, createClientErr := NewClientWithResponses(cfg.HRGateURL, WithHTTPClient(wrappedRetryableCli), WithBaseURL(cfg.HRGateURL))
-	if createClientErr != nil {
-		return nil, createClientErr
+	newCli, err := NewClientWithResponses(cfg.HRGateURL, WithHTTPClient(wrappedRetryableCli), WithBaseURL(cfg.HRGateURL))
+	if err != nil {
+		return nil, err
 	}
 
 	location, getLocationErr := time.LoadLocation("Europe/Moscow")
@@ -67,6 +67,10 @@ func NewService(cfg *Config, ssoS *sso.Service, m metrics.Metrics) (ServiceInter
 		hrGateURL: cfg.HRGateURL,
 		location:  *location,
 	}, nil
+}
+
+func (s *Service) Ping(ctx c.Context) error {
+	return nil
 }
 
 func (s *Service) GetCalendars(ctx context.Context, params *GetCalendarsParams) ([]Calendar, error) {

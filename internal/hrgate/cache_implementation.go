@@ -1,7 +1,7 @@
 package hrgate
 
 import (
-	"context"
+	c "context"
 	"encoding/json"
 	"fmt"
 	"math"
@@ -47,7 +47,7 @@ func NewServiceWithCache(cfg *Config, ssoS *sso.Service, m metrics.Metrics) (Ser
 	}, nil
 }
 
-func (s *serviceWithCache) GetCalendars(ctx context.Context, params *GetCalendarsParams) ([]Calendar, error) {
+func (s *serviceWithCache) GetCalendars(ctx c.Context, params *GetCalendarsParams) ([]Calendar, error) {
 	ctx, span := trace.StartSpan(ctx, "hrgate.get_calendars(cached)")
 	defer span.End()
 
@@ -96,7 +96,11 @@ func (s *serviceWithCache) GetCalendars(ctx context.Context, params *GetCalendar
 	return calendar, nil
 }
 
-func (s *serviceWithCache) GetCalendarDays(ctx context.Context, params *GetCalendarDaysParams) (*CalendarDays, error) {
+func (s *serviceWithCache) Ping(ctx c.Context) error {
+	return nil
+}
+
+func (s *serviceWithCache) GetCalendarDays(ctx c.Context, params *GetCalendarDaysParams) (*CalendarDays, error) {
 	ctx, span := trace.StartSpan(ctx, "hrgate.get_calendar_days(cached)")
 	defer span.End()
 
@@ -145,7 +149,7 @@ func (s *serviceWithCache) GetCalendarDays(ctx context.Context, params *GetCalen
 	return calendarDays, nil
 }
 
-func (s *serviceWithCache) GetPrimaryRussianFederationCalendarOrFirst(ctx context.Context, params *GetCalendarsParams) (*Calendar, error) {
+func (s *serviceWithCache) GetPrimaryRussianFederationCalendarOrFirst(ctx c.Context, params *GetCalendarsParams) (*Calendar, error) {
 	ctx, span := trace.StartSpan(ctx, "hrgate.get_primary_calendar_or_first(cached)")
 	defer span.End()
 
@@ -166,7 +170,7 @@ func (s *serviceWithCache) GetPrimaryRussianFederationCalendarOrFirst(ctx contex
 	return &calendars[0], nil
 }
 
-func (s *serviceWithCache) FillDefaultUnitID(ctx context.Context) error {
+func (s *serviceWithCache) FillDefaultUnitID(ctx c.Context) error {
 	return s.HRGate.FillDefaultUnitID(ctx)
 }
 
@@ -176,7 +180,7 @@ func (s *serviceWithCache) GetDefaultUnitID() string {
 
 // nolint:dupl //так нужно!
 func (s *serviceWithCache) GetDefaultCalendarDaysForGivenTimeIntervals(
-	ctx context.Context,
+ctx c.Context,
 	taskTimeIntervals []entity.TaskCompletionInterval,
 ) (*CalendarDays, error) {
 	ctx, span := trace.StartSpan(ctx, "hrgate.get_default_calendar_days_for_given_time_intervals(cached)")

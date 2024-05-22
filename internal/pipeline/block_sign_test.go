@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"golang.org/x/net/context"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -5401,7 +5400,7 @@ func TestGoSignActions(t *testing.T) {
 			RunContext *BlockRunContext
 		}
 		args struct {
-			ctx  context.Context
+			ctx  c.Context
 			data *script.BlockUpdateData
 		}
 	)

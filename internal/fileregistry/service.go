@@ -25,14 +25,14 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 )
 
-type Service struct {
+type service struct {
 	restURL  string
 	restCli  *retryablehttp.Client
 	grpcConn *grpc.ClientConn
 	grpcCLi  fileregistry.FileServiceClient
 }
 
-func NewService(cfg Config, log logger.Logger, m metrics.Metrics) (*Service, error) {
+func NewService(cfg Config, log logger.Logger, m metrics.Metrics) (Service, error) {
 	opts := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithStatsHandler(&ocgrpc.ClientHandler{}),
@@ -68,10 +68,24 @@ func NewService(cfg Config, log logger.Logger, m metrics.Metrics) (*Service, err
 
 	httpClient.Transport = &tr
 
-	return &Service{
+	return &service{
 		grpcConn: conn,
 		restCli:  httpclient.NewClient(httpClient, log, cfg.MaxRetries, cfg.RetryDelay),
 		restURL:  cfg.REST,
 		grpcCLi:  fileregistry.NewFileServiceClient(conn),
 	}, nil
+}
+
+func (s *service) Ping(ctx c.Context) error {
+	req, err := retryablehttp.NewRequest("HEAD", s.restURL, nil)
+	if err != nil {
+		return err
+	}
+
+	resp, err := s.restCli.Do(req)
+	if err != nil {
+		return err
+	}
+
+	return resp.Body.Close()
 }

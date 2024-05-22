@@ -15,8 +15,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
-	"golang.org/x/net/context"
-
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
@@ -600,7 +598,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 			RunContext    *BlockRunContext
 		}
 		args struct {
-			ctx  context.Context
+			ctx  c.Context
 			data *script.BlockUpdateData
 		}
 	)
@@ -624,7 +622,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 				},
 			},
 			args: args{
-				ctx:  context.Background(),
+				ctx:  c.Background(),
 				data: nil,
 			},
 			wantErr: true,
@@ -654,7 +652,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				data: &script.BlockUpdateData{
 					ByLogin:    exampleExecutor,
 					Action:     string(entity.TaskUpdateActionExecution),
@@ -686,7 +684,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				data: &script.BlockUpdateData{
 					ByLogin:    exampleExecutor,
 					Action:     string(entity.TaskUpdateActionExecution),
@@ -720,7 +718,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				data: &script.BlockUpdateData{
 					ByLogin:    exampleExecutor,
 					Action:     string(entity.TaskUpdateActionExecution),
@@ -789,7 +787,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				data: &script.BlockUpdateData{
 					ByLogin:    exampleExecutor,
 					Action:     string(entity.TaskUpdateActionExecution),
@@ -858,7 +856,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				data: &script.BlockUpdateData{
 					ByLogin:    exampleExecutor,
 					Action:     string(entity.TaskUpdateActionExecution),
@@ -926,7 +924,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				data: &script.BlockUpdateData{
 					ByLogin:    secondExampleExecutor,
 					Action:     string(entity.TaskUpdateActionExecution),
@@ -995,7 +993,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				data: &script.BlockUpdateData{
 					ByLogin:    exampleExecutor,
 					Action:     string(entity.TaskUpdateActionExecution),
@@ -1064,7 +1062,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				data: &script.BlockUpdateData{
 					ByLogin:    secondExampleExecutor,
 					Action:     string(entity.TaskUpdateActionSLABreach),
@@ -1133,7 +1131,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				data: &script.BlockUpdateData{
 					ByLogin:    secondExampleExecutor,
 					Action:     string(entity.TaskUpdateActionHalfSLABreach),
@@ -1237,7 +1235,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				data: &script.BlockUpdateData{
 					ByLogin:    secondExampleExecutor,
 					Action:     string(entity.TaskUpdateActionReworkSLABreach),
@@ -1300,7 +1298,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				data: &script.BlockUpdateData{
 					ByLogin:    secondExampleExecutor,
 					Action:     string(entity.TaskUpdateActionExecution),
@@ -1404,7 +1402,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				data: &script.BlockUpdateData{
 					ByLogin:    secondExampleExecutor,
 					Action:     string(entity.TaskUpdateActionExecution),
@@ -1473,7 +1471,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				data: &script.BlockUpdateData{
 					ByLogin:    secondExampleExecutor,
 					Action:     string(entity.TaskUpdateActionExecution),
@@ -1534,7 +1532,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				data: &script.BlockUpdateData{
 					ByLogin:    secondExampleExecutor,
 					Action:     string(entity.TaskUpdateActionChangeExecutor),
@@ -1603,7 +1601,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				data: &script.BlockUpdateData{
 					ByLogin:    exampleExecutor,
 					Action:     string(entity.TaskUpdateActionChangeExecutor),
@@ -1663,7 +1661,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				data: &script.BlockUpdateData{
 					ByLogin:    exampleExecutor,
 					Action:     string(entity.TaskUpdateActionChangeExecutor),
@@ -1724,7 +1722,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				data: &script.BlockUpdateData{
 					ByLogin:    secondExampleExecutor,
 					Action:     string(entity.TaskUpdateActionRequestExecutionInfo),
@@ -1785,7 +1783,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				data: &script.BlockUpdateData{
 					ByLogin:    secondExampleExecutor,
 					Action:     string(entity.TaskUpdateActionExecutorStartWork),
@@ -1852,7 +1850,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				data: &script.BlockUpdateData{
 					ByLogin:    secondExampleExecutor,
 					Action:     string(entity.TaskUpdateActionExecutorStartWork),
@@ -1913,7 +1911,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				data: &script.BlockUpdateData{
 					ByLogin:    secondExampleExecutor,
 					Action:     string(entity.TaskUpdateActionExecutorSendEditApp),
@@ -1981,7 +1979,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				data: &script.BlockUpdateData{
 					ByLogin:    secondExampleExecutor,
 					Action:     string(entity.TaskUpdateActionExecutorSendEditApp),
@@ -2065,7 +2063,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				data: &script.BlockUpdateData{
 					ByLogin:    secondExampleExecutor,
 					Action:     string(entity.TaskUpdateActionExecutorSendEditApp),
@@ -2138,7 +2136,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				data: &script.BlockUpdateData{
 					ByLogin:    secondExampleExecutor,
 					Action:     string(entity.TaskUpdateActionDayBeforeSLARequestAddInfo),
@@ -2241,7 +2239,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				data: &script.BlockUpdateData{
 					ByLogin:    exampleExecutor,
 					Action:     string(entity.TaskUpdateActionExecution),
@@ -2315,7 +2313,7 @@ func TestGoExecutionActions(t *testing.T) {
 				},
 			},
 			args: args{
-				ctx:  context.Background(),
+				ctx:  c.Background(),
 				data: nil,
 			},
 			wantActions: []MemberAction{
@@ -2362,7 +2360,7 @@ func TestGoExecutionActions(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				data: &script.BlockUpdateData{
 					ByLogin:    exampleExecutor,
 					Action:     string(entity.TaskUpdateActionExecution),
@@ -2424,7 +2422,7 @@ func TestGoExecutionActions(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				data: &script.BlockUpdateData{
 					ByLogin:    exampleExecutor,
 					Action:     string(entity.TaskUpdateActionExecution),
@@ -2498,14 +2496,14 @@ func TestGoExecutionActions(t *testing.T) {
 						HumanTasks: func() humanTasks.ServiceInterface {
 							htMock := mocks2.DelegationServiceClient{}
 
-							htMock.On("GetDelegationsFromLogin", context.Background(), "users1").Return(nil, humanTasks.Delegations{})
+							htMock.On("GetDelegationsFromLogin", c.Background(), "users1").Return(nil, humanTasks.Delegations{})
 
 							req := &delegationht.GetDelegationsRequest{
 								FilterBy:  "fromLogin",
 								FromLogin: login,
 							}
 
-							htMock.On("getDelegationsInternal", context.Background(), req).Return(humanTasks.Delegations{
+							htMock.On("getDelegationsInternal", c.Background(), req).Return(humanTasks.Delegations{
 								{
 									ToLogin:   delLogin1,
 									FromLogin: login,
@@ -2532,7 +2530,7 @@ func TestGoExecutionActions(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				data: &script.BlockUpdateData{
 					ByLogin:    exampleExecutor,
 					Action:     string(entity.TaskUpdateActionExecution),
@@ -2602,14 +2600,14 @@ func TestGoExecutionActions(t *testing.T) {
 						HumanTasks: func() humanTasks.ServiceInterface {
 							htMock := mocks2.DelegationServiceClient{}
 
-							htMock.On("GetDelegationsFromLogin", context.Background(), "users1").Return(nil, humanTasks.Delegations{})
+							htMock.On("GetDelegationsFromLogin", c.Background(), "users1").Return(nil, humanTasks.Delegations{})
 
 							req := &delegationht.GetDelegationsRequest{
 								FilterBy:  "fromLogin",
 								FromLogin: login,
 							}
 
-							htMock.On("getDelegationsInternal", context.Background(), req).Return(humanTasks.Delegations{
+							htMock.On("getDelegationsInternal", c.Background(), req).Return(humanTasks.Delegations{
 								{
 									ToLogin:   delLogin1,
 									FromLogin: login,
@@ -2636,7 +2634,7 @@ func TestGoExecutionActions(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				data: &script.BlockUpdateData{
 					ByLogin:    exampleExecutor,
 					Action:     string(entity.TaskUpdateActionExecution),
@@ -2702,14 +2700,14 @@ func TestGoExecutionActions(t *testing.T) {
 						HumanTasks: func() humanTasks.ServiceInterface {
 							htMock := mocks2.DelegationServiceClient{}
 
-							htMock.On("GetDelegationsFromLogin", context.Background(), "users1").Return(nil, humanTasks.Delegations{})
+							htMock.On("GetDelegationsFromLogin", c.Background(), "users1").Return(nil, humanTasks.Delegations{})
 
 							req := &delegationht.GetDelegationsRequest{
 								FilterBy:  "fromLogin",
 								FromLogin: login,
 							}
 
-							htMock.On("getDelegationsInternal", context.Background(), req).Return(humanTasks.Delegations{
+							htMock.On("getDelegationsInternal", c.Background(), req).Return(humanTasks.Delegations{
 								{
 									ToLogin:   delLogin1,
 									FromLogin: login,
@@ -2736,7 +2734,7 @@ func TestGoExecutionActions(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				data: &script.BlockUpdateData{
 					ByLogin:    exampleExecutor,
 					Action:     string(entity.TaskUpdateActionExecution),
@@ -2825,14 +2823,14 @@ func TestGoExecutionActions(t *testing.T) {
 						HumanTasks: func() humanTasks.ServiceInterface {
 							htMock := mocks2.DelegationServiceClient{}
 
-							htMock.On("GetDelegationsFromLogin", context.Background(), "users1").Return(nil, humanTasks.Delegations{})
+							htMock.On("GetDelegationsFromLogin", c.Background(), "users1").Return(nil, humanTasks.Delegations{})
 
 							req := &delegationht.GetDelegationsRequest{
 								FilterBy:  "fromLogin",
 								FromLogin: login,
 							}
 
-							htMock.On("getDelegationsInternal", context.Background(), req).Return(humanTasks.Delegations{
+							htMock.On("getDelegationsInternal", c.Background(), req).Return(humanTasks.Delegations{
 								{
 									ToLogin:   delLogin1,
 									FromLogin: login,
@@ -2859,7 +2857,7 @@ func TestGoExecutionActions(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				data: &script.BlockUpdateData{
 					ByLogin:    exampleExecutor,
 					Action:     string(entity.TaskUpdateActionExecution),
@@ -2943,14 +2941,14 @@ func TestGoExecutionActions(t *testing.T) {
 						HumanTasks: func() humanTasks.ServiceInterface {
 							htMock := mocks2.DelegationServiceClient{}
 
-							htMock.On("GetDelegationsFromLogin", context.Background(), "users1").Return(nil, humanTasks.Delegations{})
+							htMock.On("GetDelegationsFromLogin", c.Background(), "users1").Return(nil, humanTasks.Delegations{})
 
 							req := &delegationht.GetDelegationsRequest{
 								FilterBy:  "fromLogin",
 								FromLogin: login,
 							}
 
-							htMock.On("getDelegationsInternal", context.Background(), req).Return(humanTasks.Delegations{
+							htMock.On("getDelegationsInternal", c.Background(), req).Return(humanTasks.Delegations{
 								{
 									ToLogin:   delLogin1,
 									FromLogin: login,
@@ -2977,7 +2975,7 @@ func TestGoExecutionActions(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				data: &script.BlockUpdateData{
 					ByLogin:    exampleExecutor,
 					Action:     string(entity.TaskUpdateActionExecution),
@@ -3056,14 +3054,14 @@ func TestGoExecutionActions(t *testing.T) {
 						HumanTasks: func() humanTasks.ServiceInterface {
 							htMock := mocks2.DelegationServiceClient{}
 
-							htMock.On("GetDelegationsFromLogin", context.Background(), "users1").Return(nil, humanTasks.Delegations{})
+							htMock.On("GetDelegationsFromLogin", c.Background(), "users1").Return(nil, humanTasks.Delegations{})
 
 							req := &delegationht.GetDelegationsRequest{
 								FilterBy:  "fromLogin",
 								FromLogin: login,
 							}
 
-							htMock.On("getDelegationsInternal", context.Background(), req).Return(humanTasks.Delegations{
+							htMock.On("getDelegationsInternal", c.Background(), req).Return(humanTasks.Delegations{
 								{
 									ToLogin:   delLogin1,
 									FromLogin: login,
@@ -3090,7 +3088,7 @@ func TestGoExecutionActions(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				data: &script.BlockUpdateData{
 					ByLogin:    exampleExecutor,
 					Action:     string(entity.TaskUpdateActionExecution),

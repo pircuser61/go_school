@@ -10,7 +10,7 @@ import (
 	"go.opencensus.io/plugin/ocgrpc"
 
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
+	gc "google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
 
 	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/retry"
@@ -32,14 +32,14 @@ import (
 
 const externalSystemName = "integrations"
 
-type Service struct {
+type service struct {
 	conn       *grpc.ClientConn
-	RPCIntCli  integration.IntegrationServiceClient
-	RPCMicrCli microservice.MicroserviceServiceClient
-	Cli        *retryablehttp.Client
+	rpcIntCli  integration.IntegrationServiceClient
+	rpcMicrCli microservice.MicroserviceServiceClient
+	cli        *retryablehttp.Client
 }
 
-func NewService(cfg Config, log logger.Logger, m metrics.Metrics) (*Service, error) {
+func NewService(cfg Config, log logger.Logger, m metrics.Metrics) (Service, error) {
 	opts := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithStatsHandler(&ocgrpc.ClientHandler{}),
@@ -51,9 +51,10 @@ func NewService(cfg Config, log logger.Logger, m metrics.Metrics) (*Service, err
 			grpc_retry.WithMax(cfg.MaxRetries),
 			grpc_retry.WithBackoff(grpc_retry.BackoffLinear(cfg.RetryDelay)),
 			grpc_retry.WithPerRetryTimeout(cfg.Timeout),
-			grpc_retry.WithCodes(codes.Unavailable, codes.ResourceExhausted, codes.DataLoss, codes.DeadlineExceeded, codes.Unknown),
+			grpc_retry.WithCodes(gc.Unavailable, gc.ResourceExhausted, gc.DataLoss, gc.DeadlineExceeded, gc.Unknown),
 			grpc_retry.WithOnRetryCallback(func(ctx c.Context, attempt uint, err error) {
-				log.WithError(err).WithField("attempt", attempt).Error("failed to reconnect to integrations")
+				log.WithError(err).WithField("attempt", attempt).
+					Error("failed to reconnect to integrations")
 			}),
 		)))
 	}
@@ -64,7 +65,6 @@ func NewService(cfg Config, log logger.Logger, m metrics.Metrics) (*Service, err
 	}
 
 	httpClient := &http.Client{}
-
 	httpClient.Transport = &transport{
 		next: ochttp.Transport{
 			Base:        httpClient.Transport,
@@ -74,21 +74,37 @@ func NewService(cfg Config, log logger.Logger, m metrics.Metrics) (*Service, err
 		metrics: m,
 	}
 
-	return &Service{
+	return &service{
 		conn:       conn,
-		RPCIntCli:  integration.NewIntegrationServiceClient(conn),
-		RPCMicrCli: microservice.NewMicroserviceServiceClient(conn),
-		Cli:        httpclient.NewClient(httpClient, nil, cfg.MaxRetries, cfg.RetryDelay),
+		rpcIntCli:  integration.NewIntegrationServiceClient(conn),
+		rpcMicrCli: microservice.NewMicroserviceServiceClient(conn),
+		cli:        httpclient.NewClient(httpClient, nil, cfg.MaxRetries, cfg.RetryDelay),
 	}, nil
 }
 
-func (s *Service) GetSystemsNames(ctx c.Context, systemIDs []uuid.UUID) (map[string]string, error) {
+func (s *service) Ping(ctx c.Context) error {
+	return nil
+}
+
+func (s *service) GetRpcIntCli() integration.IntegrationServiceClient {
+	return s.rpcIntCli
+}
+
+func (s *service) GetRpcMicrCli() microservice.MicroserviceServiceClient {
+	return s.rpcMicrCli
+}
+
+func (s *service) GetCli() *retryablehttp.Client {
+	return s.cli
+}
+
+func (s *service) GetSystemsNames(ctx c.Context, systemIDs []uuid.UUID) (map[string]string, error) {
 	ids := make([]string, 0, len(systemIDs))
 	for _, systemID := range systemIDs {
 		ids = append(ids, systemID.String())
 	}
 
-	res, err := s.RPCIntCli.GetIntegrationsNamesByIds(ctx, &integration.GetIntegrationsNamesByIdsRequest{Ids: ids})
+	res, err := s.rpcIntCli.GetIntegrationsNamesByIds(ctx, &integration.GetIntegrationsNamesByIdsRequest{Ids: ids})
 	if err != nil {
 		return nil, err
 	}
@@ -100,11 +116,11 @@ func (s *Service) GetSystemsNames(ctx c.Context, systemIDs []uuid.UUID) (map[str
 	return nil, errors.New("couldn't get system names")
 }
 
-func (s *Service) GetSystemsClients(ctx c.Context, systemIDs []uuid.UUID) (map[string][]string, error) {
+func (s *service) GetSystemsClients(ctx c.Context, systemIDs []uuid.UUID) (map[string][]string, error) {
 	cc := make(map[string][]string)
 
 	for _, id := range systemIDs {
-		res, err := s.RPCIntCli.GetIntegrationById(ctx, &integration.GetIntegrationByIdRequest{IntegrationId: id.String()})
+		res, err := s.rpcIntCli.GetIntegrationById(ctx, &integration.GetIntegrationByIdRequest{IntegrationId: id.String()})
 		if err != nil {
 			return nil, err
 		}
@@ -117,8 +133,8 @@ func (s *Service) GetSystemsClients(ctx c.Context, systemIDs []uuid.UUID) (map[s
 	return cc, nil
 }
 
-func (s *Service) GetMicroserviceHumanKey(ctx c.Context, microSrvID, pID, vID, workNumber, clientID string) (string, error) {
-	res, err := s.RPCMicrCli.GetMicroservice(ctx, &microservice.GetMicroserviceRequest{
+func (s *service) GetMicroserviceHumanKey(ctx c.Context, microSrvID, pID, vID, workNumber, clientID string) (string, error) {
+	res, err := s.rpcMicrCli.GetMicroservice(ctx, &microservice.GetMicroserviceRequest{
 		MicroserviceId: microSrvID,
 		PipelineId:     pID,
 		VersionId:      vID,

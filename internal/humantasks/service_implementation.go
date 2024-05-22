@@ -9,8 +9,6 @@ import (
 
 	"go.opencensus.io/plugin/ocgrpc"
 
-	"golang.org/x/net/context"
-
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
@@ -54,7 +52,7 @@ func NewService(cfg *Config, log logger.Logger, m metrics.Metrics) (ServiceInter
 			grpc_retry.WithBackoff(grpc_retry.BackoffLinear(cfg.RetryDelay)),
 			grpc_retry.WithPerRetryTimeout(cfg.Timeout),
 			grpc_retry.WithCodes(codes.Unavailable, codes.ResourceExhausted, codes.DataLoss, codes.DeadlineExceeded, codes.Unknown),
-			grpc_retry.WithOnRetryCallback(func(ctx context.Context, attempt uint, err error) {
+			grpc_retry.WithOnRetryCallback(func(ctx c.Context, attempt uint, err error) {
 				log.WithError(err).WithField("attempt", attempt).Error("failed to reconnect to humantasks")
 			}),
 		)))
@@ -69,6 +67,12 @@ func NewService(cfg *Config, log logger.Logger, m metrics.Metrics) (ServiceInter
 		conn: conn,
 		cli:  d.NewDelegationServiceClient(conn),
 	}, nil
+}
+
+func (s *service) Ping(ctx c.Context) error {
+	//_, err := s.cli.Ping(ctx, &scheduler_v1.PingRequest{})
+
+	return nil
 }
 
 func (s *service) SetCli(cli d.DelegationServiceClient) {

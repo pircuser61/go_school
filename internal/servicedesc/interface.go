@@ -14,6 +14,7 @@ type Service interface {
 	GetSchemaByID(ctx c.Context, schemaID string) (map[string]interface{}, error)
 	GetSchemaByBlueprintID(ctx c.Context, blueprintID string) (map[string]interface{}, error)
 	GetSdURL() string
+	Ping(ctx c.Context) error
 }
 
 type Setter interface {

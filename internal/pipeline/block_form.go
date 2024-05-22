@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"time"
 
-	"golang.org/x/net/context"
-
 	"github.com/pkg/errors"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
@@ -195,7 +193,7 @@ func (gb *GoFormBlock) getFormNamesToFill() ([]string, bool) {
 	var (
 		actions   = make([]string, 0)
 		emptyForm = false
-		l         = logger.GetLogger(context.Background())
+		l         = logger.GetLogger(c.Background())
 	)
 
 	for _, form := range gb.State.FormsAccessibility {
@@ -256,7 +254,7 @@ func (gb *GoFormBlock) checkForEmptyForm(formState json.RawMessage, l logger.Log
 	return true
 }
 
-func (gb *GoFormBlock) getDeadline(ctx context.Context, workType string) (time.Time, error) {
+func (gb *GoFormBlock) getDeadline(ctx c.Context, workType string) (time.Time, error) {
 	slaInfoPtr, getSLAInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDTO{
 		TaskCompletionIntervals: []entity.TaskCompletionInterval{{
 			StartedAt:  gb.RunContext.CurrBlockStartTime,

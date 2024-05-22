@@ -1,9 +1,10 @@
 package server
 
 import (
-	"context"
+	c "context"
 	"errors"
 	"fmt"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 	"net/http"
 	"strconv"
 	"strings"
@@ -17,7 +18,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/kafka"
 )
 
-type Server struct {
+type server struct {
 	logger logger.Logger
 
 	httpServer *http.Server
@@ -25,53 +26,51 @@ type Server struct {
 	kafka  *kafka.Service
 	apiEnv *api.Env
 
-	svcsPing *configs.ServicesPing
+	servicesPing *configs.ServicesPing
 
 	consumerWorkerCh  chan kafka.TimedRunnerInMessage
 	consumerWorkerCnt int
 
 	consumerRunTaskWorkerCh chan kafka.TimedRunTaskMessage
 	consumerRunTaskWorkers  int
+
+	metrics metrics.Metrics
 }
 
-func NewServer(
-	ctx context.Context,
-	log logger.Logger,
-	kf *kafka.Service,
-	serverParam *api.ServerParam,
-) *Server {
-	httpServer, err := api.NewServer(ctx, serverParam)
+func NewServer(ctx c.Context, log logger.Logger, kf *kafka.Service, params *api.ServerParam, m metrics.Metrics) *server {
+	httpServer, err := api.NewServer(ctx, params)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	s := &Server{
+	s := &server{
 		logger:     log,
 		httpServer: httpServer,
 		kafka:      kf,
-		apiEnv:     serverParam.APIEnv,
+		apiEnv:     params.APIEnv,
+		metrics:    m,
 
 		consumerWorkerCh:  make(chan kafka.TimedRunnerInMessage),
-		consumerWorkerCnt: serverParam.ConsumerFuncsWorkers,
+		consumerWorkerCnt: params.ConsumerFuncsWorkers,
 
 		consumerRunTaskWorkerCh: make(chan kafka.TimedRunTaskMessage),
-		consumerRunTaskWorkers:  serverParam.ConsumerTasksWorkers,
+		consumerRunTaskWorkers:  params.ConsumerTasksWorkers,
 
-		svcsPing: &configs.ServicesPing{
-			PingTimer:    serverParam.SvcsPing.PingTimer,
-			MaxFailedCnt: serverParam.SvcsPing.MaxFailedCnt,
-			MaxOkCnt:     serverParam.SvcsPing.MaxOkCnt,
+		servicesPing: &configs.ServicesPing{
+			PingTimer:    params.SvcsPing.PingTimer,
+			MaxFailedCnt: params.SvcsPing.MaxFailedCnt,
+			MaxOkCnt:     params.SvcsPing.MaxOkCnt,
 		},
 	}
 
 	s.startKafkaWorkers(ctx)
 
-	go s.checkSvcsAvailability(ctx)
+	go s.checkServicesAvailability(ctx)
 
 	return s
 }
 
-func (s *Server) Run(ctx context.Context) {
+func (s *server) Run(ctx c.Context) {
 	go func() {
 		s.logger.Info("script manager service started on port", s.httpServer.Addr)
 
@@ -109,7 +108,7 @@ func (s *Server) Run(ctx context.Context) {
 	s.kafka.StartConsumer(ctx)
 }
 
-func (s *Server) Stop(ctx context.Context) {
+func (s *server) Stop(ctx c.Context) {
 	if err := s.httpServer.Shutdown(ctx); err != nil {
 		s.logger.WithError(err).Error("error on http server shutdown")
 	}
@@ -121,7 +120,7 @@ func (s *Server) Stop(ctx context.Context) {
 	s.kafka.StopConsumer()
 }
 
-func (s *Server) startKafkaWorkers(ctx context.Context) {
+func (s *server) startKafkaWorkers(ctx c.Context) {
 	for i := 0; i < s.consumerWorkerCnt; i++ {
 		go s.apiEnv.WorkFunctionHandler(ctx, s.consumerWorkerCh)
 	}
@@ -132,7 +131,7 @@ func (s *Server) startKafkaWorkers(ctx context.Context) {
 }
 
 //nolint:all // ok
-func (s *Server) SendMessageToWorkers(ctx context.Context, message kafka.RunnerInMessage) error {
+func (s *server) SendMessageToWorkers(ctx c.Context, message kafka.RunnerInMessage) error {
 	timedMsg := kafka.TimedRunnerInMessage{
 		Msg:     message,
 		TimeNow: time.Now(),
@@ -141,7 +140,8 @@ func (s *Server) SendMessageToWorkers(ctx context.Context, message kafka.RunnerI
 	s.logger.Info("Получено сообщение из functions: ", message.TaskID) // TODO: DEV-STAGE only
 
 	if err := s.kafka.SetRunnerInMsg(ctx, strconv.Itoa(int(timedMsg.TimeNow.Unix())), &message); err != nil {
-		s.logger.WithField("stepID", message.TaskID).WithError(err).Error("cannot set function-result message to cache")
+		s.logger.WithField("stepID", message.TaskID).
+			WithError(err).Error("cannot set function-result message to cache")
 	}
 
 	s.consumerWorkerCh <- timedMsg
@@ -150,14 +150,15 @@ func (s *Server) SendMessageToWorkers(ctx context.Context, message kafka.RunnerI
 }
 
 //nolint:all // ok
-func (s *Server) SendRunTaskMessageToWorkers(ctx context.Context, message kafka.RunTaskMessage) error {
+func (s *server) SendRunTaskMessageToWorkers(ctx c.Context, message kafka.RunTaskMessage) error {
 	timedMsg := kafka.TimedRunTaskMessage{
 		Msg:     message,
 		TimeNow: time.Now(),
 	}
 
 	if err := s.kafka.SetRunTaskMsg(ctx, strconv.Itoa(int(timedMsg.TimeNow.Unix())), &message); err != nil {
-		s.logger.WithField("workNumber", message.WorkNumber).WithError(err).Error("cannot set run-task message to cache")
+		s.logger.WithField("workNumber", message.WorkNumber).
+			WithError(err).Error("cannot set run-task message to cache")
 	}
 
 	s.consumerRunTaskWorkerCh <- timedMsg
@@ -165,14 +166,14 @@ func (s *Server) SendRunTaskMessageToWorkers(ctx context.Context, message kafka.
 	return nil
 }
 
-func (s *Server) checkSvcsAvailability(ctx context.Context) {
+func (s *server) checkServicesAvailability(ctx c.Context) {
 	failedCh := make(chan bool)
 
-	go s.PingSvcs(ctx, failedCh)
+	go s.PingServices(ctx, failedCh)
 
 	for {
-		areSvcsFailed := <-failedCh
-		if areSvcsFailed {
+		areServicesFailed := <-failedCh
+		if areServicesFailed {
 			s.kafka.StopConsumer()
 		} else {
 			s.kafka.StartConsumer(ctx)
@@ -180,66 +181,7 @@ func (s *Server) checkSvcsAvailability(ctx context.Context) {
 	}
 }
 
-func (s *Server) PingSvcs(ctx context.Context, failedCh chan bool) {
-	var (
-		kafkaStopped bool
-		failedCount  int
-		okCount      int
-	)
-
-	for {
-		<-time.After(s.svcsPing.PingTimer)
-
-		dbErr := s.apiEnv.DB.Ping(ctx)
-		sdlErr := s.apiEnv.Scheduler.Ping(ctx)
-
-		if dbErr != nil || sdlErr != nil {
-			if dbErr != nil {
-				s.logger.WithError(dbErr).Error("DB not accessible")
-			}
-
-			if sdlErr != nil {
-				s.logger.WithError(sdlErr).Error("scheduler not accessible")
-			}
-
-			if kafkaStopped {
-				continue
-			}
-
-			okCount = 0
-
-			failedCount++
-			if failedCount < s.svcsPing.MaxFailedCnt {
-				continue
-			}
-
-			kafkaStopped = true
-			failedCh <- true
-
-			s.logger.Error("kafka consume stop")
-
-			continue
-		}
-
-		if !kafkaStopped {
-			continue
-		}
-
-		okCount++
-		if okCount < s.svcsPing.MaxOkCnt {
-			continue
-		}
-
-		failedCount = 0
-
-		kafkaStopped = false
-		failedCh <- false
-
-		s.logger.Info("kafka consume start")
-	}
-}
-
-func (s *Server) rerunUnfinishedFunctions(ctx context.Context) error {
+func (s *server) rerunUnfinishedFunctions(ctx c.Context) error {
 	keys, keysErr := s.kafka.GetCachedKeys(ctx, kafka.RunnerInMsgPrefix+"*")
 	if keysErr != nil {
 		return fmt.Errorf("got error from GetCachedKeys: %w", keysErr)
@@ -272,7 +214,7 @@ func (s *Server) rerunUnfinishedFunctions(ctx context.Context) error {
 	return nil
 }
 
-func (s *Server) rerunUnfinishedTasks(ctx context.Context) error {
+func (s *server) rerunUnfinishedTasks(ctx c.Context) error {
 	keys, keysErr := s.kafka.GetCachedKeys(ctx, kafka.RunTaskMsgPrefix+"*")
 	if keysErr != nil {
 		return fmt.Errorf("got error from GetCachedKeys: %w", keysErr)

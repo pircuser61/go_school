@@ -1,7 +1,7 @@
 package functions
 
 import (
-	"context"
+	c "context"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
@@ -38,7 +38,7 @@ func NewService(cfg Config, log logger.Logger, m metrics.Metrics) (Service, erro
 			grpc_retry.WithBackoff(grpc_retry.BackoffLinear(cfg.RetryDelay)),
 			grpc_retry.WithPerRetryTimeout(cfg.Timeout),
 			grpc_retry.WithCodes(codes.Unavailable, codes.ResourceExhausted, codes.DataLoss, codes.DeadlineExceeded, codes.Unknown),
-			grpc_retry.WithOnRetryCallback(func(ctx context.Context, attempt uint, err error) {
+			grpc_retry.WithOnRetryCallback(func(ctx c.Context, attempt uint, err error) {
 				log.WithError(err).WithField("attempt", attempt).Error("failed to reconnect to functions")
 			}),
 		)))
@@ -53,4 +53,8 @@ func NewService(cfg Config, log logger.Logger, m metrics.Metrics) (Service, erro
 		conn: conn,
 		cli:  function.NewFunctionServiceClient(conn),
 	}, nil
+}
+
+func (s *service) Ping(ctx c.Context) error {
+	return nil
 }

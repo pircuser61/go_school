@@ -1,6 +1,7 @@
 package nocache
 
 import (
+	c "context"
 	"net/http"
 
 	"go.opencensus.io/plugin/ochttp"
@@ -23,8 +24,8 @@ const (
 )
 
 type service struct {
-	SdURL string
-	Cli   *retryablehttp.Client
+	sdURL string
+	cli   *retryablehttp.Client
 }
 
 func NewService(cfg *servicedesc.Config, ssoS *sso.Service, m metrics.Metrics) (servicedesc.Service, error) {
@@ -41,19 +42,33 @@ func NewService(cfg *servicedesc.Config, ssoS *sso.Service, m metrics.Metrics) (
 	}
 
 	return &service{
-		Cli:   httpclient.NewClient(httpClient, nil, cfg.MaxRetries, cfg.RetryDelay),
-		SdURL: cfg.ServicedeskURL,
+		cli:   httpclient.NewClient(httpClient, nil, cfg.MaxRetries, cfg.RetryDelay),
+		sdURL: cfg.ServicedeskURL,
 	}, nil
 }
 
 func (s *service) GetSdURL() string {
-	return s.SdURL
+	return s.sdURL
 }
 
 func (s *service) SetCli(cli *retryablehttp.Client) {
-	s.Cli = cli
+	s.cli = cli
 }
 
 func (s *service) GetCli() *retryablehttp.Client {
-	return s.Cli
+	return s.cli
+}
+
+func (s *service) Ping(ctx c.Context) error {
+	req, err := retryablehttp.NewRequest("HEAD", s.sdURL, nil)
+	if err != nil {
+		return err
+	}
+
+	resp, err := s.cli.Do(req)
+	if err != nil {
+		return err
+	}
+
+	return resp.Body.Close()
 }

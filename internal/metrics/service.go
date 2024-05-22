@@ -21,8 +21,19 @@ type service struct {
 	registry *prometheus.Registry
 	stand    string
 
-	incomingRequests  *prometheus.SummaryVec
-	kafkaAvailability prometheus.Gauge
+	incomingRequests *prometheus.SummaryVec
+
+	kafkaAvailability         prometheus.Gauge
+	schedulerAvailability     prometheus.Gauge
+	fileRegistryAvailability  prometheus.Gauge
+	humanTasksAvailability    prometheus.Gauge
+	functionStoreAvailability prometheus.Gauge
+	serviceDescAvailability   prometheus.Gauge
+	peopleAvailability        prometheus.Gauge
+	mailAvailability          prometheus.Gauge
+	integrationsAvailability  prometheus.Gauge
+	hrGateAvailability        prometheus.Gauge
+	sequenceAvailability      prometheus.Gauge
 
 	request2ExternalSystem *prometheus.SummaryVec
 }
@@ -102,4 +113,92 @@ func (m *service) KafkaAvailable() {
 
 func (m *service) KafkaUnavailable() {
 	m.kafkaAvailability.Set(0)
+}
+
+func (m *service) SchedulerAvailable() {
+	m.schedulerAvailability.Set(1)
+}
+
+func (m *service) SchedulerUnavailable() {
+	m.schedulerAvailability.Set(0)
+}
+
+func (m *service) FileRegistryAvailable() {
+	m.fileRegistryAvailability.Set(1)
+}
+
+func (m *service) FileRegistryUnavailable() {
+	m.fileRegistryAvailability.Set(0)
+}
+
+func (m *service) HumanTasksAvailable() {
+	m.humanTasksAvailability.Set(1)
+}
+
+func (m *service) HumanTasksUnavailable() {
+	m.humanTasksAvailability.Set(0)
+}
+
+func (m *service) FunctionStoreAvailable() {
+	m.functionStoreAvailability.Set(1)
+}
+
+func (m *service) FunctionStoreUnavailable() {
+	m.functionStoreAvailability.Set(0)
+}
+
+func (m *service) ServiceDescAvailable() {
+	m.serviceDescAvailability.Set(1)
+}
+
+func (m *service) ServiceDescUnavailable() {
+	m.serviceDescAvailability.Set(0)
+}
+
+func (m *service) PeopleAvailable() {
+	m.peopleAvailability.Set(1)
+}
+
+func (m *service) PeopleStoreUnavailable() {
+	m.peopleAvailability.Set(0)
+}
+
+func (m *service) MailAvailable() {
+	m.mailAvailability.Set(1)
+}
+
+func (m *service) MailUnavailable() {
+	m.mailAvailability.Set(0)
+}
+
+func (m *service) IntegrationsAvailable() {
+	m.integrationsAvailability.Set(1)
+}
+
+func (m *service) IntegrationsUnavailable() {
+	m.integrationsAvailability.Set(0)
+}
+
+func (m *service) HrGateAvailable() {
+	m.hrGateAvailability.Set(1)
+}
+
+func (m *service) HrGateUnavailable() {
+	m.hrGateAvailability.Set(0)
+}
+
+func (m *service) SequenceAvailable() {
+	m.sequenceAvailability.Set(1)
+}
+
+func (m *service) SequenceUnavailable() {
+	m.sequenceAvailability.Set(0)
+}
+
+func (m *service) DBAvailable() {
+	m.sequenceAvailability.Set(1)
+}
+
+func (m *service) DBUnavailable() {
+	m.sequenceAvailability.Set(0)
 }

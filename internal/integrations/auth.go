@@ -54,7 +54,7 @@ const (
 	mainSsoURL = "https://isso%s.mts.ru"
 )
 
-func (s *Service) GetToken(ctx c.Context, scopes []string, clientSecret, clientID, stand string) (token string, err error) {
+func (s *service) GetToken(ctx c.Context, scopes []string, clientSecret, clientID, stand string) (token string, err error) {
 	ctxLocal, span := trace.StartSpan(ctx, "getToken")
 	defer span.End()
 
@@ -77,7 +77,7 @@ func (s *Service) GetToken(ctx c.Context, scopes []string, clientSecret, clientI
 
 	req.Header.Add(contentTypeHeader, contentTypeFormValue)
 
-	resp, err := s.Cli.Do(req)
+	resp, err := s.cli.Do(req)
 	if err != nil {
 		return "", err
 	}
@@ -97,7 +97,7 @@ func (s *Service) GetToken(ctx c.Context, scopes []string, clientSecret, clientI
 	return res.AccessToken, nil
 }
 
-func (s *Service) initScopes(scopes []string, clientSecret, clientID string) *scope {
+func (s *service) initScopes(scopes []string, clientSecret, clientID string) *scope {
 	return &scope{
 		getTokensFormData: url.Values{
 			secretKey:    []string{clientSecret},
@@ -108,8 +108,8 @@ func (s *Service) initScopes(scopes []string, clientSecret, clientID string) *sc
 	}
 }
 
-func (s *Service) FillAuth(ctx c.Context, key, pID, vID, wNumber, clientID string) (res *Auth, err error) {
-	cred, grpcErr := s.RPCMicrCli.GetCredentialsByKey(ctx,
+func (s *service) FillAuth(ctx c.Context, key, pID, vID, wNumber, clientID string) (res *Auth, err error) {
+	cred, grpcErr := s.rpcMicrCli.GetCredentialsByKey(ctx,
 		&microservice.GetCredentialsByKeyRequest{
 			HumanReadableKey: key,
 			PipelineId:       pID,

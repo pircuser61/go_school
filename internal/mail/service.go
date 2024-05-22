@@ -2,7 +2,7 @@ package mail
 
 import (
 	"bytes"
-	"context"
+	c "context"
 	"fmt"
 	"net/http"
 	"net/mail"
@@ -36,6 +36,10 @@ type Service struct {
 	FetchEmail string
 	host       string
 	metrics    metrics.Metrics
+}
+
+func (s *Service) Ping(ctx c.Context) error {
+	return nil
 }
 
 // nolint:gocritic // it's more comfortable to work with config as a value
@@ -80,7 +84,7 @@ func (s *Service) GetApplicationLink(applicationID string) string {
 	return fmt.Sprintf(TaskURLTemplate, s.SdAddress, applicationID)
 }
 
-func (s *Service) SendNotification(ctx context.Context, to []string, files []email.Attachment, tmpl Template) error {
+func (s *Service) SendNotification(ctx c.Context, to []string, files []email.Attachment, tmpl Template) error {
 	const externalSystemName = "mail.inside"
 
 	_, span := trace.StartSpan(ctx, "SendNotification")
@@ -156,7 +160,7 @@ func (s *Service) SendNotification(ctx context.Context, to []string, files []ema
 }
 
 func getImages(path string) (map[string][]byte, error) {
-	log := logger.GetLogger(context.Background())
+	log := logger.GetLogger(c.Background())
 
 	files, err := os.ReadDir(path)
 	if err != nil {

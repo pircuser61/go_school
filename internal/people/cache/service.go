@@ -1,9 +1,10 @@
 package cache
 
 import (
-	"context"
+	c "context"
 	"encoding/json"
 	"fmt"
+	"golang.org/x/net/context"
 
 	"github.com/hashicorp/go-retryablehttp"
 
@@ -50,7 +51,11 @@ func NewService(cfg *people.Config, ssoS *sso.Service, m metrics.Metrics) (peopl
 
 func (s *service) SetCli(cli *retryablehttp.Client) {}
 
-func (s *service) GetUser(ctx context.Context, username string) (people.SSOUser, error) {
+func (s *service) Ping(ctx c.Context) error {
+	return s.People.Ping(ctx)
+}
+
+func (s *service) GetUser(ctx c.Context, username string) (people.SSOUser, error) {
 	ctx, span := trace.StartSpan(ctx, "people.cache.get_user")
 	defer span.End()
 
