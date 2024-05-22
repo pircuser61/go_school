@@ -50,7 +50,7 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 		WithField("mainFuncName", "FunctionReturnHandler").
 		WithField("stepID", message.TaskID).
 		WithField("method", "kafka").
-		WithField("traceID", span.SpanContext().TraceID)
+		WithField("traceID", span.SpanContext().TraceID.String())
 
 	messageTmp, err := json.Marshal(message)
 	if err != nil {
