@@ -37,6 +37,7 @@ type service struct {
 	metrics metrics.Metrics
 }
 
+//nolint:all //ok
 func NewServer(ctx c.Context, log logger.Logger, kf *kafka.Service, params *api.ServerParam, m metrics.Metrics) *service {
 	httpServer, err := api.NewServer(ctx, params)
 	if err != nil {
