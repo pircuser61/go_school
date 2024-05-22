@@ -4,7 +4,6 @@ import (
 	c "context"
 	"errors"
 	"fmt"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 	"net/http"
 	"strconv"
 	"strings"
@@ -16,6 +15,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/api"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/configs"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/kafka"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 )
 
 type server struct {
