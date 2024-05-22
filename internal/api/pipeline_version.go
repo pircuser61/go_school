@@ -192,6 +192,7 @@ func (ae *Env) hasPrivateFunction(ctx c.Context, executableFunctions []script.Fu
 	return false, nil
 }
 
+//nolint:all //ok
 func (ae *Env) getExternalSystem(
 	ctx c.Context,
 	storage db.Database,
@@ -203,7 +204,6 @@ func (ae *Env) getExternalSystem(
 		PipelineId: pipelineID,
 		VersionId:  versionID,
 	})
-
 	if err != nil {
 		if strings.Contains(err.Error(), "system not found") { // TODO: delete
 			return nil, nil

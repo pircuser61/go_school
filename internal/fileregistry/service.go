@@ -10,7 +10,7 @@ import (
 
 	"go.opencensus.io/plugin/ocgrpc"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
+	gc "google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
@@ -44,9 +44,10 @@ func NewService(cfg Config, log logger.Logger, m metrics.Metrics) (Service, erro
 			grpc_retry.WithMax(cfg.MaxRetries),
 			grpc_retry.WithBackoff(grpc_retry.BackoffLinear(cfg.RetryDelay)),
 			grpc_retry.WithPerRetryTimeout(cfg.Timeout),
-			grpc_retry.WithCodes(codes.Unavailable, codes.ResourceExhausted, codes.DataLoss, codes.DeadlineExceeded, codes.Unknown),
+			grpc_retry.WithCodes(gc.Unavailable, gc.ResourceExhausted, gc.DataLoss, gc.DeadlineExceeded, gc.Unknown),
 			grpc_retry.WithOnRetryCallback(func(ctx c.Context, attempt uint, err error) {
-				log.WithError(err).WithField("attempt", attempt).Error("failed to reconnect to fileregistry")
+				log.WithError(err).WithField("attempt", attempt).
+					Error("failed to reconnect to fileregistry")
 			}),
 		)))
 	}
@@ -58,15 +59,13 @@ func NewService(cfg Config, log logger.Logger, m metrics.Metrics) (Service, erro
 
 	httpClient := &http.Client{}
 
-	tr := transport{
+	httpClient.Transport = &transport{
 		next: ochttp.Transport{
 			Base:        httpClient.Transport,
 			Propagation: observability.NewHTTPFormat(),
 		},
 		metrics: m,
 	}
-
-	httpClient.Transport = &tr
 
 	return &service{
 		grpcConn: conn,

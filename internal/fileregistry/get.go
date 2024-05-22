@@ -25,7 +25,7 @@ const (
 )
 
 func (s *service) GetAttachmentLink(ctx c.Context, attachments []AttachInfo) ([]AttachInfo, error) {
-	_, span := trace.StartSpan(ctx, "file_registry.get_attachment_info")
+	_, span := trace.StartSpan(ctx, "file_registry.get_attachment_link")
 	defer span.End()
 
 	for k, v := range attachments {

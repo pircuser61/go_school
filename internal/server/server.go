@@ -18,7 +18,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 )
 
-type server struct {
+type service struct {
 	logger logger.Logger
 
 	httpServer *http.Server
@@ -37,13 +37,13 @@ type server struct {
 	metrics metrics.Metrics
 }
 
-func NewServer(ctx c.Context, log logger.Logger, kf *kafka.Service, params *api.ServerParam, m metrics.Metrics) server {
+func NewServer(ctx c.Context, log logger.Logger, kf *kafka.Service, params *api.ServerParam, m metrics.Metrics) service {
 	httpServer, err := api.NewServer(ctx, params)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	s := server{
+	s := service{
 		logger:     log,
 		httpServer: httpServer,
 		kafka:      kf,
@@ -70,7 +70,7 @@ func NewServer(ctx c.Context, log logger.Logger, kf *kafka.Service, params *api.
 	return s
 }
 
-func (s *server) Run(ctx c.Context) {
+func (s *service) Run(ctx c.Context) {
 	go func() {
 		s.logger.Info("script manager service started on port", s.httpServer.Addr)
 
@@ -108,7 +108,7 @@ func (s *server) Run(ctx c.Context) {
 	s.kafka.StartConsumer(ctx)
 }
 
-func (s *server) Stop(ctx c.Context) {
+func (s *service) Stop(ctx c.Context) {
 	if err := s.httpServer.Shutdown(ctx); err != nil {
 		s.logger.WithError(err).Error("error on http server shutdown")
 	}
@@ -120,7 +120,7 @@ func (s *server) Stop(ctx c.Context) {
 	s.kafka.StopConsumer()
 }
 
-func (s *server) startKafkaWorkers(ctx c.Context) {
+func (s *service) startKafkaWorkers(ctx c.Context) {
 	for i := 0; i < s.consumerWorkerCnt; i++ {
 		go s.apiEnv.WorkFunctionHandler(ctx, s.consumerWorkerCh)
 	}
@@ -131,7 +131,7 @@ func (s *server) startKafkaWorkers(ctx c.Context) {
 }
 
 //nolint:all // ok
-func (s *server) SendMessageToWorkers(ctx c.Context, message kafka.RunnerInMessage) error {
+func (s *service) SendMessageToWorkers(ctx c.Context, message kafka.RunnerInMessage) error {
 	timedMsg := kafka.TimedRunnerInMessage{
 		Msg:     message,
 		TimeNow: time.Now(),
@@ -150,7 +150,7 @@ func (s *server) SendMessageToWorkers(ctx c.Context, message kafka.RunnerInMessa
 }
 
 //nolint:all // ok
-func (s *server) SendRunTaskMessageToWorkers(ctx c.Context, message kafka.RunTaskMessage) error {
+func (s *service) SendRunTaskMessageToWorkers(ctx c.Context, message kafka.RunTaskMessage) error {
 	timedMsg := kafka.TimedRunTaskMessage{
 		Msg:     message,
 		TimeNow: time.Now(),
@@ -166,7 +166,7 @@ func (s *server) SendRunTaskMessageToWorkers(ctx c.Context, message kafka.RunTas
 	return nil
 }
 
-func (s *server) checkServicesAvailability(ctx c.Context) {
+func (s *service) checkServicesAvailability(ctx c.Context) {
 	failedCh := make(chan bool)
 
 	go s.PingServices(ctx, failedCh)
@@ -181,7 +181,7 @@ func (s *server) checkServicesAvailability(ctx c.Context) {
 	}
 }
 
-func (s *server) rerunUnfinishedFunctions(ctx c.Context) error {
+func (s *service) rerunUnfinishedFunctions(ctx c.Context) error {
 	keys, keysErr := s.kafka.GetCachedKeys(ctx, kafka.RunnerInMsgPrefix+"*")
 	if keysErr != nil {
 		return fmt.Errorf("got error from GetCachedKeys: %w", keysErr)
@@ -214,7 +214,7 @@ func (s *server) rerunUnfinishedFunctions(ctx c.Context) error {
 	return nil
 }
 
-func (s *server) rerunUnfinishedTasks(ctx c.Context) error {
+func (s *service) rerunUnfinishedTasks(ctx c.Context) error {
 	keys, keysErr := s.kafka.GetCachedKeys(ctx, kafka.RunTaskMsgPrefix+"*")
 	if keysErr != nil {
 		return fmt.Errorf("got error from GetCachedKeys: %w", keysErr)

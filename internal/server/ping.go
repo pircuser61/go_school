@@ -9,7 +9,7 @@ import (
 const countServices = 11
 
 //nolint:all // ok
-func (s *server) PingServices(ctx c.Context, failedCh chan bool) {
+func (s *service) PingServices(ctx c.Context, failedCh chan bool) {
 	var (
 		kafkaStopped bool
 		failedCount  int
