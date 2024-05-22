@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-retryablehttp"
+	"go.opencensus.io/trace"
 
 	"github.com/fatih/structs"
 
@@ -98,6 +99,9 @@ func (runCtx BlockRunContext) NotifyEvents(ctx c.Context) {
 }
 
 func (runCtx *BlockRunContext) notifyEvents(ctx c.Context, log logger.Logger) {
+	ctx, span := trace.StartSpan(ctx, "notify_events")
+	defer span.End()
+
 	reqURL, err := url.Parse(runCtx.TaskSubscriptionData.MicroserviceURL)
 	if err != nil {
 		log.WithError(err).Error("couldn't parse url to send event notification")
