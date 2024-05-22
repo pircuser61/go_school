@@ -1194,7 +1194,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 							res := &mocks.MockedDatabase{}
 
 							res.On("GetTaskStepById",
-								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(ctx c.Context) bool { return true }),
 								stepID,
 							).Return(
 								&entity.Step{
@@ -1222,7 +1222,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 							)
 
 							res.On("UpdateStepContext",
-								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(ctx c.Context) bool { return true }),
 								mock.AnythingOfType("*db.UpdateStepRequest"),
 							).Return(
 								nil,
@@ -1361,7 +1361,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 							res := &mocks.MockedDatabase{}
 
 							res.On("GetTaskStepById",
-								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(ctx c.Context) bool { return true }),
 								stepID,
 							).Return(
 								&entity.Step{
@@ -1389,7 +1389,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 							)
 
 							res.On("UpdateStepContext",
-								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(ctx c.Context) bool { return true }),
 								mock.AnythingOfType("*db.UpdateStepRequest"),
 							).Return(
 								nil,
@@ -2039,7 +2039,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 							res := &mocks.MockedDatabase{}
 
 							res.On("UpdateTaskStatus",
-								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(ctx c.Context) bool { return true }),
 								uuid.UUID{},
 								mock.MatchedBy(func(taskStatus int) bool { return true }),
 								mock.MatchedBy(func(comment string) bool { return true }),
@@ -2047,12 +2047,12 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 							).Return(nil)
 
 							res.On("StopTaskBlocks",
-								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(ctx c.Context) bool { return true }),
 								mock.MatchedBy(func(id uuid.UUID) bool { return true }),
 							).Return(nil)
 
 							res.On("SendTaskToArchive",
-								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(ctx c.Context) bool { return true }),
 								mock.MatchedBy(func(id uuid.UUID) bool { return true }),
 							).Return(nil)
 
@@ -2198,7 +2198,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 							res := &mocks.MockedDatabase{}
 
 							res.On("GetTaskStepById",
-								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(ctx c.Context) bool { return true }),
 								stepID,
 							).Return(
 								&entity.Step{
@@ -2226,7 +2226,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 							)
 
 							res.On("UpdateStepContext",
-								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(ctx c.Context) bool { return true }),
 								mock.AnythingOfType("*db.UpdateStepRequest"),
 							).Return(
 								nil,
@@ -2288,7 +2288,7 @@ func TestGoExecutionActions(t *testing.T) {
 			RunContext    *BlockRunContext
 		}
 		args struct {
-			ctx  context.Context
+			ctx  c.Context
 			data *script.BlockUpdateData
 		}
 	)

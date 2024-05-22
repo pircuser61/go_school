@@ -5427,7 +5427,7 @@ func TestGoSignActions(t *testing.T) {
 				},
 			},
 			args: args{
-				ctx:  context.Background(),
+				ctx:  c.Background(),
 				data: nil,
 			},
 			wantActions: []MemberAction{
@@ -5476,7 +5476,7 @@ func TestGoSignActions(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				data: &script.BlockUpdateData{
 					ByLogin:    exampleExecutor,
 					Action:     string(entity.TaskUpdateActionExecution),
@@ -5537,7 +5537,7 @@ func TestGoSignActions(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				data: &script.BlockUpdateData{
 					ByLogin:    exampleExecutor,
 					Action:     string(entity.TaskUpdateActionExecution),
@@ -5610,14 +5610,14 @@ func TestGoSignActions(t *testing.T) {
 						HumanTasks: func() human_tasks.ServiceInterface {
 							htMock := mocks2.DelegationServiceClient{}
 
-							htMock.On("GetDelegationsFromLogin", context.Background(), "users1").Return(nil, human_tasks.Delegations{})
+							htMock.On("GetDelegationsFromLogin", c.Background(), "users1").Return(nil, human_tasks.Delegations{})
 
 							req := &delegationht.GetDelegationsRequest{
 								FilterBy:  "fromLogin",
 								FromLogin: login,
 							}
 
-							htMock.On("getDelegationsInternal", context.Background(), req).Return(human_tasks.Delegations{
+							htMock.On("getDelegationsInternal", c.Background(), req).Return(human_tasks.Delegations{
 								{
 									ToLogin:   delLogin1,
 									FromLogin: login,
@@ -5644,7 +5644,7 @@ func TestGoSignActions(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				data: &script.BlockUpdateData{
 					ByLogin:    exampleExecutor,
 					Action:     string(entity.TaskUpdateActionExecution),
@@ -5712,14 +5712,14 @@ func TestGoSignActions(t *testing.T) {
 						HumanTasks: func() human_tasks.ServiceInterface {
 							htMock := mocks2.DelegationServiceClient{}
 
-							htMock.On("GetDelegationsFromLogin", context.Background(), "users1").Return(nil, human_tasks.Delegations{})
+							htMock.On("GetDelegationsFromLogin", c.Background(), "users1").Return(nil, human_tasks.Delegations{})
 
 							req := &delegationht.GetDelegationsRequest{
 								FilterBy:  "fromLogin",
 								FromLogin: login,
 							}
 
-							htMock.On("getDelegationsInternal", context.Background(), req).Return(human_tasks.Delegations{
+							htMock.On("getDelegationsInternal", c.Background(), req).Return(human_tasks.Delegations{
 								{
 									ToLogin:   delLogin1,
 									FromLogin: login,
@@ -5746,7 +5746,7 @@ func TestGoSignActions(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				data: &script.BlockUpdateData{
 					ByLogin:    exampleExecutor,
 					Action:     string(entity.TaskUpdateActionExecution),
@@ -5811,14 +5811,14 @@ func TestGoSignActions(t *testing.T) {
 						HumanTasks: func() human_tasks.ServiceInterface {
 							htMock := mocks2.DelegationServiceClient{}
 
-							htMock.On("GetDelegationsFromLogin", context.Background(), "users1").Return(nil, human_tasks.Delegations{})
+							htMock.On("GetDelegationsFromLogin", c.Background(), "users1").Return(nil, human_tasks.Delegations{})
 
 							req := &delegationht.GetDelegationsRequest{
 								FilterBy:  "fromLogin",
 								FromLogin: login,
 							}
 
-							htMock.On("getDelegationsInternal", context.Background(), req).Return(human_tasks.Delegations{
+							htMock.On("getDelegationsInternal", c.Background(), req).Return(human_tasks.Delegations{
 								{
 									ToLogin:   delLogin1,
 									FromLogin: login,
@@ -5845,7 +5845,7 @@ func TestGoSignActions(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				data: &script.BlockUpdateData{
 					ByLogin:    exampleExecutor,
 					Action:     string(entity.TaskUpdateActionExecution),
@@ -5933,14 +5933,14 @@ func TestGoSignActions(t *testing.T) {
 						HumanTasks: func() human_tasks.ServiceInterface {
 							htMock := mocks2.DelegationServiceClient{}
 
-							htMock.On("GetDelegationsFromLogin", context.Background(), "users1").Return(nil, human_tasks.Delegations{})
+							htMock.On("GetDelegationsFromLogin", c.Background(), "users1").Return(nil, human_tasks.Delegations{})
 
 							req := &delegationht.GetDelegationsRequest{
 								FilterBy:  "fromLogin",
 								FromLogin: login,
 							}
 
-							htMock.On("getDelegationsInternal", context.Background(), req).Return(human_tasks.Delegations{
+							htMock.On("getDelegationsInternal", c.Background(), req).Return(human_tasks.Delegations{
 								{
 									ToLogin:   delLogin1,
 									FromLogin: login,
@@ -5967,7 +5967,7 @@ func TestGoSignActions(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				data: &script.BlockUpdateData{
 					ByLogin:    exampleExecutor,
 					Action:     string(entity.TaskUpdateActionExecution),
@@ -6050,14 +6050,14 @@ func TestGoSignActions(t *testing.T) {
 						HumanTasks: func() human_tasks.ServiceInterface {
 							htMock := mocks2.DelegationServiceClient{}
 
-							htMock.On("GetDelegationsFromLogin", context.Background(), "users1").Return(nil, human_tasks.Delegations{})
+							htMock.On("GetDelegationsFromLogin", c.Background(), "users1").Return(nil, human_tasks.Delegations{})
 
 							req := &delegationht.GetDelegationsRequest{
 								FilterBy:  "fromLogin",
 								FromLogin: login,
 							}
 
-							htMock.On("getDelegationsInternal", context.Background(), req).Return(human_tasks.Delegations{
+							htMock.On("getDelegationsInternal", c.Background(), req).Return(human_tasks.Delegations{
 								{
 									ToLogin:   delLogin1,
 									FromLogin: login,
@@ -6084,7 +6084,7 @@ func TestGoSignActions(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				data: &script.BlockUpdateData{
 					ByLogin:    exampleExecutor,
 					Action:     string(entity.TaskUpdateActionExecution),
@@ -6172,14 +6172,14 @@ func TestGoSignActions(t *testing.T) {
 						HumanTasks: func() human_tasks.ServiceInterface {
 							htMock := mocks2.DelegationServiceClient{}
 
-							htMock.On("GetDelegationsFromLogin", context.Background(), "users1").Return(nil, human_tasks.Delegations{})
+							htMock.On("GetDelegationsFromLogin", c.Background(), "users1").Return(nil, human_tasks.Delegations{})
 
 							req := &delegationht.GetDelegationsRequest{
 								FilterBy:  "fromLogin",
 								FromLogin: login,
 							}
 
-							htMock.On("getDelegationsInternal", context.Background(), req).Return(human_tasks.Delegations{
+							htMock.On("getDelegationsInternal", c.Background(), req).Return(human_tasks.Delegations{
 								{
 									ToLogin:   delLogin1,
 									FromLogin: login,
@@ -6206,7 +6206,7 @@ func TestGoSignActions(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				data: &script.BlockUpdateData{
 					ByLogin:    exampleExecutor,
 					Action:     string(entity.TaskUpdateActionExecution),

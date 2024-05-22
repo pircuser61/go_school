@@ -25,6 +25,6 @@ type Service interface {
 
 type Getter interface {
 	GetCli() *retryablehttp.Client
-	GetRpcIntCli() integration.IntegrationServiceClient
-	GetRpcMicrCli() microservice.MicroserviceServiceClient
+	GetRPCIntCli() integration.IntegrationServiceClient
+	GetRPCMicrCli() microservice.MicroserviceServiceClient
 }

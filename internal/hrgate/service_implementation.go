@@ -3,7 +3,6 @@ package hrgate
 import (
 	c "context"
 	"fmt"
-	"golang.org/x/net/context"
 	"math"
 	"net/http"
 	"time"
@@ -73,7 +72,7 @@ func (s *Service) Ping(ctx c.Context) error {
 	return nil
 }
 
-func (s *Service) GetCalendars(ctx context.Context, params *GetCalendarsParams) ([]Calendar, error) {
+func (s *Service) GetCalendars(ctx c.Context, params *GetCalendarsParams) ([]Calendar, error) {
 	ctx, span := trace.StartSpan(ctx, "hrgate.get_calendars")
 	defer span.End()
 
@@ -93,7 +92,7 @@ func (s *Service) GetCalendars(ctx context.Context, params *GetCalendarsParams) 
 	return *response.JSON200, err
 }
 
-func (s *Service) GetCalendarDays(ctx context.Context, params *GetCalendarDaysParams) (*CalendarDays, error) {
+func (s *Service) GetCalendarDays(ctx c.Context, params *GetCalendarDaysParams) (*CalendarDays, error) {
 	ctx, span := trace.StartSpan(ctx, "hrgate.get_calendar_days")
 	defer span.End()
 
@@ -122,7 +121,7 @@ func (s *Service) GetCalendarDays(ctx context.Context, params *GetCalendarDaysPa
 	return &res, nil
 }
 
-func (s *Service) GetPrimaryRussianFederationCalendarOrFirst(ctx context.Context, params *GetCalendarsParams) (*Calendar, error) {
+func (s *Service) GetPrimaryRussianFederationCalendarOrFirst(ctx c.Context, params *GetCalendarsParams) (*Calendar, error) {
 	ctx, span := trace.StartSpan(ctx, "hrgate.get_primary_calendar_or_first")
 	defer span.End()
 
@@ -143,7 +142,7 @@ func (s *Service) GetPrimaryRussianFederationCalendarOrFirst(ctx context.Context
 	return &calendars[0], nil
 }
 
-func (s *Service) FillDefaultUnitID(ctx context.Context) error {
+func (s *Service) FillDefaultUnitID(ctx c.Context) error {
 	ctx, span := trace.StartSpan(ctx, "hrgate.fill_default_unit_id")
 	defer span.End()
 
@@ -176,7 +175,7 @@ func (s *Service) GetDefaultUnitID() string {
 
 // nolint:dupl //так нужно!
 func (s *Service) GetDefaultCalendarDaysForGivenTimeIntervals(
-	ctx context.Context,
+	ctx c.Context,
 	taskTimeIntervals []entity.TaskCompletionInterval,
 ) (*CalendarDays, error) {
 	ctx, span := trace.StartSpan(ctx, "hrgate.get_default_calendar_days_for_given_time_intervals")
@@ -227,7 +226,7 @@ func (s *Service) GetDefaultCalendarDaysForGivenTimeIntervals(
 	return calendarDays, nil
 }
 
-func (s *Service) GetEmployeeByLogin(ctx context.Context, username string) (*Employee, error) {
+func (s *Service) GetEmployeeByLogin(ctx c.Context, username string) (*Employee, error) {
 	ctx, span := trace.StartSpan(ctx, "hrgate.get_employee_by_login")
 	defer span.End()
 
@@ -249,7 +248,7 @@ func (s *Service) GetEmployeeByLogin(ctx context.Context, username string) (*Emp
 	return &(*response.JSON200)[0], err
 }
 
-func (s *Service) GetOrganizationByID(ctx context.Context, organizationID string) (*Organization, error) {
+func (s *Service) GetOrganizationByID(ctx c.Context, organizationID string) (*Organization, error) {
 	ctx, span := trace.StartSpan(ctx, "hrgate.get_organization_by_id")
 	defer span.End()
 

@@ -311,9 +311,9 @@ func (runCtx *BlockRunContext) SetTaskEvents(ctx c.Context) {
 		return
 	}
 
-	integrationsRpc := runCtx.Services.Integrations.GetRpcIntCli()
+	integrationsRPC := runCtx.Services.Integrations.GetRPCIntCli()
 
-	sResp, err := integrationsRpc.GetIntegrationByClientId(ctx,
+	sResp, err := integrationsRPC.GetIntegrationByClientId(ctx,
 		&integration_v1.GetIntegrationByClientIdRequest{
 			ClientId:   taskRunCtx.ClientID,
 			PipelineId: runCtx.PipelineID.String(),
@@ -337,9 +337,9 @@ func (runCtx *BlockRunContext) SetTaskEvents(ctx c.Context) {
 		return
 	}
 
-	micrRpc := runCtx.Services.Integrations.GetRpcMicrCli()
+	micrRPC := runCtx.Services.Integrations.GetRPCMicrCli()
 
-	resp, err := micrRpc.GetMicroservice(ctx,
+	resp, err := micrRPC.GetMicroservice(ctx,
 		&microservice_v1.GetMicroserviceRequest{
 			MicroserviceId: expectedEvents.MicroserviceID,
 			PipelineId:     runCtx.PipelineID.String(),

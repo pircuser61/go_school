@@ -2,6 +2,7 @@ package sequence
 
 import (
 	c "context"
+
 	"go.opencensus.io/plugin/ocgrpc"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
@@ -39,7 +40,8 @@ func NewService(cfg Config, log logger.Logger, m metrics.Metrics) (Service, erro
 			grpc_retry.WithPerRetryTimeout(cfg.Timeout),
 			grpc_retry.WithCodes(gc.Unavailable, gc.ResourceExhausted, gc.DataLoss, gc.DeadlineExceeded, gc.Unknown),
 			grpc_retry.WithOnRetryCallback(func(ctx c.Context, attempt uint, err error) {
-				log.WithError(err).WithField("attempt", attempt).Error("failed to reconnect to sequence")
+				log.WithError(err).WithField("attempt", attempt).
+					Error("failed to reconnect to sequence")
 			}),
 		)))
 	}
@@ -59,7 +61,5 @@ func NewService(cfg Config, log logger.Logger, m metrics.Metrics) (Service, erro
 }
 
 func (s *service) Ping(ctx c.Context) error {
-	//_, err := s.cli.Ping(ctx, &scheduler_v1.PingRequest{})
-
 	return nil
 }

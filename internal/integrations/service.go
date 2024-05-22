@@ -86,11 +86,11 @@ func (s *service) Ping(ctx c.Context) error {
 	return nil
 }
 
-func (s *service) GetRpcIntCli() integration.IntegrationServiceClient {
+func (s *service) GetRPCIntCli() integration.IntegrationServiceClient {
 	return s.rpcIntCli
 }
 
-func (s *service) GetRpcMicrCli() microservice.MicroserviceServiceClient {
+func (s *service) GetRPCMicrCli() microservice.MicroserviceServiceClient {
 	return s.rpcMicrCli
 }
 
