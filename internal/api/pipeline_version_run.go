@@ -340,7 +340,9 @@ func (ae *Env) runVersion(ctx c.Context, log logger.Logger, run *runVersionsDTO)
 	}
 
 	log = log.WithField("clientID", run.ClientID)
-	run.requestInfo.ClientID = run.ClientID
+	if run.requestInfo != nil {
+		run.requestInfo.ClientID = run.ClientID
+	}
 
 	storage, err := ae.DB.Acquire(ctx)
 	if err != nil {
