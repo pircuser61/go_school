@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -2524,7 +2525,13 @@ type NodeContent struct {
 	SchemaID string `json:"schema_id"`
 
 	// Указатель на []interface{} нужен для изменения массива значений из формы, без указателя не изменяются
-	Content map[string]*[]interface{} `json:"content"`
+	Content map[string]*ContentBody `json:"content"`
+}
+
+type ContentBody struct {
+	Title string        `json:"title"`
+	Type  []string      `json:"type"`
+	Items []interface{} `json:"items"`
 }
 
 func (db *PGCon) GetPipelinesFields(ctx context.Context, dto *SearchPipelinesFieldsParams) (map[string]map[string]*NodeContent, error) {
@@ -2611,21 +2618,24 @@ func (db *PGCon) getDataByWorkID(c context.Context, worksID map[string][]uuid.UU
 
 			node, nodeExist := nodes[StepName]
 			if !nodeExist {
-				bodySlices := make(map[string]*[]interface{}, 0)
+				bodySlices := make(map[string]*ContentBody, 0)
 
 				for key, val := range *ApplicationBody {
-					if valMap, isMap := val.(map[string]interface{}); isMap && Keys != nil {
-						val = translateKey(valMap, *Keys)
+					body := &ContentBody{
+						Title: key,
 					}
+
+					processMap(val, &body.Items)
 
 					if Keys != nil {
 						ruKeys := *Keys
+
 						if ruKey, ok := ruKeys[key]; ok && ruKey != "" {
-							key = ruKey
+							body.Title = ruKey
 						}
 					}
 
-					bodySlices[key] = &[]interface{}{val}
+					bodySlices[key] = body
 				}
 
 				nodes[StepName] = &NodeContent{
@@ -2637,30 +2647,43 @@ func (db *PGCon) getDataByWorkID(c context.Context, worksID map[string][]uuid.UU
 			}
 
 			for key, val := range *ApplicationBody {
-				if Keys != nil {
-					ruKeys := *Keys
-
-					if ruKey, ok := ruKeys[key]; ok && ruKey != "" {
-						key = ruKey
+				nodeContent, contentExist := node.Content[key]
+				if !contentExist {
+					body := &ContentBody{
+						Title: key,
 					}
-				}
 
-				valMap, isMap := val.(map[string]interface{})
-				if isMap && Keys != nil {
-					val = translateKey(valMap, *Keys)
-				}
+					processMap(val, &body.Items)
 
-				arr, exists := node.Content[key]
-				if !exists {
-					node.Content[key] = &[]interface{}{val}
+					if Keys != nil {
+						ruKeys := *Keys
+
+						if ruKey, ok := ruKeys[key]; ok && ruKey != "" {
+							body.Title = ruKey
+						}
+					}
+
+					node.Content[key] = body
 
 					continue
 				}
 
-				if !utils.IsContainsInSliceInterface(val, *arr) {
-					*arr = append(*arr, val)
-					node.Content[key] = arr
+				if !utils.IsContainsInSliceV2(val, nodeContent.Items) {
+					processMap(val, &nodeContent.Items)
 				}
+			}
+		}
+
+		for _, vals := range nodes {
+			for key, val := range vals.Content {
+				if val.Items == nil {
+					delete(vals.Content, key)
+
+					continue
+				}
+
+				val.Items = removeDuplicates(val.Items)
+				getType(&val.Type, val.Items)
 			}
 		}
 
@@ -2678,25 +2701,45 @@ func (db *PGCon) getDataByWorkID(c context.Context, worksID map[string][]uuid.UU
 	return res, rowsErr
 }
 
-func translateKey(body map[string]interface{}, ruKeys map[string]string) map[string]interface{} {
-	for key, value := range body {
-		ruKey, ruKeyExpired := ruKeys[key]
-		if ruKeyExpired {
-			delete(body, key)
+func getType(types *[]string, items []interface{}) {
+	itemType := make(map[string]struct{}, 0)
 
-			if ruKey != "" {
-				key = ruKey
-			}
+	for i := 0; i < len(items); i++ {
+		Type := reflect.TypeOf(items[i]).String()
+
+		if _, typeExist := itemType[Type]; !typeExist {
+			itemType[Type] = struct{}{}
 		}
-
-		if val, isMap := value.(map[string]interface{}); isMap {
-			value = translateKey(val, ruKeys)
-		}
-
-		body[key] = value
 	}
 
-	return body
+	for k := range itemType {
+		*types = append(*types, k)
+	}
+}
+
+func processMap(data interface{}, items *[]interface{}) {
+	switch value := data.(type) {
+	case []interface{}:
+		for i := 0; i < len(value); i++ {
+			processMap(value[i], items)
+		}
+	case map[string]interface{}:
+		_, isAttach := value["file_id"]
+		if !isAttach {
+			*items = append(*items, value)
+
+			return
+		}
+
+		if len(value) > 1 {
+			delete(value, "file_id")
+
+			*items = append(*items, value)
+		}
+
+	default:
+		*items = append(*items, value)
+	}
 }
 
 func filterForFields(params *SearchPipelinesFieldsParams, q string) string {
