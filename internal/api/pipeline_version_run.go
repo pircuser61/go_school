@@ -21,6 +21,7 @@ import (
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/errorutils"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
@@ -300,12 +301,13 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 		ApplicationBody:   req.ApplicationBody,
 		RequestID:         r.Header.Get(XRequestIDHeader),
 		Authorization:     r.Header.Get(AuthorizationHeader),
+		requestInfo:       requestInfo,
 	}
 
 	err = ae.runVersion(ctx, errorHandler.log, run)
 	if err != nil {
-		errorHandler.handleError(PipelineExecutionError, err)
-		requestInfo.Status = PipelineExecutionError.Status()
+		errorHandler.handleErrorStatusCode(PipelineExecutionError, err, http.StatusBadRequest)
+		requestInfo.Status = http.StatusBadRequest
 
 		return
 	}
@@ -344,7 +346,7 @@ func (ae *Env) runVersion(ctx c.Context, log logger.Logger, run *runVersionsDTO)
 
 	storage, err := ae.DB.Acquire(ctx)
 	if err != nil {
-		return errors.Join(err, PipelineExecutionError)
+		return errors.Join(PipelineExecutionError, err)
 	}
 
 	//nolint:errcheck // нецелесообразно отслеживать подобные ошибки в defer
@@ -352,7 +354,7 @@ func (ae *Env) runVersion(ctx c.Context, log logger.Logger, run *runVersionsDTO)
 
 	usr, err := user.GetUserInfoFromCtx(ctx)
 	if err != nil {
-		return errors.Join(err, NoUserInContextError)
+		return errors.Join(NoUserInContextError, err)
 	}
 
 	workID := uuid.New()
@@ -388,11 +390,11 @@ func (ae *Env) runVersion(ctx c.Context, log logger.Logger, run *runVersionsDTO)
 			storage,
 			emptyTask,
 		)
-		_ = storage.UpdateTaskStatus(ctx, emptyTask.WorkID, db.RunStatusError, MappingError.error(), "")
+		_ = storage.UpdateTaskStatus(ctx, emptyTask.WorkID, db.RunStatusError, GetVersionsByBlueprintIDError.error(), "")
 
 		log.WithError(err).Error("GetVersionByPipelineID")
 
-		return errors.Join(err, GetVersionsByBlueprintIDError)
+		return errors.Join(GetVersionsByBlueprintIDError, err)
 	}
 
 	emptyTask.VersionID = version.VersionID
@@ -403,11 +405,26 @@ func (ae *Env) runVersion(ctx c.Context, log logger.Logger, run *runVersionsDTO)
 		emptyTask,
 	)
 	if err != nil {
-		return errors.Join(err, PipelineCreateError)
+		return errors.Join(PipelineCreateError, err)
 	}
 
 	err = ae.processEmptyTask(ctx, storage, emptyTask, run.RequestID, run.requestInfo)
+	if errorutils.IsExternalSystemError(err) {
+		log.WithError(err).Warning("external system while empty task processing")
+
+		return nil
+	}
+
 	if err != nil {
+		log.WithError(err).Error("process empty task error")
+
+		var e Err
+		if errors.As(err, &e) {
+			_ = storage.UpdateTaskStatus(ctx, emptyTask.WorkID, db.RunStatusError, e.error(), "")
+		} else {
+			_ = storage.UpdateTaskStatus(ctx, emptyTask.WorkID, db.RunStatusError, err.Error(), "")
+		}
+
 		return err
 	}
 
@@ -428,11 +445,7 @@ func (ae *Env) processEmptyTask(
 
 	version, err := storage.GetVersionByPipelineID(ctx, emptyTask.RunContext.PipelineID)
 	if err != nil {
-		_ = storage.UpdateTaskStatus(ctx, emptyTask.WorkID, db.RunStatusError, MappingError.error(), "")
-
-		log.WithError(err).Error("GetVersionByPipelineID")
-
-		return errors.Join(err, GetVersionsByBlueprintIDError)
+		return errors.Join(GetVersionsByBlueprintIDError, err)
 	}
 
 	requestInfo.VersionID = version.VersionID.String()
@@ -449,11 +462,9 @@ func (ae *Env) processEmptyTask(
 		version.VersionID.String(),
 	)
 	if err != nil {
-		_ = storage.UpdateTaskStatus(ctx, emptyTask.WorkID, db.RunStatusError, GetExternalSystemsError.error(), "")
-
 		log.WithError(err).Error("getExternalSystem")
 
-		return errors.Join(err, GetExternalSystemsError)
+		return errors.Join(GetExternalSystemsError, err)
 	}
 
 	var allowRunAsOthers bool
@@ -467,21 +478,10 @@ func (ae *Env) processEmptyTask(
 		emptyTask.RunContext.InitialApplication.ApplicationBodyFromSystem,
 	)
 	if err != nil {
-		_ = storage.UpdateTaskStatus(ctx, emptyTask.WorkID, db.RunStatusError, MappingError.error(), "")
-
-		log.WithError(err).Error("processMappings")
-
-		return errors.Join(err, MappingError)
+		return errors.Join(MappingError, err)
 	}
 
-	err = version.FillEntryPointOutput()
-	if err != nil {
-		_ = storage.UpdateTaskStatus(ctx, emptyTask.WorkID, db.RunStatusError, GetEntryPointOutputError.error(), "")
-
-		log.WithError(err).Error("entry")
-
-		return errors.Join(err, GetEntryPointOutputError)
-	}
+	version.FillEntryPointOutput()
 
 	reqParams := &requestStartParams{
 		version:          version,
@@ -518,7 +518,7 @@ func (ae *Env) processEmptyTask(
 		},
 	})
 	if execErr != nil {
-		return errors.Join(execErr, PipelineCreateError)
+		return errors.Join(PipelineCreateError, execErr)
 	}
 
 	return nil
