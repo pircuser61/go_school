@@ -2525,10 +2525,10 @@ type NodeContent struct {
 	SchemaID string `json:"schema_id"`
 
 	// Указатель на []interface{} нужен для изменения массива значений из формы, без указателя не изменяются
-	Content map[string]*ContentBody `json:"content"`
+	Content map[string]*FieldBody `json:"content"`
 }
 
-type ContentBody struct {
+type FieldBody struct {
 	Title string        `json:"title"`
 	Type  []string      `json:"type"`
 	Items []interface{} `json:"items"`
@@ -2567,6 +2567,10 @@ type AccessField struct {
 	Description string `json:"description"`
 }
 
+const (
+	fileIDKey = "file_id"
+)
+
 //nolint:gocognit,lll,gocyclo //Так надо
 func (db *PGCon) getDataByWorkID(c context.Context, worksID map[string][]uuid.UUID, accessForms map[string]string, params *SearchPipelinesFieldsParams) (map[string]map[string]*NodeContent, error) {
 	res := make(map[string]map[string]*NodeContent, 0)
@@ -2591,44 +2595,44 @@ func (db *PGCon) getDataByWorkID(c context.Context, worksID map[string][]uuid.UU
 		}
 
 		var (
-			StepName        string
-			WorkID          string
-			NodeID          string
-			ApplicationBody *map[string]interface{}
-			Keys            *map[string]string
-			SchemaID        *string
+			stepName        string
+			workID          string
+			nodeID          string
+			applicationBody *map[string]interface{}
+			keys            *map[string]string
+			schemaID        *string
 		)
 
 		nodes := make(map[string]*NodeContent, 0)
 
 		for rows.Next() {
-			if scanErr := rows.Scan(&StepName, &WorkID, &NodeID, &ApplicationBody, &Keys, &SchemaID); scanErr != nil {
+			if scanErr := rows.Scan(&stepName, &workID, &nodeID, &applicationBody, &keys, &schemaID); scanErr != nil {
 				rows.Close()
 
 				return res, scanErr
 			}
 
-			if _, ok := accessForms[StepName]; ok {
+			if _, ok := accessForms[stepName]; ok {
 				continue
 			}
 
-			if ApplicationBody == nil || len(*ApplicationBody) == 0 {
+			if applicationBody == nil || len(*applicationBody) == 0 {
 				continue
 			}
 
-			node, nodeExist := nodes[StepName]
+			node, nodeExist := nodes[stepName]
 			if !nodeExist {
-				bodySlices := make(map[string]*ContentBody, 0)
+				bodySlices := make(map[string]*FieldBody, 0)
 
-				for key, val := range *ApplicationBody {
-					body := &ContentBody{
+				for key, val := range *applicationBody {
+					body := &FieldBody{
 						Title: key,
 					}
 
 					processMap(val, &body.Items)
 
-					if Keys != nil {
-						ruKeys := *Keys
+					if keys != nil {
+						ruKeys := *keys
 
 						if ruKey, ok := ruKeys[key]; ok && ruKey != "" {
 							body.Title = ruKey
@@ -2638,25 +2642,25 @@ func (db *PGCon) getDataByWorkID(c context.Context, worksID map[string][]uuid.UU
 					bodySlices[key] = body
 				}
 
-				nodes[StepName] = &NodeContent{
-					SchemaID: *SchemaID,
+				nodes[stepName] = &NodeContent{
+					SchemaID: *schemaID,
 					Content:  bodySlices,
 				}
 
 				continue
 			}
 
-			for key, val := range *ApplicationBody {
+			for key, val := range *applicationBody {
 				nodeContent, contentExist := node.Content[key]
 				if !contentExist {
-					body := &ContentBody{
+					body := &FieldBody{
 						Title: key,
 					}
 
 					processMap(val, &body.Items)
 
-					if Keys != nil {
-						ruKeys := *Keys
+					if keys != nil {
+						ruKeys := *keys
 
 						if ruKey, ok := ruKeys[key]; ok && ruKey != "" {
 							body.Title = ruKey
@@ -2731,7 +2735,7 @@ func processMap(data interface{}, items *[]interface{}) {
 			processMap(value[i], items)
 		}
 	case map[string]interface{}:
-		_, isAttach := value["file_id"]
+		_, isAttach := value[fileIDKey]
 		if !isAttach {
 			*items = append(*items, value)
 
@@ -2739,7 +2743,7 @@ func processMap(data interface{}, items *[]interface{}) {
 		}
 
 		if len(value) > 1 {
-			delete(value, "file_id")
+			delete(value, fileIDKey)
 
 			*items = append(*items, value)
 		}
@@ -2830,11 +2834,10 @@ func (db *PGCon) getFormsAccessibility(c context.Context, worksID map[string][]u
 
 		rows, err := db.Connection.Query(c, q, v)
 		if err != nil {
+			rows.Close()
+
 			return res, err
 		}
-
-		//nolint:gocritic //Только так и работает
-		defer rows.Close()
 
 		var (
 			WorkID      string
@@ -2843,6 +2846,8 @@ func (db *PGCon) getFormsAccessibility(c context.Context, worksID map[string][]u
 
 		for rows.Next() {
 			if scanErr := rows.Scan(&WorkID, &FormsAccess); scanErr != nil {
+				rows.Close()
+
 				return nil, scanErr
 			}
 
@@ -2852,6 +2857,8 @@ func (db *PGCon) getFormsAccessibility(c context.Context, worksID map[string][]u
 				}
 			}
 		}
+
+		rows.Close()
 
 		if rowsErr = rows.Err(); rowsErr != nil {
 			break

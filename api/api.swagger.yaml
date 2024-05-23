@@ -3633,6 +3633,20 @@ components:
                     type: string
                   content:
                     type: object
+                    properties:
+                      field_id:
+                        type: string
+                      field_body:
+                        type: object
+                        properties:
+                          title:
+                            type: string
+                          type:
+                            type: array
+                            items:
+                              type: string
+                          content:
+                            type: array
       required:
         - pipeline_id
     EriusScenario:
