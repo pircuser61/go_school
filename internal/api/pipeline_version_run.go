@@ -122,7 +122,7 @@ func (ae *Env) runVersionByPrevVersion(
 
 	workID, err := ae.DB.GetWorkIDByWorkNumber(ctx, req.WorkNumber)
 	if err != nil {
-		return nil, errors.Join(ValidationError, err)
+		return nil, errors.Join(GetVersionsByWorkNumberError, err)
 	}
 
 	isPaused, err := ae.DB.IsTaskPaused(ctx, workID)
@@ -201,7 +201,7 @@ func (ae *Env) runVersionByPrevVersion(
 		log.Error(GetHiddenFieldsError.errorMessage(err))
 	}
 
-	execErr := ae.execVersion(ctx, &execVersionDTO{
+	err = ae.execVersion(ctx, &execVersionDTO{
 		storage:     ae.DB,
 		version:     version,
 		makeNewWork: true,
@@ -221,7 +221,7 @@ func (ae *Env) runVersionByPrevVersion(
 			},
 		},
 	})
-	if errorutils.IsRemoteCallError(execErr) {
+	if errorutils.IsRemoteCallError(err) {
 		log.WithError(err).Warning("remote call error")
 
 		return &entity.RunResponse{
