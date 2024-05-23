@@ -3632,9 +3632,7 @@ components:
                   schema_id:
                     type: string
                   content:
-                    type: array
-                    items:
-                      type: object
+                    type: object
       required:
         - pipeline_id
     EriusScenario:

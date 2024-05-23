@@ -2707,8 +2707,11 @@ func getType(types *[]string, items []interface{}) {
 	for i := 0; i < len(items); i++ {
 		itemType := reflect.TypeOf(items[i]).String()
 
-		if itemType == "map[string]interface {}" {
+		switch itemType {
+		case "map[string]interface {}":
 			itemType = "object"
+		case "int", "int8", "int16", "int32", "int64", "float32", "float64":
+			itemType = "number"
 		}
 
 		if _, typeExist := itemsType[itemType]; !typeExist {
