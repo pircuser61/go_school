@@ -45,7 +45,7 @@ func NewServiceWithCache(cfg *Config, log logger.Logger, m metrics.Metrics) (Ser
 func (s *ServiceWithCache) SetCli(cli d.DelegationServiceClient) {}
 
 func (s *ServiceWithCache) Ping(ctx c.Context) error {
-	return nil
+	return s.Humantasks.Ping(ctx)
 }
 
 func (s *ServiceWithCache) GetDelegations(ctx c.Context, req *d.GetDelegationsRequest) (Delegations, error) {
