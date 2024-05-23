@@ -306,8 +306,10 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 
 	err = ae.runVersion(ctx, errorHandler.log, run)
 	if err != nil {
-		errorHandler.handleErrorStatusCode(PipelineExecutionError, err, http.StatusBadRequest)
-		requestInfo.Status = http.StatusBadRequest
+		httpErr := mapErr(err)
+
+		errorHandler.handleError(httpErr, err)
+		requestInfo.Status = httpErr.Status()
 
 		return
 	}
@@ -337,7 +339,7 @@ func (ae *Env) runVersion(ctx c.Context, log logger.Logger, run *runVersionsDTO)
 	if run.ClientID == "" {
 		run.ClientID, err = ae.getClientIDFromToken(run.Authorization)
 		if err != nil {
-			return errors.Join(err, GetClientIDError)
+			return errors.Join(GetClientIDError, err)
 		}
 	}
 
@@ -409,8 +411,8 @@ func (ae *Env) runVersion(ctx c.Context, log logger.Logger, run *runVersionsDTO)
 	}
 
 	err = ae.processEmptyTask(ctx, storage, emptyTask, run.RequestID, run.requestInfo)
-	if errorutils.IsExternalSystemError(err) {
-		log.WithError(err).Warning("external system while empty task processing")
+	if errorutils.IsRemoteCallError(err) {
+		log.WithError(err).Warning("remote call error")
 
 		return nil
 	}
@@ -418,17 +420,26 @@ func (ae *Env) runVersion(ctx c.Context, log logger.Logger, run *runVersionsDTO)
 	if err != nil {
 		log.WithError(err).Error("process empty task error")
 
-		var e Err
-		if errors.As(err, &e) {
-			_ = storage.UpdateTaskStatus(ctx, emptyTask.WorkID, db.RunStatusError, e.error(), "")
-		} else {
-			_ = storage.UpdateTaskStatus(ctx, emptyTask.WorkID, db.RunStatusError, err.Error(), "")
-		}
+		_ = storage.UpdateTaskStatus(ctx, emptyTask.WorkID, db.RunStatusError, err.Error(), "")
 
 		return err
 	}
 
 	return nil
+}
+
+func mapErr(err error) Err {
+	switch {
+	case errors.Is(err, MappingError):
+		return MappingError
+	default:
+		var httpErr Err
+		if errors.As(err, &httpErr) {
+			return httpErr
+		}
+
+		return UnknownError
+	}
 }
 
 func (ae *Env) processEmptyTask(
@@ -518,7 +529,7 @@ func (ae *Env) processEmptyTask(
 		},
 	})
 	if execErr != nil {
-		return errors.Join(PipelineCreateError, execErr)
+		return errors.Join(execErr)
 	}
 
 	return nil

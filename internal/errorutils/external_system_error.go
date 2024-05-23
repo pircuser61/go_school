@@ -5,21 +5,27 @@ import (
 	"errors"
 )
 
-var ErrExternalSystemIsNotAvailable error = ExternalSystemError{}
+// специальная ошибка предназначенная для обработки неудачных запросов к внешним системам
+//
+//	err := remoteCall(ctx)
+//	if err != nil {
+//		return errors.Join(ErrRemoteCallFailed, err)
+//	}
+var ErrRemoteCallFailed error = RemoteCallError{}
 
-type ExternalSystemError struct{}
+type RemoteCallError struct{}
 
-func (e ExternalSystemError) Error() string {
+func (e RemoteCallError) Error() string {
 	return "request canceled or external system is not available"
 }
 
-func IsExternalSystemError(err error) bool {
+func IsRemoteCallError(err error) bool {
 	switch {
 	case errors.Is(err, context.DeadlineExceeded):
 		return true
 	case errors.Is(err, context.Canceled):
 		return true
 	default:
-		return errors.Is(err, ErrExternalSystemIsNotAvailable)
+		return errors.Is(err, ErrRemoteCallFailed)
 	}
 }

@@ -207,7 +207,7 @@ func (ae *Env) getExternalSystem(
 			return nil, nil
 		}
 
-		return nil, errors.Join(errorutils.ErrExternalSystemIsNotAvailable, err)
+		return nil, errors.Join(errorutils.ErrRemoteCallFailed, err)
 	}
 
 	externalSystem, err := storage.GetExternalSystemSettings(ctx, versionID, system.Integration.IntegrationId)

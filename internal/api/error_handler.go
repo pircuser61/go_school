@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/json"
 	"net/http"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
@@ -31,25 +30,6 @@ func (h *httpErrorHandler) handleError(httpErr Err, err error) {
 
 func (h *httpErrorHandler) sendError(httpErr Err) {
 	_ = httpErr.sendError(h.w)
-	h.setMetricsRequestInfoStatus(httpErr)
-}
-
-func (h *httpErrorHandler) handleErrorStatusCode(httpErr Err, err error, statusCode int) {
-	h.log.Error(httpErr.errorMessage(err))
-	h.sendErrorStatusCode(httpErr, statusCode)
-}
-
-func (h *httpErrorHandler) sendErrorStatusCode(httpErr Err, statusCode int) {
-	resp := httpError{
-		StatusCode:  statusCode,
-		Error:       httpErr.error(),
-		Description: httpErr.description(),
-	}
-
-	h.w.WriteHeader(statusCode)
-
-	_ = json.NewEncoder(h.w).Encode(resp)
-
 	h.setMetricsRequestInfoStatus(httpErr)
 }
 
