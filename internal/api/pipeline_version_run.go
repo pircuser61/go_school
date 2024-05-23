@@ -83,6 +83,7 @@ func (ae *Env) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Request
 	}
 
 	errorHandler.log = errorHandler.log.WithField("workNumber", req.WorkNumber)
+	ctx = logger.WithLogger(ctx, errorHandler.log)
 
 	if req.WorkNumber == "" {
 		errorHandler.handleError(ValidationError, errors.New("workNumber is empty"))
@@ -90,73 +91,104 @@ func (ae *Env) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	runResp, err := ae.runVersionByPrevVersion(ctx, req, r.Header.Get(XRequestIDHeader))
+	if err != nil {
+		httpErr := getErr(err)
+
+		errorHandler.handleError(httpErr, err)
+
+		return
+	}
+
+	err = sendResponse(w, http.StatusOK, runResp)
+	if err != nil {
+		errorHandler.handleError(UnknownError, err)
+
+		return
+	}
+}
+
+func (ae *Env) runVersionByPrevVersion(
+	ctx c.Context,
+	req *runNewVersionsByPrevVersionRequest,
+	requestID string,
+) (*entity.RunResponse, error) {
+	log := logger.GetLogger(ctx)
+
 	usr, err := user.GetUserInfoFromCtx(ctx)
 	if err != nil {
-		errorHandler.handleError(NoUserInContextError, err)
-
-		return
+		return nil, errors.Join(NoUserInContextError, err)
 	}
 
-	workID := uuid.New()
-	errorHandler.log = errorHandler.log.WithField("workID", workID)
-
-	err = ae.createEmptyTask(ctx,
-		ae.DB,
-		&db.EmptyTask{
-			WorkID:        workID,
-			WorkNumber:    req.WorkNumber,
-			Author:        usr.Username,
-			ByPrevVersion: true,
-			RunContext: &entity.TaskRunContext{
-				InitialApplication: entity.InitialApplication{
-					Description:               req.Description,
-					ApplicationBody:           req.ApplicationBody,
-					AttachmentFields:          req.AttachmentFields,
-					Keys:                      req.Keys,
-					ApplicationBodyFromSystem: req.ApplicationBody,
-					CustomTitle:               req.CustomTitle,
-					IsTestApplication:         req.IsTestApplication,
-				},
-			},
-		})
+	workID, err := ae.DB.GetWorkIDByWorkNumber(ctx, req.WorkNumber)
 	if err != nil {
-		errorHandler.handleError(PipelineCreateError, err)
-
-		return
-	}
-
-	version, err := ae.DB.GetVersionByWorkNumber(ctx, req.WorkNumber)
-	if err != nil {
-		errorHandler.handleError(GetVersionsByWorkNumberError, err)
-
-		return
-	}
-
-	errorHandler.log = errorHandler.log.
-		WithField("versionID", version.VersionID).
-		WithField("pipelineID", version.PipelineID)
-
-	ctx = logger.WithLogger(ctx, errorHandler.log)
-
-	workID, err = ae.DB.GetWorkIDByWorkNumber(ctx, req.WorkNumber)
-	if err != nil {
-		errorHandler.handleError(ValidationError, err)
-
-		return
+		return nil, errors.Join(ValidationError, err)
 	}
 
 	isPaused, err := ae.DB.IsTaskPaused(ctx, workID)
 	if err != nil {
-		errorHandler.handleError(CheckIsTaskPausedError, err)
-
-		return
+		return nil, errors.Join(CheckIsTaskPausedError, err)
 	}
 
 	if isPaused {
-		errorHandler.handleError(TaskIsPausedError, err)
-
-		return
+		return nil, errors.Join(TaskIsPausedError, err)
 	}
+
+	err = ae.Scheduler.DeleteAllTasksByWorkID(ctx, workID)
+	if err != nil {
+		log.WithError(err).Error("failed delete all tasks by work id in scheduler")
+	}
+
+	workID = uuid.New()
+	log = log.WithField("workID", workID)
+
+	emptyTask := &db.EmptyTask{
+		WorkID:        workID,
+		WorkNumber:    req.WorkNumber,
+		Author:        usr.Username,
+		ByPrevVersion: true,
+		RunContext: &entity.TaskRunContext{
+			InitialApplication: entity.InitialApplication{
+				Description:               req.Description,
+				ApplicationBody:           req.ApplicationBody,
+				AttachmentFields:          req.AttachmentFields,
+				Keys:                      req.Keys,
+				ApplicationBodyFromSystem: req.ApplicationBody,
+				CustomTitle:               req.CustomTitle,
+				IsTestApplication:         req.IsTestApplication,
+			},
+		},
+	}
+
+	version, err := ae.DB.GetVersionByWorkNumber(ctx, req.WorkNumber)
+	if err != nil {
+		_ = ae.createEmptyTask(
+			ctx,
+			ae.DB,
+			emptyTask,
+		)
+		_ = ae.DB.UpdateTaskStatus(ctx, emptyTask.WorkID, db.RunStatusError, GetVersionsByWorkNumberError.error(), "")
+
+		log.WithError(err).Error("GetVersionByPipelineID")
+
+		return nil, errors.Join(GetVersionsByWorkNumberError, err)
+	}
+
+	emptyTask.VersionID = version.VersionID
+
+	err = ae.createEmptyTask(ctx,
+		ae.DB,
+		emptyTask,
+	)
+	if err != nil {
+		return nil, errors.Join(PipelineCreateError, err)
+	}
+
+	log = log.
+		WithField("versionID", version.VersionID).
+		WithField("pipelineID", version.PipelineID)
+
+	ctx = logger.WithLogger(ctx, log)
 
 	reqParams := &requestStartParams{
 		version:          version,
@@ -166,7 +198,7 @@ func (ae *Env) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Request
 
 	err = ae.handleStartApplicationParams(ctx, reqParams)
 	if err != nil {
-		errorHandler.log.Error(GetHiddenFieldsError.errorMessage(err))
+		log.Error(GetHiddenFieldsError.errorMessage(err))
 	}
 
 	execErr := ae.execVersion(ctx, &execVersionDTO{
@@ -175,7 +207,7 @@ func (ae *Env) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Request
 		makeNewWork: true,
 		workNumber:  req.WorkNumber,
 		workID:      workID,
-		requestID:   r.Header.Get(XRequestIDHeader),
+		requestID:   requestID,
 		runCtx: entity.TaskRunContext{
 			InitialApplication: entity.InitialApplication{
 				Description:               req.Description,
@@ -189,30 +221,29 @@ func (ae *Env) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Request
 			},
 		},
 	})
+	if errorutils.IsRemoteCallError(execErr) {
+		log.WithError(err).Warning("remote call error")
 
-	if execErr != nil {
-		errorHandler.handleError(UnknownError, execErr)
-
-		return
+		return &entity.RunResponse{
+			PipelineID: version.PipelineID,
+			WorkNumber: req.WorkNumber,
+			Status:     statusRunned,
+		}, nil
 	}
 
-	err = ae.Scheduler.DeleteAllTasksByWorkID(ctx, workID)
 	if err != nil {
-		errorHandler.log.WithError(err).Error("failed delete all tasks by work id in scheduler")
+		log.WithError(err).Error("process empty task error")
+
+		_ = ae.DB.UpdateTaskStatus(ctx, emptyTask.WorkID, db.RunStatusError, err.Error(), "")
+
+		return nil, err
 	}
 
-	started := &entity.RunResponse{
+	return &entity.RunResponse{
 		PipelineID: version.PipelineID,
 		WorkNumber: req.WorkNumber,
 		Status:     statusRunned,
-	}
-
-	err = sendResponse(w, http.StatusOK, started)
-	if err != nil {
-		errorHandler.handleError(UnknownError, err)
-
-		return
-	}
+	}, nil
 }
 
 type runVersionByPipelineIDRequest struct {
@@ -529,7 +560,7 @@ func (ae *Env) processEmptyTask(
 		},
 	})
 	if execErr != nil {
-		return errors.Join(execErr)
+		return execErr
 	}
 
 	return nil
