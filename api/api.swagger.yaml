@@ -3624,31 +3624,36 @@ components:
         pipeline_id:
           type: object
           additionalProperties:
-            type: object
-            properties:
-              form_id:
-                type: object
-                properties:
-                  schema_id:
-                    type: string
-                  content:
-                    type: object
-                    properties:
-                      field_id:
-                        type: string
-                      field_body:
-                        type: object
-                        properties:
-                          title:
-                            type: string
-                          type:
-                            type: array
-                            items:
-                              type: string
-                          content:
-                            type: array
+            $ref: "#/components/schemas/NodeContent"
       required:
         - pipeline_id
+    NodeContent:
+      type: object
+      properties:
+        schema_id:
+          type: string
+        content:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/FieldBody"
+      required:
+        - schema_id
+        - content
+    FieldBody:
+      type: object
+      properties:
+        title:
+          type: string
+        type:
+          type: array
+          items:
+            type: string
+        items:
+          type: array
+      required:
+        - title
+        - type
+        - items
     EriusScenario:
       type: object
       description: A single scenario with all content
