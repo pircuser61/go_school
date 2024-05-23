@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"golang.org/x/exp/slices"
 )
 
 func Test_mergeValues(t *testing.T) {
@@ -98,7 +99,13 @@ func Test_getType(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			getType(tt.types, tt.items)
 
-			assert.Equal(t, tt.wants, tt.types)
+			want := tt.wants
+			types := tt.types
+			if tt.wants != nil && tt.types != nil {
+				slices.Sort(*want)
+				slices.Sort(*types)
+			}
+			assert.Equal(t, want, types)
 		})
 	}
 }
