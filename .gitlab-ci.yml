@@ -24,6 +24,7 @@ variables:
   WRK_MEMORY_LIMIT_DEPLOY_HELPER:   1024Mi
   WRK_MEMORY_LIMIT_DEPLOY:          1024Mi
   WRK_IMG_GOLANG_BUILD: registry.services.mts.ru/docker/golang/all:1.20.0-alpine3.17.1-gcc-v1
+  ROLLOUT_TIMEOUT: 1200s
 
 deploy staging:
   variables:
