@@ -2702,17 +2702,21 @@ func (db *PGCon) getDataByWorkID(c context.Context, worksID map[string][]uuid.UU
 }
 
 func getType(types *[]string, items []interface{}) {
-	itemType := make(map[string]struct{}, 0)
+	itemsType := make(map[string]struct{}, 0)
 
 	for i := 0; i < len(items); i++ {
-		Type := reflect.TypeOf(items[i]).String()
+		itemType := reflect.TypeOf(items[i]).String()
 
-		if _, typeExist := itemType[Type]; !typeExist {
-			itemType[Type] = struct{}{}
+		if itemType == "map[string]interface {}" {
+			itemType = "object"
+		}
+
+		if _, typeExist := itemsType[itemType]; !typeExist {
+			itemsType[itemType] = struct{}{}
 		}
 	}
 
-	for k := range itemType {
+	for k := range itemsType {
 		*types = append(*types, k)
 	}
 }
