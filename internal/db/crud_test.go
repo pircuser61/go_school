@@ -91,7 +91,7 @@ func Test_getType(t *testing.T) {
 			name:  "three field",
 			items: []interface{}{"a", map[string]interface{}{"a": "b"}, 4},
 			types: &[]string{},
-			wants: &[]string{"string", "object", "int"},
+			wants: &[]string{"string", "object", "number"},
 		},
 	}
 	for _, tt := range tests {
