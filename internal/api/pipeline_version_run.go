@@ -306,7 +306,7 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 
 	err = ae.runVersion(ctx, errorHandler.log, run)
 	if err != nil {
-		httpErr := extractErr(err)
+		httpErr := getErr(err)
 
 		errorHandler.handleError(httpErr, err)
 		requestInfo.Status = httpErr.Status()
@@ -428,7 +428,7 @@ func (ae *Env) runVersion(ctx c.Context, log logger.Logger, run *runVersionsDTO)
 	return nil
 }
 
-func extractErr(err error) Err {
+func getErr(err error) Err {
 	switch {
 	case errors.Is(err, MappingError):
 		return MappingError
