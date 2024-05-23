@@ -3,6 +3,9 @@ package db
 import (
 	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"golang.org/x/exp/slices"
 )
 
 func Test_mergeValues(t *testing.T) {
@@ -56,6 +59,88 @@ func Test_mergeValues(t *testing.T) {
 			if got := mergeValues(tt.args.stepsValues); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("mergeValues() = %v, want %v", got, tt.want)
 			}
+		})
+	}
+}
+
+func Test_getType(t *testing.T) {
+	tests := []struct {
+		name  string
+		types *[]string
+		items []interface{}
+		wants *[]string
+	}{
+		{
+			name:  "clear items",
+			items: nil,
+			types: nil,
+			wants: nil,
+		},
+		{
+			name:  "one field",
+			items: []interface{}{"a"},
+			types: &[]string{},
+			wants: &[]string{"string"},
+		},
+		{
+			name:  "two field",
+			items: []interface{}{"a", map[string]interface{}{"a": "b"}},
+			types: &[]string{},
+			wants: &[]string{"string", "object"},
+		},
+		{
+			name:  "three field",
+			items: []interface{}{"a", map[string]interface{}{"a": "b"}, 4},
+			types: &[]string{},
+			wants: &[]string{"string", "object", "number"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			getType(tt.types, tt.items)
+
+			want := tt.wants
+			types := tt.types
+			if tt.wants != nil && tt.types != nil {
+				slices.Sort(*want)
+				slices.Sort(*types)
+			}
+			assert.Equal(t, want, types)
+		})
+	}
+}
+
+func Test_processMap(t *testing.T) {
+	tests := []struct {
+		name  string
+		data  interface{}
+		items *[]interface{}
+		wants *[]interface{}
+	}{
+		{
+			name:  "clear items",
+			items: &[]interface{}{},
+			data:  nil,
+			wants: &[]interface{}{nil},
+		},
+		{
+			name:  "one string array",
+			items: &[]interface{}{},
+			data:  []string{"a", "b"},
+			wants: &[]interface{}{[]string{"a", "b"}},
+		},
+		{
+			name:  "string array and map",
+			items: &[]interface{}{[]string{"a", "b"}},
+			data:  map[string]interface{}{"a": "b"},
+			wants: &[]interface{}{[]string{"a", "b"}, map[string]interface{}{"a": "b"}},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			processMap(tt.data, tt.items)
+
+			assert.Equal(t, tt.wants, tt.items)
 		})
 	}
 }

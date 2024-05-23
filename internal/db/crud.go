@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -2524,7 +2525,13 @@ type NodeContent struct {
 	SchemaID string `json:"schema_id"`
 
 	// Указатель на []interface{} нужен для изменения массива значений из формы, без указателя не изменяются
-	Content map[string]*[]interface{} `json:"content"`
+	Content map[string]*FieldBody `json:"content"`
+}
+
+type FieldBody struct {
+	Title string        `json:"title"`
+	Type  []string      `json:"type"`
+	Items []interface{} `json:"items"`
 }
 
 func (db *PGCon) GetPipelinesFields(ctx context.Context, dto *SearchPipelinesFieldsParams) (map[string]map[string]*NodeContent, error) {
@@ -2560,7 +2567,11 @@ type AccessField struct {
 	Description string `json:"description"`
 }
 
-//nolint:gocognit,lll //Так надо
+const (
+	fileIDKey = "file_id"
+)
+
+//nolint:gocognit,lll,gocyclo //Так надо
 func (db *PGCon) getDataByWorkID(c context.Context, worksID map[string][]uuid.UUID, accessForms map[string]string, params *SearchPipelinesFieldsParams) (map[string]map[string]*NodeContent, error) {
 	res := make(map[string]map[string]*NodeContent, 0)
 
@@ -2569,9 +2580,10 @@ func (db *PGCon) getDataByWorkID(c context.Context, worksID map[string][]uuid.UU
 	for k, v := range worksID {
 		// nolint:gocritic,lll
 		// language=PostgreSQL
-		q := `SELECT vs.step_name, vs.work_id as work_id, vs.id as node_id, vs.content -> 'State' -> vs.step_name -> 'application_body' as body, 
+		q := `SELECT vs.step_name, vs.work_id as work_id, vs.id as node_id, vs.content -> 'State' -> vs.step_name -> 'application_body' as body,  vs.content -> 'State' -> vs.step_name -> 'keys' as keys,
 				vs.content -> 'State' -> vs.step_name ->> 'schema_id' as schema_id 
-			 FROM variable_storage as vs WHERE work_id = any($1) AND step_type = 'form' AND (vs.content -> 'State' -> vs.step_name -> 'application_body' is not null or vs.content -> 'State' -> vs.step_name -> 'forms_accessibility' is not null)`
+			 FROM variable_storage as vs 
+			 WHERE work_id = any($1) AND step_type = 'form' AND (vs.content -> 'State' -> vs.step_name -> 'application_body' is not null or vs.content -> 'State' -> vs.step_name -> 'forms_accessibility' is not null)`
 
 		q = filterForFields(params, q)
 
@@ -2583,57 +2595,99 @@ func (db *PGCon) getDataByWorkID(c context.Context, worksID map[string][]uuid.UU
 		}
 
 		var (
-			StepName        string
-			WorkID          string
-			NodeID          string
-			ApplicationBody *map[string]interface{}
-			SchemaID        *string
+			stepName        string
+			workID          string
+			nodeID          string
+			applicationBody *map[string]interface{}
+			keys            *map[string]string
+			schemaID        *string
 		)
 
 		nodes := make(map[string]*NodeContent, 0)
 
 		for rows.Next() {
-			if scanErr := rows.Scan(&StepName, &WorkID, &NodeID, &ApplicationBody, &SchemaID); scanErr != nil {
+			if scanErr := rows.Scan(&stepName, &workID, &nodeID, &applicationBody, &keys, &schemaID); scanErr != nil {
 				rows.Close()
 
 				return res, scanErr
 			}
 
-			if _, ok := accessForms[StepName]; ok {
+			if _, ok := accessForms[stepName]; ok {
 				continue
 			}
 
-			if ApplicationBody == nil || len(*ApplicationBody) == 0 {
+			if applicationBody == nil || len(*applicationBody) == 0 {
 				continue
 			}
 
-			node, nodeExist := nodes[StepName]
+			node, nodeExist := nodes[stepName]
 			if !nodeExist {
-				bodySlices := make(map[string]*[]interface{}, 0)
-				for key, val := range *ApplicationBody {
-					bodySlices[key] = &[]interface{}{val}
+				bodySlices := make(map[string]*FieldBody, 0)
+
+				for key, val := range *applicationBody {
+					body := &FieldBody{
+						Title: key,
+					}
+
+					processMap(val, &body.Items)
+
+					if keys != nil {
+						ruKeys := *keys
+
+						if ruKey, ok := ruKeys[key]; ok && ruKey != "" {
+							body.Title = ruKey
+						}
+					}
+
+					bodySlices[key] = body
 				}
 
-				nodes[StepName] = &NodeContent{
-					SchemaID: *SchemaID,
+				nodes[stepName] = &NodeContent{
+					SchemaID: *schemaID,
 					Content:  bodySlices,
 				}
 
 				continue
 			}
 
-			for key, val := range *ApplicationBody {
-				arr, exists := node.Content[key]
-				if !exists {
-					node.Content[key] = &[]interface{}{val}
+			for key, val := range *applicationBody {
+				nodeContent, contentExist := node.Content[key]
+				if !contentExist {
+					body := &FieldBody{
+						Title: key,
+					}
+
+					processMap(val, &body.Items)
+
+					if keys != nil {
+						ruKeys := *keys
+
+						if ruKey, ok := ruKeys[key]; ok && ruKey != "" {
+							body.Title = ruKey
+						}
+					}
+
+					node.Content[key] = body
 
 					continue
 				}
 
-				if !utils.IsContainsInSliceInterface(val, *arr) {
-					*arr = append(*arr, val)
-					node.Content[key] = arr
+				if !utils.IsContainsInSliceV2(val, nodeContent.Items) {
+					processMap(val, &nodeContent.Items)
 				}
+			}
+		}
+
+		for _, vals := range nodes {
+			for key, val := range vals.Content {
+				if val.Items == nil {
+					delete(vals.Content, key)
+
+					continue
+				}
+
+				val.Items = removeDuplicates(val.Items)
+				getType(&val.Type, val.Items)
 			}
 		}
 
@@ -2649,6 +2703,54 @@ func (db *PGCon) getDataByWorkID(c context.Context, worksID map[string][]uuid.UU
 	}
 
 	return res, rowsErr
+}
+
+func getType(types *[]string, items []interface{}) {
+	itemsType := make(map[string]struct{}, 0)
+
+	for i := 0; i < len(items); i++ {
+		itemType := reflect.TypeOf(items[i]).String()
+
+		switch itemType {
+		case "map[string]interface {}":
+			itemType = "object"
+		case "int", "int8", "int16", "int32", "int64", "float32", "float64":
+			itemType = "number"
+		}
+
+		if _, typeExist := itemsType[itemType]; !typeExist {
+			itemsType[itemType] = struct{}{}
+		}
+	}
+
+	for k := range itemsType {
+		*types = append(*types, k)
+	}
+}
+
+func processMap(data interface{}, items *[]interface{}) {
+	switch value := data.(type) {
+	case []interface{}:
+		for i := 0; i < len(value); i++ {
+			processMap(value[i], items)
+		}
+	case map[string]interface{}:
+		_, isAttach := value[fileIDKey]
+		if !isAttach {
+			*items = append(*items, value)
+
+			return
+		}
+
+		if len(value) > 1 {
+			delete(value, fileIDKey)
+
+			*items = append(*items, value)
+		}
+
+	default:
+		*items = append(*items, value)
+	}
 }
 
 func filterForFields(params *SearchPipelinesFieldsParams, q string) string {
@@ -2732,11 +2834,10 @@ func (db *PGCon) getFormsAccessibility(c context.Context, worksID map[string][]u
 
 		rows, err := db.Connection.Query(c, q, v)
 		if err != nil {
+			rows.Close()
+
 			return res, err
 		}
-
-		//nolint:gocritic //Только так и работает
-		defer rows.Close()
 
 		var (
 			WorkID      string
@@ -2745,6 +2846,8 @@ func (db *PGCon) getFormsAccessibility(c context.Context, worksID map[string][]u
 
 		for rows.Next() {
 			if scanErr := rows.Scan(&WorkID, &FormsAccess); scanErr != nil {
+				rows.Close()
+
 				return nil, scanErr
 			}
 
@@ -2754,6 +2857,8 @@ func (db *PGCon) getFormsAccessibility(c context.Context, worksID map[string][]u
 				}
 			}
 		}
+
+		rows.Close()
 
 		if rowsErr = rows.Err(); rowsErr != nil {
 			break
