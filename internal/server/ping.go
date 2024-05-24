@@ -81,7 +81,7 @@ func (s *service) PingServices(ctx c.Context, failedCh chan bool) {
 		go func() {
 			defer wg.Done()
 
-			serviceDescErr := s.apiEnv.ServiceDesc.Ping(ctx)
+			serviceDescErr := s.apiEnv.ServiceDesc.Ping()
 			if serviceDescErr == nil {
 				s.metrics.ServiceDescAvailable()
 			} else {
@@ -103,7 +103,7 @@ func (s *service) PingServices(ctx c.Context, failedCh chan bool) {
 		go func() {
 			defer wg.Done()
 
-			mailErr := s.apiEnv.Mail.Ping(ctx)
+			mailErr := s.apiEnv.Mail.Ping()
 			if mailErr == nil {
 				s.metrics.MailAvailable()
 			} else {
@@ -114,7 +114,7 @@ func (s *service) PingServices(ctx c.Context, failedCh chan bool) {
 		go func() {
 			defer wg.Done()
 
-			integrationsErr := s.apiEnv.Integrations.Ping(ctx)
+			integrationsErr := s.apiEnv.Integrations.Ping()
 			if integrationsErr == nil {
 				s.metrics.IntegrationsAvailable()
 			} else {
@@ -125,7 +125,7 @@ func (s *service) PingServices(ctx c.Context, failedCh chan bool) {
 		go func() {
 			defer wg.Done()
 
-			hrGateErr := s.apiEnv.HrGate.Ping(ctx)
+			hrGateErr := s.apiEnv.HrGate.Ping()
 			if hrGateErr == nil {
 				s.metrics.HrGateAvailable()
 			} else {

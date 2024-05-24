@@ -38,10 +38,6 @@ type Service struct {
 	metrics    metrics.Metrics
 }
 
-func (s *Service) Ping(ctx c.Context) error {
-	return nil
-}
-
 // nolint:gocritic // it's more comfortable to work with config as a value
 func NewService(c Config, m metrics.Metrics) (*Service, error) {
 	cfg := &broker.Config{
@@ -78,6 +74,22 @@ func NewService(c Config, m metrics.Metrics) (*Service, error) {
 	}
 
 	return &s, nil
+}
+
+func (s *Service) Ping() error {
+	req, err := http.NewRequest("HEAD", s.host, nil)
+	if err != nil {
+		return err
+	}
+
+	httpClient := &http.Client{}
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return err
+	}
+
+	return resp.Body.Close()
 }
 
 func (s *Service) GetApplicationLink(applicationID string) string {

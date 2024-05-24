@@ -37,6 +37,7 @@ type service struct {
 	rpcIntCli  integration.IntegrationServiceClient
 	rpcMicrCli microservice.MicroserviceServiceClient
 	cli        *retryablehttp.Client
+	url        string
 }
 
 func NewService(cfg Config, log logger.Logger, m metrics.Metrics) (Service, error) {
@@ -79,11 +80,24 @@ func NewService(cfg Config, log logger.Logger, m metrics.Metrics) (Service, erro
 		rpcIntCli:  integration.NewIntegrationServiceClient(conn),
 		rpcMicrCli: microservice.NewMicroserviceServiceClient(conn),
 		cli:        httpclient.NewClient(httpClient, nil, cfg.MaxRetries, cfg.RetryDelay),
+		url:        cfg.URL,
 	}, nil
 }
 
-func (s *service) Ping(ctx c.Context) error {
-	return nil
+func (s *service) Ping() error {
+	req, err := http.NewRequest("HEAD", s.url, nil)
+	if err != nil {
+		return err
+	}
+
+	httpClient := &http.Client{}
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return err
+	}
+
+	return resp.Body.Close()
 }
 
 func (s *service) GetRPCIntCli() integration.IntegrationServiceClient {

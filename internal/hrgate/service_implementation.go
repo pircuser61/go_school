@@ -68,8 +68,20 @@ func NewService(cfg *Config, ssoS *sso.Service, m metrics.Metrics) (ServiceInter
 	}, nil
 }
 
-func (s *Service) Ping(ctx c.Context) error {
-	return nil
+func (s *Service) Ping() error {
+	req, err := http.NewRequest("HEAD", s.hrGateURL, nil)
+	if err != nil {
+		return err
+	}
+
+	httpClient := &http.Client{}
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return err
+	}
+
+	return resp.Body.Close()
 }
 
 func (s *Service) GetCalendars(ctx c.Context, params *GetCalendarsParams) ([]Calendar, error) {
