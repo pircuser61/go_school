@@ -71,7 +71,6 @@ func NewService(cfg *Config, log logger.Logger, m metrics.Metrics) (ServiceInter
 }
 
 func (s *service) Ping(ctx c.Context) error {
-	//s.cli.Ping(ctx)
 	return nil
 }
 
