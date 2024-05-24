@@ -36,7 +36,7 @@ func NewService(cfg *sd.Config, ssoS *sso.Service, m metrics.Metrics) (sd.Servic
 }
 
 func (s *service) Ping(ctx c.Context) error {
-	return nil
+	return s.servicedesc.Ping(ctx)
 }
 
 func (s *service) SetCli(cla *retryablehttp.Client) {}
