@@ -42,7 +42,7 @@ func NewServiceWithCache(cfg *Config, log logger.Logger, m metrics.Metrics) (Ser
 	}, nil
 }
 
-func (s *ServiceWithCache) SetCli(cli d.DelegationServiceClient) {}
+func (*ServiceWithCache) SetCli(d.DelegationServiceClient) {}
 
 func (s *ServiceWithCache) GetDelegations(ctx c.Context, req *d.GetDelegationsRequest) (Delegations, error) {
 	ctx, span := trace.StartSpan(ctx, "humantasks.get_delegations(cached)")

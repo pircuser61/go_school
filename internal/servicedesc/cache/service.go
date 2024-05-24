@@ -33,4 +33,4 @@ func NewService(cfg *sd.Config, ssoS *sso.Service, m metrics.Metrics) (sd.Servic
 	}, nil
 }
 
-func (s *service) SetCli(cla *retryablehttp.Client) {}
+func (*service) SetCli(*retryablehttp.Client) {}
