@@ -85,7 +85,7 @@ func NewService(cfg Config, log logger.Logger, m metrics.Metrics) (Service, erro
 }
 
 func (s *service) Ping() error {
-	req, err := http.NewRequest("HEAD", s.url, nil)
+	req, err := http.NewRequest("HEAD", s.url, http.NoBody)
 	if err != nil {
 		return err
 	}

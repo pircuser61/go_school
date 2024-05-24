@@ -69,7 +69,7 @@ func NewService(cfg *Config, ssoS *sso.Service, m metrics.Metrics) (ServiceInter
 }
 
 func (s *Service) Ping() error {
-	req, err := http.NewRequest("HEAD", s.hrGateURL, nil)
+	req, err := http.NewRequest("HEAD", s.hrGateURL, http.NoBody)
 	if err != nil {
 		return err
 	}
