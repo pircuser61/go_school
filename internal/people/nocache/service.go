@@ -20,6 +20,7 @@ const searchPath = "search/attributes"
 
 type service struct {
 	searchURL string
+	baseURL   string
 	cli       *retryablehttp.Client
 	sso       *sso.Service
 }
@@ -57,7 +58,7 @@ func (s *service) SetCli(cli *retryablehttp.Client) {
 }
 
 func (s *service) Ping(ctx c.Context) error {
-	req, err := retryablehttp.NewRequest("HEAD", s.searchURL, nil)
+	req, err := retryablehttp.NewRequest("HEAD", s.baseURL, nil)
 	if err != nil {
 		return err
 	}
