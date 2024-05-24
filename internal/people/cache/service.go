@@ -50,8 +50,8 @@ func NewService(cfg *people.Config, ssoS *sso.Service, m metrics.Metrics) (peopl
 
 func (s *service) SetCli(cli *retryablehttp.Client) {}
 
-func (s *service) Ping(ctx c.Context) error {
-	return s.People.Ping(ctx)
+func (s *service) Ping() error {
+	return s.People.Ping()
 }
 
 func (s *service) GetUser(ctx c.Context, username string) (people.SSOUser, error) {

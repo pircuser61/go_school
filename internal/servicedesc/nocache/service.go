@@ -59,12 +59,14 @@ func (s *service) GetCli() *retryablehttp.Client {
 }
 
 func (s *service) Ping() error {
-	req, err := retryablehttp.NewRequest("HEAD", s.sdURL, nil)
+	req, err := http.NewRequest("HEAD", s.sdURL, http.NoBody)
 	if err != nil {
 		return err
 	}
 
-	resp, err := s.cli.Do(req)
+	httpClient := &http.Client{}
+
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return err
 	}

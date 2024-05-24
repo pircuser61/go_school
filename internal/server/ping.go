@@ -92,7 +92,7 @@ func (s *service) PingServices(ctx c.Context, failedCh chan bool) {
 		go func() {
 			defer wg.Done()
 
-			peopleErr := s.apiEnv.People.Ping(ctx)
+			peopleErr := s.apiEnv.People.Ping()
 			if peopleErr == nil {
 				s.metrics.PeopleAvailable()
 			} else {

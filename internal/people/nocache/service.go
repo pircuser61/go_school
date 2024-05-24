@@ -1,7 +1,6 @@
 package nocache
 
 import (
-	c "context"
 	"net/http"
 
 	"go.opencensus.io/plugin/ochttp"
@@ -57,13 +56,15 @@ func (s *service) SetCli(cli *retryablehttp.Client) {
 	s.cli = cli
 }
 
-func (s *service) Ping(ctx c.Context) error {
-	req, err := retryablehttp.NewRequest("HEAD", s.baseURL, nil)
+func (s *service) Ping() error {
+	req, err := http.NewRequest("HEAD", s.baseURL, http.NoBody)
 	if err != nil {
 		return err
 	}
 
-	resp, err := s.cli.Do(req)
+	httpClient := &http.Client{}
+
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return err
 	}
