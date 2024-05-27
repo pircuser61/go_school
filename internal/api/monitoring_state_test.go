@@ -24,13 +24,7 @@ func Test_getPrevStepState(t *testing.T) {
 					"Steps":  []string{"start_0", "executable_function_0"},
 					"State": map[string]interface{}{
 						"executable_function_0": map[string]interface{}{
-							"async":           false,
-							"check_sla":       true,
-							"version":         "v1.0.0-alpha.7",
-							"cur_retry_count": 1,
-							"contracts": map[string]interface{}{
-								"test": 1,
-							},
+							"version": "v1.0.0-alpha.7",
 						},
 						"start_0": map[string]interface{}{
 							"test": 1,
@@ -41,26 +35,8 @@ func Test_getPrevStepState(t *testing.T) {
 			},
 			want: []entity.BlockStateValue{
 				{
-					Name:  "async",
-					Value: false,
-				},
-				{
-					Name:  "check_sla",
-					Value: true,
-				},
-				{
 					Name:  "version",
 					Value: "v1.0.0-alpha.7",
-				},
-				{
-					Name:  "cur_retry_count",
-					Value: 1,
-				},
-				{
-					Name: "contracts",
-					Value: map[string]interface{}{
-						"test": 1,
-					},
 				},
 			},
 		},
@@ -72,7 +48,7 @@ func Test_getPrevStepState(t *testing.T) {
 					"Steps":  []string{"start_0", "executable_function_0"},
 					"State": map[string]interface{}{
 						"executable_function_1": map[string]interface{}{
-							"async":           false,
+							"async": false,
 						},
 						"start_0": map[string]interface{}{
 							"test": 1,
