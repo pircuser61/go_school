@@ -1134,7 +1134,7 @@ func (gb *GoExecutionBlock) mapLoginsToEmails(ctx c.Context, loginsToNotify []st
 }
 
 func (gb *GoExecutionBlock) typedAuthor(ctx c.Context) (*sso.UserInfo, error) {
-	author, err := gb.RunContext.Services.People.GetUser(ctx, gb.RunContext.UpdateData.ByLogin, false)
+	author, err := gb.RunContext.Services.People.GetUser(ctx, gb.RunContext.UpdateData.ByLogin, true)
 	if err != nil {
 		return nil, err
 	}

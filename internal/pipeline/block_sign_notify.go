@@ -150,7 +150,7 @@ func (gb *GoSignBlock) notifyDecisionMadeByAdditionalApprover(ctx c.Context, log
 		emailsToNotify = append(emailsToNotify, emailToNotify)
 	}
 
-	user, err := gb.RunContext.Services.People.GetUser(ctx, gb.RunContext.UpdateData.ByLogin, false)
+	user, err := gb.RunContext.Services.People.GetUser(ctx, gb.RunContext.UpdateData.ByLogin, true)
 	if err != nil {
 		return err
 	}
