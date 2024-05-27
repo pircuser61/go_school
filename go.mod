@@ -35,16 +35,15 @@ require (
 	gitlab.services.mts.ru/jocasta/conditions-kit v1.0.10
 	gitlab.services.mts.ru/jocasta/file-registry v1.4.0
 	gitlab.services.mts.ru/jocasta/forms v1.7.0-rc.1.0.20240301073647-dad697e5b82d
-	gitlab.services.mts.ru/jocasta/functions v1.11.0-alpha.1
+	gitlab.services.mts.ru/jocasta/functions v1.13.0-rc.1
 	gitlab.services.mts.ru/jocasta/human-tasks v1.0.0-alpha.3
 	gitlab.services.mts.ru/jocasta/integrations v1.9.0
 	gitlab.services.mts.ru/jocasta/msg-kit v0.1.6
 	gitlab.services.mts.ru/jocasta/scheduler v1.10.1-0.20240411105447-0c6a180ab838
-	gitlab.services.mts.ru/jocasta/sequence v0.0.0-20240412094937-d4b3accaf9cd
+	gitlab.services.mts.ru/jocasta/sequence v1.1.0-rc.1
 	gitlab.services.mts.ru/prodboard/infra v0.3.0
 	go.opencensus.io v0.24.0
 	golang.org/x/exp v0.0.0-20230522175609-2e198f4a06a1
-	golang.org/x/net v0.21.0
 	golang.org/x/sync v0.6.0
 	golang.org/x/text v0.14.0
 	google.golang.org/grpc v1.61.1
@@ -110,6 +109,7 @@ require (
 	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect
 	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect
 	golang.org/x/crypto v0.19.0 // indirect
+	golang.org/x/net v0.21.0 // indirect
 	golang.org/x/sys v0.17.0 // indirect
 	google.golang.org/api v0.114.0 // indirect
 	google.golang.org/genproto v0.0.0-20240213162025-012b6fc9bca9 // indirect

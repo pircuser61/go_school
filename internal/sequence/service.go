@@ -2,7 +2,6 @@ package sequence
 
 import (
 	c "context"
-
 	"go.opencensus.io/plugin/ocgrpc"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
@@ -61,5 +60,6 @@ func NewService(cfg Config, log logger.Logger, m metrics.Metrics) (Service, erro
 }
 
 func (s *service) Ping(ctx c.Context) error {
-	return nil
+	_, err := s.cli.Ping(ctx, &sequence.PingRequest{})
+	return err
 }
