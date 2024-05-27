@@ -62,5 +62,6 @@ func NewService(cfg Config, log logger.Logger, m metrics.Metrics) (Service, erro
 
 func (s *service) Ping(ctx c.Context) error {
 	_, err := s.cli.Ping(ctx, &sequence.PingRequest{})
+
 	return err
 }
