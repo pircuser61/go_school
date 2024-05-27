@@ -48,7 +48,7 @@ func NewService(cfg *people.Config, ssoS *sso.Service, m metrics.Metrics) (peopl
 	}, nil
 }
 
-func (s *service) SetCli(cli *retryablehttp.Client) {}
+func (*service) SetCli(*retryablehttp.Client) {}
 
 func (s *service) Ping(ctx c.Context) error {
 	return s.People.Ping(ctx)

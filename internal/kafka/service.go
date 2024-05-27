@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/Shopify/sarama"
+	"go.opencensus.io/trace"
 
 	gometrics "github.com/rcrowley/go-metrics"
 
@@ -153,6 +154,9 @@ func (s *Service) ProduceFuncMessage(ctx c.Context, message *RunnerOutMessage) e
 }
 
 func (s *Service) ProduceFuncResultMessage(ctx c.Context, message *RunnerInMessage) error {
+	ctx, span := trace.StartSpan(ctx, "produce_func_result_message")
+	defer span.End()
+
 	if s == nil || s.producer == nil || s.producerFuncResult == nil {
 		return errors.New("kafka service unavailable")
 	}

@@ -163,6 +163,14 @@ func (s *service) GetUserEmail(ctx context.Context, username string) (string, er
 	return typed.Email, nil
 }
 
+type CouldntFindUserError struct {
+	UserName string
+}
+
+func (e *CouldntFindUserError) Error() string {
+	return "couldn't find user with name " + e.UserName
+}
+
 func (s *service) GetUser(ctx context.Context, username string) (people.SSOUser, error) {
 	ctxLocal, span := trace.StartSpan(ctx, "people.nocache.get_user")
 	defer span.End()
@@ -179,7 +187,7 @@ func (s *service) GetUser(ctx context.Context, username string) (people.SSOUser,
 	for _, u := range users {
 		uname, ok := u["username"]
 		if !ok {
-			return nil, errors.New("couldn't find user with name " + username)
+			return nil, &CouldntFindUserError{UserName: username}
 		}
 
 		if uname == username {
@@ -187,7 +195,7 @@ func (s *service) GetUser(ctx context.Context, username string) (people.SSOUser,
 		}
 	}
 
-	return nil, errors.New("couldn't find user with name " + username)
+	return nil, &CouldntFindUserError{UserName: username}
 }
 
 func (s *service) GetUsers(ctx context.Context, username string, limit *int, filter []string) ([]people.SSOUser, error) {

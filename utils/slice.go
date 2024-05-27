@@ -33,6 +33,16 @@ func IsContainsInSlice(value string, in []string) bool {
 	return false
 }
 
+func IsContainsInSliceV2[T any, K any](value T, in []K) bool {
+	for i := range in {
+		if reflect.DeepEqual(in[i], value) {
+			return true
+		}
+	}
+
+	return false
+}
+
 func IsContainsInMap(value string, in map[string]struct{}) bool {
 	for i := range in {
 		if strings.EqualFold(i, value) {

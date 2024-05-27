@@ -272,12 +272,7 @@ func (ae *Env) SaveVersionSettings(w http.ResponseWriter, req *http.Request, ver
 		return
 	}
 
-	err = scenario.FillEntryPointOutput()
-	if err != nil {
-		errorHandler.handleError(GetEntryPointOutputError, err)
-
-		return
-	}
+	scenario.FillEntryPointOutput()
 
 	txStorage, transactionErr := ae.DB.StartTransaction(ctx)
 	if transactionErr != nil {

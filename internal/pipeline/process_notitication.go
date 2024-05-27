@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	om "github.com/iancoleman/orderedmap"
+	"go.opencensus.io/trace"
 
 	e "gitlab.services.mts.ru/abp/mail/pkg/email"
 	"gitlab.services.mts.ru/abp/myosotis/logger"
@@ -40,6 +41,9 @@ const (
 )
 
 func (runCtx *BlockRunContext) handleInitiatorNotify(ctx c.Context, params handleInitiatorNotifyParams) error {
+	ctx, span := trace.StartSpan(ctx, "handle_initiator_notify")
+	defer span.End()
+
 	const (
 		FormStepType     = "form"
 		TimerStepType    = "timer"

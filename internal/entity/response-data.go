@@ -659,11 +659,11 @@ const (
 	KeyOutputApplicationBody      = "application_body"
 )
 
-func (es *EriusScenario) FillEntryPointOutput() (err error) {
+func (es *EriusScenario) FillEntryPointOutput() {
 	entryPoint := es.Pipeline.Blocks[es.Pipeline.Entrypoint]
 
 	if entryPoint == nil || entryPoint.Output == nil || entryPoint.Output.Properties == nil {
-		return nil
+		return
 	}
 
 	entryPoint.Output.Properties = script.JSONSchemaProperties{}
@@ -689,8 +689,6 @@ func (es *EriusScenario) FillEntryPointOutput() (err error) {
 	}
 
 	es.Pipeline.Blocks[es.Pipeline.Entrypoint] = entryPoint
-
-	return nil
 }
 
 type NodeGroup struct {

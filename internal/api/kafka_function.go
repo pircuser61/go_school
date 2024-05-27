@@ -47,7 +47,8 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 	log := ae.Log.WithField("funcName", "FunctionReturnHandler").
 		WithField("mainFuncName", "FunctionReturnHandler").
 		WithField("stepID", message.TaskID).
-		WithField("method", "kafka")
+		WithField("method", "kafka").
+		WithField("traceID", span.SpanContext().TraceID.String())
 
 	messageTmp, err := json.Marshal(message)
 	if err != nil {
@@ -59,6 +60,8 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 
 	log.WithField("body", messageString).
 		Info("start handle message from kafka")
+
+	span.AddAttributes(trace.StringAttribute("stepID", message.TaskID.String()))
 
 	ctx = logger.WithLogger(ctx, log)
 
@@ -78,6 +81,8 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 
 		return nil
 	}
+
+	span.AddAttributes(trace.StringAttribute("workNumber", st.WorkNumber))
 
 	log = log.WithField("workNumber", st.WorkNumber).
 		WithField("stepName", st.Name).
@@ -293,10 +298,10 @@ const (
 
 func (ae *Env) getTaskStepWithRetry(ctx c.Context, stepID uuid.UUID) (*entity.Step, error) {
 	for i := 0; i < getTaskStepRetryCount; i++ {
-		<-time.After(getTaskStepTimeout * time.Second)
-
 		st, err := ae.DB.GetActiveTaskStepByID(ctx, stepID)
 		if errors.Is(err, pgx.ErrNoRows) {
+			<-time.After(getTaskStepTimeout * time.Second)
+
 			continue
 		}
 

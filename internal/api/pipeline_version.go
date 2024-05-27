@@ -3,6 +3,7 @@ package api
 import (
 	c "context"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"strings"
@@ -16,8 +17,6 @@ import (
 
 	"github.com/jackc/pgx/v4"
 
-	"github.com/pkg/errors"
-
 	"go.opencensus.io/trace"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
@@ -26,6 +25,7 @@ import (
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	e "gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/errorutils"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
@@ -209,7 +209,7 @@ func (ae *Env) getExternalSystem(
 			return nil, nil
 		}
 
-		return nil, err
+		return nil, errors.Join(errorutils.ErrRemoteCallFailed, err)
 	}
 
 	externalSystem, err := storage.GetExternalSystemSettings(ctx, versionID, system.Integration.IntegrationId)
@@ -376,12 +376,7 @@ func (ae *Env) GetPipelineVersion(w http.ResponseWriter, req *http.Request, vers
 
 	requestInfo.PipelineID = p.PipelineID.String()
 
-	err = p.FillEntryPointOutput()
-	if err != nil {
-		errorHandler.handleError(GetEntryPointOutputError, err)
-
-		return
-	}
+	p.FillEntryPointOutput()
 
 	if err = sendResponse(w, http.StatusOK, p); err != nil {
 		errorHandler.handleError(UnknownError, err)
@@ -588,7 +583,7 @@ func (ae *Env) execVersion(ctx c.Context, dto *execVersionDTO) error {
 		errCustom := NoUserInContextError
 		log.WithField("funcName", "GetUserInfoFromCtx").Error(errCustom.errorMessage(err))
 
-		return errors.Wrap(err, errCustom.error())
+		return errors.Join(errCustom, err)
 	}
 
 	// if X-As-Other was used, then we will store the name of the real user here
@@ -602,7 +597,7 @@ func (ae *Env) execVersion(ctx c.Context, dto *execVersionDTO) error {
 			log.WithField("funcName", "GetEffectiveUserInfoFromCtx").
 				Error(errCustom.errorMessage(err))
 
-			return errors.Wrap(err, errCustom.error())
+			return errors.Join(errCustom, err)
 		}
 	}
 
@@ -622,7 +617,7 @@ func (ae *Env) execVersion(ctx c.Context, dto *execVersionDTO) error {
 
 	errCustom, err := ae.execVersionInternal(ctxLocal, execVersion)
 	if err != nil {
-		return errors.Wrap(err, errCustom.error())
+		return errors.Join(errCustom, err)
 	}
 
 	return nil

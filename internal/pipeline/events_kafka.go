@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
+	"go.opencensus.io/trace"
 
 	e "gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 )
@@ -76,6 +77,9 @@ func (runCtx *BlockRunContext) MakeNodeKafkaEvent(ctx c.Context, dto *MakeNodeKa
 }
 
 func (runCtx *BlockRunContext) notifyKafkaEvents(ctx c.Context, log logger.Logger) {
+	ctx, span := trace.StartSpan(ctx, "notify_kafka_events")
+	defer span.End()
+
 	for i := range runCtx.BlockRunResults.NodeKafkaEvents {
 		event := runCtx.BlockRunResults.NodeKafkaEvents[i]
 

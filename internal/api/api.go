@@ -1230,6 +1230,13 @@ type ExternalSystemSubscriptionParams struct {
 // Какой http метод использовать
 type ExternalSystemSubscriptionParamsMethod string
 
+// FieldBody defines model for FieldBody.
+type FieldBody struct {
+	Items []interface{} `json:"items"`
+	Title string        `json:"title"`
+	Type  []string      `json:"type"`
+}
+
 // Fill form
 type FillFormUpdateParams struct {
 	ApplicationBody map[string]interface{} `json:"application_body"`
@@ -1758,6 +1765,17 @@ type NameExists struct {
 	Exists bool `json:"exists"`
 }
 
+// NodeContent defines model for NodeContent.
+type NodeContent struct {
+	Content  NodeContent_Content `json:"content"`
+	SchemaId string              `json:"schema_id"`
+}
+
+// NodeContent_Content defines model for NodeContent.Content.
+type NodeContent_Content struct {
+	AdditionalProperties map[string]FieldBody `json:"-"`
+}
+
 // NodeDecision defines model for NodeDecision.
 type NodeDecision struct {
 	// Название решения
@@ -1917,12 +1935,7 @@ type ResponsePipelineFieldsSearch struct {
 
 // ResponsePipelineFieldsSearch_PipelineId defines model for ResponsePipelineFieldsSearch.PipelineId.
 type ResponsePipelineFieldsSearch_PipelineId struct {
-	AdditionalProperties map[string]struct {
-		FormId *struct {
-			Content  *[]map[string]interface{} `json:"content,omitempty"`
-			SchemaId *string                   `json:"schema_id,omitempty"`
-		} `json:"form_id,omitempty"`
-	} `json:"-"`
+	AdditionalProperties map[string]NodeContent `json:"-"`
 }
 
 // ResponsePipelineSearch defines model for ResponsePipelineSearch.
@@ -3784,14 +3797,62 @@ func (a MonitoringUpdateBlockInputsRequest_Inputs) MarshalJSON() ([]byte, error)
 	return json.Marshal(object)
 }
 
+// Getter for additional properties for NodeContent_Content. Returns the specified
+// element and whether it was found
+func (a NodeContent_Content) Get(fieldName string) (value FieldBody, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for NodeContent_Content
+func (a *NodeContent_Content) Set(fieldName string, value FieldBody) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]FieldBody)
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for NodeContent_Content to handle AdditionalProperties
+func (a *NodeContent_Content) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]FieldBody)
+		for fieldName, fieldBuf := range object {
+			var fieldVal FieldBody
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return errors.Wrap(err, fmt.Sprintf("error unmarshaling field %s", fieldName))
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for NodeContent_Content to handle AdditionalProperties
+func (a NodeContent_Content) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, errors.Wrap(err, fmt.Sprintf("error marshaling '%s'", fieldName))
+		}
+	}
+	return json.Marshal(object)
+}
+
 // Getter for additional properties for ResponsePipelineFieldsSearch_PipelineId. Returns the specified
 // element and whether it was found
-func (a ResponsePipelineFieldsSearch_PipelineId) Get(fieldName string) (value struct {
-	FormId *struct {
-		Content  *[]map[string]interface{} `json:"content,omitempty"`
-		SchemaId *string                   `json:"schema_id,omitempty"`
-	} `json:"form_id,omitempty"`
-}, found bool) {
+func (a ResponsePipelineFieldsSearch_PipelineId) Get(fieldName string) (value NodeContent, found bool) {
 	if a.AdditionalProperties != nil {
 		value, found = a.AdditionalProperties[fieldName]
 	}
@@ -3799,19 +3860,9 @@ func (a ResponsePipelineFieldsSearch_PipelineId) Get(fieldName string) (value st
 }
 
 // Setter for additional properties for ResponsePipelineFieldsSearch_PipelineId
-func (a *ResponsePipelineFieldsSearch_PipelineId) Set(fieldName string, value struct {
-	FormId *struct {
-		Content  *[]map[string]interface{} `json:"content,omitempty"`
-		SchemaId *string                   `json:"schema_id,omitempty"`
-	} `json:"form_id,omitempty"`
-}) {
+func (a *ResponsePipelineFieldsSearch_PipelineId) Set(fieldName string, value NodeContent) {
 	if a.AdditionalProperties == nil {
-		a.AdditionalProperties = make(map[string]struct {
-			FormId *struct {
-				Content  *[]map[string]interface{} `json:"content,omitempty"`
-				SchemaId *string                   `json:"schema_id,omitempty"`
-			} `json:"form_id,omitempty"`
-		})
+		a.AdditionalProperties = make(map[string]NodeContent)
 	}
 	a.AdditionalProperties[fieldName] = value
 }
@@ -3825,19 +3876,9 @@ func (a *ResponsePipelineFieldsSearch_PipelineId) UnmarshalJSON(b []byte) error 
 	}
 
 	if len(object) != 0 {
-		a.AdditionalProperties = make(map[string]struct {
-			FormId *struct {
-				Content  *[]map[string]interface{} `json:"content,omitempty"`
-				SchemaId *string                   `json:"schema_id,omitempty"`
-			} `json:"form_id,omitempty"`
-		})
+		a.AdditionalProperties = make(map[string]NodeContent)
 		for fieldName, fieldBuf := range object {
-			var fieldVal struct {
-				FormId *struct {
-					Content  *[]map[string]interface{} `json:"content,omitempty"`
-					SchemaId *string                   `json:"schema_id,omitempty"`
-				} `json:"form_id,omitempty"`
-			}
+			var fieldVal NodeContent
 			err := json.Unmarshal(fieldBuf, &fieldVal)
 			if err != nil {
 				return errors.Wrap(err, fmt.Sprintf("error unmarshaling field %s", fieldName))

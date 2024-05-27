@@ -430,6 +430,7 @@ var errorStatus = map[Err]int{
 	ParallelNodeReturnCycle:       http.StatusBadRequest,
 	ParallelNodeExitsNotConnected: http.StatusBadRequest,
 	OutOfParallelNodesConnection:  http.StatusBadRequest,
+	MappingError:                  http.StatusBadRequest,
 	ForbiddenError:                http.StatusForbidden,
 	MonitoringEditBlockParseError: http.StatusBadRequest,
 }
