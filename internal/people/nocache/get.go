@@ -150,7 +150,7 @@ func (s *service) GetUserEmail(ctx context.Context, username string) (string, er
 	ctxLocal, span := trace.StartSpan(ctx, "people.nocache.get_user_email")
 	defer span.End()
 
-	user, err := s.GetUser(ctxLocal, username)
+	user, err := s.GetUser(ctxLocal, username, true)
 	if err != nil {
 		return "", err
 	}
@@ -171,7 +171,7 @@ func (e *CouldntFindUserError) Error() string {
 	return "couldn't find user with name " + e.UserName
 }
 
-func (s *service) GetUser(ctx context.Context, username string) (people.SSOUser, error) {
+func (s *service) GetUser(ctx context.Context, username string, onlyEnabled bool) (people.SSOUser, error) {
 	ctxLocal, span := trace.StartSpan(ctx, "people.nocache.get_user")
 	defer span.End()
 
@@ -179,7 +179,7 @@ func (s *service) GetUser(ctx context.Context, username string) (people.SSOUser,
 		return map[string]interface{}{"username": username}, nil
 	}
 
-	users, err := s.getUser(ctxLocal, username, false)
+	users, err := s.getUser(ctxLocal, username, onlyEnabled)
 	if err != nil {
 		return nil, err
 	}

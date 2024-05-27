@@ -169,7 +169,7 @@ func (ae *Env) MonitoringGetTask(w http.ResponseWriter, req *http.Request, workN
 }
 
 func (ae *Env) getUserFullName(ctx c.Context, username string) (string, error) {
-	initiatorUserInfo, getUserErr := ae.People.GetUser(ctx, username)
+	initiatorUserInfo, getUserErr := ae.People.GetUser(ctx, username, false)
 	if getUserErr != nil {
 		return "", getUserErr
 	}
