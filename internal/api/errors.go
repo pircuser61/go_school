@@ -432,6 +432,7 @@ var errorStatus = map[Err]int{
 	OutOfParallelNodesConnection:  http.StatusBadRequest,
 	MappingError:                  http.StatusBadRequest,
 	ForbiddenError:                http.StatusForbidden,
+	MonitoringEditBlockParseError: http.StatusBadRequest,
 }
 
 type httpError struct {
