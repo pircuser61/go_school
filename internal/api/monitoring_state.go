@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/google/uuid"
 
@@ -79,24 +80,40 @@ func (ae *Env) MonitoringGetBlockState(w http.ResponseWriter, r *http.Request, b
 
 		prevState := entity.BlockState{}
 
-		if len(prevContent) > 0 {
-			for i := range prevContent {
-				prevState = append(prevState, entity.BlockStateValue{
-					Name:  i,
-					Value: prevContent[i],
-				})
+		for contentKey := range prevContent {
+			if strings.ToLower(contentKey) != "state" {
+				continue
 			}
 
-			prevParams := make(map[string]MonitoringBlockState, len(state))
+			if commonState, ok := prevContent[contentKey].(map[string]interface{}); ok {
+				for stateKey := range commonState {
+					if stateKey != dbStep.Name {
+						continue
+					}
+
+					if stepState, okStepState := commonState[stateKey].(map[string]interface{}); okStepState {
+						for stepStateKey := range stepState {
+							prevState = append(prevState, entity.BlockStateValue{
+								Name:  stepStateKey,
+								Value: stepState[stepStateKey],
+							})
+						}
+					}
+				}
+			}
+		}
+
+		if len(prevState) > 0 {
+			prevStateRes := make(map[string]MonitoringBlockState, len(state))
 			for _, bo := range prevState {
-				prevParams[bo.Name] = MonitoringBlockState{
+				prevStateRes[bo.Name] = MonitoringBlockState{
 					Name:  bo.Name,
 					Value: bo.Value,
 					Type:  utils.GetJSONType(bo.Value),
 				}
 			}
 
-			res.WhileRunning = &BlockStateResponse_WhileRunning{prevParams}
+			res.WhileRunning = &BlockStateResponse_WhileRunning{prevStateRes}
 			res.Edited = &BlockStateResponse_Edited{params}
 		}
 
