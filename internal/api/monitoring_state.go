@@ -1,16 +1,15 @@
 package api
 
 import (
+	"github.com/google/uuid"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"net/http"
 	"strings"
-
-	"github.com/google/uuid"
 
 	"go.opencensus.io/trace"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
@@ -68,9 +67,10 @@ func (ae *Env) MonitoringGetBlockState(w http.ResponseWriter, r *http.Request, b
 		}
 	}
 
+	isFinished := isStepFinished(dbStep.Status)
 	var res BlockStateResponse
 
-	if isStepFinished(dbStep.Status) {
+	if isFinished {
 		prevContent, errA := ae.DB.GetStepPreviousContent(ctx, blockID, dbStep.Time)
 		if errA != nil {
 			errorHandler.handleError(GetBlockStateError, errA)
@@ -78,30 +78,7 @@ func (ae *Env) MonitoringGetBlockState(w http.ResponseWriter, r *http.Request, b
 			return
 		}
 
-		prevState := entity.BlockState{}
-
-		for contentKey := range prevContent {
-			if strings.ToLower(contentKey) != "state" {
-				continue
-			}
-
-			if commonState, ok := prevContent[contentKey].(map[string]interface{}); ok {
-				for stateKey := range commonState {
-					if stateKey != dbStep.Name {
-						continue
-					}
-
-					if stepState, okStepState := commonState[stateKey].(map[string]interface{}); okStepState {
-						for stepStateKey := range stepState {
-							prevState = append(prevState, entity.BlockStateValue{
-								Name:  stepStateKey,
-								Value: stepState[stepStateKey],
-							})
-						}
-					}
-				}
-			}
-		}
+		prevState := getPrevStepState(prevContent, dbStep.Name)
 
 		if len(prevState) > 0 {
 			prevStateRes := make(map[string]MonitoringBlockState, len(state))
@@ -117,13 +94,13 @@ func (ae *Env) MonitoringGetBlockState(w http.ResponseWriter, r *http.Request, b
 			res.Edited = &BlockStateResponse_Edited{params}
 		}
 
-		if len(prevContent) == 0 {
+		if len(prevState) == 0 {
 			res.WhileRunning = &BlockStateResponse_WhileRunning{params}
 			res.Edited = &BlockStateResponse_Edited{params}
 		}
 	}
 
-	if !isStepFinished(dbStep.Status) {
+	if !isFinished {
 		res.WhileRunning = &BlockStateResponse_WhileRunning{params}
 		res.Edited = &BlockStateResponse_Edited{params}
 	}
@@ -133,4 +110,33 @@ func (ae *Env) MonitoringGetBlockState(w http.ResponseWriter, r *http.Request, b
 
 		return
 	}
+}
+
+func getPrevStepState(prevContent map[string]interface{}, stepName string) entity.BlockState {
+	prevState := entity.BlockState{}
+
+	for contentKey := range prevContent {
+		if !strings.EqualFold(contentKey, "state") {
+			continue
+		}
+
+		if commonState, ok := prevContent[contentKey].(map[string]interface{}); ok {
+			for stateKey := range commonState {
+				if stateKey != stepName {
+					continue
+				}
+
+				if stepState, okStepState := commonState[stateKey].(map[string]interface{}); okStepState {
+					for stepStateKey := range stepState {
+						prevState = append(prevState, entity.BlockStateValue{
+							Name:  stepStateKey,
+							Value: stepState[stepStateKey],
+						})
+					}
+				}
+			}
+		}
+	}
+
+	return prevState
 }
