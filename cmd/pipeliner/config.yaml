@@ -6,7 +6,7 @@ serve_addr: ':8000'
 probes:
   liveness: "/alive"
   readiness: "/ready"
-timeout: '30s'
+timeout: '3000s'
 faas: 'https://openfaas.dev.autobp.mts.ru/'
 scheduler: "http://scheduler"
 network_monitor: "http://network-monitor/api/netmon/v1/"
@@ -42,16 +42,14 @@ database:
 sso:
   address: "https://isso-dev.mts.ru"
   client_secret_env_key: "SSO_SECRET"
-  client_id: "jocasta-dev"
+  client_id: "jocasta-stage"
   realm: "mts"
   access_cookie_name: "kc-access"
-  max_retries: 3
-  retry_delay: 1s
 
 mail:
   broker: "redis"
   host: "localhost"
-  port: 6379
+  port: 6380
   queue: "mail"
   database: "0"
   from:
@@ -65,15 +63,13 @@ kafka:
   brokers:
     - 11.217.103.83:9094
   producer_topic_sd: "from.pipeliner.to.sd"
-  producer_topic: "from.pipeliner.to.runner"
-  consumer_group_functions:  "pipeliner-function-local2"
-  consumer_group_task_runner: "pipeliner-tasks-local2"
+  producer_topic: "from.pipeliner.to.runner2"
+  consumer_group_functions:  "pipeliner-function-local20"
+  consumer_group_task_runner: "pipeliner-tasks-local20"
   consumer_functions_topic: "from.runner.to.pipeliner-local"
   consumer_task_runner_topic: "from.pipeline-runner.to.pipeliner-local"
   health_check_timeout: 30
   function_message_resend_delay: 10s
-  group_strategy: "sticky"
-  pod_index_env_key: HOSTNAME
   cache:
     type: "default"
     address: ""
@@ -90,12 +86,12 @@ swagger:
   port: ''
 
 http_client_config:
-  timeout: '80s'
-  keep_alive: '30s'
-  max_idle_conns: 10000
-  idle_conn_timeout: '80s'
-  tls_handshake_timeout: '10s'
-  expect_continue_timeout: '1s'
+  timeout: '80000s'
+  keep_alive: '3000s'
+  max_idle_conns: 100000
+  idle_conn_timeout: '8000s'
+  tls_handshake_timeout: '4000s'
+  expect_continue_timeout: '2000s'
   proxy_url: ''
   max_retries: 3
   retry_delay: 1s
@@ -122,8 +118,8 @@ log:
 log_index: 'jocasta-dev-jocasta-dev-ocean-0000-s1-k8s-cmn-inside-01'
 
 servicedesc:
-  servicedesk_url: "https://dev.servicedesk.mts.ru"
-  scope: "servicedesk-develop-aud"
+  servicedesk_url: 'https://stage.servicedesk.mts.ru'
+  scope: 'servicedesk-staging'
   max_retries: 3
   retry_delay: 1s
   cache:
@@ -134,13 +130,13 @@ servicedesc:
     ttl: 1s
 
 function_store:
-  url: 'functions:90'
+  url: 'localhost:8890'
   max_retries: 3
   retry_delay: 1s
   timeout: 2s
 
 scheduler_tasks:
-  url: 'localhost:9001'
+  url: 'localhost:7790'
   max_retries: 3
   retry_delay: 1s
   timeout: 2s
@@ -152,7 +148,7 @@ sequence:
   timeout: 2s
 
 human_tasks:
-  url: "human-tasks:90"
+  url: "localhost:9990"
   max_retries: 3
   retry_delay: 1s
   timeout: 2s
@@ -170,7 +166,7 @@ imap:
   imap_mail_box: "Inbox"
 
 integrations:
-  url: 'integrations:90'
+  url: 'localhost:8990'
   max_retries: 3
   retry_delay: 1s
   timeout: 2s
@@ -201,10 +197,10 @@ minio:
   bucket_name: "jocasta-attachments"
 
 file_registry:
-  rest: 'file-registry:8000'
-  grpc: 'file-registry:90'
+  rest: 'http://localhost:8090'
+  grpc: 'localhost:90'
   max_retries: 3
   retry_delay: 1s
   timeout: 2s
 
-host_url: 'https://dev.ap.mts.ru'
+host_url: 'https://stage.ap.mts.ru'

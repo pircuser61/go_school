@@ -65,7 +65,7 @@ func (ae *Env) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 		log = log.WithField("workNumber", emails[i].Action.WorkNumber).
 			WithField("login", emails[i].Action.Login)
 
-		usr, errGetUser := ae.People.GetUser(ctx, emails[i].Action.Login)
+		usr, errGetUser := ae.People.GetUser(ctx, emails[i].Action.Login, true)
 		if errGetUser != nil {
 			log.Error(errGetUser)
 

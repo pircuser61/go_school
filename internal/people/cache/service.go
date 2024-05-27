@@ -50,7 +50,7 @@ func NewService(cfg *people.Config, ssoS *sso.Service, m metrics.Metrics) (peopl
 
 func (*service) SetCli(*retryablehttp.Client) {}
 
-func (s *service) GetUser(ctx context.Context, username string) (people.SSOUser, error) {
+func (s *service) GetUser(ctx context.Context, username string, onlyEnabled bool) (people.SSOUser, error) {
 	ctx, span := trace.StartSpan(ctx, "people.cache.get_user")
 	defer span.End()
 
@@ -78,7 +78,7 @@ func (s *service) GetUser(ctx context.Context, username string) (people.SSOUser,
 		}
 	}
 
-	resources, err := s.People.GetUser(ctx, username)
+	resources, err := s.People.GetUser(ctx, username, onlyEnabled)
 	if err != nil {
 		return nil, err
 	}
@@ -151,7 +151,7 @@ func (s *service) GetUserEmail(ctx context.Context, username string) (string, er
 	ctx, span := trace.StartSpan(ctx, "people.cache.get_user_email")
 	defer span.End()
 
-	user, err := s.GetUser(ctx, username)
+	user, err := s.GetUser(ctx, username, true)
 	if err != nil {
 		return "", err
 	}

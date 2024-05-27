@@ -484,7 +484,7 @@ func (gb *GoFormBlock) emailGroupExecutors(ctx context.Context, loginTakenInWork
 		}
 	}
 
-	formExecutorSSOPerson, getUserErr := gb.RunContext.Services.People.GetUser(ctx, loginTakenInWork)
+	formExecutorSSOPerson, getUserErr := gb.RunContext.Services.People.GetUser(ctx, loginTakenInWork, true)
 	if getUserErr != nil {
 		return getUserErr
 	}
@@ -494,7 +494,7 @@ func (gb *GoFormBlock) emailGroupExecutors(ctx context.Context, loginTakenInWork
 		return convertErr
 	}
 
-	initiator, err := gb.RunContext.Services.People.GetUser(ctx, gb.RunContext.Initiator)
+	initiator, err := gb.RunContext.Services.People.GetUser(ctx, gb.RunContext.Initiator, false)
 	if err != nil {
 		return getUserErr
 	}

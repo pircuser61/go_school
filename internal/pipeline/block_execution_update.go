@@ -1035,7 +1035,7 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 		return getSLAInfoErr
 	}
 
-	author1, getUserErr := gb.RunContext.Services.People.GetUser(ctx, gb.RunContext.Initiator)
+	author1, getUserErr := gb.RunContext.Services.People.GetUser(ctx, gb.RunContext.Initiator, false)
 	if getUserErr != nil {
 		return err
 	}
@@ -1134,7 +1134,7 @@ func (gb *GoExecutionBlock) mapLoginsToEmails(ctx c.Context, loginsToNotify []st
 }
 
 func (gb *GoExecutionBlock) typedAuthor(ctx c.Context) (*sso.UserInfo, error) {
-	author, err := gb.RunContext.Services.People.GetUser(ctx, gb.RunContext.UpdateData.ByLogin)
+	author, err := gb.RunContext.Services.People.GetUser(ctx, gb.RunContext.UpdateData.ByLogin, false)
 	if err != nil {
 		return nil, err
 	}
@@ -1148,7 +1148,7 @@ func (gb *GoExecutionBlock) typedAuthor(ctx c.Context) (*sso.UserInfo, error) {
 }
 
 func (gb *GoExecutionBlock) initiatorInfo(ctx c.Context) (*sso.UserInfo, error) {
-	initiator, err := gb.RunContext.Services.People.GetUser(ctx, gb.RunContext.Initiator)
+	initiator, err := gb.RunContext.Services.People.GetUser(ctx, gb.RunContext.Initiator, false)
 	if err != nil {
 		return nil, err
 	}

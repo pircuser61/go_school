@@ -95,7 +95,7 @@ func WithAsOtherUserInfo(ps people.Service, log logger.Logger) func(next http.Ha
 			username := r.Header.Get(AsOtherHeader)
 
 			if username != "" {
-				u, err := ps.GetUser(ctx, strings.ToLower(username))
+				u, err := ps.GetUser(ctx, strings.ToLower(username), false)
 				if err != nil {
 					errorHandler.handleError(GetUserinfoErr, err)
 
