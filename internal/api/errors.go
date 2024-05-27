@@ -431,6 +431,7 @@ var errorStatus = map[Err]int{
 	ParallelNodeExitsNotConnected: http.StatusBadRequest,
 	OutOfParallelNodesConnection:  http.StatusBadRequest,
 	ForbiddenError:                http.StatusForbidden,
+	MonitoringEditBlockParseError: http.StatusBadRequest,
 }
 
 type httpError struct {
