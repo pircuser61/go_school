@@ -1,10 +1,12 @@
 package api
 
 import (
-	"github.com/google/uuid"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"net/http"
 	"strings"
+
+	"github.com/google/uuid"
+
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 
 	"go.opencensus.io/trace"
 
