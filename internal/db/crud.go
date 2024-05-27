@@ -1262,7 +1262,7 @@ func (db *PGCon) CreateTaskBlock(ctx context.Context, dto *SaveStepRequest) erro
 		dto.StepType,
 		dto.StepName,
 		dto.Content,
-		time.Now(),
+		dto.BlockStart,
 		dto.BreakPoints,
 		dto.HasError,
 		dto.Status,

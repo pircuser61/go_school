@@ -771,6 +771,8 @@ func (ae *Env) createEmptyTask(
 		return fmt.Errorf("create empty task in database, %w", err)
 	}
 
+	createTime := time.Now()
+
 	block := pipeline.Block{
 		DB:            txStorage,
 		Name:          pipeline.BlockGoFirstStart,
@@ -779,6 +781,7 @@ func (ae *Env) createEmptyTask(
 		VarStore:      store.NewStore(),
 		IsPaused:      false,
 		HasUpdateData: false,
+		Time:          createTime,
 	}
 
 	err = block.CreateInDB(ctx)
@@ -791,6 +794,7 @@ func (ae *Env) createEmptyTask(
 		Author:    dto.Author,
 		EventType: string(MonitoringTaskActionRequestActionStart),
 		Params:    []byte(`{"steps":[]}`),
+		Time:      createTime,
 	})
 	if err != nil {
 		return fmt.Errorf("create task event, %w", err)
