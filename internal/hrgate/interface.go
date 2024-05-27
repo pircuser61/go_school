@@ -13,5 +13,5 @@ type ServiceInterface interface {
 	FillDefaultUnitID(ctx c.Context) error
 	GetDefaultUnitID() string
 	GetDefaultCalendarDaysForGivenTimeIntervals(ctx c.Context, intervals []entity.TaskCompletionInterval) (*CalendarDays, error)
-	Ping() error
+	Ping(ctx c.Context) error
 }

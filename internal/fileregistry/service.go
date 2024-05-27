@@ -76,12 +76,14 @@ func NewService(cfg Config, log logger.Logger, m metrics.Metrics) (Service, erro
 }
 
 func (s *service) Ping(ctx c.Context) error {
-	req, err := retryablehttp.NewRequest("HEAD", s.restURL, nil)
+	req, err := http.NewRequestWithContext(ctx, "HEAD", s.restURL, http.NoBody)
 	if err != nil {
 		return err
 	}
 
-	resp, err := s.restCli.Do(req)
+	httpClient := &http.Client{}
+
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return err
 	}

@@ -96,8 +96,8 @@ func (s *serviceWithCache) GetCalendars(ctx c.Context, params *GetCalendarsParam
 	return calendar, nil
 }
 
-func (s *serviceWithCache) Ping() error {
-	return s.HRGate.Ping()
+func (s *serviceWithCache) Ping(ctx c.Context) error {
+	return s.HRGate.Ping(ctx)
 }
 
 func (s *serviceWithCache) GetCalendarDays(ctx c.Context, params *GetCalendarDaysParams) (*CalendarDays, error) {

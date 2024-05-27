@@ -20,7 +20,7 @@ type Service interface {
 	GetMicroserviceHumanKey(ctx c.Context, microSrvID, pID, vID, workNumber, clientID string) (string, error)
 	GetToken(ctx c.Context, scopes []string, clientSecret, clientID, stand string) (token string, err error)
 	FillAuth(ctx c.Context, key, pID, vID, wNumber, clientID string) (res *Auth, err error)
-	Ping() error
+	Ping(ctx c.Context) error
 }
 
 type Getter interface {
