@@ -35,6 +35,8 @@ type service struct {
 	consumerRunTaskWorkers  int
 
 	metrics metrics.Metrics
+
+	pings map[string]func()
 }
 
 //nolint:all //ok

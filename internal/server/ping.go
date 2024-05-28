@@ -6,8 +6,6 @@ import (
 	"time"
 )
 
-var pings map[string]func()
-
 //nolint:all // ok
 func (s *service) PingServices(ctx c.Context, failedCh chan bool) {
 	var (
@@ -22,8 +20,8 @@ func (s *service) PingServices(ctx c.Context, failedCh chan bool) {
 
 		var wg sync.WaitGroup
 
-		if len(pings) == 0 {
-			pings = map[string]func() {
+		if len(s.pings) == 0 {
+			s.pings = map[string]func(){
 				"db": func() {
 					defer wg.Done()
 
@@ -137,7 +135,11 @@ func (s *service) PingServices(ctx c.Context, failedCh chan bool) {
 			}
 		}
 
-		wg.Add(len(pings))
+		wg.Add(len(s.pings))
+
+		for serviceName := range s.pings {
+			go s.pings[serviceName]()
+		}
 
 		wg.Wait()
 
