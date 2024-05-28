@@ -2,7 +2,9 @@ package nocache
 
 import (
 	c "context"
+	"fmt"
 	"net/http"
+	"time"
 
 	"go.opencensus.io/plugin/ochttp"
 
@@ -24,8 +26,9 @@ const (
 )
 
 type service struct {
-	sdURL string
-	cli   *retryablehttp.Client
+	sdURL   string
+	cli     *retryablehttp.Client
+	cliPing *http.Client
 }
 
 func NewService(cfg *servicedesc.Config, ssoS *sso.Service, m metrics.Metrics) (servicedesc.Service, error) {
@@ -42,8 +45,9 @@ func NewService(cfg *servicedesc.Config, ssoS *sso.Service, m metrics.Metrics) (
 	}
 
 	return &service{
-		cli:   httpclient.NewClient(httpClient, nil, cfg.MaxRetries, cfg.RetryDelay),
-		sdURL: cfg.ServicedeskURL,
+		sdURL:   cfg.ServicedeskURL,
+		cliPing: &http.Client{Timeout: time.Second * 2},
+		cli:     httpclient.NewClient(httpClient, nil, cfg.MaxRetries, cfg.RetryDelay),
 	}, nil
 }
 
@@ -65,11 +69,13 @@ func (s *service) Ping(ctx c.Context) error {
 		return err
 	}
 
-	httpClient := &http.Client{}
-
-	resp, err := httpClient.Do(req)
+	resp, err := s.cliPing.Do(req)
 	if err != nil {
 		return err
+	}
+
+	if resp.StatusCode != http.StatusUnauthorized {
+		return fmt.Errorf("wrong status code: %d", resp.StatusCode)
 	}
 
 	return resp.Body.Close()

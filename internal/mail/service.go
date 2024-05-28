@@ -76,20 +76,9 @@ func NewService(c Config, m metrics.Metrics) (*Service, error) {
 	return &s, nil
 }
 
-func (s *Service) Ping(ctx c.Context) error {
-	req, err := http.NewRequestWithContext(ctx, "HEAD", s.host, http.NoBody)
-	if err != nil {
-		return err
-	}
-
-	httpClient := &http.Client{}
-
-	resp, err := httpClient.Do(req)
-	if err != nil {
-		return err
-	}
-
-	return resp.Body.Close()
+func (s *Service) Ping(_ c.Context) error {
+	// TODO: придется модифицировать библиотеку
+	return nil
 }
 
 func (s *Service) GetApplicationLink(applicationID string) string {

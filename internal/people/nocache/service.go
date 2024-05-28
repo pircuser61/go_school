@@ -2,7 +2,9 @@ package nocache
 
 import (
 	c "context"
+	"fmt"
 	"net/http"
+	"time"
 
 	"go.opencensus.io/plugin/ochttp"
 
@@ -22,6 +24,7 @@ type service struct {
 	searchURL string
 	baseURL   string
 	cli       *retryablehttp.Client
+	cliPing   *http.Client
 	sso       *sso.Service
 }
 
@@ -39,8 +42,9 @@ func NewService(cfg *people.Config, ssoS *sso.Service, m metrics.Metrics) (peopl
 	}
 
 	res := &service{
-		cli: httpclient.NewClient(httpClient, nil, cfg.MaxRetries, cfg.RetryDelay),
-		sso: ssoS,
+		sso:     ssoS,
+		cliPing: &http.Client{Timeout: time.Second * 2},
+		cli:     httpclient.NewClient(httpClient, nil, cfg.MaxRetries, cfg.RetryDelay),
 	}
 
 	search, err := res.PathBuilder(cfg.URL, searchPath)
@@ -58,16 +62,18 @@ func (s *service) SetCli(cli *retryablehttp.Client) {
 }
 
 func (s *service) Ping(ctx c.Context) error {
-	req, err := http.NewRequestWithContext(ctx, "HEAD", s.baseURL, http.NoBody)
+	req, err := http.NewRequestWithContext(ctx, "HEAD", s.searchURL, http.NoBody)
 	if err != nil {
 		return err
 	}
 
-	httpClient := &http.Client{}
-
-	resp, err := httpClient.Do(req)
+	resp, err := s.cliPing.Do(req)
 	if err != nil {
 		return err
+	}
+
+	if resp.StatusCode != http.StatusMethodNotAllowed {
+		return fmt.Errorf("wrong status code: %d", resp.StatusCode)
 	}
 
 	return resp.Body.Close()

@@ -189,6 +189,7 @@ type Block struct {
 	VarStore      *store.VariableStore
 	IsPaused      bool
 	HasUpdateData bool
+	Time          time.Time
 }
 
 func (b *Block) FillFromRunContext(runCtx *BlockRunContext) {
@@ -205,6 +206,10 @@ func (b *Block) CreateInDB(ctx c.Context) error {
 		return err
 	}
 
+	if b.Time.IsZero() {
+		b.Time = time.Now()
+	}
+
 	return b.DB.CreateTaskBlock(ctx, &db.SaveStepRequest{
 		WorkID:     b.WorkID,
 		StepName:   b.Name,
@@ -213,6 +218,7 @@ func (b *Block) CreateInDB(ctx c.Context) error {
 		Content:    storageData,
 		IsPaused:   b.IsPaused,
 		HasUpdData: b.HasUpdateData,
+		BlockStart: b.Time,
 	})
 }
 
@@ -556,13 +562,13 @@ func ProcessBlockWithEndMapping(
 		return "", false, nil
 	}
 
-	if intStatus != 2 && intStatus != 4 {
+	if intStatus != db.RunStatusFinished && intStatus != db.RunStatusStopped {
 		log.Error(fmt.Errorf("can`t update block %s with status %d", name, intStatus))
 
 		return "", false, nil
 	}
 
-	if intStatus == 2 && statusBefore != 2 {
+	if intStatus == db.RunStatusFinished && statusBefore != db.RunStatusFinished {
 		params := struct {
 			Steps []string `json:"steps"`
 		}{Steps: []string{}}

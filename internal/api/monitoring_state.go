@@ -2,14 +2,16 @@ package api
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/google/uuid"
+
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 
 	"go.opencensus.io/trace"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
@@ -69,7 +71,9 @@ func (ae *Env) MonitoringGetBlockState(w http.ResponseWriter, r *http.Request, b
 
 	var res BlockStateResponse
 
-	if isStepFinished(dbStep.Status) {
+	isFinished := isStepFinished(dbStep.Status)
+
+	if isFinished {
 		prevContent, errA := ae.DB.GetStepPreviousContent(ctx, blockID, dbStep.Time)
 		if errA != nil {
 			errorHandler.handleError(GetBlockStateError, errA)
@@ -77,36 +81,29 @@ func (ae *Env) MonitoringGetBlockState(w http.ResponseWriter, r *http.Request, b
 			return
 		}
 
-		prevState := entity.BlockState{}
+		prevState := getPrevStepState(prevContent, dbStep.Name)
 
-		if len(prevContent) > 0 {
-			for i := range prevContent {
-				prevState = append(prevState, entity.BlockStateValue{
-					Name:  i,
-					Value: prevContent[i],
-				})
-			}
-
-			prevParams := make(map[string]MonitoringBlockState, len(state))
+		if len(prevState) > 0 {
+			prevStateRes := make(map[string]MonitoringBlockState, len(state))
 			for _, bo := range prevState {
-				prevParams[bo.Name] = MonitoringBlockState{
+				prevStateRes[bo.Name] = MonitoringBlockState{
 					Name:  bo.Name,
 					Value: bo.Value,
 					Type:  utils.GetJSONType(bo.Value),
 				}
 			}
 
-			res.WhileRunning = &BlockStateResponse_WhileRunning{prevParams}
+			res.WhileRunning = &BlockStateResponse_WhileRunning{prevStateRes}
 			res.Edited = &BlockStateResponse_Edited{params}
 		}
 
-		if len(prevContent) == 0 {
+		if len(prevState) == 0 {
 			res.WhileRunning = &BlockStateResponse_WhileRunning{params}
 			res.Edited = &BlockStateResponse_Edited{params}
 		}
 	}
 
-	if !isStepFinished(dbStep.Status) {
+	if !isFinished {
 		res.WhileRunning = &BlockStateResponse_WhileRunning{params}
 		res.Edited = &BlockStateResponse_Edited{params}
 	}
@@ -116,4 +113,33 @@ func (ae *Env) MonitoringGetBlockState(w http.ResponseWriter, r *http.Request, b
 
 		return
 	}
+}
+
+func getPrevStepState(prevContent map[string]interface{}, stepName string) entity.BlockState {
+	prevState := entity.BlockState{}
+
+	for contentKey := range prevContent {
+		if !strings.EqualFold(contentKey, "state") {
+			continue
+		}
+
+		if commonState, ok := prevContent[contentKey].(map[string]interface{}); ok {
+			for stateKey := range commonState {
+				if stateKey != stepName {
+					continue
+				}
+
+				if stepState, okStepState := commonState[stateKey].(map[string]interface{}); okStepState {
+					for stepStateKey := range stepState {
+						prevState = append(prevState, entity.BlockStateValue{
+							Name:  stepStateKey,
+							Value: stepState[stepStateKey],
+						})
+					}
+				}
+			}
+		}
+	}
+
+	return prevState
 }

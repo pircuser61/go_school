@@ -70,7 +70,8 @@ func NewService(cfg *Config, log logger.Logger, m metrics.Metrics) (ServiceInter
 	}, nil
 }
 
-func (s *service) Ping(ctx c.Context) error {
+func (s *service) Ping(_ c.Context) error {
+	// TODO: add Ping to human-tasks service
 	return nil
 }
 

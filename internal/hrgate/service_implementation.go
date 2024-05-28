@@ -33,6 +33,7 @@ type Service struct {
 	DefaultCalendarUnitID *string
 	location              time.Location
 	cli                   *ClientWithResponses
+	cliPing               *http.Client
 	Cache                 cachekit.Cache
 }
 
@@ -65,6 +66,7 @@ func NewService(cfg *Config, ssoS *sso.Service, m metrics.Metrics) (ServiceInter
 		cli:       newCli,
 		hrGateURL: cfg.HRGateURL,
 		location:  *location,
+		cliPing:   &http.Client{Timeout: time.Second * 2},
 	}, nil
 }
 
@@ -74,11 +76,13 @@ func (s *Service) Ping(ctx c.Context) error {
 		return err
 	}
 
-	httpClient := &http.Client{}
-
-	resp, err := httpClient.Do(req)
+	resp, err := s.cliPing.Do(req)
 	if err != nil {
 		return err
+	}
+
+	if resp.StatusCode != http.StatusUnauthorized {
+		return fmt.Errorf("wrong status code: %d", resp.StatusCode)
 	}
 
 	return resp.Body.Close()

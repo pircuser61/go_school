@@ -54,7 +54,7 @@ func (s *service) Ping(ctx c.Context) error {
 	return s.People.Ping(ctx)
 }
 
-func (s *service) GetUser(ctx c.Context, username string) (people.SSOUser, error) {
+func (s *service) GetUser(ctx c.Context, username string, onlyEnabled bool) (people.SSOUser, error) {
 	ctx, span := trace.StartSpan(ctx, "people.cache.get_user")
 	defer span.End()
 
@@ -82,7 +82,7 @@ func (s *service) GetUser(ctx c.Context, username string) (people.SSOUser, error
 		}
 	}
 
-	resources, err := s.People.GetUser(ctx, username)
+	resources, err := s.People.GetUser(ctx, username, onlyEnabled)
 	if err != nil {
 		return nil, err
 	}
@@ -155,7 +155,7 @@ func (s *service) GetUserEmail(ctx c.Context, username string) (string, error) {
 	ctx, span := trace.StartSpan(ctx, "people.cache.get_user_email")
 	defer span.End()
 
-	user, err := s.GetUser(ctx, username)
+	user, err := s.GetUser(ctx, username, true)
 	if err != nil {
 		return "", err
 	}
