@@ -1784,13 +1784,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Created'
-        - name: received
+                $ref: '#/components/schemas/TimePeriod'
+        - name: processDeadline
           in: query
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Created'
+                $ref: '#/components/schemas/TimePeriod'
         - name: archived
           in: query
           schema:
@@ -1983,7 +1983,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Created'
+                $ref: '#/components/schemas/TimePeriod'
         - name: archived
           in: query
           schema:
@@ -2163,7 +2163,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Created'
+                $ref: '#/components/schemas/TimePeriod'
         - name: archived
           in: query
           schema:
@@ -6011,7 +6011,7 @@ components:
         - id
         - title
         - icon
-    Created:
+    TimePeriod:
       type: object
       properties:
         start:

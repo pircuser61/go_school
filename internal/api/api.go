@@ -852,12 +852,6 @@ type CountTasks struct {
 	Sign        int `json:"sign"`
 }
 
-// Created defines model for Created.
-type Created struct {
-	End   int `json:"end"`
-	Start int `json:"start"`
-}
-
 // Current task execution data
 type CurrentExecutorData struct {
 	// Execution group ID
@@ -2228,6 +2222,12 @@ type TasksStopped struct {
 	Tasks []TaskStatus `json:"tasks"`
 }
 
+// TimePeriod defines model for TimePeriod.
+type TimePeriod struct {
+	End   int `json:"end"`
+	Start int `json:"start"`
+}
+
 // Timer params
 type TimerParams struct {
 	// duration for timer
@@ -2704,11 +2704,11 @@ type GetTasksParams struct {
 	Limit *int `json:"limit,omitempty"`
 
 	// Offset
-	Offset   *int                    `json:"offset,omitempty"`
-	Created  *Created                `json:"created,omitempty"`
-	Received *Created                `json:"received,omitempty"`
-	Archived *bool                   `json:"archived,omitempty"`
-	SelectAs *GetTasksParamsSelectAs `json:"selectAs,omitempty"`
+	Offset          *int                    `json:"offset,omitempty"`
+	Created         *TimePeriod             `json:"created,omitempty"`
+	ProcessDeadline *TimePeriod             `json:"processDeadline,omitempty"`
+	Archived        *bool                   `json:"archived,omitempty"`
+	SelectAs        *GetTasksParamsSelectAs `json:"selectAs,omitempty"`
 
 	// get tasks with status wait or done
 	ForCarousel *bool `json:"forCarousel,omitempty"`
@@ -2769,7 +2769,7 @@ type GetTasksSchemasParams struct {
 
 	// params for tasks ordering
 	OrderBy  *[]string                      `json:"orderBy,omitempty"`
-	Created  *Created                       `json:"created,omitempty"`
+	Created  *TimePeriod                    `json:"created,omitempty"`
 	Archived *bool                          `json:"archived,omitempty"`
 	SelectAs *GetTasksSchemasParamsSelectAs `json:"selectAs,omitempty"`
 
@@ -2835,7 +2835,7 @@ type GetTasksUsersParams struct {
 
 	// Offset
 	Offset   *int                         `json:"offset,omitempty"`
-	Created  *Created                     `json:"created,omitempty"`
+	Created  *TimePeriod                  `json:"created,omitempty"`
 	Archived *bool                        `json:"archived,omitempty"`
 	SelectAs *GetTasksUsersParamsSelectAs `json:"selectAs,omitempty"`
 
@@ -6157,7 +6157,7 @@ func (siw *ServerInterfaceWrapper) GetTasks(w http.ResponseWriter, r *http.Reque
 	// ------------- Optional query parameter "created" -------------
 	if paramValue := r.URL.Query().Get("created"); paramValue != "" {
 
-		var value Created
+		var value TimePeriod
 		err = json.Unmarshal([]byte(paramValue), &value)
 		if err != nil {
 			http.Error(w, "Error unmarshaling parameter 'created' as JSON", http.StatusBadRequest)
@@ -6168,17 +6168,17 @@ func (siw *ServerInterfaceWrapper) GetTasks(w http.ResponseWriter, r *http.Reque
 
 	}
 
-	// ------------- Optional query parameter "received" -------------
-	if paramValue := r.URL.Query().Get("received"); paramValue != "" {
+	// ------------- Optional query parameter "processDeadline" -------------
+	if paramValue := r.URL.Query().Get("processDeadline"); paramValue != "" {
 
-		var value Created
+		var value TimePeriod
 		err = json.Unmarshal([]byte(paramValue), &value)
 		if err != nil {
-			http.Error(w, "Error unmarshaling parameter 'received' as JSON", http.StatusBadRequest)
+			http.Error(w, "Error unmarshaling parameter 'processDeadline' as JSON", http.StatusBadRequest)
 			return
 		}
 
-		params.Received = &value
+		params.ProcessDeadline = &value
 
 	}
 
@@ -6459,7 +6459,7 @@ func (siw *ServerInterfaceWrapper) GetTasksSchemas(w http.ResponseWriter, r *htt
 	// ------------- Optional query parameter "created" -------------
 	if paramValue := r.URL.Query().Get("created"); paramValue != "" {
 
-		var value Created
+		var value TimePeriod
 		err = json.Unmarshal([]byte(paramValue), &value)
 		if err != nil {
 			http.Error(w, "Error unmarshaling parameter 'created' as JSON", http.StatusBadRequest)
@@ -6706,7 +6706,7 @@ func (siw *ServerInterfaceWrapper) GetTasksUsers(w http.ResponseWriter, r *http.
 	// ------------- Optional query parameter "created" -------------
 	if paramValue := r.URL.Query().Get("created"); paramValue != "" {
 
-		var value Created
+		var value TimePeriod
 		err = json.Unmarshal([]byte(paramValue), &value)
 		if err != nil {
 			http.Error(w, "Error unmarshaling parameter 'created' as JSON", http.StatusBadRequest)
