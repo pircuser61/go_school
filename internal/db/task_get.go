@@ -502,6 +502,20 @@ func (cq *compileGetTaskQueryMaker) addCreated() {
 	}
 }
 
+func (cq *compileGetTaskQueryMaker) addReceived() {
+	if cq.fl.Received != nil {
+		nodeType := getStepTypeBySelectForFilter(*cq.fl.SelectAs)
+
+		if nodeType == "execution" {
+			cq.args = append(cq.args, time.Unix(int64(cq.fl.Received.Start), 0).UTC(), time.Unix(int64(cq.fl.Received.End), 0).UTC())
+			cq.q = fmt.Sprintf("%s AND ua.exec_start_time BETWEEN $%d AND $%d", cq.q, len(cq.args)-1, len(cq.args))
+		} else {
+			cq.args = append(cq.args, time.Unix(int64(cq.fl.Received.Start), 0).UTC(), time.Unix(int64(cq.fl.Received.End), 0).UTC())
+			cq.q = fmt.Sprintf("%s AND ua.appr_start_time BETWEEN $%d AND $%d", cq.q, len(cq.args)-1, len(cq.args))
+		}
+	}
+}
+
 func (cq *compileGetTaskQueryMaker) addArchived() {
 	if cq.fl.Archived != nil {
 		switch *cq.fl.Archived {
@@ -677,6 +691,7 @@ func (cq *compileGetTaskQueryMaker) MakeQuery(
 	cq.addTaskID()
 	cq.addName()
 	cq.addCreated()
+	cq.addReceived()
 	cq.addArchived()
 	cq.addForCorousel()
 	cq.addStatus()

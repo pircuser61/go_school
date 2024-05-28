@@ -833,6 +833,7 @@ func (p *GetTasksParams) toEntity(req *http.Request) (entity.TaskFilter, error) 
 		ForCarousel:          p.ForCarousel,
 		Status:               statusToEntity(p.Status),
 		Receiver:             p.Receiver,
+		Received:             p.Received.toEntity(),
 		HasAttachments:       p.HasAttachments,
 		Initiator:            p.Initiator,
 		InitiatorLogins:      p.InitiatorLogins,

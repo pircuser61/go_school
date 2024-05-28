@@ -2706,6 +2706,7 @@ type GetTasksParams struct {
 	// Offset
 	Offset   *int                    `json:"offset,omitempty"`
 	Created  *Created                `json:"created,omitempty"`
+	Received *Created                `json:"received,omitempty"`
 	Archived *bool                   `json:"archived,omitempty"`
 	SelectAs *GetTasksParamsSelectAs `json:"selectAs,omitempty"`
 
@@ -6164,6 +6165,20 @@ func (siw *ServerInterfaceWrapper) GetTasks(w http.ResponseWriter, r *http.Reque
 		}
 
 		params.Created = &value
+
+	}
+
+	// ------------- Optional query parameter "received" -------------
+	if paramValue := r.URL.Query().Get("received"); paramValue != "" {
+
+		var value Created
+		err = json.Unmarshal([]byte(paramValue), &value)
+		if err != nil {
+			http.Error(w, "Error unmarshaling parameter 'received' as JSON", http.StatusBadRequest)
+			return
+		}
+
+		params.Received = &value
 
 	}
 

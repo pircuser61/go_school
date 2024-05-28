@@ -1785,6 +1785,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Created'
+        - name: received
+          in: query
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Created'
         - name: archived
           in: query
           schema:
