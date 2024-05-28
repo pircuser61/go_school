@@ -267,7 +267,7 @@ func (s *Service) StartCheckHealth() {
 	}
 }
 
-//nolint:nestif //так нужно
+//nolint:nestif,gocognit //так нужно
 func (s *Service) checkHealth() {
 	metricRegistry := gometrics.DefaultRegistry
 	metricRegistry.UnregisterAll()
