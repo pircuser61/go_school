@@ -278,6 +278,16 @@ func (s *Service) checkHealth() {
 
 	admin, err := sarama.NewClusterAdmin(s.brokers, saramaCfg)
 	if err != nil || (!s.isConsuming && !s.stoppedByPing) || s.producer == nil || s.producerFuncResult == nil {
+		if err == nil {
+			if s.producer == nil || s.producerFuncResult == nil {
+				err = errors.New("producer is nil")
+			}
+
+			if !s.isConsuming && !s.stoppedByPing {
+				err = errors.New("consuming is false")
+			}
+		}
+
 		s.log.WithError(err).Error("couldn't connect to kafka! Trying to reconnect")
 		s.metrics.KafkaUnavailable()
 
