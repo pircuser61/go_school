@@ -135,7 +135,7 @@ func cleanUnexpectedSymbols(s string) string {
 		"\r":   "",
 		"\\r":  "",
 		"\"\"": "",
-		"\"":   "''",
+		"\"":   `"`,
 	}
 
 	for old, news := range replacements {
