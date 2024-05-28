@@ -22,7 +22,6 @@ const searchPath = "search/attributes"
 
 type service struct {
 	searchURL string
-	baseURL   string
 	cli       *retryablehttp.Client
 	cliPing   *http.Client
 	sso       *sso.Service
