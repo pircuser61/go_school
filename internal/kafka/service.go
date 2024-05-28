@@ -285,7 +285,7 @@ func (s *Service) checkHealth() {
 			}
 
 			if !s.isConsuming && !s.stoppedByPing {
-				err = errors.New("consuming is false")
+				err = errors.New("currently is not consuming")
 			}
 		}
 
