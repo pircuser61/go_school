@@ -833,6 +833,7 @@ func (p *GetTasksParams) toEntity(req *http.Request) (entity.TaskFilter, error) 
 		ForCarousel:          p.ForCarousel,
 		Status:               statusToEntity(p.Status),
 		Receiver:             p.Receiver,
+		ProcessDeadline:      p.ProcessDeadline.toEntity(),
 		HasAttachments:       p.HasAttachments,
 		Initiator:            p.Initiator,
 		InitiatorLogins:      p.InitiatorLogins,
@@ -901,7 +902,7 @@ func selectAsValid(selectAs string) bool {
 	return false
 }
 
-func (cr *Created) toEntity() *entity.TimePeriod {
+func (cr *TimePeriod) toEntity() *entity.TimePeriod {
 	var timePeriod *entity.TimePeriod
 
 	if cr != nil {

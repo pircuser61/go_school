@@ -502,6 +502,13 @@ func (cq *compileGetTaskQueryMaker) addCreated() {
 	}
 }
 
+func (cq *compileGetTaskQueryMaker) addProcessDeadline() {
+	if cq.fl.ProcessDeadline != nil {
+		cq.args = append(cq.args, time.Unix(int64(cq.fl.ProcessDeadline.Start), 0).UTC(), time.Unix(int64(cq.fl.ProcessDeadline.End), 0).UTC())
+		cq.q = fmt.Sprintf("%s AND ua.node_deadline BETWEEN $%d AND $%d", cq.q, len(cq.args)-1, len(cq.args))
+	}
+}
+
 func (cq *compileGetTaskQueryMaker) addArchived() {
 	if cq.fl.Archived != nil {
 		switch *cq.fl.Archived {
@@ -677,6 +684,7 @@ func (cq *compileGetTaskQueryMaker) MakeQuery(
 	cq.addTaskID()
 	cq.addName()
 	cq.addCreated()
+	cq.addProcessDeadline()
 	cq.addArchived()
 	cq.addForCorousel()
 	cq.addStatus()
