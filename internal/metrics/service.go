@@ -69,6 +69,7 @@ func (m *service) MustRegisterMetrics(registry *prometheus.Registry) {
 	registry.MustRegister(
 		m.incomingRequests,
 		m.kafkaAvailability,
+		m.request2ExternalSystem,
 	)
 }
 
