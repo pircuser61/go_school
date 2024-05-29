@@ -563,8 +563,6 @@ func ProcessBlockWithEndMapping(
 	}
 
 	if intStatus != db.RunStatusFinished && intStatus != db.RunStatusStopped {
-		log.Error(fmt.Errorf("can`t update block %s with status %d", name, intStatus))
-
 		return "", false, nil
 	}
 
