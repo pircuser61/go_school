@@ -85,19 +85,9 @@ func NewService(cfg Config, log logger.Logger, m metrics.Metrics) (Service, erro
 }
 
 func (s *service) Ping(ctx c.Context) error {
-	req, err := http.NewRequestWithContext(ctx, "HEAD", s.url, http.NoBody)
-	if err != nil {
-		return err
-	}
+	_, err := s.rpcMicrCli.Ping(ctx, &microservice.PingRequest{})
 
-	httpClient := &http.Client{}
-
-	resp, err := httpClient.Do(req)
-	if err != nil {
-		return err
-	}
-
-	return resp.Body.Close()
+	return err
 }
 
 func (s *service) GetRPCIntCli() integration.IntegrationServiceClient {
