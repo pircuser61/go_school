@@ -52,8 +52,8 @@ type ExecutablePipeline struct {
 	ServiceDesc   sd.Service
 	FunctionStore functions.Service
 	HumanTasks    human_tasks.ServiceInterface
-	Integrations  *integrations.Service
-	FileRegistry  *file_registry.Service
+	Integrations  integrations.Service
+	FileRegistry  file_registry.Service
 	Scheduler     *scheduler.Service
 
 	FaaS string

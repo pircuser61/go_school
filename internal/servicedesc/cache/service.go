@@ -1,6 +1,8 @@
 package cache
 
 import (
+	c "context"
+
 	"github.com/hashicorp/go-retryablehttp"
 
 	cachekit "gitlab.services.mts.ru/jocasta/cache-kit"
@@ -33,4 +35,8 @@ func NewService(cfg *sd.Config, ssoS *sso.Service, m metrics.Metrics) (sd.Servic
 	}, nil
 }
 
-func (*service) SetCli(*retryablehttp.Client) {}
+func (s *service) Ping(ctx c.Context) error {
+	return s.servicedesc.Ping(ctx)
+}
+
+func (s *service) SetCli(cla *retryablehttp.Client) {}

@@ -49,13 +49,13 @@ type Env struct {
 	FunctionStore           functions.Service
 	HumanTasks              human_tasks.ServiceInterface
 	MailFetcher             mail_fetcher.Service
-	FileRegistry            *file_registry.Service
-	Integrations            *integrations.Service
+	FileRegistry            file_registry.Service
+	Integrations            integrations.Service
 	HrGate                  hrgate.ServiceInterface
 	Scheduler               *scheduler.Service
 	SLAService              sla.Service
 	Forms                   *forms.Service
-	Sequence                *sequence.Service
+	Sequence                sequence.Service
 	IncludePlaceholderBlock bool
 	HostURL                 string
 	LogIndex                string

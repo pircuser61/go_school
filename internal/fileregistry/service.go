@@ -10,7 +10,7 @@ import (
 
 	"go.opencensus.io/plugin/ocgrpc"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
+	gc "google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
@@ -25,14 +25,14 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 )
 
-type Service struct {
+type service struct {
 	restURL  string
 	restCli  *retryablehttp.Client
 	grpcConn *grpc.ClientConn
 	grpcCLi  fileregistry.FileServiceClient
 }
 
-func NewService(cfg Config, log logger.Logger, m metrics.Metrics) (*Service, error) {
+func NewService(cfg Config, log logger.Logger, m metrics.Metrics) (Service, error) {
 	opts := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithStatsHandler(&ocgrpc.ClientHandler{}),
@@ -44,21 +44,22 @@ func NewService(cfg Config, log logger.Logger, m metrics.Metrics) (*Service, err
 			grpc_retry.WithMax(cfg.MaxRetries),
 			grpc_retry.WithBackoff(grpc_retry.BackoffLinear(cfg.RetryDelay)),
 			grpc_retry.WithPerRetryTimeout(cfg.Timeout),
-			grpc_retry.WithCodes(codes.Unavailable, codes.ResourceExhausted, codes.DataLoss, codes.DeadlineExceeded, codes.Unknown),
+			grpc_retry.WithCodes(gc.Unavailable, gc.ResourceExhausted, gc.DataLoss, gc.DeadlineExceeded, gc.Unknown),
 			grpc_retry.WithOnRetryCallback(func(ctx c.Context, attempt uint, err error) {
-				log.WithError(err).WithField("attempt", attempt).Error("failed to reconnect to fileregistry")
+				log.WithError(err).WithField("attempt", attempt).
+					Error("failed to reconnect to fileregistry")
 			}),
 		)))
 	}
 
-	conn, err := grpc.Dial(cfg.GRPC, opts...)
+	conn, err := grpc.NewClient(cfg.GRPC, opts...)
 	if err != nil {
 		return nil, err
 	}
 
 	httpClient := &http.Client{}
 
-	tr := transport{
+	httpClient.Transport = &transport{
 		next: ochttp.Transport{
 			Base:        httpClient.Transport,
 			Propagation: observability.NewHTTPFormat(),
@@ -66,12 +67,16 @@ func NewService(cfg Config, log logger.Logger, m metrics.Metrics) (*Service, err
 		metrics: m,
 	}
 
-	httpClient.Transport = &tr
-
-	return &Service{
+	return &service{
 		grpcConn: conn,
 		restCli:  httpclient.NewClient(httpClient, log, cfg.MaxRetries, cfg.RetryDelay),
 		restURL:  cfg.REST,
 		grpcCLi:  fileregistry.NewFileServiceClient(conn),
 	}, nil
+}
+
+func (s *service) Ping(ctx c.Context) error {
+	_, err := s.grpcCLi.PingService(ctx, &fileregistry.PingRequest{})
+
+	return err
 }

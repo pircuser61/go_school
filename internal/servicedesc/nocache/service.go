@@ -1,7 +1,10 @@
 package nocache
 
 import (
+	c "context"
+	"fmt"
 	"net/http"
+	"time"
 
 	"go.opencensus.io/plugin/ochttp"
 
@@ -23,8 +26,9 @@ const (
 )
 
 type service struct {
-	SdURL string
-	Cli   *retryablehttp.Client
+	sdURL   string
+	cli     *retryablehttp.Client
+	cliPing *http.Client
 }
 
 func NewService(cfg *servicedesc.Config, ssoS *sso.Service, m metrics.Metrics) (servicedesc.Service, error) {
@@ -41,19 +45,38 @@ func NewService(cfg *servicedesc.Config, ssoS *sso.Service, m metrics.Metrics) (
 	}
 
 	return &service{
-		Cli:   httpclient.NewClient(httpClient, nil, cfg.MaxRetries, cfg.RetryDelay),
-		SdURL: cfg.ServicedeskURL,
+		sdURL:   cfg.ServicedeskURL,
+		cliPing: &http.Client{Timeout: time.Second * 2},
+		cli:     httpclient.NewClient(httpClient, nil, cfg.MaxRetries, cfg.RetryDelay),
 	}, nil
 }
 
 func (s *service) GetSdURL() string {
-	return s.SdURL
+	return s.sdURL
 }
 
 func (s *service) SetCli(cli *retryablehttp.Client) {
-	s.Cli = cli
+	s.cli = cli
 }
 
 func (s *service) GetCli() *retryablehttp.Client {
-	return s.Cli
+	return s.cli
+}
+
+func (s *service) Ping(ctx c.Context) error {
+	req, err := http.NewRequestWithContext(ctx, "HEAD", s.sdURL, http.NoBody)
+	if err != nil {
+		return err
+	}
+
+	resp, err := s.cliPing.Do(req)
+	if err != nil {
+		return err
+	}
+
+	if resp.StatusCode != http.StatusUnauthorized {
+		return fmt.Errorf("wrong status code: %d", resp.StatusCode)
+	}
+
+	return resp.Body.Close()
 }
