@@ -102,6 +102,7 @@ type GoFormBlock struct {
 	expectedEvents      map[string]struct{}
 	happenedEvents      []entity.NodeEvent
 	happenedKafkaEvents []entity.NodeKafkaEvent
+	workIsOnEditing     bool
 }
 
 func (gb *GoFormBlock) CurrentExecutorData() CurrentExecutorData {
@@ -155,6 +156,10 @@ func (gb *GoFormBlock) formActions() []MemberAction {
 	}
 
 	actions := make([]MemberAction, 0)
+
+	if gb.workIsOnEditing {
+		return actions
+	}
 
 	fillFormNames, existEmptyForm := gb.getFormNamesToFill()
 	if existEmptyForm {

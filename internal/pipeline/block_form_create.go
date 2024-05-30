@@ -78,6 +78,13 @@ func createGoFormBlock(
 		}
 	}
 
+	isWorkOnEditing, err := b.RunContext.Services.Storage.CheckIsOnEditing(ctx, b.RunContext.TaskID.String())
+	if err != nil {
+		return nil, false, err
+	}
+
+	b.workIsOnEditing = isWorkOnEditing
+
 	return b, reEntry, nil
 }
 

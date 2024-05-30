@@ -299,6 +299,63 @@ func (_c *MockedDatabase_CheckIsArchived_Call) RunAndReturn(run func(context.Con
 	return _c
 }
 
+// CheckIsOnEditing provides a mock function with given fields: ctx, workID
+func (_m *MockedDatabase) CheckIsOnEditing(ctx context.Context, workID string) (bool, error) {
+	ret := _m.Called(ctx, workID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CheckIsOnEditing")
+	}
+
+	var r0 bool
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) (bool, error)); ok {
+		return rf(ctx, workID)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string) bool); ok {
+		r0 = rf(ctx, workID)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, workID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockedDatabase_CheckIsOnEditing_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CheckIsOnEditing'
+type MockedDatabase_CheckIsOnEditing_Call struct {
+	*mock.Call
+}
+
+// CheckIsOnEditing is a helper method to define mock.On call
+//   - ctx context.Context
+//   - workID string
+func (_e *MockedDatabase_Expecter) CheckIsOnEditing(ctx interface{}, workID interface{}) *MockedDatabase_CheckIsOnEditing_Call {
+	return &MockedDatabase_CheckIsOnEditing_Call{Call: _e.mock.On("CheckIsOnEditing", ctx, workID)}
+}
+
+func (_c *MockedDatabase_CheckIsOnEditing_Call) Run(run func(ctx context.Context, workID string)) *MockedDatabase_CheckIsOnEditing_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string))
+	})
+	return _c
+}
+
+func (_c *MockedDatabase_CheckIsOnEditing_Call) Return(_a0 bool, _a1 error) *MockedDatabase_CheckIsOnEditing_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockedDatabase_CheckIsOnEditing_Call) RunAndReturn(run func(context.Context, string) (bool, error)) *MockedDatabase_CheckIsOnEditing_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // CheckPipelineNameExists provides a mock function with given fields: _a0, _a1, _a2
 func (_m *MockedDatabase) CheckPipelineNameExists(_a0 context.Context, _a1 string, _a2 bool) (*bool, error) {
 	ret := _m.Called(_a0, _a1, _a2)

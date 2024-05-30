@@ -2883,3 +2883,40 @@ func (db *PGCon) GetBlockState(ctx c.Context, blockID string) ([]byte, error) {
 
 	return params, nil
 }
+
+func (db *PGCon) CheckIsOnEditing(ctx c.Context, workID string) (bool, error) {
+	ctx, span := trace.StartSpan(ctx, "check_is_on_editing")
+	defer span.End()
+
+	q := `
+		SELECT vs.content->'State'-> step_name -> 'editing_app'
+		FROM variable_storage vs
+		WHERE vs.work_id = $1 AND vs.status IN ('running', 'idle')`
+
+	var (
+		isOnEditing bool
+		editingApp  interface{}
+	)
+
+	rows, err := db.Connection.Query(ctx, q, workID)
+	if err != nil {
+		return false, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		if scanErr := rows.Scan(&editingApp); scanErr != nil {
+			return false, scanErr
+		}
+
+		if editingApp != nil {
+			isOnEditing = true
+		}
+	}
+
+	if rowsErr := rows.Err(); rowsErr != nil {
+		return false, rowsErr
+	}
+
+	return isOnEditing, nil
+}

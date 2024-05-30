@@ -152,6 +152,10 @@ func (gb *GoFormBlock) checkFormFilled() error {
 func (gb *GoFormBlock) handleRequestFillForm(ctx context.Context, data *script.BlockUpdateData) error {
 	var updateParams updateFillFormParams
 
+	if gb.workIsOnEditing {
+		return errors.New("work is on editing by initiator")
+	}
+
 	err := json.Unmarshal(data.Parameters, &updateParams)
 	if err != nil {
 		return errors.New("can't assert provided data")
