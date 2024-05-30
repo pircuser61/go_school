@@ -21,7 +21,6 @@ import (
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/errorutils"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
@@ -221,15 +220,6 @@ func (ae *Env) runVersionByPrevVersion(
 			},
 		},
 	})
-	if errorutils.IsRemoteCallError(err) {
-		log.WithError(err).Warning("remote call error")
-
-		return &entity.RunResponse{
-			PipelineID: version.PipelineID,
-			WorkNumber: req.WorkNumber,
-			Status:     statusRunned,
-		}, nil
-	}
 
 	if err != nil {
 		log.WithError(err).Error("process empty task error")
@@ -445,12 +435,6 @@ func (ae *Env) runVersion(ctx c.Context, log logger.Logger, run *runVersionsDTO)
 	}
 
 	err = ae.processEmptyTask(ctx, storage, emptyTask, run.RequestID, run.requestInfo)
-	if errorutils.IsRemoteCallError(err) {
-		log.WithError(err).Warning("remote call error")
-
-		return nil
-	}
-
 	if err != nil {
 		log.WithError(err).Error("process empty task error")
 
