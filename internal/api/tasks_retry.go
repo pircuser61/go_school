@@ -27,7 +27,7 @@ func (ae *Env) RetryTasks(w http.ResponseWriter, r *http.Request, params RetryTa
 		limit = *params.Limit
 	}
 
-	retried, err := ae.retryEmptyTasks(ctx, limit)
+	_, err := ae.retryEmptyTasks(ctx, limit)
 	if err != nil {
 		httpErr := getErr(err)
 
@@ -36,15 +36,12 @@ func (ae *Env) RetryTasks(w http.ResponseWriter, r *http.Request, params RetryTa
 		return
 	}
 
-	limit -= retried
-
 	err = sendResponse(w, http.StatusOK, nil)
 	if err != nil {
 		errorHandler.handleError(UnknownError, err)
 
 		return
 	}
-
 }
 
 func (ae *Env) retryEmptyTasks(ctx context.Context, limit int) (retried int, err error) {

@@ -37,6 +37,7 @@ func scanEmptyTasks(rows pgx.Rows) ([]*EmptyTask, error) {
 
 	for rows.Next() {
 		var emptyTask EmptyTask
+
 		err := rows.Scan(&emptyTask.WorkID, &emptyTask.VersionID, &emptyTask.WorkNumber, &emptyTask.Author, &emptyTask.RunContext)
 		if err != nil {
 			return nil, fmt.Errorf("scan empty task, %w", err)
