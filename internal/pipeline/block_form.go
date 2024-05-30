@@ -142,7 +142,7 @@ func (gb *GoFormBlock) isFormUserActed(login string) bool {
 }
 
 func (gb *GoFormBlock) formActions() []MemberAction {
-	if gb.State.IsFilled {
+	if gb.State.IsFilled || gb.workIsOnEditing {
 		return []MemberAction{}
 	}
 
@@ -156,10 +156,6 @@ func (gb *GoFormBlock) formActions() []MemberAction {
 	}
 
 	actions := make([]MemberAction, 0)
-
-	if gb.workIsOnEditing {
-		return actions
-	}
 
 	fillFormNames, existEmptyForm := gb.getFormNamesToFill()
 	if existEmptyForm {
