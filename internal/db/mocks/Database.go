@@ -1185,6 +1185,67 @@ func (_c *MockedDatabase_DeleteVersion_Call) RunAndReturn(run func(context.Conte
 	return _c
 }
 
+// EmptyTasks provides a mock function with given fields: ctx, minLifetime, maxLifetime, limit
+func (_m *MockedDatabase) EmptyTasks(ctx context.Context, minLifetime time.Duration, maxLifetime time.Duration, limit int) ([]*db.EmptyTask, error) {
+	ret := _m.Called(ctx, minLifetime, maxLifetime, limit)
+
+	if len(ret) == 0 {
+		panic("no return value specified for EmptyTasks")
+	}
+
+	var r0 []*db.EmptyTask
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, time.Duration, time.Duration, int) ([]*db.EmptyTask, error)); ok {
+		return rf(ctx, minLifetime, maxLifetime, limit)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, time.Duration, time.Duration, int) []*db.EmptyTask); ok {
+		r0 = rf(ctx, minLifetime, maxLifetime, limit)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*db.EmptyTask)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, time.Duration, time.Duration, int) error); ok {
+		r1 = rf(ctx, minLifetime, maxLifetime, limit)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockedDatabase_EmptyTasks_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'EmptyTasks'
+type MockedDatabase_EmptyTasks_Call struct {
+	*mock.Call
+}
+
+// EmptyTasks is a helper method to define mock.On call
+//   - ctx context.Context
+//   - minLifetime time.Duration
+//   - maxLifetime time.Duration
+//   - limit int
+func (_e *MockedDatabase_Expecter) EmptyTasks(ctx interface{}, minLifetime interface{}, maxLifetime interface{}, limit interface{}) *MockedDatabase_EmptyTasks_Call {
+	return &MockedDatabase_EmptyTasks_Call{Call: _e.mock.On("EmptyTasks", ctx, minLifetime, maxLifetime, limit)}
+}
+
+func (_c *MockedDatabase_EmptyTasks_Call) Run(run func(ctx context.Context, minLifetime time.Duration, maxLifetime time.Duration, limit int)) *MockedDatabase_EmptyTasks_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(time.Duration), args[2].(time.Duration), args[3].(int))
+	})
+	return _c
+}
+
+func (_c *MockedDatabase_EmptyTasks_Call) Return(_a0 []*db.EmptyTask, _a1 error) *MockedDatabase_EmptyTasks_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockedDatabase_EmptyTasks_Call) RunAndReturn(run func(context.Context, time.Duration, time.Duration, int) ([]*db.EmptyTask, error)) *MockedDatabase_EmptyTasks_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // FillEmptyTask provides a mock function with given fields: ctx, updateTask
 func (_m *MockedDatabase) FillEmptyTask(ctx context.Context, updateTask *db.UpdateEmptyTaskDTO) error {
 	ret := _m.Called(ctx, updateTask)

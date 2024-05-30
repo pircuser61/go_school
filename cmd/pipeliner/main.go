@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"contrib.go.opencensus.io/exporter/jaeger"
 
@@ -227,6 +228,10 @@ func main() {
 		HostURL:                 cfg.HostURL,
 		LogIndex:                cfg.LogIndex,
 		FuncMsgResendDelay:      cfg.Kafka.FuncMessageResendDelay,
+		TaskRetry: api.TaskRetry{
+			MinLifetime: time.Second * 60,
+			MaxLifetime: time.Hour * 24,
+		},
 	}
 
 	serverParam := api.ServerParam{

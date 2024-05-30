@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	c "context"
 	"time"
 
@@ -302,4 +303,6 @@ type Database interface {
 	CreateEventToSend(ctx c.Context, dto *e.CreateEventToSend) (eventID string, err error)
 	DeleteEventToSend(ctx c.Context, eventID string) (err error)
 	GetEventsToSend(ctx c.Context) ([]e.ToSendKafkaEvent, error)
+
+	EmptyTasks(ctx context.Context, minLifetime, maxLifetime time.Duration, limit int) ([]*EmptyTask, error)
 }

@@ -60,6 +60,12 @@ type Env struct {
 	HostURL                 string
 	LogIndex                string
 	FuncMsgResendDelay      time.Duration
+	TaskRetry               TaskRetry
+}
+
+type TaskRetry struct {
+	MinLifetime time.Duration
+	MaxLifetime time.Duration
 }
 
 type ServerParam struct {
