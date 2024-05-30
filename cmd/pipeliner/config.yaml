@@ -134,25 +134,25 @@ servicedesc:
     ttl: 1s
 
 function_store:
-  url: 'localhost:9001'
+  url: 'functions:90'
   max_retries: 3
   retry_delay: 1s
   timeout: 2s
 
 scheduler_tasks:
-  url: 'localhost:9002'
+  url: 'localhost:9001'
   max_retries: 3
   retry_delay: 1s
   timeout: 2s
 
 sequence:
-  url: 'localhost:9003'
+  url: 'localhost:9002'
   max_retries: 3
   retry_delay: 1s
   timeout: 2s
 
 human_tasks:
-  url: "localhost:9004"
+  url: "human-tasks:90"
   max_retries: 3
   retry_delay: 1s
   timeout: 2s
@@ -170,13 +170,13 @@ imap:
   imap_mail_box: "Inbox"
 
 integrations:
-  url: 'localhost:9005'
+  url: 'integrations:90'
   max_retries: 3
   retry_delay: 1s
   timeout: 2s
 
 forms:
-  url: 'localhost:9006'
+  url: 'forms:90'
   max_retries: 3
   retry_delay: 1s
   timeout: 2s
