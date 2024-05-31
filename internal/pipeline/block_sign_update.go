@@ -175,6 +175,7 @@ func (gb *GoSignBlock) handleSignature(ctx c.Context, login string) error {
 	return nil
 }
 
+//nolint:gocyclo //it's ok here
 func (gb *GoSignBlock) Update(ctx c.Context) (interface{}, error) {
 	isWorkOnEditing, err := gb.RunContext.Services.Storage.CheckIsOnEditing(ctx, gb.RunContext.TaskID.String())
 	if err != nil {
