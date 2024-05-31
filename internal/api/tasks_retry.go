@@ -53,7 +53,7 @@ func (ae *Env) retryEmptyTasks(ctx context.Context, limit int) (retried int, err
 	}
 
 	for _, emptyTask := range emptyTasks {
-		processErr := ae.processEmptyTask(ctx, ae.DB, emptyTask, "", &metrics.RequestInfo{})
+		processErr := ae.launchEmptyTask(ctx, ae.DB, emptyTask, "", &metrics.RequestInfo{})
 		if processErr != nil {
 			log.WithError(processErr).
 				WithFields(

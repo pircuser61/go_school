@@ -3,6 +3,7 @@ package errorutils
 import (
 	"context"
 	"errors"
+	"io"
 )
 
 // ErrRemoteCallFailed - специальная ошибка предназначенная для обработки неудачных запросов к внешним системам
@@ -24,6 +25,8 @@ func IsRemoteCallError(err error) bool {
 	case errors.Is(err, context.DeadlineExceeded):
 		return true
 	case errors.Is(err, context.Canceled):
+		return true
+	case errors.Is(err, io.ErrUnexpectedEOF):
 		return true
 	default:
 		return errors.Is(err, ErrRemoteCallFailed)

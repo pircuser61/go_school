@@ -10,12 +10,12 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"github.com/google/uuid"
 
 	"github.com/iancoleman/orderedmap"
-
-	"github.com/jackc/pgx/v4"
 
 	"go.opencensus.io/trace"
 
@@ -203,8 +203,8 @@ func (ae *Env) getExternalSystem(
 		VersionId:  versionID,
 	})
 	if err != nil {
-		if strings.Contains(err.Error(), "system not found") { // TODO: delete
-			return nil, nil
+		if strings.Contains(err.Error(), "system not found") || status.Code(err) == codes.NotFound {
+			return nil, err
 		}
 
 		return nil, errors.Join(errorutils.ErrRemoteCallFailed, err)
@@ -212,10 +212,6 @@ func (ae *Env) getExternalSystem(
 
 	externalSystem, err := storage.GetExternalSystemSettings(ctx, versionID, system.Integration.IntegrationId)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) { // TODO: delete
-			return nil, nil
-		}
-
 		return nil, err
 	}
 

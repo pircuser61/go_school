@@ -444,7 +444,33 @@ func (ae *Env) runVersion(ctx c.Context, log logger.Logger, run *runVersionsDTO)
 		return errors.Join(PipelineCreateError, err)
 	}
 
-	err = ae.processEmptyTask(ctx, storage, emptyTask, run.RequestID, run.requestInfo)
+	return ae.launchEmptyTask(ctx, storage, emptyTask, run.RequestID, run.requestInfo)
+}
+
+func getErr(err error) Err {
+	switch {
+	case errors.Is(err, MappingError):
+		return MappingError
+	default:
+		var httpErr Err
+		if errors.As(err, &httpErr) {
+			return httpErr
+		}
+
+		return UnknownError
+	}
+}
+
+func (ae *Env) launchEmptyTask(
+	ctx c.Context,
+	storage db.Database,
+	emptyTask *db.EmptyTask,
+	requestID string,
+	requestInfo *metrics.RequestInfo,
+) error {
+	log := logger.GetLogger(ctx)
+
+	err := ae.processEmptyTask(ctx, storage, emptyTask, requestID, requestInfo)
 	if errorutils.IsRemoteCallError(err) {
 		log.WithError(err).Warning("remote call error")
 
@@ -460,20 +486,6 @@ func (ae *Env) runVersion(ctx c.Context, log logger.Logger, run *runVersionsDTO)
 	}
 
 	return nil
-}
-
-func getErr(err error) Err {
-	switch {
-	case errors.Is(err, MappingError):
-		return MappingError
-	default:
-		var httpErr Err
-		if errors.As(err, &httpErr) {
-			return httpErr
-		}
-
-		return UnknownError
-	}
 }
 
 func (ae *Env) processEmptyTask(
