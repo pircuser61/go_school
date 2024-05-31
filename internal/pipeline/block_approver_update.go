@@ -898,6 +898,15 @@ func (gb *GoApproverBlock) checkFormFilled() error {
 
 //nolint:gocognit,gocyclo //тут большой switch case, где нибудь но он должен быть
 func (gb *GoApproverBlock) handleTaskUpdateAction(ctx context.Context) error {
+	isWorkOnEditing, err := gb.RunContext.Services.Storage.CheckIsOnEditing(ctx, gb.RunContext.TaskID.String())
+	if err != nil {
+		return err
+	}
+
+	if isWorkOnEditing {
+		return errors.New("work is on editing by initiator")
+	}
+
 	data := gb.RunContext.UpdateData
 	if data == nil {
 		return errors.New("empty data")

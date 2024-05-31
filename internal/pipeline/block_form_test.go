@@ -380,6 +380,7 @@ func Test_createGoFormBlock(t *testing.T) {
 
 							return slaMock
 						}(),
+						Storage: myStorage,
 						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
@@ -560,6 +561,7 @@ func Test_createGoFormBlock(t *testing.T) {
 
 							return slaMock
 						}(),
+						Storage: myStorage,
 						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
@@ -664,7 +666,6 @@ func Test_createGoFormBlock(t *testing.T) {
 			ht.SetCli(&cli)
 
 			tt.args.runCtx.Services.HumanTasks = ht
-
 
 			got, _, err := createGoFormBlock(ctx, tt.args.name, tt.args.ef, tt.args.runCtx, nil)
 			if got != nil {

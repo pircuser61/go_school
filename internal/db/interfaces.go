@@ -91,6 +91,7 @@ type TaskStorager interface {
 	UpdateStepContent(ctx c.Context, stepID, workID, stepName string, state, output map[string]interface{}) error
 
 	CheckIsOnEditing(ctx c.Context, workID string) (bool, error)
+	ClearTaskMembersActions(ctx c.Context, workID uuid.UUID) error
 }
 
 type UpdateTaskRate struct {

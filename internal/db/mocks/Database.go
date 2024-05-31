@@ -532,6 +532,53 @@ func (_c *MockedDatabase_CheckUserCanEditForm_Call) RunAndReturn(run func(contex
 	return _c
 }
 
+// ClearTaskMembersActions provides a mock function with given fields: ctx, workID
+func (_m *MockedDatabase) ClearTaskMembersActions(ctx context.Context, workID uuid.UUID) error {
+	ret := _m.Called(ctx, workID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ClearTaskMembersActions")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) error); ok {
+		r0 = rf(ctx, workID)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// MockedDatabase_ClearTaskMembersActions_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ClearTaskMembersActions'
+type MockedDatabase_ClearTaskMembersActions_Call struct {
+	*mock.Call
+}
+
+// ClearTaskMembersActions is a helper method to define mock.On call
+//   - ctx context.Context
+//   - workID uuid.UUID
+func (_e *MockedDatabase_Expecter) ClearTaskMembersActions(ctx interface{}, workID interface{}) *MockedDatabase_ClearTaskMembersActions_Call {
+	return &MockedDatabase_ClearTaskMembersActions_Call{Call: _e.mock.On("ClearTaskMembersActions", ctx, workID)}
+}
+
+func (_c *MockedDatabase_ClearTaskMembersActions_Call) Run(run func(ctx context.Context, workID uuid.UUID)) *MockedDatabase_ClearTaskMembersActions_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(uuid.UUID))
+	})
+	return _c
+}
+
+func (_c *MockedDatabase_ClearTaskMembersActions_Call) Return(_a0 error) *MockedDatabase_ClearTaskMembersActions_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *MockedDatabase_ClearTaskMembersActions_Call) RunAndReturn(run func(context.Context, uuid.UUID) error) *MockedDatabase_ClearTaskMembersActions_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // CommitTransaction provides a mock function with given fields: ctx
 func (_m *MockedDatabase) CommitTransaction(ctx context.Context) error {
 	ret := _m.Called(ctx)
