@@ -57,6 +57,7 @@ func NewImapClient(cfg *ClientConfig) (*Client, error) {
 func (s *Client) connect() error {
 	cfg := &tls.Config{
 		CipherSuites: []uint16{49195, 49199, 49196, 49200, 52393, 52392, 49161, 49171, 49162, 49172, 156, 157, 47, 53, 49170, 10},
+		MinVersion:   tls.VersionTLS12,
 	}
 
 	c, err := client.DialTLS(s.imapConnection, cfg)
