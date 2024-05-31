@@ -32,7 +32,7 @@ people:
 database:
   kind: postgres
   host: localhost
-  port: 5432
+  port: 5434
   user_env_key: "DB_USER"
   pass_env_key: "DB_PASS"
   dbname: 'pipeliner'
@@ -51,7 +51,7 @@ sso:
 mail:
   broker: "redis"
   host: "localhost"
-  port: 6379
+  port: 6380
   queue: "mail"
   database: "0"
   from:
