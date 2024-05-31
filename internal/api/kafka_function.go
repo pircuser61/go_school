@@ -8,8 +8,6 @@ import (
 	"strconv"
 	"time"
 
-	"golang.org/x/net/context"
-
 	"github.com/google/uuid"
 
 	"github.com/jackc/pgx/v4"
@@ -30,7 +28,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
-func (ae *Env) WorkFunctionHandler(ctx context.Context, jobs <-chan kafka.TimedRunnerInMessage) {
+func (ae *Env) WorkFunctionHandler(ctx c.Context, jobs <-chan kafka.TimedRunnerInMessage) {
 	log := ae.Log.WithField("funcName", "WorkFunctionHandler")
 
 	for job := range jobs {

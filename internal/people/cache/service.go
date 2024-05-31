@@ -1,7 +1,7 @@
 package cache
 
 import (
-	"context"
+	c "context"
 	"encoding/json"
 	"fmt"
 
@@ -50,7 +50,11 @@ func NewService(cfg *people.Config, ssoS *sso.Service, m metrics.Metrics) (peopl
 
 func (*service) SetCli(*retryablehttp.Client) {}
 
-func (s *service) GetUser(ctx context.Context, username string, onlyEnabled bool) (people.SSOUser, error) {
+func (s *service) Ping(ctx c.Context) error {
+	return s.People.Ping(ctx)
+}
+
+func (s *service) GetUser(ctx c.Context, username string, onlyEnabled bool) (people.SSOUser, error) {
 	ctx, span := trace.StartSpan(ctx, "people.cache.get_user")
 	defer span.End()
 
@@ -94,7 +98,7 @@ func (s *service) GetUser(ctx context.Context, username string, onlyEnabled bool
 	return resources, nil
 }
 
-func (s *service) GetUsers(ctx context.Context, username string, limit *int, filter []string) ([]people.SSOUser, error) {
+func (s *service) GetUsers(ctx c.Context, username string, limit *int, filter []string) ([]people.SSOUser, error) {
 	ctx, span := trace.StartSpan(ctx, "people.cache.get_users")
 	defer span.End()
 
@@ -147,7 +151,7 @@ func (s *service) PathBuilder(mainPath, subPath string) (string, error) {
 	return s.People.PathBuilder(mainPath, subPath)
 }
 
-func (s *service) GetUserEmail(ctx context.Context, username string) (string, error) {
+func (s *service) GetUserEmail(ctx c.Context, username string) (string, error) {
 	ctx, span := trace.StartSpan(ctx, "people.cache.get_user_email")
 	defer span.End()
 

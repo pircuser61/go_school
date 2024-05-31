@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"golang.org/x/net/context"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -3197,6 +3196,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 			fields: fields{
 				Name: stepName,
 				RunContext: &BlockRunContext{
+					skipNotifications: true,
 					WorkNumber: "J001",
 					VarStore:   store.NewStore(),
 					Services: RunContextServices{
@@ -3278,6 +3278,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 			fields: fields{
 				Name: stepName,
 				RunContext: &BlockRunContext{
+					skipNotifications: true,
 					WorkNumber: "J001",
 					VarStore:   store.NewStore(),
 					Services: RunContextServices{
@@ -3359,6 +3360,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 			fields: fields{
 				Name: stepName,
 				RunContext: &BlockRunContext{
+					skipNotifications: true,
 					WorkNumber: "J001",
 					VarStore:   store.NewStore(),
 					Services: RunContextServices{
@@ -3440,6 +3442,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 			fields: fields{
 				Name: stepName,
 				RunContext: &BlockRunContext{
+					skipNotifications: true,
 					WorkNumber: "J001",
 					VarStore:   store.NewStore(),
 					Services: RunContextServices{
@@ -3521,6 +3524,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 			fields: fields{
 				Name: stepName,
 				RunContext: &BlockRunContext{
+					skipNotifications: true,
 					WorkNumber: "J001",
 					VarStore:   store.NewStore(),
 					Services: RunContextServices{
@@ -3602,6 +3606,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 			fields: fields{
 				Name: stepName,
 				RunContext: &BlockRunContext{
+					skipNotifications: true,
 					WorkNumber: "J001",
 					VarStore:   store.NewStore(),
 					Services: RunContextServices{
@@ -3683,6 +3688,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 			fields: fields{
 				Name: stepName,
 				RunContext: &BlockRunContext{
+					skipNotifications: true,
 					WorkNumber: "J001",
 					VarStore:   store.NewStore(),
 					Services: RunContextServices{
@@ -3764,6 +3770,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 			fields: fields{
 				Name: stepName,
 				RunContext: &BlockRunContext{
+					skipNotifications: true,
 					WorkNumber: "J001",
 					VarStore:   store.NewStore(),
 					Services: RunContextServices{
@@ -3845,6 +3852,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 			fields: fields{
 				Name: stepName,
 				RunContext: &BlockRunContext{
+					skipNotifications: true,
 					WorkNumber: "J001",
 					VarStore:   store.NewStore(),
 					Services: RunContextServices{
@@ -3926,6 +3934,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 			fields: fields{
 				Name: stepName,
 				RunContext: &BlockRunContext{
+					skipNotifications: true,
 					WorkNumber: "J001",
 					VarStore:   store.NewStore(),
 					Services: RunContextServices{
@@ -3994,6 +4003,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 			fields: fields{
 				Name: stepName,
 				RunContext: &BlockRunContext{
+					skipNotifications: true,
 					WorkNumber: "J001",
 					VarStore:   store.NewStore(),
 					Services: RunContextServices{
@@ -4062,6 +4072,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 			fields: fields{
 				Name: stepName,
 				RunContext: &BlockRunContext{
+					skipNotifications: true,
 					WorkNumber: "J001",
 					VarStore:   store.NewStore(),
 					Services: RunContextServices{
@@ -4130,6 +4141,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 			fields: fields{
 				Name: stepName,
 				RunContext: &BlockRunContext{
+					skipNotifications: true,
 					WorkNumber: "J001",
 					VarStore: func() *store.VariableStore {
 						s := store.NewStore()
@@ -4223,6 +4235,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 			fields: fields{
 				Name: stepName,
 				RunContext: &BlockRunContext{
+					skipNotifications: true,
 					WorkNumber: "J001",
 					VarStore:   store.NewStore(),
 					Services: RunContextServices{
@@ -4291,6 +4304,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 			fields: fields{
 				Name: stepName,
 				RunContext: &BlockRunContext{
+					skipNotifications: true,
 					WorkNumber: "J001",
 					VarStore:   store.NewStore(),
 					Services: RunContextServices{
@@ -4359,6 +4373,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 			fields: fields{
 				Name: stepName,
 				RunContext: &BlockRunContext{
+					skipNotifications: true,
 					WorkNumber: "J001",
 					VarStore:   store.NewStore(),
 					Services: RunContextServices{
@@ -4427,6 +4442,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 			fields: fields{
 				Name: stepName,
 				RunContext: &BlockRunContext{
+					skipNotifications: true,
 					WorkNumber: "J001",
 					VarStore:   store.NewStore(),
 					Services: RunContextServices{
@@ -4508,6 +4524,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 			fields: fields{
 				Name: stepName,
 				RunContext: &BlockRunContext{
+					skipNotifications: true,
 					WorkNumber: "J001",
 					VarStore:   store.NewStore(),
 					Services: RunContextServices{
@@ -4589,6 +4606,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 			fields: fields{
 				Name: stepName,
 				RunContext: &BlockRunContext{
+					skipNotifications: true,
 					WorkNumber: "J001",
 					VarStore:   store.NewStore(),
 					Services: RunContextServices{
@@ -4670,6 +4688,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 			fields: fields{
 				Name: stepName,
 				RunContext: &BlockRunContext{
+					skipNotifications: true,
 					WorkNumber: "J001",
 					VarStore:   store.NewStore(),
 					Services: RunContextServices{
@@ -4738,6 +4757,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 			fields: fields{
 				Name: stepName,
 				RunContext: &BlockRunContext{
+					skipNotifications: true,
 					WorkNumber: "J001",
 					VarStore:   store.NewStore(),
 					Services: RunContextServices{
@@ -4806,6 +4826,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 			fields: fields{
 				Name: stepName,
 				RunContext: &BlockRunContext{
+					skipNotifications: true,
 					WorkNumber: "J001",
 					VarStore: func() *store.VariableStore {
 						s := store.NewStore()
@@ -4899,6 +4920,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 			fields: fields{
 				Name: stepName,
 				RunContext: &BlockRunContext{
+					skipNotifications: true,
 					WorkNumber: "J001",
 					VarStore: func() *store.VariableStore {
 						s := store.NewStore()
@@ -4991,6 +5013,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 			fields: fields{
 				Name: stepName,
 				RunContext: &BlockRunContext{
+					skipNotifications: true,
 					WorkNumber: "J001",
 					VarStore: func() *store.VariableStore {
 						s := store.NewStore()
@@ -5083,6 +5106,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 			fields: fields{
 				Name: stepName,
 				RunContext: &BlockRunContext{
+					skipNotifications: true,
 					WorkNumber: "J001",
 					VarStore: func() *store.VariableStore {
 						s := store.NewStore()
@@ -5172,6 +5196,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 			fields: fields{
 				Name: stepName,
 				RunContext: &BlockRunContext{
+					skipNotifications: true,
 					WorkNumber: "J001",
 					VarStore: func() *store.VariableStore {
 						s := store.NewStore()
@@ -5401,7 +5426,7 @@ func TestGoSignActions(t *testing.T) {
 			RunContext *BlockRunContext
 		}
 		args struct {
-			ctx  context.Context
+			ctx  c.Context
 			data *script.BlockUpdateData
 		}
 	)
@@ -5428,7 +5453,7 @@ func TestGoSignActions(t *testing.T) {
 				},
 			},
 			args: args{
-				ctx:  context.Background(),
+				ctx:  c.Background(),
 				data: nil,
 			},
 			wantActions: []MemberAction{
@@ -5477,7 +5502,7 @@ func TestGoSignActions(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				data: &script.BlockUpdateData{
 					ByLogin:    exampleExecutor,
 					Action:     string(entity.TaskUpdateActionExecution),
@@ -5538,7 +5563,7 @@ func TestGoSignActions(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				data: &script.BlockUpdateData{
 					ByLogin:    exampleExecutor,
 					Action:     string(entity.TaskUpdateActionExecution),
@@ -5611,14 +5636,14 @@ func TestGoSignActions(t *testing.T) {
 						HumanTasks: func() human_tasks.ServiceInterface {
 							htMock := mocks2.DelegationServiceClient{}
 
-							htMock.On("GetDelegationsFromLogin", context.Background(), "users1").Return(nil, human_tasks.Delegations{})
+							htMock.On("GetDelegationsFromLogin", c.Background(), "users1").Return(nil, human_tasks.Delegations{})
 
 							req := &delegationht.GetDelegationsRequest{
 								FilterBy:  "fromLogin",
 								FromLogin: login,
 							}
 
-							htMock.On("getDelegationsInternal", context.Background(), req).Return(human_tasks.Delegations{
+							htMock.On("getDelegationsInternal", c.Background(), req).Return(human_tasks.Delegations{
 								{
 									ToLogin:   delLogin1,
 									FromLogin: login,
@@ -5645,7 +5670,7 @@ func TestGoSignActions(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				data: &script.BlockUpdateData{
 					ByLogin:    exampleExecutor,
 					Action:     string(entity.TaskUpdateActionExecution),
@@ -5713,14 +5738,14 @@ func TestGoSignActions(t *testing.T) {
 						HumanTasks: func() human_tasks.ServiceInterface {
 							htMock := mocks2.DelegationServiceClient{}
 
-							htMock.On("GetDelegationsFromLogin", context.Background(), "users1").Return(nil, human_tasks.Delegations{})
+							htMock.On("GetDelegationsFromLogin", c.Background(), "users1").Return(nil, human_tasks.Delegations{})
 
 							req := &delegationht.GetDelegationsRequest{
 								FilterBy:  "fromLogin",
 								FromLogin: login,
 							}
 
-							htMock.On("getDelegationsInternal", context.Background(), req).Return(human_tasks.Delegations{
+							htMock.On("getDelegationsInternal", c.Background(), req).Return(human_tasks.Delegations{
 								{
 									ToLogin:   delLogin1,
 									FromLogin: login,
@@ -5747,7 +5772,7 @@ func TestGoSignActions(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				data: &script.BlockUpdateData{
 					ByLogin:    exampleExecutor,
 					Action:     string(entity.TaskUpdateActionExecution),
@@ -5812,14 +5837,14 @@ func TestGoSignActions(t *testing.T) {
 						HumanTasks: func() human_tasks.ServiceInterface {
 							htMock := mocks2.DelegationServiceClient{}
 
-							htMock.On("GetDelegationsFromLogin", context.Background(), "users1").Return(nil, human_tasks.Delegations{})
+							htMock.On("GetDelegationsFromLogin", c.Background(), "users1").Return(nil, human_tasks.Delegations{})
 
 							req := &delegationht.GetDelegationsRequest{
 								FilterBy:  "fromLogin",
 								FromLogin: login,
 							}
 
-							htMock.On("getDelegationsInternal", context.Background(), req).Return(human_tasks.Delegations{
+							htMock.On("getDelegationsInternal", c.Background(), req).Return(human_tasks.Delegations{
 								{
 									ToLogin:   delLogin1,
 									FromLogin: login,
@@ -5846,7 +5871,7 @@ func TestGoSignActions(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				data: &script.BlockUpdateData{
 					ByLogin:    exampleExecutor,
 					Action:     string(entity.TaskUpdateActionExecution),
@@ -5934,14 +5959,14 @@ func TestGoSignActions(t *testing.T) {
 						HumanTasks: func() human_tasks.ServiceInterface {
 							htMock := mocks2.DelegationServiceClient{}
 
-							htMock.On("GetDelegationsFromLogin", context.Background(), "users1").Return(nil, human_tasks.Delegations{})
+							htMock.On("GetDelegationsFromLogin", c.Background(), "users1").Return(nil, human_tasks.Delegations{})
 
 							req := &delegationht.GetDelegationsRequest{
 								FilterBy:  "fromLogin",
 								FromLogin: login,
 							}
 
-							htMock.On("getDelegationsInternal", context.Background(), req).Return(human_tasks.Delegations{
+							htMock.On("getDelegationsInternal", c.Background(), req).Return(human_tasks.Delegations{
 								{
 									ToLogin:   delLogin1,
 									FromLogin: login,
@@ -5968,7 +5993,7 @@ func TestGoSignActions(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				data: &script.BlockUpdateData{
 					ByLogin:    exampleExecutor,
 					Action:     string(entity.TaskUpdateActionExecution),
@@ -6051,14 +6076,14 @@ func TestGoSignActions(t *testing.T) {
 						HumanTasks: func() human_tasks.ServiceInterface {
 							htMock := mocks2.DelegationServiceClient{}
 
-							htMock.On("GetDelegationsFromLogin", context.Background(), "users1").Return(nil, human_tasks.Delegations{})
+							htMock.On("GetDelegationsFromLogin", c.Background(), "users1").Return(nil, human_tasks.Delegations{})
 
 							req := &delegationht.GetDelegationsRequest{
 								FilterBy:  "fromLogin",
 								FromLogin: login,
 							}
 
-							htMock.On("getDelegationsInternal", context.Background(), req).Return(human_tasks.Delegations{
+							htMock.On("getDelegationsInternal", c.Background(), req).Return(human_tasks.Delegations{
 								{
 									ToLogin:   delLogin1,
 									FromLogin: login,
@@ -6085,7 +6110,7 @@ func TestGoSignActions(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				data: &script.BlockUpdateData{
 					ByLogin:    exampleExecutor,
 					Action:     string(entity.TaskUpdateActionExecution),
@@ -6173,14 +6198,14 @@ func TestGoSignActions(t *testing.T) {
 						HumanTasks: func() human_tasks.ServiceInterface {
 							htMock := mocks2.DelegationServiceClient{}
 
-							htMock.On("GetDelegationsFromLogin", context.Background(), "users1").Return(nil, human_tasks.Delegations{})
+							htMock.On("GetDelegationsFromLogin", c.Background(), "users1").Return(nil, human_tasks.Delegations{})
 
 							req := &delegationht.GetDelegationsRequest{
 								FilterBy:  "fromLogin",
 								FromLogin: login,
 							}
 
-							htMock.On("getDelegationsInternal", context.Background(), req).Return(human_tasks.Delegations{
+							htMock.On("getDelegationsInternal", c.Background(), req).Return(human_tasks.Delegations{
 								{
 									ToLogin:   delLogin1,
 									FromLogin: login,
@@ -6207,7 +6232,7 @@ func TestGoSignActions(t *testing.T) {
 			},
 
 			args: args{
-				ctx: context.Background(),
+				ctx: c.Background(),
 				data: &script.BlockUpdateData{
 					ByLogin:    exampleExecutor,
 					Action:     string(entity.TaskUpdateActionExecution),

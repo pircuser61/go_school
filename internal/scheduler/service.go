@@ -50,7 +50,7 @@ func NewService(cfg Config, log logger.Logger, m metrics.Metrics) (*Service, err
 		)))
 	}
 
-	conn, err := grpc.Dial(cfg.URL, opts...)
+	conn, err := grpc.NewClient(cfg.URL, opts...)
 	if err != nil {
 		return nil, err
 	}

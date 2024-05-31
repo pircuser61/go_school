@@ -191,7 +191,7 @@ func main() {
 		return
 	}
 
-	sequenceService, err := sequence.NewService(cfg.Sequence, log)
+	sequenceService, err := sequence.NewService(cfg.Sequence, log, m)
 	if err != nil {
 		log.WithError(err).Error("can't create sequence service")
 
@@ -265,7 +265,7 @@ func main() {
 		trace.ApplyConfig(trace.Config{DefaultSampler: trace.ProbabilitySampler(cfg.Tracing.SampleFraction)})
 	}
 
-	s := server.NewServer(ctx, log, kafkaService, &serverParam)
+	s := server.NewServer(ctx, log, kafkaService, &serverParam, m)
 
 	kafkaService.InitMessageHandler(s.SendMessageToWorkers, s.SendRunTaskMessageToWorkers)
 

@@ -14,6 +14,7 @@ type ServiceInterface interface {
 	GetDelegationsToLogin(ctx c.Context, login string) (ds Delegations, err error)
 	GetDelegationsToLogins(ctx c.Context, logins []string) (ds Delegations, err error)
 	GetDelegationsByLogins(ctx c.Context, logins []string) (ds Delegations, err error)
+	Ping(ctx c.Context) error
 }
 
 type Setter interface {

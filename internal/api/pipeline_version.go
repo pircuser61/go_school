@@ -192,12 +192,14 @@ func (ae *Env) hasPrivateFunction(ctx c.Context, executableFunctions []script.Fu
 	return false, nil
 }
 
+//nolint:all //ok
 func (ae *Env) getExternalSystem(
 	ctx c.Context,
 	storage db.Database,
 	clientID, pipelineID, versionID string,
 ) (*e.ExternalSystem, error) {
-	system, err := ae.Integrations.RPCIntCli.GetIntegrationByClientId(ctx, &integration_v1.GetIntegrationByClientIdRequest{
+	rpc := ae.Integrations.GetRPCIntCli()
+	system, err := rpc.GetIntegrationByClientId(ctx, &integration_v1.GetIntegrationByClientIdRequest{
 		ClientId:   clientID,
 		PipelineId: pipelineID,
 		VersionId:  versionID,

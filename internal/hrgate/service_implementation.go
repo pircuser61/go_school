@@ -1,7 +1,7 @@
 package hrgate
 
 import (
-	"context"
+	c "context"
 	"fmt"
 	"math"
 	"net/http"
@@ -33,12 +33,13 @@ type Service struct {
 	DefaultCalendarUnitID *string
 	location              time.Location
 	cli                   *ClientWithResponses
+	cliPing               *http.Client
 	Cache                 cachekit.Cache
 }
 
 func NewService(cfg *Config, ssoS *sso.Service, m metrics.Metrics) (ServiceInterface, error) {
 	httpClient := &http.Client{}
-	tr := transport{
+	httpClient.Transport = &transport{
 		next: ochttp.Transport{
 			Base:        httpClient.Transport,
 			Propagation: observability.NewHTTPFormat(),
@@ -48,13 +49,12 @@ func NewService(cfg *Config, ssoS *sso.Service, m metrics.Metrics) (ServiceInter
 		metrics: m,
 	}
 
-	httpClient.Transport = &tr
 	retryableCli := httpclient.NewClient(httpClient, nil, cfg.MaxRetries, cfg.RetryDelay)
 	wrappedRetryableCli := httpRequestDoer{retryableCli}
 
-	newCli, createClientErr := NewClientWithResponses(cfg.HRGateURL, WithHTTPClient(wrappedRetryableCli), WithBaseURL(cfg.HRGateURL))
-	if createClientErr != nil {
-		return nil, createClientErr
+	newCli, err := NewClientWithResponses(cfg.HRGateURL, WithHTTPClient(wrappedRetryableCli), WithBaseURL(cfg.HRGateURL))
+	if err != nil {
+		return nil, err
 	}
 
 	location, getLocationErr := time.LoadLocation("Europe/Moscow")
@@ -66,10 +66,29 @@ func NewService(cfg *Config, ssoS *sso.Service, m metrics.Metrics) (ServiceInter
 		cli:       newCli,
 		hrGateURL: cfg.HRGateURL,
 		location:  *location,
+		cliPing:   &http.Client{Timeout: time.Second * 2},
 	}, nil
 }
 
-func (s *Service) GetCalendars(ctx context.Context, params *GetCalendarsParams) ([]Calendar, error) {
+func (s *Service) Ping(ctx c.Context) error {
+	req, err := http.NewRequestWithContext(ctx, "HEAD", s.hrGateURL, http.NoBody)
+	if err != nil {
+		return err
+	}
+
+	resp, err := s.cliPing.Do(req)
+	if err != nil {
+		return err
+	}
+
+	if resp.StatusCode != http.StatusUnauthorized {
+		return fmt.Errorf("wrong status code: %d", resp.StatusCode)
+	}
+
+	return resp.Body.Close()
+}
+
+func (s *Service) GetCalendars(ctx c.Context, params *GetCalendarsParams) ([]Calendar, error) {
 	ctx, span := trace.StartSpan(ctx, "hrgate.get_calendars")
 	defer span.End()
 
@@ -89,7 +108,7 @@ func (s *Service) GetCalendars(ctx context.Context, params *GetCalendarsParams) 
 	return *response.JSON200, err
 }
 
-func (s *Service) GetCalendarDays(ctx context.Context, params *GetCalendarDaysParams) (*CalendarDays, error) {
+func (s *Service) GetCalendarDays(ctx c.Context, params *GetCalendarDaysParams) (*CalendarDays, error) {
 	ctx, span := trace.StartSpan(ctx, "hrgate.get_calendar_days")
 	defer span.End()
 
@@ -118,7 +137,7 @@ func (s *Service) GetCalendarDays(ctx context.Context, params *GetCalendarDaysPa
 	return &res, nil
 }
 
-func (s *Service) GetPrimaryRussianFederationCalendarOrFirst(ctx context.Context, params *GetCalendarsParams) (*Calendar, error) {
+func (s *Service) GetPrimaryRussianFederationCalendarOrFirst(ctx c.Context, params *GetCalendarsParams) (*Calendar, error) {
 	ctx, span := trace.StartSpan(ctx, "hrgate.get_primary_calendar_or_first")
 	defer span.End()
 
@@ -139,7 +158,7 @@ func (s *Service) GetPrimaryRussianFederationCalendarOrFirst(ctx context.Context
 	return &calendars[0], nil
 }
 
-func (s *Service) FillDefaultUnitID(ctx context.Context) error {
+func (s *Service) FillDefaultUnitID(ctx c.Context) error {
 	ctx, span := trace.StartSpan(ctx, "hrgate.fill_default_unit_id")
 	defer span.End()
 
@@ -172,7 +191,7 @@ func (s *Service) GetDefaultUnitID() string {
 
 // nolint:dupl //так нужно!
 func (s *Service) GetDefaultCalendarDaysForGivenTimeIntervals(
-	ctx context.Context,
+	ctx c.Context,
 	taskTimeIntervals []entity.TaskCompletionInterval,
 ) (*CalendarDays, error) {
 	ctx, span := trace.StartSpan(ctx, "hrgate.get_default_calendar_days_for_given_time_intervals")
@@ -223,7 +242,7 @@ func (s *Service) GetDefaultCalendarDaysForGivenTimeIntervals(
 	return calendarDays, nil
 }
 
-func (s *Service) GetEmployeeByLogin(ctx context.Context, username string) (*Employee, error) {
+func (s *Service) GetEmployeeByLogin(ctx c.Context, username string) (*Employee, error) {
 	ctx, span := trace.StartSpan(ctx, "hrgate.get_employee_by_login")
 	defer span.End()
 
@@ -245,7 +264,7 @@ func (s *Service) GetEmployeeByLogin(ctx context.Context, username string) (*Emp
 	return &(*response.JSON200)[0], err
 }
 
-func (s *Service) GetOrganizationByID(ctx context.Context, organizationID string) (*Organization, error) {
+func (s *Service) GetOrganizationByID(ctx c.Context, organizationID string) (*Organization, error) {
 	ctx, span := trace.StartSpan(ctx, "hrgate.get_organization_by_id")
 	defer span.End()
 

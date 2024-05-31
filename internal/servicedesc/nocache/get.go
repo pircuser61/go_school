@@ -26,14 +26,14 @@ func (s *service) GetSsoPerson(ctx c.Context, username string) (*sd.SsoPerson, e
 		}, nil
 	}
 
-	reqURL := fmt.Sprintf("%s%s", s.SdURL, fmt.Sprintf(getUserInfo, username))
+	reqURL := fmt.Sprintf("%s%s", s.sdURL, fmt.Sprintf(getUserInfo, username))
 
 	req, err := retryablehttp.NewRequestWithContext(ctxLocal, http.MethodGet, reqURL, http.NoBody)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := s.Cli.Do(req)
+	resp, err := s.cli.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -57,14 +57,14 @@ func (s *service) GetWorkGroup(ctx c.Context, groupID string) (*sd.WorkGroup, er
 	ctxLocal, span := trace.StartSpan(ctx, "servicedesc.get_work_group")
 	defer span.End()
 
-	reqURL := fmt.Sprintf("%s%s%s", s.SdURL, getWorkGroup, groupID)
+	reqURL := fmt.Sprintf("%s%s%s", s.sdURL, getWorkGroup, groupID)
 
 	req, err := retryablehttp.NewRequestWithContext(ctxLocal, http.MethodGet, reqURL, http.NoBody)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := s.Cli.Do(req)
+	resp, err := s.cli.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -90,14 +90,14 @@ func (s *service) GetSchemaByID(ctx c.Context, schemaID string) (map[string]inte
 	ctxLocal, span := trace.StartSpan(ctx, "servicedesc.get_schema_by_id")
 	defer span.End()
 
-	reqURL := fmt.Sprintf("%s%s%s", s.SdURL, getSchemaByID, schemaID)
+	reqURL := fmt.Sprintf("%s%s%s", s.sdURL, getSchemaByID, schemaID)
 
 	req, err := retryablehttp.NewRequestWithContext(ctxLocal, http.MethodGet, reqURL, http.NoBody)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := s.Cli.Do(req)
+	resp, err := s.cli.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -120,14 +120,14 @@ func (s *service) GetSchemaByBlueprintID(ctx c.Context, blueprintID string) (map
 	ctxLocal, span := trace.StartSpan(ctx, "servicedesc.get_schema_by_blueprint_id")
 	defer span.End()
 
-	reqURL := fmt.Sprintf("%s%s%s%s", s.SdURL, getSchemaByBlueprintID, blueprintID, "/json")
+	reqURL := fmt.Sprintf("%s%s%s%s", s.sdURL, getSchemaByBlueprintID, blueprintID, "/json")
 
 	req, err := retryablehttp.NewRequestWithContext(ctxLocal, http.MethodGet, reqURL, http.NoBody)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := s.Cli.Do(req)
+	resp, err := s.cli.Do(req)
 	if err != nil {
 		return nil, err
 	}

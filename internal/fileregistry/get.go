@@ -24,8 +24,8 @@ const (
 	dispositionHeader = "Content-Disposition"
 )
 
-func (s *Service) GetAttachmentLink(ctx c.Context, attachments []AttachInfo) ([]AttachInfo, error) {
-	_, span := trace.StartSpan(ctx, "file_registry.get_attachment_info")
+func (s *service) GetAttachmentLink(ctx c.Context, attachments []AttachInfo) ([]AttachInfo, error) {
+	_, span := trace.StartSpan(ctx, "file_registry.get_attachment_link")
 	defer span.End()
 
 	for k, v := range attachments {
@@ -42,7 +42,7 @@ func (s *Service) GetAttachmentLink(ctx c.Context, attachments []AttachInfo) ([]
 	return attachments, nil
 }
 
-func (s *Service) getAttachmentInfo(ctx c.Context, fileID string) (FileInfo, error) {
+func (s *service) getAttachmentInfo(ctx c.Context, fileID string) (FileInfo, error) {
 	_, span := trace.StartSpan(ctx, "file_registry.get_attachment_info")
 	defer span.End()
 
@@ -63,7 +63,7 @@ func (s *Service) getAttachmentInfo(ctx c.Context, fileID string) (FileInfo, err
 	}, nil
 }
 
-func (s *Service) GetAttachmentsInfo(ctx c.Context, attachments map[string][]entity.Attachment) (map[string][]FileInfo, error) {
+func (s *service) GetAttachmentsInfo(ctx c.Context, attachments map[string][]entity.Attachment) (map[string][]FileInfo, error) {
 	ctxLocal, span := trace.StartSpan(ctx, "file_registry.get_attachments_info")
 	defer span.End()
 
@@ -88,7 +88,7 @@ func (s *Service) GetAttachmentsInfo(ctx c.Context, attachments map[string][]ent
 	return res, nil
 }
 
-func (s *Service) getAttachment(ctx c.Context, fileID, workNumber, clientID string) (em.Attachment, error) {
+func (s *service) getAttachment(ctx c.Context, fileID, workNumber, clientID string) (em.Attachment, error) {
 	ctxLocal, span := trace.StartSpan(ctx, "file_registry.get_attachment")
 	defer span.End()
 
@@ -127,7 +127,7 @@ func (s *Service) getAttachment(ctx c.Context, fileID, workNumber, clientID stri
 	}, nil
 }
 
-func (s *Service) GetAttachments(ctx c.Context, attach []entity.Attachment, wNumber, clientID string) ([]em.Attachment, error) {
+func (s *service) GetAttachments(ctx c.Context, attach []entity.Attachment, wNumber, clientID string) ([]em.Attachment, error) {
 	ctxLocal, span := trace.StartSpan(ctx, "file_registry.get_attachments")
 	defer span.End()
 

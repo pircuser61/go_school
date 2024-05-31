@@ -221,15 +221,6 @@ func (ae *Env) runVersionByPrevVersion(
 			},
 		},
 	})
-	if errorutils.IsRemoteCallError(err) {
-		log.WithError(err).Warning("remote call error")
-
-		return &entity.RunResponse{
-			PipelineID: version.PipelineID,
-			WorkNumber: req.WorkNumber,
-			Status:     statusRunned,
-		}, nil
-	}
 
 	if err != nil {
 		log.WithError(err).Error("process empty task error")
