@@ -114,17 +114,16 @@ func (p *blockProcessor) ProcessBlock(ctx context.Context, its int) (string, err
 			return p.name, p.handleErrorWithRollback(ctx, log, errCheckEditing)
 		}
 
-		if isOnEditing && p.runCtx.UpdateData != nil && (p.runCtx.UpdateData.Action == string(entity.TaskUpdateActionApproverSendEditApp) ||
-			p.runCtx.UpdateData.Action == string(entity.TaskUpdateActionExecutorSendEditApp)) {
+		switch {
+		case isOnEditing && p.runCtx.UpdateData != nil && (p.runCtx.UpdateData.Action == string(entity.TaskUpdateActionApproverSendEditApp) ||
+			p.runCtx.UpdateData.Action == string(entity.TaskUpdateActionExecutorSendEditApp)):
 			errClearActions := p.runCtx.Services.Storage.ClearTaskMembersActions(ctx, p.runCtx.TaskID)
 			if errClearActions != nil {
 				return p.name, p.handleErrorWithRollback(ctx, log, errClearActions)
 			}
-		}
 
-		refillForm := p.bl.TypeID == "form" && p.runCtx.UpdateData != nil &&
-			p.runCtx.UpdateData.Action == string(entity.TaskUpdateActionRequestFillForm)
-		if refillForm && isStatusFiniteBeforeUpdate {
+		case isStatusFiniteBeforeUpdate && (p.bl.TypeID == "form" && p.runCtx.UpdateData != nil &&
+			p.runCtx.UpdateData.Action == string(entity.TaskUpdateActionRequestFillForm)):
 			activeBlocks, getActiveBlockErr := p.runCtx.Services.Storage.GetTaskActiveBlock(ctx, p.runCtx.TaskID.String(), p.name)
 			if getActiveBlockErr != nil {
 				return p.name, p.handleErrorWithRollback(ctx, log, getActiveBlockErr)
@@ -134,7 +133,6 @@ func (p *blockProcessor) ProcessBlock(ctx context.Context, its int) (string, err
 			failedBlock, processActiveErr := p.processActiveBlocks(ctx, activeBlocks, its, true)
 			if processActiveErr != nil {
 				log.WithError(initErr).Error("couldn't process active blocks " + strings.Join(activeBlocks, ","))
-
 				return failedBlock, processActiveErr
 			}
 

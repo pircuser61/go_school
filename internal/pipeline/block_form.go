@@ -141,6 +141,10 @@ func (gb *GoFormBlock) isFormUserActed(login string) bool {
 }
 
 func (gb *GoFormBlock) formActions() []MemberAction {
+	if gb.State.IsFilled {
+		return []MemberAction{}
+	}
+
 	if !gb.State.IsTakenInWork {
 		action := MemberAction{
 			ID:   formStartWorkAction,
