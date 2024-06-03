@@ -133,6 +133,7 @@ func (p *blockProcessor) ProcessBlock(ctx context.Context, its int) (string, err
 			failedBlock, processActiveErr := p.processActiveBlocks(ctx, activeBlocks, its, true)
 			if processActiveErr != nil {
 				log.WithError(initErr).Error("couldn't process active blocks " + strings.Join(activeBlocks, ","))
+
 				return failedBlock, processActiveErr
 			}
 
