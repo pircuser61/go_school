@@ -82,6 +82,15 @@ func (gb *GoExecutionBlock) handleTaskUpdateAction(ctx c.Context) error {
 
 //nolint:gocognit,gocyclo // вся сложность функции состоит в switch case, под каждым вызывается одна-две функции
 func (gb *GoExecutionBlock) handleAction(ctx c.Context, action e.TaskUpdateAction) error {
+	isWorkOnEditing, err := gb.RunContext.Services.Storage.CheckIsOnEditing(ctx, gb.RunContext.TaskID.String())
+	if err != nil {
+		return err
+	}
+
+	if isWorkOnEditing {
+		return errors.New("work is on editing by initiator")
+	}
+
 	//nolint:exhaustive //нам не нужно обрабатывать остальные случаи
 	switch action {
 	case e.TaskUpdateActionSLABreach:

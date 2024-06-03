@@ -724,6 +724,7 @@ func Test_createGoApproverBlock(t *testing.T) {
 
 func TestGoApproverBlock_Update(t *testing.T) {
 	stepID := uuid.New()
+	workID := "00000000-0000-0000-0000-000000000000"
 	exampleApprover := "example"
 	secondExampleApprover := "example2"
 	stepName := "appr"
@@ -766,6 +767,13 @@ func TestGoApproverBlock_Update(t *testing.T) {
 								stepID,
 							).Return(
 								nil, errors.New("unknown error"),
+							)
+
+							res.On("CheckIsOnEditing",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								workID,
+							).Return(
+								false, nil,
 							)
 
 							return res
@@ -871,6 +879,13 @@ func TestGoApproverBlock_Update(t *testing.T) {
 								mock.AnythingOfType("*db.UpdateStepRequest"),
 							).Return(
 								nil,
+							)
+
+							res.On("CheckIsOnEditing",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								workID,
+							).Return(
+								false, nil,
 							)
 
 							return res
@@ -983,6 +998,13 @@ func TestGoApproverBlock_Update(t *testing.T) {
 								nil,
 							)
 
+							res.On("CheckIsOnEditing",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								workID,
+							).Return(
+								false, nil,
+							)
+
 							return res
 						}(),
 					},
@@ -1085,6 +1107,13 @@ func TestGoApproverBlock_Update(t *testing.T) {
 								mock.AnythingOfType("*db.UpdateStepRequest"),
 							).Return(
 								nil,
+							)
+
+							res.On("CheckIsOnEditing",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								workID,
+							).Return(
+								false, nil,
 							)
 
 							return res

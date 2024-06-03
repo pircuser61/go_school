@@ -175,7 +175,17 @@ func (gb *GoSignBlock) handleSignature(ctx c.Context, login string) error {
 	return nil
 }
 
+//nolint:gocyclo //it's ok here
 func (gb *GoSignBlock) Update(ctx c.Context) (interface{}, error) {
+	isWorkOnEditing, err := gb.RunContext.Services.Storage.CheckIsOnEditing(ctx, gb.RunContext.TaskID.String())
+	if err != nil {
+		return nil, err
+	}
+
+	if isWorkOnEditing {
+		return nil, errors.New("work is on editing by initiator")
+	}
+
 	data := gb.RunContext.UpdateData
 	if data == nil {
 		return nil, errors.New("empty data")
@@ -222,7 +232,7 @@ func (gb *GoSignBlock) Update(ctx c.Context) (interface{}, error) {
 
 	gb.State.Deadline = deadline
 
-	err := gb.setEvents(ctx, signersLogins)
+	err = gb.setEvents(ctx, signersLogins)
 	if err != nil {
 		return nil, err
 	}

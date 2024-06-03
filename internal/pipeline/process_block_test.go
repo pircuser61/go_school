@@ -147,6 +147,13 @@ func makeStorage() *mocks.MockedDatabase {
 		mock.MatchedBy(func(data *db.SaveStepRequest) bool { return true }),
 	).Return(nil)
 
+	res.On("CheckIsOnEditing",
+		mock.MatchedBy(func(ctx context.Context) bool { return true }),
+		"00000000-0000-0000-0000-000000000000",
+	).Return(
+		false, nil,
+	)
+
 	res.EXPECT().IsStepExist(mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(true, uuid.Nil, time.Now(), nil)
 
 	return res

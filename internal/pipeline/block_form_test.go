@@ -380,6 +380,7 @@ func Test_createGoFormBlock(t *testing.T) {
 
 							return slaMock
 						}(),
+						Storage: myStorage,
 						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
@@ -560,6 +561,7 @@ func Test_createGoFormBlock(t *testing.T) {
 
 							return slaMock
 						}(),
+						Storage: myStorage,
 						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
@@ -665,7 +667,6 @@ func Test_createGoFormBlock(t *testing.T) {
 
 			tt.args.runCtx.Services.HumanTasks = ht
 
-
 			got, _, err := createGoFormBlock(ctx, tt.args.name, tt.args.ef, tt.args.runCtx, nil)
 			if got != nil {
 				got.RunContext = nil
@@ -755,6 +756,11 @@ func TestGoFormBlock_Update(t *testing.T) {
 		mock.MatchedBy(func(string) bool { return true }),
 		mock.MatchedBy(func(map[string]interface{}) bool { return true }),
 	).Return(nil)
+
+	mockedDb.On("CheckIsOnEditing",
+		mock.MatchedBy(func(ctx context.Context) bool { return true }),
+		"00000000-0000-0000-0000-000000000000",
+	).Return(false, nil)
 
 	type (
 		args struct {
