@@ -757,6 +757,11 @@ func TestGoFormBlock_Update(t *testing.T) {
 		mock.MatchedBy(func(map[string]interface{}) bool { return true }),
 	).Return(nil)
 
+	mockedDb.On("CheckIsOnEditing",
+		mock.MatchedBy(func(ctx context.Context) bool { return true }),
+		"00000000-0000-0000-0000-000000000000",
+	).Return(false, nil)
+
 	type (
 		args struct {
 			Name       string
