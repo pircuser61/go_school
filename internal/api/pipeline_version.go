@@ -10,8 +10,6 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 
 	"github.com/google/uuid"
 
@@ -25,7 +23,6 @@ import (
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	e "gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/errorutils"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
@@ -199,17 +196,14 @@ func (ae *Env) getExternalSystem(
 	clientID, pipelineID, versionID string,
 ) (*e.ExternalSystem, error) {
 	rpc := ae.Integrations.GetRPCIntCli()
+
 	system, err := rpc.GetIntegrationByClientId(ctx, &integration_v1.GetIntegrationByClientIdRequest{
 		ClientId:   clientID,
 		PipelineId: pipelineID,
 		VersionId:  versionID,
 	})
 	if err != nil {
-		if strings.Contains(err.Error(), "system not found") || status.Code(err) == codes.NotFound {
-			return nil, err
-		}
-
-		return nil, errors.Join(errorutils.ErrRemoteCallFailed, err)
+		return nil, err
 	}
 
 	externalSystem, err := storage.GetExternalSystemSettings(ctx, versionID, system.Integration.IntegrationId)

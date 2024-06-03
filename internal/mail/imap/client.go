@@ -2,6 +2,7 @@ package imap
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"os"
 	"sync"
@@ -54,7 +55,17 @@ func NewImapClient(cfg *ClientConfig) (*Client, error) {
 }
 
 func (s *Client) connect() error {
-	c, err := client.DialTLS(s.imapConnection, nil)
+	//nolint:gosec //почтовый сервер не будет работать с другими CipherSuites
+	cnf := &tls.Config{
+		CipherSuites: []uint16{
+			tls.TLS_RSA_WITH_3DES_EDE_CBC_SHA,
+			tls.TLS_RSA_WITH_AES_128_CBC_SHA,
+			tls.TLS_RSA_WITH_AES_256_CBC_SHA,
+		},
+		MinVersion: tls.VersionTLS12,
+	}
+
+	c, err := client.DialTLS(s.imapConnection, cnf)
 	if err != nil {
 		return errors.Wrap(err, "create IMAP client")
 	}

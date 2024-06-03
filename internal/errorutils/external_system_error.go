@@ -4,6 +4,9 @@ import (
 	"context"
 	"errors"
 	"io"
+
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // ErrRemoteCallFailed - специальная ошибка предназначенная для обработки неудачных запросов к внешним системам
@@ -26,8 +29,13 @@ func IsRemoteCallError(err error) bool {
 		return true
 	case errors.Is(err, context.Canceled):
 		return true
+	// ErrUnexpectedEOF возвращается из базы если соединение прерывается
 	case errors.Is(err, io.ErrUnexpectedEOF):
 		return true
+	// Работает на все grpc вызовы
+	case status.Code(err) == codes.Unavailable:
+		return true
+	// Для кастомного ретрая
 	default:
 		return errors.Is(err, ErrRemoteCallFailed)
 	}
