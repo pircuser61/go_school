@@ -1514,18 +1514,16 @@ func (db *PGCon) ClearTaskMembersActions(ctx context.Context, workID uuid.UUID) 
 	c, span := trace.StartSpan(ctx, "pg_clear_task__members_action")
 	defer span.End()
 
-	actions := make(pq.StringArray, 0)
-
 	// nolint:gocritic
 	// language=PostgreSQL
 	const qMembersUpdate = `
 		UPDATE members 
-		SET actions = $2
+		SET actions = '{}'
 		WHERE block_id IN (
 			SELECT id FROM variable_storage where work_id=$1
 		) AND NOT is_initiator`
 
-	_, err := db.Connection.Exec(c, qMembersUpdate, workID, actions)
+	_, err := db.Connection.Exec(c, qMembersUpdate, workID)
 
 	return err
 }

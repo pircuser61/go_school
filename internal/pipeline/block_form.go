@@ -102,7 +102,6 @@ type GoFormBlock struct {
 	expectedEvents      map[string]struct{}
 	happenedEvents      []entity.NodeEvent
 	happenedKafkaEvents []entity.NodeKafkaEvent
-	workIsOnEditing     bool
 }
 
 func (gb *GoFormBlock) CurrentExecutorData() CurrentExecutorData {
@@ -142,10 +141,6 @@ func (gb *GoFormBlock) isFormUserActed(login string) bool {
 }
 
 func (gb *GoFormBlock) formActions() []MemberAction {
-	if gb.State.IsFilled || gb.workIsOnEditing {
-		return []MemberAction{}
-	}
-
 	if !gb.State.IsTakenInWork {
 		action := MemberAction{
 			ID:   formStartWorkAction,

@@ -109,7 +109,12 @@ func (p *blockProcessor) ProcessBlock(ctx context.Context, its int) (string, err
 			return p.name, p.handleErrorWithRollback(ctx, log, err)
 		}
 
-		if p.runCtx.UpdateData != nil && (p.runCtx.UpdateData.Action == string(entity.TaskUpdateActionApproverSendEditApp) ||
+		isOnEditing, err := p.runCtx.Services.Storage.CheckIsOnEditing(ctx, p.runCtx.TaskID.String())
+		if err != nil {
+			return p.name, p.handleErrorWithRollback(ctx, log, err)
+		}
+
+		if isOnEditing && p.runCtx.UpdateData != nil && (p.runCtx.UpdateData.Action == string(entity.TaskUpdateActionApproverSendEditApp) ||
 			p.runCtx.UpdateData.Action == string(entity.TaskUpdateActionExecutorSendEditApp)) {
 			errClearActions := p.runCtx.Services.Storage.ClearTaskMembersActions(ctx, p.runCtx.TaskID)
 			if errClearActions != nil {

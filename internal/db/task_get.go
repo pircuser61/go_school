@@ -2889,34 +2889,21 @@ func (db *PGCon) CheckIsOnEditing(ctx c.Context, workID string) (bool, error) {
 	defer span.End()
 
 	q := `
-		SELECT vs.content->'State'-> step_name -> 'editing_app'
+		SELECT count(*)
 		FROM variable_storage vs
-		WHERE vs.work_id = $1 AND vs.status IN ('running', 'idle')`
+		WHERE vs.work_id = $1 AND vs.status IN ('idle') AND 
+		NOT (vs.content->'State'-> step_name -> 'editing_app' IS NULL OR
+		vs.content->'State'-> step_name ->> 'editing_app'::text = '{}'::text)`
 
-	var (
-		isOnEditing bool
-		editingApp  interface{}
-	)
+	var cnt int
 
-	rows, err := db.Connection.Query(ctx, q, workID)
-	if err != nil {
+	if err := db.Connection.QueryRow(ctx, q, workID).Scan(&cnt); err != nil {
 		return false, err
 	}
-	defer rows.Close()
 
-	for rows.Next() {
-		if scanErr := rows.Scan(&editingApp); scanErr != nil {
-			return false, scanErr
-		}
-
-		if editingApp != nil {
-			isOnEditing = true
-		}
+	if cnt > 0 {
+		return true, nil
 	}
 
-	if rowsErr := rows.Err(); rowsErr != nil {
-		return false, rowsErr
-	}
-
-	return isOnEditing, nil
+	return false, nil
 }
