@@ -15,8 +15,8 @@ func (db *PGCon) EmptyTasksToRetry(ctx context.Context, minLifetime, maxLifetime
 	INNER JOIN variable_storage vs ON vs.work_id = w.id
 	WHERE 
 	w.version_id IS NOT NULL AND 
-	now() - vs.time > make_interval(0,0,0,0,0,0,$2) and 
-	now() - vs.time < make_interval(0,0,0,0,0,0,$3) and
+	now() - vs.time > interval '1 second' * $2 and 
+	now() - vs.time < interval '1 second' * $3 and
 	w.status = 5
 	ORDER BY vs.time asc
 	LIMIT $1

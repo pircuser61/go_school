@@ -462,21 +462,20 @@ func (ae *Env) launchEmptyTask(
 	log := logger.GetLogger(ctx)
 
 	err := ae.processEmptyTask(ctx, storage, emptyTask, requestID, requestInfo)
-	if errorutils.IsRemoteCallError(err) {
+	switch {
+	case errorutils.IsRemoteCallError(err):
 		log.WithError(err).Warning("remote call error")
 
 		return nil
-	}
-
-	if err != nil {
+	case err != nil:
 		log.WithError(err).Error("process empty task error")
 
 		_ = storage.UpdateTaskStatus(ctx, emptyTask.WorkID, db.RunStatusError, err.Error(), "")
 
 		return err
+	default:
+		return nil
 	}
-
-	return nil
 }
 
 func (ae *Env) processEmptyTask(
