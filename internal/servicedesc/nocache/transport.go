@@ -45,6 +45,7 @@ func (t *transport) RoundTrip(req *http.Request) (*http.Response, error) {
 
 	res, err := t.next.RoundTrip(req)
 	code := http.StatusServiceUnavailable
+
 	if res != nil {
 		code = res.StatusCode
 	}
