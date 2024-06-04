@@ -47,7 +47,7 @@ func (ae *Env) MonitoringGetBlockError(w http.ResponseWriter, r *http.Request, b
 	}
 
 	desc := fmt.Sprintf(ae.getErrorDescription(), blockID, taskStep.WorkNumber)
-	urlError := ae.getErrorURL(taskStep.WorkNumber, blockID)
+	urlError := ae.GetErrorURL(taskStep.WorkNumber, blockID)
 
 	if err = sendResponse(w, http.StatusOK, BlockErrorResponse{
 		Description: desc,
@@ -73,22 +73,22 @@ func (ae *Env) getErrorDescription() string {
 }
 
 //nolint:all // ok
-func (ae *Env) getErrorURL(workNumber, stepID string) string {
+func (ae *Env) GetErrorURL(workNumber, stepID string) string {
 	const (
-		logRequestStart           = `https://dashboards.obs.mts.ru/app/discoverLegacy#/?_a=(columns:!(_source),discover:(columns:!(_source),isDirty:!f,sort:!()),filters:!(`
+		logRequestStart           = `https://dashboards.obs.mts.ru/app/data-explorer/discover#?_a=(discover:(columns:!(_source),isDirty:!f,sort:!()),metadata:(indexPattern:%s,view:discover))`
+		logRequestStart2          = `&_g=(filters:!(),refreshInterval:(pause:!t,value:0),time:(from:now-20d,to:now))&_q=(filters:!(`
 		logRequestFilter          = `('$state':(store:appState),meta:(alias:!n,disabled:!f,index:%s,key:%s,negate:!f,params:(query:'%s'),type:phrase),query:(match_phrase:(%s:'%s'))),`
 		logRequestFilterMethod    = `('$state':(store:appState),meta:(alias:!n,disabled:!f,index:%s,key:method,negate:!f,params:!(POST,PUT,kafka,faas),type:phrases,value:'POST,PUT,kafka,faas'),`
 		logRequestFilterMethodEnd = `query:(bool:(minimum_should_match:1,should:!((match_phrase:(method:POST)),(match_phrase:(method:PUT)),(match_phrase:(method:kafka)),(match_phrase:(method:faas))))))),`
-		logRequestEnd             = `index:%s,interval:auto,metadata:(indexPattern:aggregated-index-pattern-for-tenant,view:discover),query:(language:kuery,query:''),`
-		logRequestEnd2            = `sort:!())&_g=(filters:!(),refreshInterval:(pause:!t,value:0),time:(from:now-20d,to:now))&_q=(filters:!(),query:(language:kuery,query:''))`
+		logRequestEnd             = `query:(language:kuery,query:''))`
 	)
 
 	indexJocasta := ae.LogIndex
 
-	return logRequestStart +
+	return fmt.Sprintf(logRequestStart, indexJocasta) + logRequestStart2 +
 		fmt.Sprintf(logRequestFilter, indexJocasta, "level", "error", "level", "error") +
 		fmt.Sprintf(logRequestFilter, indexJocasta, "stepID", stepID, "stepID", stepID) +
 		fmt.Sprintf(logRequestFilter, indexJocasta, "workNumber", workNumber, "workNumber", workNumber) +
 		fmt.Sprintf(logRequestFilterMethod, indexJocasta) + logRequestFilterMethodEnd +
-		fmt.Sprintf(logRequestEnd, indexJocasta) + logRequestEnd2
+		logRequestEnd
 }
