@@ -462,6 +462,7 @@ func (ae *Env) launchEmptyTask(
 	log := logger.GetLogger(ctx)
 
 	err := ae.processEmptyTask(ctx, storage, emptyTask, requestID, requestInfo)
+
 	switch {
 	case errorutils.IsRemoteCallError(err):
 		log.WithError(err).Warning("remote call error")
