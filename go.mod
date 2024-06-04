@@ -1,6 +1,6 @@
 module gitlab.services.mts.ru/jocasta/pipeliner
 
-go 1.22
+go 1.22.2
 
 require (
 	contrib.go.opencensus.io/exporter/jaeger v0.2.1
@@ -16,7 +16,7 @@ require (
 	github.com/google/go-cmp v0.6.0
 	github.com/google/uuid v1.6.0
 	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.1.0
-	github.com/hashicorp/go-retryablehttp v0.7.5
+	github.com/hashicorp/go-retryablehttp v0.7.7
 	github.com/hrishin/httpmock v0.0.2
 	github.com/iancoleman/orderedmap v0.3.0
 	github.com/jackc/pgconn v1.14.0
@@ -30,13 +30,14 @@ require (
 	github.com/stretchr/testify v1.9.0
 	github.com/xeipuuv/gojsonschema v1.2.0
 	gitlab.services.mts.ru/abp/mail/pkg v1.19.0
-	gitlab.services.mts.ru/abp/myosotis v1.4.4
+	gitlab.services.mts.ru/abp/myosotis v1.4.5
 	gitlab.services.mts.ru/jocasta/cache-kit v1.2.0
 	gitlab.services.mts.ru/jocasta/conditions-kit v1.0.10
 	gitlab.services.mts.ru/jocasta/file-registry v1.8.0-rc.2
 	gitlab.services.mts.ru/jocasta/forms v1.7.0-rc.1.0.20240301073647-dad697e5b82d
 	gitlab.services.mts.ru/jocasta/functions v1.13.0-rc.1
 	gitlab.services.mts.ru/jocasta/human-tasks v1.0.0-alpha.3
+	gitlab.services.mts.ru/jocasta/iga-kit v1.0.1
 	gitlab.services.mts.ru/jocasta/integrations v1.11.0-rc.1
 	gitlab.services.mts.ru/jocasta/msg-kit v0.1.6
 	gitlab.services.mts.ru/jocasta/scheduler v1.10.1-0.20240411105447-0c6a180ab838
@@ -45,7 +46,6 @@ require (
 	go.opencensus.io v0.24.0
 	golang.org/x/exp v0.0.0-20230522175609-2e198f4a06a1
 	golang.org/x/sync v0.7.0
-	golang.org/x/text v0.15.0
 	google.golang.org/grpc v1.64.0
 	gopkg.in/square/go-jose.v2 v2.6.0
 	gopkg.in/yaml.v3 v3.0.1
@@ -64,7 +64,6 @@ require (
 	github.com/emersion/go-sasl v0.0.0-20200509203442-7bfe0ed36a21 // indirect
 	github.com/emersion/go-textwrapper v0.0.0-20200911093747-65d896831594 // indirect
 	github.com/envoyproxy/protoc-gen-validate v1.0.4 // indirect
-	github.com/fatih/color v1.16.0 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/getsentry/sentry-go v0.20.0 // indirect
 	github.com/go-kit/log v0.2.1 // indirect
@@ -92,7 +91,6 @@ require (
 	github.com/jcmturner/rpc/v2 v2.0.3 // indirect
 	github.com/klauspost/compress v1.17.8 // indirect
 	github.com/makasim/sentryhook v0.4.0 // indirect
-	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/pierrec/lz4/v4 v4.1.17 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/prometheus/client_model v0.6.1 // indirect
@@ -108,6 +106,7 @@ require (
 	golang.org/x/crypto v0.23.0 // indirect
 	golang.org/x/net v0.25.0 // indirect
 	golang.org/x/sys v0.20.0 // indirect
+	golang.org/x/text v0.16.0 // indirect
 	google.golang.org/api v0.114.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240318140521-94a12d6c2237 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240318140521-94a12d6c2237 // indirect
