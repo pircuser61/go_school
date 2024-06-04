@@ -47,7 +47,7 @@ func (ae *Env) RetryTasks(w http.ResponseWriter, r *http.Request, params RetryTa
 func (ae *Env) retryEmptyTasks(ctx context.Context, limit int) (retried int, err error) {
 	log := logger.GetLogger(ctx)
 
-	emptyTasks, err := ae.DB.EmptyTasks(ctx, ae.TaskRetry.MinLifetime, ae.TaskRetry.MaxLifetime, limit)
+	emptyTasks, err := ae.DB.EmptyTasksToRetry(ctx, ae.TaskRetry.MinLifetime, ae.TaskRetry.MaxLifetime, limit)
 	if err != nil {
 		return 0, errors.Join(GetTaskError, err)
 	}

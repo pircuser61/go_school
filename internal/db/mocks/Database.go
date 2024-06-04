@@ -1185,12 +1185,12 @@ func (_c *MockedDatabase_DeleteVersion_Call) RunAndReturn(run func(context.Conte
 	return _c
 }
 
-// EmptyTasks provides a mock function with given fields: ctx, minLifetime, maxLifetime, limit
-func (_m *MockedDatabase) EmptyTasks(ctx context.Context, minLifetime time.Duration, maxLifetime time.Duration, limit int) ([]*db.EmptyTask, error) {
+// EmptyTasksToRetry provides a mock function with given fields: ctx, minLifetime, maxLifetime, limit
+func (_m *MockedDatabase) EmptyTasksToRetry(ctx context.Context, minLifetime time.Duration, maxLifetime time.Duration, limit int) ([]*db.EmptyTask, error) {
 	ret := _m.Called(ctx, minLifetime, maxLifetime, limit)
 
 	if len(ret) == 0 {
-		panic("no return value specified for EmptyTasks")
+		panic("no return value specified for EmptyTasksToRetry")
 	}
 
 	var r0 []*db.EmptyTask
@@ -1215,33 +1215,33 @@ func (_m *MockedDatabase) EmptyTasks(ctx context.Context, minLifetime time.Durat
 	return r0, r1
 }
 
-// MockedDatabase_EmptyTasks_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'EmptyTasks'
-type MockedDatabase_EmptyTasks_Call struct {
+// MockedDatabase_EmptyTasksToRetry_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'EmptyTasksToRetry'
+type MockedDatabase_EmptyTasksToRetry_Call struct {
 	*mock.Call
 }
 
-// EmptyTasks is a helper method to define mock.On call
+// EmptyTasksToRetry is a helper method to define mock.On call
 //   - ctx context.Context
 //   - minLifetime time.Duration
 //   - maxLifetime time.Duration
 //   - limit int
-func (_e *MockedDatabase_Expecter) EmptyTasks(ctx interface{}, minLifetime interface{}, maxLifetime interface{}, limit interface{}) *MockedDatabase_EmptyTasks_Call {
-	return &MockedDatabase_EmptyTasks_Call{Call: _e.mock.On("EmptyTasks", ctx, minLifetime, maxLifetime, limit)}
+func (_e *MockedDatabase_Expecter) EmptyTasksToRetry(ctx interface{}, minLifetime interface{}, maxLifetime interface{}, limit interface{}) *MockedDatabase_EmptyTasksToRetry_Call {
+	return &MockedDatabase_EmptyTasksToRetry_Call{Call: _e.mock.On("EmptyTasksToRetry", ctx, minLifetime, maxLifetime, limit)}
 }
 
-func (_c *MockedDatabase_EmptyTasks_Call) Run(run func(ctx context.Context, minLifetime time.Duration, maxLifetime time.Duration, limit int)) *MockedDatabase_EmptyTasks_Call {
+func (_c *MockedDatabase_EmptyTasksToRetry_Call) Run(run func(ctx context.Context, minLifetime time.Duration, maxLifetime time.Duration, limit int)) *MockedDatabase_EmptyTasksToRetry_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		run(args[0].(context.Context), args[1].(time.Duration), args[2].(time.Duration), args[3].(int))
 	})
 	return _c
 }
 
-func (_c *MockedDatabase_EmptyTasks_Call) Return(_a0 []*db.EmptyTask, _a1 error) *MockedDatabase_EmptyTasks_Call {
+func (_c *MockedDatabase_EmptyTasksToRetry_Call) Return(_a0 []*db.EmptyTask, _a1 error) *MockedDatabase_EmptyTasksToRetry_Call {
 	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
-func (_c *MockedDatabase_EmptyTasks_Call) RunAndReturn(run func(context.Context, time.Duration, time.Duration, int) ([]*db.EmptyTask, error)) *MockedDatabase_EmptyTasks_Call {
+func (_c *MockedDatabase_EmptyTasksToRetry_Call) RunAndReturn(run func(context.Context, time.Duration, time.Duration, int) ([]*db.EmptyTask, error)) *MockedDatabase_EmptyTasksToRetry_Call {
 	_c.Call.Return(run)
 	return _c
 }

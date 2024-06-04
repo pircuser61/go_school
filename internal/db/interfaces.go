@@ -303,5 +303,5 @@ type Database interface {
 	DeleteEventToSend(ctx c.Context, eventID string) (err error)
 	GetEventsToSend(ctx c.Context) ([]e.ToSendKafkaEvent, error)
 
-	EmptyTasks(ctx c.Context, minLifetime, maxLifetime time.Duration, limit int) ([]*EmptyTask, error)
+	EmptyTasksToRetry(ctx c.Context, minLifetime, maxLifetime time.Duration, limit int) ([]*EmptyTask, error)
 }

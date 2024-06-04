@@ -8,7 +8,7 @@ import (
 	"github.com/jackc/pgx/v4"
 )
 
-func (db *PGCon) EmptyTasks(ctx context.Context, minLifetime, maxLifetime time.Duration, limit int) ([]*EmptyTask, error) {
+func (db *PGCon) EmptyTasksToRetry(ctx context.Context, minLifetime, maxLifetime time.Duration, limit int) ([]*EmptyTask, error) {
 	const query = `
 	SELECT w.id, w.version_id, w.work_number, w.author, w.run_context
 	FROM works w 
@@ -25,6 +25,10 @@ func (db *PGCon) EmptyTasks(ctx context.Context, minLifetime, maxLifetime time.D
 	rows, err := db.Connection.Query(ctx, query, limit, minLifetime.Seconds(), maxLifetime.Seconds())
 	if err != nil {
 		return nil, err
+	}
+
+	if rows.Err() != nil {
+		return nil, rows.Err()
 	}
 
 	defer rows.Close()
@@ -44,6 +48,10 @@ func scanEmptyTasks(rows pgx.Rows) ([]*EmptyTask, error) {
 		}
 
 		emptyTasks = append(emptyTasks, &emptyTask)
+	}
+
+	if rows.Err() != nil {
+		return nil, fmt.Errorf("rows.Err: %w", rows.Err())
 	}
 
 	return emptyTasks, nil
