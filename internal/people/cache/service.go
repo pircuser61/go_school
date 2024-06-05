@@ -4,6 +4,7 @@ import (
 	c "context"
 	"encoding/json"
 	"fmt"
+	"github.com/hashicorp/go-retryablehttp"
 
 	"go.opencensus.io/trace"
 
@@ -44,6 +45,8 @@ func NewService(cfg *people.Config, m metrics.Metrics) (people.Service, error) {
 		Cache:  cache,
 	}, nil
 }
+
+func (s *service) SetCli(cli *retryablehttp.Client) {}
 
 func (s *service) Ping(ctx c.Context) error {
 	return s.People.Ping(ctx)

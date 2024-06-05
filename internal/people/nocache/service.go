@@ -2,6 +2,7 @@ package nocache
 
 import (
 	c "context"
+	"github.com/hashicorp/go-retryablehttp"
 	"net/http"
 
 	"go.opencensus.io/plugin/ochttp"
@@ -41,6 +42,10 @@ func NewService(cfg *people.Config, m metrics.Metrics) (people.Service, error) {
 	}
 
 	return res, nil
+}
+
+func (s *service) SetCli(cli *retryablehttp.Client) {
+	s.iga.SetCli(cli)
 }
 
 func (s *service) Ping(ctx c.Context) error {

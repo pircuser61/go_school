@@ -100,6 +100,8 @@ type SSOUserTyped struct {
 	DisabledCredentialTypes []string          `json:"disabledCredentialTypes"`
 	RequiredActions         []string          `json:"requiredActions"`
 	NotBefore               int               `json:"notBefore"`
+	Tabnum                  string            `json:"tabnum"`
+	UnitPaths               string            `json:"unitPaths"`
 }
 
 type SSOUser map[string]interface{}

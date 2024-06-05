@@ -2804,7 +2804,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
-
   /monitoring/tasks/{workNumber}/events:
     get:
       operationId: GetMonitoringTaskEvents
@@ -2855,7 +2854,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
-
   /monitoring/tasks/block/{blockId}:
     put:
       operationId: MonitoringUpdateTaskBlockData
@@ -2914,7 +2912,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/httpError'
       x-codegen-request-body-name: variables
-
   /monitoring/tasks/block/inputs:
     put:
       operationId: MonitoringUpdateBlockInputs
@@ -2966,7 +2963,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/httpError'
       x-codegen-request-body-name: variables
-
   /monitoring/tasks/block/{blockId}/context:
     get:
       operationId: MonitoringGetBlockContext
@@ -3443,8 +3439,85 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
+  /people/find:
+    get:
+      tags:
+        - people
+      summary: Get user info
+      operationId: GetUser
+      parameters:
+        - name: search
+          in: query
+          description: User login
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/UserInfo'
+                  status_code:
+                    type: integer
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        403:
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
 components:
   schemas:
+    UserInfo:
+      type: object
+      properties:
+        fullname:
+          type: string
+        username:
+          type: string
+        email:
+          type: string
+        mobile:
+          type: string
+        fullOrgUnit:
+          type: string
+        position:
+          type: string
+        phone:
+          type: string
+        tabnum:
+          type: string
+      required:
+        - fullname
+        - username
+        - email
+        - mobile
+        - fullOrgUnit
+        - position
+        - phone
+        - tabnum
     ApproveStatusesResponse:
       type: object
       properties:
