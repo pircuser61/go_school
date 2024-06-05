@@ -1227,6 +1227,7 @@ func (gb *GoExecutionBlock) toEditApplication(ctx c.Context) (err error) {
 	}
 
 	// возврат на доработку всей заявки инициатору
+	//nolint:nestif //it's ok
 	if gb.isNextBlockServiceDesk() {
 		err = gb.returnToAdminForRevision(ctx, delegateFor, updateParams)
 		if err != nil {
@@ -1248,9 +1249,11 @@ func (gb *GoExecutionBlock) toEditApplication(ctx c.Context) (err error) {
 		if valOutputExecutionLogin, ok := gb.Output[keyOutputExecutionLogin]; ok {
 			gb.RunContext.VarStore.SetValue(valOutputExecutionLogin, person)
 		}
+
 		if valOutputDecision, ok := gb.Output[keyOutputDecision]; ok {
 			gb.RunContext.VarStore.SetValue(valOutputDecision, ExecutionDecisionSentEdit)
 		}
+
 		if valOutputComment, ok := gb.Output[keyOutputComment]; ok {
 			gb.RunContext.VarStore.SetValue(valOutputComment, updateParams.Comment)
 		}

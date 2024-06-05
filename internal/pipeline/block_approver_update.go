@@ -653,9 +653,11 @@ func (gb *GoApproverBlock) toEditApplication(ctx context.Context, updateParams a
 	if valOutputApprover, ok := gb.Output[keyOutputApprover]; ok {
 		gb.RunContext.VarStore.SetValue(valOutputApprover, person)
 	}
+
 	if valOutputDecision, ok := gb.Output[keyOutputDecision]; ok {
 		gb.RunContext.VarStore.SetValue(valOutputDecision, ApproverDecisionSentToEdit)
 	}
+
 	if valOutputComment, ok := gb.Output[keyOutputComment]; ok {
 		gb.RunContext.VarStore.SetValue(valOutputComment, updateParams.Comment)
 	}

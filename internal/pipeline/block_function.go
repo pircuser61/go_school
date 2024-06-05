@@ -299,6 +299,7 @@ func createExecutableFunctionBlock(ctx context.Context, name string, ef *entity.
 			if v.Global == "" {
 				continue
 			}
+
 			b.Output[propertyName] = v.Global
 		}
 	}
@@ -468,6 +469,7 @@ func (gb *ExecutableFunctionBlock) setStateByResponse(ctx context.Context, log l
 		gb.State.HasResponse = true
 	}
 
+	//nolint:nestif //it's ok
 	if gb.State.HasResponse {
 		var expectedOutput map[string]script.ParamMetadata
 

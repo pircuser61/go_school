@@ -47,6 +47,7 @@ func createGoExecutionBlock(ctx context.Context, name string, ef *entity.EriusFu
 			if v.Global == "" {
 				continue
 			}
+
 			b.Output[propertyName] = v.Global
 		}
 	}
