@@ -84,9 +84,11 @@ func (gb *GoStartBlock) Update(ctx context.Context) (interface{}, error) {
 	if valOutputWorkNumber, ok := gb.Output[entity.KeyOutputWorkNumber]; ok {
 		gb.RunContext.VarStore.SetValue(valOutputWorkNumber, gb.RunContext.WorkNumber)
 	}
+
 	if valOutputApplicationInitiator, ok := gb.Output[entity.KeyOutputApplicationInitiator]; ok {
 		gb.RunContext.VarStore.SetValue(valOutputApplicationInitiator, personData)
 	}
+
 	if valOutputApplicationBody, ok := gb.Output[entity.KeyOutputApplicationBody]; ok {
 		gb.RunContext.VarStore.SetValue(valOutputApplicationBody, data.InitialApplication.ApplicationBody)
 	}
@@ -170,6 +172,7 @@ func createGoStartBlock(ctx context.Context, name string, ef *entity.EriusFunc, 
 			if v.Global == "" {
 				continue
 			}
+
 			b.Output[propertyName] = v.Global
 		}
 	}

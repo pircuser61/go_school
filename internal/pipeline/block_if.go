@@ -186,6 +186,7 @@ func createGoIfBlock(ctx context.Context, name string, ef *entity.EriusFunc, run
 			if v.Global == "" {
 				continue
 			}
+
 			b.Output[propertyName] = v.Global
 		}
 	}
