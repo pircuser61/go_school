@@ -194,6 +194,10 @@ func Test_createGoFormBlock(t *testing.T) {
 								Type:   "string",
 								Global: global2,
 							},
+							"empty_global": {
+								Type:   "string",
+								Global: "",
+							},
 						},
 					},
 					Params: func() []byte {
@@ -338,6 +342,10 @@ func Test_createGoFormBlock(t *testing.T) {
 							keyOutputFormBody: {
 								Type:   "string",
 								Global: global2,
+							},
+							"empty_global": {
+								Type:   "string",
+								Global: "",
 							},
 						},
 					},
@@ -516,6 +524,10 @@ func Test_createGoFormBlock(t *testing.T) {
 								Type:   "string",
 								Global: global2,
 							},
+							"empty_global": {
+								Type:   "string",
+								Global: "",
+							},
 						},
 					},
 					Params: func() []byte {
@@ -664,7 +676,6 @@ func Test_createGoFormBlock(t *testing.T) {
 			ht.SetCli(&cli)
 
 			tt.args.runCtx.Services.HumanTasks = ht
-
 
 			got, _, err := createGoFormBlock(ctx, tt.args.name, tt.args.ef, tt.args.runCtx, nil)
 			if got != nil {

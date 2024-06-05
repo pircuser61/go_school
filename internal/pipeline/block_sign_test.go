@@ -43,11 +43,10 @@ import (
 
 type PeopleServiceTest struct {
 	SearchURL string
-	Cli   *retryablehttp.Client `json:"-"`
-	Sso   *sso.Service
-	Cache cachekit.Cache
+	Cli       *retryablehttp.Client `json:"-"`
+	Sso       *sso.Service
+	Cache     cachekit.Cache
 }
-
 
 func getTaskRunContext() db.Database {
 	res := &mocks.MockedDatabase{}
@@ -541,6 +540,10 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 								Type:   "string",
 								Global: "bar",
 							},
+							"empty_global": {
+								Type:   "string",
+								Global: "",
+							},
 						},
 					},
 					Params: func() []byte {
@@ -667,6 +670,10 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 							"foo": {
 								Type:   "string",
 								Global: "bar",
+							},
+							"empty_global": {
+								Type:   "string",
+								Global: "",
 							},
 						},
 					},
@@ -800,6 +807,10 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 							"foo": {
 								Type:   "string",
 								Global: "bar",
+							},
+							"empty_global": {
+								Type:   "string",
+								Global: "",
 							},
 						},
 					},
@@ -953,6 +964,10 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 								Type:   "string",
 								Global: "bar",
 							},
+							"empty_global": {
+								Type:   "string",
+								Global: "",
+							},
 						},
 					},
 					Params: func() []byte {
@@ -1079,6 +1094,10 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 							"foo": {
 								Type:   "string",
 								Global: "bar",
+							},
+							"empty_global": {
+								Type:   "string",
+								Global: "",
 							},
 						},
 					},
@@ -1212,6 +1231,10 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 							"foo": {
 								Type:   "string",
 								Global: "bar",
+							},
+							"empty_global": {
+								Type:   "string",
+								Global: "",
 							},
 						},
 					},
@@ -1356,6 +1379,10 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 								Type:   "string",
 								Global: "bar",
 							},
+							"empty_global": {
+								Type:   "string",
+								Global: "",
+							},
 						},
 					},
 					Params: func() []byte {
@@ -1414,6 +1441,10 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 								Type:   "string",
 								Global: "bar",
 							},
+							"empty_global": {
+								Type:   "string",
+								Global: "",
+							},
 						},
 					},
 					Params: func() []byte {
@@ -1471,6 +1502,10 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 							"foo": {
 								Type:   "string",
 								Global: "bar",
+							},
+							"empty_global": {
+								Type:   "string",
+								Global: "",
 							},
 						},
 					},
@@ -1538,6 +1573,10 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 							"foo": {
 								Type:   "string",
 								Global: "bar",
+							},
+							"empty_global": {
+								Type:   "string",
+								Global: "",
 							},
 						},
 					},
@@ -1671,6 +1710,10 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 							"foo": {
 								Type:   "string",
 								Global: "bar",
+							},
+							"empty_global": {
+								Type:   "string",
+								Global: "",
 							},
 						},
 					},
@@ -1815,6 +1858,10 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 							"foo": {
 								Type:   "string",
 								Global: "bar",
+							},
+							"empty_global": {
+								Type:   "string",
+								Global: "",
 							},
 						},
 					},
@@ -3004,7 +3051,7 @@ func TestGoSignBlock_Update(t *testing.T) {
 
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							
+
 							sdMock, _ := sd_nocache.NewService(&servicedesc.Config{}, nil, nil)
 							sdMock.SetCli(retryableHttpClient)
 
@@ -3197,8 +3244,8 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 				Name: stepName,
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
-					WorkNumber: "J001",
-					VarStore:   store.NewStore(),
+					WorkNumber:        "J001",
+					VarStore:          store.NewStore(),
 					Services: RunContextServices{
 						SLAService: func() sla.Service {
 							slaMock := sla.NewSLAService(nil)
@@ -3279,8 +3326,8 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 				Name: stepName,
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
-					WorkNumber: "J001",
-					VarStore:   store.NewStore(),
+					WorkNumber:        "J001",
+					VarStore:          store.NewStore(),
 					Services: RunContextServices{
 						SLAService: func() sla.Service {
 							slaMock := sla.NewSLAService(nil)
@@ -3361,8 +3408,8 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 				Name: stepName,
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
-					WorkNumber: "J001",
-					VarStore:   store.NewStore(),
+					WorkNumber:        "J001",
+					VarStore:          store.NewStore(),
 					Services: RunContextServices{
 						SLAService: func() sla.Service {
 							slaMock := sla.NewSLAService(nil)
@@ -3443,8 +3490,8 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 				Name: stepName,
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
-					WorkNumber: "J001",
-					VarStore:   store.NewStore(),
+					WorkNumber:        "J001",
+					VarStore:          store.NewStore(),
 					Services: RunContextServices{
 						SLAService: func() sla.Service {
 							slaMock := sla.NewSLAService(nil)
@@ -3525,8 +3572,8 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 				Name: stepName,
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
-					WorkNumber: "J001",
-					VarStore:   store.NewStore(),
+					WorkNumber:        "J001",
+					VarStore:          store.NewStore(),
 					Services: RunContextServices{
 						SLAService: func() sla.Service {
 							slaMock := sla.NewSLAService(nil)
@@ -3607,8 +3654,8 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 				Name: stepName,
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
-					WorkNumber: "J001",
-					VarStore:   store.NewStore(),
+					WorkNumber:        "J001",
+					VarStore:          store.NewStore(),
 					Services: RunContextServices{
 						SLAService: func() sla.Service {
 							slaMock := sla.NewSLAService(nil)
@@ -3689,8 +3736,8 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 				Name: stepName,
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
-					WorkNumber: "J001",
-					VarStore:   store.NewStore(),
+					WorkNumber:        "J001",
+					VarStore:          store.NewStore(),
 					Services: RunContextServices{
 						SLAService: func() sla.Service {
 							slaMock := sla.NewSLAService(nil)
@@ -3771,8 +3818,8 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 				Name: stepName,
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
-					WorkNumber: "J001",
-					VarStore:   store.NewStore(),
+					WorkNumber:        "J001",
+					VarStore:          store.NewStore(),
 					Services: RunContextServices{
 						SLAService: func() sla.Service {
 							slaMock := sla.NewSLAService(nil)
@@ -3853,8 +3900,8 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 				Name: stepName,
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
-					WorkNumber: "J001",
-					VarStore:   store.NewStore(),
+					WorkNumber:        "J001",
+					VarStore:          store.NewStore(),
 					Services: RunContextServices{
 						SLAService: func() sla.Service {
 							slaMock := sla.NewSLAService(nil)
@@ -3935,8 +3982,8 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 				Name: stepName,
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
-					WorkNumber: "J001",
-					VarStore:   store.NewStore(),
+					WorkNumber:        "J001",
+					VarStore:          store.NewStore(),
 					Services: RunContextServices{
 						SLAService: func() sla.Service {
 							slaMock := sla.NewSLAService(nil)
@@ -4004,8 +4051,8 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 				Name: stepName,
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
-					WorkNumber: "J001",
-					VarStore:   store.NewStore(),
+					WorkNumber:        "J001",
+					VarStore:          store.NewStore(),
 					Services: RunContextServices{
 						SLAService: func() sla.Service {
 							slaMock := sla.NewSLAService(nil)
@@ -4073,8 +4120,8 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 				Name: stepName,
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
-					WorkNumber: "J001",
-					VarStore:   store.NewStore(),
+					WorkNumber:        "J001",
+					VarStore:          store.NewStore(),
 					Services: RunContextServices{
 						SLAService: func() sla.Service {
 							slaMock := sla.NewSLAService(nil)
@@ -4142,7 +4189,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 				Name: stepName,
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
-					WorkNumber: "J001",
+					WorkNumber:        "J001",
 					VarStore: func() *store.VariableStore {
 						s := store.NewStore()
 						s.SetValue("form_3.inn", "inn_1")
@@ -4236,8 +4283,8 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 				Name: stepName,
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
-					WorkNumber: "J001",
-					VarStore:   store.NewStore(),
+					WorkNumber:        "J001",
+					VarStore:          store.NewStore(),
 					Services: RunContextServices{
 						SLAService: func() sla.Service {
 							slaMock := sla.NewSLAService(nil)
@@ -4305,8 +4352,8 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 				Name: stepName,
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
-					WorkNumber: "J001",
-					VarStore:   store.NewStore(),
+					WorkNumber:        "J001",
+					VarStore:          store.NewStore(),
 					Services: RunContextServices{
 						SLAService: func() sla.Service {
 							slaMock := sla.NewSLAService(nil)
@@ -4374,8 +4421,8 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 				Name: stepName,
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
-					WorkNumber: "J001",
-					VarStore:   store.NewStore(),
+					WorkNumber:        "J001",
+					VarStore:          store.NewStore(),
 					Services: RunContextServices{
 						SLAService: func() sla.Service {
 							slaMock := sla.NewSLAService(nil)
@@ -4443,8 +4490,8 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 				Name: stepName,
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
-					WorkNumber: "J001",
-					VarStore:   store.NewStore(),
+					WorkNumber:        "J001",
+					VarStore:          store.NewStore(),
 					Services: RunContextServices{
 						SLAService: func() sla.Service {
 							slaMock := sla.NewSLAService(nil)
@@ -4525,8 +4572,8 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 				Name: stepName,
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
-					WorkNumber: "J001",
-					VarStore:   store.NewStore(),
+					WorkNumber:        "J001",
+					VarStore:          store.NewStore(),
 					Services: RunContextServices{
 						SLAService: func() sla.Service {
 							slaMock := sla.NewSLAService(nil)
@@ -4607,8 +4654,8 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 				Name: stepName,
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
-					WorkNumber: "J001",
-					VarStore:   store.NewStore(),
+					WorkNumber:        "J001",
+					VarStore:          store.NewStore(),
 					Services: RunContextServices{
 						SLAService: func() sla.Service {
 							slaMock := sla.NewSLAService(nil)
@@ -4689,8 +4736,8 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 				Name: stepName,
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
-					WorkNumber: "J001",
-					VarStore:   store.NewStore(),
+					WorkNumber:        "J001",
+					VarStore:          store.NewStore(),
 					Services: RunContextServices{
 						SLAService: func() sla.Service {
 							slaMock := sla.NewSLAService(nil)
@@ -4758,8 +4805,8 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 				Name: stepName,
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
-					WorkNumber: "J001",
-					VarStore:   store.NewStore(),
+					WorkNumber:        "J001",
+					VarStore:          store.NewStore(),
 					Services: RunContextServices{
 						SLAService: func() sla.Service {
 							slaMock := sla.NewSLAService(nil)
@@ -4827,7 +4874,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 				Name: stepName,
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
-					WorkNumber: "J001",
+					WorkNumber:        "J001",
 					VarStore: func() *store.VariableStore {
 						s := store.NewStore()
 						s.SetValue("form_3.inn", "inn_1")
@@ -4921,7 +4968,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 				Name: stepName,
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
-					WorkNumber: "J001",
+					WorkNumber:        "J001",
 					VarStore: func() *store.VariableStore {
 						s := store.NewStore()
 						s.SetValue("form_3.snils", "snils_1")
@@ -5014,7 +5061,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 				Name: stepName,
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
-					WorkNumber: "J001",
+					WorkNumber:        "J001",
 					VarStore: func() *store.VariableStore {
 						s := store.NewStore()
 						s.SetValue("form_3.inn", "inn_1")
@@ -5107,7 +5154,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 				Name: stepName,
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
-					WorkNumber: "J001",
+					WorkNumber:        "J001",
 					VarStore: func() *store.VariableStore {
 						s := store.NewStore()
 						s.SetValue("form_3.inn", "inn_1")
@@ -5197,7 +5244,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 				Name: stepName,
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
-					WorkNumber: "J001",
+					WorkNumber:        "J001",
 					VarStore: func() *store.VariableStore {
 						s := store.NewStore()
 						s.SetValue("form_3.inn", 123)

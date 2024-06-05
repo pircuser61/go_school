@@ -522,6 +522,10 @@ func Test_createGoApproverBlock(t *testing.T) {
 								Type:   "string",
 								Global: example,
 							},
+							"empty_global": {
+								Type:   "string",
+								Global: "",
+							},
 						},
 					},
 					Params: func() []byte {
@@ -631,6 +635,10 @@ func Test_createGoApproverBlock(t *testing.T) {
 							keyOutputApprover: {
 								Type:   "string",
 								Global: example,
+							},
+							"empty_global": {
+								Type:   "string",
+								Global: "",
 							},
 						},
 					},
@@ -1118,6 +1126,7 @@ func TestGoApproverBlock_Update(t *testing.T) {
 			}
 			tt.fields.RunContext.UpdateData = tt.args.data
 			_, err := gb.Update(tt.args.ctx)
+			fmt.Println(gb.RunContext.VarStore.Values)
 			assert.Equalf(t, tt.wantErr, err != nil, fmt.Sprintf("Update(%v, %v)", tt.args.ctx, tt.args.data))
 		})
 	}
