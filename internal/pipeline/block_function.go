@@ -423,7 +423,7 @@ func (gb *ExecutableFunctionBlock) createExpectedEvents(
 
 var ErrMessageFromKafkaHasError = errors.New("message from kafka has error")
 
-//nolint:gocognit, gocyclo //it's ok
+//nolint:gocognit,gocyclo //it's ok
 func (gb *ExecutableFunctionBlock) setStateByResponse(ctx context.Context, log logger.Logger, updateData *FunctionUpdateParams) error {
 	if gb.State.Async && gb.State.HasAck && !updateData.IsAsyncResult {
 		log.Warning("repeating ack message")
