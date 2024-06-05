@@ -228,6 +228,7 @@ func createTimerBlock(
 			if v.Global == "" {
 				continue
 			}
+
 			b.Output[propertyName] = v.Global
 		}
 	}

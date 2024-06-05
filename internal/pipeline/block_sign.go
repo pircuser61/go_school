@@ -898,6 +898,7 @@ func createGoSignBlock(ctx context.Context, name string, ef *entity.EriusFunc, r
 			if v.Global == "" {
 				continue
 			}
+
 			b.Output[propertyName] = v.Global
 		}
 	}

@@ -175,6 +175,7 @@ func createGoWaitForAllInputsBlock(
 			if v.Global == "" {
 				continue
 			}
+
 			b.Output[propertyName] = v.Global
 		}
 	}
