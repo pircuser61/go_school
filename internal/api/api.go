@@ -2589,9 +2589,6 @@ type SearchPeopleParams struct {
 	// First and last name or username
 	Search string `json:"search"`
 
-	// If only enabled accounts should be returned
-	Enabled *bool `json:"enabled,omitempty"`
-
 	// Search limit
 	Limit *int `json:"limit,omitempty"`
 }
@@ -5123,17 +5120,6 @@ func (siw *ServerInterfaceWrapper) SearchPeople(w http.ResponseWriter, r *http.R
 	err = runtime.BindQueryParameter("form", true, true, "search", r.URL.Query(), &params.Search)
 	if err != nil {
 		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "search", Err: err})
-		return
-	}
-
-	// ------------- Optional query parameter "enabled" -------------
-	if paramValue := r.URL.Query().Get("enabled"); paramValue != "" {
-
-	}
-
-	err = runtime.BindQueryParameter("form", true, false, "enabled", r.URL.Query(), &params.Enabled)
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "enabled", Err: err})
 		return
 	}
 
