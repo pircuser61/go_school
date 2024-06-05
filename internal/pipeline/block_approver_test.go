@@ -522,6 +522,10 @@ func Test_createGoApproverBlock(t *testing.T) {
 								Type:   "string",
 								Global: example,
 							},
+							"empty_global": {
+								Type:   "string",
+								Global: "",
+							},
 						},
 					},
 					Params: func() []byte {
@@ -631,6 +635,10 @@ func Test_createGoApproverBlock(t *testing.T) {
 							keyOutputApprover: {
 								Type:   "string",
 								Global: example,
+							},
+							"empty_global": {
+								Type:   "string",
+								Global: "",
 							},
 						},
 					},

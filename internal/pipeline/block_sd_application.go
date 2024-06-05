@@ -122,10 +122,21 @@ func (gb *GoSdApplicationBlock) Update(ctx context.Context) (interface{}, error)
 		return nil, err
 	}
 
-	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputSdApplicationExecutor], personData)
-	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputBlueprintID], gb.State.BlueprintID)
-	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputSdApplicationDesc], data.InitialApplication.Description)
-	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputSdApplication], appBody)
+	if valOutputSdApplicationExecutor, ok := gb.Output[keyOutputSdApplicationExecutor]; ok {
+		gb.RunContext.VarStore.SetValue(valOutputSdApplicationExecutor, personData)
+	}
+
+	if valOutputBlueprintID, ok := gb.Output[keyOutputBlueprintID]; ok {
+		gb.RunContext.VarStore.SetValue(valOutputBlueprintID, gb.State.BlueprintID)
+	}
+
+	if valOutputSdApplicationDesc, ok := gb.Output[keyOutputSdApplicationDesc]; ok {
+		gb.RunContext.VarStore.SetValue(valOutputSdApplicationDesc, data.InitialApplication.Description)
+	}
+
+	if valOutputSdApplication, ok := gb.Output[keyOutputSdApplication]; ok {
+		gb.RunContext.VarStore.SetValue(valOutputSdApplication, appBody)
+	}
 
 	gb.State.ApplicationBody = appBody
 	gb.State.Description = data.InitialApplication.Description
@@ -230,6 +241,10 @@ func createGoSdApplicationBlock(ctx context.Context, name string, ef *entity.Eri
 	if ef.Output != nil {
 		//nolint:gocritic //в этом проекте не принято использовать поинтеры в коллекциях
 		for propertyName, v := range ef.Output.Properties {
+			if v.Global == "" {
+				continue
+			}
+
 			b.Output[propertyName] = v.Global
 		}
 	}

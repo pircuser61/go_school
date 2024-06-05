@@ -219,10 +219,14 @@ func (gb *GoFormBlock) handleRequestFillForm(ctx context.Context, data *script.B
 			return err
 		}
 
-		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputFormExecutor], personData)
+		if valOutputFormExecutor, ok := gb.Output[keyOutputFormExecutor]; ok {
+			gb.RunContext.VarStore.SetValue(valOutputFormExecutor, personData)
+		}
 	}
 
-	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputFormBody], gb.State.ApplicationBody)
+	if valOutputFormBody, ok := gb.Output[keyOutputFormBody]; ok {
+		gb.RunContext.VarStore.SetValue(valOutputFormBody, gb.State.ApplicationBody)
+	}
 
 	return nil
 }

@@ -44,6 +44,10 @@ func createGoApproverBlock(ctx context.Context, name string, ef *entity.EriusFun
 	if ef.Output != nil {
 		//nolint:gocritic //в этом проекте не принято использовать поинтеры в коллекциях
 		for propertyName, v := range ef.Output.Properties {
+			if v.Global == "" {
+				continue
+			}
+
 			b.Output[propertyName] = v.Global
 		}
 	}
@@ -478,8 +482,8 @@ func (gb *GoApproverBlock) trySetPreviousDecision(ctx context.Context) (isPrevDe
 		return false
 	}
 
-	data, ok := parentStep.State[gb.Name]
-	if !ok {
+	data, exists := parentStep.State[gb.Name]
+	if !exists {
 		//nolint:goconst // не нужно здесь константы чекать
 		l.Error(funcName, "parent step state is not found: "+gb.Name)
 
@@ -515,9 +519,17 @@ func (gb *GoApproverBlock) trySetPreviousDecision(ctx context.Context) (isPrevDe
 		return false
 	}
 
-	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputApprover], person)
-	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputDecision], parentState.Decision.String())
-	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputComment], comment)
+	if valOutputApprover, ok := gb.Output[keyOutputApprover]; ok {
+		gb.RunContext.VarStore.SetValue(valOutputApprover, person)
+	}
+
+	if valOutputDecision, ok := gb.Output[keyOutputDecision]; ok {
+		gb.RunContext.VarStore.SetValue(valOutputDecision, parentState.Decision.String())
+	}
+
+	if valOutputComment, ok := gb.Output[keyOutputComment]; ok {
+		gb.RunContext.VarStore.SetValue(valOutputComment, comment)
+	}
 
 	gb.State.ActualApprover = &actualApprover
 	gb.State.Comment = &comment
@@ -527,7 +539,7 @@ func (gb *GoApproverBlock) trySetPreviousDecision(ctx context.Context) (isPrevDe
 
 	status, _, _ := gb.GetTaskHumanStatus()
 
-	if _, ok = gb.expectedEvents[eventEnd]; ok {
+	if _, exists = gb.expectedEvents[eventEnd]; exists {
 		event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, MakeNodeEndEventArgs{
 			NodeName:      gb.Name,
 			NodeShortName: gb.ShortName,

@@ -296,6 +296,10 @@ func createExecutableFunctionBlock(ctx context.Context, name string, ef *entity.
 	if ef.Output != nil {
 		//nolint:gocritic //в этом проекте не принято использовать поинтеры в коллекциях
 		for propertyName, v := range ef.Output.Properties {
+			if v.Global == "" {
+				continue
+			}
+
 			b.Output[propertyName] = v.Global
 		}
 	}
@@ -419,6 +423,7 @@ func (gb *ExecutableFunctionBlock) createExpectedEvents(
 
 var ErrMessageFromKafkaHasError = errors.New("message from kafka has error")
 
+//nolint:gocognit,gocyclo //it's ok
 func (gb *ExecutableFunctionBlock) setStateByResponse(ctx context.Context, log logger.Logger, updateData *FunctionUpdateParams) error {
 	if gb.State.Async && gb.State.HasAck && !updateData.IsAsyncResult {
 		log.Warning("repeating ack message")
@@ -429,7 +434,10 @@ func (gb *ExecutableFunctionBlock) setStateByResponse(ctx context.Context, log l
 	//nolint:nestif //it's ok
 	if updateData.DoRetry && gb.State.RetryCount > 0 {
 		if gb.State.CurrRetryCount >= gb.State.RetryCount {
-			gb.RunContext.VarStore.SetValue(gb.Output[keyOutputFunctionDecision], RetryCountExceededDecision)
+			if valOutputFunctionDecision, ok := gb.Output[keyOutputFunctionDecision]; ok {
+				gb.RunContext.VarStore.SetValue(valOutputFunctionDecision, RetryCountExceededDecision)
+			}
+
 			gb.State.RetryCountExceeded = true
 		} else if !gb.RunContext.skipProduce { // for test
 			gb.State.Started = false
@@ -463,6 +471,7 @@ func (gb *ExecutableFunctionBlock) setStateByResponse(ctx context.Context, log l
 		gb.State.HasResponse = true
 	}
 
+	//nolint:nestif //it's ok
 	if gb.State.HasResponse {
 		var expectedOutput map[string]script.ParamMetadata
 
@@ -489,10 +498,14 @@ func (gb *ExecutableFunctionBlock) setStateByResponse(ctx context.Context, log l
 
 		gb.RunContext.VarStore.ClearValues(gb.Name)
 
-		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputFunctionDecision], ExecutedDecision)
+		if valOutputFunctionDecision, ok := gb.Output[keyOutputFunctionDecision]; ok {
+			gb.RunContext.VarStore.SetValue(valOutputFunctionDecision, ExecutedDecision)
+		}
 
 		for k, v := range resultOutput {
-			gb.RunContext.VarStore.SetValue(gb.Output[k], v)
+			if valFromOutput, ok := gb.Output[k]; ok {
+				gb.RunContext.VarStore.SetValue(valFromOutput, v)
+			}
 		}
 	}
 

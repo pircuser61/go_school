@@ -155,6 +155,10 @@ func createGoEndBlock(
 	if ef.Output != nil {
 		//nolint:gocritic // глобальная проблема неиспользования указателей в коллекциях
 		for propertyName, v := range ef.Output.Properties {
+			if v.Global == "" {
+				continue
+			}
+
 			b.Output[propertyName] = v.Global
 		}
 	}
