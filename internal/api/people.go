@@ -22,7 +22,7 @@ func (ae *Env) FindPerson(w http.ResponseWriter, r *http.Request, params FindPer
 		search = *params.Search
 	}
 
-	enabled := false
+	enabled := true
 	if params.Enabled != nil {
 		enabled = *params.Enabled
 	}
