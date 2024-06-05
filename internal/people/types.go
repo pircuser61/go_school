@@ -3,6 +3,8 @@ package people
 import (
 	"encoding/json"
 
+	iga_kit "gitlab.services.mts.ru/jocasta/iga-kit"
+
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 )
@@ -167,4 +169,20 @@ func GetSsoPersonSchemaProperties() map[string]script.JSONSchemaPropertiesValue 
 		"phone":       {Type: "string", Title: "Телефон"},
 		"tabnum":      {Type: "string", Title: "Табельный номер"},
 	}
+}
+
+func (u SSOUser) ToSSOUserFromIga(igaSSOUser iga_kit.SSOUser) (*SSOUser, error) {
+	var ui SSOUser
+
+	bb, err := json.Marshal(igaSSOUser)
+	if err != nil {
+		return nil, err
+	}
+
+	err = json.Unmarshal(bb, &ui)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ui, nil
 }

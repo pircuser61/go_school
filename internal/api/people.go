@@ -5,21 +5,33 @@ import (
 
 	"go.opencensus.io/trace"
 
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
+
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 )
 
-func (ae *Env) GetUser(w http.ResponseWriter, r *http.Request, params GetUserParams) {
-	ctx, s := trace.StartSpan(r.Context(), "get_user")
+func (ae *Env) FindPerson(w http.ResponseWriter, r *http.Request, params FindPersonParams) {
+	ctx, s := trace.StartSpan(r.Context(), "find_person")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
 	errorHandler := newHTTPErrorHandler(log, w)
 
-	user, err := ae.People.GetUser(ctx, params.Search, false)
+	search := ""
+	if params.Search != nil {
+		search = *params.Search
+	}
+
+	enabled := false
+	if params.Enabled != nil {
+		enabled = *params.Enabled
+	}
+
+	user, err := ae.People.GetUser(ctx, search, enabled)
 	if err != nil {
 		e := GetUserError
 
-		log.WithField("username", params.Search).
+		log.WithField("search", search).
 			Error(e.errorMessage(err))
 		errorHandler.sendError(e)
 
@@ -30,7 +42,7 @@ func (ae *Env) GetUser(w http.ResponseWriter, r *http.Request, params GetUserPar
 	if err != nil {
 		e := GetUserError
 
-		log.WithField("username", params.Search).
+		log.WithField("search", search).
 			Error(e.errorMessage(err))
 		errorHandler.sendError(e)
 
@@ -47,6 +59,58 @@ func (ae *Env) GetUser(w http.ResponseWriter, r *http.Request, params GetUserPar
 		Tabnum:      ui.Tabnum,
 		Username:    ui.Username,
 	}); err != nil {
+		errorHandler.handleError(UnknownError, err)
+
+		return
+	}
+}
+
+func (ae *Env) SearchPeople(w http.ResponseWriter, r *http.Request, params SearchPeopleParams) {
+	ctx, s := trace.StartSpan(r.Context(), "search_people")
+	defer s.End()
+
+	log := logger.GetLogger(ctx)
+	errorHandler := newHTTPErrorHandler(log, w)
+
+	users, err := ae.People.GetUsers(ctx, params.Search, params.Limit, []string{})
+	if err != nil {
+		e := GetUserError
+
+		log.WithField("search", params.Search).
+			Error(e.errorMessage(err))
+		errorHandler.sendError(e)
+
+		return
+	}
+
+	var ui *people.SSOUserTyped
+	res := make([]UserInfo, 0, len(users))
+
+	for i := range users {
+		ui, err = users[i].ToSSOUserTyped()
+		if err != nil {
+			e := GetUserError
+
+			log.WithField("search", params.Search).
+				Error(e.errorMessage(err))
+			errorHandler.sendError(e)
+
+			return
+		}
+
+		res = append(res, UserInfo{
+			Email:       ui.Email,
+			FullOrgUnit: ui.Attributes.OrgUnit,
+			Fullname:    ui.Attributes.FullName,
+			Phone:       ui.Attributes.Phone,
+			Mobile:      ui.Attributes.Mobile,
+			Position:    ui.Attributes.Title,
+			Tabnum:      ui.Tabnum,
+			Username:    ui.Username,
+		})
+	}
+
+	if err = sendResponse(w, http.StatusOK, res); err != nil {
 		errorHandler.handleError(UnknownError, err)
 
 		return

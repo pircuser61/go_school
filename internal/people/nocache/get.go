@@ -28,7 +28,7 @@ func (e *FindUserError) Error() string {
 	return "couldn't find user with name " + e.UserName
 }
 
-func (s *service) GetUser(ctx c.Context, username string, onlyEnabled bool) (people.SSOUser, error) {
+func (s *service) GetUser(ctx c.Context, username string, onlyEnabled bool) (*people.SSOUser, error) {
 	ctxLocal, span := trace.StartSpan(ctx, "people.nocache.get_user")
 	defer span.End()
 
@@ -37,15 +37,12 @@ func (s *service) GetUser(ctx c.Context, username string, onlyEnabled bool) (peo
 		return nil, err
 	}
 
-	res := make(people.SSOUser, len(igaSsoUser))
-	for i := range igaSsoUser {
-		res[i] = igaSsoUser[i]
-	}
+	var res *people.SSOUser
 
-	return res, err
+	return res.ToSSOUserFromIga(igaSsoUser)
 }
 
-func (s *service) GetUsers(ctx c.Context, username string, limit *int, filter []string) ([]people.SSOUser, error) {
+func (s *service) GetUsers(ctx c.Context, username string, limit *int, filter []string) ([]*people.SSOUser, error) {
 	ctxLocal, span := trace.StartSpan(ctx, "people.nocache.get_users")
 	defer span.End()
 
@@ -54,11 +51,13 @@ func (s *service) GetUsers(ctx c.Context, username string, limit *int, filter []
 		return nil, err
 	}
 
-	res := make([]people.SSOUser, 0)
+	res := make([]*people.SSOUser, 0)
 	for i := range igaSsoUsers {
-		ssoUser := make(people.SSOUser, len(igaSsoUsers[i]))
-		for j := range igaSsoUsers[i] {
-			ssoUser[j] = igaSsoUsers[i][j]
+		var ssoUser *people.SSOUser
+
+		ssoUser, err = ssoUser.ToSSOUserFromIga(igaSsoUsers[i])
+		if err != nil {
+			return nil, err
 		}
 
 		res = append(res, ssoUser)
