@@ -436,6 +436,7 @@ func (gb *ExecutableFunctionBlock) setStateByResponse(ctx context.Context, log l
 			if valOutputFunctionDecision, ok := gb.Output[keyOutputFunctionDecision]; ok {
 				gb.RunContext.VarStore.SetValue(valOutputFunctionDecision, RetryCountExceededDecision)
 			}
+
 			gb.State.RetryCountExceeded = true
 		} else if !gb.RunContext.skipProduce { // for test
 			gb.State.Started = false
@@ -462,12 +463,11 @@ func (gb *ExecutableFunctionBlock) setStateByResponse(ctx context.Context, log l
 		return ErrMessageFromKafkaHasError
 	}
 
-	if gb.State.Async && !gb.State.HasAck && !updateData.IsAsyncResult {
-		gb.State.HasAck = true
-	} else {
-		gb.State.HasAck = true
+	if !gb.State.Async || gb.State.HasAck || updateData.IsAsyncResult {
 		gb.State.HasResponse = true
 	}
+
+	gb.State.HasAck = true
 
 	//nolint:nestif //it's ok
 	if gb.State.HasResponse {

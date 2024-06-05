@@ -54,6 +54,7 @@ func createGoFormBlock(
 			if v.Global == "" {
 				continue
 			}
+
 			b.Output[propertyName] = v.Global
 		}
 	}

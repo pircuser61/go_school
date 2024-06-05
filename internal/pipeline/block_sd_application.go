@@ -125,12 +125,15 @@ func (gb *GoSdApplicationBlock) Update(ctx context.Context) (interface{}, error)
 	if valOutputSdApplicationExecutor, ok := gb.Output[keyOutputSdApplicationExecutor]; ok {
 		gb.RunContext.VarStore.SetValue(valOutputSdApplicationExecutor, personData)
 	}
+
 	if valOutputBlueprintID, ok := gb.Output[keyOutputBlueprintID]; ok {
 		gb.RunContext.VarStore.SetValue(valOutputBlueprintID, gb.State.BlueprintID)
 	}
+
 	if valOutputSdApplicationDesc, ok := gb.Output[keyOutputSdApplicationDesc]; ok {
 		gb.RunContext.VarStore.SetValue(valOutputSdApplicationDesc, data.InitialApplication.Description)
 	}
+
 	if valOutputSdApplication, ok := gb.Output[keyOutputSdApplication]; ok {
 		gb.RunContext.VarStore.SetValue(valOutputSdApplication, appBody)
 	}

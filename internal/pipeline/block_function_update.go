@@ -40,6 +40,7 @@ func (gb *ExecutableFunctionBlock) updateFunctionResult(ctx context.Context, log
 		if valOutputFunctionDecision, ok := gb.Output[keyOutputFunctionDecision]; ok {
 			gb.RunContext.VarStore.SetValue(valOutputFunctionDecision, TimeoutDecision)
 		}
+
 		gb.State.TimeExpired = true
 
 		return nil
