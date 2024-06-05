@@ -37,9 +37,9 @@ func (s *service) GetUser(ctx c.Context, username string, onlyEnabled bool) (*pe
 		return nil, err
 	}
 
-	var res *people.SSOUser
+	res := people.SSOUser(igaSsoUser)
 
-	return res.ToSSOUserFromIga(igaSsoUser)
+	return &res, nil
 }
 
 func (s *service) GetUsers(ctx c.Context, username string, limit *int, filter []string) ([]*people.SSOUser, error) {
@@ -53,14 +53,8 @@ func (s *service) GetUsers(ctx c.Context, username string, limit *int, filter []
 
 	res := make([]*people.SSOUser, 0)
 	for i := range igaSsoUsers {
-		var ssoUser *people.SSOUser
-
-		ssoUser, err = ssoUser.ToSSOUserFromIga(igaSsoUsers[i])
-		if err != nil {
-			return nil, err
-		}
-
-		res = append(res, ssoUser)
+		ssoUser := people.SSOUser(igaSsoUsers[i])
+		res = append(res, &ssoUser)
 	}
 
 	return res, err
