@@ -1126,7 +1126,6 @@ func TestGoApproverBlock_Update(t *testing.T) {
 			}
 			tt.fields.RunContext.UpdateData = tt.args.data
 			_, err := gb.Update(tt.args.ctx)
-			fmt.Println(gb.RunContext.VarStore.Values)
 			assert.Equalf(t, tt.wantErr, err != nil, fmt.Sprintf("Update(%v, %v)", tt.args.ctx, tt.args.data))
 		})
 	}

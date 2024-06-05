@@ -464,11 +464,12 @@ func (gb *ExecutableFunctionBlock) setStateByResponse(ctx context.Context, log l
 		return ErrMessageFromKafkaHasError
 	}
 
-	if !gb.State.Async || gb.State.HasAck || updateData.IsAsyncResult {
+	if gb.State.Async && !gb.State.HasAck && !updateData.IsAsyncResult {
+		gb.State.HasAck = true
+	} else {
+		gb.State.HasAck = true
 		gb.State.HasResponse = true
 	}
-
-	gb.State.HasAck = true
 
 	//nolint:nestif //it's ok
 	if gb.State.HasResponse {
