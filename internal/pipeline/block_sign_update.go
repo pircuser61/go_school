@@ -473,14 +473,22 @@ func (gb *GoSignBlock) setSignerDecision(ctx c.Context, u *signSignatureParams) 
 				return err
 			}
 
-			gb.RunContext.VarStore.SetValue(gb.Output[keyOutputSigner], personData)
+			if valOutputSigner, ok := gb.Output[keyOutputSigner]; ok {
+				gb.RunContext.VarStore.SetValue(valOutputSigner, personData)
+			}
 		}
 
 		gb.State.IsExpired = gb.State.Deadline.Before(time.Now())
 
-		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputSignDecision], gb.State.Decision)
-		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputSignComment], gb.State.Comment)
-		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputSignatures], gb.State.Signatures)
+		if valOutputSignDecision, ok := gb.Output[keyOutputSignDecision]; ok {
+			gb.RunContext.VarStore.SetValue(valOutputSignDecision, gb.State.Decision)
+		}
+		if valOutputSignComment, ok := gb.Output[keyOutputSignComment]; ok {
+			gb.RunContext.VarStore.SetValue(valOutputSignComment, gb.State.Comment)
+		}
+		if valOutputSignatures, ok := gb.Output[keyOutputSignatures]; ok {
+			gb.RunContext.VarStore.SetValue(valOutputSignatures, gb.State.Signatures)
+		}
 
 		resAttachments := make([]entity.Attachment, 0)
 
@@ -495,7 +503,9 @@ func (gb *GoSignBlock) setSignerDecision(ctx c.Context, u *signSignatureParams) 
 
 		resAttachments = append(resAttachments, gb.State.SigningParams.Files...)
 
-		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputSignAttachments], resAttachments)
+		if valOutputSignAttachments, ok := gb.Output[keyOutputSignAttachments]; ok {
+			gb.RunContext.VarStore.SetValue(valOutputSignAttachments, resAttachments)
+		}
 	}
 
 	return nil

@@ -81,9 +81,15 @@ func (gb *GoStartBlock) Update(ctx context.Context) (interface{}, error) {
 		return nil, err
 	}
 
-	gb.RunContext.VarStore.SetValue(gb.Output[entity.KeyOutputWorkNumber], gb.RunContext.WorkNumber)
-	gb.RunContext.VarStore.SetValue(gb.Output[entity.KeyOutputApplicationInitiator], personData)
-	gb.RunContext.VarStore.SetValue(gb.Output[entity.KeyOutputApplicationBody], data.InitialApplication.ApplicationBody)
+	if valOutputWorkNumber, ok := gb.Output[entity.KeyOutputWorkNumber]; ok {
+		gb.RunContext.VarStore.SetValue(valOutputWorkNumber, gb.RunContext.WorkNumber)
+	}
+	if valOutputApplicationInitiator, ok := gb.Output[entity.KeyOutputApplicationInitiator]; ok {
+		gb.RunContext.VarStore.SetValue(valOutputApplicationInitiator, personData)
+	}
+	if valOutputApplicationBody, ok := gb.Output[entity.KeyOutputApplicationBody]; ok {
+		gb.RunContext.VarStore.SetValue(valOutputApplicationBody, data.InitialApplication.ApplicationBody)
+	}
 
 	if _, ok := gb.expectedEvents[eventEnd]; ok {
 		status, _, _ := gb.GetTaskHumanStatus()
@@ -161,6 +167,9 @@ func createGoStartBlock(ctx context.Context, name string, ef *entity.EriusFunc, 
 	if ef.Output != nil {
 		//nolint:gocritic //в этом проекте не принято использовать поинтеры в коллекциях
 		for propertyName, v := range ef.Output.Properties {
+			if v.Global == "" {
+				continue
+			}
 			b.Output[propertyName] = v.Global
 		}
 	}

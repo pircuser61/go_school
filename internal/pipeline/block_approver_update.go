@@ -94,16 +94,20 @@ func (gb *GoApproverBlock) setApproveDecision(ctx context.Context, u *approverUp
 			return err
 		}
 
-		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputApprover], person)
+		if valOutputApprover, ok := gb.Output[keyOutputApprover]; ok {
+			gb.RunContext.VarStore.SetValue(valOutputApprover, person)
+		}
 	}
 
-	if gb.State.Decision != nil {
-		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputDecision], gb.State.Decision.String())
+	if valOutputDecision, ok := gb.Output[keyOutputDecision]; ok && gb.State.Decision != nil {
+		gb.RunContext.VarStore.SetValue(valOutputDecision, gb.State.Decision.String())
 	}
 
 	gb.State.IsExpired = gb.State.Deadline.Before(time.Now())
 
-	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputComment], gb.State.Comment)
+	if valOutputComment, ok := gb.Output[keyOutputComment]; ok {
+		gb.RunContext.VarStore.SetValue(valOutputComment, gb.State.Comment)
+	}
 
 	return nil
 }
@@ -646,9 +650,15 @@ func (gb *GoApproverBlock) toEditApplication(ctx context.Context, updateParams a
 
 	gb.State.IsExpired = gb.State.Deadline.Before(time.Now())
 
-	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputApprover], person)
-	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputDecision], ApproverDecisionSentToEdit)
-	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputComment], updateParams.Comment)
+	if valOutputApprover, ok := gb.Output[keyOutputApprover]; ok {
+		gb.RunContext.VarStore.SetValue(valOutputApprover, person)
+	}
+	if valOutputDecision, ok := gb.Output[keyOutputDecision]; ok {
+		gb.RunContext.VarStore.SetValue(valOutputDecision, ApproverDecisionSentToEdit)
+	}
+	if valOutputComment, ok := gb.Output[keyOutputComment]; ok {
+		gb.RunContext.VarStore.SetValue(valOutputComment, updateParams.Comment)
+	}
 
 	return nil
 }

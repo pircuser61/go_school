@@ -172,6 +172,9 @@ func createGoWaitForAllInputsBlock(
 	if ef.Output != nil {
 		//nolint:gocritic //не в моих силах поменять коллекцию на поинтеры
 		for propertyName, v := range ef.Output.Properties {
+			if v.Global == "" {
+				continue
+			}
 			b.Output[propertyName] = v.Global
 		}
 	}

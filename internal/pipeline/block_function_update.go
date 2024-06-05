@@ -37,7 +37,9 @@ func (gb *ExecutableFunctionBlock) updateFunctionResult(ctx context.Context, log
 	}
 
 	if gb.RunContext.UpdateData.Action == string(entity.TaskUpdateActionFuncSLAExpired) {
-		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputFunctionDecision], TimeoutDecision)
+		if valOutputFunctionDecision, ok := gb.Output[keyOutputFunctionDecision]; ok {
+			gb.RunContext.VarStore.SetValue(valOutputFunctionDecision, TimeoutDecision)
+		}
 		gb.State.TimeExpired = true
 
 		return nil
@@ -163,7 +165,9 @@ func (gb *ExecutableFunctionBlock) sendUpdateNotification(ctx context.Context, l
 
 	// эта функция уже запускалась и время ожидания корректного ответа закончилось
 	if !isFirstStart && firstStart != nil && !isTimeToWaitAnswer(firstStart.Time, gb.State.WaitCorrectRes) {
-		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputFunctionDecision], TimeoutDecision)
+		if valOutputFunctionDecision, ok := gb.Output[keyOutputFunctionDecision]; ok {
+			gb.RunContext.VarStore.SetValue(valOutputFunctionDecision, TimeoutDecision)
+		}
 
 		em, errEmail := gb.RunContext.Services.People.GetUserEmail(ctx, gb.RunContext.Initiator)
 		if errEmail != nil {

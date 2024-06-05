@@ -457,8 +457,12 @@ func (gb *GoFormBlock) handleAutoFillForm() error {
 		},
 	}, gb.State.ChangesLog...)
 
-	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputFormExecutor], personData)
-	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputFormBody], gb.State.ApplicationBody)
+	if valOutputFormExecutor, ok := gb.Output[keyOutputFormExecutor]; ok {
+		gb.RunContext.VarStore.SetValue(valOutputFormExecutor, personData)
+	}
+	if valOutputFormBody, ok := gb.Output[keyOutputFormBody]; ok {
+		gb.RunContext.VarStore.SetValue(valOutputFormBody, gb.State.ApplicationBody)
+	}
 
 	gb.State.ActualExecutor = &personData.Username
 	gb.State.IsFilled = true
