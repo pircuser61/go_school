@@ -1225,9 +1225,9 @@ type ExternalSystemSubscriptionParamsMethod string
 
 // FieldBody defines model for FieldBody.
 type FieldBody struct {
-	Items []interface{} `json:"items"`
-	Title string        `json:"title"`
-	Type  []string      `json:"type"`
+	Items []string `json:"items"`
+	Title string   `json:"title"`
+	Type  []string `json:"type"`
 }
 
 // Fill form
@@ -2702,6 +2702,11 @@ type SaveExternalSystemEndSettingsJSONBody EndSystemSettings
 
 // AllowRunAsOthersJSONBody defines parameters for AllowRunAsOthers.
 type AllowRunAsOthersJSONBody AllowRunAsOthers
+
+// RetryTasksParams defines parameters for RetryTasks.
+type RetryTasksParams struct {
+	Limit *int `json:"limit,omitempty"`
+}
 
 // RunNewVersionByPrevVersionJSONBody defines parameters for RunNewVersionByPrevVersion.
 type RunNewVersionByPrevVersionJSONBody RunNewVersionByPrevVersionRequest
@@ -4412,6 +4417,9 @@ type ServerInterface interface {
 	// Get pipeline versions
 	// (GET /pipelines/{pipelineID}/versions)
 	GetPipelineVersions(w http.ResponseWriter, r *http.Request, pipelineID string)
+	// retry zombie works
+	// (GET /run/retry)
+	RetryTasks(w http.ResponseWriter, r *http.Request, params RetryTasksParams)
 	// Run Version
 	// (POST /run/version/new_version)
 	RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Request)
@@ -6115,6 +6123,37 @@ func (siw *ServerInterfaceWrapper) GetPipelineVersions(w http.ResponseWriter, r 
 	handler(w, r.WithContext(ctx))
 }
 
+// RetryTasks operation middleware
+func (siw *ServerInterfaceWrapper) RetryTasks(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params RetryTasksParams
+
+	// ------------- Optional query parameter "limit" -------------
+	if paramValue := r.URL.Query().Get("limit"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "limit", r.URL.Query(), &params.Limit)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RetryTasks(w, r, params)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
 // RunNewVersionByPrevVersion operation middleware
 func (siw *ServerInterfaceWrapper) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -7363,6 +7402,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/pipelines/{pipelineID}/versions", wrapper.GetPipelineVersions)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/run/retry", wrapper.RetryTasks)
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/run/version/new_version", wrapper.RunNewVersionByPrevVersion)

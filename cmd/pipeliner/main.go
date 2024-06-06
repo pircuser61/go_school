@@ -227,6 +227,10 @@ func main() {
 		HostURL:                 cfg.HostURL,
 		LogIndex:                cfg.LogIndex,
 		FuncMsgResendDelay:      cfg.Kafka.FuncMessageResendDelay,
+		TaskRetry: api.TaskRetry{
+			MinLifetime: cfg.Retry.MinLifetime,
+			MaxLifetime: cfg.Retry.MaxLifetime,
+		},
 	}
 
 	serverParam := api.ServerParam{

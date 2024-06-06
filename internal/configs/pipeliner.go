@@ -70,6 +70,12 @@ type Pipeliner struct {
 	ServicesPing            ServicesPing             `yaml:"services_ping"`
 	ConsumerFuncsWorkers    int                      `yaml:"consumer_funcs_workers"`
 	ConsumerTasksWorkers    int                      `yaml:"consumer_tasks_workers"`
+	Retry                   RetryConfig              `yaml:"retry"`
+}
+
+type RetryConfig struct {
+	MinLifetime time.Duration `yaml:"min_lifetime"`
+	MaxLifetime time.Duration `yaml:"max_lifetime"`
 }
 
 type RunEnv struct {
