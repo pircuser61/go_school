@@ -87,7 +87,7 @@ func main() {
 		return
 	}
 
-	peopleService, err := iga_nocache.NewService(&cfg.People, m)
+	peopleService, err := iga_nocache.NewService(&cfg.People, ssoService, m)
 	if err != nil {
 		log.WithError(err).Error("can't create people service")
 
