@@ -24,7 +24,7 @@ func (e RemoteCallError) Error() string {
 }
 
 func IsRemoteCallError(err error) bool {
-	// grpc коды
+	//nolint:exhaustive // не нужно обрабатывать остальные случаи
 	switch status.Code(err) {
 	case codes.Unavailable, codes.DeadlineExceeded:
 		return true
