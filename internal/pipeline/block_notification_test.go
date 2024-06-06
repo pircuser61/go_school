@@ -246,7 +246,15 @@ func Test_createGoNotificationBlock(t *testing.T) {
 					Title:      title,
 					ShortTitle: shortTitle,
 					Input:      nil,
-					Output:     nil,
+					Output: &script.JSONSchema{
+						Type: "object",
+						Properties: map[string]script.JSONSchemaPropertiesValue{
+							"empty_global": {
+								Type:   "string",
+								Global: "",
+							},
+						},
+					},
 					Params: func() []byte {
 						r, _ := json.Marshal(&script.NotificationParams{
 							Emails:          []string{},
@@ -295,7 +303,15 @@ func Test_createGoNotificationBlock(t *testing.T) {
 					Title:      title,
 					ShortTitle: shortTitle,
 					Input:      nil,
-					Output:     nil,
+					Output: &script.JSONSchema{
+						Type: "object",
+						Properties: map[string]script.JSONSchemaPropertiesValue{
+							"empty_global": {
+								Type:   "string",
+								Global: "",
+							},
+						},
+					},
 					Params: func() []byte {
 						r, _ := json.Marshal(&script.NotificationParams{
 							Emails:          []string{emails},

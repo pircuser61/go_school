@@ -238,6 +238,10 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 								Type:   "string",
 								Global: "bar",
 							},
+							"empty_global": {
+								Type:   "string",
+								Global: "",
+							},
 						},
 					},
 					Params: func() []byte {
@@ -346,6 +350,10 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 							"foo": {
 								Type:   "string",
 								Global: "bar",
+							},
+							"empty_global": {
+								Type:   "string",
+								Global: "",
 							},
 						},
 					},
@@ -469,6 +477,10 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 							"foo": {
 								Type:   "string",
 								Global: "bar",
+							},
+							"empty_global": {
+								Type:   "string",
+								Global: "",
 							},
 						},
 					},

@@ -541,6 +541,10 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 								Type:   "string",
 								Global: "bar",
 							},
+							"empty_global": {
+								Type:   "string",
+								Global: "",
+							},
 						},
 					},
 					Params: func() []byte {
@@ -667,6 +671,10 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 							"foo": {
 								Type:   "string",
 								Global: "bar",
+							},
+							"empty_global": {
+								Type:   "string",
+								Global: "",
 							},
 						},
 					},
@@ -800,6 +808,10 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 							"foo": {
 								Type:   "string",
 								Global: "bar",
+							},
+							"empty_global": {
+								Type:   "string",
+								Global: "",
 							},
 						},
 					},
@@ -953,6 +965,10 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 								Type:   "string",
 								Global: "bar",
 							},
+							"empty_global": {
+								Type:   "string",
+								Global: "",
+							},
 						},
 					},
 					Params: func() []byte {
@@ -1079,6 +1095,10 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 							"foo": {
 								Type:   "string",
 								Global: "bar",
+							},
+							"empty_global": {
+								Type:   "string",
+								Global: "",
 							},
 						},
 					},
@@ -1212,6 +1232,10 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 							"foo": {
 								Type:   "string",
 								Global: "bar",
+							},
+							"empty_global": {
+								Type:   "string",
+								Global: "",
 							},
 						},
 					},
@@ -1356,6 +1380,10 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 								Type:   "string",
 								Global: "bar",
 							},
+							"empty_global": {
+								Type:   "string",
+								Global: "",
+							},
 						},
 					},
 					Params: func() []byte {
@@ -1414,6 +1442,10 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 								Type:   "string",
 								Global: "bar",
 							},
+							"empty_global": {
+								Type:   "string",
+								Global: "",
+							},
 						},
 					},
 					Params: func() []byte {
@@ -1471,6 +1503,10 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 							"foo": {
 								Type:   "string",
 								Global: "bar",
+							},
+							"empty_global": {
+								Type:   "string",
+								Global: "",
 							},
 						},
 					},
@@ -1538,6 +1574,10 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 							"foo": {
 								Type:   "string",
 								Global: "bar",
+							},
+							"empty_global": {
+								Type:   "string",
+								Global: "",
 							},
 						},
 					},
@@ -1671,6 +1711,10 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 							"foo": {
 								Type:   "string",
 								Global: "bar",
+							},
+							"empty_global": {
+								Type:   "string",
+								Global: "",
 							},
 						},
 					},
@@ -1815,6 +1859,10 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 							"foo": {
 								Type:   "string",
 								Global: "bar",
+							},
+							"empty_global": {
+								Type:   "string",
+								Global: "",
 							},
 						},
 					},

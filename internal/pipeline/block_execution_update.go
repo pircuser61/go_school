@@ -742,15 +742,17 @@ func (gb *GoExecutionBlock) updateDecision(ctx c.Context) error {
 				return personErr
 			}
 
-			gb.RunContext.VarStore.SetValue(gb.Output[keyOutputExecutionLogin], person)
+			if valOutputExecutionLogin, ok := gb.Output[keyOutputExecutionLogin]; ok {
+				gb.RunContext.VarStore.SetValue(valOutputExecutionLogin, person)
+			}
 		}
 
-		if gb.State.Decision != nil {
-			gb.RunContext.VarStore.SetValue(gb.Output[keyOutputDecision], &gb.State.Decision)
+		if valOutputDecision, ok := gb.Output[keyOutputDecision]; ok && gb.State.Decision != nil {
+			gb.RunContext.VarStore.SetValue(valOutputDecision, &gb.State.Decision)
 		}
 
-		if gb.State.DecisionComment != nil {
-			gb.RunContext.VarStore.SetValue(gb.Output[keyOutputComment], &gb.State.DecisionComment)
+		if valOutputComment, ok := gb.Output[keyOutputComment]; ok && gb.State.DecisionComment != nil {
+			gb.RunContext.VarStore.SetValue(valOutputComment, &gb.State.DecisionComment)
 		}
 
 		gb.State.IsExpired = gb.State.Deadline.Before(time.Now())
@@ -1234,6 +1236,7 @@ func (gb *GoExecutionBlock) toEditApplication(ctx c.Context) (err error) {
 	}
 
 	// возврат на доработку всей заявки инициатору
+	//nolint:nestif //it's ok
 	if gb.isNextBlockServiceDesk() {
 		err = gb.returnToAdminForRevision(ctx, delegateFor, updateParams)
 		if err != nil {
@@ -1252,9 +1255,17 @@ func (gb *GoExecutionBlock) toEditApplication(ctx c.Context) (err error) {
 
 		gb.State.IsExpired = gb.State.Deadline.Before(time.Now())
 
-		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputExecutionLogin], person)
-		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputDecision], ExecutionDecisionSentEdit)
-		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputComment], updateParams.Comment)
+		if valOutputExecutionLogin, ok := gb.Output[keyOutputExecutionLogin]; ok {
+			gb.RunContext.VarStore.SetValue(valOutputExecutionLogin, person)
+		}
+
+		if valOutputDecision, ok := gb.Output[keyOutputDecision]; ok {
+			gb.RunContext.VarStore.SetValue(valOutputDecision, ExecutionDecisionSentEdit)
+		}
+
+		if valOutputComment, ok := gb.Output[keyOutputComment]; ok {
+			gb.RunContext.VarStore.SetValue(valOutputComment, updateParams.Comment)
+		}
 	}
 
 	return nil
