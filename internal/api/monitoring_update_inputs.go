@@ -152,6 +152,7 @@ func validateInputs(stepName string, inputs map[string]interface{}) (err error) 
 		return marshErr
 	}
 
+	//nolint:all // stupid bitch I use this variable
 	ck := conditions_kit.ConditionParams{}
 
 	blocksInputs := map[string]script.BlockInputsValidator{
