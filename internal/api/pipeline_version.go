@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
+	"github.com/jackc/pgx/v4"
 
 	"github.com/google/uuid"
 
@@ -208,6 +209,10 @@ func (ae *Env) getExternalSystem(
 
 	externalSystem, err := storage.GetExternalSystemSettings(ctx, versionID, system.Integration.IntegrationId)
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+
 		return nil, err
 	}
 
