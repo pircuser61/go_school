@@ -1600,6 +1600,10 @@ func (db *PGCon) getTask(ctx c.Context, delegators []string, q, workNumber strin
 		&et.IsPaused,
 	)
 	if err != nil {
+		if err == sql.ErrNoRows { //nolint:wrapcheck // PG errors are not wrapped
+			return nil, entity.ErrNoRecords
+		}
+
 		return nil, err
 	}
 

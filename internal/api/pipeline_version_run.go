@@ -287,9 +287,9 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.PipelineID == "" {
-		errorHandler.handleError(ValidationError, errors.New("pipelineID is empty"))
-		requestInfo.Status = ValidationError.Status()
+	if vErr := ae.validateRunVersionsByPipelineId(req.PipelineID); vErr != -1 {
+		errorHandler.handleError(vErr, vErr)
+		requestInfo.Status = vErr.Status()
 
 		return
 	}
@@ -790,4 +790,12 @@ func (ae *Env) createEmptyTask(
 	}
 
 	return nil
+}
+
+func (ae *Env) validateRunVersionsByPipelineId(pipelineID string) Err {
+	if pipelineID == "" {
+		return ValidatePipelineIDError
+	}
+
+	return -1
 }
