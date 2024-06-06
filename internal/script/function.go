@@ -246,7 +246,7 @@ func (a *ExecutableFunctionParams) validateRetryParam() error {
 		}
 
 		if a.RetryInterval <= 0 {
-			return fmt.Errorf("invalid return interval: %d", a.RetryInterval)
+			return fmt.Errorf("invalid retry interval: %d", a.RetryInterval)
 		}
 	}
 
