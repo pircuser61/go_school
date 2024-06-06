@@ -12,6 +12,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 
+	"github.com/hashicorp/go-retryablehttp"
 	iga_kit "gitlab.services.mts.ru/jocasta/iga-kit"
 )
 
