@@ -2,9 +2,7 @@ package nocache
 
 import (
 	c "context"
-	"fmt"
 	"net/http"
-	"time"
 
 	"go.opencensus.io/plugin/ochttp"
 
@@ -12,68 +10,45 @@ import (
 
 	"gitlab.services.mts.ru/abp/myosotis/observability"
 
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/httpclient"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
+
+	iga_kit "gitlab.services.mts.ru/jocasta/iga-kit"
 )
 
-const searchPath = "search/attributes"
-
 type service struct {
-	searchURL string
-	cli       *retryablehttp.Client
-	cliPing   *http.Client
-	sso       *sso.Service
+	iga iga_kit.Service
 }
 
-func NewService(cfg *people.Config, ssoS *sso.Service, m metrics.Metrics) (people.Service, error) {
-	httpClient := &http.Client{}
-
-	httpClient.Transport = &transport{
+func NewService(cfg *people.Config, m metrics.Metrics) (people.Service, error) {
+	tr := &transport{
 		next: ochttp.Transport{
-			Base:        httpClient.Transport,
+			Base:        http.Client{}.Transport,
 			Propagation: observability.NewHTTPFormat(),
 		},
-		sso:     ssoS,
-		scope:   "",
 		metrics: m,
 	}
 
-	res := &service{
-		sso:     ssoS,
-		cliPing: &http.Client{Timeout: time.Second * 2},
-		cli:     httpclient.NewClient(httpClient, nil, cfg.MaxRetries, cfg.RetryDelay),
-	}
-
-	search, err := res.PathBuilder(cfg.URL, searchPath)
+	iga, err := iga_kit.NewIGA(&iga_kit.Config{
+		URL:        cfg.URL,
+		MaxRetries: cfg.MaxRetries,
+		RetryDelay: cfg.RetryDelay,
+	}, tr)
 	if err != nil {
 		return nil, err
 	}
 
-	res.searchURL = search
+	res := &service{
+		iga: iga,
+	}
 
 	return res, nil
 }
 
 func (s *service) SetCli(cli *retryablehttp.Client) {
-	s.cli = cli
+	s.iga.SetCli(cli)
 }
 
 func (s *service) Ping(ctx c.Context) error {
-	req, err := http.NewRequestWithContext(ctx, "HEAD", s.searchURL, http.NoBody)
-	if err != nil {
-		return err
-	}
-
-	resp, err := s.cliPing.Do(req)
-	if err != nil {
-		return err
-	}
-
-	if resp.StatusCode != http.StatusMethodNotAllowed {
-		return fmt.Errorf("wrong status code: %d", resp.StatusCode)
-	}
-
-	return resp.Body.Close()
+	return s.iga.Ping(ctx)
 }

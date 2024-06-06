@@ -18,7 +18,6 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people/nocache"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 )
 
 const (
@@ -31,8 +30,8 @@ type service struct {
 	People people.Service
 }
 
-func NewService(cfg *people.Config, ssoS *sso.Service, m metrics.Metrics) (people.Service, error) {
-	srv, err := nocache.NewService(cfg, ssoS, m)
+func NewService(cfg *people.Config, m metrics.Metrics) (people.Service, error) {
+	srv, err := nocache.NewService(cfg, m)
 	if err != nil {
 		return nil, err
 	}
@@ -48,13 +47,15 @@ func NewService(cfg *people.Config, ssoS *sso.Service, m metrics.Metrics) (peopl
 	}, nil
 }
 
-func (*service) SetCli(*retryablehttp.Client) {}
+func (s *service) SetCli(cli *retryablehttp.Client) {
+	s.People.SetCli(cli)
+}
 
 func (s *service) Ping(ctx c.Context) error {
 	return s.People.Ping(ctx)
 }
 
-func (s *service) GetUser(ctx c.Context, username string, onlyEnabled bool) (people.SSOUser, error) {
+func (s *service) GetUser(ctx c.Context, username string, onlyEnabled bool) (*people.SSOUser, error) {
 	ctx, span := trace.StartSpan(ctx, "people.cache.get_user")
 	defer span.End()
 
@@ -66,7 +67,7 @@ func (s *service) GetUser(ctx c.Context, username string, onlyEnabled bool) (peo
 	if err == nil {
 		resources, ok := valueFromCache.(string)
 		if ok {
-			var data people.SSOUser
+			var data *people.SSOUser
 
 			unmErr := json.Unmarshal([]byte(resources), &data)
 			if unmErr == nil {
@@ -98,7 +99,7 @@ func (s *service) GetUser(ctx c.Context, username string, onlyEnabled bool) (peo
 	return resources, nil
 }
 
-func (s *service) GetUsers(ctx c.Context, username string, limit *int, filter []string) ([]people.SSOUser, error) {
+func (s *service) GetUsers(ctx c.Context, username string, limit *int, filter []string) ([]*people.SSOUser, error) {
 	ctx, span := trace.StartSpan(ctx, "people.cache.get_users")
 	defer span.End()
 
@@ -114,7 +115,7 @@ func (s *service) GetUsers(ctx c.Context, username string, limit *int, filter []
 		if err == nil {
 			resources, ok := valueFromCache.(string)
 			if ok {
-				var data []people.SSOUser
+				var data []*people.SSOUser
 
 				unmErr := json.Unmarshal([]byte(resources), &data)
 				if unmErr == nil {
@@ -145,10 +146,6 @@ func (s *service) GetUsers(ctx c.Context, username string, limit *int, filter []
 	}
 
 	return resources, nil
-}
-
-func (s *service) PathBuilder(mainPath, subPath string) (string, error) {
-	return s.People.PathBuilder(mainPath, subPath)
 }
 
 func (s *service) GetUserEmail(ctx c.Context, username string) (string, error) {
