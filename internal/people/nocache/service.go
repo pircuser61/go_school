@@ -2,17 +2,18 @@ package nocache
 
 import (
 	c "context"
-	"github.com/hashicorp/go-retryablehttp"
 	"net/http"
 
 	"go.opencensus.io/plugin/ochttp"
+
+	"github.com/hashicorp/go-retryablehttp"
 
 	"gitlab.services.mts.ru/abp/myosotis/observability"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 
-	"gitlab.services.mts.ru/jocasta/iga-kit"
+	iga_kit "gitlab.services.mts.ru/jocasta/iga-kit"
 )
 
 type service struct {
