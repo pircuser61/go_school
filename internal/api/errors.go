@@ -142,6 +142,7 @@ const (
 	GetWorkNumberError
 	CreateTaskStepInputsError
 	GetBlockInputsError
+	GetUserError
 )
 
 /*
@@ -272,6 +273,7 @@ var errorText = map[Err]string{
 	GetWorkNumberError:                  "can`t get work number from sequence",
 	CreateTaskStepInputsError:           "can`t create update inputs history",
 	GetBlockInputsError:                 "can`t get block inputs",
+	GetUserError:                        "can`t get user",
 }
 
 /*
@@ -402,6 +404,7 @@ var errorDescription = map[Err]string{
 	GetWorkNumberError:             "Не удалось получить номер заявки из сервиса очереди",
 	CreateTaskStepInputsError:      "Не удалось создать запись о изменении инпутов блока",
 	GetBlockInputsError:            "Не удалось получить инпуты блока",
+	GetUserError:                   "Не удалось найти пользователя по логину",
 }
 
 /*

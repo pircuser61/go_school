@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"bytes"
+	"context"
 	c "context"
 	"encoding/json"
 	"fmt"
@@ -237,6 +238,10 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 								Type:   "string",
 								Global: "bar",
 							},
+							"empty_global": {
+								Type:   "string",
+								Global: "",
+							},
 						},
 					},
 					Params: func() []byte {
@@ -345,6 +350,10 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 							"foo": {
 								Type:   "string",
 								Global: "bar",
+							},
+							"empty_global": {
+								Type:   "string",
+								Global: "",
 							},
 						},
 					},
@@ -469,6 +478,10 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 								Type:   "string",
 								Global: "bar",
 							},
+							"empty_global": {
+								Type:   "string",
+								Global: "",
+							},
 						},
 					},
 					Params: func() []byte {
@@ -574,6 +587,7 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 
 func TestGoExecutionBlock_Update(t *testing.T) {
 	stepID := uuid.New()
+	workID := "00000000-0000-0000-0000-000000000000"
 
 	const (
 		exampleExecutor       = "example"
@@ -645,6 +659,13 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 						Storage: func() db.Database {
 							res := &mocks.MockedDatabase{}
 
+							res.On("CheckIsOnEditing",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								workID,
+							).Return(
+								false, nil,
+							)
+
 							return res
 						}(),
 					},
@@ -676,6 +697,13 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 					Services: RunContextServices{
 						Storage: func() db.Database {
 							res := &mocks.MockedDatabase{}
+
+							res.On("CheckIsOnEditing",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								workID,
+							).Return(
+								false, nil,
+							)
 
 							return res
 						}(),
@@ -710,6 +738,13 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 					Services: RunContextServices{
 						Storage: func() db.Database {
 							res := &mocks.MockedDatabase{}
+
+							res.On("CheckIsOnEditing",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								workID,
+							).Return(
+								false, nil,
+							)
 
 							return res
 						}(),
@@ -780,6 +815,13 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 						Storage: func() db.Database {
 							res := &mocks.MockedDatabase{}
 
+							res.On("CheckIsOnEditing",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								workID,
+							).Return(
+								false, nil,
+							)
+
 							return res
 						}(),
 					},
@@ -849,6 +891,13 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 						Storage: func() db.Database {
 							res := &mocks.MockedDatabase{}
 
+							res.On("CheckIsOnEditing",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								workID,
+							).Return(
+								false, nil,
+							)
+
 							return res
 						}(),
 					},
@@ -916,6 +965,13 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 						}(),
 						Storage: func() db.Database {
 							res := &mocks.MockedDatabase{}
+
+							res.On("CheckIsOnEditing",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								workID,
+							).Return(
+								false, nil,
+							)
 
 							return res
 						}(),
@@ -986,6 +1042,13 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 						Storage: func() db.Database {
 							res := &mocks.MockedDatabase{}
 
+							res.On("CheckIsOnEditing",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								workID,
+							).Return(
+								false, nil,
+							)
+
 							return res
 						}(),
 					},
@@ -1054,6 +1117,13 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 						}(),
 						Storage: func() db.Database {
 							res := &mocks.MockedDatabase{}
+
+							res.On("CheckIsOnEditing",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								workID,
+							).Return(
+								false, nil,
+							)
 
 							return res
 						}(),
@@ -1124,6 +1194,13 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 						Storage: func() db.Database {
 							res := &mocks.MockedDatabase{}
 
+							res.On("CheckIsOnEditing",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								workID,
+							).Return(
+								false, nil,
+							)
+
 							return res
 						}(),
 					},
@@ -1192,6 +1269,13 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 						}(),
 						Storage: func() db.Database {
 							res := &mocks.MockedDatabase{}
+
+							res.On("CheckIsOnEditing",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								workID,
+							).Return(
+								false, nil,
+							)
 
 							res.On("GetTaskStepById",
 								mock.MatchedBy(func(ctx c.Context) bool { return true }),
@@ -1291,6 +1375,13 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 						Storage: func() db.Database {
 							res := &mocks.MockedDatabase{}
 
+							res.On("CheckIsOnEditing",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								workID,
+							).Return(
+								false, nil,
+							)
+
 							return res
 						}(),
 					},
@@ -1359,6 +1450,13 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 						}(),
 						Storage: func() db.Database {
 							res := &mocks.MockedDatabase{}
+
+							res.On("CheckIsOnEditing",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								workID,
+							).Return(
+								false, nil,
+							)
 
 							res.On("GetTaskStepById",
 								mock.MatchedBy(func(ctx c.Context) bool { return true }),
@@ -1464,6 +1562,13 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 						Storage: func() db.Database {
 							res := &mocks.MockedDatabase{}
 
+							res.On("CheckIsOnEditing",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								workID,
+							).Return(
+								false, nil,
+							)
+
 							return res
 						}(),
 					},
@@ -1524,6 +1629,13 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 						}(),
 						Storage: func() db.Database {
 							res := &mocks.MockedDatabase{}
+
+							res.On("CheckIsOnEditing",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								workID,
+							).Return(
+								false, nil,
+							)
 
 							return res
 						}(),
@@ -1594,6 +1706,13 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 						Storage: func() db.Database {
 							res := &mocks.MockedDatabase{}
 
+							res.On("CheckIsOnEditing",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								workID,
+							).Return(
+								false, nil,
+							)
+
 							return res
 						}(),
 					},
@@ -1653,6 +1772,13 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 						}(),
 						Storage: func() db.Database {
 							res := &mocks.MockedDatabase{}
+
+							res.On("CheckIsOnEditing",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								workID,
+							).Return(
+								false, nil,
+							)
 
 							return res
 						}(),
@@ -1715,6 +1841,13 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 						Storage: func() db.Database {
 							res := &mocks.MockedDatabase{}
 
+							res.On("CheckIsOnEditing",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								workID,
+							).Return(
+								false, nil,
+							)
+
 							return res
 						}(),
 					},
@@ -1775,6 +1908,13 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 						}(),
 						Storage: func() db.Database {
 							res := &mocks.MockedDatabase{}
+
+							res.On("CheckIsOnEditing",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								workID,
+							).Return(
+								false, nil,
+							)
 
 							return res
 						}(),
@@ -1843,6 +1983,13 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 						Storage: func() db.Database {
 							res := &mocks.MockedDatabase{}
 
+							res.On("CheckIsOnEditing",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								workID,
+							).Return(
+								false, nil,
+							)
+
 							return res
 						}(),
 					},
@@ -1903,6 +2050,13 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 						}(),
 						Storage: func() db.Database {
 							res := &mocks.MockedDatabase{}
+
+							res.On("CheckIsOnEditing",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								workID,
+							).Return(
+								false, nil,
+							)
 
 							return res
 						}(),
@@ -1972,6 +2126,13 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 						Storage: func() db.Database {
 							res := &mocks.MockedDatabase{}
 
+							res.On("CheckIsOnEditing",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								workID,
+							).Return(
+								false, nil,
+							)
+
 							return res
 						}(),
 					},
@@ -2038,6 +2199,13 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 						Storage: func() db.Database {
 							res := &mocks.MockedDatabase{}
 
+							res.On("CheckIsOnEditing",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								workID,
+							).Return(
+								false, nil,
+							)
+
 							res.On("UpdateTaskStatus",
 								mock.MatchedBy(func(ctx c.Context) bool { return true }),
 								uuid.UUID{},
@@ -2096,7 +2264,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 							return slaMock
 						}(),
 						People: func() people.Service {
-							pServ, _ := people_nocache.NewService(&people.Config{}, nil, nil)
+							pServ, _ := people_nocache.NewService(&people.Config{}, nil)
 							return pServ
 						}(),
 						ServiceDesc: func() servicedesc.Service {
@@ -2128,6 +2296,13 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 						}(),
 						Storage: func() db.Database {
 							res := &mocks.MockedDatabase{}
+
+							res.On("CheckIsOnEditing",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								workID,
+							).Return(
+								false, nil,
+							)
 
 							return res
 						}(),
@@ -2196,6 +2371,13 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 						}(),
 						Storage: func() db.Database {
 							res := &mocks.MockedDatabase{}
+
+							res.On("CheckIsOnEditing",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								workID,
+							).Return(
+								false, nil,
+							)
 
 							res.On("GetTaskStepById",
 								mock.MatchedBy(func(ctx c.Context) bool { return true }),

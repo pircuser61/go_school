@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"bytes"
+	"context"
 	c "context"
 	"encoding/json"
 	"fmt"
@@ -43,11 +44,10 @@ import (
 
 type PeopleServiceTest struct {
 	SearchURL string
-	Cli   *retryablehttp.Client `json:"-"`
-	Sso   *sso.Service
-	Cache cachekit.Cache
+	Cli       *retryablehttp.Client `json:"-"`
+	Sso       *sso.Service
+	Cache     cachekit.Cache
 }
-
 
 func getTaskRunContext() db.Database {
 	res := &mocks.MockedDatabase{}
@@ -541,6 +541,10 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 								Type:   "string",
 								Global: "bar",
 							},
+							"empty_global": {
+								Type:   "string",
+								Global: "",
+							},
 						},
 					},
 					Params: func() []byte {
@@ -667,6 +671,10 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 							"foo": {
 								Type:   "string",
 								Global: "bar",
+							},
+							"empty_global": {
+								Type:   "string",
+								Global: "",
 							},
 						},
 					},
@@ -800,6 +808,10 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 							"foo": {
 								Type:   "string",
 								Global: "bar",
+							},
+							"empty_global": {
+								Type:   "string",
+								Global: "",
 							},
 						},
 					},
@@ -953,6 +965,10 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 								Type:   "string",
 								Global: "bar",
 							},
+							"empty_global": {
+								Type:   "string",
+								Global: "",
+							},
 						},
 					},
 					Params: func() []byte {
@@ -1079,6 +1095,10 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 							"foo": {
 								Type:   "string",
 								Global: "bar",
+							},
+							"empty_global": {
+								Type:   "string",
+								Global: "",
 							},
 						},
 					},
@@ -1212,6 +1232,10 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 							"foo": {
 								Type:   "string",
 								Global: "bar",
+							},
+							"empty_global": {
+								Type:   "string",
+								Global: "",
 							},
 						},
 					},
@@ -1356,6 +1380,10 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 								Type:   "string",
 								Global: "bar",
 							},
+							"empty_global": {
+								Type:   "string",
+								Global: "",
+							},
 						},
 					},
 					Params: func() []byte {
@@ -1414,6 +1442,10 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 								Type:   "string",
 								Global: "bar",
 							},
+							"empty_global": {
+								Type:   "string",
+								Global: "",
+							},
 						},
 					},
 					Params: func() []byte {
@@ -1471,6 +1503,10 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 							"foo": {
 								Type:   "string",
 								Global: "bar",
+							},
+							"empty_global": {
+								Type:   "string",
+								Global: "",
 							},
 						},
 					},
@@ -1538,6 +1574,10 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 							"foo": {
 								Type:   "string",
 								Global: "bar",
+							},
+							"empty_global": {
+								Type:   "string",
+								Global: "",
 							},
 						},
 					},
@@ -1671,6 +1711,10 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 							"foo": {
 								Type:   "string",
 								Global: "bar",
+							},
+							"empty_global": {
+								Type:   "string",
+								Global: "",
 							},
 						},
 					},
@@ -1815,6 +1859,10 @@ func TestGoSignBlock_createGoSignBlock(t *testing.T) {
 							"foo": {
 								Type:   "string",
 								Global: "bar",
+							},
+							"empty_global": {
+								Type:   "string",
+								Global: "",
 							},
 						},
 					},
@@ -1961,6 +2009,20 @@ func TestGoSignBlock_Update(t *testing.T) {
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
 					VarStore:          store.NewStore(),
+					Services: RunContextServices{
+						Storage: func() db.Database {
+							res := &mocks.MockedDatabase{}
+
+							res.On("CheckIsOnEditing",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								"00000000-0000-0000-0000-000000000000",
+							).Return(
+								false, nil,
+							)
+
+							return res
+						}(),
+					},
 				},
 			},
 			args: args{
@@ -1991,6 +2053,18 @@ func TestGoSignBlock_Update(t *testing.T) {
 							slaMock := sla.NewSLAService(nil)
 
 							return slaMock
+						}(),
+						Storage: func() db.Database {
+							res := &mocks.MockedDatabase{}
+
+							res.On("CheckIsOnEditing",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								"00000000-0000-0000-0000-000000000000",
+							).Return(
+								false, nil,
+							)
+
+							return res
 						}(),
 						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
@@ -2057,6 +2131,18 @@ func TestGoSignBlock_Update(t *testing.T) {
 							slaMock := sla.NewSLAService(nil)
 
 							return slaMock
+						}(),
+						Storage: func() db.Database {
+							res := &mocks.MockedDatabase{}
+
+							res.On("CheckIsOnEditing",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								"00000000-0000-0000-0000-000000000000",
+							).Return(
+								false, nil,
+							)
+
+							return res
 						}(),
 						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
@@ -2125,6 +2211,18 @@ func TestGoSignBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
+						Storage: func() db.Database {
+							res := &mocks.MockedDatabase{}
+
+							res.On("CheckIsOnEditing",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								"00000000-0000-0000-0000-000000000000",
+							).Return(
+								false, nil,
+							)
+
+							return res
+						}(),
 						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
@@ -2189,6 +2287,18 @@ func TestGoSignBlock_Update(t *testing.T) {
 							slaMock := sla.NewSLAService(nil)
 
 							return slaMock
+						}(),
+						Storage: func() db.Database {
+							res := &mocks.MockedDatabase{}
+
+							res.On("CheckIsOnEditing",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								"00000000-0000-0000-0000-000000000000",
+							).Return(
+								false, nil,
+							)
+
+							return res
 						}(),
 						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
@@ -2255,6 +2365,18 @@ func TestGoSignBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
+						Storage: func() db.Database {
+							res := &mocks.MockedDatabase{}
+
+							res.On("CheckIsOnEditing",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								"00000000-0000-0000-0000-000000000000",
+							).Return(
+								false, nil,
+							)
+
+							return res
+						}(),
 						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
@@ -2316,6 +2438,18 @@ func TestGoSignBlock_Update(t *testing.T) {
 							slaMock := sla.NewSLAService(nil)
 
 							return slaMock
+						}(),
+						Storage: func() db.Database {
+							res := &mocks.MockedDatabase{}
+
+							res.On("CheckIsOnEditing",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								"00000000-0000-0000-0000-000000000000",
+							).Return(
+								false, nil,
+							)
+
+							return res
 						}(),
 						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
@@ -2381,6 +2515,18 @@ func TestGoSignBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
+						Storage: func() db.Database {
+							res := &mocks.MockedDatabase{}
+
+							res.On("CheckIsOnEditing",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								"00000000-0000-0000-0000-000000000000",
+							).Return(
+								false, nil,
+							)
+
+							return res
+						}(),
 						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
@@ -2443,6 +2589,18 @@ func TestGoSignBlock_Update(t *testing.T) {
 							slaMock := sla.NewSLAService(nil)
 
 							return slaMock
+						}(),
+						Storage: func() db.Database {
+							res := &mocks.MockedDatabase{}
+
+							res.On("CheckIsOnEditing",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								"00000000-0000-0000-0000-000000000000",
+							).Return(
+								false, nil,
+							)
+
+							return res
 						}(),
 						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
@@ -2507,6 +2665,18 @@ func TestGoSignBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
+						Storage: func() db.Database {
+							res := &mocks.MockedDatabase{}
+
+							res.On("CheckIsOnEditing",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								"00000000-0000-0000-0000-000000000000",
+							).Return(
+								false, nil,
+							)
+
+							return res
+						}(),
 						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
@@ -2569,6 +2739,18 @@ func TestGoSignBlock_Update(t *testing.T) {
 							slaMock := sla.NewSLAService(nil)
 
 							return slaMock
+						}(),
+						Storage: func() db.Database {
+							res := &mocks.MockedDatabase{}
+
+							res.On("CheckIsOnEditing",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								"00000000-0000-0000-0000-000000000000",
+							).Return(
+								false, nil,
+							)
+
+							return res
 						}(),
 						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
@@ -2633,6 +2815,18 @@ func TestGoSignBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
+						Storage: func() db.Database {
+							res := &mocks.MockedDatabase{}
+
+							res.On("CheckIsOnEditing",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								"00000000-0000-0000-0000-000000000000",
+							).Return(
+								false, nil,
+							)
+
+							return res
+						}(),
 						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
@@ -2695,6 +2889,18 @@ func TestGoSignBlock_Update(t *testing.T) {
 							slaMock := sla.NewSLAService(nil)
 
 							return slaMock
+						}(),
+						Storage: func() db.Database {
+							res := &mocks.MockedDatabase{}
+
+							res.On("CheckIsOnEditing",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								"00000000-0000-0000-0000-000000000000",
+							).Return(
+								false, nil,
+							)
+
+							return res
 						}(),
 						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
@@ -2760,6 +2966,18 @@ func TestGoSignBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
+						Storage: func() db.Database {
+							res := &mocks.MockedDatabase{}
+
+							res.On("CheckIsOnEditing",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								"00000000-0000-0000-0000-000000000000",
+							).Return(
+								false, nil,
+							)
+
+							return res
+						}(),
 						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
@@ -2823,6 +3041,18 @@ func TestGoSignBlock_Update(t *testing.T) {
 							slaMock := sla.NewSLAService(nil)
 
 							return slaMock
+						}(),
+						Storage: func() db.Database {
+							res := &mocks.MockedDatabase{}
+
+							res.On("CheckIsOnEditing",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								"00000000-0000-0000-0000-000000000000",
+							).Return(
+								false, nil,
+							)
+
+							return res
 						}(),
 						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
@@ -2890,6 +3120,18 @@ func TestGoSignBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
+						Storage: func() db.Database {
+							res := &mocks.MockedDatabase{}
+
+							res.On("CheckIsOnEditing",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								"00000000-0000-0000-0000-000000000000",
+							).Return(
+								false, nil,
+							)
+
+							return res
+						}(),
 						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
@@ -2946,6 +3188,20 @@ func TestGoSignBlock_Update(t *testing.T) {
 				RunContext: &BlockRunContext{
 					skipNotifications: false,
 					VarStore:          store.NewStore(),
+					Services: RunContextServices{
+						Storage: func() db.Database {
+							res := &mocks.MockedDatabase{}
+
+							res.On("CheckIsOnEditing",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								"00000000-0000-0000-0000-000000000000",
+							).Return(
+								false, nil,
+							)
+
+							return res
+						}(),
+					},
 				},
 			},
 
@@ -2981,6 +3237,18 @@ func TestGoSignBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
+						Storage: func() db.Database {
+							res := &mocks.MockedDatabase{}
+
+							res.On("CheckIsOnEditing",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								"00000000-0000-0000-0000-000000000000",
+							).Return(
+								false, nil,
+							)
+
+							return res
+						}(),
 						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
@@ -3004,7 +3272,7 @@ func TestGoSignBlock_Update(t *testing.T) {
 
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
-							
+
 							sdMock, _ := sd_nocache.NewService(&servicedesc.Config{}, nil, nil)
 							sdMock.SetCli(retryableHttpClient)
 
@@ -3046,6 +3314,18 @@ func TestGoSignBlock_Update(t *testing.T) {
 							slaMock := sla.NewSLAService(nil)
 
 							return slaMock
+						}(),
+						Storage: func() db.Database {
+							res := &mocks.MockedDatabase{}
+
+							res.On("CheckIsOnEditing",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								"00000000-0000-0000-0000-000000000000",
+							).Return(
+								false, nil,
+							)
+
+							return res
 						}(),
 						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
@@ -3197,8 +3477,8 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 				Name: stepName,
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
-					WorkNumber: "J001",
-					VarStore:   store.NewStore(),
+					WorkNumber:        "J001",
+					VarStore:          store.NewStore(),
 					Services: RunContextServices{
 						SLAService: func() sla.Service {
 							slaMock := sla.NewSLAService(nil)
@@ -3226,7 +3506,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 
-							plMock, _ := people_nocache.NewService(&people.Config{}, nil, nil)
+							plMock, _ := people_nocache.NewService(&people.Config{}, nil)
 							plMock.SetCli(retryableHttpClient)
 
 							return plMock
@@ -3279,8 +3559,8 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 				Name: stepName,
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
-					WorkNumber: "J001",
-					VarStore:   store.NewStore(),
+					WorkNumber:        "J001",
+					VarStore:          store.NewStore(),
 					Services: RunContextServices{
 						SLAService: func() sla.Service {
 							slaMock := sla.NewSLAService(nil)
@@ -3308,7 +3588,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 
-							plMock, _ := people_nocache.NewService(&people.Config{}, nil, nil)
+							plMock, _ := people_nocache.NewService(&people.Config{}, nil)
 							plMock.SetCli(retryableHttpClient)
 
 							return plMock
@@ -3361,8 +3641,8 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 				Name: stepName,
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
-					WorkNumber: "J001",
-					VarStore:   store.NewStore(),
+					WorkNumber:        "J001",
+					VarStore:          store.NewStore(),
 					Services: RunContextServices{
 						SLAService: func() sla.Service {
 							slaMock := sla.NewSLAService(nil)
@@ -3390,7 +3670,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 
-							plMock, _ := people_nocache.NewService(&people.Config{}, nil, nil)
+							plMock, _ := people_nocache.NewService(&people.Config{}, nil)
 							plMock.SetCli(retryableHttpClient)
 
 							return plMock
@@ -3443,8 +3723,8 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 				Name: stepName,
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
-					WorkNumber: "J001",
-					VarStore:   store.NewStore(),
+					WorkNumber:        "J001",
+					VarStore:          store.NewStore(),
 					Services: RunContextServices{
 						SLAService: func() sla.Service {
 							slaMock := sla.NewSLAService(nil)
@@ -3472,7 +3752,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 
-							plMock, _ := people_nocache.NewService(&people.Config{}, nil, nil)
+							plMock, _ := people_nocache.NewService(&people.Config{}, nil)
 							plMock.SetCli(retryableHttpClient)
 
 							return plMock
@@ -3525,8 +3805,8 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 				Name: stepName,
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
-					WorkNumber: "J001",
-					VarStore:   store.NewStore(),
+					WorkNumber:        "J001",
+					VarStore:          store.NewStore(),
 					Services: RunContextServices{
 						SLAService: func() sla.Service {
 							slaMock := sla.NewSLAService(nil)
@@ -3554,7 +3834,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 
-							plMock, _ := people_nocache.NewService(&people.Config{}, nil, nil)
+							plMock, _ := people_nocache.NewService(&people.Config{}, nil)
 							plMock.SetCli(retryableHttpClient)
 
 							return plMock
@@ -3607,8 +3887,8 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 				Name: stepName,
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
-					WorkNumber: "J001",
-					VarStore:   store.NewStore(),
+					WorkNumber:        "J001",
+					VarStore:          store.NewStore(),
 					Services: RunContextServices{
 						SLAService: func() sla.Service {
 							slaMock := sla.NewSLAService(nil)
@@ -3636,7 +3916,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 
-							plMock, _ := people_nocache.NewService(&people.Config{}, nil, nil)
+							plMock, _ := people_nocache.NewService(&people.Config{}, nil)
 							plMock.SetCli(retryableHttpClient)
 
 							return plMock
@@ -3644,6 +3924,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 						Storage: func() db.Database {
 							res := &mocks.MockedDatabase{}
 
+							res.On("CheckIsOnEditing", "J001").Return(false, nil)
 							res.On("GetApplicationData", "J001").Return("", nil)
 							res.On("GetAdditionalForms", "J001", "sign").Return([]string{}, nil)
 							res.On("UpdateStepContext",
@@ -3689,8 +3970,8 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 				Name: stepName,
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
-					WorkNumber: "J001",
-					VarStore:   store.NewStore(),
+					WorkNumber:        "J001",
+					VarStore:          store.NewStore(),
 					Services: RunContextServices{
 						SLAService: func() sla.Service {
 							slaMock := sla.NewSLAService(nil)
@@ -3718,7 +3999,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 
-							plMock, _ := people_nocache.NewService(&people.Config{}, nil, nil)
+							plMock, _ := people_nocache.NewService(&people.Config{}, nil)
 							plMock.SetCli(retryableHttpClient)
 
 							return plMock
@@ -3771,8 +4052,8 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 				Name: stepName,
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
-					WorkNumber: "J001",
-					VarStore:   store.NewStore(),
+					WorkNumber:        "J001",
+					VarStore:          store.NewStore(),
 					Services: RunContextServices{
 						SLAService: func() sla.Service {
 							slaMock := sla.NewSLAService(nil)
@@ -3800,7 +4081,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 
-							plMock, _ := people_nocache.NewService(&people.Config{}, nil, nil)
+							plMock, _ := people_nocache.NewService(&people.Config{}, nil)
 							plMock.SetCli(retryableHttpClient)
 
 							return plMock
@@ -3853,8 +4134,8 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 				Name: stepName,
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
-					WorkNumber: "J001",
-					VarStore:   store.NewStore(),
+					WorkNumber:        "J001",
+					VarStore:          store.NewStore(),
 					Services: RunContextServices{
 						SLAService: func() sla.Service {
 							slaMock := sla.NewSLAService(nil)
@@ -3882,7 +4163,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 
-							plMock, _ := people_nocache.NewService(&people.Config{}, nil, nil)
+							plMock, _ := people_nocache.NewService(&people.Config{}, nil)
 							plMock.SetCli(retryableHttpClient)
 
 							return plMock
@@ -3935,8 +4216,8 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 				Name: stepName,
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
-					WorkNumber: "J001",
-					VarStore:   store.NewStore(),
+					WorkNumber:        "J001",
+					VarStore:          store.NewStore(),
 					Services: RunContextServices{
 						SLAService: func() sla.Service {
 							slaMock := sla.NewSLAService(nil)
@@ -3964,7 +4245,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 
-							plMock, _ := people_nocache.NewService(&people.Config{}, nil, nil)
+							plMock, _ := people_nocache.NewService(&people.Config{}, nil)
 							plMock.SetCli(retryableHttpClient)
 
 							return plMock
@@ -4004,8 +4285,8 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 				Name: stepName,
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
-					WorkNumber: "J001",
-					VarStore:   store.NewStore(),
+					WorkNumber:        "J001",
+					VarStore:          store.NewStore(),
 					Services: RunContextServices{
 						SLAService: func() sla.Service {
 							slaMock := sla.NewSLAService(nil)
@@ -4033,7 +4314,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 
-							plMock, _ := people_nocache.NewService(&people.Config{}, nil, nil)
+							plMock, _ := people_nocache.NewService(&people.Config{}, nil)
 							plMock.SetCli(retryableHttpClient)
 
 							return plMock
@@ -4073,8 +4354,8 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 				Name: stepName,
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
-					WorkNumber: "J001",
-					VarStore:   store.NewStore(),
+					WorkNumber:        "J001",
+					VarStore:          store.NewStore(),
 					Services: RunContextServices{
 						SLAService: func() sla.Service {
 							slaMock := sla.NewSLAService(nil)
@@ -4102,7 +4383,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 
-							plMock, _ := people_nocache.NewService(&people.Config{}, nil, nil)
+							plMock, _ := people_nocache.NewService(&people.Config{}, nil)
 							plMock.SetCli(retryableHttpClient)
 
 							return plMock
@@ -4142,7 +4423,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 				Name: stepName,
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
-					WorkNumber: "J001",
+					WorkNumber:        "J001",
 					VarStore: func() *store.VariableStore {
 						s := store.NewStore()
 						s.SetValue("form_3.inn", "inn_1")
@@ -4191,7 +4472,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 
-							plMock, _ := people_nocache.NewService(&people.Config{}, nil, nil)
+							plMock, _ := people_nocache.NewService(&people.Config{}, nil)
 							plMock.SetCli(retryableHttpClient)
 
 							return plMock
@@ -4236,8 +4517,8 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 				Name: stepName,
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
-					WorkNumber: "J001",
-					VarStore:   store.NewStore(),
+					WorkNumber:        "J001",
+					VarStore:          store.NewStore(),
 					Services: RunContextServices{
 						SLAService: func() sla.Service {
 							slaMock := sla.NewSLAService(nil)
@@ -4265,7 +4546,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 
-							plMock, _ := people_nocache.NewService(&people.Config{}, nil, nil)
+							plMock, _ := people_nocache.NewService(&people.Config{}, nil)
 							plMock.SetCli(retryableHttpClient)
 
 							return plMock
@@ -4305,8 +4586,8 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 				Name: stepName,
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
-					WorkNumber: "J001",
-					VarStore:   store.NewStore(),
+					WorkNumber:        "J001",
+					VarStore:          store.NewStore(),
 					Services: RunContextServices{
 						SLAService: func() sla.Service {
 							slaMock := sla.NewSLAService(nil)
@@ -4334,7 +4615,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 
-							plMock, _ := people_nocache.NewService(&people.Config{}, nil, nil)
+							plMock, _ := people_nocache.NewService(&people.Config{}, nil)
 							plMock.SetCli(retryableHttpClient)
 
 							return plMock
@@ -4374,8 +4655,8 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 				Name: stepName,
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
-					WorkNumber: "J001",
-					VarStore:   store.NewStore(),
+					WorkNumber:        "J001",
+					VarStore:          store.NewStore(),
 					Services: RunContextServices{
 						SLAService: func() sla.Service {
 							slaMock := sla.NewSLAService(nil)
@@ -4403,7 +4684,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 
-							plMock, _ := people_nocache.NewService(&people.Config{}, nil, nil)
+							plMock, _ := people_nocache.NewService(&people.Config{}, nil)
 							plMock.SetCli(retryableHttpClient)
 
 							return plMock
@@ -4443,8 +4724,8 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 				Name: stepName,
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
-					WorkNumber: "J001",
-					VarStore:   store.NewStore(),
+					WorkNumber:        "J001",
+					VarStore:          store.NewStore(),
 					Services: RunContextServices{
 						SLAService: func() sla.Service {
 							slaMock := sla.NewSLAService(nil)
@@ -4472,7 +4753,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 
-							plMock, _ := people_nocache.NewService(&people.Config{}, nil, nil)
+							plMock, _ := people_nocache.NewService(&people.Config{}, nil)
 							plMock.SetCli(retryableHttpClient)
 
 							return plMock
@@ -4525,8 +4806,8 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 				Name: stepName,
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
-					WorkNumber: "J001",
-					VarStore:   store.NewStore(),
+					WorkNumber:        "J001",
+					VarStore:          store.NewStore(),
 					Services: RunContextServices{
 						SLAService: func() sla.Service {
 							slaMock := sla.NewSLAService(nil)
@@ -4554,7 +4835,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 
-							plMock, _ := people_nocache.NewService(&people.Config{}, nil, nil)
+							plMock, _ := people_nocache.NewService(&people.Config{}, nil)
 							plMock.SetCli(retryableHttpClient)
 
 							return plMock
@@ -4607,8 +4888,8 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 				Name: stepName,
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
-					WorkNumber: "J001",
-					VarStore:   store.NewStore(),
+					WorkNumber:        "J001",
+					VarStore:          store.NewStore(),
 					Services: RunContextServices{
 						SLAService: func() sla.Service {
 							slaMock := sla.NewSLAService(nil)
@@ -4636,7 +4917,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 
-							plMock, _ := people_nocache.NewService(&people.Config{}, nil, nil)
+							plMock, _ := people_nocache.NewService(&people.Config{}, nil)
 							plMock.SetCli(retryableHttpClient)
 
 							return plMock
@@ -4689,8 +4970,8 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 				Name: stepName,
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
-					WorkNumber: "J001",
-					VarStore:   store.NewStore(),
+					WorkNumber:        "J001",
+					VarStore:          store.NewStore(),
 					Services: RunContextServices{
 						SLAService: func() sla.Service {
 							slaMock := sla.NewSLAService(nil)
@@ -4718,7 +4999,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 
-							plMock, _ := people_nocache.NewService(&people.Config{}, nil, nil)
+							plMock, _ := people_nocache.NewService(&people.Config{}, nil)
 							plMock.SetCli(retryableHttpClient)
 
 							return plMock
@@ -4758,8 +5039,8 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 				Name: stepName,
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
-					WorkNumber: "J001",
-					VarStore:   store.NewStore(),
+					WorkNumber:        "J001",
+					VarStore:          store.NewStore(),
 					Services: RunContextServices{
 						SLAService: func() sla.Service {
 							slaMock := sla.NewSLAService(nil)
@@ -4787,7 +5068,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 
-							plMock, _ := people_nocache.NewService(&people.Config{}, nil, nil)
+							plMock, _ := people_nocache.NewService(&people.Config{}, nil)
 							plMock.SetCli(retryableHttpClient)
 
 							return plMock
@@ -4827,7 +5108,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 				Name: stepName,
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
-					WorkNumber: "J001",
+					WorkNumber:        "J001",
 					VarStore: func() *store.VariableStore {
 						s := store.NewStore()
 						s.SetValue("form_3.inn", "inn_1")
@@ -4876,7 +5157,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 
-							plMock, _ := people_nocache.NewService(&people.Config{}, nil, nil)
+							plMock, _ := people_nocache.NewService(&people.Config{}, nil)
 							plMock.SetCli(retryableHttpClient)
 
 							return plMock
@@ -4921,7 +5202,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 				Name: stepName,
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
-					WorkNumber: "J001",
+					WorkNumber:        "J001",
 					VarStore: func() *store.VariableStore {
 						s := store.NewStore()
 						s.SetValue("form_3.snils", "snils_1")
@@ -4969,7 +5250,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 
-							plMock, _ := people_nocache.NewService(&people.Config{}, nil, nil)
+							plMock, _ := people_nocache.NewService(&people.Config{}, nil)
 							plMock.SetCli(retryableHttpClient)
 
 							return plMock
@@ -5014,7 +5295,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 				Name: stepName,
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
-					WorkNumber: "J001",
+					WorkNumber:        "J001",
 					VarStore: func() *store.VariableStore {
 						s := store.NewStore()
 						s.SetValue("form_3.inn", "inn_1")
@@ -5062,7 +5343,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 
-							plMock, _ := people_nocache.NewService(&people.Config{}, nil, nil)
+							plMock, _ := people_nocache.NewService(&people.Config{}, nil)
 							plMock.SetCli(retryableHttpClient)
 
 							return plMock
@@ -5107,7 +5388,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 				Name: stepName,
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
-					WorkNumber: "J001",
+					WorkNumber:        "J001",
 					VarStore: func() *store.VariableStore {
 						s := store.NewStore()
 						s.SetValue("form_3.inn", "inn_1")
@@ -5152,7 +5433,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 
-							plMock, _ := people_nocache.NewService(&people.Config{}, nil, nil)
+							plMock, _ := people_nocache.NewService(&people.Config{}, nil)
 							plMock.SetCli(retryableHttpClient)
 
 							return plMock
@@ -5197,7 +5478,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 				Name: stepName,
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
-					WorkNumber: "J001",
+					WorkNumber:        "J001",
 					VarStore: func() *store.VariableStore {
 						s := store.NewStore()
 						s.SetValue("form_3.inn", 123)
@@ -5246,7 +5527,7 @@ func TestGoSignBlock_CreateState(t *testing.T) {
 							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, fError)
 							httpClient.Transport = &mockTransport
 
-							plMock, _ := people_nocache.NewService(&people.Config{}, nil, nil)
+							plMock, _ := people_nocache.NewService(&people.Config{}, nil)
 							plMock.SetCli(retryableHttpClient)
 
 							return plMock

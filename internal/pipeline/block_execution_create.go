@@ -44,6 +44,10 @@ func createGoExecutionBlock(ctx context.Context, name string, ef *entity.EriusFu
 	if ef.Output != nil {
 		//nolint:gocritic //в этом проекте не принято использовать поинтеры в коллекциях
 		for propertyName, v := range ef.Output.Properties {
+			if v.Global == "" {
+				continue
+			}
+
 			b.Output[propertyName] = v.Global
 		}
 	}
@@ -440,13 +444,17 @@ func (gb *GoExecutionBlock) handleDecision(ctx context.Context, parentState *Exe
 		return personErr
 	}
 
-	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputExecutionLogin], person)
-
-	if parentState.Decision != nil {
-		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputDecision], &parentState.Decision)
+	if valOutputExecutionLogin, ok := gb.Output[keyOutputExecutionLogin]; ok {
+		gb.RunContext.VarStore.SetValue(valOutputExecutionLogin, person)
 	}
 
-	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputComment], comment)
+	if valOutputDecision, ok := gb.Output[keyOutputDecision]; ok && parentState.Decision != nil {
+		gb.RunContext.VarStore.SetValue(valOutputDecision, &parentState.Decision)
+	}
+
+	if valOutputComment, ok := gb.Output[keyOutputApprover]; ok {
+		gb.RunContext.VarStore.SetValue(valOutputComment, comment)
+	}
 
 	gb.State.ActualExecutor = &actualExecutor
 	gb.State.DecisionComment = &comment

@@ -29,8 +29,13 @@ func (t *transport) RoundTrip(req *http.Request) (*http.Response, error) {
 	start := time.Now()
 
 	res, err := t.next.RoundTrip(req)
+	code := http.StatusServiceUnavailable
 
-	info.ResponseCode = res.StatusCode
+	if res != nil {
+		code = res.StatusCode
+	}
+
+	info.ResponseCode = code
 	info.Duration = time.Since(start)
 
 	t.metrics.Request2ExternalSystem(info)

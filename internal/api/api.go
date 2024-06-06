@@ -2263,6 +2263,18 @@ type UpdateApprovalListSettings struct {
 	Steps        []string             `json:"steps"`
 }
 
+// UserInfo defines model for UserInfo.
+type UserInfo struct {
+	Email       string `json:"email"`
+	FullOrgUnit string `json:"fullOrgUnit"`
+	Fullname    string `json:"fullname"`
+	Mobile      string `json:"mobile"`
+	Phone       string `json:"phone"`
+	Position    string `json:"position"`
+	Tabnum      string `json:"tabnum"`
+	Username    string `json:"username"`
+}
+
 // VersionApprovalList defines model for VersionApprovalList.
 type VersionApprovalList struct {
 	// Представляет из себя набор ключ-значение, где ключ - это название переменной/поля объекта, а значение - это структура, которая описывает переменную(или поле объекта). Причём, если переменная - это объект, тогда должно быть заполнено поле propeties(описание полей). Если переменная - массив, тогда должно быть заполнено поле items(описание типа, который хранится в массиве).
@@ -2562,6 +2574,24 @@ type MonitoringGetTaskParams struct {
 
 // MonitoringTaskActionJSONBody defines parameters for MonitoringTaskAction.
 type MonitoringTaskActionJSONBody MonitoringTaskActionRequest
+
+// FindPersonParams defines parameters for FindPerson.
+type FindPersonParams struct {
+	// Person login
+	Search *string `json:"search,omitempty"`
+
+	// If only enabled accounts should be returned
+	Enabled *bool `json:"enabled,omitempty"`
+}
+
+// SearchPeopleParams defines parameters for SearchPeople.
+type SearchPeopleParams struct {
+	// First and last name or username
+	Search string `json:"search"`
+
+	// Search limit
+	Limit *int `json:"limit,omitempty"`
+}
 
 // SaveVersionMainSettingsJSONBody defines parameters for SaveVersionMainSettings.
 type SaveVersionMainSettingsJSONBody ProcessSettings
@@ -4291,6 +4321,12 @@ type ServerInterface interface {
 	// Ивенты заяви в мониторинге
 	// (GET /monitoring/tasks/{workNumber}/events)
 	GetMonitoringTaskEvents(w http.ResponseWriter, r *http.Request, workNumber string)
+
+	// (GET /people/find)
+	FindPerson(w http.ResponseWriter, r *http.Request, params FindPersonParams)
+
+	// (GET /people/search)
+	SearchPeople(w http.ResponseWriter, r *http.Request, params SearchPeopleParams)
 	// Save process main settings
 	// (POST /pipeline/version/{versionID}/settings/main)
 	SaveVersionMainSettings(w http.ResponseWriter, r *http.Request, versionID string)
@@ -5021,6 +5057,93 @@ func (siw *ServerInterfaceWrapper) GetMonitoringTaskEvents(w http.ResponseWriter
 
 	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetMonitoringTaskEvents(w, r, workNumber)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
+// FindPerson operation middleware
+func (siw *ServerInterfaceWrapper) FindPerson(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params FindPersonParams
+
+	// ------------- Optional query parameter "search" -------------
+	if paramValue := r.URL.Query().Get("search"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "search", r.URL.Query(), &params.Search)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "search", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "enabled" -------------
+	if paramValue := r.URL.Query().Get("enabled"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "enabled", r.URL.Query(), &params.Enabled)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "enabled", Err: err})
+		return
+	}
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.FindPerson(w, r, params)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
+// SearchPeople operation middleware
+func (siw *ServerInterfaceWrapper) SearchPeople(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params SearchPeopleParams
+
+	// ------------- Required query parameter "search" -------------
+	if paramValue := r.URL.Query().Get("search"); paramValue != "" {
+
+	} else {
+		siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "search"})
+		return
+	}
+
+	err = runtime.BindQueryParameter("form", true, true, "search", r.URL.Query(), &params.Search)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "search", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+	if paramValue := r.URL.Query().Get("limit"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "limit", r.URL.Query(), &params.Limit)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SearchPeople(w, r, params)
 	}
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -7183,6 +7306,12 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/monitoring/tasks/{workNumber}/events", wrapper.GetMonitoringTaskEvents)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/people/find", wrapper.FindPerson)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/people/search", wrapper.SearchPeople)
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/pipeline/version/{versionID}/settings/main", wrapper.SaveVersionMainSettings)

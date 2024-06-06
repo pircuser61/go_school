@@ -1510,6 +1510,24 @@ func (db *PGCon) insertIntoMembers(ctx context.Context, members []Member, id uui
 	return nil
 }
 
+func (db *PGCon) ClearTaskMembersActions(ctx context.Context, workID uuid.UUID) error {
+	c, span := trace.StartSpan(ctx, "pg_clear_task__members_action")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	const qMembersUpdate = `
+		UPDATE members 
+		SET actions = '{}'
+		WHERE block_id IN (
+			SELECT id FROM variable_storage where work_id=$1
+		) AND NOT is_initiator`
+
+	_, err := db.Connection.Exec(c, qMembersUpdate, workID)
+
+	return err
+}
+
 func (db *PGCon) insertIntoDeadlines(ctx context.Context, deadlines []Deadline, id uuid.UUID) error {
 	_, span := trace.StartSpan(ctx, "pg_create_block_deadlines")
 	defer span.End()
