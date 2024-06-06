@@ -612,8 +612,6 @@ github.com/yuin/goldmark v1.4.13/go.mod h1:6yULJ656Px+3vBD8DxQVa3kxgyrAnzto9xy5t
 github.com/zenazn/goji v0.9.0/go.mod h1:7S9M489iMyHBNxwZnk9/EHS098H4/F6TATF2mIxtB1Q=
 gitlab.services.mts.ru/abp/mail/pkg v1.19.0 h1:DNccIRhUuijQYAq3v9gnY5AC7xi51UjHixHYudxFOXU=
 gitlab.services.mts.ru/abp/mail/pkg v1.19.0/go.mod h1:YE2ngC0lCO90yQG+eeT8F6343VuR1pi/VuxvqTLDwYE=
-gitlab.services.mts.ru/abp/myosotis v1.4.4 h1:De8ST0tK1aZKnVFvOd1a3FReloOh3hl6G34so5e1Vcs=
-gitlab.services.mts.ru/abp/myosotis v1.4.4/go.mod h1:x1TTaEJ+kgNbCkQViA5eWgnNLAprspL6qJWJWkhVZFE=
 gitlab.services.mts.ru/abp/myosotis v1.4.5 h1:jcuFnCdsyO/A6FN09npLFWZzFuvuHqB/NxutNSctrxM=
 gitlab.services.mts.ru/abp/myosotis v1.4.5/go.mod h1:uF2046pLHEKQDPXR/gvom0SVlvA7Ww1br8R3nm+M4zk=
 gitlab.services.mts.ru/jocasta/cache-kit v1.2.0 h1:BHzYoRHt7Kz/fysRH6jMuX83IbBtez8GdDYdl7NT0vc=
