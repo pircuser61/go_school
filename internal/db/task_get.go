@@ -417,7 +417,8 @@ func compileGetTasksMetaQuery(fl entity.TaskFilter, delegations []string) (q str
         SELECT
         w.id,
         CASE
-			    WHEN w.run_context -> 'initial_application' -> 'custom_title' IS NULL OR w.run_context -> 'initial_application' ->> 'custom_title' =''
+			    WHEN w.run_context -> 'initial_application' -> 'custom_title' IS NULL 
+				     OR w.run_context -> 'initial_application' ->> 'custom_title' =''
 				THEN
                     CASE WHEN w.run_context -> 'initial_application' ->> 'is_test_application' = 'true'
 					THEN
