@@ -84,6 +84,7 @@ func (ae *Env) SearchPeople(w http.ResponseWriter, r *http.Request, params Searc
 	}
 
 	var ui *people.SSOUserTyped
+
 	res := make([]UserInfo, 0, len(users))
 
 	for i := range users {

@@ -52,6 +52,7 @@ func (s *service) GetUsers(ctx c.Context, username string, limit *int, filter []
 	}
 
 	res := make([]*people.SSOUser, 0)
+
 	for i := range igaSsoUsers {
 		ssoUser := people.SSOUser(igaSsoUsers[i])
 		res = append(res, &ssoUser)
