@@ -149,9 +149,9 @@ func (ae *Env) UpdateTask(w http.ResponseWriter, req *http.Request, workNumber s
 	errorHandler := newHTTPErrorHandler(log, w)
 	errorHandler.setMetricsRequestInfo(requestInfo)
 
-	if vErr := ae.validateUpdateTasks(workNumber); vErr != -1 {
-		errorHandler.handleError(vErr, vErr)
-		requestInfo.Status = vErr.Status()
+	if workNumber == "" {
+		errorHandler.handleError(ValidateWorkNumberError, ValidateWorkNumberError)
+		requestInfo.Status = ValidateWorkNumberError.Status()
 
 		return
 	}
@@ -861,9 +861,9 @@ func (ae *Env) StopTasks(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if vErr := ae.validateStopTasks(req.Tasks); vErr != -1 {
-		errorHandler.handleError(vErr, vErr)
-		requestInfo.Status = vErr.Status()
+	if len(req.Tasks) == 0 {
+		errorHandler.handleError(ValidateTasksError, ValidateTasksError)
+		requestInfo.Status = ValidateTasksError.Status()
 
 		return
 	}
@@ -1142,20 +1142,4 @@ func (ae *Env) processSingleTask(ctx context.Context, task *stoppedTask) error {
 	runCtx.NotifyEvents(ctx)
 
 	return nil
-}
-
-func (ae *Env) validateUpdateTasks(workNumber string) Err {
-	if workNumber == "" {
-		return ValidateWorkNumberError
-	}
-
-	return -1
-}
-
-func (ae *Env) validateStopTasks(tasks []string) Err {
-	if len(tasks) == 0 {
-		return ValidateTasksError
-	}
-
-	return -1
 }
