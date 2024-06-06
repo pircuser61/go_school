@@ -678,7 +678,7 @@ func (cq *compileGetTaskQueryMaker) addOrderBy(order string, orderBy []string) {
 		case "last_changed_at":
 			orderItem = append(orderItem, fmt.Sprintf("ua.updated_at %s", columnOrder))
 		case "name":
-			orderItem = append(orderItem, fmt.Sprintf("p.name %s", columnOrder))
+			orderItem = append(orderItem, fmt.Sprintf("translate(wn.work_name, '_/\\.,?', '000000') %s", columnOrder))
 		case "status":
 			orderItem = append(orderItem, fmt.Sprintf("w.status %s", columnOrder))
 		case "version_id":
@@ -689,8 +689,6 @@ func (cq *compileGetTaskQueryMaker) addOrderBy(order string, orderBy []string) {
 			orderItem = append(orderItem, fmt.Sprintf("w.rate %s", columnOrder))
 		case "is_paused":
 			orderItem = append(orderItem, fmt.Sprintf("w.is_paused %s", columnOrder))
-		case "work_name":
-			orderItem = append(orderItem, fmt.Sprintf("translate(wn.work_name, '_/\\.,?', '000000') %s", columnOrder))
 		default:
 			continue
 		}
@@ -1949,6 +1947,8 @@ func (db *PGCon) getTasks(ctx c.Context, filters *entity.TaskFilter,
 	ets := entity.EriusTasks{
 		Tasks: make([]entity.EriusTask, 0),
 	}
+
+	fmt.Println(q)
 
 	rows, err := db.Connection.Query(ctx, q, args...)
 	if err != nil {
