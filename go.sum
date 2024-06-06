@@ -626,8 +626,6 @@ gitlab.services.mts.ru/jocasta/functions v1.13.0-rc.1 h1:Lb9V3GIh5eJh7Vt/KBHh4XO
 gitlab.services.mts.ru/jocasta/functions v1.13.0-rc.1/go.mod h1:xThppzNGLqhClqhIH+DDiT/W36bNfU7s727f5NYvu9U=
 gitlab.services.mts.ru/jocasta/human-tasks v1.0.0-alpha.3 h1:5pW66koPEYP8/ZUilXUjJYRgJO4doHbs+ZVOEvKUgIE=
 gitlab.services.mts.ru/jocasta/human-tasks v1.0.0-alpha.3/go.mod h1:s5ymK5liDXfZRBcLNOFZr+YleyYBNCUCUhzr6ddtJuo=
-gitlab.services.mts.ru/jocasta/iga-kit v1.0.0 h1:UlGZQpbHMRzKgqJ9Qj4p4VcavOa2Mh+50eaetRIeWus=
-gitlab.services.mts.ru/jocasta/iga-kit v1.0.0/go.mod h1:+baXgajCK1TGWyMD3+JdX2HW1IvdQ7Ao7yHNIaZDof8=
 gitlab.services.mts.ru/jocasta/iga-kit v1.0.1 h1:fcqjKOmSTTPf2qLrwW0uYKwMVN43KHQQ20qW6rs7riU=
 gitlab.services.mts.ru/jocasta/iga-kit v1.0.1/go.mod h1:+baXgajCK1TGWyMD3+JdX2HW1IvdQ7Ao7yHNIaZDof8=
 gitlab.services.mts.ru/jocasta/integrations v1.11.0-rc.1 h1:gwAageTo79xiIC4o6G2sgOtd9D4Bdl8ksyjcPhK5DXY=

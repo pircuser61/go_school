@@ -1,6 +1,6 @@
 module gitlab.services.mts.ru/jocasta/pipeliner
 
-go 1.22
+go 1.22.2
 
 require (
 	contrib.go.opencensus.io/exporter/jaeger v0.2.1
