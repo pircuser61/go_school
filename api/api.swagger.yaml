@@ -450,6 +450,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
+        404:
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
         500:
           description: Internal Server Error
           content:
@@ -578,6 +584,12 @@ paths:
                 $ref: '#/components/schemas/httpError'
         401:
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        404:
+          description: Not Found
           content:
             application/json:
               schema:
@@ -1921,6 +1933,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
+        404:
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
         500:
           description: Internal Server Error
           content:
@@ -2371,6 +2389,12 @@ paths:
                 $ref: '#/components/schemas/httpError'
         401:
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        404:
+          description: Not Found
           content:
             application/json:
               schema:

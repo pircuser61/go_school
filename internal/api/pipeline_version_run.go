@@ -288,8 +288,8 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if req.PipelineID == "" {
-		errorHandler.handleError(ValidationError, errors.New("pipelineID is empty"))
-		requestInfo.Status = ValidationError.Status()
+		errorHandler.handleError(ValidatePipelineIDError, ValidatePipelineIDError)
+		requestInfo.Status = ValidatePipelineIDError.Status()
 
 		return
 	}

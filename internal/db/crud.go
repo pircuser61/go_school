@@ -1042,6 +1042,10 @@ func (db *PGCon) GetPipelineVersion(c context.Context, id uuid.UUID, checkNotDel
 			return nil, err
 		}
 
+		if vID == uuid.Nil {
+			return nil, entity.ErrNoRecords
+		}
+
 		err = json.Unmarshal([]byte(c), &p)
 		if err != nil {
 			return nil, err

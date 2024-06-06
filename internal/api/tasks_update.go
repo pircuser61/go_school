@@ -150,7 +150,8 @@ func (ae *Env) UpdateTask(w http.ResponseWriter, req *http.Request, workNumber s
 	errorHandler.setMetricsRequestInfo(requestInfo)
 
 	if workNumber == "" {
-		errorHandler.handleError(WorkNumberParsingError, errors.New("workNumber is empty"))
+		errorHandler.handleError(ValidateWorkNumberError, ValidateWorkNumberError)
+		requestInfo.Status = ValidateWorkNumberError.Status()
 
 		return
 	}
@@ -856,6 +857,13 @@ func (ae *Env) StopTasks(w http.ResponseWriter, r *http.Request) {
 	req := &TasksStop{}
 	if err = json.Unmarshal(b, req); err != nil {
 		errorHandler.handleError(StopTaskParsingError, err)
+
+		return
+	}
+
+	if len(req.Tasks) == 0 {
+		errorHandler.handleError(ValidateTasksError, ValidateTasksError)
+		requestInfo.Status = ValidateTasksError.Status()
 
 		return
 	}
