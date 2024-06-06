@@ -287,7 +287,7 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if vErr := ae.validateRunVersionsByPipelineId(req.PipelineID); vErr != -1 {
+	if vErr := ae.validateRunVersionsByPipelineID(req.PipelineID); vErr != -1 {
 		errorHandler.handleError(vErr, vErr)
 		requestInfo.Status = vErr.Status()
 
@@ -792,7 +792,7 @@ func (ae *Env) createEmptyTask(
 	return nil
 }
 
-func (ae *Env) validateRunVersionsByPipelineId(pipelineID string) Err {
+func (ae *Env) validateRunVersionsByPipelineID(pipelineID string) Err {
 	if pipelineID == "" {
 		return ValidatePipelineIDError
 	}
