@@ -142,7 +142,7 @@ func (ae *Env) runVersionByPrevVersion(
 	workID = uuid.New()
 	log = log.WithField("workID", workID)
 
-	emptyTask := &db.EmptyTask{
+	emptyTask := &db.Task{
 		WorkID:        workID,
 		WorkNumber:    req.WorkNumber,
 		Author:        usr.Username,
@@ -391,7 +391,7 @@ func (ae *Env) runVersion(ctx c.Context, log logger.Logger, run *runVersionsDTO)
 
 	ctx = logger.WithLogger(ctx, log)
 
-	emptyTask := &db.EmptyTask{
+	emptyTask := &db.Task{
 		WorkID:        workID,
 		WorkNumber:    run.WorkNumber,
 		Author:        usr.Username,
@@ -455,13 +455,17 @@ func getErr(err error) Err {
 func (ae *Env) launchEmptyTask(
 	ctx c.Context,
 	storage db.Database,
-	emptyTask *db.EmptyTask,
+	emptyTask *db.Task,
 	requestID string,
 	requestInfo *metrics.RequestInfo,
 ) error {
-	log := logger.GetLogger(ctx)
-
 	err := ae.processEmptyTask(ctx, storage, emptyTask, requestID, requestInfo)
+
+	return handleLaunchTaskError(ctx, storage, emptyTask.WorkID, err)
+}
+
+func handleLaunchTaskError(ctx c.Context, storage db.Database, taskID uuid.UUID, err error) error {
+	log := logger.GetLogger(ctx)
 
 	switch {
 	case errorutils.IsRemoteCallError(err):
@@ -471,7 +475,7 @@ func (ae *Env) launchEmptyTask(
 	case err != nil:
 		log.WithError(err).Error("process empty task error")
 
-		_ = storage.UpdateTaskStatus(ctx, emptyTask.WorkID, db.RunStatusError, err.Error(), "")
+		_ = storage.UpdateTaskStatus(ctx, taskID, db.RunStatusError, err.Error(), "")
 
 		return err
 	default:
@@ -482,7 +486,7 @@ func (ae *Env) launchEmptyTask(
 func (ae *Env) processEmptyTask(
 	ctx c.Context,
 	storage db.Database,
-	emptyTask *db.EmptyTask,
+	emptyTask *db.Task,
 	requestID string,
 	requestInfo *metrics.RequestInfo,
 ) error {
@@ -752,7 +756,7 @@ func cleanKey(mapKeys interface{}) string {
 func (ae *Env) createEmptyTask(
 	ctx c.Context,
 	storage db.Database,
-	dto *db.EmptyTask,
+	dto *db.Task,
 ) error {
 	ctx, span := trace.StartSpan(ctx, "create_empty_task")
 	defer span.End()

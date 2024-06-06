@@ -24,6 +24,12 @@ func (e RemoteCallError) Error() string {
 }
 
 func IsRemoteCallError(err error) bool {
+	// grpc коды
+	switch status.Code(err) {
+	case codes.Unavailable, codes.DeadlineExceeded:
+		return true
+	}
+
 	switch {
 	case errors.Is(err, context.DeadlineExceeded):
 		return true
@@ -31,9 +37,6 @@ func IsRemoteCallError(err error) bool {
 		return true
 	// ErrUnexpectedEOF возвращается из базы если соединение прерывается
 	case errors.Is(err, io.ErrUnexpectedEOF):
-		return true
-	// Работает на все grpc вызовы
-	case status.Code(err) == codes.Unavailable:
 		return true
 	// Для кастомного ретрая
 	default:
