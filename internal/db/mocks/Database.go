@@ -5008,6 +5008,65 @@ func (_c *MockedDatabase_GetTaskStepByNameForCtxEditing_Call) RunAndReturn(run f
 	return _c
 }
 
+// GetTaskStepToRetry provides a mock function with given fields: ctx, taskID
+func (_m *MockedDatabase) GetTaskStepToRetry(ctx context.Context, taskID uuid.UUID) (*entity.Step, error) {
+	ret := _m.Called(ctx, taskID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetTaskStepToRetry")
+	}
+
+	var r0 *entity.Step
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) (*entity.Step, error)); ok {
+		return rf(ctx, taskID)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) *entity.Step); ok {
+		r0 = rf(ctx, taskID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*entity.Step)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
+		r1 = rf(ctx, taskID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockedDatabase_GetTaskStepToRetry_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetTaskStepToRetry'
+type MockedDatabase_GetTaskStepToRetry_Call struct {
+	*mock.Call
+}
+
+// GetTaskStepToRetry is a helper method to define mock.On call
+//   - ctx context.Context
+//   - taskID uuid.UUID
+func (_e *MockedDatabase_Expecter) GetTaskStepToRetry(ctx interface{}, taskID interface{}) *MockedDatabase_GetTaskStepToRetry_Call {
+	return &MockedDatabase_GetTaskStepToRetry_Call{Call: _e.mock.On("GetTaskStepToRetry", ctx, taskID)}
+}
+
+func (_c *MockedDatabase_GetTaskStepToRetry_Call) Run(run func(ctx context.Context, taskID uuid.UUID)) *MockedDatabase_GetTaskStepToRetry_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(uuid.UUID))
+	})
+	return _c
+}
+
+func (_c *MockedDatabase_GetTaskStepToRetry_Call) Return(_a0 *entity.Step, _a1 error) *MockedDatabase_GetTaskStepToRetry_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockedDatabase_GetTaskStepToRetry_Call) RunAndReturn(run func(context.Context, uuid.UUID) (*entity.Step, error)) *MockedDatabase_GetTaskStepToRetry_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetTaskSteps provides a mock function with given fields: ctx, id
 func (_m *MockedDatabase) GetTaskSteps(ctx context.Context, id uuid.UUID) (entity.TaskSteps, error) {
 	ret := _m.Called(ctx, id)
@@ -5363,6 +5422,76 @@ func (_c *MockedDatabase_GetTasksSchemas_Call) Return(_a0 []entity.BlueprintSche
 }
 
 func (_c *MockedDatabase_GetTasksSchemas_Call) RunAndReturn(run func(context.Context, entity.TaskFilter, []string) ([]entity.BlueprintSchemas, error)) *MockedDatabase_GetTasksSchemas_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// GetTasksToRetry provides a mock function with given fields: ctx, minLifetime, maxLifetime, limit
+func (_m *MockedDatabase) GetTasksToRetry(ctx context.Context, minLifetime time.Duration, maxLifetime time.Duration, limit int) ([]*db.Task, []*db.Task, error) {
+	ret := _m.Called(ctx, minLifetime, maxLifetime, limit)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetTasksToRetry")
+	}
+
+	var r0 []*db.Task
+	var r1 []*db.Task
+	var r2 error
+	if rf, ok := ret.Get(0).(func(context.Context, time.Duration, time.Duration, int) ([]*db.Task, []*db.Task, error)); ok {
+		return rf(ctx, minLifetime, maxLifetime, limit)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, time.Duration, time.Duration, int) []*db.Task); ok {
+		r0 = rf(ctx, minLifetime, maxLifetime, limit)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*db.Task)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, time.Duration, time.Duration, int) []*db.Task); ok {
+		r1 = rf(ctx, minLifetime, maxLifetime, limit)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).([]*db.Task)
+		}
+	}
+
+	if rf, ok := ret.Get(2).(func(context.Context, time.Duration, time.Duration, int) error); ok {
+		r2 = rf(ctx, minLifetime, maxLifetime, limit)
+	} else {
+		r2 = ret.Error(2)
+	}
+
+	return r0, r1, r2
+}
+
+// MockedDatabase_GetTasksToRetry_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetTasksToRetry'
+type MockedDatabase_GetTasksToRetry_Call struct {
+	*mock.Call
+}
+
+// GetTasksToRetry is a helper method to define mock.On call
+//   - ctx context.Context
+//   - minLifetime time.Duration
+//   - maxLifetime time.Duration
+//   - limit int
+func (_e *MockedDatabase_Expecter) GetTasksToRetry(ctx interface{}, minLifetime interface{}, maxLifetime interface{}, limit interface{}) *MockedDatabase_GetTasksToRetry_Call {
+	return &MockedDatabase_GetTasksToRetry_Call{Call: _e.mock.On("GetTasksToRetry", ctx, minLifetime, maxLifetime, limit)}
+}
+
+func (_c *MockedDatabase_GetTasksToRetry_Call) Run(run func(ctx context.Context, minLifetime time.Duration, maxLifetime time.Duration, limit int)) *MockedDatabase_GetTasksToRetry_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(time.Duration), args[2].(time.Duration), args[3].(int))
+	})
+	return _c
+}
+
+func (_c *MockedDatabase_GetTasksToRetry_Call) Return(emptyTasks []*db.Task, filledTasks []*db.Task, err error) *MockedDatabase_GetTasksToRetry_Call {
+	_c.Call.Return(emptyTasks, filledTasks, err)
+	return _c
+}
+
+func (_c *MockedDatabase_GetTasksToRetry_Call) RunAndReturn(run func(context.Context, time.Duration, time.Duration, int) ([]*db.Task, []*db.Task, error)) *MockedDatabase_GetTasksToRetry_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -7728,135 +7857,6 @@ func (_c *MockedDatabase_SwitchRejected_Call) Return(_a0 error) *MockedDatabase_
 }
 
 func (_c *MockedDatabase_SwitchRejected_Call) RunAndReturn(run func(context.Context, uuid.UUID, string, string) error) *MockedDatabase_SwitchRejected_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// TaskStepToRetry provides a mock function with given fields: ctx, taskID
-func (_m *MockedDatabase) TaskStepToRetry(ctx context.Context, taskID uuid.UUID) (*entity.Step, error) {
-	ret := _m.Called(ctx, taskID)
-
-	if len(ret) == 0 {
-		panic("no return value specified for TaskStepToRetry")
-	}
-
-	var r0 *entity.Step
-	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) (*entity.Step, error)); ok {
-		return rf(ctx, taskID)
-	}
-	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) *entity.Step); ok {
-		r0 = rf(ctx, taskID)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*entity.Step)
-		}
-	}
-
-	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
-		r1 = rf(ctx, taskID)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// MockedDatabase_TaskStepToRetry_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'TaskStepToRetry'
-type MockedDatabase_TaskStepToRetry_Call struct {
-	*mock.Call
-}
-
-// TaskStepToRetry is a helper method to define mock.On call
-//   - ctx context.Context
-//   - taskID uuid.UUID
-func (_e *MockedDatabase_Expecter) TaskStepToRetry(ctx interface{}, taskID interface{}) *MockedDatabase_TaskStepToRetry_Call {
-	return &MockedDatabase_TaskStepToRetry_Call{Call: _e.mock.On("TaskStepToRetry", ctx, taskID)}
-}
-
-func (_c *MockedDatabase_TaskStepToRetry_Call) Run(run func(ctx context.Context, taskID uuid.UUID)) *MockedDatabase_TaskStepToRetry_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(uuid.UUID))
-	})
-	return _c
-}
-
-func (_c *MockedDatabase_TaskStepToRetry_Call) Return(_a0 *entity.Step, _a1 error) *MockedDatabase_TaskStepToRetry_Call {
-	_c.Call.Return(_a0, _a1)
-	return _c
-}
-
-func (_c *MockedDatabase_TaskStepToRetry_Call) RunAndReturn(run func(context.Context, uuid.UUID) (*entity.Step, error)) *MockedDatabase_TaskStepToRetry_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// TasksToRetry provides a mock function with given fields: ctx, minLifetime, maxLifetime, limit
-func (_m *MockedDatabase) TasksToRetry(ctx context.Context, minLifetime time.Duration, maxLifetime time.Duration, limit int) ([]*db.Task, []*db.Task, error) {
-	ret := _m.Called(ctx, minLifetime, maxLifetime, limit)
-
-	if len(ret) == 0 {
-		panic("no return value specified for TasksToRetry")
-	}
-
-	var r0 []*db.Task
-	var r1 []*db.Task
-	var r2 error
-	if rf, ok := ret.Get(0).(func(context.Context, time.Duration, time.Duration, int) ([]*db.Task, []*db.Task, error)); ok {
-		return rf(ctx, minLifetime, maxLifetime, limit)
-	}
-	if rf, ok := ret.Get(0).(func(context.Context, time.Duration, time.Duration, int) []*db.Task); ok {
-		r0 = rf(ctx, minLifetime, maxLifetime, limit)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]*db.Task)
-		}
-	}
-
-	if rf, ok := ret.Get(1).(func(context.Context, time.Duration, time.Duration, int) []*db.Task); ok {
-		r1 = rf(ctx, minLifetime, maxLifetime, limit)
-	} else {
-		if ret.Get(1) != nil {
-			r1 = ret.Get(1).([]*db.Task)
-		}
-	}
-
-	if rf, ok := ret.Get(2).(func(context.Context, time.Duration, time.Duration, int) error); ok {
-		r2 = rf(ctx, minLifetime, maxLifetime, limit)
-	} else {
-		r2 = ret.Error(2)
-	}
-
-	return r0, r1, r2
-}
-
-// MockedDatabase_TasksToRetry_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'TasksToRetry'
-type MockedDatabase_TasksToRetry_Call struct {
-	*mock.Call
-}
-
-// TasksToRetry is a helper method to define mock.On call
-//   - ctx context.Context
-//   - minLifetime time.Duration
-//   - maxLifetime time.Duration
-//   - limit int
-func (_e *MockedDatabase_Expecter) TasksToRetry(ctx interface{}, minLifetime interface{}, maxLifetime interface{}, limit interface{}) *MockedDatabase_TasksToRetry_Call {
-	return &MockedDatabase_TasksToRetry_Call{Call: _e.mock.On("TasksToRetry", ctx, minLifetime, maxLifetime, limit)}
-}
-
-func (_c *MockedDatabase_TasksToRetry_Call) Run(run func(ctx context.Context, minLifetime time.Duration, maxLifetime time.Duration, limit int)) *MockedDatabase_TasksToRetry_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(time.Duration), args[2].(time.Duration), args[3].(int))
-	})
-	return _c
-}
-
-func (_c *MockedDatabase_TasksToRetry_Call) Return(emptyTasks []*db.Task, filledTasks []*db.Task, err error) *MockedDatabase_TasksToRetry_Call {
-	_c.Call.Return(emptyTasks, filledTasks, err)
-	return _c
-}
-
-func (_c *MockedDatabase_TasksToRetry_Call) RunAndReturn(run func(context.Context, time.Duration, time.Duration, int) ([]*db.Task, []*db.Task, error)) *MockedDatabase_TasksToRetry_Call {
 	_c.Call.Return(run)
 	return _c
 }

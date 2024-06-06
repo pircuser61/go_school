@@ -306,6 +306,6 @@ type Database interface {
 	DeleteEventToSend(ctx c.Context, eventID string) (err error)
 	GetEventsToSend(ctx c.Context) ([]e.ToSendKafkaEvent, error)
 
-	TasksToRetry(ctx c.Context, minLifetime, maxLifetime time.Duration, limit int) (emptyTasks, filledTasks []*Task, err error)
-	TaskStepToRetry(ctx c.Context, taskID uuid.UUID) (*e.Step, error)
+	GetTasksToRetry(ctx c.Context, minLifetime, maxLifetime time.Duration, limit int) (emptyTasks, filledTasks []*Task, err error)
+	GetTaskStepToRetry(ctx c.Context, taskID uuid.UUID) (*e.Step, error)
 }

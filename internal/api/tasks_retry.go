@@ -52,7 +52,7 @@ func (ae *Env) retryEmptyTasks(ctx context.Context, limit int) error {
 	ctx, span := trace.StartSpan(ctx, "retry_empty_tasks")
 	defer span.End()
 
-	emptyTasks, filledTasks, err := ae.DB.TasksToRetry(ctx, ae.TaskRetry.MinLifetime, ae.TaskRetry.MaxLifetime, limit)
+	emptyTasks, filledTasks, err := ae.DB.GetTasksToRetry(ctx, ae.TaskRetry.MinLifetime, ae.TaskRetry.MaxLifetime, limit)
 	if err != nil {
 		return errors.Join(GetTaskError, err)
 	}
@@ -110,7 +110,7 @@ func (ae *Env) launchTask(ctx context.Context, task *db.Task) error {
 func (ae *Env) processTask(ctx context.Context, task *db.Task) error {
 	log := logger.GetLogger(ctx)
 
-	step, err := ae.DB.TaskStepToRetry(ctx, task.WorkID)
+	step, err := ae.DB.GetTaskStepToRetry(ctx, task.WorkID)
 	if err != nil {
 		return errors.Join(GetTaskStepError, err)
 	}

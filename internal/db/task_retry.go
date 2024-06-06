@@ -18,7 +18,7 @@ const (
 	emptyType  = "empty"
 )
 
-func (db *PGCon) TasksToRetry(
+func (db *PGCon) GetTasksToRetry(
 	ctx c.Context,
 	minLifetime, maxLifetime time.Duration,
 	limit int,
@@ -88,7 +88,7 @@ func scanEmptyTasks(rows pgx.Rows) (emptyTasks, filledTasks []*Task, err error) 
 	return emptyTasks, filledTasks, nil
 }
 
-func (db *PGCon) TaskStepToRetry(ctx c.Context, taskID uuid.UUID) (*entity.Step, error) {
+func (db *PGCon) GetTaskStepToRetry(ctx c.Context, taskID uuid.UUID) (*entity.Step, error) {
 	ctx, span := trace.StartSpan(ctx, "task_step_to_retry")
 	defer span.End()
 
