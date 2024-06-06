@@ -314,7 +314,7 @@ func TestExecutableFunctionParams_Validate(t *testing.T) {
 				RetryPolicy: "simple",
 			},
 
-			wantErr: errors.New("invalid return interval: 0"),
+			wantErr: errors.New("invalid retry interval: 0"),
 		},
 		{
 			name: "Tests missing retry policy",

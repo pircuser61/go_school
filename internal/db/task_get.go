@@ -314,6 +314,29 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 	// language=PostgreSQL
 	q = `
 		[with_variable_storage]
+		, work_names AS (
+        SELECT
+        w.id,
+        CASE
+			    WHEN w.run_context -> 'initial_application' -> 'custom_title' IS NULL OR w.run_context -> 'initial_application' ->> 'custom_title' =''
+				THEN
+                    CASE WHEN w.run_context -> 'initial_application' ->> 'is_test_application' = 'true'
+					THEN
+			   			p.name || ' (ТЕСТОВАЯ ЗАЯВКА)'
+					ELSE  p.name
+					END
+			    ELSE
+			        CASE WHEN w.run_context -> 'initial_application' ->> 'is_test_application' = 'true'
+					THEN
+			   			w.run_context -> 'initial_application' ->> 'custom_title' || ' (ТЕСТОВАЯ ЗАЯВКА)'
+					ELSE  w.run_context -> 'initial_application' ->> 'custom_title'
+					END
+			END as work_name
+ 	    FROM works w
+ 	        LEFT JOIN versions v ON v.id = w.version_id
+		    LEFT JOIN pipelines p ON p.id = v.pipeline_id
+        	JOIN unique_actions ua ON ua.work_id = w.id
+    	)
 		SELECT 
 			w.id,
 			w.started_at,
@@ -355,8 +378,9 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 		FROM works w 
 		LEFT JOIN versions v ON v.id = w.version_id
 		LEFT JOIN pipelines p ON p.id = v.pipeline_id
+		JOIN work_names wn ON wn.id = w.id
 		JOIN work_status ws ON w.status = ws.id
-		JOIN unique_actions ua ON ua.work_id = w.id
+		JOIN unique_actions ua ON ua.work_id = w.id		
 		[join_variable_storage]
 		LEFT JOIN LATERAL (
 			SELECT work_id, 
@@ -389,12 +413,37 @@ func compileGetTasksMetaQuery(fl entity.TaskFilter, delegations []string) (q str
 	// language=PostgreSQL
 	q = `
 		[with_variable_storage]
+		, work_names AS (
+        SELECT
+        w.id,
+        CASE
+			    WHEN w.run_context -> 'initial_application' -> 'custom_title' IS NULL 
+				     OR w.run_context -> 'initial_application' ->> 'custom_title' =''
+				THEN
+                    CASE WHEN w.run_context -> 'initial_application' ->> 'is_test_application' = 'true'
+					THEN
+			   			p.name || ' (ТЕСТОВАЯ ЗАЯВКА)'
+					ELSE  p.name
+					END
+			    ELSE
+			        CASE WHEN w.run_context -> 'initial_application' ->> 'is_test_application' = 'true'
+					THEN
+			   			w.run_context -> 'initial_application' ->> 'custom_title' || ' (ТЕСТОВАЯ ЗАЯВКА)'
+					ELSE  w.run_context -> 'initial_application' ->> 'custom_title'
+					END
+			END as work_name
+ 	    FROM works w
+ 	        LEFT JOIN versions v ON v.id = w.version_id
+		    LEFT JOIN pipelines p ON p.id = v.pipeline_id
+        	JOIN unique_actions ua ON ua.work_id = w.id
+    	)
 		SELECT 
 			w.work_number,
 			v.content->'pipeline'->'blocks'->'servicedesk_application_0'->'params'->>'blueprint_id' 		
 		FROM works w 
 		JOIN versions v ON v.id = w.version_id
 		JOIN pipelines p ON p.id = v.pipeline_id
+		JOIN work_names wn ON wn.id = w.id
 		JOIN unique_actions ua on w.id = ua.work_id
 		[join_variable_storage]
 		WHERE w.child_id IS NULL`
@@ -629,7 +678,7 @@ func (cq *compileGetTaskQueryMaker) addOrderBy(order string, orderBy []string) {
 		case "last_changed_at":
 			orderItem = append(orderItem, fmt.Sprintf("ua.updated_at %s", columnOrder))
 		case "name":
-			orderItem = append(orderItem, fmt.Sprintf("p.name %s", columnOrder))
+			orderItem = append(orderItem, fmt.Sprintf("translate(wn.work_name, '_/\\.,?', '000000') %s", columnOrder))
 		case "status":
 			orderItem = append(orderItem, fmt.Sprintf("w.status %s", columnOrder))
 		case "version_id":
