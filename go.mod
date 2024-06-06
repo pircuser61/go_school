@@ -1,6 +1,6 @@
 module gitlab.services.mts.ru/jocasta/pipeliner
 
-go 1.22
+go 1.22.2
 
 require (
 	contrib.go.opencensus.io/exporter/jaeger v0.2.1
@@ -37,7 +37,6 @@ require (
 	gitlab.services.mts.ru/jocasta/forms v1.7.0-rc.1.0.20240301073647-dad697e5b82d
 	gitlab.services.mts.ru/jocasta/functions v1.13.0-rc.1
 	gitlab.services.mts.ru/jocasta/human-tasks v1.0.0-alpha.3
-	gitlab.services.mts.ru/jocasta/iga-kit v1.0.1
 	gitlab.services.mts.ru/jocasta/integrations v1.11.0-rc.1
 	gitlab.services.mts.ru/jocasta/msg-kit v0.1.6
 	gitlab.services.mts.ru/jocasta/scheduler v1.10.1-0.20240411105447-0c6a180ab838
@@ -103,6 +102,7 @@ require (
 	github.com/uber/jaeger-client-go v2.25.0+incompatible // indirect
 	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect
 	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect
+	gitlab.services.mts.ru/jocasta/iga-kit v1.0.1 // indirect
 	golang.org/x/crypto v0.23.0 // indirect
 	golang.org/x/net v0.25.0 // indirect
 	golang.org/x/sys v0.20.0 // indirect
