@@ -1948,8 +1948,6 @@ func (db *PGCon) getTasks(ctx c.Context, filters *entity.TaskFilter,
 		Tasks: make([]entity.EriusTask, 0),
 	}
 
-	fmt.Println(q)
-
 	rows, err := db.Connection.Query(ctx, q, args...)
 	if err != nil {
 		return nil, err
