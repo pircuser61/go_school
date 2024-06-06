@@ -688,8 +688,6 @@ func (cq *compileGetTaskQueryMaker) addOrderBy(order string, orderBy []string) {
 			orderItem = append(orderItem, fmt.Sprintf("w.rate %s", columnOrder))
 		case "is_paused":
 			orderItem = append(orderItem, fmt.Sprintf("w.is_paused %s", columnOrder))
-		case "custom_name":
-			orderItem = append(orderItem, fmt.Sprintf("custom_name %s", columnOrder))
 		case "work_name":
 			orderItem = append(orderItem, fmt.Sprintf("translate(wn.work_name, '_/\\.,?', '000000') %s", columnOrder))
 		default:
