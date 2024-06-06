@@ -612,6 +612,8 @@ github.com/yuin/goldmark v1.4.13/go.mod h1:6yULJ656Px+3vBD8DxQVa3kxgyrAnzto9xy5t
 github.com/zenazn/goji v0.9.0/go.mod h1:7S9M489iMyHBNxwZnk9/EHS098H4/F6TATF2mIxtB1Q=
 gitlab.services.mts.ru/abp/mail/pkg v1.19.0 h1:DNccIRhUuijQYAq3v9gnY5AC7xi51UjHixHYudxFOXU=
 gitlab.services.mts.ru/abp/mail/pkg v1.19.0/go.mod h1:YE2ngC0lCO90yQG+eeT8F6343VuR1pi/VuxvqTLDwYE=
+gitlab.services.mts.ru/abp/myosotis v1.4.4 h1:De8ST0tK1aZKnVFvOd1a3FReloOh3hl6G34so5e1Vcs=
+gitlab.services.mts.ru/abp/myosotis v1.4.4/go.mod h1:x1TTaEJ+kgNbCkQViA5eWgnNLAprspL6qJWJWkhVZFE=
 gitlab.services.mts.ru/abp/myosotis v1.4.5 h1:jcuFnCdsyO/A6FN09npLFWZzFuvuHqB/NxutNSctrxM=
 gitlab.services.mts.ru/abp/myosotis v1.4.5/go.mod h1:uF2046pLHEKQDPXR/gvom0SVlvA7Ww1br8R3nm+M4zk=
 gitlab.services.mts.ru/jocasta/cache-kit v1.2.0 h1:BHzYoRHt7Kz/fysRH6jMuX83IbBtez8GdDYdl7NT0vc=
@@ -628,6 +630,8 @@ gitlab.services.mts.ru/jocasta/human-tasks v1.0.0-alpha.3 h1:5pW66koPEYP8/ZUilXU
 gitlab.services.mts.ru/jocasta/human-tasks v1.0.0-alpha.3/go.mod h1:s5ymK5liDXfZRBcLNOFZr+YleyYBNCUCUhzr6ddtJuo=
 gitlab.services.mts.ru/jocasta/iga-kit v1.0.1 h1:fcqjKOmSTTPf2qLrwW0uYKwMVN43KHQQ20qW6rs7riU=
 gitlab.services.mts.ru/jocasta/iga-kit v1.0.1/go.mod h1:+baXgajCK1TGWyMD3+JdX2HW1IvdQ7Ao7yHNIaZDof8=
+gitlab.services.mts.ru/jocasta/iga-kit v1.0.2 h1:s7iVvOqViGeXWuII/8Idfstj/dnKTSeDi7Ln8u9ZV54=
+gitlab.services.mts.ru/jocasta/iga-kit v1.0.2/go.mod h1:DyapL+lZSMfITkhr9RRWRzBnZHMttcJFWXcqnfdUDX0=
 gitlab.services.mts.ru/jocasta/integrations v1.11.0-rc.1 h1:gwAageTo79xiIC4o6G2sgOtd9D4Bdl8ksyjcPhK5DXY=
 gitlab.services.mts.ru/jocasta/integrations v1.11.0-rc.1/go.mod h1:zytD6KOKrniifdw0PWe3dt95SmBWnCJyiWhfCp1fbTU=
 gitlab.services.mts.ru/jocasta/msg-kit v0.1.6 h1:2DKxrPjiYe1Ml9t1ZragTVEG/1Gqb4Hl6VGpk/rXTt0=
