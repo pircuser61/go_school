@@ -28,7 +28,7 @@ func (e *FindUserError) Error() string {
 	return "couldn't find user with name " + e.UserName
 }
 
-func (s *service) GetUser(ctx c.Context, username string, onlyEnabled bool) (*people.SSOUser, error) {
+func (s *service) GetUser(ctx c.Context, username string, onlyEnabled bool) (people.SSOUser, error) {
 	ctxLocal, span := trace.StartSpan(ctx, "people.nocache.get_user")
 	defer span.End()
 
@@ -39,10 +39,10 @@ func (s *service) GetUser(ctx c.Context, username string, onlyEnabled bool) (*pe
 
 	res := people.SSOUser(igaSsoUser)
 
-	return &res, nil
+	return res, nil
 }
 
-func (s *service) GetUsers(ctx c.Context, username string, limit *int, filter []string) ([]*people.SSOUser, error) {
+func (s *service) GetUsers(ctx c.Context, username string, limit *int, filter []string) ([]people.SSOUser, error) {
 	ctxLocal, span := trace.StartSpan(ctx, "people.nocache.get_users")
 	defer span.End()
 
@@ -51,11 +51,11 @@ func (s *service) GetUsers(ctx c.Context, username string, limit *int, filter []
 		return nil, err
 	}
 
-	res := make([]*people.SSOUser, 0)
+	res := make([]people.SSOUser, 0)
 
 	for i := range igaSsoUsers {
 		ssoUser := people.SSOUser(igaSsoUsers[i])
-		res = append(res, &ssoUser)
+		res = append(res, ssoUser)
 	}
 
 	return res, err

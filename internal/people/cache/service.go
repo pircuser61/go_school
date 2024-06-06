@@ -55,7 +55,7 @@ func (s *service) Ping(ctx c.Context) error {
 	return s.People.Ping(ctx)
 }
 
-func (s *service) GetUser(ctx c.Context, username string, onlyEnabled bool) (*people.SSOUser, error) {
+func (s *service) GetUser(ctx c.Context, username string, onlyEnabled bool) (people.SSOUser, error) {
 	ctx, span := trace.StartSpan(ctx, "people.cache.get_user")
 	defer span.End()
 
@@ -67,7 +67,7 @@ func (s *service) GetUser(ctx c.Context, username string, onlyEnabled bool) (*pe
 	if err == nil {
 		resources, ok := valueFromCache.(string)
 		if ok {
-			var data *people.SSOUser
+			var data people.SSOUser
 
 			unmErr := json.Unmarshal([]byte(resources), &data)
 			if unmErr == nil {
@@ -99,7 +99,7 @@ func (s *service) GetUser(ctx c.Context, username string, onlyEnabled bool) (*pe
 	return resources, nil
 }
 
-func (s *service) GetUsers(ctx c.Context, username string, limit *int, filter []string) ([]*people.SSOUser, error) {
+func (s *service) GetUsers(ctx c.Context, username string, limit *int, filter []string) ([]people.SSOUser, error) {
 	ctx, span := trace.StartSpan(ctx, "people.cache.get_users")
 	defer span.End()
 
@@ -115,7 +115,7 @@ func (s *service) GetUsers(ctx c.Context, username string, limit *int, filter []
 		if err == nil {
 			resources, ok := valueFromCache.(string)
 			if ok {
-				var data []*people.SSOUser
+				var data []people.SSOUser
 
 				unmErr := json.Unmarshal([]byte(resources), &data)
 				if unmErr == nil {

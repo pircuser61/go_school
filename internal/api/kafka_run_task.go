@@ -90,7 +90,7 @@ func (ae *Env) RunTaskHandler(ctx c.Context, message kafka.RunTaskMessage) error
 	log.WithField("body", messageString).Info("start handle message from kafka")
 
 	if message.Username != "" {
-		var u *people.SSOUser
+		var u people.SSOUser
 		u, err = ae.People.GetUser(ctx, strings.ToLower(message.Username), true)
 		if err != nil {
 			log.WithField("username", message.Username).Error(err)
@@ -110,7 +110,7 @@ func (ae *Env) RunTaskHandler(ctx c.Context, message kafka.RunTaskMessage) error
 	}
 
 	if message.XAsOther != "" {
-		var u *people.SSOUser
+		var u people.SSOUser
 		u, err = ae.People.GetUser(ctx, strings.ToLower(message.XAsOther), true)
 		if err != nil {
 			log.WithField("XAsOther", message.XAsOther).Error(err)
