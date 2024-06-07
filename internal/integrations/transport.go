@@ -35,6 +35,7 @@ func (t *transport) RoundTrip(req *http.Request) (*http.Response, error) {
 
 	res, err := t.next.RoundTrip(req)
 	code := http.StatusServiceUnavailable
+
 	script.IncreaseReqRetryCntREST(req)
 
 	if res != nil {

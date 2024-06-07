@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/hashicorp/go-retryablehttp"
-
 	"go.opencensus.io/trace"
+
+	"github.com/hashicorp/go-retryablehttp"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
