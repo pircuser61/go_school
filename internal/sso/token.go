@@ -14,6 +14,8 @@ import (
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
+	"github.com/hashicorp/go-retryablehttp"
+
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
 

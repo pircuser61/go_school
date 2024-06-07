@@ -101,7 +101,6 @@ func (s *service) GetWorkGroup(ctx c.Context, groupID string) (*sd.WorkGroup, er
 		return nil, unmErr
 	}
 
-	log := logger.GetLogger(ctx)
 	log.Info(fmt.Sprintf("got %d from group: %s", len(res.People), res.GroupName))
 
 	return res, nil

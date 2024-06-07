@@ -27,7 +27,7 @@ type service struct {
 	cli sequence.SequenceClient
 }
 
-func NewService(cfg Config, _ logger.Logger, m metrics.Metrics) (Service, error) {
+func NewService(cfg Config, log logger.Logger, m metrics.Metrics) (Service, error) {
 	opts := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithStatsHandler(&ocgrpc.ClientHandler{}),

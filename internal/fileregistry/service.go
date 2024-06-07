@@ -6,6 +6,8 @@ import (
 
 	"gitlab.services.mts.ru/abp/myosotis/observability"
 
+	"github.com/hashicorp/go-retryablehttp"
+
 	"go.opencensus.io/plugin/ochttp"
 
 	"go.opencensus.io/plugin/ocgrpc"
@@ -31,7 +33,7 @@ type service struct {
 	grpcCLi  fileregistry.FileServiceClient
 }
 
-func NewService(cfg Config, log logger.Logger, m metrics.Metrics) (Service, error) {
+func NewService(cfg Config, _ logger.Logger, m metrics.Metrics) (Service, error) {
 	opts := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithStatsHandler(&ocgrpc.ClientHandler{}),
