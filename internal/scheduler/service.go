@@ -45,7 +45,7 @@ func NewService(cfg Config, _ logger.Logger, m metrics.Metrics) (*Service, error
 			grpc_retry.WithBackoff(grpc_retry.BackoffLinear(cfg.RetryDelay)),
 			grpc_retry.WithPerRetryTimeout(cfg.Timeout),
 			grpc_retry.WithCodes(codes.Unavailable, codes.ResourceExhausted, codes.DataLoss, codes.DeadlineExceeded, codes.Unknown),
-			grpc_retry.WithOnRetryCallback(func(ctx c.Context, attempt uint, err error) {
+			grpc_retry.WithOnRetryCallback(func(ctx context.Context, attempt uint, err error) {
 				script.IncreaseReqRetryCntGRPC(ctx)
 			}),
 		)))

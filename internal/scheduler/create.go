@@ -7,6 +7,8 @@ import (
 
 	"github.com/google/uuid"
 
+	"gitlab.services.mts.ru/abp/myosotis/logger"
+
 	scheduler_v1 "gitlab.services.mts.ru/jocasta/scheduler/pkg/proto/gen/src/task/v1"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"

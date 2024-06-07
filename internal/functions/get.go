@@ -7,6 +7,8 @@ import (
 
 	"go.opencensus.io/trace"
 
+	"gitlab.services.mts.ru/abp/myosotis/logger"
+
 	function "gitlab.services.mts.ru/jocasta/functions/pkg/proto/gen/function/v1"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"

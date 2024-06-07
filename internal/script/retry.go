@@ -9,11 +9,13 @@ type retryCnt struct{}
 
 func MakeContextWithRetryCnt(ctx context.Context) context.Context {
 	count := 0
+
 	return context.WithValue(ctx, retryCnt{}, &count)
 }
 
 func IncreaseReqRetryCntREST(req *http.Request) {
 	cnt := req.Context().Value(retryCnt{})
+
 	i, _ := cnt.(*int)
 	if i != nil {
 		*i++
@@ -22,6 +24,7 @@ func IncreaseReqRetryCntREST(req *http.Request) {
 
 func IncreaseReqRetryCntGRPC(ctx context.Context) {
 	cnt := ctx.Value(retryCnt{})
+
 	i, _ := cnt.(*int)
 	if i != nil {
 		*i++

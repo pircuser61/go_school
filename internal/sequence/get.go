@@ -5,6 +5,8 @@ import (
 
 	"go.opencensus.io/trace"
 
+	"gitlab.services.mts.ru/abp/myosotis/logger"
+
 	sequence "gitlab.services.mts.ru/jocasta/sequence/pkg/proto/gen/src/sequence/v1"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"

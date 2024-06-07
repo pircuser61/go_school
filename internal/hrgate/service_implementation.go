@@ -11,6 +11,8 @@ import (
 
 	"go.opencensus.io/trace"
 
+	"gitlab.services.mts.ru/abp/myosotis/logger"
+
 	openapi_types "github.com/deepmap/oapi-codegen/pkg/types"
 
 	"gitlab.services.mts.ru/abp/myosotis/observability"

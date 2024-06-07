@@ -12,6 +12,8 @@ import (
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
+	"github.com/hashicorp/go-retryablehttp"
+
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
 
@@ -42,7 +44,7 @@ func (s *service) SaveFile(ctx c.Context, token, clientID, name string, file []b
 	log := logger.GetLogger(ctxLocal).
 		WithField("traceID", span.SpanContext().TraceID.String()).WithField("transport", "HTTP")
 	reqURL := s.restURL + saveFile
-	ctxLocal = script.MakeContextWithRetyrCnt(ctxLocal)
+	ctxLocal = script.MakeContextWithRetryCnt(ctxLocal)
 
 	req, err := retryablehttp.NewRequestWithContext(ctxLocal, http.MethodPost, reqURL, buf)
 	if err != nil {
