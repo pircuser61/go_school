@@ -204,6 +204,10 @@ func (ae *Env) getExternalSystem(
 		VersionId:  versionID,
 	})
 	if err != nil {
+		if strings.Contains(err.Error(), "system not found") { // TODO: delete
+			return nil, nil
+		}
+
 		return nil, err
 	}
 
