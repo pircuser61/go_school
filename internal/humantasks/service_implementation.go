@@ -19,6 +19,7 @@ import (
 	d "gitlab.services.mts.ru/jocasta/human-tasks/pkg/proto/gen/proto/go/delegation"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
 
 const (
@@ -35,7 +36,7 @@ type service struct {
 	cli  d.DelegationServiceClient
 }
 
-func NewService(cfg *Config, log logger.Logger, m metrics.Metrics) (ServiceInterface, error) {
+func NewService(cfg *Config, _ logger.Logger, m metrics.Metrics) (ServiceInterface, error) {
 	if cfg.URL == "" {
 		return &ServiceWithCache{}, nil
 	}
@@ -53,8 +54,7 @@ func NewService(cfg *Config, log logger.Logger, m metrics.Metrics) (ServiceInter
 			grpc_retry.WithPerRetryTimeout(cfg.Timeout),
 			grpc_retry.WithCodes(gc.Unavailable, gc.ResourceExhausted, gc.DataLoss, gc.DeadlineExceeded, gc.Unknown),
 			grpc_retry.WithOnRetryCallback(func(ctx c.Context, attempt uint, err error) {
-				log.WithError(err).WithField("attempt", attempt).
-					Error("failed to reconnect to humantasks")
+				script.IncreaseReqRetryCntGRPC(ctx)
 			}),
 		)))
 	}
@@ -80,16 +80,28 @@ func (s *service) SetCli(cli d.DelegationServiceClient) {
 }
 
 func (s *service) GetDelegations(ctx c.Context, req *d.GetDelegationsRequest) (ds Delegations, err error) {
-	ctx, span := trace.StartSpan(ctx, "humantasks.get_delegations")
+	ctxLocal, span := trace.StartSpan(ctx, "humantasks.get_delegations")
 	defer span.End()
 
 	if s.cli == nil || s.conn == nil {
 		return make([]Delegation, 0), nil
 	}
 
-	res, reqErr := s.cli.GetDelegations(ctx, req)
+	log := logger.GetLogger(ctxLocal).
+		WithField("traceID", span.SpanContext().TraceID.String()).WithField("transport", "GRPC")
+	ctxLocal = script.MakeContextWithRetryCnt(ctxLocal)
+
+	res, reqErr := s.cli.GetDelegations(ctxLocal, req)
+	attempt := script.GetRetryCnt(ctxLocal)
+
 	if reqErr != nil {
+		log.Warning("Pipeliner failed to connect to humantasks. Exceeded max retry count: ", attempt)
+
 		return nil, reqErr
+	}
+
+	if attempt > 0 {
+		log.Warning("Pipeliner successfully reconnected to humantasks: ", attempt)
 	}
 
 	for _, delegation := range res.Delegations {

@@ -16,6 +16,7 @@ import (
 	function "gitlab.services.mts.ru/jocasta/functions/pkg/proto/gen/function/v1"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
 
 const externalSystemName = "functions"
@@ -25,7 +26,7 @@ type service struct {
 	cli  function.FunctionServiceClient
 }
 
-func NewService(cfg Config, log logger.Logger, m metrics.Metrics) (Service, error) {
+func NewService(cfg Config, _ logger.Logger, m metrics.Metrics) (Service, error) {
 	opts := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithStatsHandler(&ocgrpc.ClientHandler{}),
@@ -39,8 +40,7 @@ func NewService(cfg Config, log logger.Logger, m metrics.Metrics) (Service, erro
 			grpc_retry.WithPerRetryTimeout(cfg.Timeout),
 			grpc_retry.WithCodes(gc.Unavailable, gc.ResourceExhausted, gc.DataLoss, gc.DeadlineExceeded, gc.Unknown),
 			grpc_retry.WithOnRetryCallback(func(ctx c.Context, attempt uint, err error) {
-				log.WithError(err).WithField("attempt", attempt).
-					Error("failed to reconnect to functions")
+				script.IncreaseReqRetryCntGRPC(ctx)
 			}),
 		)))
 	}
