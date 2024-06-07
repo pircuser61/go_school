@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"regexp"
 
+	"github.com/hashicorp/go-retryablehttp"
+
 	"go.opencensus.io/trace"
 
 	fr "gitlab.services.mts.ru/jocasta/file-registry/pkg/proto/gen/file-registry/v1"

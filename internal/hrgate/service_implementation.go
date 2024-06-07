@@ -3,7 +3,6 @@ package hrgate
 import (
 	c "context"
 	"fmt"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"math"
 	"net/http"
 	"time"
@@ -22,6 +21,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
 
 const (
