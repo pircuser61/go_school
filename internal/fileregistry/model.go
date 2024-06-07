@@ -18,3 +18,5 @@ type AttachInfo struct {
 type fileID struct {
 	Data string `json:"data"`
 }
+
+type retryCnt struct{}

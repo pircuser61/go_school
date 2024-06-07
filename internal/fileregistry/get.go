@@ -1,6 +1,7 @@
 package fileregistry
 
 import (
+	"context"
 	c "context"
 	"fmt"
 	"io"
@@ -14,6 +15,7 @@ import (
 	fr "gitlab.services.mts.ru/jocasta/file-registry/pkg/proto/gen/file-registry/v1"
 
 	em "gitlab.services.mts.ru/abp/mail/pkg/email"
+	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 )
@@ -28,12 +30,25 @@ func (s *service) GetAttachmentLink(ctx c.Context, attachments []AttachInfo) ([]
 	_, span := trace.StartSpan(ctx, "file_registry.get_attachment_link")
 	defer span.End()
 
+	log := logger.GetLogger(ctx)
+
 	for k, v := range attachments {
+		count := 0
+		ctx = context.WithValue(ctx, retryCnt{}, &count)
 		link, err := s.grpcCLi.GetFileLinkById(ctx, &fr.GetFileLinkRequest{
 			FileId: v.FileID,
 		})
+		attempt, ok := ctx.Value(retryCnt{}).(*int)
 		if err != nil {
+			log.WithField("traceID", span.SpanContext().TraceID.String()).
+				Warning("Pipeliner failed to connect to fileregistry.  Exceeded max retry count: ", *attempt)
+
 			return nil, err
+		}
+
+		if ok && *attempt > 0 {
+			log.WithField("traceID", span.SpanContext().TraceID.String()).
+				Warning("Pipeliner successfully reconnected to fileregistry: ", attempt)
 		}
 
 		attachments[k].ExternalLink = link.Url
@@ -92,7 +107,10 @@ func (s *service) getAttachment(ctx c.Context, fileID, workNumber, clientID stri
 	ctxLocal, span := trace.StartSpan(ctx, "file_registry.get_attachment")
 	defer span.End()
 
+	count := 0
+	log := logger.GetLogger(ctx)
 	url := s.restURL + getFileByID + fileID
+	ctxLocal = context.WithValue(ctxLocal, retryCnt{}, &count)
 
 	req, err := retryablehttp.NewRequestWithContext(ctxLocal, http.MethodGet, url, http.NoBody)
 	if err != nil {
@@ -103,10 +121,20 @@ func (s *service) getAttachment(ctx c.Context, fileID, workNumber, clientID stri
 	req.Header.Set("Clientid", clientID)
 
 	resp, err := s.restCli.Do(req)
+	attempt, ok := req.Context().Value(retryCnt{}).(*int)
+
 	if err != nil {
+		log.WithField("traceID", span.SpanContext().TraceID.String()).
+			Warning("Pipeliner failed to connect to fileregistry.  Exceeded max retry count: ", *attempt)
+
 		return em.Attachment{}, err
 	}
 	defer resp.Body.Close()
+
+	if ok && *attempt > 0 {
+		log.WithField("traceID", span.SpanContext().TraceID.String()).
+			Warning("Pipeliner successfully reconnected to fileregistry: ", *attempt)
+	}
 
 	if resp.StatusCode != http.StatusOK {
 		return em.Attachment{}, fmt.Errorf("got bad status code: %d", resp.StatusCode)
