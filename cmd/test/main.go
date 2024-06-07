@@ -8,19 +8,10 @@ import (
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/configs"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/fileregistry"
 	file_registry "gitlab.services.mts.ru/jocasta/pipeliner/internal/fileregistry"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 )
 
-const serviceName = "jocasta.pipeliner"
-
-// @title Pipeliner API
-// @version 0.1
-
-// @host localhost:8181
-// @BasePath /api/pipeliner/v1
-//
 //nolint:gocyclo //it's ok here
 func main() {
 	configPath := flag.String("c", "cmd/pipeliner/config.yaml", "path to config")
@@ -48,7 +39,7 @@ func main() {
 		return
 	}
 
-	attach := fileregistry.AttachInfo{
+	attach := file_registry.AttachInfo{
 		FileID: "1111",
 		Name:   "test",
 	}
@@ -57,7 +48,7 @@ func main() {
 		FileID: "1111",
 	}
 
-	_, _ = fileRegistryService.GetAttachmentLink(context.Background(), []fileregistry.AttachInfo{attach})
+	_, _ = fileRegistryService.GetAttachmentLink(context.Background(), []file_registry.AttachInfo{attach})
 
 	_, _ = fileRegistryService.GetAttachments(context.Background(), []entity.Attachment{attach2}, "J00000002222", "")
 }

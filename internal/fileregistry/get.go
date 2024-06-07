@@ -39,6 +39,7 @@ func (s *service) GetAttachmentLink(ctx c.Context, attachments []AttachInfo) ([]
 			FileId: v.FileID,
 		})
 		attempt, ok := ctx.Value(retryCnt{}).(*int)
+
 		if err != nil {
 			log.WithField("traceID", span.SpanContext().TraceID.String()).
 				Warning("Pipeliner failed to connect to fileregistry.  Exceeded max retry count: ", *attempt)
