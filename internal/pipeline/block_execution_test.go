@@ -2264,7 +2264,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 							return slaMock
 						}(),
 						People: func() people.Service {
-							pServ, _ := people_nocache.NewService(&people.Config{}, nil)
+							pServ, _ := people_nocache.NewService(&people.Config{}, nil, nil)
 							return pServ
 						}(),
 						ServiceDesc: func() servicedesc.Service {

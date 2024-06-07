@@ -58,7 +58,7 @@ func (db *PGCon) SetLastRunID(c context.Context, taskID, versionID uuid.UUID) er
 	return nil
 }
 
-type EmptyTask struct {
+type Task struct {
 	WorkID        uuid.UUID
 	VersionID     uuid.UUID
 	WorkNumber    string
@@ -67,7 +67,7 @@ type EmptyTask struct {
 	ByPrevVersion bool
 }
 
-func (db *PGCon) CreateEmptyTask(ctx context.Context, task *EmptyTask) error {
+func (db *PGCon) CreateEmptyTask(ctx context.Context, task *Task) error {
 	ctx, span := trace.StartSpan(ctx, "pg_create_empty_task")
 	defer span.End()
 

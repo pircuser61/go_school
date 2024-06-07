@@ -4,7 +4,7 @@ info:
   contact: { }
   version: "0.1"
 servers:
-  - url: //localhost:8181/api/pipeliner/v1
+  - url: http://localhost:8000/api/pipeliner/v1
 paths:
   /cron/sla:
     get:
@@ -32,6 +32,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
+  /run/retry:
+    get: 
+      summary: retry zombie works
+      operationId: retryTasks
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+      responses:
+        200:
+          description: OK
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'      
   /application/rate/{workNumber}:
     post:
       summary: rate application
@@ -450,6 +468,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
+        404:
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
         500:
           description: Internal Server Error
           content:
@@ -578,6 +602,12 @@ paths:
                 $ref: '#/components/schemas/httpError'
         401:
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        404:
+          description: Not Found
           content:
             application/json:
               schema:
@@ -1921,6 +1951,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
+        404:
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
         500:
           description: Internal Server Error
           content:
@@ -2371,6 +2407,12 @@ paths:
                 $ref: '#/components/schemas/httpError'
         401:
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        404:
+          description: Not Found
           content:
             application/json:
               schema:
@@ -3800,6 +3842,8 @@ components:
             type: string
         items:
           type: array
+          items:
+            type: string
       required:
         - title
         - type
@@ -6596,7 +6640,6 @@ components:
         - type
         - description
         - value
-        -
     NameExists:
       type: object
       properties:

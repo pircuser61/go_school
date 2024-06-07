@@ -87,7 +87,7 @@ func main() {
 		return
 	}
 
-	peopleService, err := iga_nocache.NewService(&cfg.People, m)
+	peopleService, err := iga_nocache.NewService(&cfg.People, ssoService, m)
 	if err != nil {
 		log.WithError(err).Error("can't create people service")
 
@@ -227,6 +227,10 @@ func main() {
 		HostURL:                 cfg.HostURL,
 		LogIndex:                cfg.LogIndex,
 		FuncMsgResendDelay:      cfg.Kafka.FuncMessageResendDelay,
+		TaskRetry: api.TaskRetry{
+			MinLifetime: cfg.Retry.MinLifetime,
+			MaxLifetime: cfg.Retry.MaxLifetime,
+		},
 	}
 
 	serverParam := api.ServerParam{

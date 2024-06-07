@@ -208,3 +208,7 @@ file_registry:
   timeout: 2s
 
 host_url: 'https://dev.ap.mts.ru'
+
+retry:
+  min_lifetime: 60s
+  max_lifetime: 86400s

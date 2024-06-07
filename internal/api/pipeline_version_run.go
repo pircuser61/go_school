@@ -21,6 +21,7 @@ import (
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/errorutils"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
@@ -141,7 +142,7 @@ func (ae *Env) runVersionByPrevVersion(
 	workID = uuid.New()
 	log = log.WithField("workID", workID)
 
-	emptyTask := &db.EmptyTask{
+	emptyTask := &db.Task{
 		WorkID:        workID,
 		WorkNumber:    req.WorkNumber,
 		Author:        usr.Username,
@@ -288,8 +289,8 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if req.PipelineID == "" {
-		errorHandler.handleError(ValidationError, errors.New("pipelineID is empty"))
-		requestInfo.Status = ValidationError.Status()
+		errorHandler.handleError(ValidatePipelineIDError, ValidatePipelineIDError)
+		requestInfo.Status = ValidatePipelineIDError.Status()
 
 		return
 	}
@@ -390,7 +391,7 @@ func (ae *Env) runVersion(ctx c.Context, log logger.Logger, run *runVersionsDTO)
 
 	ctx = logger.WithLogger(ctx, log)
 
-	emptyTask := &db.EmptyTask{
+	emptyTask := &db.Task{
 		WorkID:        workID,
 		WorkNumber:    run.WorkNumber,
 		Author:        usr.Username,
@@ -434,16 +435,7 @@ func (ae *Env) runVersion(ctx c.Context, log logger.Logger, run *runVersionsDTO)
 		return errors.Join(PipelineCreateError, err)
 	}
 
-	err = ae.processEmptyTask(ctx, storage, emptyTask, run.RequestID, run.requestInfo)
-	if err != nil {
-		log.WithError(err).Error("process empty task error")
-
-		_ = storage.UpdateTaskStatus(ctx, emptyTask.WorkID, db.RunStatusError, err.Error(), "")
-
-		return err
-	}
-
-	return nil
+	return ae.launchEmptyTask(ctx, storage, emptyTask, run.RequestID, run.requestInfo)
 }
 
 func getErr(err error) Err {
@@ -460,10 +452,41 @@ func getErr(err error) Err {
 	}
 }
 
+func (ae *Env) launchEmptyTask(
+	ctx c.Context,
+	storage db.Database,
+	emptyTask *db.Task,
+	requestID string,
+	requestInfo *metrics.RequestInfo,
+) error {
+	err := ae.processEmptyTask(ctx, storage, emptyTask, requestID, requestInfo)
+
+	return handleLaunchTaskError(ctx, storage, emptyTask.WorkID, err)
+}
+
+func handleLaunchTaskError(ctx c.Context, storage db.Database, taskID uuid.UUID, err error) error {
+	log := logger.GetLogger(ctx)
+
+	switch {
+	case errorutils.IsRemoteCallError(err):
+		log.WithError(err).Warning("remote call error")
+
+		return nil
+	case err != nil:
+		log.WithError(err).Error("process empty task error")
+
+		_ = storage.UpdateTaskStatus(ctx, taskID, db.RunStatusError, err.Error(), "")
+
+		return err
+	default:
+		return nil
+	}
+}
+
 func (ae *Env) processEmptyTask(
 	ctx c.Context,
 	storage db.Database,
-	emptyTask *db.EmptyTask,
+	emptyTask *db.Task,
 	requestID string,
 	requestInfo *metrics.RequestInfo,
 ) error {
@@ -733,7 +756,7 @@ func cleanKey(mapKeys interface{}) string {
 func (ae *Env) createEmptyTask(
 	ctx c.Context,
 	storage db.Database,
-	dto *db.EmptyTask,
+	dto *db.Task,
 ) error {
 	ctx, span := trace.StartSpan(ctx, "create_empty_task")
 	defer span.End()
