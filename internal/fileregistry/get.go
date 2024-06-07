@@ -1,7 +1,6 @@
 package fileregistry
 
 import (
-	"context"
 	c "context"
 	"fmt"
 	"io"
@@ -34,7 +33,7 @@ func (s *service) GetAttachmentLink(ctx c.Context, attachments []AttachInfo) ([]
 
 	for k, v := range attachments {
 		count := 0
-		ctx = context.WithValue(ctx, retryCnt{}, &count)
+		ctx = c.WithValue(ctx, retryCnt{}, &count)
 		link, err := s.grpcCLi.GetFileLinkById(ctx, &fr.GetFileLinkRequest{
 			FileId: v.FileID,
 		})
