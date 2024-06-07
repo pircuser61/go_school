@@ -37,17 +37,19 @@ func (s *service) GetAttachmentLink(ctx c.Context, attachments []AttachInfo) ([]
 		link, err := s.grpcCLi.GetFileLinkById(ctx, &fr.GetFileLinkRequest{
 			FileId: v.FileID,
 		})
-		attempt, ok := ctx.Value(retryCnt{}).(*int)
+		attempt, _ := ctx.Value(retryCnt{}).(*int)
 
 		if err != nil {
 			log.WithField("traceID", span.SpanContext().TraceID.String()).
-				Warning("Pipeliner failed to connect to fileregistry.  Exceeded max retry count: ", *attempt)
+				WithField("transport", "GRPC").
+				Warning("Pipeliner failed to connect to fileregistry. Exceeded max retry count: ", *attempt)
 
 			return nil, err
 		}
 
-		if ok && *attempt > 0 {
+		if *attempt > 0 {
 			log.WithField("traceID", span.SpanContext().TraceID.String()).
+				WithField("transport", "GRPC").
 				Warning("Pipeliner successfully reconnected to fileregistry: ", attempt)
 		}
 
@@ -121,18 +123,20 @@ func (s *service) getAttachment(ctx c.Context, fileID, workNumber, clientID stri
 	req.Header.Set("Clientid", clientID)
 
 	resp, err := s.restCli.Do(req)
-	attempt, ok := req.Context().Value(retryCnt{}).(*int)
+	attempt, _ := req.Context().Value(retryCnt{}).(*int)
 
 	if err != nil {
 		log.WithField("traceID", span.SpanContext().TraceID.String()).
+			WithField("transport", "HTTP").
 			Warning("Pipeliner failed to connect to fileregistry.  Exceeded max retry count: ", *attempt)
 
 		return em.Attachment{}, err
 	}
 	defer resp.Body.Close()
 
-	if ok && *attempt > 0 {
+	if *attempt > 0 {
 		log.WithField("traceID", span.SpanContext().TraceID.String()).
+			WithField("transport", "HTTP").
 			Warning("Pipeliner successfully reconnected to fileregistry: ", *attempt)
 	}
 

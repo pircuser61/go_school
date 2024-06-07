@@ -47,9 +47,7 @@ func NewService(cfg Config, log logger.Logger, m metrics.Metrics) (Service, erro
 			grpc_retry.WithCodes(gc.Unavailable, gc.ResourceExhausted, gc.DataLoss, gc.DeadlineExceeded, gc.Unknown),
 			grpc_retry.WithOnRetryCallback(func(ctx c.Context, attempt uint, err error) {
 				cnt := ctx.Value(retryCnt{})
-				log.WithError(err).WithField("attempt", attempt).WithField("cnt", cnt).
-					Error("failed to reconnect to fileregistry")
-				i := cnt.(*int)
+				i, _ := cnt.(*int)
 				*i++
 			}),
 		)))
@@ -72,7 +70,7 @@ func NewService(cfg Config, log logger.Logger, m metrics.Metrics) (Service, erro
 
 	return &service{
 		grpcConn: conn,
-		restCli:  httpclient.NewClient(httpClient, log, cfg.MaxRetries, cfg.RetryDelay),
+		restCli:  httpclient.NewClient(httpClient, nil, cfg.MaxRetries, cfg.RetryDelay),
 		restURL:  cfg.REST,
 		grpcCLi:  fileregistry.NewFileServiceClient(conn),
 	}, nil
