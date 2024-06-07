@@ -57,7 +57,7 @@ func main() {
 		FileID: "1111",
 	}
 
-	fileRegistryService.GetAttachmentLink(context.Background(), []fileregistry.AttachInfo{attach})
+	_, _ = fileRegistryService.GetAttachmentLink(context.Background(), []fileregistry.AttachInfo{attach})
 
-	fileRegistryService.GetAttachments(context.Background(), []entity.Attachment{attach2}, "J00000002222", "")
+	_, _ = fileRegistryService.GetAttachments(context.Background(), []entity.Attachment{attach2}, "J00000002222", "")
 }

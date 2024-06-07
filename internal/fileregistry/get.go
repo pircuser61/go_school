@@ -110,7 +110,7 @@ func (s *service) getAttachment(ctx c.Context, fileID, workNumber, clientID stri
 	count := 0
 	log := logger.GetLogger(ctx)
 	url := s.restURL + getFileByID + fileID
-	ctxLocal = context.WithValue(ctxLocal, retryCnt{}, &count)
+	ctxLocal = c.WithValue(ctxLocal, retryCnt{}, &count)
 
 	req, err := retryablehttp.NewRequestWithContext(ctxLocal, http.MethodGet, url, http.NoBody)
 	if err != nil {
