@@ -21,9 +21,9 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/httpclient"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
 
 const (
@@ -101,7 +101,7 @@ func (s *Service) GetCalendars(ctx c.Context, params *GetCalendarsParams) ([]Cal
 
 	response, err := s.cli.GetCalendarsWithResponse(ctxLocal, params)
 	attempt := script.GetRetryCnt(ctxLocal) - 1
-	
+
 	if err != nil {
 		log.Warning("Pipeliner failed to connect to hrgate. Exceeded max retry count: ", attempt)
 
@@ -136,10 +136,10 @@ func (s *Service) GetCalendarDays(ctx c.Context, params *GetCalendarDaysParams) 
 
 	resp, err := s.cli.GetCalendarDaysWithResponse(ctxLocal, params)
 	attempt := script.GetRetryCnt(ctxLocal) - 1
-	
+
 	if err != nil {
 		log.Warning("Pipeliner failed to connect to hrgate. Exceeded max retry count: ", attempt)
-		
+
 		return nil, err
 	}
 
@@ -281,7 +281,7 @@ func (s *Service) GetEmployeeByLogin(ctx c.Context, username string) (*Employee,
 	})
 
 	attempt := script.GetRetryCnt(ctxLocal) - 1
-	
+
 	if err != nil {
 		log.Warning("Pipeliner failed to connect to hrgate. Exceeded max retry count: ", attempt)
 
@@ -313,7 +313,7 @@ func (s *Service) GetOrganizationByID(ctx c.Context, organizationID string) (*Or
 
 	response, err := s.cli.GetOrganizationsIdWithResponse(ctxLocal, UUIDPathObjectID(organizationID))
 	attempt := script.GetRetryCnt(ctxLocal) - 1
-	
+
 	if err != nil {
 		log.Warning("Pipeliner failed to connect to hrgate. Exceeded max retry count: ", attempt)
 

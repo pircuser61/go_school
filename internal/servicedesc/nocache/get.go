@@ -12,9 +12,9 @@ import (
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	sd "gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
 
 func (s *service) GetSsoPerson(ctx c.Context, username string) (*sd.SsoPerson, error) {
