@@ -31,7 +31,7 @@ func (t *transport) RoundTrip(req *http.Request) (*http.Response, error) {
 	code := http.StatusServiceUnavailable
 	cnt := req.Context().Value(retryCnt{})
 	i := cnt.(*int)
-	*i = *i + 1
+	*i++
 
 	if res != nil {
 		code = res.StatusCode

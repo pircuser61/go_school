@@ -50,7 +50,7 @@ func NewService(cfg Config, log logger.Logger, m metrics.Metrics) (Service, erro
 				log.WithError(err).WithField("attempt", attempt).WithField("cnt", cnt).
 					Error("failed to reconnect to fileregistry")
 				i := cnt.(*int)
-				*i = *i + 1
+				*i++
 			}),
 		)))
 	}
