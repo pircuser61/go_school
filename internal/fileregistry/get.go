@@ -50,7 +50,7 @@ func (s *service) GetAttachmentLink(ctx c.Context, attachments []AttachInfo) ([]
 		if *attempt > 0 {
 			log.WithField("traceID", span.SpanContext().TraceID.String()).
 				WithField("transport", "GRPC").
-				Warning("Pipeliner successfully reconnected to fileregistry: ", attempt)
+				Warning("Pipeliner successfully reconnected to fileregistry: ", *attempt)
 		}
 
 		attachments[k].ExternalLink = link.Url
