@@ -8,6 +8,7 @@ import (
 	"go.opencensus.io/plugin/ochttp"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 )
 
@@ -45,6 +46,7 @@ func (t *transport) RoundTrip(req *http.Request) (*http.Response, error) {
 
 	res, err := t.next.RoundTrip(req)
 	code := http.StatusServiceUnavailable
+	script.IncreaseReqRetryCntREST(req)
 
 	if res != nil {
 		code = res.StatusCode

@@ -326,7 +326,7 @@ func (gb *ExecutableFunctionBlock) loadState(raw json.RawMessage) error {
 }
 
 //nolint:dupl //its not duplicate
-func (gb *ExecutableFunctionBlock) createState(ef *entity.EriusFunc) error {
+func (gb *ExecutableFunctionBlock) createState(ctx context.Context, ef *entity.EriusFunc) error {
 	var params script.ExecutableFunctionParams
 
 	err := json.Unmarshal(ef.Params, &params)
@@ -339,7 +339,7 @@ func (gb *ExecutableFunctionBlock) createState(ef *entity.EriusFunc) error {
 	}
 
 	function, err := gb.RunContext.Services.FunctionStore.GetFunctionVersion(
-		context.Background(),
+		ctx,
 		params.Function.FunctionID,
 		params.Function.VersionID,
 	)
@@ -375,7 +375,7 @@ func (gb *ExecutableFunctionBlock) createState(ef *entity.EriusFunc) error {
 	}
 
 	if gb.State.CheckSLA {
-		_, err = gb.RunContext.Services.Scheduler.CreateTask(context.Background(), &scheduler.CreateTask{
+		_, err = gb.RunContext.Services.Scheduler.CreateTask(ctx, &scheduler.CreateTask{
 			WorkNumber:  gb.RunContext.WorkNumber,
 			WorkID:      gb.RunContext.TaskID.String(),
 			ActionName:  string(entity.TaskUpdateActionFuncSLAExpired),
@@ -396,7 +396,7 @@ func (gb *ExecutableFunctionBlock) createExpectedEvents(
 	name string,
 	ef *entity.EriusFunc,
 ) error {
-	if err := gb.createState(ef); err != nil {
+	if err := gb.createState(ctx, ef); err != nil {
 		return err
 	}
 

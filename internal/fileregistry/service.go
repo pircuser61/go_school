@@ -15,14 +15,13 @@ import (
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
-	"github.com/hashicorp/go-retryablehttp"
-
 	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/retry"
 
 	fileregistry "gitlab.services.mts.ru/jocasta/file-registry/pkg/proto/gen/file-registry/v1"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/httpclient"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
 
 type service struct {
@@ -46,9 +45,7 @@ func NewService(cfg Config, log logger.Logger, m metrics.Metrics) (Service, erro
 			grpc_retry.WithPerRetryTimeout(cfg.Timeout),
 			grpc_retry.WithCodes(gc.Unavailable, gc.ResourceExhausted, gc.DataLoss, gc.DeadlineExceeded, gc.Unknown),
 			grpc_retry.WithOnRetryCallback(func(ctx c.Context, attempt uint, err error) {
-				cnt := ctx.Value(retryCnt{})
-				i, _ := cnt.(*int)
-				*i++
+				script.IncreaseReqRetryCntGRPC(ctx)
 			}),
 		)))
 	}

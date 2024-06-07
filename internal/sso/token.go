@@ -8,11 +8,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/go-retryablehttp"
-
 	"github.com/pkg/errors"
 
 	"go.opencensus.io/trace"
+
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
 
 type Tokens struct {
@@ -130,6 +130,10 @@ func (s *Service) getTokens(ctx context.Context, scopeName string) error {
 	ctxLocal, span := trace.StartSpan(ctx, "getTokens")
 	defer span.End()
 
+	log := logger.GetLogger(ctxLocal).
+		WithField("traceID", span.SpanContext().TraceID.String()).WithField("transport", "HTTP")
+	ctxLocal = script.MakeContextWithRetryCnt(ctxLocal)
+
 	s.scopesMutex.RLock()
 	if _, ok := s.scopes[scopeName]; !ok {
 		s.scopesMutex.RUnlock()
@@ -143,8 +147,16 @@ func (s *Service) getTokens(ctx context.Context, scopeName string) error {
 	s.scopesMutex.RUnlock()
 
 	req, err := retryablehttp.NewRequestWithContext(ctxLocal, http.MethodPost, s.tokensURL, strings.NewReader(sc.getTokensFormData.Encode()))
+	attempt := script.GetRetryCnt(ctxLocal) - 1
+
 	if err != nil {
+		log.Warning("Pipeliner failed to connect to sso. Exceeded max retry count: ", attempt)
+
 		return err
+	}
+
+	if attempt > 0 {
+		log.Warning("Pipeliner successfully reconnected to sso: ", attempt)
 	}
 
 	req.Header.Add(contentTypeHeader, contentTypeFormValue)
@@ -182,6 +194,10 @@ func (s *Service) refreshTokens(ctx context.Context, scopeName string) error {
 	ctxLocal, span := trace.StartSpan(ctx, "refreshTokens")
 	defer span.End()
 
+	log := logger.GetLogger(ctxLocal).
+		WithField("traceID", span.SpanContext().TraceID.String()).WithField("transport", "HTTP")
+	ctxLocal = script.MakeContextWithRetryCnt(ctxLocal)
+
 	s.scopesMutex.RLock()
 
 	if _, ok := s.scopes[scopeName]; !ok {
@@ -200,8 +216,16 @@ func (s *Service) refreshTokens(ctx context.Context, scopeName string) error {
 	formData.Add(refreshTokenKey, sc.refreshToken)
 
 	req, err := retryablehttp.NewRequestWithContext(ctxLocal, http.MethodPost, s.tokensURL, strings.NewReader(sc.getTokensFormData.Encode()))
+	attempt := script.GetRetryCnt(ctxLocal) - 1
+
 	if err != nil {
+		log.Warning("Pipeliner failed to connect to sso. Exceeded max retry count: ", attempt)
+
 		return err
+	}
+
+	if attempt > 0 {
+		log.Warning("Pipeliner successfully reconnected to sso: ", attempt)
 	}
 
 	req.Header.Add(contentTypeHeader, contentTypeFormValue)

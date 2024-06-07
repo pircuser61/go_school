@@ -16,6 +16,7 @@ import (
 	scheduler_v1 "gitlab.services.mts.ru/jocasta/scheduler/pkg/proto/gen/src/task/v1"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
 
 const externalSystemName = "scheduler"
@@ -31,7 +32,7 @@ func (s *Service) Ping(ctx context.Context) error {
 	return err
 }
 
-func NewService(cfg Config, log logger.Logger, m metrics.Metrics) (*Service, error) {
+func NewService(cfg Config, _ logger.Logger, m metrics.Metrics) (*Service, error) {
 	opts := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithStatsHandler(&ocgrpc.ClientHandler{}),
@@ -44,8 +45,8 @@ func NewService(cfg Config, log logger.Logger, m metrics.Metrics) (*Service, err
 			grpc_retry.WithBackoff(grpc_retry.BackoffLinear(cfg.RetryDelay)),
 			grpc_retry.WithPerRetryTimeout(cfg.Timeout),
 			grpc_retry.WithCodes(codes.Unavailable, codes.ResourceExhausted, codes.DataLoss, codes.DeadlineExceeded, codes.Unknown),
-			grpc_retry.WithOnRetryCallback(func(ctx context.Context, attempt uint, err error) {
-				log.WithError(err).WithField("attempt", attempt).Error("failed to reconnect to scheduler")
+			grpc_retry.WithOnRetryCallback(func(ctx c.Context, attempt uint, err error) {
+				script.IncreaseReqRetryCntGRPC(ctx)
 			}),
 		)))
 	}
