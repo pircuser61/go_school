@@ -1845,6 +1845,11 @@ type NumberOperandOperandType string
 // Block constant params
 type Params interface{}
 
+// People from iga
+type PeopleResp struct {
+	People *[]UserInfo `json:"people,omitempty"`
+}
+
 // Placeholder block params
 type PlaceholderParams struct {
 	// New task description

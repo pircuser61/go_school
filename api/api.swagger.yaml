@@ -3566,7 +3566,7 @@ paths:
                 type: object
                 properties:
                   data:
-                    $ref: '#/components/schemas/UserInfo'
+                    $ref: '#/components/schemas/PeopleResp'
                   status_code:
                     type: integer
         400:
