@@ -85,7 +85,7 @@ func (ae *Env) SearchPeople(w http.ResponseWriter, r *http.Request, params Searc
 
 	var ui *people.SSOUserTyped
 
-	res := make([]UserInfo, 0, len(users))
+	pls := make([]UserInfo, 0, len(users))
 
 	for i := range users {
 		ui, err = users[i].ToSSOUserTyped()
@@ -99,7 +99,7 @@ func (ae *Env) SearchPeople(w http.ResponseWriter, r *http.Request, params Searc
 			return
 		}
 
-		res = append(res, UserInfo{
+		pls = append(pls, UserInfo{
 			Email:       ui.Email,
 			FullOrgUnit: ui.Attributes.OrgUnit,
 			Fullname:    ui.Attributes.FullName,
@@ -109,6 +109,10 @@ func (ae *Env) SearchPeople(w http.ResponseWriter, r *http.Request, params Searc
 			Tabnum:      ui.Tabnum,
 			Username:    ui.Username,
 		})
+	}
+
+	res := PeopleResp{
+		People: &pls,
 	}
 
 	if err = sendResponse(w, http.StatusOK, res); err != nil {
