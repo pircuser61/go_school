@@ -3551,6 +3551,13 @@ paths:
           schema:
             type: string
         - in: query
+          name: enabled
+          description: If only enabled accounts should be returned
+          required: false
+          schema:
+            type: boolean
+            default: true
+        - in: query
           name: limit
           description: Search limit
           required: false

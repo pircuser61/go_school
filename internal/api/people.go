@@ -72,7 +72,12 @@ func (ae *Env) SearchPeople(w http.ResponseWriter, r *http.Request, params Searc
 	log := logger.GetLogger(ctx)
 	errorHandler := newHTTPErrorHandler(log, w)
 
-	users, err := ae.People.GetUsers(ctx, params.Search, params.Limit, []string{})
+	enabled := true
+	if params.Enabled != nil {
+		enabled = *params.Enabled
+	}
+
+	users, err := ae.People.GetUsers(ctx, params.Search, params.Limit, []string{}, enabled)
 	if err != nil {
 		e := GetUserError
 

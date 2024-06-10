@@ -632,6 +632,8 @@ gitlab.services.mts.ru/jocasta/iga-kit v1.0.1 h1:fcqjKOmSTTPf2qLrwW0uYKwMVN43KHQ
 gitlab.services.mts.ru/jocasta/iga-kit v1.0.1/go.mod h1:+baXgajCK1TGWyMD3+JdX2HW1IvdQ7Ao7yHNIaZDof8=
 gitlab.services.mts.ru/jocasta/iga-kit v1.0.2 h1:s7iVvOqViGeXWuII/8Idfstj/dnKTSeDi7Ln8u9ZV54=
 gitlab.services.mts.ru/jocasta/iga-kit v1.0.2/go.mod h1:DyapL+lZSMfITkhr9RRWRzBnZHMttcJFWXcqnfdUDX0=
+gitlab.services.mts.ru/jocasta/iga-kit v1.0.3 h1:xe5sW3EoioCLTqL3kUAPt7vNp/EcwUOQm5Q8QoGus0M=
+gitlab.services.mts.ru/jocasta/iga-kit v1.0.3/go.mod h1:DyapL+lZSMfITkhr9RRWRzBnZHMttcJFWXcqnfdUDX0=
 gitlab.services.mts.ru/jocasta/integrations v1.11.0-rc.1 h1:gwAageTo79xiIC4o6G2sgOtd9D4Bdl8ksyjcPhK5DXY=
 gitlab.services.mts.ru/jocasta/integrations v1.11.0-rc.1/go.mod h1:zytD6KOKrniifdw0PWe3dt95SmBWnCJyiWhfCp1fbTU=
 gitlab.services.mts.ru/jocasta/msg-kit v0.1.6 h1:2DKxrPjiYe1Ml9t1ZragTVEG/1Gqb4Hl6VGpk/rXTt0=

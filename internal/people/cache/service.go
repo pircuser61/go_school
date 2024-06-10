@@ -100,7 +100,7 @@ func (s *service) GetUser(ctx c.Context, username string, onlyEnabled bool) (peo
 	return resources, nil
 }
 
-func (s *service) GetUsers(ctx c.Context, username string, limit *int, filter []string) ([]people.SSOUser, error) {
+func (s *service) GetUsers(ctx c.Context, username string, limit *int, filter []string, onlyEnabled bool) ([]people.SSOUser, error) {
 	ctx, span := trace.StartSpan(ctx, "people.cache.get_users")
 	defer span.End()
 
@@ -133,7 +133,7 @@ func (s *service) GetUsers(ctx c.Context, username string, limit *int, filter []
 		}
 	}
 
-	resources, err := s.People.GetUsers(ctx, username, limit, filter)
+	resources, err := s.People.GetUsers(ctx, username, limit, filter, onlyEnabled)
 	if err != nil {
 		return nil, err
 	}
