@@ -71,7 +71,7 @@ func (s *service) GetUser(ctx c.Context, username string, onlyEnabled bool) (peo
 	return res, nil
 }
 
-func (s *service) GetUsers(ctx c.Context, username string, limit *int, filter []string) ([]people.SSOUser, error) {
+func (s *service) GetUsers(ctx c.Context, username string, limit *int, filter []string, enabled bool) ([]people.SSOUser, error) {
 	ctxLocal, span := trace.StartSpan(ctx, "people.nocache.get_users")
 	defer span.End()
 
@@ -80,7 +80,7 @@ func (s *service) GetUsers(ctx c.Context, username string, limit *int, filter []
 
 	ctxLocal = script.MakeContextWithRetryCnt(ctxLocal)
 
-	igaSsoUsers, err := s.iga.GetUsers(ctxLocal, username, limit, filter)
+	igaSsoUsers, err := s.iga.GetUsers(ctxLocal, username, limit, filter, enabled)
 	attempt := script.GetRetryCnt(ctxLocal) - 1
 
 	if err != nil {
