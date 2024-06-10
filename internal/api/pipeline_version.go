@@ -11,6 +11,8 @@ import (
 
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/jackc/pgx/v4"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"github.com/google/uuid"
 
@@ -204,7 +206,7 @@ func (ae *Env) getExternalSystem(
 		VersionId:  versionID,
 	})
 	if err != nil {
-		if strings.Contains(err.Error(), "system not found") { // TODO: delete
+		if status.Code(err) == codes.NotFound {
 			return nil, nil
 		}
 
