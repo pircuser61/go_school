@@ -157,7 +157,7 @@ func main() {
 		return
 	}
 
-	integrationsService, err := integrations.NewService(cfg.Integrations, log, m)
+	integrationsService, err := integrations.NewService(cfg.Integrations, m, ssoService)
 	if err != nil {
 		log.WithError(err).Error("can't create integrations service")
 
