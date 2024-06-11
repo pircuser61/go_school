@@ -147,6 +147,7 @@ const (
 	CreateTaskStepInputsError
 	GetBlockInputsError
 	GetUserError
+	TypeAndValueNotCompatible
 )
 
 /*
@@ -282,6 +283,7 @@ var errorText = map[Err]string{
 	CreateTaskStepInputsError:           "can`t create update inputs history",
 	GetBlockInputsError:                 "can`t get block inputs",
 	GetUserError:                        "can`t get user",
+	TypeAndValueNotCompatible:           "type and value are not compatible",
 }
 
 /*
@@ -417,6 +419,7 @@ var errorDescription = map[Err]string{
 	CreateTaskStepInputsError:      "Не удалось создать запись о изменении инпутов блока",
 	GetBlockInputsError:            "Не удалось получить инпуты блока",
 	GetUserError:                   "Не удалось найти пользователя по логину",
+	TypeAndValueNotCompatible:      "Type и Value не совместимы",
 }
 
 /*
