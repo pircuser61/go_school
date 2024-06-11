@@ -176,7 +176,7 @@ func main() {
 		log.WithError(fillErr).Error("can't fill default unit id")
 	}
 
-	fileRegistryService, err := file_registry.NewService(cfg.FileRegistry, log, m)
+	fileRegistryService, err := file_registry.NewService(cfg.FileRegistry, log, m, cfg.Integrations.MaxRetries)
 	if err != nil {
 		log.WithError(err).Error("can't create file-registry service")
 

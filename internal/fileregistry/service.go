@@ -27,13 +27,14 @@ import (
 )
 
 type service struct {
-	restURL  string
-	restCli  *retryablehttp.Client
-	grpcConn *grpc.ClientConn
-	grpcCLi  fileregistry.FileServiceClient
+	restURL       string
+	restCli       *retryablehttp.Client
+	grpcConn      *grpc.ClientConn
+	grpcCLi       fileregistry.FileServiceClient
+	maxRetryCount uint
 }
 
-func NewService(cfg Config, _ logger.Logger, m metrics.Metrics) (Service, error) {
+func NewService(cfg Config, _ logger.Logger, m metrics.Metrics, maxRetryCount uint) (Service, error) {
 	opts := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithStatsHandler(&ocgrpc.ClientHandler{}),
@@ -68,10 +69,11 @@ func NewService(cfg Config, _ logger.Logger, m metrics.Metrics) (Service, error)
 	}
 
 	return &service{
-		grpcConn: conn,
-		restCli:  httpclient.NewClient(httpClient, nil, cfg.MaxRetries, cfg.RetryDelay),
-		restURL:  cfg.REST,
-		grpcCLi:  fileregistry.NewFileServiceClient(conn),
+		grpcConn:      conn,
+		restCli:       httpclient.NewClient(httpClient, nil, cfg.MaxRetries, cfg.RetryDelay),
+		restURL:       cfg.REST,
+		grpcCLi:       fileregistry.NewFileServiceClient(conn),
+		maxRetryCount: maxRetryCount,
 	}, nil
 }
 
