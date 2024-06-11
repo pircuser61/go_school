@@ -103,7 +103,7 @@ func (gb *GoNotificationBlock) compileText(ctx context.Context) (*mail.Notif, []
 		return nil, nil, err
 	}
 
-	description, files, err := gb.RunContext.makeNotificationDescription(gb.Name)
+	description, files, err := gb.RunContext.makeNotificationDescription(ctx, gb.Name)
 	if err != nil {
 		return nil, nil, err
 	}

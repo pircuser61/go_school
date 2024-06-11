@@ -79,7 +79,7 @@ func (runCtx *BlockRunContext) handleInitiatorNotify(ctx c.Context, params handl
 		return nil
 	}
 
-	description, files, err := runCtx.makeNotificationDescription(params.step)
+	description, files, err := runCtx.makeNotificationDescription(ctx, params.step)
 	if err != nil {
 		return err
 	}
@@ -154,7 +154,7 @@ func (runCtx *BlockRunContext) getFileField() ([]string, error) {
 	return task.InitialApplication.AttachmentFields, nil
 }
 
-func (runCtx *BlockRunContext) makeNotificationFormAttachment(files []string) ([]fileregistry.FileInfo, error) {
+func (runCtx *BlockRunContext) makeNotificationFormAttachment(ctx c.Context, files []string) ([]fileregistry.FileInfo, error) {
 	attachments := make([]entity.Attachment, 0)
 	mapFiles := make(map[string][]entity.Attachment)
 
@@ -164,7 +164,7 @@ func (runCtx *BlockRunContext) makeNotificationFormAttachment(files []string) ([
 
 	mapFiles[filesType] = attachments
 
-	file, err := runCtx.Services.FileRegistry.GetAttachmentsInfo(c.Background(), mapFiles)
+	file, err := runCtx.Services.FileRegistry.GetAttachmentsInfo(ctx, mapFiles)
 	if err != nil {
 		return nil, err
 	}
@@ -178,14 +178,14 @@ func (runCtx *BlockRunContext) makeNotificationFormAttachment(files []string) ([
 }
 
 // nolint:gocognit,gocyclo //it's ok
-func (runCtx *BlockRunContext) makeNotificationAttachment() ([]fileregistry.FileInfo, []fileregistry.AttachInfo, error) {
+func (runCtx *BlockRunContext) makeNotificationAttachment(ctx c.Context) ([]fileregistry.FileInfo, []fileregistry.AttachInfo, error) {
 	fmt.Println(runCtx.skipNotifications)
 
 	if runCtx.skipNotifications {
 		return []fileregistry.FileInfo{}, []fileregistry.AttachInfo{}, nil
 	}
 
-	task, err := runCtx.Services.Storage.GetTaskRunContext(c.Background(), runCtx.WorkNumber)
+	task, err := runCtx.Services.Storage.GetTaskRunContext(ctx, runCtx.WorkNumber)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -277,7 +277,7 @@ func (runCtx *BlockRunContext) makeNotificationAttachment() ([]fileregistry.File
 
 	mapFiles[filesType] = attachmentsList
 
-	file, err := runCtx.Services.FileRegistry.GetAttachmentsInfo(c.Background(), mapFiles)
+	file, err := runCtx.Services.FileRegistry.GetAttachmentsInfo(ctx, mapFiles)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -405,8 +405,8 @@ func filterHiddenAttachmentFields(attachmentFields, hiddenFields []string) []str
 }
 
 //nolint:gocognit,gocyclo // данный нейминг хорошо описывает механику метода
-func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) ([]om.OrderedMap, []e.Attachment, error) {
-	taskContext, err := runCtx.Services.Storage.GetTaskRunContext(c.Background(), runCtx.WorkNumber)
+func (runCtx *BlockRunContext) makeNotificationDescription(ctx c.Context, nodeName string) ([]om.OrderedMap, []e.Attachment, error) {
+	taskContext, err := runCtx.Services.Storage.GetTaskRunContext(ctx, runCtx.WorkNumber)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -416,7 +416,7 @@ func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) ([]o
 		files        = make([]e.Attachment, 0)
 	)
 
-	filesAttach, getAttachErr := runCtx.GetAttachmentFiles(&taskContext.InitialApplication.ApplicationBody, nil)
+	filesAttach, getAttachErr := runCtx.GetAttachmentFiles(ctx, &taskContext.InitialApplication.ApplicationBody, nil)
 	if getAttachErr != nil {
 		return nil, nil, getAttachErr
 	}
@@ -428,7 +428,7 @@ func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) ([]o
 	descriptions = append(descriptions, apDesc)
 	files = append(files, filesAttach...)
 
-	adFormDescriptions, adFormFilesAttach := runCtx.getAdditionalForms(nodeName)
+	adFormDescriptions, adFormFilesAttach := runCtx.getAdditionalForms(ctx, nodeName)
 	if len(adFormDescriptions) != 0 {
 		descriptions = append(descriptions, adFormDescriptions...)
 		files = append(files, adFormFilesAttach...)
@@ -450,7 +450,7 @@ func cleanName(files []e.Attachment) {
 	}
 }
 
-func (runCtx *BlockRunContext) getAdditionalForms(nodeName string) ([]om.OrderedMap, []e.Attachment) {
+func (runCtx *BlockRunContext) getAdditionalForms(ctx c.Context, nodeName string) ([]om.OrderedMap, []e.Attachment) {
 	additionalForms, err := runCtx.Services.Storage.GetAdditionalDescriptionForms(runCtx.WorkNumber, nodeName)
 	if err != nil {
 		return nil, nil
@@ -471,7 +471,7 @@ func (runCtx *BlockRunContext) getAdditionalForms(nodeName string) ([]om.Ordered
 
 		adDesc := flatArray(form.Description)
 
-		additionalAttach, getAdAttachErr := runCtx.GetAttachmentFiles(&adDesc, attachmentFiles)
+		additionalAttach, getAdAttachErr := runCtx.GetAttachmentFiles(ctx, &adDesc, attachmentFiles)
 		if getAdAttachErr != nil {
 			return nil, nil
 		}
@@ -525,7 +525,7 @@ func getAdditionalAttachList(form entity.DescriptionForm, formData *FormData) []
 	return attachmentFiles
 }
 
-func (runCtx *BlockRunContext) GetAttachmentFiles(desc *om.OrderedMap, addAttach []string) ([]e.Attachment, error) {
+func (runCtx *BlockRunContext) GetAttachmentFiles(ctx c.Context, desc *om.OrderedMap, addAttach []string) ([]e.Attachment, error) {
 	var (
 		err              error
 		filesAttach      []fileregistry.FileInfo
@@ -533,9 +533,9 @@ func (runCtx *BlockRunContext) GetAttachmentFiles(desc *om.OrderedMap, addAttach
 	)
 
 	if addAttach == nil {
-		filesAttach, filesAttachLinks, err = runCtx.makeNotificationAttachment()
+		filesAttach, filesAttachLinks, err = runCtx.makeNotificationAttachment(ctx)
 	} else {
-		filesAttach, err = runCtx.makeNotificationFormAttachment(addAttach)
+		filesAttach, err = runCtx.makeNotificationFormAttachment(ctx, addAttach)
 	}
 
 	if err != nil {
@@ -546,7 +546,7 @@ func (runCtx *BlockRunContext) GetAttachmentFiles(desc *om.OrderedMap, addAttach
 		return []e.Attachment{}, nil
 	}
 
-	attachments, err := runCtx.GetAttach(filesAttach)
+	attachments, err := runCtx.GetAttach(ctx, filesAttach)
 	if err != nil {
 		return nil, err
 	}

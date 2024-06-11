@@ -517,17 +517,17 @@ func (gb *GoFormBlock) emailGroupExecutors(ctx context.Context, loginTakenInWork
 		return convertErr
 	}
 
-	description, files, err := gb.RunContext.makeNotificationDescription(gb.Name)
+	description, files, err := gb.RunContext.makeNotificationDescription(ctx, gb.Name)
 	if err != nil {
 		return err
 	}
 
-	filesAttach, _, err := gb.RunContext.makeNotificationAttachment()
+	filesAttach, _, err := gb.RunContext.makeNotificationAttachment(ctx)
 	if err != nil {
 		return err
 	}
 
-	attachment, err := gb.RunContext.GetAttach(filesAttach)
+	attachment, err := gb.RunContext.GetAttach(ctx, filesAttach)
 	if err != nil {
 		return err
 	}

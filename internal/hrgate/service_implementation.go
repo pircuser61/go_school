@@ -11,6 +11,8 @@ import (
 
 	"go.opencensus.io/trace"
 
+	"gitlab.services.mts.ru/abp/myosotis/logger"
+
 	openapi_types "github.com/deepmap/oapi-codegen/pkg/types"
 
 	"gitlab.services.mts.ru/abp/myosotis/observability"
@@ -19,6 +21,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/httpclient"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
@@ -89,12 +92,24 @@ func (s *Service) Ping(ctx c.Context) error {
 }
 
 func (s *Service) GetCalendars(ctx c.Context, params *GetCalendarsParams) ([]Calendar, error) {
-	ctx, span := trace.StartSpan(ctx, "hrgate.get_calendars")
+	ctxLocal, span := trace.StartSpan(ctx, "hrgate.get_calendars")
 	defer span.End()
 
-	response, err := s.cli.GetCalendarsWithResponse(ctx, params)
+	log := logger.GetLogger(ctxLocal).
+		WithField("traceID", span.SpanContext().TraceID.String()).WithField("transport", "HTTP")
+	ctxLocal = script.MakeContextWithRetryCnt(ctxLocal)
+
+	response, err := s.cli.GetCalendarsWithResponse(ctxLocal, params)
+	attempt := script.GetRetryCnt(ctxLocal) - 1
+
 	if err != nil {
+		log.Warning("Pipeliner failed to connect to hrgate. Exceeded max retry count: ", attempt)
+
 		return nil, err
+	}
+
+	if attempt > 0 {
+		log.Warning("Pipeliner successfully reconnected to hrgate: ", attempt)
 	}
 
 	if response.StatusCode() != http.StatusOK {
@@ -109,16 +124,27 @@ func (s *Service) GetCalendars(ctx c.Context, params *GetCalendarsParams) ([]Cal
 }
 
 func (s *Service) GetCalendarDays(ctx c.Context, params *GetCalendarDaysParams) (*CalendarDays, error) {
-	ctx, span := trace.StartSpan(ctx, "hrgate.get_calendar_days")
+	ctxLocal, span := trace.StartSpan(ctx, "hrgate.get_calendar_days")
 	defer span.End()
 
+	log := logger.GetLogger(ctxLocal).
+		WithField("traceID", span.SpanContext().TraceID.String()).WithField("transport", "HTTP")
+	ctxLocal = script.MakeContextWithRetryCnt(ctxLocal)
 	res := CalendarDays{
 		CalendarMap: make(map[int64]CalendarDayType),
 	}
 
-	resp, err := s.cli.GetCalendarDaysWithResponse(ctx, params)
+	resp, err := s.cli.GetCalendarDaysWithResponse(ctxLocal, params)
+	attempt := script.GetRetryCnt(ctxLocal) - 1
+
 	if err != nil {
+		log.Warning("Pipeliner failed to connect to hrgate. Exceeded max retry count: ", attempt)
+
 		return nil, err
+	}
+
+	if attempt > 0 {
+		log.Warning("Pipeliner successfully reconnected to hrgate: ", attempt)
 	}
 
 	if resp.StatusCode() != http.StatusOK {
@@ -243,14 +269,27 @@ func (s *Service) GetDefaultCalendarDaysForGivenTimeIntervals(
 }
 
 func (s *Service) GetEmployeeByLogin(ctx c.Context, username string) (*Employee, error) {
-	ctx, span := trace.StartSpan(ctx, "hrgate.get_employee_by_login")
+	ctxLocal, span := trace.StartSpan(ctx, "hrgate.get_employee_by_login")
 	defer span.End()
 
-	response, err := s.cli.GetEmployeesWithResponse(ctx, &GetEmployeesParams{
+	log := logger.GetLogger(ctxLocal).
+		WithField("traceID", span.SpanContext().TraceID.String()).WithField("transport", "HTTP")
+	ctxLocal = script.MakeContextWithRetryCnt(ctxLocal)
+
+	response, err := s.cli.GetEmployeesWithResponse(ctxLocal, &GetEmployeesParams{
 		Logins: &[]string{username},
 	})
+
+	attempt := script.GetRetryCnt(ctxLocal) - 1
+
 	if err != nil {
+		log.Warning("Pipeliner failed to connect to hrgate. Exceeded max retry count: ", attempt)
+
 		return nil, err
+	}
+
+	if attempt > 0 {
+		log.Warning("Pipeliner successfully reconnected to hrgate: ", attempt)
 	}
 
 	if response.StatusCode() != http.StatusOK {
@@ -265,12 +304,24 @@ func (s *Service) GetEmployeeByLogin(ctx c.Context, username string) (*Employee,
 }
 
 func (s *Service) GetOrganizationByID(ctx c.Context, organizationID string) (*Organization, error) {
-	ctx, span := trace.StartSpan(ctx, "hrgate.get_organization_by_id")
+	ctxLocal, span := trace.StartSpan(ctx, "hrgate.get_organization_by_id")
 	defer span.End()
 
-	response, err := s.cli.GetOrganizationsIdWithResponse(ctx, UUIDPathObjectID(organizationID))
+	log := logger.GetLogger(ctxLocal).
+		WithField("traceID", span.SpanContext().TraceID.String()).WithField("transport", "HTTP")
+	ctxLocal = script.MakeContextWithRetryCnt(ctxLocal)
+
+	response, err := s.cli.GetOrganizationsIdWithResponse(ctxLocal, UUIDPathObjectID(organizationID))
+	attempt := script.GetRetryCnt(ctxLocal) - 1
+
 	if err != nil {
+		log.Warning("Pipeliner failed to connect to hrgate. Exceeded max retry count: ", attempt)
+
 		return nil, err
+	}
+
+	if attempt > 0 {
+		log.Warning("Pipeliner successfully reconnected to hrgate: ", attempt)
 	}
 
 	if response.StatusCode() != http.StatusOK {

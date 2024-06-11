@@ -8,15 +8,19 @@ import (
 	"mime/multipart"
 	"net/http"
 
+	"go.opencensus.io/trace"
+
+	"gitlab.services.mts.ru/abp/myosotis/logger"
+
 	"github.com/hashicorp/go-retryablehttp"
 
-	"go.opencensus.io/trace"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
 
 const authorizationHeader = "Authorization"
 
 func (s *service) SaveFile(ctx c.Context, token, clientID, name string, file []byte, workNumber string) (string, error) {
-	ctx, span := trace.StartSpan(ctx, "file_registry.save_file")
+	ctxLocal, span := trace.StartSpan(ctx, "file_registry.save_file")
 	defer span.End()
 
 	buf := new(bytes.Buffer)
@@ -37,9 +41,12 @@ func (s *service) SaveFile(ctx c.Context, token, clientID, name string, file []b
 		return "", err
 	}
 
+	log := logger.GetLogger(ctxLocal).
+		WithField("traceID", span.SpanContext().TraceID.String()).WithField("transport", "HTTP")
 	reqURL := s.restURL + saveFile
+	ctxLocal = script.MakeContextWithRetryCnt(ctxLocal)
 
-	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodPost, reqURL, buf)
+	req, err := retryablehttp.NewRequestWithContext(ctxLocal, http.MethodPost, reqURL, buf)
 	if err != nil {
 		return "", err
 	}
@@ -50,11 +57,20 @@ func (s *service) SaveFile(ctx c.Context, token, clientID, name string, file []b
 	req.Header.Set(authorizationHeader, token)
 
 	resp, err := s.restCli.Do(req)
+
+	attempt := script.GetRetryCnt(ctxLocal) - 1
+
 	if err != nil {
+		log.Warning("Pipeliner failed to connect to fileregistry. Exceeded max retry count: ", attempt)
+
 		return "", err
 	}
 
 	defer resp.Body.Close()
+
+	if attempt > 0 {
+		log.Warning("Pipeliner successfully reconnected to fileregistry: ", attempt)
+	}
 
 	if resp.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("got bad status: %s", resp.Status)

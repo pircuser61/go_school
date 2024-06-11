@@ -60,7 +60,7 @@ func (runCtx *BlockRunContext) GetIcons(need []string) ([]e.Attachment, error) {
 	return outFiles, nil
 }
 
-func (runCtx *BlockRunContext) GetAttach(filesAttach []file_registry.FileInfo) (*mail.Attachments, error) {
+func (runCtx *BlockRunContext) GetAttach(ctx c.Context, filesAttach []file_registry.FileInfo) (*mail.Attachments, error) {
 	req, skip := sortAndFilterAttachments(filesAttach)
 
 	attachFields, err := runCtx.getFileField()
@@ -68,7 +68,7 @@ func (runCtx *BlockRunContext) GetAttach(filesAttach []file_registry.FileInfo) (
 		return nil, err
 	}
 
-	attach, err := runCtx.Services.FileRegistry.GetAttachments(c.Background(),
+	attach, err := runCtx.Services.FileRegistry.GetAttachments(ctx,
 		req,
 		runCtx.WorkNumber,
 		runCtx.ClientID,
@@ -77,7 +77,7 @@ func (runCtx *BlockRunContext) GetAttach(filesAttach []file_registry.FileInfo) (
 		return nil, err
 	}
 
-	attachLinks, err := runCtx.Services.FileRegistry.GetAttachmentLink(c.Background(), skip)
+	attachLinks, err := runCtx.Services.FileRegistry.GetAttachmentLink(ctx, skip)
 	if err != nil {
 		return nil, err
 	}

@@ -82,12 +82,16 @@ const (
 	NetworkMonitorClientFailed
 	GetUserinfoErr
 	BadFiltersError
-	WorkNumberParsingError
+	ValidateWorkNumberError
+	ValidateTasksError
+	ValidatePipelineIDError
 	UpdateTaskParsingError
 	UpdateTaskValidationError
 	UpdateNotRunningTaskError
 	UpdateBlockError
 	BlockNotFoundError
+	TaskNotFoundError
+	VersionNotFoundError
 	GetVersionsByBlueprintIDError
 	BodyParseError
 	ValidationError
@@ -142,6 +146,7 @@ const (
 	GetWorkNumberError
 	CreateTaskStepInputsError
 	GetBlockInputsError
+	GetUserError
 )
 
 /*
@@ -214,12 +219,16 @@ var errorText = map[Err]string{
 	RunDebugInvalidStatusError:          "can't start debug task with this status",
 	GetUserinfoErr:                      "can't get userinfo",
 	BadFiltersError:                     "can't parse filters",
-	WorkNumberParsingError:              "can't find work number",
+	ValidateWorkNumberError:             "path parameter 'WorkNumber' is invalid",
+	ValidateTasksError:                  "path parameter 'Tasks' is invalid",
+	ValidatePipelineIDError:             "body parameter 'PipelineID' is invalid",
 	UpdateTaskParsingError:              "can't parse data to update task",
 	UpdateTaskValidationError:           "can't validate data to update task",
 	UpdateNotRunningTaskError:           "can't update not running work",
 	UpdateBlockError:                    "can't update block",
 	BlockNotFoundError:                  "can't find block",
+	TaskNotFoundError:                   "can't find task",
+	VersionNotFoundError:                "can't find pipeline version",
 	GetVersionsByBlueprintIDError:       "can't get get versions by blueprintId",
 	BodyParseError:                      "can't parse body to struct",
 	ValidationError:                     "run version by blueprint id request is invalid",
@@ -272,6 +281,7 @@ var errorText = map[Err]string{
 	GetWorkNumberError:                  "can`t get work number from sequence",
 	CreateTaskStepInputsError:           "can`t create update inputs history",
 	GetBlockInputsError:                 "can`t get block inputs",
+	GetUserError:                        "can`t get user",
 }
 
 /*
@@ -344,12 +354,16 @@ var errorDescription = map[Err]string{
 	RunDebugInvalidStatusError:          "Невозможно запустить отладочный сценарий с таким статусом",
 	GetUserinfoErr:                      "Не удалось получить информацию о пользователе",
 	BadFiltersError:                     "Получены некорректные значения фильтров",
-	WorkNumberParsingError:              "Не удалось прочитать идентификатор задачи",
+	ValidateWorkNumberError:             "Ошибка при валидации идентификатора задачи",
+	ValidateTasksError:                  "Ошибка при валидации списка задач",
+	ValidatePipelineIDError:             "Ошибка при валидации ID сценария",
 	UpdateTaskParsingError:              "Не удалось прочитать информацию об обновлении задачи",
 	UpdateTaskValidationError:           "Не удалось прочитать информацию об обновлении задачи",
 	UpdateNotRunningTaskError:           "Невозможно обновить незапущенную задачу",
 	UpdateBlockError:                    "Не удалось обновить блок задачи",
 	BlockNotFoundError:                  "Не удалось получить блок задачи",
+	TaskNotFoundError:                   "Не удалось найти экземпляр задачи",
+	VersionNotFoundError:                "Не удалось найти версию сценария",
 	GetVersionsByBlueprintIDError:       "Ошибка при получении версий по id шаблона",
 	BodyParseError:                      "Ошибка при разборе тела запроса",
 	ValidationError:                     "Ошибка при валидации запроса",
@@ -402,6 +416,7 @@ var errorDescription = map[Err]string{
 	GetWorkNumberError:             "Не удалось получить номер заявки из сервиса очереди",
 	CreateTaskStepInputsError:      "Не удалось создать запись о изменении инпутов блока",
 	GetBlockInputsError:            "Не удалось получить инпуты блока",
+	GetUserError:                   "Не удалось найти пользователя по логину",
 }
 
 /*
@@ -418,11 +433,15 @@ var errorStatus = map[Err]int{
 	UUIDParsingError:              http.StatusBadRequest,
 	BadFiltersError:               http.StatusBadRequest,
 	GetUserinfoErr:                http.StatusUnauthorized,
-	WorkNumberParsingError:        http.StatusBadRequest,
+	ValidateWorkNumberError:       http.StatusBadRequest,
+	ValidateTasksError:            http.StatusBadRequest,
+	ValidatePipelineIDError:       http.StatusBadRequest,
 	UpdateTaskParsingError:        http.StatusBadRequest,
 	UpdateTaskValidationError:     http.StatusBadRequest,
 	UpdateNotRunningTaskError:     http.StatusBadRequest,
 	BlockNotFoundError:            http.StatusBadRequest,
+	TaskNotFoundError:             http.StatusNotFound,
+	VersionNotFoundError:          http.StatusNotFound,
 	BodyParseError:                http.StatusBadRequest,
 	ValidationError:               http.StatusBadRequest,
 	PipelineValidateError:         http.StatusBadRequest,

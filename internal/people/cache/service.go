@@ -48,7 +48,9 @@ func NewService(cfg *people.Config, ssoS *sso.Service, m metrics.Metrics) (peopl
 	}, nil
 }
 
-func (*service) SetCli(*retryablehttp.Client) {}
+func (s *service) SetCli(cli *retryablehttp.Client) {
+	s.People.SetCli(cli)
+}
 
 func (s *service) Ping(ctx c.Context) error {
 	return s.People.Ping(ctx)
@@ -98,7 +100,7 @@ func (s *service) GetUser(ctx c.Context, username string, onlyEnabled bool) (peo
 	return resources, nil
 }
 
-func (s *service) GetUsers(ctx c.Context, username string, limit *int, filter []string) ([]people.SSOUser, error) {
+func (s *service) GetUsers(ctx c.Context, username string, limit *int, filter []string, onlyEnabled bool) ([]people.SSOUser, error) {
 	ctx, span := trace.StartSpan(ctx, "people.cache.get_users")
 	defer span.End()
 
@@ -131,7 +133,7 @@ func (s *service) GetUsers(ctx c.Context, username string, limit *int, filter []
 		}
 	}
 
-	resources, err := s.People.GetUsers(ctx, username, limit, filter)
+	resources, err := s.People.GetUsers(ctx, username, limit, filter, onlyEnabled)
 	if err != nil {
 		return nil, err
 	}
@@ -145,10 +147,6 @@ func (s *service) GetUsers(ctx c.Context, username string, limit *int, filter []
 	}
 
 	return resources, nil
-}
-
-func (s *service) PathBuilder(mainPath, subPath string) (string, error) {
-	return s.People.PathBuilder(mainPath, subPath)
 }
 
 func (s *service) GetUserEmail(ctx c.Context, username string) (string, error) {

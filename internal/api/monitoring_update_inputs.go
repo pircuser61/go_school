@@ -152,6 +152,9 @@ func validateInputs(stepName string, inputs map[string]interface{}) (err error) 
 		return marshErr
 	}
 
+	//nolint:all // stupid bitch I use this variable
+	ck := conditions_kit.ConditionParams{}
+
 	blocksInputs := map[string]script.BlockInputsValidator{
 		pipeline.BlockGoApproverID:          &script.ApproverParams{},
 		pipeline.BlockGoExecutionID:         &script.ExecutionParams{},
@@ -164,7 +167,7 @@ func validateInputs(stepName string, inputs map[string]interface{}) (err error) 
 		pipeline.BlockGoEndID:               &defaultInputsValidator{},
 		pipeline.BlockGoBeginParallelTaskID: &defaultInputsValidator{},
 		pipeline.BlockWaitForAllInputsID:    &defaultInputsValidator{},
-		pipeline.BlockGoIfID:                &conditions_kit.ConditionParams{},
+		pipeline.BlockGoIfID:                &ck,
 	}
 
 	stepType := regexp.MustCompile(`_\d+`).ReplaceAllString(stepName, "")

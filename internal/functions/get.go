@@ -5,7 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"go.opencensus.io/trace"
+
+	"gitlab.services.mts.ru/abp/myosotis/logger"
+
 	function "gitlab.services.mts.ru/jocasta/functions/pkg/proto/gen/function/v1"
+
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
 
 func (s *service) GetFunctionVersion(ctx c.Context, functionID, versionID string) (res Function, err error) {
@@ -59,13 +65,30 @@ func (s *service) GetFunctionVersion(ctx c.Context, functionID, versionID string
 }
 
 func (s *service) GetFunction(ctx c.Context, id string) (result Function, err error) {
-	res, err := s.cli.GetFunctionById(ctx,
+	ctxLocal, span := trace.StartSpan(ctx, "functions.get_function")
+	defer span.End()
+
+	log := logger.GetLogger(ctxLocal).
+		WithField("traceID", span.SpanContext().TraceID.String()).WithField("transport", "GRPC")
+
+	ctxLocal = script.MakeContextWithRetryCnt(ctxLocal)
+
+	res, err := s.cli.GetFunctionById(ctxLocal,
 		&function.GetFunctionRequest{
 			FunctionId: id,
 		},
 	)
+
+	attempt := script.GetRetryCnt(ctxLocal)
+
 	if err != nil {
+		log.Warning("Pipeliner failed to connect to functions. Exceeded max retry count: ", attempt)
+
 		return Function{}, err
+	}
+
+	if attempt > 0 {
+		log.Warning("Pipeliner successfully reconnected to functions: ", attempt)
 	}
 
 	input, inputConvertErr := convertToParamMetadata(res.Function.Input)

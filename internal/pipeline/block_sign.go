@@ -521,7 +521,7 @@ func (gb *GoSignBlock) handleNotifications(ctx context.Context) error {
 
 	signers := getSliceFromMap(gb.State.Signers)
 
-	description, files, err := gb.RunContext.makeNotificationDescription(gb.Name)
+	description, files, err := gb.RunContext.makeNotificationDescription(ctx, gb.Name)
 	if err != nil {
 		return err
 	}

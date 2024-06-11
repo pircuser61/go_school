@@ -259,6 +259,13 @@ func (ae *Env) GetTask(w http.ResponseWriter, req *http.Request, workNumber stri
 
 	dbTask, err := ae.DB.GetTask(ctx, dApprovers, dExecutors, ui.Username, workNumber)
 	if err != nil {
+		if errors.Is(err, entity.ErrNoRecords) {
+			errorHandler.handleError(TaskNotFoundError, err)
+			requestInfo.Status = TaskNotFoundError.Status()
+
+			return
+		}
+
 		errorHandler.handleError(GetTaskError, err)
 
 		return

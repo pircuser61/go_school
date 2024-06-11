@@ -76,7 +76,7 @@ func (gb *GoSignBlock) notifyAdditionalApprovers(ctx c.Context, logins []string,
 		}
 	}
 
-	description, files, err := gb.RunContext.makeNotificationDescription(gb.Name)
+	description, files, err := gb.RunContext.makeNotificationDescription(ctx, gb.Name)
 	if err != nil {
 		return err
 	}
@@ -164,12 +164,12 @@ func (gb *GoSignBlock) notifyDecisionMadeByAdditionalApprover(ctx c.Context, log
 
 	files := make([]email.Attachment, 0)
 
-	filesAttach, _, err := gb.RunContext.makeNotificationAttachment()
+	filesAttach, _, err := gb.RunContext.makeNotificationAttachment(ctx)
 	if err != nil {
 		return err
 	}
 
-	attach, err := gb.RunContext.GetAttach(filesAttach)
+	attach, err := gb.RunContext.GetAttach(ctx, filesAttach)
 	if err != nil {
 		return err
 	}

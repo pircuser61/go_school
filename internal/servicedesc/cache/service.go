@@ -39,4 +39,4 @@ func (s *service) Ping(ctx c.Context) error {
 	return s.servicedesc.Ping(ctx)
 }
 
-func (s *service) SetCli(cla *retryablehttp.Client) {}
+func (s *service) SetCli(*retryablehttp.Client) {}

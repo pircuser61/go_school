@@ -69,7 +69,7 @@ type TaskStorager interface {
 	CreateTask(ctx c.Context, dto *CreateTaskDTO) (*e.EriusTask, error)
 	FillEmptyTask(ctx c.Context, updateTask *UpdateEmptyTaskDTO) error
 	IsStepExist(ctx c.Context, workID, stepName string, hasUpdData bool) (bool, uuid.UUID, time.Time, error)
-	CreateEmptyTask(ctx c.Context, task *EmptyTask) error
+	CreateEmptyTask(ctx c.Context, task *Task) error
 	CreateTaskStepInputs(ctx c.Context, in *e.CreateTaskStepInputs) error
 
 	CheckUserCanEditForm(ctx c.Context, workNumber string, stepName string, login string) (bool, error)
@@ -305,4 +305,7 @@ type Database interface {
 	CreateEventToSend(ctx c.Context, dto *e.CreateEventToSend) (eventID string, err error)
 	DeleteEventToSend(ctx c.Context, eventID string) (err error)
 	GetEventsToSend(ctx c.Context) ([]e.ToSendKafkaEvent, error)
+
+	GetTasksToRetry(ctx c.Context, minLifetime, maxLifetime time.Duration, limit int) (emptyTasks, filledTasks []*Task, err error)
+	GetTaskStepToRetry(ctx c.Context, taskID uuid.UUID) (*e.Step, error)
 }
