@@ -43,7 +43,7 @@ type service struct {
 	url        string
 }
 
-func NewService(cfg Config, l logger.Logger, m metrics.Metrics, sso *sso.Service) (Service, error) {
+func NewService(cfg Config, l logger.Logger, m metrics.Metrics, ssoService *sso.Service) (Service, error) {
 	opts := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithStatsHandler(&ocgrpc.ClientHandler{}),
@@ -73,7 +73,7 @@ func NewService(cfg Config, l logger.Logger, m metrics.Metrics, sso *sso.Service
 			Base:        httpClient.Transport,
 			Propagation: observability.NewHTTPFormat(),
 		},
-		sso:     sso,
+		sso:     ssoService,
 		scope:   "",
 		metrics: m,
 	}
