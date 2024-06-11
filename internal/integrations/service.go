@@ -30,6 +30,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/httpclient"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 )
 
 const externalSystemName = "integrations"
@@ -42,7 +43,7 @@ type service struct {
 	url        string
 }
 
-func NewService(cfg Config, _ logger.Logger, m metrics.Metrics) (Service, error) {
+func NewService(cfg Config, l logger.Logger, m metrics.Metrics, sso *sso.Service) (Service, error) {
 	opts := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithStatsHandler(&ocgrpc.ClientHandler{}),
@@ -72,6 +73,7 @@ func NewService(cfg Config, _ logger.Logger, m metrics.Metrics) (Service, error)
 			Base:        httpClient.Transport,
 			Propagation: observability.NewHTTPFormat(),
 		},
+		sso:     sso,
 		scope:   "",
 		metrics: m,
 	}
@@ -80,7 +82,7 @@ func NewService(cfg Config, _ logger.Logger, m metrics.Metrics) (Service, error)
 		conn:       conn,
 		rpcIntCli:  integration.NewIntegrationServiceClient(conn),
 		rpcMicrCli: microservice.NewMicroserviceServiceClient(conn),
-		cli:        httpclient.NewClient(httpClient, nil, cfg.MaxRetries, cfg.RetryDelay),
+		cli:        httpclient.NewClient(httpClient, l, cfg.MaxRetries, cfg.RetryDelay),
 		url:        cfg.URL,
 	}, nil
 }
