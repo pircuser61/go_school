@@ -3,8 +3,6 @@ package scheduler
 import (
 	"context"
 
-	"gitlab.services.mts.ru/abp/myosotis/logger"
-
 	"go.opencensus.io/plugin/ocgrpc"
 
 	"google.golang.org/grpc"
@@ -22,8 +20,9 @@ import (
 const externalSystemName = "scheduler"
 
 type Service struct {
-	c   *grpc.ClientConn
-	cli scheduler_v1.TaskServiceClient
+	c             *grpc.ClientConn
+	cli           scheduler_v1.TaskServiceClient
+	maxRetryCount uint
 }
 
 func (s *Service) Ping(ctx context.Context) error {
@@ -32,7 +31,7 @@ func (s *Service) Ping(ctx context.Context) error {
 	return err
 }
 
-func NewService(cfg Config, _ logger.Logger, m metrics.Metrics) (*Service, error) {
+func NewService(cfg Config, m metrics.Metrics) (*Service, error) {
 	opts := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithStatsHandler(&ocgrpc.ClientHandler{}),
@@ -59,7 +58,8 @@ func NewService(cfg Config, _ logger.Logger, m metrics.Metrics) (*Service, error
 	client := scheduler_v1.NewTaskServiceClient(conn)
 
 	return &Service{
-		c:   conn,
-		cli: client,
+		c:             conn,
+		cli:           client,
+		maxRetryCount: cfg.MaxRetries,
 	}, nil
 }

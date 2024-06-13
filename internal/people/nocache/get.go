@@ -12,26 +12,25 @@ import (
 )
 
 func (s *service) GetUserEmail(ctx c.Context, username string) (string, error) {
-	ctxLocal, span := trace.StartSpan(ctx, "people.nocache.get_user_email")
+	ctx, span := trace.StartSpan(ctx, "people.nocache.get_user_email")
 	defer span.End()
 
-	log := logger.GetLogger(ctxLocal).
-		WithField("traceID", span.SpanContext().TraceID.String()).WithField("transport", "HTTP")
+	log := logger.GetLogger(ctx).
+		WithField("traceID", span.SpanContext().TraceID.String()).
+		WithField("transport", "HTTP").
+		WithField("integration_name", externalSystemName)
 
-	ctxLocal = script.MakeContextWithRetryCnt(ctxLocal)
+	ctx = logger.WithLogger(ctx, log)
+	ctx = script.MakeContextWithRetryCnt(ctx)
 
-	email, err := s.iga.GetUserEmail(ctxLocal, username)
-	attempt := script.GetRetryCnt(ctxLocal) - 1
-
+	email, err := s.iga.GetUserEmail(ctx, username)
 	if err != nil {
-		log.Warning("Pipeliner failed to connect to iga. Exceeded max retry count: ", attempt)
+		script.LogRetryFailure(ctx, s.maxRetryCount)
 
 		return "", err
 	}
 
-	if attempt > 0 {
-		log.Warning("Pipeliner successfully reconnected to iga: ", attempt)
-	}
+	script.LogRetrySuccess(ctx)
 
 	return email, nil
 }
@@ -45,26 +44,25 @@ func (e *FindUserError) Error() string {
 }
 
 func (s *service) GetUser(ctx c.Context, username string, onlyEnabled bool) (people.SSOUser, error) {
-	ctxLocal, span := trace.StartSpan(ctx, "people.nocache.get_user")
+	ctx, span := trace.StartSpan(ctx, "people.nocache.get_user")
 	defer span.End()
 
-	log := logger.GetLogger(ctxLocal).
-		WithField("traceID", span.SpanContext().TraceID.String()).WithField("transport", "HTTP")
+	log := logger.GetLogger(ctx).
+		WithField("traceID", span.SpanContext().TraceID.String()).
+		WithField("transport", "HTTP").
+		WithField("integration_name", externalSystemName)
 
-	ctxLocal = script.MakeContextWithRetryCnt(ctxLocal)
+	ctx = logger.WithLogger(ctx, log)
+	ctx = script.MakeContextWithRetryCnt(ctx)
 
-	igaSsoUser, err := s.iga.GetUser(ctxLocal, username, onlyEnabled)
-	attempt := script.GetRetryCnt(ctxLocal) - 1
-
+	igaSsoUser, err := s.iga.GetUser(ctx, username, onlyEnabled)
 	if err != nil {
-		log.Warning("Pipeliner failed to connect to iga. Exceeded max retry count: ", attempt)
+		script.LogRetryFailure(ctx, s.maxRetryCount)
 
 		return nil, err
 	}
 
-	if attempt > 0 {
-		log.Warning("Pipeliner successfully reconnected to iga: ", attempt)
-	}
+	script.LogRetrySuccess(ctx)
 
 	res := people.SSOUser(igaSsoUser)
 
@@ -72,26 +70,25 @@ func (s *service) GetUser(ctx c.Context, username string, onlyEnabled bool) (peo
 }
 
 func (s *service) GetUsers(ctx c.Context, username string, limit *int, filter []string, enabled bool) ([]people.SSOUser, error) {
-	ctxLocal, span := trace.StartSpan(ctx, "people.nocache.get_users")
+	ctx, span := trace.StartSpan(ctx, "people.nocache.get_users")
 	defer span.End()
 
-	log := logger.GetLogger(ctxLocal).
-		WithField("traceID", span.SpanContext().TraceID.String()).WithField("transport", "HTTP")
+	log := logger.GetLogger(ctx).
+		WithField("traceID", span.SpanContext().TraceID.String()).
+		WithField("transport", "HTTP").
+		WithField("integration_name", externalSystemName)
 
-	ctxLocal = script.MakeContextWithRetryCnt(ctxLocal)
+	ctx = logger.WithLogger(ctx, log)
+	ctx = script.MakeContextWithRetryCnt(ctx)
 
-	igaSsoUsers, err := s.iga.GetUsers(ctxLocal, username, limit, filter, enabled)
-	attempt := script.GetRetryCnt(ctxLocal) - 1
-
+	igaSsoUsers, err := s.iga.GetUsers(ctx, username, limit, filter, enabled)
 	if err != nil {
-		log.Warning("Pipeliner failed to connect to iga. Exceeded max retry count: ", attempt)
+		script.LogRetryFailure(ctx, s.maxRetryCount)
 
 		return nil, err
 	}
 
-	if attempt > 0 {
-		log.Warning("Pipeliner successfully reconnected to iga: ", attempt)
-	}
+	script.LogRetrySuccess(ctx)
 
 	res := make([]people.SSOUser, 0)
 

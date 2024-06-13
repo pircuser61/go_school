@@ -2702,7 +2702,7 @@ func TestGoExecutionActions(t *testing.T) {
 							})
 							htMock.On("GetDelegates", "users1").Return([]string{"a"})
 
-							ht, _ := humanTasks.NewService(&humanTasks.Config{}, nil, nil)
+							ht, _ := humanTasks.NewService(&humanTasks.Config{}, nil)
 							ht.SetCli(&htMock)
 
 							return ht
@@ -2806,7 +2806,7 @@ func TestGoExecutionActions(t *testing.T) {
 							})
 							htMock.On("GetDelegates", "users1").Return([]string{"a"})
 
-							ht, _ := humanTasks.NewService(&humanTasks.Config{}, nil, nil)
+							ht, _ := humanTasks.NewService(&humanTasks.Config{}, nil)
 							ht.SetCli(&htMock)
 
 							return ht
@@ -2906,7 +2906,7 @@ func TestGoExecutionActions(t *testing.T) {
 							})
 							htMock.On("GetDelegates", "users1").Return([]string{"a"})
 
-							ht, _ := humanTasks.NewService(&humanTasks.Config{}, nil, nil)
+							ht, _ := humanTasks.NewService(&humanTasks.Config{}, nil)
 							ht.SetCli(&htMock)
 
 							return ht
@@ -3029,7 +3029,7 @@ func TestGoExecutionActions(t *testing.T) {
 							})
 							htMock.On("GetDelegates", "users1").Return([]string{"a"})
 
-							ht, _ := humanTasks.NewService(&humanTasks.Config{}, nil, nil)
+							ht, _ := humanTasks.NewService(&humanTasks.Config{}, nil)
 							ht.SetCli(&htMock)
 
 							return ht
@@ -3147,7 +3147,7 @@ func TestGoExecutionActions(t *testing.T) {
 							})
 							htMock.On("GetDelegates", "users1").Return([]string{"a"})
 
-							ht, _ := humanTasks.NewService(&humanTasks.Config{}, nil, nil)
+							ht, _ := humanTasks.NewService(&humanTasks.Config{}, nil)
 							ht.SetCli(&htMock)
 
 							return ht
@@ -3260,7 +3260,7 @@ func TestGoExecutionActions(t *testing.T) {
 							})
 							htMock.On("GetDelegates", "users1").Return([]string{"a"})
 
-							ht, _ := humanTasks.NewService(&humanTasks.Config{}, nil, nil)
+							ht, _ := humanTasks.NewService(&humanTasks.Config{}, nil)
 							ht.SetCli(&htMock)
 
 							return ht

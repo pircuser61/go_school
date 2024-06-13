@@ -5941,7 +5941,7 @@ func TestGoSignActions(t *testing.T) {
 							})
 							htMock.On("GetDelegates", "users1").Return([]string{"a"})
 
-							ht, _ := human_tasks.NewService(&human_tasks.Config{}, nil, nil)
+							ht, _ := human_tasks.NewService(&human_tasks.Config{}, nil)
 							ht.SetCli(&htMock)
 
 							return ht
@@ -6043,7 +6043,7 @@ func TestGoSignActions(t *testing.T) {
 							})
 							htMock.On("GetDelegates", "users1").Return([]string{"a"})
 
-							ht, _ := human_tasks.NewService(&human_tasks.Config{}, nil, nil)
+							ht, _ := human_tasks.NewService(&human_tasks.Config{}, nil)
 							ht.SetCli(&htMock)
 
 							return ht
@@ -6142,7 +6142,7 @@ func TestGoSignActions(t *testing.T) {
 							})
 							htMock.On("GetDelegates", "users1").Return([]string{"a"})
 
-							ht, _ := human_tasks.NewService(&human_tasks.Config{}, nil, nil)
+							ht, _ := human_tasks.NewService(&human_tasks.Config{}, nil)
 							ht.SetCli(&htMock)
 
 							return ht
@@ -6264,7 +6264,7 @@ func TestGoSignActions(t *testing.T) {
 							})
 							htMock.On("GetDelegates", "users1").Return([]string{"a"})
 
-							ht, _ := human_tasks.NewService(&human_tasks.Config{}, nil, nil)
+							ht, _ := human_tasks.NewService(&human_tasks.Config{}, nil)
 							ht.SetCli(&htMock)
 
 							return ht
@@ -6381,7 +6381,7 @@ func TestGoSignActions(t *testing.T) {
 							})
 							htMock.On("GetDelegates", "users1").Return([]string{"a"})
 
-							ht, _ := human_tasks.NewService(&human_tasks.Config{}, nil, nil)
+							ht, _ := human_tasks.NewService(&human_tasks.Config{}, nil)
 							ht.SetCli(&htMock)
 
 							return ht
@@ -6503,7 +6503,7 @@ func TestGoSignActions(t *testing.T) {
 							})
 							htMock.On("GetDelegates", "users1").Return([]string{"a"})
 
-							ht, _ := human_tasks.NewService(&human_tasks.Config{}, nil, nil)
+							ht, _ := human_tasks.NewService(&human_tasks.Config{}, nil)
 							ht.SetCli(&htMock)
 
 							return ht

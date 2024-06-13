@@ -15,8 +15,6 @@ import (
 	gc "google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
 
-	"gitlab.services.mts.ru/abp/myosotis/logger"
-
 	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/retry"
 
 	fileregistry "gitlab.services.mts.ru/jocasta/file-registry/pkg/proto/gen/file-registry/v1"
@@ -34,7 +32,7 @@ type service struct {
 	maxRetryCount uint
 }
 
-func NewService(cfg Config, _ logger.Logger, m metrics.Metrics, maxRetryCount uint) (Service, error) {
+func NewService(cfg Config, m metrics.Metrics) (Service, error) {
 	opts := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithStatsHandler(&ocgrpc.ClientHandler{}),
@@ -73,7 +71,7 @@ func NewService(cfg Config, _ logger.Logger, m metrics.Metrics, maxRetryCount ui
 		restCli:       httpclient.NewClient(httpClient, nil, cfg.MaxRetries, cfg.RetryDelay),
 		restURL:       cfg.REST,
 		grpcCLi:       fileregistry.NewFileServiceClient(conn),
-		maxRetryCount: maxRetryCount,
+		maxRetryCount: cfg.MaxRetries,
 	}, nil
 }
 

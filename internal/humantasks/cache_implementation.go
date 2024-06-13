@@ -25,8 +25,8 @@ type ServiceWithCache struct {
 	Humantasks ServiceInterface
 }
 
-func NewServiceWithCache(cfg *Config, log logger.Logger, m metrics.Metrics) (ServiceInterface, error) {
-	srv, err := NewService(cfg, log, m)
+func NewServiceWithCache(cfg *Config, m metrics.Metrics) (ServiceInterface, error) {
+	srv, err := NewService(cfg, m)
 	if err != nil {
 		return nil, err
 	}

@@ -13,11 +13,16 @@ type (
 )
 
 func LogRetryFailure(ctx context.Context, maxCount uint) {
-	log := logger.GetLogger(ctx)
 	attempt := getRetryCnt(ctx)
+	log := logger.GetLogger(ctx).WithField("attempt", attempt)
 
-	log.WithField("attempt", attempt).
-		Warning("connect, exceeded max retry count: %d", maxCount)
+	if attempt == maxCount {
+		log.Error("Pipeliner failed to connect, Exceeded max retry count")
+
+		return
+	}
+
+	log.Error("Pipeliner failed to connect")
 }
 
 func LogRetrySuccess(ctx context.Context) {
@@ -35,7 +40,9 @@ func MakeContextWithRetryCnt(ctx context.Context) context.Context {
 	count := uint(0)
 	retryStarted := false
 
+	// счетчик ретраев
 	ctx = context.WithValue(ctx, retryCnt{}, &count)
+	// флаг для запросов по http
 	ctx = context.WithValue(ctx, restRetryStarted{}, &retryStarted)
 
 	return ctx
@@ -74,8 +81,4 @@ func getRetryCnt(ctx context.Context) uint {
 	}
 
 	return *attempt
-}
-
-func GetRetryCnt(context.Context) uint {
-	return 0
 }

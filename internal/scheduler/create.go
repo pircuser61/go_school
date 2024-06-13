@@ -17,15 +17,18 @@ import (
 // TODO: Update service call to new version
 
 func (s *Service) CreateTask(ctx context.Context, task *CreateTask) (id string, err error) {
-	ctxLocal, span := trace.StartSpan(ctx, "scheduler_create_task")
+	ctx, span := trace.StartSpan(ctx, "scheduler_create_task")
 	defer span.End()
 
-	log := logger.GetLogger(ctxLocal).
-		WithField("traceID", span.SpanContext().TraceID.String()).WithField("transport", "GRPC")
+	log := logger.GetLogger(ctx).
+		WithField("traceID", span.SpanContext().TraceID.String()).
+		WithField("transport", "GRPC").
+		WithField("integration_name", externalSystemName)
 
-	ctxLocal = script.MakeContextWithRetryCnt(ctxLocal)
+	ctx = logger.WithLogger(ctx, log)
+	ctx = script.MakeContextWithRetryCnt(ctx)
 
-	res, err := s.cli.CreateTask(ctxLocal,
+	res, err := s.cli.CreateTask(ctx,
 		&scheduler_v1.CreateTaskRequest{
 			WorkNumber:  task.WorkNumber,
 			TaskId:      task.WorkID,
@@ -34,79 +37,70 @@ func (s *Service) CreateTask(ctx context.Context, task *CreateTask) (id string, 
 			WaitSeconds: int32(task.WaitSeconds),
 		},
 	)
-
-	attempt := script.GetRetryCnt(ctxLocal)
-
 	if err != nil {
-		log.Warning("Pipeliner failed to connect to scheduler. Exceeded max retry count: ", attempt)
+		script.LogRetryFailure(ctx, s.maxRetryCount)
 
 		return "", err
 	}
 
-	if attempt > 0 {
-		log.Warning("Pipeliner successfully reconnected to scheduler: ", attempt)
-	}
+	script.LogRetrySuccess(ctx)
 
 	return res.TaskId, nil
 }
 
 func (s *Service) DeleteTask(ctx context.Context, task *DeleteTask) error {
-	ctxLocal, span := trace.StartSpan(ctx, "scheduler_delete_task")
+	ctx, span := trace.StartSpan(ctx, "scheduler_delete_task")
 	defer span.End()
 
-	log := logger.GetLogger(ctxLocal).
-		WithField("traceID", span.SpanContext().TraceID.String()).WithField("transport", "GRPC")
+	log := logger.GetLogger(ctx).
+		WithField("traceID", span.SpanContext().TraceID.String()).
+		WithField("transport", "GRPC").
+		WithField("integration_name", externalSystemName)
 
-	ctxLocal = script.MakeContextWithRetryCnt(ctxLocal)
+	ctx = logger.WithLogger(ctx, log)
+	ctx = script.MakeContextWithRetryCnt(ctx)
 
-	_, err := s.cli.DeleteTask(ctxLocal,
+	_, err := s.cli.DeleteTask(ctx,
 		&scheduler_v1.DeleteTaskRequest{
 			WorkId:   task.WorkID,
 			StepName: task.StepName,
 		},
 	)
-
-	attempt := script.GetRetryCnt(ctxLocal)
-
 	if err != nil {
-		log.Warning("Pipeliner failed to connect to scheduler. Exceeded max retry count: ", attempt)
+		script.LogRetryFailure(ctx, s.maxRetryCount)
 
 		return err
 	}
 
-	if attempt > 0 {
-		log.Warning("Pipeliner successfully reconnected to scheduler: ", attempt)
-	}
+	script.LogRetrySuccess(ctx)
 
 	return nil
 }
 
 func (s *Service) DeleteAllTasksByWorkID(ctx context.Context, workID uuid.UUID) error {
-	ctxLocal, span := trace.StartSpan(ctx, "scheduler_delete_task_by_work_id")
+	ctx, span := trace.StartSpan(ctx, "scheduler_delete_task_by_work_id")
 	defer span.End()
 
-	log := logger.GetLogger(ctxLocal).
-		WithField("traceID", span.SpanContext().TraceID.String()).WithField("transport", "GRPC")
+	log := logger.GetLogger(ctx).
+		WithField("traceID", span.SpanContext().TraceID.String()).
+		WithField("transport", "GRPC").
+		WithField("integration_name", externalSystemName)
 
-	ctxLocal = script.MakeContextWithRetryCnt(ctxLocal)
+	ctx = logger.WithLogger(ctx, log)
+	ctx = script.MakeContextWithRetryCnt(ctx)
 
-	_, err := s.cli.DeleteAllTasksByWorkID(ctxLocal,
+	_, err := s.cli.DeleteAllTasksByWorkID(ctx,
 		&scheduler_v1.DeleteAllTasksByWorkIDRequest{
 			WorkId: workID.String(),
 		},
 	)
-
-	attempt := script.GetRetryCnt(ctxLocal)
-
 	if err != nil {
-		log.Warning("Pipeliner failed to connect to scheduler. Exceeded max retry count: ", attempt)
+		script.LogRetryFailure(ctx, s.maxRetryCount)
 
 		return err
 	}
 
-	if attempt > 0 {
-		log.Warning("Pipeliner successfully reconnected to scheduler: ", attempt)
-	}
+	script.LogRetrySuccess(ctx)
 
 	return nil
 }

@@ -24,11 +24,12 @@ import (
 const externalSystemName = "forms"
 
 type Service struct {
-	conn *grpc.ClientConn
-	cli  forms_v1.FormsServiceClient
+	conn          *grpc.ClientConn
+	cli           forms_v1.FormsServiceClient
+	maxRetryCount uint
 }
 
-func NewService(cfg Config, _ logger.Logger, m metrics.Metrics) (*Service, error) {
+func NewService(cfg Config, m metrics.Metrics) (*Service, error) {
 	opts := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithStatsHandler(&ocgrpc.ClientHandler{}),
@@ -55,33 +56,31 @@ func NewService(cfg Config, _ logger.Logger, m metrics.Metrics) (*Service, error
 	client := forms_v1.NewFormsServiceClient(conn)
 
 	return &Service{
-		conn: conn,
-		cli:  client,
+		conn:          conn,
+		cli:           client,
+		maxRetryCount: cfg.MaxRetries,
 	}, nil
 }
 
 func (s *Service) MakeFlatSchema(ctx c.Context, schema []byte) (*script.JSONSchema, error) {
-	ctxLocal, span := trace.StartSpan(ctx, "forms.make_flat_schema")
+	ctx, span := trace.StartSpan(ctx, "forms.make_flat_schema")
 	defer span.End()
 
-	log := logger.GetLogger(ctxLocal).
-		WithField("traceID", span.SpanContext().TraceID.String()).WithField("transport", "GRPC")
+	log := logger.GetLogger(ctx).
+		WithField("traceID", span.SpanContext().TraceID.String()).
+		WithField("transport", "GRPC").
+		WithField("integration_name", externalSystemName)
+	ctx = script.MakeContextWithRetryCnt(ctx)
+	ctx = logger.WithLogger(ctx, log)
 
-	ctxLocal = script.MakeContextWithRetryCnt(ctxLocal)
-
-	res, err := s.cli.ConvertToFlatJSONSchema(ctxLocal, &forms_v1.InputJSONSchema{Schema: schema})
-
-	attempt := script.GetRetryCnt(ctxLocal)
-
+	res, err := s.cli.ConvertToFlatJSONSchema(ctx, &forms_v1.InputJSONSchema{Schema: schema})
 	if err != nil {
-		log.Warning("Pipeliner failed to connect to forms. Exceeded max retry count: ", attempt)
+		script.LogRetryFailure(ctx, s.maxRetryCount)
 
 		return nil, err
 	}
 
-	if attempt > 0 {
-		log.Warning("Pipeliner successfully reconnected to forms: ", attempt)
-	}
+	script.LogRetrySuccess(ctx)
 
 	if res != nil {
 		var newSchema *script.JSONSchema

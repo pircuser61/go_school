@@ -17,7 +17,8 @@ import (
 )
 
 type service struct {
-	iga iga_kit.Service
+	iga           iga_kit.Service
+	maxRetryCount uint
 }
 
 func NewService(cfg *people.Config, ssoS *sso.Service, m metrics.Metrics) (people.Service, error) {
@@ -40,7 +41,8 @@ func NewService(cfg *people.Config, ssoS *sso.Service, m metrics.Metrics) (peopl
 	}
 
 	res := &service{
-		iga: iga,
+		iga:           iga,
+		maxRetryCount: cfg.MaxRetries,
 	}
 
 	return res, nil

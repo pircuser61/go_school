@@ -38,7 +38,7 @@ func (s *service) GetFunctionVersion(ctx c.Context, functionID, versionID string
 		var options Options
 
 		optionsUnmarshalErr := json.Unmarshal([]byte(fn.Versions[index].Options), &options)
-		if err != nil {
+		if optionsUnmarshalErr != nil {
 			return Function{}, optionsUnmarshalErr
 		}
 
@@ -65,31 +65,29 @@ func (s *service) GetFunctionVersion(ctx c.Context, functionID, versionID string
 }
 
 func (s *service) GetFunction(ctx c.Context, id string) (result Function, err error) {
-	ctxLocal, span := trace.StartSpan(ctx, "functions.get_function")
+	ctx, span := trace.StartSpan(ctx, "functions.get_function")
 	defer span.End()
 
-	log := logger.GetLogger(ctxLocal).
-		WithField("traceID", span.SpanContext().TraceID.String()).WithField("transport", "GRPC")
+	log := logger.GetLogger(ctx).
+		WithField("traceID", span.SpanContext().TraceID.String()).
+		WithField("transport", "GRPC").
+		WithField("integration_name", externalSystemName)
 
-	ctxLocal = script.MakeContextWithRetryCnt(ctxLocal)
+	ctx = script.MakeContextWithRetryCnt(ctx)
+	ctx = logger.WithLogger(ctx, log)
 
-	res, err := s.cli.GetFunctionById(ctxLocal,
+	res, err := s.cli.GetFunctionById(ctx,
 		&function.GetFunctionRequest{
 			FunctionId: id,
 		},
 	)
-
-	attempt := script.GetRetryCnt(ctxLocal)
-
 	if err != nil {
-		log.Warning("Pipeliner failed to connect to functions. Exceeded max retry count: ", attempt)
+		script.LogRetryFailure(ctx, s.maxRetryCount)
 
 		return Function{}, err
 	}
 
-	if attempt > 0 {
-		log.Warning("Pipeliner successfully reconnected to functions: ", attempt)
-	}
+	script.LogRetrySuccess(ctx)
 
 	input, inputConvertErr := convertToParamMetadata(res.Function.Input)
 	if inputConvertErr != nil {
