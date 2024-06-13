@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
+	"reflect"
 	"strings"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
@@ -61,7 +63,13 @@ func (ae *Env) MonitoringUpdateTaskBlockData(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	data := convertReqEditData(req.ChangeData.AdditionalProperties)
+	data, err := convertReqEditData(req.ChangeData.AdditionalProperties)
+	if err != nil {
+		log.Error(fmt.Errorf("type and type of value are not compatible: %w", err))
+		errorHandler.handleError(TypeAndValueNotCompatible, err)
+
+		return
+	}
 
 	blockID, parseIDErr := uuid.Parse(blockId)
 	if parseIDErr != nil {
@@ -171,13 +179,61 @@ func (ae *Env) MonitoringUpdateTaskBlockData(w http.ResponseWriter, r *http.Requ
 	}
 }
 
-func convertReqEditData(in map[string]MonitoringEditBlockData) (res map[string]interface{}) {
+func convertReqEditData(in map[string]MonitoringEditBlockData) (res map[string]interface{}, err error) {
 	res = map[string]interface{}{}
+
 	for key, val := range in {
+		err = IsTypeCorrect(val.Type, val.Value)
+		if err != nil {
+			return nil, err
+		}
+
 		res[key] = val.Value
 	}
 
-	return res
+	return res, nil
+}
+
+func IsTypeCorrect(t string, v any) error {
+	if t == "" {
+		return fmt.Errorf("empty type")
+	}
+
+	reflectType := reflect.TypeOf(v).Kind()
+
+	typeIsCorrect := false
+
+	switch t {
+	case "integer":
+		if reflectType == reflect.Float64 {
+			floatNum, ok := v.(float64)
+			if ok {
+				typeIsCorrect = checkIfInteger(floatNum)
+			}
+		} else if reflectType == reflect.Int {
+			typeIsCorrect = (reflectType == reflect.Int)
+		}
+	case "number":
+		typeIsCorrect = (reflectType == reflect.Float64)
+	case "string":
+		typeIsCorrect = (reflectType == reflect.String)
+	case "boolean":
+		typeIsCorrect = (reflectType == reflect.Bool)
+	case "array":
+		typeIsCorrect = (reflectType == reflect.Slice)
+	case "object":
+		typeIsCorrect = (reflectType == reflect.Map)
+	}
+
+	if typeIsCorrect {
+		return nil
+	}
+
+	return fmt.Errorf("not compatible: type is %s, type of value is %s", t, reflectType.String())
+}
+
+func checkIfInteger(a float64) bool {
+	return (a - math.Floor(a)) == 0
 }
 
 func (ae *Env) rollbackTransaction(ctx c.Context, tx db.Database, fn string) {
