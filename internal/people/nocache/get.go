@@ -2,11 +2,13 @@ package nocache
 
 import (
 	c "context"
+	"errors"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"go.opencensus.io/trace"
 
+	iga_kit "gitlab.services.mts.ru/jocasta/iga-kit"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
@@ -23,8 +25,14 @@ func (s *service) GetUserEmail(ctx c.Context, username string) (string, error) {
 	ctx = logger.WithLogger(ctx, log)
 	ctx = script.MakeContextWithRetryCnt(ctx)
 
+	var couldntFindUserError *iga_kit.CouldntFindUserError
+
 	email, err := s.iga.GetUserEmail(ctx, username)
-	if err != nil {
+
+	switch {
+	case errors.As(err, &couldntFindUserError):
+		return "", err
+	case err != nil:
 		script.LogRetryFailure(ctx, s.maxRetryCount)
 
 		return "", err
@@ -33,14 +41,6 @@ func (s *service) GetUserEmail(ctx c.Context, username string) (string, error) {
 	script.LogRetrySuccess(ctx)
 
 	return email, nil
-}
-
-type FindUserError struct {
-	UserName string
-}
-
-func (e *FindUserError) Error() string {
-	return "couldn't find user with name " + e.UserName
 }
 
 func (s *service) GetUser(ctx c.Context, username string, onlyEnabled bool) (people.SSOUser, error) {
@@ -55,8 +55,14 @@ func (s *service) GetUser(ctx c.Context, username string, onlyEnabled bool) (peo
 	ctx = logger.WithLogger(ctx, log)
 	ctx = script.MakeContextWithRetryCnt(ctx)
 
+	var couldntFindUserError *iga_kit.CouldntFindUserError
+
 	igaSsoUser, err := s.iga.GetUser(ctx, username, onlyEnabled)
-	if err != nil {
+
+	switch {
+	case errors.As(err, &couldntFindUserError):
+		return nil, err
+	case err != nil:
 		script.LogRetryFailure(ctx, s.maxRetryCount)
 
 		return nil, err
