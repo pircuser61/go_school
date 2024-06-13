@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"reflect"
 	"strings"
@@ -64,6 +65,7 @@ func (ae *Env) MonitoringUpdateTaskBlockData(w http.ResponseWriter, r *http.Requ
 
 	data, err := convertReqEditData(req.ChangeData.AdditionalProperties)
 	if err != nil {
+		log.Error(fmt.Errorf("type and type of value are not compatible: %w", err))
 		errorHandler.handleError(TypeAndValueNotCompatible, err)
 
 		return
@@ -203,15 +205,24 @@ func IsTypeCorrect(t string, v any) error {
 
 	switch t {
 	case "integer":
+		if reflectType == reflect.Float64 {
+			floatNum, ok := v.(float64)
+			if ok {
+				typeIsCorrect = checkIfInteger(floatNum)
+			}
+		} else if reflectType == reflect.Int {
+			typeIsCorrect = (reflectType == reflect.Int)
+		}
 	case "number":
-		typeIsCorrect = (reflectType == reflect.Int || reflectType == reflect.Float64)
+		typeIsCorrect = (reflectType == reflect.Float64)
 	case "string":
 		typeIsCorrect = (reflectType == reflect.String)
 	case "boolean":
 		typeIsCorrect = (reflectType == reflect.Bool)
 	case "array":
+		typeIsCorrect = (reflectType == reflect.Slice)
 	case "object":
-		typeIsCorrect = (reflectType == reflect.String)
+		typeIsCorrect = (reflectType == reflect.Map)
 	}
 
 	if typeIsCorrect {
@@ -219,6 +230,10 @@ func IsTypeCorrect(t string, v any) error {
 	}
 
 	return fmt.Errorf("not compatible: type is %s, type of value is %s", t, reflectType.String())
+}
+
+func checkIfInteger(a float64) bool {
+	return (a - math.Floor(a)) == 0
 }
 
 func (ae *Env) rollbackTransaction(ctx c.Context, tx db.Database, fn string) {

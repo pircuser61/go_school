@@ -52,7 +52,7 @@ func (ae *Env) MonitoringUpdateBlockInputs(w http.ResponseWriter, r *http.Reques
 
 	data, err := convertReqEditData(req.Inputs.AdditionalProperties)
 	if err != nil {
-		log.WithError(err).Error(fmt.Errorf("type and type of value are not compatible: %w", err))
+		log.Error(fmt.Errorf("type and type of value are not compatible: %w", err))
 		errorHandler.handleError(TypeAndValueNotCompatible, err)
 
 		return
