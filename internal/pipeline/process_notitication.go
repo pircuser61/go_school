@@ -542,14 +542,16 @@ func (runCtx *BlockRunContext) GetAttachmentFiles(ctx c.Context, desc *om.Ordere
 		return nil, err
 	}
 
+	if len(filesAttachLinks) != 0 {
+		return []e.Attachment{}, nil
+	}
+
 	attachments, err := runCtx.GetAttach(ctx, filesAttach)
 	if err != nil {
 		return nil, err
 	}
 
-	if len(filesAttach) != 0 || len(filesAttachLinks) != 0 || len(attachments.AttachLinks) != 0 || len(attachments.AttachmentsList) != 0 {
-		attachments.AttachLinks = append(attachments.AttachLinks, filesAttachLinks...)
-
+	if len(filesAttach) != 0 || len(attachments.AttachLinks) != 0 || len(attachments.AttachmentsList) != 0 {
 		desc.Set(attachLinksKey, attachments.AttachLinks)
 		desc.Set(attachExistKey, attachments.AttachExists)
 		desc.Set(attachListKey, attachments.AttachmentsList)
