@@ -1,11 +1,13 @@
 package pipeline
 
 import (
-	"github.com/stretchr/testify/assert"
-	en "gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+	
+	en "gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
 
 func TestApproverData_getFinalGroupDecision(t *testing.T) {

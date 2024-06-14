@@ -11,6 +11,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
 
+//nolint:all // ok
 func (a *ApproverData) SetDecision(login, comment string, ds ApproverDecision, attach []en.Attachment, d ht.Delegations) error {
 	if ds == "" {
 		return errors.New("missing decision")
@@ -130,6 +131,10 @@ func (a *ApproverData) SetDecision(login, comment string, ds ApproverDecision, a
 	}
 
 	return nil
+}
+
+func (a *ApproverData) setDecisionAllOfApprovementRequired() {
+
 }
 
 //nolint:gocyclo //its ok here
