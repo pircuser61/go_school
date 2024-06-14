@@ -133,10 +133,6 @@ func (a *ApproverData) SetDecision(login, comment string, ds ApproverDecision, a
 	return nil
 }
 
-func (a *ApproverData) setDecisionAllOfApprovementRequired() {
-
-}
-
 //nolint:gocyclo //its ok here
 func (a *ApproverData) SetDecisionByAdditionalApprover(login string,
 	params additionalApproverUpdateParams, delegations ht.Delegations,
