@@ -52,7 +52,7 @@ func IncreaseReqRetryCntREST(req *http.Request) {
 	ctx := req.Context()
 
 	retryStarted, _ := ctx.Value(restRetryStarted{}).(*bool)
-	if retryStarted == nil || !*retryStarted {
+	if retryStarted != nil && !*retryStarted {
 		*retryStarted = true
 
 		return
