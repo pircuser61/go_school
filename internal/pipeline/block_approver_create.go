@@ -264,6 +264,7 @@ func (gb *GoApproverBlock) createState(ctx context.Context, ef *entity.EriusFunc
 		ApprovementRule:    params.ApprovementRule,
 		ApproveStatusName:  params.ApproveStatusName,
 		ActionList:         actions,
+		WaitAllDecisions:   params.WaitAllDecisions,
 	}
 
 	if gb.State.AutoAction != nil {

@@ -82,6 +82,7 @@
       "repeat_prev_decision": false,
       "approvers_group_id": "",
       "approvers_group_name": "",
+      "wait_all_decisions": false,
       "approvers_group_id_path": "",
       "approve_status_name": "На согласовании",
       "work_type": "8/5"
@@ -196,6 +197,7 @@
       "repeat_prev_decision": false,
       "approvers_group_id": "",
       "approvers_group_name": "",
+      "wait_all_decisions": false,
       "approve_status_name": "На согласовании",
       "work_type": "8/5"
     },
