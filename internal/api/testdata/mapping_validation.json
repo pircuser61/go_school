@@ -530,7 +530,6 @@
           ],
           "use_actual_executor": false,
           "executors_group_name": "",
-          "wait_all_decisions": false,
           "repeat_prev_decision": false,
           "executors_group_id_path": ""
         },
@@ -636,7 +635,6 @@
           "rework_sla": 16,
           "check_rework_sla": false,
           "work_type": "8/5",
-          "wait_all_decisions": false,
           "repeat_prev_decision": false,
           "is_editable": false,
           "executors_group_id": "",
@@ -703,7 +701,6 @@
           "rework_sla":16,
           "check_rework_sla":false,
           "work_type":"8/5",
-          "wait_all_decisions": false,
           "repeat_prev_decision":false,
           "is_editable":false,
           "executors_group_id":"",
