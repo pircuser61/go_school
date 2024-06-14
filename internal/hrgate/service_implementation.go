@@ -38,6 +38,7 @@ type Service struct {
 	cli                   *ClientWithResponses
 	cliPing               *http.Client
 	Cache                 cachekit.Cache
+	maxRetryCount         uint
 }
 
 func NewService(cfg *Config, ssoS *sso.Service, m metrics.Metrics) (ServiceInterface, error) {
@@ -66,10 +67,11 @@ func NewService(cfg *Config, ssoS *sso.Service, m metrics.Metrics) (ServiceInter
 	}
 
 	return &Service{
-		cli:       newCli,
-		hrGateURL: cfg.HRGateURL,
-		location:  *location,
-		cliPing:   &http.Client{Timeout: time.Second * 2},
+		cli:           newCli,
+		hrGateURL:     cfg.HRGateURL,
+		location:      *location,
+		cliPing:       &http.Client{Timeout: time.Second * 2},
+		maxRetryCount: cfg.MaxRetries,
 	}, nil
 }
 
@@ -92,25 +94,25 @@ func (s *Service) Ping(ctx c.Context) error {
 }
 
 func (s *Service) GetCalendars(ctx c.Context, params *GetCalendarsParams) ([]Calendar, error) {
-	ctxLocal, span := trace.StartSpan(ctx, "hrgate.get_calendars")
+	ctx, span := trace.StartSpan(ctx, "hrgate.get_calendars")
 	defer span.End()
 
-	log := logger.GetLogger(ctxLocal).
-		WithField("traceID", span.SpanContext().TraceID.String()).WithField("transport", "HTTP")
-	ctxLocal = script.MakeContextWithRetryCnt(ctxLocal)
+	log := logger.GetLogger(ctx).
+		WithField("traceID", span.SpanContext().TraceID.String()).
+		WithField("transport", "HTTP").
+		WithField("integration_name", externalSystemName)
 
-	response, err := s.cli.GetCalendarsWithResponse(ctxLocal, params)
-	attempt := script.GetRetryCnt(ctxLocal) - 1
+	ctx = logger.WithLogger(ctx, log)
+	ctx = script.MakeContextWithRetryCnt(ctx)
 
+	response, err := s.cli.GetCalendarsWithResponse(ctx, params)
 	if err != nil {
-		log.Warning("Pipeliner failed to connect to hrgate. Exceeded max retry count: ", attempt)
+		script.LogRetryFailure(ctx, s.maxRetryCount)
 
 		return nil, err
 	}
 
-	if attempt > 0 {
-		log.Warning("Pipeliner successfully reconnected to hrgate: ", attempt)
-	}
+	script.LogRetrySuccess(ctx)
 
 	if response.StatusCode() != http.StatusOK {
 		return nil, fmt.Errorf("invalid response code on getting calendars: %d", response.StatusCode())
@@ -124,31 +126,32 @@ func (s *Service) GetCalendars(ctx c.Context, params *GetCalendarsParams) ([]Cal
 }
 
 func (s *Service) GetCalendarDays(ctx c.Context, params *GetCalendarDaysParams) (*CalendarDays, error) {
-	ctxLocal, span := trace.StartSpan(ctx, "hrgate.get_calendar_days")
+	ctx, span := trace.StartSpan(ctx, "hrgate.get_calendar_days")
 	defer span.End()
 
-	log := logger.GetLogger(ctxLocal).
-		WithField("traceID", span.SpanContext().TraceID.String()).WithField("transport", "HTTP")
-	ctxLocal = script.MakeContextWithRetryCnt(ctxLocal)
-	res := CalendarDays{
-		CalendarMap: make(map[int64]CalendarDayType),
-	}
+	log := logger.GetLogger(ctx).
+		WithField("traceID", span.SpanContext().TraceID.String()).
+		WithField("transport", "HTTP").
+		WithField("integration_name", externalSystemName)
 
-	resp, err := s.cli.GetCalendarDaysWithResponse(ctxLocal, params)
-	attempt := script.GetRetryCnt(ctxLocal) - 1
+	ctx = logger.WithLogger(ctx, log)
+	ctx = script.MakeContextWithRetryCnt(ctx)
 
+	resp, err := s.cli.GetCalendarDaysWithResponse(ctx, params)
 	if err != nil {
-		log.Warning("Pipeliner failed to connect to hrgate. Exceeded max retry count: ", attempt)
+		script.LogRetryFailure(ctx, s.maxRetryCount)
 
 		return nil, err
 	}
 
-	if attempt > 0 {
-		log.Warning("Pipeliner successfully reconnected to hrgate: ", attempt)
-	}
+	script.LogRetrySuccess(ctx)
 
 	if resp.StatusCode() != http.StatusOK {
 		return nil, fmt.Errorf("invalid code on getting calendar days: %d", resp.StatusCode())
+	}
+
+	res := CalendarDays{
+		CalendarMap: make(map[int64]CalendarDayType),
 	}
 
 	for i := range *resp.JSON200 {
@@ -269,28 +272,27 @@ func (s *Service) GetDefaultCalendarDaysForGivenTimeIntervals(
 }
 
 func (s *Service) GetEmployeeByLogin(ctx c.Context, username string) (*Employee, error) {
-	ctxLocal, span := trace.StartSpan(ctx, "hrgate.get_employee_by_login")
+	ctx, span := trace.StartSpan(ctx, "hrgate.get_employee_by_login")
 	defer span.End()
 
-	log := logger.GetLogger(ctxLocal).
-		WithField("traceID", span.SpanContext().TraceID.String()).WithField("transport", "HTTP")
-	ctxLocal = script.MakeContextWithRetryCnt(ctxLocal)
+	log := logger.GetLogger(ctx).
+		WithField("traceID", span.SpanContext().TraceID.String()).
+		WithField("transport", "HTTP").
+		WithField("integration_name", externalSystemName)
 
-	response, err := s.cli.GetEmployeesWithResponse(ctxLocal, &GetEmployeesParams{
+	ctx = logger.WithLogger(ctx, log)
+	ctx = script.MakeContextWithRetryCnt(ctx)
+
+	response, err := s.cli.GetEmployeesWithResponse(ctx, &GetEmployeesParams{
 		Logins: &[]string{username},
 	})
-
-	attempt := script.GetRetryCnt(ctxLocal) - 1
-
 	if err != nil {
-		log.Warning("Pipeliner failed to connect to hrgate. Exceeded max retry count: ", attempt)
+		script.LogRetryFailure(ctx, s.maxRetryCount)
 
 		return nil, err
 	}
 
-	if attempt > 0 {
-		log.Warning("Pipeliner successfully reconnected to hrgate: ", attempt)
-	}
+	script.LogRetrySuccess(ctx)
 
 	if response.StatusCode() != http.StatusOK {
 		return nil, fmt.Errorf("invalid response code on gettings employee by login: %d", response.StatusCode())
@@ -304,25 +306,25 @@ func (s *Service) GetEmployeeByLogin(ctx c.Context, username string) (*Employee,
 }
 
 func (s *Service) GetOrganizationByID(ctx c.Context, organizationID string) (*Organization, error) {
-	ctxLocal, span := trace.StartSpan(ctx, "hrgate.get_organization_by_id")
+	ctx, span := trace.StartSpan(ctx, "hrgate.get_organization_by_id")
 	defer span.End()
 
-	log := logger.GetLogger(ctxLocal).
-		WithField("traceID", span.SpanContext().TraceID.String()).WithField("transport", "HTTP")
-	ctxLocal = script.MakeContextWithRetryCnt(ctxLocal)
+	log := logger.GetLogger(ctx).
+		WithField("traceID", span.SpanContext().TraceID.String()).
+		WithField("transport", "HTTP").
+		WithField("integration_name", externalSystemName)
 
-	response, err := s.cli.GetOrganizationsIdWithResponse(ctxLocal, UUIDPathObjectID(organizationID))
-	attempt := script.GetRetryCnt(ctxLocal) - 1
+	ctx = logger.WithLogger(ctx, log)
+	ctx = script.MakeContextWithRetryCnt(ctx)
 
+	response, err := s.cli.GetOrganizationsIdWithResponse(ctx, UUIDPathObjectID(organizationID))
 	if err != nil {
-		log.Warning("Pipeliner failed to connect to hrgate. Exceeded max retry count: ", attempt)
+		script.LogRetryFailure(ctx, s.maxRetryCount)
 
 		return nil, err
 	}
 
-	if attempt > 0 {
-		log.Warning("Pipeliner successfully reconnected to hrgate: ", attempt)
-	}
+	script.LogRetrySuccess(ctx)
 
 	if response.StatusCode() != http.StatusOK {
 		return nil, fmt.Errorf("invalid response code on gettings organization on id: %d", response.StatusCode())

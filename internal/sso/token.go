@@ -98,7 +98,7 @@ func (s *Service) GetAccessToken(req *http.Request) (string, error) {
 }
 
 func (s *Service) updateTokens(ctx context.Context, scopeName string) error {
-	ctxLocal, span := trace.StartSpan(ctx, "updateTokens")
+	ctx, span := trace.StartSpan(ctx, "updateTokens")
 	defer span.End()
 
 	currTime := time.Now()
@@ -124,19 +124,23 @@ func (s *Service) updateTokens(ctx context.Context, scopeName string) error {
 	}
 
 	if currTime.Before(sc.rtExp) {
-		return s.refreshTokens(ctxLocal, scopeName)
+		return s.refreshTokens(ctx, scopeName)
 	}
 
-	return s.getTokens(ctxLocal, scopeName)
+	return s.getTokens(ctx, scopeName)
 }
 
 func (s *Service) getTokens(ctx context.Context, scopeName string) error {
-	ctxLocal, span := trace.StartSpan(ctx, "getTokens")
+	ctx, span := trace.StartSpan(ctx, "getTokens")
 	defer span.End()
 
-	log := logger.GetLogger(ctxLocal).
-		WithField("traceID", span.SpanContext().TraceID.String()).WithField("transport", "HTTP")
-	ctxLocal = script.MakeContextWithRetryCnt(ctxLocal)
+	log := logger.GetLogger(ctx).
+		WithField("traceID", span.SpanContext().TraceID.String()).
+		WithField("transport", "HTTP").
+		WithField("integration_name", externalSystemName)
+
+	ctx = logger.WithLogger(ctx, log)
+	ctx = script.MakeContextWithRetryCnt(ctx)
 
 	s.scopesMutex.RLock()
 	if _, ok := s.scopes[scopeName]; !ok {
@@ -150,18 +154,14 @@ func (s *Service) getTokens(ctx context.Context, scopeName string) error {
 	sc := s.scopes[scopeName]
 	s.scopesMutex.RUnlock()
 
-	req, err := retryablehttp.NewRequestWithContext(ctxLocal, http.MethodPost, s.tokensURL, strings.NewReader(sc.getTokensFormData.Encode()))
-	attempt := script.GetRetryCnt(ctxLocal) - 1
-
+	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodPost, s.tokensURL, strings.NewReader(sc.getTokensFormData.Encode()))
 	if err != nil {
-		log.Warning("Pipeliner failed to connect to sso. Exceeded max retry count: ", attempt)
+		script.LogRetryFailure(ctx, uint(s.cli.RetryMax))
 
 		return err
 	}
 
-	if attempt > 0 {
-		log.Warning("Pipeliner successfully reconnected to sso: ", attempt)
-	}
+	script.LogRetrySuccess(ctx)
 
 	req.Header.Add(contentTypeHeader, contentTypeFormValue)
 
@@ -195,12 +195,16 @@ func (s *Service) getTokens(ctx context.Context, scopeName string) error {
 }
 
 func (s *Service) refreshTokens(ctx context.Context, scopeName string) error {
-	ctxLocal, span := trace.StartSpan(ctx, "refreshTokens")
+	ctx, span := trace.StartSpan(ctx, "refreshTokens")
 	defer span.End()
 
-	log := logger.GetLogger(ctxLocal).
-		WithField("traceID", span.SpanContext().TraceID.String()).WithField("transport", "HTTP")
-	ctxLocal = script.MakeContextWithRetryCnt(ctxLocal)
+	log := logger.GetLogger(ctx).
+		WithField("traceID", span.SpanContext().TraceID.String()).
+		WithField("transport", "HTTP").
+		WithField("integration_name", externalSystemName)
+
+	ctx = logger.WithLogger(ctx, log)
+	ctx = script.MakeContextWithRetryCnt(ctx)
 
 	s.scopesMutex.RLock()
 
@@ -219,18 +223,14 @@ func (s *Service) refreshTokens(ctx context.Context, scopeName string) error {
 	formData := s.refreshTokensFormData
 	formData.Add(refreshTokenKey, sc.refreshToken)
 
-	req, err := retryablehttp.NewRequestWithContext(ctxLocal, http.MethodPost, s.tokensURL, strings.NewReader(sc.getTokensFormData.Encode()))
-	attempt := script.GetRetryCnt(ctxLocal) - 1
-
+	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodPost, s.tokensURL, strings.NewReader(sc.getTokensFormData.Encode()))
 	if err != nil {
-		log.Warning("Pipeliner failed to connect to sso. Exceeded max retry count: ", attempt)
+		script.LogRetryFailure(ctx, uint(s.cli.RetryMax))
 
 		return err
 	}
 
-	if attempt > 0 {
-		log.Warning("Pipeliner successfully reconnected to sso: ", attempt)
-	}
+	script.LogRetrySuccess(ctx)
 
 	req.Header.Add(contentTypeHeader, contentTypeFormValue)
 

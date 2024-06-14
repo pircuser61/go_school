@@ -28,30 +28,28 @@ const (
 )
 
 func (s *service) GetAttachmentLink(ctx c.Context, attachments []AttachInfo) ([]AttachInfo, error) {
-	ctxLocal, span := trace.StartSpan(ctx, "file_registry.get_attachment_link")
+	ctx, span := trace.StartSpan(ctx, "file_registry.get_attachment_link")
 	defer span.End()
 
-	log := logger.GetLogger(ctxLocal).
-		WithField("traceID", span.SpanContext().TraceID.String()).WithField("transport", "GRPC")
+	log := logger.GetLogger(ctx).
+		WithField("traceID", span.SpanContext().TraceID.String()).
+		WithField("transport", "GRPC").
+		WithField("integration_name", externalSystemName)
+	ctx = logger.WithLogger(ctx, log)
 
 	for k, v := range attachments {
-		ctxLocal = script.MakeContextWithRetryCnt(ctxLocal)
+		ctx = script.MakeContextWithRetryCnt(ctx)
 
-		link, err := s.grpcCLi.GetFileLinkById(ctxLocal, &fr.GetFileLinkRequest{
+		link, err := s.grpcCLi.GetFileLinkById(ctx, &fr.GetFileLinkRequest{
 			FileId: v.FileID,
 		})
-
-		attempt := script.GetRetryCnt(ctxLocal)
-
 		if err != nil {
-			log.Warning("Pipeliner failed to connect to fileregistry. Exceeded max retry count: ", attempt)
+			script.LogRetryFailure(ctx, s.maxRetryCount)
 
 			return nil, err
 		}
 
-		if attempt > 0 {
-			log.Warning("Pipeliner successfully reconnected to fileregistry: ", attempt)
-		}
+		script.LogRetrySuccess(ctx)
 
 		attachments[k].ExternalLink = link.Url
 	}
@@ -60,31 +58,28 @@ func (s *service) GetAttachmentLink(ctx c.Context, attachments []AttachInfo) ([]
 }
 
 func (s *service) getAttachmentInfo(ctx c.Context, fileID string) (FileInfo, error) {
-	ctxLocal, span := trace.StartSpan(ctx, "file_registry.get_attachment_info")
+	ctx, span := trace.StartSpan(ctx, "file_registry.get_attachment_info")
 	defer span.End()
 
-	log := logger.GetLogger(ctxLocal).
-		WithField("traceID", span.SpanContext().TraceID.String()).WithField("transport", "GRPC")
+	log := logger.GetLogger(ctx).
+		WithField("traceID", span.SpanContext().TraceID.String()).
+		WithField("transport", "GRPC").
+		WithField("integration_name", externalSystemName)
+	ctx = logger.WithLogger(ctx, log)
+	ctx = script.MakeContextWithRetryCnt(ctx)
 
-	ctxLocal = script.MakeContextWithRetryCnt(ctxLocal)
-
-	res, err := s.grpcCLi.GetFileInfoById(ctxLocal,
+	res, err := s.grpcCLi.GetFileInfoById(ctx,
 		&fr.GetFileInfoRequest{
 			FileId: fileID,
 		},
 	)
-
-	attempt := script.GetRetryCnt(ctxLocal)
-
 	if err != nil {
-		log.Warning("Pipeliner failed to connect to fileregistry. Exceeded max retry count: ", attempt)
+		script.LogRetryFailure(ctx, s.maxRetryCount)
 
 		return FileInfo{}, err
 	}
 
-	if attempt > 0 {
-		log.Warning("Pipeliner successfully reconnected to fileregistry: ", attempt)
-	}
+	script.LogRetrySuccess(ctx)
 
 	return FileInfo{
 		FileID:    res.FileId,
@@ -95,7 +90,7 @@ func (s *service) getAttachmentInfo(ctx c.Context, fileID string) (FileInfo, err
 }
 
 func (s *service) GetAttachmentsInfo(ctx c.Context, attachments map[string][]entity.Attachment) (map[string][]FileInfo, error) {
-	ctxLocal, span := trace.StartSpan(ctx, "file_registry.get_attachments_info")
+	ctx, span := trace.StartSpan(ctx, "file_registry.get_attachments_info")
 	defer span.End()
 
 	res := make(map[string][]FileInfo)
@@ -105,7 +100,7 @@ func (s *service) GetAttachmentsInfo(ctx c.Context, attachments map[string][]ent
 		filesInfo := make([]FileInfo, 0, len(aa))
 
 		for _, a := range aa {
-			fileInfo, err := s.getAttachmentInfo(ctxLocal, a.FileID)
+			fileInfo, err := s.getAttachmentInfo(ctx, a.FileID)
 			if err != nil {
 				return nil, err
 			}
@@ -120,15 +115,19 @@ func (s *service) GetAttachmentsInfo(ctx c.Context, attachments map[string][]ent
 }
 
 func (s *service) getAttachment(ctx c.Context, fileID, workNumber, clientID string) (em.Attachment, error) {
-	ctxLocal, span := trace.StartSpan(ctx, "file_registry.get_attachment")
+	ctx, span := trace.StartSpan(ctx, "file_registry.get_attachment")
 	defer span.End()
 
-	log := logger.GetLogger(ctxLocal).
-		WithField("traceID", span.SpanContext().TraceID.String()).WithField("transport", "HTTP")
-	url := s.restURL + getFileByID + fileID
-	ctxLocal = script.MakeContextWithRetryCnt(ctxLocal)
+	log := logger.GetLogger(ctx).
+		WithField("traceID", span.SpanContext().TraceID.String()).
+		WithField("transport", "HTTP").
+		WithField("integration_name", externalSystemName)
+	ctx = logger.WithLogger(ctx, log)
+	ctx = script.MakeContextWithRetryCnt(ctx)
 
-	req, err := retryablehttp.NewRequestWithContext(ctxLocal, http.MethodGet, url, http.NoBody)
+	url := s.restURL + getFileByID + fileID
+
+	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
 	if err != nil {
 		return em.Attachment{}, err
 	}
@@ -137,18 +136,15 @@ func (s *service) getAttachment(ctx c.Context, fileID, workNumber, clientID stri
 	req.Header.Set("Clientid", clientID)
 
 	resp, err := s.restCli.Do(req)
-	attempt := script.GetRetryCnt(ctxLocal) - 1
-
 	if err != nil {
-		log.Warning("Pipeliner failed to connect to fileregistry. Exceeded max retry count: ", attempt)
+		script.LogRetryFailure(ctx, s.maxRetryCount)
 
 		return em.Attachment{}, err
 	}
+
 	defer resp.Body.Close()
 
-	if attempt > 0 {
-		log.Warning("Pipeliner successfully reconnected to fileregistry: ", attempt)
-	}
+	script.LogRetrySuccess(ctx)
 
 	if resp.StatusCode != http.StatusOK {
 		return em.Attachment{}, fmt.Errorf("got bad status code: %d", resp.StatusCode)

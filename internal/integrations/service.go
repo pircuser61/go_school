@@ -106,31 +106,30 @@ func (s *service) GetCli() *retryablehttp.Client {
 }
 
 func (s *service) GetSystemsNames(ctx c.Context, systemIDs []uuid.UUID) (map[string]string, error) {
-	ctxLocal, span := trace.StartSpan(ctx, "integrations.get_systems_names")
+	ctx, span := trace.StartSpan(ctx, "integrations.get_systems_names")
 	defer span.End()
 
-	log := logger.GetLogger(ctxLocal).
-		WithField("traceID", span.SpanContext().TraceID.String()).WithField("transport", "GRPC")
+	log := logger.GetLogger(ctx).
+		WithField("traceID", span.SpanContext().TraceID.String()).
+		WithField("transport", "GRPC").
+		WithField("integration_name", externalSystemName)
 
-	ctxLocal = script.MakeContextWithRetryCnt(ctxLocal)
+	ctx = logger.WithLogger(ctx, log)
+	ctx = script.MakeContextWithRetryCnt(ctx)
 
 	ids := make([]string, 0, len(systemIDs))
 	for _, systemID := range systemIDs {
 		ids = append(ids, systemID.String())
 	}
 
-	res, err := s.rpcIntCli.GetIntegrationsNamesByIds(ctxLocal, &integration.GetIntegrationsNamesByIdsRequest{Ids: ids})
-	attempt := script.GetRetryCnt(ctxLocal)
-
+	res, err := s.rpcIntCli.GetIntegrationsNamesByIds(ctx, &integration.GetIntegrationsNamesByIdsRequest{Ids: ids})
 	if err != nil {
-		log.Warning("Pipeliner failed to connect to integrations. Exceeded max retry count: ", attempt)
+		script.LogRetryFailure(ctx, uint(s.cli.RetryMax))
 
 		return nil, err
 	}
 
-	if attempt > 0 {
-		log.Warning("Pipeliner successfully reconnected to integrations: ", attempt)
-	}
+	script.LogRetrySuccess(ctx)
 
 	if res != nil {
 		return res.Names, nil
@@ -140,29 +139,29 @@ func (s *service) GetSystemsNames(ctx c.Context, systemIDs []uuid.UUID) (map[str
 }
 
 func (s *service) GetSystemsClients(ctx c.Context, systemIDs []uuid.UUID) (map[string][]string, error) {
-	ctxLocal, span := trace.StartSpan(ctx, "integrations.get_systems_clients")
+	ctx, span := trace.StartSpan(ctx, "integrations.get_systems_clients")
 	defer span.End()
 
-	log := logger.GetLogger(ctxLocal).
-		WithField("traceID", span.SpanContext().TraceID.String()).WithField("transport", "GRPC")
+	log := logger.GetLogger(ctx).
+		WithField("traceID", span.SpanContext().TraceID.String()).
+		WithField("transport", "GRPC").
+		WithField("integration_name", externalSystemName)
+
+	ctx = logger.WithLogger(ctx, log)
 
 	cc := make(map[string][]string)
 
 	for _, id := range systemIDs {
-		ctxLocal = script.MakeContextWithRetryCnt(ctxLocal)
+		retryCtx := script.MakeContextWithRetryCnt(ctx)
 
-		res, err := s.rpcIntCli.GetIntegrationById(ctxLocal, &integration.GetIntegrationByIdRequest{IntegrationId: id.String()})
-		attempt := script.GetRetryCnt(ctxLocal)
-
+		res, err := s.rpcIntCli.GetIntegrationById(retryCtx, &integration.GetIntegrationByIdRequest{IntegrationId: id.String()})
 		if err != nil {
-			log.Warning("Pipeliner failed to connect to integrations. Exceeded max retry count: ", attempt)
+			script.LogRetryFailure(retryCtx, uint(s.cli.RetryMax))
 
 			return nil, err
 		}
 
-		if attempt > 0 {
-			log.Warning("Pipeliner successfully reconnected to integrations: ", attempt)
-		}
+		script.LogRetrySuccess(retryCtx)
 
 		if res != nil && res.Integration != nil {
 			cc[id.String()] = res.Integration.ClientIds
@@ -173,33 +172,31 @@ func (s *service) GetSystemsClients(ctx c.Context, systemIDs []uuid.UUID) (map[s
 }
 
 func (s *service) GetMicroserviceHumanKey(ctx c.Context, microSrvID, pID, vID, workNumber, clientID string) (string, error) {
-	ctxLocal, span := trace.StartSpan(ctx, "integrations.get_microservice_human_key")
+	ctx, span := trace.StartSpan(ctx, "integrations.get_microservice_human_key")
 	defer span.End()
 
-	log := logger.GetLogger(ctxLocal).
-		WithField("traceID", span.SpanContext().TraceID.String()).WithField("transport", "GRPC")
+	log := logger.GetLogger(ctx).
+		WithField("traceID", span.SpanContext().TraceID.String()).
+		WithField("transport", "GRPC").
+		WithField("integration_name", externalSystemName)
 
-	ctxLocal = script.MakeContextWithRetryCnt(ctxLocal)
+	ctx = logger.WithLogger(ctx, log)
+	ctx = script.MakeContextWithRetryCnt(ctx)
 
-	res, err := s.rpcMicrCli.GetMicroservice(ctxLocal, &microservice.GetMicroserviceRequest{
+	res, err := s.rpcMicrCli.GetMicroservice(ctx, &microservice.GetMicroserviceRequest{
 		MicroserviceId: microSrvID,
 		PipelineId:     pID,
 		VersionId:      vID,
 		WorkNumber:     workNumber,
 		ClientId:       clientID,
 	})
-
-	attempt := script.GetRetryCnt(ctxLocal)
-
 	if err != nil {
-		log.Warning("Pipeliner failed to connect to integrations. Exceeded max retry count: ", attempt)
+		script.LogRetryFailure(ctx, uint(s.cli.RetryMax))
 
 		return "", err
 	}
 
-	if attempt > 0 {
-		log.Warning("Pipeliner successfully reconnected to integrations: ", attempt)
-	}
+	script.LogRetrySuccess(ctx)
 
 	if res != nil && res.Microservice != nil && res.Microservice.Creds != nil && res.Microservice.Creds.Prod != nil {
 		return res.Microservice.Creds.Prod.HumanKey, nil

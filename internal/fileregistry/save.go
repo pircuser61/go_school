@@ -20,7 +20,7 @@ import (
 const authorizationHeader = "Authorization"
 
 func (s *service) SaveFile(ctx c.Context, token, clientID, name string, file []byte, workNumber string) (string, error) {
-	ctxLocal, span := trace.StartSpan(ctx, "file_registry.save_file")
+	ctx, span := trace.StartSpan(ctx, "file_registry.save_file")
 	defer span.End()
 
 	buf := new(bytes.Buffer)
@@ -41,12 +41,16 @@ func (s *service) SaveFile(ctx c.Context, token, clientID, name string, file []b
 		return "", err
 	}
 
-	log := logger.GetLogger(ctxLocal).
-		WithField("traceID", span.SpanContext().TraceID.String()).WithField("transport", "HTTP")
-	reqURL := s.restURL + saveFile
-	ctxLocal = script.MakeContextWithRetryCnt(ctxLocal)
+	log := logger.GetLogger(ctx).
+		WithField("traceID", span.SpanContext().TraceID.String()).
+		WithField("transport", "HTTP").
+		WithField("integration_name", externalSystemName)
+	ctx = logger.WithLogger(ctx, log)
+	ctx = script.MakeContextWithRetryCnt(ctx)
 
-	req, err := retryablehttp.NewRequestWithContext(ctxLocal, http.MethodPost, reqURL, buf)
+	reqURL := s.restURL + saveFile
+
+	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodPost, reqURL, buf)
 	if err != nil {
 		return "", err
 	}
@@ -57,20 +61,15 @@ func (s *service) SaveFile(ctx c.Context, token, clientID, name string, file []b
 	req.Header.Set(authorizationHeader, token)
 
 	resp, err := s.restCli.Do(req)
-
-	attempt := script.GetRetryCnt(ctxLocal) - 1
-
 	if err != nil {
-		log.Warning("Pipeliner failed to connect to fileregistry. Exceeded max retry count: ", attempt)
+		script.LogRetryFailure(ctx, s.maxRetryCount)
 
 		return "", err
 	}
 
 	defer resp.Body.Close()
 
-	if attempt > 0 {
-		log.Warning("Pipeliner successfully reconnected to fileregistry: ", attempt)
-	}
+	script.LogRetrySuccess(ctx)
 
 	if resp.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("got bad status: %s", resp.Status)

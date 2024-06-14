@@ -13,26 +13,25 @@ import (
 )
 
 func (s *service) GetWorkNumber(ctx c.Context) (workNumber string, err error) {
-	ctxLocal, span := trace.StartSpan(ctx, "sequence.get_work_number")
+	ctx, span := trace.StartSpan(ctx, "sequence.get_work_number")
 	defer span.End()
 
-	log := logger.GetLogger(ctxLocal).
-		WithField("traceID", span.SpanContext().TraceID.String()).WithField("transport", "GRPC")
+	log := logger.GetLogger(ctx).
+		WithField("traceID", span.SpanContext().TraceID.String()).
+		WithField("transport", "GRPC").
+		WithField("integration_name", externalSystemName)
 
-	ctxLocal = script.MakeContextWithRetryCnt(ctxLocal)
+	ctx = logger.WithLogger(ctx, log)
+	ctx = script.MakeContextWithRetryCnt(ctx)
 
-	resp, err := s.cli.GetWorkNumber(ctxLocal, &sequence.GetWorkNumberRequest{})
-	attempt := script.GetRetryCnt(ctxLocal)
-
+	resp, err := s.cli.GetWorkNumber(ctx, &sequence.GetWorkNumberRequest{})
 	if err != nil {
-		log.Warning("Pipeliner failed to connect to sequence. Exceeded max retry count: ", attempt)
+		script.LogRetryFailure(ctx, s.maxRetryCount)
 
 		return "", err
 	}
 
-	if attempt > 0 {
-		log.Warning("Pipeliner successfully reconnected to sequence: ", attempt)
-	}
+	script.LogRetrySuccess(ctx)
 
 	return resp.WorkNumber, nil
 }

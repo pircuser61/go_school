@@ -32,11 +32,12 @@ const (
 )
 
 type service struct {
-	conn *grpc.ClientConn
-	cli  d.DelegationServiceClient
+	conn          *grpc.ClientConn
+	cli           d.DelegationServiceClient
+	maxRetryCount uint
 }
 
-func NewService(cfg *Config, _ logger.Logger, m metrics.Metrics) (ServiceInterface, error) {
+func NewService(cfg *Config, m metrics.Metrics) (ServiceInterface, error) {
 	if cfg.URL == "" {
 		return &ServiceWithCache{}, nil
 	}
@@ -65,12 +66,13 @@ func NewService(cfg *Config, _ logger.Logger, m metrics.Metrics) (ServiceInterfa
 	}
 
 	return &service{
-		conn: conn,
-		cli:  d.NewDelegationServiceClient(conn),
+		conn:          conn,
+		cli:           d.NewDelegationServiceClient(conn),
+		maxRetryCount: cfg.MaxRetries,
 	}, nil
 }
 
-func (s *service) Ping(_ c.Context) error {
+func (s *service) Ping(c.Context) error {
 	// TODO: add Ping to human-tasks service
 	return nil
 }
@@ -80,29 +82,29 @@ func (s *service) SetCli(cli d.DelegationServiceClient) {
 }
 
 func (s *service) GetDelegations(ctx c.Context, req *d.GetDelegationsRequest) (ds Delegations, err error) {
-	ctxLocal, span := trace.StartSpan(ctx, "humantasks.get_delegations")
+	ctx, span := trace.StartSpan(ctx, "humantasks.get_delegations")
 	defer span.End()
 
 	if s.cli == nil || s.conn == nil {
 		return make([]Delegation, 0), nil
 	}
 
-	log := logger.GetLogger(ctxLocal).
-		WithField("traceID", span.SpanContext().TraceID.String()).WithField("transport", "GRPC")
-	ctxLocal = script.MakeContextWithRetryCnt(ctxLocal)
+	log := logger.GetLogger(ctx).
+		WithField("traceID", span.SpanContext().TraceID.String()).
+		WithField("transport", "GRPC").
+		WithField("integration_name", externalSystemName)
 
-	res, reqErr := s.cli.GetDelegations(ctxLocal, req)
-	attempt := script.GetRetryCnt(ctxLocal)
+	ctx = logger.WithLogger(ctx, log)
+	ctx = script.MakeContextWithRetryCnt(ctx)
 
+	res, reqErr := s.cli.GetDelegations(ctx, req)
 	if reqErr != nil {
-		log.Warning("Pipeliner failed to connect to humantasks. Exceeded max retry count: ", attempt)
+		script.LogRetryFailure(ctx, s.maxRetryCount)
 
 		return nil, reqErr
 	}
 
-	if attempt > 0 {
-		log.Warning("Pipeliner successfully reconnected to humantasks: ", attempt)
-	}
+	script.LogRetrySuccess(ctx)
 
 	for _, delegation := range res.Delegations {
 		fromDate, parseFromDateErr := time.Parse("02/01/2006", delegation.FromDate)
