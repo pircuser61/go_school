@@ -6073,6 +6073,9 @@ components:
           description: Approvement status
         work_type:
           $ref: "#/components/schemas/WorkType"
+        wait_all_decisions:
+          type: boolean
+          description: true - wait all decisions
       required:
         - type
         - approver
@@ -6085,6 +6088,7 @@ components:
         - approvers_group_id
         - approvers_group_name
         - approve_status_name
+        - wait_all_decisions
     FormsChangelogResponse:
       type: array
       items:

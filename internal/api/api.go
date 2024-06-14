@@ -670,6 +670,9 @@ type ApproverParams struct {
 	//   * FromSchema - Selected by initiator
 	Type ApproverType `json:"type"`
 
+	// true - wait all decisions
+	WaitAllDecisions bool `json:"wait_all_decisions"`
+
 	// Рабочий режим
 	WorkType *WorkType `json:"work_type,omitempty"`
 }
