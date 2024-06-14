@@ -3,8 +3,6 @@ package functions
 import (
 	c "context"
 
-	"gitlab.services.mts.ru/abp/myosotis/logger"
-
 	"go.opencensus.io/plugin/ocgrpc"
 
 	"google.golang.org/grpc"
@@ -22,11 +20,12 @@ import (
 const externalSystemName = "functions"
 
 type service struct {
-	conn *grpc.ClientConn
-	cli  function.FunctionServiceClient
+	conn          *grpc.ClientConn
+	cli           function.FunctionServiceClient
+	maxRetryCount uint
 }
 
-func NewService(cfg Config, _ logger.Logger, m metrics.Metrics) (Service, error) {
+func NewService(cfg Config, m metrics.Metrics) (Service, error) {
 	opts := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithStatsHandler(&ocgrpc.ClientHandler{}),
@@ -51,8 +50,9 @@ func NewService(cfg Config, _ logger.Logger, m metrics.Metrics) (Service, error)
 	}
 
 	return &service{
-		conn: conn,
-		cli:  function.NewFunctionServiceClient(conn),
+		conn:          conn,
+		cli:           function.NewFunctionServiceClient(conn),
+		maxRetryCount: cfg.MaxRetries,
 	}, nil
 }
 

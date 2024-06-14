@@ -22,9 +22,10 @@ import (
 const externalSystemName = "sequence"
 
 type service struct {
-	c   *grpc.ClientConn
-	log logger.Logger
-	cli sequence.SequenceClient
+	c             *grpc.ClientConn
+	log           logger.Logger
+	cli           sequence.SequenceClient
+	maxRetryCount uint
 }
 
 func NewService(cfg Config, log logger.Logger, m metrics.Metrics) (Service, error) {
@@ -54,9 +55,10 @@ func NewService(cfg Config, log logger.Logger, m metrics.Metrics) (Service, erro
 	client := sequence.NewSequenceClient(conn)
 
 	return &service{
-		c:   conn,
-		log: log,
-		cli: client,
+		c:             conn,
+		log:           log,
+		cli:           client,
+		maxRetryCount: cfg.MaxRetries,
 	}, nil
 }
 

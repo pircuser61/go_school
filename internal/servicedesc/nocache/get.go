@@ -17,8 +17,10 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 )
 
+const externalSystemName = "servicedesk"
+
 func (s *service) GetSsoPerson(ctx c.Context, username string) (*sd.SsoPerson, error) {
-	ctxLocal, span := trace.StartSpan(ctx, "servicedesc.get_sso_person")
+	ctx, span := trace.StartSpan(ctx, "servicedesc.get_sso_person")
 	defer span.End()
 
 	if sso.IsServiceUserName(username) {
@@ -27,29 +29,31 @@ func (s *service) GetSsoPerson(ctx c.Context, username string) (*sd.SsoPerson, e
 		}, nil
 	}
 
-	log := logger.GetLogger(ctxLocal).
-		WithField("traceID", span.SpanContext().TraceID.String()).WithField("transport", "HTTP")
-	ctxLocal = script.MakeContextWithRetryCnt(ctxLocal)
+	log := logger.GetLogger(ctx).
+		WithField("traceID", span.SpanContext().TraceID.String()).
+		WithField("transport", "HTTP").
+		WithField("integration_name", externalSystemName)
+
+	ctx = logger.WithLogger(ctx, log)
+	ctx = script.MakeContextWithRetryCnt(ctx)
+
 	reqURL := fmt.Sprintf("%s%s", s.sdURL, fmt.Sprintf(getUserInfo, username))
 
-	req, err := retryablehttp.NewRequestWithContext(ctxLocal, http.MethodGet, reqURL, http.NoBody)
+	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodGet, reqURL, http.NoBody)
 	if err != nil {
 		return nil, err
 	}
 
 	resp, err := s.cli.Do(req)
-	attempt := script.GetRetryCnt(ctxLocal) - 1
-
 	if err != nil {
-		log.Warning("Pipeliner failed to connect to servicedesk. Exceeded max retry count: ", attempt)
+		script.LogRetryFailure(ctx, uint(s.cli.RetryMax))
 
 		return nil, err
 	}
+
 	defer resp.Body.Close()
 
-	if attempt > 0 {
-		log.Warning("Pipeliner successfully reconnected to servicedesk: ", attempt)
-	}
+	script.LogRetrySuccess(ctx)
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("bad status code from sso: %d, username: %s", resp.StatusCode, username)
@@ -65,32 +69,34 @@ func (s *service) GetSsoPerson(ctx c.Context, username string) (*sd.SsoPerson, e
 
 //nolint:dupl //its not duplicate
 func (s *service) GetWorkGroup(ctx c.Context, groupID string) (*sd.WorkGroup, error) {
-	ctxLocal, span := trace.StartSpan(ctx, "servicedesc.get_work_group")
+	ctx, span := trace.StartSpan(ctx, "servicedesc.get_work_group")
 	defer span.End()
 
-	log := logger.GetLogger(ctxLocal).
-		WithField("traceID", span.SpanContext().TraceID.String()).WithField("transport", "HTTP")
-	ctxLocal = script.MakeContextWithRetryCnt(ctxLocal)
+	log := logger.GetLogger(ctx).
+		WithField("traceID", span.SpanContext().TraceID.String()).
+		WithField("transport", "HTTP").
+		WithField("integration_name", externalSystemName)
+
+	ctx = logger.WithLogger(ctx, log)
+	ctx = script.MakeContextWithRetryCnt(ctx)
+
 	reqURL := fmt.Sprintf("%s%s%s", s.sdURL, getWorkGroup, groupID)
 
-	req, err := retryablehttp.NewRequestWithContext(ctxLocal, http.MethodGet, reqURL, http.NoBody)
+	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodGet, reqURL, http.NoBody)
 	if err != nil {
 		return nil, err
 	}
 
 	resp, err := s.cli.Do(req)
-	attempt := script.GetRetryCnt(ctxLocal) - 1
-
 	if err != nil {
-		log.Warning("Pipeliner failed to connect to servicedesk. Exceeded max retry count: ", attempt)
+		script.LogRetryFailure(ctx, uint(s.cli.RetryMax))
 
 		return nil, err
 	}
+
 	defer resp.Body.Close()
 
-	if attempt > 0 {
-		log.Warning("Pipeliner successfully reconnected to servicedesk: ", attempt)
-	}
+	script.LogRetrySuccess(ctx)
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("got bad status code: %d", resp.StatusCode)
@@ -107,32 +113,34 @@ func (s *service) GetWorkGroup(ctx c.Context, groupID string) (*sd.WorkGroup, er
 }
 
 func (s *service) GetSchemaByID(ctx c.Context, schemaID string) (map[string]interface{}, error) {
-	ctxLocal, span := trace.StartSpan(ctx, "servicedesc.get_schema_by_id")
+	ctx, span := trace.StartSpan(ctx, "servicedesc.get_schema_by_id")
 	defer span.End()
 
-	log := logger.GetLogger(ctxLocal).
-		WithField("traceID", span.SpanContext().TraceID.String()).WithField("transport", "HTTP")
-	ctxLocal = script.MakeContextWithRetryCnt(ctxLocal)
+	log := logger.GetLogger(ctx).
+		WithField("traceID", span.SpanContext().TraceID.String()).
+		WithField("transport", "HTTP").
+		WithField("integration_name", externalSystemName)
+
+	ctx = logger.WithLogger(ctx, log)
+	ctx = script.MakeContextWithRetryCnt(ctx)
+
 	reqURL := fmt.Sprintf("%s%s%s", s.sdURL, getSchemaByID, schemaID)
 
-	req, err := retryablehttp.NewRequestWithContext(ctxLocal, http.MethodGet, reqURL, http.NoBody)
+	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodGet, reqURL, http.NoBody)
 	if err != nil {
 		return nil, err
 	}
 
 	resp, err := s.cli.Do(req)
-	attempt := script.GetRetryCnt(ctxLocal) - 1
-
 	if err != nil {
-		log.Warning("Pipeliner failed to connect to servicedesk. Exceeded max retry count: ", attempt)
+		script.LogRetryFailure(ctx, uint(s.cli.RetryMax))
 
 		return nil, err
 	}
+
 	defer resp.Body.Close()
 
-	if attempt > 0 {
-		log.Warning("Pipeliner successfully reconnected to servicedesk: ", attempt)
-	}
+	script.LogRetrySuccess(ctx)
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("got bad status code: %d", resp.StatusCode)
@@ -147,32 +155,33 @@ func (s *service) GetSchemaByID(ctx c.Context, schemaID string) (map[string]inte
 }
 
 func (s *service) GetSchemaByBlueprintID(ctx c.Context, blueprintID string) (map[string]interface{}, error) {
-	ctxLocal, span := trace.StartSpan(ctx, "servicedesc.get_schema_by_blueprint_id")
+	ctx, span := trace.StartSpan(ctx, "servicedesc.get_schema_by_blueprint_id")
 	defer span.End()
 
-	log := logger.GetLogger(ctxLocal).
-		WithField("traceID", span.SpanContext().TraceID.String()).WithField("transport", "HTTP")
-	ctxLocal = script.MakeContextWithRetryCnt(ctxLocal)
+	log := logger.GetLogger(ctx).
+		WithField("traceID", span.SpanContext().TraceID.String()).
+		WithField("transport", "HTTP").
+		WithField("integration_name", externalSystemName)
+
+	ctx = logger.WithLogger(ctx, log)
+	ctx = script.MakeContextWithRetryCnt(ctx)
 	reqURL := fmt.Sprintf("%s%s%s%s", s.sdURL, getSchemaByBlueprintID, blueprintID, "/json")
 
-	req, err := retryablehttp.NewRequestWithContext(ctxLocal, http.MethodGet, reqURL, http.NoBody)
+	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodGet, reqURL, http.NoBody)
 	if err != nil {
 		return nil, err
 	}
 
 	resp, err := s.cli.Do(req)
-	attempt := script.GetRetryCnt(ctxLocal) - 1
-
 	if err != nil {
-		log.Warning("Pipeliner failed to connect to servicedesk. Exceeded max retry count: ", attempt)
+		script.LogRetryFailure(ctx, uint(s.cli.RetryMax))
 
 		return nil, err
 	}
+
 	defer resp.Body.Close()
 
-	if attempt > 0 {
-		log.Warning("Pipeliner successfully reconnected to servicedesk: ", attempt)
-	}
+	script.LogRetrySuccess(ctx)
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("got bad status code: %d", resp.StatusCode)
