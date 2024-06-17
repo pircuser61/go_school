@@ -76,6 +76,7 @@ type FormData struct {
 	WorkType       string    `json:"work_type"`
 
 	HideExecutorFromInitiator bool `json:"hide_executor_from_initiator"`
+	HideFormFromInitiator     bool `json:"hide_form_from_initiator"`
 
 	Mapping         script.JSONSchemaProperties `json:"mapping"`
 	FullFormMapping string                      `json:"full_form_mapping"`

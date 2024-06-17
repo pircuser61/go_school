@@ -1315,6 +1315,9 @@ type FormParams struct {
 	// Hide executor from initiator
 	HideExecutorFromInitiator bool `json:"hide_executor_from_initiator"`
 
+	// Hide form from initiator
+	HideFormFromInitiator bool `json:"hide_form_from_initiator"`
+
 	// true - need manual fill when reenter in block
 	IsEditable bool `json:"is_editable"`
 

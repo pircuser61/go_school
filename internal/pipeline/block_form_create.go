@@ -342,6 +342,7 @@ func (gb *GoFormBlock) createState(ctx context.Context, ef *entity.EriusFunc) er
 		Mapping:                   params.Mapping,
 		FullFormMapping:           params.FullFormMapping,
 		HideExecutorFromInitiator: params.HideExecutorFromInitiator,
+		HideFormFromInitiator:     params.HideExecutorFromInitiator,
 		IsEditable:                params.IsEditable,
 		CheckRequiredForm:         params.CheckRequiredForm,
 		ReEnterSettings:           params.ReEnterSettings,
