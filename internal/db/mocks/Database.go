@@ -3217,6 +3217,65 @@ func (_c *MockedDatabase_GetNodeDecisions_Call) RunAndReturn(run func(context.Co
 	return _c
 }
 
+// GetNotSkippedTaskSteps provides a mock function with given fields: ctx, id
+func (_m *MockedDatabase) GetNotSkippedTaskSteps(ctx context.Context, id uuid.UUID) (entity.TaskSteps, error) {
+	ret := _m.Called(ctx, id)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetNotSkippedTaskSteps")
+	}
+
+	var r0 entity.TaskSteps
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) (entity.TaskSteps, error)); ok {
+		return rf(ctx, id)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) entity.TaskSteps); ok {
+		r0 = rf(ctx, id)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(entity.TaskSteps)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
+		r1 = rf(ctx, id)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockedDatabase_GetNotSkippedTaskSteps_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetNotSkippedTaskSteps'
+type MockedDatabase_GetNotSkippedTaskSteps_Call struct {
+	*mock.Call
+}
+
+// GetNotSkippedTaskSteps is a helper method to define mock.On call
+//   - ctx context.Context
+//   - id uuid.UUID
+func (_e *MockedDatabase_Expecter) GetNotSkippedTaskSteps(ctx interface{}, id interface{}) *MockedDatabase_GetNotSkippedTaskSteps_Call {
+	return &MockedDatabase_GetNotSkippedTaskSteps_Call{Call: _e.mock.On("GetNotSkippedTaskSteps", ctx, id)}
+}
+
+func (_c *MockedDatabase_GetNotSkippedTaskSteps_Call) Run(run func(ctx context.Context, id uuid.UUID)) *MockedDatabase_GetNotSkippedTaskSteps_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(uuid.UUID))
+	})
+	return _c
+}
+
+func (_c *MockedDatabase_GetNotSkippedTaskSteps_Call) Return(_a0 entity.TaskSteps, _a1 error) *MockedDatabase_GetNotSkippedTaskSteps_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockedDatabase_GetNotSkippedTaskSteps_Call) RunAndReturn(run func(context.Context, uuid.UUID) (entity.TaskSteps, error)) *MockedDatabase_GetNotSkippedTaskSteps_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetOnApproveVersions provides a mock function with given fields: ctx
 func (_m *MockedDatabase) GetOnApproveVersions(ctx context.Context) ([]entity.EriusScenarioInfo, error) {
 	ret := _m.Called(ctx)

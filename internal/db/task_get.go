@@ -2193,6 +2193,86 @@ func (db *PGCon) getTaskUniquePersons(ctx c.Context, q string, args []interface{
 	return &up, nil
 }
 
+//nolint:dupl // я уникальный метод, я личность, не стоит меня смешивать с остальными
+func (db *PGCon) GetNotSkippedTaskSteps(ctx c.Context, id uuid.UUID) (entity.TaskSteps, error) {
+	ctx, span := trace.StartSpan(ctx, "pg_get_not_skipped_task_steps")
+	defer span.End()
+
+	res := entity.TaskSteps{}
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	const query = `
+		SELECT 
+			vs.id,
+			vs.step_type,
+			vs.step_name,
+			vs.time, 
+			vs.content, 
+			COALESCE(vs.break_points, '{}') AS break_points, 
+			vs.has_error,
+			vs.status,
+			vs.updated_at,
+			vs.attachments
+		FROM variable_storage vs 
+			WHERE work_id = $1 AND NOT vs.status IN ('skipped') AND
+			(SELECT max(time)
+				 FROM variable_storage vrbs
+				 WHERE vrbs.step_name = vs.step_name AND
+					   vrbs.work_id = $1 AND NOT vs.status IN ('skipped')
+				) = vs.time
+		ORDER BY vs.time DESC`
+
+	rows, err := db.Connection.Query(ctx, query, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	//nolint:dupl //scan
+	for rows.Next() {
+		s := entity.Step{}
+
+		var content string
+
+		err = rows.Scan(
+			&s.ID,
+			&s.Type,
+			&s.Name,
+			&s.Time,
+			&content,
+			&s.BreakPoints,
+			&s.HasError,
+			&s.Status,
+			&s.UpdatedAt,
+			&s.Attachments,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		storage := store.NewStore()
+
+		err = json.Unmarshal([]byte(content), storage)
+		if err != nil {
+			return nil, err
+		}
+
+		s.State = storage.State
+		s.Steps = storage.Steps
+		s.Errors = storage.Errors
+		s.Storage = storage.Values
+		res = append(res, &s)
+	}
+
+	if rowsErr := rows.Err(); rowsErr != nil {
+		return nil, rowsErr
+	}
+
+	return res, nil
+}
+
+//nolint:dupl // я уникальный метод, я личность, не стоит меня смешивать с остальными
 func (db *PGCon) GetTaskSteps(ctx c.Context, id uuid.UUID) (entity.TaskSteps, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_task_steps")
 	defer span.End()

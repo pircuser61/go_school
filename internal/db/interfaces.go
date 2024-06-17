@@ -38,6 +38,7 @@ type TaskStorager interface {
 	GetTasksCount(ctx c.Context, currentUser string, delegationsByApprovement, delegationsByExecution []string) (*e.CountTasks, error)
 	GetTask(ctx c.Context, delegationsApprover, delegationsExecution []string, currentUser, workNumber string) (*e.EriusTask, error)
 	GetTaskSteps(ctx c.Context, id uuid.UUID) (e.TaskSteps, error)
+	GetNotSkippedTaskSteps(ctx c.Context, id uuid.UUID) (e.TaskSteps, error)
 	GetUnfinishedTaskSteps(ctx c.Context, in *e.GetUnfinishedTaskSteps) (e.TaskSteps, error)
 	GetTaskStepByID(ctx c.Context, id uuid.UUID) (*e.Step, error)
 	GetActiveTaskStepByID(ctx c.Context, id uuid.UUID) (*e.Step, error)
