@@ -179,8 +179,6 @@ func (runCtx *BlockRunContext) makeNotificationFormAttachment(ctx c.Context, fil
 
 // nolint:gocognit,gocyclo //it's ok
 func (runCtx *BlockRunContext) makeNotificationAttachment(ctx c.Context) ([]fileregistry.FileInfo, []fileregistry.AttachInfo, error) {
-	fmt.Println(runCtx.skipNotifications)
-
 	if runCtx.skipNotifications {
 		return []fileregistry.FileInfo{}, []fileregistry.AttachInfo{}, nil
 	}
