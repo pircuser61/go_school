@@ -61,9 +61,9 @@ func (ae *Env) GetFormsChangelog(w http.ResponseWriter, r *http.Request, params 
 		return
 	}
 
-	formState := formState(steps, params)
+	fState := formState(steps, params)
 
-	if formState == nil {
+	if fState == nil {
 		errorHandler.handleError(GetFormsChangelogError, errors.New("no history for form node"))
 
 		return
@@ -71,7 +71,7 @@ func (ae *Env) GetFormsChangelog(w http.ResponseWriter, r *http.Request, params 
 
 	formData := pipeline.FormData{}
 
-	err = json.Unmarshal(formState, &formData)
+	err = json.Unmarshal(fState, &formData)
 	if err != nil {
 		errorHandler.handleError(GetFormsChangelogError, err)
 

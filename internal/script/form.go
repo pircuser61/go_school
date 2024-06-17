@@ -29,6 +29,7 @@ type FormParams struct {
 	FormGroupIDPath           *string                `json:"form_group_id_path,omitempty"`
 	FormsAccessibility        []FormAccessibility    `json:"forms_accessibility"`
 	HideExecutorFromInitiator bool                   `json:"hide_executor_from_initiator"`
+	HideFormFromInitiator     bool                   `json:"hide_form_from_initiator"`
 	Mapping                   JSONSchemaProperties   `json:"mapping"`
 	FullFormMapping           string                 `json:"full_form_mapping"`
 	WorkType                  *string                `json:"work_type"`
