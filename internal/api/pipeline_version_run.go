@@ -446,7 +446,7 @@ func getErr(err error) Err {
 		return GetVersionsByBlueprintIDError
 	case errors.Is(err, entity.ErrUnknownAction),
 		errors.Is(err, entity.ErrEmptyStepTypes):
-		return UpdateTasksError
+		return UpdateTaskError
 	default:
 		var httpErr Err
 		if errors.As(err, &httpErr) {

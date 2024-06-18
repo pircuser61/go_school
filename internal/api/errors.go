@@ -48,7 +48,7 @@ const (
 	GetDelegationsError
 	GetTaskError
 	GetTasksCountError
-	UpdateTasksError
+	UpdateTaskError
 	TokenParseError
 	GetProcessSettingsError
 	GetExternalSystemsError
@@ -188,7 +188,7 @@ var errorText = map[Err]string{
 	GetTasksError:                       "can't find tasks",
 	GetTasksCountError:                  "can't get amount of tasks",
 	GetTaskError:                        "can't get task",
-	UpdateTasksError:                    "can't update tasks",
+	UpdateTaskError:                     "can't update tasks",
 	TokenParseError:                     "cant't parse token",
 	GetProcessSettingsError:             "can't get process settings",
 	GetExternalSystemsError:             "can't get external systems",
@@ -325,7 +325,7 @@ var errorDescription = map[Err]string{
 	GetTasksError:                       "Не удалось найти запуски сценария",
 	GetTasksCountError:                  "Не удалось получить количество задач",
 	GetTaskError:                        "Не удалось получить экземпляр задачи",
-	UpdateTasksError:                    "Не удалось обновить экземпляр задачи",
+	UpdateTaskError:                     "Не удалось обновить экземпляр задачи",
 	TokenParseError:                     "Не удалось разобрать токен",
 	GetProcessSettingsError:             "Не удалось получить настройки процесса",
 	GetExternalSystemsError:             "Не удалось получить подключенные внешние системы",
@@ -440,7 +440,7 @@ var errorStatus = map[Err]int{
 	BadFiltersError:               http.StatusBadRequest,
 	GetUserinfoErr:                http.StatusUnauthorized,
 	GetVersionsByBlueprintIDError: http.StatusBadRequest,
-	UpdateTasksError:              http.StatusBadRequest,
+	UpdateTaskError:               http.StatusBadRequest,
 	ValidateWorkNumberError:       http.StatusBadRequest,
 	ValidateTasksError:            http.StatusBadRequest,
 	ValidatePipelineIDError:       http.StatusBadRequest,

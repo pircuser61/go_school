@@ -951,8 +951,8 @@ func (ae *Env) StopTasks(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if stoppedTasksCnt == 0 {
-		errorHandler.handleError(UpdateTasksError, UpdateTasksError)
-		requestInfo.Status = UpdateTasksError.Status()
+		errorHandler.handleError(UpdateTaskError, UpdateTaskError)
+		requestInfo.Status = UpdateTaskError.Status()
 
 		return
 	}
