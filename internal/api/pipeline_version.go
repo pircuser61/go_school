@@ -370,7 +370,7 @@ func (ae *Env) GetPipelineVersion(w http.ResponseWriter, req *http.Request, vers
 
 	p, err := ae.DB.GetPipelineVersion(ctx, versionUUID, true)
 	if err != nil {
-		if errors.Is(err, e.ErrNoRecords) {
+		if errors.Is(err, e.ErrNoRecords) || errors.Is(err, db.ErrCantFindPipelineVersion) {
 			errorHandler.handleError(VersionNotFoundError, err)
 			requestInfo.Status = VersionNotFoundError.Status()
 

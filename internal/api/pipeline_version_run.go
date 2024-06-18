@@ -442,6 +442,11 @@ func getErr(err error) Err {
 	switch {
 	case errors.Is(err, MappingError):
 		return MappingError
+	case errors.Is(err, GetVersionsByBlueprintIDError):
+		return GetVersionsByBlueprintIDError
+	case errors.Is(err, entity.ErrUnknownAction),
+		errors.Is(err, entity.ErrEmptyStepTypes):
+		return UpdateTasksError
 	default:
 		var httpErr Err
 		if errors.As(err, &httpErr) {

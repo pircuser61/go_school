@@ -7,8 +7,6 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/iancoleman/orderedmap"
-
-	"github.com/pkg/errors"
 )
 
 type Step struct {
@@ -283,7 +281,7 @@ func (t *TaskUpdate) Validate() error {
 		TaskUpdateActionReplyApproverInfo:
 		return nil
 	default:
-		return errors.New("unknown action")
+		return ErrUnknownAction
 	}
 }
 

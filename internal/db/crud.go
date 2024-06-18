@@ -183,7 +183,7 @@ const (
 )
 
 var (
-	errCantFindPipelineVersion = errors.New("can't find pipeline version")
+	ErrCantFindPipelineVersion = errors.New("can't find pipeline version")
 	errCantFindExternalSystem  = errors.New("can't find external system settings")
 	errUnkonwnSchemaFlag       = errors.New("unknown schema flag")
 )
@@ -981,7 +981,7 @@ func (db *PGCon) GetPipeline(c context.Context, id uuid.UUID) (*entity.EriusScen
 		return nil, rowsErr
 	}
 
-	return nil, errCantFindPipelineVersion
+	return nil, ErrCantFindPipelineVersion
 }
 
 func (db *PGCon) GetPipelineVersion(c context.Context, id uuid.UUID, checkNotDeleted bool) (*entity.EriusScenario, error) {
@@ -1069,7 +1069,7 @@ func (db *PGCon) GetPipelineVersion(c context.Context, id uuid.UUID, checkNotDel
 		return nil, rowsErr
 	}
 
-	return nil, fmt.Errorf("%w: with id: %v", errCantFindPipelineVersion, id)
+	return nil, fmt.Errorf("%w: with id: %v", ErrCantFindPipelineVersion, id)
 }
 
 func (db *PGCon) RenamePipeline(c context.Context, id uuid.UUID, name string) error {
