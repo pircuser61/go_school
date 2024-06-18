@@ -10,12 +10,6 @@ type MultipleTypesStepHandler struct {
 	handlers map[string]StepHandler
 }
 
-func NewMultipleTypesStepHandler() MultipleTypesStepHandler {
-	return MultipleTypesStepHandler{
-		handlers: make(map[string]StepHandler),
-	}
-}
-
 func (h *MultipleTypesStepHandler) RegisterStepTypeHandler(stepType string, handler StepHandler) {
 	h.handlers[stepType] = handler
 }

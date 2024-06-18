@@ -23,13 +23,11 @@ func NewHideExecutorsFormBlockStepHandler(
 	stepDelegates map[string]bool,
 	members []string,
 	requesterLogin string,
-	isInitiator bool,
 ) *HideExecutorsFormBlockStepHandler {
 	return &HideExecutorsFormBlockStepHandler{
 		stepDelegates:  stepDelegates,
 		members:        members,
 		requesterLogin: requesterLogin,
-		isInitiator:    isInitiator,
 	}
 }
 
@@ -88,13 +86,11 @@ func NewHideExecutorsExecutionBlockStepHandler(
 	stepDelegates map[string]bool,
 	members []string,
 	requesterLogin string,
-	isInitiator bool,
 ) *HideExecutorsExecutionBlockStepHandler {
 	return &HideExecutorsExecutionBlockStepHandler{
 		stepDelegates:  stepDelegates,
 		members:        members,
 		requesterLogin: requesterLogin,
-		isInitiator:    isInitiator,
 	}
 }
 

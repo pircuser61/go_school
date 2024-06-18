@@ -512,12 +512,12 @@ func (gb *GoFormBlock) emailGroupExecutors(ctx context.Context, loginTakenInWork
 		return getUserErr
 	}
 
-	inititatorInfo, err := initiator.ToUserinfo()
+	initiatorInfo, err := initiator.ToUserinfo()
 	if err != nil {
 		return convertErr
 	}
 
-	description, files, err := gb.RunContext.makeNotificationDescription(ctx, gb.Name)
+	description, files, err := gb.RunContext.makeNotificationDescription(ctx, gb.Name, false)
 	if err != nil {
 		return err
 	}
@@ -539,7 +539,7 @@ func (gb *GoFormBlock) emailGroupExecutors(ctx context.Context, loginTakenInWork
 			SdURL:       gb.RunContext.Services.Sender.SdAddress,
 			Description: description,
 			Executor:    typeExecutor,
-			Initiator:   inititatorInfo,
+			Initiator:   initiatorInfo,
 			Mailto:      gb.RunContext.Services.Sender.FetchEmail,
 		})
 

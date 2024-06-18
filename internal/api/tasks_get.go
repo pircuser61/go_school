@@ -1,7 +1,7 @@
 package api
 
 import (
-	"context"
+	c "context"
 	"encoding/json"
 	"net/http"
 	"strings"
@@ -299,8 +299,9 @@ func (ae *Env) GetTask(w http.ResponseWriter, req *http.Request, workNumber stri
 	shortNames := shortNameMap(version.Pipeline.Blocks.AdditionalProperties)
 
 	dbTask.Steps = steps
+	isInitiator := ui.Username == dbTask.Author
 
-	if ui.Username != dbTask.Author {
+	if !isInitiator {
 		accessibleForms, ttErr := ae.getAccessibleForms(ui.Username, &steps, &delegations)
 		if ttErr != nil {
 			errorHandler.handleError(GetDelegationsError, ttErr)
@@ -309,6 +310,10 @@ func (ae *Env) GetTask(w http.ResponseWriter, req *http.Request, workNumber stri
 		}
 
 		ae.removeForms(dbTask, accessibleForms)
+	}
+
+	if isInitiator {
+		ae.removeHiddenFormsForInitiator(dbTask)
 	}
 
 	currentUserDelegateSteps, tErr := ae.getCurrentUserInDelegatesForSteps(ui.Username, &steps, &delegations)
@@ -328,8 +333,8 @@ func (ae *Env) GetTask(w http.ResponseWriter, req *http.Request, workNumber stri
 	requestInfo.PipelineID = scenario.PipelineID.String()
 	requestInfo.VersionID = scenario.VersionID.String()
 
-	if ui.Username != scenario.Author {
-		hideErr := ae.hideExecutors(ctx, dbTask, ui.Username, currentUserDelegateSteps, ui.Username == dbTask.Author)
+	if !isInitiator {
+		hideErr := ae.hideExecutors(ctx, dbTask, ui.Username, currentUserDelegateSteps)
 		if hideErr != nil {
 			errorHandler.handleError(UnknownError, hideErr)
 
@@ -400,7 +405,7 @@ func shortNameMap(additionalProperties map[string]EriusFunc) map[string]string {
 	return shortNames
 }
 
-func (ae *Env) handleZeroTaskNodeGroup(ctx context.Context, dbTask *entity.EriusTask) error {
+func (ae *Env) handleZeroTaskNodeGroup(ctx c.Context, dbTask *entity.EriusTask) error {
 	scenario, getVersionErr := ae.DB.GetVersionByWorkNumber(ctx, dbTask.WorkNumber)
 	if getVersionErr != nil {
 		return getVersionErr
@@ -421,18 +426,18 @@ func (ae *Env) handleZeroTaskNodeGroup(ctx context.Context, dbTask *entity.Erius
 	return nil
 }
 
+const (
+	approverBlockType  = "approver"
+	executionBlockType = "execution"
+	formBlockType      = "form"
+	signBlockType      = "sign"
+)
+
 func (ae *Env) getAccessibleForms(
 	currentUser string,
 	steps *entity.TaskSteps,
 	delegates *ht.Delegations,
 ) (accessibleForms map[string]struct{}, err error) {
-	const (
-		ApproverBlockType  = "approver"
-		ExecutionBlockType = "execution"
-		FormBlockType      = "form"
-		SignBlockType      = "sign"
-	)
-
 	accessibleForms = make(map[string]struct{}, 0)
 
 	// это костыль но он вынужденный потому что в тестах подразумевается что функцию можно вызвать с nil delegates
@@ -443,19 +448,19 @@ func (ae *Env) getAccessibleForms(
 	stepHandler := stephandlers.NewMultipleTypesStepHandler()
 
 	stepHandler.RegisterStepTypeHandler(
-		ApproverBlockType,
+		approverBlockType,
 		stephandlers.NewAccessibleFormsApproverBlockStepHandler(currentUser, accessibleForms, *delegates),
 	)
 	stepHandler.RegisterStepTypeHandler(
-		FormBlockType,
+		formBlockType,
 		stephandlers.NewAccessibleFormsFormBlockStepHandler(currentUser, accessibleForms),
 	)
 	stepHandler.RegisterStepTypeHandler(
-		ExecutionBlockType,
+		executionBlockType,
 		stephandlers.NewAccessibleFormsExecutionBlockStepHandler(currentUser, accessibleForms, *delegates),
 	)
 	stepHandler.RegisterStepTypeHandler(
-		SignBlockType,
+		signBlockType,
 		stephandlers.NewAccessibleFormsSignBlockStepHandler(currentUser, accessibleForms),
 	)
 
@@ -472,18 +477,12 @@ func (ae *Env) getCurrentUserInDelegatesForSteps(
 	steps *entity.TaskSteps,
 	delegates *ht.Delegations,
 ) (userInDelegates map[string]bool, err error) {
-	const (
-		ApproverBlockType  = "approver"
-		ExecutionBlockType = "execution"
-		FormBlockType      = "form"
-	)
-
 	userInDelegates = make(map[string]bool, 0)
 
 	stepHandler := stephandlers.NewMultipleTypesStepHandler()
 
 	stepHandler.RegisterStepTypeHandler(
-		ApproverBlockType,
+		approverBlockType,
 		stephandlers.NewUserInDelegatesApproverBlockTypeStepHandler(currentUser, *delegates, userInDelegates),
 	)
 
@@ -493,8 +492,8 @@ func (ae *Env) getCurrentUserInDelegatesForSteps(
 		userInDelegates,
 	)
 
-	stepHandler.RegisterStepTypeHandler(ExecutionBlockType, executionFormBlockTypeStepHandler)
-	stepHandler.RegisterStepTypeHandler(FormBlockType, executionFormBlockTypeStepHandler)
+	stepHandler.RegisterStepTypeHandler(executionBlockType, executionFormBlockTypeStepHandler)
+	stepHandler.RegisterStepTypeHandler(formBlockType, executionFormBlockTypeStepHandler)
 
 	err = stepHandler.HandleSteps(*steps)
 	if err != nil {
@@ -1097,54 +1096,78 @@ func (ae *Env) GetTaskMeanSolveTime(w http.ResponseWriter, req *http.Request, pi
 	}
 }
 
-func (ae *Env) removeForms(dbTask *entity.EriusTask, accessibleForms map[string]struct{}) {
+func (ae *Env) removeHiddenFormsForInitiator(dbTask *entity.EriusTask) {
 	actualSteps := make([]*entity.Step, 0, len(dbTask.Steps))
 
-	for _, step := range dbTask.Steps {
-		if _, ok := accessibleForms[step.Name]; !ok && step.Type == "form" {
+	for _, st := range dbTask.Steps {
+		if st.Type != formBlockType {
+			actualSteps = append(actualSteps, st)
 			continue
 		}
 
-		newSteps := make([]string, 0, len(step.Steps))
+		var formBlock pipeline.FormData
 
-		for _, s := range step.Steps {
-			if _, ok := accessibleForms[s]; !ok && strings.HasPrefix(s, "form") {
+		err := json.Unmarshal(st.State[st.Name], &formBlock)
+		if err != nil {
+			ae.Log.WithField("func", "removeHiddenFormsForInitiator").Warning(errors.Wrap(err, st.Name))
+			continue
+		}
+
+		_, isInitiatorExecutor := formBlock.Executors[dbTask.Author]
+		if !formBlock.HideFormFromInitiator || isInitiatorExecutor {
+			actualSteps = append(actualSteps, st)
+		}
+	}
+
+	dbTask.Steps = actualSteps
+}
+
+func (ae *Env) removeForms(dbTask *entity.EriusTask, accessibleForms map[string]struct{}) {
+	actualSteps := make([]*entity.Step, 0, len(dbTask.Steps))
+
+	for _, st := range dbTask.Steps {
+		if _, ok := accessibleForms[st.Name]; !ok && st.Type == formBlockType {
+			continue
+		}
+
+		newSteps := make([]string, 0, len(st.Steps))
+
+		for _, s := range st.Steps {
+			if _, ok := accessibleForms[s]; !ok && strings.HasPrefix(s, formBlockType) {
 				continue
 			}
 
 			newSteps = append(newSteps, s)
 		}
 
-		step.Steps = newSteps
+		st.Steps = newSteps
 
-		newStates := make(map[string]json.RawMessage, len(step.State))
+		newStates := make(map[string]json.RawMessage, len(st.State))
 
-		for k, v := range step.State {
-			if _, ok := accessibleForms[k]; !ok && strings.HasPrefix(k, "form") {
+		for k, v := range st.State {
+			if _, ok := accessibleForms[k]; !ok && strings.HasPrefix(k, formBlockType) {
 				continue
 			}
 
 			newStates[k] = v
 		}
 
-		for k := range step.Storage {
+		for k := range st.Storage {
 			key := strings.Split(k, ".")
 
-			if _, ok := accessibleForms[key[0]]; !ok && strings.HasPrefix(k, "form") {
-				delete(step.Storage, k)
+			if _, ok := accessibleForms[key[0]]; !ok && strings.HasPrefix(k, formBlockType) {
+				delete(st.Storage, k)
 			}
 		}
 
-		step.State = newStates
-		actualSteps = append(actualSteps, step)
+		st.State = newStates
+		actualSteps = append(actualSteps, st)
 	}
 
 	dbTask.Steps = actualSteps
 }
 
-func (ae *Env) hideExecutors(
-	ctx context.Context, dbTask *entity.EriusTask, requesterLogin string, stepDelegates map[string]bool, isInitiator bool,
-) error {
+func (ae *Env) hideExecutors(ctx c.Context, dbTask *entity.EriusTask, login string, stepDelegates map[string]bool) error {
 	dbMembers, membErr := ae.DB.GetTaskMembers(ctx, dbTask.WorkNumber, false)
 	if membErr != nil {
 		return membErr
@@ -1160,12 +1183,12 @@ func (ae *Env) hideExecutors(
 
 	stepHandler.RegisterStepTypeHandler(
 		pipeline.BlockGoFormID,
-		stephandlers.NewHideExecutorsFormBlockStepHandler(stepDelegates, members, requesterLogin, isInitiator),
+		stephandlers.NewHideExecutorsFormBlockStepHandler(stepDelegates, members, login),
 	)
 
 	stepHandler.RegisterStepTypeHandler(
 		pipeline.BlockGoExecutionID,
-		stephandlers.NewHideExecutorsExecutionBlockStepHandler(stepDelegates, members, requesterLogin, isInitiator),
+		stephandlers.NewHideExecutorsExecutionBlockStepHandler(stepDelegates, members, login),
 	)
 
 	err := stepHandler.HandleSteps(dbTask.Steps)
@@ -1176,7 +1199,7 @@ func (ae *Env) hideExecutors(
 	return nil
 }
 
-func (ae *Env) GetTaskForUpdate(ctx context.Context, workNumber string) (task *entity.EriusTask, err error) {
+func (ae *Env) GetTaskForUpdate(ctx c.Context, workNumber string) (task *entity.EriusTask, err error) {
 	dbTask, taskErr := ae.DB.GetTask(
 		ctx,
 		[]string{""},
