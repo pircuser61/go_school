@@ -3,27 +3,27 @@ package pipeline
 import (
 	"context"
 	"fmt"
-	om "github.com/iancoleman/orderedmap"
-	"github.com/stretchr/testify/mock"
-	e "gitlab.services.mts.ru/abp/mail/pkg/email"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db/mocks"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/fileregistry"
-	fileRegestryMocks "gitlab.services.mts.ru/jocasta/pipeliner/internal/fileregistry/mocks"
 	"sort"
 	"testing"
 	"time"
 
+	om "github.com/iancoleman/orderedmap"
+
 	"github.com/google/uuid"
 
-	"github.com/iancoleman/orderedmap"
-
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/fileregistry"
+	fileRegestryMocks "gitlab.services.mts.ru/jocasta/pipeliner/internal/fileregistry/mocks"
 	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
+
+	e "gitlab.services.mts.ru/abp/mail/pkg/email"
 )
 
 func TestBlockRunContext_makeNotificationDescription(t *testing.T) {
@@ -110,7 +110,7 @@ func TestBlockRunContext_makeNotificationDescription(t *testing.T) {
 						dbMock := &mocks.MockedDatabase{}
 
 						apBodyJson := `{"field-uuid-1":{"type":"object","properties":{"file_id":"1"}}}`
-						apBody := orderedmap.New()
+						apBody := om.New()
 						err := apBody.UnmarshalJSON([]byte(apBodyJson))
 
 						if err != nil {
@@ -199,7 +199,7 @@ func TestBlockRunContext_makeNotificationDescription(t *testing.T) {
 						dbMock := &mocks.MockedDatabase{}
 
 						apBodyJson := `{"field-uuid-1":{"type":"object","properties":{"external_link":"mts.ru/file/1"}}}`
-						apBody := orderedmap.New()
+						apBody := om.New()
 						err := apBody.UnmarshalJSON([]byte(apBodyJson))
 
 						if err != nil {
@@ -273,7 +273,7 @@ func TestBlockRunContext_makeNotificationDescription(t *testing.T) {
 						dbMock := &mocks.MockedDatabase{}
 
 						apBodyJson := `{"field-uuid-1":{"type":"object","properties":{"file_id":"1","external_link":"mts.ru/file/2"}}}`
-						apBody := orderedmap.New()
+						apBody := om.New()
 						err := apBody.UnmarshalJSON([]byte(apBodyJson))
 
 						if err != nil {
@@ -346,7 +346,7 @@ func TestBlockRunContext_makeNotificationDescription(t *testing.T) {
 						dbMock := &mocks.MockedDatabase{}
 
 						apBodyJson := `{"field-uuid-1":{"type":"object","properties":{"external_link":"mts.ru/file/3","hidden_foo":"bar","unhidden_foo":"biz"}}}`
-						apBody := orderedmap.New()
+						apBody := om.New()
 						err := apBody.UnmarshalJSON([]byte(apBodyJson))
 
 						if err != nil {
@@ -461,7 +461,7 @@ func TestBlockRunContext_makeNotificationDescription(t *testing.T) {
 
 						apBodyJson := `{"field-uuid-1":{"type":"object","properties":{"file_id":"2"}},
 										"field-uuid-2":{"type":"object","properties":{"file_id":"3"}}}`
-						apBody := orderedmap.New()
+						apBody := om.New()
 						err := apBody.UnmarshalJSON([]byte(apBodyJson))
 
 						if err != nil {
