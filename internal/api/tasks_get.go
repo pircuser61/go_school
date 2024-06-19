@@ -15,7 +15,7 @@ import (
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	e "gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	ht "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
@@ -91,11 +91,11 @@ type (
 )
 
 type taskToResponseDTO struct {
-	task         *entity.EriusTask
+	task         *e.EriusTask
 	usrDegSteps  map[string]bool
 	sNames       map[string]string
 	dln          time.Time
-	approvalList []entity.ApprovalListSettings
+	approvalList []e.ApprovalListSettings
 }
 
 func (taskResp) toResponse(in *taskToResponseDTO) *taskResp {
@@ -169,7 +169,7 @@ func (taskResp) toResponse(in *taskToResponseDTO) *taskResp {
 	return out
 }
 
-func groupsToResponse(groups []*entity.NodeGroup) []NodeGroup {
+func groupsToResponse(groups []*e.NodeGroup) []NodeGroup {
 	if groups == nil {
 		return nil
 	}
@@ -260,7 +260,7 @@ func (ae *Env) GetTask(w http.ResponseWriter, req *http.Request, workNumber stri
 
 	dbTask, err := ae.DB.GetTask(ctx, dApprovers, dExecutors, ui.Username, workNumber)
 	if err != nil {
-		if errors.Is(err, entity.ErrNoRecords) {
+		if errors.Is(err, e.ErrNoRecords) {
 			errorHandler.handleError(TaskNotFoundError, err)
 			requestInfo.Status = TaskNotFoundError.Status()
 
@@ -301,11 +301,12 @@ func (ae *Env) GetTask(w http.ResponseWriter, req *http.Request, workNumber stri
 
 	dbTask.Steps = steps
 	isInitiator := ui.Username == dbTask.Author
+	accessibleForms := make(map[string]struct{}, 0)
 
 	if !isInitiator {
-		accessibleForms, ttErr := ae.getAccessibleForms(ui.Username, &steps, &delegations)
-		if ttErr != nil {
-			errorHandler.handleError(GetDelegationsError, ttErr)
+		accessibleForms, err = ae.getAccessibleForms(ui.Username, &steps, &delegations)
+		if err != nil {
+			errorHandler.handleError(GetDelegationsError, err)
 
 			return
 		}
@@ -314,7 +315,7 @@ func (ae *Env) GetTask(w http.ResponseWriter, req *http.Request, workNumber stri
 	}
 
 	if isInitiator {
-		ae.removeHiddenFormsForInitiator(dbTask)
+		ae.removeHiddenFormsForInitiator(dbTask, accessibleForms)
 	}
 
 	currentUserDelegateSteps, tErr := ae.getCurrentUserInDelegatesForSteps(ui.Username, &steps, &delegations)
@@ -351,7 +352,7 @@ func (ae *Env) GetTask(w http.ResponseWriter, req *http.Request, workNumber stri
 	}
 
 	slaInfoDTO := sla.InfoDTO{
-		TaskCompletionIntervals: []entity.TaskCompletionInterval{
+		TaskCompletionIntervals: []e.TaskCompletionInterval{
 			{
 				StartedAt:  dbTask.StartedAt,
 				FinishedAt: dbTask.StartedAt.Add(time.Hour * 24 * 100),
@@ -406,7 +407,7 @@ func shortNameMap(additionalProperties map[string]EriusFunc) map[string]string {
 	return shortNames
 }
 
-func (ae *Env) handleZeroTaskNodeGroup(ctx c.Context, dbTask *entity.EriusTask) error {
+func (ae *Env) handleZeroTaskNodeGroup(ctx c.Context, dbTask *e.EriusTask) error {
 	scenario, getVersionErr := ae.DB.GetVersionByWorkNumber(ctx, dbTask.WorkNumber)
 	if getVersionErr != nil {
 		return getVersionErr
@@ -434,38 +435,33 @@ const (
 	signBlockType      = "sign"
 )
 
-func (ae *Env) getAccessibleForms(
-	currentUser string,
-	steps *entity.TaskSteps,
-	delegates *ht.Delegations,
-) (accessibleForms map[string]struct{}, err error) {
-	accessibleForms = make(map[string]struct{}, 0)
+func (ae *Env) getAccessibleForms(login string, steps *e.TaskSteps, ds *ht.Delegations) (map[string]struct{}, error) {
+	accessibleForms := make(map[string]struct{}, 0)
 
-	// это костыль но он вынужденный потому что в тестах подразумевается что функцию можно вызвать с nil delegates
-	if delegates == nil {
-		delegates = &ht.Delegations{}
+	if ds == nil {
+		ds = &ht.Delegations{}
 	}
 
 	stepHandler := stephandlers.NewMultipleTypesStepHandler()
 
 	stepHandler.RegisterStepTypeHandler(
 		approverBlockType,
-		stephandlers.NewAccessibleFormsApproverBlockStepHandler(currentUser, accessibleForms, *delegates),
+		stephandlers.NewAccessibleFormsApproverBlockStepHandler(login, accessibleForms, *ds),
 	)
 	stepHandler.RegisterStepTypeHandler(
 		formBlockType,
-		stephandlers.NewAccessibleFormsFormBlockStepHandler(currentUser, accessibleForms),
+		stephandlers.NewAccessibleFormsFormBlockStepHandler(login, accessibleForms),
 	)
 	stepHandler.RegisterStepTypeHandler(
 		executionBlockType,
-		stephandlers.NewAccessibleFormsExecutionBlockStepHandler(currentUser, accessibleForms, *delegates),
+		stephandlers.NewAccessibleFormsExecutionBlockStepHandler(login, accessibleForms, *ds),
 	)
 	stepHandler.RegisterStepTypeHandler(
 		signBlockType,
-		stephandlers.NewAccessibleFormsSignBlockStepHandler(currentUser, accessibleForms),
+		stephandlers.NewAccessibleFormsSignBlockStepHandler(login, accessibleForms),
 	)
 
-	err = stepHandler.HandleSteps(*steps)
+	err := stepHandler.HandleSteps(*steps)
 	if err != nil {
 		return nil, err
 	}
@@ -475,7 +471,7 @@ func (ae *Env) getAccessibleForms(
 
 func (ae *Env) getCurrentUserInDelegatesForSteps(
 	currentUser string,
-	steps *entity.TaskSteps,
+	steps *e.TaskSteps,
 	delegates *ht.Delegations,
 ) (userInDelegates map[string]bool, err error) {
 	userInDelegates = make(map[string]bool, 0)
@@ -544,9 +540,9 @@ func (ae *Env) GetTasks(w http.ResponseWriter, req *http.Request, params GetTask
 
 	if filters.SelectAs != nil {
 		switch *filters.SelectAs {
-		case entity.SelectAsValApprover:
+		case e.SelectAsValApprover:
 			delegations = delegations.FilterByType("approvement")
-		case entity.SelectAsValExecutor, entity.SelectAsValQueueExecutor, entity.SelectAsValInWorkExecutor:
+		case e.SelectAsValExecutor, e.SelectAsValQueueExecutor, e.SelectAsValInWorkExecutor:
 			delegations = delegations.FilterByType("execution")
 		default:
 			delegations = delegations[:0]
@@ -645,9 +641,9 @@ func (ae *Env) GetTasksSchemas(w http.ResponseWriter, req *http.Request, params 
 
 	if filters.SelectAs != nil {
 		switch *filters.SelectAs {
-		case entity.SelectAsValApprover:
+		case e.SelectAsValApprover:
 			delegations = delegations.FilterByType("approvement")
-		case entity.SelectAsValExecutor, entity.SelectAsValQueueExecutor, entity.SelectAsValInWorkExecutor:
+		case e.SelectAsValExecutor, e.SelectAsValQueueExecutor, e.SelectAsValInWorkExecutor:
 			delegations = delegations.FilterByType("execution")
 		default:
 			delegations = delegations[:0]
@@ -718,9 +714,9 @@ func (ae *Env) GetTasksUsers(w http.ResponseWriter, req *http.Request, params Ge
 
 	if filters.SelectAs != nil {
 		switch *filters.SelectAs {
-		case entity.SelectAsValApprover:
+		case e.SelectAsValApprover:
 			delegations = delegations.FilterByType("approvement")
-		case entity.SelectAsValExecutor, entity.SelectAsValQueueExecutor, entity.SelectAsValInWorkExecutor:
+		case e.SelectAsValExecutor, e.SelectAsValQueueExecutor, e.SelectAsValInWorkExecutor:
 			delegations = delegations.FilterByType("execution")
 		default:
 			delegations = delegations[:0]
@@ -775,8 +771,8 @@ func (ae *Env) GetTasksUsers(w http.ResponseWriter, req *http.Request, params Ge
 }
 
 //nolint:dupl //Нужно для /tasks
-func (p *GetTasksParams) toEntity(req *http.Request) (entity.TaskFilter, error) {
-	var filters entity.TaskFilter
+func (p *GetTasksParams) toEntity(req *http.Request) (e.TaskFilter, error) {
+	var filters e.TaskFilter
 
 	var typeAssigned *string
 
@@ -784,7 +780,7 @@ func (p *GetTasksParams) toEntity(req *http.Request) (entity.TaskFilter, error) 
 		at := string(*p.ExecutorTypeAssigned)
 
 		typeAssigned = &at
-		if *typeAssigned != entity.AssignedToMe && *typeAssigned != entity.AssignedByMe {
+		if *typeAssigned != e.AssignedToMe && *typeAssigned != e.AssignedByMe {
 			return filters, errors.New("invalid value in typeAssigned filter")
 		}
 	}
@@ -795,9 +791,9 @@ func (p *GetTasksParams) toEntity(req *http.Request) (entity.TaskFilter, error) 
 		at := string(*p.SignatureCarrier)
 
 		signatureCarrier = &at
-		if *signatureCarrier != entity.SignatureCarrierCloud &&
-			*signatureCarrier != entity.SignatureCarrierToken &&
-			*signatureCarrier != entity.SignatureCarrierAll {
+		if *signatureCarrier != e.SignatureCarrierCloud &&
+			*signatureCarrier != e.SignatureCarrierToken &&
+			*signatureCarrier != e.SignatureCarrierAll {
 			return filters, errors.New("invalid value in SignatureCarrier filter")
 		}
 	}
@@ -825,7 +821,7 @@ func (p *GetTasksParams) toEntity(req *http.Request) (entity.TaskFilter, error) 
 		limit = 1000
 	}
 
-	filters.GetTaskParams = entity.GetTaskParams{
+	filters.GetTaskParams = e.GetTaskParams{
 		Name:                 p.Name,
 		Created:              p.Created.toEntity(),
 		Order:                p.Order,
@@ -855,7 +851,7 @@ func (p *GetTasksParams) toEntity(req *http.Request) (entity.TaskFilter, error) 
 	return filters, nil
 }
 
-func handleFilterStatus(filters *entity.TaskFilter) {
+func handleFilterStatus(filters *e.TaskFilter) {
 	ss := strings.Split(*filters.Status, ",")
 
 	uniqueS := make(map[pipeline.TaskHumanStatus]struct{})
@@ -887,33 +883,33 @@ func handleFilterStatus(filters *entity.TaskFilter) {
 
 func selectAsValid(selectAs string) bool {
 	switch selectAs {
-	case entity.SelectAsValApprover,
-		entity.SelectAsValFinishedApprover,
-		entity.SelectAsValExecutor,
-		entity.SelectAsValFinishedExecutor,
-		entity.SelectAsValFormExecutor,
-		entity.SelectAsValFinishedFormExecutor,
-		entity.SelectAsValSignerPhys,
-		entity.SelectAsValFinishedSignerPhys,
-		entity.SelectAsValSignerJur,
-		entity.SelectAsValFinishedSignerJur,
-		entity.SelectAsValInitiators,
-		entity.SelectAsValGroupExecutor,
-		entity.SelectAsValFinishedGroupExecutor,
-		entity.SelectAsValQueueExecutor,
-		entity.SelectAsValInWorkExecutor,
-		entity.SelectAsValFinishedExecutorV2:
+	case e.SelectAsValApprover,
+		e.SelectAsValFinishedApprover,
+		e.SelectAsValExecutor,
+		e.SelectAsValFinishedExecutor,
+		e.SelectAsValFormExecutor,
+		e.SelectAsValFinishedFormExecutor,
+		e.SelectAsValSignerPhys,
+		e.SelectAsValFinishedSignerPhys,
+		e.SelectAsValSignerJur,
+		e.SelectAsValFinishedSignerJur,
+		e.SelectAsValInitiators,
+		e.SelectAsValGroupExecutor,
+		e.SelectAsValFinishedGroupExecutor,
+		e.SelectAsValQueueExecutor,
+		e.SelectAsValInWorkExecutor,
+		e.SelectAsValFinishedExecutorV2:
 		return true
 	}
 
 	return false
 }
 
-func (cr *TimePeriod) toEntity() *entity.TimePeriod {
-	var timePeriod *entity.TimePeriod
+func (cr *TimePeriod) toEntity() *e.TimePeriod {
+	var timePeriod *e.TimePeriod
 
 	if cr != nil {
-		timePeriod = &entity.TimePeriod{
+		timePeriod = &e.TimePeriod{
 			Start: cr.Start,
 			End:   cr.End,
 		}
@@ -979,80 +975,80 @@ func (ae *Env) GetTasksCount(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func getTaskStepNameByAction(action entity.TaskUpdateAction) []string {
-	if action == entity.TaskUpdateActionAdditionalApprovement {
+func getTaskStepNameByAction(action e.TaskUpdateAction) []string {
+	if action == e.TaskUpdateActionAdditionalApprovement {
 		return []string{pipeline.BlockGoApproverID, pipeline.BlockGoSignID}
 	}
 
-	if action == entity.TaskUpdateActionApprovement {
+	if action == e.TaskUpdateActionApprovement {
 		return []string{pipeline.BlockGoApproverID}
 	}
 
-	if action == entity.TaskUpdateActionApproverSendEditApp {
+	if action == e.TaskUpdateActionApproverSendEditApp {
 		return []string{pipeline.BlockGoApproverID}
 	}
 
-	if action == entity.TaskUpdateActionRequestApproveInfo {
+	if action == e.TaskUpdateActionRequestApproveInfo {
 		return []string{pipeline.BlockGoApproverID}
 	}
 
-	if action == entity.TaskUpdateActionReplyApproverInfo {
+	if action == e.TaskUpdateActionReplyApproverInfo {
 		return []string{pipeline.BlockGoApproverID}
 	}
 
-	if action == entity.TaskUpdateActionExecution {
+	if action == e.TaskUpdateActionExecution {
 		return []string{pipeline.BlockGoExecutionID}
 	}
 
-	if action == entity.TaskUpdateActionChangeExecutor {
+	if action == e.TaskUpdateActionChangeExecutor {
 		return []string{pipeline.BlockGoExecutionID}
 	}
 
-	if action == entity.TaskUpdateActionRequestExecutionInfo {
+	if action == e.TaskUpdateActionRequestExecutionInfo {
 		return []string{pipeline.BlockGoExecutionID}
 	}
 
-	if action == entity.TaskUpdateActionReplyExecutionInfo {
+	if action == e.TaskUpdateActionReplyExecutionInfo {
 		return []string{pipeline.BlockGoExecutionID}
 	}
 
-	if action == entity.TaskUpdateActionExecutorStartWork {
+	if action == e.TaskUpdateActionExecutorStartWork {
 		return []string{pipeline.BlockGoExecutionID}
 	}
 
-	if action == entity.TaskUpdateActionRequestFillForm {
+	if action == e.TaskUpdateActionRequestFillForm {
 		return []string{pipeline.BlockGoFormID}
 	}
 
-	if action == entity.TaskUpdateActionExecutorSendEditApp {
+	if action == e.TaskUpdateActionExecutorSendEditApp {
 		return []string{pipeline.BlockGoExecutionID}
 	}
 
-	if action == entity.TaskUpdateActionAddApprovers {
+	if action == e.TaskUpdateActionAddApprovers {
 		return []string{pipeline.BlockGoApproverID, pipeline.BlockGoSignID}
 	}
 
-	if action == entity.TaskUpdateActionFormExecutorStartWork {
+	if action == e.TaskUpdateActionFormExecutorStartWork {
 		return []string{pipeline.BlockGoFormID}
 	}
 
-	if action == entity.TaskUpdateActionSign {
+	if action == e.TaskUpdateActionSign {
 		return []string{pipeline.BlockGoSignID}
 	}
 
-	if action == entity.TaskUpdateActionSignChangeWorkStatus {
+	if action == e.TaskUpdateActionSignChangeWorkStatus {
 		return []string{pipeline.BlockGoSignID}
 	}
 
-	if action == entity.TaskUpdateActionFinishTimer {
+	if action == e.TaskUpdateActionFinishTimer {
 		return []string{pipeline.BlockTimerID}
 	}
 
-	if action == entity.TaskUpdateActionFuncSLAExpired {
+	if action == e.TaskUpdateActionFuncSLAExpired {
 		return []string{pipeline.BlockExecutableFunctionID}
 	}
 
-	if action == entity.TaskUpdateActionRetry {
+	if action == e.TaskUpdateActionRetry {
 		return []string{pipeline.BlockExecutableFunctionID}
 	}
 
@@ -1097,11 +1093,17 @@ func (ae *Env) GetTaskMeanSolveTime(w http.ResponseWriter, req *http.Request, pi
 	}
 }
 
-func (ae *Env) removeHiddenFormsForInitiator(dbTask *entity.EriusTask) {
-	actualSteps := make([]*entity.Step, 0, len(dbTask.Steps))
+func (ae *Env) removeHiddenFormsForInitiator(dbTask *e.EriusTask, accessibleForms map[string]struct{}) {
+	actualSteps := make([]*e.Step, 0, len(dbTask.Steps))
 
 	for _, st := range dbTask.Steps {
 		if st.Type != formBlockType {
+			actualSteps = append(actualSteps, st)
+
+			continue
+		}
+
+		if _, ok := accessibleForms[st.Name]; ok {
 			actualSteps = append(actualSteps, st)
 
 			continue
@@ -1125,8 +1127,8 @@ func (ae *Env) removeHiddenFormsForInitiator(dbTask *entity.EriusTask) {
 	dbTask.Steps = actualSteps
 }
 
-func (ae *Env) removeForms(dbTask *entity.EriusTask, accessibleForms map[string]struct{}) {
-	actualSteps := make([]*entity.Step, 0, len(dbTask.Steps))
+func (ae *Env) removeForms(dbTask *e.EriusTask, accessibleForms map[string]struct{}) {
+	actualSteps := make([]*e.Step, 0, len(dbTask.Steps))
 
 	for _, st := range dbTask.Steps {
 		if _, ok := accessibleForms[st.Name]; !ok && st.Type == formBlockType {
@@ -1170,7 +1172,7 @@ func (ae *Env) removeForms(dbTask *entity.EriusTask, accessibleForms map[string]
 	dbTask.Steps = actualSteps
 }
 
-func (ae *Env) hideExecutors(ctx c.Context, dbTask *entity.EriusTask, login string, stepDelegates map[string]bool) error {
+func (ae *Env) hideExecutors(ctx c.Context, dbTask *e.EriusTask, login string, stepDelegates map[string]bool) error {
 	dbMembers, membErr := ae.DB.GetTaskMembers(ctx, dbTask.WorkNumber, false)
 	if membErr != nil {
 		return membErr
@@ -1202,7 +1204,7 @@ func (ae *Env) hideExecutors(ctx c.Context, dbTask *entity.EriusTask, login stri
 	return nil
 }
 
-func (ae *Env) GetTaskForUpdate(ctx c.Context, workNumber string) (task *entity.EriusTask, err error) {
+func (ae *Env) GetTaskForUpdate(ctx c.Context, workNumber string) (task *e.EriusTask, err error) {
 	dbTask, taskErr := ae.DB.GetTask(
 		ctx,
 		[]string{""},
