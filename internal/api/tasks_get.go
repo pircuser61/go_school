@@ -1231,7 +1231,7 @@ func (ae *Env) GetTaskForUpdate(ctx c.Context, workNumber string) (task *e.Erius
 	return dbTask, nil
 }
 
-func (ae *Env) GetTaskForRestart(ctx context.Context, workNumber string) (task *entity.EriusTask, err error) {
+func (ae *Env) GetTaskForRestart(ctx c.Context, workNumber string) (task *e.EriusTask, err error) {
 	dbTask, taskErr := ae.DB.GetTask(
 		ctx,
 		[]string{""},

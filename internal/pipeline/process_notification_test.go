@@ -561,7 +561,7 @@ func TestBlockRunContext_makeNotificationDescription(t *testing.T) {
 				OnceProductive:       tt.fields.OnceProductive,
 				Productive:           tt.fields.Productive,
 			}
-			got, got1, err := runCtx.makeNotificationDescription(tt.args.ctx, tt.args.nodeName)
+			got, got1, err := runCtx.makeNotificationDescription(tt.args.ctx, tt.args.nodeName, false)
 			if !tt.wantErr(t, err, fmt.Sprintf("makeNotificationDescription(%v, %v)", tt.args.ctx, tt.args.nodeName)) {
 				return
 			}
