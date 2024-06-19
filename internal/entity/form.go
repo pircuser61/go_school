@@ -7,15 +7,6 @@ type (
 	BlockType         string
 )
 
-const (
-	UserExecution       UserExecutionType = "user"
-	FromSchemaExecution UserExecutionType = "from_schema"
-	GroupExecution      UserExecutionType = "group"
-
-	ExecutionBlockType   BlockType = "execution"
-	ApprovementBlockType BlockType = "approver"
-)
-
 type UsersWithFormAccess struct {
 	GroupID       *string           `json:"executors_group_id"`
 	ExecutionType UserExecutionType `json:"execution_type"`

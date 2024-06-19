@@ -44,6 +44,8 @@ func (runCtx *BlockRunContext) handleInitiatorNotify(ctx c.Context, params handl
 	ctx, span := trace.StartSpan(ctx, "handle_initiator_notify")
 	defer span.End()
 
+	var email string
+
 	const (
 		FormStepType     = "form"
 		TimerStepType    = "timer"
@@ -79,28 +81,18 @@ func (runCtx *BlockRunContext) handleInitiatorNotify(ctx c.Context, params handl
 		return nil
 	}
 
-	description, files, err := runCtx.makeNotificationDescription(ctx, params.step)
+	description, files, err := runCtx.makeNotificationDescription(ctx, params.step, true)
 	if err != nil {
 		return err
 	}
 
-	loginsToNotify := []string{runCtx.Initiator}
-
 	log := logger.GetLogger(ctx)
 
-	var email string
+	email, err = runCtx.Services.People.GetUserEmail(ctx, runCtx.Initiator)
+	if err != nil {
+		log.WithField("login", runCtx.Initiator).WithError(err).Warning("couldn't get email")
 
-	emails := make([]string, 0, len(loginsToNotify))
-
-	for _, login := range loginsToNotify {
-		email, err = runCtx.Services.People.GetUserEmail(ctx, login)
-		if err != nil {
-			log.WithField("login", login).WithError(err).Warning("couldn't get email")
-
-			return nil
-		}
-
-		emails = append(emails, email)
+		return nil
 	}
 
 	if params.action == "" {
@@ -138,7 +130,7 @@ func (runCtx *BlockRunContext) handleInitiatorNotify(ctx c.Context, params handl
 
 	files = append(files, iconFiles...)
 
-	if sendErr := runCtx.Services.Sender.SendNotification(ctx, emails, files, tmpl); sendErr != nil {
+	if sendErr := runCtx.Services.Sender.SendNotification(ctx, []string{email}, files, tmpl); sendErr != nil {
 		return sendErr
 	}
 
@@ -403,7 +395,9 @@ func filterHiddenAttachmentFields(attachmentFields, hiddenFields []string) []str
 }
 
 //nolint:gocognit,gocyclo // данный нейминг хорошо описывает механику метода
-func (runCtx *BlockRunContext) makeNotificationDescription(ctx c.Context, nodeName string) ([]om.OrderedMap, []e.Attachment, error) {
+func (runCtx *BlockRunContext) makeNotificationDescription(ctx c.Context, stepName string, isInitiator bool) (
+	[]om.OrderedMap, []e.Attachment, error,
+) {
 	taskContext, err := runCtx.Services.Storage.GetTaskRunContext(ctx, runCtx.WorkNumber)
 	if err != nil {
 		return nil, nil, err
@@ -421,12 +415,12 @@ func (runCtx *BlockRunContext) makeNotificationDescription(ctx c.Context, nodeNa
 
 	apDesc := flatArray(taskContext.InitialApplication.ApplicationBody)
 
-	apDesc = GetConvertDesc(apDesc, taskContext.InitialApplication.Keys, taskContext.InitialApplication.HiddenFields)
+	apDesc = convertDesc(apDesc, taskContext.InitialApplication.Keys, taskContext.InitialApplication.HiddenFields)
 
 	descriptions = append(descriptions, apDesc)
 	files = append(files, filesAttach...)
 
-	adFormDescriptions, adFormFilesAttach := runCtx.getAdditionalForms(ctx, nodeName)
+	adFormDescriptions, adFormFilesAttach := runCtx.getForms(ctx, stepName, isInitiator)
 	if len(adFormDescriptions) != 0 {
 		descriptions = append(descriptions, adFormDescriptions...)
 		files = append(files, adFormFilesAttach...)
@@ -448,8 +442,8 @@ func cleanName(files []e.Attachment) {
 	}
 }
 
-func (runCtx *BlockRunContext) getAdditionalForms(ctx c.Context, nodeName string) ([]om.OrderedMap, []e.Attachment) {
-	additionalForms, err := runCtx.Services.Storage.GetAdditionalDescriptionForms(runCtx.WorkNumber, nodeName)
+func (runCtx *BlockRunContext) getForms(ctx c.Context, stepName string, isInitiator bool) ([]om.OrderedMap, []e.Attachment) {
+	forms, err := runCtx.Services.Storage.GetAdditionalDescriptionForms(runCtx.WorkNumber, stepName)
 	if err != nil {
 		return nil, nil
 	}
@@ -459,10 +453,15 @@ func (runCtx *BlockRunContext) getAdditionalForms(ctx c.Context, nodeName string
 		files        = make([]e.Attachment, 0)
 	)
 
-	for _, form := range additionalForms {
+	for _, form := range forms {
 		var formBlock FormData
 		if marshalErr := json.Unmarshal(runCtx.VarStore.State[form.Name], &formBlock); marshalErr != nil {
-			return nil, nil
+			continue
+		}
+
+		_, isInitiatorExecutor := formBlock.Executors[runCtx.Initiator]
+		if formBlock.HideFormFromInitiator && isInitiator && !isInitiatorExecutor {
+			continue
 		}
 
 		attachmentFiles := getAdditionalAttachList(form, &formBlock)
@@ -474,7 +473,7 @@ func (runCtx *BlockRunContext) getAdditionalForms(ctx c.Context, nodeName string
 			return nil, nil
 		}
 
-		adDesc = GetConvertDesc(adDesc, formBlock.Keys, formBlock.HiddenFields)
+		adDesc = convertDesc(adDesc, formBlock.Keys, formBlock.HiddenFields)
 
 		files = append(files, additionalAttach...)
 		descriptions = append(descriptions, adDesc)
@@ -559,7 +558,7 @@ func (runCtx *BlockRunContext) GetAttachmentFiles(ctx c.Context, desc *om.Ordere
 }
 
 //nolint:gocognit //it's ok
-func GetConvertDesc(descriptions om.OrderedMap, keys map[string]string, hiddenFields []string) om.OrderedMap {
+func convertDesc(descriptions om.OrderedMap, keys map[string]string, hiddenFields []string) om.OrderedMap {
 	var (
 		newDesc    = *om.New()
 		spaceCount = 1

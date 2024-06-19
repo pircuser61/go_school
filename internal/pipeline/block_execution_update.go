@@ -949,7 +949,7 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 
 	log.WithField("func", "emailGroupExecutors").WithField("emails", emails)
 
-	description, files, err := gb.RunContext.makeNotificationDescription(ctx, gb.Name)
+	description, files, err := gb.RunContext.makeNotificationDescription(ctx, gb.Name, false)
 	if err != nil {
 		return err
 	}

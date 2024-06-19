@@ -2926,7 +2926,7 @@ where accesses.data::jsonb ->> 'node_id' = $2
 	return count != 0, nil
 }
 
-func (db *PGCon) GetAdditionalDescriptionForms(workNumber, nodeName string) ([]entity.DescriptionForm, error) {
+func (db *PGCon) GetAdditionalDescriptionForms(workNumber, stepName string) ([]entity.DescriptionForm, error) {
 	const query = `
 	WITH content as (
 		SELECT jsonb_array_elements(content -> 'pipeline' -> 'blocks' -> $2 -> 'params' -> 'forms_accessibility') as rules
@@ -2943,8 +2943,8 @@ func (db *PGCon) GetAdditionalDescriptionForms(workNumber, nodeName string) ([]e
 	FROM variable_storage v
 	    INNER JOIN  (
 		      SELECT max(time) as mtime, step_name from variable_storage
-	          where work_id = (SELECT id FROM works WHERE work_number = $1 AND child_id IS NULL)
-		      group by step_name
+	          WHERE work_id = (SELECT id FROM works WHERE work_number = $1 AND child_id IS NULL)
+		      GROUP BY step_name
         ) t ON t.mtime= v.time and t.step_name=v.step_name
 		WHERE v.step_name in (
 			SELECT rules ->> 'node_id' as rule
@@ -2956,7 +2956,7 @@ func (db *PGCon) GetAdditionalDescriptionForms(workNumber, nodeName string) ([]e
 
 	descriptionForms := make([]entity.DescriptionForm, 0)
 
-	rows, err := db.Connection.Query(context.Background(), query, workNumber, nodeName)
+	rows, err := db.Connection.Query(context.Background(), query, workNumber, stepName)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return descriptionForms, nil
