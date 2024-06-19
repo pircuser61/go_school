@@ -397,7 +397,9 @@ func filterHiddenAttachmentFields(attachmentFields, hiddenFields []string) []str
 }
 
 //nolint:gocognit,gocyclo // данный нейминг хорошо описывает механику метода
-func (runCtx *BlockRunContext) makeNotificationDescription(ctx c.Context, stepName string, isInitiator bool) ([]om.OrderedMap, []e.Attachment, error) {
+func (runCtx *BlockRunContext) makeNotificationDescription(ctx c.Context, stepName string, isInitiator bool) (
+	[]om.OrderedMap, []e.Attachment, error,
+) {
 	taskContext, err := runCtx.Services.Storage.GetTaskRunContext(ctx, runCtx.WorkNumber)
 	if err != nil {
 		return nil, nil, err

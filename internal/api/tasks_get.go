@@ -211,6 +211,7 @@ func (ae *Env) GetTaskFormSchema(w http.ResponseWriter, req *http.Request, workN
 	}
 }
 
+//nolint:gocyclo,gocognit //its ok here
 func (ae *Env) GetTask(w http.ResponseWriter, req *http.Request, workNumber string) {
 	start := time.Now()
 	ctx, s := trace.StartSpan(req.Context(), "get_task")
@@ -1102,6 +1103,7 @@ func (ae *Env) removeHiddenFormsForInitiator(dbTask *entity.EriusTask) {
 	for _, st := range dbTask.Steps {
 		if st.Type != formBlockType {
 			actualSteps = append(actualSteps, st)
+
 			continue
 		}
 
@@ -1110,6 +1112,7 @@ func (ae *Env) removeHiddenFormsForInitiator(dbTask *entity.EriusTask) {
 		err := json.Unmarshal(st.State[st.Name], &formBlock)
 		if err != nil {
 			ae.Log.WithField("func", "removeHiddenFormsForInitiator").Warning(errors.Wrap(err, st.Name))
+
 			continue
 		}
 
