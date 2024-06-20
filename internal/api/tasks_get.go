@@ -535,6 +535,12 @@ func (ae *Env) GetTasks(w http.ResponseWriter, req *http.Request, params GetTask
 		return
 	}
 
+	if filters.OrderBy == nil {
+		filters.OrderBy = &[]string{"started_at", "id"}
+	} else {
+		*filters.OrderBy = append(*filters.OrderBy, "id")
+	}
+
 	delegations, err := ae.HumanTasks.GetDelegationsToLogin(ctx, filters.CurrentUser)
 	if err != nil {
 		errorHandler.handleError(GetDelegationsError, err)
