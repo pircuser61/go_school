@@ -199,6 +199,12 @@ func IsTypeCorrect(t string, v any) error {
 		return fmt.Errorf("empty type")
 	}
 
+	if v == nil && (t == "object" || t == "array") {
+		return nil
+	} else if v == nil {
+		return fmt.Errorf("value of type %s can't be null", t)
+	}
+
 	reflectType := reflect.TypeOf(v).Kind()
 
 	typeIsCorrect := false
@@ -224,7 +230,6 @@ func IsTypeCorrect(t string, v any) error {
 	case "object":
 		typeIsCorrect = (reflectType == reflect.Map)
 	}
-
 	if typeIsCorrect {
 		return nil
 	}

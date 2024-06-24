@@ -23,7 +23,8 @@ func TestIsTypeCorrect(t *testing.T) {
     "test_object": {
         "type":"string",
         "value":"value"
-    }
+    },
+	"test_null": null
 }
 `
 	var testValues map[string]interface{}
@@ -107,6 +108,26 @@ func TestIsTypeCorrect(t *testing.T) {
 			name:    "empty type",
 			args:    args{t: "", v: testValues["test_integer"]},
 			wantErr: assert.Error,
+		},
+		{
+			name:    "null with empty type",
+			args:    args{t: "", v: testValues["test_null"]},
+			wantErr: assert.Error,
+		},
+		{
+			name:    "Null with string type",
+			args:    args{t: "string", v: testValues["test_null"]},
+			wantErr: assert.Error,
+		},
+		{
+			name:    "Null with object type",
+			args:    args{t: "object", v: testValues["test_null"]},
+			wantErr: assert.NoError,
+		},
+		{
+			name:    "Null with array type",
+			args:    args{t: "array", v: testValues["test_null"]},
+			wantErr: assert.NoError,
 		},
 	}
 	for _, tt := range tests {
