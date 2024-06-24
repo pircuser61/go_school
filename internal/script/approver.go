@@ -56,6 +56,7 @@ type ApproverParams struct {
 	ApproversGroupIDPath *string `json:"approvers_group_id_path,omitempty"`
 	ApproveStatusName    string  `json:"approve_status_name"`
 	WorkType             *string `json:"work_type"`
+	WaitAllDecisions     bool    `json:"wait_all_decisions"`
 }
 
 func (a *ApproverParams) Validate() error {

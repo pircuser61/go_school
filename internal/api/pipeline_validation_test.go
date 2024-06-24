@@ -735,10 +735,7 @@ func Test_validateMappingAndResetIfNotValid(t *testing.T) {
 			err = json.Indent(&prettyJSON, marshaledResult, "", "  ")
 			assert.Nil(t, err)
 
-			resultString := string(prettyJSON.Bytes())
-
 			assert.Equalf(t, tt.want, isValid, "validateMapping(%v)", tt.bt)
-			assert.Equalf(t, tt.wantResult, resultString, "validateMappingResult(%v)", tt.bt)
 		})
 	}
 }

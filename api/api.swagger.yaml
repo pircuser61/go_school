@@ -5856,6 +5856,9 @@ components:
         hide_executor_from_initiator:
           type: boolean
           description: Hide executor from initiator
+        hide_form_from_initiator:
+          type: boolean
+          description: Hide form from initiator
         mapping:
           $ref: '#/components/schemas/JSONSchemaProperties'
         form_group_id:
@@ -5886,6 +5889,7 @@ components:
         - blueprint_id
         - blueprint_name
         - hide_executor_from_initiator
+        - hide_form_from_initiator
         - is_editable
         - constants
     FormExecutorType:
@@ -6073,6 +6077,9 @@ components:
           description: Approvement status
         work_type:
           $ref: "#/components/schemas/WorkType"
+        wait_all_decisions:
+          type: boolean
+          description: true - wait all decisions
       required:
         - type
         - approver
@@ -6085,6 +6092,7 @@ components:
         - approvers_group_id
         - approvers_group_name
         - approve_status_name
+        - wait_all_decisions
     FormsChangelogResponse:
       type: array
       items:

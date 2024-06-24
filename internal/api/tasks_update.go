@@ -190,7 +190,10 @@ func (ae *Env) UpdateTask(w http.ResponseWriter, req *http.Request, workNumber s
 
 	err = ae.updateTask(ctx, workNumber, ui.Username, &updateData)
 	if err != nil {
-		errorHandler.handleError(UnknownError, err)
+		httpErr := getErr(err)
+
+		errorHandler.handleError(httpErr, err)
+		requestInfo.Status = httpErr.Status()
 
 		return
 	}
@@ -237,9 +240,9 @@ func (ae *Env) updateTaskBlockBySchedulerRequest(ctx context.Context, workNumber
 
 	stepTypes := getTaskStepNameByAction(in.Action)
 	if len(stepTypes) == 0 {
-		log.Error(errors.New("stepTypes is empty"))
+		log.Error(entity.ErrEmptyStepTypes)
 
-		return errors.New("stepTypes is empty")
+		return entity.ErrEmptyStepTypes
 	}
 
 	dbTask, err := ae.GetTaskForUpdate(ctxLocal, workNumber)
@@ -336,9 +339,9 @@ func (ae *Env) updateTaskBlockInternal(ctx context.Context, workNumber, userLogi
 
 	stepTypes := getTaskStepNameByAction(in.Action)
 	if len(stepTypes) == 0 {
-		log.Error(errors.New("stepTypes is empty"))
+		log.Error(entity.ErrEmptyStepTypes)
 
-		return errors.New("stepTypes is empty")
+		return entity.ErrEmptyStepTypes
 	}
 
 	dbTask, err := ae.GetTaskForUpdate(ctxLocal, workNumber)
@@ -900,6 +903,8 @@ func (ae *Env) StopTasks(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
+	var stoppedTasksCnt int
+
 	for _, workNumber := range req.Tasks {
 		requestInfo.WorkNumber = workNumber
 
@@ -915,6 +920,8 @@ func (ae *Env) StopTasks(w http.ResponseWriter, r *http.Request) {
 
 			continue
 		}
+
+		stoppedTasksCnt++
 
 		workID, errGetID := ae.DB.GetWorkIDByWorkNumber(ctx, workNumber)
 		if errGetID != nil {
@@ -941,6 +948,13 @@ func (ae *Env) StopTasks(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			log.WithError(err).Error("couldn't create task event pause: " + workNumber)
 		}
+	}
+
+	if stoppedTasksCnt == 0 {
+		errorHandler.handleError(UpdateTaskError, UpdateTaskError)
+		requestInfo.Status = UpdateTaskError.Status()
+
+		return
 	}
 
 	if err = txStorage.CommitTransaction(ctx); err != nil {

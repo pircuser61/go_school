@@ -585,12 +585,12 @@ func (gb *GoApproverBlock) Next(_ *store.VariableStore) ([]string, bool) {
 		key = requestAddInfoSocketID
 	}
 
-	nexts, ok := script.GetNexts(gb.Sockets, key)
+	nextSockets, ok := script.GetNexts(gb.Sockets, key)
 	if !ok {
 		return nil, false
 	}
 
-	return nexts, true
+	return nextSockets, true
 }
 
 func (gb *GoApproverBlock) GetState() interface{} {

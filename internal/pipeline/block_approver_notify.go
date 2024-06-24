@@ -49,7 +49,7 @@ func (gb *GoApproverBlock) handleNotifications(ctx context.Context) error {
 	approvers := getSliceFromMap(gb.State.Approvers)
 	loginsToNotify := delegates.GetUserInArrayWithDelegations(approvers)
 
-	description, files, err := gb.RunContext.makeNotificationDescription(ctx, gb.Name)
+	description, files, err := gb.RunContext.makeNotificationDescription(ctx, gb.Name, false)
 	if err != nil {
 		return err
 	}
@@ -302,7 +302,7 @@ func (gb *GoApproverBlock) notifyAdditionalApprovers(ctx context.Context, logins
 		}
 	}
 
-	description, files, err := gb.RunContext.makeNotificationDescription(ctx, gb.Name)
+	description, files, err := gb.RunContext.makeNotificationDescription(ctx, gb.Name, false)
 	if err != nil {
 		return err
 	}

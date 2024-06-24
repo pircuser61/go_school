@@ -670,6 +670,9 @@ type ApproverParams struct {
 	//   * FromSchema - Selected by initiator
 	Type ApproverType `json:"type"`
 
+	// true - wait all decisions
+	WaitAllDecisions bool `json:"wait_all_decisions"`
+
 	// Рабочий режим
 	WorkType *WorkType `json:"work_type,omitempty"`
 }
@@ -1311,6 +1314,9 @@ type FormParams struct {
 
 	// Hide executor from initiator
 	HideExecutorFromInitiator bool `json:"hide_executor_from_initiator"`
+
+	// Hide form from initiator
+	HideFormFromInitiator bool `json:"hide_form_from_initiator"`
 
 	// true - need manual fill when reenter in block
 	IsEditable bool `json:"is_editable"`

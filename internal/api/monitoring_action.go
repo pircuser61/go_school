@@ -418,7 +418,7 @@ func (ae *Env) restartStep(ctx c.Context, tx db.Database, wID uuid.UUID, wNumber
 		return "", blockErr
 	}
 
-	task, dbTaskErr := ae.GetTaskForUpdate(ctx, wNumber)
+	task, dbTaskErr := ae.GetTaskForRestart(ctx, wNumber)
 	if dbTaskErr != nil {
 		return "", dbTaskErr
 	}

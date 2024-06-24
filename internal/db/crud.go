@@ -183,7 +183,7 @@ const (
 )
 
 var (
-	errCantFindPipelineVersion = errors.New("can't find pipeline version")
+	ErrCantFindPipelineVersion = errors.New("can't find pipeline version")
 	errCantFindExternalSystem  = errors.New("can't find external system settings")
 	errUnkonwnSchemaFlag       = errors.New("unknown schema flag")
 )
@@ -981,7 +981,7 @@ func (db *PGCon) GetPipeline(c context.Context, id uuid.UUID) (*entity.EriusScen
 		return nil, rowsErr
 	}
 
-	return nil, errCantFindPipelineVersion
+	return nil, ErrCantFindPipelineVersion
 }
 
 func (db *PGCon) GetPipelineVersion(c context.Context, id uuid.UUID, checkNotDeleted bool) (*entity.EriusScenario, error) {
@@ -1069,7 +1069,7 @@ func (db *PGCon) GetPipelineVersion(c context.Context, id uuid.UUID, checkNotDel
 		return nil, rowsErr
 	}
 
-	return nil, fmt.Errorf("%w: with id: %v", errCantFindPipelineVersion, id)
+	return nil, fmt.Errorf("%w: with id: %v", ErrCantFindPipelineVersion, id)
 }
 
 func (db *PGCon) RenamePipeline(c context.Context, id uuid.UUID, name string) error {
@@ -2926,7 +2926,7 @@ where accesses.data::jsonb ->> 'node_id' = $2
 	return count != 0, nil
 }
 
-func (db *PGCon) GetAdditionalDescriptionForms(workNumber, nodeName string) ([]entity.DescriptionForm, error) {
+func (db *PGCon) GetAdditionalDescriptionForms(workNumber, stepName string) ([]entity.DescriptionForm, error) {
 	const query = `
 	WITH content as (
 		SELECT jsonb_array_elements(content -> 'pipeline' -> 'blocks' -> $2 -> 'params' -> 'forms_accessibility') as rules
@@ -2943,8 +2943,8 @@ func (db *PGCon) GetAdditionalDescriptionForms(workNumber, nodeName string) ([]e
 	FROM variable_storage v
 	    INNER JOIN  (
 		      SELECT max(time) as mtime, step_name from variable_storage
-	          where work_id = (SELECT id FROM works WHERE work_number = $1 AND child_id IS NULL)
-		      group by step_name
+	          WHERE work_id = (SELECT id FROM works WHERE work_number = $1 AND child_id IS NULL)
+		      GROUP BY step_name
         ) t ON t.mtime= v.time and t.step_name=v.step_name
 		WHERE v.step_name in (
 			SELECT rules ->> 'node_id' as rule
@@ -2956,7 +2956,7 @@ func (db *PGCon) GetAdditionalDescriptionForms(workNumber, nodeName string) ([]e
 
 	descriptionForms := make([]entity.DescriptionForm, 0)
 
-	rows, err := db.Connection.Query(context.Background(), query, workNumber, nodeName)
+	rows, err := db.Connection.Query(context.Background(), query, workNumber, stepName)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return descriptionForms, nil

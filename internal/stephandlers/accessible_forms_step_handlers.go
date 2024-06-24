@@ -9,13 +9,6 @@ import (
 )
 
 const (
-	ApproverBlockType  = "approver"
-	ExecutionBlockType = "execution"
-	FormBlockType      = "form"
-
-	RunningStatus = "running"
-	IdleStatus    = "idle"
-
 	TypeAccessFormNone = "None"
 )
 
