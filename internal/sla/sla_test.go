@@ -1,6 +1,7 @@
 package sla
 
 import (
+	"reflect"
 	"testing"
 	"time"
 
@@ -220,11 +221,14 @@ func Test_getWorkWorkHoursBetweenDates(t *testing.T) {
 				to:   time.Date(2022, 07, 18, 15, 30, 0, 0, time.UTC),
 				slaInfoPtr: &Info{
 					CalendarDays: &hrgate.CalendarDays{
-						CalendarMap: map[int64]hrgate.CalendarDayType{time.Date(2022, 07, 16, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypePreHoliday, time.Date(2022, 07, 17, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypePreHoliday, time.Date(2022, 07, 18, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypePreHoliday},
+						CalendarMap: map[int64]hrgate.CalendarDayType{
+							time.Date(2022, 07, 16, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypePreHoliday,
+							time.Date(2022, 07, 17, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypePreHoliday,
+							time.Date(2022, 07, 18, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypePreHoliday},
 					},
 				},
 			},
-			wantWorkHours: 7,
+			wantWorkHours: 21,
 		},
 		{
 			name: "work hours eq 0 at holidays days",
@@ -233,7 +237,11 @@ func Test_getWorkWorkHoursBetweenDates(t *testing.T) {
 				to:   time.Date(2022, 07, 21, 15, 30, 0, 0, time.UTC),
 				slaInfoPtr: &Info{
 					CalendarDays: &hrgate.CalendarDays{
-						CalendarMap: map[int64]hrgate.CalendarDayType{time.Date(2022, 07, 18, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeHoliday, time.Date(2022, 07, 19, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeHoliday, time.Date(2022, 07, 20, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeHoliday, time.Date(2022, 07, 21, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeHoliday},
+						CalendarMap: map[int64]hrgate.CalendarDayType{
+							time.Date(2022, 07, 18, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeHoliday,
+							time.Date(2022, 07, 19, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeHoliday,
+							time.Date(2022, 07, 20, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeHoliday,
+							time.Date(2022, 07, 21, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeHoliday},
 					},
 				},
 			},
@@ -246,7 +254,11 @@ func Test_getWorkWorkHoursBetweenDates(t *testing.T) {
 				to:   time.Date(2022, 07, 21, 15, 30, 0, 0, time.UTC),
 				slaInfoPtr: &Info{
 					CalendarDays: &hrgate.CalendarDays{
-						CalendarMap: map[int64]hrgate.CalendarDayType{time.Date(2022, 07, 20, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeHoliday, time.Date(2022, 07, 21, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeHoliday, time.Date(2022, 07, 18, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeHoliday, time.Date(2022, 07, 19, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypePreHoliday},
+						CalendarMap: map[int64]hrgate.CalendarDayType{
+							time.Date(2022, 07, 20, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeHoliday,
+							time.Date(2022, 07, 21, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeHoliday,
+							time.Date(2022, 07, 18, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeHoliday,
+							time.Date(2022, 07, 19, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypePreHoliday},
 					},
 				},
 			},
@@ -313,7 +325,10 @@ func Test_getWorkWorkHoursBetweenDates(t *testing.T) {
 					StartWorkHourPtr: utils.GetAddressOfValue(6),
 					EndWorkHourPtr:   utils.GetAddressOfValue(14),
 					Weekends:         []time.Weekday{time.Monday},
-					CalendarDays:     &hrgate.CalendarDays{CalendarMap: map[int64]hrgate.CalendarDayType{time.Date(2022, 07, 13, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeHoliday, time.Date(2022, 07, 12, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypePreHoliday}},
+					CalendarDays: &hrgate.CalendarDays{
+						CalendarMap: map[int64]hrgate.CalendarDayType{
+							time.Date(2022, 07, 13, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeHoliday,
+							time.Date(2022, 07, 12, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypePreHoliday}},
 				},
 			},
 			wantWorkHours: 87,
@@ -327,7 +342,9 @@ func Test_getWorkWorkHoursBetweenDates(t *testing.T) {
 					StartWorkHourPtr: utils.GetAddressOfValue(6),
 					EndWorkHourPtr:   utils.GetAddressOfValue(14),
 					Weekends:         []time.Weekday{time.Tuesday},
-					CalendarDays:     &hrgate.CalendarDays{CalendarMap: map[int64]hrgate.CalendarDayType{time.Date(2022, 07, 13, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeHoliday, time.Date(2022, 07, 14, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeHoliday}},
+					CalendarDays: &hrgate.CalendarDays{CalendarMap: map[int64]hrgate.CalendarDayType{
+						time.Date(2022, 07, 13, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeHoliday,
+						time.Date(2022, 07, 14, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeHoliday}},
 				},
 			},
 			wantWorkHours: 80,
@@ -337,6 +354,139 @@ func Test_getWorkWorkHoursBetweenDates(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if gotWorkHours := sla.GetWorkHoursBetweenDates(tt.fields.from, tt.fields.to, tt.fields.slaInfoPtr); gotWorkHours != tt.wantWorkHours {
 				t.Errorf("getWorkHoursBetweenDates() = %v, want %v", gotWorkHours, tt.wantWorkHours)
+			}
+		})
+	}
+}
+
+func Test_service_ComputeMaxDate(t *testing.T) {
+	sla := NewSLAService(nil)
+
+	type args struct {
+		start      time.Time
+		sla        float32
+		slaInfoPtr *Info
+	}
+	tests := []struct {
+		name string
+		args args
+		want time.Time
+	}{
+		{
+			name: "regular 8/5 work week",
+			args: args{
+				start: time.Date(2024, 6, 24, 0, 0, 0, 0, time.UTC),
+				sla:   40.0,
+				slaInfoPtr: &Info{
+					CalendarDays: &hrgate.CalendarDays{CalendarMap: map[int64]hrgate.CalendarDayType{
+						time.Date(2024, 6, 24, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeWorkday,
+						time.Date(2024, 6, 25, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeWorkday,
+						time.Date(2024, 6, 26, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeWorkday,
+						time.Date(2024, 6, 27, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeWorkday,
+						time.Date(2024, 6, 28, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeWorkday,
+						time.Date(2024, 6, 29, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeWeekend,
+						time.Date(2024, 6, 30, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeWeekend}},
+				},
+			},
+			want: time.Date(2024, 6, 28, 14, 0, 0, 0, time.UTC),
+		},
+		{
+			name: "regular 8/5 work week + 1 hour",
+			args: args{
+				start: time.Date(2024, 6, 24, 0, 0, 0, 0, time.UTC),
+				sla:   41.0,
+				slaInfoPtr: &Info{
+					Weekends: []time.Weekday{time.Saturday, time.Sunday},
+					CalendarDays: &hrgate.CalendarDays{CalendarMap: map[int64]hrgate.CalendarDayType{
+						time.Date(2024, 6, 24, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeWorkday,
+						time.Date(2024, 6, 25, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeWorkday,
+						time.Date(2024, 6, 26, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeWorkday,
+						time.Date(2024, 6, 27, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeWorkday,
+						time.Date(2024, 6, 28, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeWorkday,
+						time.Date(2024, 6, 29, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeWeekend,
+						time.Date(2024, 6, 30, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeWeekend,
+						time.Date(2024, 7, 1, 0, 0, 0, 0, time.UTC).Unix():  hrgate.CalendarDayTypeWorkday}},
+				},
+			},
+			want: time.Date(2024, 7, 1, 7, 0, 0, 0, time.UTC),
+		},
+		{
+			name: "empty calendar (default weekends test)",
+			args: args{
+				start: time.Date(2024, 6, 24, 0, 0, 0, 0, time.UTC),
+				sla:   41.0,
+				slaInfoPtr: &Info{
+					Weekends:     []time.Weekday{time.Saturday, time.Sunday},
+					CalendarDays: &hrgate.CalendarDays{CalendarMap: map[int64]hrgate.CalendarDayType{}},
+				},
+			},
+			want: time.Date(2024, 7, 1, 7, 0, 0, 0, time.UTC),
+		},
+		{
+			name: "work saturday 8/5",
+			args: args{
+				start: time.Date(2024, 6, 24, 0, 0, 0, 0, time.UTC),
+				sla:   41.0,
+				slaInfoPtr: &Info{
+					Weekends: []time.Weekday{time.Saturday, time.Sunday},
+					CalendarDays: &hrgate.CalendarDays{CalendarMap: map[int64]hrgate.CalendarDayType{
+						time.Date(2024, 6, 24, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeWorkday,
+						time.Date(2024, 6, 25, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeWorkday,
+						time.Date(2024, 6, 26, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeWorkday,
+						time.Date(2024, 6, 27, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeWorkday,
+						time.Date(2024, 6, 28, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeWorkday,
+						time.Date(2024, 6, 29, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeWorkday,
+						time.Date(2024, 6, 30, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeWeekend,
+						time.Date(2024, 7, 1, 0, 0, 0, 0, time.UTC).Unix():  hrgate.CalendarDayTypeWorkday}},
+				},
+			},
+			want: time.Date(2024, 6, 29, 7, 0, 0, 0, time.UTC),
+		},
+		{
+			name: "pre-holiday test",
+			args: args{
+				start: time.Date(2024, 6, 24, 0, 0, 0, 0, time.UTC),
+				sla:   41.0,
+				slaInfoPtr: &Info{
+					Weekends: []time.Weekday{time.Saturday, time.Sunday},
+					CalendarDays: &hrgate.CalendarDays{CalendarMap: map[int64]hrgate.CalendarDayType{
+						time.Date(2024, 6, 24, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeWorkday,
+						time.Date(2024, 6, 25, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeWorkday,
+						time.Date(2024, 6, 26, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeWorkday,
+						time.Date(2024, 6, 27, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeWorkday,
+						time.Date(2024, 6, 28, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypePreHoliday,
+						time.Date(2024, 6, 29, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeHoliday,
+						time.Date(2024, 6, 30, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeHoliday,
+						time.Date(2024, 7, 1, 0, 0, 0, 0, time.UTC).Unix():  hrgate.CalendarDayTypeWorkday}},
+				},
+			},
+			want: time.Date(2024, 7, 1, 8, 0, 0, 0, time.UTC),
+		},
+		{
+			name: "weekend + holiday test",
+			args: args{
+				start: time.Date(2024, 6, 24, 0, 0, 0, 0, time.UTC),
+				sla:   40.0,
+				slaInfoPtr: &Info{
+					Weekends: []time.Weekday{time.Saturday, time.Sunday},
+					CalendarDays: &hrgate.CalendarDays{CalendarMap: map[int64]hrgate.CalendarDayType{
+						time.Date(2024, 6, 24, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeWorkday,
+						time.Date(2024, 6, 25, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeWorkday,
+						time.Date(2024, 6, 26, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeWorkday,
+						time.Date(2024, 6, 27, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeWorkday,
+						time.Date(2024, 6, 28, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeHoliday,
+						time.Date(2024, 6, 29, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeWeekend,
+						time.Date(2024, 6, 30, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeWeekend,
+						time.Date(2024, 7, 1, 0, 0, 0, 0, time.UTC).Unix():  hrgate.CalendarDayTypeWorkday}},
+				},
+			},
+			want: time.Date(2024, 7, 1, 14, 0, 0, 0, time.UTC),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := sla.ComputeMaxDate(tt.args.start, tt.args.sla, tt.args.slaInfoPtr); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("ComputeMaxDate() = %v, want %v", got, tt.want)
 			}
 		})
 	}

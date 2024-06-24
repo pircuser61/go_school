@@ -9104,7 +9104,7 @@ components:
         - $ref: "#/components/schemas/ChangeableApplicant"
     CalendarDayType:
       type: string
-      enum: [workday, pre-holiday, holiday]
+      enum: [workday, pre-holiday, holiday, weekend]
 
     ChangeableBank:
       type: object
