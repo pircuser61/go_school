@@ -54,17 +54,17 @@ func (slaInfo *Info) GetStartWorkHour() int {
 }
 
 func (slaInfo *Info) GetEndWorkHour(t time.Time) int {
-	workDayType := slaInfo.GetCalendarDays().GetDayType(t)
+	workDayType, found := slaInfo.GetCalendarDays().GetDayType(t)
 
 	if slaInfo == nil || slaInfo.EndWorkHourPtr == nil {
-		if workDayType == hrgate.CalendarDayTypePreHoliday {
+		if found && workDayType == hrgate.CalendarDayTypePreHoliday {
 			return workingHoursEnd - 1
 		}
 
 		return workingHoursEnd
 	}
 
-	if workDayType == hrgate.CalendarDayTypePreHoliday {
+	if found && workDayType == hrgate.CalendarDayTypePreHoliday {
 		return *slaInfo.EndWorkHourPtr - 1
 	}
 

@@ -177,13 +177,13 @@ func afterWorkingHours(t time.Time, endHour int) bool {
 }
 
 func notWorkingHours(t time.Time, calendarDays *hrgate.CalendarDays, startWorkHour, endWorkHour int, weekends []time.Weekday) bool {
-	if slices.Contains(weekends, t.Weekday()) {
+	workDayType, found := calendarDays.GetDayType(t)
+
+	if !found && slices.Contains(weekends, t.Weekday()) {
 		return true
 	}
 
-	workDayType := calendarDays.GetDayType(t)
-
-	if workDayType == hrgate.CalendarDayTypeHoliday {
+	if found && workDayType == hrgate.CalendarDayTypeHoliday {
 		return true
 	}
 

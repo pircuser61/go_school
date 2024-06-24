@@ -159,7 +159,7 @@ func (s *Service) GetCalendarDays(ctx c.Context, params *GetCalendarDaysParams) 
 		if d.DayType != nil {
 			res.CalendarMap[d.Date.Unix()] = *d.DayType
 		} else {
-			res.CalendarMap[d.Date.Unix()] = CalendarDayTypeWorkday
+			res.CalendarMap[d.Date.Unix()] = CalendarDayTypeHoliday
 		}
 	}
 
