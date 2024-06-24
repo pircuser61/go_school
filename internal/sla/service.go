@@ -183,7 +183,7 @@ func notWorkingHours(t time.Time, calendarDays *hrgate.CalendarDays, startWorkHo
 		return true
 	}
 
-	if found && workDayType == hrgate.CalendarDayTypeHoliday {
+	if found && (workDayType == hrgate.CalendarDayTypeWeekend || workDayType == hrgate.CalendarDayTypeHoliday) {
 		return true
 	}
 

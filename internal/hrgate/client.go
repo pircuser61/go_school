@@ -29,6 +29,8 @@ const (
 
 	CalendarDayTypePreHoliday CalendarDayType = "pre-holiday"
 
+	CalendarDayTypeWeekend CalendarDayType = "weekend"
+
 	CalendarDayTypeWorkday CalendarDayType = "workday"
 )
 
