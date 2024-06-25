@@ -1,10 +1,11 @@
-package humantasks
+package cache
 
 import (
 	c "context"
 	"encoding/json"
 	"strings"
 
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks/nocache"
 	"go.opencensus.io/trace"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
@@ -13,6 +14,7 @@ import (
 
 	d "gitlab.services.mts.ru/jocasta/human-tasks/pkg/proto/gen/proto/go/delegation"
 
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 )
 
@@ -20,13 +22,13 @@ const (
 	delegationsKeyPrefix = "delegations:"
 )
 
-type ServiceWithCache struct {
+type Service struct {
 	Cache      cachekit.Cache
-	Humantasks ServiceInterface
+	Humantasks humantasks.Service
 }
 
-func NewServiceWithCache(cfg *Config, m metrics.Metrics) (ServiceInterface, error) {
-	srv, err := NewService(cfg, m)
+func NewService(cfg *humantasks.Config, m metrics.Metrics) (humantasks.Service, error) {
+	srv, err := nocache.NewService(cfg, m)
 	if err != nil {
 		return nil, err
 	}
@@ -36,19 +38,19 @@ func NewServiceWithCache(cfg *Config, m metrics.Metrics) (ServiceInterface, erro
 		return nil, cacheErr
 	}
 
-	return &ServiceWithCache{
+	return &Service{
 		Cache:      cache,
 		Humantasks: srv,
 	}, nil
 }
 
-func (*ServiceWithCache) SetCli(d.DelegationServiceClient) {}
+func (*Service) SetCli(d.DelegationServiceClient) {}
 
-func (s *ServiceWithCache) Ping(ctx c.Context) error {
+func (s *Service) Ping(ctx c.Context) error {
 	return s.Humantasks.Ping(ctx)
 }
 
-func (s *ServiceWithCache) GetDelegations(ctx c.Context, req *d.GetDelegationsRequest) (Delegations, error) {
+func (s *Service) GetDelegations(ctx c.Context, req *d.GetDelegationsRequest) (humantasks.Delegations, error) {
 	ctx, span := trace.StartSpan(ctx, "humantasks.get_delegations(cached)")
 	defer span.End()
 
@@ -64,7 +66,7 @@ func (s *ServiceWithCache) GetDelegations(ctx c.Context, req *d.GetDelegationsRe
 		if err == nil {
 			delegations, ok := valueFromCache.(string)
 			if ok {
-				var data Delegations
+				var data humantasks.Delegations
 
 				unmErr := json.Unmarshal([]byte(delegations), &data)
 				if unmErr == nil {
@@ -97,12 +99,12 @@ func (s *ServiceWithCache) GetDelegations(ctx c.Context, req *d.GetDelegationsRe
 	return delegations, nil
 }
 
-func (s *ServiceWithCache) GetDelegationsFromLogin(ctx c.Context, login string) (Delegations, error) {
+func (s *Service) GetDelegationsFromLogin(ctx c.Context, login string) (humantasks.Delegations, error) {
 	ctx, span := trace.StartSpan(ctx, "humantasks.get_delegations_from_login(cached)")
 	defer span.End()
 
 	req := &d.GetDelegationsRequest{
-		FilterBy:  FromLoginFilter,
+		FilterBy:  nocache.FromLoginFilter,
 		FromLogin: login,
 	}
 
@@ -114,12 +116,12 @@ func (s *ServiceWithCache) GetDelegationsFromLogin(ctx c.Context, login string) 
 	return res, nil
 }
 
-func (s *ServiceWithCache) GetDelegationsToLogin(ctx c.Context, login string) (Delegations, error) {
+func (s *Service) GetDelegationsToLogin(ctx c.Context, login string) (humantasks.Delegations, error) {
 	ctx, span := trace.StartSpan(ctx, "humantasks.get_delegations_to_login(cached)")
 	defer span.End()
 
 	req := &d.GetDelegationsRequest{
-		FilterBy: ToLoginFilter,
+		FilterBy: nocache.ToLoginFilter,
 		ToLogin:  login,
 	}
 
@@ -131,7 +133,7 @@ func (s *ServiceWithCache) GetDelegationsToLogin(ctx c.Context, login string) (D
 	return res, nil
 }
 
-func (s *ServiceWithCache) GetDelegationsToLogins(ctx c.Context, logins []string) (Delegations, error) {
+func (s *Service) GetDelegationsToLogins(ctx c.Context, logins []string) (humantasks.Delegations, error) {
 	ctx, span := trace.StartSpan(ctx, "humantasks.get_delegations_to_logins(cached)")
 	defer span.End()
 
@@ -146,7 +148,7 @@ func (s *ServiceWithCache) GetDelegationsToLogins(ctx c.Context, logins []string
 	}
 
 	req := &d.GetDelegationsRequest{
-		FilterBy: ToLoginsFilter,
+		FilterBy: nocache.ToLoginsFilter,
 		ToLogins: sb.String(),
 	}
 
@@ -158,7 +160,7 @@ func (s *ServiceWithCache) GetDelegationsToLogins(ctx c.Context, logins []string
 	return res, nil
 }
 
-func (s *ServiceWithCache) GetDelegationsByLogins(ctx c.Context, logins []string) (Delegations, error) {
+func (s *Service) GetDelegationsByLogins(ctx c.Context, logins []string) (humantasks.Delegations, error) {
 	ctx, span := trace.StartSpan(ctx, "humantasks.get_delegations_by_logins(cached)")
 	defer span.End()
 
@@ -173,7 +175,7 @@ func (s *ServiceWithCache) GetDelegationsByLogins(ctx c.Context, logins []string
 	}
 
 	req := &d.GetDelegationsRequest{
-		FilterBy:   FromLoginsFilter,
+		FilterBy:   nocache.FromLoginsFilter,
 		FromLogins: sb.String(),
 	}
 

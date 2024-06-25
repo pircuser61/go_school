@@ -1,10 +1,12 @@
-package humantasks
+package nocache
 
 import (
 	c "context"
 	"strings"
 	"time"
 
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks/cache"
 	"go.opencensus.io/trace"
 
 	"go.opencensus.io/plugin/ocgrpc"
@@ -37,9 +39,9 @@ type service struct {
 	maxRetryCount uint
 }
 
-func NewService(cfg *Config, m metrics.Metrics) (ServiceInterface, error) {
+func NewService(cfg *humantasks.Config, m metrics.Metrics) (humantasks.Service, error) {
 	if cfg.URL == "" {
-		return &ServiceWithCache{}, nil
+		return &cache.Service{}, nil
 	}
 
 	opts := []grpc.DialOption{
@@ -81,12 +83,12 @@ func (s *service) SetCli(cli d.DelegationServiceClient) {
 	s.cli = cli
 }
 
-func (s *service) GetDelegations(ctx c.Context, req *d.GetDelegationsRequest) (ds Delegations, err error) {
+func (s *service) GetDelegations(ctx c.Context, req *d.GetDelegationsRequest) (ds humantasks.Delegations, err error) {
 	ctx, span := trace.StartSpan(ctx, "humantasks.get_delegations")
 	defer span.End()
 
 	if s.cli == nil || s.conn == nil {
-		return make([]Delegation, 0), nil
+		return make([]humantasks.Delegation, 0), nil
 	}
 
 	log := logger.GetLogger(ctx).
@@ -127,7 +129,7 @@ func (s *service) GetDelegations(ctx c.Context, req *d.GetDelegationsRequest) (d
 			continue
 		}
 
-		ds = append(ds, Delegation{
+		ds = append(ds, humantasks.Delegation{
 			FromDate:        fromDate,
 			ToDate:          toDate,
 			FromLogin:       delegation.FromUser.Username,
@@ -139,7 +141,7 @@ func (s *service) GetDelegations(ctx c.Context, req *d.GetDelegationsRequest) (d
 	return ds, nil
 }
 
-func (s *service) GetDelegationsFromLogin(ctx c.Context, login string) (ds Delegations, err error) {
+func (s *service) GetDelegationsFromLogin(ctx c.Context, login string) (ds humantasks.Delegations, err error) {
 	ctx, span := trace.StartSpan(ctx, "humantasks.get_delegations_from_login")
 	defer span.End()
 
@@ -156,7 +158,7 @@ func (s *service) GetDelegationsFromLogin(ctx c.Context, login string) (ds Deleg
 	return res, nil
 }
 
-func (s *service) GetDelegationsToLogin(ctx c.Context, login string) (ds Delegations, err error) {
+func (s *service) GetDelegationsToLogin(ctx c.Context, login string) (ds humantasks.Delegations, err error) {
 	ctx, span := trace.StartSpan(ctx, "humantasks.get_delegations_to_login")
 	defer span.End()
 
@@ -173,7 +175,7 @@ func (s *service) GetDelegationsToLogin(ctx c.Context, login string) (ds Delegat
 	return res, nil
 }
 
-func (s *service) GetDelegationsToLogins(ctx c.Context, logins []string) (ds Delegations, err error) {
+func (s *service) GetDelegationsToLogins(ctx c.Context, logins []string) (ds humantasks.Delegations, err error) {
 	ctx, span := trace.StartSpan(ctx, "humantasks.get_delegations_to_logins")
 	defer span.End()
 
@@ -200,7 +202,7 @@ func (s *service) GetDelegationsToLogins(ctx c.Context, logins []string) (ds Del
 	return res, nil
 }
 
-func (s *service) GetDelegationsByLogins(ctx c.Context, logins []string) (ds Delegations, err error) {
+func (s *service) GetDelegationsByLogins(ctx c.Context, logins []string) (ds humantasks.Delegations, err error) {
 	ctx, span := trace.StartSpan(ctx, "humantasks.get_delegations_by_logins")
 	defer span.End()
 

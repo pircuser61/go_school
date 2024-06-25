@@ -1,4 +1,4 @@
-package hrgate
+package nocache
 
 import (
 	c "context"
@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/hrgate"
 	"go.opencensus.io/plugin/ochttp"
 
 	"go.opencensus.io/trace"
@@ -35,13 +36,13 @@ type Service struct {
 	hrGateURL             string
 	DefaultCalendarUnitID *string
 	location              time.Location
-	cli                   *ClientWithResponses
+	cli                   *hrgate.ClientWithResponses
 	cliPing               *http.Client
 	Cache                 cachekit.Cache
 	maxRetryCount         uint
 }
 
-func NewService(cfg *Config, ssoS *sso.Service, m metrics.Metrics) (ServiceInterface, error) {
+func NewService(cfg *hrgate.Config, ssoS *sso.Service, m metrics.Metrics) (hrgate.Service, error) {
 	httpClient := &http.Client{}
 	httpClient.Transport = &transport{
 		next: ochttp.Transport{
@@ -56,7 +57,7 @@ func NewService(cfg *Config, ssoS *sso.Service, m metrics.Metrics) (ServiceInter
 	retryableCli := httpclient.NewClient(httpClient, nil, cfg.MaxRetries, cfg.RetryDelay)
 	wrappedRetryableCli := httpRequestDoer{retryableCli}
 
-	newCli, err := NewClientWithResponses(cfg.HRGateURL, WithHTTPClient(wrappedRetryableCli), WithBaseURL(cfg.HRGateURL))
+	newCli, err := hrgate.NewClientWithResponses(cfg.HRGateURL, hrgate.WithHTTPClient(wrappedRetryableCli), hrgate.WithBaseURL(cfg.HRGateURL))
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +94,7 @@ func (s *Service) Ping(ctx c.Context) error {
 	return resp.Body.Close()
 }
 
-func (s *Service) GetCalendars(ctx c.Context, params *GetCalendarsParams) ([]Calendar, error) {
+func (s *Service) GetCalendars(ctx c.Context, params *hrgate.GetCalendarsParams) ([]hrgate.Calendar, error) {
 	ctx, span := trace.StartSpan(ctx, "hrgate.get_calendars")
 	defer span.End()
 
@@ -125,7 +126,7 @@ func (s *Service) GetCalendars(ctx c.Context, params *GetCalendarsParams) ([]Cal
 	return *response.JSON200, err
 }
 
-func (s *Service) GetCalendarDays(ctx c.Context, params *GetCalendarDaysParams) (*CalendarDays, error) {
+func (s *Service) GetCalendarDays(ctx c.Context, params *hrgate.GetCalendarDaysParams) (*hrgate.CalendarDays, error) {
 	ctx, span := trace.StartSpan(ctx, "hrgate.get_calendar_days")
 	defer span.End()
 
@@ -150,8 +151,8 @@ func (s *Service) GetCalendarDays(ctx c.Context, params *GetCalendarDaysParams) 
 		return nil, fmt.Errorf("invalid code on getting calendar days: %d", resp.StatusCode())
 	}
 
-	res := CalendarDays{
-		CalendarMap: make(map[int64]CalendarDayType),
+	res := hrgate.CalendarDays{
+		CalendarMap: make(map[int64]hrgate.CalendarDayType),
 	}
 
 	for i := range *resp.JSON200 {
@@ -159,14 +160,14 @@ func (s *Service) GetCalendarDays(ctx c.Context, params *GetCalendarDaysParams) 
 		if d.DayType != nil {
 			res.CalendarMap[d.Date.Unix()] = *d.DayType
 		} else {
-			res.CalendarMap[d.Date.Unix()] = CalendarDayTypeWeekend
+			res.CalendarMap[d.Date.Unix()] = hrgate.CalendarDayTypeWeekend
 		}
 	}
 
 	return &res, nil
 }
 
-func (s *Service) GetPrimaryRussianFederationCalendarOrFirst(ctx c.Context, params *GetCalendarsParams) (*Calendar, error) {
+func (s *Service) GetPrimaryRussianFederationCalendarOrFirst(ctx c.Context, params *hrgate.GetCalendarsParams) (*hrgate.Calendar, error) {
 	ctx, span := trace.StartSpan(ctx, "hrgate.get_primary_calendar_or_first")
 	defer span.End()
 
@@ -222,14 +223,14 @@ func (s *Service) GetDefaultUnitID() string {
 func (s *Service) GetDefaultCalendarDaysForGivenTimeIntervals(
 	ctx c.Context,
 	taskTimeIntervals []entity.TaskCompletionInterval,
-) (*CalendarDays, error) {
+) (*hrgate.CalendarDays, error) {
 	ctx, span := trace.StartSpan(ctx, "hrgate.get_default_calendar_days_for_given_time_intervals")
 	defer span.End()
 
 	unitID := s.GetDefaultUnitID()
 
-	calendar, getCalendarsErr := s.GetPrimaryRussianFederationCalendarOrFirst(ctx, &GetCalendarsParams{
-		UnitIDs: &UnitIDs{unitID},
+	calendar, getCalendarsErr := s.GetPrimaryRussianFederationCalendarOrFirst(ctx, &hrgate.GetCalendarsParams{
+		UnitIDs: &hrgate.UnitIDs{unitID},
 	})
 
 	if getCalendarsErr != nil {
@@ -254,13 +255,13 @@ func (s *Service) GetDefaultCalendarDaysForGivenTimeIntervals(
 
 	maxIntervalTime.FinishedAt = minIntervalTime.FinishedAt.Add(time.Hour * 24 * 7) // just taking more time
 
-	calendarDays, getCalendarDaysErr := s.GetCalendarDays(ctx, &GetCalendarDaysParams{
-		QueryFilters: &QueryFilters{
+	calendarDays, getCalendarDaysErr := s.GetCalendarDays(ctx, &hrgate.GetCalendarDaysParams{
+		QueryFilters: &hrgate.QueryFilters{
 			WithDeleted: utils.GetAddressOfValue(false),
 			Limit: utils.GetAddressOfValue(int(math.Ceil(utils.GetDateUnitNumBetweenDates(minIntervalTime.StartedAt,
 				maxIntervalTime.FinishedAt, utils.Day)))),
 		},
-		Calendar: &IDsList{string(calendar.Id)},
+		Calendar: &hrgate.IDsList{string(calendar.Id)},
 		DateFrom: &openapi_types.Date{Time: minIntervalTime.StartedAt},
 		DateTo:   &openapi_types.Date{Time: maxIntervalTime.FinishedAt},
 	})
@@ -271,7 +272,7 @@ func (s *Service) GetDefaultCalendarDaysForGivenTimeIntervals(
 	return calendarDays, nil
 }
 
-func (s *Service) GetEmployeeByLogin(ctx c.Context, username string) (*Employee, error) {
+func (s *Service) GetEmployeeByLogin(ctx c.Context, username string) (*hrgate.Employee, error) {
 	ctx, span := trace.StartSpan(ctx, "hrgate.get_employee_by_login")
 	defer span.End()
 
@@ -283,7 +284,7 @@ func (s *Service) GetEmployeeByLogin(ctx c.Context, username string) (*Employee,
 	ctx = logger.WithLogger(ctx, log)
 	ctx = script.MakeContextWithRetryCnt(ctx)
 
-	response, err := s.cli.GetEmployeesWithResponse(ctx, &GetEmployeesParams{
+	response, err := s.cli.GetEmployeesWithResponse(ctx, &hrgate.GetEmployeesParams{
 		Logins: &[]string{username},
 	})
 	if err != nil {
@@ -305,7 +306,7 @@ func (s *Service) GetEmployeeByLogin(ctx c.Context, username string) (*Employee,
 	return &(*response.JSON200)[0], err
 }
 
-func (s *Service) GetOrganizationByID(ctx c.Context, organizationID string) (*Organization, error) {
+func (s *Service) GetOrganizationByID(ctx c.Context, organizationID string) (*hrgate.Organization, error) {
 	ctx, span := trace.StartSpan(ctx, "hrgate.get_organization_by_id")
 	defer span.End()
 
@@ -317,7 +318,7 @@ func (s *Service) GetOrganizationByID(ctx c.Context, organizationID string) (*Or
 	ctx = logger.WithLogger(ctx, log)
 	ctx = script.MakeContextWithRetryCnt(ctx)
 
-	response, err := s.cli.GetOrganizationsIdWithResponse(ctx, UUIDPathObjectID(organizationID))
+	response, err := s.cli.GetOrganizationsIdWithResponse(ctx, hrgate.UUIDPathObjectID(organizationID))
 	if err != nil {
 		script.LogRetryFailure(ctx, s.maxRetryCount)
 

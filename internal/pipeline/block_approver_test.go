@@ -12,6 +12,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
+	humanTasksNC "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks/nocache"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -1381,7 +1382,7 @@ func TestGoApproverBlock_Actions(t *testing.T) {
 						}
 						return s
 					}(), Services: RunContextServices{
-						HumanTasks: func() humanTasks.ServiceInterface {
+						HumanTasks: func() humanTasks.Service {
 							htMock := htMocks.DelegationServiceClient{}
 
 							htMock.On("GetDelegationsFromLogin", context.Background(), "users1").Return(nil, humanTasks.Delegations{})
@@ -1408,7 +1409,7 @@ func TestGoApproverBlock_Actions(t *testing.T) {
 							})
 							htMock.On("GetDelegates", "users1").Return([]string{})
 
-							ht, _ := humanTasks.NewService(&humanTasks.Config{}, nil)
+							ht, _ := humanTasksNC.NewService(&humanTasks.Config{}, nil)
 							ht.SetCli(&htMock)
 
 							return ht
@@ -1489,7 +1490,7 @@ func TestGoApproverBlock_Actions(t *testing.T) {
 
 							return res
 						}(),
-						HumanTasks: func() humanTasks.ServiceInterface {
+						HumanTasks: func() humanTasks.Service {
 							htMock := htMocks.DelegationServiceClient{}
 
 							htMock.On("GetDelegationsFromLogin", context.Background(), "users1").Return(humanTasks.Delegations{}, nil)
@@ -1505,7 +1506,7 @@ func TestGoApproverBlock_Actions(t *testing.T) {
 							})
 							htMock.On("GetDelegates", "users1").Return([]string{})
 
-							ht, _ := humanTasks.NewService(&humanTasks.Config{}, nil)
+							ht, _ := humanTasksNC.NewService(&humanTasks.Config{}, nil)
 							ht.SetCli(&htMock)
 
 							return ht
@@ -1574,7 +1575,7 @@ func TestGoApproverBlock_Actions(t *testing.T) {
 
 							return res
 						}(),
-						HumanTasks: func() humanTasks.ServiceInterface {
+						HumanTasks: func() humanTasks.Service {
 							htMock := htMocks.DelegationServiceClient{}
 
 							htMock.On("GetDelegationsFromLogin", context.Background(), "users1").Return(humanTasks.Delegations{}, nil)
@@ -1590,7 +1591,7 @@ func TestGoApproverBlock_Actions(t *testing.T) {
 							})
 							htMock.On("GetDelegates", "users1").Return([]string{})
 
-							ht, _ := humanTasks.NewService(&humanTasks.Config{}, nil)
+							ht, _ := humanTasksNC.NewService(&humanTasks.Config{}, nil)
 							ht.SetCli(&htMock)
 
 							return ht
@@ -1686,7 +1687,7 @@ func TestGoApproverBlock_Actions(t *testing.T) {
 
 							return res
 						}(),
-						HumanTasks: func() humanTasks.ServiceInterface {
+						HumanTasks: func() humanTasks.Service {
 							htMock := htMocks.DelegationServiceClient{}
 
 							htMock.On("GetDelegationsFromLogin", context.Background(), "users1").Return(humanTasks.Delegations{}, nil)
@@ -1705,7 +1706,7 @@ func TestGoApproverBlock_Actions(t *testing.T) {
 							delegates := []string{delLogin1}
 							htMock.On("GetDelegates", "users1").Return(delegates)
 
-							ht, _ := humanTasks.NewService(&humanTasks.Config{}, nil)
+							ht, _ := humanTasksNC.NewService(&humanTasks.Config{}, nil)
 							ht.SetCli(&htMock)
 
 							return ht
