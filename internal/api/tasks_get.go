@@ -3,6 +3,7 @@ package api
 import (
 	c "context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -15,6 +16,7 @@ import (
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	e "gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	ht "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
@@ -529,6 +531,21 @@ func (ae *Env) GetTasks(w http.ResponseWriter, req *http.Request, params GetTask
 		errorHandler.handleError(BadFiltersError, err)
 
 		return
+	}
+
+	// we need it in order to fix freezing query ahead
+	if filters.Order == nil {
+		ascOrder := db.AscOrder
+		filters.Order = &ascOrder
+	}
+
+	if *filters.Order != db.SkipOrderKey {
+		if filters.OrderBy == nil {
+			orderByStartedAt := fmt.Sprintf("started_at:%s", *filters.Order)
+			filters.OrderBy = &[]string{orderByStartedAt, "id"}
+		} else {
+			*filters.OrderBy = append(*filters.OrderBy, "id")
+		}
 	}
 
 	delegations, err := ae.HumanTasks.GetDelegationsToLogin(ctx, filters.CurrentUser)
