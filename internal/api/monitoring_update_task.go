@@ -199,7 +199,7 @@ func IsTypeCorrect(t string, v any) error {
 		return fmt.Errorf("empty type")
 	}
 
-	if v == nil && (t == "object" || t == "array") {
+	if v == nil && (t == utils.ObjectType || t == utils.ArrayType) {
 		return nil
 	} else if v == nil {
 		return fmt.Errorf("value of type %s can't be null", t)
@@ -210,7 +210,7 @@ func IsTypeCorrect(t string, v any) error {
 	typeIsCorrect := false
 
 	switch t {
-	case "integer":
+	case utils.IntegerType:
 		if reflectType == reflect.Float64 {
 			floatNum, ok := v.(float64)
 			if ok {
@@ -219,17 +219,18 @@ func IsTypeCorrect(t string, v any) error {
 		} else if reflectType == reflect.Int {
 			typeIsCorrect = (reflectType == reflect.Int)
 		}
-	case "number":
+	case utils.NumberType:
 		typeIsCorrect = (reflectType == reflect.Float64)
-	case "string":
+	case utils.StringType:
 		typeIsCorrect = (reflectType == reflect.String)
-	case "boolean":
+	case utils.BoolType:
 		typeIsCorrect = (reflectType == reflect.Bool)
-	case "array":
+	case utils.ArrayType:
 		typeIsCorrect = (reflectType == reflect.Slice)
-	case "object":
+	case utils.ObjectType:
 		typeIsCorrect = (reflectType == reflect.Map)
 	}
+
 	if typeIsCorrect {
 		return nil
 	}
