@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks/nocache"
 
 	"github.com/iancoleman/orderedmap"
 
@@ -990,8 +991,8 @@ func TestProcessBlock(t *testing.T) {
 
 							return slaMock
 						}(),
-						HumanTasks: func() human_tasks.ServiceInterface {
-							service, _ := human_tasks.NewService(&human_tasks.Config{}, nil)
+						HumanTasks: func() human_tasks.Service {
+							service, _ := nocache.NewService(&human_tasks.Config{}, nil)
 
 							return service
 						}(),

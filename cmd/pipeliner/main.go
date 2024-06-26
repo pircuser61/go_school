@@ -8,6 +8,8 @@ import (
 	"syscall"
 
 	"contrib.go.opencensus.io/exporter/jaeger"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/hrgate/nocache"
+	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks/nocache"
 
 	"go.opencensus.io/trace"
 
@@ -20,9 +22,7 @@ import (
 	file_registry "gitlab.services.mts.ru/jocasta/pipeliner/internal/fileregistry"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/forms"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/functions"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/hrgate"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/httpclient"
-	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/integrations"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/kafka"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
@@ -164,7 +164,7 @@ func main() {
 		return
 	}
 
-	hrGateService, err := hrgate.NewService(&cfg.HrGate, ssoService, m)
+	hrGateService, err := nocache.NewService(&cfg.HrGate, ssoService, m)
 	if err != nil {
 		log.WithError(err).Error("can't create hrgate service")
 

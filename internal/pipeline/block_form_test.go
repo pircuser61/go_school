@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks/nocache"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -674,7 +675,7 @@ func Test_createGoFormBlock(t *testing.T) {
 				Delegations: []*delegationht.Delegation{},
 			}, nil)
 
-			ht, _ := humanTasks.NewService(&humanTasks.Config{}, nil)
+			ht, _ := nocache.NewService(&humanTasks.Config{}, nil)
 			ht.SetCli(&cli)
 
 			tt.args.runCtx.Services.HumanTasks = ht
@@ -1512,7 +1513,7 @@ func TestGoFormActions(t *testing.T) {
 
 							return res
 						}(),
-						HumanTasks: func() humanTasks.ServiceInterface {
+						HumanTasks: func() humanTasks.Service {
 							htMock := mocks.DelegationServiceClient{}
 
 							htMock.On("GetDelegationsFromLogin", context.Background(), "users1").Return(nil, humanTasks.Delegations{})
@@ -1539,7 +1540,7 @@ func TestGoFormActions(t *testing.T) {
 							})
 							htMock.On("GetDelegates", "users1").Return([]string{"a"})
 
-							ht, _ := humanTasks.NewService(&humanTasks.Config{}, nil)
+							ht, _ := nocache.NewService(&humanTasks.Config{}, nil)
 							ht.SetCli(&htMock)
 
 							return ht
@@ -1610,7 +1611,7 @@ func TestGoFormActions(t *testing.T) {
 
 							return res
 						}(),
-						HumanTasks: func() humanTasks.ServiceInterface {
+						HumanTasks: func() humanTasks.Service {
 							htMock := mocks.DelegationServiceClient{}
 
 							htMock.On("GetDelegationsFromLogin", context.Background(), "users1").Return(nil, humanTasks.Delegations{})
@@ -1637,7 +1638,7 @@ func TestGoFormActions(t *testing.T) {
 							})
 							htMock.On("GetDelegates", "users1").Return([]string{"a"})
 
-							ht, _ := humanTasks.NewService(&humanTasks.Config{}, nil)
+							ht, _ := nocache.NewService(&humanTasks.Config{}, nil)
 							ht.SetCli(&htMock)
 
 							return ht
@@ -1706,7 +1707,7 @@ func TestGoFormActions(t *testing.T) {
 
 							return res
 						}(),
-						HumanTasks: func() humanTasks.ServiceInterface {
+						HumanTasks: func() humanTasks.Service {
 							htMock := mocks.DelegationServiceClient{}
 
 							htMock.On("GetDelegationsFromLogin", context.Background(), "users1").Return(nil, humanTasks.Delegations{})
@@ -1733,7 +1734,7 @@ func TestGoFormActions(t *testing.T) {
 							})
 							htMock.On("GetDelegates", "users1").Return([]string{"a"})
 
-							ht, _ := humanTasks.NewService(&humanTasks.Config{}, nil)
+							ht, _ := nocache.NewService(&humanTasks.Config{}, nil)
 							ht.SetCli(&htMock)
 
 							return ht
@@ -1825,7 +1826,7 @@ func TestGoFormActions(t *testing.T) {
 
 							return res
 						}(),
-						HumanTasks: func() humanTasks.ServiceInterface {
+						HumanTasks: func() humanTasks.Service {
 							htMock := mocks.DelegationServiceClient{}
 
 							htMock.On("GetDelegationsFromLogin", context.Background(), "users1").Return(nil, humanTasks.Delegations{})
@@ -1852,7 +1853,7 @@ func TestGoFormActions(t *testing.T) {
 							})
 							htMock.On("GetDelegates", "users1").Return([]string{"a"})
 
-							ht, _ := humanTasks.NewService(&humanTasks.Config{}, nil)
+							ht, _ := nocache.NewService(&humanTasks.Config{}, nil)
 							ht.SetCli(&htMock)
 
 							return ht
@@ -1938,7 +1939,7 @@ func TestGoFormActions(t *testing.T) {
 
 							return res
 						}(),
-						HumanTasks: func() humanTasks.ServiceInterface {
+						HumanTasks: func() humanTasks.Service {
 							htMock := mocks.DelegationServiceClient{}
 
 							htMock.On("GetDelegationsFromLogin", context.Background(), "users1").Return(nil, humanTasks.Delegations{})
@@ -1965,7 +1966,7 @@ func TestGoFormActions(t *testing.T) {
 							})
 							htMock.On("GetDelegates", "users1").Return([]string{"a"})
 
-							ht, _ := humanTasks.NewService(&humanTasks.Config{}, nil)
+							ht, _ := nocache.NewService(&humanTasks.Config{}, nil)
 							ht.SetCli(&htMock)
 
 							return ht
@@ -2057,7 +2058,7 @@ func TestGoFormActions(t *testing.T) {
 
 							return res
 						}(),
-						HumanTasks: func() humanTasks.ServiceInterface {
+						HumanTasks: func() humanTasks.Service {
 							htMock := mocks.DelegationServiceClient{}
 
 							htMock.On("GetDelegationsFromLogin", context.Background(), "users1").Return(nil, humanTasks.Delegations{})
@@ -2084,7 +2085,7 @@ func TestGoFormActions(t *testing.T) {
 							})
 							htMock.On("GetDelegates", "users1").Return([]string{"a"})
 
-							ht, _ := humanTasks.NewService(&humanTasks.Config{}, nil)
+							ht, _ := nocache.NewService(&humanTasks.Config{}, nil)
 							ht.SetCli(&htMock)
 
 							return ht

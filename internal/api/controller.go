@@ -47,11 +47,11 @@ type Env struct {
 	People                  people.Service
 	ServiceDesc             servicedesc.Service
 	FunctionStore           functions.Service
-	HumanTasks              human_tasks.ServiceInterface
+	HumanTasks              human_tasks.Service
 	MailFetcher             mail_fetcher.Service
 	FileRegistry            file_registry.Service
 	Integrations            integrations.Service
-	HrGate                  hrgate.ServiceInterface
+	HrGate                  hrgate.Service
 	Scheduler               *scheduler.Service
 	SLAService              sla.Service
 	Forms                   *forms.Service

@@ -1,4 +1,4 @@
-package hrgate
+package cache
 
 import (
 	c "context"
@@ -7,6 +7,8 @@ import (
 	"math"
 	"time"
 
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/hrgate"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/hrgate/nocache"
 	"go.opencensus.io/trace"
 
 	openapi_types "github.com/deepmap/oapi-codegen/pkg/types"
@@ -25,13 +27,13 @@ const (
 	calendarDaysKeyPrefix = "calendarDays:"
 )
 
-type serviceWithCache struct {
+type service struct {
 	Cache  cachekit.Cache
-	HRGate ServiceInterface
+	HRGate hrgate.Service
 }
 
-func NewServiceWithCache(cfg *Config, ssoS *sso.Service, m metrics.Metrics) (ServiceInterface, error) {
-	service, err := NewService(cfg, ssoS, m)
+func NewService(cfg *hrgate.Config, ssoS *sso.Service, m metrics.Metrics) (hrgate.Service, error) {
+	srv, err := nocache.NewService(cfg, ssoS, m)
 	if err != nil {
 		return nil, err
 	}
@@ -41,13 +43,13 @@ func NewServiceWithCache(cfg *Config, ssoS *sso.Service, m metrics.Metrics) (Ser
 		return nil, cacheErr
 	}
 
-	return &serviceWithCache{
-		HRGate: service,
+	return &service{
+		HRGate: srv,
 		Cache:  cache,
 	}, nil
 }
 
-func (s *serviceWithCache) GetCalendars(ctx c.Context, params *GetCalendarsParams) ([]Calendar, error) {
+func (s *service) GetCalendars(ctx c.Context, params *hrgate.GetCalendarsParams) ([]hrgate.Calendar, error) {
 	ctx, span := trace.StartSpan(ctx, "hrgate.get_calendars(cached)")
 	defer span.End()
 
@@ -63,7 +65,7 @@ func (s *serviceWithCache) GetCalendars(ctx c.Context, params *GetCalendarsParam
 		if err == nil {
 			calendars, ok := valueFromCache.(string)
 			if ok {
-				var data []Calendar
+				var data []hrgate.Calendar
 
 				unmErr := json.Unmarshal([]byte(calendars), &data)
 				if unmErr == nil {
@@ -96,11 +98,11 @@ func (s *serviceWithCache) GetCalendars(ctx c.Context, params *GetCalendarsParam
 	return calendar, nil
 }
 
-func (s *serviceWithCache) Ping(ctx c.Context) error {
+func (s *service) Ping(ctx c.Context) error {
 	return s.HRGate.Ping(ctx)
 }
 
-func (s *serviceWithCache) GetCalendarDays(ctx c.Context, params *GetCalendarDaysParams) (*CalendarDays, error) {
+func (s *service) GetCalendarDays(ctx c.Context, params *hrgate.GetCalendarDaysParams) (*hrgate.CalendarDays, error) {
 	ctx, span := trace.StartSpan(ctx, "hrgate.get_calendar_days(cached)")
 	defer span.End()
 
@@ -116,7 +118,7 @@ func (s *serviceWithCache) GetCalendarDays(ctx c.Context, params *GetCalendarDay
 		if err == nil {
 			calendarDays, ok := valueFromCache.(string)
 			if ok {
-				var data *CalendarDays
+				var data *hrgate.CalendarDays
 
 				unmErr := json.Unmarshal([]byte(calendarDays), &data)
 				if unmErr == nil {
@@ -149,7 +151,7 @@ func (s *serviceWithCache) GetCalendarDays(ctx c.Context, params *GetCalendarDay
 	return calendarDays, nil
 }
 
-func (s *serviceWithCache) GetPrimaryRussianFederationCalendarOrFirst(ctx c.Context, params *GetCalendarsParams) (*Calendar, error) {
+func (s *service) GetPrimaryRussianFederationCalendarOrFirst(ctx c.Context, params *hrgate.GetCalendarsParams) (*hrgate.Calendar, error) {
 	ctx, span := trace.StartSpan(ctx, "hrgate.get_primary_calendar_or_first(cached)")
 	defer span.End()
 
@@ -162,7 +164,7 @@ func (s *serviceWithCache) GetPrimaryRussianFederationCalendarOrFirst(ctx c.Cont
 	for calendarIdx := range calendars {
 		calendar := calendars[calendarIdx]
 
-		if calendar.Primary != nil && *calendar.Primary && calendar.HolidayCalendar == RussianFederation {
+		if calendar.Primary != nil && *calendar.Primary && calendar.HolidayCalendar == nocache.RussianFederation {
 			return &calendar, nil
 		}
 	}
@@ -170,26 +172,26 @@ func (s *serviceWithCache) GetPrimaryRussianFederationCalendarOrFirst(ctx c.Cont
 	return &calendars[0], nil
 }
 
-func (s *serviceWithCache) FillDefaultUnitID(ctx c.Context) error {
+func (s *service) FillDefaultUnitID(ctx c.Context) error {
 	return s.HRGate.FillDefaultUnitID(ctx)
 }
 
-func (s *serviceWithCache) GetDefaultUnitID() string {
+func (s *service) GetDefaultUnitID() string {
 	return s.HRGate.GetDefaultUnitID()
 }
 
 // nolint:dupl //так нужно!
-func (s *serviceWithCache) GetDefaultCalendarDaysForGivenTimeIntervals(
+func (s *service) GetDefaultCalendarDaysForGivenTimeIntervals(
 	ctx c.Context,
 	taskTimeIntervals []entity.TaskCompletionInterval,
-) (*CalendarDays, error) {
+) (*hrgate.CalendarDays, error) {
 	ctx, span := trace.StartSpan(ctx, "hrgate.get_default_calendar_days_for_given_time_intervals(cached)")
 	defer span.End()
 
 	unitID := s.GetDefaultUnitID()
 
-	calendar, getCalendarsErr := s.GetPrimaryRussianFederationCalendarOrFirst(ctx, &GetCalendarsParams{
-		UnitIDs: &UnitIDs{unitID},
+	calendar, getCalendarsErr := s.GetPrimaryRussianFederationCalendarOrFirst(ctx, &hrgate.GetCalendarsParams{
+		UnitIDs: &hrgate.UnitIDs{unitID},
 	})
 
 	if getCalendarsErr != nil {
@@ -214,13 +216,13 @@ func (s *serviceWithCache) GetDefaultCalendarDaysForGivenTimeIntervals(
 
 	maxIntervalTime.FinishedAt = minIntervalTime.FinishedAt.Add(time.Hour * 24 * 7) // just taking more time
 
-	calendarDays, getCalendarDaysErr := s.GetCalendarDays(ctx, &GetCalendarDaysParams{
-		QueryFilters: &QueryFilters{
+	calendarDays, getCalendarDaysErr := s.GetCalendarDays(ctx, &hrgate.GetCalendarDaysParams{
+		QueryFilters: &hrgate.QueryFilters{
 			WithDeleted: utils.GetAddressOfValue(false),
 			Limit: utils.GetAddressOfValue(int(math.Ceil(utils.GetDateUnitNumBetweenDates(minIntervalTime.StartedAt,
 				maxIntervalTime.FinishedAt, utils.Day)))),
 		},
-		Calendar: &IDsList{string(calendar.Id)},
+		Calendar: &hrgate.IDsList{string(calendar.Id)},
 		DateFrom: &openapi_types.Date{Time: minIntervalTime.StartedAt},
 		DateTo:   &openapi_types.Date{Time: maxIntervalTime.FinishedAt},
 	})

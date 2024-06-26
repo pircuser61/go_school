@@ -56,11 +56,11 @@ type RunContextServices struct {
 	People        people.Service
 	ServiceDesc   servicedesc.Service
 	FunctionStore functions.Service
-	HumanTasks    human_tasks.ServiceInterface
+	HumanTasks    human_tasks.Service
 	Integrations  integrations.Service
 	FileRegistry  fileregistry.Service
 	FaaS          string
-	HrGate        hrgate.ServiceInterface
+	HrGate        hrgate.Service
 	Scheduler     *scheduler.Service
 	SLAService    sla.Service
 }

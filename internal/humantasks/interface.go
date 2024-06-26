@@ -6,7 +6,7 @@ import (
 	d "gitlab.services.mts.ru/jocasta/human-tasks/pkg/proto/gen/proto/go/delegation"
 )
 
-type ServiceInterface interface {
+type Service interface {
 	Setter
 
 	GetDelegations(ctx c.Context, req *d.GetDelegationsRequest) (ds Delegations, err error)
