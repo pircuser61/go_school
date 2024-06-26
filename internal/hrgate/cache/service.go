@@ -27,13 +27,13 @@ const (
 	calendarDaysKeyPrefix = "calendarDays:"
 )
 
-type serviceWithCache struct {
+type service struct {
 	Cache  cachekit.Cache
 	HRGate hrgate.Service
 }
 
 func NewService(cfg *hrgate.Config, ssoS *sso.Service, m metrics.Metrics) (hrgate.Service, error) {
-	service, err := nocache.NewService(cfg, ssoS, m)
+	srv, err := nocache.NewService(cfg, ssoS, m)
 	if err != nil {
 		return nil, err
 	}
@@ -43,13 +43,13 @@ func NewService(cfg *hrgate.Config, ssoS *sso.Service, m metrics.Metrics) (hrgat
 		return nil, cacheErr
 	}
 
-	return &serviceWithCache{
-		HRGate: service,
+	return &service{
+		HRGate: srv,
 		Cache:  cache,
 	}, nil
 }
 
-func (s *serviceWithCache) GetCalendars(ctx c.Context, params *hrgate.GetCalendarsParams) ([]hrgate.Calendar, error) {
+func (s *service) GetCalendars(ctx c.Context, params *hrgate.GetCalendarsParams) ([]hrgate.Calendar, error) {
 	ctx, span := trace.StartSpan(ctx, "hrgate.get_calendars(cached)")
 	defer span.End()
 
@@ -98,11 +98,11 @@ func (s *serviceWithCache) GetCalendars(ctx c.Context, params *hrgate.GetCalenda
 	return calendar, nil
 }
 
-func (s *serviceWithCache) Ping(ctx c.Context) error {
+func (s *service) Ping(ctx c.Context) error {
 	return s.HRGate.Ping(ctx)
 }
 
-func (s *serviceWithCache) GetCalendarDays(ctx c.Context, params *hrgate.GetCalendarDaysParams) (*hrgate.CalendarDays, error) {
+func (s *service) GetCalendarDays(ctx c.Context, params *hrgate.GetCalendarDaysParams) (*hrgate.CalendarDays, error) {
 	ctx, span := trace.StartSpan(ctx, "hrgate.get_calendar_days(cached)")
 	defer span.End()
 
@@ -151,7 +151,7 @@ func (s *serviceWithCache) GetCalendarDays(ctx c.Context, params *hrgate.GetCale
 	return calendarDays, nil
 }
 
-func (s *serviceWithCache) GetPrimaryRussianFederationCalendarOrFirst(ctx c.Context, params *hrgate.GetCalendarsParams) (*hrgate.Calendar, error) {
+func (s *service) GetPrimaryRussianFederationCalendarOrFirst(ctx c.Context, params *hrgate.GetCalendarsParams) (*hrgate.Calendar, error) {
 	ctx, span := trace.StartSpan(ctx, "hrgate.get_primary_calendar_or_first(cached)")
 	defer span.End()
 
@@ -172,16 +172,16 @@ func (s *serviceWithCache) GetPrimaryRussianFederationCalendarOrFirst(ctx c.Cont
 	return &calendars[0], nil
 }
 
-func (s *serviceWithCache) FillDefaultUnitID(ctx c.Context) error {
+func (s *service) FillDefaultUnitID(ctx c.Context) error {
 	return s.HRGate.FillDefaultUnitID(ctx)
 }
 
-func (s *serviceWithCache) GetDefaultUnitID() string {
+func (s *service) GetDefaultUnitID() string {
 	return s.HRGate.GetDefaultUnitID()
 }
 
 // nolint:dupl //так нужно!
-func (s *serviceWithCache) GetDefaultCalendarDaysForGivenTimeIntervals(
+func (s *service) GetDefaultCalendarDaysForGivenTimeIntervals(
 	ctx c.Context,
 	taskTimeIntervals []entity.TaskCompletionInterval,
 ) (*hrgate.CalendarDays, error) {
