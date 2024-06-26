@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks/cache"
 	"go.opencensus.io/trace"
 
 	"go.opencensus.io/plugin/ocgrpc"
@@ -40,10 +39,6 @@ type service struct {
 }
 
 func NewService(cfg *humantasks.Config, m metrics.Metrics) (humantasks.Service, error) {
-	if cfg.URL == "" {
-		return &cache.Service{}, nil
-	}
-
 	opts := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithStatsHandler(&ocgrpc.ClientHandler{}),

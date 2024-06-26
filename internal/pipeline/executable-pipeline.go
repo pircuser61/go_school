@@ -51,7 +51,7 @@ type ExecutablePipeline struct {
 	People        people.Service
 	ServiceDesc   sd.Service
 	FunctionStore functions.Service
-	HumanTasks    human_tasks.ServiceInterface
+	HumanTasks    human_tasks.Service
 	Integrations  integrations.Service
 	FileRegistry  file_registry.Service
 	Scheduler     *scheduler.Service
