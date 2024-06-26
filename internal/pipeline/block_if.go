@@ -171,6 +171,9 @@ func createGoIfBlock(ctx context.Context, name string, ef *entity.EriusFunc, run
 		Output:     map[string]string{},
 		Sockets:    entity.ConvertSocket(ef.Sockets),
 		RunContext: runCtx,
+		State: &ConditionsData{
+			ConditionGroups: make([]conditions_kit.ConditionGroup, 0),
+		},
 
 		expectedEvents: expectedEvents,
 		happenedEvents: make([]entity.NodeEvent, 0),
@@ -192,7 +195,8 @@ func createGoIfBlock(ctx context.Context, name string, ef *entity.EriusFunc, run
 	}
 
 	b.State = &ConditionsData{
-		ChosenGroupID: "",
+		ChosenGroupID:   "",
+		ConditionGroups: make([]conditions_kit.ConditionGroup, 0),
 	}
 
 	if ef.Params != nil {

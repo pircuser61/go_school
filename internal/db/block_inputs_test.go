@@ -40,9 +40,9 @@ func Test_trySetNewParams(t *testing.T) {
 				stepParams: stepParams,
 				inputs:     inputs,
 			},
-			want:    map[string]interface{} {
-				"sla": float64(2),
-				"approver": "gogen",
+			want: map[string]interface{}{
+				"sla":        float64(2),
+				"approver":   "gogen",
 				"otherParam": true,
 			},
 			wantErr: false,
@@ -53,7 +53,7 @@ func Test_trySetNewParams(t *testing.T) {
 				stepParams: stepParamsEmpty,
 				inputs:     inputs,
 			},
-			want:    map[string]interface{} {},
+			want:    map[string]interface{}{},
 			wantErr: false,
 		},
 	}

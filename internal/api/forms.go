@@ -15,6 +15,7 @@ import (
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
@@ -69,7 +70,18 @@ func (ae *Env) GetFormsChangelog(w http.ResponseWriter, r *http.Request, params 
 		return
 	}
 
-	formData := pipeline.FormData{}
+	formData := pipeline.FormData{
+		Executors:          make(map[string]struct{}, 0),
+		InitialExecutors:   make(map[string]struct{}, 0),
+		ApplicationBody:    make(map[string]interface{}, 0),
+		Constants:          make(map[string]interface{}, 0),
+		ChangesLog:         make([]pipeline.ChangesLogItem, 0),
+		HiddenFields:       make([]string, 0),
+		FormsAccessibility: make([]script.FormAccessibility, 0),
+		Mapping:            make(map[string]script.JSONSchemaPropertiesValue, 0),
+		AttachmentFields:   make([]string, 0),
+		Keys:               make(map[string]string, 0),
+	}
 
 	err = json.Unmarshal(fState, &formData)
 	if err != nil {

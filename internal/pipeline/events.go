@@ -238,7 +238,15 @@ func (runCtx BlockRunContext) GetCancelledStepsEvents(ctx c.Context) ([]e.NodeEv
 			if _, ok := stepContent.State[s.Name]; ok {
 				switch s.Type {
 				case BlockGoApproverID:
-					state := &ApproverData{}
+					state := &ApproverData{
+						Approvers:           make(map[string]struct{}, 0),
+						ApproverLog:         make([]ApproverLogEntry, 0),
+						EditingAppLog:       make([]ApproverEditingApp, 0),
+						FormsAccessibility:  make([]script.FormAccessibility, 0),
+						AddInfo:             make([]AdditionalInfo, 0),
+						ActionList:          make([]Action, 0),
+						AdditionalApprovers: make([]AdditionalApprover, 0),
+					}
 
 					unmarshalErr := json.Unmarshal(stepContent.State[s.Name], &state)
 					if unmarshalErr != nil {
@@ -247,7 +255,16 @@ func (runCtx BlockRunContext) GetCancelledStepsEvents(ctx c.Context) ([]e.NodeEv
 
 					stepPeople = state.Approvers
 				case BlockGoExecutionID:
-					state := &ExecutionData{}
+					state := &ExecutionData{
+						Executors:                make(map[string]struct{}, 0),
+						InitialExecutors:         make(map[string]struct{}, 0),
+						DecisionAttachments:      make([]e.Attachment, 0),
+						EditingAppLog:            make([]ExecutorEditApp, 0),
+						ChangedExecutorsLogs:     make([]ChangeExecutorLog, 0),
+						RequestExecutionInfoLogs: make([]RequestExecutionInfoLog, 0),
+						FormsAccessibility:       make([]script.FormAccessibility, 0),
+						TakenInWorkLog:           make([]StartWorkLog, 0),
+					}
 
 					unmarshalErr := json.Unmarshal(stepContent.State[s.Name], &state)
 					if unmarshalErr != nil {
@@ -256,7 +273,14 @@ func (runCtx BlockRunContext) GetCancelledStepsEvents(ctx c.Context) ([]e.NodeEv
 
 					stepPeople = state.Executors
 				case BlockGoSignID:
-					state := &SignData{}
+					state := &SignData{
+						Signers:             make(map[string]struct{}, 0),
+						Attachments:         make([]e.Attachment, 0),
+						Signatures:          make([]FileSignaturePair, 0),
+						SignLog:             make([]SignLogEntry, 0),
+						FormsAccessibility:  make([]script.FormAccessibility, 0),
+						AdditionalApprovers: make([]AdditionalSignApprover, 0),
+					}
 
 					unmarshalErr := json.Unmarshal(stepContent.State[s.Name], &state)
 					if unmarshalErr != nil {
@@ -265,7 +289,18 @@ func (runCtx BlockRunContext) GetCancelledStepsEvents(ctx c.Context) ([]e.NodeEv
 
 					stepPeople = state.Signers
 				case BlockGoFormID:
-					state := &FormData{}
+					state := &FormData{
+						Executors:          make(map[string]struct{}, 0),
+						InitialExecutors:   make(map[string]struct{}, 0),
+						ApplicationBody:    make(map[string]interface{}, 0),
+						Constants:          make(map[string]interface{}, 0),
+						ChangesLog:         make([]ChangesLogItem, 0),
+						HiddenFields:       make([]string, 0),
+						FormsAccessibility: make([]script.FormAccessibility, 0),
+						Mapping:            make(map[string]script.JSONSchemaPropertiesValue, 0),
+						AttachmentFields:   make([]string, 0),
+						Keys:               make(map[string]string, 0),
+					}
 
 					unmarshalErr := json.Unmarshal(stepContent.State[s.Name], &state)
 					if unmarshalErr != nil {

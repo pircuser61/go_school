@@ -62,7 +62,7 @@ type SignData struct {
 	Comment            *string                   `json:"comment,omitempty"`
 	ActualSigner       *string                   `json:"actual_signer,omitempty"`
 	Attachments        []entity.Attachment       `json:"attachments,omitempty"`
-	Signatures         []fileSignaturePair       `json:"signatures,omitempty"`
+	Signatures         []FileSignaturePair       `json:"signatures,omitempty"`
 	SigningParams      SigningParams             `json:"signing_params,omitempty"`
 	SigningParamsPaths script.SigningParamsPaths `json:"signing_params_paths,omitempty"`
 	SigningRule        script.SigningRule        `json:"signing_rule,omitempty"`

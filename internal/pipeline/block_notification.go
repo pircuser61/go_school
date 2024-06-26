@@ -350,6 +350,11 @@ func createGoNotificationBlock(
 		Input:     map[string]string{},
 		Output:    map[string]string{},
 		Sockets:   entity.ConvertSocket(ef.Sockets),
+		State: &NotificationData{
+			People:          make([]string, 0),
+			Emails:          make([]string, 0),
+			UsersFromSchema: make(map[string]struct{}, 0),
+		},
 
 		RunContext: runCtx,
 

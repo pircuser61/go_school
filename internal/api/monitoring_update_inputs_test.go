@@ -27,9 +27,7 @@ func Test_validateInputs(t *testing.T) {
 		},
 		{
 			name: "invalid approver",
-			args: args{inputs: map[string]interface{}{
-
-			},
+			args: args{inputs: map[string]interface{}{},
 				stepName: "approver_0"},
 			wantErr: true,
 		},

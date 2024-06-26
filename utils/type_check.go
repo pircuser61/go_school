@@ -20,6 +20,8 @@ const (
 	ObjectType  = "object"
 )
 
+// найди стейты, все поля с массивами, в них прописать слайс нулвой длины
+
 func GetJSONType(value interface{}) string {
 	if value == nil {
 		return ""
@@ -35,9 +37,9 @@ func GetJSONType(value interface{}) string {
 		return StringType
 	case reflect.Bool:
 		return BoolType
-	case reflect.Array:
+	case reflect.Slice, reflect.Array:
 		return ArrayType
-	case reflect.Map:
+	case reflect.Map, reflect.Struct:
 		return ObjectType
 	default:
 		return ""

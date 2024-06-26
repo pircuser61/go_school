@@ -284,6 +284,11 @@ func createExecutableFunctionBlock(ctx context.Context, name string, ef *entity.
 		Output:     map[string]string{},
 		Sockets:    entity.ConvertSocket(ef.Sockets),
 		RunContext: runCtx,
+		State: &ExecutableFunction{
+			Mapping:       make(map[string]script.JSONSchemaPropertiesValue, 0),
+			Constants:     make(map[string]interface{}, 0),
+			RetryTimeouts: make([]int, 0),
+		},
 
 		expectedEvents: expectedEvents,
 		happenedEvents: make([]entity.NodeEvent, 0),
@@ -365,6 +370,7 @@ func (gb *ExecutableFunctionBlock) createState(ctx context.Context, ef *entity.E
 		Constants:      params.Constants,
 		CheckSLA:       params.CheckSLA,
 		SLA:            params.SLA,
+		RetryTimeouts:  make([]int, 0),
 	}
 
 	if params.NeedRetry {

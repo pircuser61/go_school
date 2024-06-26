@@ -10,14 +10,14 @@ import (
 	"reflect"
 	"strings"
 
-	"gitlab.services.mts.ru/abp/myosotis/logger"
-
 	"github.com/google/uuid"
+	"gitlab.services.mts.ru/abp/myosotis/logger"
 	"go.opencensus.io/trace"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
@@ -195,7 +195,9 @@ func convertReqEditData(in map[string]MonitoringEditBlockData) (res map[string]i
 }
 
 func IsTypeCorrect(t string, v any) error {
-	if t == "" {
+	if v == nil && t == "" {
+		return nil
+	} else if t == "" {
 		return fmt.Errorf("empty type")
 	}
 
@@ -419,7 +421,15 @@ func (ae *Env) approverEditBlock(ctx c.Context, stepID uuid.UUID, stepName strin
 			return nil, stateErr
 		}
 
-		approverState := pipeline.ApproverData{}
+		approverState := pipeline.ApproverData{
+			Approvers:           make(map[string]struct{}, 0),
+			ApproverLog:         make([]pipeline.ApproverLogEntry, 0),
+			EditingAppLog:       make([]pipeline.ApproverEditingApp, 0),
+			FormsAccessibility:  make([]script.FormAccessibility, 0),
+			AddInfo:             make([]pipeline.AdditionalInfo, 0),
+			ActionList:          make([]pipeline.Action, 0),
+			AdditionalApprovers: make([]pipeline.AdditionalApprover, 0),
+		}
 
 		unmErr := json.Unmarshal(blockState, &approverState)
 		if unmErr != nil {
@@ -436,7 +446,15 @@ func (ae *Env) approverEditBlock(ctx c.Context, stepID uuid.UUID, stepName strin
 		return []EditBlock{{State: updState, Output: data, StepName: stepName, StepID: stepID}}, nil
 
 	case MonitoringTaskUpdateBlockRequestChangeTypeState:
-		approverState := pipeline.ApproverData{}
+		approverState := pipeline.ApproverData{
+			Approvers:           make(map[string]struct{}, 0),
+			ApproverLog:         make([]pipeline.ApproverLogEntry, 0),
+			EditingAppLog:       make([]pipeline.ApproverEditingApp, 0),
+			FormsAccessibility:  make([]script.FormAccessibility, 0),
+			AddInfo:             make([]pipeline.AdditionalInfo, 0),
+			ActionList:          make([]pipeline.Action, 0),
+			AdditionalApprovers: make([]pipeline.AdditionalApprover, 0),
+		}
 
 		unmErr := json.Unmarshal(marshData, &approverState)
 		if unmErr != nil {
@@ -477,7 +495,16 @@ func (ae *Env) executorEditBlock(ctx c.Context, stepID uuid.UUID, stepName strin
 			return nil, stateErr
 		}
 
-		execState := pipeline.ExecutionData{}
+		execState := pipeline.ExecutionData{
+			Executors:                make(map[string]struct{}, 0),
+			InitialExecutors:         make(map[string]struct{}, 0),
+			DecisionAttachments:      make([]entity.Attachment, 0),
+			EditingAppLog:            make([]pipeline.ExecutorEditApp, 0),
+			ChangedExecutorsLogs:     make([]pipeline.ChangeExecutorLog, 0),
+			RequestExecutionInfoLogs: make([]pipeline.RequestExecutionInfoLog, 0),
+			FormsAccessibility:       make([]script.FormAccessibility, 0),
+			TakenInWorkLog:           make([]pipeline.StartWorkLog, 0),
+		}
 
 		unmErr := json.Unmarshal(blockState, &execState)
 		if unmErr != nil {
@@ -493,7 +520,16 @@ func (ae *Env) executorEditBlock(ctx c.Context, stepID uuid.UUID, stepName strin
 
 		return []EditBlock{{State: updState, Output: data, StepName: stepName, StepID: stepID}}, nil
 	case MonitoringTaskUpdateBlockRequestChangeTypeState:
-		execState := pipeline.ExecutionData{}
+		execState := pipeline.ExecutionData{
+			Executors:                make(map[string]struct{}, 0),
+			InitialExecutors:         make(map[string]struct{}, 0),
+			DecisionAttachments:      make([]entity.Attachment, 0),
+			EditingAppLog:            make([]pipeline.ExecutorEditApp, 0),
+			ChangedExecutorsLogs:     make([]pipeline.ChangeExecutorLog, 0),
+			RequestExecutionInfoLogs: make([]pipeline.RequestExecutionInfoLog, 0),
+			FormsAccessibility:       make([]script.FormAccessibility, 0),
+			TakenInWorkLog:           make([]pipeline.StartWorkLog, 0),
+		}
 
 		unmErr := json.Unmarshal(marshData, &execState)
 		if unmErr != nil {
@@ -624,7 +660,11 @@ func (ae *Env) functionEditBlock(ctx c.Context, stepID uuid.UUID, stepName strin
 			return nil, stateErr
 		}
 
-		funcState := pipeline.ExecutableFunction{}
+		funcState := pipeline.ExecutableFunction{
+			Mapping:       make(map[string]script.JSONSchemaPropertiesValue, 0),
+			Constants:     make(map[string]interface{}, 0),
+			RetryTimeouts: make([]int, 0),
+		}
 
 		unmErr := json.Unmarshal(blockState, &funcState)
 		if unmErr != nil {
@@ -653,7 +693,11 @@ func (ae *Env) functionEditBlock(ctx c.Context, stepID uuid.UUID, stepName strin
 			funcOutputs[output.Name] = output.Value
 		}
 
-		funcState := pipeline.ExecutableFunction{}
+		funcState := pipeline.ExecutableFunction{
+			Mapping:       make(map[string]script.JSONSchemaPropertiesValue, 0),
+			Constants:     make(map[string]interface{}, 0),
+			RetryTimeouts: make([]int, 0),
+		}
 
 		unmErr := json.Unmarshal(marshData, &funcState)
 		if unmErr != nil {
@@ -697,7 +741,18 @@ func (ae *Env) formEditBlock(ctx c.Context, stepID uuid.UUID, stepName string, d
 			return nil, stateErr
 		}
 
-		formBlockState := pipeline.FormData{}
+		formBlockState := pipeline.FormData{
+			Executors:          make(map[string]struct{}, 0),
+			InitialExecutors:   make(map[string]struct{}, 0),
+			ApplicationBody:    make(map[string]interface{}, 0),
+			Constants:          make(map[string]interface{}, 0),
+			ChangesLog:         make([]pipeline.ChangesLogItem, 0),
+			HiddenFields:       make([]string, 0),
+			FormsAccessibility: make([]script.FormAccessibility, 0),
+			Mapping:            make(map[string]script.JSONSchemaPropertiesValue, 0),
+			AttachmentFields:   make([]string, 0),
+			Keys:               make(map[string]string, 0),
+		}
 
 		unmErr := json.Unmarshal(blockState, &formBlockState)
 		if unmErr != nil {
@@ -714,7 +769,18 @@ func (ae *Env) formEditBlock(ctx c.Context, stepID uuid.UUID, stepName string, d
 		return []EditBlock{{State: updState, Output: data, StepName: stepName, StepID: stepID}}, nil
 
 	case MonitoringTaskUpdateBlockRequestChangeTypeState:
-		formBlockState := pipeline.FormData{}
+		formBlockState := pipeline.FormData{
+			Executors:          make(map[string]struct{}, 0),
+			InitialExecutors:   make(map[string]struct{}, 0),
+			ApplicationBody:    make(map[string]interface{}, 0),
+			Constants:          make(map[string]interface{}, 0),
+			ChangesLog:         make([]pipeline.ChangesLogItem, 0),
+			HiddenFields:       make([]string, 0),
+			FormsAccessibility: make([]script.FormAccessibility, 0),
+			Mapping:            make(map[string]script.JSONSchemaPropertiesValue, 0),
+			AttachmentFields:   make([]string, 0),
+			Keys:               make(map[string]string, 0),
+		}
 
 		unmErr := json.Unmarshal(marshData, &formBlockState)
 		if unmErr != nil {
@@ -799,7 +865,9 @@ func (ae *Env) sdEditBlock(ctx c.Context, stepID uuid.UUID, stepName string, dat
 			return nil, stateErr
 		}
 
-		sdState := pipeline.ApplicationData{}
+		sdState := pipeline.ApplicationData{
+			ApplicationBody: make(map[string]interface{}, 0),
+		}
 
 		unmErr := json.Unmarshal(blockState, &sdState)
 		if unmErr != nil {
@@ -816,7 +884,9 @@ func (ae *Env) sdEditBlock(ctx c.Context, stepID uuid.UUID, stepName string, dat
 		return []EditBlock{{State: updState, Output: data, StepName: stepName, StepID: stepID}}, nil
 
 	case MonitoringTaskUpdateBlockRequestChangeTypeState:
-		sdState := pipeline.ApplicationData{}
+		sdState := pipeline.ApplicationData{
+			ApplicationBody: make(map[string]interface{}, 0),
+		}
 
 		unmErr := json.Unmarshal(marshData, &sdState)
 		if unmErr != nil {
@@ -857,7 +927,14 @@ func (ae *Env) signEditBlock(ctx c.Context, stepID uuid.UUID, stepName string, d
 			return nil, stateErr
 		}
 
-		signState := pipeline.SignData{}
+		signState := pipeline.SignData{
+			Signers:             make(map[string]struct{}, 0),
+			Attachments:         make([]entity.Attachment, 0),
+			Signatures:          make([]pipeline.FileSignaturePair, 0),
+			SignLog:             make([]pipeline.SignLogEntry, 0),
+			FormsAccessibility:  make([]script.FormAccessibility, 0),
+			AdditionalApprovers: make([]pipeline.AdditionalSignApprover, 0),
+		}
 
 		unmErr := json.Unmarshal(blockState, &signState)
 		if unmErr != nil {
@@ -874,7 +951,14 @@ func (ae *Env) signEditBlock(ctx c.Context, stepID uuid.UUID, stepName string, d
 		return []EditBlock{{State: updState, Output: data, StepName: stepName, StepID: stepID}}, nil
 
 	case MonitoringTaskUpdateBlockRequestChangeTypeState:
-		signState := pipeline.SignData{}
+		signState := pipeline.SignData{
+			Signers:             make(map[string]struct{}, 0),
+			Attachments:         make([]entity.Attachment, 0),
+			Signatures:          make([]pipeline.FileSignaturePair, 0),
+			SignLog:             make([]pipeline.SignLogEntry, 0),
+			FormsAccessibility:  make([]script.FormAccessibility, 0),
+			AdditionalApprovers: make([]pipeline.AdditionalSignApprover, 0),
+		}
 
 		unmErr := json.Unmarshal(marshData, &signState)
 		if unmErr != nil {

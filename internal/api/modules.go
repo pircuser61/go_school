@@ -3,6 +3,8 @@ package api
 import (
 	"net/http"
 
+	conditions_kit "gitlab.services.mts.ru/jocasta/conditions-kit"
+
 	"go.opencensus.io/trace"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
@@ -55,16 +57,74 @@ func (ae *Env) GetModules(w http.ResponseWriter, req *http.Request) {
 func eriusFunctions() []script.FunctionModel {
 	return []script.FunctionModel{
 		(&pipeline.GoSdApplicationBlock{}).Model(),
-		(&pipeline.GoFormBlock{}).Model(),
-		(&pipeline.GoApproverBlock{}).Model(),
-		(&pipeline.GoExecutionBlock{}).Model(),
-		(&pipeline.GoSignBlock{}).Model(),
-		(&pipeline.IF{}).Model(),
+		(&pipeline.GoFormBlock{
+			State: &pipeline.FormData{
+				Executors:          make(map[string]struct{}, 0),
+				InitialExecutors:   make(map[string]struct{}, 0),
+				ApplicationBody:    make(map[string]interface{}, 0),
+				Constants:          make(map[string]interface{}, 0),
+				ChangesLog:         make([]pipeline.ChangesLogItem, 0),
+				HiddenFields:       make([]string, 0),
+				FormsAccessibility: make([]script.FormAccessibility, 0),
+				Mapping:            make(map[string]script.JSONSchemaPropertiesValue, 0),
+				AttachmentFields:   make([]string, 0),
+				Keys:               make(map[string]string, 0),
+			},
+		}).Model(),
+		(&pipeline.GoApproverBlock{
+			State: &pipeline.ApproverData{
+				ApproverLog:         make([]pipeline.ApproverLogEntry, 0),
+				EditingAppLog:       make([]pipeline.ApproverEditingApp, 0),
+				FormsAccessibility:  make([]script.FormAccessibility, 0),
+				AddInfo:             make([]pipeline.AdditionalInfo, 0),
+				ActionList:          make([]pipeline.Action, 0),
+				AdditionalApprovers: make([]pipeline.AdditionalApprover, 0),
+			},
+		}).Model(),
+		(&pipeline.GoExecutionBlock{
+			State: &pipeline.ExecutionData{
+				Executors:                make(map[string]struct{}, 0),
+				InitialExecutors:         make(map[string]struct{}, 0),
+				DecisionAttachments:      make([]entity.Attachment, 0),
+				EditingAppLog:            make([]pipeline.ExecutorEditApp, 0),
+				ChangedExecutorsLogs:     make([]pipeline.ChangeExecutorLog, 0),
+				RequestExecutionInfoLogs: make([]pipeline.RequestExecutionInfoLog, 0),
+				FormsAccessibility:       make([]script.FormAccessibility, 0),
+				TakenInWorkLog:           make([]pipeline.StartWorkLog, 0),
+			},
+		}).Model(),
+		(&pipeline.GoSignBlock{
+			State: &pipeline.SignData{
+				Signers:             make(map[string]struct{}, 0),
+				Attachments:         make([]entity.Attachment, 0),
+				Signatures:          make([]pipeline.FileSignaturePair, 0),
+				SignLog:             make([]pipeline.SignLogEntry, 0),
+				FormsAccessibility:  make([]script.FormAccessibility, 0),
+				AdditionalApprovers: make([]pipeline.AdditionalSignApprover, 0),
+			},
+		}).Model(),
+		(&pipeline.IF{
+			State: &pipeline.ConditionsData{
+				ConditionGroups: make([]conditions_kit.ConditionGroup, 0),
+			},
+		}).Model(),
 		(&pipeline.GoBeginParallelTaskBlock{}).Model(),
 		(&pipeline.GoWaitForAllInputsBlock{}).Model(),
-		(&pipeline.ExecutableFunctionBlock{}).Model(),
+		(&pipeline.ExecutableFunctionBlock{
+			State: &pipeline.ExecutableFunction{
+				Mapping:       make(map[string]script.JSONSchemaPropertiesValue, 0),
+				Constants:     make(map[string]interface{}, 0),
+				RetryTimeouts: make([]int, 0),
+			},
+		}).Model(),
 		(&pipeline.TimerBlock{}).Model(),
-		(&pipeline.GoNotificationBlock{}).Model(),
+		(&pipeline.GoNotificationBlock{
+			State: &pipeline.NotificationData{
+				People:          make([]string, 0),
+				Emails:          make([]string, 0),
+				UsersFromSchema: make(map[string]struct{}, 0),
+			},
+		}).Model(),
 		(&pipeline.GoPlaceholderBlock{}).Model(),
 		(&pipeline.GoStartBlock{}).Model(),
 		(&pipeline.GoEndBlock{}).Model(),

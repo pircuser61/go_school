@@ -574,7 +574,10 @@ func Test_createGoApproverBlock(t *testing.T) {
 					},
 				},
 				State: &ApproverData{
-					Type: script.ApproverTypeFromSchema,
+					EditingAppLog:       make([]ApproverEditingApp, 0),
+					AddInfo:             make([]AdditionalInfo, 0),
+					AdditionalApprovers: make([]AdditionalApprover, 0),
+					Type:                script.ApproverTypeFromSchema,
 					Approvers: map[string]struct{}{
 						loginFromSlice0: {},
 						loginFromSlice1: {},
@@ -687,7 +690,10 @@ func Test_createGoApproverBlock(t *testing.T) {
 					},
 				},
 				State: &ApproverData{
-					Type: script.ApproverTypeUser,
+					EditingAppLog:       make([]ApproverEditingApp, 0),
+					AddInfo:             make([]AdditionalInfo, 0),
+					AdditionalApprovers: make([]AdditionalApprover, 0),
+					Type:                script.ApproverTypeUser,
 					Approvers: map[string]struct{}{
 						login: {},
 					},

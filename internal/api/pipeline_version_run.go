@@ -632,7 +632,9 @@ func (ae *Env) getHiddenFields(ctx c.Context, version *entity.EriusScenario) ([]
 		return hiddenFields, nil
 	}
 
-	params := pipeline.ApplicationData{}
+	params := pipeline.ApplicationData{
+		ApplicationBody: make(map[string]interface{}, 0),
+	}
 
 	errJSON := json.Unmarshal(version.Pipeline.Blocks[sdBlockName].Params, &params)
 	if errJSON != nil {

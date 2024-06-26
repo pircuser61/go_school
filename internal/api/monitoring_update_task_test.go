@@ -112,7 +112,7 @@ func TestIsTypeCorrect(t *testing.T) {
 		{
 			name:    "null with empty type",
 			args:    args{t: "", v: testValues["test_null"]},
-			wantErr: assert.Error,
+			wantErr: assert.NoError,
 		},
 		{
 			name:    "Null with string type",
