@@ -886,14 +886,7 @@ func createGoSignBlock(ctx context.Context, name string, ef *entity.EriusFunc, r
 		Output:     map[string]string{},
 		Sockets:    entity.ConvertSocket(ef.Sockets),
 		RunContext: runCtx,
-		State: &SignData{
-			Signers:             make(map[string]struct{}, 0),
-			Attachments:         make([]entity.Attachment, 0),
-			Signatures:          make([]FileSignaturePair, 0),
-			SignLog:             make([]SignLogEntry, 0),
-			FormsAccessibility:  make([]script.FormAccessibility, 0),
-			AdditionalApprovers: make([]AdditionalSignApprover, 0),
-		},
+		State:      NewSignState(),
 
 		expectedEvents: expectedEvents,
 		happenedEvents: make([]entity.NodeEvent, 0),

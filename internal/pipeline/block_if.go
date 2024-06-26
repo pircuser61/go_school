@@ -57,6 +57,12 @@ type ConditionsData struct {
 	ChosenGroupID   string                          `json:"-"`
 }
 
+func NewIfState() *ConditionsData {
+	return &ConditionsData{
+		ConditionGroups: make([]conditions_kit.ConditionGroup, 0),
+	}
+}
+
 func (cd *ConditionsData) GetConditionGroups() []conditions_kit.ConditionGroup {
 	return cd.ConditionGroups
 }
@@ -171,9 +177,7 @@ func createGoIfBlock(ctx context.Context, name string, ef *entity.EriusFunc, run
 		Output:     map[string]string{},
 		Sockets:    entity.ConvertSocket(ef.Sockets),
 		RunContext: runCtx,
-		State: &ConditionsData{
-			ConditionGroups: make([]conditions_kit.ConditionGroup, 0),
-		},
+		State:      NewIfState(),
 
 		expectedEvents: expectedEvents,
 		happenedEvents: make([]entity.NodeEvent, 0),

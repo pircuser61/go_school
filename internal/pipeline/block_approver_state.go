@@ -197,6 +197,17 @@ type ApproverData struct {
 	AdditionalApprovers []AdditionalApprover `json:"additional_approvers"`
 }
 
+func NewApproverState() *ApproverData {
+	return &ApproverData{
+		ApproverLog:         make([]ApproverLogEntry, 0),
+		EditingAppLog:       make([]ApproverEditingApp, 0),
+		FormsAccessibility:  make([]script.FormAccessibility, 0),
+		AddInfo:             make([]AdditionalInfo, 0),
+		ActionList:          make([]Action, 0),
+		AdditionalApprovers: make([]AdditionalApprover, 0),
+	}
+}
+
 type Action struct {
 	ID    string `json:"id"`
 	Type  string `json:"type"`

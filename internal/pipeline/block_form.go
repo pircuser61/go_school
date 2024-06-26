@@ -89,6 +89,21 @@ type FormData struct {
 	ReEnterSettings   *script.FormReEnterSettings `json:"form_re_enter_settings,omitempty"`
 }
 
+func NewFormState() *FormData {
+	return &FormData{
+		Executors:          make(map[string]struct{}, 0),
+		InitialExecutors:   make(map[string]struct{}, 0),
+		ApplicationBody:    make(map[string]interface{}, 0),
+		Constants:          make(map[string]interface{}, 0),
+		ChangesLog:         make([]ChangesLogItem, 0),
+		HiddenFields:       make([]string, 0),
+		FormsAccessibility: make([]script.FormAccessibility, 0),
+		Mapping:            make(map[string]script.JSONSchemaPropertiesValue, 0),
+		AttachmentFields:   make([]string, 0),
+		Keys:               make(map[string]string, 0),
+	}
+}
+
 type GoFormBlock struct {
 	Name      string
 	ShortName string

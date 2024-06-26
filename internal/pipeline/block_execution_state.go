@@ -95,6 +95,19 @@ type ExecutionData struct {
 	HideExecutor                 bool      `json:"hide_executor"`
 }
 
+func NewExecutionState() *ExecutionData {
+	return &ExecutionData{
+		Executors:                make(map[string]struct{}, 0),
+		InitialExecutors:         make(map[string]struct{}, 0),
+		DecisionAttachments:      make([]entity.Attachment, 0),
+		EditingAppLog:            make([]ExecutorEditApp, 0),
+		ChangedExecutorsLogs:     make([]ChangeExecutorLog, 0),
+		RequestExecutionInfoLogs: make([]RequestExecutionInfoLog, 0),
+		FormsAccessibility:       make([]script.FormAccessibility, 0),
+		TakenInWorkLog:           make([]StartWorkLog, 0),
+	}
+}
+
 func (a *ExecutionData) GetDecision() *ExecutionDecision {
 	return a.Decision
 }

@@ -92,6 +92,17 @@ type SignData struct {
 	Reentered bool `json:"reentered"`
 }
 
+func NewSignState() *SignData {
+	return &SignData{
+		Signers:             make(map[string]struct{}, 0),
+		Attachments:         make([]entity.Attachment, 0),
+		Signatures:          make([]FileSignaturePair, 0),
+		SignLog:             make([]SignLogEntry, 0),
+		FormsAccessibility:  make([]script.FormAccessibility, 0),
+		AdditionalApprovers: make([]AdditionalSignApprover, 0),
+	}
+}
+
 type AdditionalSignApprover struct {
 	ApproverLogin string              `json:"approver_login"`
 	BaseLogin     string              `json:"base_login"`

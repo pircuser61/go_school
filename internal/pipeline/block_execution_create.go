@@ -30,16 +30,7 @@ func createGoExecutionBlock(ctx context.Context, name string, ef *entity.EriusFu
 		Input:     map[string]string{},
 		Output:    map[string]string{},
 		Sockets:   entity.ConvertSocket(ef.Sockets),
-		State: &ExecutionData{
-			Executors:                make(map[string]struct{}, 0),
-			InitialExecutors:         make(map[string]struct{}, 0),
-			DecisionAttachments:      make([]entity.Attachment, 0),
-			EditingAppLog:            make([]ExecutorEditApp, 0),
-			ChangedExecutorsLogs:     make([]ChangeExecutorLog, 0),
-			RequestExecutionInfoLogs: make([]RequestExecutionInfoLog, 0),
-			FormsAccessibility:       make([]script.FormAccessibility, 0),
-			TakenInWorkLog:           make([]StartWorkLog, 0),
-		},
+		State:     NewExecutionState(),
 
 		RunContext: runCtx,
 

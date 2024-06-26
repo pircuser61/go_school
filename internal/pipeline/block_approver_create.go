@@ -31,15 +31,7 @@ func createGoApproverBlock(ctx context.Context, name string, ef *entity.EriusFun
 		Output:     map[string]string{},
 		Sockets:    entity.ConvertSocket(ef.Sockets),
 		RunContext: runCtx,
-		State: &ApproverData{
-			Approvers:           make(map[string]struct{}, 0),
-			ApproverLog:         make([]ApproverLogEntry, 0),
-			EditingAppLog:       make([]ApproverEditingApp, 0),
-			FormsAccessibility:  make([]script.FormAccessibility, 0),
-			AddInfo:             make([]AdditionalInfo, 0),
-			ActionList:          make([]Action, 0),
-			AdditionalApprovers: make([]AdditionalApprover, 0),
-		},
+		State:      NewApproverState(),
 
 		expectedEvents: expectedEvents,
 		happenedEvents: make([]entity.NodeEvent, 0),
