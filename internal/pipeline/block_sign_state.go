@@ -62,7 +62,7 @@ type SignData struct {
 	Comment            *string                   `json:"comment,omitempty"`
 	ActualSigner       *string                   `json:"actual_signer,omitempty"`
 	Attachments        []entity.Attachment       `json:"attachments,omitempty"`
-	Signatures         []fileSignaturePair       `json:"signatures,omitempty"`
+	Signatures         []FileSignaturePair       `json:"signatures,omitempty"`
 	SigningParams      SigningParams             `json:"signing_params,omitempty"`
 	SigningParamsPaths script.SigningParamsPaths `json:"signing_params_paths,omitempty"`
 	SigningRule        script.SigningRule        `json:"signing_rule,omitempty"`
@@ -90,6 +90,17 @@ type SignData struct {
 	AdditionalApprovers []AdditionalSignApprover `json:"additional_approvers,omitempty"`
 
 	Reentered bool `json:"reentered"`
+}
+
+func NewSignState() *SignData {
+	return &SignData{
+		Signers:             make(map[string]struct{}, 0),
+		Attachments:         make([]entity.Attachment, 0),
+		Signatures:          make([]FileSignaturePair, 0),
+		SignLog:             make([]SignLogEntry, 0),
+		FormsAccessibility:  make([]script.FormAccessibility, 0),
+		AdditionalApprovers: make([]AdditionalSignApprover, 0),
+	}
 }
 
 type AdditionalSignApprover struct {

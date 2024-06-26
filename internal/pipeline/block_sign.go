@@ -666,18 +666,21 @@ func (gb *GoSignBlock) createState(ctx context.Context, ef *entity.EriusFunc) er
 	}
 
 	gb.State = &SignData{
-		Type:               params.Type,
-		SigningRule:        params.SigningRule,
-		SignLog:            make([]SignLogEntry, 0),
-		Signatures:         make([]fileSignaturePair, 0),
-		SigningParamsPaths: params.SigningParamsPaths,
-		FormsAccessibility: params.FormsAccessibility,
-		SignatureType:      params.SignatureType,
-		SignatureCarrier:   params.SignatureCarrier,
-		SLA:                params.SLA,
-		CheckSLA:           params.CheckSLA,
-		AutoReject:         params.AutoReject,
-		WorkType:           params.WorkType,
+		Type:                params.Type,
+		SigningRule:         params.SigningRule,
+		SignLog:             make([]SignLogEntry, 0),
+		Signatures:          make([]FileSignaturePair, 0),
+		SigningParamsPaths:  params.SigningParamsPaths,
+		FormsAccessibility:  params.FormsAccessibility,
+		SignatureType:       params.SignatureType,
+		SignatureCarrier:    params.SignatureCarrier,
+		SLA:                 params.SLA,
+		CheckSLA:            params.CheckSLA,
+		AutoReject:          params.AutoReject,
+		WorkType:            params.WorkType,
+		Signers:             make(map[string]struct{}, 0),
+		Attachments:         make([]entity.Attachment, 0),
+		AdditionalApprovers: make([]AdditionalSignApprover, 0),
 	}
 
 	if gb.State.SigningRule == "" {
@@ -883,6 +886,7 @@ func createGoSignBlock(ctx context.Context, name string, ef *entity.EriusFunc, r
 		Output:     map[string]string{},
 		Sockets:    entity.ConvertSocket(ef.Sockets),
 		RunContext: runCtx,
+		State:      NewSignState(),
 
 		expectedEvents: expectedEvents,
 		happenedEvents: make([]entity.NodeEvent, 0),
@@ -1013,7 +1017,7 @@ func (gb *GoSignBlock) getNotificationImages(descriptions []orderedmap.OrderedMa
 type SignOutput struct {
 	Comment    *string
 	Decision   *SignDecision
-	Signatures []fileSignaturePair
+	Signatures []FileSignaturePair
 	Signer     *sd.SsoPerson
 }
 

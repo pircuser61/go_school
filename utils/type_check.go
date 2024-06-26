@@ -12,13 +12,15 @@ type TypeValue interface {
 }
 
 const (
-	integerType = "integer"
-	stringType  = "string"
-	numberType  = "number"
-	boolType    = "boolean"
-	arrayType   = "array"
-	objectType  = "object"
+	IntegerType = "integer"
+	StringType  = "string"
+	NumberType  = "number"
+	BoolType    = "boolean"
+	ArrayType   = "array"
+	ObjectType  = "object"
 )
+
+// найди стейты, все поля с массивами, в них прописать слайс нулвой длины
 
 func GetJSONType(value interface{}) string {
 	if value == nil {
@@ -28,17 +30,17 @@ func GetJSONType(value interface{}) string {
 	//nolint:exhaustive //нам не нужно обрабатывать остальные случаи
 	switch reflect.TypeOf(value).Kind() {
 	case reflect.Int:
-		return integerType
+		return IntegerType
 	case reflect.Float64:
-		return numberType
+		return NumberType
 	case reflect.String:
-		return stringType
+		return StringType
 	case reflect.Bool:
-		return boolType
-	case reflect.Array:
-		return arrayType
-	case reflect.Map:
-		return objectType
+		return BoolType
+	case reflect.Slice, reflect.Array:
+		return ArrayType
+	case reflect.Map, reflect.Struct:
+		return ObjectType
 	default:
 		return ""
 	}
@@ -56,20 +58,20 @@ func CheckVariableType(variable *interface{}, originalValue TypeValue) error {
 
 //nolint:gochecknoglobals // GOOGLE дал нам глобальные переменные в go, так почему мы должны отказываться от этого божественного дара
 var typesHandlersMapping = map[string]typeHandler{
-	integerType: simpleTypeHandler,
-	stringType:  simpleTypeHandler,
-	numberType:  simpleTypeHandler,
-	boolType:    simpleTypeHandler,
-	arrayType:   simpleTypeHandler,
+	IntegerType: simpleTypeHandler,
+	StringType:  simpleTypeHandler,
+	NumberType:  simpleTypeHandler,
+	BoolType:    simpleTypeHandler,
+	ArrayType:   simpleTypeHandler,
 
-	objectType: nestedTypeHandler,
+	ObjectType: nestedTypeHandler,
 }
 
 type typeHandler func(variable *interface{}, originalValue TypeValue) error
 
 //nolint:gochecknoglobals // GOOGLE дал нам глобальные переменные в go, так почему мы должны отказываться от этого божественного дара
 var nestedTypesMapping = map[string]reflect.Kind{
-	objectType: reflect.Map,
+	ObjectType: reflect.Map,
 }
 
 //nolint:gocritic //так надо, так что линтер - не выпендривайся
@@ -111,10 +113,10 @@ func handleMap(variable interface{}, originalValue TypeValue) error {
 
 //nolint:gochecknoglobals // этот линтер тут случайно
 var simpleTypesMapping = map[string]reflect.Kind{
-	integerType: reflect.Int,
-	stringType:  reflect.String,
-	numberType:  reflect.Float64,
-	boolType:    reflect.Bool,
+	IntegerType: reflect.Int,
+	StringType:  reflect.String,
+	NumberType:  reflect.Float64,
+	BoolType:    reflect.Bool,
 }
 
 // We're using pointer because we sometimes need to change type inside interface

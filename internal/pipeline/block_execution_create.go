@@ -30,6 +30,7 @@ func createGoExecutionBlock(ctx context.Context, name string, ef *entity.EriusFu
 		Input:     map[string]string{},
 		Output:    map[string]string{},
 		Sockets:   entity.ConvertSocket(ef.Sockets),
+		State:     NewExecutionState(),
 
 		RunContext: runCtx,
 
@@ -124,16 +125,23 @@ func (gb *GoExecutionBlock) createState(ctx context.Context, ef *entity.EriusFun
 	}
 
 	gb.State = &ExecutionData{
-		ExecutionType:      params.Type,
-		CheckSLA:           params.CheckSLA,
-		SLA:                params.SLA,
-		ReworkSLA:          params.ReworkSLA,
-		CheckReworkSLA:     params.CheckReworkSLA,
-		FormsAccessibility: params.FormsAccessibility,
-		IsEditable:         params.IsEditable,
-		RepeatPrevDecision: params.RepeatPrevDecision,
-		UseActualExecutor:  params.UseActualExecutor,
-		HideExecutor:       params.HideExecutor,
+		ExecutionType:            params.Type,
+		CheckSLA:                 params.CheckSLA,
+		SLA:                      params.SLA,
+		ReworkSLA:                params.ReworkSLA,
+		CheckReworkSLA:           params.CheckReworkSLA,
+		FormsAccessibility:       params.FormsAccessibility,
+		IsEditable:               params.IsEditable,
+		RepeatPrevDecision:       params.RepeatPrevDecision,
+		UseActualExecutor:        params.UseActualExecutor,
+		HideExecutor:             params.HideExecutor,
+		Executors:                make(map[string]struct{}, 0),
+		InitialExecutors:         make(map[string]struct{}, 0),
+		DecisionAttachments:      make([]entity.Attachment, 0),
+		EditingAppLog:            make([]ExecutorEditApp, 0),
+		ChangedExecutorsLogs:     make([]ChangeExecutorLog, 0),
+		RequestExecutionInfoLogs: make([]RequestExecutionInfoLog, 0),
+		TakenInWorkLog:           make([]StartWorkLog, 0),
 	}
 
 	if params.ExecutorsGroupIDPath != nil && *params.ExecutorsGroupIDPath != "" {

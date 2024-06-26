@@ -10,9 +10,8 @@ import (
 	"reflect"
 	"strings"
 
-	"gitlab.services.mts.ru/abp/myosotis/logger"
-
 	"github.com/google/uuid"
+	"gitlab.services.mts.ru/abp/myosotis/logger"
 	"go.opencensus.io/trace"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
@@ -195,8 +194,16 @@ func convertReqEditData(in map[string]MonitoringEditBlockData) (res map[string]i
 }
 
 func IsTypeCorrect(t string, v any) error {
-	if t == "" {
+	if v == nil && t == "" {
+		return nil
+	} else if t == "" {
 		return fmt.Errorf("empty type")
+	}
+
+	if v == nil && (t == utils.ObjectType || t == utils.ArrayType) {
+		return nil
+	} else if v == nil {
+		return fmt.Errorf("value of type %s can't be null", t)
 	}
 
 	reflectType := reflect.TypeOf(v).Kind()
@@ -204,7 +211,7 @@ func IsTypeCorrect(t string, v any) error {
 	typeIsCorrect := false
 
 	switch t {
-	case "integer":
+	case utils.IntegerType:
 		if reflectType == reflect.Float64 {
 			floatNum, ok := v.(float64)
 			if ok {
@@ -213,15 +220,15 @@ func IsTypeCorrect(t string, v any) error {
 		} else if reflectType == reflect.Int {
 			typeIsCorrect = (reflectType == reflect.Int)
 		}
-	case "number":
+	case utils.NumberType:
 		typeIsCorrect = (reflectType == reflect.Float64)
-	case "string":
+	case utils.StringType:
 		typeIsCorrect = (reflectType == reflect.String)
-	case "boolean":
+	case utils.BoolType:
 		typeIsCorrect = (reflectType == reflect.Bool)
-	case "array":
+	case utils.ArrayType:
 		typeIsCorrect = (reflectType == reflect.Slice)
-	case "object":
+	case utils.ObjectType:
 		typeIsCorrect = (reflectType == reflect.Map)
 	}
 
@@ -413,14 +420,14 @@ func (ae *Env) approverEditBlock(ctx c.Context, stepID uuid.UUID, stepName strin
 			return nil, stateErr
 		}
 
-		approverState := pipeline.ApproverData{}
+		approverState := pipeline.NewApproverState()
 
 		unmErr := json.Unmarshal(blockState, &approverState)
 		if unmErr != nil {
 			return nil, unmErr
 		}
 
-		block := pipeline.GoApproverBlock{State: &approverState}
+		block := pipeline.GoApproverBlock{State: approverState}
 
 		updState, updErr := block.UpdateStateUsingOutput(ctx, marshData)
 		if updErr != nil {
@@ -430,7 +437,7 @@ func (ae *Env) approverEditBlock(ctx c.Context, stepID uuid.UUID, stepName strin
 		return []EditBlock{{State: updState, Output: data, StepName: stepName, StepID: stepID}}, nil
 
 	case MonitoringTaskUpdateBlockRequestChangeTypeState:
-		approverState := pipeline.ApproverData{}
+		approverState := pipeline.NewApproverState()
 
 		unmErr := json.Unmarshal(marshData, &approverState)
 		if unmErr != nil {
@@ -438,7 +445,7 @@ func (ae *Env) approverEditBlock(ctx c.Context, stepID uuid.UUID, stepName strin
 		}
 
 		block := pipeline.GoApproverBlock{
-			State:      &approverState,
+			State:      approverState,
 			RunContext: &pipeline.BlockRunContext{Services: pipeline.RunContextServices{ServiceDesc: ae.ServiceDesc}},
 		}
 
@@ -471,14 +478,14 @@ func (ae *Env) executorEditBlock(ctx c.Context, stepID uuid.UUID, stepName strin
 			return nil, stateErr
 		}
 
-		execState := pipeline.ExecutionData{}
+		execState := pipeline.NewExecutionState()
 
 		unmErr := json.Unmarshal(blockState, &execState)
 		if unmErr != nil {
 			return nil, unmErr
 		}
 
-		block := pipeline.GoExecutionBlock{State: &execState}
+		block := pipeline.GoExecutionBlock{State: execState}
 
 		updState, updErr := block.UpdateStateUsingOutput(ctx, marshData)
 		if updErr != nil {
@@ -487,7 +494,7 @@ func (ae *Env) executorEditBlock(ctx c.Context, stepID uuid.UUID, stepName strin
 
 		return []EditBlock{{State: updState, Output: data, StepName: stepName, StepID: stepID}}, nil
 	case MonitoringTaskUpdateBlockRequestChangeTypeState:
-		execState := pipeline.ExecutionData{}
+		execState := pipeline.NewExecutionState()
 
 		unmErr := json.Unmarshal(marshData, &execState)
 		if unmErr != nil {
@@ -495,7 +502,7 @@ func (ae *Env) executorEditBlock(ctx c.Context, stepID uuid.UUID, stepName strin
 		}
 
 		block := pipeline.GoExecutionBlock{
-			State:      &execState,
+			State:      execState,
 			RunContext: &pipeline.BlockRunContext{Services: pipeline.RunContextServices{ServiceDesc: ae.ServiceDesc}},
 		}
 
@@ -618,14 +625,14 @@ func (ae *Env) functionEditBlock(ctx c.Context, stepID uuid.UUID, stepName strin
 			return nil, stateErr
 		}
 
-		funcState := pipeline.ExecutableFunction{}
+		funcState := pipeline.NewExecutableFunctionState()
 
 		unmErr := json.Unmarshal(blockState, &funcState)
 		if unmErr != nil {
 			return nil, unmErr
 		}
 
-		block := pipeline.ExecutableFunctionBlock{State: &funcState}
+		block := pipeline.ExecutableFunctionBlock{State: funcState}
 
 		updState, updErr := block.UpdateStateUsingOutput(ctx, marshData)
 		if updErr != nil {
@@ -647,7 +654,7 @@ func (ae *Env) functionEditBlock(ctx c.Context, stepID uuid.UUID, stepName strin
 			funcOutputs[output.Name] = output.Value
 		}
 
-		funcState := pipeline.ExecutableFunction{}
+		funcState := pipeline.NewExecutableFunctionState()
 
 		unmErr := json.Unmarshal(marshData, &funcState)
 		if unmErr != nil {
@@ -655,7 +662,7 @@ func (ae *Env) functionEditBlock(ctx c.Context, stepID uuid.UUID, stepName strin
 		}
 
 		block := pipeline.ExecutableFunctionBlock{
-			State: &funcState,
+			State: funcState,
 		}
 
 		updOutput, updErr := block.UpdateOutputUsingState(ctx)
@@ -691,14 +698,14 @@ func (ae *Env) formEditBlock(ctx c.Context, stepID uuid.UUID, stepName string, d
 			return nil, stateErr
 		}
 
-		formBlockState := pipeline.FormData{}
+		formBlockState := pipeline.NewFormState()
 
 		unmErr := json.Unmarshal(blockState, &formBlockState)
 		if unmErr != nil {
 			return nil, unmErr
 		}
 
-		block := pipeline.GoFormBlock{State: &formBlockState}
+		block := pipeline.GoFormBlock{State: formBlockState}
 
 		updState, updErr := block.UpdateStateUsingOutput(ctx, marshData)
 		if updErr != nil {
@@ -708,7 +715,7 @@ func (ae *Env) formEditBlock(ctx c.Context, stepID uuid.UUID, stepName string, d
 		return []EditBlock{{State: updState, Output: data, StepName: stepName, StepID: stepID}}, nil
 
 	case MonitoringTaskUpdateBlockRequestChangeTypeState:
-		formBlockState := pipeline.FormData{}
+		formBlockState := pipeline.NewFormState()
 
 		unmErr := json.Unmarshal(marshData, &formBlockState)
 		if unmErr != nil {
@@ -716,7 +723,7 @@ func (ae *Env) formEditBlock(ctx c.Context, stepID uuid.UUID, stepName string, d
 		}
 
 		block := pipeline.GoFormBlock{
-			State:      &formBlockState,
+			State:      formBlockState,
 			RunContext: &pipeline.BlockRunContext{Services: pipeline.RunContextServices{ServiceDesc: ae.ServiceDesc}},
 		}
 
@@ -793,7 +800,9 @@ func (ae *Env) sdEditBlock(ctx c.Context, stepID uuid.UUID, stepName string, dat
 			return nil, stateErr
 		}
 
-		sdState := pipeline.ApplicationData{}
+		sdState := pipeline.ApplicationData{
+			ApplicationBody: make(map[string]interface{}, 0),
+		}
 
 		unmErr := json.Unmarshal(blockState, &sdState)
 		if unmErr != nil {
@@ -810,7 +819,9 @@ func (ae *Env) sdEditBlock(ctx c.Context, stepID uuid.UUID, stepName string, dat
 		return []EditBlock{{State: updState, Output: data, StepName: stepName, StepID: stepID}}, nil
 
 	case MonitoringTaskUpdateBlockRequestChangeTypeState:
-		sdState := pipeline.ApplicationData{}
+		sdState := pipeline.ApplicationData{
+			ApplicationBody: make(map[string]interface{}, 0),
+		}
 
 		unmErr := json.Unmarshal(marshData, &sdState)
 		if unmErr != nil {
@@ -851,14 +862,14 @@ func (ae *Env) signEditBlock(ctx c.Context, stepID uuid.UUID, stepName string, d
 			return nil, stateErr
 		}
 
-		signState := pipeline.SignData{}
+		signState := pipeline.NewSignState()
 
 		unmErr := json.Unmarshal(blockState, &signState)
 		if unmErr != nil {
 			return nil, unmErr
 		}
 
-		block := pipeline.GoSignBlock{State: &signState}
+		block := pipeline.GoSignBlock{State: signState}
 
 		updState, updErr := block.UpdateStateUsingOutput(ctx, marshData)
 		if updErr != nil {
@@ -868,7 +879,7 @@ func (ae *Env) signEditBlock(ctx c.Context, stepID uuid.UUID, stepName string, d
 		return []EditBlock{{State: updState, Output: data, StepName: stepName, StepID: stepID}}, nil
 
 	case MonitoringTaskUpdateBlockRequestChangeTypeState:
-		signState := pipeline.SignData{}
+		signState := pipeline.NewSignState()
 
 		unmErr := json.Unmarshal(marshData, &signState)
 		if unmErr != nil {
@@ -876,7 +887,7 @@ func (ae *Env) signEditBlock(ctx c.Context, stepID uuid.UUID, stepName string, d
 		}
 
 		block := pipeline.GoSignBlock{
-			State:      &signState,
+			State:      signState,
 			RunContext: &pipeline.BlockRunContext{Services: pipeline.RunContextServices{ServiceDesc: ae.ServiceDesc}},
 		}
 

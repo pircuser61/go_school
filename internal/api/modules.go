@@ -55,16 +55,30 @@ func (ae *Env) GetModules(w http.ResponseWriter, req *http.Request) {
 func eriusFunctions() []script.FunctionModel {
 	return []script.FunctionModel{
 		(&pipeline.GoSdApplicationBlock{}).Model(),
-		(&pipeline.GoFormBlock{}).Model(),
-		(&pipeline.GoApproverBlock{}).Model(),
-		(&pipeline.GoExecutionBlock{}).Model(),
-		(&pipeline.GoSignBlock{}).Model(),
-		(&pipeline.IF{}).Model(),
+		(&pipeline.GoFormBlock{
+			State: pipeline.NewFormState(),
+		}).Model(),
+		(&pipeline.GoApproverBlock{
+			State: pipeline.NewApproverState(),
+		}).Model(),
+		(&pipeline.GoExecutionBlock{
+			State: pipeline.NewExecutionState(),
+		}).Model(),
+		(&pipeline.GoSignBlock{
+			State: pipeline.NewSignState(),
+		}).Model(),
+		(&pipeline.IF{
+			State: pipeline.NewIfState(),
+		}).Model(),
 		(&pipeline.GoBeginParallelTaskBlock{}).Model(),
 		(&pipeline.GoWaitForAllInputsBlock{}).Model(),
-		(&pipeline.ExecutableFunctionBlock{}).Model(),
+		(&pipeline.ExecutableFunctionBlock{
+			State: pipeline.NewExecutableFunctionState(),
+		}).Model(),
 		(&pipeline.TimerBlock{}).Model(),
-		(&pipeline.GoNotificationBlock{}).Model(),
+		(&pipeline.GoNotificationBlock{
+			State: pipeline.NewNotificationState(),
+		}).Model(),
 		(&pipeline.GoPlaceholderBlock{}).Model(),
 		(&pipeline.GoStartBlock{}).Model(),
 		(&pipeline.GoEndBlock{}).Model(),

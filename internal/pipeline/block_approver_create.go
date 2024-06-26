@@ -31,6 +31,7 @@ func createGoApproverBlock(ctx context.Context, name string, ef *entity.EriusFun
 		Output:     map[string]string{},
 		Sockets:    entity.ConvertSocket(ef.Sockets),
 		RunContext: runCtx,
+		State:      NewApproverState(),
 
 		expectedEvents: expectedEvents,
 		happenedEvents: make([]entity.NodeEvent, 0),
@@ -251,20 +252,24 @@ func (gb *GoApproverBlock) createState(ctx context.Context, ef *entity.EriusFunc
 	}
 
 	gb.State = &ApproverData{
-		Type:               params.Type,
-		CheckSLA:           params.CheckSLA,
-		SLA:                params.SLA,
-		ReworkSLA:          params.ReworkSLA,
-		CheckReworkSLA:     params.CheckReworkSLA,
-		AutoAction:         ApproverActionFromString(params.AutoAction),
-		IsEditable:         params.IsEditable,
-		RepeatPrevDecision: params.RepeatPrevDecision,
-		ApproverLog:        make([]ApproverLogEntry, 0),
-		FormsAccessibility: params.FormsAccessibility,
-		ApprovementRule:    params.ApprovementRule,
-		ApproveStatusName:  params.ApproveStatusName,
-		ActionList:         actions,
-		WaitAllDecisions:   params.WaitAllDecisions,
+		Type:                params.Type,
+		CheckSLA:            params.CheckSLA,
+		SLA:                 params.SLA,
+		ReworkSLA:           params.ReworkSLA,
+		CheckReworkSLA:      params.CheckReworkSLA,
+		AutoAction:          ApproverActionFromString(params.AutoAction),
+		IsEditable:          params.IsEditable,
+		RepeatPrevDecision:  params.RepeatPrevDecision,
+		ApproverLog:         make([]ApproverLogEntry, 0),
+		FormsAccessibility:  params.FormsAccessibility,
+		ApprovementRule:     params.ApprovementRule,
+		ApproveStatusName:   params.ApproveStatusName,
+		ActionList:          actions,
+		WaitAllDecisions:    params.WaitAllDecisions,
+		Approvers:           make(map[string]struct{}, 0),
+		EditingAppLog:       make([]ApproverEditingApp, 0),
+		AddInfo:             make([]AdditionalInfo, 0),
+		AdditionalApprovers: make([]AdditionalApprover, 0),
 	}
 
 	if gb.State.AutoAction != nil {

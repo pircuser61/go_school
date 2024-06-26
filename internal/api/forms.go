@@ -69,7 +69,7 @@ func (ae *Env) GetFormsChangelog(w http.ResponseWriter, r *http.Request, params 
 		return
 	}
 
-	formData := pipeline.FormData{}
+	formData := pipeline.NewFormState()
 
 	err = json.Unmarshal(fState, &formData)
 	if err != nil {

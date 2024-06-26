@@ -39,6 +39,7 @@ func createGoFormBlock(
 		Output:     map[string]string{},
 		Sockets:    entity.ConvertSocket(ef.Sockets),
 		RunContext: runCtx,
+		State:      NewFormState(),
 
 		expectedEvents: expectedEvents,
 		happenedEvents: make([]entity.NodeEvent, 0),
@@ -349,6 +350,8 @@ func (gb *GoFormBlock) createState(ctx context.Context, ef *entity.EriusFunc) er
 		HiddenFields:              hiddenFields,
 		Keys:                      params.Keys,
 		AttachmentFields:          params.AttachmentFields,
+		Executors:                 make(map[string]struct{}, 0),
+		InitialExecutors:          make(map[string]struct{}, 0),
 	}
 
 	if params.FormGroupIDPath != nil && *params.FormGroupIDPath != "" {

@@ -32,7 +32,7 @@ type fileSignature struct {
 	SignatureFileID string `json:"signature_file_id"`
 }
 
-type fileSignaturePair struct {
+type FileSignaturePair struct {
 	File          entity.Attachment `json:"file"`
 	SignatureFile entity.Attachment `json:"signature_file"`
 }
@@ -102,7 +102,7 @@ func (gb *GoSignBlock) handleSignature(ctx c.Context, login string) error {
 	}
 
 	for _, v := range updateParams.Signatures {
-		newPair := fileSignaturePair{
+		newPair := FileSignaturePair{
 			File: entity.Attachment{
 				FileID:       v.FileID,
 				ExternalLink: "",

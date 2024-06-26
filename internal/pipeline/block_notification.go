@@ -36,6 +36,14 @@ type NotificationData struct {
 	TextSourceType  script.TextSourceType `json:"textSourceType"`
 }
 
+func NewNotificationState() *NotificationData {
+	return &NotificationData{
+		People:          make([]string, 0),
+		Emails:          make([]string, 0),
+		UsersFromSchema: make(map[string]struct{}, 0),
+	}
+}
+
 func (n *NotificationData) Type() script.TextSourceType {
 	if n.TextSourceType == "" {
 		return script.TextFieldSource
@@ -350,6 +358,7 @@ func createGoNotificationBlock(
 		Input:     map[string]string{},
 		Output:    map[string]string{},
 		Sockets:   entity.ConvertSocket(ef.Sockets),
+		State:     NewNotificationState(),
 
 		RunContext: runCtx,
 
