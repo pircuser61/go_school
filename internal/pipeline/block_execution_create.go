@@ -445,11 +445,16 @@ func (gb *GoExecutionBlock) handleDecision(ctx context.Context, parentState *Exe
 		comment = *parentState.DecisionComment
 	}
 
-	person, personErr := gb.RunContext.Services.ServiceDesc.GetSsoPerson(ctx, actualExecutor)
-	if personErr != nil {
-		log.Error(fn, "service couldn't get person by login: "+actualExecutor)
+	ssoUser, err := gb.RunContext.Services.People.GetUser(ctx, actualExecutor, false)
+	if err != nil {
+		log.Error(fn, "can`t get person by login: "+actualExecutor)
 
-		return personErr
+		return err
+	}
+
+	person, err := ssoUser.ToPerson()
+	if err != nil {
+		return err
 	}
 
 	if valOutputExecutionLogin, ok := gb.Output[keyOutputExecutionLogin]; ok {

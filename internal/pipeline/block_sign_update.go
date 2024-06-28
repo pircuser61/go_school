@@ -479,12 +479,17 @@ func (gb *GoSignBlock) setSignerDecision(ctx c.Context, u *signSignatureParams) 
 	//nolint:nestif //it's ok
 	if gb.State.Decision != nil {
 		if valOutputSigner, ok := gb.Output[keyOutputSigner]; ok && gb.State.ActualSigner != nil {
-			personData, err := gb.RunContext.Services.ServiceDesc.GetSsoPerson(ctx, *gb.State.ActualSigner)
+			ssoUser, err := gb.RunContext.Services.People.GetUser(ctx, *gb.State.ActualSigner, false)
 			if err != nil {
 				return err
 			}
 
-			gb.RunContext.VarStore.SetValue(valOutputSigner, personData)
+			person, err := ssoUser.ToPerson()
+			if err != nil {
+				return err
+			}
+
+			gb.RunContext.VarStore.SetValue(valOutputSigner, person)
 		}
 
 		gb.State.IsExpired = gb.State.Deadline.Before(time.Now())

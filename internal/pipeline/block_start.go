@@ -76,7 +76,12 @@ func (gb *GoStartBlock) Update(ctx context.Context) (interface{}, error) {
 		return nil, errors.Wrap(err, "can't get task run context")
 	}
 
-	personData, err := gb.RunContext.Services.ServiceDesc.GetSsoPerson(ctx, gb.RunContext.Initiator)
+	ssoUser, err := gb.RunContext.Services.People.GetUser(ctx, gb.RunContext.Initiator, false)
+	if err != nil {
+		return nil, err
+	}
+
+	person, err := ssoUser.ToPerson()
 	if err != nil {
 		return nil, err
 	}
@@ -86,7 +91,7 @@ func (gb *GoStartBlock) Update(ctx context.Context) (interface{}, error) {
 	}
 
 	if valOutputApplicationInitiator, ok := gb.Output[entity.KeyOutputApplicationInitiator]; ok {
-		gb.RunContext.VarStore.SetValue(valOutputApplicationInitiator, personData)
+		gb.RunContext.VarStore.SetValue(valOutputApplicationInitiator, person)
 	}
 
 	if valOutputApplicationBody, ok := gb.Output[entity.KeyOutputApplicationBody]; ok {

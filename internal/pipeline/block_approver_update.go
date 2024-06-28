@@ -89,7 +89,7 @@ func (gb *GoApproverBlock) setApproveDecision(ctx context.Context, u *approverUp
 	}
 
 	if gb.State.ActualApprover != nil {
-		person, err := gb.RunContext.Services.ServiceDesc.GetSsoPerson(ctx, *gb.State.ActualApprover)
+		person, err := gb.RunContext.Services.People.GetUser(ctx, *gb.State.ActualApprover, false)
 		if err != nil {
 			return err
 		}
@@ -634,16 +634,17 @@ func (gb *GoApproverBlock) toEditApplication(ctx context.Context, updateParams a
 		return nil
 	}
 
-	err := gb.State.setEditToNextBlock(
-		gb.RunContext.UpdateData.ByLogin,
-		delegateFor,
-		updateParams,
-	)
+	err := gb.State.setEditToNextBlock(gb.RunContext.UpdateData.ByLogin, delegateFor, updateParams)
 	if err != nil {
 		return err
 	}
 
-	person, err := gb.RunContext.Services.ServiceDesc.GetSsoPerson(ctx, gb.RunContext.UpdateData.ByLogin)
+	ssoUser, err := gb.RunContext.Services.People.GetUser(ctx, gb.RunContext.UpdateData.ByLogin, true)
+	if err != nil {
+		return err
+	}
+
+	person, err := ssoUser.ToPerson()
 	if err != nil {
 		return err
 	}

@@ -14,58 +14,9 @@ import (
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	sd "gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 )
 
 const externalSystemName = "servicedesk"
-
-func (s *service) GetSsoPerson(ctx c.Context, username string) (*sd.SsoPerson, error) {
-	ctx, span := trace.StartSpan(ctx, "servicedesc.get_sso_person")
-	defer span.End()
-
-	if sso.IsServiceUserName(username) {
-		return &sd.SsoPerson{
-			Username: username,
-		}, nil
-	}
-
-	log := logger.GetLogger(ctx).
-		WithField("traceID", span.SpanContext().TraceID.String()).
-		WithField("transport", "HTTP").
-		WithField("integration_name", externalSystemName)
-
-	ctx = logger.WithLogger(ctx, log)
-	ctx = script.MakeContextWithRetryCnt(ctx)
-
-	reqURL := fmt.Sprintf("%s%s", s.sdURL, fmt.Sprintf(getUserInfo, username))
-
-	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodGet, reqURL, http.NoBody)
-	if err != nil {
-		return nil, err
-	}
-
-	resp, err := s.cli.Do(req)
-	if err != nil {
-		script.LogRetryFailure(ctx, uint(s.cli.RetryMax))
-
-		return nil, err
-	}
-
-	defer resp.Body.Close()
-
-	script.LogRetrySuccess(ctx)
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("bad status code from sso: %d, username: %s", resp.StatusCode, username)
-	}
-
-	res := &sd.SsoPerson{}
-	if unmErr := json.NewDecoder(resp.Body).Decode(&res); unmErr != nil {
-		return nil, unmErr
-	}
-
-	return res, nil
-}
 
 //nolint:dupl //its not duplicate
 func (s *service) GetWorkGroup(ctx c.Context, groupID string) (*sd.WorkGroup, error) {

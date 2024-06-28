@@ -12,7 +12,6 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
-	sd "gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
@@ -117,13 +116,18 @@ func (gb *GoSdApplicationBlock) Update(ctx context.Context) (interface{}, error)
 		return nil, unmErr
 	}
 
-	personData, err := gb.RunContext.Services.ServiceDesc.GetSsoPerson(ctx, gb.RunContext.Initiator)
+	ssoUser, err := gb.RunContext.Services.People.GetUser(ctx, gb.RunContext.Initiator, false)
+	if err != nil {
+		return nil, err
+	}
+
+	person, err := ssoUser.ToPerson()
 	if err != nil {
 		return nil, err
 	}
 
 	if valOutputSdApplicationExecutor, ok := gb.Output[keyOutputSdApplicationExecutor]; ok {
-		gb.RunContext.VarStore.SetValue(valOutputSdApplicationExecutor, personData)
+		gb.RunContext.VarStore.SetValue(valOutputSdApplicationExecutor, person)
 	}
 
 	if valOutputBlueprintID, ok := gb.Output[keyOutputBlueprintID]; ok {
@@ -286,7 +290,7 @@ func createGoSdApplicationBlock(ctx context.Context, name string, ef *entity.Eri
 }
 
 type SDOutput struct {
-	Executor        sd.SsoPerson
+	Executor        people.Person
 	ApplicationBody map[string]interface{}
 	Description     string
 	BlueprintID     string

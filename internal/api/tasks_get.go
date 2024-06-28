@@ -762,18 +762,25 @@ func (ae *Env) GetTasksUsers(w http.ResponseWriter, req *http.Request, params Ge
 	respUsers := make([]UniqueUser, 0)
 
 	for i := range dbResp.Logins {
-		ssoUser, sdErr := ae.ServiceDesc.GetSsoPerson(ctx, dbResp.Logins[i])
+		ssoUser, err := ae.People.GetUser(ctx, dbResp.Logins[i], false)
 		if err != nil {
-			errorHandler.handleError(GetUserinfoErr, sdErr)
+			errorHandler.handleError(GetUserinfoErr, err)
+
+			return
+		}
+
+		person, err := ssoUser.ToPerson()
+		if err != nil {
+			errorHandler.handleError(GetUserinfoErr, err)
 
 			return
 		}
 
 		if ssoUser != nil {
 			respUsers = append(respUsers, UniqueUser{
-				FullName: ssoUser.Fullname,
-				TabNum:   ssoUser.Tabnum,
-				Username: ssoUser.Username,
+				FullName: person.Fullname,
+				TabNum:   person.Tabnum,
+				Username: person.Username,
 			})
 		}
 	}
