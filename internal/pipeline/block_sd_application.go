@@ -121,9 +121,9 @@ func (gb *GoSdApplicationBlock) Update(ctx context.Context) (interface{}, error)
 		return nil, err
 	}
 
-	person, err := ssoUser.ToPerson()
-	if err != nil {
-		return nil, err
+	person, errConv := ssoUser.ToPerson()
+	if errConv != nil {
+		return nil, errConv
 	}
 
 	if valOutputSdApplicationExecutor, ok := gb.Output[keyOutputSdApplicationExecutor]; ok {

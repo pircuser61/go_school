@@ -749,9 +749,9 @@ func (gb *GoExecutionBlock) UpdateOutputUsingState(ctx context.Context) (map[str
 			return nil, ssoErr
 		}
 
-		person, err := ssoUser.ToPerson()
-		if err != nil {
-			return nil, err
+		person, errConv := ssoUser.ToPerson()
+		if errConv != nil {
+			return nil, errConv
 		}
 
 		output[keyOutputExecutionLogin] = person

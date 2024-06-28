@@ -21,6 +21,8 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/httpclient"
 	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
+	peopleMock "gitlab.services.mts.ru/jocasta/pipeliner/internal/people/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 	serviceDeskMocks "gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc/mocks"
@@ -412,13 +414,24 @@ func TestProcessBlock(t *testing.T) {
 
 							return res
 						}(),
+						People: func() people.Service {
+							res := new(peopleMock.Service)
+
+							res.On("GetUser",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(status string) bool { return true }),
+								mock.MatchedBy(func(onlyEnabled bool) bool { return true }),
+							).Return(people.SSOUser{}, nil)
+
+							return res
+						}(),
 						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								b, _ := json.Marshal(people.Person{})
 								body := bytes.NewReader(b)
 
 								return &http.Response{
@@ -960,13 +973,24 @@ func TestProcessBlock(t *testing.T) {
 
 							return res
 						}(),
+						People: func() people.Service {
+							res := new(peopleMock.Service)
+
+							res.On("GetUser",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(status string) bool { return true }),
+								mock.MatchedBy(func(onlyEnabled bool) bool { return true }),
+							).Return(people.SSOUser{}, nil)
+
+							return res
+						}(),
 						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								b, _ := json.Marshal(people.Person{})
 								body := bytes.NewReader(b)
 
 								return &http.Response{

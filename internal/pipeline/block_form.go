@@ -625,9 +625,9 @@ func (gb *GoFormBlock) UpdateOutputUsingState(ctx c.Context) (res map[string]int
 			return nil, ssoErr
 		}
 
-		person, err := ssoUser.ToPerson()
-		if err != nil {
-			return nil, err
+		person, errConv := ssoUser.ToPerson()
+		if errConv != nil {
+			return nil, errConv
 		}
 
 		output[keyOutputFormExecutor] = person

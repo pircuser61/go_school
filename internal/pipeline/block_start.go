@@ -81,9 +81,9 @@ func (gb *GoStartBlock) Update(ctx context.Context) (interface{}, error) {
 		return nil, err
 	}
 
-	person, err := ssoUser.ToPerson()
-	if err != nil {
-		return nil, err
+	person, errConv := ssoUser.ToPerson()
+	if errConv != nil {
+		return nil, errConv
 	}
 
 	if valOutputWorkNumber, ok := gb.Output[entity.KeyOutputWorkNumber]; ok {

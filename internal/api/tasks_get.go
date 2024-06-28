@@ -762,16 +762,16 @@ func (ae *Env) GetTasksUsers(w http.ResponseWriter, req *http.Request, params Ge
 	respUsers := make([]UniqueUser, 0)
 
 	for i := range dbResp.Logins {
-		ssoUser, err := ae.People.GetUser(ctx, dbResp.Logins[i], false)
-		if err != nil {
-			errorHandler.handleError(GetUserinfoErr, err)
+		ssoUser, errSso := ae.People.GetUser(ctx, dbResp.Logins[i], false)
+		if errSso != nil {
+			errorHandler.handleError(GetUserinfoErr, errSso)
 
 			return
 		}
 
-		person, err := ssoUser.ToPerson()
-		if err != nil {
-			errorHandler.handleError(GetUserinfoErr, err)
+		person, errConv := ssoUser.ToPerson()
+		if errConv != nil {
+			errorHandler.handleError(GetUserinfoErr, errConv)
 
 			return
 		}

@@ -750,9 +750,9 @@ func (gb *GoApproverBlock) UpdateOutputUsingState(ctx context.Context) (res map[
 			return nil, err
 		}
 
-		person, err := ssoUser.ToPerson()
-		if err != nil {
-			return nil, err
+		person, errConv := ssoUser.ToPerson()
+		if errConv != nil {
+			return nil, errConv
 		}
 
 		output[keyOutputApprover] = person

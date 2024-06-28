@@ -525,8 +525,8 @@ func (gb *GoApproverBlock) trySetPreviousDecision(ctx context.Context) (isPrevDe
 		return false
 	}
 
-	person, err := ssoUser.ToPerson()
-	if err != nil {
+	person, errConv := ssoUser.ToPerson()
+	if errConv != nil {
 		return false
 	}
 

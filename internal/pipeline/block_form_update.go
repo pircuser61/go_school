@@ -219,9 +219,9 @@ func (gb *GoFormBlock) handleRequestFillForm(ctx context.Context, data *script.B
 			return err
 		}
 
-		person, err := ssoUser.ToPerson()
-		if err != nil {
-			return err
+		person, errConv := ssoUser.ToPerson()
+		if errConv != nil {
+			return errConv
 		}
 
 		if valOutputFormExecutor, ok := gb.Output[keyOutputFormExecutor]; ok {

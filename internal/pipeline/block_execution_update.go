@@ -1253,9 +1253,9 @@ func (gb *GoExecutionBlock) toEditApplication(ctx c.Context) (err error) {
 			return personErr
 		}
 
-		person, err := ssoUser.ToPerson()
-		if err != nil {
-			return err
+		person, errConv := ssoUser.ToPerson()
+		if errConv != nil {
+			return errConv
 		}
 
 		gb.State.IsExpired = gb.State.Deadline.Before(time.Now())

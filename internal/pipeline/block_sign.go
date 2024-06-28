@@ -1066,9 +1066,9 @@ func (gb *GoSignBlock) UpdateOutputUsingState(ctx context.Context) (res map[stri
 			return nil, ssoErr
 		}
 
-		person, err := ssoUser.ToPerson()
-		if err != nil {
-			return nil, err
+		person, errConv := ssoUser.ToPerson()
+		if errConv != nil {
+			return nil, errConv
 		}
 
 		output[keyOutputSigner] = person

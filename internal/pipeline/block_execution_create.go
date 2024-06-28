@@ -452,9 +452,9 @@ func (gb *GoExecutionBlock) handleDecision(ctx context.Context, parentState *Exe
 		return err
 	}
 
-	person, err := ssoUser.ToPerson()
-	if err != nil {
-		return err
+	person, errConv := ssoUser.ToPerson()
+	if errConv != nil {
+		return errConv
 	}
 
 	if valOutputExecutionLogin, ok := gb.Output[keyOutputExecutionLogin]; ok {

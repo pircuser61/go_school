@@ -484,9 +484,9 @@ func (gb *GoSignBlock) setSignerDecision(ctx c.Context, u *signSignatureParams) 
 				return err
 			}
 
-			person, err := ssoUser.ToPerson()
-			if err != nil {
-				return err
+			person, errConv := ssoUser.ToPerson()
+			if errConv != nil {
+				return errConv
 			}
 
 			gb.RunContext.VarStore.SetValue(valOutputSigner, person)
