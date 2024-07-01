@@ -598,17 +598,26 @@ func (gb *GoApproverBlock) HandleBreachedSLARequestAddInfo(ctx context.Context) 
 	return nil
 }
 
-func (gb *GoApproverBlock) toEditApplication(ctx context.Context, updateParams approverUpdateEditingParams) error {
+func (gb *GoApproverBlock) toEditApplication(ctx context.Context, in approverUpdateEditingParams) (err error) {
 	if gb.State.Decision != nil {
 		return errors.New("decision already set")
 	}
 
-	_, approverFound := gb.State.Approvers[gb.RunContext.UpdateData.ByLogin]
-	delegateFor, isDelegate := gb.RunContext.Delegations.FindDelegatorFor(
-		gb.RunContext.UpdateData.ByLogin, getSliceFromMap(gb.State.Approvers))
+	byLogin := gb.RunContext.UpdateData.ByLogin
+	delegations := gb.RunContext.Delegations
 
-	if !(approverFound || isDelegate) && gb.RunContext.UpdateData.ByLogin != AutoApprover {
+	_, approverFound := gb.State.Approvers[byLogin]
+	delegateFor, isDelegate := delegations.FindDelegatorFor(byLogin, getSliceFromMap(gb.State.Approvers))
+
+	if !(approverFound || isDelegate) && byLogin != AutoApprover {
 		return NewUserIsNotPartOfProcessErr()
+	}
+
+	if gb.State.WaitAllDecisions {
+		err = gb.State.SetDecision(byLogin, in.Comment, ApproverActionSendToEdit, in.Attachments, delegations)
+		if err != nil {
+			return err
+		}
 	}
 
 	if gb.isNextBlockServiceDesk() {
@@ -616,7 +625,7 @@ func (gb *GoApproverBlock) toEditApplication(ctx context.Context, updateParams a
 			delegateFor = ""
 		}
 
-		err := gb.State.setEditAppToInitiator(gb.RunContext.UpdateData.ByLogin, delegateFor, updateParams)
+		err = gb.State.setEditAppToInitiator(byLogin, delegateFor, in)
 		if err != nil {
 			return err
 		}
@@ -634,16 +643,12 @@ func (gb *GoApproverBlock) toEditApplication(ctx context.Context, updateParams a
 		return nil
 	}
 
-	err := gb.State.setEditToNextBlock(
-		gb.RunContext.UpdateData.ByLogin,
-		delegateFor,
-		updateParams,
-	)
+	err = gb.State.setEditToNextBlock(byLogin, delegateFor, in)
 	if err != nil {
 		return err
 	}
 
-	person, err := gb.RunContext.Services.ServiceDesc.GetSsoPerson(ctx, gb.RunContext.UpdateData.ByLogin)
+	person, err := gb.RunContext.Services.ServiceDesc.GetSsoPerson(ctx, byLogin)
 	if err != nil {
 		return err
 	}
@@ -659,7 +664,7 @@ func (gb *GoApproverBlock) toEditApplication(ctx context.Context, updateParams a
 	}
 
 	if valOutputComment, ok := gb.Output[keyOutputComment]; ok {
-		gb.RunContext.VarStore.SetValue(valOutputComment, updateParams.Comment)
+		gb.RunContext.VarStore.SetValue(valOutputComment, in.Comment)
 	}
 
 	return nil
