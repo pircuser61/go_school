@@ -1005,21 +1005,20 @@ func (gb *GoApproverBlock) handleTaskUpdateAction(ctx c.Context) error {
 		}
 
 	case e.TaskUpdateActionAdditionalApprovement:
+		byLogin := gb.RunContext.UpdateData.ByLogin
 		var updateParams additionalApproverUpdateParams
 
 		if err = json.Unmarshal(data.Parameters, &updateParams); err != nil {
 			return fmt.Errorf("can't assert provided data: %v", err)
 		}
 
-		if err = updateParams.Validate(); err != nil {
+		if err := updateParams.Validate(); err != nil {
 			return err
 		}
 
-		logins := make([]string, 0)
-		logins, err = gb.State.SetDecisionByAdditionalApprover(gb.RunContext.UpdateData.ByLogin,
-			updateParams, gb.RunContext.Delegations)
-		if err != nil {
-			return err
+		logins, errUpdate := gb.State.SetDecisionByAdditionalApprover(byLogin, updateParams, gb.RunContext.Delegations)
+		if errUpdate != nil {
+			return errUpdate
 		}
 
 		logins = append(logins, gb.RunContext.Initiator)
