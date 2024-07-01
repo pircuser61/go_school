@@ -209,6 +209,7 @@ func (a *ApproverData) SetDecisionByAdditionalApprover(login string,
 
 func (a *ApproverData) calculateDecisions() (isFinal, rejectExist, sendEditExist bool, p map[ApproverDecision]int) {
 	var total int
+
 	positiveDecisions := make(map[ApproverDecision]int)
 
 	for i := range a.ApproverLog {

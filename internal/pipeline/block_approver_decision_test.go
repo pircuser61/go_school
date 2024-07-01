@@ -253,12 +253,12 @@ func TestApproverData_calculateDecisions(t *testing.T) {
 					"pholty":    {},
 				},
 			},
-			wantIsFinal: true,
-			wantRejectExist: true,
+			wantIsFinal:       true,
+			wantRejectExist:   true,
 			wantSendEditExist: false,
 			wantP: map[ApproverDecision]int{
 				ApproverDecisionConfirmed: 1,
-				ApproverDecisionViewed: 1,
+				ApproverDecisionViewed:    1,
 			},
 		},
 		{
@@ -266,7 +266,7 @@ func TestApproverData_calculateDecisions(t *testing.T) {
 			fields: fields{
 				ApproverLog: []ApproverLogEntry{
 					{
-						LogType:  ApproverLogAddApprover,
+						LogType: ApproverLogAddApprover,
 					},
 					{
 						Decision: ApproverDecisionConfirmed,
@@ -283,12 +283,12 @@ func TestApproverData_calculateDecisions(t *testing.T) {
 					"pholty":    {},
 				},
 			},
-			wantIsFinal: false,
-			wantRejectExist: false,
+			wantIsFinal:       false,
+			wantRejectExist:   false,
 			wantSendEditExist: false,
 			wantP: map[ApproverDecision]int{
 				ApproverDecisionConfirmed: 1,
-				ApproverDecisionViewed: 1,
+				ApproverDecisionViewed:    1,
 			},
 		},
 		{
@@ -296,7 +296,7 @@ func TestApproverData_calculateDecisions(t *testing.T) {
 			fields: fields{
 				ApproverLog: []ApproverLogEntry{
 					{
-						LogType:  ApproverLogAddApprover,
+						LogType: ApproverLogAddApprover,
 					},
 					{
 						Decision: ApproverDecisionRejected,
@@ -313,10 +313,10 @@ func TestApproverData_calculateDecisions(t *testing.T) {
 					"pholty":    {},
 				},
 			},
-			wantIsFinal: false,
-			wantRejectExist: true,
+			wantIsFinal:       false,
+			wantRejectExist:   true,
 			wantSendEditExist: true,
-			wantP: map[ApproverDecision]int{},
+			wantP:             map[ApproverDecision]int{},
 		},
 	}
 	for _, tt := range tests {

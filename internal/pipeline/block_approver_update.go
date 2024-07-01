@@ -4,7 +4,6 @@ import (
 	c "context"
 	"encoding/json"
 	"fmt"
-	"golang.org/x/net/context"
 	"time"
 
 	"github.com/google/uuid"
@@ -908,7 +907,7 @@ func (gb *GoApproverBlock) Update(ctx c.Context) (interface{}, error) {
 }
 
 func (gb *GoApproverBlock) checkFormFilled() error {
-	l := logger.GetLogger(context.Background())
+	l := logger.GetLogger(c.Background())
 
 	for _, form := range gb.State.FormsAccessibility {
 		formState, ok := gb.RunContext.VarStore.State[form.NodeID]
@@ -963,12 +962,14 @@ func (gb *GoApproverBlock) handleTaskUpdateAction(ctx c.Context) error {
 	case e.TaskUpdateActionApprovement:
 		var updateParams approverUpdateParams
 
-		if err := json.Unmarshal(data.Parameters, &updateParams); err != nil {
+		err = json.Unmarshal(data.Parameters, &updateParams)
+		if err != nil {
 			return errors.New("can't assert provided data")
 		}
 
 		if updateParams.Decision.ToDecision() != ApproverDecisionRejected {
-			if err := gb.checkFormFilled(); err != nil {
+			err = gb.checkFormFilled()
+			if err != nil {
 				return err
 			}
 
@@ -1014,15 +1015,16 @@ func (gb *GoApproverBlock) handleTaskUpdateAction(ctx c.Context) error {
 			return err
 		}
 
-		loginsToNotify, err := gb.State.SetDecisionByAdditionalApprover(gb.RunContext.UpdateData.ByLogin,
+		logins := make([]string, 0)
+		logins, err = gb.State.SetDecisionByAdditionalApprover(gb.RunContext.UpdateData.ByLogin,
 			updateParams, gb.RunContext.Delegations)
 		if err != nil {
 			return err
 		}
 
-		loginsToNotify = append(loginsToNotify, gb.RunContext.Initiator)
+		logins = append(logins, gb.RunContext.Initiator)
 
-		err = gb.notifyDecisionMadeByAdditionalApprover(ctx, loginsToNotify)
+		err = gb.notifyDecisionMadeByAdditionalApprover(ctx, logins)
 		if err != nil {
 			return err
 		}
