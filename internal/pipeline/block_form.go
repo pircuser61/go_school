@@ -14,7 +14,6 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
-	sd "gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
@@ -457,7 +456,7 @@ func (gb *GoFormBlock) handleAutoFillForm() error {
 		return constErr
 	}
 
-	personData := &sd.SsoPerson{
+	personData := &people.Person{
 		Username: AutoFillUser,
 	}
 
@@ -584,7 +583,7 @@ func (gb *GoFormBlock) handleNotifications(ctx c.Context) error {
 }
 
 type FormOutput struct {
-	Executor        *sd.SsoPerson
+	Executor        *people.Person
 	ApplicationBody map[string]interface{}
 }
 
@@ -621,12 +620,17 @@ func (gb *GoFormBlock) UpdateOutputUsingState(ctx c.Context) (res map[string]int
 	output := map[string]interface{}{}
 
 	if gb.State.ActualExecutor != nil {
-		personData, ssoErr := gb.RunContext.Services.ServiceDesc.GetSsoPerson(ctx, *gb.State.ActualExecutor)
+		ssoUser, ssoErr := gb.RunContext.Services.People.GetUser(ctx, *gb.State.ActualExecutor, false)
 		if ssoErr != nil {
 			return nil, ssoErr
 		}
 
-		output[keyOutputFormExecutor] = personData
+		person, errConv := ssoUser.ToPerson()
+		if errConv != nil {
+			return nil, errConv
+		}
+
+		output[keyOutputFormExecutor] = person
 	}
 
 	if gb.State.ApplicationBody != nil {

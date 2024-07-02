@@ -24,7 +24,7 @@ import (
 	humanTasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks"
 	mocks2 "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
-	people_nocache "gitlab.services.mts.ru/jocasta/pipeliner/internal/people/nocache"
+	peopleMock "gitlab.services.mts.ru/jocasta/pipeliner/internal/people/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 	serviceDeskMocks "gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc/mocks"
@@ -808,13 +808,24 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
+						People: func() people.Service {
+							res := new(peopleMock.Service)
+
+							res.On("GetUser",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(status string) bool { return true }),
+								mock.MatchedBy(func(onlyEnabled bool) bool { return true }),
+							).Return(people.SSOUser{}, nil)
+
+							return res
+						}(),
 						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								b, _ := json.Marshal(people.Person{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -884,13 +895,24 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
+						People: func() people.Service {
+							res := new(peopleMock.Service)
+
+							res.On("GetUser",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(status string) bool { return true }),
+								mock.MatchedBy(func(onlyEnabled bool) bool { return true }),
+							).Return(people.SSOUser{}, nil)
+
+							return res
+						}(),
 						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								b, _ := json.Marshal(people.Person{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -959,13 +981,24 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
+						People: func() people.Service {
+							res := new(peopleMock.Service)
+
+							res.On("GetUser",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(status string) bool { return true }),
+								mock.MatchedBy(func(onlyEnabled bool) bool { return true }),
+							).Return(people.SSOUser{}, nil)
+
+							return res
+						}(),
 						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								b, _ := json.Marshal(people.Person{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -1035,13 +1068,24 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
+						People: func() people.Service {
+							res := new(peopleMock.Service)
+
+							res.On("GetUser",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(status string) bool { return true }),
+								mock.MatchedBy(func(onlyEnabled bool) bool { return true }),
+							).Return(people.SSOUser{}, nil)
+
+							return res
+						}(),
 						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								b, _ := json.Marshal(people.Person{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -1111,13 +1155,24 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
+						People: func() people.Service {
+							res := new(peopleMock.Service)
+
+							res.On("GetUser",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(status string) bool { return true }),
+								mock.MatchedBy(func(onlyEnabled bool) bool { return true }),
+							).Return(people.SSOUser{}, nil)
+
+							return res
+						}(),
 						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								b, _ := json.Marshal(people.Person{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -1187,13 +1242,24 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
+						People: func() people.Service {
+							res := new(peopleMock.Service)
+
+							res.On("GetUser",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(status string) bool { return true }),
+								mock.MatchedBy(func(onlyEnabled bool) bool { return true }),
+							).Return(people.SSOUser{}, nil)
+
+							return res
+						}(),
 						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								b, _ := json.Marshal(people.Person{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -1263,13 +1329,24 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
+						People: func() people.Service {
+							res := new(peopleMock.Service)
+
+							res.On("GetUser",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(status string) bool { return true }),
+								mock.MatchedBy(func(onlyEnabled bool) bool { return true }),
+							).Return(people.SSOUser{}, nil)
+
+							return res
+						}(),
 						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								b, _ := json.Marshal(people.Person{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -1367,13 +1444,24 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 					skipNotifications: true,
 					VarStore:          store.NewStore(),
 					Services: RunContextServices{
+						People: func() people.Service {
+							res := new(peopleMock.Service)
+
+							res.On("GetUser",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(status string) bool { return true }),
+								mock.MatchedBy(func(onlyEnabled bool) bool { return true }),
+							).Return(people.SSOUser{}, nil)
+
+							return res
+						}(),
 						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								b, _ := json.Marshal(people.Person{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -1444,13 +1532,24 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
+						People: func() people.Service {
+							res := new(peopleMock.Service)
+
+							res.On("GetUser",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(status string) bool { return true }),
+								mock.MatchedBy(func(onlyEnabled bool) bool { return true }),
+							).Return(people.SSOUser{}, nil)
+
+							return res
+						}(),
 						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								b, _ := json.Marshal(people.Person{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -1555,13 +1654,24 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
+						People: func() people.Service {
+							res := new(peopleMock.Service)
+
+							res.On("GetUser",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(status string) bool { return true }),
+								mock.MatchedBy(func(onlyEnabled bool) bool { return true }),
+							).Return(people.SSOUser{}, nil)
+
+							return res
+						}(),
 						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								b, _ := json.Marshal(people.Person{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -1623,13 +1733,24 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 					skipNotifications: true,
 					VarStore:          store.NewStore(),
 					Services: RunContextServices{
+						People: func() people.Service {
+							res := new(peopleMock.Service)
+
+							res.On("GetUser",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(status string) bool { return true }),
+								mock.MatchedBy(func(onlyEnabled bool) bool { return true }),
+							).Return(people.SSOUser{}, nil)
+
+							return res
+						}(),
 						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								b, _ := json.Marshal(people.Person{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -1699,13 +1820,24 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
+						People: func() people.Service {
+							res := new(peopleMock.Service)
+
+							res.On("GetUser",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(status string) bool { return true }),
+								mock.MatchedBy(func(onlyEnabled bool) bool { return true }),
+							).Return(people.SSOUser{}, nil)
+
+							return res
+						}(),
 						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								b, _ := json.Marshal(people.Person{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -1766,13 +1898,24 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 					skipNotifications: true,
 					VarStore:          store.NewStore(),
 					Services: RunContextServices{
+						People: func() people.Service {
+							res := new(peopleMock.Service)
+
+							res.On("GetUser",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(status string) bool { return true }),
+								mock.MatchedBy(func(onlyEnabled bool) bool { return true }),
+							).Return(people.SSOUser{}, nil)
+
+							return res
+						}(),
 						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								b, _ := json.Marshal(people.Person{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -1834,13 +1977,24 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 					skipNotifications: true,
 					VarStore:          store.NewStore(),
 					Services: RunContextServices{
+						People: func() people.Service {
+							res := new(peopleMock.Service)
+
+							res.On("GetUser",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(status string) bool { return true }),
+								mock.MatchedBy(func(onlyEnabled bool) bool { return true }),
+							).Return(people.SSOUser{}, nil)
+
+							return res
+						}(),
 						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								b, _ := json.Marshal(people.Person{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -1902,13 +2056,24 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 					skipNotifications: true,
 					VarStore:          store.NewStore(),
 					Services: RunContextServices{
+						People: func() people.Service {
+							res := new(peopleMock.Service)
+
+							res.On("GetUser",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(status string) bool { return true }),
+								mock.MatchedBy(func(onlyEnabled bool) bool { return true }),
+							).Return(people.SSOUser{}, nil)
+
+							return res
+						}(),
 						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								b, _ := json.Marshal(people.Person{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -1976,13 +2141,24 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
+						People: func() people.Service {
+							res := new(peopleMock.Service)
+
+							res.On("GetUser",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(status string) bool { return true }),
+								mock.MatchedBy(func(onlyEnabled bool) bool { return true }),
+							).Return(people.SSOUser{}, nil)
+
+							return res
+						}(),
 						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								b, _ := json.Marshal(people.Person{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -2044,13 +2220,24 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 					skipNotifications: true,
 					VarStore:          store.NewStore(),
 					Services: RunContextServices{
+						People: func() people.Service {
+							res := new(peopleMock.Service)
+
+							res.On("GetUser",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(status string) bool { return true }),
+								mock.MatchedBy(func(onlyEnabled bool) bool { return true }),
+							).Return(people.SSOUser{}, nil)
+
+							return res
+						}(),
 						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								b, _ := json.Marshal(people.Person{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -2119,13 +2306,24 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
+						People: func() people.Service {
+							res := new(peopleMock.Service)
+
+							res.On("GetUser",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(status string) bool { return true }),
+								mock.MatchedBy(func(onlyEnabled bool) bool { return true }),
+							).Return(people.SSOUser{}, nil)
+
+							return res
+						}(),
 						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								b, _ := json.Marshal(people.Person{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -2192,13 +2390,24 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 					skipNotifications: true,
 					VarStore:          store.NewStore(),
 					Services: RunContextServices{
+						People: func() people.Service {
+							res := new(peopleMock.Service)
+
+							res.On("GetUser",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(status string) bool { return true }),
+								mock.MatchedBy(func(onlyEnabled bool) bool { return true }),
+							).Return(people.SSOUser{}, nil)
+
+							return res
+						}(),
 						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								b, _ := json.Marshal(people.Person{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -2287,8 +2496,15 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 							return slaMock
 						}(),
 						People: func() people.Service {
-							pServ, _ := people_nocache.NewService(&people.Config{}, nil, nil)
-							return pServ
+							res := new(peopleMock.Service)
+
+							res.On("GetUser",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(status string) bool { return true }),
+								mock.MatchedBy(func(onlyEnabled bool) bool { return true }),
+							).Return(people.SSOUser{}, nil)
+
+							return res
 						}(),
 						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
@@ -2296,7 +2512,7 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								b, _ := json.Marshal(people.Person{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -2365,13 +2581,24 @@ func TestGoExecutionBlock_Update(t *testing.T) {
 
 							return slaMock
 						}(),
+						People: func() people.Service {
+							res := new(peopleMock.Service)
+
+							res.On("GetUser",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(status string) bool { return true }),
+								mock.MatchedBy(func(onlyEnabled bool) bool { return true }),
+							).Return(people.SSOUser{}, nil)
+
+							return res
+						}(),
 						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								b, _ := json.Marshal(people.Person{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 

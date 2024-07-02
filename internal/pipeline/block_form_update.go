@@ -214,13 +214,18 @@ func (gb *GoFormBlock) handleRequestFillForm(ctx context.Context, data *script.B
 	}
 
 	if gb.State.ActualExecutor != nil {
-		personData, err := gb.RunContext.Services.ServiceDesc.GetSsoPerson(ctx, *gb.State.ActualExecutor)
+		ssoUser, err := gb.RunContext.Services.People.GetUser(ctx, *gb.State.ActualExecutor, false)
 		if err != nil {
 			return err
 		}
 
+		person, errConv := ssoUser.ToPerson()
+		if errConv != nil {
+			return errConv
+		}
+
 		if valOutputFormExecutor, ok := gb.Output[keyOutputFormExecutor]; ok {
-			gb.RunContext.VarStore.SetValue(valOutputFormExecutor, personData)
+			gb.RunContext.VarStore.SetValue(valOutputFormExecutor, person)
 		}
 	}
 
