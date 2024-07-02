@@ -15,6 +15,17 @@ import (
 )
 
 func (s *service) GetFunctionVersion(ctx c.Context, functionID, versionID string) (res Function, err error) {
+	ctx, span := trace.StartSpan(ctx, "functions.get_function_version")
+	defer span.End()
+
+	log := logger.GetLogger(ctx).
+		WithField("traceID", span.SpanContext().TraceID.String()).
+		WithField("transport", transportGRPC).
+		WithField("integration_name", externalSystemName)
+
+	ctx = logger.WithLogger(ctx, log)
+	ctx = script.MakeContextWithRetryCnt(ctx)
+
 	fn, err := s.GetFunction(ctx, functionID)
 	if err != nil {
 		return Function{}, err
