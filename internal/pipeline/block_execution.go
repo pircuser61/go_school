@@ -14,7 +14,6 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
-	sd "gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
@@ -703,7 +702,7 @@ func (gb *GoExecutionBlock) BlockAttachments() (ids []string) {
 }
 
 type ExecutionOutput struct {
-	Login    *sd.SsoPerson
+	Login    *people.Person
 	Comment  *string
 	Decision *ExecutionDecision
 }
@@ -741,16 +740,21 @@ func (gb *GoExecutionBlock) UpdateStateUsingOutput(_ context.Context, data []byt
 	return state, nil
 }
 
-func (gb *GoExecutionBlock) UpdateOutputUsingState(ctx context.Context) (res map[string]interface{}, err error) {
+func (gb *GoExecutionBlock) UpdateOutputUsingState(ctx context.Context) (map[string]interface{}, error) {
 	output := map[string]interface{}{}
 
 	if gb.State.ActualExecutor != nil {
-		personData, ssoErr := gb.RunContext.Services.ServiceDesc.GetSsoPerson(ctx, *gb.State.ActualExecutor)
+		ssoUser, ssoErr := gb.RunContext.Services.People.GetUser(ctx, *gb.State.ActualExecutor, false)
 		if ssoErr != nil {
 			return nil, ssoErr
 		}
 
-		output[keyOutputExecutionLogin] = personData
+		person, errConv := ssoUser.ToPerson()
+		if errConv != nil {
+			return nil, errConv
+		}
+
+		output[keyOutputExecutionLogin] = person
 	}
 
 	if gb.State.Decision != nil {

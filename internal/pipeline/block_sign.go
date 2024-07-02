@@ -18,7 +18,6 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
-	sd "gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
@@ -1018,7 +1017,7 @@ type SignOutput struct {
 	Comment    *string
 	Decision   *SignDecision
 	Signatures []FileSignaturePair
-	Signer     *sd.SsoPerson
+	Signer     *people.Person
 }
 
 func (gb *GoSignBlock) UpdateStateUsingOutput(_ context.Context, data []byte) (state map[string]interface{}, err error) {
@@ -1062,12 +1061,17 @@ func (gb *GoSignBlock) UpdateOutputUsingState(ctx context.Context) (res map[stri
 	output := map[string]interface{}{}
 
 	if gb.State.ActualSigner != nil {
-		personData, ssoErr := gb.RunContext.Services.ServiceDesc.GetSsoPerson(ctx, *gb.State.ActualSigner)
+		ssoUser, ssoErr := gb.RunContext.Services.People.GetUser(ctx, *gb.State.ActualSigner, false)
 		if ssoErr != nil {
 			return nil, ssoErr
 		}
 
-		output[keyOutputSigner] = personData
+		person, errConv := ssoUser.ToPerson()
+		if errConv != nil {
+			return nil, errConv
+		}
+
+		output[keyOutputSigner] = person
 	}
 
 	if gb.State.Decision != nil {

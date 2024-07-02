@@ -89,9 +89,14 @@ func (gb *GoApproverBlock) setApproveDecision(ctx c.Context, u *approverUpdatePa
 	}
 
 	if gb.State.ActualApprover != nil {
-		person, err := gb.RunContext.Services.ServiceDesc.GetSsoPerson(ctx, *gb.State.ActualApprover)
-		if err != nil {
-			return err
+		ssoUser, errSso := gb.RunContext.Services.People.GetUser(ctx, *gb.State.ActualApprover, false)
+		if errSso != nil {
+			return errSso
+		}
+
+		person, errConv := ssoUser.ToPerson()
+		if errConv != nil {
+			return errConv
 		}
 
 		if valOutputApprover, ok := gb.Output[keyOutputApprover]; ok {
@@ -662,9 +667,14 @@ func (gb *GoApproverBlock) SendEdit(ctx c.Context, in approverUpdateEditingParam
 		return err
 	}
 
-	person, err := gb.RunContext.Services.ServiceDesc.GetSsoPerson(ctx, byLogin)
+	ssoUser, err := gb.RunContext.Services.People.GetUser(ctx, byLogin, true)
 	if err != nil {
 		return err
+	}
+
+	person, errConv := ssoUser.ToPerson()
+	if errConv != nil {
+		return errConv
 	}
 
 	gb.State.IsExpired = gb.State.Deadline.Before(time.Now())
