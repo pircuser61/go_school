@@ -97,14 +97,14 @@ func (s *service) parseEmail(ctx c.Context, r *mail.Reader, sn map[*imap.BodySec
 		rejected = "Отклонено"
 	)
 
-	log := logger.GetLogger(ctx)
+	log := logger.GetLogger(ctx).WithField("funcName", funcName)
 
 	_, span := trace.StartSpan(ctx, funcName)
 	defer span.End()
 
 	headers, err := parseEmailHeaders(r.Header)
 	if err != nil {
-		return nil, errors.Wrap(err, funcName+": headers")
+		return nil, err
 	}
 
 	from := addressListToStrList(headers.From)
@@ -175,14 +175,14 @@ type parsedHeaders struct {
 }
 
 func parseEmailHeaders(header mail.Header) (headers *parsedHeaders, err error) {
-	from, err := header.AddressList("From")
-	if err != nil {
-		return nil, errors.Wrap(err, "header From")
-	}
-
 	to, err := header.AddressList("To")
 	if err != nil {
 		return nil, errors.Wrap(err, "header To")
+	}
+
+	from, err := header.AddressList("From")
+	if err != nil {
+		return nil, errors.Wrap(err, "header From")
 	}
 
 	subject, err := header.Subject()
