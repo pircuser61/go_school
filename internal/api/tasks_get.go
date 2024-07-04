@@ -303,9 +303,8 @@ func (ae *Env) GetTask(w http.ResponseWriter, req *http.Request, workNumber stri
 
 	dbTask.Steps = steps
 	isInitiator := ui.Username == dbTask.Author
-	accessibleForms := make(map[string]struct{}, 0)
 
-	accessibleForms, err = ae.getAccessibleForms(ui.Username, &steps, &delegations)
+	accessibleForms, err := ae.getAccessibleForms(ui.Username, &steps, &delegations)
 	if err != nil {
 		errorHandler.handleError(GetDelegationsError, err)
 
