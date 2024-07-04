@@ -587,6 +587,11 @@ func convertDesc(descriptions om.OrderedMap, keys map[string]string, hiddenField
 			k = strings.TrimSpace(k)
 		}
 
+		// skip hidden fields from flattened arrays
+		if utils.IsContainsInSlice(k, hiddenFields) {
+			continue
+		}
+
 		var (
 			ruKey string
 			ok    bool
