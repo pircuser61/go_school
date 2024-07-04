@@ -169,7 +169,7 @@ func (s *service) getAttachment(ctx c.Context, fileID, workNumber, clientID stri
 }
 
 func (s *service) GetAttachments(ctx c.Context, attach []entity.Attachment, wNumber, clientID string) ([]em.Attachment, error) {
-	ctxLocal, span := trace.StartSpan(ctx, "file_registry.get_attachments")
+	ctx, span := trace.StartSpan(ctx, "file_registry.get_attachments")
 	defer span.End()
 
 	traceID := span.SpanContext().TraceID.String()
@@ -183,7 +183,7 @@ func (s *service) GetAttachments(ctx c.Context, attach []entity.Attachment, wNum
 	for i := range attach {
 		a := attach[i]
 
-		file, err := s.getAttachment(ctxLocal, a.FileID, wNumber, clientID)
+		file, err := s.getAttachment(ctx, a.FileID, wNumber, clientID)
 		if err != nil {
 			return nil, err
 		}

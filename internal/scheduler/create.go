@@ -2,6 +2,7 @@ package scheduler
 
 import (
 	"context"
+
 	"go.opencensus.io/trace"
 
 	"github.com/google/uuid"

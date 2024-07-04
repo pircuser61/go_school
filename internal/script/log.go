@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	GRPC  = "GRPC"
+	GRPC = "GRPC"
 	HTTP = "HTTP"
 )
 
@@ -17,7 +17,7 @@ type (
 	restRetryStarted struct{}
 )
 
-func SetFieldsExternalCall(ctx c.Context, traceID , v, tr, method, systemName string) logger.Logger {
+func SetFieldsExternalCall(ctx c.Context, traceID, v, tr, method, systemName string) logger.Logger {
 	return logger.GetLogger(ctx).
 		WithField("traceID", traceID).
 		WithField("transport", tr).

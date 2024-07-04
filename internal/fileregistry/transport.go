@@ -12,7 +12,7 @@ import (
 
 const (
 	externalSystemName = "file-registry"
-	xRequestIDHeader = "X-Request-Id"
+	xRequestIDHeader   = "X-Request-Id"
 )
 
 type transport struct {
