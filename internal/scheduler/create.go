@@ -2,7 +2,6 @@ package scheduler
 
 import (
 	"context"
-
 	"go.opencensus.io/trace"
 
 	"github.com/google/uuid"
@@ -20,10 +19,8 @@ func (s *Service) CreateTask(ctx context.Context, task *CreateTask) (id string, 
 	ctx, span := trace.StartSpan(ctx, "scheduler_create_task")
 	defer span.End()
 
-	log := logger.GetLogger(ctx).
-		WithField("traceID", span.SpanContext().TraceID.String()).
-		WithField("transport", "GRPC").
-		WithField("integration_name", externalSystemName)
+	traceID := span.SpanContext().TraceID.String()
+	log := script.SetFieldsExternalCall(ctx, traceID, "v1", script.GRPC, script.GRPC, externalSystemName)
 
 	ctx = logger.WithLogger(ctx, log)
 	ctx = script.MakeContextWithRetryCnt(ctx)
@@ -52,10 +49,8 @@ func (s *Service) DeleteTask(ctx context.Context, task *DeleteTask) error {
 	ctx, span := trace.StartSpan(ctx, "scheduler_delete_task")
 	defer span.End()
 
-	log := logger.GetLogger(ctx).
-		WithField("traceID", span.SpanContext().TraceID.String()).
-		WithField("transport", "GRPC").
-		WithField("integration_name", externalSystemName)
+	traceID := span.SpanContext().TraceID.String()
+	log := script.SetFieldsExternalCall(ctx, traceID, "v1", script.GRPC, script.GRPC, externalSystemName)
 
 	ctx = logger.WithLogger(ctx, log)
 	ctx = script.MakeContextWithRetryCnt(ctx)
@@ -81,10 +76,8 @@ func (s *Service) DeleteAllTasksByWorkID(ctx context.Context, workID uuid.UUID) 
 	ctx, span := trace.StartSpan(ctx, "scheduler_delete_task_by_work_id")
 	defer span.End()
 
-	log := logger.GetLogger(ctx).
-		WithField("traceID", span.SpanContext().TraceID.String()).
-		WithField("transport", "GRPC").
-		WithField("integration_name", externalSystemName)
+	traceID := span.SpanContext().TraceID.String()
+	log := script.SetFieldsExternalCall(ctx, traceID, "v1", script.GRPC, script.GRPC, externalSystemName)
 
 	ctx = logger.WithLogger(ctx, log)
 	ctx = script.MakeContextWithRetryCnt(ctx)

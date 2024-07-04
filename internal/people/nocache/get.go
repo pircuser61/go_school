@@ -3,6 +3,7 @@ package nocache
 import (
 	c "context"
 	"errors"
+	"net/http"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
@@ -17,10 +18,8 @@ func (s *service) GetUserEmail(ctx c.Context, username string) (string, error) {
 	ctx, span := trace.StartSpan(ctx, "people.nocache.get_user_email")
 	defer span.End()
 
-	log := logger.GetLogger(ctx).
-		WithField("traceID", span.SpanContext().TraceID.String()).
-		WithField("transport", "HTTP").
-		WithField("integration_name", externalSystemName)
+	traceID := span.SpanContext().TraceID.String()
+	log := script.SetFieldsExternalCall(ctx, traceID, "v1", script.HTTP, http.MethodGet, externalSystemName)
 
 	ctx = logger.WithLogger(ctx, log)
 	ctx = script.MakeContextWithRetryCnt(ctx)
@@ -47,10 +46,8 @@ func (s *service) GetUser(ctx c.Context, username string, onlyEnabled bool) (peo
 	ctx, span := trace.StartSpan(ctx, "people.nocache.get_user")
 	defer span.End()
 
-	log := logger.GetLogger(ctx).
-		WithField("traceID", span.SpanContext().TraceID.String()).
-		WithField("transport", "HTTP").
-		WithField("integration_name", externalSystemName)
+	traceID := span.SpanContext().TraceID.String()
+	log := script.SetFieldsExternalCall(ctx, traceID, "v1", script.HTTP, http.MethodGet, externalSystemName)
 
 	ctx = logger.WithLogger(ctx, log)
 	ctx = script.MakeContextWithRetryCnt(ctx)
@@ -79,10 +76,8 @@ func (s *service) GetUsers(ctx c.Context, username string, limit *int, filter []
 	ctx, span := trace.StartSpan(ctx, "people.nocache.get_users")
 	defer span.End()
 
-	log := logger.GetLogger(ctx).
-		WithField("traceID", span.SpanContext().TraceID.String()).
-		WithField("transport", "HTTP").
-		WithField("integration_name", externalSystemName)
+	traceID := span.SpanContext().TraceID.String()
+	log := script.SetFieldsExternalCall(ctx, traceID, "v1", script.HTTP, http.MethodGet, externalSystemName)
 
 	ctx = logger.WithLogger(ctx, log)
 	ctx = script.MakeContextWithRetryCnt(ctx)

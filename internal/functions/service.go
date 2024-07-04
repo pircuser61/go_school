@@ -18,7 +18,6 @@ import (
 )
 
 const externalSystemName = "functions"
-const transportGRPC = "GRPC"
 
 type service struct {
 	conn          *grpc.ClientConn

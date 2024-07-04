@@ -31,10 +31,9 @@ func (s *service) GetAttachmentLink(ctx c.Context, attachments []AttachInfo) ([]
 	ctx, span := trace.StartSpan(ctx, "file_registry.get_attachment_link")
 	defer span.End()
 
-	log := logger.GetLogger(ctx).
-		WithField("traceID", span.SpanContext().TraceID.String()).
-		WithField("transport", "GRPC").
-		WithField("integration_name", externalSystemName)
+	traceID := span.SpanContext().TraceID.String()
+	log := script.SetFieldsExternalCall(ctx, traceID, "v1", script.GRPC, script.GRPC, externalSystemName)
+
 	ctx = logger.WithLogger(ctx, log)
 
 	for k, v := range attachments {
@@ -61,10 +60,9 @@ func (s *service) getAttachmentInfo(ctx c.Context, fileID string) (FileInfo, err
 	ctx, span := trace.StartSpan(ctx, "file_registry.get_attachment_info")
 	defer span.End()
 
-	log := logger.GetLogger(ctx).
-		WithField("traceID", span.SpanContext().TraceID.String()).
-		WithField("transport", "GRPC").
-		WithField("integration_name", externalSystemName)
+	traceID := span.SpanContext().TraceID.String()
+	log := script.SetFieldsExternalCall(ctx, traceID, "v1", script.GRPC, script.GRPC, externalSystemName)
+
 	ctx = logger.WithLogger(ctx, log)
 	ctx = script.MakeContextWithRetryCnt(ctx)
 
@@ -93,6 +91,12 @@ func (s *service) GetAttachmentsInfo(ctx c.Context, attachments map[string][]ent
 	ctx, span := trace.StartSpan(ctx, "file_registry.get_attachments_info")
 	defer span.End()
 
+	traceID := span.SpanContext().TraceID.String()
+	log := script.SetFieldsExternalCall(ctx, traceID, "v1", script.GRPC, script.GRPC, externalSystemName)
+
+	ctx = logger.WithLogger(ctx, log)
+	ctx = script.MakeContextWithRetryCnt(ctx)
+
 	res := make(map[string][]FileInfo)
 
 	for k := range attachments {
@@ -118,10 +122,9 @@ func (s *service) getAttachment(ctx c.Context, fileID, workNumber, clientID stri
 	ctx, span := trace.StartSpan(ctx, "file_registry.get_attachment")
 	defer span.End()
 
-	log := logger.GetLogger(ctx).
-		WithField("traceID", span.SpanContext().TraceID.String()).
-		WithField("transport", "HTTP").
-		WithField("integration_name", externalSystemName)
+	traceID := span.SpanContext().TraceID.String()
+	log := script.SetFieldsExternalCall(ctx, traceID, "v1", script.HTTP, http.MethodGet, externalSystemName)
+
 	ctx = logger.WithLogger(ctx, log)
 	ctx = script.MakeContextWithRetryCnt(ctx)
 
@@ -168,6 +171,12 @@ func (s *service) getAttachment(ctx c.Context, fileID, workNumber, clientID stri
 func (s *service) GetAttachments(ctx c.Context, attach []entity.Attachment, wNumber, clientID string) ([]em.Attachment, error) {
 	ctxLocal, span := trace.StartSpan(ctx, "file_registry.get_attachments")
 	defer span.End()
+
+	traceID := span.SpanContext().TraceID.String()
+	log := script.SetFieldsExternalCall(ctx, traceID, "v1", script.HTTP, http.MethodGet, externalSystemName)
+
+	ctx = logger.WithLogger(ctx, log)
+	ctx = script.MakeContextWithRetryCnt(ctx)
 
 	res := make([]em.Attachment, 0, len(attach))
 
