@@ -737,7 +737,7 @@ func (gb *GoExecutionBlock) updateDecision(ctx c.Context) error {
 
 	if gb.State.Decision != nil {
 		if gb.State.ActualExecutor != nil {
-			person, personErr := gb.RunContext.Services.ServiceDesc.GetSsoPerson(ctx, *gb.State.ActualExecutor)
+			person, personErr := gb.RunContext.Services.People.GetUser(ctx, *gb.State.ActualExecutor, false)
 			if personErr != nil {
 				return personErr
 			}
@@ -1248,9 +1248,14 @@ func (gb *GoExecutionBlock) toEditApplication(ctx c.Context) (err error) {
 			return editErr
 		}
 
-		person, personErr := gb.RunContext.Services.ServiceDesc.GetSsoPerson(ctx, gb.RunContext.UpdateData.ByLogin)
+		ssoUser, personErr := gb.RunContext.Services.People.GetUser(ctx, gb.RunContext.UpdateData.ByLogin, true)
 		if personErr != nil {
 			return personErr
+		}
+
+		person, errConv := ssoUser.ToPerson()
+		if errConv != nil {
+			return errConv
 		}
 
 		gb.State.IsExpired = gb.State.Deadline.Before(time.Now())

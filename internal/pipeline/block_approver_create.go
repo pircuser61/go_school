@@ -517,11 +517,16 @@ func (gb *GoApproverBlock) trySetPreviousDecision(ctx context.Context) (isPrevDe
 		comment = *parentState.Comment
 	}
 
-	person, personErr := gb.RunContext.Services.ServiceDesc.GetSsoPerson(ctx, actualApprover)
+	ssoUser, personErr := gb.RunContext.Services.People.GetUser(ctx, actualApprover, false)
 	if personErr != nil {
 		//nolint:goconst //не хочу внедрять миллион констант под каждую строку в проекте
-		l.Error(funcName, "service couldn't get person by login: "+actualApprover)
+		l.Error(funcName, "can`t get person by login: "+actualApprover)
 
+		return false
+	}
+
+	person, errConv := ssoUser.ToPerson()
+	if errConv != nil {
 		return false
 	}
 

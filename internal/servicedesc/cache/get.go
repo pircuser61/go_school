@@ -18,7 +18,6 @@ const (
 	workGroupKeyPrefix         = "workGroup:"
 	schemaIDKeyPrefix          = "schemaID:"
 	schemaBlueprintIDKeyPrefix = "schemaBlueprintID:"
-	ssoPersonKeyPrefix         = "ssoPerson:"
 )
 
 //nolint:dupl //так нужно
@@ -154,51 +153,6 @@ func (s *service) GetSchemaByBlueprintID(ctx context.Context, blueprintID string
 	}
 
 	return blueprint, nil
-}
-
-//nolint:dupl //так нужно
-func (s *service) GetSsoPerson(ctx context.Context, username string) (*sd.SsoPerson, error) {
-	ctx, span := trace.StartSpan(ctx, "servicedesc.get_sso_person")
-	defer span.End()
-
-	log := logger.GetLogger(ctx)
-
-	keyForCache := ssoPersonKeyPrefix + username
-
-	valueFromCache, err := s.cache.GetValue(ctx, keyForCache)
-	if err == nil {
-		person, ok := valueFromCache.(string)
-		if ok {
-			var data *sd.SsoPerson
-
-			unmErr := json.Unmarshal([]byte(person), &data)
-			if unmErr == nil {
-				log.Info("got res from cache")
-
-				return data, nil
-			}
-		}
-
-		err = s.cache.DeleteValue(ctx, keyForCache)
-		if err != nil {
-			log.WithError(err).Error("can't delete key from cache")
-		}
-	}
-
-	person, err := s.servicedesc.GetSsoPerson(ctx, username)
-	if err != nil {
-		return nil, err
-	}
-
-	personData, err := json.Marshal(person)
-	if err == nil && keyForCache != "" {
-		err = s.cache.SetValue(ctx, keyForCache, string(personData))
-		if err != nil {
-			return nil, fmt.Errorf("can't set res to cache: %s", err)
-		}
-	}
-
-	return person, nil
 }
 
 func (s *service) GetSdURL() string {

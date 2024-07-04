@@ -25,6 +25,8 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/httpclient"
 	humanTasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/humantasks/mocks"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
+	peopleMock "gitlab.services.mts.ru/jocasta/pipeliner/internal/people/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 	serviceDeskMocks "gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc/mocks"
@@ -223,13 +225,24 @@ func Test_createGoFormBlock(t *testing.T) {
 							return slaMock
 						}(),
 						Storage: myStorage,
+						People: func() people.Service {
+							res := new(peopleMock.Service)
+
+							res.On("GetUser",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(status string) bool { return true }),
+								mock.MatchedBy(func(onlyEnabled bool) bool { return true }),
+							).Return(people.SSOUser{}, nil)
+
+							return res
+						}(),
 						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								b, _ := json.Marshal(people.Person{})
 								body := io.NopCloser(bytes.NewReader(b))
 
 								defer body.Close()
@@ -390,13 +403,24 @@ func Test_createGoFormBlock(t *testing.T) {
 							return slaMock
 						}(),
 						Storage: myStorage,
+						People: func() people.Service {
+							res := new(peopleMock.Service)
+
+							res.On("GetUser",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(status string) bool { return true }),
+								mock.MatchedBy(func(onlyEnabled bool) bool { return true }),
+							).Return(people.SSOUser{}, nil)
+
+							return res
+						}(),
 						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								b, _ := json.Marshal(people.Person{})
 								body := io.NopCloser(bytes.NewReader(b))
 
 								defer body.Close()
@@ -575,13 +599,24 @@ func Test_createGoFormBlock(t *testing.T) {
 							return slaMock
 						}(),
 						Storage: myStorage,
+						People: func() people.Service {
+							res := new(peopleMock.Service)
+
+							res.On("GetUser",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(status string) bool { return true }),
+								mock.MatchedBy(func(onlyEnabled bool) bool { return true }),
+							).Return(people.SSOUser{}, nil)
+
+							return res
+						}(),
 						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								b, _ := json.Marshal(people.Person{})
 								body := io.NopCloser(bytes.NewReader(b))
 
 								defer body.Close()
@@ -819,6 +854,17 @@ func TestGoFormBlock_Update(t *testing.T) {
 					Services: RunContextServices{
 						Storage:     mockedDb,
 						ServiceDesc: serviceDesc,
+						People: func() people.Service {
+							res := new(peopleMock.Service)
+
+							res.On("GetUser",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(status string) bool { return true }),
+								mock.MatchedBy(func(onlyEnabled bool) bool { return true }),
+							).Return(people.SSOUser{}, nil)
+
+							return res
+						}(),
 					},
 				},
 			},
@@ -851,6 +897,17 @@ func TestGoFormBlock_Update(t *testing.T) {
 					Services: RunContextServices{
 						Storage:     mockedDb,
 						ServiceDesc: serviceDesc,
+						People: func() people.Service {
+							res := new(peopleMock.Service)
+
+							res.On("GetUser",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(status string) bool { return true }),
+								mock.MatchedBy(func(onlyEnabled bool) bool { return true }),
+							).Return(people.SSOUser{}, nil)
+
+							return res
+						}(),
 					},
 				},
 			},
@@ -906,13 +963,24 @@ func TestGoFormBlock_Update(t *testing.T) {
 							return slaMock
 						}(),
 						Storage: mockedDb,
+						People: func() people.Service {
+							res := new(peopleMock.Service)
+
+							res.On("GetUser",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(status string) bool { return true }),
+								mock.MatchedBy(func(onlyEnabled bool) bool { return true }),
+							).Return(people.SSOUser{}, nil)
+
+							return res
+						}(),
 						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								b, _ := json.Marshal(people.Person{})
 								body := io.NopCloser(bytes.NewReader(b))
 								defer body.Close()
 
@@ -1018,13 +1086,24 @@ func TestGoFormBlock_Update(t *testing.T) {
 							return slaMock
 						}(),
 						Storage: mockedDb,
+						People: func() people.Service {
+							res := new(peopleMock.Service)
+
+							res.On("GetUser",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(status string) bool { return true }),
+								mock.MatchedBy(func(onlyEnabled bool) bool { return true }),
+							).Return(people.SSOUser{}, nil)
+
+							return res
+						}(),
 						ServiceDesc: func() servicedesc.Service {
 							httpClient := http.DefaultClient
 							retryableHttpClient := httpclient.NewClient(httpClient, nil, 0, 0)
 
 							mockTransport := serviceDeskMocks.RoundTripper{}
 							fResponse := func(*http.Request) *http.Response {
-								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								b, _ := json.Marshal(people.Person{})
 								body := io.NopCloser(bytes.NewReader(b))
 
 								return &http.Response{
@@ -1114,6 +1193,17 @@ func TestGoFormBlock_Update(t *testing.T) {
 					Services: RunContextServices{
 						Storage:     mockedDb,
 						ServiceDesc: serviceDesc,
+						People: func() people.Service {
+							res := new(peopleMock.Service)
+
+							res.On("GetUser",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(status string) bool { return true }),
+								mock.MatchedBy(func(onlyEnabled bool) bool { return true }),
+							).Return(people.SSOUser{}, nil)
+
+							return res
+						}(),
 					},
 				},
 			},

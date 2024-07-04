@@ -1,7 +1,7 @@
 package pipeline
 
 import (
-	"context"
+	c "context"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -76,7 +76,7 @@ func (a *additionalApproverUpdateParams) Validate() error {
 	return nil
 }
 
-func (gb *GoApproverBlock) setApproveDecision(ctx context.Context, u *approverUpdateParams) error {
+func (gb *GoApproverBlock) setApproveDecision(ctx c.Context, u *approverUpdateParams) error {
 	byLogin := gb.RunContext.UpdateData.ByLogin
 
 	err := gb.State.SetDecision(byLogin, u.Comment, u.internalDecision, u.Attachments, gb.RunContext.Delegations)
@@ -89,9 +89,14 @@ func (gb *GoApproverBlock) setApproveDecision(ctx context.Context, u *approverUp
 	}
 
 	if gb.State.ActualApprover != nil {
-		person, err := gb.RunContext.Services.ServiceDesc.GetSsoPerson(ctx, *gb.State.ActualApprover)
-		if err != nil {
-			return err
+		ssoUser, errSso := gb.RunContext.Services.People.GetUser(ctx, *gb.State.ActualApprover, false)
+		if errSso != nil {
+			return errSso
+		}
+
+		person, errConv := ssoUser.ToPerson()
+		if errConv != nil {
+			return errConv
 		}
 
 		if valOutputApprover, ok := gb.Output[keyOutputApprover]; ok {
@@ -113,7 +118,7 @@ func (gb *GoApproverBlock) setApproveDecision(ctx context.Context, u *approverUp
 }
 
 //nolint:dupl,gocyclo //its not duplicate
-func (gb *GoApproverBlock) handleBreachedSLA(ctx context.Context) error {
+func (gb *GoApproverBlock) handleBreachedSLA(ctx c.Context) error {
 	const fn = "pipeline.approver.handleBreachedSLA"
 
 	if !gb.State.CheckSLA {
@@ -212,7 +217,7 @@ func (gb *GoApproverBlock) handleBreachedSLA(ctx context.Context) error {
 	return nil
 }
 
-func (gb *GoApproverBlock) checkBreachedSLA(ctx context.Context) error {
+func (gb *GoApproverBlock) checkBreachedSLA(ctx c.Context) error {
 	const fn = "pipeline.approver.checkSLA"
 
 	log := logger.GetLogger(ctx)
@@ -350,7 +355,7 @@ func (gb *GoApproverBlock) checkBreachedSLA(ctx context.Context) error {
 }
 
 //nolint:dupl //its not duplicate
-func (gb *GoApproverBlock) handleHalfBreachedSLA(ctx context.Context) (err error) {
+func (gb *GoApproverBlock) handleHalfBreachedSLA(ctx c.Context) (err error) {
 	if !gb.State.CheckSLA {
 		gb.State.SLAChecked = true
 		gb.State.HalfSLAChecked = true
@@ -371,7 +376,7 @@ func (gb *GoApproverBlock) handleHalfBreachedSLA(ctx context.Context) (err error
 }
 
 // nolint:dupl // another action
-func (gb *GoApproverBlock) handleReworkSLABreached(ctx context.Context) error {
+func (gb *GoApproverBlock) handleReworkSLABreached(ctx c.Context) error {
 	const fn = "pipeline.approver.handleReworkSLABreached"
 
 	if !gb.State.CheckReworkSLA {
@@ -459,7 +464,7 @@ func (gb *GoApproverBlock) handleReworkSLABreached(ctx context.Context) error {
 	return nil
 }
 
-func (gb *GoApproverBlock) handleBreachedDayBeforeSLARequestAddInfo(ctx context.Context) error {
+func (gb *GoApproverBlock) handleBreachedDayBeforeSLARequestAddInfo(ctx c.Context) error {
 	const fn = "pipeline.approver.handleBreachedDayBeforeSLARequestAddInfo"
 
 	if !gb.State.CheckDayBeforeSLARequestInfo {
@@ -507,7 +512,7 @@ func (gb *GoApproverBlock) handleBreachedDayBeforeSLARequestAddInfo(ctx context.
 }
 
 //nolint:dupl // dont duplicate
-func (gb *GoApproverBlock) HandleBreachedSLARequestAddInfo(ctx context.Context) error {
+func (gb *GoApproverBlock) HandleBreachedSLARequestAddInfo(ctx c.Context) error {
 	const (
 		fn = "pipeline.approver.HandleBreachedSLARequestAddInfo"
 	)
@@ -598,25 +603,48 @@ func (gb *GoApproverBlock) HandleBreachedSLARequestAddInfo(ctx context.Context) 
 	return nil
 }
 
-func (gb *GoApproverBlock) toEditApplication(ctx context.Context, updateParams approverUpdateEditingParams) error {
+func (gb *GoApproverBlock) tryToSendEdit(ctx c.Context, in approverUpdateEditingParams) (err error) {
 	if gb.State.Decision != nil {
 		return errors.New("decision already set")
 	}
 
-	_, approverFound := gb.State.Approvers[gb.RunContext.UpdateData.ByLogin]
-	delegateFor, isDelegate := gb.RunContext.Delegations.FindDelegatorFor(
-		gb.RunContext.UpdateData.ByLogin, getSliceFromMap(gb.State.Approvers))
+	byLogin := gb.RunContext.UpdateData.ByLogin
+	delegations := gb.RunContext.Delegations
 
-	if !(approverFound || isDelegate) && gb.RunContext.UpdateData.ByLogin != AutoApprover {
+	_, approverFound := gb.State.Approvers[byLogin]
+	_, isDelegate := delegations.FindDelegatorFor(byLogin, getSliceFromMap(gb.State.Approvers))
+
+	if !(approverFound || isDelegate) && byLogin != AutoApprover {
 		return NewUserIsNotPartOfProcessErr()
 	}
+
+	if gb.State.WaitAllDecisions {
+		err = gb.State.SetDecision(byLogin, in.Comment, ApproverActionSendToEdit, in.Attachments, delegations)
+		if err != nil {
+			return err
+		}
+
+		if gb.State.Decision == nil || *gb.State.Decision != ApproverActionSendToEdit {
+			return nil
+		}
+	}
+
+	return gb.SendEdit(ctx, in)
+}
+
+func (gb *GoApproverBlock) SendEdit(ctx c.Context, in approverUpdateEditingParams) (err error) {
+	byLogin := gb.RunContext.UpdateData.ByLogin
+	delegations := gb.RunContext.Delegations
+
+	_, approverFound := gb.State.Approvers[byLogin]
+	delegateFor, _ := delegations.FindDelegatorFor(byLogin, getSliceFromMap(gb.State.Approvers))
 
 	if gb.isNextBlockServiceDesk() {
 		if approverFound {
 			delegateFor = ""
 		}
 
-		err := gb.State.setEditAppToInitiator(gb.RunContext.UpdateData.ByLogin, delegateFor, updateParams)
+		err = gb.State.setEditAppToInitiator(byLogin, delegateFor, in)
 		if err != nil {
 			return err
 		}
@@ -634,18 +662,19 @@ func (gb *GoApproverBlock) toEditApplication(ctx context.Context, updateParams a
 		return nil
 	}
 
-	err := gb.State.setEditToNextBlock(
-		gb.RunContext.UpdateData.ByLogin,
-		delegateFor,
-		updateParams,
-	)
+	err = gb.State.setEditToNextBlock(byLogin, delegateFor, in)
 	if err != nil {
 		return err
 	}
 
-	person, err := gb.RunContext.Services.ServiceDesc.GetSsoPerson(ctx, gb.RunContext.UpdateData.ByLogin)
+	ssoUser, err := gb.RunContext.Services.People.GetUser(ctx, byLogin, true)
 	if err != nil {
 		return err
+	}
+
+	person, errConv := ssoUser.ToPerson()
+	if errConv != nil {
+		return errConv
 	}
 
 	gb.State.IsExpired = gb.State.Deadline.Before(time.Now())
@@ -659,7 +688,7 @@ func (gb *GoApproverBlock) toEditApplication(ctx context.Context, updateParams a
 	}
 
 	if valOutputComment, ok := gb.Output[keyOutputComment]; ok {
-		gb.RunContext.VarStore.SetValue(valOutputComment, updateParams.Comment)
+		gb.RunContext.VarStore.SetValue(valOutputComment, in.Comment)
 	}
 
 	return nil
@@ -676,7 +705,7 @@ func (gb *GoApproverBlock) isNextBlockServiceDesk() bool {
 	return false
 }
 
-func (gb *GoApproverBlock) updateRequestApproverInfo(ctx context.Context) (err error) {
+func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context) (err error) {
 	var updateParams requestInfoParams
 
 	delegations := gb.RunContext.Delegations.FilterByType("approvement")
@@ -736,7 +765,7 @@ func (gb *GoApproverBlock) updateRequestApproverInfo(ctx context.Context) (err e
 	return nil
 }
 
-func (gb *GoApproverBlock) replyAddInfo(ctx context.Context, id string, updateParams *requestInfoParams) (string, error) {
+func (gb *GoApproverBlock) replyAddInfo(ctx c.Context, id string, updateParams *requestInfoParams) (string, error) {
 	var (
 		initiator    = gb.RunContext.Initiator
 		currentLogin = gb.RunContext.UpdateData.ByLogin
@@ -773,7 +802,7 @@ func (gb *GoApproverBlock) replyAddInfo(ctx context.Context, id string, updatePa
 	return *updateParams.LinkID, nil
 }
 
-func (gb *GoApproverBlock) updateReplyApproverInfo(ctx context.Context) (err error) {
+func (gb *GoApproverBlock) updateReplyApproverInfo(ctx c.Context) (err error) {
 	var updateParams replyInfoParams
 
 	if err = json.Unmarshal(gb.RunContext.UpdateData.Parameters, &updateParams); err != nil {
@@ -857,7 +886,7 @@ func (gb *GoApproverBlock) actionAcceptable(action ApproverAction) bool {
 	return false
 }
 
-func (gb *GoApproverBlock) Update(ctx context.Context) (interface{}, error) {
+func (gb *GoApproverBlock) Update(ctx c.Context) (interface{}, error) {
 	err := gb.handleTaskUpdateAction(ctx)
 	if err != nil {
 		return nil, err
@@ -888,7 +917,7 @@ func (gb *GoApproverBlock) Update(ctx context.Context) (interface{}, error) {
 }
 
 func (gb *GoApproverBlock) checkFormFilled() error {
-	l := logger.GetLogger(context.Background())
+	l := logger.GetLogger(c.Background())
 
 	for _, form := range gb.State.FormsAccessibility {
 		formState, ok := gb.RunContext.VarStore.State[form.NodeID]
@@ -909,7 +938,7 @@ func (gb *GoApproverBlock) checkFormFilled() error {
 }
 
 //nolint:gocognit,gocyclo //тут большой switch case, где нибудь но он должен быть
-func (gb *GoApproverBlock) handleTaskUpdateAction(ctx context.Context) error {
+func (gb *GoApproverBlock) handleTaskUpdateAction(ctx c.Context) error {
 	isWorkOnEditing, err := gb.RunContext.Services.Storage.CheckIsOnEditing(ctx, gb.RunContext.TaskID.String())
 	if err != nil {
 		return err
@@ -943,12 +972,14 @@ func (gb *GoApproverBlock) handleTaskUpdateAction(ctx context.Context) error {
 	case e.TaskUpdateActionApprovement:
 		var updateParams approverUpdateParams
 
-		if err := json.Unmarshal(data.Parameters, &updateParams); err != nil {
+		err = json.Unmarshal(data.Parameters, &updateParams)
+		if err != nil {
 			return errors.New("can't assert provided data")
 		}
 
 		if updateParams.Decision.ToDecision() != ApproverDecisionRejected {
-			if err := gb.checkFormFilled(); err != nil {
+			err = gb.checkFormFilled()
+			if err != nil {
 				return err
 			}
 
@@ -968,26 +999,42 @@ func (gb *GoApproverBlock) handleTaskUpdateAction(ctx context.Context) error {
 			return errUpdate
 		}
 
+		if gb.State.Decision != nil && *gb.State.Decision == ApproverActionSendToEdit {
+			comment := ""
+			if gb.State.Comment != nil {
+				comment = *gb.State.Comment
+			}
+
+			errUpdate := gb.SendEdit(ctx, approverUpdateEditingParams{
+				Comment:     comment,
+				Attachments: gb.State.DecisionAttachments,
+			})
+			if errUpdate != nil {
+				return errUpdate
+			}
+		}
+
 	case e.TaskUpdateActionAdditionalApprovement:
+		byLogin := gb.RunContext.UpdateData.ByLogin
+
 		var updateParams additionalApproverUpdateParams
 
-		if err := json.Unmarshal(data.Parameters, &updateParams); err != nil {
+		if err = json.Unmarshal(data.Parameters, &updateParams); err != nil {
 			return fmt.Errorf("can't assert provided data: %v", err)
 		}
 
-		if err := updateParams.Validate(); err != nil {
-			return err
+		if errValid := updateParams.Validate(); errValid != nil {
+			return errValid
 		}
 
-		loginsToNotify, err := gb.State.SetDecisionByAdditionalApprover(gb.RunContext.UpdateData.ByLogin,
-			updateParams, gb.RunContext.Delegations)
-		if err != nil {
-			return err
+		logins, errUpdate := gb.State.SetDecisionByAdditionalApprover(byLogin, updateParams, gb.RunContext.Delegations)
+		if errUpdate != nil {
+			return errUpdate
 		}
 
-		loginsToNotify = append(loginsToNotify, gb.RunContext.Initiator)
+		logins = append(logins, gb.RunContext.Initiator)
 
-		err = gb.notifyDecisionMadeByAdditionalApprover(ctx, loginsToNotify)
+		err = gb.notifyDecisionMadeByAdditionalApprover(ctx, logins)
 		if err != nil {
 			return err
 		}
@@ -995,11 +1042,11 @@ func (gb *GoApproverBlock) handleTaskUpdateAction(ctx context.Context) error {
 	case e.TaskUpdateActionApproverSendEditApp:
 		var updateParams approverUpdateEditingParams
 
-		if err := json.Unmarshal(data.Parameters, &updateParams); err != nil {
+		if err = json.Unmarshal(data.Parameters, &updateParams); err != nil {
 			return errors.New("can't assert provided data")
 		}
 
-		if errUpdate := gb.toEditApplication(ctx, updateParams); errUpdate != nil {
+		if errUpdate := gb.tryToSendEdit(ctx, updateParams); errUpdate != nil {
 			return errUpdate
 		}
 
@@ -1015,7 +1062,7 @@ func (gb *GoApproverBlock) handleTaskUpdateAction(ctx context.Context) error {
 
 	case e.TaskUpdateActionAddApprovers:
 		var updateParams addApproversParams
-		if err := json.Unmarshal(data.Parameters, &updateParams); err != nil {
+		if err = json.Unmarshal(data.Parameters, &updateParams); err != nil {
 			return errors.New("can't assert provided data")
 		}
 
@@ -1037,7 +1084,7 @@ func (gb *GoApproverBlock) handleTaskUpdateAction(ctx context.Context) error {
 	return nil
 }
 
-func (gb *GoApproverBlock) addApprovers(ctx context.Context, u addApproversParams) error {
+func (gb *GoApproverBlock) addApprovers(ctx c.Context, u addApproversParams) error {
 	var logApprovers []string
 
 	delegateFor, isDelegate := gb.State.userIsDelegate(gb.RunContext.UpdateData.ByLogin, gb.RunContext.Delegations)

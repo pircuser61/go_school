@@ -63,7 +63,11 @@ func (ae *Env) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 
 	for i := range emails {
 		log = log.WithField("workNumber", emails[i].Action.WorkNumber).
-			WithField("login", emails[i].Action.Login)
+			WithField("login", emails[i].Action.Login).
+			WithField("email", emails[i].From).
+			WithField("action", emails[i].Action.ActionName)
+
+		log.Info("start update task by email")
 
 		usr, errGetUser := ae.People.GetUser(ctx, emails[i].Action.Login, true)
 		if errGetUser != nil {
@@ -91,7 +95,7 @@ func (ae *Env) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 
 		clientID, tokenParseErr := ae.getClientIDFromToken(token)
 		if tokenParseErr != nil {
-			log.WithError(err).Info("failed to get client id for file registry metrics")
+			log.WithError(tokenParseErr).Info("failed to get client id for file registry metrics")
 		}
 
 		log = log.WithField("clientID", clientID)
@@ -121,6 +125,8 @@ func (ae *Env) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 
 		errUpdate := ae.updateTaskBlockInternal(ctx, emails[i].Action.WorkNumber, emails[i].Action.Login, &updateData)
 		if errUpdate != nil {
+			log.Error(errUpdate)
+
 			continue
 		}
 	}

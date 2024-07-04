@@ -1,6 +1,7 @@
 package pipeline
 
 import (
+	"reflect"
 	"testing"
 	"time"
 
@@ -182,6 +183,191 @@ func TestApproverData_getFinalGroupDecision(t *testing.T) {
 			gotFinalDecision, gotIsFinal := a.getFinalGroupDecision(tt.args.ds)
 			assert.Equalf(t, tt.wantFinalDecision, gotFinalDecision, "getFinalGroupDecision(%v)", tt.args.ds)
 			assert.Equalf(t, tt.wantIsFinal, gotIsFinal, "getFinalGroupDecision(%v)", tt.args.ds)
+		})
+	}
+}
+
+func TestApproverData_calculateDecisions(t *testing.T) {
+	type fields struct {
+		Type                         script.ApproverType
+		Approvers                    map[string]struct{}
+		Decision                     *ApproverDecision
+		DecisionAttachments          []en.Attachment
+		Comment                      *string
+		ActualApprover               *string
+		ApprovementRule              script.ApprovementRule
+		ApproverLog                  []ApproverLogEntry
+		WaitAllDecisions             bool
+		IsExpired                    bool
+		IsEditable                   bool
+		RepeatPrevDecision           bool
+		EditingApp                   *ApproverEditingApp
+		EditingAppLog                []ApproverEditingApp
+		FormsAccessibility           []script.FormAccessibility
+		ApproversGroupID             string
+		ApproversGroupName           string
+		ApproversGroupIDPath         *string
+		AddInfo                      []AdditionalInfo
+		ApproveStatusName            string
+		Deadline                     time.Time
+		SLA                          int
+		CheckSLA                     bool
+		SLAChecked                   bool
+		HalfSLAChecked               bool
+		ReworkSLA                    int
+		CheckReworkSLA               bool
+		CheckDayBeforeSLARequestInfo bool
+		WorkType                     string
+		AutoAction                   *ApproverAction
+		ActionList                   []Action
+		AdditionalApprovers          []AdditionalApprover
+	}
+	tests := []struct {
+		name              string
+		fields            fields
+		wantIsFinal       bool
+		wantRejectExist   bool
+		wantSendEditExist bool
+		wantP             map[ApproverDecision]int
+	}{
+		{
+			name: "is final",
+			fields: fields{
+				ApproverLog: []ApproverLogEntry{
+					{
+						Decision: ApproverDecisionRejected,
+						LogType:  ApproverLogDecision,
+					},
+					{
+						Decision: ApproverDecisionConfirmed,
+						LogType:  ApproverLogDecision,
+					},
+					{
+						Decision: ApproverDecisionViewed,
+						LogType:  ApproverLogDecision,
+					},
+				},
+				Approvers: map[string]struct{}{
+					"ebalnik":   {},
+					"kozaegaza": {},
+					"pholty":    {},
+				},
+			},
+			wantIsFinal:       true,
+			wantRejectExist:   true,
+			wantSendEditExist: false,
+			wantP: map[ApproverDecision]int{
+				ApproverDecisionConfirmed: 1,
+				ApproverDecisionViewed:    1,
+			},
+		},
+		{
+			name: "not final",
+			fields: fields{
+				ApproverLog: []ApproverLogEntry{
+					{
+						LogType: ApproverLogAddApprover,
+					},
+					{
+						Decision: ApproverDecisionConfirmed,
+						LogType:  ApproverLogDecision,
+					},
+					{
+						Decision: ApproverDecisionViewed,
+						LogType:  ApproverLogDecision,
+					},
+				},
+				Approvers: map[string]struct{}{
+					"ebalnik":   {},
+					"kozaegaza": {},
+					"pholty":    {},
+				},
+			},
+			wantIsFinal:       false,
+			wantRejectExist:   false,
+			wantSendEditExist: false,
+			wantP: map[ApproverDecision]int{
+				ApproverDecisionConfirmed: 1,
+				ApproverDecisionViewed:    1,
+			},
+		},
+		{
+			name: "wantRejectExist and wantSendEditExist",
+			fields: fields{
+				ApproverLog: []ApproverLogEntry{
+					{
+						LogType: ApproverLogAddApprover,
+					},
+					{
+						Decision: ApproverDecisionRejected,
+						LogType:  ApproverLogDecision,
+					},
+					{
+						Decision: ApproverDecisionSentToEdit,
+						LogType:  ApproverLogDecision,
+					},
+				},
+				Approvers: map[string]struct{}{
+					"ebalnik":   {},
+					"kozaegaza": {},
+					"pholty":    {},
+				},
+			},
+			wantIsFinal:       false,
+			wantRejectExist:   true,
+			wantSendEditExist: true,
+			wantP:             map[ApproverDecision]int{},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a := &ApproverData{
+				Type:                         tt.fields.Type,
+				Approvers:                    tt.fields.Approvers,
+				Decision:                     tt.fields.Decision,
+				DecisionAttachments:          tt.fields.DecisionAttachments,
+				Comment:                      tt.fields.Comment,
+				ActualApprover:               tt.fields.ActualApprover,
+				ApprovementRule:              tt.fields.ApprovementRule,
+				ApproverLog:                  tt.fields.ApproverLog,
+				WaitAllDecisions:             tt.fields.WaitAllDecisions,
+				IsExpired:                    tt.fields.IsExpired,
+				IsEditable:                   tt.fields.IsEditable,
+				RepeatPrevDecision:           tt.fields.RepeatPrevDecision,
+				EditingApp:                   tt.fields.EditingApp,
+				EditingAppLog:                tt.fields.EditingAppLog,
+				FormsAccessibility:           tt.fields.FormsAccessibility,
+				ApproversGroupID:             tt.fields.ApproversGroupID,
+				ApproversGroupName:           tt.fields.ApproversGroupName,
+				ApproversGroupIDPath:         tt.fields.ApproversGroupIDPath,
+				AddInfo:                      tt.fields.AddInfo,
+				ApproveStatusName:            tt.fields.ApproveStatusName,
+				Deadline:                     tt.fields.Deadline,
+				SLA:                          tt.fields.SLA,
+				CheckSLA:                     tt.fields.CheckSLA,
+				SLAChecked:                   tt.fields.SLAChecked,
+				HalfSLAChecked:               tt.fields.HalfSLAChecked,
+				ReworkSLA:                    tt.fields.ReworkSLA,
+				CheckReworkSLA:               tt.fields.CheckReworkSLA,
+				CheckDayBeforeSLARequestInfo: tt.fields.CheckDayBeforeSLARequestInfo,
+				WorkType:                     tt.fields.WorkType,
+				AutoAction:                   tt.fields.AutoAction,
+				ActionList:                   tt.fields.ActionList,
+				AdditionalApprovers:          tt.fields.AdditionalApprovers,
+			}
+			gotIsFinal, gotRejectExist, gotSendEditExist, gotP := a.calculateDecisions()
+			if gotIsFinal != tt.wantIsFinal {
+				t.Errorf("calculateDecisions() gotIsFinal = %v, want %v", gotIsFinal, tt.wantIsFinal)
+			}
+			if gotRejectExist != tt.wantRejectExist {
+				t.Errorf("calculateDecisions() gotRejectExist = %v, want %v", gotRejectExist, tt.wantRejectExist)
+			}
+			if gotSendEditExist != tt.wantSendEditExist {
+				t.Errorf("calculateDecisions() gotSendEditExist = %v, want %v", gotSendEditExist, tt.wantSendEditExist)
+			}
+			if !reflect.DeepEqual(gotP, tt.wantP) {
+				t.Errorf("calculateDecisions() gotP = %v, want %v", gotP, tt.wantP)
+			}
 		})
 	}
 }

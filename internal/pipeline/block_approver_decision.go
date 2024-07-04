@@ -39,7 +39,7 @@ func (a *ApproverData) SetDecision(login, comment string, ds ApproverDecision, a
 		a.ActualApprover = &login
 		a.DecisionAttachments = attach
 
-		approverLogEntry := ApproverLogEntry{
+		logEntry := ApproverLogEntry{
 			Login:       login,
 			Decision:    ds,
 			Comment:     comment,
@@ -48,10 +48,10 @@ func (a *ApproverData) SetDecision(login, comment string, ds ApproverDecision, a
 			LogType:     ApproverLogDecision,
 		}
 		if len(delegateFor) > 0 && !isApproverExist {
-			approverLogEntry.DelegateFor = delegateFor[0]
+			logEntry.DelegateFor = delegateFor[0]
 		}
 
-		a.ApproverLog = append(a.ApproverLog, approverLogEntry)
+		a.ApproverLog = append(a.ApproverLog, logEntry)
 	}
 
 	if allOfApprovementRequired {
@@ -207,12 +207,9 @@ func (a *ApproverData) SetDecisionByAdditionalApprover(login string,
 	return loginsToNotify, nil
 }
 
-func (a *ApproverData) getFinalGroupDecision(ds ApproverDecision) (finalDecision ApproverDecision, isFinal bool) {
-	if ds == ApproverDecisionRejected && !a.WaitAllDecisions {
-		return ApproverDecisionRejected, true
-	}
+func (a *ApproverData) calculateDecisions() (isFinal, rejectExist, sendEditExist bool, p map[ApproverDecision]int) {
+	var total int
 
-	totalDecisionsCount := 0
 	positiveDecisions := make(map[ApproverDecision]int)
 
 	for i := range a.ApproverLog {
@@ -221,9 +218,9 @@ func (a *ApproverData) getFinalGroupDecision(ds ApproverDecision) (finalDecision
 			continue
 		}
 
-		totalDecisionsCount++
+		total++
 
-		if log.Decision != ApproverDecisionRejected {
+		if log.Decision != ApproverDecisionRejected && log.Decision != ApproverDecisionSentToEdit {
 			count, decisionExists := positiveDecisions[log.Decision]
 			if !decisionExists {
 				count = 0
@@ -231,28 +228,47 @@ func (a *ApproverData) getFinalGroupDecision(ds ApproverDecision) (finalDecision
 
 			positiveDecisions[log.Decision] = count + 1
 		}
+
+		if log.Decision == ApproverDecisionRejected {
+			rejectExist = true
+		}
+
+		if log.Decision == ApproverDecisionSentToEdit {
+			sendEditExist = true
+		}
 	}
 
-	if totalDecisionsCount < len(a.Approvers) {
-		return "", false
-	}
+	return total == len(a.Approvers), rejectExist, sendEditExist, positiveDecisions
+}
 
-	areAllDecisonsGiven := totalDecisionsCount == len(a.Approvers)
-	areAllDecisionsPositive := len(positiveDecisions) == len(a.Approvers)
-
-	if a.WaitAllDecisions && areAllDecisonsGiven && !areAllDecisionsPositive {
+func (a *ApproverData) getFinalGroupDecision(ds ApproverDecision) (finalDecision ApproverDecision, isFinal bool) {
+	if ds == ApproverDecisionRejected && !a.WaitAllDecisions {
 		return ApproverDecisionRejected, true
 	}
 
+	isFinal, isRejectExist, isSendEditExist, positives := a.calculateDecisions()
+
+	if !isFinal {
+		return "", isFinal
+	}
+
+	if a.WaitAllDecisions && isFinal && isRejectExist {
+		return ApproverDecisionRejected, isFinal
+	}
+
+	if a.WaitAllDecisions && isFinal && isSendEditExist {
+		return ApproverDecisionSentToEdit, isFinal
+	}
+
 	maxCount := 0
-	for decision, count := range positiveDecisions {
+	for decision, count := range positives {
 		if count > maxCount {
 			maxCount = count
 			finalDecision = decision
 		}
 	}
 
-	return finalDecision, true
+	return finalDecision, isFinal
 }
 
 func (a *ApproverData) isUserDecisionSet(login string) bool {

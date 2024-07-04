@@ -13,7 +13,6 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
-	sd "gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
@@ -704,7 +703,7 @@ func getPositiveFinishStatus(decision ApproverDecision) (status TaskHumanStatus)
 }
 
 type ApproverOutput struct {
-	Approver *sd.SsoPerson
+	Approver *people.Person
 	Comment  *string
 	Decision *ApproverDecision
 }
@@ -746,12 +745,17 @@ func (gb *GoApproverBlock) UpdateOutputUsingState(ctx context.Context) (res map[
 	output := map[string]interface{}{}
 
 	if gb.State.ActualApprover != nil {
-		personData, ssoErr := gb.RunContext.Services.ServiceDesc.GetSsoPerson(ctx, *gb.State.ActualApprover)
-		if ssoErr != nil {
-			return nil, ssoErr
+		ssoUser, errSso := gb.RunContext.Services.People.GetUser(ctx, *gb.State.ActualApprover, false)
+		if errSso != nil {
+			return nil, err
 		}
 
-		output[keyOutputApprover] = personData
+		person, errConv := ssoUser.ToPerson()
+		if errConv != nil {
+			return nil, errConv
+		}
+
+		output[keyOutputApprover] = person
 	}
 
 	if gb.State.Decision != nil {

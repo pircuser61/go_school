@@ -8,7 +8,7 @@ require (
 	github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de
 	github.com/deepmap/oapi-codegen v1.12.4
 	github.com/emersion/go-imap v1.2.1
-	github.com/emersion/go-message v0.15.0
+	github.com/emersion/go-message v0.18.1
 	github.com/fatih/structs v1.1.0
 	github.com/go-chi/chi v4.1.2+incompatible
 	github.com/go-chi/chi/v5 v5.0.8

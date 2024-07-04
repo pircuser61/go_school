@@ -303,21 +303,20 @@ func (ae *Env) GetTask(w http.ResponseWriter, req *http.Request, workNumber stri
 
 	dbTask.Steps = steps
 	isInitiator := ui.Username == dbTask.Author
-	accessibleForms := make(map[string]struct{}, 0)
+
+	accessibleForms, err := ae.getAccessibleForms(ui.Username, &steps, &delegations)
+	if err != nil {
+		errorHandler.handleError(GetDelegationsError, err)
+
+		return
+	}
 
 	if !isInitiator {
-		accessibleForms, err = ae.getAccessibleForms(ui.Username, &steps, &delegations)
-		if err != nil {
-			errorHandler.handleError(GetDelegationsError, err)
-
-			return
-		}
-
-		ae.removeForms(dbTask, accessibleForms)
+		ae.removeFormsFromUser(dbTask, accessibleForms)
 	}
 
 	if isInitiator {
-		ae.removeHiddenFormsForInitiator(dbTask, accessibleForms)
+		ae.removeHiddenFormsFromInitiator(dbTask, accessibleForms)
 	}
 
 	currentUserDelegateSteps, tErr := ae.getCurrentUserInDelegatesForSteps(ui.Username, &steps, &delegations)
@@ -762,18 +761,25 @@ func (ae *Env) GetTasksUsers(w http.ResponseWriter, req *http.Request, params Ge
 	respUsers := make([]UniqueUser, 0)
 
 	for i := range dbResp.Logins {
-		ssoUser, sdErr := ae.ServiceDesc.GetSsoPerson(ctx, dbResp.Logins[i])
-		if err != nil {
-			errorHandler.handleError(GetUserinfoErr, sdErr)
+		ssoUser, errSso := ae.People.GetUser(ctx, dbResp.Logins[i], false)
+		if errSso != nil {
+			errorHandler.handleError(GetUserinfoErr, errSso)
+
+			return
+		}
+
+		person, errConv := ssoUser.ToPerson()
+		if errConv != nil {
+			errorHandler.handleError(GetUserinfoErr, errConv)
 
 			return
 		}
 
 		if ssoUser != nil {
 			respUsers = append(respUsers, UniqueUser{
-				FullName: ssoUser.Fullname,
-				TabNum:   ssoUser.Tabnum,
-				Username: ssoUser.Username,
+				FullName: person.Fullname,
+				TabNum:   person.Tabnum,
+				Username: person.Username,
 			})
 		}
 	}
@@ -1110,18 +1116,18 @@ func (ae *Env) GetTaskMeanSolveTime(w http.ResponseWriter, req *http.Request, pi
 	}
 }
 
-func (ae *Env) removeHiddenFormsForInitiator(dbTask *e.EriusTask, accessibleForms map[string]struct{}) {
-	actualSteps := make([]*e.Step, 0, len(dbTask.Steps))
+func (ae *Env) removeHiddenFormsFromInitiator(dbTask *e.EriusTask, accessibleForms map[string]struct{}) {
+	res := make([]*e.Step, 0, len(dbTask.Steps))
 
 	for _, st := range dbTask.Steps {
 		if st.Type != formBlockType {
-			actualSteps = append(actualSteps, st)
+			res = append(res, st)
 
 			continue
 		}
 
 		if _, ok := accessibleForms[st.Name]; ok {
-			actualSteps = append(actualSteps, st)
+			res = append(res, st)
 
 			continue
 		}
@@ -1137,14 +1143,14 @@ func (ae *Env) removeHiddenFormsForInitiator(dbTask *e.EriusTask, accessibleForm
 
 		_, isInitiatorExecutor := formBlock.Executors[dbTask.Author]
 		if !formBlock.HideFormFromInitiator || isInitiatorExecutor {
-			actualSteps = append(actualSteps, st)
+			res = append(res, st)
 		}
 	}
 
-	dbTask.Steps = actualSteps
+	dbTask.Steps = res
 }
 
-func (ae *Env) removeForms(dbTask *e.EriusTask, accessibleForms map[string]struct{}) {
+func (ae *Env) removeFormsFromUser(dbTask *e.EriusTask, accessibleForms map[string]struct{}) {
 	actualSteps := make([]*e.Step, 0, len(dbTask.Steps))
 
 	for _, st := range dbTask.Steps {

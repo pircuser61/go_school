@@ -2,6 +2,7 @@ package people
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
@@ -167,4 +168,33 @@ func GetSsoPersonSchemaProperties() map[string]script.JSONSchemaPropertiesValue 
 		"phone":       {Type: "string", Title: "Телефон"},
 		"tabnum":      {Type: "string", Title: "Табельный номер"},
 	}
+}
+
+func (u SSOUser) ToPerson() (*Person, error) {
+	typed, err := u.ToSSOUserTyped()
+	if err != nil {
+		return nil, err
+	}
+
+	return &Person{
+		Fullname:    fmt.Sprintf("%s %s", typed.FirstName, typed.LastName),
+		Username:    typed.Username,
+		Email:       typed.Email,
+		Mobile:      typed.Attributes.TelephoneNumber,
+		FullOrgUnit: typed.UnitPaths,
+		Position:    typed.Attributes.Title,
+		Phone:       typed.Attributes.TelephoneNumber,
+		Tabnum:      typed.Tabnum,
+	}, nil
+}
+
+type Person struct {
+	Fullname    string `json:"fullname"`
+	Username    string `json:"username"`
+	Email       string `json:"email"`
+	Mobile      string `json:"mobile"`
+	FullOrgUnit string `json:"fullOrgUnit"`
+	Position    string `json:"position"`
+	Phone       string `json:"phone"`
+	Tabnum      string `json:"tabnum"`
 }
