@@ -66,10 +66,9 @@ func (s *Service) MakeFlatSchema(ctx c.Context, schema []byte) (*script.JSONSche
 	ctx, span := trace.StartSpan(ctx, "forms.make_flat_schema")
 	defer span.End()
 
-	log := logger.GetLogger(ctx).
-		WithField("traceID", span.SpanContext().TraceID.String()).
-		WithField("transport", "GRPC").
-		WithField("integration_name", externalSystemName)
+	traceID := span.SpanContext().TraceID.String()
+	log := script.SetFieldsExternalCall(ctx, traceID, "v1", script.GRPC, script.GRPC, externalSystemName)
+
 	ctx = script.MakeContextWithRetryCnt(ctx)
 	ctx = logger.WithLogger(ctx, log)
 

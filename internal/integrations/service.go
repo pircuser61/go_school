@@ -109,10 +109,8 @@ func (s *service) GetSystemsNames(ctx c.Context, systemIDs []uuid.UUID) (map[str
 	ctx, span := trace.StartSpan(ctx, "integrations.get_systems_names")
 	defer span.End()
 
-	log := logger.GetLogger(ctx).
-		WithField("traceID", span.SpanContext().TraceID.String()).
-		WithField("transport", "GRPC").
-		WithField("integration_name", externalSystemName)
+	traceID := span.SpanContext().TraceID.String()
+	log := script.SetFieldsExternalCall(ctx, traceID, "v1", script.GRPC, script.GRPC, externalSystemName)
 
 	ctx = logger.WithLogger(ctx, log)
 	ctx = script.MakeContextWithRetryCnt(ctx)
@@ -142,10 +140,8 @@ func (s *service) GetSystemsClients(ctx c.Context, systemIDs []uuid.UUID) (map[s
 	ctx, span := trace.StartSpan(ctx, "integrations.get_systems_clients")
 	defer span.End()
 
-	log := logger.GetLogger(ctx).
-		WithField("traceID", span.SpanContext().TraceID.String()).
-		WithField("transport", "GRPC").
-		WithField("integration_name", externalSystemName)
+	traceID := span.SpanContext().TraceID.String()
+	log := script.SetFieldsExternalCall(ctx, traceID, "v1", script.GRPC, script.GRPC, externalSystemName)
 
 	ctx = logger.WithLogger(ctx, log)
 
@@ -175,10 +171,8 @@ func (s *service) GetMicroserviceHumanKey(ctx c.Context, microSrvID, pID, vID, w
 	ctx, span := trace.StartSpan(ctx, "integrations.get_microservice_human_key")
 	defer span.End()
 
-	log := logger.GetLogger(ctx).
-		WithField("traceID", span.SpanContext().TraceID.String()).
-		WithField("transport", "GRPC").
-		WithField("integration_name", externalSystemName)
+	traceID := span.SpanContext().TraceID.String()
+	log := script.SetFieldsExternalCall(ctx, traceID, "v1", script.GRPC, script.GRPC, externalSystemName)
 
 	ctx = logger.WithLogger(ctx, log)
 	ctx = script.MakeContextWithRetryCnt(ctx)

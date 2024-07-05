@@ -23,10 +23,8 @@ func (s *service) GetWorkGroup(ctx c.Context, groupID string) (*sd.WorkGroup, er
 	ctx, span := trace.StartSpan(ctx, "servicedesc.get_work_group")
 	defer span.End()
 
-	log := logger.GetLogger(ctx).
-		WithField("traceID", span.SpanContext().TraceID.String()).
-		WithField("transport", "HTTP").
-		WithField("integration_name", externalSystemName)
+	traceID := span.SpanContext().TraceID.String()
+	log := script.SetFieldsExternalCall(ctx, traceID, "v1", script.HTTP, http.MethodGet, externalSystemName)
 
 	ctx = logger.WithLogger(ctx, log)
 	ctx = script.MakeContextWithRetryCnt(ctx)
@@ -67,10 +65,8 @@ func (s *service) GetSchemaByID(ctx c.Context, schemaID string) (map[string]inte
 	ctx, span := trace.StartSpan(ctx, "servicedesc.get_schema_by_id")
 	defer span.End()
 
-	log := logger.GetLogger(ctx).
-		WithField("traceID", span.SpanContext().TraceID.String()).
-		WithField("transport", "HTTP").
-		WithField("integration_name", externalSystemName)
+	traceID := span.SpanContext().TraceID.String()
+	log := script.SetFieldsExternalCall(ctx, traceID, "v1", script.HTTP, http.MethodGet, externalSystemName)
 
 	ctx = logger.WithLogger(ctx, log)
 	ctx = script.MakeContextWithRetryCnt(ctx)
@@ -109,10 +105,8 @@ func (s *service) GetSchemaByBlueprintID(ctx c.Context, blueprintID string) (map
 	ctx, span := trace.StartSpan(ctx, "servicedesc.get_schema_by_blueprint_id")
 	defer span.End()
 
-	log := logger.GetLogger(ctx).
-		WithField("traceID", span.SpanContext().TraceID.String()).
-		WithField("transport", "HTTP").
-		WithField("integration_name", externalSystemName)
+	traceID := span.SpanContext().TraceID.String()
+	log := script.SetFieldsExternalCall(ctx, traceID, "v1", script.HTTP, http.MethodGet, externalSystemName)
 
 	ctx = logger.WithLogger(ctx, log)
 	ctx = script.MakeContextWithRetryCnt(ctx)

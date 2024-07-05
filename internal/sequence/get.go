@@ -16,10 +16,8 @@ func (s *service) GetWorkNumber(ctx c.Context) (workNumber string, err error) {
 	ctx, span := trace.StartSpan(ctx, "sequence.get_work_number")
 	defer span.End()
 
-	log := logger.GetLogger(ctx).
-		WithField("traceID", span.SpanContext().TraceID.String()).
-		WithField("transport", "GRPC").
-		WithField("integration_name", externalSystemName)
+	traceID := span.SpanContext().TraceID.String()
+	log := script.SetFieldsExternalCall(ctx, traceID, "v1", script.GRPC, script.GRPC, externalSystemName)
 
 	ctx = logger.WithLogger(ctx, log)
 	ctx = script.MakeContextWithRetryCnt(ctx)

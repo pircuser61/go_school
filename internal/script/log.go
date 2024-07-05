@@ -1,10 +1,15 @@
 package script
 
 import (
-	"context"
+	c "context"
 	"net/http"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
+)
+
+const (
+	GRPC = "GRPC"
+	HTTP = "HTTP"
 )
 
 type (
@@ -12,20 +17,30 @@ type (
 	restRetryStarted struct{}
 )
 
-func LogRetryFailure(ctx context.Context, maxCount uint) {
+func SetFieldsExternalCall(ctx c.Context, traceID, v, tr, method, systemName string) logger.Logger {
+	return logger.GetLogger(ctx).
+		WithField("traceID", traceID).
+		WithField("transport", tr).
+		WithField("logVersion ", v).
+		WithField("callMethod ", method).
+		WithField("callTransport", tr).
+		WithField("integrationName", systemName)
+}
+
+func LogRetryFailure(ctx c.Context, maxCount uint) {
 	attempt := getRetryCnt(ctx)
 	log := logger.GetLogger(ctx).WithField("attempt", attempt)
 
 	if attempt == maxCount {
-		log.Error("Pipeliner failed to connect, Exceeded max retry count")
+		log.Error("pipeliner failed to connect, Exceeded max retry count")
 
 		return
 	}
 
-	log.Error("Pipeliner failed to connect")
+	log.Error("pipeliner failed to connect")
 }
 
-func LogRetrySuccess(ctx context.Context) {
+func LogRetrySuccess(ctx c.Context) {
 	attempt := getRetryCnt(ctx)
 
 	if attempt > 0 {
@@ -36,14 +51,14 @@ func LogRetrySuccess(ctx context.Context) {
 	}
 }
 
-func MakeContextWithRetryCnt(ctx context.Context) context.Context {
+func MakeContextWithRetryCnt(ctx c.Context) c.Context {
 	count := uint(0)
 	retryStarted := false
 
 	// счетчик ретраев
-	ctx = context.WithValue(ctx, retryCnt{}, &count)
+	ctx = c.WithValue(ctx, retryCnt{}, &count)
 	// флаг для запросов по http
-	ctx = context.WithValue(ctx, restRetryStarted{}, &retryStarted)
+	ctx = c.WithValue(ctx, restRetryStarted{}, &retryStarted)
 
 	return ctx
 }
@@ -61,11 +76,11 @@ func IncreaseReqRetryCntREST(req *http.Request) {
 	incReqRetry(ctx)
 }
 
-func IncreaseReqRetryCntGRPC(ctx context.Context) {
+func IncreaseReqRetryCntGRPC(ctx c.Context) {
 	incReqRetry(ctx)
 }
 
-func incReqRetry(ctx context.Context) {
+func incReqRetry(ctx c.Context) {
 	cnt := ctx.Value(retryCnt{})
 
 	i, _ := cnt.(*uint)
@@ -74,7 +89,7 @@ func incReqRetry(ctx context.Context) {
 	}
 }
 
-func getRetryCnt(ctx context.Context) uint {
+func getRetryCnt(ctx c.Context) uint {
 	attempt, _ := ctx.Value(retryCnt{}).(*uint)
 	if attempt == nil {
 		return 0

@@ -134,10 +134,8 @@ func (s *Service) getTokens(ctx context.Context, scopeName string) error {
 	ctx, span := trace.StartSpan(ctx, "getTokens")
 	defer span.End()
 
-	log := logger.GetLogger(ctx).
-		WithField("traceID", span.SpanContext().TraceID.String()).
-		WithField("transport", "HTTP").
-		WithField("integration_name", externalSystemName)
+	traceID := span.SpanContext().TraceID.String()
+	log := script.SetFieldsExternalCall(ctx, traceID, "v1", script.HTTP, http.MethodPost, externalSystemName)
 
 	ctx = logger.WithLogger(ctx, log)
 	ctx = script.MakeContextWithRetryCnt(ctx)
@@ -198,10 +196,8 @@ func (s *Service) refreshTokens(ctx context.Context, scopeName string) error {
 	ctx, span := trace.StartSpan(ctx, "refreshTokens")
 	defer span.End()
 
-	log := logger.GetLogger(ctx).
-		WithField("traceID", span.SpanContext().TraceID.String()).
-		WithField("transport", "HTTP").
-		WithField("integration_name", externalSystemName)
+	traceID := span.SpanContext().TraceID.String()
+	log := script.SetFieldsExternalCall(ctx, traceID, "v1", script.HTTP, http.MethodPost, externalSystemName)
 
 	ctx = logger.WithLogger(ctx, log)
 	ctx = script.MakeContextWithRetryCnt(ctx)

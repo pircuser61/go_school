@@ -86,10 +86,8 @@ func (s *service) GetDelegations(ctx c.Context, req *d.GetDelegationsRequest) (d
 		return make([]humantasks.Delegation, 0), nil
 	}
 
-	log := logger.GetLogger(ctx).
-		WithField("traceID", span.SpanContext().TraceID.String()).
-		WithField("transport", "GRPC").
-		WithField("integration_name", externalSystemName)
+	traceID := span.SpanContext().TraceID.String()
+	log := script.SetFieldsExternalCall(ctx, traceID, "v1", script.GRPC, script.GRPC, externalSystemName)
 
 	ctx = logger.WithLogger(ctx, log)
 	ctx = script.MakeContextWithRetryCnt(ctx)
