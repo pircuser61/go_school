@@ -527,16 +527,6 @@ func (gb *GoFormBlock) emailGroupExecutors(ctx context.Context, loginTakenInWork
 		return err
 	}
 
-	filesAttach, _, err := gb.RunContext.makeNotificationAttachment(ctx)
-	if err != nil {
-		return err
-	}
-
-	attachment, err := gb.RunContext.GetAttach(ctx, filesAttach)
-	if err != nil {
-		return err
-	}
-
 	tpl := mail.NewFormExecutionTakenInWorkTpl(
 		&mail.ExecutorNotifTemplate{
 			WorkNumber:  gb.RunContext.WorkNumber,
@@ -563,7 +553,19 @@ func (gb *GoFormBlock) emailGroupExecutors(ctx context.Context, loginTakenInWork
 
 	emailTakenInWork, emailErr := gb.RunContext.Services.People.GetUserEmail(ctx, loginTakenInWork)
 	if emailErr != nil {
+		log.WithField("login", loginTakenInWork).WithError(emailErr).Warning("couldn't get email")
+
 		return emailErr
+	}
+
+	filesAttach, _, fileAttachErr := gb.RunContext.makeNotificationAttachment(ctx)
+	if fileAttachErr != nil {
+		return fileAttachErr
+	}
+
+	attachment, attachErr := gb.RunContext.GetAttach(ctx, filesAttach)
+	if attachErr != nil {
+		return attachErr
 	}
 
 	slaInfoPtr, getSLAInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDTO{
@@ -578,7 +580,8 @@ func (gb *GoFormBlock) emailGroupExecutors(ctx context.Context, loginTakenInWork
 		return getSLAInfoErr
 	}
 
-	tpl = mail.NewFormPersonExecutionNotificationTemplate(gb.RunContext.WorkNumber,
+	tpl = mail.NewFormPersonExecutionNotificationTemplate(
+		gb.RunContext.WorkNumber,
 		gb.RunContext.NotifName,
 		gb.RunContext.Services.Sender.SdAddress,
 		gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(

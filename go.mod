@@ -37,6 +37,7 @@ require (
 	gitlab.services.mts.ru/jocasta/forms v1.7.0-rc.1.0.20240301073647-dad697e5b82d
 	gitlab.services.mts.ru/jocasta/functions v1.13.0-rc.1
 	gitlab.services.mts.ru/jocasta/human-tasks v1.0.0-alpha.3
+	gitlab.services.mts.ru/jocasta/iga-kit v1.0.3
 	gitlab.services.mts.ru/jocasta/integrations v1.11.0-rc.1
 	gitlab.services.mts.ru/jocasta/msg-kit v0.1.6
 	gitlab.services.mts.ru/jocasta/scheduler v1.10.1-0.20240411105447-0c6a180ab838
@@ -61,7 +62,6 @@ require (
 	github.com/eapache/go-xerial-snappy v0.0.0-20180814174437-776d5712da21 // indirect
 	github.com/eapache/queue v1.1.0 // indirect
 	github.com/emersion/go-sasl v0.0.0-20200509203442-7bfe0ed36a21 // indirect
-	github.com/emersion/go-textwrapper v0.0.0-20200911093747-65d896831594 // indirect
 	github.com/envoyproxy/protoc-gen-validate v1.0.4 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/getsentry/sentry-go v0.20.0 // indirect
@@ -102,7 +102,6 @@ require (
 	github.com/uber/jaeger-client-go v2.25.0+incompatible // indirect
 	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect
 	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect
-	gitlab.services.mts.ru/jocasta/iga-kit v1.0.3 // indirect
 	golang.org/x/crypto v0.23.0 // indirect
 	golang.org/x/net v0.25.0 // indirect
 	golang.org/x/sys v0.20.0 // indirect
