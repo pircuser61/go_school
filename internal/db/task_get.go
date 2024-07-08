@@ -472,6 +472,7 @@ func compileGetUniquePersonsQuery(fl entity.TaskFilter, delegations []string) (q
 	q = fmt.Sprintf(`
 		[with_variable_storage]
 		SELECT 
+		    w.author,
     		var.current_executor->'people',
     		var.current_executor->>'group_name',  		
     		var.current_executor->>'group_id'    		
@@ -2152,8 +2153,9 @@ func (db *PGCon) getTasksMeta(ctx c.Context, q string, args []interface{}) (*ent
 }
 
 type UniquePersons struct {
-	Groups map[string]string `json:"groups"`
-	Logins []string          `json:"logins"`
+	Groups     map[string]string `json:"groups"`
+	Logins     []string          `json:"logins"`
+	InitLogins []string          `json:"initLogins"`
 }
 
 const potentialPersonsCapacity = 100
@@ -2169,21 +2171,30 @@ func (db *PGCon) getTaskUniquePersons(ctx c.Context, q string, args []interface{
 	defer rows.Close()
 
 	var (
+		initiator sql.NullString
 		executors *[]string
 		groupName sql.NullString
 		groupID   sql.NullString
 	)
 
 	up := UniquePersons{
-		Logins: make([]string, 0, potentialPersonsCapacity),
-		Groups: make(map[string]string, 0),
+		Logins:     make([]string, 0, potentialPersonsCapacity),
+		InitLogins: make([]string, 0, potentialPersonsCapacity),
+		Groups:     make(map[string]string, 0),
 	}
 
-	check := make(map[string]struct{}, potentialPersonsCapacity*2)
+	check := make(map[string]struct{}, potentialPersonsCapacity*3)
 
 	for rows.Next() {
-		if scanErr := rows.Scan(&executors, &groupName, &groupID); scanErr != nil {
+		if scanErr := rows.Scan(&initiator, &executors, &groupName, &groupID); scanErr != nil {
 			return nil, scanErr
+		}
+
+		if initiator.String != "" {
+			if _, ok := check["init_"+initiator.String]; !ok {
+				check["init_"+initiator.String] = struct{}{}
+				up.InitLogins = append(up.InitLogins, initiator.String)
+			}
 		}
 
 		if executors != nil {
