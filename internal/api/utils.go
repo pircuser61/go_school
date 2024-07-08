@@ -53,6 +53,7 @@ func convertTaskUserParams(up GetTasksUsersParams) (*GetTasksParams, error) {
 		HasAttachments:     up.HasAttachments,
 		Initiator:          up.Initiator,
 		InitiatorLogins:    up.InitiatorLogins,
+		InitiatorReq:       up.InitiatorReq,
 		ProcessingLogins:   up.ProcessingLogins,
 		ProcessingGroupIds: up.ProcessingGroupIds,
 		ExecutorLogins:     up.ExecutorLogins,

@@ -2246,9 +2246,10 @@ type TimerParams struct {
 
 // UniquePersons defines model for UniquePersons.
 type UniquePersons struct {
-	Groups *UniquePersons_Groups `json:"groups,omitempty"`
-	Logins *[]string             `json:"logins,omitempty"`
-	Users  *[]UniqueUser         `json:"users,omitempty"`
+	Groups     *UniquePersons_Groups `json:"groups,omitempty"`
+	InitLogins *[]string             `json:"initLogins,omitempty"`
+	Logins     *[]string             `json:"logins,omitempty"`
+	Users      *[]UniqueUser         `json:"users,omitempty"`
 }
 
 // UniquePersons_Groups defines model for UniquePersons.Groups.
@@ -2776,6 +2777,9 @@ type GetTasksParams struct {
 	// filter for initiators
 	InitiatorLogins *[]string `json:"initiatorLogins,omitempty"`
 
+	// filter for initiators
+	InitiatorReq *bool `json:"initiatorReq,omitempty"`
+
 	// filter in process by logins
 	ProcessingLogins *[]string `json:"processingLogins,omitempty"`
 
@@ -2904,6 +2908,9 @@ type GetTasksUsersParams struct {
 
 	// filter for initiators
 	InitiatorLogins *[]string `json:"initiatorLogins,omitempty"`
+
+	// filter for initiators
+	InitiatorReq *bool `json:"initiatorReq,omitempty"`
 
 	// filter in process by logins
 	ProcessingLogins *[]string `json:"processingLogins,omitempty"`
@@ -6457,6 +6464,17 @@ func (siw *ServerInterfaceWrapper) GetTasks(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	// ------------- Optional query parameter "initiatorReq" -------------
+	if paramValue := r.URL.Query().Get("initiatorReq"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "initiatorReq", r.URL.Query(), &params.InitiatorReq)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "initiatorReq", Err: err})
+		return
+	}
+
 	// ------------- Optional query parameter "processingLogins" -------------
 	if paramValue := r.URL.Query().Get("processingLogins"); paramValue != "" {
 
@@ -6989,6 +7007,17 @@ func (siw *ServerInterfaceWrapper) GetTasksUsers(w http.ResponseWriter, r *http.
 	err = runtime.BindQueryParameter("form", true, false, "initiatorLogins", r.URL.Query(), &params.InitiatorLogins)
 	if err != nil {
 		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "initiatorLogins", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "initiatorReq" -------------
+	if paramValue := r.URL.Query().Get("initiatorReq"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "initiatorReq", r.URL.Query(), &params.InitiatorReq)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "initiatorReq", Err: err})
 		return
 	}
 

@@ -786,6 +786,10 @@ func (ae *Env) GetTasksUsers(w http.ResponseWriter, req *http.Request, params Ge
 
 	resp.Users = &respUsers
 
+	if filters.InitiatorReq != nil && *filters.InitiatorReq {
+		resp.InitLogins = &dbResp.InitLogins
+	}
+
 	if err = sendResponse(w, http.StatusOK, resp); err != nil {
 		errorHandler.handleError(UnknownError, err)
 
@@ -863,6 +867,7 @@ func (p *GetTasksParams) toEntity(req *http.Request) (e.TaskFilter, error) {
 		HasAttachments:       p.HasAttachments,
 		Initiator:            p.Initiator,
 		InitiatorLogins:      p.InitiatorLogins,
+		InitiatorReq:         p.InitiatorReq,
 		ProcessingLogins:     p.ProcessingLogins,
 		ProcessingGroupIds:   p.ProcessingGroupIds,
 		ExecutorLogins:       p.ExecutorLogins,

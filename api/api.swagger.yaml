@@ -1882,6 +1882,11 @@ paths:
             items:
               type: string
           description: filter for initiators
+        - name: initiatorReq
+          in: query
+          schema:
+            type: boolean
+          description: filter for initiators
         - name: processingLogins
           in: query
           schema:
@@ -2080,6 +2085,11 @@ paths:
             type: array
             items:
               type: string
+          description: filter for initiators
+        - name: initiatorReq
+          in: query
+          schema:
+            type: boolean
           description: filter for initiators
         - name: processingLogins
           in: query
@@ -4307,6 +4317,10 @@ components:
           items:
             $ref: '#/components/schemas/UniqueUser'
         logins:
+          type: array
+          items:
+            type: string
+        initLogins:
           type: array
           items:
             type: string
