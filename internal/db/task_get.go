@@ -2158,8 +2158,10 @@ type UniquePersons struct {
 	InitLogins []string          `json:"initLogins"`
 }
 
-const potentialPersonsCapacity = 100
-const initPrefix = "init_"
+const (
+	potentialPersonsCapacity = 100
+	initPrefix               = "init_"
+)
 
 func (db *PGCon) getTaskUniquePersons(ctx c.Context, q string, args []interface{}) (*UniquePersons, error) {
 	ctx, span := trace.StartSpan(ctx, "db.pg_get_tasks_meta")
