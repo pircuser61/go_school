@@ -2159,6 +2159,7 @@ type UniquePersons struct {
 }
 
 const potentialPersonsCapacity = 100
+const initPrefix = "init_"
 
 func (db *PGCon) getTaskUniquePersons(ctx c.Context, q string, args []interface{}) (*UniquePersons, error) {
 	ctx, span := trace.StartSpan(ctx, "db.pg_get_tasks_meta")
@@ -2191,8 +2192,8 @@ func (db *PGCon) getTaskUniquePersons(ctx c.Context, q string, args []interface{
 		}
 
 		if initiator.String != "" {
-			if _, ok := check["init_"+initiator.String]; !ok {
-				check["init_"+initiator.String] = struct{}{}
+			if _, ok := check[initPrefix+initiator.String]; !ok {
+				check[initPrefix+initiator.String] = struct{}{}
 				init := initiator.String
 				up.InitLogins = append(up.InitLogins, init)
 			}
