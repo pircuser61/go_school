@@ -2193,7 +2193,8 @@ func (db *PGCon) getTaskUniquePersons(ctx c.Context, q string, args []interface{
 		if initiator.String != "" {
 			if _, ok := check["init_"+initiator.String]; !ok {
 				check["init_"+initiator.String] = struct{}{}
-				up.InitLogins = append(up.InitLogins, initiator.String)
+				init := initiator.String
+				up.InitLogins = append(up.InitLogins, init)
 			}
 		}
 
