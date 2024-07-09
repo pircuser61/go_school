@@ -939,13 +939,15 @@ func (gb *GoApproverBlock) checkFormFilled() error {
 
 //nolint:gocognit,gocyclo //тут большой switch case, где нибудь но он должен быть
 func (gb *GoApproverBlock) handleTaskUpdateAction(ctx c.Context) error {
-	isWorkOnEditing, err := gb.RunContext.Services.Storage.CheckIsOnEditing(ctx, gb.RunContext.TaskID.String())
-	if err != nil {
-		return err
-	}
+	if !gb.RunContext.BreachedSLA {
+		isWorkOnEditing, err := gb.RunContext.Services.Storage.CheckIsOnEditing(ctx, gb.RunContext.TaskID.String())
+		if err != nil {
+			return err
+		}
 
-	if isWorkOnEditing {
-		return errors.New("work is on editing by initiator")
+		if isWorkOnEditing {
+			return errors.New("work is on editing by initiator")
+		}
 	}
 
 	data := gb.RunContext.UpdateData
@@ -972,7 +974,7 @@ func (gb *GoApproverBlock) handleTaskUpdateAction(ctx c.Context) error {
 	case e.TaskUpdateActionApprovement:
 		var updateParams approverUpdateParams
 
-		err = json.Unmarshal(data.Parameters, &updateParams)
+		err := json.Unmarshal(data.Parameters, &updateParams)
 		if err != nil {
 			return errors.New("can't assert provided data")
 		}
@@ -1019,7 +1021,7 @@ func (gb *GoApproverBlock) handleTaskUpdateAction(ctx c.Context) error {
 
 		var updateParams additionalApproverUpdateParams
 
-		if err = json.Unmarshal(data.Parameters, &updateParams); err != nil {
+		if err := json.Unmarshal(data.Parameters, &updateParams); err != nil {
 			return fmt.Errorf("can't assert provided data: %v", err)
 		}
 
@@ -1034,7 +1036,7 @@ func (gb *GoApproverBlock) handleTaskUpdateAction(ctx c.Context) error {
 
 		logins = append(logins, gb.RunContext.Initiator)
 
-		err = gb.notifyDecisionMadeByAdditionalApprover(ctx, logins)
+		err := gb.notifyDecisionMadeByAdditionalApprover(ctx, logins)
 		if err != nil {
 			return err
 		}
@@ -1042,7 +1044,7 @@ func (gb *GoApproverBlock) handleTaskUpdateAction(ctx c.Context) error {
 	case e.TaskUpdateActionApproverSendEditApp:
 		var updateParams approverUpdateEditingParams
 
-		if err = json.Unmarshal(data.Parameters, &updateParams); err != nil {
+		if err := json.Unmarshal(data.Parameters, &updateParams); err != nil {
 			return errors.New("can't assert provided data")
 		}
 
@@ -1062,7 +1064,7 @@ func (gb *GoApproverBlock) handleTaskUpdateAction(ctx c.Context) error {
 
 	case e.TaskUpdateActionAddApprovers:
 		var updateParams addApproversParams
-		if err = json.Unmarshal(data.Parameters, &updateParams); err != nil {
+		if err := json.Unmarshal(data.Parameters, &updateParams); err != nil {
 			return errors.New("can't assert provided data")
 		}
 

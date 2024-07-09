@@ -98,6 +98,7 @@ type BlockRunContext struct {
 
 	OnceProductive bool
 	Productive     bool
+	BreachedSLA    bool
 }
 
 func (runCtx *BlockRunContext) Copy() *BlockRunContext {
