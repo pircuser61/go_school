@@ -58,6 +58,7 @@ func (ae *Env) handleBreachSlA(ctx c.Context, item *db.StepBreachedSLA) {
 		CustomTitle: item.CustomTitle,
 		NotifName:   utils.MakeTaskTitle(item.WorkTitle, item.CustomTitle, item.IsTest),
 		Productive:  true,
+		BreachedSLA: true,
 	}
 
 	runCtx.SetTaskEvents(ctx)
