@@ -30,6 +30,7 @@ people:
     ttl: "1s"
 
 database:
+  schema: public
   kind: postgres
   host: localhost
   port: 5432

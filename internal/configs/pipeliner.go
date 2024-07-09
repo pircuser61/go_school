@@ -87,6 +87,7 @@ type RunEnv struct {
 }
 
 type Database struct {
+	Schema         string `yaml:"schema"`
 	Kind           string `yaml:"kind"`
 	Host           string `yaml:"host"`
 	Port           string `yaml:"port"`
