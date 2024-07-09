@@ -122,11 +122,25 @@ func (db *PGCon) RollbackTransaction(ctx context.Context) error {
 	return tx.Rollback(ctx) // nolint:errcheck // rollback err
 }
 
+const defaultSchema = "public"
+
 func ConnectPostgres(ctx context.Context, db *configs.Database) (PGCon, error) {
+	schema := defaultSchema
+	if db.Schema != "" {
+		schema = db.Schema
+	}
+
 	maxConnections := strconv.Itoa(db.MaxConnections)
-	connString := "postgres://" + os.Getenv(db.UserEnvKey) + ":" + os.Getenv(db.PassEnvKey) +
-		"@" + db.Host + ":" + db.Port + "/" + db.DBName +
-		"?sslmode=disable&pool_max_conns=" + maxConnections
+	connString := fmt.Sprintf(
+		"postgres://%s:%s@%s:%s/%s?sslmode=disable&pool_max_conns=%s&search_path=%s",
+		os.Getenv(db.UserEnvKey),
+		os.Getenv(db.PassEnvKey),
+		db.Host,
+		db.Port,
+		db.DBName,
+		maxConnections,
+		schema,
+	)
 
 	ctx, cancel := context.WithTimeout(ctx, time.Duration(db.Timeout)*time.Second)
 	_ = cancel // no needed yet
