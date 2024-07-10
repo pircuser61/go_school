@@ -616,7 +616,7 @@ func (cq *compileGetTaskQueryMaker) addIsExpiredFilter(isExpired *bool, selectAs
 	// true - просроченные задачи
 	if *isExpired {
 		if utils.IsContainsInSlice(selectAs, finished) {
-			cq.q = fmt.Sprintf("%s and (ua.updated_at is not null and date_trunc('minute',ua.updated_at) > date_trunc('minute',COALESCE(NULLIF(ua.node_deadline, '0001-01-01T00:00:00Z'), w.exec_deadline)) AND date_trunc('minute',now()) > date_trunc('minute',COALESCE(NULLIF(ua.node_deadline, '0001-01-01T00:00:00Z'), w.exec_deadline)))", cq.q)
+			cq.q = fmt.Sprintf("%s and (ua.updated_at is not null and date_trunc('minute',ua.updated_at) > date_trunc('minute',COALESCE(NULLIF(ua.node_deadline, '0001-01-01T00:00:00Z'), w.exec_deadline)) OR ua.updated_at is null AND date_trunc('minute',now()) > date_trunc('minute',COALESCE(NULLIF(ua.node_deadline, '0001-01-01T00:00:00Z'), w.exec_deadline)))", cq.q)
 
 			return
 		}
