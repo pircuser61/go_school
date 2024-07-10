@@ -520,7 +520,7 @@ func (gb *GoSignBlock) handleNotifications(ctx context.Context) error {
 
 	signers := getSliceFromMap(gb.State.Signers)
 
-	description, files, err := gb.RunContext.makeNotificationDescription(ctx, gb.Name, false)
+	notifDescription, files, err := gb.RunContext.makeNotificationDescription(ctx, gb.Name, false)
 	if err != nil {
 		return err
 	}
@@ -559,6 +559,10 @@ func (gb *GoSignBlock) handleNotifications(ctx context.Context) error {
 			continue
 		}
 
+		if len(notifDescription) > 0 {
+			notifDescription = notifDescription[1:]
+		}
+
 		emails[em] = mail.NewSignerNotificationTpl(
 			&mail.SignerNotifTemplate{
 				WorkNumber:  gb.RunContext.WorkNumber,
@@ -566,7 +570,7 @@ func (gb *GoSignBlock) handleNotifications(ctx context.Context) error {
 				SdURL:       gb.RunContext.Services.Sender.SdAddress,
 				Deadline:    slaDeadline,
 				AutoReject:  gb.State.AutoReject != nil && *gb.State.AutoReject,
-				Description: description,
+				Description: notifDescription,
 			})
 	}
 
@@ -577,7 +581,7 @@ func (gb *GoSignBlock) handleNotifications(ctx context.Context) error {
 	for i := range emails {
 		item := emails[i]
 
-		iconsName := append([]string{item.Image}, gb.getNotificationImages(description)...)
+		iconsName := append([]string{item.Image}, gb.getNotificationImages(notifDescription)...)
 
 		iconFiles, filesErr := gb.RunContext.GetIcons(iconsName)
 		if filesErr != nil {
