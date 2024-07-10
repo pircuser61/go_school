@@ -619,12 +619,12 @@ func (gb *GoApproverBlock) tryToSendEdit(ctx c.Context, in approverUpdateEditing
 	}
 
 	if gb.State.WaitAllDecisions {
-		err = gb.State.SetDecision(byLogin, in.Comment, ApproverActionSendToEdit, in.Attachments, delegations)
+		err = gb.State.SetDecision(byLogin, in.Comment, ApproverDecisionSentToEdit, in.Attachments, delegations)
 		if err != nil {
 			return err
 		}
 
-		if gb.State.Decision == nil || *gb.State.Decision != ApproverActionSendToEdit {
+		if gb.State.Decision == nil || *gb.State.Decision != ApproverDecisionSentToEdit {
 			return nil
 		}
 	}
@@ -1001,7 +1001,7 @@ func (gb *GoApproverBlock) handleTaskUpdateAction(ctx c.Context) error {
 			return errUpdate
 		}
 
-		if gb.State.Decision != nil && *gb.State.Decision == ApproverActionSendToEdit {
+		if gb.State.Decision != nil && *gb.State.Decision == ApproverDecisionSentToEdit {
 			comment := ""
 			if gb.State.Comment != nil {
 				comment = *gb.State.Comment
