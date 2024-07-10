@@ -143,6 +143,43 @@ func TestApproverData_getFinalGroupDecision(t *testing.T) {
 			wantFinalDecision: ApproverDecisionRejected,
 			wantIsFinal:       true,
 		},
+		{
+			name: "sent to edit decision",
+			fields: fields{
+				Type: "",
+				Approvers: map[string]struct{}{
+					"user1": {},
+					"user2": {},
+					"user3": {},
+				},
+				Decision:        nil,
+				ApprovementRule: script.AllOfApprovementRequired,
+				ApproverLog: []ApproverLogEntry{
+					{
+						Login:    "user1",
+						Decision: ApproverDecisionApproved,
+						Comment:  "test comment user 1",
+						LogType:  ApproverLogDecision,
+					},
+					{
+						Login:    "user2",
+						Decision: ApproverDecisionApproved,
+						Comment:  "test comment user 2",
+						LogType:  ApproverLogDecision,
+					},
+					{
+						Login:    "user3",
+						Decision: ApproverDecisionSentToEdit,
+						Comment:  "need fix application",
+						LogType:  ApproverLogDecision,
+					},
+				},
+				WaitAllDecisions: true,
+			},
+			args:              args{ds: ApproverDecisionSentToEdit},
+			wantFinalDecision: ApproverDecisionSentToEdit,
+			wantIsFinal:       true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -317,6 +354,34 @@ func TestApproverData_calculateDecisions(t *testing.T) {
 			wantRejectExist:   true,
 			wantSendEditExist: true,
 			wantP:             map[ApproverDecision]int{},
+		},
+		{
+			name: "send to edit",
+			fields: fields{
+				ApproverLog: []ApproverLogEntry{
+					{
+						Decision: ApproverDecisionApproved,
+						LogType: ApproverLogDecision,
+					},
+					{
+						Decision: ApproverDecisionApproved,
+						LogType:  ApproverLogDecision,
+					},
+					{
+						Decision: ApproverDecisionSentToEdit,
+						LogType:  ApproverLogDecision,
+					},
+				},
+				Approvers: map[string]struct{}{
+					"ebalnik":   {},
+					"kozaegaza": {},
+					"pholty":    {},
+				},
+			},
+			wantIsFinal:       true,
+			wantRejectExist:   false,
+			wantSendEditExist: true,
+			wantP:             map[ApproverDecision]int{ApproverDecisionApproved: 2},
 		},
 	}
 	for _, tt := range tests {
