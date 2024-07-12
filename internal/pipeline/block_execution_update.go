@@ -949,7 +949,7 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 
 	log.WithField("func", "emailGroupExecutors").WithField("emails", emails)
 
-	description, files, err := gb.RunContext.makeNotificationDescription(ctx, gb.Name, false)
+	notifDescription, files, err := gb.RunContext.makeNotificationDescription(ctx, gb.Name, false)
 	if err != nil {
 		return err
 	}
@@ -996,7 +996,7 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 			WorkNumber:  gb.RunContext.WorkNumber,
 			Name:        gb.RunContext.NotifName,
 			SdURL:       gb.RunContext.Services.Sender.SdAddress,
-			Description: description,
+			Description: notifDescription,
 			Executor:    typedAuthor,
 			Initiator:   initiatorInfo,
 			LastWorks:   lastWorksForUser,
@@ -1010,7 +1010,7 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 		iconsName = append(iconsName, warningImg)
 	}
 
-	if gb.downloadImgFromDescription(description) {
+	if gb.downloadImgFromDescription(notifDescription) {
 		iconsName = append(iconsName, downloadImg)
 	}
 
@@ -1057,6 +1057,11 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 	}
 
 	var buttons []mail.Button
+
+	if len(notifDescription) > 0 {
+		notifDescription = notifDescription[1:]
+	}
+
 	tpl, buttons = mail.NewAppPersonStatusNotificationTpl(
 		&mail.NewAppPersonStatusTpl{
 			WorkNumber:  gb.RunContext.WorkNumber,
@@ -1064,7 +1069,7 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 			Status:      string(StatusExecution),
 			Action:      statusToTaskAction[StatusExecution],
 			DeadLine:    gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(time.Now(), gb.State.SLA, slaInfoPtr),
-			Description: description,
+			Description: notifDescription,
 			SdURL:       gb.RunContext.Services.Sender.SdAddress,
 			Mailto:      gb.RunContext.Services.Sender.FetchEmail,
 			Login:       loginTakenInWork,
@@ -1078,7 +1083,7 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 		},
 	)
 
-	attachFiles, err := gb.attachFiles(&tpl, buttons, lastWorksForUser, description)
+	attachFiles, err := gb.attachFiles(&tpl, buttons, lastWorksForUser, notifDescription)
 	if err != nil {
 		return err
 	}
