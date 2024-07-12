@@ -929,6 +929,7 @@ func (gb *GoExecutionBlock) executorStartWork(ctx c.Context) (err error) {
 	return nil
 }
 
+//nolint:gocyclo //да это так
 func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork string, logins map[string]struct{}) error {
 	log := logger.GetLogger(ctx)
 
