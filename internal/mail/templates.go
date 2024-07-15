@@ -56,7 +56,7 @@ type SignerNotifTemplate struct {
 	WorkNumber  string
 	Name        string
 	SdURL       string
-	JocastaURl  string
+	JocastaURL  string
 	Deadline    string
 	AutoReject  bool
 	IsPositive  bool
@@ -591,7 +591,7 @@ func NewAppInitiatorStatusNotificationTpl(dto *SignerNotifTemplate) Template {
 			Description: dto.Description,
 			Link:        fmt.Sprintf(TaskURLTemplate, dto.SdURL, dto.WorkNumber),
 			IsPositive:  dto.IsPositive,
-			RateURL:     fmt.Sprintf(taskRateURLTemplate, dto.JocastaURl, dto.WorkNumber),
+			RateURL:     fmt.Sprintf(taskRateURLTemplate, dto.JocastaURL, dto.WorkNumber),
 		},
 	}
 }

@@ -106,15 +106,15 @@ func (runCtx *BlockRunContext) handleInitiatorNotify(ctx c.Context, params handl
 			WorkNumber:  runCtx.WorkNumber,
 			Name:        runCtx.NotifName,
 			SdURL:       runCtx.Services.Sender.SdAddress,
-			JocastaURl:  runCtx.Services.JocastaURL,
+			JocastaURL:  runCtx.Services.JocastaURL,
 			Description: description,
 			Action:      params.action,
-			IsPositive: isPositive,
+			IsPositive:  isPositive,
 		})
 
 	iconsName := []string{tmpl.Image}
 
-	for i := 0; i <= 10; i ++ {
+	for i := 0; i <= 10; i++ {
 		iconsName = append(iconsName, fmt.Sprintf("qualityControl-%d.png", i))
 	}
 
