@@ -181,56 +181,45 @@
             </td>
           </tr>
 
+          {{ if .isPositive }}
           <tr>
-            <td
-                    align="center"
-                    style="
-      border-collapse: collapse;
-      padding-left: 24px;
-      padding-right: 24px;
-      padding-bottom: 24px;
-      padding-top: 12px;
-    "
-            >
-              <table
-                      cellpadding="0"
-                      cellspacing="0"
+            <td align="center"
+                style="
+                border-collapse: collapse;
+                padding-left: 24px;
+                padding-right: 24px;
+                padding-bottom: 24px;
+                padding-top: 12px;">
+              <table cellpadding="0" cellspacing="0"
                       style="
-        border-collapse: collapse;
-        mso-table-lspace: 0pt;
-        mso-table-rspace: 0pt;
-      "
-              >
+                      border-collapse: collapse;
+                      mso-table-lspace: 0pt;
+                      mso-table-rspace: 0pt;">
                 <tr>
                   <td
                           style="
-            border-collapse: collapse;
-            width: 512px;
-            background-color: #f6f2f7;
-            border-radius: 16px;
-            padding-left: 16px;
-            padding-right: 16px;
-            padding-bottom: 16px;
-            padding-top: 16px;
-          "
-                  >
+                  border-collapse: collapse;
+                  width: 512px;
+                  background-color: #f6f2f7;
+                  border-radius: 16px;
+                  padding-left: 16px;
+                  padding-right: 16px;
+                  padding-bottom: 16px;
+                  padding-top: 16px;
+                ">
                     <table
                             cellpadding="0"
                             cellspacing="0"
                             style="
               border-collapse: collapse;
               mso-table-lspace: 0pt;
-              mso-table-rspace: 0pt;
-            "
-                    >
+              mso-table-rspace: 0pt;">
                       <tr>
                         <td
                                 style="
                   border-collapse: collapse;
                   width: 480px;
-                  padding-bottom: 8px;
-                "
-                        >
+                  padding-bottom: 8px;">
                           <p
                                   style="
                     margin: 0;
@@ -264,9 +253,7 @@
                                 style="
                   border-collapse: collapse;
                   width: 280px;
-                  padding-bottom: 8px;
-                "
-                        >
+                  padding-bottom: 8px;">
                           <p
                                   style="
                     margin: 0;
@@ -277,9 +264,7 @@
                     line-height: 20px;
                     color: #6e7782;
                     display: table-cell;
-                    vertical-align: middle;
-                  "
-                          >
+                    vertical-align: middle;">
                             0 - совсем не соответствует ожиданиям
                           </p>
                         </td>
@@ -322,7 +307,7 @@
                       <tr>
                         <td style="border-collapse: collapse; width: 44px">
                           <a
-                                  href="#"
+                                  href="{{.rateURL}}0"
                                   target="_blank"
                                   style="
                     margin: 0;
@@ -352,7 +337,7 @@
                         </td>
                         <td style="border-collapse: collapse; width: 44px">
                           <a
-                                  href="#"
+                                  href="{{.rateURL}}1"
                                   target="_blank"
                                   style="
                     margin: 0;
@@ -382,7 +367,7 @@
                         </td>
                         <td style="border-collapse: collapse; width: 44px">
                           <a
-                                  href="#"
+                                  href="{{.rateURL}}2"
                                   target="_blank"
                                   style="
                     margin: 0;
@@ -412,7 +397,7 @@
                         </td>
                         <td style="border-collapse: collapse; width: 44px">
                           <a
-                                  href="#"
+                                  href="{{.rateURL}}3"
                                   target="_blank"
                                   style="
                     margin: 0;
@@ -442,7 +427,7 @@
                         </td>
                         <td style="border-collapse: collapse; width: 44px">
                           <a
-                                  href="#"
+                                  href="{{.rateURL}}4"
                                   target="_blank"
                                   style="
                     margin: 0;
@@ -472,7 +457,7 @@
                         </td>
                         <td style="border-collapse: collapse; width: 44px">
                           <a
-                                  href="#"
+                                  href="{{.rateURL}}5"
                                   target="_blank"
                                   style="
                     margin: 0;
@@ -502,7 +487,7 @@
                         </td>
                         <td style="border-collapse: collapse; width: 44px">
                           <a
-                                  href="#"
+                                  href="{{.rateURL}}6"
                                   target="_blank"
                                   style="
                     margin: 0;
@@ -532,7 +517,7 @@
                         </td>
                         <td style="border-collapse: collapse; width: 44px">
                           <a
-                                  href="#"
+                                  href="{{.rateURL}}7"
                                   target="_blank"
                                   style="
                     margin: 0;
@@ -562,7 +547,7 @@
                         </td>
                         <td style="border-collapse: collapse; width: 44px">
                           <a
-                                  href="#"
+                                  href="{{.rateURL}}8"
                                   target="_blank"
                                   style="
                     margin: 0;
@@ -592,7 +577,7 @@
                         </td>
                         <td style="border-collapse: collapse; width: 44px">
                           <a
-                                  href="#"
+                                  href="{{.rateURL}}9"
                                   target="_blank"
                                   style="
                     margin: 0;
@@ -622,7 +607,7 @@
                         </td>
                         <td style="border-collapse: collapse; width: 40px">
                           <a
-                                  href="#"
+                                  href="{{.rateURL}}10"
                                   target="_blank"
                                   style="
                     margin: 0;
@@ -657,6 +642,7 @@
               </table>
             </td>
           </tr>
+          {{ end }}
 
           {{ if .Description }} {{ range $ko, $vo := .Description }} {{ $item :=
           retMap $vo }} {{ if (hasValue $vo) }}

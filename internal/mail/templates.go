@@ -24,6 +24,7 @@ const (
 	attachLinks                  = "attachLinks"
 	attachList                   = "attachList"
 	TaskURLTemplate              = "%s/applications/details/%s"
+	taskRateURLTemplate          = "%s/score?work_number=%s&rate="
 )
 
 type Descriptions struct {
@@ -55,8 +56,10 @@ type SignerNotifTemplate struct {
 	WorkNumber  string
 	Name        string
 	SdURL       string
+	JocastaURl  string
 	Deadline    string
 	AutoReject  bool
+	IsPositive  bool
 	Description []orderedmap.OrderedMap
 	Action      string
 }
@@ -581,10 +584,14 @@ func NewAppInitiatorStatusNotificationTpl(dto *SignerNotifTemplate) Template {
 			Body        string                  `json:"body"`
 			Description []orderedmap.OrderedMap `json:"description"`
 			Link        string                  `json:"link"`
+			IsPositive  bool                    `json:"isPositive"`
+			RateURL     string                  `json:"rateURL"`
 		}{
 			Body:        textPart,
 			Description: dto.Description,
 			Link:        fmt.Sprintf(TaskURLTemplate, dto.SdURL, dto.WorkNumber),
+			IsPositive:  dto.IsPositive,
+			RateURL:     fmt.Sprintf(taskRateURLTemplate, dto.JocastaURl, dto.WorkNumber),
 		},
 	}
 }

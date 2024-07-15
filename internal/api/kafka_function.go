@@ -153,6 +153,7 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 			HrGate:        ae.HrGate,
 			Scheduler:     ae.Scheduler,
 			SLAService:    ae.SLAService,
+			JocastaURL:    ae.HostURL,
 		},
 		BlockRunResults: &pipeline.BlockRunResults{},
 
