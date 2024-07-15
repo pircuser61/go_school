@@ -581,11 +581,11 @@ func NewAppInitiatorStatusNotificationTpl(dto *SignerNotifTemplate) Template {
 		Template: "internal/mail/template/40newAppInitiator-template.html",
 		Image:    "40_answer_po_zayavke.png",
 		Variables: struct {
-			Body        string                  `json:"body"`
-			Description []orderedmap.OrderedMap `json:"description"`
-			Link        string                  `json:"link"`
-			IsPositive  bool                    `json:"isPositive"`
-			RateURL     string                  `json:"rateURL"`
+			Body        string
+			Description []orderedmap.OrderedMap
+			Link        string
+			IsPositive  bool
+			RateURL     string
 		}{
 			Body:        textPart,
 			Description: dto.Description,
