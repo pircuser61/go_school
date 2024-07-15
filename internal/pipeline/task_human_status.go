@@ -45,6 +45,7 @@ var statusToTaskState = map[TaskHumanStatus]string{
 	StatusProcessingError:     "обработана с ошибкой",
 }
 
+//nolint:gochecknoglobals // тут слишком много завязано на глобальных переменных
 var positiveTaskState = []string{
 	"согласована",
 	"ознакомлено",
