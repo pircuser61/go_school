@@ -46,6 +46,16 @@ var statusToTaskState = map[TaskHumanStatus]string{
 }
 
 //nolint:gochecknoglobals // тут слишком много завязано на глобальных переменных
+var positiveTaskState = []string{
+	"согласована",
+	"ознакомлено",
+	"проинформировано",
+	"утверждена",
+	"выполнена исполнителем",
+	"подписана",
+}
+
+//nolint:gochecknoglobals // тут слишком много завязано на глобальных переменных
 var statusToTaskAction = map[TaskHumanStatus]string{
 	StatusApprovement: "согласования",
 	StatusExecution:   "исполнения",

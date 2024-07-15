@@ -481,6 +481,7 @@ func (ae *Env) updateStepInternal(ctx context.Context, data *updateStepData) boo
 			Scheduler:     ae.Scheduler,
 			SLAService:    ae.SLAService,
 			Storage:       ae.DB,
+			JocastaURL:    ae.HostURL,
 		},
 		BlockRunResults: &pipeline.BlockRunResults{},
 

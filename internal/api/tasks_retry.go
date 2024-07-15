@@ -145,6 +145,7 @@ func (ae *Env) processTask(ctx context.Context, task *db.Task) error {
 			Scheduler:     ae.Scheduler,
 			SLAService:    ae.SLAService,
 			Storage:       ae.DB,
+			JocastaURL:    ae.HostURL,
 		},
 		BlockRunResults: &pipeline.BlockRunResults{},
 

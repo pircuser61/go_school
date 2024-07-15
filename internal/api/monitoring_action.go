@@ -482,6 +482,7 @@ func (ae *Env) restartStep(ctx c.Context, tx db.Database, wID uuid.UUID, wNumber
 			Scheduler:     ae.Scheduler,
 			SLAService:    ae.SLAService,
 			Storage:       tx,
+			JocastaURL:    ae.HostURL,
 		},
 		BlockRunResults: &pipeline.BlockRunResults{},
 

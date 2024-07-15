@@ -48,6 +48,7 @@ func (ae *Env) handleBreachSlA(ctx c.Context, item *db.StepBreachedSLA) {
 			HrGate:        ae.HrGate,
 			Scheduler:     ae.Scheduler,
 			SLAService:    ae.SLAService,
+			JocastaURL:    ae.HostURL,
 		},
 		BlockRunResults: &pipeline.BlockRunResults{},
 

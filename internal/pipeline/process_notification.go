@@ -99,16 +99,24 @@ func (runCtx *BlockRunContext) handleInitiatorNotify(ctx c.Context, params handl
 		params.action = statusToTaskState[params.status]
 	}
 
+	isPositive := utils.IsContainsInSlice(params.action, positiveTaskState)
+
 	tmpl := mail.NewAppInitiatorStatusNotificationTpl(
 		&mail.SignerNotifTemplate{
 			WorkNumber:  runCtx.WorkNumber,
 			Name:        runCtx.NotifName,
 			SdURL:       runCtx.Services.Sender.SdAddress,
+			JocastaURL:  runCtx.Services.JocastaURL,
 			Description: description,
 			Action:      params.action,
+			IsPositive:  isPositive,
 		})
 
 	iconsName := []string{tmpl.Image}
+
+	for i := 0; i <= 10; i++ {
+		iconsName = append(iconsName, fmt.Sprintf("qualityControl-%d.png", i))
+	}
 
 	for _, v := range description {
 		links, link := v.Get(attachLinksKey)

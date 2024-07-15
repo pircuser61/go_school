@@ -60,6 +60,7 @@ type RunContextServices struct {
 	Integrations  integrations.Service
 	FileRegistry  fileregistry.Service
 	FaaS          string
+	JocastaURL    string
 	HrGate        hrgate.Service
 	Scheduler     *scheduler.Service
 	SLAService    sla.Service
