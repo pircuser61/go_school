@@ -38,12 +38,20 @@ func uniqueActionsByRole(loginsIn, stepType string, finished, acted, isPersonsFi
 
 	if finished {
 		statuses = "(vs.status IN ('finished', 'cancel', 'no_success', 'error') OR m.finished = true)"
+
+		if stepType == "approver" {
+			statuses = "(vs.status IN ('finished', 'cancel', 'no_success', 'error') OR m.finished = true OR m.is_acted = true)"
+		}
 	}
 
 	memberActed := ""
 
 	if acted {
 		memberActed = "AND m.is_acted = true"
+	}
+
+	if stepType == "approver" && !finished {
+		memberActed = "AND m.is_acted = false"
 	}
 
 	// nolint:gocritic,lll //В старых заявках нет пользователя и из-за этого приходится их забирать из других полей, где они есть там
@@ -71,7 +79,7 @@ func uniqueActionsByRole(loginsIn, stepType string, finished, acted, isPersonsFi
              WHEN vs.status in ('finished', 'no_success') AND vs.step_type in ('execution', 'approver', 'form', 'sign') THEN vs.updated_at 
 		   END AS updated_at
 		 , COALESCE(NULLIF(timestamptz(vs.content -> 'State' -> vs.step_name ->> 'deadline'), '0001-01-01T00:00:00Z'), w.exec_deadline) AS node_deadline
-         , vs.content -> 'State' -> vs.step_name ->> 'is_expired'		   					AS is_expired
+         , vs.content -> 'State' -> vs.step_name ->> 'is_expired' AS is_expired
     FROM members m
              JOIN variable_storage vs on vs.id = m.block_id
              JOIN works w on vs.work_id = w.id
@@ -86,7 +94,7 @@ func uniqueActionsByRole(loginsIn, stepType string, finished, acted, isPersonsFi
                           FROM actions a
                           GROUP BY block_id, a.work_id)
    , unique_actions AS (
-      	 SELECT actions.work_id                  	  		 AS work_id
+      	 SELECT actions.work_id AS work_id
 			%s
 		FROM actions
 				 JOIN filtered_actions fa ON fa.time = actions.node_start AND fa.block_id = actions.block_id
