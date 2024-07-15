@@ -114,8 +114,10 @@ func (runCtx *BlockRunContext) handleInitiatorNotify(ctx c.Context, params handl
 
 	iconsName := []string{tmpl.Image}
 
-	for i := 0; i <= 10; i++ {
-		iconsName = append(iconsName, fmt.Sprintf("qualityControl-%d.png", i))
+	if isPositive {
+		for i := 0; i <= 10; i++ {
+			iconsName = append(iconsName, fmt.Sprintf("qualityControl-%d.png", i))
+		}
 	}
 
 	for _, v := range description {
