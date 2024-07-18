@@ -226,6 +226,7 @@ func (es *ExternalSystem) ValidateInputMapping() error {
 	return nil
 }
 
+//nolint:gocritic //Нельзя передавать как указатель - значение находится в map
 func fillMappedSet(obj script.JSONSchemaPropertiesValue, mappedSet map[string]bool) {
 	for k := range obj.Properties {
 		if obj.Properties[k].Value != "" && obj.Properties[k].Default != nil {
