@@ -59,33 +59,43 @@ func (ae *Env) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Request
 	ctx, s := trace.StartSpan(r.Context(), "run_new_version_by_prev_version")
 	defer s.End()
 
-	errorHandler := newHTTPErrorHandler(
-		logger.GetLogger(ctx).
-			WithField("funcName", "RunNewVersionByPrevVersion"),
-		w,
-	)
+	log := logger.GetLogger(ctx).
+		WithField("mainFuncName", "RunNewVersionByPrevVersion").
+		WithField("method", "post").
+		WithField("transport", "rest").
+		WithField("logVersion", "v1").
+		WithField("TraceID", s.SpanContext().TraceID.String())
+
+	errorHandler := newHTTPErrorHandler(log, w)
 
 	body, err := io.ReadAll(r.Body)
 	defer r.Body.Close()
 
 	if err != nil {
+		log.Error(err)
 		errorHandler.handleError(RequestReadError, err)
 
 		return
 	}
 
+	log = log.WithField("body", string(body))
+
 	req := &runNewVersionsByPrevVersionRequest{}
 
 	if err = json.Unmarshal(body, req); err != nil {
+		log.Error(err)
 		errorHandler.handleError(BodyParseError, err)
 
 		return
 	}
 
-	errorHandler.log = errorHandler.log.WithField("workNumber", req.WorkNumber)
+	log = log.WithField("workNumber", req.WorkNumber)
+
+	errorHandler.log = log
 	ctx = logger.WithLogger(ctx, errorHandler.log)
 
 	if req.WorkNumber == "" {
+		log.Error(err)
 		errorHandler.handleError(ValidationError, errors.New("workNumber is empty"))
 
 		return
@@ -221,7 +231,6 @@ func (ae *Env) runVersionByPrevVersion(
 			},
 		},
 	})
-
 	if err != nil {
 		log.WithError(err).Error("process empty task error")
 
@@ -253,6 +262,13 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
 	ctx, s := trace.StartSpan(r.Context(), "run_version_by_pipeline_id")
 
+	log := logger.GetLogger(r.Context()).
+		WithField("mainFuncName", "RunVersionsByPipelineId").
+		WithField("method", "post").
+		WithField("transport", "rest").
+		WithField("logVersion", "v1").
+		WithField("traceID", s.SpanContext().TraceID.String())
+
 	requestInfo := metrics.NewPostRequestInfo(runByPipelineIDPath)
 	defer func() {
 		s.End()
@@ -262,26 +278,26 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 		ae.Metrics.RequestsIncrease(requestInfo)
 	}()
 
-	errorHandler := newHTTPErrorHandler(
-		logger.
-			GetLogger(r.Context()).
-			WithField("funcName", "RunVersionsByPipelineId"),
-		w,
-	)
+	errorHandler := newHTTPErrorHandler(log, w)
 
 	body, err := io.ReadAll(r.Body)
 	defer r.Body.Close()
 
 	if err != nil {
+		log.Error(err)
 		errorHandler.handleError(RequestReadError, err)
 		requestInfo.Status = RequestReadError.Status()
 
 		return
 	}
 
+	log = log.WithField("body", body)
+	ctx = logger.WithLogger(ctx, log)
+
 	req := &runVersionByPipelineIDRequest{}
 
 	if err = json.Unmarshal(body, req); err != nil {
+		log.Error(err)
 		errorHandler.handleError(BodyParseError, err)
 		requestInfo.Status = BodyParseError.Status()
 
@@ -289,6 +305,7 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if req.PipelineID == "" {
+		log.Error("empty pipeline id")
 		errorHandler.handleError(ValidatePipelineIDError, ValidatePipelineIDError)
 		requestInfo.Status = ValidatePipelineIDError.Status()
 
@@ -297,12 +314,16 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 
 	requestInfo.PipelineID = req.PipelineID
 
-	errorHandler.log = errorHandler.log.WithField("pipelineID", req.PipelineID).
-		WithField("funcName", "RunVersionsByPipelineId")
+	log = log.WithField("pipelineID", req.PipelineID)
+
+	ctx = logger.WithLogger(ctx, log)
+
+	errorHandler.log = log
 
 	if req.WorkNumber == "" {
 		req.WorkNumber, err = ae.Sequence.GetWorkNumber(r.Context())
 		if err != nil {
+			log.WithField("funcName", "GetWorkNumber").Error(err)
 			errorHandler.handleError(GetWorkNumberError, err)
 			requestInfo.Status = GetWorkNumberError.Status()
 
@@ -365,7 +386,8 @@ func (ae *Env) runVersion(ctx c.Context, log logger.Logger, run *runVersionsDTO)
 		}
 	}
 
-	log = log.WithField("clientID", run.ClientID)
+	log = log.WithField("clientID", run.ClientID).
+		WithField("funcName", "runVersion")
 
 	if run.requestInfo != nil {
 		run.requestInfo.ClientID = run.ClientID
@@ -373,6 +395,8 @@ func (ae *Env) runVersion(ctx c.Context, log logger.Logger, run *runVersionsDTO)
 
 	storage, err := ae.DB.Acquire(ctx)
 	if err != nil {
+		log.Error(err)
+
 		return errors.Join(PipelineExecutionError, err)
 	}
 
@@ -381,6 +405,8 @@ func (ae *Env) runVersion(ctx c.Context, log logger.Logger, run *runVersionsDTO)
 
 	usr, err := user.GetUserInfoFromCtx(ctx)
 	if err != nil {
+		log.Error(err)
+
 		return errors.Join(NoUserInContextError, err)
 	}
 
@@ -432,6 +458,8 @@ func (ae *Env) runVersion(ctx c.Context, log logger.Logger, run *runVersionsDTO)
 		emptyTask,
 	)
 	if err != nil {
+		log.Error(err)
+
 		return errors.Join(PipelineCreateError, err)
 	}
 
@@ -470,7 +498,7 @@ func (ae *Env) launchEmptyTask(
 }
 
 func handleLaunchTaskError(ctx c.Context, storage db.Database, taskID uuid.UUID, err error) error {
-	log := logger.GetLogger(ctx)
+	log := logger.GetLogger(ctx).WithField("funcName", "handleLaunchTaskError")
 
 	switch {
 	case errorutils.IsRemoteCallError(err):
@@ -498,7 +526,7 @@ func (ae *Env) processEmptyTask(
 	ctx, span := trace.StartSpan(ctx, "process_empty_task")
 	defer span.End()
 
-	log := logger.GetLogger(ctx)
+	log := logger.GetLogger(ctx).WithField("funcName", "processEmptyTask")
 
 	version, err := storage.GetVersionByPipelineID(ctx, emptyTask.RunContext.PipelineID)
 	if err != nil {

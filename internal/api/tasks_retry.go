@@ -20,7 +20,11 @@ func (ae *Env) RetryTasks(w http.ResponseWriter, r *http.Request, params RetryTa
 	defer span.End()
 
 	errorHandler := newHTTPErrorHandler(
-		logger.GetLogger(ctx).WithField("funcName", "RetryTasks"),
+		logger.GetLogger(ctx).WithField("mainFuncName", "RetryTasks").
+			WithField("method", "get").
+			WithField("transport", "rest").
+			WithField("logVersion", "v1").
+			WithField("traceID", span.SpanContext().SpanID.String()),
 		w,
 	)
 
@@ -52,10 +56,16 @@ func (ae *Env) retryEmptyTasks(ctx context.Context, limit int) error {
 	ctx, span := trace.StartSpan(ctx, "retry_empty_tasks")
 	defer span.End()
 
+	log := logger.GetLogger(ctx).WithField("funcName", "retryEmptyTasks")
+
 	emptyTasks, filledTasks, err := ae.DB.GetTasksToRetry(ctx, ae.TaskRetry.MinLifetime, ae.TaskRetry.MaxLifetime, limit)
 	if err != nil {
+		log.Error(err)
+
 		return errors.Join(GetTaskError, err)
 	}
+
+	ctx = logger.WithLogger(ctx, log)
 
 	ae.launchEmptyTasks(ctx, emptyTasks)
 	ae.launchTasks(ctx, filledTasks)
@@ -64,7 +74,7 @@ func (ae *Env) retryEmptyTasks(ctx context.Context, limit int) error {
 }
 
 func (ae *Env) launchEmptyTasks(ctx context.Context, emptyTasks []*db.Task) {
-	log := logger.GetLogger(ctx)
+	log := logger.GetLogger(ctx).WithField("funcName", "launchEmptyTasks")
 
 	for _, emptyTask := range emptyTasks {
 		processErr := ae.launchEmptyTask(ctx, ae.DB, emptyTask, "", &metrics.RequestInfo{})
@@ -82,7 +92,7 @@ func (ae *Env) launchEmptyTasks(ctx context.Context, emptyTasks []*db.Task) {
 }
 
 func (ae *Env) launchTasks(ctx context.Context, tasks []*db.Task) {
-	log := logger.GetLogger(ctx)
+	log := logger.GetLogger(ctx).WithField("funcName", "launchTasks")
 
 	for _, emptyTask := range tasks {
 		processErr := ae.launchTask(ctx, emptyTask)
@@ -108,7 +118,7 @@ func (ae *Env) launchTask(ctx context.Context, task *db.Task) error {
 }
 
 func (ae *Env) processTask(ctx context.Context, task *db.Task) error {
-	log := logger.GetLogger(ctx)
+	log := logger.GetLogger(ctx).WithField("funcName", "processTask")
 
 	step, err := ae.DB.GetTaskStepToRetry(ctx, task.WorkID)
 	if err != nil {

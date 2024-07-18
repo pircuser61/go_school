@@ -14,7 +14,12 @@ func (ae *Env) FindPerson(w http.ResponseWriter, r *http.Request, params FindPer
 	ctx, s := trace.StartSpan(r.Context(), "find_person")
 	defer s.End()
 
-	log := logger.GetLogger(ctx)
+	log := logger.GetLogger(ctx).
+		WithField("mainFuncName", "FindPerson").
+		WithField("method", "get").
+		WithField("transport", "rest").
+		WithField("traceID", s.SpanContext().TraceID.String()).
+		WithField("logVersion", "v1")
 	errorHandler := newHTTPErrorHandler(log, w)
 
 	search := ""
@@ -26,6 +31,8 @@ func (ae *Env) FindPerson(w http.ResponseWriter, r *http.Request, params FindPer
 	if params.Enabled != nil {
 		enabled = *params.Enabled
 	}
+
+	ctx = logger.WithLogger(ctx, log)
 
 	user, err := ae.People.GetUser(ctx, search, enabled)
 	if err != nil {
@@ -69,13 +76,19 @@ func (ae *Env) SearchPeople(w http.ResponseWriter, r *http.Request, params Searc
 	ctx, s := trace.StartSpan(r.Context(), "search_people")
 	defer s.End()
 
-	log := logger.GetLogger(ctx)
+	log := logger.GetLogger(ctx).WithField("mainFuncName", "SearchPeople").
+		WithField("method", "get").
+		WithField("transport", "rest").
+		WithField("traceID", s.SpanContext().TraceID.String()).
+		WithField("logVersion", "v1")
 	errorHandler := newHTTPErrorHandler(log, w)
 
 	enabled := true
 	if params.Enabled != nil {
 		enabled = *params.Enabled
 	}
+
+	ctx = logger.WithLogger(ctx, log)
 
 	users, err := ae.People.GetUsers(ctx, params.Search, params.Limit, []string{}, enabled)
 	if err != nil {

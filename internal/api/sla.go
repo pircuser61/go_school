@@ -21,7 +21,8 @@ func (ae *Env) handleBreachSlA(ctx c.Context, item *db.StepBreachedSLA) {
 		WithField("funcName", "handleBreachSlA").
 		WithField("workID", item.TaskID).
 		WithField("workNumber", item.WorkNumber).
-		WithField("stepName", item.StepName)
+		WithField("stepName", item.StepName).
+		WithField("funcName", "handleBreachSlA")
 	ctx = logger.WithLogger(ctx, log)
 
 	runCtx := &pipeline.BlockRunContext{
@@ -66,6 +67,7 @@ func (ae *Env) handleBreachSlA(ctx c.Context, item *db.StepBreachedSLA) {
 
 	_, workFinished, blockErr := pipeline.ProcessBlockWithEndMapping(ctx, item.StepName, item.BlockData, runCtx, true)
 	if blockErr != nil {
+		log.WithError(blockErr)
 		runCtx.NotifyEvents(ctx) // events for successfully processed nodes
 
 		return
@@ -85,12 +87,18 @@ func (ae *Env) CheckBreachSLA(w http.ResponseWriter, r *http.Request) {
 	ctx, span := trace.StartSpan(r.Context(), "check_breach_sla")
 	defer span.End()
 
-	log := logger.GetLogger(ctx).WithField("mainFuncName", "CheckBreachSLA")
+	log := logger.GetLogger(ctx).
+		WithField("mainFuncName", "CheckBreachSLA").
+		WithField("callMethod", "get").
+		WithField("callTransport", "rest").
+		WithField("traceID", span.SpanContext().TraceID.String()).
+		WithField("logVersion", "v1")
 	errorhandler := newHTTPErrorHandler(log, w)
 
 	steps, err := ae.DB.GetBlocksBreachedSLA(ctx)
 	if err != nil {
 		err := errors.New("couldn't get steps")
+		log.WithError(err)
 		errorhandler.handleError(UpdateBlockError, err)
 
 		return

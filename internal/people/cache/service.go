@@ -60,7 +60,7 @@ func (s *service) GetUser(ctx c.Context, username string, onlyEnabled bool) (peo
 	ctx, span := trace.StartSpan(ctx, "people.cache.get_user")
 	defer span.End()
 
-	log := logger.GetLogger(ctx)
+	log := logger.GetLogger(ctx).WithField("funcName", "GetUser")
 
 	keyForCache := userKeyPrefix + username
 

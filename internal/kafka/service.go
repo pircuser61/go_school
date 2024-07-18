@@ -172,7 +172,8 @@ func (s *Service) ProduceEventMessage(ctx c.Context, message *e.NodeKafkaEvent) 
 
 	l := s.log.WithField("workNumber", message.WorkNumber).
 		WithField("nodeName", message.NodeName).
-		WithField("action", message.Action)
+		WithField("action", message.Action).
+		WithField("funcName", "ProduceEventMessage")
 
 	l.Info("try to send event to kafka")
 

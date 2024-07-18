@@ -15,11 +15,18 @@ func (ae *Env) SendEventsToKafka(w http.ResponseWriter, r *http.Request) {
 	ctx, span := trace.StartSpan(r.Context(), "send_events_to_kafka")
 	defer span.End()
 
-	log := logger.GetLogger(ctx).WithField("funcName", "SendEventsToKafka")
+	log := logger.GetLogger(ctx).
+		WithField("mainFuncName", "SendEventsToKafka").
+		WithField("traceID", span.SpanContext().TraceID.String()).
+		WithField("method", "get").
+		WithField("transport", "rest").
+		WithField("logVersion", "v1")
 	errorHandler := newHTTPErrorHandler(log, w)
 
 	events, err := ae.DB.GetEventsToSend(ctx)
 	if err != nil {
+		log.Error(err)
+
 		err = errors.New("couldn't get event to send")
 		errorHandler.handleError(UnknownError, err)
 

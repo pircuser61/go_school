@@ -361,7 +361,7 @@ func TestApproverData_calculateDecisions(t *testing.T) {
 				ApproverLog: []ApproverLogEntry{
 					{
 						Decision: ApproverDecisionApproved,
-						LogType: ApproverLogDecision,
+						LogType:  ApproverLogDecision,
 					},
 					{
 						Decision: ApproverDecisionApproved,
