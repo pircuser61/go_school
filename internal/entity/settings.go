@@ -2,9 +2,11 @@ package entity
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
+	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
 type UpdateApprovalListSettings struct {
@@ -180,5 +182,58 @@ func (es *ExternalSystem) ValidateSchemas() error {
 		return err
 	}
 
+	err = es.ValidateInputMapping()
+	if err != nil {
+		return err
+	}
+
 	return nil
+}
+
+func (es *ExternalSystem) ValidateInputMapping() error {
+	if es.InputSchema == nil || es.InputMapping == nil {
+		return nil
+	}
+
+	mappedSet := make(map[string]bool)
+
+	for k := range es.InputSchema.Properties {
+		if es.InputSchema.Properties[k].Default != nil {
+			mappedSet[k] = true
+		}
+
+		if es.InputSchema.Properties[k].Type == utils.ObjectType {
+			fillMappedSet(es.InputMapping.Properties[k], mappedSet)
+		}
+	}
+
+	for k := range es.InputMapping.Properties {
+		if es.InputMapping.Properties[k].Value != "" {
+			mappedSet[k] = true
+		}
+
+		if es.InputMapping.Properties[k].Type == utils.ObjectType {
+			fillMappedSet(es.InputMapping.Properties[k], mappedSet)
+		}
+	}
+
+	for _, k := range es.InputSchema.Required {
+		if _, ok := mappedSet[k]; !ok {
+			return fmt.Errorf("%w: %s", ErrMappingRequired, k)
+		}
+	}
+
+	return nil
+}
+
+func fillMappedSet(obj script.JSONSchemaPropertiesValue, mappedSet map[string]bool) {
+	for k := range obj.Properties {
+		if obj.Properties[k].Value != "" && obj.Properties[k].Default != nil {
+			mappedSet[k] = true
+		}
+
+		if obj.Properties[k].Type == utils.ObjectType {
+			fillMappedSet(obj.Properties[k], mappedSet)
+		}
+	}
 }
