@@ -196,6 +196,7 @@ func (es *ExternalSystem) ValidateInputMapping() error {
 	}
 
 	mappedSet := make(map[string]bool)
+	requireds := es.InputSchema.Required
 
 	for k := range es.InputSchema.Properties {
 		if es.InputSchema.Properties[k].Default != nil {
@@ -203,7 +204,9 @@ func (es *ExternalSystem) ValidateInputMapping() error {
 		}
 
 		if es.InputSchema.Properties[k].Type == utils.ObjectType {
-			fillMappedSet(es.InputMapping.Properties[k], mappedSet)
+			requireds = append(requireds, es.InputSchema.Properties[k].Required...)
+
+			fillMappedSet(es.InputMapping.Properties[k], mappedSet, &requireds)
 		}
 	}
 
@@ -213,11 +216,11 @@ func (es *ExternalSystem) ValidateInputMapping() error {
 		}
 
 		if es.InputMapping.Properties[k].Type == utils.ObjectType {
-			fillMappedSet(es.InputMapping.Properties[k], mappedSet)
+			fillMappedSet(es.InputMapping.Properties[k], mappedSet, &requireds)
 		}
 	}
 
-	for _, k := range es.InputSchema.Required {
+	for _, k := range requireds {
 		if _, ok := mappedSet[k]; !ok {
 			return fmt.Errorf("%w: %s", ErrMappingRequired, k)
 		}
@@ -227,14 +230,18 @@ func (es *ExternalSystem) ValidateInputMapping() error {
 }
 
 //nolint:gocritic //Нельзя передавать как указатель - значение находится в map
-func fillMappedSet(obj script.JSONSchemaPropertiesValue, mappedSet map[string]bool) {
+func fillMappedSet(
+	obj script.JSONSchemaPropertiesValue, mappedSet map[string]bool, requireds *[]string,
+) {
 	for k := range obj.Properties {
 		if obj.Properties[k].Value != "" || obj.Properties[k].Default != nil {
 			mappedSet[k] = true
 		}
 
 		if obj.Properties[k].Type == utils.ObjectType {
-			fillMappedSet(obj.Properties[k], mappedSet)
+			*requireds = append(*requireds, obj.Properties[k].Required...)
+
+			fillMappedSet(obj.Properties[k], mappedSet, requireds)
 		}
 	}
 }
