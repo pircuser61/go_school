@@ -15,16 +15,6 @@ func TestExternalSystem_ValidateInputMapping(t *testing.T) {
 		t.Parallel()
 
 		es := &ExternalSystem{
-			InputSchema: &script.JSONSchema{
-				Type: "object",
-				Properties: script.JSONSchemaProperties{
-					"a": {
-						Type:  "string",
-						Title: "Тестовая строка",
-					},
-				},
-				Required: []string{"a"},
-			},
 			InputMapping: &script.JSONSchema{
 				Type: "object",
 				Properties: script.JSONSchemaProperties{
@@ -34,6 +24,7 @@ func TestExternalSystem_ValidateInputMapping(t *testing.T) {
 						Value: "test-mapping",
 					},
 				},
+				Required: []string{"a"},
 			},
 		}
 
@@ -46,7 +37,7 @@ func TestExternalSystem_ValidateInputMapping(t *testing.T) {
 		t.Parallel()
 
 		es := &ExternalSystem{
-			InputSchema: &script.JSONSchema{
+			InputMapping: &script.JSONSchema{
 				Type: "object",
 				Properties: script.JSONSchemaProperties{
 					"a": {
@@ -56,15 +47,6 @@ func TestExternalSystem_ValidateInputMapping(t *testing.T) {
 					},
 				},
 				Required: []string{"a"},
-			},
-			InputMapping: &script.JSONSchema{
-				Type: "object",
-				Properties: script.JSONSchemaProperties{
-					"a": {
-						Type:  "string",
-						Title: "Тестовая строка",
-					},
-				},
 			},
 		}
 
@@ -77,7 +59,34 @@ func TestExternalSystem_ValidateInputMapping(t *testing.T) {
 		t.Parallel()
 
 		es := &ExternalSystem{
-			InputSchema: &script.JSONSchema{
+			InputMapping: &script.JSONSchema{
+				Type: "object",
+				Properties: script.JSONSchemaProperties{
+					"a-obj": {
+						Type: "object",
+						Properties: script.JSONSchemaProperties{
+							"a-str": {
+								Type:  "string",
+								Title: "Тестовая строка в объекте",
+								Value: "test-mapping",
+							},
+						},
+						Required: []string{"a-str"},
+					},
+				},
+			},
+		}
+
+		err := es.ValidateInputMapping()
+
+		assert.NoError(t, err)
+	})
+
+	t.Run("Invalid with required and nested object", func(t *testing.T) {
+		t.Parallel()
+
+		es := &ExternalSystem{
+			InputMapping: &script.JSONSchema{
 				Type: "object",
 				Properties: script.JSONSchemaProperties{
 					"a-obj": {
@@ -92,33 +101,18 @@ func TestExternalSystem_ValidateInputMapping(t *testing.T) {
 					},
 				},
 			},
-			InputMapping: &script.JSONSchema{
-				Type: "object",
-				Properties: script.JSONSchemaProperties{
-					"a-obj": {
-						Type: "object",
-						Properties: script.JSONSchemaProperties{
-							"a-str": {
-								Type:  "string",
-								Title: "Тестовая строка в объекте",
-								Value: "Тестовый маппинг",
-							},
-						},
-					},
-				},
-			},
 		}
 
 		err := es.ValidateInputMapping()
 
-		assert.NoError(t, err)
+		assert.EqualError(t, err, fmt.Sprintf("%s: %s", ErrMappingRequired.Error(), "a-obj.a-str"))
 	})
 
 	t.Run("Invalid with required", func(t *testing.T) {
 		t.Parallel()
 
 		es := &ExternalSystem{
-			InputSchema: &script.JSONSchema{
+			InputMapping: &script.JSONSchema{
 				Type: "object",
 				Properties: script.JSONSchemaProperties{
 					"a": {
@@ -127,15 +121,6 @@ func TestExternalSystem_ValidateInputMapping(t *testing.T) {
 					},
 				},
 				Required: []string{"a"},
-			},
-			InputMapping: &script.JSONSchema{
-				Type: "object",
-				Properties: script.JSONSchemaProperties{
-					"a": {
-						Type:  "string",
-						Title: "Тестовая строка",
-					},
-				},
 			},
 		}
 

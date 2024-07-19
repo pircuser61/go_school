@@ -191,32 +191,20 @@ func (es *ExternalSystem) ValidateSchemas() error {
 }
 
 func (es *ExternalSystem) ValidateInputMapping() error {
-	if es.InputSchema == nil || es.InputMapping == nil {
+	if es.InputMapping == nil {
 		return nil
 	}
 
-	mappedSet := make(map[string]bool)
-	requireds := es.InputSchema.Required
-
-	for k := range es.InputSchema.Properties {
-		if es.InputSchema.Properties[k].Default != nil {
-			mappedSet[k] = true
-		}
-
-		if es.InputSchema.Properties[k].Type == utils.ObjectType {
-			requireds = append(requireds, es.InputSchema.Properties[k].Required...)
-
-			fillMappedSet(es.InputMapping.Properties[k], mappedSet, &requireds)
-		}
-	}
+	mappedSet := make(map[string]struct{})
+	requireds := es.InputMapping.Required
 
 	for k := range es.InputMapping.Properties {
-		if es.InputMapping.Properties[k].Value != "" {
-			mappedSet[k] = true
+		if es.InputMapping.Properties[k].Value != "" || es.InputMapping.Properties[k].Default != nil {
+			mappedSet[k] = struct{}{}
 		}
 
 		if es.InputMapping.Properties[k].Type == utils.ObjectType {
-			fillMappedSet(es.InputMapping.Properties[k], mappedSet, &requireds)
+			fillMappedSet(es.InputMapping.Properties[k], mappedSet, &requireds, k)
 		}
 	}
 
@@ -231,17 +219,29 @@ func (es *ExternalSystem) ValidateInputMapping() error {
 
 //nolint:gocritic //Нельзя передавать как указатель - значение находится в map
 func fillMappedSet(
-	obj script.JSONSchemaPropertiesValue, mappedSet map[string]bool, requireds *[]string,
+	obj script.JSONSchemaPropertiesValue,
+	mappedSet map[string]struct{},
+	requireds *[]string,
+	keyPath string,
 ) {
+	// Было: ['a', 'b'] Стало: ['obj.a', 'obj.b'] — Чтобы отличать дублирующиеся ключи
+	if objReqs := obj.Required; objReqs != nil {
+		tempRequireds := make([]string, len(objReqs))
+
+		for i := range objReqs {
+			tempRequireds[i] = keyPath + "." + objReqs[i]
+		}
+
+		*requireds = append(*requireds, tempRequireds...)
+	}
+
 	for k := range obj.Properties {
 		if obj.Properties[k].Value != "" || obj.Properties[k].Default != nil {
-			mappedSet[k] = true
+			mappedSet[keyPath+"."+k] = struct{}{}
 		}
 
 		if obj.Properties[k].Type == utils.ObjectType {
-			*requireds = append(*requireds, obj.Properties[k].Required...)
-
-			fillMappedSet(obj.Properties[k], mappedSet, requireds)
+			fillMappedSet(obj.Properties[k], mappedSet, requireds, keyPath+k)
 		}
 	}
 }
