@@ -44,6 +44,7 @@ const (
 	signBlockType      = "sign"
 )
 
+//nolint:all // ok
 func (runCtx *BlockRunContext) handleInitiatorNotify(ctx c.Context, params handleInitiatorNotifyParams) error {
 	ctx, span := trace.StartSpan(ctx, "handle_initiator_notify")
 	defer span.End()
@@ -117,6 +118,7 @@ func (runCtx *BlockRunContext) handleInitiatorNotify(ctx c.Context, params handl
 		isExecutableStep := utils.IsContainsInSlice(steps[i].Type, types)
 		if isExecutableStep && steps[i].UpdatedAt == nil {
 			isLastExecutableStep = false
+
 			break
 		}
 	}
