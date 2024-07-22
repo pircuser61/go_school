@@ -225,11 +225,11 @@ func fillMappedSet(
 	keyPath string,
 ) {
 	// Было: ['a', 'b'] Стало: ['obj.a', 'obj.b'] — Чтобы отличать дублирующиеся ключи
-	if objReqs := obj.Required; objReqs != nil {
-		tempRequireds := make([]string, len(objReqs))
+	if obj.Required != nil {
+		tempRequireds := make([]string, len(obj.Required))
 
-		for i := range objReqs {
-			tempRequireds[i] = keyPath + "." + objReqs[i]
+		for i := range obj.Required {
+			tempRequireds[i] = keyPath + "." + obj.Required[i]
 		}
 
 		*requireds = append(*requireds, tempRequireds...)
