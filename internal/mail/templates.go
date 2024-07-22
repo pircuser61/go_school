@@ -53,15 +53,16 @@ type Attachments struct {
 }
 
 type SignerNotifTemplate struct {
-	WorkNumber  string
-	Name        string
-	SdURL       string
-	JocastaURL  string
-	Deadline    string
-	AutoReject  bool
-	IsPositive  bool
-	Description []orderedmap.OrderedMap
-	Action      string
+	WorkNumber           string
+	Name                 string
+	SdURL                string
+	JocastaURL           string
+	Deadline             string
+	AutoReject           bool
+	IsPositive           bool
+	IsLastExecutableStep bool
+	Description          []orderedmap.OrderedMap
+	Action               string
 }
 
 type Notif struct {
@@ -581,17 +582,19 @@ func NewAppInitiatorStatusNotificationTpl(dto *SignerNotifTemplate) Template {
 		Template: "internal/mail/template/40newAppInitiator-template.html",
 		Image:    "40_answer_po_zayavke.png",
 		Variables: struct {
-			Body        string
-			Description []orderedmap.OrderedMap
-			Link        string
-			IsPositive  bool
-			RateURL     string
+			Body                 string
+			Description          []orderedmap.OrderedMap
+			Link                 string
+			IsPositive           bool
+			IsLastExecutableStep bool
+			RateURL              string
 		}{
-			Body:        textPart,
-			Description: dto.Description,
-			Link:        fmt.Sprintf(TaskURLTemplate, dto.SdURL, dto.WorkNumber),
-			IsPositive:  dto.IsPositive,
-			RateURL:     fmt.Sprintf(taskRateURLTemplate, dto.JocastaURL, dto.WorkNumber),
+			Body:                 textPart,
+			Description:          dto.Description,
+			Link:                 fmt.Sprintf(TaskURLTemplate, dto.SdURL, dto.WorkNumber),
+			IsPositive:           dto.IsPositive,
+			IsLastExecutableStep: dto.IsLastExecutableStep,
+			RateURL:              fmt.Sprintf(taskRateURLTemplate, dto.JocastaURL, dto.WorkNumber),
 		},
 	}
 }

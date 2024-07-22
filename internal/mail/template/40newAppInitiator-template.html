@@ -181,7 +181,7 @@
             </td>
           </tr>
 
-          {{ if .IsPositive }}
+          {{ if and .IsPositive .IsLastExecutableStep}}
           <tr>
             <td align="center"
                 style="
@@ -200,7 +200,7 @@
                           style="
                   border-collapse: collapse;
                   width: 512px;
-                  background-color: #f6f2f7;
+                  background-color: #f2f3f7;
                   border-radius: 16px;
                   padding-left: 16px;
                   padding-right: 16px;
@@ -250,6 +250,7 @@
                     >
                       <tr>
                         <td
+                              align="left"
                                 style="
                   border-collapse: collapse;
                   width: 280px;
@@ -269,11 +270,12 @@
                           </p>
                         </td>
                         <td
-                                style="
+                            align="right"
+                            style="
                   border-collapse: collapse;
-                  width: 188px;
+                  width: 195px;
                   padding-bottom: 8px;
-                  padding-left: 12px;
+                  padding-left: 4px;
                 "
                         >
                           <p
