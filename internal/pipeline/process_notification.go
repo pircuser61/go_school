@@ -38,8 +38,13 @@ const (
 	attachLinksKey = "attachLinks"
 	attachExistKey = "attachExist"
 	attachListKey  = "attachList"
+
+	approverBlockType  = "approver"
+	executionBlockType = "execution"
+	signBlockType      = "sign"
 )
 
+//nolint:all // ok
 func (runCtx *BlockRunContext) handleInitiatorNotify(ctx c.Context, params handleInitiatorNotifyParams) error {
 	ctx, span := trace.StartSpan(ctx, "handle_initiator_notify")
 	defer span.End()
@@ -100,16 +105,34 @@ func (runCtx *BlockRunContext) handleInitiatorNotify(ctx c.Context, params handl
 	}
 
 	isPositive := utils.IsContainsInSlice(params.action, positiveTaskState)
+	isLastExecutableStep := true
+
+	steps, err := runCtx.Services.Storage.GetTaskSteps(ctx, runCtx.TaskID)
+	if err != nil {
+		return err
+	}
+
+	types := []string{approverBlockType, executionBlockType, signBlockType}
+
+	for i := range steps {
+		isExecutableStep := utils.IsContainsInSlice(steps[i].Type, types)
+		if isExecutableStep && steps[i].UpdatedAt == nil {
+			isLastExecutableStep = false
+
+			break
+		}
+	}
 
 	tmpl := mail.NewAppInitiatorStatusNotificationTpl(
 		&mail.SignerNotifTemplate{
-			WorkNumber:  runCtx.WorkNumber,
-			Name:        runCtx.NotifName,
-			SdURL:       runCtx.Services.Sender.SdAddress,
-			JocastaURL:  runCtx.Services.JocastaURL,
-			Description: description,
-			Action:      params.action,
-			IsPositive:  isPositive,
+			WorkNumber:           runCtx.WorkNumber,
+			Name:                 runCtx.NotifName,
+			SdURL:                runCtx.Services.Sender.SdAddress,
+			JocastaURL:           runCtx.Services.JocastaURL,
+			Description:          description,
+			Action:               params.action,
+			IsPositive:           isPositive,
+			IsLastExecutableStep: isLastExecutableStep,
 		})
 
 	iconsName := []string{tmpl.Image}

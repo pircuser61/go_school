@@ -9,6 +9,7 @@ import (
 	"github.com/emersion/go-imap"
 
 	"github.com/emersion/go-message"
+	// to correct handle charsets
 	_ "github.com/emersion/go-message/charset"
 	"github.com/emersion/go-message/mail"
 

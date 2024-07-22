@@ -181,7 +181,7 @@
             </td>
           </tr>
 
-          {{ if .IsPositive }}
+          {{ if and .IsPositive .IsLastExecutableStep}}
           <tr>
             <td align="center"
                 style="
