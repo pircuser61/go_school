@@ -6,6 +6,7 @@ import (
 	"go.opencensus.io/trace"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 )
@@ -15,11 +16,11 @@ func (ae *Env) FindPerson(w http.ResponseWriter, r *http.Request, params FindPer
 	defer s.End()
 
 	log := logger.GetLogger(ctx).
-		WithField("mainFuncName", "FindPerson").
-		WithField("method", "get").
-		WithField("transport", "rest").
-		WithField("traceID", s.SpanContext().TraceID.String()).
-		WithField("logVersion", "v1")
+		WithField(script.MainFuncName, "FindPerson").
+		WithField(script.Method, script.MethodGet).
+		WithField(script.Transport, script.TransportREST).
+		WithField(script.TraceID, s.SpanContext().TraceID.String()).
+		WithField(script.LogVersion, "v1")
 	errorHandler := newHTTPErrorHandler(log, w)
 
 	search := ""
@@ -76,11 +77,12 @@ func (ae *Env) SearchPeople(w http.ResponseWriter, r *http.Request, params Searc
 	ctx, s := trace.StartSpan(r.Context(), "search_people")
 	defer s.End()
 
-	log := logger.GetLogger(ctx).WithField("mainFuncName", "SearchPeople").
-		WithField("method", "get").
-		WithField("transport", "rest").
-		WithField("traceID", s.SpanContext().TraceID.String()).
-		WithField("logVersion", "v1")
+	log := logger.GetLogger(ctx).
+		WithField(script.MainFuncName, "SearchPeople").
+		WithField(script.Method, script.MethodGet).
+		WithField(script.Transport, script.TransportREST).
+		WithField(script.TraceID, s.SpanContext().TraceID.String()).
+		WithField(script.LogVersion, "v1")
 	errorHandler := newHTTPErrorHandler(log, w)
 
 	enabled := true

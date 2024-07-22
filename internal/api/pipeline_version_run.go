@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"io"
 	"net/http"
 	"time"
@@ -60,11 +61,11 @@ func (ae *Env) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Request
 	defer s.End()
 
 	log := logger.GetLogger(ctx).
-		WithField("mainFuncName", "RunNewVersionByPrevVersion").
-		WithField("method", "post").
-		WithField("transport", "rest").
-		WithField("logVersion", "v1").
-		WithField("TraceID", s.SpanContext().TraceID.String())
+		WithField(script.MainFuncName, "RunNewVersionByPrevVersion").
+		WithField(script.Method, script.MethodPost).
+		WithField(script.Transport, script.TransportREST).
+		WithField(script.LogVersion, "v1").
+		WithField(script.TraceID, s.SpanContext().TraceID.String())
 
 	errorHandler := newHTTPErrorHandler(log, w)
 
@@ -89,7 +90,7 @@ func (ae *Env) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	log = log.WithField("workNumber", req.WorkNumber)
+	log = log.WithField(script.WorkNumber, req.WorkNumber)
 
 	errorHandler.log = log
 	ctx = logger.WithLogger(ctx, errorHandler.log)
@@ -263,11 +264,11 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 	ctx, s := trace.StartSpan(r.Context(), "run_version_by_pipeline_id")
 
 	log := logger.GetLogger(r.Context()).
-		WithField("mainFuncName", "RunVersionsByPipelineId").
-		WithField("method", "post").
-		WithField("transport", "rest").
-		WithField("logVersion", "v1").
-		WithField("traceID", s.SpanContext().TraceID.String())
+		WithField(script.MainFuncName, "RunVersionsByPipelineId").
+		WithField(script.Method, script.MethodGet).
+		WithField(script.Transport, script.TransportREST).
+		WithField(script.LogVersion, "v1").
+		WithField(script.TraceID, s.SpanContext().TraceID.String())
 
 	requestInfo := metrics.NewPostRequestInfo(runByPipelineIDPath)
 	defer func() {
@@ -314,7 +315,7 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 
 	requestInfo.PipelineID = req.PipelineID
 
-	log = log.WithField("pipelineID", req.PipelineID)
+	log = log.WithField(script.PipelineID, req.PipelineID)
 
 	ctx = logger.WithLogger(ctx, log)
 
@@ -323,7 +324,7 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 	if req.WorkNumber == "" {
 		req.WorkNumber, err = ae.Sequence.GetWorkNumber(r.Context())
 		if err != nil {
-			log.WithField("funcName", "GetWorkNumber").Error(err)
+			log.WithField(script.FuncName, "GetWorkNumber").Error(err)
 			errorHandler.handleError(GetWorkNumberError, err)
 			requestInfo.Status = GetWorkNumberError.Status()
 
@@ -387,7 +388,7 @@ func (ae *Env) runVersion(ctx c.Context, log logger.Logger, run *runVersionsDTO)
 	}
 
 	log = log.WithField("clientID", run.ClientID).
-		WithField("funcName", "runVersion")
+		WithField(script.FuncName, "runVersion")
 
 	if run.requestInfo != nil {
 		run.requestInfo.ClientID = run.ClientID
@@ -498,7 +499,7 @@ func (ae *Env) launchEmptyTask(
 }
 
 func handleLaunchTaskError(ctx c.Context, storage db.Database, taskID uuid.UUID, err error) error {
-	log := logger.GetLogger(ctx).WithField("funcName", "handleLaunchTaskError")
+	log := logger.GetLogger(ctx).WithField(script.FuncName, "handleLaunchTaskError")
 
 	switch {
 	case errorutils.IsRemoteCallError(err):
@@ -526,7 +527,7 @@ func (ae *Env) processEmptyTask(
 	ctx, span := trace.StartSpan(ctx, "process_empty_task")
 	defer span.End()
 
-	log := logger.GetLogger(ctx).WithField("funcName", "processEmptyTask")
+	log := logger.GetLogger(ctx).WithField(script.FuncName, "processEmptyTask")
 
 	version, err := storage.GetVersionByPipelineID(ctx, emptyTask.RunContext.PipelineID)
 	if err != nil {

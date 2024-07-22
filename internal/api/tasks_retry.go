@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"errors"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"math"
 	"net/http"
 
@@ -20,11 +21,11 @@ func (ae *Env) RetryTasks(w http.ResponseWriter, r *http.Request, params RetryTa
 	defer span.End()
 
 	errorHandler := newHTTPErrorHandler(
-		logger.GetLogger(ctx).WithField("mainFuncName", "RetryTasks").
-			WithField("method", "get").
-			WithField("transport", "rest").
-			WithField("logVersion", "v1").
-			WithField("traceID", span.SpanContext().SpanID.String()),
+		logger.GetLogger(ctx).WithField(script.MainFuncName, "RetryTasks").
+			WithField(script.Method, script.MethodGet).
+			WithField(script.Transport, script.TransportREST).
+			WithField(script.LogVersion, "v1").
+			WithField(script.TraceID, span.SpanContext().SpanID.String()),
 		w,
 	)
 
@@ -56,7 +57,7 @@ func (ae *Env) retryEmptyTasks(ctx context.Context, limit int) error {
 	ctx, span := trace.StartSpan(ctx, "retry_empty_tasks")
 	defer span.End()
 
-	log := logger.GetLogger(ctx).WithField("funcName", "retryEmptyTasks")
+	log := logger.GetLogger(ctx).WithField(script.FuncName, "retryEmptyTasks")
 
 	emptyTasks, filledTasks, err := ae.DB.GetTasksToRetry(ctx, ae.TaskRetry.MinLifetime, ae.TaskRetry.MaxLifetime, limit)
 	if err != nil {
@@ -74,7 +75,7 @@ func (ae *Env) retryEmptyTasks(ctx context.Context, limit int) error {
 }
 
 func (ae *Env) launchEmptyTasks(ctx context.Context, emptyTasks []*db.Task) {
-	log := logger.GetLogger(ctx).WithField("funcName", "launchEmptyTasks")
+	log := logger.GetLogger(ctx).WithField(script.FuncName, "launchEmptyTasks")
 
 	for _, emptyTask := range emptyTasks {
 		processErr := ae.launchEmptyTask(ctx, ae.DB, emptyTask, "", &metrics.RequestInfo{})
@@ -92,7 +93,7 @@ func (ae *Env) launchEmptyTasks(ctx context.Context, emptyTasks []*db.Task) {
 }
 
 func (ae *Env) launchTasks(ctx context.Context, tasks []*db.Task) {
-	log := logger.GetLogger(ctx).WithField("funcName", "launchTasks")
+	log := logger.GetLogger(ctx).WithField(script.FuncName, "launchTasks")
 
 	for _, emptyTask := range tasks {
 		processErr := ae.launchTask(ctx, emptyTask)
@@ -118,7 +119,7 @@ func (ae *Env) launchTask(ctx context.Context, task *db.Task) error {
 }
 
 func (ae *Env) processTask(ctx context.Context, task *db.Task) error {
-	log := logger.GetLogger(ctx).WithField("funcName", "processTask")
+	log := logger.GetLogger(ctx).WithField(script.FuncName, "processTask")
 
 	step, err := ae.DB.GetTaskStepToRetry(ctx, task.WorkID)
 	if err != nil {

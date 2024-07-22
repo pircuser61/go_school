@@ -20,11 +20,11 @@ func (ae *Env) GetTaskEventSchema(w http.ResponseWriter, r *http.Request) {
 	defer s.End()
 
 	log := logger.GetLogger(ctx).
-		WithField("mainFuncName", "GetTaskEventSchema").
-		WithField("method", "get").
-		WithField("transport", "rest").
-		WithField("traceID", s.SpanContext().TraceID.String()).
-		WithField("logVersion", "v1")
+		WithField(script.MainFuncName, "GetTaskEventSchema").
+		WithField(script.Method, script.MethodGet).
+		WithField(script.Transport, script.TransportREST).
+		WithField(script.TraceID, s.SpanContext().TraceID.String()).
+		WithField(script.LogVersion, "v1")
 	errorHandler := newHTTPErrorHandler(log, w)
 
 	type eventSchemaProperties struct {
@@ -103,11 +103,11 @@ func (ae *Env) GetApproveActionNames(w http.ResponseWriter, r *http.Request) {
 	defer s.End()
 
 	log := logger.GetLogger(ctx).
-		WithField("mainFuncName", "GetApproveActionNames").
-		WithField("method", "get").
-		WithField("transport", "rest").
-		WithField("traceID", s.SpanContext().TraceID.String()).
-		WithField("logVersion", "v1")
+		WithField(script.MainFuncName, "GetApproveActionNames").
+		WithField(script.Method, script.MethodGet).
+		WithField(script.Transport, script.TransportREST).
+		WithField(script.TraceID, s.SpanContext().TraceID.String()).
+		WithField(script.LogVersion, "v1")
 	errorHandler := newHTTPErrorHandler(log, w)
 
 	data, err := ae.DB.GetApproveActionNames(ctx)
@@ -142,17 +142,17 @@ func (ae *Env) GetApproveStatuses(w http.ResponseWriter, r *http.Request) {
 	ctx, s := trace.StartSpan(r.Context(), "get_approve_statuses")
 	defer s.End()
 
-	log := logger.GetLogger(ctx).WithField("mainFuncName", "GetApproveStatuses").
-		WithField("method", "get").
-		WithField("transport", "rest").
-		WithField("traceID", s.SpanContext().TraceID.String()).
-		WithField("logVersion", "v1")
+	log := logger.GetLogger(ctx).
+		WithField(script.MainFuncName, "GetApproveStatuses").
+		WithField(script.Method, script.MethodGet).
+		WithField(script.Transport, script.TransportREST).
+		WithField(script.TraceID, s.SpanContext().TraceID.String()).
+		WithField(script.LogVersion, "v1")
 	errorHandler := newHTTPErrorHandler(log, w)
 
 	data, err := ae.DB.GetApproveStatuses(ctx)
 	if err != nil {
-		log.WithField("funcName", "GetApproveStatuses").
-			Error(err)
+		log.Error(err)
 		errorHandler.handleError(UnknownError, err)
 
 		return
@@ -179,11 +179,11 @@ func (ae *Env) GetNodeDecisions(w http.ResponseWriter, r *http.Request) {
 	defer s.End()
 
 	log := logger.GetLogger(ctx).
-		WithField("mainFuncName", "GetNodeDecisions").
-		WithField("method", "get").
-		WithField("transport", "rest").
-		WithField("traceID", s.SpanContext().TraceID.String()).
-		WithField("logVersion", "v1")
+		WithField(script.MainFuncName, "GetNodeDecisions").
+		WithField(script.Method, script.MethodGet).
+		WithField(script.Transport, script.TransportREST).
+		WithField(script.TraceID, s.SpanContext().TraceID.String()).
+		WithField(script.LogVersion, "v1")
 	errorHandler := newHTTPErrorHandler(log, w)
 
 	data, err := ae.DB.GetNodeDecisions(ctx)

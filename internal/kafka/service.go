@@ -21,6 +21,7 @@ import (
 
 	e "gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
 
 type Service struct {
@@ -170,10 +171,10 @@ func (s *Service) ProduceEventMessage(ctx c.Context, message *e.NodeKafkaEvent) 
 		return nil
 	}
 
-	l := s.log.WithField("workNumber", message.WorkNumber).
+	l := s.log.WithField(script.WorkNumber, message.WorkNumber).
 		WithField("nodeName", message.NodeName).
 		WithField("action", message.Action).
-		WithField("funcName", "ProduceEventMessage")
+		WithField(script.FuncName, "ProduceEventMessage")
 
 	l.Info("try to send event to kafka")
 

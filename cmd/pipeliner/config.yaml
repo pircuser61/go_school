@@ -32,7 +32,7 @@ people:
 database:
   schema: public
   kind: postgres
-  host: localhost
+  host: 10.73.97.168
   port: 5432
   user_env_key: "DB_USER"
   pass_env_key: "DB_PASS"
@@ -52,7 +52,7 @@ sso:
 mail:
   broker: "redis"
   host: "localhost"
-  port: 6379
+  port: 6380
   queue: "mail"
   database: "0"
   from:
@@ -171,7 +171,7 @@ imap:
   imap_mail_box: "Inbox"
 
 integrations:
-  url: 'integrations:90'
+  url: 'localhost:9097'
   max_retries: 3
   retry_delay: 1s
   timeout: 2s

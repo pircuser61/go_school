@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 
 	"go.opencensus.io/trace"
 )
@@ -16,11 +17,11 @@ func (ae *Env) SendEventsToKafka(w http.ResponseWriter, r *http.Request) {
 	defer span.End()
 
 	log := logger.GetLogger(ctx).
-		WithField("mainFuncName", "SendEventsToKafka").
-		WithField("traceID", span.SpanContext().TraceID.String()).
-		WithField("method", "get").
-		WithField("transport", "rest").
-		WithField("logVersion", "v1")
+		WithField(script.MainFuncName, "SendEventsToKafka").
+		WithField(script.TraceID, span.SpanContext().TraceID.String()).
+		WithField(script.Method, script.MethodGet).
+		WithField(script.Transport, script.TransportREST).
+		WithField(script.LogVersion, "v1")
 	errorHandler := newHTTPErrorHandler(log, w)
 
 	events, err := ae.DB.GetEventsToSend(ctx)

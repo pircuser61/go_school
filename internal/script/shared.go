@@ -1,5 +1,23 @@
 package script
 
+const (
+	MethodPost    = "post"
+	MethodGet     = "get"
+	TransportREST = "rest"
+	Method        = "method"
+	MainFuncName  = "mainFuncName"
+	FuncName      = "funcName"
+	Transport     = "transport"
+	LogVersion    = "logVersion"
+	TraceID       = "traceID"
+	WorkID        = "workID"
+	StepName      = "stepName"
+	WorkNumber    = "workNumber"
+	PipelineID    = "pipelineID"
+	VersionID     = "versionID"
+	StepID        = "stepID"
+)
+
 type AccessType string
 
 type FormAccessibility struct {

@@ -18,11 +18,10 @@ import (
 
 func (ae *Env) handleBreachSlA(ctx c.Context, item *db.StepBreachedSLA) {
 	log := logger.GetLogger(ctx).
-		WithField("funcName", "handleBreachSlA").
-		WithField("workID", item.TaskID).
-		WithField("workNumber", item.WorkNumber).
-		WithField("stepName", item.StepName).
-		WithField("funcName", "handleBreachSlA")
+		WithField(script.FuncName, "handleBreachSlA").
+		WithField(script.WorkID, item.TaskID).
+		WithField(script.WorkNumber, item.WorkNumber).
+		WithField(script.StepName, item.StepName)
 	ctx = logger.WithLogger(ctx, log)
 
 	runCtx := &pipeline.BlockRunContext{
@@ -88,11 +87,11 @@ func (ae *Env) CheckBreachSLA(w http.ResponseWriter, r *http.Request) {
 	defer span.End()
 
 	log := logger.GetLogger(ctx).
-		WithField("mainFuncName", "CheckBreachSLA").
-		WithField("callMethod", "get").
-		WithField("callTransport", "rest").
-		WithField("traceID", span.SpanContext().TraceID.String()).
-		WithField("logVersion", "v1")
+		WithField(script.MainFuncName, "CheckBreachSLA").
+		WithField(script.Method, script.MethodGet).
+		WithField(script.Transport, script.TransportREST).
+		WithField(script.TraceID, span.SpanContext().TraceID.String()).
+		WithField(script.LogVersion, "v1")
 	errorhandler := newHTTPErrorHandler(log, w)
 
 	steps, err := ae.DB.GetBlocksBreachedSLA(ctx)
@@ -116,10 +115,10 @@ func (ae *Env) CheckBreachSLA(w http.ResponseWriter, r *http.Request) {
 	//nolint:gocritic //глобальная тема, лучше не трогать
 	for i := range steps {
 		item := steps[i]
-		log = log.WithField("pipelineID", item.PipelineID).
-			WithField("versionID", item.VersionID).
-			WithField("workID", item.TaskID).
-			WithField("stepName", item.StepName)
+		log = log.WithField(script.PipelineID, item.PipelineID).
+			WithField(script.VersionID, item.VersionID).
+			WithField(script.WorkID, item.TaskID).
+			WithField(script.StepName, item.StepName)
 
 		ae.handleBreachSlA(logger.WithLogger(processCtx, log), &item)
 	}

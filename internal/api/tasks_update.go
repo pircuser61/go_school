@@ -780,11 +780,11 @@ func (ae *Env) RateApplication(w http.ResponseWriter, r *http.Request, workNumbe
 	defer s.End()
 
 	log := logger.GetLogger(ctx).
-		WithField("mainFuncName", "RateApplication").
-		WithField("method", "post").
-		WithField("transport", "rest").
-		WithField("traceID", s.SpanContext().TraceID.String()).
-		WithField("logVersion", "v1")
+		WithField(script.MainFuncName, "RateApplication").
+		WithField(script.Method, script.MethodGet).
+		WithField(script.Transport, script.TransportREST).
+		WithField(script.TraceID, s.SpanContext().TraceID.String()).
+		WithField(script.LogVersion, "v1")
 	errorHandler := newHTTPErrorHandler(log, w)
 
 	b, err := io.ReadAll(r.Body)
