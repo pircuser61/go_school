@@ -3,7 +3,6 @@ package api
 import (
 	"context"
 	"errors"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"math"
 	"net/http"
 
@@ -11,6 +10,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 	"go.opencensus.io/trace"
