@@ -65,6 +65,7 @@ const (
 	ExternalSystemRemoveError
 	JSONSchemaValidationError
 	MappingError
+	MappingRequiredError
 	ModuleFindError
 	PipelineIsNotDraft
 	SchedulerClientFailed
@@ -205,6 +206,7 @@ var errorText = map[Err]string{
 	ExternalSystemRemoveError:           "can't remove external system from the list",
 	JSONSchemaValidationError:           "json schema validation error",
 	MappingError:                        "error occurred during data mapping",
+	MappingRequiredError:                "required field is not filled",
 	ModuleFindError:                     "can't find module",
 	SchedulerClientFailed:               "scheduler client failed",
 	NetworkMonitorClientFailed:          "network monitor client failed",
@@ -342,6 +344,7 @@ var errorDescription = map[Err]string{
 	ExternalSystemRemoveError:           "Не удалось удалить внешнюю систему из списка подключенных",
 	JSONSchemaValidationError:           "Ошибка валидации JSON-схемы",
 	MappingError:                        "Произошла ошибка во время маппинга данных",
+	MappingRequiredError:                "Выполните маппинг required переменных",
 	ModuleFindError:                     "Не удалось найти функцию",
 	SchedulerClientFailed:               "Ошибка клиента планировщика",
 	NetworkMonitorClientFailed:          "Ошибка клиента сетевого мониторинга",
@@ -458,6 +461,7 @@ var errorStatus = map[Err]int{
 	ParallelNodeExitsNotConnected: http.StatusBadRequest,
 	OutOfParallelNodesConnection:  http.StatusBadRequest,
 	MappingError:                  http.StatusBadRequest,
+	MappingRequiredError:          http.StatusBadRequest,
 	ForbiddenError:                http.StatusForbidden,
 	MonitoringEditBlockParseError: http.StatusBadRequest,
 }

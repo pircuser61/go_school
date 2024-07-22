@@ -380,6 +380,12 @@ func (ae *Env) SaveExternalSystemSettings(
 
 	err = externalSystem.ValidateSchemas()
 	if err != nil {
+		if errors.Is(err, e.ErrMappingRequired) {
+			errorHandler.handleError(MappingRequiredError, err)
+
+			return
+		}
+
 		errorHandler.handleError(JSONSchemaValidationError, err)
 
 		return
