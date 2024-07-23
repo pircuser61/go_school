@@ -2,9 +2,11 @@ package entity
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
+	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
 type UpdateApprovalListSettings struct {
@@ -180,5 +182,66 @@ func (es *ExternalSystem) ValidateSchemas() error {
 		return err
 	}
 
+	err = es.ValidateInputMapping()
+	if err != nil {
+		return err
+	}
+
 	return nil
+}
+
+func (es *ExternalSystem) ValidateInputMapping() error {
+	if es.InputMapping == nil {
+		return nil
+	}
+
+	mappedSet := make(map[string]struct{})
+	requireds := es.InputMapping.Required
+
+	for k := range es.InputMapping.Properties {
+		if es.InputMapping.Properties[k].Value != "" || es.InputMapping.Properties[k].Default != nil {
+			mappedSet[k] = struct{}{}
+		}
+
+		if es.InputMapping.Properties[k].Type == utils.ObjectType {
+			fillMappedSet(es.InputMapping.Properties[k], mappedSet, &requireds, k)
+		}
+	}
+
+	for _, k := range requireds {
+		if _, ok := mappedSet[k]; !ok {
+			return fmt.Errorf("%w: %s", ErrMappingRequired, k)
+		}
+	}
+
+	return nil
+}
+
+//nolint:gocritic //Нельзя передавать как указатель - значение находится в map
+func fillMappedSet(
+	obj script.JSONSchemaPropertiesValue,
+	mappedSet map[string]struct{},
+	requireds *[]string,
+	keyPath string,
+) {
+	// Было: ['a', 'b'] Стало: ['obj.a', 'obj.b'] — Чтобы отличать дублирующиеся ключи
+	if obj.Required != nil {
+		tempRequireds := make([]string, len(obj.Required))
+
+		for i := range obj.Required {
+			tempRequireds[i] = keyPath + "." + obj.Required[i]
+		}
+
+		*requireds = append(*requireds, tempRequireds...)
+	}
+
+	for k := range obj.Properties {
+		if obj.Properties[k].Value != "" || obj.Properties[k].Default != nil {
+			mappedSet[keyPath+"."+k] = struct{}{}
+		}
+
+		if obj.Properties[k].Type == utils.ObjectType {
+			fillMappedSet(obj.Properties[k], mappedSet, requireds, keyPath+k)
+		}
+	}
 }

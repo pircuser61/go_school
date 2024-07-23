@@ -180,21 +180,6 @@ func (p *blockProcessor) ProcessBlock(ctx context.Context, its int) (string, err
 		return p.name, nil
 	}
 
-	err = p.runCtx.handleInitiatorNotify(
-		ctx,
-		handleInitiatorNotifyParams{
-			step:     p.name,
-			stepType: p.bl.TypeID,
-			action:   action,
-			status:   taskHumanStatus,
-		},
-	)
-	if err != nil {
-		log.WithError(err).Error("couldn't handle initiator notify")
-
-		return p.name, p.handleErrorWithRollback(ctx, log, err)
-	}
-
 	activeBlocks, ok := block.Next(p.runCtx.VarStore)
 	if !ok {
 		err = p.runCtx.updateStepInDB(ctx, &updateStepDTO{
@@ -219,7 +204,21 @@ func (p *blockProcessor) ProcessBlock(ctx context.Context, its int) (string, err
 	if err != nil {
 		log.WithError(err).Error("couldn't ProcessBlock active blocks " + strings.Join(activeBlocks, ","))
 
-		return failedBlock, err
+		return failedBlock, p.handleErrorWithRollback(ctx, log, err)
+	}
+
+	err = p.runCtx.handleInitiatorNotify(ctx,
+		handleInitiatorNotifyParams{
+			step:     p.name,
+			stepType: p.bl.TypeID,
+			action:   action,
+			status:   taskHumanStatus,
+		},
+	)
+	if err != nil {
+		log.WithError(err).Error("couldn't handle initiator notify")
+
+		return p.name, p.handleErrorWithRollback(ctx, log, err)
 	}
 
 	return "", nil
