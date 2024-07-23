@@ -122,7 +122,7 @@ func (runCtx *BlockRunContext) handleInitiatorNotify(ctx c.Context, params handl
 	versionExecutableSteps := 0
 
 	for i := range v.Pipeline.Blocks {
-		if utils.IsContainsInSlice(v.Pipeline.Blocks[i].BlockType, types) {
+		if utils.IsContainsInSlice(v.Pipeline.Blocks[i].TypeID, types) {
 			versionExecutableSteps++
 		}
 	}
