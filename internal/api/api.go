@@ -2240,8 +2240,20 @@ type TimePeriod struct {
 
 // Timer params
 type TimerParams struct {
+	// waiting days ratio
+	Coef *int `json:"coef,omitempty"`
+
+	// path to date info
+	DatePath *string `json:"date_path,omitempty"`
+
+	// few days delay
+	Delay *string `json:"delay,omitempty"`
+
 	// duration for timer
-	Duration string `json:"duration"`
+	Duration *string `json:"duration,omitempty"`
+
+	// worDay requirement
+	WorkDay *int `json:"workDay,omitempty"`
 }
 
 // UniquePersons defines model for UniquePersons.

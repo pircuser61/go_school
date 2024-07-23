@@ -5961,8 +5961,18 @@ components:
         duration:
           type: string
           description: duration for timer
-      required:
-        - duration
+        delay:
+          type: string
+          description: few days delay
+        date_path:
+          type: string
+          description: path to date info
+        coef:
+          type: integer
+          description: waiting days ratio
+        workDay:
+          type: integer
+          description: worDay requirement
     SignatureCarrier:
       type: string
       enum:

@@ -4,15 +4,19 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
-
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/hrgate"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/scheduler"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
+	"golang.org/x/exp/slices"
 )
 
 type TimerData struct {
@@ -50,6 +54,10 @@ func (gb *TimerBlock) GetNewKafkaEvents() []entity.NodeKafkaEvent {
 }
 
 type TimerParams struct {
+	Delay    string `json:"delay"`
+	DatePath string `json:"date_path"`
+	Coef     int    `json:"coef"`
+	WorkDay  int    `json:"workDay"`
 	Duration string `json:"duration"`
 }
 
@@ -182,7 +190,11 @@ func (gb *TimerBlock) Model() script.FunctionModel {
 		Params: &script.FunctionParams{
 			Type: BlockTimerID,
 			Params: TimerParams{
-				Duration: "0s",
+				Delay:    "0d",
+				DatePath: "",
+				Coef:     0,
+				WorkDay:  0,
+				Duration: "0h",
 			},
 		},
 		Sockets: []script.Socket{script.DefaultSocket},
@@ -297,17 +309,85 @@ func (gb *TimerBlock) createState(ef *entity.EriusFunc) error {
 
 	var duration time.Duration
 
-	duration, err = time.ParseDuration(params.Duration)
-	if err != nil {
-		return errors.Wrap(err, "can not parse timer duration")
-	}
+	if params.Duration != "" {
+		duration, err = time.ParseDuration(params.Duration)
+		if err != nil {
+			return errors.Wrap(err, "can not parse timer duration")
+		}
 
-	if duration <= 0 {
-		return errors.New("delay time is not set for the timer")
+		if duration <= 0 {
+			return errors.New("delay time is not set for the timer")
+		}
+	} else {
+		variableStorage, grabStorageErr := gb.RunContext.VarStore.GrabStorage()
+		if grabStorageErr != nil {
+			return grabStorageErr
+		}
+
+		dateInt := getVariable(variableStorage, params.DatePath)
+		if dateInt == nil {
+			return errors.New("can't find group id in variables")
+		}
+
+		date := fmt.Sprintf("%v", dateInt)
+
+		var dateObj time.Time
+		dateObj, err = time.Parse("02.01.2006", date)
+		if err != nil {
+			return errors.Wrap(err, "can not parse timer duration")
+		}
+
+		targetTime := time.Date(dateObj.Year(), dateObj.Month(), dateObj.Day(), 8, 0, 0, 0, dateObj.Location())
+
+		currentDate := time.Now()
+		daysToAdd := 0
+
+		if params.Delay != "" {
+			daysToAdd, err = strconv.Atoi(strings.TrimSuffix(params.Delay, "d"))
+			if err != nil {
+				return errors.New("wrong format of delay days")
+			}
+		}
+
+		targetTime = targetTime.Add(time.Duration(params.Coef*daysToAdd) * 24 * time.Hour)
+
+		if params.WorkDay != 0 {
+			slaInfoPtr, getSLAInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(
+				context.Background(),
+				sla.InfoDTO{
+					TaskCompletionIntervals: []entity.TaskCompletionInterval{
+						{
+							StartedAt:  gb.RunContext.CurrBlockStartTime,
+							FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100),
+						},
+					},
+					WorkType: sla.WorkHourType("8/ 5"),
+				},
+			)
+			if getSLAInfoErr != nil {
+				return errors.Wrap(err, "can not prepare slaInfo")
+			}
+
+			for {
+				calendarDays, weekends := slaInfoPtr.GetCalendarDays(), slaInfoPtr.GetWeekends()
+				if notWorkingHours(targetTime, calendarDays, weekends) {
+					targetTime = targetTime.AddDate(0, 0, params.WorkDay)
+				} else {
+					break
+				}
+			}
+		}
+
+		duration = targetTime.Sub(currentDate)
+		if duration <= 0 {
+			duration = 1 * time.Millisecond
+		}
+		if duration > 365*24*time.Hour {
+			duration = 365 * 24 * time.Hour
+		}
 	}
 
 	gb.State = &TimerData{Duration: duration}
-
 	return nil
 }
 
@@ -317,4 +397,18 @@ func (gb *TimerBlock) UpdateStateUsingOutput(context.Context, []byte) (state map
 
 func (gb *TimerBlock) UpdateOutputUsingState(context.Context) (output map[string]interface{}, err error) {
 	return nil, nil
+}
+
+func notWorkingHours(t time.Time, calendarDays *hrgate.CalendarDays, weekends []time.Weekday) bool {
+	workDayType, found := calendarDays.GetDayType(t)
+
+	if !found && slices.Contains(weekends, t.Weekday()) {
+		return true
+	}
+
+	if found && (workDayType == hrgate.CalendarDayTypeWeekend || workDayType == hrgate.CalendarDayTypeHoliday) {
+		return true
+	}
+
+	return false
 }
