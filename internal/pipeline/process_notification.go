@@ -105,23 +105,35 @@ func (runCtx *BlockRunContext) handleInitiatorNotify(ctx c.Context, params handl
 	}
 
 	isPositive := utils.IsContainsInSlice(params.action, positiveTaskState)
-	isLastExecutableStep := true
 
 	steps, err := runCtx.Services.Storage.GetTaskSteps(ctx, runCtx.TaskID)
 	if err != nil {
 		return err
 	}
 
+	v, err := runCtx.Services.Storage.GetVersionByWorkNumber(ctx, runCtx.WorkNumber)
+	if err != nil {
+		return err
+	}
+
 	types := []string{approverBlockType, executionBlockType, signBlockType}
 
-	for i := range steps {
-		isExecutableStep := utils.IsContainsInSlice(steps[i].Type, types)
-		if isExecutableStep && steps[i].UpdatedAt == nil {
-			isLastExecutableStep = false
+	taskExecutableSteps := 0
+	versionExecutableSteps := 0
 
-			break
+	for i := range v.Pipeline.Blocks {
+		if utils.IsContainsInSlice(v.Pipeline.Blocks[i].BlockType, types) {
+			versionExecutableSteps++
 		}
 	}
+
+	for i := range steps {
+		if utils.IsContainsInSlice(steps[i].Type, types) {
+			taskExecutableSteps++
+		}
+	}
+
+	isLastExecutableStep := versionExecutableSteps == taskExecutableSteps
 
 	tmpl := mail.NewAppInitiatorStatusNotificationTpl(
 		&mail.SignerNotifTemplate{
