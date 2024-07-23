@@ -8,8 +8,22 @@ import (
 )
 
 const (
-	GRPC = "GRPC"
-	HTTP = "HTTP"
+	GRPC         = "GRPC"
+	HTTP         = "HTTP"
+	MethodPost   = http.MethodPost
+	MethodGet    = http.MethodGet
+	Method       = "method"
+	MainFuncName = "mainFuncName"
+	FuncName     = "funcName"
+	Transport    = "transport"
+	LogVersion   = "logVersion"
+	TraceID      = "traceID"
+	WorkID       = "workID"
+	StepName     = "stepName"
+	WorkNumber   = "workNumber"
+	PipelineID   = "pipelineID"
+	VersionID    = "versionID"
+	StepID       = "stepID"
 )
 
 type (
@@ -17,11 +31,20 @@ type (
 	restRetryStarted struct{}
 )
 
+func SetMainFuncLog(ctx c.Context, mainFuncName, method, transport, traceID, v string) logger.Logger {
+	return logger.GetLogger(ctx).
+		WithField(MainFuncName, mainFuncName).
+		WithField(Method, method).
+		WithField(Transport, transport).
+		WithField(TraceID, traceID).
+		WithField(LogVersion, v)
+}
+
 func SetFieldsExternalCall(ctx c.Context, traceID, v, tr, method, systemName string) logger.Logger {
 	return logger.GetLogger(ctx).
-		WithField("traceID", traceID).
-		WithField("transport", tr).
-		WithField("logVersion ", v).
+		WithField(TraceID, traceID).
+		WithField(Transport, tr).
+		WithField(LogVersion, v).
 		WithField("callMethod ", method).
 		WithField("callTransport", tr).
 		WithField("integrationName", systemName)

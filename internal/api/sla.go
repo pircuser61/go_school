@@ -86,12 +86,14 @@ func (ae *Env) CheckBreachSLA(w http.ResponseWriter, r *http.Request) {
 	ctx, span := trace.StartSpan(r.Context(), "check_breach_sla")
 	defer span.End()
 
-	log := logger.GetLogger(ctx).
-		WithField(script.MainFuncName, "CheckBreachSLA").
-		WithField(script.Method, script.MethodGet).
-		WithField(script.Transport, script.TransportREST).
-		WithField(script.TraceID, span.SpanContext().TraceID.String()).
-		WithField(script.LogVersion, "v1")
+	log := script.SetMainFuncLog(ctx,
+		"CheckBreachSLA",
+		script.MethodGet,
+		script.HTTP,
+		span.SpanContext().TraceID.String(),
+		"v1",
+	)
+
 	errorhandler := newHTTPErrorHandler(log, w)
 
 	steps, err := ae.DB.GetBlocksBreachedSLA(ctx)

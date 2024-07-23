@@ -60,12 +60,13 @@ func (ae *Env) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Request
 	ctx, s := trace.StartSpan(r.Context(), "run_new_version_by_prev_version")
 	defer s.End()
 
-	log := logger.GetLogger(ctx).
-		WithField(script.MainFuncName, "RunNewVersionByPrevVersion").
-		WithField(script.Method, script.MethodPost).
-		WithField(script.Transport, script.TransportREST).
-		WithField(script.LogVersion, "v1").
-		WithField(script.TraceID, s.SpanContext().TraceID.String())
+	log := script.SetMainFuncLog(ctx,
+		"RunNewVersionByPrevVersion",
+		script.MethodPost,
+		script.HTTP,
+		s.SpanContext().TraceID.String(),
+		"v1",
+	)
 
 	errorHandler := newHTTPErrorHandler(log, w)
 
@@ -263,12 +264,13 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
 	ctx, s := trace.StartSpan(r.Context(), "run_version_by_pipeline_id")
 
-	log := logger.GetLogger(r.Context()).
-		WithField(script.MainFuncName, "RunVersionsByPipelineId").
-		WithField(script.Method, script.MethodGet).
-		WithField(script.Transport, script.TransportREST).
-		WithField(script.LogVersion, "v1").
-		WithField(script.TraceID, s.SpanContext().TraceID.String())
+	log := script.SetMainFuncLog(ctx,
+		"RunVersionsByPipelineId",
+		script.MethodPost,
+		script.HTTP,
+		s.SpanContext().TraceID.String(),
+		"v1",
+	)
 
 	requestInfo := metrics.NewPostRequestInfo(runByPipelineIDPath)
 	defer func() {

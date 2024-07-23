@@ -20,14 +20,15 @@ func (ae *Env) RetryTasks(w http.ResponseWriter, r *http.Request, params RetryTa
 	ctx, span := trace.StartSpan(r.Context(), "retry_tasks")
 	defer span.End()
 
-	errorHandler := newHTTPErrorHandler(
-		logger.GetLogger(ctx).WithField(script.MainFuncName, "RetryTasks").
-			WithField(script.Method, script.MethodGet).
-			WithField(script.Transport, script.TransportREST).
-			WithField(script.LogVersion, "v1").
-			WithField(script.TraceID, span.SpanContext().SpanID.String()),
-		w,
+	log := script.SetMainFuncLog(ctx,
+		"RetryTasks",
+		script.MethodGet,
+		script.HTTP,
+		span.SpanContext().TraceID.String(),
+		"v1",
 	)
+
+	errorHandler := newHTTPErrorHandler(log, w)
 
 	ctx = logger.WithLogger(ctx, errorHandler.log)
 

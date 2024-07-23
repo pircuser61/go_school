@@ -15,12 +15,14 @@ func (ae *Env) FindPerson(w http.ResponseWriter, r *http.Request, params FindPer
 	ctx, s := trace.StartSpan(r.Context(), "find_person")
 	defer s.End()
 
-	log := logger.GetLogger(ctx).
-		WithField(script.MainFuncName, "FindPerson").
-		WithField(script.Method, script.MethodGet).
-		WithField(script.Transport, script.TransportREST).
-		WithField(script.TraceID, s.SpanContext().TraceID.String()).
-		WithField(script.LogVersion, "v1")
+	log := script.SetMainFuncLog(ctx,
+		"FindPerson",
+		script.MethodGet,
+		script.HTTP,
+		s.SpanContext().TraceID.String(),
+		"v1",
+	)
+
 	errorHandler := newHTTPErrorHandler(log, w)
 
 	search := ""
@@ -77,12 +79,14 @@ func (ae *Env) SearchPeople(w http.ResponseWriter, r *http.Request, params Searc
 	ctx, s := trace.StartSpan(r.Context(), "search_people")
 	defer s.End()
 
-	log := logger.GetLogger(ctx).
-		WithField(script.MainFuncName, "SearchPeople").
-		WithField(script.Method, script.MethodGet).
-		WithField(script.Transport, script.TransportREST).
-		WithField(script.TraceID, s.SpanContext().TraceID.String()).
-		WithField(script.LogVersion, "v1")
+	log := script.SetMainFuncLog(ctx,
+		"SearchPeople",
+		script.MethodGet,
+		script.HTTP,
+		s.SpanContext().TraceID.String(),
+		"v1",
+	)
+
 	errorHandler := newHTTPErrorHandler(log, w)
 
 	enabled := true
