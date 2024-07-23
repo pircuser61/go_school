@@ -320,6 +320,7 @@ func (gb *TimerBlock) createState(ef *entity.EriusFunc) error {
 		}
 
 		gb.State = &TimerData{Duration: duration}
+
 		return nil
 	}
 
@@ -335,8 +336,7 @@ func (gb *TimerBlock) createState(ef *entity.EriusFunc) error {
 
 	date := fmt.Sprintf("%v", dateInt)
 
-	var dateObj time.Time
-	dateObj, err = time.Parse("02.01.2006", date)
+	dateObj, err := time.Parse("02.01.2006", date)
 	if err != nil {
 		return errors.Wrap(err, "can not parse timer duration")
 	}
@@ -386,7 +386,9 @@ func (gb *TimerBlock) createState(ef *entity.EriusFunc) error {
 	if duration <= 0 {
 		duration = 1 * time.Millisecond
 	}
-	if duration > 365*24*time.Hour {
+
+	year := 365 * 24 * time.Hour
+	if duration > year {
 		duration = 365 * 24 * time.Hour
 	}
 
