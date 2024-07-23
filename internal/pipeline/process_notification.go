@@ -135,6 +135,12 @@ func (runCtx *BlockRunContext) handleInitiatorNotify(ctx c.Context, params handl
 
 	isLastExecutableStep := versionExecutableSteps == taskExecutableSteps
 
+	for i := range steps {
+		if utils.IsContainsInSlice(steps[i].Type, types) && steps[i].UpdatedAt == nil {
+			isLastExecutableStep = false
+		}
+	}
+
 	tmpl := mail.NewAppInitiatorStatusNotificationTpl(
 		&mail.SignerNotifTemplate{
 			WorkNumber:           runCtx.WorkNumber,
