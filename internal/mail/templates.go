@@ -582,19 +582,15 @@ func NewAppInitiatorStatusNotificationTpl(dto *SignerNotifTemplate) Template {
 		Template: "internal/mail/template/40newAppInitiator-template.html",
 		Image:    "40_answer_po_zayavke.png",
 		Variables: struct {
-			Body                 string
-			Description          []orderedmap.OrderedMap
-			Link                 string
-			IsPositive           bool
-			IsLastExecutableStep bool
-			RateURL              string
+			Body        string
+			Description []orderedmap.OrderedMap
+			Link        string
+			RateURL     string
 		}{
-			Body:                 textPart,
-			Description:          dto.Description,
-			Link:                 fmt.Sprintf(TaskURLTemplate, dto.SdURL, dto.WorkNumber),
-			IsPositive:           dto.IsPositive,
-			IsLastExecutableStep: dto.IsLastExecutableStep,
-			RateURL:              fmt.Sprintf(taskRateURLTemplate, dto.JocastaURL, dto.WorkNumber),
+			Body:        textPart,
+			Description: dto.Description,
+			Link:        fmt.Sprintf(TaskURLTemplate, dto.SdURL, dto.WorkNumber),
+			RateURL:     fmt.Sprintf(taskRateURLTemplate, dto.JocastaURL, dto.WorkNumber),
 		},
 	}
 }
