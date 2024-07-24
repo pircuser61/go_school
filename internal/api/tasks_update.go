@@ -779,20 +779,31 @@ func (ae *Env) RateApplication(w http.ResponseWriter, r *http.Request, workNumbe
 	ctx, s := trace.StartSpan(r.Context(), "rate_application")
 	defer s.End()
 
-	log := logger.GetLogger(ctx)
+	log := script.SetMainFuncLog(ctx,
+		"RateApplication",
+		script.MethodGet,
+		script.HTTP,
+		s.SpanContext().TraceID.String(),
+		"v1",
+	)
+
 	errorHandler := newHTTPErrorHandler(log, w)
 
 	b, err := io.ReadAll(r.Body)
 	defer r.Body.Close()
 
 	if err != nil {
+		log.Error(err)
 		errorHandler.handleError(RequestReadError, err)
 
 		return
 	}
 
+	log = log.WithField("body", string(b))
+
 	req := &RateApplicationRequest{}
 	if err = json.Unmarshal(b, req); err != nil {
+		log.Error(err)
 		errorHandler.handleError(UpdateTaskParsingError, err)
 
 		return
@@ -800,6 +811,7 @@ func (ae *Env) RateApplication(w http.ResponseWriter, r *http.Request, workNumbe
 
 	ui, err := user.GetUserInfoFromCtx(ctx)
 	if err != nil {
+		log.Error(err)
 		errorHandler.handleError(NoUserInContextError, err)
 
 		return
@@ -812,6 +824,7 @@ func (ae *Env) RateApplication(w http.ResponseWriter, r *http.Request, workNumbe
 		Rate:       req.Rate,
 	})
 	if err != nil {
+		log.Error(err)
 		errorHandler.handleError(UpdateTaskRateError, err)
 
 		return

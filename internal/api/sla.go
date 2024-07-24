@@ -18,10 +18,10 @@ import (
 
 func (ae *Env) handleBreachSlA(ctx c.Context, item *db.StepBreachedSLA) {
 	log := logger.GetLogger(ctx).
-		WithField("funcName", "handleBreachSlA").
-		WithField("workID", item.TaskID).
-		WithField("workNumber", item.WorkNumber).
-		WithField("stepName", item.StepName)
+		WithField(script.FuncName, "handleBreachSlA").
+		WithField(script.WorkID, item.TaskID).
+		WithField(script.WorkNumber, item.WorkNumber).
+		WithField(script.StepName, item.StepName)
 	ctx = logger.WithLogger(ctx, log)
 
 	runCtx := &pipeline.BlockRunContext{
@@ -66,6 +66,7 @@ func (ae *Env) handleBreachSlA(ctx c.Context, item *db.StepBreachedSLA) {
 
 	_, workFinished, blockErr := pipeline.ProcessBlockWithEndMapping(ctx, item.StepName, item.BlockData, runCtx, true)
 	if blockErr != nil {
+		log.WithError(blockErr)
 		runCtx.NotifyEvents(ctx) // events for successfully processed nodes
 
 		return
@@ -85,12 +86,20 @@ func (ae *Env) CheckBreachSLA(w http.ResponseWriter, r *http.Request) {
 	ctx, span := trace.StartSpan(r.Context(), "check_breach_sla")
 	defer span.End()
 
-	log := logger.GetLogger(ctx).WithField("mainFuncName", "CheckBreachSLA")
+	log := script.SetMainFuncLog(ctx,
+		"CheckBreachSLA",
+		script.MethodGet,
+		script.HTTP,
+		span.SpanContext().TraceID.String(),
+		"v1",
+	)
+
 	errorhandler := newHTTPErrorHandler(log, w)
 
 	steps, err := ae.DB.GetBlocksBreachedSLA(ctx)
 	if err != nil {
 		err := errors.New("couldn't get steps")
+		log.WithError(err)
 		errorhandler.handleError(UpdateBlockError, err)
 
 		return
@@ -108,10 +117,10 @@ func (ae *Env) CheckBreachSLA(w http.ResponseWriter, r *http.Request) {
 	//nolint:gocritic //глобальная тема, лучше не трогать
 	for i := range steps {
 		item := steps[i]
-		log = log.WithField("pipelineID", item.PipelineID).
-			WithField("versionID", item.VersionID).
-			WithField("workID", item.TaskID).
-			WithField("stepName", item.StepName)
+		log = log.WithField(script.PipelineID, item.PipelineID).
+			WithField(script.VersionID, item.VersionID).
+			WithField(script.WorkID, item.TaskID).
+			WithField(script.StepName, item.StepName)
 
 		ae.handleBreachSlA(logger.WithLogger(processCtx, log), &item)
 	}

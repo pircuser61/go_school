@@ -543,6 +543,14 @@ func ProcessBlockWithEndMapping(
 
 	processor := newBlockProcessor(name, bl, runCtx, manual)
 
+	log = log.WithField(script.WorkNumber, processor.runCtx.WorkNumber).
+		WithField(script.PipelineID, processor.runCtx.PipelineID).
+		WithField(script.VersionID, processor.runCtx.VersionID).
+		WithField(script.StepID, processor.runCtx.TaskID).
+		WithField(script.StepName, name)
+
+	ctx = logger.WithLogger(ctx, log)
+
 	failedBlock, pErr := processor.ProcessBlock(ctx, 0)
 	if pErr != nil {
 		log.WithError(pErr).Error("couldn't process block with end mapping, ProcessBlock")
@@ -603,7 +611,7 @@ func processBlockEnd(ctx c.Context, status string, runCtx *BlockRunContext) (err
 	ctx, s := trace.StartSpan(ctx, "process_block_end")
 	defer s.End()
 
-	log := logger.GetLogger(ctx)
+	log := logger.GetLogger(ctx).WithField(script.FuncName, "processBlockEnd")
 
 	version, versErr := runCtx.Services.Storage.GetVersionByWorkNumber(ctx, runCtx.WorkNumber)
 	if versErr != nil {

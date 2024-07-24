@@ -5,8 +5,6 @@ import (
 
 	"go.opencensus.io/trace"
 
-	"gitlab.services.mts.ru/abp/myosotis/logger"
-
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
 
@@ -19,7 +17,12 @@ func (ae *Env) GetTaskEventSchema(w http.ResponseWriter, r *http.Request) {
 	ctx, s := trace.StartSpan(r.Context(), "get_task_event_schema")
 	defer s.End()
 
-	log := logger.GetLogger(ctx)
+	log := script.SetMainFuncLog(ctx,
+		"GetTaskEventSchema",
+		script.MethodGet,
+		script.HTTP,
+		s.SpanContext().TraceID.String(),
+		"v1")
 	errorHandler := newHTTPErrorHandler(log, w)
 
 	type eventSchemaProperties struct {
@@ -97,7 +100,14 @@ func (ae *Env) GetApproveActionNames(w http.ResponseWriter, r *http.Request) {
 	ctx, s := trace.StartSpan(r.Context(), "get_approve_action_names")
 	defer s.End()
 
-	log := logger.GetLogger(ctx)
+	log := script.SetMainFuncLog(ctx,
+		"GetApproveActionNames",
+		script.MethodGet,
+		script.HTTP,
+		s.SpanContext().TraceID.String(),
+		"v1",
+	)
+
 	errorHandler := newHTTPErrorHandler(log, w)
 
 	data, err := ae.DB.GetApproveActionNames(ctx)
@@ -132,11 +142,19 @@ func (ae *Env) GetApproveStatuses(w http.ResponseWriter, r *http.Request) {
 	ctx, s := trace.StartSpan(r.Context(), "get_approve_statuses")
 	defer s.End()
 
-	log := logger.GetLogger(ctx)
+	log := script.SetMainFuncLog(ctx,
+		"GetApproveStatuses",
+		script.MethodGet,
+		script.HTTP,
+		s.SpanContext().TraceID.String(),
+		"v1",
+	)
+
 	errorHandler := newHTTPErrorHandler(log, w)
 
 	data, err := ae.DB.GetApproveStatuses(ctx)
 	if err != nil {
+		log.Error(err)
 		errorHandler.handleError(UnknownError, err)
 
 		return
@@ -162,12 +180,20 @@ func (ae *Env) GetNodeDecisions(w http.ResponseWriter, r *http.Request) {
 	ctx, s := trace.StartSpan(r.Context(), "get_node_decisions")
 	defer s.End()
 
-	log := logger.GetLogger(ctx)
+	log := script.SetMainFuncLog(ctx,
+		"GetNodeDecisions",
+		script.MethodGet,
+		script.HTTP,
+		s.SpanContext().TraceID.String(),
+		"v1",
+	)
+
 	errorHandler := newHTTPErrorHandler(log, w)
 
 	data, err := ae.DB.GetNodeDecisions(ctx)
 	if err != nil {
-		log.Error(err)
+		log.WithField("funcName", "GetNodeDecisions").
+			Error(err)
 
 		_ = GetDecisionsError.sendError(w)
 

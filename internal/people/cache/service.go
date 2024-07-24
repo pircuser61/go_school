@@ -18,6 +18,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people/nocache"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 )
 
@@ -60,7 +61,7 @@ func (s *service) GetUser(ctx c.Context, username string, onlyEnabled bool) (peo
 	ctx, span := trace.StartSpan(ctx, "people.cache.get_user")
 	defer span.End()
 
-	log := logger.GetLogger(ctx)
+	log := logger.GetLogger(ctx).WithField(script.FuncName, "GetUser")
 
 	keyForCache := userKeyPrefix + username
 
