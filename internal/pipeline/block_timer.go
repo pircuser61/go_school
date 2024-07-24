@@ -310,10 +310,30 @@ func (gb *TimerBlock) createState(ef *entity.EriusFunc) error {
 	var duration time.Duration
 
 	if params.Duration != "" {
-		duration, err = time.ParseDuration(params.Duration)
+		var day int
+
+		dur := strings.Split(params.Duration, "d")
+
+		day, err = strconv.Atoi(dur[0])
+		if err != nil {
+			return errors.Wrap(err, "can not convert timer day duration")
+		}
+
+		dayInHours := fmt.Sprintf("%dh", day*24)
+
+		duration, err = time.ParseDuration(dur[1])
 		if err != nil {
 			return errors.Wrap(err, "can not parse timer duration")
 		}
+
+		var duration2 time.Duration
+
+		duration2, err = time.ParseDuration(dayInHours)
+		if err != nil {
+			return errors.Wrap(err, "can not parse timer days duration")
+		}
+
+		duration += duration2
 
 		if duration <= 0 {
 			return errors.New("delay time is not set for the timer")
