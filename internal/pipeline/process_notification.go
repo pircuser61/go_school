@@ -38,10 +38,6 @@ const (
 	attachLinksKey = "attachLinks"
 	attachExistKey = "attachExist"
 	attachListKey  = "attachList"
-
-	approverBlockType  = "approver"
-	executionBlockType = "execution"
-	signBlockType      = "sign"
 )
 
 //nolint:all // ok
