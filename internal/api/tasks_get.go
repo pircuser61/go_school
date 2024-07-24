@@ -569,10 +569,6 @@ func (ae *Env) GetTasks(w http.ResponseWriter, req *http.Request, params GetTask
 
 	users := delegations.GetUserInArrayWithDelegators([]string{filters.CurrentUser})
 
-	if filters.Status != nil {
-		handleFilterStatus(&filters)
-	}
-
 	resp, err := ae.DB.GetTasks(ctx, filters, users)
 	if err != nil {
 		errorHandler.handleError(GetTasksError, err)
@@ -670,10 +666,6 @@ func (ae *Env) GetTasksSchemas(w http.ResponseWriter, req *http.Request, params 
 
 	users := delegations.GetUserInArrayWithDelegators([]string{filters.CurrentUser})
 
-	if filters.Status != nil {
-		handleFilterStatus(&filters)
-	}
-
 	resp, err := ae.DB.GetTasksSchemas(ctx, filters, users)
 	if err != nil {
 		errorHandler.handleError(GetTasksError, err)
@@ -742,10 +734,6 @@ func (ae *Env) GetTasksUsers(w http.ResponseWriter, req *http.Request, params Ge
 	}
 
 	users := delegations.GetUserInArrayWithDelegators([]string{filters.CurrentUser})
-
-	if filters.Status != nil {
-		handleFilterStatus(&filters)
-	}
 
 	dbResp, err := ae.DB.GetTasksUsers(ctx, filters, users)
 	if err != nil {
@@ -877,36 +865,6 @@ func (p *GetTasksParams) toEntity(req *http.Request) (e.TaskFilter, error) {
 	}
 
 	return filters, nil
-}
-
-func handleFilterStatus(filters *e.TaskFilter) {
-	ss := strings.Split(*filters.Status, ",")
-
-	uniqueS := make(map[pipeline.TaskHumanStatus]struct{})
-	for _, status := range ss {
-		uniqueS[pipeline.TaskHumanStatus(strings.Trim(status, "'"))] = struct{}{}
-	}
-
-	//nolint:exhaustive // раз не надо было обрабатывать остальные случаи значит не надо // правильно, не уважаю этот линтер
-	for status := range uniqueS {
-		switch status {
-		case pipeline.StatusRejected:
-			uniqueS[pipeline.StatusApprovementRejected] = struct{}{}
-		case pipeline.StatusApprovementRejected:
-			uniqueS[pipeline.StatusRejected] = struct{}{}
-		default:
-			continue
-		}
-	}
-
-	newSS := make([]string, 0, len(uniqueS))
-
-	for status := range uniqueS {
-		newSS = append(newSS, "'"+string(status)+"'")
-	}
-
-	newStatuses := strings.Join(newSS, ",")
-	filters.Status = &newStatuses
 }
 
 func selectAsValid(selectAs string) bool {
