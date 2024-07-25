@@ -10,7 +10,6 @@ import (
 	"github.com/iancoleman/orderedmap"
 
 	"gitlab.services.mts.ru/abp/mail/pkg/email"
-
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	file_registry "gitlab.services.mts.ru/jocasta/pipeliner/internal/fileregistry"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
@@ -20,6 +19,7 @@ import (
 
 const (
 	defaultApprovementActionName = "согласования"
+	defaultComment               = "К заявке добавлено вложение"
 	attachExists                 = "attachExist"
 	attachLinks                  = "attachLinks"
 	attachList                   = "attachList"
@@ -257,7 +257,7 @@ func NewReworkSLATpl(id, name, sdURL string, reworkSLA int, checkSLA bool) Templ
 }
 
 func NewRequestExecutionInfoTpl(id, name, sdURL, comment string) Template {
-	comm := "К заявке добавлено вложение"
+	comm := defaultComment
 
 	if comment != "" {
 		comm = comment
@@ -351,7 +351,7 @@ func NewFormExecutionNeedTakeInWorkTpl(dto *NewFormExecutionNeedTakeInWorkDto, i
 }
 
 func NewRequestApproverInfoTpl(id, name, sdURL, comment string) Template {
-	comm := "К заявке добавлено вложение"
+	comm := defaultComment
 
 	if comment != "" {
 		comm = comment
@@ -570,13 +570,13 @@ func NewAppInitiatorStatusNotificationTpl(dto *SignerNotifTemplate) Template {
 
 	switch dto.Action {
 	case "согласована", "выполнена исполнителем", "отклонена", "отклонена исполнителем":
-		comment := "К заявке добавлено вложение"
+		comment := defaultComment
 
 		if dto.Comment != "" {
 			comment = dto.Comment
 		}
 
-		textPart += fmt.Sprintf(" с комментарием: \"%s\"", comment)
+		textPart += fmt.Sprintf(" с комментарием: %q", comment)
 	}
 
 	if dto.Action == "ознакомлено" {
@@ -739,7 +739,7 @@ func NewAppPersonStatusNotificationTpl(in *NewAppPersonStatusTpl) (Template, []B
 }
 
 func NewSendToInitiatorEditTpl(id, name, sdURL, comment string) Template {
-	comm := "К заявке добавлено вложение"
+	comm := defaultComment
 
 	if comment != "" {
 		comm = comment
