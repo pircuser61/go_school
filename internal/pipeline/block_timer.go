@@ -354,9 +354,11 @@ func (gb *TimerBlock) createState(ef *entity.EriusFunc) error {
 		return errors.New("can't find group id in variables")
 	}
 
-	date := fmt.Sprintf("%v", dateInt)
+	dateWithHour := fmt.Sprintf("%v", dateInt)
 
-	dateObj, err := time.Parse("02.01.2006", date)
+	date := strings.Split(dateWithHour, " ")
+
+	dateObj, err := time.Parse("02.01.2006", date[0])
 	if err != nil {
 		return errors.Wrap(err, "can not parse timer duration")
 	}
@@ -385,7 +387,7 @@ func (gb *TimerBlock) createState(ef *entity.EriusFunc) error {
 						FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100),
 					},
 				},
-				WorkType: sla.WorkHourType("8/ 5"),
+				WorkType: sla.WorkHourType("8/5"),
 			},
 		)
 		if getSLAInfoErr != nil {
