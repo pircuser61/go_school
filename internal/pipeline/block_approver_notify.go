@@ -49,7 +49,7 @@ func (gb *GoApproverBlock) handleNotifications(ctx context.Context) error {
 	approvers := getSliceFromMap(gb.State.Approvers)
 	loginsToNotify := delegates.GetUserInArrayWithDelegations(approvers)
 
-	notifDescription, files, err := gb.RunContext.makeNotificationDescription(ctx, gb.Name, false)
+	description, files, err := gb.RunContext.makeNotificationDescription(ctx, gb.Name, false)
 	if err != nil {
 		return err
 	}
@@ -142,10 +142,6 @@ func (gb *GoApproverBlock) handleNotifications(ctx context.Context) error {
 			return initialErr
 		}
 
-		if len(notifDescription) > 0 {
-			notifDescription = notifDescription[1:]
-		}
-
 		tpl := &mail.NewAppPersonStatusTpl{
 			WorkNumber:                gb.RunContext.WorkNumber,
 			Name:                      gb.RunContext.NotifName,
@@ -157,7 +153,7 @@ func (gb *GoApproverBlock) handleNotifications(ctx context.Context) error {
 			Login:                     login,
 			IsEditable:                gb.State.GetIsEditable(),
 			ApproverActions:           actionsList,
-			Description:               notifDescription,
+			Description:               description,
 			BlockID:                   BlockGoApproverID,
 			ExecutionDecisionExecuted: string(ExecutionDecisionExecuted),
 			ExecutionDecisionRejected: string(ExecutionDecisionRejected),
@@ -172,7 +168,7 @@ func (gb *GoApproverBlock) handleNotifications(ctx context.Context) error {
 		buttonImg = append(buttonImg, v.Img)
 	}
 
-	err = gb.sendNotifications(ctx, templates, buttonImg, lastWorksForUser, notifDescription, files)
+	err = gb.sendNotifications(ctx, templates, buttonImg, lastWorksForUser, description, files)
 	if err != nil {
 		return err
 	}
