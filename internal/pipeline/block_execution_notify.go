@@ -199,7 +199,7 @@ func (gb *GoExecutionBlock) notifyNeedRework(ctx context.Context) error {
 	}
 
 	tpl := mail.NewSendToInitiatorEditTpl(gb.RunContext.WorkNumber, gb.RunContext.NotifName,
-		gb.RunContext.Services.Sender.SdAddress)
+		gb.RunContext.Services.Sender.SdAddress, *gb.State.DecisionComment)
 
 	filesList := []string{tpl.Image}
 
@@ -317,6 +317,7 @@ func (gb *GoExecutionBlock) notifyNeedMoreInfo(ctx context.Context) error {
 		gb.RunContext.WorkNumber,
 		gb.RunContext.NotifName,
 		gb.RunContext.Services.Sender.SdAddress,
+		*gb.State.DecisionComment,
 	)
 
 	filesList := []string{tpl.Image}

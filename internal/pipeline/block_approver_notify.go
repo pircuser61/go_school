@@ -507,6 +507,7 @@ func (gb *GoApproverBlock) notifyNeedRework(ctx context.Context) error {
 		gb.RunContext.WorkNumber,
 		gb.RunContext.NotifName,
 		gb.RunContext.Services.Sender.SdAddress,
+		*gb.State.Comment,
 	)
 
 	filesList := []string{tpl.Image}
@@ -593,7 +594,7 @@ func (gb *GoApproverBlock) notifyNeedMoreInfo(ctx context.Context) error {
 	}
 
 	tpl := mail.NewRequestApproverInfoTpl(gb.RunContext.WorkNumber, gb.RunContext.NotifName,
-		gb.RunContext.Services.Sender.SdAddress)
+		gb.RunContext.Services.Sender.SdAddress, *gb.State.Comment)
 
 	filesList := []string{tpl.Image}
 

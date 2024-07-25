@@ -63,6 +63,7 @@ type SignerNotifTemplate struct {
 	IsLastExecutableStep bool
 	Description          []orderedmap.OrderedMap
 	Action               string
+	Comment              string
 }
 
 type Notif struct {
@@ -255,19 +256,27 @@ func NewReworkSLATpl(id, name, sdURL string, reworkSLA int, checkSLA bool) Templ
 	}
 }
 
-func NewRequestExecutionInfoTpl(id, name, sdURL string) Template {
+func NewRequestExecutionInfoTpl(id, name, sdURL, comment string) Template {
+	comm := "К заявке добавлено вложение"
+
+	if comment != "" {
+		comm = comment
+	}
+
 	return Template{
 		Subject:  fmt.Sprintf("Заявка № %s %s запрос дополнительной информации", id, name),
 		Template: "internal/mail/template/15moreInfoRequired-template.html",
 		Image:    "15_dop_info_trebuetsya.png",
 		Variables: struct {
-			ID   string `json:"id"`
-			Name string `json:"name"`
-			Link string `json:"link"`
+			ID      string `json:"id"`
+			Name    string `json:"name"`
+			Link    string `json:"link"`
+			Comment string `json:"comment"`
 		}{
-			ID:   id,
-			Name: name,
-			Link: fmt.Sprintf(TaskURLTemplate, sdURL, id),
+			ID:      id,
+			Name:    name,
+			Link:    fmt.Sprintf(TaskURLTemplate, sdURL, id),
+			Comment: comm,
 		},
 	}
 }
@@ -341,19 +350,27 @@ func NewFormExecutionNeedTakeInWorkTpl(dto *NewFormExecutionNeedTakeInWorkDto, i
 	}
 }
 
-func NewRequestApproverInfoTpl(id, name, sdURL string) Template {
+func NewRequestApproverInfoTpl(id, name, sdURL, comment string) Template {
+	comm := "К заявке добавлено вложение"
+
+	if comment != "" {
+		comm = comment
+	}
+
 	return Template{
 		Subject:  fmt.Sprintf("Заявка № %s %s запрос дополнительной информации", id, name),
 		Template: "internal/mail/template/15moreInfoRequired-template.html",
 		Image:    "15_dop_info_trebuetsya.png",
 		Variables: struct {
-			ID   string `json:"id"`
-			Name string `json:"name"`
-			Link string `json:"link"`
+			ID      string `json:"id"`
+			Name    string `json:"name"`
+			Link    string `json:"link"`
+			Comment string `json:"comment"`
 		}{
-			ID:   id,
-			Name: name,
-			Link: fmt.Sprintf(TaskURLTemplate, sdURL, id),
+			ID:      id,
+			Name:    name,
+			Link:    fmt.Sprintf(TaskURLTemplate, sdURL, id),
+			Comment: comm,
 		},
 	}
 }
@@ -551,6 +568,17 @@ func NewAppInitiatorStatusNotificationTpl(dto *SignerNotifTemplate) Template {
                   "
                   ><strong>заявка № %s %s <b>%s</b>.</span>`, dto.WorkNumber, dto.Name, dto.Action)
 
+	switch dto.Action {
+	case "согласована", "выполнена исполнителем", "отклонена", "отклонена исполнителем":
+		comment := "К заявке добавлено вложение"
+
+		if dto.Comment != "" {
+			comment = dto.Comment
+		}
+
+		textPart += fmt.Sprintf(" с комментарием: \"%s\"", comment)
+	}
+
 	if dto.Action == "ознакомлено" {
 		subject = fmt.Sprintf("Ознакомление по заявке № %s %s", dto.WorkNumber, dto.Name)
 		textPart = fmt.Sprintf(`Уважаемый коллега, <span
@@ -710,19 +738,27 @@ func NewAppPersonStatusNotificationTpl(in *NewAppPersonStatusTpl) (Template, []B
 	}, buttons
 }
 
-func NewSendToInitiatorEditTpl(id, name, sdURL string) Template {
+func NewSendToInitiatorEditTpl(id, name, sdURL, comment string) Template {
+	comm := "К заявке добавлено вложение"
+
+	if comment != "" {
+		comm = comment
+	}
+
 	return Template{
 		Subject:  fmt.Sprintf("Заявка № %s %s требует доработки", id, name),
 		Template: "internal/mail/template/17needsImprovement-template.html",
 		Image:    "17_nujna_dorabotka.png",
 		Variables: struct {
-			ID   string `json:"id"`
-			Name string `json:"name"`
-			Link string `json:"link"`
+			ID      string `json:"id"`
+			Name    string `json:"name"`
+			Link    string `json:"link"`
+			Comment string `json:"comment"`
 		}{
-			ID:   id,
-			Name: name,
-			Link: fmt.Sprintf(TaskURLTemplate, sdURL, id),
+			ID:      id,
+			Name:    name,
+			Link:    fmt.Sprintf(TaskURLTemplate, sdURL, id),
+			Comment: comm,
 		},
 	}
 }

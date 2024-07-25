@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"context"
+	"encoding/json"
 	"strings"
 	"time"
 
@@ -207,12 +208,21 @@ func (p *blockProcessor) ProcessBlock(ctx context.Context, its int) (string, err
 		return failedBlock, p.handleErrorWithRollback(ctx, log, err)
 	}
 
+	taskParams := struct {
+		Comment string `json:"comment"`
+	}{}
+
+	if errJson := json.Unmarshal(p.runCtx.UpdateData.Parameters, &taskParams); errJson != nil {
+		return "", errJson
+	}
+
 	err = p.runCtx.handleInitiatorNotify(ctx,
 		handleInitiatorNotifyParams{
 			step:     p.name,
 			stepType: p.bl.TypeID,
 			action:   action,
 			status:   taskHumanStatus,
+			comment:  taskParams.Comment,
 		},
 	)
 	if err != nil {

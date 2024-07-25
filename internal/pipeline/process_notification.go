@@ -23,6 +23,7 @@ type handleInitiatorNotifyParams struct {
 	step     string
 	stepType string
 	action   string
+	comment  string
 	status   TaskHumanStatus
 }
 
@@ -108,6 +109,7 @@ func (runCtx *BlockRunContext) handleInitiatorNotify(ctx c.Context, params handl
 			JocastaURL:  runCtx.Services.JocastaURL,
 			Description: description,
 			Action:      params.action,
+			Comment:     params.comment,
 		})
 
 	iconsName := []string{tmpl.Image}
