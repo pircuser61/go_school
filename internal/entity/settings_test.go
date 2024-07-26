@@ -82,6 +82,43 @@ func TestExternalSystem_ValidateInputMapping(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
+	t.Run("Valid with required object and mapped properties", func(t *testing.T) {
+		t.Parallel()
+
+		es := &ExternalSystem{
+			InputMapping: &script.JSONSchema{
+				Type: "object",
+				Properties: script.JSONSchemaProperties{
+					"a-obj": {
+						Type: "object",
+						Properties: script.JSONSchemaProperties{
+							"a-str": {
+								Type:  "string",
+								Title: "Тестовая строка в объекте",
+								Value: "test-mapping",
+							},
+							"b-str": {
+								Type:  "string",
+								Title: "Тестовая строка в объекте",
+								Value: "test-mapping",
+							},
+							"c-str": {
+								Type:  "string",
+								Title: "Тестовая строка в объекте",
+								Value: "test-mapping",
+							},
+						},
+					},
+				},
+				Required: []string{"a-obj"},
+			},
+		}
+
+		err := es.ValidateInputMapping()
+
+		assert.NoError(t, err)
+	})
+
 	t.Run("Invalid with required and nested object", func(t *testing.T) {
 		t.Parallel()
 
@@ -127,6 +164,42 @@ func TestExternalSystem_ValidateInputMapping(t *testing.T) {
 		err := es.ValidateInputMapping()
 
 		assert.EqualError(t, err, fmt.Sprintf("%s: %s", ErrMappingRequired.Error(), "a"))
+	})
+
+	t.Run("Invalid with required object and mapped properties", func(t *testing.T) {
+		t.Parallel()
+
+		es := &ExternalSystem{
+			InputMapping: &script.JSONSchema{
+				Type: "object",
+				Properties: script.JSONSchemaProperties{
+					"a-obj": {
+						Type: "object",
+						Properties: script.JSONSchemaProperties{
+							"a-str": {
+								Type:  "string",
+								Title: "Тестовая строка в объекте",
+								Value: "test-mapping",
+							},
+							"b-str": {
+								Type:  "string",
+								Title: "Тестовая строка в объекте",
+								Value: "test-mapping",
+							},
+							"c-str": {
+								Type:  "string",
+								Title: "Тестовая строка в объекте",
+							},
+						},
+					},
+				},
+				Required: []string{"a-obj"},
+			},
+		}
+
+		err := es.ValidateInputMapping()
+
+		assert.Error(t, err)
 	})
 
 	t.Run("Empty mapping", func(t *testing.T) {

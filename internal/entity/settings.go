@@ -235,9 +235,17 @@ func fillMappedSet(
 		*requireds = append(*requireds, tempRequireds...)
 	}
 
+	// Счетчик для проверки, что все поля в объекте смаплены
+	var mappedCounter int
+
 	for k := range obj.Properties {
 		if obj.Properties[k].Value != "" || obj.Properties[k].Default != nil {
 			mappedSet[keyPath+"."+k] = struct{}{}
+
+			mappedCounter++
+			if mappedCounter == len(obj.Properties) {
+				mappedSet[keyPath] = struct{}{}
+			}
 		}
 
 		if obj.Properties[k].Type == utils.ObjectType {
