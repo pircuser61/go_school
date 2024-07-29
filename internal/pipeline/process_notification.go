@@ -96,6 +96,14 @@ func (runCtx *BlockRunContext) handleInitiatorNotify(ctx c.Context, params handl
 		return nil
 	}
 
+	updateParams := struct {
+		Comment string `json:"comment"`
+	}{}
+
+	if err = json.Unmarshal(runCtx.UpdateData.Parameters, &updateParams); err != nil {
+		return err
+	}
+
 	if params.action == "" {
 		params.action = statusToTaskState[params.status]
 	}
@@ -108,6 +116,7 @@ func (runCtx *BlockRunContext) handleInitiatorNotify(ctx c.Context, params handl
 			JocastaURL:  runCtx.Services.JocastaURL,
 			Description: description,
 			Action:      params.action,
+			Comment:     updateParams.Comment,
 		})
 
 	iconsName := []string{tmpl.Image}
