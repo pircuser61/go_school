@@ -577,9 +577,7 @@ func NewAppInitiatorStatusNotificationTpl(dto *SignerNotifTemplate) Template {
 		}
 
 		textPart += fmt.Sprintf(" с комментарием: %q", comment)
-	}
-
-	if dto.Action == "ознакомлено" {
+	case "ознакомлено":
 		subject = fmt.Sprintf("Ознакомление по заявке № %s %s", dto.WorkNumber, dto.Name)
 		textPart = fmt.Sprintf(`Уважаемый коллега, <span
                   style="
@@ -589,9 +587,7 @@ func NewAppInitiatorStatusNotificationTpl(dto *SignerNotifTemplate) Template {
                     font-weight: 500;
                   "
                   ><strong>заявка № %s %s получена виза <b>Ознакомлен</b>.</strong></span>`, dto.WorkNumber, dto.Name)
-	}
-
-	if dto.Action == "проинформировано" {
+	case "проинформировано":
 		subject = fmt.Sprintf("Информирование по заявке № %s %s", dto.WorkNumber, dto.Name)
 		textPart = fmt.Sprintf(`Уважаемый коллега, <span
                   style="
