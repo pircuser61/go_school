@@ -2,6 +2,8 @@ package pipeline
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"time"
 
 	"github.com/iancoleman/orderedmap"
@@ -482,6 +484,12 @@ func (gb *GoApproverBlock) notifyNeedRework(ctx context.Context) error {
 		return err
 	}
 
+	var updateParams ExecutionUpdateParams
+
+	if err = json.Unmarshal(gb.RunContext.UpdateData.Parameters, &updateParams); err != nil {
+		return errors.New("can't unmarshal update params")
+	}
+
 	loginsToNotify := delegates.GetUserInArrayWithDelegations([]string{gb.RunContext.Initiator})
 
 	var em string
@@ -503,7 +511,7 @@ func (gb *GoApproverBlock) notifyNeedRework(ctx context.Context) error {
 		gb.RunContext.WorkNumber,
 		gb.RunContext.NotifName,
 		gb.RunContext.Services.Sender.SdAddress,
-		*gb.State.Comment,
+		updateParams.Comment,
 	)
 
 	filesList := []string{tpl.Image}

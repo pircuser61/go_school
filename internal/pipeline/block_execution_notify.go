@@ -2,6 +2,8 @@ package pipeline
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"time"
 
 	"github.com/iancoleman/orderedmap"
@@ -181,6 +183,12 @@ func (gb *GoExecutionBlock) notifyNeedRework(ctx context.Context) error {
 		return err
 	}
 
+	var updateParams ExecutionUpdateParams
+
+	if err = json.Unmarshal(gb.RunContext.UpdateData.Parameters, &updateParams); err != nil {
+		return errors.New("can't unmarshal update params")
+	}
+
 	loginsToNotify := delegates.GetUserInArrayWithDelegations([]string{gb.RunContext.Initiator})
 
 	var em string
@@ -199,7 +207,7 @@ func (gb *GoExecutionBlock) notifyNeedRework(ctx context.Context) error {
 	}
 
 	tpl := mail.NewSendToInitiatorEditTpl(gb.RunContext.WorkNumber, gb.RunContext.NotifName,
-		gb.RunContext.Services.Sender.SdAddress, *gb.State.DecisionComment)
+		gb.RunContext.Services.Sender.SdAddress, updateParams.Comment)
 
 	filesList := []string{tpl.Image}
 
@@ -293,6 +301,12 @@ func (gb *GoExecutionBlock) setMailTemplates(
 func (gb *GoExecutionBlock) notifyNeedMoreInfo(ctx context.Context) error {
 	l := logger.GetLogger(ctx)
 
+	var updateParams ExecutionUpdateParams
+
+	if err := json.Unmarshal(gb.RunContext.UpdateData.Parameters, &updateParams); err != nil {
+		return errors.New("can't unmarshal update params")
+	}
+
 	loginsToNotify := []string{gb.RunContext.Initiator}
 
 	emails := make([]string, 0, len(loginsToNotify))
@@ -312,7 +326,7 @@ func (gb *GoExecutionBlock) notifyNeedMoreInfo(ctx context.Context) error {
 		gb.RunContext.WorkNumber,
 		gb.RunContext.NotifName,
 		gb.RunContext.Services.Sender.SdAddress,
-		*gb.State.DecisionComment,
+		updateParams.Comment,
 	)
 
 	filesList := []string{tpl.Image}
