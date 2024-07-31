@@ -398,11 +398,12 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 		WHERE w.child_id IS NULL`
 
 	var subquery string
+
 	packToSubquery := false
 
 	if fl.OrderBy != nil {
 		if len(*fl.OrderBy) == 0 {
-			// nolint:gocritic,lll
+			// nolint:gocritic,lll,goconst
 			// language=PostgreSQL
 			subquery = `SELECT * FROM (`
 			packToSubquery = true
@@ -411,7 +412,7 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 		splitRes := strings.Split((*fl.OrderBy)[0], ":")
 		// nolint:goconst
 		if splitRes[0] == "started_at" {
-			// nolint:gocritic,lll
+			// nolint:gocritic,lll,goconst
 			// language=PostgreSQL
 			subquery = `SELECT * FROM (`
 			packToSubquery = true
