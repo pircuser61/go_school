@@ -2946,25 +2946,25 @@ func (db *PGCon) GetAdditionalDescriptionForms(workNumber, stepName string) ([]e
 		SELECT jsonb_array_elements(content -> 'pipeline' -> 'blocks' -> $2 -> 'params' -> 'forms_accessibility') as rules
 		FROM versions
 			WHERE id = (SELECT version_id FROM works WHERE work_number = $1 AND child_id IS NULL)
-
+	
 		UNION
-
+	
 		SELECT jsonb_array_elements(content -> 'pipeline' -> 'blocks' -> $2 -> 'params' -> 'formsAccessibility') as rules
 		FROM versions
 			WHERE id = (SELECT version_id FROM works WHERE work_number = $1 AND child_id IS NULL)
 	)
     SELECT v.content -> 'State' -> v.step_name -> 'application_body', v.step_name
 	FROM variable_storage v
-	    INNER JOIN  (
+	   INNER JOIN  (
 		      SELECT max(time) as mtime, step_name from variable_storage
-	          WHERE work_id = (SELECT id FROM works WHERE work_number = $1 AND child_id IS NULL)
+	         WHERE work_id = (SELECT id FROM works WHERE work_number = $1 AND child_id IS NULL)
 		      GROUP BY step_name
-        ) t ON t.mtime= v.time and t.step_name=v.step_name
-		WHERE v.step_name in (
+       ) t ON t.mtime= v.time and t.step_name=v.step_name
+		WHERE (v.step_name in (
 			SELECT rules ->> 'node_id' as rule
 			FROM content
 			WHERE rules ->> 'accessType' != 'None'
-		)
+		)OR v.step_name LIKE 'servicedesk%')
 		AND v.work_id = (SELECT id FROM works WHERE work_number = $1 AND child_id IS NULL)
 	ORDER BY v.time`
 
