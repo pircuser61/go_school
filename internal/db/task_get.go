@@ -409,6 +409,7 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 		}
 
 		splitRes := strings.Split((*fl.OrderBy)[0], ":")
+		// nolint:goconst
 		if splitRes[0] == "started_at" {
 			// nolint:gocritic,lll
 			// language=PostgreSQL
