@@ -345,6 +345,7 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 		    LEFT JOIN pipelines p ON p.id = v.pipeline_id
         	JOIN unique_actions ua ON ua.work_id = w.id
     	)
+		SELECT * FROM (
 		SELECT 
 			w.id,
 			w.started_at,
@@ -398,7 +399,7 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 			WHERE vs.work_id = w.id AND vs.step_type = 'servicedesk_application' AND vs.status != 'skipped'
 			LIMIT 1
 		) descr ON descr.work_id = w.id
-		WHERE w.child_id IS NULL`
+		WHERE w.child_id IS NULL) AS w`
 
 	var order string
 	if fl.Order != nil {
