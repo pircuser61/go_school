@@ -993,19 +993,46 @@ func NewFormPersonExecutionNotificationTemplate(workNumber, workTitle, sdURL, de
 	}
 }
 
-func NewRejectPipelineGroupTemplate(workNumber, workTitle, sdURL string) Template {
+func NewTaskRejectedWithCommentTemplate(workNumber, workTitle, sdURL, comment string) Template {
+	comm := defaultComment
+
+	if comment != "" {
+		comm = comment
+	}
+
 	return Template{
 		Subject:  fmt.Sprintf("Заявка № %s %s - отозвана", workNumber, workTitle),
 		Template: "internal/mail/template/24applicationWithdrawn-template.html",
 		Image:    "24_zayavka_otozvana_inic.png",
 		Variables: struct {
-			ID   string `json:"id"`
-			Name string `json:"name"`
-			Link string `json:"link"`
+			ID          string `json:"id"`
+			Name        string `json:"name"`
+			Link        string `json:"link"`
+			WithComment string `json:"withComment"`
 		}{
-			ID:   workNumber,
-			Name: workTitle,
-			Link: fmt.Sprintf(TaskURLTemplate, sdURL, workNumber),
+			ID:          workNumber,
+			Name:        workTitle,
+			Link:        fmt.Sprintf(TaskURLTemplate, sdURL, workNumber),
+			WithComment: comm,
+		},
+	}
+}
+
+func NewTaskRejectedTemplate(workNumber, workTitle, sdURL string) Template {
+	return Template{
+		Subject:  fmt.Sprintf("Заявка № %s %s - отозвана", workNumber, workTitle),
+		Template: "internal/mail/template/24applicationWithdrawn-template.html",
+		Image:    "24_zayavka_otozvana_inic.png",
+		Variables: struct {
+			ID          string `json:"id"`
+			Name        string `json:"name"`
+			Link        string `json:"link"`
+			WithComment string `json:"withComment"`
+		}{
+			ID:          workNumber,
+			Name:        workTitle,
+			Link:        fmt.Sprintf(TaskURLTemplate, sdURL, workNumber),
+			WithComment: "",
 		},
 	}
 }

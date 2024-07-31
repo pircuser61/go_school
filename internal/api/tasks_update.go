@@ -721,7 +721,8 @@ func (ae *Env) updateTaskInternal(ctx context.Context, workNumber, userLogin str
 	runCtx.BlockRunResults.NodeKafkaEvents = nodeKafkaEvents
 	runCtx.NotifyEvents(ctxLocal)
 
-	em := mail.NewRejectPipelineGroupTemplate(dbTask.WorkNumber, dbTask.Name, ae.Mail.SdAddress)
+	em := mail.NewTaskRejectedWithCommentTemplate(
+		dbTask.WorkNumber, dbTask.Name, ae.Mail.SdAddress, cancelAppParams.Comment)
 
 	file, ok := ae.Mail.Images[em.Image]
 	if !ok {
@@ -1074,7 +1075,7 @@ func (ae *Env) updateTaskByWorkNumber(
 		emails = append(emails, userEmail)
 	}
 
-	em := mail.NewRejectPipelineGroupTemplate(dbTask.WorkNumber, dbTask.Name, ae.Mail.SdAddress)
+	em := mail.NewTaskRejectedTemplate(dbTask.WorkNumber, dbTask.Name, ae.Mail.SdAddress)
 
 	file, ok := ae.Mail.Images[em.Image]
 	if !ok {
