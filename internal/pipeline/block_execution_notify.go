@@ -242,7 +242,12 @@ func (gb *GoExecutionBlock) setMailTemplates(
 			continue
 		}
 
+		//nolint:nestif //it's ok
 		if !gb.State.IsTakenInWork {
+			if len(description) > 0 {
+				description = description[1:]
+			}
+
 			mailTemplates[userEmail] = mail.NewExecutionNeedTakeInWorkTpl(
 				&mail.ExecutorNotifTemplate{
 					WorkNumber:  gb.RunContext.WorkNumber,
