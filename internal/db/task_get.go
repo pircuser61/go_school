@@ -312,7 +312,7 @@ func getUniqueActions(selectFilter string, logins []string, isPersonFilter bool)
 func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string, args []interface{}) {
 	// nolint:gocritic,lll
 	// language=PostgreSQL
-	q = `
+	q1 := `
 		[with_variable_storage]
 		, work_names AS (
         SELECT
@@ -337,7 +337,11 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 		    LEFT JOIN pipelines p ON p.id = v.pipeline_id
         	JOIN unique_actions ua ON ua.work_id = w.id
     	)
-		SELECT * FROM (
+		    `
+
+	// nolint:gocritic,lll
+	// language=PostgreSQL
+	q2 := `
 		SELECT 
 			w.id,
 			w.started_at,
@@ -393,6 +397,28 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 		) descr ON descr.work_id = w.id
 		WHERE w.child_id IS NULL`
 
+	var subquery string
+	packToSubquery := false
+
+	if fl.OrderBy != nil {
+		if len(*fl.OrderBy) == 0 {
+			// nolint:gocritic,lll
+			// language=PostgreSQL
+			subquery = `SELECT * FROM (`
+			packToSubquery = true
+		}
+
+		splitRes := strings.Split((*fl.OrderBy)[0], ":")
+		if splitRes[0] == "started_at" {
+			// nolint:gocritic,lll
+			// language=PostgreSQL
+			subquery = `SELECT * FROM (`
+			packToSubquery = true
+		}
+	}
+
+	q = fmt.Sprint(q1, subquery, q2)
+
 	var order string
 	if fl.Order != nil {
 		order = *fl.Order
@@ -405,7 +431,7 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 
 	var queryMaker compileGetTaskQueryMaker
 
-	return queryMaker.MakeQuery(&fl, q, delegations, args, order, orderBy, true, false, true)
+	return queryMaker.MakeQuery(&fl, q, delegations, args, order, orderBy, true, false, packToSubquery)
 }
 
 //nolint:gocritic //изначально было без поинтера
@@ -723,7 +749,7 @@ func (cq *compileGetTaskQueryMaker) MakeQuery(
 	orderBy []string,
 	useLimitOffset bool,
 	isPersonFilter bool,
-	useAsW bool,
+	packToSubquery bool,
 ) (query string, resArgs []any) {
 	cq.fl = fl
 	cq.q = q
@@ -746,7 +772,7 @@ func (cq *compileGetTaskQueryMaker) MakeQuery(
 	cq.addFieldsFilter(fl)
 	cq.addIsExpiredFilter(fl.Expired, *fl.SelectAs)
 	// performance optimization
-	cq.addAsW(useAsW)
+	cq.addSubqueryEnd(packToSubquery)
 	cq.addOrderBy(order, orderBy)
 
 	if useLimitOffset {
@@ -766,9 +792,9 @@ func replaceStorageVariable(q string) string {
 	return q
 }
 
-// addAsW performance optimization for getTasks query only
-func (cq *compileGetTaskQueryMaker) addAsW(useAsW bool) {
-	if useAsW {
+// addSubqueryEnd performance optimization for getTasks query only
+func (cq *compileGetTaskQueryMaker) addSubqueryEnd(packToSubquery bool) {
+	if packToSubquery {
 		cq.q = fmt.Sprintf("%s) AS w", cq.q)
 	}
 }
