@@ -363,7 +363,7 @@ func (gb *TimerBlock) createState(ef *entity.EriusFunc) error {
 		return errors.Wrap(err, "can not parse timer duration")
 	}
 
-	targetTime := time.Date(dateObj.Year(), dateObj.Month(), dateObj.Day(), 8, 0, 0, 0, dateObj.Location())
+	targetTime := time.Date(dateObj.Year(), dateObj.Month(), dateObj.Day(), 5, 0, 0, 0, dateObj.Location())
 
 	currentDate := time.Now()
 	daysToAdd := 0
