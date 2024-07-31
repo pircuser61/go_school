@@ -150,6 +150,15 @@ func (gb *GoExecutionBlock) handleAction(ctx c.Context, action e.TaskUpdateActio
 		if errUpdate != nil {
 			return errUpdate
 		}
+	case e.TaskUpdateActionBackToGroup:
+		if !gb.State.IsTakenInWork {
+			return errors.New("is not taken in work")
+		}
+
+		errUpdate := gb.executorBackToGroup(ctx)
+		if errUpdate != nil {
+			return errUpdate
+		}
 	case e.TaskUpdateActionExecutorSendEditApp:
 		if !gb.State.IsTakenInWork {
 			return errors.New("is not taken in work")
@@ -926,6 +935,12 @@ func (gb *GoExecutionBlock) executorStartWork(ctx c.Context) (err error) {
 		return err
 	}
 
+	return nil
+}
+
+func (gb *GoExecutionBlock) executorBackToGroup(ctx c.Context) (err error) {
+	gb.State.Executors = gb.State.InitialExecutors
+	gb.State.IsTakenInWork = false
 	return nil
 }
 

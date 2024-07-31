@@ -1002,6 +1002,10 @@ func getTaskStepNameByAction(action e.TaskUpdateAction) []string {
 		return []string{pipeline.BlockGoExecutionID}
 	}
 
+	if action == e.TaskUpdateActionBackToGroup {
+		return []string{pipeline.BlockGoExecutionID}
+	}
+
 	if action == e.TaskUpdateActionRequestFillForm {
 		return []string{pipeline.BlockGoFormID}
 	}
