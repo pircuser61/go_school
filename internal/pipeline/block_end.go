@@ -66,14 +66,17 @@ func (gb *GoEndBlock) GetState() interface{} {
 }
 
 func (gb *GoEndBlock) Update(ctx c.Context) (interface{}, error) {
+	// устанавливаем status = 'cancel' в таблице variable_storage
 	if err := gb.RunContext.Services.Storage.StopTaskBlocks(ctx, gb.RunContext.TaskID); err != nil {
 		return nil, err
 	}
 
+	// меняем статус в таблице works
 	if err := gb.RunContext.updateTaskStatus(ctx, db.RunStatusFinished, "", db.SystemLogin); err != nil {
 		return nil, err
 	}
 
+	// получаем отмененные события шагов
 	nodeEvents, nodeKafkaEvents, err := gb.RunContext.GetCancelledStepsEvents(ctx)
 	if err != nil {
 		return nil, err
@@ -105,6 +108,19 @@ func (gb *GoEndBlock) Update(ctx c.Context) (interface{}, error) {
 		}
 
 		gb.happenedEvents = append(gb.happenedEvents, event)
+	}
+
+	//достаем из базы значение поля notify_process_finished
+	notify, err := gb.RunContext.Services.Storage.GetNotifyProcessFinished(ctx, gb.RunContext.VersionID)
+	if err != nil {
+		return nil, err
+	}
+
+	if notify {
+		err = gb.handleNotifications(ctx)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return nil, nil

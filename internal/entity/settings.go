@@ -61,13 +61,14 @@ type ProcessSettingsWithExternalSystems struct {
 }
 
 type ProcessSettings struct {
-	VersionID          string             `json:"version_id"`
-	StartSchema        *script.JSONSchema `json:"start_schema"`
-	EndSchema          *script.JSONSchema `json:"end_schema"`
-	ResubmissionPeriod int                `json:"resubmission_period"`
-	Name               string             `json:"name"`
-	SLA                int                `json:"sla"`
-	WorkType           string             `json:"work_type"`
+	VersionID             string             `json:"version_id"`
+	StartSchema           *script.JSONSchema `json:"start_schema"`
+	EndSchema             *script.JSONSchema `json:"end_schema"`
+	ResubmissionPeriod    int                `json:"resubmission_period"`
+	Name                  string             `json:"name"`
+	SLA                   int                `json:"sla"`
+	WorkType              string             `json:"work_type"`
+	NotifyProcessFinished bool               `json:"notify_process_finished"`
 
 	StartSchemaRaw []byte `json:"-"`
 	EndSchemaRaw   []byte `json:"-"`

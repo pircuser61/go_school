@@ -152,6 +152,24 @@ func (db *PGCon) GetVersionSettings(ctx context.Context, versionID string) (e.Pr
 	return ps, nil
 }
 
+func (db *PGCon) GetNotifyProcessFinished(ctx context.Context, versionID uuid.UUID) (bool, error) {
+	ctx, span := trace.StartSpan(ctx, "pg_get_notify_process_finished")
+	defer span.End()
+
+	const q = `
+	SELECT notify_process_finished
+	FROM version_settings
+	WHERE version_id = $1`
+
+	var notify bool
+
+	if err := db.Connection.QueryRow(ctx, q, versionID).Scan(&notify); err != nil {
+		return false, err
+	}
+
+	return notify, nil
+}
+
 //nolint:gocritic //нужно для реализации интерфейса Database
 func (db *PGCon) SaveVersionSettings(ctx context.Context, settings e.ProcessSettings, schemaFlag *string) error {
 	ctx, span := trace.StartSpan(ctx, "pg_save_version_settings")
@@ -166,8 +184,8 @@ func (db *PGCon) SaveVersionSettings(ctx context.Context, settings e.ProcessSett
 		// nolint:gocritic
 		// language=PostgreSQL
 		query := `
-		INSERT INTO version_settings (id, version_id, start_schema, end_schema, raw_start_schema) 
-		VALUES ($1, $2, $3, $4, $5)
+		INSERT INTO version_settings (id, version_id, start_schema, end_schema, raw_start_schema, notify_process_finished) 
+		VALUES ($1, $2, $3, $4, $5, $6)
 		ON CONFLICT (version_id) DO UPDATE 
 			SET start_schema = excluded.start_schema, 
 				end_schema = excluded.end_schema,
@@ -180,6 +198,7 @@ func (db *PGCon) SaveVersionSettings(ctx context.Context, settings e.ProcessSett
 			settings.StartSchema,
 			settings.EndSchema,
 			settings.StartSchemaRaw,
+			settings.NotifyProcessFinished,
 		)
 		if err != nil {
 			return err

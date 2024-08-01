@@ -89,6 +89,16 @@ type ExecutorNotifTemplate struct {
 	Deadline    string
 }
 
+type ProcessFinishedTemplate struct {
+	WorkNumber  string
+	Name        string
+	Initiator   *sso.UserInfo
+	Mailto      string
+	Login       string
+	SdURL       string
+	Description []orderedmap.OrderedMap
+}
+
 type ReviewTemplate struct {
 	ID          string
 	Name        string
@@ -1059,6 +1069,27 @@ func NewSignSLAExpiredTemplate(workNumber, workTitle, sdURL string) Template {
 			ID:   workNumber,
 			Name: workTitle,
 			Link: fmt.Sprintf(TaskURLTemplate, sdURL, workNumber),
+		},
+	}
+}
+
+func NewAppCompletedTemplate(dto *ProcessFinishedTemplate) Template {
+	dto.Description = CheckGroup(dto.Description)
+
+	return Template{
+		Subject:  fmt.Sprintf("Заявка № %s %s завершена", dto.WorkNumber, dto.Name),
+		Template: "internal/mail/template/44appCompleted-template.html",
+		Image:    "05_zayavka_vzyata_v_rabotu.png",
+		Variables: struct {
+			ID          string
+			Name        string
+			Link        string
+			Description []orderedmap.OrderedMap
+		}{
+			ID:          dto.WorkNumber,
+			Name:        dto.Name,
+			Link:        fmt.Sprintf(TaskURLTemplate, dto.SdURL, dto.WorkNumber),
+			Description: dto.Description,
 		},
 	}
 }
