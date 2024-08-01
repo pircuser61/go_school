@@ -399,7 +399,7 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 
 	var subquery string
 
-	packToSubquery := false
+	var packToSubquery bool
 
 	if fl.OrderBy != nil {
 		if len(*fl.OrderBy) == 0 {
