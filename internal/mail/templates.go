@@ -1013,7 +1013,7 @@ func NewTaskRejectedWithCommentTemplate(workNumber, workTitle, sdURL, comment st
 			ID:          workNumber,
 			Name:        workTitle,
 			Link:        fmt.Sprintf(TaskURLTemplate, sdURL, workNumber),
-			WithComment: comm,
+			WithComment: fmt.Sprintf(" с комментарием: %q", comm),
 		},
 	}
 }
