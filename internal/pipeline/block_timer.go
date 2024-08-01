@@ -309,12 +309,12 @@ func (gb *TimerBlock) createState(ef *entity.EriusFunc) error {
 
 	var duration time.Duration
 
+	if params.Duration != "" && !strings.Contains(params.Duration, "d") {
+		params.Duration = "0d" + params.Duration
+	}
+
 	if params.Duration != "" {
 		var day int
-
-		if !strings.Contains(params.Duration, "d") {
-			params.Duration = "0d" + params.Duration
-		}
 
 		dur := strings.Split(params.Duration, "d")
 
