@@ -399,14 +399,14 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 
 	var subquery string
 
-	var packToSubquery bool
+	var hasSubquery bool
 
 	if fl.OrderBy != nil {
 		if len(*fl.OrderBy) == 0 {
 			// nolint:gocritic,lll,goconst
 			// language=PostgreSQL
 			subquery = `SELECT * FROM (`
-			packToSubquery = true
+			hasSubquery = true
 		}
 
 		splitRes := strings.Split((*fl.OrderBy)[0], ":")
@@ -415,7 +415,7 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 			// nolint:gocritic,lll,goconst
 			// language=PostgreSQL
 			subquery = `SELECT * FROM (`
-			packToSubquery = true
+			hasSubquery = true
 		}
 	}
 
@@ -433,7 +433,7 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 
 	var queryMaker compileGetTaskQueryMaker
 
-	return queryMaker.MakeQuery(&fl, q, delegations, args, order, orderBy, true, false, packToSubquery)
+	return queryMaker.MakeQuery(&fl, q, delegations, args, order, orderBy, true, false, hasSubquery)
 }
 
 //nolint:gocritic //изначально было без поинтера
@@ -751,7 +751,7 @@ func (cq *compileGetTaskQueryMaker) MakeQuery(
 	orderBy []string,
 	useLimitOffset bool,
 	isPersonFilter bool,
-	packToSubquery bool,
+	hasSubquery bool,
 ) (query string, resArgs []any) {
 	cq.fl = fl
 	cq.q = q
@@ -774,7 +774,7 @@ func (cq *compileGetTaskQueryMaker) MakeQuery(
 	cq.addFieldsFilter(fl)
 	cq.addIsExpiredFilter(fl.Expired, *fl.SelectAs)
 	// performance optimization
-	cq.addSubqueryEnd(packToSubquery)
+	cq.addSubqueryEnd(hasSubquery)
 	cq.addOrderBy(order, orderBy)
 
 	if useLimitOffset {
@@ -795,8 +795,8 @@ func replaceStorageVariable(q string) string {
 }
 
 // addSubqueryEnd performance optimization for getTasks query only
-func (cq *compileGetTaskQueryMaker) addSubqueryEnd(packToSubquery bool) {
-	if packToSubquery {
+func (cq *compileGetTaskQueryMaker) addSubqueryEnd(hasSubquery bool) {
+	if hasSubquery {
 		cq.q = fmt.Sprintf("%s) AS w", cq.q)
 	}
 }
