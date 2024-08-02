@@ -961,6 +961,7 @@ func (ae *Env) GetTasksCount(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
+// nolint:gocyclo //number of actions to reduce the limit
 func getTaskStepNameByAction(action e.TaskUpdateAction) []string {
 	if action == e.TaskUpdateActionAdditionalApprovement {
 		return []string{pipeline.BlockGoApproverID, pipeline.BlockGoSignID}

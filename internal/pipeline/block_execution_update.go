@@ -941,6 +941,7 @@ func (gb *GoExecutionBlock) executorStartWork(ctx c.Context) (err error) {
 func (gb *GoExecutionBlock) executorBackToGroup(ctx c.Context) (err error) {
 	gb.State.Executors = gb.State.InitialExecutors
 	gb.State.IsTakenInWork = false
+
 	return nil
 }
 
