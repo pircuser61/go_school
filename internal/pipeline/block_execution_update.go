@@ -155,7 +155,7 @@ func (gb *GoExecutionBlock) handleAction(ctx c.Context, action e.TaskUpdateActio
 			return errors.New("is not taken in work")
 		}
 
-		errUpdate := gb.executorBackToGroup(ctx)
+		errUpdate := gb.executorBackToGroup()
 		if errUpdate != nil {
 			return errUpdate
 		}
@@ -938,7 +938,7 @@ func (gb *GoExecutionBlock) executorStartWork(ctx c.Context) (err error) {
 	return nil
 }
 
-func (gb *GoExecutionBlock) executorBackToGroup(ctx c.Context) (err error) {
+func (gb *GoExecutionBlock) executorBackToGroup() (err error) {
 	gb.State.Executors = gb.State.InitialExecutors
 	gb.State.IsTakenInWork = false
 
