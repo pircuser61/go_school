@@ -375,36 +375,52 @@ func NewRequestApproverInfoTpl(id, name, sdURL, comment string) Template {
 	}
 }
 
-func NewAnswerApproverInfoTpl(id, name, sdURL string) Template {
+func NewAnswerApproverInfoTpl(id, name, sdURL, comment string) Template {
+	comm := defaultComment
+
+	if comment != "" {
+		comm = comment
+	}
+
 	return Template{
 		Subject:  fmt.Sprintf("Заявка № %s %s — Получена дополнительная информация", id, name),
 		Template: "internal/mail/template/16additionalInfoReceived-template.html",
 		Image:    "16_dop_info_polucheno.png",
 		Variables: struct {
-			ID   string `json:"id"`
-			Name string `json:"name"`
-			Link string `json:"link"`
+			ID      string `json:"id"`
+			Name    string `json:"name"`
+			Link    string `json:"link"`
+			Comment string `json:"comment"`
 		}{
-			ID:   id,
-			Name: name,
-			Link: fmt.Sprintf(TaskURLTemplate, sdURL, id),
+			ID:      id,
+			Name:    name,
+			Link:    fmt.Sprintf(TaskURLTemplate, sdURL, id),
+			Comment: comm,
 		},
 	}
 }
 
-func NewAnswerExecutionInfoTpl(id, name, sdURL string) Template {
+func NewAnswerExecutionInfoTpl(id, name, sdURL, comment string) Template {
+	comm := defaultComment
+
+	if comment != "" {
+		comm = comment
+	}
+
 	return Template{
 		Subject:  fmt.Sprintf("Заявка № %s %s — Получена дополнительная информация", id, name),
 		Template: "internal/mail/template/16additionalInfoReceived-template.html",
 		Image:    "16_dop_info_polucheno.png",
 		Variables: struct {
-			ID   string `json:"id"`
-			Name string `json:"name"`
-			Link string `json:"link"`
+			ID      string `json:"id"`
+			Name    string `json:"name"`
+			Link    string `json:"link"`
+			Comment string `json:"comment"`
 		}{
-			ID:   id,
-			Name: name,
-			Link: fmt.Sprintf(TaskURLTemplate, sdURL, id),
+			ID:      id,
+			Name:    name,
+			Link:    fmt.Sprintf(TaskURLTemplate, sdURL, id),
+			Comment: comm,
 		},
 	}
 }
