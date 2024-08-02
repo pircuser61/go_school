@@ -536,6 +536,12 @@ func (gb *GoApproverBlock) notifyNeedRework(ctx context.Context) error {
 func (gb *GoApproverBlock) notifyNewInfoReceived(ctx context.Context, approverLogin string) error {
 	l := logger.GetLogger(ctx)
 
+	var updateParams approverUpdateParams
+
+	if err := json.Unmarshal(gb.RunContext.UpdateData.Parameters, &updateParams); err != nil {
+		return errors.New("can't unmarshal update params")
+	}
+
 	logins := []string{approverLogin}
 	for i := range gb.State.AdditionalApprovers {
 		logins = append(logins, gb.State.AdditionalApprovers[i].ApproverLogin)
@@ -565,7 +571,7 @@ func (gb *GoApproverBlock) notifyNewInfoReceived(ctx context.Context, approverLo
 	}
 
 	tpl := mail.NewAnswerApproverInfoTpl(gb.RunContext.WorkNumber, gb.RunContext.NotifName,
-		gb.RunContext.Services.Sender.SdAddress)
+		gb.RunContext.Services.Sender.SdAddress, updateParams.Comment)
 
 	files := []string{tpl.Image}
 

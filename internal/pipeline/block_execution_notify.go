@@ -351,6 +351,12 @@ func (gb *GoExecutionBlock) notifyNeedMoreInfo(ctx context.Context) error {
 func (gb *GoExecutionBlock) notifyNewInfoReceived(ctx context.Context) error {
 	l := logger.GetLogger(ctx)
 
+	var updateParams ExecutionUpdateParams
+
+	if err := json.Unmarshal(gb.RunContext.UpdateData.Parameters, &updateParams); err != nil {
+		return errors.New("can't unmarshal update params")
+	}
+
 	delegates, err := gb.RunContext.Services.HumanTasks.GetDelegationsByLogins(ctx,
 		getSliceFromMap(gb.State.Executors))
 	if err != nil {
@@ -378,6 +384,7 @@ func (gb *GoExecutionBlock) notifyNewInfoReceived(ctx context.Context) error {
 		gb.RunContext.WorkNumber,
 		gb.RunContext.NotifName,
 		gb.RunContext.Services.Sender.SdAddress,
+		updateParams.Comment,
 	)
 
 	files := []string{tpl.Image}
