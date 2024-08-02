@@ -248,6 +248,12 @@ func (gb *GoExecutionBlock) setMailTemplates(
 				description = description[1:]
 			}
 
+			var updateParams ExecutionUpdateParams
+
+			if err := json.Unmarshal(gb.RunContext.UpdateData.Parameters, &updateParams); err != nil {
+				return nil, errors.New("can't unmarshal update params")
+			}
+
 			mailTemplates[userEmail] = mail.NewExecutionNeedTakeInWorkTpl(
 				&mail.ExecutorNotifTemplate{
 					WorkNumber:  gb.RunContext.WorkNumber,
@@ -260,6 +266,7 @@ func (gb *GoExecutionBlock) setMailTemplates(
 					LastWorks:   lastWorksForUser,
 					IsGroup:     len(gb.State.Executors) > 1,
 					Deadline:    gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(time.Now(), gb.State.SLA, slaInfoPtr),
+					Comment:     updateParams.Comment,
 				},
 			)
 		} else {

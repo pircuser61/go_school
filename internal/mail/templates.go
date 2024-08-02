@@ -87,6 +87,7 @@ type ExecutorNotifTemplate struct {
 	IsGroup     bool
 	LastWorks   []*entity.EriusTask
 	Deadline    string
+	Comment     string
 }
 
 type ReviewTemplate struct {
@@ -798,6 +799,12 @@ func NewExecutionNeedTakeInWorkTpl(dto *ExecutorNotifTemplate) Template {
 
 	dto.Description = CheckGroup(dto.Description)
 
+	comm := defaultComment
+
+	if dto.Comment != "" {
+		comm = dto.Comment
+	}
+
 	return Template{
 		Subject:  subject,
 		Template: "internal/mail/template/27reassignment-template.html",
@@ -811,6 +818,7 @@ func NewExecutionNeedTakeInWorkTpl(dto *ExecutorNotifTemplate) Template {
 			Deadline    string
 			ActionBtn   Button
 			LastWorks   LastWorks
+			Comment     string
 		}{
 			ID:          dto.WorkNumber,
 			Name:        dto.Name,
@@ -820,6 +828,7 @@ func NewExecutionNeedTakeInWorkTpl(dto *ExecutorNotifTemplate) Template {
 			Deadline:    dto.Deadline,
 			ActionBtn:   *actionBtn,
 			LastWorks:   lastWorksTemplate,
+			Comment:     comm,
 		},
 	}
 }
