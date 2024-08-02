@@ -37,6 +37,7 @@ const (
 	executionRequestExecutionInfoAction = "request_execution_info"
 	executionExecuteAction              = "execution"
 	executionDeclineAction              = "decline"
+	executionBackToGroup                = "back_to_group"
 )
 
 type GoExecutionBlock struct {
@@ -315,6 +316,10 @@ func (gb *GoExecutionBlock) executionActions() []MemberAction {
 		},
 		{
 			ID:   executionRequestExecutionInfoAction,
+			Type: ActionTypeOther,
+		},
+		{
+			ID:   executionBackToGroup,
 			Type: ActionTypeOther,
 		},
 	}
