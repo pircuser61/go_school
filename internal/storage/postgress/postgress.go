@@ -51,8 +51,7 @@ func (i PostgresStore) foreignKeys(ctx context.Context, m models.Material) (int,
 	row := i.pool.QueryRow(ctx, queryGetForeign, m.Type, m.Status)
 	err := row.Scan(&mType, &mStatus)
 	if err != nil {
-		i.l.Error("pg:Material Create", slog.String("msg", err.Error()))
-
+		i.l.Error("pg:Material foreignKeys", slog.String("msg", err.Error()))
 	}
 	return mType, mStatus, err
 }
@@ -64,7 +63,7 @@ func (i PostgresStore) MaterialCreate(ctx context.Context, m models.Material) (u
 		VALUES ($1, $2, $3, $4, $5, now());`
 	mType, mStatus, err := i.foreignKeys(ctx, m)
 	if err != nil {
-		return uuid.Nil, err
+		return uuid.Nil, fmt.Errorf("ошибка проверки типа/статуса: %w", err)
 	}
 	m.UUID = uuid.New()
 	i.l.Debug("pg:Добавление материала", slog.String("name", m.Title))
@@ -104,7 +103,7 @@ func (i PostgresStore) MaterialUpdate(ctx context.Context, m models.Material) er
 		WHERE uuid = $1	AND type=$3;`
 	mType, mStatus, err := i.foreignKeys(ctx, m)
 	if err != nil {
-		return err
+		return fmt.Errorf("ошибка проверки типа/статуса: %w", err)
 	}
 	i.l.Debug("pg:Обновление материала", slog.Any("id", m.UUID))
 	commandTag, err := i.pool.Exec(ctx, queryAdd, m.UUID, m.Title, mType, mStatus,
@@ -120,7 +119,7 @@ func (i PostgresStore) MaterialUpdate(ctx context.Context, m models.Material) er
 	oldM, err := i.MaterialGet(ctx, m.UUID)
 	if err == nil {
 		if oldM.Type != m.Type {
-			return fmt.Errorf("нельзя изменять тип материала %s %s", oldM.Type, m.Type)
+			return fmt.Errorf("нельзя изменять тип материала: %s %s", oldM.Type, m.Type)
 		}
 		return fmt.Errorf("запись найдена в базе, но не удалось обновить")
 	}
@@ -152,6 +151,20 @@ func (i PostgresStore) Materials(ctx context.Context, filter models.MaterialList
 	if filter.Limit <= 0 || filter.Limit > 20 {
 		filter.Limit = 20
 	}
+	var typeId string
+	if filter.Type > "" {
+		const queryGetType = `SELECT id 
+		FROM material_type 
+		WHERE name = $1 ;`
+		i.l.Debug("pg:запрос типа", slog.String("name", filter.Type))
+		row := i.pool.QueryRow(ctx, queryGetType, filter.Type)
+		err := row.Scan(&typeId)
+		if err != nil {
+			i.l.Error("pg:Material filterType", slog.String("msg", err.Error()))
+			return nil, fmt.Errorf("ошибка получения типа материала: %w", err)
+		}
+	}
+
 	sql := sq.Select("UUID, material_type.name as type, title, dt_create, dt_update").From("material").
 		Join("material_type on material_type.id =  type").
 		Limit(filter.Limit).PlaceholderFormat(sq.Dollar)
@@ -159,16 +172,15 @@ func (i PostgresStore) Materials(ctx context.Context, filter models.MaterialList
 	if filter.Offset > 0 {
 		sql = sql.Offset(filter.Offset)
 	}
-	/*
-		if filter.DtCreateFrom != nil && filter.DtCreateTo != nil {
-			sql = sql.Where(sq.GtOrEq{"DT_CREATE": filter.DtCreateFrom}, sq.LtOrEq{"DT_CREATE": filter.DtCreateTo})
-		}
-	*/
+
 	if filter.DtCreateFrom != nil {
 		sql = sql.Where(sq.GtOrEq{"DT_CREATE": filter.DtCreateFrom})
 	}
 	if filter.DtCreateTo != nil {
 		sql = sql.Where(sq.LtOrEq{"DT_CREATE": filter.DtCreateTo})
+	}
+	if typeId > "" {
+		sql = sql.Where(sq.Eq{"TYPE": typeId})
 	}
 
 	queryList, args, err := sql.ToSql()

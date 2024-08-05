@@ -25,9 +25,9 @@ type MaterialListItem struct {
 }
 
 type MaterialListFilter struct {
-	Type         string
+	Type         string     `schema:"type"`
 	DtCreateFrom *time.Time `schema:"cr_from"`
 	DtCreateTo   *time.Time `schema:"cr_to"`
 	Offset       uint64     `schema:"offset"`
-	Limit        uint64
+	Limit        uint64     `schema:"limit"`
 }

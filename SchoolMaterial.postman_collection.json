@@ -44,7 +44,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"Title\": \"Title1\",\r\n    \"Status\": \"активный\",\r\n    \"Type\": \"статья\",\r\n    \"Content\": \"Content1\"\r\n}",
+							"raw": "{\r\n    \"Title\": \"Title5\",\r\n    \"Status\": \"активный\",\r\n    \"Type\": \"презентация\",\r\n    \"Content\": \"Content1\"\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -169,7 +169,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{host}}:{{port}}/materials?limit=2&offset=0",
+							"raw": "{{host}}:{{port}}/materials?limit=2&offset=4&type=презентация",
 							"host": [
 								"{{host}}"
 							],
@@ -184,17 +184,26 @@
 								},
 								{
 									"key": "offset",
-									"value": "0"
+									"value": "4"
 								},
 								{
 									"key": "cr_from",
-									"value": "2024-08-05T01:44:02.07487+03:00",
+									"value": "2024-08-05T02:50:00%2B03:00",
 									"disabled": true
 								},
 								{
 									"key": "cr_to",
-									"value": "2024-08-05T15:04:05-01:00",
+									"value": "2024-08-05T03:00:00%2B03:00",
 									"disabled": true
+								},
+								{
+									"key": "type",
+									"value": "статья",
+									"disabled": true
+								},
+								{
+									"key": "type",
+									"value": "презентация"
 								}
 							]
 						}
