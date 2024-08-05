@@ -320,7 +320,7 @@ func getUniqueActions(selectFilter string, logins []string, isPersonFilter bool)
 func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string, args []interface{}) {
 	// nolint:gocritic,lll
 	// language=PostgreSQL
-	q = `
+	q1 := `
 		[with_variable_storage]
 		, work_names AS (
         SELECT
@@ -345,7 +345,11 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 		    LEFT JOIN pipelines p ON p.id = v.pipeline_id
         	JOIN unique_actions ua ON ua.work_id = w.id
     	)
-		SELECT * FROM (
+		    `
+
+	// nolint:gocritic,lll
+	// language=PostgreSQL
+	q2 := `
 		SELECT 
 			w.id,
 			w.started_at,
@@ -399,7 +403,31 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 			WHERE vs.work_id = w.id AND vs.step_type = 'servicedesk_application' AND vs.status != 'skipped'
 			LIMIT 1
 		) descr ON descr.work_id = w.id
-		WHERE w.child_id IS NULL) AS w`
+		WHERE w.child_id IS NULL`
+
+	var subquery string
+
+	var hasSubquery bool
+
+	if fl.OrderBy != nil {
+		if len(*fl.OrderBy) == 0 {
+			// nolint:gocritic,lll,goconst
+			// language=PostgreSQL
+			subquery = `SELECT * FROM (`
+			hasSubquery = true
+		}
+
+		splitRes := strings.Split((*fl.OrderBy)[0], ":")
+		// nolint:goconst
+		if splitRes[0] == "started_at" {
+			// nolint:gocritic,lll,goconst
+			// language=PostgreSQL
+			subquery = `SELECT * FROM (`
+			hasSubquery = true
+		}
+	}
+
+	q = fmt.Sprint(q1, subquery, q2)
 
 	var order string
 	if fl.Order != nil {
@@ -413,7 +441,7 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 
 	var queryMaker compileGetTaskQueryMaker
 
-	return queryMaker.MakeQuery(&fl, q, delegations, args, order, orderBy, true, false)
+	return queryMaker.MakeQuery(&fl, q, delegations, args, order, orderBy, true, false, hasSubquery)
 }
 
 //nolint:gocritic //изначально было без поинтера
@@ -469,7 +497,7 @@ func compileGetTasksMetaQuery(fl entity.TaskFilter, delegations []string) (q str
 
 	var queryMaker compileGetTaskQueryMaker
 
-	return queryMaker.MakeQuery(&fl, q, delegations, args, order, orderBy, false, false)
+	return queryMaker.MakeQuery(&fl, q, delegations, args, order, orderBy, false, false, false)
 }
 
 //nolint:gocritic //изначально было без поинтера
@@ -505,7 +533,7 @@ func compileGetUniquePersonsQuery(fl entity.TaskFilter, delegations []string) (q
 
 	var queryMaker compileGetTaskQueryMaker
 
-	return queryMaker.MakeQuery(&fl, q, delegations, args, order, orderBy, false, true)
+	return queryMaker.MakeQuery(&fl, q, delegations, args, order, orderBy, false, true, false)
 }
 
 type compileGetTaskQueryMaker struct {
@@ -732,6 +760,7 @@ func (cq *compileGetTaskQueryMaker) MakeQuery(
 	orderBy []string,
 	useLimitOffset bool,
 	isPersonFilter bool,
+	hasSubquery bool,
 ) (query string, resArgs []any) {
 	cq.fl = fl
 	cq.q = q
@@ -753,6 +782,8 @@ func (cq *compileGetTaskQueryMaker) MakeQuery(
 	cq.addExecutorFilter()
 	cq.addFieldsFilter(fl)
 	cq.addIsExpiredFilter(fl.Expired, *fl.SelectAs)
+	// performance optimization
+	cq.addSubqueryEnd(hasSubquery)
 	cq.addOrderBy(order, orderBy)
 
 	if useLimitOffset {
@@ -770,6 +801,13 @@ func replaceStorageVariable(q string) string {
 	q = strings.Replace(q, "[join_variable_storage]", "", 1)
 
 	return q
+}
+
+// addSubqueryEnd performance optimization for getTasks query only
+func (cq *compileGetTaskQueryMaker) addSubqueryEnd(hasSubquery bool) {
+	if hasSubquery {
+		cq.q = fmt.Sprintf("%s) AS w", cq.q)
+	}
 }
 
 func (cq *compileGetTaskQueryMaker) addFieldsFilter(fl *entity.TaskFilter) {
@@ -1342,7 +1380,7 @@ func compileGetTasksSchemasQuery(fl entity.TaskFilter, delegations []string) (q 
 
 	var queryMaker compileGetTaskQueryMaker
 
-	return queryMaker.MakeQuery(&fl, q, delegations, args, SkipOrderKey, nil, true, true)
+	return queryMaker.MakeQuery(&fl, q, delegations, args, SkipOrderKey, nil, true, true, false)
 }
 
 //nolint:gocritic //в этом проекте не принято использовать поинтеры

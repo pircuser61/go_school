@@ -23,13 +23,13 @@ func (h *httpErrorHandler) setMetricsRequestInfo(req *metrics.RequestInfo) {
 	h.metricsRequestInfo = req
 }
 
-func (h *httpErrorHandler) handleError(httpErr Err, err error) {
+func (h *httpErrorHandler) handleError(httpErr Err, err error, opts ...func(*httpError)) {
 	h.log.Error(httpErr.errorMessage(err))
-	h.sendError(httpErr)
+	h.sendError(httpErr, opts...)
 }
 
-func (h *httpErrorHandler) sendError(httpErr Err) {
-	_ = httpErr.sendError(h.w)
+func (h *httpErrorHandler) sendError(httpErr Err, opts ...func(*httpError)) {
+	_ = httpErr.sendError(h.w, opts...)
 	h.setMetricsRequestInfoStatus(httpErr)
 }
 

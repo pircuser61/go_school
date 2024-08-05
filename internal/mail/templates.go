@@ -87,6 +87,7 @@ type ExecutorNotifTemplate struct {
 	IsGroup     bool
 	LastWorks   []*entity.EriusTask
 	Deadline    string
+	Comment     string
 }
 
 type ProcessFinishedTemplate struct {
@@ -385,36 +386,52 @@ func NewRequestApproverInfoTpl(id, name, sdURL, comment string) Template {
 	}
 }
 
-func NewAnswerApproverInfoTpl(id, name, sdURL string) Template {
+func NewAnswerApproverInfoTpl(id, name, sdURL, comment string) Template {
+	comm := defaultComment
+
+	if comment != "" {
+		comm = comment
+	}
+
 	return Template{
 		Subject:  fmt.Sprintf("Заявка № %s %s — Получена дополнительная информация", id, name),
 		Template: "internal/mail/template/16additionalInfoReceived-template.html",
 		Image:    "16_dop_info_polucheno.png",
 		Variables: struct {
-			ID   string `json:"id"`
-			Name string `json:"name"`
-			Link string `json:"link"`
+			ID      string `json:"id"`
+			Name    string `json:"name"`
+			Link    string `json:"link"`
+			Comment string `json:"comment"`
 		}{
-			ID:   id,
-			Name: name,
-			Link: fmt.Sprintf(TaskURLTemplate, sdURL, id),
+			ID:      id,
+			Name:    name,
+			Link:    fmt.Sprintf(TaskURLTemplate, sdURL, id),
+			Comment: comm,
 		},
 	}
 }
 
-func NewAnswerExecutionInfoTpl(id, name, sdURL string) Template {
+func NewAnswerExecutionInfoTpl(id, name, sdURL, comment string) Template {
+	comm := defaultComment
+
+	if comment != "" {
+		comm = comment
+	}
+
 	return Template{
 		Subject:  fmt.Sprintf("Заявка № %s %s — Получена дополнительная информация", id, name),
 		Template: "internal/mail/template/16additionalInfoReceived-template.html",
 		Image:    "16_dop_info_polucheno.png",
 		Variables: struct {
-			ID   string `json:"id"`
-			Name string `json:"name"`
-			Link string `json:"link"`
+			ID      string `json:"id"`
+			Name    string `json:"name"`
+			Link    string `json:"link"`
+			Comment string `json:"comment"`
 		}{
-			ID:   id,
-			Name: name,
-			Link: fmt.Sprintf(TaskURLTemplate, sdURL, id),
+			ID:      id,
+			Name:    name,
+			Link:    fmt.Sprintf(TaskURLTemplate, sdURL, id),
+			Comment: comm,
 		},
 	}
 }
@@ -586,7 +603,14 @@ func NewAppInitiatorStatusNotificationTpl(dto *SignerNotifTemplate) Template {
 			comment = dto.Comment
 		}
 
-		textPart += fmt.Sprintf(" с комментарием: %q", comment)
+		textPart = fmt.Sprintf(`Уважаемый коллега, <span
+			style="
+			font-family: MTS Text, sans-serif, serif, EmojiFont;
+			font-size: 17px;
+			line-height: 24px;
+			font-weight: 500;"
+			><strong>заявка № %s %s <b>%s</b></strong> с комментарием: %q.</span>`,
+			dto.WorkNumber, dto.Name, dto.Action, comment)
 	case "ознакомлено":
 		subject = fmt.Sprintf("Ознакомление по заявке № %s %s", dto.WorkNumber, dto.Name)
 		textPart = fmt.Sprintf(`Уважаемый коллега, <span
@@ -785,6 +809,12 @@ func NewExecutionNeedTakeInWorkTpl(dto *ExecutorNotifTemplate) Template {
 
 	dto.Description = CheckGroup(dto.Description)
 
+	comm := defaultComment
+
+	if dto.Comment != "" {
+		comm = dto.Comment
+	}
+
 	return Template{
 		Subject:  subject,
 		Template: "internal/mail/template/27reassignment-template.html",
@@ -798,6 +828,7 @@ func NewExecutionNeedTakeInWorkTpl(dto *ExecutorNotifTemplate) Template {
 			Deadline    string
 			ActionBtn   Button
 			LastWorks   LastWorks
+			Comment     string
 		}{
 			ID:          dto.WorkNumber,
 			Name:        dto.Name,
@@ -807,6 +838,7 @@ func NewExecutionNeedTakeInWorkTpl(dto *ExecutorNotifTemplate) Template {
 			Deadline:    dto.Deadline,
 			ActionBtn:   *actionBtn,
 			LastWorks:   lastWorksTemplate,
+			Comment:     comm,
 		},
 	}
 }
@@ -1003,19 +1035,46 @@ func NewFormPersonExecutionNotificationTemplate(workNumber, workTitle, sdURL, de
 	}
 }
 
-func NewRejectPipelineGroupTemplate(workNumber, workTitle, sdURL string) Template {
+func NewTaskRejectedWithCommentTemplate(workNumber, workTitle, sdURL, comment string) Template {
+	comm := defaultComment
+
+	if comment != "" {
+		comm = comment
+	}
+
 	return Template{
 		Subject:  fmt.Sprintf("Заявка № %s %s - отозвана", workNumber, workTitle),
 		Template: "internal/mail/template/24applicationWithdrawn-template.html",
 		Image:    "24_zayavka_otozvana_inic.png",
 		Variables: struct {
-			ID   string `json:"id"`
-			Name string `json:"name"`
-			Link string `json:"link"`
+			ID          string `json:"id"`
+			Name        string `json:"name"`
+			Link        string `json:"link"`
+			WithComment string `json:"withComment"`
 		}{
-			ID:   workNumber,
-			Name: workTitle,
-			Link: fmt.Sprintf(TaskURLTemplate, sdURL, workNumber),
+			ID:          workNumber,
+			Name:        workTitle,
+			Link:        fmt.Sprintf(TaskURLTemplate, sdURL, workNumber),
+			WithComment: fmt.Sprintf(" с комментарием: %q", comm),
+		},
+	}
+}
+
+func NewTaskRejectedTemplate(workNumber, workTitle, sdURL string) Template {
+	return Template{
+		Subject:  fmt.Sprintf("Заявка № %s %s - отозвана", workNumber, workTitle),
+		Template: "internal/mail/template/24applicationWithdrawn-template.html",
+		Image:    "24_zayavka_otozvana_inic.png",
+		Variables: struct {
+			ID          string `json:"id"`
+			Name        string `json:"name"`
+			Link        string `json:"link"`
+			WithComment string `json:"withComment"`
+		}{
+			ID:          workNumber,
+			Name:        workTitle,
+			Link:        fmt.Sprintf(TaskURLTemplate, sdURL, workNumber),
+			WithComment: "",
 		},
 	}
 }

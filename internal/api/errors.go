@@ -516,11 +516,15 @@ func (c Err) description() string {
 	return errorDescription[UnknownError]
 }
 
-func (c Err) sendError(w http.ResponseWriter) error {
+func (c Err) sendError(w http.ResponseWriter, opts ...func(*httpError)) error {
 	resp := httpError{
 		StatusCode:  c.Status(),
 		Error:       c.error(),
 		Description: c.description(),
+	}
+
+	for _, o := range opts {
+		o(&resp)
 	}
 
 	w.WriteHeader(resp.StatusCode)
@@ -531,4 +535,10 @@ func (c Err) sendError(w http.ResponseWriter) error {
 	}
 
 	return nil
+}
+
+func WithError(errStr string) func(*httpError) {
+	return func(resp *httpError) {
+		resp.Error = errStr
+	}
 }
