@@ -1,0 +1,243 @@
+{
+	"info": {
+		"_postman_id": "c48a7a9c-1028-48c3-9827-f9818ac60546",
+		"name": "SchoolMaterial",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "37433450"
+	},
+	"item": [
+		{
+			"name": "api",
+			"item": [
+				{
+					"name": "Create",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const err = pm.response.json().Error;\r",
+									"if (err == false) {\r",
+									"    const id = pm.response.json().Body\r",
+									"    pm.collectionVariables.set(\"id\", id)\r",
+									" } else {\r",
+									"    pm.collectionVariables.set(\"id\", \"\")\r",
+									" }"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"Title\": \"Title1\",\r\n    \"Status\": \"активный\",\r\n    \"Type\": \"статья\",\r\n    \"Content\": \"Content1\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{host}}:{{port}}/materials",
+							"host": [
+								"{{host}}"
+							],
+							"port": "{{port}}",
+							"path": [
+								"materials"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{host}}:{{port}}/materials/{{id}}",
+							"host": [
+								"{{host}}"
+							],
+							"port": "{{port}}",
+							"path": [
+								"materials",
+								"{{id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"Title\": \"Title1\",\r\n    \"Status\": \"архивный\",\r\n    \"Type\": \"статья\",\r\n    \"Content\": \"Content1\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{host}}:{{port}}/materials/{{id}}",
+							"host": [
+								"{{host}}"
+							],
+							"port": "{{port}}",
+							"path": [
+								"materials",
+								"{{id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{host}}:{{port}}/materials/{{id}}",
+							"host": [
+								"{{host}}"
+							],
+							"port": "{{port}}",
+							"path": [
+								"materials",
+								"{{id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const err = pm.response.json().Error;\r",
+									"if (err == false) {\r",
+									"    const b = pm.response.json().Body\r",
+									"    if (b.length > 0) {\r",
+									"        const id = b[0].UUID\r",
+									"        pm.collectionVariables.set(\"id\", id)\r",
+									"    } \r",
+									" } else {\r",
+									"    pm.collectionVariables.set(\"id\", \"\")\r",
+									" }"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{host}}:{{port}}/materials?limit=2&offset=0",
+							"host": [
+								"{{host}}"
+							],
+							"port": "{{port}}",
+							"path": [
+								"materials"
+							],
+							"query": [
+								{
+									"key": "limit",
+									"value": "2"
+								},
+								{
+									"key": "offset",
+									"value": "0"
+								},
+								{
+									"key": "cr_from",
+									"value": "2024-08-05T01:44:02.07487+03:00",
+									"disabled": true
+								},
+								{
+									"key": "cr_to",
+									"value": "2024-08-05T15:04:05-01:00",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "host",
+			"value": "127.0.0.1"
+		},
+		{
+			"key": "port",
+			"value": "8080"
+		},
+		{
+			"key": "id",
+			"value": ""
+		}
+	]
+}

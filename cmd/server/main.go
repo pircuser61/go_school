@@ -13,7 +13,7 @@ import (
 )
 
 func main() {
-	opts := slog.HandlerOptions{Level: slog.LevelDebug}
+	opts := slog.HandlerOptions{Level: slog.LevelInfo}
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &opts))
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
