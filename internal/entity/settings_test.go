@@ -119,6 +119,33 @@ func TestExternalSystem_ValidateInputMapping(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
+	t.Run("Valid with mapped object and required inner property", func(t *testing.T) {
+		t.Parallel()
+
+		es := &ExternalSystem{
+			InputMapping: &script.JSONSchema{
+				Type: "object",
+				Properties: script.JSONSchemaProperties{
+					"a-obj": {
+						Type: "object",
+						Properties: script.JSONSchemaProperties{
+							"a-str": {
+								Type:  "string",
+								Title: "Тестовая строка в объекте",
+							},
+						},
+						Required: []string{"a-str"},
+						Value:    "obj-test-mapping",
+					},
+				},
+			},
+		}
+
+		err := es.ValidateInputMapping()
+
+		assert.NoError(t, err)
+	})
+
 	t.Run("Invalid with required and nested object", func(t *testing.T) {
 		t.Parallel()
 

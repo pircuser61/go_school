@@ -235,11 +235,13 @@ func fillMappedSet(
 		*requireds = append(*requireds, tempRequireds...)
 	}
 
+	_, isParentMapped := mappedSet[keyPath]
+
 	// Счетчик для проверки, что все поля в объекте смаплены
 	var mappedCounter int
 
 	for k := range obj.Properties {
-		if obj.Properties[k].Value != "" || obj.Properties[k].Default != nil {
+		if obj.Properties[k].Value != "" || obj.Properties[k].Default != nil || isParentMapped {
 			mappedSet[keyPath+"."+k] = struct{}{}
 
 			mappedCounter++
