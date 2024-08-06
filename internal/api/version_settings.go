@@ -48,7 +48,12 @@ func (ae *Env) SaveVersionTaskSubscriptionSettings(w http.ResponseWriter, req *h
 	ctx, s := trace.StartSpan(req.Context(), "save_version_task_subscription_settings")
 	defer s.End()
 
-	log := logger.GetLogger(ctx)
+	log := script.SetMainFuncLog(ctx,
+		"SaveVersionTaskSubscriptionSettings",
+		script.MethodPost,
+		script.HTTP,
+		s.SpanContext().TraceID.String(),
+		"v1").WithField(script.VersionID, versionID)
 	errorHandler := newHTTPErrorHandler(log, w)
 
 	b, err := io.ReadAll(req.Body)
@@ -59,6 +64,8 @@ func (ae *Env) SaveVersionTaskSubscriptionSettings(w http.ResponseWriter, req *h
 	}
 
 	defer req.Body.Close()
+
+	log = log.WithField(script.Body, string(b))
 
 	var settings []*e.ExternalSystemSubscriptionParams
 
@@ -132,7 +139,12 @@ func (ae *Env) GetVersionSettings(w http.ResponseWriter, req *http.Request, vers
 	ctx, s := trace.StartSpan(req.Context(), "get_version_settings")
 	defer s.End()
 
-	log := logger.GetLogger(ctx)
+	log := script.SetMainFuncLog(ctx,
+		"GetVersionSettings",
+		script.MethodGet,
+		script.HTTP,
+		s.SpanContext().TraceID.String(),
+		"v1").WithField(script.VersionID, versionID)
 	errorHandler := newHTTPErrorHandler(log, w)
 
 	processSettings, err := ae.DB.GetVersionSettings(ctx, versionID)
@@ -227,19 +239,26 @@ func (ae *Env) SaveVersionSettings(w http.ResponseWriter, req *http.Request, ver
 	ctx, s := trace.StartSpan(req.Context(), "save_version_settings")
 	defer s.End()
 
-	log := logger.GetLogger(ctx)
+	log := script.SetMainFuncLog(ctx,
+		"SaveVersionSettings",
+		script.MethodPost,
+		script.HTTP,
+		s.SpanContext().TraceID.String(),
+		"v1").WithField(script.VersionID, versionID)
 	errorHandler := newHTTPErrorHandler(log, w)
 
 	var errCustom Err
 
 	b, err := io.ReadAll(req.Body)
-	defer req.Body.Close()
-
 	if err != nil {
 		errorHandler.handleError(RequestReadError, err)
 
 		return
 	}
+
+	defer req.Body.Close()
+
+	log = log.WithField(script.Body, string(b))
 
 	var processSettings *e.ProcessSettings
 
@@ -355,17 +374,24 @@ func (ae *Env) SaveExternalSystemSettings(
 	ctx, s := trace.StartSpan(req.Context(), "save_external_system_settings")
 	defer s.End()
 
-	log := logger.GetLogger(ctx)
+	log := script.SetMainFuncLog(ctx,
+		"SaveExternalSystemSettings",
+		script.MethodPut,
+		script.HTTP,
+		s.SpanContext().TraceID.String(),
+		"v1").WithField(script.VersionID, versionID)
 	errorHandler := newHTTPErrorHandler(log, w)
 
 	b, err := io.ReadAll(req.Body)
-	defer req.Body.Close()
-
 	if err != nil {
 		errorHandler.handleError(RequestReadError, err)
 
 		return
 	}
+
+	defer req.Body.Close()
+
+	errorHandler.log = log.WithField(script.Body, string(b))
 
 	var externalSystem e.ExternalSystem
 
@@ -409,7 +435,12 @@ func (ae *Env) RemoveExternalSystem(w http.ResponseWriter, req *http.Request, ve
 	ctx, s := trace.StartSpan(req.Context(), "remove_external_system")
 	defer s.End()
 
-	log := logger.GetLogger(ctx)
+	log := script.SetMainFuncLog(ctx,
+		"RemoveExternalSystem",
+		script.MethodDelete,
+		script.HTTP,
+		s.SpanContext().TraceID.String(),
+		"v1").WithField(script.VersionID, versionID)
 	errorHandler := newHTTPErrorHandler(log, w)
 
 	txStorage, transactionErr := ae.DB.StartTransaction(ctx)
@@ -422,9 +453,7 @@ func (ae *Env) RemoveExternalSystem(w http.ResponseWriter, req *http.Request, ve
 
 	defer func() {
 		if r := recover(); r != nil {
-			log = log.
-				WithField("funcName", "RemoveExternalSystem").
-				WithField("panic handle", true)
+			log = log.WithField("panic handle", true)
 
 			log.Error(r)
 
@@ -472,7 +501,12 @@ func (ae *Env) GetExternalSystemSettings(w http.ResponseWriter, req *http.Reques
 	ctx, s := trace.StartSpan(req.Context(), "get_external_system_settings")
 	defer s.End()
 
-	log := logger.GetLogger(ctx)
+	log := script.SetMainFuncLog(ctx,
+		"GetExternalSystemSettings",
+		script.MethodGet,
+		script.HTTP,
+		s.SpanContext().TraceID.String(),
+		"v1").WithField(script.VersionID, versionID)
 	errorHandler := newHTTPErrorHandler(log, w)
 
 	externalSystemSettings, err := ae.DB.GetExternalSystemSettings(ctx, versionID, systemID)
@@ -495,17 +529,24 @@ func (ae *Env) AddExternalSystemToVersion(w http.ResponseWriter, req *http.Reque
 	ctx, s := trace.StartSpan(req.Context(), "add_external_system_to_version")
 	defer s.End()
 
-	log := logger.GetLogger(ctx)
+	log := script.SetMainFuncLog(ctx,
+		"AddExternalSystemToVersion",
+		script.MethodPost,
+		script.HTTP,
+		s.SpanContext().TraceID.String(),
+		"v1").WithField(script.VersionID, versionID)
 	errorHandler := newHTTPErrorHandler(log, w)
 
 	b, err := io.ReadAll(req.Body)
-	defer req.Body.Close()
-
 	if err != nil {
 		errorHandler.handleError(RequestReadError, err)
 
 		return
 	}
+
+	defer req.Body.Close()
+
+	errorHandler.log = log.WithField(script.Body, string(b))
 
 	var systemID ExternalSystemId
 
@@ -535,7 +576,12 @@ func (ae *Env) SaveVersionMainSettings(w http.ResponseWriter, req *http.Request,
 	ctx, s := trace.StartSpan(req.Context(), "save_version_main_settings")
 	defer s.End()
 
-	log := logger.GetLogger(ctx)
+	log := script.SetMainFuncLog(ctx,
+		"SaveVersionMainSettings",
+		script.MethodPost,
+		script.HTTP,
+		s.SpanContext().TraceID.String(),
+		"v1").WithField(script.VersionID, versionID)
 	errorHandler := newHTTPErrorHandler(log, w)
 
 	b, err := io.ReadAll(req.Body)
@@ -546,6 +592,8 @@ func (ae *Env) SaveVersionMainSettings(w http.ResponseWriter, req *http.Request,
 	}
 
 	defer req.Body.Close()
+
+	log = log.WithField(script.Body, string(b))
 
 	var processSettings e.ProcessSettings
 
@@ -663,7 +711,12 @@ func (ae *Env) SaveExternalSystemEndSettings(w http.ResponseWriter, r *http.Requ
 	ctx, s := trace.StartSpan(r.Context(), "save_system_ending_settings")
 	defer s.End()
 
-	log := logger.GetLogger(ctx)
+	log := script.SetMainFuncLog(ctx,
+		"SaveExternalSystemEndSettings",
+		script.MethodPut,
+		script.HTTP,
+		s.SpanContext().TraceID.String(),
+		"v1").WithField(script.VersionID, versionID)
 	errorHandler := newHTTPErrorHandler(log, w)
 
 	b, err := io.ReadAll(r.Body)
@@ -674,6 +727,8 @@ func (ae *Env) SaveExternalSystemEndSettings(w http.ResponseWriter, r *http.Requ
 	}
 
 	defer r.Body.Close()
+
+	log = log.WithField(script.Body, string(b))
 
 	var systemSettings EndSystemSettings
 
@@ -714,7 +769,12 @@ func (ae *Env) DeleteExternalSystemEndSettings(w http.ResponseWriter, r *http.Re
 	ctx, s := trace.StartSpan(r.Context(), "delete_system_ending_settings")
 	defer s.End()
 
-	log := logger.GetLogger(ctx)
+	log := script.SetMainFuncLog(ctx,
+		"DeleteExternalSystemEndSettings",
+		script.MethodDelete,
+		script.HTTP,
+		s.SpanContext().TraceID.String(),
+		"v1").WithField(script.VersionID, versionID)
 	errorHandler := newHTTPErrorHandler(log, w)
 
 	err := ae.DB.UpdateEndingSystemSettings(ctx, versionID, systemID, e.EndSystemSettings{})
@@ -737,7 +797,12 @@ func (ae *Env) AllowRunAsOthers(w http.ResponseWriter, r *http.Request, versionI
 	ctx, s := trace.StartSpan(r.Context(), "allow_run_as_others")
 	defer s.End()
 
-	log := logger.GetLogger(ctx)
+	log := script.SetMainFuncLog(ctx,
+		"AllowRunAsOthers",
+		script.MethodPost,
+		script.HTTP,
+		s.SpanContext().TraceID.String(),
+		"v1").WithField(script.VersionID, versionID)
 	errorHandler := newHTTPErrorHandler(log, w)
 
 	b, err := io.ReadAll(r.Body)
@@ -748,6 +813,8 @@ func (ae *Env) AllowRunAsOthers(w http.ResponseWriter, r *http.Request, versionI
 	}
 
 	defer r.Body.Close()
+
+	errorHandler.log = log.WithField(script.Body, string(b))
 
 	var allowRunAsOthers bool
 

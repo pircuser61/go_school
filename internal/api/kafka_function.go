@@ -221,7 +221,12 @@ func (ae *Env) NotifyNewFunctionVersion(w http.ResponseWriter, r *http.Request) 
 	ctx, s := trace.StartSpan(r.Context(), "notify_new_function_version")
 	defer s.End()
 
-	log := logger.GetLogger(ctx)
+	log := script.SetMainFuncLog(ctx,
+		"NotifyNewFunctionVersion",
+		script.MethodPost,
+		script.HTTP,
+		s.SpanContext().TraceID.String(),
+		"v1")
 	errorHandler := newHTTPErrorHandler(log, w)
 
 	var b NotifyNewFunctionVersionJSONRequestBody

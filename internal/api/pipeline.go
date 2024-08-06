@@ -8,7 +8,6 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
-
 	"github.com/pkg/errors"
 
 	"go.opencensus.io/trace"
@@ -17,6 +16,7 @@ import (
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 )
 
@@ -37,18 +37,24 @@ func (ae *Env) CreatePipeline(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "create_pipeline")
 	defer s.End()
 
-	log := logger.GetLogger(ctx)
+	log := script.SetMainFuncLog(ctx,
+		"CreatePipeline",
+		script.MethodPost,
+		script.HTTP,
+		s.SpanContext().TraceID.String(),
+		"v1")
 	errorHandler := newHTTPErrorHandler(log, w)
 
 	b, err := io.ReadAll(req.Body)
-
-	defer req.Body.Close()
-
 	if err != nil {
 		errorHandler.handleError(RequestReadError, err)
 
 		return
 	}
+
+	defer req.Body.Close()
+
+	log = log.WithField(script.Body, string(b))
 
 	p := entity.EriusScenario{}
 
@@ -126,17 +132,24 @@ func (ae *Env) CopyPipeline(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "create_pipeline")
 	defer s.End()
 
-	log := logger.GetLogger(ctx)
+	log := script.SetMainFuncLog(ctx,
+		"CopyPipeline",
+		script.MethodPost,
+		script.HTTP,
+		s.SpanContext().TraceID.String(),
+		"v1")
 	errorHandler := newHTTPErrorHandler(log, w)
 
 	b, err := io.ReadAll(req.Body)
-	defer req.Body.Close()
-
 	if err != nil {
 		errorHandler.handleError(RequestReadError, err)
 
 		return
 	}
+
+	defer req.Body.Close()
+
+	log = log.WithField(script.Body, string(b))
 
 	p := entity.EriusScenario{}
 
@@ -210,7 +223,12 @@ func (ae *Env) GetPipeline(w http.ResponseWriter, req *http.Request, pipelineID 
 	ctx, s := trace.StartSpan(req.Context(), "get_pipeline")
 	defer s.End()
 
-	log := logger.GetLogger(ctx)
+	log := script.SetMainFuncLog(ctx,
+		"GetPipeline",
+		script.MethodGet,
+		script.HTTP,
+		s.SpanContext().TraceID.String(),
+		"v1").WithField(script.PipelineID, pipelineID)
 	errorHandler := newHTTPErrorHandler(log, w)
 
 	id, err := uuid.Parse(pipelineID)
@@ -238,7 +256,12 @@ func (ae *Env) ListPipelines(w http.ResponseWriter, req *http.Request, params Li
 	ctx, s := trace.StartSpan(req.Context(), "list_pipelines")
 	defer s.End()
 
-	log := logger.GetLogger(ctx)
+	log := script.SetMainFuncLog(ctx,
+		"ListPipelines",
+		script.MethodGet,
+		script.HTTP,
+		s.SpanContext().TraceID.String(),
+		"v1")
 	errorHandler := newHTTPErrorHandler(log, w)
 
 	myPipelines := params.My != nil && *params.My
@@ -277,7 +300,12 @@ func (ae *Env) DeletePipeline(w http.ResponseWriter, req *http.Request, pipeline
 	ctx, s := trace.StartSpan(req.Context(), "delete_pipeline")
 	defer s.End()
 
-	log := logger.GetLogger(ctx)
+	log := script.SetMainFuncLog(ctx,
+		"DeletePipeline",
+		script.MethodDelete,
+		script.HTTP,
+		s.SpanContext().TraceID.String(),
+		"v1").WithField(script.PipelineID, pipelineID)
 	errorHandler := newHTTPErrorHandler(log, w)
 
 	id, err := uuid.Parse(pipelineID)
@@ -330,7 +358,12 @@ func (ae *Env) GetPipelineVersions(w http.ResponseWriter, req *http.Request, pip
 	ctx, span := trace.StartSpan(req.Context(), "get_pipeline_versions")
 	defer span.End()
 
-	log := logger.GetLogger(ctx)
+	log := script.SetMainFuncLog(ctx,
+		"GetPipelineVersions",
+		script.MethodGet,
+		script.HTTP,
+		span.SpanContext().TraceID.String(),
+		"v1").WithField(script.PipelineID, pipelineID)
 	errorHandler := newHTTPErrorHandler(log, w)
 
 	id, err := uuid.Parse(pipelineID)
@@ -391,7 +424,12 @@ func (ae *Env) PipelineNameExists(w http.ResponseWriter, r *http.Request, params
 	ctx, span := trace.StartSpan(r.Context(), "pipeline_name_exists")
 	defer span.End()
 
-	log := logger.GetLogger(ctx)
+	log := script.SetMainFuncLog(ctx,
+		"PipelineNameExists",
+		script.MethodGet,
+		script.HTTP,
+		span.SpanContext().TraceID.String(),
+		"v1")
 	errorHandler := newHTTPErrorHandler(log, w)
 
 	nameExists, checkNameExistsErr := ae.DB.CheckPipelineNameExists(ctx, params.Name, params.CheckNotDeleted)

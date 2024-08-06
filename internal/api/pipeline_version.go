@@ -400,17 +400,24 @@ func (ae *Env) EditVersion(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "edit_version")
 	defer s.End()
 
-	log := logger.GetLogger(ctx)
+	log := script.SetMainFuncLog(ctx,
+		"EditVersion",
+		script.MethodPut,
+		script.HTTP,
+		s.SpanContext().TraceID.String(),
+		"v1")
 	errorHandler := newHTTPErrorHandler(log, w)
 
 	b, err := io.ReadAll(req.Body)
-	defer req.Body.Close()
-
 	if err != nil {
 		errorHandler.handleError(RequestReadError, err)
 
 		return
 	}
+
+	defer req.Body.Close()
+
+	log.WithField(script.Body, string(b))
 
 	p := &e.EriusScenario{}
 
@@ -767,7 +774,12 @@ func (ae *Env) SearchPipelines(w http.ResponseWriter, req *http.Request, params 
 	ctx, s := trace.StartSpan(req.Context(), "search_pipelines")
 	defer s.End()
 
-	log := logger.GetLogger(ctx)
+	log := script.SetMainFuncLog(ctx,
+		"SearchPipelines",
+		script.MethodGet,
+		script.HTTP,
+		s.SpanContext().TraceID.String(),
+		"v1")
 	errorHandler := newHTTPErrorHandler(log, w)
 
 	if params.PipelineId == nil && params.PipelineName == nil {
@@ -811,7 +823,12 @@ func (ae *Env) SearchPipelinesFields(w http.ResponseWriter, req *http.Request, p
 	ctx, s := trace.StartSpan(req.Context(), "search_pipelines_fields")
 	defer s.End()
 
-	log := logger.GetLogger(ctx)
+	log := script.SetMainFuncLog(ctx,
+		"SearchPipelinesFields",
+		script.MethodGet,
+		script.HTTP,
+		s.SpanContext().TraceID.String(),
+		"v1").WithField(script.PipelineID, *params.PipelineId)
 	errorHandler := newHTTPErrorHandler(log, w)
 
 	if params.PipelineId == nil {

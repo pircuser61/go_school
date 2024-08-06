@@ -1111,6 +1111,9 @@ type ExecutionParams struct {
 	// Is active SLA
 	CheckSla bool `json:"check_sla"`
 
+	// child work blueprint ID
+	ChildWorkBlueprintId *string `json:"child_work_blueprint_id,omitempty"`
+
 	// Executor value (depends on type)
 	Executors string `json:"executors"`
 

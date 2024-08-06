@@ -39,7 +39,12 @@ func (ae *Env) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), funcName)
 	defer s.End()
 
-	log := logger.GetLogger(ctx).WithField("funcName", "UpdateTasksByMails")
+	log := script.SetMainFuncLog(ctx,
+		funcName,
+		script.MethodGet,
+		script.HTTP,
+		s.SpanContext().TraceID.String(),
+		"v1")
 	errorHandler := newHTTPErrorHandler(log, w)
 
 	log.Info(funcName, ", started")
@@ -151,7 +156,12 @@ func (ae *Env) UpdateTask(w http.ResponseWriter, req *http.Request, workNumber s
 		ae.Metrics.RequestsIncrease(requestInfo)
 	}()
 
-	log := logger.GetLogger(ctx)
+	log := script.SetMainFuncLog(ctx,
+		"UpdateTask",
+		script.MethodPost,
+		script.HTTP,
+		s.SpanContext().TraceID.String(),
+		"v1").WithField(script.WorkNumber, workNumber)
 	errorHandler := newHTTPErrorHandler(log, w)
 	errorHandler.setMetricsRequestInfo(requestInfo)
 
@@ -165,13 +175,15 @@ func (ae *Env) UpdateTask(w http.ResponseWriter, req *http.Request, workNumber s
 	requestInfo.WorkNumber = workNumber
 
 	b, err := io.ReadAll(req.Body)
-	defer req.Body.Close()
-
 	if err != nil {
 		errorHandler.handleError(RequestReadError, err)
 
 		return
 	}
+
+	defer req.Body.Close()
+
+	log = log.WithField(script.Body, string(b))
 
 	var updateData entity.TaskUpdate
 	if err = json.Unmarshal(b, &updateData); err != nil {
@@ -189,7 +201,6 @@ func (ae *Env) UpdateTask(w http.ResponseWriter, req *http.Request, workNumber s
 		return
 	}
 
-	log = log.WithField("workNumber", workNumber)
 	ctx = logger.WithLogger(ctx, log)
 
 	log.WithField("body", string(b)).Info("updating block")
@@ -865,7 +876,12 @@ func (ae *Env) StopTasks(w http.ResponseWriter, r *http.Request) {
 		ae.Metrics.RequestsIncrease(requestInfo)
 	}()
 
-	log := logger.GetLogger(ctx)
+	log := script.SetMainFuncLog(ctx,
+		"StopTasks",
+		script.MethodPost,
+		script.HTTP,
+		s.SpanContext().TraceID.String(),
+		"v1")
 	errorHandler := newHTTPErrorHandler(log, w)
 	errorHandler.setMetricsRequestInfo(requestInfo)
 
@@ -877,6 +893,8 @@ func (ae *Env) StopTasks(w http.ResponseWriter, r *http.Request) {
 	}
 
 	defer r.Body.Close()
+
+	log = log.WithField(script.Body, string(b))
 
 	req := &TasksStop{}
 	if err = json.Unmarshal(b, req); err != nil {
