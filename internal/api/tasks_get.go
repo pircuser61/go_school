@@ -200,7 +200,12 @@ func (ae *Env) GetTaskFormSchema(w http.ResponseWriter, req *http.Request, workN
 	ctx, s := trace.StartSpan(req.Context(), "get_task_form_schema")
 	defer s.End()
 
-	log := logger.GetLogger(ctx)
+	log := script.SetMainFuncLog(ctx,
+		"GetTaskFormSchema",
+		script.MethodGet,
+		script.HTTP,
+		s.SpanContext().TraceID.String(),
+		"v1").WithField(script.WorkNumber, workNumber)
 	errorHandler := newHTTPErrorHandler(log, w)
 
 	id, err := ae.DB.GetTaskFormSchemaID(workNumber, formID)
@@ -232,7 +237,12 @@ func (ae *Env) GetTask(w http.ResponseWriter, req *http.Request, workNumber stri
 		ae.Metrics.RequestsIncrease(requestInfo)
 	}()
 
-	log := logger.GetLogger(ctx)
+	log := script.SetMainFuncLog(ctx,
+		"GetTask",
+		script.MethodGet,
+		script.HTTP,
+		s.SpanContext().TraceID.String(),
+		"v1").WithField(script.WorkNumber, workNumber)
 	errorHandler := newHTTPErrorHandler(log, w)
 	errorHandler.setMetricsRequestInfo(requestInfo)
 
@@ -1076,7 +1086,12 @@ func (ae *Env) GetTaskMeanSolveTime(w http.ResponseWriter, req *http.Request, pi
 	ctx, s := trace.StartSpan(req.Context(), "get_task_mean_solve_time")
 	defer s.End()
 
-	log := logger.GetLogger(ctx).WithField("pipelineID", pipelineID)
+	log := script.SetMainFuncLog(ctx,
+		"GetTaskMeanSolveTime",
+		script.MethodGet,
+		script.HTTP,
+		s.SpanContext().TraceID.String(),
+		"v1").WithField("pipelineID", pipelineID)
 	errorHandler := newHTTPErrorHandler(log, w)
 
 	taskTimeIntervals, intervalsErr := ae.DB.GetMeanTaskSolveTime(ctx, pipelineID) // it returns ordered by created_at
