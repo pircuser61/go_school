@@ -639,7 +639,6 @@ func (dto *execVersionDTO) realAuthor(usr *sso.UserInfo) string {
 	return ""
 }
 
-// TODO добавить сюда флаг о нотификации?
 type execVersionInternalDTO struct {
 	storage        db.Database
 	reqID          string

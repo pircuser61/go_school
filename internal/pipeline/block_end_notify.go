@@ -3,8 +3,6 @@ package pipeline
 import (
 	"context"
 
-	"gitlab.services.mts.ru/abp/mail/pkg/email"
-
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
@@ -14,11 +12,6 @@ import (
 func (gb *GoEndBlock) handleNotifications(ctx context.Context) error {
 	if gb.RunContext.skipNotifications {
 		return nil
-	}
-
-	_, files, err := gb.RunContext.makeNotificationDescription(ctx, gb.Name, false)
-	if err != nil {
-		return err
 	}
 
 	emails := make(map[string]mail.Template, 0)
@@ -49,7 +42,7 @@ func (gb *GoEndBlock) handleNotifications(ctx context.Context) error {
 
 	filesNames = append(filesNames, fnames...)
 
-	err = gb.sendNotifications(ctx, emails, filesNames, files)
+	err = gb.sendNotifications(ctx, emails, filesNames)
 	if err != nil {
 		return err
 	}
@@ -61,7 +54,6 @@ func (gb *GoEndBlock) sendNotifications(
 	ctx context.Context,
 	emails map[string]mail.Template,
 	filesNames []string,
-	files []email.Attachment,
 ) error {
 	for i, item := range emails {
 		iconsName := []string{item.Image}
@@ -71,8 +63,6 @@ func (gb *GoEndBlock) sendNotifications(
 		if errFiles != nil {
 			return errFiles
 		}
-
-		iconFiles = append(iconFiles, files...)
 
 		sendErr := gb.RunContext.Services.Sender.SendNotification(
 			ctx,
