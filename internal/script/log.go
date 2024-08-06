@@ -24,6 +24,7 @@ const (
 	PipelineID   = "pipelineID"
 	VersionID    = "versionID"
 	StepID       = "stepID"
+	Body         = "body"
 )
 
 type (
