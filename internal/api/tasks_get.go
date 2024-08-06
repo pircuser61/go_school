@@ -521,7 +521,12 @@ func (ae *Env) GetTasks(w http.ResponseWriter, req *http.Request, params GetTask
 		ae.Metrics.RequestsIncrease(requestInfo)
 	}()
 
-	log := logger.GetLogger(ctx)
+	log := script.SetMainFuncLog(ctx,
+		"GetTasks",
+		script.MethodGet,
+		script.HTTP,
+		s.SpanContext().TraceID.String(),
+		"v1")
 	errorHandler := newHTTPErrorHandler(log, w)
 	errorHandler.setMetricsRequestInfo(requestInfo)
 
@@ -626,7 +631,12 @@ func (ae *Env) GetTasksSchemas(w http.ResponseWriter, req *http.Request, params 
 		ae.Metrics.RequestsIncrease(requestInfo)
 	}()
 
-	log := logger.GetLogger(ctx)
+	log := script.SetMainFuncLog(ctx,
+		"GetTasksSchemas",
+		script.MethodGet,
+		script.HTTP,
+		s.SpanContext().TraceID.String(),
+		"v1")
 	errorHandler := newHTTPErrorHandler(log, w)
 	errorHandler.setMetricsRequestInfo(requestInfo)
 
@@ -695,7 +705,12 @@ func (ae *Env) GetTasksUsers(w http.ResponseWriter, req *http.Request, params Ge
 		ae.Metrics.RequestsIncrease(requestInfo)
 	}()
 
-	log := logger.GetLogger(ctx)
+	log := script.SetMainFuncLog(ctx,
+		"GetTasksUsers",
+		script.MethodGet,
+		script.HTTP,
+		s.SpanContext().TraceID.String(),
+		"v1")
 	errorHandler := newHTTPErrorHandler(log, w)
 	errorHandler.setMetricsRequestInfo(requestInfo)
 
@@ -922,7 +937,12 @@ func (ae *Env) GetTasksCount(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "get_tasks_count")
 	defer s.End()
 
-	log := logger.GetLogger(ctx)
+	log := script.SetMainFuncLog(ctx,
+		"GetTasksCount",
+		script.MethodGet,
+		script.HTTP,
+		s.SpanContext().TraceID.String(),
+		"v1")
 	errorHandler := newHTTPErrorHandler(log, w)
 
 	ui, err := user.GetEffectiveUserInfoFromCtx(req.Context())
