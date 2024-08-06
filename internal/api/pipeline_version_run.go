@@ -336,7 +336,7 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if req.WorkNumber == *req.ParentWorkNumber {
+		if req.ParentWorkNumber != nil && req.WorkNumber == *req.ParentWorkNumber {
 			log.Warning("generated and parent work numbers are equal, trying to generate again")
 
 			goto GetWorkNumber
