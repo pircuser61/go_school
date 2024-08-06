@@ -8,10 +8,14 @@ import (
 )
 
 const (
-	GRPC         = "GRPC"
-	HTTP         = "HTTP"
+	GRPC = "GRPC"
+	HTTP = "HTTP"
+
 	MethodPost   = http.MethodPost
 	MethodGet    = http.MethodGet
+	MethodPut    = http.MethodPut
+	MethodDelete = http.MethodDelete
+
 	Method       = "method"
 	MainFuncName = "mainFuncName"
 	FuncName     = "funcName"
