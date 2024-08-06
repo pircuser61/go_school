@@ -996,7 +996,10 @@ type EriusTask struct {
 	AttachmentsCount *int                   `json:"attachments_count,omitempty"`
 	Author           string                 `json:"author"`
 	BlueprintId      string                 `json:"blueprint_id"`
-	Comment          *string                `json:"comment,omitempty"`
+
+	// Child tasks work numbers
+	ChildWorkNumbers *[]string `json:"child_work_numbers,omitempty"`
+	Comment          *string   `json:"comment,omitempty"`
 
 	// Current approvement start time (UTC)
 	CurrentApprovementStart *string `json:"current_approvement_start,omitempty"`
@@ -1018,12 +1021,15 @@ type EriusTask struct {
 	Name               string                 `json:"name"`
 	NodeGroup          *[]NodeGroup           `json:"node_group,omitempty"`
 	Parameters         map[string]interface{} `json:"parameters"`
-	Rate               *int                   `json:"rate,omitempty"`
-	StartedAt          string                 `json:"started_at"`
-	Status             string                 `json:"status"`
-	Steps              []Step                 `json:"steps"`
-	VersionId          string                 `json:"version_id"`
-	WorkNumber         string                 `json:"work_number"`
+
+	// Parent task work number
+	ParentWorkNumber *string `json:"parent_work_number,omitempty"`
+	Rate             *int    `json:"rate,omitempty"`
+	StartedAt        string  `json:"started_at"`
+	Status           string  `json:"status"`
+	Steps            []Step  `json:"steps"`
+	VersionId        string  `json:"version_id"`
+	WorkNumber       string  `json:"work_number"`
 }
 
 // EriusTasksPage defines model for EriusTasksPage.
@@ -1977,11 +1983,12 @@ type RunNewVersionByPrevVersionRequest_Keys struct {
 
 // RunResponse defines model for RunResponse.
 type RunResponse struct {
-	Errors     []string               `json:"errors"`
-	Output     map[string]interface{} `json:"output"`
-	PipelineId string                 `json:"pipeline_id"`
-	Status     string                 `json:"status"`
-	WorkNumber string                 `json:"work_number"`
+	Errors           []string               `json:"errors"`
+	Output           map[string]interface{} `json:"output"`
+	ParentWorkNumber *string                `json:"parent_work_number,omitempty"`
+	PipelineId       string                 `json:"pipeline_id"`
+	Status           string                 `json:"status"`
+	WorkNumber       string                 `json:"work_number"`
 }
 
 // RunVersionsByPipelineIdRequest defines model for RunVersionsByPipelineIdRequest.
@@ -1992,6 +1999,7 @@ type RunVersionsByPipelineIdRequest struct {
 	Description       string                              `json:"description"`
 	IsTestApplication *bool                               `json:"is_test_application,omitempty"`
 	Keys              RunVersionsByPipelineIdRequest_Keys `json:"keys"`
+	ParentWorkNumber  *string                             `json:"parent_work_number,omitempty"`
 	PipelineId        string                              `json:"pipeline_id"`
 }
 
@@ -2392,6 +2400,9 @@ type EriusTaskResponse struct {
 	// ID шаблона SD, на основании которого запускалась заявка
 	BlueprintId string `json:"blueprint_id"`
 
+	// Массив номеров дочерних заявок
+	ChildWorkNumbers *[]string `json:"child_work_numbers,omitempty"`
+
 	// Запускалась ли заявка в режиме отладки
 	Debug bool `json:"debug"`
 
@@ -2415,6 +2426,9 @@ type EriusTaskResponse struct {
 
 	// Параметры заявки
 	Parameters map[string]interface{} `json:"parameters"`
+
+	// Номер родительской заявки
+	ParentWorkNumber *string `json:"parent_work_number,omitempty"`
 
 	// Плановая дата завершения процесса
 	ProcessDeadline string `json:"process_deadline"`

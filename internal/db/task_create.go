@@ -59,12 +59,13 @@ func (db *PGCon) SetLastRunID(c context.Context, taskID, versionID uuid.UUID) er
 }
 
 type Task struct {
-	WorkID        uuid.UUID
-	VersionID     uuid.UUID
-	WorkNumber    string
-	Author        string
-	RunContext    *entity.TaskRunContext
-	ByPrevVersion bool
+	WorkID           uuid.UUID
+	VersionID        uuid.UUID
+	WorkNumber       string
+	Author           string
+	RunContext       *entity.TaskRunContext
+	ByPrevVersion    bool
+	ParentWorkNumber *string
 }
 
 func (db *PGCon) CreateEmptyTask(ctx context.Context, task *Task) error {

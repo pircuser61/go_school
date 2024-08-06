@@ -204,7 +204,7 @@ type StepBreachedSLA struct {
 	CustomTitle string
 }
 
-//go:generate mockery --name=Database --structname=MockedDatabase --with-expecter
+//go:generate go run github.com/vektra/mockery/v2@v2.42.1 --name=Database --structname=MockedDatabase --with-expecter
 type Database interface {
 	PipelineStorager
 	TaskStorager
@@ -277,6 +277,10 @@ type Database interface {
 	CheckPipelineNameExists(c.Context, string, bool) (*bool, error)
 	UpdateEndingSystemSettings(ctx c.Context, versionID, systemID string, settings e.EndSystemSettings) (err error)
 	AllowRunAsOthers(ctx c.Context, versionID, systemID string, allowRunAsOthers bool) error
+	GetTaskRelations(ctx c.Context, workNumber string) (rel *e.TaskRelations, err error)
+	CreateTaskEmptyRelation(ctx c.Context, workNumber string) (err error)
+	CreateTaskParentRelation(ctx c.Context, workNumber, parentWorkNumber string) (err error)
+	AddTaskChildRelation(ctx c.Context, parentWorkNumber, newChildWorkNumber string) (err error)
 	SaveSLAVersionSettings(ctx c.Context, versionID string, s e.SLAVersionSettings) (err error)
 	GetSLAVersionSettings(ctx c.Context, versionID string) (s e.SLAVersionSettings, err error)
 	GetTaskMembers(ctx c.Context, workNumber string, fromActiveNodes bool) ([]Member, error)

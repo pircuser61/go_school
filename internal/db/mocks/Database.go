@@ -136,6 +136,54 @@ func (_c *MockedDatabase_AddExternalSystemToVersion_Call) RunAndReturn(run func(
 	return _c
 }
 
+// AddTaskChildRelation provides a mock function with given fields: ctx, parentWorkNumber, newChildWorkNumber
+func (_m *MockedDatabase) AddTaskChildRelation(ctx context.Context, parentWorkNumber string, newChildWorkNumber string) error {
+	ret := _m.Called(ctx, parentWorkNumber, newChildWorkNumber)
+
+	if len(ret) == 0 {
+		panic("no return value specified for AddTaskChildRelation")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) error); ok {
+		r0 = rf(ctx, parentWorkNumber, newChildWorkNumber)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// MockedDatabase_AddTaskChildRelation_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'AddTaskChildRelation'
+type MockedDatabase_AddTaskChildRelation_Call struct {
+	*mock.Call
+}
+
+// AddTaskChildRelation is a helper method to define mock.On call
+//   - ctx context.Context
+//   - parentWorkNumber string
+//   - newChildWorkNumber string
+func (_e *MockedDatabase_Expecter) AddTaskChildRelation(ctx interface{}, parentWorkNumber interface{}, newChildWorkNumber interface{}) *MockedDatabase_AddTaskChildRelation_Call {
+	return &MockedDatabase_AddTaskChildRelation_Call{Call: _e.mock.On("AddTaskChildRelation", ctx, parentWorkNumber, newChildWorkNumber)}
+}
+
+func (_c *MockedDatabase_AddTaskChildRelation_Call) Run(run func(ctx context.Context, parentWorkNumber string, newChildWorkNumber string)) *MockedDatabase_AddTaskChildRelation_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string), args[2].(string))
+	})
+	return _c
+}
+
+func (_c *MockedDatabase_AddTaskChildRelation_Call) Return(err error) *MockedDatabase_AddTaskChildRelation_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockedDatabase_AddTaskChildRelation_Call) RunAndReturn(run func(context.Context, string, string) error) *MockedDatabase_AddTaskChildRelation_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // AllowRunAsOthers provides a mock function with given fields: ctx, versionID, systemID, allowRunAsOthers
 func (_m *MockedDatabase) AllowRunAsOthers(ctx context.Context, versionID string, systemID string, allowRunAsOthers bool) error {
 	ret := _m.Called(ctx, versionID, systemID, allowRunAsOthers)
@@ -993,6 +1041,53 @@ func (_c *MockedDatabase_CreateTaskBlock_Call) RunAndReturn(run func(context.Con
 	return _c
 }
 
+// CreateTaskEmptyRelation provides a mock function with given fields: ctx, workNumber
+func (_m *MockedDatabase) CreateTaskEmptyRelation(ctx context.Context, workNumber string) error {
+	ret := _m.Called(ctx, workNumber)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CreateTaskEmptyRelation")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) error); ok {
+		r0 = rf(ctx, workNumber)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// MockedDatabase_CreateTaskEmptyRelation_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CreateTaskEmptyRelation'
+type MockedDatabase_CreateTaskEmptyRelation_Call struct {
+	*mock.Call
+}
+
+// CreateTaskEmptyRelation is a helper method to define mock.On call
+//   - ctx context.Context
+//   - workNumber string
+func (_e *MockedDatabase_Expecter) CreateTaskEmptyRelation(ctx interface{}, workNumber interface{}) *MockedDatabase_CreateTaskEmptyRelation_Call {
+	return &MockedDatabase_CreateTaskEmptyRelation_Call{Call: _e.mock.On("CreateTaskEmptyRelation", ctx, workNumber)}
+}
+
+func (_c *MockedDatabase_CreateTaskEmptyRelation_Call) Run(run func(ctx context.Context, workNumber string)) *MockedDatabase_CreateTaskEmptyRelation_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string))
+	})
+	return _c
+}
+
+func (_c *MockedDatabase_CreateTaskEmptyRelation_Call) Return(err error) *MockedDatabase_CreateTaskEmptyRelation_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockedDatabase_CreateTaskEmptyRelation_Call) RunAndReturn(run func(context.Context, string) error) *MockedDatabase_CreateTaskEmptyRelation_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // CreateTaskEvent provides a mock function with given fields: ctx, dto
 func (_m *MockedDatabase) CreateTaskEvent(ctx context.Context, dto *entity.CreateTaskEvent) (string, error) {
 	ret := _m.Called(ctx, dto)
@@ -1046,6 +1141,54 @@ func (_c *MockedDatabase_CreateTaskEvent_Call) Return(eventID string, err error)
 }
 
 func (_c *MockedDatabase_CreateTaskEvent_Call) RunAndReturn(run func(context.Context, *entity.CreateTaskEvent) (string, error)) *MockedDatabase_CreateTaskEvent_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// CreateTaskParentRelation provides a mock function with given fields: ctx, workNumber, parentWorkNumber
+func (_m *MockedDatabase) CreateTaskParentRelation(ctx context.Context, workNumber string, parentWorkNumber string) error {
+	ret := _m.Called(ctx, workNumber, parentWorkNumber)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CreateTaskParentRelation")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) error); ok {
+		r0 = rf(ctx, workNumber, parentWorkNumber)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// MockedDatabase_CreateTaskParentRelation_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CreateTaskParentRelation'
+type MockedDatabase_CreateTaskParentRelation_Call struct {
+	*mock.Call
+}
+
+// CreateTaskParentRelation is a helper method to define mock.On call
+//   - ctx context.Context
+//   - workNumber string
+//   - parentWorkNumber string
+func (_e *MockedDatabase_Expecter) CreateTaskParentRelation(ctx interface{}, workNumber interface{}, parentWorkNumber interface{}) *MockedDatabase_CreateTaskParentRelation_Call {
+	return &MockedDatabase_CreateTaskParentRelation_Call{Call: _e.mock.On("CreateTaskParentRelation", ctx, workNumber, parentWorkNumber)}
+}
+
+func (_c *MockedDatabase_CreateTaskParentRelation_Call) Run(run func(ctx context.Context, workNumber string, parentWorkNumber string)) *MockedDatabase_CreateTaskParentRelation_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string), args[2].(string))
+	})
+	return _c
+}
+
+func (_c *MockedDatabase_CreateTaskParentRelation_Call) Return(err error) *MockedDatabase_CreateTaskParentRelation_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockedDatabase_CreateTaskParentRelation_Call) RunAndReturn(run func(context.Context, string, string) error) *MockedDatabase_CreateTaskParentRelation_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -4705,6 +4848,65 @@ func (_c *MockedDatabase_GetTaskMembers_Call) Return(_a0 []db.Member, _a1 error)
 }
 
 func (_c *MockedDatabase_GetTaskMembers_Call) RunAndReturn(run func(context.Context, string, bool) ([]db.Member, error)) *MockedDatabase_GetTaskMembers_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// GetTaskRelations provides a mock function with given fields: ctx, workNumber
+func (_m *MockedDatabase) GetTaskRelations(ctx context.Context, workNumber string) (*entity.TaskRelations, error) {
+	ret := _m.Called(ctx, workNumber)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetTaskRelations")
+	}
+
+	var r0 *entity.TaskRelations
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) (*entity.TaskRelations, error)); ok {
+		return rf(ctx, workNumber)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string) *entity.TaskRelations); ok {
+		r0 = rf(ctx, workNumber)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*entity.TaskRelations)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, workNumber)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockedDatabase_GetTaskRelations_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetTaskRelations'
+type MockedDatabase_GetTaskRelations_Call struct {
+	*mock.Call
+}
+
+// GetTaskRelations is a helper method to define mock.On call
+//   - ctx context.Context
+//   - workNumber string
+func (_e *MockedDatabase_Expecter) GetTaskRelations(ctx interface{}, workNumber interface{}) *MockedDatabase_GetTaskRelations_Call {
+	return &MockedDatabase_GetTaskRelations_Call{Call: _e.mock.On("GetTaskRelations", ctx, workNumber)}
+}
+
+func (_c *MockedDatabase_GetTaskRelations_Call) Run(run func(ctx context.Context, workNumber string)) *MockedDatabase_GetTaskRelations_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string))
+	})
+	return _c
+}
+
+func (_c *MockedDatabase_GetTaskRelations_Call) Return(rel *entity.TaskRelations, err error) *MockedDatabase_GetTaskRelations_Call {
+	_c.Call.Return(rel, err)
+	return _c
+}
+
+func (_c *MockedDatabase_GetTaskRelations_Call) RunAndReturn(run func(context.Context, string) (*entity.TaskRelations, error)) *MockedDatabase_GetTaskRelations_Call {
 	_c.Call.Return(run)
 	return _c
 }

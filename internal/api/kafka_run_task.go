@@ -32,6 +32,7 @@ type runVersionsDTO struct {
 	Authorization     string
 	RequestID         string
 	ClientID          string
+	ParentWorkNumber  *string
 
 	requestInfo *metrics.RequestInfo
 

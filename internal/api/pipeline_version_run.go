@@ -257,6 +257,7 @@ type runVersionByPipelineIDRequest struct {
 	Keys              map[string]string     `json:"keys"`
 	IsTestApplication bool                  `json:"is_test_application"`
 	CustomTitle       string                `json:"custom_title"`
+	ParentWorkNumber  *string               `json:"parent_work_number"`
 }
 
 //nolint:revive,stylecheck //need to implement interface in api.go
@@ -324,6 +325,7 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 	errorHandler.log = log
 
 	if req.WorkNumber == "" {
+	GetWorkNumber:
 		req.WorkNumber, err = ae.Sequence.GetWorkNumber(r.Context())
 		if err != nil {
 			log.WithField(script.FuncName, "GetWorkNumber").Error(err)
@@ -331,6 +333,11 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 			requestInfo.Status = GetWorkNumberError.Status()
 
 			return
+		}
+
+		if req.WorkNumber == *req.ParentWorkNumber {
+			log.Warning("generated and parent work numbers are equal, trying to generate again")
+			goto GetWorkNumber
 		}
 	}
 
@@ -348,6 +355,7 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 		RequestID:         r.Header.Get(XRequestIDHeader),
 		Authorization:     r.Header.Get(AuthorizationHeader),
 		requestInfo:       requestInfo,
+		ParentWorkNumber:  req.ParentWorkNumber,
 	}
 
 	err = ae.runVersion(ctx, errorHandler.log, run)
@@ -363,9 +371,10 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 	pipelineID, _ := uuid.Parse(req.PipelineID)
 
 	resp := &entity.RunResponse{
-		PipelineID: pipelineID,
-		WorkNumber: req.WorkNumber,
-		Status:     statusRunned,
+		PipelineID:       pipelineID,
+		WorkNumber:       req.WorkNumber,
+		Status:           statusRunned,
+		ParentWorkNumber: req.ParentWorkNumber,
 	}
 
 	if err = sendResponse(w, http.StatusOK, []*entity.RunResponse{resp}); err != nil {
@@ -418,6 +427,10 @@ func (ae *Env) runVersion(ctx c.Context, log logger.Logger, run *runVersionsDTO)
 		WithField("workNumber", run.WorkNumber).
 		WithField("workID", workID)
 
+	if run.ParentWorkNumber != nil {
+		log = log.WithField("parentWorkNumber", run.ParentWorkNumber)
+	}
+
 	ctx = logger.WithLogger(ctx, log)
 
 	emptyTask := &db.Task{
@@ -437,6 +450,29 @@ func (ae *Env) runVersion(ctx c.Context, log logger.Logger, run *runVersionsDTO)
 				CustomTitle:               run.CustomTitle,
 			},
 		},
+		ParentWorkNumber: run.ParentWorkNumber,
+	}
+
+	if run.ParentWorkNumber != nil {
+		dbTask, err := ae.DB.GetTask(
+			ctx,
+			[]string{""},
+			[]string{""},
+			"",
+			*run.ParentWorkNumber,
+		)
+		if err != nil {
+			log.Error(err)
+
+			return errors.Join(PipelineCreateError, err)
+		}
+
+		if dbTask == nil {
+			err = fmt.Errorf("parent task %s not found", *run.ParentWorkNumber)
+			log.Error(err)
+
+			return errors.Join(PipelineCreateError, err)
+		}
 	}
 
 	version, err := storage.GetVersionByPipelineID(ctx, emptyTask.RunContext.PipelineID)
@@ -843,6 +879,30 @@ func (ae *Env) createEmptyTask(
 	})
 	if err != nil {
 		return fmt.Errorf("create task event, %w", err)
+	}
+
+	if dto.ParentWorkNumber != nil {
+		err = txStorage.CreateTaskParentRelation(ctx, dto.WorkNumber, *dto.ParentWorkNumber)
+		if err != nil {
+			return fmt.Errorf("create task parent relation, %w", err)
+		}
+
+		parentRel, err := txStorage.GetTaskRelations(ctx, *dto.ParentWorkNumber)
+		if err != nil {
+			return fmt.Errorf("get task parent relation, %w", err)
+		}
+
+		if parentRel == nil {
+			err = txStorage.CreateTaskEmptyRelation(ctx, *dto.ParentWorkNumber)
+			if err != nil {
+				return fmt.Errorf("create parent task empty relation, %w", err)
+			}
+		}
+
+		err = txStorage.AddTaskChildRelation(ctx, *dto.ParentWorkNumber, dto.WorkNumber)
+		if err != nil {
+			return fmt.Errorf("add task child relation, %w", err)
+		}
 	}
 
 	err = txStorage.CommitTransaction(ctx)

@@ -1887,6 +1887,81 @@ func (db *PGCon) GetUnfinishedTaskSteps(ctx context.Context, in *entity.GetUnfin
 	return el, nil
 }
 
+func (db *PGCon) GetTaskRelations(ctx context.Context, workNumber string) (rel *entity.TaskRelations, err error) {
+	ctx, span := trace.StartSpan(ctx, "pg_get_task_relations")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	q := `SELECT w.work_number, w.parent_work_number, w.child_work_numbers FROM works_relations w WHERE w.work_number = $1`
+
+	rows, err := db.Connection.Query(ctx, q, workNumber)
+	if err != nil {
+		return nil, err
+	}
+
+	rel = &entity.TaskRelations{}
+
+	for rows.Next() {
+		err = rows.Scan(&rel.WorkNumber, &rel.ParentWorkNumber, &rel.ChildWorkNumbers)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return rel, nil
+}
+
+func (db *PGCon) CreateTaskEmptyRelation(ctx context.Context, workNumber string) (err error) {
+	ctx, span := trace.StartSpan(ctx, "pg_create_task_empty_relation")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	q := `INSERT INTO works_relations (work_number) VALUES ($1)`
+	_, err = db.Connection.Exec(ctx, q, workNumber)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *PGCon) CreateTaskParentRelation(ctx context.Context, workNumber, parentWorkNumber string) (err error) {
+	ctx, span := trace.StartSpan(ctx, "pg_create_task_parent_relation")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	q := `INSERT INTO works_relations (work_number, parent_work_number) VALUES ($1, $2)`
+	_, err = db.Connection.Exec(ctx, q, workNumber, parentWorkNumber)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *PGCon) AddTaskChildRelation(ctx context.Context, parentWorkNumber, newChildWorkNumber string) (err error) {
+	ctx, span := trace.StartSpan(ctx, "pg_add_task_child_relation")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	q := `UPDATE works_relations SET child_work_numbers = array_append(child_work_numbers, $1) WHERE work_number = $2`
+
+	_, err = db.Connection.Exec(ctx, q, newChildWorkNumber, parentWorkNumber)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (db *PGCon) GetTaskStepsToWait(ctx context.Context, workNumber, blockName string) ([]string, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_task_steps_to_wait")
 	defer span.End()

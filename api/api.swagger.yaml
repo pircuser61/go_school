@@ -4234,6 +4234,14 @@ components:
           description: Current approvement start time (UTC)
         is_paused:
           type: boolean
+        parent_work_number:
+          type: string
+          description: Parent task work number
+        child_work_numbers:
+          type: array
+          description: Child tasks work numbers
+          items:
+            type: string
       required:
         - id
         - version_id
@@ -4515,6 +4523,8 @@ components:
           type: string
           example: runned
         work_number:
+          type: string
+        parent_work_number:
           type: string
       required:
         - pipeline_id
@@ -5261,6 +5271,8 @@ components:
           type: array
           items:
             type: string
+        parent_work_number:
+          type: string
     RunNewVersionByPrevVersionRequest:
       required: [ work_number, description, application_body, keys, attachment_fields ]
       type: object
@@ -5356,6 +5368,14 @@ components:
           type: object
           properties: { }
           description: мапа листов согласований из настроек сценария
+        parent_work_number:
+          type: string
+          description: Номер родительской заявки
+        child_work_numbers:
+          type: array
+          items:
+            type: string
+          description: Массив номеров дочерних заявок
       required:
         - id
         - version_id

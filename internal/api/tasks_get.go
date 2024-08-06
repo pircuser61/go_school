@@ -60,6 +60,8 @@ type taskResp struct {
 	NodeGroup          []NodeGroup            `json:"node_group"`
 	ApprovalList       map[string]string      `json:"approval_list"`
 	IsPaused           bool                   `json:"is_paused"`
+	ParentWorkNumber   *string                `json:"parent_work_number"`
+	ChildWorkNumbers   []string               `json:"child_work_numbers"`
 }
 
 type step struct {
@@ -157,6 +159,8 @@ func (taskResp) toResponse(in *taskToResponseDTO) *taskResp {
 		StatusAuthor:       in.task.StatusAuthor,
 		ProcessDeadline:    in.dln,
 		NodeGroup:          groupsToResponse(in.task.NodeGroup),
+		ParentWorkNumber:   in.task.ParentWorkNumber,
+		ChildWorkNumbers:   in.task.ChildWorkNumbers,
 	}
 
 	approvalList := map[string]string{}
@@ -378,6 +382,16 @@ func (ae *Env) GetTask(w http.ResponseWriter, req *http.Request, workNumber stri
 		return
 	}
 
+	rel, err := ae.DB.GetTaskRelations(ctx, dbTask.WorkNumber)
+	if err != nil {
+		return
+	}
+
+	if rel != nil && rel.WorkNumber != "" {
+		dbTask.ParentWorkNumber = rel.ParentWorkNumber
+		dbTask.ChildWorkNumbers = rel.ChildWorkNumbers
+	}
+
 	resp := &taskResp{}
 
 	toResponse := &taskToResponseDTO{
@@ -591,6 +605,18 @@ func (ae *Env) GetTasks(w http.ResponseWriter, req *http.Request, params GetTask
 
 		if len(mapApprovalLists) > 0 {
 			resp.Tasks[i].ApprovalList = mapApprovalLists
+		}
+
+		rel, err := ae.DB.GetTaskRelations(ctx, resp.Tasks[i].WorkNumber)
+		if err != nil {
+			errorHandler.handleError(UnknownError, err)
+
+			return
+		}
+
+		if rel != nil && rel.WorkNumber != "" {
+			resp.Tasks[i].ParentWorkNumber = rel.ParentWorkNumber
+			resp.Tasks[i].ChildWorkNumbers = rel.ChildWorkNumbers
 		}
 
 		if resp.Tasks[i].CurrentExecutor.ExecutionGroupName == "" {

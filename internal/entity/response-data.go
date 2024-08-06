@@ -615,11 +615,12 @@ type EriusFunctionValue struct {
 }
 
 type RunResponse struct {
-	PipelineID uuid.UUID   `json:"pipeline_id" example:"916ad995-8d13-49fb-82ee-edd4f97649e2" format:"uuid"`
-	WorkNumber string      `json:"work_number"`
-	Status     string      `json:"status" example:"runned"`
-	Output     interface{} `json:"output"`
-	Errors     []string    `json:"errors"`
+	PipelineID       uuid.UUID   `json:"pipeline_id" example:"916ad995-8d13-49fb-82ee-edd4f97649e2" format:"uuid"`
+	WorkNumber       string      `json:"work_number"`
+	Status           string      `json:"status" example:"runned"`
+	Output           interface{} `json:"output"`
+	Errors           []string    `json:"errors"`
+	ParentWorkNumber *string     `json:"parent_work_number,omitempty"`
 }
 
 type SchedulerTasksResponse struct {
