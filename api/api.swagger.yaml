@@ -5838,6 +5838,9 @@ components:
         hide_executor:
           type: boolean
           description: flag to show executor
+        child_work_blueprint_id:
+          type:  string
+          description: child work blueprint ID
       required:
         - type
         - executors
