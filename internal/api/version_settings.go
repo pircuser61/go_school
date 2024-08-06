@@ -391,7 +391,7 @@ func (ae *Env) SaveExternalSystemSettings(
 
 	defer req.Body.Close()
 
-	log = log.WithField(script.Body, string(b))
+	log = log.WithField(script.Body, string(b)) //nolint:staticcheck // Логер используется внутри errorHandler
 
 	var externalSystem e.ExternalSystem
 
@@ -546,7 +546,7 @@ func (ae *Env) AddExternalSystemToVersion(w http.ResponseWriter, req *http.Reque
 
 	defer req.Body.Close()
 
-	log = log.WithField(script.Body, string(b))
+	log = log.WithField(script.Body, string(b)) //nolint:staticcheck // Логер используется внутри errorHandler
 
 	var systemID ExternalSystemId
 
@@ -814,7 +814,7 @@ func (ae *Env) AllowRunAsOthers(w http.ResponseWriter, r *http.Request, versionI
 
 	defer r.Body.Close()
 
-	log = log.WithField(script.Body, string(b))
+	log = log.WithField(script.Body, string(b)) //nolint:staticcheck // Логер используется внутри errorHandler
 
 	var allowRunAsOthers bool
 
