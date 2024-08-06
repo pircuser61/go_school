@@ -91,13 +91,11 @@ type ExecutorNotifTemplate struct {
 }
 
 type ProcessFinishedTemplate struct {
-	WorkNumber  string
-	Name        string
-	Initiator   *sso.UserInfo
-	Mailto      string
-	Login       string
-	SdURL       string
-	Description []orderedmap.OrderedMap
+	WorkNumber string
+	Name       string
+	SdURL      string
+	Mailto     string
+	Login      string
 }
 
 type ReviewTemplate struct {
@@ -1115,6 +1113,23 @@ func NewFunctionNotify(funcName, funcVersion string, versions []script.VersionsB
 	}
 }
 
+func NewNotifyProcessFinished(dto *ProcessFinishedTemplate) Template {
+	return Template{
+		Subject:  fmt.Sprintf("Заявка № %s %s завершена", dto.WorkNumber, dto.Name),
+		Template: "internal/mail/template/44notifyProcessFinished.html",
+		Image:    "05_zayavka_vzyata_v_rabotu.png",
+		Variables: struct {
+			ID   string
+			Name string
+			Link string
+		}{
+			ID:   dto.WorkNumber,
+			Name: dto.Name,
+			Link: fmt.Sprintf(TaskURLTemplate, dto.SdURL, dto.WorkNumber),
+		},
+	}
+}
+
 func NewSignSLAExpiredTemplate(workNumber, workTitle, sdURL string) Template {
 	return Template{
 		Subject:  fmt.Sprintf("По заявке № %s %s- истекло время подписания", workNumber, workTitle),
@@ -1128,27 +1143,6 @@ func NewSignSLAExpiredTemplate(workNumber, workTitle, sdURL string) Template {
 			ID:   workNumber,
 			Name: workTitle,
 			Link: fmt.Sprintf(TaskURLTemplate, sdURL, workNumber),
-		},
-	}
-}
-
-func NewAppCompletedTemplate(dto *ProcessFinishedTemplate) Template {
-	dto.Description = CheckGroup(dto.Description)
-
-	return Template{
-		Subject:  fmt.Sprintf("Заявка № %s %s завершена", dto.WorkNumber, dto.Name),
-		Template: "internal/mail/template/44appCompleted-template.html",
-		Image:    "05_zayavka_vzyata_v_rabotu.png",
-		Variables: struct {
-			ID          string
-			Name        string
-			Link        string
-			Description []orderedmap.OrderedMap
-		}{
-			ID:          dto.WorkNumber,
-			Name:        dto.Name,
-			Link:        fmt.Sprintf(TaskURLTemplate, dto.SdURL, dto.WorkNumber),
-			Description: dto.Description,
 		},
 	}
 }

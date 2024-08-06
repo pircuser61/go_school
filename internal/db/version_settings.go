@@ -242,6 +242,24 @@ func (db *PGCon) SaveVersionSettings(ctx context.Context, settings e.ProcessSett
 	return nil
 }
 
+func (db *PGCon) NeedToNotifyProcessFinished(ctx context.Context, versionID uuid.UUID) (bool, error) {
+	ctx, span := trace.StartSpan(ctx, "pg_get_notify_process_finished")
+	defer span.End()
+
+	const q = `
+	SELECT notify_process_finished
+	FROM version_settings
+	WHERE version_id = $1`
+
+	var notify bool
+
+	if err := db.Connection.QueryRow(ctx, q, versionID).Scan(&notify); err != nil {
+		return false, err
+	}
+
+	return notify, nil
+}
+
 //nolint:gocritic //нужно для реализации интерфейса Database
 func (db *PGCon) SaveVersionMainSettings(ctx context.Context, params e.ProcessSettings) error {
 	ctx, span := trace.StartSpan(ctx, "pg_save_version_main_settings")

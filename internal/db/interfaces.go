@@ -263,7 +263,7 @@ type Database interface {
 	SaveVersionSettings(ctx c.Context, settings e.ProcessSettings, schemaFlag *string) error
 	SaveVersionMainSettings(ctx c.Context, settings e.ProcessSettings) error
 	GetVersionSettings(ctx c.Context, versionID string) (e.ProcessSettings, error)
-	GetNotifyProcessFinished(ctx c.Context, versionID uuid.UUID) (bool, error)
+	NeedToNotifyProcessFinished(ctx c.Context, versionID uuid.UUID) (bool, error)
 	AddExternalSystemToVersion(ctx c.Context, versionID string, systemID string) error
 	GetExternalSystemsIDs(ctx c.Context, versionID string) ([]uuid.UUID, error)
 	GetExternalSystemSettings(ctx c.Context, versionID string, systemID string) (e.ExternalSystem, error)

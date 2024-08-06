@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"context"
+
 	"gitlab.services.mts.ru/abp/mail/pkg/email"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
@@ -102,8 +103,8 @@ func (gb *GoEndBlock) setMailTemplates(
 		return nil, getUserEmailErr
 	}
 
-	mailTemplates[userEmail] = mail.NewAppCompletedTemplate(
-		&mail.AppCompletedTemplate{
+	mailTemplates[userEmail] = mail.NewNotifyProcessFinished(
+		&mail.ProcessFinishedTemplate{
 			WorkNumber: gb.RunContext.WorkNumber,
 			Name:       gb.RunContext.NotifName,
 			SdURL:      gb.RunContext.Services.Sender.SdAddress,
