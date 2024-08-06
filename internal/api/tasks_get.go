@@ -520,7 +520,7 @@ const (
 	getTasksUsersPath = "/tasks/users"
 )
 
-//nolint:dupl,gocritic //its not duplicate // params без поинтера нужен для интерфейса
+//nolint:dupl,gocritic,gocognit //its not duplicate // params без поинтера нужен для интерфейса
 func (ae *Env) GetTasks(w http.ResponseWriter, req *http.Request, params GetTasksParams) {
 	start := time.Now()
 	ctx, s := trace.StartSpan(req.Context(), "get_tasks")
@@ -607,9 +607,9 @@ func (ae *Env) GetTasks(w http.ResponseWriter, req *http.Request, params GetTask
 			resp.Tasks[i].ApprovalList = mapApprovalLists
 		}
 
-		rel, err := ae.DB.GetTaskRelations(ctx, resp.Tasks[i].WorkNumber)
-		if err != nil {
-			errorHandler.handleError(UnknownError, err)
+		rel, taskErr := ae.DB.GetTaskRelations(ctx, resp.Tasks[i].WorkNumber)
+		if taskErr != nil {
+			errorHandler.handleError(UnknownError, taskErr)
 
 			return
 		}

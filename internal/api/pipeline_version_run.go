@@ -327,6 +327,7 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 	if req.WorkNumber == "" {
 	GetWorkNumber:
 		req.WorkNumber, err = ae.Sequence.GetWorkNumber(r.Context())
+
 		if err != nil {
 			log.WithField(script.FuncName, "GetWorkNumber").Error(err)
 			errorHandler.handleError(GetWorkNumberError, err)
@@ -337,6 +338,7 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 
 		if req.WorkNumber == *req.ParentWorkNumber {
 			log.Warning("generated and parent work numbers are equal, trying to generate again")
+
 			goto GetWorkNumber
 		}
 	}
@@ -454,17 +456,17 @@ func (ae *Env) runVersion(ctx c.Context, log logger.Logger, run *runVersionsDTO)
 	}
 
 	if run.ParentWorkNumber != nil {
-		dbTask, err := ae.DB.GetTask(
+		dbTask, taskErr := ae.DB.GetTask(
 			ctx,
 			[]string{""},
 			[]string{""},
 			"",
 			*run.ParentWorkNumber,
 		)
-		if err != nil {
-			log.Error(err)
+		if taskErr != nil {
+			log.Error(taskErr)
 
-			return errors.Join(PipelineCreateError, err)
+			return errors.Join(PipelineCreateError, taskErr)
 		}
 
 		if dbTask == nil {
@@ -827,6 +829,7 @@ func cleanKey(mapKeys interface{}) string {
 	return utils.CleanUnexpectedSymbols(keyStr)
 }
 
+// nolint:nestif //it's ok
 func (ae *Env) createEmptyTask(
 	ctx c.Context,
 	storage db.Database,
@@ -887,12 +890,12 @@ func (ae *Env) createEmptyTask(
 			return fmt.Errorf("create task parent relation, %w", err)
 		}
 
-		parentRel, err := txStorage.GetTaskRelations(ctx, *dto.ParentWorkNumber)
-		if err != nil {
-			return fmt.Errorf("get task parent relation, %w", err)
+		parentRel, taskErr := txStorage.GetTaskRelations(ctx, *dto.ParentWorkNumber)
+		if taskErr != nil {
+			return fmt.Errorf("get task parent relation, %w", taskErr)
 		}
 
-		if parentRel == nil {
+		if parentRel == nil || parentRel.WorkNumber == "" {
 			err = txStorage.CreateTaskEmptyRelation(ctx, *dto.ParentWorkNumber)
 			if err != nil {
 				return fmt.Errorf("create parent task empty relation, %w", err)

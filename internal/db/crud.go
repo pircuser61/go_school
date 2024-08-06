@@ -1909,7 +1909,7 @@ func (db *PGCon) GetTaskRelations(ctx context.Context, workNumber string) (rel *
 		}
 	}
 
-	if err = rows.Err(); err != nil {
+	if err := rows.Err(); err != nil {
 		return nil, err
 	}
 
@@ -1924,6 +1924,7 @@ func (db *PGCon) CreateTaskEmptyRelation(ctx context.Context, workNumber string)
 	// language=PostgreSQL
 	q := `INSERT INTO works_relations (work_number) VALUES ($1)`
 	_, err = db.Connection.Exec(ctx, q, workNumber)
+
 	if err != nil {
 		return err
 	}
@@ -1939,6 +1940,7 @@ func (db *PGCon) CreateTaskParentRelation(ctx context.Context, workNumber, paren
 	// language=PostgreSQL
 	q := `INSERT INTO works_relations (work_number, parent_work_number) VALUES ($1, $2)`
 	_, err = db.Connection.Exec(ctx, q, workNumber, parentWorkNumber)
+
 	if err != nil {
 		return err
 	}
