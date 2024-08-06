@@ -60,6 +60,8 @@ type taskResp struct {
 	NodeGroup          []NodeGroup            `json:"node_group"`
 	ApprovalList       map[string]string      `json:"approval_list"`
 	IsPaused           bool                   `json:"is_paused"`
+	ParentWorkNumber   *string                `json:"parent_work_number"`
+	ChildWorkNumbers   []string               `json:"child_work_numbers"`
 }
 
 type step struct {
@@ -157,6 +159,8 @@ func (taskResp) toResponse(in *taskToResponseDTO) *taskResp {
 		StatusAuthor:       in.task.StatusAuthor,
 		ProcessDeadline:    in.dln,
 		NodeGroup:          groupsToResponse(in.task.NodeGroup),
+		ParentWorkNumber:   in.task.ParentWorkNumber,
+		ChildWorkNumbers:   in.task.ChildWorkNumbers,
 	}
 
 	approvalList := map[string]string{}
@@ -378,6 +382,16 @@ func (ae *Env) GetTask(w http.ResponseWriter, req *http.Request, workNumber stri
 		return
 	}
 
+	rel, err := ae.DB.GetTaskRelations(ctx, dbTask.WorkNumber)
+	if err != nil {
+		return
+	}
+
+	if rel != nil && rel.WorkNumber != "" {
+		dbTask.ParentWorkNumber = rel.ParentWorkNumber
+		dbTask.ChildWorkNumbers = rel.ChildWorkNumbers
+	}
+
 	resp := &taskResp{}
 
 	toResponse := &taskToResponseDTO{
@@ -506,7 +520,7 @@ const (
 	getTasksUsersPath = "/tasks/users"
 )
 
-//nolint:dupl,gocritic //its not duplicate // params без поинтера нужен для интерфейса
+//nolint:dupl,gocritic,gocognit //its not duplicate // params без поинтера нужен для интерфейса
 func (ae *Env) GetTasks(w http.ResponseWriter, req *http.Request, params GetTasksParams) {
 	start := time.Now()
 	ctx, s := trace.StartSpan(req.Context(), "get_tasks")
@@ -591,6 +605,18 @@ func (ae *Env) GetTasks(w http.ResponseWriter, req *http.Request, params GetTask
 
 		if len(mapApprovalLists) > 0 {
 			resp.Tasks[i].ApprovalList = mapApprovalLists
+		}
+
+		rel, taskErr := ae.DB.GetTaskRelations(ctx, resp.Tasks[i].WorkNumber)
+		if taskErr != nil {
+			errorHandler.handleError(UnknownError, taskErr)
+
+			return
+		}
+
+		if rel != nil && rel.WorkNumber != "" {
+			resp.Tasks[i].ParentWorkNumber = rel.ParentWorkNumber
+			resp.Tasks[i].ChildWorkNumbers = rel.ChildWorkNumbers
 		}
 
 		if resp.Tasks[i].CurrentExecutor.ExecutionGroupName == "" {

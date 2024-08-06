@@ -45,6 +45,12 @@ type TasksMeta struct {
 	Blueprints map[string][]string `json:"blueprints"` // SD blueprints: [workNumbers]
 }
 
+type TaskRelations struct {
+	WorkNumber       string
+	ParentWorkNumber *string
+	ChildWorkNumbers []string
+}
+
 type EriusTasksPage struct {
 	Tasks     []EriusTask `json:"tasks"`
 	Total     int         `json:"total"`
@@ -128,6 +134,9 @@ type EriusTask struct {
 	CurrentExecutionStart   *time.Time          `json:"current_execution_start,omitempty"`
 	CurrentApprovementStart *time.Time          `json:"current_approvement_start,omitempty"`
 	IsPaused                bool                `json:"is_paused"`
+
+	ParentWorkNumber *string  `json:"parent_work_number,omitempty"`
+	ChildWorkNumbers []string `json:"child_work_numbers,omitempty"`
 }
 
 type CurrentExecutorData struct {
