@@ -799,7 +799,7 @@ func NewExecutionNeedTakeInWorkTpl(dto *ExecutorNotifTemplate) Template {
 
 	dto.Description = CheckGroup(dto.Description)
 
-	comm := defaultComment
+	comm := fmt.Sprintf("с комментарием: %q", defaultComment)
 
 	if dto.Comment != "" {
 		comm = dto.Comment
