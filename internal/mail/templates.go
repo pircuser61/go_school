@@ -1116,16 +1116,20 @@ func NewFunctionNotify(funcName, funcVersion string, versions []script.VersionsB
 func NewNotifyProcessFinished(dto *ProcessFinishedTemplate) Template {
 	return Template{
 		Subject:  fmt.Sprintf("Заявка № %s %s завершена", dto.WorkNumber, dto.Name),
-		Template: "internal/mail/template/44notifyProcessFinished.html",
+		Template: "internal/mail/template/44notifyProcessFinished-template.html",
 		Image:    "05_zayavka_vzyata_v_rabotu.png",
 		Variables: struct {
-			ID   string
-			Name string
-			Link string
+			ID     string
+			Name   string
+			Link   string
+			MailTo string
+			Login  string
 		}{
-			ID:   dto.WorkNumber,
-			Name: dto.Name,
-			Link: fmt.Sprintf(TaskURLTemplate, dto.SdURL, dto.WorkNumber),
+			ID:     dto.WorkNumber,
+			Name:   dto.Name,
+			Link:   fmt.Sprintf(TaskURLTemplate, dto.SdURL, dto.WorkNumber),
+			MailTo: dto.Mailto,
+			Login:  dto.Login,
 		},
 	}
 }

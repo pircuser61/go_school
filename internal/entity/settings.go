@@ -76,13 +76,14 @@ type ProcessSettings struct {
 
 func (ps *ProcessSettings) UnmarshalJSON(bytes []byte) error {
 	temp := struct {
-		ID                 string           `json:"version_id"`
-		StartSchema        *json.RawMessage `json:"start_schema"`
-		EndSchema          *json.RawMessage `json:"end_schema"`
-		ResubmissionPeriod int              `json:"resubmission_period"`
-		Name               string           `json:"name"`
-		SLA                int              `json:"sla"`
-		WorkType           string           `json:"work_type"`
+		ID                    string           `json:"version_id"`
+		StartSchema           *json.RawMessage `json:"start_schema"`
+		EndSchema             *json.RawMessage `json:"end_schema"`
+		ResubmissionPeriod    int              `json:"resubmission_period"`
+		Name                  string           `json:"name"`
+		SLA                   int              `json:"sla"`
+		WorkType              string           `json:"work_type"`
+		NotifyProcessFinished bool             `json:"notify_process_finished"`
 	}{}
 
 	if err := json.Unmarshal(bytes, &temp); err != nil {
@@ -94,6 +95,7 @@ func (ps *ProcessSettings) UnmarshalJSON(bytes []byte) error {
 	ps.Name = temp.Name
 	ps.SLA = temp.SLA
 	ps.WorkType = temp.WorkType
+	ps.NotifyProcessFinished = temp.NotifyProcessFinished
 
 	if temp.StartSchema != nil {
 		ps.StartSchemaRaw = *temp.StartSchema

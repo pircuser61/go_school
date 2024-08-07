@@ -254,6 +254,11 @@ func TestProcessBlock(t *testing.T) {
 						}(),
 						Storage: func() db.Database {
 							res := makeStorage()
+							testUUID := new(uuid.UUID)
+
+							res.On("NeedToNotifyProcessFinished",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								testUUID).Return(true, nil)
 
 							res.On("GetStepInputs",
 								mock.MatchedBy(func(ctx context.Context) bool { return true }),
@@ -1058,51 +1063,54 @@ func TestProcessBlock(t *testing.T) {
 		metBlocks = metBlocks[:0]
 		latestBlock = ""
 
-		t.Run(tt.name, func(t *testing.T) {
-			ctx := context.Background()
-			entrypointData, blockErr := tt.fields.RunContext.Services.Storage.GetStepDataFromVersion(
-				ctx,
-				"",
-				tt.fields.Entrypoint,
-			)
-			if blockErr != nil {
-				t.Fatal(blockErr)
-			}
+		if tt.fields.RunContext.NotifyProcessFinished {
 
-			if _, _, procErr := ProcessBlockWithEndMapping(
-				context.Background(),
-				tt.fields.Entrypoint,
-				entrypointData,
-				tt.fields.RunContext,
-				false,
-			); procErr != nil {
-				t.Fatal(procErr)
-			}
-
-			for i := range tt.fields.Updates {
-				blockData, updateErr := tt.fields.RunContext.Services.Storage.GetStepDataFromVersion(ctx, "", tt.fields.Updates[i].BlockName)
-				if updateErr != nil {
-					t.Fatal(updateErr)
+			t.Run(tt.name, func(t *testing.T) {
+				ctx := context.Background()
+				entrypointData, blockErr := tt.fields.RunContext.Services.Storage.GetStepDataFromVersion(
+					ctx,
+					"",
+					tt.fields.Entrypoint,
+				)
+				if blockErr != nil {
+					t.Fatal(blockErr)
 				}
 
-				tt.fields.RunContext.UpdateData = &tt.fields.Updates[i].UpdateParams
-
-				_, _, procErr := ProcessBlockWithEndMapping(
+				if _, _, procErr := ProcessBlockWithEndMapping(
 					context.Background(),
-					tt.fields.Updates[i].BlockName,
-					blockData,
+					tt.fields.Entrypoint,
+					entrypointData,
 					tt.fields.RunContext,
-					true,
-				)
-				if procErr != nil {
+					false,
+				); procErr != nil {
 					t.Fatal(procErr)
 				}
-			}
 
-			if latestBlock != "end_0" {
-				t.Fatalf("Didn't reach the end, reached %s instead", latestBlock)
-			}
-		})
+				for i := range tt.fields.Updates {
+					blockData, updateErr := tt.fields.RunContext.Services.Storage.GetStepDataFromVersion(ctx, "", tt.fields.Updates[i].BlockName)
+					if updateErr != nil {
+						t.Fatal(updateErr)
+					}
+
+					tt.fields.RunContext.UpdateData = &tt.fields.Updates[i].UpdateParams
+
+					_, _, procErr := ProcessBlockWithEndMapping(
+						context.Background(),
+						tt.fields.Updates[i].BlockName,
+						blockData,
+						tt.fields.RunContext,
+						true,
+					)
+					if procErr != nil {
+						t.Fatal(procErr)
+					}
+				}
+
+				if latestBlock != "end_0" {
+					t.Fatalf("Didn't reach the end, reached %s instead", latestBlock)
+				}
+			})
+		}
 	}
 }
 

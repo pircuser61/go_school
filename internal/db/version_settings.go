@@ -131,12 +131,11 @@ func (db *PGCon) GetVersionSettings(ctx context.Context, versionID string) (e.Pr
 	// nolint:gocritic,lll
 	// language=PostgreSQL
 	const query = `
-	SELECT start_schema, end_schema, resubmission_period, raw_start_schema,
-	    (select p.name from pipelines p where p.id = 
-	       (select pipeline_id from versions v where v.id = 
-	       	(select version_id from version_settings vs where vs.id = version_settings.id)
-	       )
-	    ) "name"
+	SELECT start_schema, end_schema, resubmission_period, raw_start_schema, notify_process_finished,
+       (select p.name from pipelines p where p.id =
+        (select pipeline_id from versions v where v.id =
+        (select version_id from version_settings vs where vs.id = version_settings.id))
+       ) "name"
 	FROM version_settings
 	WHERE version_id = $1`
 
@@ -144,7 +143,13 @@ func (db *PGCon) GetVersionSettings(ctx context.Context, versionID string) (e.Pr
 
 	ps := e.ProcessSettings{VersionID: versionID}
 
-	err := row.Scan(&ps.StartSchema, &ps.EndSchema, &ps.ResubmissionPeriod, &ps.StartSchemaRaw, &ps.Name)
+	err := row.Scan(
+		&ps.StartSchema,
+		&ps.EndSchema,
+		&ps.ResubmissionPeriod,
+		&ps.StartSchemaRaw,
+		&ps.NotifyProcessFinished,
+		&ps.Name)
 	if err != nil && err != pgx.ErrNoRows {
 		return ps, err
 	}
@@ -249,12 +254,12 @@ func (db *PGCon) SaveVersionMainSettings(ctx context.Context, params e.ProcessSe
 
 	// nolint:gocritic
 	// language=PostgreSQL
-	const query = `INSERT INTO version_settings (id, version_id, resubmission_period) 
-			VALUES ($1, $2, $3)
+	const query = `INSERT INTO version_settings (id, version_id, resubmission_period, notify_process_finished) 
+			VALUES ($1, $2, $3, $4)
 			ON CONFLICT (version_id) DO UPDATE 
 			SET resubmission_period = excluded.resubmission_period`
 
-	_, err := db.Connection.Exec(ctx, query, uuid.New(), params.VersionID, params.ResubmissionPeriod)
+	_, err := db.Connection.Exec(ctx, query, uuid.New(), params.VersionID, params.ResubmissionPeriod, params.NotifyProcessFinished)
 	if err != nil {
 		return err
 	}
