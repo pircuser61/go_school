@@ -91,6 +91,10 @@ func makeStorage() *mocks.MockedDatabase {
 		mock.MatchedBy(func(blockIds []string) bool { return true }),
 	).Return(store.NewStore(), nil)
 
+	res.On("NeedToNotifyProcessFinished",
+		mock.MatchedBy(func(ctx context.Context) bool { return true }),
+		mock.AnythingOfType("uuid.UUID")).Return(true, nil)
+
 	res.On("GetVersionByWorkNumber",
 		mock.MatchedBy(func(ctx context.Context) bool { return true }),
 		mock.MatchedBy(func(workNumber string) bool { return true }),
@@ -232,6 +236,7 @@ func TestProcessBlock(t *testing.T) {
 	var (
 		metBlocks   []string
 		latestBlock string
+		testUUID    *uuid.UUID
 	)
 
 	tests := []struct {
@@ -254,11 +259,7 @@ func TestProcessBlock(t *testing.T) {
 						}(),
 						Storage: func() db.Database {
 							res := makeStorage()
-							testUUID := new(uuid.UUID)
-
-							res.On("NeedToNotifyProcessFinished",
-								mock.MatchedBy(func(ctx context.Context) bool { return true }),
-								testUUID).Return(true, nil)
+							testUUID = new(uuid.UUID)
 
 							res.On("GetStepInputs",
 								mock.MatchedBy(func(ctx context.Context) bool { return true }),
@@ -346,6 +347,10 @@ func TestProcessBlock(t *testing.T) {
 								mock.MatchedBy(func(ctx context.Context) bool { return true }),
 								uuid.Nil,
 							).Return(false, nil)
+
+							res.On("NeedToNotifyProcessFinished",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								testUUID).Return(true, nil)
 
 							txStorage.EXPECT().CommitTransaction(mock.Anything).Return(nil).Once()
 
@@ -1063,54 +1068,51 @@ func TestProcessBlock(t *testing.T) {
 		metBlocks = metBlocks[:0]
 		latestBlock = ""
 
-		if tt.fields.RunContext.NotifyProcessFinished {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
+			entrypointData, blockErr := tt.fields.RunContext.Services.Storage.GetStepDataFromVersion(
+				ctx,
+				"",
+				tt.fields.Entrypoint,
+			)
+			if blockErr != nil {
+				t.Fatal(blockErr)
+			}
 
-			t.Run(tt.name, func(t *testing.T) {
-				ctx := context.Background()
-				entrypointData, blockErr := tt.fields.RunContext.Services.Storage.GetStepDataFromVersion(
-					ctx,
-					"",
-					tt.fields.Entrypoint,
-				)
-				if blockErr != nil {
-					t.Fatal(blockErr)
+			if _, _, procErr := ProcessBlockWithEndMapping(
+				context.Background(),
+				tt.fields.Entrypoint,
+				entrypointData,
+				tt.fields.RunContext,
+				false,
+			); procErr != nil {
+				t.Fatal(procErr)
+			}
+
+			for i := range tt.fields.Updates {
+				blockData, updateErr := tt.fields.RunContext.Services.Storage.GetStepDataFromVersion(ctx, "", tt.fields.Updates[i].BlockName)
+				if updateErr != nil {
+					t.Fatal(updateErr)
 				}
 
-				if _, _, procErr := ProcessBlockWithEndMapping(
+				tt.fields.RunContext.UpdateData = &tt.fields.Updates[i].UpdateParams
+
+				_, _, procErr := ProcessBlockWithEndMapping(
 					context.Background(),
-					tt.fields.Entrypoint,
-					entrypointData,
+					tt.fields.Updates[i].BlockName,
+					blockData,
 					tt.fields.RunContext,
-					false,
-				); procErr != nil {
+					true,
+				)
+				if procErr != nil {
 					t.Fatal(procErr)
 				}
+			}
 
-				for i := range tt.fields.Updates {
-					blockData, updateErr := tt.fields.RunContext.Services.Storage.GetStepDataFromVersion(ctx, "", tt.fields.Updates[i].BlockName)
-					if updateErr != nil {
-						t.Fatal(updateErr)
-					}
-
-					tt.fields.RunContext.UpdateData = &tt.fields.Updates[i].UpdateParams
-
-					_, _, procErr := ProcessBlockWithEndMapping(
-						context.Background(),
-						tt.fields.Updates[i].BlockName,
-						blockData,
-						tt.fields.RunContext,
-						true,
-					)
-					if procErr != nil {
-						t.Fatal(procErr)
-					}
-				}
-
-				if latestBlock != "end_0" {
-					t.Fatalf("Didn't reach the end, reached %s instead", latestBlock)
-				}
-			})
-		}
+			if latestBlock != "end_0" {
+				t.Fatalf("Didn't reach the end, reached %s instead", latestBlock)
+			}
+		})
 	}
 }
 
