@@ -90,6 +90,14 @@ type ExecutorNotifTemplate struct {
 	Comment     string
 }
 
+type ProcessFinishedTemplate struct {
+	WorkNumber string
+	Name       string
+	SdURL      string
+	Mailto     string
+	Login      string
+}
+
 type ReviewTemplate struct {
 	ID          string
 	Name        string
@@ -1101,6 +1109,27 @@ func NewFunctionNotify(funcName, funcVersion string, versions []script.VersionsB
 			HaveDraft:       len(draftVersions) > 0,
 			ActiveVersions:  activeVersions,
 			DraftVersions:   draftVersions,
+		},
+	}
+}
+
+func NewNotifyProcessFinished(dto *ProcessFinishedTemplate) Template {
+	return Template{
+		Subject:  fmt.Sprintf("Заявка № %s %s завершена", dto.WorkNumber, dto.Name),
+		Template: "internal/mail/template/44notifyProcessFinished-template.html",
+		Image:    "05_zayavka_vzyata_v_rabotu.png",
+		Variables: struct {
+			ID     string
+			Name   string
+			Link   string
+			MailTo string
+			Login  string
+		}{
+			ID:     dto.WorkNumber,
+			Name:   dto.Name,
+			Link:   fmt.Sprintf(TaskURLTemplate, dto.SdURL, dto.WorkNumber),
+			MailTo: dto.Mailto,
+			Login:  dto.Login,
 		},
 	}
 }

@@ -33,7 +33,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/httpError'
   /run/retry:
-    get: 
+    get:
       summary: retry zombie works
       operationId: retryTasks
       parameters:
@@ -49,7 +49,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/httpError'      
+                $ref: '#/components/schemas/httpError'
   /application/rate/{workNumber}:
     post:
       summary: rate application
@@ -4028,12 +4028,16 @@ components:
           minimum: 1
         work_type:
           $ref: "#/components/schemas/WorkType"
+        notify_process_finished:
+          type: boolean
+          description: Флаг уведомлять ли инициатора об окончании процесса
       required:
         - version_id
         - name
         - resubmission_period
         - sla
         - work_type
+        - notify_process_finished
     ExternalSystem:
       type: object
       properties:
@@ -6542,7 +6546,7 @@ components:
             $ref: '#/components/schemas/MonitoringBlockState'
     BlockErrorResponse:
       type: object
-      properties:        
+      properties:
         url:
           type: string
           description: Ссылка на OpenSearch
@@ -6603,7 +6607,7 @@ components:
         - name
         - type
         - description
-        - value      
+        - value
     MonitoringInputsResponse:
       type: object
       properties:

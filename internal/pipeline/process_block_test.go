@@ -91,6 +91,10 @@ func makeStorage() *mocks.MockedDatabase {
 		mock.MatchedBy(func(blockIds []string) bool { return true }),
 	).Return(store.NewStore(), nil)
 
+	res.On("NeedToNotifyProcessFinished",
+		mock.MatchedBy(func(ctx context.Context) bool { return true }),
+		mock.AnythingOfType("uuid.UUID")).Return(true, nil)
+
 	res.On("GetVersionByWorkNumber",
 		mock.MatchedBy(func(ctx context.Context) bool { return true }),
 		mock.MatchedBy(func(workNumber string) bool { return true }),
@@ -232,6 +236,7 @@ func TestProcessBlock(t *testing.T) {
 	var (
 		metBlocks   []string
 		latestBlock string
+		testUUID    *uuid.UUID
 	)
 
 	tests := []struct {
@@ -254,6 +259,7 @@ func TestProcessBlock(t *testing.T) {
 						}(),
 						Storage: func() db.Database {
 							res := makeStorage()
+							testUUID = new(uuid.UUID)
 
 							res.On("GetStepInputs",
 								mock.MatchedBy(func(ctx context.Context) bool { return true }),
@@ -341,6 +347,10 @@ func TestProcessBlock(t *testing.T) {
 								mock.MatchedBy(func(ctx context.Context) bool { return true }),
 								uuid.Nil,
 							).Return(false, nil)
+
+							res.On("NeedToNotifyProcessFinished",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								testUUID).Return(true, nil)
 
 							txStorage.EXPECT().CommitTransaction(mock.Anything).Return(nil).Once()
 

@@ -107,6 +107,18 @@ func (gb *GoEndBlock) Update(ctx c.Context) (interface{}, error) {
 		gb.happenedEvents = append(gb.happenedEvents, event)
 	}
 
+	notify, err := gb.RunContext.Services.Storage.NeedToNotifyProcessFinished(ctx, gb.RunContext.VersionID)
+	if err != nil {
+		return nil, err
+	}
+
+	if notify {
+		err = gb.handleNotifications(ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return nil, nil
 }
 

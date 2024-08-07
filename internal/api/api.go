@@ -1881,6 +1881,9 @@ type ProcessSettings struct {
 	// Новое имя сценария
 	Name string `json:"name"`
 
+	// Флаг уведомлять ли инициатора об окончании процесса
+	NotifyProcessFinished bool `json:"notify_process_finished"`
+
 	// Срок, в течении которого придет уведомление о том, что пользователь повторно создал заявку. Указывается в часах.
 	ResubmissionPeriod int `json:"resubmission_period"`
 
