@@ -809,7 +809,7 @@ func NewExecutionNeedTakeInWorkTpl(dto *ExecutorNotifTemplate) Template {
 
 	comm := dto.Comment
 
-	if comm[len(comm)-2] == ':' {
+	if comm != "" && comm[len(comm)-2] == ':' {
 		comm += defaultComment
 	}
 
