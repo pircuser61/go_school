@@ -257,7 +257,8 @@ func (db *PGCon) SaveVersionMainSettings(ctx context.Context, params e.ProcessSe
 	const query = `INSERT INTO version_settings (id, version_id, resubmission_period, notify_process_finished) 
 			VALUES ($1, $2, $3, $4)
 			ON CONFLICT (version_id) DO UPDATE 
-			SET resubmission_period = excluded.resubmission_period`
+			SET resubmission_period = excluded.resubmission_period,
+			notify_process_finished = excluded.notify_process_finished`
 
 	_, err := db.Connection.Exec(ctx, query, uuid.New(), params.VersionID, params.ResubmissionPeriod, params.NotifyProcessFinished)
 	if err != nil {
