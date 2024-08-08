@@ -318,10 +318,13 @@ func (gb *GoExecutionBlock) executionActions() []MemberAction {
 			ID:   executionRequestExecutionInfoAction,
 			Type: ActionTypeOther,
 		},
-		{
+	}
+
+	if gb.State.ExecutorsGroupID != "" {
+		actions = append(actions, MemberAction{
 			ID:   executionBackToGroup,
 			Type: ActionTypeOther,
-		},
+		})
 	}
 
 	if gb.State.IsEditable {
