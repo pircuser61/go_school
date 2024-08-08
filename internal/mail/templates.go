@@ -810,7 +810,7 @@ func NewExecutionNeedTakeInWorkTpl(dto *ExecutorNotifTemplate) Template {
 	comm := dto.Comment
 
 	if comm != "" && comm[len(comm)-2] == ':' {
-		comm += defaultComment
+		comm = fmt.Sprintf(" %q", dto.Comment+defaultComment)
 	}
 
 	return Template{
