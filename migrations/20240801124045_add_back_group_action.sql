@@ -1,6 +1,6 @@
 -- +goose Up
 -- +goose StatementBegin
-INSERT INTO dict_actions values ('back_to_group', 'Вернуть в очередь', true, true, false, 'execution');
+INSERT INTO dict_actions values ('back_to_group', 'Вернуть в очередь', true, true, true, 'execution');
 -- +goose StatementEnd
 
 -- +goose Down
