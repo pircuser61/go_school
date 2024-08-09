@@ -320,7 +320,7 @@ func (gb *GoExecutionBlock) executionActions(login string) []MemberAction {
 		},
 	}
 
-	if _, ok := gb.State.InitialExecutors[login]; ok {
+	if _, ok := gb.State.InitialExecutors[login]; ok && gb.State.ExecutorsGroupID != "" {
 		actions = append(actions, MemberAction{
 			ID:   executionBackToGroup,
 			Type: ActionTypeOther,
