@@ -3550,7 +3550,7 @@ func TestGoExecutionActions(t *testing.T) {
 			}
 			tt.fields.RunContext.UpdateData = tt.args.data
 
-			actions := gb.executionActions()
+			actions := gb.executionActions(login)
 			assert.Equal(t, tt.wantActions, actions, fmt.Sprintf("executionActions(%v)", login))
 		})
 	}

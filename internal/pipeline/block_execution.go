@@ -107,7 +107,7 @@ func (gb *GoExecutionBlock) Members() []Member {
 	for login := range gb.State.Executors {
 		members = append(members, Member{
 			Login:                login,
-			Actions:              gb.executionActions(),
+			Actions:              gb.executionActions(login),
 			IsActed:              gb.isExecutionActed(login),
 			ExecutionGroupMember: gb.isPartOfExecutionGroup(login),
 		})
@@ -287,7 +287,7 @@ func (gb *GoExecutionBlock) isPartOfExecutionGroup(login string) bool {
 	return false
 }
 
-func (gb *GoExecutionBlock) executionActions() []MemberAction {
+func (gb *GoExecutionBlock) executionActions(login string) []MemberAction {
 	if gb.State.Decision != nil || gb.State.EditingApp != nil {
 		return nil
 	}
@@ -320,7 +320,7 @@ func (gb *GoExecutionBlock) executionActions() []MemberAction {
 		},
 	}
 
-	if gb.State.ExecutorsGroupID != "" {
+	if _, ok := gb.State.InitialExecutors[login]; ok {
 		actions = append(actions, MemberAction{
 			ID:   executionBackToGroup,
 			Type: ActionTypeOther,
