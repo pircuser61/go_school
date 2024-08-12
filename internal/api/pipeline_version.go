@@ -745,6 +745,8 @@ func (ae *Env) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO) (
 		Productive: true,
 	}
 
+	runCtx.SetTaskEvents(ctx)
+
 	blockData := dto.p.Pipeline.Blocks[pipeline.BlockGoFirstStart]
 
 	log = log.WithField("stepName", pipeline.BlockGoFirstStart)
