@@ -135,6 +135,7 @@ func (gb *GoExecutionBlock) createState(ctx context.Context, ef *entity.EriusFun
 		RepeatPrevDecision:       params.RepeatPrevDecision,
 		UseActualExecutor:        params.UseActualExecutor,
 		HideExecutor:             params.HideExecutor,
+		ChildWorkBlueprintID:     params.ChildWorkBlueprintID,
 		Executors:                make(map[string]struct{}, 0),
 		InitialExecutors:         make(map[string]struct{}, 0),
 		DecisionAttachments:      make([]entity.Attachment, 0),
@@ -142,6 +143,7 @@ func (gb *GoExecutionBlock) createState(ctx context.Context, ef *entity.EriusFun
 		ChangedExecutorsLogs:     make([]ChangeExecutorLog, 0),
 		RequestExecutionInfoLogs: make([]RequestExecutionInfoLog, 0),
 		TakenInWorkLog:           make([]StartWorkLog, 0),
+		ChildTaskWorkLog:         make([]ChildWorkLog, 0),
 	}
 
 	if params.ExecutorsGroupIDPath != nil && *params.ExecutorsGroupIDPath != "" {

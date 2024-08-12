@@ -142,6 +142,10 @@ func (h *HideExecutorsExecutionBlockStepHandler) HandleStep(step *entity.Step) e
 		execBlock.TakenInWorkLog[i].DelegateFor = hideDelegator(execBlock.TakenInWorkLog[i].DelegateFor)
 	}
 
+	for i := range execBlock.ChildTaskWorkLog {
+		execBlock.ChildTaskWorkLog[i].Executor = hiddenUserLogin
+	}
+
 	for i := range execBlock.RequestExecutionInfoLogs {
 		if execBlock.RequestExecutionInfoLogs[i].ReqType == pipeline.RequestInfoQuestion {
 			execBlock.RequestExecutionInfoLogs[i].Login = hiddenUserLogin

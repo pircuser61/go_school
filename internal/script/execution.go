@@ -33,11 +33,12 @@ type ExecutionParams struct {
 	ReworkSLA      int  `json:"rework_sla"`
 	CheckReworkSLA bool `json:"check_rework_sla"`
 
-	IsEditable         bool    `json:"is_editable"`
-	RepeatPrevDecision bool    `json:"repeat_prev_decision"`
-	WorkType           *string `json:"work_type"`
-	UseActualExecutor  bool    `json:"use_actual_executor"`
-	HideExecutor       bool    `json:"hide_executor"`
+	IsEditable           bool    `json:"is_editable"`
+	RepeatPrevDecision   bool    `json:"repeat_prev_decision"`
+	WorkType             *string `json:"work_type"`
+	UseActualExecutor    bool    `json:"use_actual_executor"`
+	HideExecutor         bool    `json:"hide_executor"`
+	ChildWorkBlueprintID *string `json:"child_work_blueprint_id"`
 }
 
 func (a *ExecutionParams) Validate() error {

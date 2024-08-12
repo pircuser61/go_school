@@ -311,6 +311,7 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 					ChangedExecutorsLogs:     make([]ChangeExecutorLog, 0),
 					RequestExecutionInfoLogs: make([]RequestExecutionInfoLog, 0),
 					TakenInWorkLog:           make([]StartWorkLog, 0),
+					ChildTaskWorkLog:         make([]ChildWorkLog, 0),
 					WorkType:                 workType,
 					ExecutionType:            script.ExecutionTypeFromSchema,
 					Deadline:                 time.Date(1, time.January, 1, 14, 0, 0, 0, time.UTC),
@@ -427,6 +428,7 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 					ChangedExecutorsLogs:     make([]ChangeExecutorLog, 0),
 					RequestExecutionInfoLogs: make([]RequestExecutionInfoLog, 0),
 					TakenInWorkLog:           make([]StartWorkLog, 0),
+					ChildTaskWorkLog:         make([]ChildWorkLog, 0),
 					DecisionAttachments:      make([]entity.Attachment, 0),
 					WorkType:                 workType,
 					ExecutionType:            script.ExecutionTypeFromSchema,
@@ -2806,6 +2808,55 @@ func TestGoExecutionActions(t *testing.T) {
 				{ID: "request_execution_info", Type: "other", Params: map[string]interface{}(nil)},
 				{ID: "back_to_group", Type: "other", Params: map[string]interface{}(nil)},
 				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": []string{"form_0"}}},
+			},
+		},
+		{
+			name: "new child task action",
+			fields: fields{
+				Name: stepName,
+				ExecutionData: &ExecutionData{
+					IsTakenInWork: true,
+					ExecutionType: script.ExecutionTypeUser,
+					Executors: map[string]struct{}{
+						exampleExecutor: {},
+					},
+					ChildWorkBlueprintID: func() *string {
+						s := "some_blueprint_id"
+						return &s
+					}(),
+				},
+				RunContext: &BlockRunContext{
+					skipNotifications: false,
+					VarStore: func() *store.VariableStore {
+						s := store.NewStore()
+
+						return s
+					}(),
+					Services: RunContextServices{
+						Storage: func() db.Database {
+							res := &mocks.MockedDatabase{}
+
+							return res
+						}(),
+					},
+				},
+			},
+
+			args: args{
+				ctx: c.Background(),
+				data: &script.BlockUpdateData{
+					ByLogin:    exampleExecutor,
+					Action:     string(entity.TaskUpdateActionNewExecutionTask),
+					Parameters: []byte(`{"child_task_work_number":"J0000000000"}`),
+				},
+			},
+			wantActions: []MemberAction{
+				{ID: "execution", Type: "primary", Params: map[string]interface{}(nil)},
+				{ID: "decline", Type: "secondary", Params: map[string]interface{}(nil)},
+				{ID: "change_executor", Type: "other", Params: map[string]interface{}(nil)},
+				{ID: "request_execution_info", Type: "other", Params: map[string]interface{}(nil)},
+				{ID: "back_to_group", Type: "other", Params: map[string]interface{}(nil)},
+				{ID: "new_execution_task", Type: "other", Params: map[string]interface{}{"child_work_blueprint_id": "some_blueprint_id"}},
 			},
 		},
 		{
