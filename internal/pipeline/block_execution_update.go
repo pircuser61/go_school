@@ -956,6 +956,11 @@ func (gb *GoExecutionBlock) executorBackToGroup() (err error) {
 		ByLogin:     currentLogin,
 	})
 
+	gb.State.TakenInWorkLog = append(gb.State.TakenInWorkLog, StartWorkLog{
+		Executor:  currentLogin,
+		CreatedAt: time.Now(),
+	})
+
 	return nil
 }
 
