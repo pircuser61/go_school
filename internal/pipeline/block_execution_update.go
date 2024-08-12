@@ -159,6 +159,15 @@ func (gb *GoExecutionBlock) handleAction(ctx c.Context, action e.TaskUpdateActio
 		if errUpdate != nil {
 			return errUpdate
 		}
+	case e.TaskUpdateActionNewExecutionTask:
+		if !gb.State.IsTakenInWork {
+			return errors.New("is not taken in work")
+		}
+
+		errUpdate := gb.newExecutionTask()
+		if errUpdate != nil {
+			return errUpdate
+		}
 	case e.TaskUpdateActionExecutorSendEditApp:
 		if !gb.State.IsTakenInWork {
 			return errors.New("is not taken in work")
@@ -941,6 +950,29 @@ func (gb *GoExecutionBlock) executorStartWork(ctx c.Context) (err error) {
 func (gb *GoExecutionBlock) executorBackToGroup() (err error) {
 	gb.State.Executors = gb.State.InitialExecutors
 	gb.State.IsTakenInWork = false
+
+	return nil
+}
+
+type executorUpdateNewExecutionTaskParams struct {
+	Comment             string         `json:"comment"`
+	Attachments         []e.Attachment `json:"attachments"`
+	ChildTaskWorkNumber string         `json:"child_task_work_number"`
+}
+
+func (gb *GoExecutionBlock) newExecutionTask() (err error) {
+	var updateParams executorUpdateNewExecutionTaskParams
+	if err = json.Unmarshal(gb.RunContext.UpdateData.Parameters, &updateParams); err != nil {
+		return errors.New("can't assert provided update data")
+	}
+
+	gb.State.ChildTaskWorkLog = append(gb.State.ChildTaskWorkLog, ChildWorkLog{
+		Executor:        gb.RunContext.UpdateData.ByLogin,
+		CreatedAt:       time.Now(),
+		Comment:         updateParams.Comment,
+		Attachments:     updateParams.Attachments,
+		ChildWorkNumber: updateParams.ChildTaskWorkNumber,
+	})
 
 	return nil
 }

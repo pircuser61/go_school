@@ -38,6 +38,9 @@ const (
 	executionExecuteAction              = "execution"
 	executionDeclineAction              = "decline"
 	executionBackToGroup                = "back_to_group"
+	executionNewExecutionTask           = "new_execution_task"
+
+	childTaskWorkNumber = "child_task_work_number"
 )
 
 type GoExecutionBlock struct {
@@ -328,6 +331,16 @@ func (gb *GoExecutionBlock) executionActions() []MemberAction {
 		actions = append(actions, MemberAction{
 			ID:   executionSendEditAppAction,
 			Type: ActionTypeOther,
+		})
+	}
+
+	if gb.State.ChildWorkBlueprintId != nil && *gb.State.ChildWorkBlueprintId != "" {
+		actions = append(actions, MemberAction{
+			ID:   executionNewExecutionTask,
+			Type: ActionTypeOther,
+			Params: map[string]interface{}{
+				"child_work_blueprint_id": *gb.State.ChildWorkBlueprintId,
+			},
 		})
 	}
 

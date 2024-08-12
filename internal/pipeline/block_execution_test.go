@@ -2809,6 +2809,55 @@ func TestGoExecutionActions(t *testing.T) {
 			},
 		},
 		{
+			name: "new child task action",
+			fields: fields{
+				Name: stepName,
+				ExecutionData: &ExecutionData{
+					IsTakenInWork: true,
+					ExecutionType: script.ExecutionTypeUser,
+					Executors: map[string]struct{}{
+						exampleExecutor: {},
+					},
+					ChildWorkBlueprintId: func() *string {
+						s := "some_blueprint_id"
+						return &s
+					}(),
+				},
+				RunContext: &BlockRunContext{
+					skipNotifications: false,
+					VarStore: func() *store.VariableStore {
+						s := store.NewStore()
+
+						return s
+					}(),
+					Services: RunContextServices{
+						Storage: func() db.Database {
+							res := &mocks.MockedDatabase{}
+
+							return res
+						}(),
+					},
+				},
+			},
+
+			args: args{
+				ctx: c.Background(),
+				data: &script.BlockUpdateData{
+					ByLogin:    exampleExecutor,
+					Action:     string(entity.TaskUpdateActionNewExecutionTask),
+					Parameters: []byte(`{"` + childTaskWorkNumber + `":"J00000000107810"}`),
+				},
+			},
+			wantActions: []MemberAction{
+				{ID: "execution", Type: "primary", Params: map[string]interface{}(nil)},
+				{ID: "decline", Type: "secondary", Params: map[string]interface{}(nil)},
+				{ID: "change_executor", Type: "other", Params: map[string]interface{}(nil)},
+				{ID: "request_execution_info", Type: "other", Params: map[string]interface{}(nil)},
+				{ID: "back_to_group", Type: "other", Params: map[string]interface{}(nil)},
+				{ID: "new_execution_task", Type: "other", Params: map[string]interface{}{"child_work_blueprint_id": "some_blueprint_id"}},
+			},
+		},
+		{
 			name: "two form (ReadWrite)",
 			fields: fields{
 				Name: stepName,

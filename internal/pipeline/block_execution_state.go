@@ -53,6 +53,14 @@ type StartWorkLog struct {
 	DelegateFor string    `json:"delegate_for"`
 }
 
+type ChildWorkLog struct {
+	Executor        string              `json:"executor"`
+	CreatedAt       time.Time           `json:"created_at"`
+	Comment         string              `json:"comment"`
+	Attachments     []entity.Attachment `json:"attachments"`
+	ChildWorkNumber string              `json:"child_work_number"`
+}
+
 type ExecutionData struct {
 	ExecutionType       script.ExecutionType `json:"execution_type"`
 	Executors           map[string]struct{}  `json:"executors"`
@@ -77,6 +85,7 @@ type ExecutionData struct {
 	IsExpired                   bool           `json:"is_expired"`
 	IsTakenInWork               bool           `json:"is_taken_in_work"`
 	TakenInWorkLog              []StartWorkLog `json:"taken_in_work_log"`
+	ChildTaskWorkLog            []ChildWorkLog `json:"child_task_work_log"`
 	IsExecutorVariablesResolved bool           `json:"is_executor_variables_resolved"`
 
 	IsEditable         bool `json:"is_editable"`
@@ -93,6 +102,7 @@ type ExecutionData struct {
 	CheckDayBeforeSLARequestInfo bool      `json:"check_day_before_sla_request_info"`
 	WorkType                     string    `json:"work_type"`
 	HideExecutor                 bool      `json:"hide_executor"`
+	ChildWorkBlueprintId         *string   `json:"child_work_blueprint_id,omitempty"`
 }
 
 func NewExecutionState() *ExecutionData {
@@ -105,6 +115,7 @@ func NewExecutionState() *ExecutionData {
 		RequestExecutionInfoLogs: make([]RequestExecutionInfoLog, 0),
 		FormsAccessibility:       make([]script.FormAccessibility, 0),
 		TakenInWorkLog:           make([]StartWorkLog, 0),
+		ChildTaskWorkLog:         make([]ChildWorkLog, 0),
 	}
 }
 

@@ -221,6 +221,7 @@ const (
 	TaskUpdateActionReplyExecutionInfo         TaskUpdateAction = "reply_execution_info"
 	TaskUpdateActionExecutorStartWork          TaskUpdateAction = "executor_start_work"
 	TaskUpdateActionBackToGroup                TaskUpdateAction = "back_to_group"
+	TaskUpdateActionNewExecutionTask           TaskUpdateAction = "new_execution_task"
 	TaskUpdateActionApproverSendEditApp        TaskUpdateAction = "approver_send_edit_app"
 	TaskUpdateActionExecutorSendEditApp        TaskUpdateAction = "executor_send_edit_app"
 	TaskUpdateActionRequestApproveInfo         TaskUpdateAction = "request_add_info"
@@ -288,6 +289,7 @@ func (t *TaskUpdate) Validate() error {
 		TaskUpdateActionFuncSLAExpired,
 		TaskUpdateActionRetry,
 		TaskUpdateActionBackToGroup,
+		TaskUpdateActionNewExecutionTask,
 		TaskUpdateActionSignChangeWorkStatus,
 		TaskUpdateActionReplyExecutionInfo,
 		TaskUpdateActionReplyApproverInfo:
