@@ -158,6 +158,17 @@ func (m *service) MustRegisterMetrics(registry *prometheus.Registry) {
 		m.incomingRequests,
 		m.kafkaAvailability,
 		m.request2ExternalSystem,
+		m.dbAvailability,
+		m.schedulerAvailability,
+		m.fileRegistryAvailability,
+		m.humanTasksAvailability,
+		m.functionStoreAvailability,
+		m.serviceDescAvailability,
+		m.peopleAvailability,
+		m.mailAvailability,
+		m.integrationsAvailability,
+		m.hrGateAvailability,
+		m.sequenceAvailability,
 	)
 }
 
