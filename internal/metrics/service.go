@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"net/http"
+	"net/url"
 	"strconv"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -12,20 +13,22 @@ const (
 	namespace = "jocasta"
 	subsystem = "pipeliner"
 
-	incomingRequests          = "incoming_requests"
-	kafkaAvailability         = "kafka_availability"
-	schedulerAvailability     = "scheduler_availability"
-	fileRegistryAvailability  = "file_registry_availability"
-	humanTasksAvailability    = "human_tasks_availability"
-	functionStoreAvailability = "function_store_availability"
-	serviceDescAvailability   = "service_desc_availability"
-	peopleAvailability        = "people_availability"
-	mailAvailability          = "mail_availability"
-	integrationsAvailability  = "integrations_availability"
-	hrGateAvailability        = "hrGate_availability"
-	sequenceAvailability      = "sequence_availability"
-	dbAvailability            = "db_availability"
-	request2ExternalSystem    = "request_2_external_system"
+	incomingRequests             = "incoming_requests"
+	kafkaAvailability            = "kafka_availability"
+	schedulerAvailability        = "scheduler_availability"
+	fileRegistryAvailability     = "file_registry_availability"
+	humanTasksAvailability       = "human_tasks_availability"
+	functionStoreAvailability    = "function_store_availability"
+	serviceDescAvailability      = "service_desc_availability"
+	peopleAvailability           = "people_availability"
+	mailAvailability             = "mail_availability"
+	integrationsAvailability     = "integrations_availability"
+	hrGateAvailability           = "hrGate_availability"
+	sequenceAvailability         = "sequence_availability"
+	dbAvailability               = "db_availability"
+	request2ExternalSystem       = "request_2_external_system"
+	incomingRequestsCounter      = "incoming_requests_counter"
+	externalSystemRequestCounter = "requests_2_external_system_counter"
 )
 
 type service struct {
@@ -44,6 +47,9 @@ type service struct {
 	integrationsAvailability  prometheus.Gauge
 	hrGateAvailability        prometheus.Gauge
 	sequenceAvailability      prometheus.Gauge
+
+	incomingRequestsCounter      *prometheus.CounterVec
+	externalSystemRequestCounter *prometheus.CounterVec
 
 	incomingRequests       *prometheus.SummaryVec
 	request2ExternalSystem *prometheus.SummaryVec
@@ -137,6 +143,18 @@ func New(config PrometheusConfig) Metrics {
 			Help:      "Indicates whether service is available(1) or not(0)",
 			Name:      sequenceAvailability,
 		}),
+		incomingRequestsCounter: prometheus.NewCounterVec(prometheus.CounterOpts{
+			Namespace: namespace,
+			Subsystem: subsystem,
+			Name:      incomingRequestsCounter,
+			Help:      "Total number of incoming requests",
+		}, []string{"method", "stand", "path", "http_status"}),
+		externalSystemRequestCounter: prometheus.NewCounterVec(prometheus.CounterOpts{
+			Namespace: namespace,
+			Subsystem: subsystem,
+			Name:      externalSystemRequestCounter,
+			Help:      "Total number of requests to external systems",
+		}, []string{"method", "stand", "path", "http_status", "service"}),
 	}
 
 	m.MustRegisterMetrics(registry)
@@ -169,6 +187,8 @@ func (m *service) MustRegisterMetrics(registry *prometheus.Registry) {
 		m.integrationsAvailability,
 		m.hrGateAvailability,
 		m.sequenceAvailability,
+		m.externalSystemRequestCounter,
+		m.incomingRequestsCounter,
 	)
 }
 
@@ -181,6 +201,50 @@ func (m *service) Request2ExternalSystem(label *ExternalRequestInfo) {
 		strconv.Itoa(label.ResponseCode),
 		label.TraceID,
 	}...).Observe(label.Duration.Seconds())
+
+	//nolint:errcheck
+	parsedURL, _ := url.Parse(label.URL)
+	m.externalSystemRequestCounter.With(prometheus.Labels{
+		"method":      label.Method,
+		"stand":       m.stand,
+		"service":     label.ExternalSystem,
+		"path":        parsedURL.Path,
+		"http_status": strconv.Itoa(label.ResponseCode),
+	}).Inc()
+}
+
+type loggingResponseWriter struct {
+	http.ResponseWriter
+	status int
+}
+
+func (writer *loggingResponseWriter) WriteHeader(statusCode int) {
+	writer.status = statusCode
+	writer.ResponseWriter.WriteHeader(statusCode)
+}
+
+func (writer *loggingResponseWriter) Write(p []byte) (int, error) {
+	if writer.status == 0 {
+		writer.status = http.StatusOK
+	}
+	return writer.ResponseWriter.Write(p)
+}
+
+func (m *service) IncomingRequestMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		wrappedRespWriter := &loggingResponseWriter{
+			ResponseWriter: writer,
+		}
+
+		next.ServeHTTP(wrappedRespWriter, request)
+
+		m.incomingRequestsCounter.With(prometheus.Labels{
+			"method":      request.Method,
+			"stand":       m.stand,
+			"path":        request.URL.Path,
+			"http_status": strconv.Itoa(wrappedRespWriter.status),
+		}).Inc()
+	})
 }
 
 func (m *service) RequestsIncrease(label *RequestInfo) {

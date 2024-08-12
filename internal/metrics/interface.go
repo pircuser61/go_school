@@ -48,4 +48,5 @@ type Metrics interface {
 	SequenceUnavailable()
 
 	Request2ExternalSystem(label *ExternalRequestInfo)
+	IncomingRequestMiddleware(next http.Handler) http.Handler
 }
