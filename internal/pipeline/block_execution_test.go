@@ -311,6 +311,7 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 					ChangedExecutorsLogs:     make([]ChangeExecutorLog, 0),
 					RequestExecutionInfoLogs: make([]RequestExecutionInfoLog, 0),
 					TakenInWorkLog:           make([]StartWorkLog, 0),
+					ChildTaskWorkLog:         make([]ChildWorkLog, 0),
 					WorkType:                 workType,
 					ExecutionType:            script.ExecutionTypeFromSchema,
 					Deadline:                 time.Date(1, time.January, 1, 14, 0, 0, 0, time.UTC),
@@ -427,6 +428,7 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 					ChangedExecutorsLogs:     make([]ChangeExecutorLog, 0),
 					RequestExecutionInfoLogs: make([]RequestExecutionInfoLog, 0),
 					TakenInWorkLog:           make([]StartWorkLog, 0),
+					ChildTaskWorkLog:         make([]ChildWorkLog, 0),
 					DecisionAttachments:      make([]entity.Attachment, 0),
 					WorkType:                 workType,
 					ExecutionType:            script.ExecutionTypeFromSchema,
@@ -2818,7 +2820,7 @@ func TestGoExecutionActions(t *testing.T) {
 					Executors: map[string]struct{}{
 						exampleExecutor: {},
 					},
-					ChildWorkBlueprintId: func() *string {
+					ChildWorkBlueprintID: func() *string {
 						s := "some_blueprint_id"
 						return &s
 					}(),
@@ -2845,7 +2847,7 @@ func TestGoExecutionActions(t *testing.T) {
 				data: &script.BlockUpdateData{
 					ByLogin:    exampleExecutor,
 					Action:     string(entity.TaskUpdateActionNewExecutionTask),
-					Parameters: []byte(`{"` + childTaskWorkNumber + `":"J00000000107810"}`),
+					Parameters: []byte(`{"child_task_work_number":"J0000000000"}`),
 				},
 			},
 			wantActions: []MemberAction{

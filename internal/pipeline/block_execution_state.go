@@ -102,7 +102,7 @@ type ExecutionData struct {
 	CheckDayBeforeSLARequestInfo bool      `json:"check_day_before_sla_request_info"`
 	WorkType                     string    `json:"work_type"`
 	HideExecutor                 bool      `json:"hide_executor"`
-	ChildWorkBlueprintId         *string   `json:"child_work_blueprint_id,omitempty"`
+	ChildWorkBlueprintID         *string   `json:"child_work_blueprint_id,omitempty"`
 }
 
 func NewExecutionState() *ExecutionData {

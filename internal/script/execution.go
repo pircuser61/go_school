@@ -38,7 +38,7 @@ type ExecutionParams struct {
 	WorkType             *string `json:"work_type"`
 	UseActualExecutor    bool    `json:"use_actual_executor"`
 	HideExecutor         bool    `json:"hide_executor"`
-	ChildWorkBlueprintId *string `json:"child_work_blueprint_id"`
+	ChildWorkBlueprintID *string `json:"child_work_blueprint_id"`
 }
 
 func (a *ExecutionParams) Validate() error {

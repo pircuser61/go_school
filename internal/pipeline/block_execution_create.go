@@ -135,7 +135,7 @@ func (gb *GoExecutionBlock) createState(ctx context.Context, ef *entity.EriusFun
 		RepeatPrevDecision:       params.RepeatPrevDecision,
 		UseActualExecutor:        params.UseActualExecutor,
 		HideExecutor:             params.HideExecutor,
-		ChildWorkBlueprintId:     params.ChildWorkBlueprintId,
+		ChildWorkBlueprintID:     params.ChildWorkBlueprintID,
 		Executors:                make(map[string]struct{}, 0),
 		InitialExecutors:         make(map[string]struct{}, 0),
 		DecisionAttachments:      make([]entity.Attachment, 0),
