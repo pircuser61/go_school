@@ -2854,7 +2854,6 @@ func TestGoExecutionActions(t *testing.T) {
 				{ID: "decline", Type: "secondary", Params: map[string]interface{}(nil)},
 				{ID: "change_executor", Type: "other", Params: map[string]interface{}(nil)},
 				{ID: "request_execution_info", Type: "other", Params: map[string]interface{}(nil)},
-				{ID: "back_to_group", Type: "other", Params: map[string]interface{}(nil)},
 				{ID: "new_execution_task", Type: "other", Params: map[string]interface{}{"child_work_blueprint_id": "some_blueprint_id"}},
 			},
 		},
