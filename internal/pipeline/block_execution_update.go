@@ -948,8 +948,27 @@ func (gb *GoExecutionBlock) executorStartWork(ctx c.Context) (err error) {
 }
 
 func (gb *GoExecutionBlock) executorBackToGroup() (err error) {
+	currentLogin := gb.RunContext.UpdateData.ByLogin
 	gb.State.Executors = gb.State.InitialExecutors
 	gb.State.IsTakenInWork = false
+
+	var updateParams ExecutorChangeParams
+	if err = json.Unmarshal(gb.RunContext.UpdateData.Parameters, &updateParams); err != nil {
+		return errors.New("can't assert provided update data")
+	}
+
+	gb.State.ChangedExecutorsLogs = append(gb.State.ChangedExecutorsLogs, ChangeExecutorLog{
+		OldLogin:    currentLogin,
+		Comment:     updateParams.Comment,
+		Attachments: updateParams.Attachments,
+		CreatedAt:   time.Now(),
+		ByLogin:     currentLogin,
+	})
+
+	gb.State.TakenInWorkLog = append(gb.State.TakenInWorkLog, StartWorkLog{
+		Executor:  currentLogin,
+		CreatedAt: time.Now(),
+	})
 
 	return nil
 }

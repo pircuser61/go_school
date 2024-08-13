@@ -2806,7 +2806,6 @@ func TestGoExecutionActions(t *testing.T) {
 				{ID: "decline", Type: "secondary", Params: map[string]interface{}(nil)},
 				{ID: "change_executor", Type: "other", Params: map[string]interface{}(nil)},
 				{ID: "request_execution_info", Type: "other", Params: map[string]interface{}(nil)},
-				{ID: "back_to_group", Type: "other", Params: map[string]interface{}(nil)},
 				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": []string{"form_0"}}},
 			},
 		},
@@ -2918,7 +2917,6 @@ func TestGoExecutionActions(t *testing.T) {
 				{ID: "decline", Type: "secondary", Params: map[string]interface{}(nil)},
 				{ID: "change_executor", Type: "other", Params: map[string]interface{}(nil)},
 				{ID: "request_execution_info", Type: "other", Params: map[string]interface{}(nil)},
-				{ID: "back_to_group", Type: "other", Params: map[string]interface{}(nil)},
 				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": []string{"form_0", "form_1"}}},
 			},
 		},
@@ -3027,7 +3025,6 @@ func TestGoExecutionActions(t *testing.T) {
 				{ID: "decline", Type: "secondary", Params: map[string]interface{}(nil)},
 				{ID: "change_executor", Type: "other", Params: map[string]interface{}(nil)},
 				{ID: "request_execution_info", Type: "other", Params: map[string]interface{}(nil)},
-				{ID: "back_to_group", Type: "other", Params: map[string]interface{}(nil)},
 				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": []string{"form_0", "form_1"}}},
 			},
 		},
@@ -3132,7 +3129,6 @@ func TestGoExecutionActions(t *testing.T) {
 				{ID: "decline", Type: "secondary", Params: map[string]interface{}(nil)},
 				{ID: "change_executor", Type: "other", Params: map[string]interface{}(nil)},
 				{ID: "request_execution_info", Type: "other", Params: map[string]interface{}(nil)},
-				{ID: "back_to_group", Type: "other", Params: map[string]interface{}(nil)},
 				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": []string{"form_0", "form_1"}}},
 			},
 		},
@@ -3233,7 +3229,6 @@ func TestGoExecutionActions(t *testing.T) {
 				{ID: "decline", Type: "secondary", Params: map[string]interface{}(nil)},
 				{ID: "change_executor", Type: "other", Params: map[string]interface{}(nil)},
 				{ID: "request_execution_info", Type: "other", Params: map[string]interface{}(nil)},
-				{ID: "back_to_group", Type: "other", Params: map[string]interface{}(nil)},
 				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": []string{"form_0", "form_1"}}},
 			},
 		},
@@ -3357,7 +3352,6 @@ func TestGoExecutionActions(t *testing.T) {
 				{ID: "decline", Type: "secondary", Params: map[string]interface{}(nil)},
 				{ID: "change_executor", Type: "other", Params: map[string]interface{}(nil)},
 				{ID: "request_execution_info", Type: "other", Params: map[string]interface{}(nil)},
-				{ID: "back_to_group", Type: "other", Params: map[string]interface{}(nil)},
 				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": []string{"form_0", "form_1"}}},
 			},
 		},
@@ -3476,7 +3470,6 @@ func TestGoExecutionActions(t *testing.T) {
 				{ID: "decline", Type: "secondary", Params: map[string]interface{}(nil)},
 				{ID: "change_executor", Type: "other", Params: map[string]interface{}(nil)},
 				{ID: "request_execution_info", Type: "other", Params: map[string]interface{}(nil)},
-				{ID: "back_to_group", Type: "other", Params: map[string]interface{}(nil)},
 				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": []string{"form_0", "form_1"}}},
 			},
 		},
@@ -3590,7 +3583,6 @@ func TestGoExecutionActions(t *testing.T) {
 				{ID: "decline", Type: "secondary", Params: map[string]interface{}(nil)},
 				{ID: "change_executor", Type: "other", Params: map[string]interface{}(nil)},
 				{ID: "request_execution_info", Type: "other", Params: map[string]interface{}(nil)},
-				{ID: "back_to_group", Type: "other", Params: map[string]interface{}(nil)},
 				{ID: "fill_form", Type: "custom", Params: map[string]interface{}{"form_name": []string{"form_0", "form_1"}}},
 			},
 		},
@@ -3609,7 +3601,7 @@ func TestGoExecutionActions(t *testing.T) {
 			}
 			tt.fields.RunContext.UpdateData = tt.args.data
 
-			actions := gb.executionActions()
+			actions := gb.executionActions(login)
 			assert.Equal(t, tt.wantActions, actions, fmt.Sprintf("executionActions(%v)", login))
 		})
 	}
