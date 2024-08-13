@@ -433,10 +433,12 @@ func (runCtx *BlockRunContext) makeNotificationDescription(ctx c.Context, stepNa
 	descriptions = append(descriptions, apDesc)
 	files = append(files, filesAttach...)
 
-	adFormDescriptions, adFormFilesAttach := runCtx.getForms(ctx, stepName, isInitiator)
+	adFormDescriptions, adFormFilesAttach, AdAttachErr := runCtx.getForms(ctx, stepName, isInitiator)
 	if len(adFormDescriptions) != 0 {
 		descriptions = append(descriptions, adFormDescriptions...)
 		files = append(files, adFormFilesAttach...)
+	} else {
+		return nil, nil, AdAttachErr
 	}
 
 	cleanName(files)
@@ -455,10 +457,10 @@ func cleanName(files []e.Attachment) {
 	}
 }
 
-func (runCtx *BlockRunContext) getForms(ctx c.Context, stepName string, isInitiator bool) ([]om.OrderedMap, []e.Attachment) {
+func (runCtx *BlockRunContext) getForms(ctx c.Context, stepName string, isInitiator bool) ([]om.OrderedMap, []e.Attachment, error) {
 	forms, err := runCtx.Services.Storage.GetAdditionalDescriptionForms(runCtx.WorkNumber, stepName)
 	if err != nil {
-		return nil, nil
+		return nil, nil, err
 	}
 
 	var (
@@ -483,7 +485,7 @@ func (runCtx *BlockRunContext) getForms(ctx c.Context, stepName string, isInitia
 
 		additionalAttach, getAdAttachErr := runCtx.GetAttachmentFiles(ctx, &adDesc, attachmentFiles)
 		if getAdAttachErr != nil {
-			return nil, nil
+			return nil, nil, getAdAttachErr
 		}
 
 		adDesc = convertDesc(adDesc, formBlock.Keys, formBlock.HiddenFields)
@@ -492,7 +494,7 @@ func (runCtx *BlockRunContext) getForms(ctx c.Context, stepName string, isInitia
 		descriptions = append(descriptions, adDesc)
 	}
 
-	return descriptions, files
+	return descriptions, files, nil
 }
 
 //nolint:gocognit // it's ok
