@@ -355,7 +355,9 @@ func (gb *TimerBlock) createState(ef *entity.EriusFunc) error {
 
 	dateInt := getVariable(variableStorage, params.DatePath)
 	if dateInt == nil {
-		return errors.New("can't find group id in variables")
+		gb.State = &TimerData{Duration: 1 * time.Millisecond}
+
+		return nil
 	}
 
 	dateWithHour := fmt.Sprintf("%v", dateInt)
@@ -364,7 +366,9 @@ func (gb *TimerBlock) createState(ef *entity.EriusFunc) error {
 
 	dateObj, err := time.Parse("02.01.2006", date[0])
 	if err != nil {
-		return errors.Wrap(err, "can not parse timer duration")
+		gb.State = &TimerData{Duration: 1 * time.Millisecond}
+
+		return nil
 	}
 
 	targetTime := time.Date(dateObj.Year(), dateObj.Month(), dateObj.Day(), 5, 0, 0, 0, dateObj.Location())
