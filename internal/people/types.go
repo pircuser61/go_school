@@ -2,7 +2,6 @@ package people
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
@@ -177,11 +176,11 @@ func (u SSOUser) ToPerson() (*Person, error) {
 	}
 
 	return &Person{
-		Fullname:    fmt.Sprintf("%s %s", typed.FirstName, typed.LastName),
+		Fullname:    typed.Attributes.FullName,
 		Username:    typed.Username,
 		Email:       typed.Email,
 		Mobile:      typed.Attributes.TelephoneNumber,
-		FullOrgUnit: typed.UnitPaths,
+		FullOrgUnit: typed.Attributes.OrgUnit,
 		Position:    typed.Attributes.Title,
 		Phone:       typed.Attributes.TelephoneNumber,
 		Tabnum:      typed.Tabnum,
