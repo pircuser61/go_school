@@ -356,6 +356,7 @@ func (gb *TimerBlock) createState(ef *entity.EriusFunc) error {
 	dateInt := getVariable(variableStorage, params.DatePath)
 	if dateInt == nil {
 		gb.State = &TimerData{Duration: 1 * time.Millisecond}
+
 		return nil
 	}
 
@@ -366,6 +367,7 @@ func (gb *TimerBlock) createState(ef *entity.EriusFunc) error {
 	dateObj, err := time.Parse("02.01.2006", date[0])
 	if err != nil {
 		gb.State = &TimerData{Duration: 1 * time.Millisecond}
+
 		return nil
 	}
 
