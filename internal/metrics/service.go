@@ -202,8 +202,9 @@ func (m *service) Request2ExternalSystem(label *ExternalRequestInfo) {
 		label.TraceID,
 	}...).Observe(label.Duration.Seconds())
 
-	//nolint:errcheck
+	//nolint:errcheck //url must be relevant
 	parsedURL, _ := url.Parse(label.URL)
+
 	m.externalSystemRequestCounter.With(prometheus.Labels{
 		"method":      label.Method,
 		"stand":       m.stand,
@@ -227,6 +228,7 @@ func (writer *loggingResponseWriter) Write(p []byte) (int, error) {
 	if writer.status == 0 {
 		writer.status = http.StatusOK
 	}
+
 	return writer.ResponseWriter.Write(p)
 }
 
