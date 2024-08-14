@@ -400,6 +400,7 @@ func (ae *Env) GetWorkNumber(ctx c.Context) (string, error) {
 			ae.Sequence.AddWorkNumbersToQueue(workNumbers)
 		}
 	}
+
 	return workNumber, nil
 }
 

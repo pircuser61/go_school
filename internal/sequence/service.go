@@ -48,9 +48,8 @@ func (s *service) GetPrefetchSize() int {
 }
 
 func (s *service) GetWorkNumberFromQueue(ctx c.Context) (workNumber string, ok, needPrefetch bool) {
-	var span *trace.Span
-
-	ctx, span = trace.StartSpan(ctx, "sequence.get_work_number")
+	//nolint:ineffassign //it's ok
+	ctx, span := trace.StartSpan(ctx, "sequence.get_work_number")
 	defer span.End()
 
 	if s.q.Length() <= s.prefetchMinQueueSize {
