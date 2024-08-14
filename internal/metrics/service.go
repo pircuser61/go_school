@@ -13,22 +13,22 @@ const (
 	namespace = "jocasta"
 	subsystem = "pipeliner"
 
-	incomingRequests             = "incoming_requests"
-	kafkaAvailability            = "kafka_availability"
-	schedulerAvailability        = "scheduler_availability"
-	fileRegistryAvailability     = "file_registry_availability"
-	humanTasksAvailability       = "human_tasks_availability"
-	functionStoreAvailability    = "function_store_availability"
-	serviceDescAvailability      = "service_desc_availability"
-	peopleAvailability           = "people_availability"
-	mailAvailability             = "mail_availability"
-	integrationsAvailability     = "integrations_availability"
-	hrGateAvailability           = "hrGate_availability"
-	sequenceAvailability         = "sequence_availability"
-	dbAvailability               = "db_availability"
-	request2ExternalSystem       = "request_2_external_system"
-	incomingRequestsCounter      = "incoming_requests_counter"
-	externalSystemRequestCounter = "requests_2_external_system_counter"
+	incomingRequests           = "incoming_requests"
+	kafkaAvailability          = "kafka_availability"
+	schedulerAvailability      = "scheduler_availability"
+	fileRegistryAvailability   = "file_registry_availability"
+	humanTasksAvailability     = "human_tasks_availability"
+	functionStoreAvailability  = "function_store_availability"
+	serviceDescAvailability    = "service_desc_availability"
+	peopleAvailability         = "people_availability"
+	mailAvailability           = "mail_availability"
+	integrationsAvailability   = "integrations_availability"
+	hrGateAvailability         = "hrGate_availability"
+	sequenceAvailability       = "sequence_availability"
+	dbAvailability             = "db_availability"
+	request2ExternalSystem     = "request_2_external_system"
+	incomingRequestsCount      = "incoming_requests_count"
+	externalSystemRequestCount = "external_system_requests_count"
 )
 
 type service struct {
@@ -48,8 +48,8 @@ type service struct {
 	hrGateAvailability        prometheus.Gauge
 	sequenceAvailability      prometheus.Gauge
 
-	incomingRequestsCounter      *prometheus.CounterVec
-	externalSystemRequestCounter *prometheus.CounterVec
+	incomingRequestsCount       *prometheus.CounterVec
+	externalSystemRequestsCount *prometheus.CounterVec
 
 	incomingRequests       *prometheus.SummaryVec
 	request2ExternalSystem *prometheus.SummaryVec
@@ -143,16 +143,16 @@ func New(config PrometheusConfig) Metrics {
 			Help:      "Indicates whether service is available(1) or not(0)",
 			Name:      sequenceAvailability,
 		}),
-		incomingRequestsCounter: prometheus.NewCounterVec(prometheus.CounterOpts{
+		incomingRequestsCount: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Namespace: namespace,
 			Subsystem: subsystem,
-			Name:      incomingRequestsCounter,
+			Name:      incomingRequestsCount,
 			Help:      "Total number of incoming requests",
 		}, []string{"method", "stand", "path", "http_status"}),
-		externalSystemRequestCounter: prometheus.NewCounterVec(prometheus.CounterOpts{
+		externalSystemRequestsCount: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Namespace: namespace,
 			Subsystem: subsystem,
-			Name:      externalSystemRequestCounter,
+			Name:      externalSystemRequestCount,
 			Help:      "Total number of requests to external systems",
 		}, []string{"method", "stand", "path", "http_status", "service"}),
 	}
@@ -187,8 +187,8 @@ func (m *service) MustRegisterMetrics(registry *prometheus.Registry) {
 		m.integrationsAvailability,
 		m.hrGateAvailability,
 		m.sequenceAvailability,
-		m.externalSystemRequestCounter,
-		m.incomingRequestsCounter,
+		m.externalSystemRequestsCount,
+		m.incomingRequestsCount,
 	)
 }
 
@@ -205,7 +205,7 @@ func (m *service) Request2ExternalSystem(label *ExternalRequestInfo) {
 	//nolint:errcheck //url must be relevant
 	parsedURL, _ := url.Parse(label.URL)
 
-	m.externalSystemRequestCounter.With(prometheus.Labels{
+	m.externalSystemRequestsCount.With(prometheus.Labels{
 		"method":      label.Method,
 		"stand":       m.stand,
 		"service":     label.ExternalSystem,
@@ -240,7 +240,7 @@ func (m *service) IncomingRequestMiddleware(next http.Handler) http.Handler {
 
 		next.ServeHTTP(wrappedRespWriter, request)
 
-		m.incomingRequestsCounter.With(prometheus.Labels{
+		m.incomingRequestsCount.With(prometheus.Labels{
 			"method":      request.Method,
 			"stand":       m.stand,
 			"path":        request.URL.Path,
