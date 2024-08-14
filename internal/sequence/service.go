@@ -3,13 +3,14 @@ package sequence
 import (
 	c "context"
 	"fmt"
-	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
-	"go.opencensus.io/trace"
 	"sync"
+
+	"go.opencensus.io/trace"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
+	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
 type service struct {
@@ -47,7 +48,9 @@ func (s *service) GetPrefetchSize() int {
 }
 
 func (s *service) GetWorkNumberFromQueue(ctx c.Context) (workNumber string, ok, needPrefetch bool) {
-	ctx, span := trace.StartSpan(ctx, "sequence.get_work_number")
+	var span *trace.Span
+
+	ctx, span = trace.StartSpan(ctx, "sequence.get_work_number")
 	defer span.End()
 
 	if s.q.Length() <= s.prefetchMinQueueSize {
@@ -61,4 +64,8 @@ func (s *service) GetWorkNumberFromQueue(ctx c.Context) (workNumber string, ok, 
 
 func (s *service) AddWorkNumbersToQueue(workNumbers []int) {
 	s.q.BulkPush(workNumbers)
+}
+
+func (s *service) AddWorkNumberToQueue(workNumber int) {
+	s.q.Push(workNumber)
 }
