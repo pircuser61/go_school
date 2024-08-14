@@ -419,7 +419,7 @@ func TestBlockRunContext_makeNotificationDescription(t *testing.T) {
 								Size:         15728640,
 								ExternalLink: "mts.ru/file/3",
 							},
-						}, nil, nil)
+						}, nil)
 
 						fileRegistryMock.On("GetAttachmentsInfo",
 							mock.MatchedBy(func(ctx context.Context) bool { return true }),
@@ -439,7 +439,7 @@ func TestBlockRunContext_makeNotificationDescription(t *testing.T) {
 									Size:      15728640,
 								},
 							},
-						}, nil, nil)
+						}, nil)
 
 						fileRegistryMock.On("GetAttachments",
 							mock.MatchedBy(func(ctx context.Context) bool { return true }),
@@ -452,7 +452,7 @@ func TestBlockRunContext_makeNotificationDescription(t *testing.T) {
 								Content: []byte("hello world"),
 								Type:    e.EmbeddedAttachment,
 							},
-						}, nil, nil)
+						}, nil)
 
 						return fileRegistryMock
 					}(),

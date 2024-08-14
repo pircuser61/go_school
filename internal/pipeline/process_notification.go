@@ -438,7 +438,7 @@ func (runCtx *BlockRunContext) makeNotificationDescription(ctx c.Context, stepNa
 		descriptions = append(descriptions, adFormDescriptions...)
 		files = append(files, adFormFilesAttach...)
 	} else {
-		return nil, nil, AdAttachErr
+		return descriptions, files, AdAttachErr
 	}
 
 	cleanName(files)
