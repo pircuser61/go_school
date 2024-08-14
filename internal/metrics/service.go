@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -13,22 +14,22 @@ const (
 	namespace = "jocasta"
 	subsystem = "pipeliner"
 
-	incomingRequests           = "incoming_requests"
-	kafkaAvailability          = "kafka_availability"
-	schedulerAvailability      = "scheduler_availability"
-	fileRegistryAvailability   = "file_registry_availability"
-	humanTasksAvailability     = "human_tasks_availability"
-	functionStoreAvailability  = "function_store_availability"
-	serviceDescAvailability    = "service_desc_availability"
-	peopleAvailability         = "people_availability"
-	mailAvailability           = "mail_availability"
-	integrationsAvailability   = "integrations_availability"
-	hrGateAvailability         = "hrGate_availability"
-	sequenceAvailability       = "sequence_availability"
-	dbAvailability             = "db_availability"
-	request2ExternalSystem     = "request_2_external_system"
-	incomingRequestsCount      = "incoming_requests_count"
-	externalSystemRequestCount = "external_system_requests_count"
+	incomingRequests            = "incoming_requests"
+	kafkaAvailability           = "kafka_availability"
+	schedulerAvailability       = "scheduler_availability"
+	fileRegistryAvailability    = "file_registry_availability"
+	humanTasksAvailability      = "human_tasks_availability"
+	functionStoreAvailability   = "function_store_availability"
+	serviceDescAvailability     = "service_desc_availability"
+	peopleAvailability          = "people_availability"
+	mailAvailability            = "mail_availability"
+	integrationsAvailability    = "integrations_availability"
+	hrGateAvailability          = "hrGate_availability"
+	sequenceAvailability        = "sequence_availability"
+	dbAvailability              = "db_availability"
+	request2ExternalSystem      = "request_2_external_system"
+	incomingRequestsTotal       = "incoming_requests_total"
+	externalSystemRequestsTotal = "external_system_requests_total"
 )
 
 type service struct {
@@ -48,8 +49,8 @@ type service struct {
 	hrGateAvailability        prometheus.Gauge
 	sequenceAvailability      prometheus.Gauge
 
-	incomingRequestsCount       *prometheus.CounterVec
-	externalSystemRequestsCount *prometheus.CounterVec
+	incomingRequestsTotal       *prometheus.HistogramVec
+	externalSystemRequestsTotal *prometheus.HistogramVec
 
 	incomingRequests       *prometheus.SummaryVec
 	request2ExternalSystem *prometheus.SummaryVec
@@ -143,17 +144,19 @@ func New(config PrometheusConfig) Metrics {
 			Help:      "Indicates whether service is available(1) or not(0)",
 			Name:      sequenceAvailability,
 		}),
-		incomingRequestsCount: prometheus.NewCounterVec(prometheus.CounterOpts{
+		incomingRequestsTotal: prometheus.NewHistogramVec(prometheus.HistogramOpts{
 			Namespace: namespace,
 			Subsystem: subsystem,
-			Name:      incomingRequestsCount,
-			Help:      "Total number of incoming requests",
+			Name:      incomingRequestsTotal,
+			Help:      "Duration of incoming requests in seconds",
+			Buckets:   prometheus.DefBuckets,
 		}, []string{"method", "stand", "path", "http_status"}),
-		externalSystemRequestsCount: prometheus.NewCounterVec(prometheus.CounterOpts{
+		externalSystemRequestsTotal: prometheus.NewHistogramVec(prometheus.HistogramOpts{
 			Namespace: namespace,
 			Subsystem: subsystem,
-			Name:      externalSystemRequestCount,
-			Help:      "Total number of requests to external systems",
+			Name:      externalSystemRequestsTotal,
+			Help:      "Duration of requests to external systems in seconds",
+			Buckets:   prometheus.DefBuckets,
 		}, []string{"method", "stand", "path", "http_status", "service"}),
 	}
 
@@ -187,8 +190,8 @@ func (m *service) MustRegisterMetrics(registry *prometheus.Registry) {
 		m.integrationsAvailability,
 		m.hrGateAvailability,
 		m.sequenceAvailability,
-		m.externalSystemRequestsCount,
-		m.incomingRequestsCount,
+		m.externalSystemRequestsTotal,
+		m.incomingRequestsTotal,
 	)
 }
 
@@ -205,13 +208,13 @@ func (m *service) Request2ExternalSystem(label *ExternalRequestInfo) {
 	//nolint:errcheck //url must be relevant
 	parsedURL, _ := url.Parse(label.URL)
 
-	m.externalSystemRequestsCount.With(prometheus.Labels{
+	m.externalSystemRequestsTotal.With(prometheus.Labels{
 		"method":      label.Method,
 		"stand":       m.stand,
 		"service":     label.ExternalSystem,
 		"path":        parsedURL.Path,
 		"http_status": strconv.Itoa(label.ResponseCode),
-	}).Inc()
+	}).Observe(label.Duration.Seconds())
 }
 
 type loggingResponseWriter struct {
@@ -238,14 +241,18 @@ func (m *service) IncomingRequestMiddleware(next http.Handler) http.Handler {
 			ResponseWriter: writer,
 		}
 
+		start := time.Now()
+
 		next.ServeHTTP(wrappedRespWriter, request)
 
-		m.incomingRequestsCount.With(prometheus.Labels{
+		duration := time.Since(start)
+
+		m.incomingRequestsTotal.With(prometheus.Labels{
 			"method":      request.Method,
 			"stand":       m.stand,
 			"path":        request.URL.Path,
 			"http_status": strconv.Itoa(wrappedRespWriter.status),
-		}).Inc()
+		}).Observe(duration.Seconds())
 	})
 }
 
