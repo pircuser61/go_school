@@ -1464,6 +1464,7 @@ WITH active_counts as (
       AND m.login = ANY ($2)
       AND vs.step_type = 'approver'
 	  AND m.finished = false
+      AND m.is_acted = false
     GROUP BY vs.work_id
     limit 1
 )
