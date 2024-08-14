@@ -325,8 +325,7 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 	errorHandler.log = log
 
 	if req.WorkNumber == "" {
-	GetWorkNumber:
-		req.WorkNumber, err = ae.Sequence.GetWorkNumber(r.Context())
+		req.WorkNumber, err = ae.GetWorkNumber(r.Context())
 
 		if err != nil {
 			log.WithField(script.FuncName, "GetWorkNumber").Error(err)
@@ -334,12 +333,6 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 			requestInfo.Status = GetWorkNumberError.Status()
 
 			return
-		}
-
-		if req.ParentWorkNumber != nil && req.WorkNumber == *req.ParentWorkNumber {
-			log.Warning("generated and parent work numbers are equal, trying to generate again")
-
-			goto GetWorkNumber
 		}
 	}
 
@@ -385,6 +378,29 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 
 		return
 	}
+}
+
+func (ae *Env) GetWorkNumber(ctx c.Context) (string, error) {
+	ae.Sequence.Lock()
+	defer ae.Sequence.Unlock()
+
+	ok := false
+	needPrefetch := false
+	workNumber := ""
+
+	for !ok {
+		workNumber, ok, needPrefetch = ae.Sequence.GetWorkNumberFromQueue(ctx)
+
+		if needPrefetch {
+			workNumbers, err := ae.DB.GetNewWorkNumbers(ctx, ae.Sequence.GetPrefetchSize())
+			if err != nil {
+				return "", err
+			}
+
+			ae.Sequence.AddWorkNumbersToQueue(workNumbers)
+		}
+	}
+	return workNumber, nil
 }
 
 func (ae *Env) runVersion(ctx c.Context, log logger.Logger, run *runVersionsDTO) error {
