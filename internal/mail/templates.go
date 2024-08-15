@@ -24,7 +24,6 @@ const (
 	attachLinks                  = "attachLinks"
 	attachList                   = "attachList"
 	TaskURLTemplate              = "%s/applications/details/%s"
-	taskRateURLTemplate          = "%s/score?work_number=%s&rate="
 )
 
 type Descriptions struct {
@@ -93,6 +92,7 @@ type ExecutorNotifTemplate struct {
 type ProcessFinishedTemplate struct {
 	WorkNumber string
 	Name       string
+	Action     string
 	SdURL      string
 	Mailto     string
 	Login      string
@@ -641,12 +641,10 @@ func NewAppInitiatorStatusNotificationTpl(dto *SignerNotifTemplate) Template {
 			Body        string
 			Description []orderedmap.OrderedMap
 			Link        string
-			RateURL     string
 		}{
 			Body:        textPart,
 			Description: dto.Description,
 			Link:        fmt.Sprintf(TaskURLTemplate, dto.SdURL, dto.WorkNumber),
-			RateURL:     fmt.Sprintf(taskRateURLTemplate, dto.JocastaURL, dto.WorkNumber),
 		},
 	}
 }
@@ -1117,25 +1115,30 @@ func NewFunctionNotify(funcName, funcVersion string, versions []script.VersionsB
 	}
 }
 
-func NewNotifyProcessFinished(dto *ProcessFinishedTemplate) Template {
+func NewNotifyProcessFinished(dto *ProcessFinishedTemplate, btn []string) (Template, []Button) {
+	actionSubject := fmt.Sprintf(subjectTpl, dto.Action, "rated", dto.WorkNumber, notifyProcessFinished, dto.Login)
+	actionBtn := getRateButton(dto.Mailto, actionSubject, btn)
+
 	return Template{
 		Subject:  fmt.Sprintf("Заявка № %s %s завершена", dto.WorkNumber, dto.Name),
 		Template: "internal/mail/template/44notifyProcessFinished-template.html",
 		Image:    "05_zayavka_vzyata_v_rabotu.png",
 		Variables: struct {
-			ID     string
-			Name   string
-			Link   string
-			MailTo string
-			Login  string
+			ID        string
+			Name      string
+			Link      string
+			MailTo    string
+			Login     string
+			ActionBtn []Button
 		}{
-			ID:     dto.WorkNumber,
-			Name:   dto.Name,
-			Link:   fmt.Sprintf(TaskURLTemplate, dto.SdURL, dto.WorkNumber),
-			MailTo: dto.Mailto,
-			Login:  dto.Login,
+			ID:        dto.WorkNumber,
+			Name:      dto.Name,
+			Link:      fmt.Sprintf(TaskURLTemplate, dto.SdURL, dto.WorkNumber),
+			MailTo:    dto.Mailto,
+			Login:     dto.Login,
+			ActionBtn: actionBtn,
 		},
-	}
+	}, actionBtn
 }
 
 func NewSignSLAExpiredTemplate(workNumber, workTitle, sdURL string) Template {
@@ -1219,6 +1222,7 @@ const (
 	executionStartWorkAction            = "executor_start_work"
 	formExecutorStartWorkAction         = "form_executor_start_work"
 	actionApproverSignUkep              = "sign_ukep"
+	notifyProcessFinished               = "rate"
 )
 
 func getApproverButtons(workNumber, mailto, blockID, login string, actions []Action, isEditable, isAdditionalApprover bool) []Button {
@@ -1311,6 +1315,24 @@ func getLastWorksForTemplate(lastWorks []*entity.EriusTask, sdURL string) LastWo
 	}
 
 	return lastWorksTemplate
+}
+
+func getRateButton(to, subject string, images []string) []Button {
+	subject = strings.ReplaceAll(subject, " ", "")
+
+	body := "***Спасибо%20за%20вашу%20оценку!***"
+	href := fmt.Sprintf("mailto:%s?subject=%s&body=%s", to, subject, body)
+
+	var buttons []Button //nolint:prealloc //it's normal
+
+	for _, image := range images {
+		buttons = append(buttons, Button{
+			Href: href,
+			Img:  image,
+		})
+	}
+
+	return buttons
 }
 
 type Button struct {

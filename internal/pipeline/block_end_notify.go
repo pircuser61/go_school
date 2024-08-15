@@ -14,35 +14,46 @@ func (gb *GoEndBlock) handleNotifications(ctx context.Context) error {
 		return nil
 	}
 
-	emails := make(map[string]mail.Template, 0)
+	log := logger.GetLogger(ctx)
 
-	task, getVersionErr := gb.RunContext.Services.Storage.GetVersionByWorkNumber(ctx, gb.RunContext.WorkNumber)
-	if getVersionErr != nil {
-		return getVersionErr
+	login := gb.RunContext.Initiator
+
+	templates := make(map[string]mail.Template, len(login))
+
+	var btns []mail.Button
+
+	buttonImg := make([]string, 0, 11)
+
+	buttons := []string{
+		"qualityControl-0.png", "qualityControl-1.png", "qualityControl-2.png",
+		"qualityControl-3.png", "qualityControl-4.png", "qualityControl-5.png",
+		"qualityControl-6.png", "qualityControl-7.png", "qualityControl-8.png",
+		"qualityControl-9.png", "qualityControl-10.png",
 	}
 
-	taskRunContext, getDataErr := gb.RunContext.Services.Storage.GetTaskRunContext(ctx, gb.RunContext.WorkNumber)
-	if getDataErr != nil {
-		return getDataErr
+	initiatorEmail, getUserEmailErr := gb.RunContext.Services.People.GetUserEmail(ctx, login)
+	if getUserEmailErr != nil {
+		log.WithField("login", login).WithError(getUserEmailErr).Warning("couldn't get email")
+
+		return getUserEmailErr
 	}
 
-	login := task.Author
-
-	recipient := getRecipientFromState(&taskRunContext.InitialApplication.ApplicationBody)
-	if recipient != "" {
-		login = recipient
+	tpl := &mail.ProcessFinishedTemplate{
+		WorkNumber: gb.RunContext.WorkNumber,
+		Name:       gb.RunContext.NotifName,
+		SdURL:      gb.RunContext.Services.Sender.SdAddress,
+		Mailto:     gb.RunContext.Services.Sender.FetchEmail,
+		Login:      login,
+		Action:     "rate",
 	}
 
-	filesNames := make([]string, 0)
+	templates[initiatorEmail], btns = mail.NewNotifyProcessFinished(tpl, buttons)
 
-	fnames, err := gb.setMailTemplates(ctx, login, emails)
-	if err != nil {
-		return err
+	for _, v := range btns {
+		buttonImg = append(buttonImg, v.Img)
 	}
 
-	filesNames = append(filesNames, fnames...)
-
-	err = gb.sendNotifications(ctx, emails, filesNames)
+	err := gb.sendNotifications(ctx, templates, buttonImg)
 	if err != nil {
 		return err
 	}
@@ -52,56 +63,26 @@ func (gb *GoEndBlock) handleNotifications(ctx context.Context) error {
 
 func (gb *GoEndBlock) sendNotifications(
 	ctx context.Context,
-	emails map[string]mail.Template,
-	filesNames []string,
+	templates map[string]mail.Template,
+	buttonImg []string,
 ) error {
-	for i, item := range emails {
-		iconsName := []string{item.Image}
-		iconsName = append(iconsName, filesNames...)
+	for login, mailTemplate := range templates {
+		iconsName := []string{mailTemplate.Image}
 
-		iconFiles, errFiles := gb.RunContext.GetIcons(iconsName)
-		if errFiles != nil {
-			return errFiles
+		iconsName = append(iconsName, buttonImg...)
+
+		iconsFiles, iconsErr := gb.RunContext.GetIcons(iconsName)
+		if iconsErr != nil {
+			return iconsErr
 		}
 
 		sendErr := gb.RunContext.Services.Sender.SendNotification(
-			ctx,
-			[]string{i},
-			iconFiles,
-			emails[i],
-		)
+			ctx, []string{login}, iconsFiles, mailTemplate)
+
 		if sendErr != nil {
 			return sendErr
 		}
 	}
 
 	return nil
-}
-
-func (gb *GoEndBlock) setMailTemplates(
-	ctx context.Context,
-	login string,
-	mailTemplates map[string]mail.Template,
-) ([]string, error) {
-	log := logger.GetLogger(ctx)
-	filesNames := make([]string, 0)
-
-	userEmail, getUserEmailErr := gb.RunContext.Services.People.GetUserEmail(ctx, login)
-	if getUserEmailErr != nil {
-		log.WithField("login", login).WithError(getUserEmailErr).Warning("couldn't get email")
-
-		return nil, getUserEmailErr
-	}
-
-	mailTemplates[userEmail] = mail.NewNotifyProcessFinished(
-		&mail.ProcessFinishedTemplate{
-			WorkNumber: gb.RunContext.WorkNumber,
-			Name:       gb.RunContext.NotifName,
-			SdURL:      gb.RunContext.Services.Sender.SdAddress,
-			Mailto:     gb.RunContext.Services.Sender.FetchEmail,
-			Login:      login,
-		},
-	)
-
-	return filesNames, nil
 }
