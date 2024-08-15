@@ -127,6 +127,193 @@
               <!-- конец пустой линии -->
             </td>
           </tr>
+
+          <!-- начало JAP-6240 -->
+          <tr>
+            <td
+                    align="center"
+                    style="
+                border-collapse: collapse;
+                padding-left: 24px;
+                padding-right: 24px;
+                padding-bottom: 2px;
+                padding-top: 8px;
+              "
+            >
+              <table
+                      cellpadding="0"
+                      cellspacing="0"
+                      style="
+                  border-collapse: collapse;
+                  mso-table-lspace: 0pt;
+                  mso-table-rspace: 0pt;
+                "
+              >
+                <tr>
+                  <td
+                          style="
+                      border-collapse: collapse;
+                      width: 512px;
+                      background-color: #f2f3f7;
+                      border-radius: 16px;
+                      padding-left: 16px;
+                      padding-right: 16px;
+                      padding-bottom: 16px;
+                      padding-top: 16px;
+                    "
+                  >
+                    <table
+                            cellpadding="0"
+                            cellspacing="0"
+                            style="
+                        border-collapse: collapse;
+                        mso-table-lspace: 0pt;
+                        mso-table-rspace: 0pt;
+                      "
+                    >
+                      <tr>
+                        <td
+                                style="
+                            border-collapse: collapse;
+                            width: 480px;
+                            padding-bottom: 8px;
+                          "
+                        >
+                          <p
+                                  style="
+                              margin: 0;
+                              padding: 0;
+                              font-family: MTS Compact, sans-serif, serif,
+                                EmojiFont;
+                              font-size: 14px;
+                              font-weight: 500;
+                              line-height: 15pt;
+                              color: #1d2023;
+                              padding-top: 2px;
+                              display: table-cell;
+                              vertical-align: middle;
+                            "
+                          >
+                            <strong>Оцените качество решения</strong>
+                          </p>
+                        </td>
+                      </tr>
+                    </table>
+                    <table
+                            cellpadding="0"
+                            cellspacing="0"
+                            style="
+                        border-collapse: collapse;
+                        mso-table-lspace: 0pt;
+                        mso-table-rspace: 0pt;
+                      "
+                    >
+                      <tr>
+                        <td
+                                align="left"
+                                style="
+                            border-collapse: collapse;
+                            width: 280px;
+                            padding-bottom: 8px;
+                          "
+                        >
+                          <p
+                                  style="
+                              margin: 0;
+                              padding: 0;
+                              font-family: MTS Compact, sans-serif, serif,
+                                EmojiFont;
+                              font-size: 14px;
+                              font-weight: 400;
+                              line-height: 20px;
+                              color: #6e7782;
+                              display: table-cell;
+                              vertical-align: middle;
+                            "
+                          >
+                            0 - совсем не соответствует ожиданиям
+                          </p>
+                        </td>
+                        <td
+                                align="right"
+                                style="
+                            border-collapse: collapse;
+                            width: 195px;
+                            padding-bottom: 8px;
+                            padding-left: 4px;
+                          "
+                        >
+                          <p
+                                  style="
+                              margin: 0;
+                              padding: 0;
+                              font-family: MTS Compact, sans-serif, serif,
+                                EmojiFont;
+                              font-size: 14px;
+                              font-weight: 400;
+                              line-height: 20px;
+                              color: #6e7782;
+                              display: table-cell;
+                              vertical-align: middle;
+                            "
+                          >
+                            10 - полностью соответствует
+                          </p>
+                        </td>
+                      </tr>
+                    </table>
+                    <table
+                            align="center"
+                            cellpadding="0"
+                            cellspacing="0"
+                            style="
+                        border-collapse: collapse;
+                        mso-table-lspace: 0pt;
+                        mso-table-rspace: 0pt;
+                      "
+                    >
+                      <tr>
+                        {{ range $i, $a := .ActionBtn }}
+                        <td style="border-collapse: collapse; width: 44px">
+                          <a
+                                  href="{{$a.Href}}"
+                                  target="_blank"
+                                  style="
+                              margin: 0;
+                              padding: 0;
+                              display: inline-block;
+                              width: 40px;
+                              border-radius: 8px;
+                              text-decoration: none;
+                              font-family: MTS Compact, sans-serif, serif,
+                                EmojiFont;
+                              font-size: 14px;
+                              font-weight: 400;
+                              line-height: 20px;
+                            "
+                          >
+                            <img
+                                    src="cid:{{$a.Img}}"
+                                    alt="{{$i}}"
+                                    style="
+                                outline: none;
+                                text-decoration: none;
+                                border: none;
+                                -ms-interpolation-mode: bicubic;
+                                border-radius: 6px;
+                                color: #000000;
+                              "
+                            /></a>
+                        </td>
+                        {{ end }}
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <!-- конец JAP-6240 -->
           <tr>
             <td
                     align="center"

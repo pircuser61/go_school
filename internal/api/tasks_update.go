@@ -33,6 +33,7 @@ import (
 
 const headImg = "header.png"
 
+//nolint:gocognit // it's normal
 func (ae *Env) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 	const funcName = "update_tasks_by_mails"
 
@@ -70,7 +71,8 @@ func (ae *Env) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 		log = log.WithField("workNumber", emails[i].Action.WorkNumber).
 			WithField("login", emails[i].Action.Login).
 			WithField("email", emails[i].From).
-			WithField("action", emails[i].Action.ActionName)
+			WithField("action", emails[i].Action.ActionName).
+			WithField("decision", emails[i].Action.Decision)
 
 		log.Info("start update task by email")
 
@@ -134,7 +136,45 @@ func (ae *Env) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 
 			continue
 		}
+
+		if emails[i].Action.Decision == "rate" {
+			b, raedErr := io.ReadAll(req.Body)
+			if raedErr != nil {
+				errorHandler.handleError(RequestReadError, raedErr)
+
+				return
+			}
+
+			updateReq := &RateApplicationRequest{}
+
+			if updateErr := json.Unmarshal(b, updateReq); updateErr != nil {
+				errorHandler.handleError(UpdateTaskParsingError, updateErr)
+
+				return
+			}
+
+			ui, getUserErr := user.GetUserInfoFromCtx(ctx)
+			if getUserErr != nil {
+				errorHandler.handleError(NoUserInContextError, getUserErr)
+
+				return
+			}
+
+			updateTaskErr := ae.DB.UpdateTaskRate(ctx, &db.UpdateTaskRate{
+				ByLogin:    ui.Username,
+				WorkNumber: emails[i].Action.WorkNumber,
+				Comment:    updateReq.Comment,
+				Rate:       updateReq.Rate,
+			})
+			if updateTaskErr != nil {
+				errorHandler.handleError(UpdateTaskRateError, updateTaskErr)
+
+				return
+			}
+		}
 	}
+
+	defer req.Body.Close()
 
 	err = sendResponse(w, http.StatusOK, nil)
 	if err != nil {
