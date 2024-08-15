@@ -18,7 +18,7 @@ func (q *Queue) Length() int {
 }
 
 func (q *Queue) BulkPush(items []int) (ok bool) {
-	if (len(q.q) + len(items)) < q.capacity {
+	if (len(q.q) + len(items)) <= q.capacity {
 		q.q = append(q.q, items...)
 
 		return true
@@ -42,7 +42,8 @@ func (q *Queue) Push(item int) (ok bool) {
 func (q *Queue) Pop() (item int, ok bool) {
 	if len(q.q) > 0 {
 		item := q.q[0]
-		q.q = q.q[1:]
+		copy(q.q, q.q[1:])
+		q.q = q.q[:len(q.q)-1]
 
 		return item, true
 	}
