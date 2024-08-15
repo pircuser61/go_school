@@ -100,7 +100,7 @@ func (runCtx *BlockRunContext) handleInitiatorNotify(ctx c.Context, params handl
 		Comment string `json:"comment"`
 	}{}
 
-	if runCtx.UpdateData != nil {
+	if runCtx.UpdateData != nil && runCtx.UpdateData.Parameters != nil {
 		if err = json.Unmarshal(runCtx.UpdateData.Parameters, &updateParams); err != nil {
 			return err
 		}
