@@ -389,7 +389,7 @@ func (ae *Env) GetWorkNumber(ctx c.Context) (string, error) {
 	workNumber := ""
 
 	for !ok {
-		workNumber, ok, needPrefetch = ae.Sequence.GetWorkNumberFromQueue(ctx)
+		workNumber, ok, needPrefetch = ae.Sequence.GetWorkNumberFromQueue()
 
 		if needPrefetch {
 			workNumbers, err := ae.DB.GetNewWorkNumbers(ctx, ae.Sequence.GetPrefetchSize())

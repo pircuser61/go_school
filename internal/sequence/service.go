@@ -1,11 +1,8 @@
 package sequence
 
 import (
-	c "context"
 	"fmt"
 	"sync"
-
-	"go.opencensus.io/trace"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
@@ -47,11 +44,7 @@ func (s *service) GetPrefetchSize() int {
 	return s.PrefetchSize
 }
 
-func (s *service) GetWorkNumberFromQueue(ctx c.Context) (workNumber string, ok, needPrefetch bool) {
-	//nolint:ineffassign //it's ok
-	ctx, span := trace.StartSpan(ctx, "sequence.get_work_number")
-	defer span.End()
-
+func (s *service) GetWorkNumberFromQueue() (workNumber string, ok, needPrefetch bool) {
 	if s.q.Length() <= s.prefetchMinQueueSize {
 		needPrefetch = true
 	}
