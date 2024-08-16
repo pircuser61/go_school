@@ -468,6 +468,7 @@ func (gb *ExecutableFunctionBlock) setState(ctx context.Context, log logger.Logg
 	}
 
 	var hasErrorSocket bool
+
 	for _, soc := range gb.Sockets {
 		if soc.ID == script.FuncErrorSocket.ID {
 			hasErrorSocket = true
