@@ -250,7 +250,7 @@ func (gb *GoExecutionBlock) setMailTemplates(
 
 			var updateParams ExecutionUpdateParams
 
-			if gb.RunContext.UpdateData != nil {
+			if gb.RunContext.UpdateData != nil && gb.RunContext.UpdateData.Parameters != nil {
 				if err := json.Unmarshal(gb.RunContext.UpdateData.Parameters, &updateParams); err != nil {
 					return nil, errors.New("can't unmarshal update params")
 				}
