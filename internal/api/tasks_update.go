@@ -100,11 +100,9 @@ func (ae *Env) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 			continue
 		}
 
-		rates := []string{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"}
-
 		//nolint:nestif //it's normal
-		if contains(rates, emails[i].Action.Decision) {
-			ui, rateReq, updateErr := GetTaskRating(ctx, req.Body)
+		if emails[i].Action.ActionName == "rate" {
+			ui, rateReq, updateErr := getTaskRating(ctx, req.Body)
 			if updateErr != nil {
 				log.Error(updateErr)
 			}
@@ -1223,38 +1221,20 @@ func (ae *Env) processSingleTask(ctx context.Context, task *stoppedTask) error {
 	return nil
 }
 
-func contains(rates []string, decision string) bool {
-	for _, item := range rates {
-		if item == decision {
-			return true
-		}
-	}
-
-	return false
-}
-
-func GetTaskRating(ctx context.Context, body io.ReadCloser) (*sso.UserInfo, RateApplicationRequest, error) {
-	log := logger.GetLogger(ctx)
-
+func getTaskRating(ctx context.Context, body io.ReadCloser) (*sso.UserInfo, RateApplicationRequest, error) {
 	b, raedErr := io.ReadAll(body)
 	if raedErr != nil {
-		log.Error(raedErr)
-
 		return nil, RateApplicationRequest{}, raedErr
 	}
 
 	updateReq := &RateApplicationRequest{}
 
 	if updateErr := json.Unmarshal(b, updateReq); updateErr != nil {
-		log.Error(updateErr)
-
 		return nil, RateApplicationRequest{}, updateErr
 	}
 
 	userInfo, getUserErr := user.GetUserInfoFromCtx(ctx)
 	if getUserErr != nil {
-		log.Error(getUserErr)
-
 		return nil, RateApplicationRequest{}, getUserErr
 	}
 
