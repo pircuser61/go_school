@@ -104,6 +104,7 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 
 	functionMapping := pipeline.FunctionUpdateParams{
 		Mapping:       message.FunctionMapping,
+		ErrMapping:    message.FunctionErrMapping,
 		DoRetry:       message.DoRetry,
 		IsAsyncResult: message.IsAsyncResult,
 		Err:           message.Err,
@@ -183,7 +184,7 @@ func (ae *Env) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessag
 
 		runCtx.NotifyEvents(ctx) // events for successfully processed nodes
 
-		if st.Name == errBlock && !errors.Is(blockErr, pipeline.ErrMessageFromKafkaHasError) {
+		if st.Name == errBlock && !errors.Is(blockErr, pipeline.ErrUnexpectedErrMsgFromKafka) {
 			<-time.After(ae.FuncMsgResendDelay)
 
 			if kafkaErr := ae.Kafka.ProduceFuncResultMessage(ctx, &kafka.RunnerInMessage{
