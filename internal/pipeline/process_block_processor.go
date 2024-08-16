@@ -217,8 +217,6 @@ func (p *blockProcessor) ProcessBlock(ctx context.Context, its int) (string, err
 	)
 	if err != nil {
 		log.WithError(err).Error("couldn't handle initiator notify")
-
-		return p.name, p.handleErrorWithRollback(ctx, log, err)
 	}
 
 	return "", nil

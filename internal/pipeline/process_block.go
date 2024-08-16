@@ -563,7 +563,7 @@ func ProcessBlockWithEndMapping(
 	if updDeadlineErr != nil {
 		log.WithError(updDeadlineErr).Error("couldn't update task deadline")
 
-		return "", false, updDeadlineErr
+		return "", false, nil
 	}
 
 	intStatus, stringStatus, err := runCtx.Services.Storage.GetTaskStatusWithReadableString(ctx, runCtx.TaskID)
@@ -596,7 +596,7 @@ func ProcessBlockWithEndMapping(
 		if err != nil {
 			log.WithError(updDeadlineErr).Error("couldn't create task event")
 
-			return "", false, err
+			return "", false, nil
 		}
 	}
 
