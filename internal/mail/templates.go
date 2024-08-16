@@ -1116,7 +1116,7 @@ func NewFunctionNotify(funcName, funcVersion string, versions []script.VersionsB
 }
 
 func NewNotifyProcessFinished(dto *ProcessFinishedTemplate, btn []string) (Template, []Button) {
-	actionSubject := fmt.Sprintf(subjectTpl, dto.Action, "rated", dto.WorkNumber, notifyProcessFinished, dto.Login)
+	actionSubject := fmt.Sprintf(subjectRateTpl, dto.Action, dto.WorkNumber, notifyProcessFinished, dto.Login)
 	actionBtn := getRateButton(dto.Mailto, actionSubject, btn)
 
 	return Template{
@@ -1212,7 +1212,8 @@ func getButton(to, subject, image string) *Button {
 }
 
 const (
-	subjectTpl = "step_name=%s|decision=%s|work_number=%s|action_name=%s|login=%s"
+	subjectTpl     = "step_name=%s|decision=%s|work_number=%s|action_name=%s|login=%s"
+	subjectRateTpl = "step_name=%s|work_number=%s|action_name=%s|login=%s"
 
 	actionApproverSendEditApp           = "approver_send_edit_app"
 	actionExecutorSendEditApp           = "executor_send_edit_app"
@@ -1320,14 +1321,15 @@ func getLastWorksForTemplate(lastWorks []*entity.EriusTask, sdURL string) LastWo
 func getRateButton(to, subject string, images []string) []Button {
 	subject = strings.ReplaceAll(subject, " ", "")
 
-	body := "***Спасибо%20за%20вашу%20оценку!***"
-	href := fmt.Sprintf("mailto:%s?subject=%s&body=%s", to, subject, body)
+	body := "***Вы%20можете%20оставить%20комментарий%20к%20оценке%20ниже***%0D%0A%0D%0A***Нажмите%20'отправить'%20чтобы%20оценить%20работу%20сервиса***" //nolint:lll //так нужно
 
 	var buttons []Button //nolint:prealloc //it's normal
 
-	for _, image := range images {
+	for i, image := range images {
+		finalSub := fmt.Sprintf("%s|decision=%s", subject, strconv.Itoa(i))
+
 		buttons = append(buttons, Button{
-			Href: href,
+			Href: fmt.Sprintf("mailto:%s?subject=%s&body=%s", to, finalSub, body),
 			Img:  image,
 		})
 	}
