@@ -102,13 +102,18 @@ func (ae *Env) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 
 		//nolint:nestif //it's normal
 		if emails[i].Action.ActionName == "rate" {
-			userName, rateReq, updateErr := getTaskRating(ctx, req.Body)
+			rateReq, updateErr := getTaskRating(req.Body)
 			if updateErr != nil {
 				log.Error(updateErr)
 			}
 
+			ui, getUserErr := user.GetUserInfoFromCtx(ctx)
+			if getUserErr != nil {
+				log.Error(getUserErr)
+			}
+
 			updateTaskErr := ae.DB.UpdateTaskRate(ctx, &db.UpdateTaskRate{
-				ByLogin:    userName,
+				ByLogin:    ui.Username,
 				WorkNumber: emails[i].Action.WorkNumber,
 				Comment:    rateReq.Comment,
 				Rate:       rateReq.Rate,
@@ -1221,22 +1226,17 @@ func (ae *Env) processSingleTask(ctx context.Context, task *stoppedTask) error {
 	return nil
 }
 
-func getTaskRating(ctx context.Context, body io.ReadCloser) (string, RateApplicationRequest, error) {
+func getTaskRating(body io.ReadCloser) (RateApplicationRequest, error) {
 	b, raedErr := io.ReadAll(body)
 	if raedErr != nil {
-		return "", RateApplicationRequest{}, raedErr
+		return RateApplicationRequest{}, raedErr
 	}
 
 	updateReq := &RateApplicationRequest{}
 
 	if updateErr := json.Unmarshal(b, updateReq); updateErr != nil {
-		return "", RateApplicationRequest{}, updateErr
+		return RateApplicationRequest{}, updateErr
 	}
 
-	userInfo, getUserErr := user.GetUserInfoFromCtx(ctx)
-	if getUserErr != nil {
-		return "", RateApplicationRequest{}, getUserErr
-	}
-
-	return userInfo.Username, *updateReq, nil
+	return *updateReq, nil
 }
