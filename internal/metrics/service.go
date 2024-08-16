@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
@@ -150,14 +151,14 @@ func New(config PrometheusConfig) Metrics {
 			Name:      incomingRequestsTotal,
 			Help:      "Duration of incoming requests in seconds",
 			Buckets:   prometheus.DefBuckets,
-		}, []string{"method", "stand", "path", "http_status"}),
+		}, []string{"method", "path", "http_status"}),
 		externalSystemRequestsTotal: prometheus.NewHistogramVec(prometheus.HistogramOpts{
 			Namespace: namespace,
 			Subsystem: subsystem,
 			Name:      externalSystemRequestsTotal,
 			Help:      "Duration of requests to external systems in seconds",
 			Buckets:   prometheus.DefBuckets,
-		}, []string{"method", "stand", "path", "http_status", "service"}),
+		}, []string{"method", "path", "http_status", "integration_name"}),
 	}
 
 	m.MustRegisterMetrics(registry)
@@ -209,11 +210,10 @@ func (m *service) Request2ExternalSystem(label *ExternalRequestInfo) {
 	parsedURL, _ := url.Parse(label.URL)
 
 	m.externalSystemRequestsTotal.With(prometheus.Labels{
-		"method":      label.Method,
-		"stand":       m.stand,
-		"service":     label.ExternalSystem,
-		"path":        parsedURL.Path,
-		"http_status": strconv.Itoa(label.ResponseCode),
+		"method":           label.Method,
+		"integration_name": label.ExternalSystem,
+		"path":             parsedURL.Path,
+		"http_status":      strconv.Itoa(label.ResponseCode),
 	}).Observe(label.Duration.Seconds())
 }
 
@@ -235,7 +235,7 @@ func (writer *loggingResponseWriter) Write(p []byte) (int, error) {
 	return writer.ResponseWriter.Write(p)
 }
 
-func (m *service) IncomingRequestMiddleware(next http.Handler) http.Handler {
+func (m *service) RequestMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		wrappedRespWriter := &loggingResponseWriter{
 			ResponseWriter: writer,
@@ -247,10 +247,14 @@ func (m *service) IncomingRequestMiddleware(next http.Handler) http.Handler {
 
 		duration := time.Since(start)
 
+		var path string
+		if routeContext := chi.RouteContext(request.Context()); routeContext != nil {
+			path = routeContext.RoutePattern()
+		}
+
 		m.incomingRequestsTotal.With(prometheus.Labels{
 			"method":      request.Method,
-			"stand":       m.stand,
-			"path":        request.URL.Path,
+			"path":        path,
 			"http_status": strconv.Itoa(wrappedRespWriter.status),
 		}).Observe(duration.Seconds())
 	})

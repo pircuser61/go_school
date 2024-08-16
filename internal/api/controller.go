@@ -91,7 +91,7 @@ func NewServer(ctx context.Context, param *ServerParam) (*http.Server, error) {
 	mux.Use(observability.MiddlewareChi())
 	mux.Use(RequestIDMiddleware)
 	mux.Use(middleware.Timeout(param.TimeoutMiddleware))
-	mux.Use(param.APIEnv.Metrics.IncomingRequestMiddleware)
+	mux.Use(param.APIEnv.Metrics.RequestMiddleware)
 
 	mux.Get(param.LivenessPath, param.APIEnv.Alive)
 	mux.Get(param.ReadinessPath, param.APIEnv.Ready)
