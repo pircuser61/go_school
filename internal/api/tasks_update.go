@@ -102,6 +102,8 @@ func (ae *Env) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 			continue
 		}
 
+		fmt.Println(">>>>>>>>> Action", emails[i].Action.ActionName, emails[i].Action.Decision, emails[i].Action.Comment)
+
 		//nolint:nestif //it's normal
 		if emails[i].Action.ActionName == "rate" {
 			ui, getUserErr := user.GetUserInfoFromCtx(ctx)
