@@ -610,6 +610,7 @@ func ProcessBlockWithEndMapping(
 			return
 		}
 		if intStatus != db.RunStatusFinished && intStatus != db.RunStatusStopped {
+
 			result = struct {
 				failedBlock string
 				success     bool
