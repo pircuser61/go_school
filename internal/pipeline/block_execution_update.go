@@ -963,6 +963,7 @@ func (gb *GoExecutionBlock) executorBackToGroup() (err error) {
 		Attachments: updateParams.Attachments,
 		CreatedAt:   time.Now(),
 		ByLogin:     currentLogin,
+		NewGroup:    gb.State.ExecutorsGroupName,
 	})
 
 	gb.State.TakenInWorkLog = append(gb.State.TakenInWorkLog, StartWorkLog{
