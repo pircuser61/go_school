@@ -206,6 +206,7 @@ func (p *blockProcessor) ProcessBlock(ctx context.Context, its int) (string, err
 
 		return failedBlock, p.handleErrorWithRollback(ctx, log, err)
 	}
+
 	go func() {
 		err = p.runCtx.handleInitiatorNotify(ctx,
 			handleInitiatorNotifyParams{
