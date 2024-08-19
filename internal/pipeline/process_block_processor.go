@@ -206,18 +206,19 @@ func (p *blockProcessor) ProcessBlock(ctx context.Context, its int) (string, err
 
 		return failedBlock, p.handleErrorWithRollback(ctx, log, err)
 	}
-
-	err = p.runCtx.handleInitiatorNotify(ctx,
-		handleInitiatorNotifyParams{
-			step:     p.name,
-			stepType: p.bl.TypeID,
-			action:   action,
-			status:   taskHumanStatus,
-		},
-	)
-	if err != nil {
-		log.WithError(err).Error("couldn't handle initiator notify")
-	}
+	go func() {
+		err = p.runCtx.handleInitiatorNotify(ctx,
+			handleInitiatorNotifyParams{
+				step:     p.name,
+				stepType: p.bl.TypeID,
+				action:   action,
+				status:   taskHumanStatus,
+			},
+		)
+		if err != nil {
+			log.WithError(err).Error("couldn't handle initiator notify")
+		}
+	}()
 
 	return "", nil
 }

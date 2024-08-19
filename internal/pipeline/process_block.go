@@ -551,61 +551,108 @@ func ProcessBlockWithEndMapping(
 		WithField(script.StepName, name)
 
 	ctx = logger.WithLogger(ctx, log)
-
-	failedBlock, pErr := processor.ProcessBlock(ctx, 0)
-	if pErr != nil {
-		log.WithError(pErr).Error("couldn't process block with end mapping, ProcessBlock")
-
-		return failedBlock, false, pErr
+	resultChan := make(chan struct {
+		failedBlock string
+		success     bool
+		err         error
+	})
+	var result struct {
+		failedBlock string
+		success     bool
+		err         error
 	}
+	result.failedBlock = ""
+	result.success = true
+	result.err = nil
 
-	updDeadlineErr := processor.updateTaskExecDeadline(ctx)
-	if updDeadlineErr != nil {
-		log.WithError(updDeadlineErr).Error("couldn't update task deadline")
-
-		return "", false, nil
-	}
-
-	intStatus, stringStatus, err := runCtx.Services.Storage.GetTaskStatusWithReadableString(ctx, runCtx.TaskID)
-	if err != nil {
-		log.WithError(err).Error("couldn't get task status after processing")
-
-		return "", false, nil
-	}
-
-	if intStatus != db.RunStatusFinished && intStatus != db.RunStatusStopped {
-		return "", false, nil
-	}
-
-	if intStatus == db.RunStatusFinished && statusBefore != db.RunStatusFinished {
-		params := struct {
-			Steps []string `json:"steps"`
-		}{Steps: []string{}}
-
-		jsonParams, mrshErr := json.Marshal(params)
-		if mrshErr != nil {
-			log.Error(mrshErr)
+	go func() {
+		var result struct {
+			failedBlock string
+			success     bool
+			err         error
+		}
+		failedBlock, pErr := processor.ProcessBlock(ctx, 0)
+		if pErr != nil {
+			log.WithError(pErr).Error("couldn't process block with end mapping, ProcessBlock")
+			result = struct {
+				failedBlock string
+				success     bool
+				err         error
+			}{failedBlock, false, pErr}
+			resultChan <- result
+			return
 		}
 
-		_, err = runCtx.Services.Storage.CreateTaskEvent(ctx, &entity.CreateTaskEvent{
-			WorkID:    runCtx.TaskID.String(),
-			EventType: "pause",
-			Author:    db.SystemLogin,
-			Params:    jsonParams,
-		})
+		updDeadlineErr := processor.updateTaskExecDeadline(ctx)
+		if updDeadlineErr != nil {
+			log.WithError(updDeadlineErr).Error("couldn't update task deadline")
+			result = struct {
+				failedBlock string
+				success     bool
+				err         error
+			}{"", false, nil}
+			resultChan <- result
+			return
+		}
+
+		intStatus, stringStatus, err := runCtx.Services.Storage.GetTaskStatusWithReadableString(ctx, runCtx.TaskID)
 		if err != nil {
-			log.WithError(updDeadlineErr).Error("couldn't create task event")
-
-			return "", false, nil
+			log.WithError(err).Error("couldn't get task status after processing")
+			result = struct {
+				failedBlock string
+				success     bool
+				err         error
+			}{"", false, nil}
+			resultChan <- result
+			return
 		}
-	}
 
-	endErr := processBlockEnd(ctx, stringStatus, runCtx)
-	if endErr != nil {
-		log.WithError(endErr).Error("couldn't send process end notification")
-	}
+		if intStatus != db.RunStatusFinished && intStatus != db.RunStatusStopped {
+			result = struct {
+				failedBlock string
+				success     bool
+				err         error
+			}{"", false, nil}
+			resultChan <- result
+			return
+		}
 
-	return "", true, nil
+		if intStatus == db.RunStatusFinished && statusBefore != db.RunStatusFinished {
+			params := struct {
+				Steps []string `json:"steps"`
+			}{Steps: []string{}}
+
+			jsonParams, mrshErr := json.Marshal(params)
+			if mrshErr != nil {
+				log.Error(mrshErr)
+			}
+
+			_, err = runCtx.Services.Storage.CreateTaskEvent(ctx, &entity.CreateTaskEvent{
+				WorkID:    runCtx.TaskID.String(),
+				EventType: "pause",
+				Author:    db.SystemLogin,
+				Params:    jsonParams,
+			})
+			if err != nil {
+				log.WithError(updDeadlineErr).Error("couldn't create task event")
+				result = struct {
+					failedBlock string
+					success     bool
+					err         error
+				}{"", false, nil}
+				resultChan <- result
+				return
+			}
+		}
+
+		endErr := processBlockEnd(ctx, stringStatus, runCtx)
+		if endErr != nil {
+			log.WithError(endErr).Error("couldn't send process end notification")
+		}
+	}()
+
+	result = <-resultChan
+	return result.failedBlock, result.success, result.err
 }
 
 func processBlockEnd(ctx c.Context, status string, runCtx *BlockRunContext) (err error) {
