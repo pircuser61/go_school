@@ -556,11 +556,6 @@ func ProcessBlockWithEndMapping(
 		success     bool
 		err         error
 	})
-	result := struct {
-		failedBlock string
-		success     bool
-		err         error
-	}{"", true, nil}
 
 	go func() {
 		defer close(resultChan)
@@ -602,7 +597,6 @@ func ProcessBlockWithEndMapping(
 		}
 
 		intStatus, stringStatus, err := runCtx.Services.Storage.GetTaskStatusWithReadableString(ctx, runCtx.TaskID)
-
 		if err != nil {
 			log.WithError(err).Error("couldn't get task status after processing")
 
@@ -615,7 +609,6 @@ func ProcessBlockWithEndMapping(
 
 			return
 		}
-
 		if intStatus != db.RunStatusFinished && intStatus != db.RunStatusStopped {
 
 			result = struct {
@@ -644,7 +637,6 @@ func ProcessBlockWithEndMapping(
 				Author:    db.SystemLogin,
 				Params:    jsonParams,
 			})
-
 			if err != nil {
 				log.WithError(updDeadlineErr).Error("couldn't create task event")
 
@@ -666,9 +658,11 @@ func ProcessBlockWithEndMapping(
 		}
 	}()
 
-	result = <-resultChan
-
-	return result.failedBlock, result.success, result.err
+	result := <-resultChan
+	if !result.success {
+		return result.failedBlock, result.success, result.err
+	}
+	return "", true, nil
 }
 
 func processBlockEnd(ctx c.Context, status string, runCtx *BlockRunContext) (err error) {
