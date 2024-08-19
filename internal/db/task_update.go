@@ -282,6 +282,8 @@ func (db *PGCon) UpdateTaskBlocksData(ctx c.Context, dto *UpdateTaskBlocksDataRe
 
 func (db *PGCon) UpdateTaskRate(ctx c.Context, req *UpdateTaskRate) (err error) {
 	fmt.Println("?????????? req: ", req)
+	fmt.Println("?????????? rate: ", *req.Rate)
+	fmt.Println("?????????? comment: ", *req.Comment)
 
 	const q = `
 		UPDATE works 
@@ -290,7 +292,7 @@ func (db *PGCon) UpdateTaskRate(ctx c.Context, req *UpdateTaskRate) (err error) 
 			rate_comment = $2
 		WHERE work_number = $3 AND author = $4`
 
-	_, err = db.Connection.Exec(ctx, q, req.Rate, req.Comment, req.WorkNumber, req.ByLogin)
+	_, err = db.Connection.Exec(ctx, q, *req.Rate, *req.Comment, req.WorkNumber, req.ByLogin)
 
 	return err
 }
