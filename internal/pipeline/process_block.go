@@ -662,6 +662,7 @@ func ProcessBlockWithEndMapping(
 	if !result.success {
 		return result.failedBlock, result.success, result.err
 	}
+
 	return "", true, nil
 }
 
