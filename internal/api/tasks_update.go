@@ -120,13 +120,6 @@ func (ae *Env) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 		if emails[i].Action.ActionName == "rate" {
 			fmt.Println(" +++++++++++ зашли сюда ++++++++++++")
 
-			ui, getUserErr := user.GetUserInfoFromCtx(ctx)
-			if getUserErr != nil {
-				log.Error(getUserErr)
-			}
-
-			fmt.Println("<<<<<<<<< user.GetUserInfoFromCtx: ui: ", ui)
-
 			rate, atoiErr := strconv.Atoi(emails[i].Action.Decision)
 			if atoiErr != nil {
 				log.Error(atoiErr)
@@ -138,7 +131,7 @@ func (ae *Env) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 				Rate:       &rate,
 				Comment:    &emails[i].Action.Comment,
 				WorkNumber: emails[i].Action.WorkNumber,
-				ByLogin:    ui.Username,
+				ByLogin:    emails[i].Action.Login,
 			})
 			if updateTaskErr != nil {
 				log.Error(updateTaskErr)
