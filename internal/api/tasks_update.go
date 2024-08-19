@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -100,29 +101,23 @@ func (ae *Env) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 			continue
 		}
 
-		body, _ := io.ReadAll(req.Body)
-
-		fmt.Println("<<<<<<<<<< Action.ActionName: ", emails[i].Action.ActionName)
-		fmt.Println("<<<<<<<<<< req.Header: ", req.Header)
-		fmt.Println("<<<<<<<<<< req.Body: ", string(body))
-
 		//nolint:nestif //it's normal
 		if emails[i].Action.ActionName == "rate" {
-			rateReq, updateErr := getTaskRating(req.Body)
-			if updateErr != nil {
-				log.Error(updateErr)
-			}
-
 			ui, getUserErr := user.GetUserInfoFromCtx(ctx)
 			if getUserErr != nil {
 				log.Error(getUserErr)
 			}
 
+			rate, atoiErr := strconv.Atoi(emails[i].Action.Decision)
+			if atoiErr != nil {
+				log.Error(atoiErr)
+			}
+
 			updateTaskErr := ae.DB.UpdateTaskRate(ctx, &db.UpdateTaskRate{
 				ByLogin:    ui.Username,
 				WorkNumber: emails[i].Action.WorkNumber,
-				Comment:    rateReq.Comment,
-				Rate:       rateReq.Rate,
+				Comment:    &emails[i].Action.Comment,
+				Rate:       &rate,
 			})
 			if updateTaskErr != nil {
 				log.Error(updateTaskErr)
@@ -1230,19 +1225,4 @@ func (ae *Env) processSingleTask(ctx context.Context, task *stoppedTask) error {
 	runCtx.NotifyEvents(ctx)
 
 	return nil
-}
-
-func getTaskRating(body io.ReadCloser) (RateApplicationRequest, error) {
-	b, raedErr := io.ReadAll(body)
-	if raedErr != nil {
-		return RateApplicationRequest{}, raedErr
-	}
-
-	updateReq := &RateApplicationRequest{}
-
-	if updateErr := json.Unmarshal(b, updateReq); updateErr != nil {
-		return RateApplicationRequest{}, updateErr
-	}
-
-	return *updateReq, nil
 }
