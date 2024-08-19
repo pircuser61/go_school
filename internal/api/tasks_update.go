@@ -115,10 +115,10 @@ func (ae *Env) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 			}
 
 			updateTaskErr := ae.DB.UpdateTaskRate(ctx, &db.UpdateTaskRate{
-				ByLogin:    ui.Username,
-				WorkNumber: emails[i].Action.WorkNumber,
-				Comment:    &emails[i].Action.Comment,
 				Rate:       &rate,
+				Comment:    &emails[i].Action.Comment,
+				WorkNumber: emails[i].Action.WorkNumber,
+				ByLogin:    ui.Username,
 			})
 			if updateTaskErr != nil {
 				log.Error(updateTaskErr)
