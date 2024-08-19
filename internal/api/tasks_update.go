@@ -124,12 +124,14 @@ func (ae *Env) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 			if getUserErr != nil {
 				log.Error(getUserErr)
 			}
+
 			fmt.Println("<<<<<<<<< user.GetUserInfoFromCtx: ui: ", ui)
 
 			rate, atoiErr := strconv.Atoi(emails[i].Action.Decision)
 			if atoiErr != nil {
 				log.Error(atoiErr)
 			}
+
 			fmt.Println("<<<<<<<<< rate: ", rate)
 
 			updateTaskErr := ae.DB.UpdateTaskRate(ctx, &db.UpdateTaskRate{
