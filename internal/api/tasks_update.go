@@ -102,6 +102,8 @@ func (ae *Env) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 			continue
 		}
 
+		fmt.Println(">>>>>>>>> Action", emails[i].Action.ActionName, emails[i].Action.Decision, emails[i].Action.Comment)
+
 		//nolint:nestif //it's normal
 		if emails[i].Action.ActionName == "rate" {
 			ui, getUserErr := user.GetUserInfoFromCtx(ctx)
@@ -115,10 +117,10 @@ func (ae *Env) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 			}
 
 			updateTaskErr := ae.DB.UpdateTaskRate(ctx, &db.UpdateTaskRate{
-				ByLogin:    ui.Username,
-				WorkNumber: emails[i].Action.WorkNumber,
-				Comment:    &emails[i].Action.Comment,
 				Rate:       &rate,
+				Comment:    &emails[i].Action.Comment,
+				WorkNumber: emails[i].Action.WorkNumber,
+				ByLogin:    ui.Username,
 			})
 			if updateTaskErr != nil {
 				log.Error(updateTaskErr)
