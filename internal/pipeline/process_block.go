@@ -551,69 +551,55 @@ func ProcessBlockWithEndMapping(
 		WithField(script.StepName, name)
 
 	ctx = logger.WithLogger(ctx, log)
-	resultChan := make(chan struct {
+	result := struct {
 		failedBlock string
 		success     bool
 		err         error
-	})
-	var result struct {
-		failedBlock string
-		success     bool
-		err         error
-	}
-	result.failedBlock = ""
-	result.success = true
-	result.err = nil
+	}{"", true, nil}
 
-	go func() {
-		var result struct {
-			failedBlock string
-			success     bool
-			err         error
-		}
+	go func(result *struct {
+		failedBlock string
+		success     bool
+		err         error
+	}) {
 		failedBlock, pErr := processor.ProcessBlock(ctx, 0)
+
 		if pErr != nil {
 			log.WithError(pErr).Error("couldn't process block with end mapping, ProcessBlock")
-			result = struct {
-				failedBlock string
-				success     bool
-				err         error
-			}{failedBlock, false, pErr}
-			resultChan <- result
+			result.failedBlock = failedBlock
+			result.success = false
+			result.err = pErr
+
 			return
 		}
 
 		updDeadlineErr := processor.updateTaskExecDeadline(ctx)
+
 		if updDeadlineErr != nil {
 			log.WithError(updDeadlineErr).Error("couldn't update task deadline")
-			result = struct {
-				failedBlock string
-				success     bool
-				err         error
-			}{"", false, nil}
-			resultChan <- result
+			result.failedBlock = ""
+			result.success = false
+			result.err = nil
+
 			return
 		}
 
 		intStatus, stringStatus, err := runCtx.Services.Storage.GetTaskStatusWithReadableString(ctx, runCtx.TaskID)
+
 		if err != nil {
 			log.WithError(err).Error("couldn't get task status after processing")
-			result = struct {
-				failedBlock string
-				success     bool
-				err         error
-			}{"", false, nil}
-			resultChan <- result
+			result.failedBlock = ""
+			result.success = false
+			result.err = nil
+
 			return
 		}
 
 		if intStatus != db.RunStatusFinished && intStatus != db.RunStatusStopped {
-			result = struct {
-				failedBlock string
-				success     bool
-				err         error
-			}{"", false, nil}
-			resultChan <- result
+			result.failedBlock = ""
+			result.success = false
+			result.err = nil
+
 			return
 		}
 
@@ -633,14 +619,13 @@ func ProcessBlockWithEndMapping(
 				Author:    db.SystemLogin,
 				Params:    jsonParams,
 			})
+
 			if err != nil {
 				log.WithError(updDeadlineErr).Error("couldn't create task event")
-				result = struct {
-					failedBlock string
-					success     bool
-					err         error
-				}{"", false, nil}
-				resultChan <- result
+				result.failedBlock = ""
+				result.success = false
+				result.err = nil
+
 				return
 			}
 		}
@@ -649,9 +634,8 @@ func ProcessBlockWithEndMapping(
 		if endErr != nil {
 			log.WithError(endErr).Error("couldn't send process end notification")
 		}
-	}()
+	}(&result)
 
-	result = <-resultChan
 	return result.failedBlock, result.success, result.err
 }
 
