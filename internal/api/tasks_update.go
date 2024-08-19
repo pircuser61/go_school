@@ -73,7 +73,8 @@ func (ae *Env) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 			WithField("login", emails[i].Action.Login).
 			WithField("email", emails[i].From).
 			WithField("action", emails[i].Action.ActionName).
-			WithField("decision", emails[i].Action.Decision)
+			WithField("decision", emails[i].Action.Decision).
+			WithField("comment", emails[i].Action.Comment)
 
 		log.Info("start update task by email")
 
@@ -860,10 +861,10 @@ func (ae *Env) RateApplication(w http.ResponseWriter, r *http.Request, workNumbe
 	}
 
 	err = ae.DB.UpdateTaskRate(ctx, &db.UpdateTaskRate{
-		ByLogin:    ui.Username,
-		WorkNumber: workNumber,
-		Comment:    req.Comment,
 		Rate:       req.Rate,
+		Comment:    req.Comment,
+		WorkNumber: workNumber,
+		ByLogin:    ui.Username,
 	})
 	if err != nil {
 		log.Error(err)
