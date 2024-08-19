@@ -574,8 +574,8 @@ func ProcessBlockWithEndMapping(
 		failedBlock, pErr := processor.ProcessBlock(ctx, 0)
 
 		if pErr != nil {
-
 			log.WithError(pErr).Error("couldn't process block with end mapping, ProcessBlock")
+
 			result = struct {
 				failedBlock string
 				success     bool
@@ -589,8 +589,8 @@ func ProcessBlockWithEndMapping(
 		updDeadlineErr := processor.updateTaskExecDeadline(ctx)
 
 		if updDeadlineErr != nil {
-
 			log.WithError(updDeadlineErr).Error("couldn't update task deadline")
+
 			result = struct {
 				failedBlock string
 				success     bool
@@ -604,8 +604,8 @@ func ProcessBlockWithEndMapping(
 		intStatus, stringStatus, err := runCtx.Services.Storage.GetTaskStatusWithReadableString(ctx, runCtx.TaskID)
 
 		if err != nil {
-
 			log.WithError(err).Error("couldn't get task status after processing")
+
 			result = struct {
 				failedBlock string
 				success     bool
@@ -647,6 +647,7 @@ func ProcessBlockWithEndMapping(
 
 			if err != nil {
 				log.WithError(updDeadlineErr).Error("couldn't create task event")
+
 				result = struct {
 					failedBlock string
 					success     bool
