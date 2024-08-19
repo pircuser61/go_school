@@ -281,6 +281,8 @@ func (db *PGCon) UpdateTaskBlocksData(ctx c.Context, dto *UpdateTaskBlocksDataRe
 }
 
 func (db *PGCon) UpdateTaskRate(ctx c.Context, req *UpdateTaskRate) (err error) {
+	fmt.Println("?????????? req: ", req)
+
 	const q = `
 		UPDATE works 
 		SET 
