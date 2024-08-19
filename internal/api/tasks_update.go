@@ -100,76 +100,65 @@ func (ae *Env) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 			continue
 		}
 
-		clientID, tokenParseErr := ae.getClientIDFromToken(token)
-		if tokenParseErr != nil {
-			log.WithError(tokenParseErr).Info("failed to get client id for file registry metrics")
-		}
-
-		log = log.WithField("clientID", clientID)
-
-		for fileName, fileData := range emails[i].Action.Attachments {
-			id, errSave := ae.FileRegistry.SaveFile(ctx, token, clientID, fileName, fileData.Raw, emails[i].Action.WorkNumber)
-			if errSave != nil {
-				log.WithField("fileName", fileName).Error(errSave)
-
-				continue
-			}
-
-			emails[i].Action.AttachmentsIds = append(emails[i].Action.AttachmentsIds, entity.Attachment{FileID: id})
-		}
-
-		jsonBody, errParse := json.Marshal(emails[i].Action)
-		if errParse != nil {
-			log.Error(errParse)
-
-			continue
-		}
-
-		updateData := entity.TaskUpdate{
-			Action:     entity.TaskUpdateAction(emails[i].Action.ActionName),
-			Parameters: jsonBody,
-		}
-
-		errUpdate := ae.updateTaskBlockInternal(ctx, emails[i].Action.WorkNumber, emails[i].Action.Login, &updateData)
-		if errUpdate != nil {
-			log.Error(errUpdate)
-
-			continue
-		}
-
-		if emails[i].Action.Decision == "rate" {
-			b, raedErr := io.ReadAll(req.Body)
-			if raedErr != nil {
-				errorHandler.handleError(RequestReadError, raedErr)
-
-				return
-			}
-
-			updateReq := &RateApplicationRequest{}
-
-			if updateErr := json.Unmarshal(b, updateReq); updateErr != nil {
-				errorHandler.handleError(UpdateTaskParsingError, updateErr)
-
-				return
+		//nolint:nestif //it's normal
+		if emails[i].Action.ActionName == "rate" {
+			rateReq, updateErr := getTaskRating(req.Body)
+			if updateErr != nil {
+				log.Error(updateErr)
 			}
 
 			ui, getUserErr := user.GetUserInfoFromCtx(ctx)
 			if getUserErr != nil {
-				errorHandler.handleError(NoUserInContextError, getUserErr)
-
-				return
+				log.Error(getUserErr)
 			}
 
 			updateTaskErr := ae.DB.UpdateTaskRate(ctx, &db.UpdateTaskRate{
 				ByLogin:    ui.Username,
 				WorkNumber: emails[i].Action.WorkNumber,
-				Comment:    updateReq.Comment,
-				Rate:       updateReq.Rate,
+				Comment:    rateReq.Comment,
+				Rate:       rateReq.Rate,
 			})
 			if updateTaskErr != nil {
-				errorHandler.handleError(UpdateTaskRateError, updateTaskErr)
+				log.Error(updateTaskErr)
 
 				return
+			}
+		} else {
+			clientID, tokenParseErr := ae.getClientIDFromToken(token)
+			if tokenParseErr != nil {
+				log.WithError(tokenParseErr).Info("failed to get client id for file registry metrics")
+			}
+
+			log = log.WithField("clientID", clientID)
+
+			for fileName, fileData := range emails[i].Action.Attachments {
+				id, errSave := ae.FileRegistry.SaveFile(ctx, token, clientID, fileName, fileData.Raw, emails[i].Action.WorkNumber)
+				if errSave != nil {
+					log.WithField("fileName", fileName).Error(errSave)
+
+					continue
+				}
+
+				emails[i].Action.AttachmentsIds = append(emails[i].Action.AttachmentsIds, entity.Attachment{FileID: id})
+			}
+
+			jsonBody, errParse := json.Marshal(emails[i].Action)
+			if errParse != nil {
+				log.Error(errParse)
+
+				continue
+			}
+
+			updateData := entity.TaskUpdate{
+				Action:     entity.TaskUpdateAction(emails[i].Action.ActionName),
+				Parameters: jsonBody,
+			}
+
+			errUpdate := ae.updateTaskBlockInternal(ctx, emails[i].Action.WorkNumber, emails[i].Action.Login, &updateData)
+			if errUpdate != nil {
+				log.Error(errUpdate)
+
+				continue
 			}
 		}
 	}
@@ -1235,4 +1224,19 @@ func (ae *Env) processSingleTask(ctx context.Context, task *stoppedTask) error {
 	runCtx.NotifyEvents(ctx)
 
 	return nil
+}
+
+func getTaskRating(body io.ReadCloser) (RateApplicationRequest, error) {
+	b, raedErr := io.ReadAll(body)
+	if raedErr != nil {
+		return RateApplicationRequest{}, raedErr
+	}
+
+	updateReq := &RateApplicationRequest{}
+
+	if updateErr := json.Unmarshal(b, updateReq); updateErr != nil {
+		return RateApplicationRequest{}, updateErr
+	}
+
+	return *updateReq, nil
 }
