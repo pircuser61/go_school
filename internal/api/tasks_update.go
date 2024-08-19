@@ -100,6 +100,12 @@ func (ae *Env) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 			continue
 		}
 
+		body, _ := io.ReadAll(req.Body)
+
+		fmt.Println("<<<<<<<<<< Action.ActionName: ", emails[i].Action.ActionName)
+		fmt.Println("<<<<<<<<<< req.Header: ", req.Header)
+		fmt.Println("<<<<<<<<<< req.Body: ", string(body))
+
 		//nolint:nestif //it's normal
 		if emails[i].Action.ActionName == "rate" {
 			rateReq, updateErr := getTaskRating(req.Body)
