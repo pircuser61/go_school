@@ -753,14 +753,13 @@ func (ae *Env) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO) (
 	ctx = logger.WithLogger(ctx, log)
 
 	_, workFinished, err := pipeline.ProcessBlockWithEndMapping(ctx, pipeline.BlockGoFirstStart, blockData, runCtx, false)
+	if err != nil {
+		runCtx.NotifyEvents(ctx) // events for successfully processed nodes
+
+		return PipelineRunError, err
+	}
 
 	go func() {
-		if err != nil {
-			runCtx.NotifyEvents(ctx) // events for successfully processed nodes
-
-			return
-		}
-
 		if workFinished {
 			err = ae.Scheduler.DeleteAllTasksByWorkID(ctx, dto.taskID)
 			if err != nil {
