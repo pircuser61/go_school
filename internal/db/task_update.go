@@ -293,10 +293,6 @@ func (db *PGCon) UpdateTaskRate(ctx c.Context, req *UpdateTaskRate) (err error) 
 
 	_, err = db.Connection.Exec(ctx, q, rate, comment, req.WorkNumber, req.ByLogin)
 
-	fmt.Println("?????????? rate: ", rate)
-	fmt.Println("?????????? comment: ", comment)
-	fmt.Println("?????????? req.ByLogin: ", req.ByLogin)
-
 	return err
 }
 
