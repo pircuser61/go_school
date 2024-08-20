@@ -610,7 +610,6 @@ func ProcessBlockWithEndMapping(
 			return
 		}
 		if intStatus != db.RunStatusFinished && intStatus != db.RunStatusStopped {
-
 			result = struct {
 				failedBlock string
 				success     bool
@@ -620,6 +619,7 @@ func ProcessBlockWithEndMapping(
 
 			return
 		}
+
 		if intStatus == db.RunStatusFinished && statusBefore != db.RunStatusFinished {
 			params := struct {
 				Steps []string `json:"steps"`
