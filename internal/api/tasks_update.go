@@ -109,6 +109,11 @@ func (ae *Env) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 				log.Error(atoiErr)
 			}
 
+			fmt.Println("----------- &rate: ", &rate)
+			fmt.Println("----------- &emails[i].Action.Comment: ", &emails[i].Action.Comment)
+			fmt.Println("----------- emails[i].Action.WorkNumber: ", emails[i].Action.WorkNumber)
+			fmt.Println("----------- emails[i].Action.Login: ", emails[i].Action.Login)
+
 			updateTaskErr := ae.DB.UpdateTaskRate(ctx, &db.UpdateTaskRate{
 				Rate:       &rate,
 				Comment:    &emails[i].Action.Comment,
