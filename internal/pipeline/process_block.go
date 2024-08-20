@@ -597,6 +597,7 @@ func ProcessBlockWithEndMapping(
 			})
 			if err != nil {
 				log.WithError(updDeadlineErr).Error("couldn't create task event")
+
 				return
 			}
 		}
