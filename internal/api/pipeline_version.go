@@ -753,21 +753,24 @@ func (ae *Env) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO) (
 	ctx = logger.WithLogger(ctx, log)
 
 	_, workFinished, err := pipeline.ProcessBlockWithEndMapping(ctx, pipeline.BlockGoFirstStart, blockData, runCtx, false)
-	if err != nil {
-		runCtx.NotifyEvents(ctx) // events for successfully processed nodes
 
-		return PipelineRunError, err
-	}
-
-	if workFinished {
-		err = ae.Scheduler.DeleteAllTasksByWorkID(ctx, dto.taskID)
+	go func() {
 		if err != nil {
-			log.WithField("funcName", "DeleteAllTasksByWorkID").
-				WithError(err).Error("failed delete all tasks by work id in scheduler")
-		}
-	}
+			runCtx.NotifyEvents(ctx) // events for successfully processed nodes
 
-	runCtx.NotifyEvents(ctx)
+			return
+		}
+
+		if workFinished {
+			err = ae.Scheduler.DeleteAllTasksByWorkID(ctx, dto.taskID)
+			if err != nil {
+				log.WithField("funcName", "DeleteAllTasksByWorkID").
+					WithError(err).Error("failed delete all tasks by work id in scheduler")
+			}
+		}
+
+		runCtx.NotifyEvents(ctx)
+	}()
 
 	return 0, nil
 }
