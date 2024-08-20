@@ -284,10 +284,6 @@ func (db *PGCon) UpdateTaskRate(ctx c.Context, req *UpdateTaskRate) (err error) 
 	rate := *req.Rate
 	comment := *req.Comment
 
-	fmt.Println("?????????? rate: ", rate)
-	fmt.Println("?????????? comment: ", comment)
-	fmt.Println("?????????? req.ByLogin: ", req.ByLogin)
-
 	const q = `
 		UPDATE works 
 		SET 
