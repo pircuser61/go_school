@@ -66,13 +66,9 @@ func (ae *Env) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	fmt.Println("<<<<<<<<< emails: ", emails)
-
 	token := req.Header.Get(AuthorizationHeader)
 
 	for i := range emails {
-		fmt.Println("<<<<<<<<< emails[i]: ", emails[i].Action)
-
 		log = log.WithField("workNumber", emails[i].Action.WorkNumber).
 			WithField("login", emails[i].Action.Login).
 			WithField("email", emails[i].From).
@@ -89,8 +85,6 @@ func (ae *Env) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 			continue
 		}
 
-		fmt.Println("<<<<<<<<< usr: ", usr)
-
 		useInfo, errToUserinfo := usr.ToUserinfo()
 		if errToUserinfo != nil {
 			log.Error(errToUserinfo)
@@ -98,15 +92,9 @@ func (ae *Env) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 			continue
 		}
 
-		fmt.Println("<<<<<<<<< useInfo: ", useInfo)
-
 		log = log.WithField("userEmailByLogin", useInfo.Email).
 			WithField("emailFromEmail", emails[i].From).
 			WithField("proxyEmails", useInfo.ProxyEmails)
-
-		fmt.Println("<<<<<<<<< useInfo.Email: ", useInfo.Email)
-		fmt.Println("<<<<<<<<< emails[i].From: ", emails[i].From)
-		fmt.Println("<<<<<<<<< useInfo.ProxyEmails: ", useInfo.ProxyEmails)
 
 		if !strings.EqualFold(useInfo.Email, emails[i].From) && !utils.IsContainsInSlice(emails[i].From, useInfo.ProxyEmails) {
 			log.Error(errors.New("login from email not eq or not in proxyAddresses"))
@@ -114,18 +102,12 @@ func (ae *Env) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 			continue
 		}
 
-		fmt.Println(">>>>>>>>> Action", emails[i].Action.ActionName, emails[i].Action.Decision, emails[i].Action.Comment)
-
 		//nolint:nestif //it's normal
 		if emails[i].Action.ActionName == "rate" {
-			fmt.Println(" +++++++++++ зашли сюда ++++++++++++")
-
 			rate, atoiErr := strconv.Atoi(emails[i].Action.Decision)
 			if atoiErr != nil {
 				log.Error(atoiErr)
 			}
-
-			fmt.Println("<<<<<<<<< rate: ", rate)
 
 			updateTaskErr := ae.DB.UpdateTaskRate(ctx, &db.UpdateTaskRate{
 				Rate:       &rate,
@@ -138,8 +120,6 @@ func (ae *Env) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 
 				return
 			}
-
-			fmt.Println("<<<<<<<<< &emails[i].Action.Comment: ", emails[i].Action.Comment)
 		} else {
 			clientID, tokenParseErr := ae.getClientIDFromToken(token)
 			if tokenParseErr != nil {
