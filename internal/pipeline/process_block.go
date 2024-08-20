@@ -552,8 +552,10 @@ func ProcessBlockWithEndMapping(
 
 	ctx = logger.WithLogger(ctx, log)
 	failedBlock, pErr := processor.ProcessBlock(ctx, 0)
+
 	if pErr != nil {
 		log.WithError(pErr).Error("couldn't process block with end mapping, ProcessBlock")
+
 		return failedBlock, false, pErr
 	}
 
@@ -562,12 +564,14 @@ func ProcessBlockWithEndMapping(
 
 		if updDeadlineErr != nil {
 			log.WithError(updDeadlineErr).Error("couldn't update task deadline")
+
 			return
 		}
 
 		intStatus, stringStatus, err := runCtx.Services.Storage.GetTaskStatusWithReadableString(ctx, runCtx.TaskID)
 		if err != nil {
 			log.WithError(err).Error("couldn't get task status after processing")
+
 			return
 		}
 
