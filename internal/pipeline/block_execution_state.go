@@ -45,6 +45,7 @@ type ChangeExecutorLog struct {
 	CreatedAt   time.Time           `json:"created_at"`
 	DelegateFor string              `json:"delegate_for"`
 	ByLogin     string              `json:"by_login"`
+	NewGroup    string              `json:"new_group,omitempty"`
 }
 
 type StartWorkLog struct {
