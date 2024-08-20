@@ -759,15 +759,17 @@ func (ae *Env) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO) (
 		return PipelineRunError, err
 	}
 
-	if workFinished {
-		err = ae.Scheduler.DeleteAllTasksByWorkID(ctx, dto.taskID)
-		if err != nil {
-			log.WithField("funcName", "DeleteAllTasksByWorkID").
-				WithError(err).Error("failed delete all tasks by work id in scheduler")
+	go func() {
+		if workFinished {
+			err = ae.Scheduler.DeleteAllTasksByWorkID(ctx, dto.taskID)
+			if err != nil {
+				log.WithField("funcName", "DeleteAllTasksByWorkID").
+					WithError(err).Error("failed delete all tasks by work id in scheduler")
+			}
 		}
-	}
 
-	runCtx.NotifyEvents(ctx)
+		runCtx.NotifyEvents(ctx)
+	}()
 
 	return 0, nil
 }
