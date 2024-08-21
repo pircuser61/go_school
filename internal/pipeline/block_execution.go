@@ -321,7 +321,15 @@ func (gb *GoExecutionBlock) executionActions(login string) []MemberAction {
 		},
 	}
 
-	if _, ok := gb.State.InitialExecutors[login]; ok && gb.State.ExecutorsGroupID != "" {
+	isDelegated := false
+
+	l := len(gb.State.TakenInWorkLog)
+	if l > 0 {
+		delegate := gb.State.TakenInWorkLog[l-1].DelegateFor
+		_, isDelegated = gb.State.InitialExecutors[delegate]
+	}
+
+	if _, ok := gb.State.InitialExecutors[login]; ok && gb.State.ExecutorsGroupID != "" || isDelegated {
 		actions = append(actions, MemberAction{
 			ID:   executionBackToGroup,
 			Type: ActionTypeOther,
