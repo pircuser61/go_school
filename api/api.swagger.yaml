@@ -5825,6 +5825,9 @@ components:
         executors_group_name:
           type: string
           description: Executors group name in SD
+        executors_group_limit:
+          type: integer
+          description: Executors group limit in SD
         executors_group_id_path:
           type: string
           description: Path to executors group id

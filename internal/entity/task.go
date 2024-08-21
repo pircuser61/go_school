@@ -134,16 +134,18 @@ type EriusTask struct {
 	CurrentExecutionStart   *time.Time          `json:"current_execution_start,omitempty"`
 	CurrentApprovementStart *time.Time          `json:"current_approvement_start,omitempty"`
 	IsPaused                bool                `json:"is_paused"`
+	GroupLimitExceeded      bool                `json:"group_limit_exceeded"`
 
 	ParentWorkNumber *string  `json:"parent_work_number,omitempty"`
 	ChildWorkNumbers []string `json:"child_work_numbers,omitempty"`
 }
 
 type CurrentExecutorData struct {
-	People             []string `json:"people"`
-	InitialPeople      []string `json:"initial_people"`
-	ExecutionGroupID   string   `json:"execution_group_id,omitempty"`
-	ExecutionGroupName string   `json:"execution_group_name,omitempty"`
+	People              []string `json:"people"`
+	InitialPeople       []string `json:"initial_people"`
+	ExecutionGroupID    string   `json:"execution_group_id,omitempty"`
+	ExecutionGroupName  string   `json:"execution_group_name,omitempty"`
+	ExecutionGroupLimit int      `json:"execution_group_limit,omitempty"`
 }
 
 func (et *EriusTask) IsRun() bool {

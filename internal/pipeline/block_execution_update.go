@@ -915,6 +915,17 @@ func (gb *GoExecutionBlock) executorStartWork(ctx c.Context) (err error) {
 		return NewUserIsNotPartOfProcessErr()
 	}
 
+	if gb.State.ExecutorsGroupID != "" {
+		limit, err := gb.RunContext.Services.Storage.GetExecutorsNumbersOfCurrentTasks(ctx, currentLogin, gb.State.ExecutorsGroupID)
+		if err != nil {
+			return err
+		}
+
+		if gb.State.ExecutorsGroupLimit != 0 && limit == gb.State.ExecutorsGroupLimit {
+			return fmt.Errorf("the number of tasks exceeds the group limit")
+		}
+	}
+
 	executorLogins := make(map[string]struct{}, 0)
 	for i := range gb.State.Executors {
 		executorLogins[i] = gb.State.Executors[i]

@@ -641,6 +641,22 @@ func (ae *Env) GetTasks(w http.ResponseWriter, req *http.Request, params GetTask
 
 			resp.Tasks[i].CurrentExecutor.ExecutionGroupName = executionBaseGroupName
 		}
+
+		if resp.Tasks[i].CurrentExecutor.ExecutionGroupID != "" {
+			if resp.Tasks[i].CurrentExecutor.ExecutionGroupLimit != 0 {
+				cur, err := ae.DB.GetExecutorsNumbersOfCurrentTasks(
+					ctx,
+					filters.CurrentUser,
+					resp.Tasks[i].CurrentExecutor.ExecutionGroupID,
+				)
+				if err != nil {
+					errorHandler.handleError(GetTasksError, err)
+					return
+				}
+				resp.Tasks[i].GroupLimitExceeded = cur == resp.Tasks[i].CurrentExecutor.ExecutionGroupLimit
+			}
+
+		}
 	}
 
 	if err = sendResponse(w, http.StatusOK, resp); err != nil {
