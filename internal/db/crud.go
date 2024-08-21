@@ -1970,39 +1970,6 @@ func (db *PGCon) AddTaskChildRelation(ctx context.Context, parentWorkNumber, new
 	return nil
 }
 
-func (db *PGCon) GetNewWorkNumbers(ctx context.Context, prefetchSize int) ([]int, error) {
-	ctx, span := trace.StartSpan(ctx, "pg_get_new_work_numbers")
-	defer span.End()
-
-	// nolint:gocritic
-	// language=PostgreSQL
-	q := `SELECT nextval('work_seq') FROM generate_series(1,$1)`
-
-	var workNumbers []int
-
-	rows, err := db.Connection.Query(ctx, q, prefetchSize)
-	if err != nil {
-		return nil, err
-	}
-
-	defer rows.Close()
-
-	for rows.Next() {
-		var workNumber int
-		if scanErr := rows.Scan(&workNumber); scanErr != nil {
-			return nil, scanErr
-		}
-
-		workNumbers = append(workNumbers, workNumber)
-	}
-
-	if rowsErr := rows.Err(); rowsErr != nil {
-		return nil, rowsErr
-	}
-
-	return workNumbers, nil
-}
-
 func (db *PGCon) GetTaskStepsToWait(ctx context.Context, workNumber, blockName string) ([]string, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_task_steps_to_wait")
 	defer span.End()

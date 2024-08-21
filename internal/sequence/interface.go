@@ -1,9 +1,8 @@
 package sequence
 
+import c "context"
+
 type Service interface {
-	GetWorkNumberFromQueue() (workNumber string, ok, needPrefetch bool)
-	AddWorkNumbersToQueue(workNumbers []int)
-	Lock()
-	Unlock()
-	GetPrefetchSize() int
+	GetWorkNumber(ctx c.Context) (workNumber string, err error)
+	Ping(ctx c.Context) error
 }
