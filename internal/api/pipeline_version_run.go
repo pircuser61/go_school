@@ -543,9 +543,11 @@ func handleLaunchTaskError(ctx c.Context, storage db.Database, taskID uuid.UUID,
 
 	switch {
 	case errorutils.IsRemoteCallError(err):
-		log.WithError(err).Warning("remote call error")
+		log.WithError(err).Error("remote call error")
 
-		return nil
+		_ = storage.UpdateTaskStatus(ctx, taskID, db.RunStatusError, err.Error(), "")
+
+		return err
 	case err != nil:
 		log.WithError(err).Error("process empty task error")
 
