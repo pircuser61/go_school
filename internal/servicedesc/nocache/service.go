@@ -74,7 +74,7 @@ func (s *service) Ping(ctx c.Context) error {
 		return err
 	}
 
-	if resp.StatusCode != http.StatusUnauthorized {
+	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("wrong status code: %d", resp.StatusCode)
 	}
 
