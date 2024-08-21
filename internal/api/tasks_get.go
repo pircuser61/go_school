@@ -528,7 +528,7 @@ const (
 	getTasksUsersPath = "/tasks/users"
 )
 
-//nolint:dupl,gocritic,gocognit //its not duplicate // params без поинтера нужен для интерфейса
+//nolint:dupl,gocritic,gocognit,gocyclo //its not duplicate // params без поинтера нужен для интерфейса
 func (ae *Env) GetTasks(w http.ResponseWriter, req *http.Request, params GetTasksParams) {
 	start := time.Now()
 	ctx, s := trace.StartSpan(req.Context(), "get_tasks")
@@ -642,21 +642,23 @@ func (ae *Env) GetTasks(w http.ResponseWriter, req *http.Request, params GetTask
 			resp.Tasks[i].CurrentExecutor.ExecutionGroupName = executionBaseGroupName
 		}
 
-		if resp.Tasks[i].CurrentExecutor.ExecutionGroupID != "" {
-			if resp.Tasks[i].CurrentExecutor.ExecutionGroupLimit != 0 {
-				cur := 0
+		if resp.Tasks[i].CurrentExecutor.ExecutionGroupID != "" && resp.Tasks[i].CurrentExecutor.ExecutionGroupLimit != 0 {
+			cur := 0
 
-				cur, err = ae.DB.GetExecutorsNumbersOfCurrentTasks(
-					ctx,
-					filters.CurrentUser,
-					resp.Tasks[i].CurrentExecutor.ExecutionGroupID,
-				)
-				if err != nil {
-					errorHandler.handleError(GetTasksError, err)
+			cur, err = ae.DB.GetExecutorsNumbersOfCurrentTasks(
+				ctx,
+				filters.CurrentUser,
+				resp.Tasks[i].CurrentExecutor.ExecutionGroupID,
+			)
+			if err != nil {
+				errorHandler.handleError(GetTasksError, err)
 
-					return
-				}
-				resp.Tasks[i].GroupLimitExceeded = cur == resp.Tasks[i].CurrentExecutor.ExecutionGroupLimit
+				return
+			}
+
+			resp.Tasks[i].GroupLimitExceeded = false
+			if cur == resp.Tasks[i].CurrentExecutor.ExecutionGroupLimit {
+				resp.Tasks[i].GroupLimitExceeded = true
 			}
 		}
 	}
