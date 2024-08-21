@@ -121,16 +121,6 @@ func (s *service) PingServices(ctx c.Context, failedCh chan bool) {
 					s.metrics.HrGateUnavailable()
 				}
 			},
-			"sequence": func() {
-				defer wg.Done()
-
-				sequenceErr := s.apiEnv.Sequence.Ping(ctx)
-				if sequenceErr == nil {
-					s.metrics.SequenceAvailable()
-				} else {
-					s.metrics.SequenceUnavailable()
-				}
-			},
 		}
 
 		wg.Add(len(s.pings))
