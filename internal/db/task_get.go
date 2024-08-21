@@ -671,7 +671,7 @@ func (cq *compileGetTaskQueryMaker) addIsExpiredFilter(isExpired *bool, selectAs
 }
 
 func (cq *compileGetTaskQueryMaker) addExecutorFilter() {
-	if cq.fl.ExecutorLogins != nil || cq.fl.ExecutorGroupIds != nil {
+	if cq.fl.ExecutorLogins != nil || cq.fl.ExecutorGroupIDs != nil {
 		cq.q = getExecutors(cq.q, cq.fl)
 	}
 }
@@ -879,7 +879,7 @@ func getExecutors(q string, fl *entity.TaskFilter) string {
 
 	varStorage = addAssignType(varStorage, fl.CurrentUser, fl.ExecutorTypeAssigned)
 	varStorage = addExecutorsLogins(varStorage, fl.SelectAs, fl.ExecutorLogins)
-	varStorage = addExecutorGroups(varStorage, fl.SelectAs, fl.ExecutorGroupIds)
+	varStorage = addExecutorGroups(varStorage, fl.SelectAs, fl.ExecutorGroupIDs)
 
 	varStorage += ")"
 
