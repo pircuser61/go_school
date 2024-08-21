@@ -733,7 +733,16 @@ func (ae *Env) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO) (
 			SLAService:    ae.SLAService,
 			Storage:       dto.storage,
 		},
-		BlockRunResults: &pipeline.BlockRunResults{},
+		BlockRunResults: &pipeline.BlockRunResults{
+			NodeEvents: []e.NodeEvent{{
+				TaskID:     dto.taskID.String(),
+				WorkNumber: dto.workNumber,
+				NodeName:   "start_0",
+				NodeStart:  time.Now().Format(time.RFC3339),
+				TaskStatus: string(pipeline.StatusNew),
+				NodeStatus: string(pipeline.StatusRunning),
+			}},
+		},
 
 		UpdateData: nil,
 		IsTest:     dto.runCtx.InitialApplication.IsTestApplication,
@@ -746,6 +755,8 @@ func (ae *Env) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO) (
 	}
 
 	runCtx.SetTaskEvents(ctx)
+
+	runCtx.NotifyEvents(ctx)
 
 	blockData := dto.p.Pipeline.Blocks[pipeline.BlockGoFirstStart]
 
