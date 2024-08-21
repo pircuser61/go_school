@@ -71,7 +71,6 @@ type Pipeliner struct {
 	ConsumerFuncsWorkers    int                      `yaml:"consumer_funcs_workers"`
 	ConsumerTasksWorkers    int                      `yaml:"consumer_tasks_workers"`
 	Retry                   RetryConfig              `yaml:"retry"`
-	SequencePrefetchSize    int                      `yaml:"sequence_prefetch_size"`
 }
 
 type RetryConfig struct {

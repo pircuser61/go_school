@@ -236,7 +236,6 @@ type Database interface {
 	UpdateTaskBlocksData(ctx c.Context, dto *UpdateTaskBlocksDataRequest) error
 	GetTaskActiveBlock(ctx c.Context, taskID, stepName string) ([]string, error)
 	SetExecDeadline(ctx c.Context, taskID string, deadline time.Time) error
-	GetNewWorkNumbers(ctx c.Context, prefetchSize int) ([]int, error)
 
 	GetExecutableScenarios(ctx c.Context) ([]e.EriusScenario, error)
 	GetExecutableByName(ctx c.Context, name string) (*e.EriusScenario, error)

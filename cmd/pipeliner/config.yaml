@@ -147,12 +147,10 @@ scheduler_tasks:
   timeout: 2s
 
 sequence:
-  # сколько work_number запрашиваем за раз для выдачи
-  work_number_prefetch_size: 50
-  # запросить новые work_number если в очереди меньше N номеров
-  # не делайте его равным или больше work_number_prefetch_size, иначе
-  # новые номера будут подгружаться каждый запрос...
-  prefetch_min_queue_size: 10
+  url: 'localhost:9002'
+  max_retries: 3
+  retry_delay: 1s
+  timeout: 2s
 
 human_tasks:
   url: "human-tasks:90"
