@@ -56,6 +56,7 @@ type TaskStorager interface {
 	GetVariableStorageForStepByID(ctx c.Context, stepID uuid.UUID) (*store.VariableStore, error)
 	GetVariableStorage(ctx c.Context, workNumber string) (*store.VariableStore, error)
 	GetBlocksBreachedSLA(ctx c.Context) ([]StepBreachedSLA, error)
+	GetRunningExecutionBlocks(ctx c.Context) ([]e.Step, error)
 	GetMeanTaskSolveTime(ctx c.Context, pipelineID string) ([]e.TaskCompletionInterval, error)
 	GetTaskInWorkTime(ctx c.Context, workNumber string) (*e.TaskCompletionInterval, error)
 	GetExecutorsFromPrevExecutionBlockRun(ctx c.Context, taskID uuid.UUID, name string) (exec map[string]struct{}, err error)

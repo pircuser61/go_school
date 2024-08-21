@@ -3392,6 +3392,48 @@ func (db *PGCon) GetBlocksBreachedSLA(ctx context.Context) ([]StepBreachedSLA, e
 	return res, nil
 }
 
+func (db *PGCon) GetRunningExecutionBlocks(ctx context.Context) ([]entity.Step, error) {
+	c, span := trace.StartSpan(ctx, "get_running_execution_block")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	q := `SELECT 
+    vs.id,
+    vs.content,
+    vs.current_executor
+    
+			FROM variable_storage vs
+			WHERE 
+			    status IN ('running') 
+				AND step_type IN ('execution')`
+
+	steps := []entity.Step{}
+
+	rows, err := db.Connection.Query(c, q)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var step entity.Step
+
+		if scanErr := rows.Scan(&step.ID, &step.Content, &step.CurrentExecutorData); scanErr != nil {
+			return steps, scanErr
+		}
+
+		steps = append(steps, step)
+	}
+
+	if rowsErr := rows.Err(); rowsErr != nil {
+		return nil, rowsErr
+	}
+
+	return steps, nil
+}
+
 func (db *PGCon) GetTaskActiveBlock(c context.Context, taskID, stepName string) ([]string, error) {
 	c, span := trace.StartSpan(c, "pg_get_task_active_block")
 	defer span.End()

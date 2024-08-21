@@ -2,7 +2,9 @@ package nocache
 
 import (
 	c "context"
+	"encoding/json"
 	"fmt"
+	"io"
 	"math"
 	"net/http"
 	"time"
@@ -328,4 +330,35 @@ func (s *Service) GetOrganizationByID(ctx c.Context, organizationID string) (*hr
 
 func (s *Service) GetLocation() time.Location {
 	return s.location
+}
+
+func (s *Service) GetComplexAssignmentsV2(ctx c.Context, logins []string) ([]entity.AssignmentsV2, error) {
+	ctx, span := trace.StartSpan(ctx, "hrgate.get_complex_assignmentsV2")
+	defer span.End()
+
+	traceID := span.SpanContext().TraceID.String()
+	log := script.SetFieldsExternalCall(ctx, traceID, "v1", script.HTTP, http.MethodGet, externalSystemName)
+
+	ctx = logger.WithLogger(ctx, log)
+	ctx = script.MakeContextWithRetryCnt(ctx)
+
+	l := hrgate.LoginFilterParam(logins)
+	resp, err := s.cli.GetComplexAssignmentsV2(ctx, &hrgate.GetComplexAssignmentsV2Params{Logins: &l})
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var result []entity.AssignmentsV2
+	err = json.Unmarshal(data, &result)
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
 }

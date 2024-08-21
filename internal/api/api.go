@@ -4317,6 +4317,9 @@ type ServerInterface interface {
 	// Send failed tasks events to kafka
 	// (GET /cron/events_to_send)
 	SendEventsToKafka(w http.ResponseWriter, r *http.Request)
+	// Returns tasks of fired users to the group
+	// (GET /cron/fired)
+	CheckFired(w http.ResponseWriter, r *http.Request)
 	// Check if any steps breached SLA
 	// (GET /cron/sla)
 	CheckBreachSLA(w http.ResponseWriter, r *http.Request)
@@ -4555,6 +4558,21 @@ func (siw *ServerInterfaceWrapper) SendEventsToKafka(w http.ResponseWriter, r *h
 
 	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.SendEventsToKafka(w, r)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
+// CheckFired operation middleware
+func (siw *ServerInterfaceWrapper) CheckFired(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CheckFired(w, r)
 	}
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -7335,6 +7353,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/cron/events_to_send", wrapper.SendEventsToKafka)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/cron/fired", wrapper.CheckFired)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/cron/sla", wrapper.CheckBreachSLA)

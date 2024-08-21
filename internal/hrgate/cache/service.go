@@ -232,3 +232,14 @@ func (s *service) GetDefaultCalendarDaysForGivenTimeIntervals(
 
 	return calendarDays, nil
 }
+
+func (s *service) GetComplexAssignmentsV2(ctx c.Context, logins []string) ([]entity.AssignmentsV2, error) {
+	ctx, span := trace.StartSpan(ctx, "hrgate.get_complex_assignmentsV2")
+	defer span.End()
+
+	result, err := s.HRGate.GetComplexAssignmentsV2(ctx, logins)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
