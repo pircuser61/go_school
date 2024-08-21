@@ -916,7 +916,9 @@ func (gb *GoExecutionBlock) executorStartWork(ctx c.Context) (err error) {
 	}
 
 	if gb.State.ExecutorsGroupID != "" {
-		limit, err := gb.RunContext.Services.Storage.GetExecutorsNumbersOfCurrentTasks(ctx, currentLogin, gb.State.ExecutorsGroupID)
+		limit := 0
+
+		limit, err = gb.RunContext.Services.Storage.GetExecutorsNumbersOfCurrentTasks(ctx, currentLogin, gb.State.ExecutorsGroupID)
 		if err != nil {
 			return err
 		}

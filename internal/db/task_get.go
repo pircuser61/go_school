@@ -3033,7 +3033,7 @@ func (db *PGCon) GetExecutorsFromPrevWorkVersionExecutionBlockRun(ctx c.Context,
 	return executors, nil
 }
 
-func (db *PGCon) GetExecutorsNumbersOfCurrentTasks(ctx c.Context, name, groupId string) (
+func (db *PGCon) GetExecutorsNumbersOfCurrentTasks(ctx c.Context, name, groupID string) (
 	limit int, err error,
 ) {
 	ctx, span := trace.StartSpan(ctx, "get_numbers_of_current_tasks")
@@ -3047,10 +3047,11 @@ AND current_executor->'people' ? $1
 AND jsonb_array_length(current_executor->'initial_people') > 1
 AND current_executor->>'group_id' = $2`
 
-	if err = db.Connection.QueryRow(ctx, q, name, groupId).Scan(&limit); err != nil {
+	if err = db.Connection.QueryRow(ctx, q, name, groupID).Scan(&limit); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return 0, nil
 		}
+
 		return 0, err
 	}
 

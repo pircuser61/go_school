@@ -644,18 +644,20 @@ func (ae *Env) GetTasks(w http.ResponseWriter, req *http.Request, params GetTask
 
 		if resp.Tasks[i].CurrentExecutor.ExecutionGroupID != "" {
 			if resp.Tasks[i].CurrentExecutor.ExecutionGroupLimit != 0 {
-				cur, err := ae.DB.GetExecutorsNumbersOfCurrentTasks(
+				cur := 0
+
+				cur, err = ae.DB.GetExecutorsNumbersOfCurrentTasks(
 					ctx,
 					filters.CurrentUser,
 					resp.Tasks[i].CurrentExecutor.ExecutionGroupID,
 				)
 				if err != nil {
 					errorHandler.handleError(GetTasksError, err)
+
 					return
 				}
 				resp.Tasks[i].GroupLimitExceeded = cur == resp.Tasks[i].CurrentExecutor.ExecutionGroupLimit
 			}
-
 		}
 	}
 
@@ -924,7 +926,7 @@ func (p *GetTasksParams) toEntity(req *http.Request) (e.TaskFilter, error) {
 		ProcessingLogins:     p.ProcessingLogins,
 		ProcessingGroupIds:   p.ProcessingGroupIds,
 		ExecutorLogins:       p.ExecutorLogins,
-		ExecutorGroupIds:     p.ExecutorGroupIds,
+		ExecutorGroupIDs:     p.ExecutorGroupIds,
 		ExecutorTypeAssigned: typeAssigned,
 		SignatureCarrier:     signatureCarrier,
 	}

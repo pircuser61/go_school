@@ -60,7 +60,7 @@ type TaskStorager interface {
 	GetTaskInWorkTime(ctx c.Context, workNumber string) (*e.TaskCompletionInterval, error)
 	GetExecutorsFromPrevExecutionBlockRun(ctx c.Context, taskID uuid.UUID, name string) (exec map[string]struct{}, err error)
 	GetExecutorsFromPrevWorkVersionExecutionBlockRun(ctx c.Context, workNumber, name string) (exec map[string]struct{}, err error)
-	GetExecutorsNumbersOfCurrentTasks(ctx c.Context, name, groupId string) (int, error)
+	GetExecutorsNumbersOfCurrentTasks(ctx c.Context, name, groupID string) (int, error)
 	GetWorkIDByWorkNumber(ctx c.Context, workNumber string) (uuid.UUID, error)
 	GetPipelineIDByWorkID(ctx c.Context, taskID string) (uuid.UUID, uuid.UUID, error)
 
