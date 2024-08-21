@@ -88,7 +88,9 @@ func (gb *GoExecutionBlock) handleAction(ctx c.Context, action e.TaskUpdateActio
 			return errUpdate
 		}
 	}
+
 	isWorkOnEditing, err := gb.RunContext.Services.Storage.CheckIsOnEditing(ctx, gb.RunContext.TaskID.String())
+
 	if err != nil {
 		return err
 	}
