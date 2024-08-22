@@ -298,7 +298,7 @@ func (gb *TimerBlock) createExpectedEvents(
 	return nil
 }
 
-//nolint:dupl //its not duplicate
+//nolint:dupl,gocyclo //its not duplicate
 func (gb *TimerBlock) createState(ef *entity.EriusFunc) error {
 	var params TimerParams
 
@@ -373,20 +373,18 @@ func (gb *TimerBlock) createState(ef *entity.EriusFunc) error {
 
 	targetTime := time.Date(dateObj.Year(), dateObj.Month(), dateObj.Day(), 5, 0, 0, 0, dateObj.Location())
 
-	currentDate := time.Now()
-	daysToAdd := 0
+	var (
+		slaInfoPtr    *sla.Info
+		getSLAInfoErr error
+		calendarDays  *hrgate.CalendarDays
+		weekends      []time.Weekday
+	)
 
-	if params.Delay != "" {
-		daysToAdd, err = strconv.Atoi(strings.TrimSuffix(params.Delay, "d"))
-		if err != nil {
-			return errors.New("wrong format of delay days")
-		}
-	}
-
-	targetTime = targetTime.Add(time.Duration(params.Coef*daysToAdd) * 24 * time.Hour)
-
+	useCalendar := false
 	if params.WorkDay != 0 {
-		slaInfoPtr, getSLAInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(
+		useCalendar = true
+
+		slaInfoPtr, getSLAInfoErr = gb.RunContext.Services.SLAService.GetSLAInfoPtr(
 			context.Background(),
 			sla.InfoDTO{
 				TaskCompletionIntervals: []entity.TaskCompletionInterval{
@@ -402,15 +400,33 @@ func (gb *TimerBlock) createState(ef *entity.EriusFunc) error {
 			return errors.Wrap(err, "can not prepare slaInfo")
 		}
 
-		for {
-			calendarDays, weekends := slaInfoPtr.GetCalendarDays(), slaInfoPtr.GetWeekends()
-			if notWorkingHours(targetTime, calendarDays, weekends) {
-				targetTime = targetTime.AddDate(0, 0, params.WorkDay)
-			} else {
-				break
-			}
+		calendarDays = slaInfoPtr.GetCalendarDays()
+
+		weekends = slaInfoPtr.GetWeekends()
+	}
+
+	if useCalendar {
+		targetTime = skipNotWorkingDays(targetTime, calendarDays, weekends, params.WorkDay)
+	}
+
+	daysToAdd := 0
+
+	if params.Delay != "" {
+		daysToAdd, err = strconv.Atoi(strings.TrimSuffix(params.Delay, "d"))
+		if err != nil {
+			return errors.New("wrong format of delay days")
 		}
 	}
+
+	for ; daysToAdd != 0; daysToAdd-- {
+		targetTime = targetTime.Add(time.Duration(params.Coef) * 24 * time.Hour)
+
+		if useCalendar {
+			targetTime = skipNotWorkingDays(targetTime, calendarDays, weekends, params.Coef)
+		}
+	}
+
+	currentDate := time.Now()
 
 	duration = targetTime.Sub(currentDate)
 	if duration <= 0 {
@@ -447,4 +463,21 @@ func notWorkingHours(t time.Time, calendarDays *hrgate.CalendarDays, weekends []
 	}
 
 	return false
+}
+
+func skipNotWorkingDays(
+	targetTime time.Time,
+	calendarDays *hrgate.CalendarDays,
+	weekends []time.Weekday,
+	delay int,
+) time.Time {
+	for {
+		if notWorkingHours(targetTime, calendarDays, weekends) {
+			targetTime = targetTime.AddDate(0, 0, delay)
+		} else {
+			break
+		}
+	}
+
+	return targetTime
 }
