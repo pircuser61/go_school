@@ -474,7 +474,8 @@ func skipNotWorkingDays(
 	for {
 		if !notWorkingHours(targetTime, calendarDays, weekends) {
 			break
-		} 
+		}
+
 		targetTime = targetTime.AddDate(0, 0, delay)
 	}
 
