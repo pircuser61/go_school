@@ -526,12 +526,6 @@ func (gb *ExecutableFunctionBlock) setStateByRetry(ctx context.Context) error {
 }
 
 func (gb *ExecutableFunctionBlock) setStateByErr(updateData *FunctionUpdateParams) error {
-	mapping := updateData.Mapping
-
-	if updateData.Err == "FUNCTION_RUN_ERROR" {
-		mapping = updateData.ErrMapping
-	}
-
 	var expectedOutput map[string]script.ParamMetadata
 
 	outputUnmarshalErr := json.Unmarshal([]byte(gb.State.Function.ErrorOutput), &expectedOutput)
@@ -542,7 +536,7 @@ func (gb *ExecutableFunctionBlock) setStateByErr(updateData *FunctionUpdateParam
 	resultOutput := make(map[string]interface{})
 
 	for k := range expectedOutput {
-		param, ok := mapping[k]
+		param, ok := updateData.ErrMapping[k]
 		if !ok {
 			continue
 		}
