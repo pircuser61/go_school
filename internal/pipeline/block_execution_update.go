@@ -1127,10 +1127,6 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 
 	var buttons []mail.Button
 
-	if len(notifDescription) > 0 {
-		notifDescription = notifDescription[1:]
-	}
-
 	tpl, buttons = mail.NewAppPersonStatusNotificationTpl(
 		&mail.NewAppPersonStatusTpl{
 			WorkNumber:  gb.RunContext.WorkNumber,
