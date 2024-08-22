@@ -489,6 +489,10 @@ func (gb *ExecutableFunctionBlock) setState(ctx context.Context, log logger.Logg
 		gb.State.HasResponse = true
 	}
 
+	if updateData.Err != "" {
+		return gb.setStateByErr(updateData)
+	}
+
 	if gb.State.HasResponse {
 		return gb.setStateByResponse(updateData)
 	}
@@ -521,25 +525,16 @@ func (gb *ExecutableFunctionBlock) setStateByRetry(ctx context.Context) error {
 	return nil
 }
 
-func (gb *ExecutableFunctionBlock) setStateByResponse(updateData *FunctionUpdateParams) error {
+func (gb *ExecutableFunctionBlock) setStateByErr(updateData *FunctionUpdateParams) error {
 	mapping := updateData.Mapping
-	decision := ExecutedDecision
 
-	if updateData.Err != "" {
-		if updateData.Err == "FUNCTION_RUN_ERROR" {
-			mapping = updateData.ErrMapping
-		}
-
-		decision = ErrorDecision
-
-		if valOutputFunctionDecision, ok := gb.Output[keyOutputFunctionError]; ok {
-			gb.RunContext.VarStore.SetValue(valOutputFunctionDecision, updateData.Err)
-		}
+	if updateData.Err == "FUNCTION_RUN_ERROR" {
+		mapping = updateData.ErrMapping
 	}
 
 	var expectedOutput map[string]script.ParamMetadata
 
-	outputUnmarshalErr := json.Unmarshal([]byte(gb.State.Function.Output), &expectedOutput)
+	outputUnmarshalErr := json.Unmarshal([]byte(gb.State.Function.ErrorOutput), &expectedOutput)
 	if outputUnmarshalErr != nil {
 		return outputUnmarshalErr
 	}
@@ -562,8 +557,53 @@ func (gb *ExecutableFunctionBlock) setStateByResponse(updateData *FunctionUpdate
 
 	gb.RunContext.VarStore.ClearValues(gb.Name)
 
+	if valOutputFunctionDecision, ok := gb.Output[keyOutputFunctionError]; ok {
+		gb.RunContext.VarStore.SetValue(valOutputFunctionDecision, updateData.Err)
+	}
+
 	if valOutputFunctionDecision, ok := gb.Output[keyOutputFunctionDecision]; ok {
-		gb.RunContext.VarStore.SetValue(valOutputFunctionDecision, decision)
+		gb.RunContext.VarStore.SetValue(valOutputFunctionDecision, ErrorDecision)
+	}
+
+	for k, v := range resultOutput {
+		if valFromOutput, ok := gb.Output[k]; ok {
+			gb.RunContext.VarStore.SetValue(valFromOutput, v)
+		}
+	}
+
+	gb.State.HasError = true
+
+	return nil
+}
+
+func (gb *ExecutableFunctionBlock) setStateByResponse(updateData *FunctionUpdateParams) error {
+	var expectedOutput map[string]script.ParamMetadata
+
+	outputUnmarshalErr := json.Unmarshal([]byte(gb.State.Function.Output), &expectedOutput)
+	if outputUnmarshalErr != nil {
+		return outputUnmarshalErr
+	}
+
+	resultOutput := make(map[string]interface{})
+
+	for k := range expectedOutput {
+		param, ok := updateData.Mapping[k]
+		if !ok {
+			continue
+		}
+		// We're using pointer because we sometimes need to change type inside interface
+		// from float to integer (func simpleTypeHandler)
+		if err := utils.CheckVariableType(&param, expectedOutput[k]); err != nil {
+			return err
+		}
+
+		resultOutput[k] = param
+	}
+
+	gb.RunContext.VarStore.ClearValues(gb.Name)
+
+	if valOutputFunctionDecision, ok := gb.Output[keyOutputFunctionDecision]; ok {
+		gb.RunContext.VarStore.SetValue(valOutputFunctionDecision, ExecutedDecision)
 	}
 
 	for k, v := range resultOutput {
