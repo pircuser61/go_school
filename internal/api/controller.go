@@ -88,10 +88,10 @@ func NewServer(ctx context.Context, param *ServerParam) (*http.Server, error) {
 	mux := chi.NewRouter()
 	mux.Use(middleware.NoCache)
 	mux.Use(LoggerMiddleware(logger.GetLogger(ctx)))
+	mux.Use(param.APIEnv.Metrics.RequestMiddleware)
 	mux.Use(observability.MiddlewareChi())
 	mux.Use(RequestIDMiddleware)
 	mux.Use(middleware.Timeout(param.TimeoutMiddleware))
-	mux.Use(param.APIEnv.Metrics.IncomingRequestMiddleware)
 
 	mux.Get(param.LivenessPath, param.APIEnv.Alive)
 	mux.Get(param.ReadinessPath, param.APIEnv.Ready)
