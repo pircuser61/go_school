@@ -559,10 +559,6 @@ func (gb *GoSignBlock) handleNotifications(ctx context.Context) error {
 			continue
 		}
 
-		if len(notifDescription) > 0 {
-			notifDescription = notifDescription[1:]
-		}
-
 		emails[em] = mail.NewSignerNotificationTpl(
 			&mail.SignerNotifTemplate{
 				WorkNumber:  gb.RunContext.WorkNumber,

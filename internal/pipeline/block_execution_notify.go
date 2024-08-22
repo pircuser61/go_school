@@ -244,10 +244,6 @@ func (gb *GoExecutionBlock) setMailTemplates(
 
 		//nolint:nestif //it's ok
 		if !gb.State.IsTakenInWork {
-			if len(description) > 0 {
-				description = description[1:]
-			}
-
 			var updateParams ExecutionUpdateParams
 
 			if gb.RunContext.UpdateData != nil && gb.RunContext.UpdateData.Parameters != nil {

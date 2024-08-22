@@ -144,10 +144,6 @@ func (gb *GoApproverBlock) handleNotifications(ctx context.Context) error {
 			return initialErr
 		}
 
-		if len(notifDescription) > 0 {
-			notifDescription = notifDescription[1:]
-		}
-
 		tpl := &mail.NewAppPersonStatusTpl{
 			WorkNumber:                gb.RunContext.WorkNumber,
 			Name:                      gb.RunContext.NotifName,
