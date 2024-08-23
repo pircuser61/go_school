@@ -82,6 +82,13 @@ func (gb *GoExecutionBlock) handleTaskUpdateAction(ctx c.Context) error {
 
 //nolint:gocognit,gocyclo // вся сложность функции состоит в switch case, под каждым вызывается одна-две функции
 func (gb *GoExecutionBlock) handleAction(ctx c.Context, action e.TaskUpdateAction) error {
+	if action == e.TaskUpdateActionReworkSLABreach {
+		errUpdate := gb.handleReworkSLABreached(ctx)
+		if errUpdate != nil {
+			return errUpdate
+		}
+	}
+
 	isWorkOnEditing, err := gb.RunContext.Services.Storage.CheckIsOnEditing(ctx, gb.RunContext.TaskID.String())
 	if err != nil {
 		return err
@@ -100,11 +107,6 @@ func (gb *GoExecutionBlock) handleAction(ctx c.Context, action e.TaskUpdateActio
 		}
 	case e.TaskUpdateActionHalfSLABreach:
 		gb.handleHalfSLABreached(ctx)
-	case e.TaskUpdateActionReworkSLABreach:
-		errUpdate := gb.handleReworkSLABreached(ctx)
-		if errUpdate != nil {
-			return errUpdate
-		}
 	case e.TaskUpdateActionExecution:
 		if !gb.State.IsTakenInWork {
 			return errors.New("is not taken in work")
@@ -963,7 +965,6 @@ func (gb *GoExecutionBlock) executorBackToGroup() (err error) {
 		Attachments: updateParams.Attachments,
 		CreatedAt:   time.Now(),
 		ByLogin:     currentLogin,
-		NewGroup:    gb.State.ExecutorsGroupName,
 	})
 
 	gb.State.TakenInWorkLog = append(gb.State.TakenInWorkLog, StartWorkLog{
