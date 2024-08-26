@@ -2879,6 +2879,64 @@ func (_c *MockedDatabase_GetExecutorsFromPrevWorkVersionExecutionBlockRun_Call) 
 	return _c
 }
 
+// GetExecutorsNumbersOfCurrentTasks provides a mock function with given fields: ctx, name, groupId
+func (_m *MockedDatabase) GetExecutorsNumbersOfCurrentTasks(ctx context.Context, name string, groupId string) (int, error) {
+	ret := _m.Called(ctx, name, groupId)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetExecutorsNumbersOfCurrentTasks")
+	}
+
+	var r0 int
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) (int, error)); ok {
+		return rf(ctx, name, groupId)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) int); ok {
+		r0 = rf(ctx, name, groupId)
+	} else {
+		r0 = ret.Get(0).(int)
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
+		r1 = rf(ctx, name, groupId)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockedDatabase_GetExecutorsNumbersOfCurrentTasks_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetExecutorsNumbersOfCurrentTasks'
+type MockedDatabase_GetExecutorsNumbersOfCurrentTasks_Call struct {
+	*mock.Call
+}
+
+// GetExecutorsNumbersOfCurrentTasks is a helper method to define mock.On call
+//   - ctx context.Context
+//   - name string
+//   - groupId string
+func (_e *MockedDatabase_Expecter) GetExecutorsNumbersOfCurrentTasks(ctx interface{}, name interface{}, groupId interface{}) *MockedDatabase_GetExecutorsNumbersOfCurrentTasks_Call {
+	return &MockedDatabase_GetExecutorsNumbersOfCurrentTasks_Call{Call: _e.mock.On("GetExecutorsNumbersOfCurrentTasks", ctx, name, groupId)}
+}
+
+func (_c *MockedDatabase_GetExecutorsNumbersOfCurrentTasks_Call) Run(run func(ctx context.Context, name string, groupId string)) *MockedDatabase_GetExecutorsNumbersOfCurrentTasks_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string), args[2].(string))
+	})
+	return _c
+}
+
+func (_c *MockedDatabase_GetExecutorsNumbersOfCurrentTasks_Call) Return(_a0 int, _a1 error) *MockedDatabase_GetExecutorsNumbersOfCurrentTasks_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockedDatabase_GetExecutorsNumbersOfCurrentTasks_Call) RunAndReturn(run func(context.Context, string, string) (int, error)) *MockedDatabase_GetExecutorsNumbersOfCurrentTasks_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetExternalSystemSettings provides a mock function with given fields: ctx, versionID, systemID
 func (_m *MockedDatabase) GetExternalSystemSettings(ctx context.Context, versionID string, systemID string) (entity.ExternalSystem, error) {
 	ret := _m.Called(ctx, versionID, systemID)

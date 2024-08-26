@@ -1123,6 +1123,9 @@ type ExecutionParams struct {
 	// Path to executors group id
 	ExecutorsGroupIdPath *string `json:"executors_group_id_path,omitempty"`
 
+	// Executors group limit in SD
+	ExecutorsGroupLimit *int `json:"executors_group_limit,omitempty"`
+
 	// Executors group name in SD
 	ExecutorsGroupName string `json:"executors_group_name"`
 

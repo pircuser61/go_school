@@ -51,6 +51,7 @@ type CurrentExecutorData struct {
 	GroupName     string
 	People        []string
 	InitialPeople []string
+	GroupLimit    int
 }
 
 type Runner interface {

@@ -75,6 +75,7 @@ func (gb *GoExecutionBlock) CurrentExecutorData() CurrentExecutorData {
 		GroupName:     gb.State.ExecutorsGroupName,
 		People:        mapToSlice(gb.State.Executors),
 		InitialPeople: mapToSlice(gb.State.InitialExecutors),
+		GroupLimit:    gb.State.ExecutorsGroupLimit,
 	}
 }
 

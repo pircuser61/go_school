@@ -450,6 +450,7 @@ func (runCtx *BlockRunContext) saveStepInDB(ctx c.Context, dto *saveStepDTO, id 
 			GroupName:     dto.currentExecutor.GroupName,
 			People:        dto.currentExecutor.People,
 			InitialPeople: dto.currentExecutor.InitialPeople,
+			GroupLimit:    dto.currentExecutor.GroupLimit,
 		},
 		BlockStart: runCtx.CurrBlockStartTime,
 	}, id)
@@ -517,6 +518,7 @@ func (runCtx *BlockRunContext) updateStepInDB(ctx c.Context, dto *updateStepDTO)
 			GroupName:     dto.currentExecutor.GroupName,
 			People:        dto.currentExecutor.People,
 			InitialPeople: dto.currentExecutor.InitialPeople,
+			GroupLimit:    dto.currentExecutor.GroupLimit,
 		},
 	})
 }

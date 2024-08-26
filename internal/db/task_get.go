@@ -671,7 +671,7 @@ func (cq *compileGetTaskQueryMaker) addIsExpiredFilter(isExpired *bool, selectAs
 }
 
 func (cq *compileGetTaskQueryMaker) addExecutorFilter() {
-	if cq.fl.ExecutorLogins != nil || cq.fl.ExecutorGroupIds != nil {
+	if cq.fl.ExecutorLogins != nil || cq.fl.ExecutorGroupIDs != nil {
 		cq.q = getExecutors(cq.q, cq.fl)
 	}
 }
@@ -879,7 +879,7 @@ func getExecutors(q string, fl *entity.TaskFilter) string {
 
 	varStorage = addAssignType(varStorage, fl.CurrentUser, fl.ExecutorTypeAssigned)
 	varStorage = addExecutorsLogins(varStorage, fl.SelectAs, fl.ExecutorLogins)
-	varStorage = addExecutorGroups(varStorage, fl.SelectAs, fl.ExecutorGroupIds)
+	varStorage = addExecutorGroups(varStorage, fl.SelectAs, fl.ExecutorGroupIDs)
 
 	varStorage += ")"
 
@@ -1988,6 +1988,7 @@ type executorData struct {
 	InitialPeople []string `json:"initial_people"`
 	GroupID       string   `json:"group_id"`
 	GroupName     string   `json:"group_name"`
+	GroupLimit    int      `json:"group_limit"`
 }
 
 //nolint:gocyclo,gocognit //its ok here
@@ -2115,6 +2116,7 @@ func (db *PGCon) getTasks(ctx c.Context, filters *entity.TaskFilter,
 		et.CurrentExecutor.InitialPeople = currExecutorData.InitialPeople
 		et.CurrentExecutor.ExecutionGroupID = currExecutorData.GroupID
 		et.CurrentExecutor.ExecutionGroupName = currExecutorData.GroupName
+		et.CurrentExecutor.ExecutionGroupLimit = currExecutorData.GroupLimit
 
 		var actions []TaskAction
 		if len(actionData) != 0 {
@@ -3029,6 +3031,31 @@ func (db *PGCon) GetExecutorsFromPrevWorkVersionExecutionBlockRun(ctx c.Context,
 	}
 
 	return executors, nil
+}
+
+func (db *PGCon) GetExecutorsNumbersOfCurrentTasks(ctx c.Context, name, groupID string) (
+	limit int, err error,
+) {
+	ctx, span := trace.StartSpan(ctx, "get_numbers_of_current_tasks")
+	defer span.End()
+
+	q := `SELECT COUNT(*)
+FROM variable_storage
+WHERE step_type = 'execution'
+AND status = 'running'
+AND current_executor->'people' ? $1
+AND jsonb_array_length(current_executor->'initial_people') > 1
+AND current_executor->>'group_id' = $2`
+
+	if err = db.Connection.QueryRow(ctx, q, name, groupID).Scan(&limit); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return 0, nil
+		}
+
+		return 0, err
+	}
+
+	return limit, nil
 }
 
 func (db *PGCon) IsTaskPaused(ctx c.Context, workID uuid.UUID) (isPaused bool, err error) {
