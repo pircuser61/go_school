@@ -32,7 +32,7 @@ people:
 database:
   schema: public
   kind: postgres
-  host: localhost
+  host: 10.73.97.168
   port: 5432
   user_env_key: "DB_USER"
   pass_env_key: "DB_PASS"
