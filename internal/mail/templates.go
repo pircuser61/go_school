@@ -63,6 +63,7 @@ type SignerNotifTemplate struct {
 	Description          []orderedmap.OrderedMap
 	Action               string
 	Comment              string
+	Reason               string
 }
 
 type Notif struct {
@@ -594,7 +595,7 @@ func NewAppInitiatorStatusNotificationTpl(dto *SignerNotifTemplate) Template {
                   ><strong>заявка № %s %s <b>%s</b>.</span>`, dto.WorkNumber, dto.Name, dto.Action)
 
 	switch dto.Action {
-	case "согласована", "выполнена исполнителем", "отклонена", "отклонена исполнителем":
+	case "согласована", "выполнена исполнителем", "отклонена исполнителем":
 		comment := defaultComment
 
 		if dto.Comment != "" {
@@ -609,6 +610,21 @@ func NewAppInitiatorStatusNotificationTpl(dto *SignerNotifTemplate) Template {
 			font-weight: 500;"
 			><strong>заявка № %s %s <b>%s</b></strong> с комментарием: %q.</span>`,
 			dto.WorkNumber, dto.Name, dto.Action, comment)
+	case "отклонена":
+		comment := defaultComment
+
+		if dto.Comment != "" {
+			comment = dto.Comment
+		}
+
+		textPart = fmt.Sprintf(`Уважаемый коллега, <span
+			style="
+			font-family: MTS Text, sans-serif, serif, EmojiFont;
+			font-size: 17px;
+			line-height: 24px;
+			font-weight: 500;"
+			><strong>заявка № %s %s <b>%s</b></strong> по причине: %s , с комментарием: %q.</span>`,
+			dto.WorkNumber, dto.Name, dto.Action, dto.Reason, comment)
 	case "ознакомлено":
 		subject = fmt.Sprintf("Ознакомление по заявке № %s %s", dto.WorkNumber, dto.Name)
 		textPart = fmt.Sprintf(`Уважаемый коллега, <span

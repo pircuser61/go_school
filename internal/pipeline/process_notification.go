@@ -98,6 +98,7 @@ func (runCtx *BlockRunContext) handleInitiatorNotify(ctx c.Context, params handl
 
 	updateParams := struct {
 		Comment string `json:"comment"`
+		Reason  string `json:"reason"`
 	}{}
 
 	if runCtx.UpdateData != nil && runCtx.UpdateData.Parameters != nil {
@@ -119,6 +120,7 @@ func (runCtx *BlockRunContext) handleInitiatorNotify(ctx c.Context, params handl
 			Description: description,
 			Action:      params.action,
 			Comment:     updateParams.Comment,
+			Reason:      updateParams.Reason,
 		})
 
 	iconsName := []string{tmpl.Image}

@@ -2107,6 +2107,9 @@ type SignUpdateParams struct {
 	//  * error - Произошла ошибка
 	Decision SignDecision `json:"decision"`
 
+	// Reason for rejection
+	Reason *string `json:"reason,omitempty"`
+
 	// files to sign
 	Signatures *[]struct {
 		// id file which was signed

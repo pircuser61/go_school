@@ -25,6 +25,7 @@ type signSignatureParams struct {
 	Attachments []entity.Attachment `json:"attachments"`
 	Signatures  []fileSignature     `json:"signatures"`
 	Username    string              `json:"username"`
+	Reason      string              `json:"reason"`
 }
 
 type fileSignature struct {
@@ -504,6 +505,10 @@ func (gb *GoSignBlock) setSignerDecision(ctx c.Context, u *signSignatureParams) 
 
 		if valOutputSignatures, ok := gb.Output[keyOutputSignatures]; ok {
 			gb.RunContext.VarStore.SetValue(valOutputSignatures, gb.State.Signatures)
+		}
+
+		if valOutputReason, ok := gb.Output[keyOutputReason]; ok {
+			gb.RunContext.VarStore.SetValue(valOutputReason, gb.State.Signatures)
 		}
 
 		resAttachments := make([]entity.Attachment, 0)

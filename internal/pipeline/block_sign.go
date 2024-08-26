@@ -31,6 +31,7 @@ const (
 	keyOutputSignComment     = "comment"
 	keyOutputSignAttachments = "attachments"
 	keyOutputSignatures      = "signatures"
+	keyOutputReason          = "reason"
 
 	SignDecisionSigned              SignDecision = "signed"   // signed by signer
 	SignDecisionRejected            SignDecision = "rejected" // rejected by signer or by additional approver
@@ -52,6 +53,11 @@ const (
 	signatureFilesParamsKey = "files"
 
 	reentrySignComment = "Произошла ошибка подписания. Требуется повторное подписание"
+
+	reasonWrongElement   = "Ошибка в содержании документа"
+	reasonCancelRequired = "Нужно отменить/аннулировать кадровое событие"
+	reasonSentByMistake  = "Документ отправлен мне по ошибке"
+	reasonDontAgree      = "Не согласен с документом"
 )
 
 type GoSignBlock struct {
@@ -179,6 +185,14 @@ func (gb *GoSignBlock) signActions(login string) []MemberAction {
 	rejectAction := MemberAction{
 		ID:   signActionReject,
 		Type: ActionTypeSecondary,
+		Params: map[string]interface{}{
+			"reason": []string{
+				reasonWrongElement,
+				reasonCancelRequired,
+				reasonSentByMistake,
+				reasonDontAgree,
+			},
+		},
 	}
 
 	addApproversAction := MemberAction{
