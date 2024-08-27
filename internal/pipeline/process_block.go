@@ -561,51 +561,47 @@ func ProcessBlockWithEndMapping(
 		return failedBlock, false, pErr
 	}
 
-	updDeadlineErr := processor.updateTaskExecDeadline(ctx)
-	if updDeadlineErr != nil {
-		log.WithError(updDeadlineErr).Error("couldn't update task deadline")
-
-		return "", false, updDeadlineErr
-	}
-
-	intStatus, stringStatus, err := runCtx.Services.Storage.GetTaskStatusWithReadableString(ctx, runCtx.TaskID)
-	if err != nil {
-		log.WithError(err).Error("couldn't get task status after processing")
-
-		return "", false, nil
-	}
-
-	if intStatus != db.RunStatusFinished && intStatus != db.RunStatusStopped {
-		return "", false, nil
-	}
-
-	if intStatus == db.RunStatusFinished && statusBefore != db.RunStatusFinished {
-		params := struct {
-			Steps []string `json:"steps"`
-		}{Steps: []string{}}
-
-		jsonParams, mrshErr := json.Marshal(params)
-		if mrshErr != nil {
-			log.Error(mrshErr)
+	go func() {
+		updDeadlineErr := processor.updateTaskExecDeadline(ctx)
+		if updDeadlineErr != nil {
+			log.WithError(updDeadlineErr).Error("couldn't update task deadline")
 		}
 
-		_, err = runCtx.Services.Storage.CreateTaskEvent(ctx, &entity.CreateTaskEvent{
-			WorkID:    runCtx.TaskID.String(),
-			EventType: "pause",
-			Author:    db.SystemLogin,
-			Params:    jsonParams,
-		})
+		intStatus, stringStatus, err := runCtx.Services.Storage.GetTaskStatusWithReadableString(ctx, runCtx.TaskID)
 		if err != nil {
-			log.WithError(updDeadlineErr).Error("couldn't create task event")
-
-			return "", false, err
+			log.WithError(err).Error("couldn't get task status after processing")
 		}
-	}
 
-	endErr := processBlockEnd(ctx, stringStatus, runCtx)
-	if endErr != nil {
-		log.WithError(endErr).Error("couldn't send process end notification")
-	}
+		if intStatus != db.RunStatusFinished && intStatus != db.RunStatusStopped {
+			return
+		}
+
+		if intStatus == db.RunStatusFinished && statusBefore != db.RunStatusFinished {
+			params := struct {
+				Steps []string `json:"steps"`
+			}{Steps: []string{}}
+
+			jsonParams, mrshErr := json.Marshal(params)
+			if mrshErr != nil {
+				log.Error(mrshErr)
+			}
+
+			_, err = runCtx.Services.Storage.CreateTaskEvent(ctx, &entity.CreateTaskEvent{
+				WorkID:    runCtx.TaskID.String(),
+				EventType: "pause",
+				Author:    db.SystemLogin,
+				Params:    jsonParams,
+			})
+			if err != nil {
+				log.WithError(updDeadlineErr).Error("couldn't create task event")
+			}
+		}
+
+		endErr := processBlockEnd(ctx, stringStatus, runCtx)
+		if endErr != nil {
+			log.WithError(endErr).Error("couldn't send process end notification")
+		}
+	}()
 
 	return "", true, nil
 }
