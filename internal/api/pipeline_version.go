@@ -718,20 +718,21 @@ func (ae *Env) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO) (
 		VarStore:   variableStorage,
 
 		Services: pipeline.RunContextServices{
-			HTTPClient:    ae.HTTPClient,
-			Sender:        ae.Mail,
-			Kafka:         ae.Kafka,
-			People:        ae.People,
-			ServiceDesc:   ae.ServiceDesc,
-			FunctionStore: ae.FunctionStore,
-			HumanTasks:    ae.HumanTasks,
-			Integrations:  ae.Integrations,
-			FileRegistry:  ae.FileRegistry,
-			FaaS:          ae.FaaS,
-			HrGate:        ae.HrGate,
-			Scheduler:     ae.Scheduler,
-			SLAService:    ae.SLAService,
-			Storage:       dto.storage,
+			HTTPClient:     ae.HTTPClient,
+			Sender:         ae.Mail,
+			Kafka:          ae.Kafka,
+			People:         ae.People,
+			ServiceDesc:    ae.ServiceDesc,
+			FunctionStore:  ae.FunctionStore,
+			HumanTasks:     ae.HumanTasks,
+			Integrations:   ae.Integrations,
+			FileRegistry:   ae.FileRegistry,
+			FaaS:           ae.FaaS,
+			HrGate:         ae.HrGate,
+			Scheduler:      ae.Scheduler,
+			SLAService:     ae.SLAService,
+			Storage:        dto.storage,
+			StorageFactory: ae.DB,
 		},
 		BlockRunResults: &pipeline.BlockRunResults{},
 
@@ -758,6 +759,8 @@ func (ae *Env) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO) (
 
 		return PipelineRunError, err
 	}
+
+	ctx = c.WithoutCancel(ctx)
 
 	go func() {
 		if workFinished {

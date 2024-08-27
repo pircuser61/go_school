@@ -7,9 +7,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/hashicorp/go-retryablehttp"
-
 	"github.com/google/uuid"
+	"github.com/hashicorp/go-retryablehttp"
 
 	"github.com/pkg/errors"
 
@@ -49,21 +48,22 @@ type TaskSubscriptionData struct {
 }
 
 type RunContextServices struct {
-	HTTPClient    *retryablehttp.Client
-	Storage       db.Database
-	Sender        *mail.Service
-	Kafka         *kafka.Service
-	People        people.Service
-	ServiceDesc   servicedesc.Service
-	FunctionStore functions.Service
-	HumanTasks    human_tasks.Service
-	Integrations  integrations.Service
-	FileRegistry  fileregistry.Service
-	FaaS          string
-	JocastaURL    string
-	HrGate        hrgate.Service
-	Scheduler     *scheduler.Service
-	SLAService    sla.Service
+	HTTPClient     *retryablehttp.Client
+	StorageFactory db.Database
+	Storage        db.Database
+	Sender         *mail.Service
+	Kafka          *kafka.Service
+	People         people.Service
+	ServiceDesc    servicedesc.Service
+	FunctionStore  functions.Service
+	HumanTasks     human_tasks.Service
+	Integrations   integrations.Service
+	FileRegistry   fileregistry.Service
+	FaaS           string
+	JocastaURL     string
+	HrGate         hrgate.Service
+	Scheduler      *scheduler.Service
+	SLAService     sla.Service
 }
 
 type BlockRunResults struct {
@@ -561,13 +561,27 @@ func ProcessBlockWithEndMapping(
 		return failedBlock, false, pErr
 	}
 
+	newRunCtx := runCtx.Copy()
+	newRunCtx.Services.Storage, err = runCtx.Services.StorageFactory.Acquire(ctx)
+	if err != nil {
+		log.WithError(err).Error("couldn't acquire new connection")
+
+		return "", true, nil
+	}
+
+	processor.runCtx = newRunCtx
+
+	ctx = c.WithoutCancel(ctx)
+
 	go func() {
+		defer newRunCtx.Services.Storage.Release(ctx)
+
 		updDeadlineErr := processor.updateTaskExecDeadline(ctx)
 		if updDeadlineErr != nil {
 			log.WithError(updDeadlineErr).Error("couldn't update task deadline")
 		}
 
-		intStatus, stringStatus, err := runCtx.Services.Storage.GetTaskStatusWithReadableString(ctx, runCtx.TaskID)
+		intStatus, stringStatus, err := newRunCtx.Services.Storage.GetTaskStatusWithReadableString(ctx, newRunCtx.TaskID)
 		if err != nil {
 			log.WithError(err).Error("couldn't get task status after processing")
 		}
@@ -586,8 +600,8 @@ func ProcessBlockWithEndMapping(
 				log.Error(mrshErr)
 			}
 
-			_, err = runCtx.Services.Storage.CreateTaskEvent(ctx, &entity.CreateTaskEvent{
-				WorkID:    runCtx.TaskID.String(),
+			_, err = newRunCtx.Services.Storage.CreateTaskEvent(ctx, &entity.CreateTaskEvent{
+				WorkID:    newRunCtx.TaskID.String(),
 				EventType: "pause",
 				Author:    db.SystemLogin,
 				Params:    jsonParams,
@@ -597,7 +611,8 @@ func ProcessBlockWithEndMapping(
 			}
 		}
 
-		endErr := processBlockEnd(ctx, stringStatus, runCtx)
+		endErr := processBlockEnd(ctx, stringStatus, newRunCtx)
+
 		if endErr != nil {
 			log.WithError(endErr).Error("couldn't send process end notification")
 		}
