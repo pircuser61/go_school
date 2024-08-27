@@ -4730,6 +4730,9 @@ components:
         comment:
           type: string
           description: Comment from signer
+        reason:
+          type: string
+          description: Reason for rejection
         attachments:
           type: array
           items:
