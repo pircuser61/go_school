@@ -1223,7 +1223,7 @@ func (ae *Env) processSingleTask(ctx context.Context, task *stoppedTask) error {
 	return nil
 }
 
-func (ae *Env) CheckLimitTasks(w http.ResponseWriter, r *http.Request) error {
+func (ae *Env) CheckLimitTasks(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
 	ctx, s := trace.StartSpan(r.Context(), "check_limit_tasks")
 
@@ -1250,39 +1250,55 @@ func (ae *Env) CheckLimitTasks(w http.ResponseWriter, r *http.Request) error {
 	if err != nil {
 		errorHandler.handleError(RequestReadError, err)
 
-		return err
+		return
 	}
 
 	defer r.Body.Close()
 
-	log = log.WithField(script.Body, string(b))
-
 	tasks := []string{}
-	if err = json.Unmarshal(b, tasks); err != nil {
+	if err = json.Unmarshal(b, &tasks); err != nil {
 		errorHandler.handleError(StopTaskParsingError, err)
 
-		return err
+		return
 	}
 
 	if len(tasks) == 0 {
 		errorHandler.handleError(ValidateTasksError, ValidateTasksError)
 		requestInfo.Status = ValidateTasksError.Status()
 
-		return err
+		return
 	}
 
 	ui, err := user.GetUserInfoFromCtx(ctx)
 	if err != nil {
 		errorHandler.handleError(NoUserInContextError, err)
 
-		return err
+		return
 	}
+
+	err = ae.checkLimit(ctx, tasks, ui)
+	if err != nil {
+		httpErr := getErr(err)
+
+		errorHandler.handleError(httpErr, err)
+		requestInfo.Status = httpErr.Status()
+
+		return
+	}
+
+	if err = sendResponse(w, http.StatusOK, nil); err != nil {
+		errorHandler.handleError(UnknownError, err)
+
+		return
+	}
+}
+
+func (ae *Env) checkLimit(ctx context.Context, tasks []string, ui *sso.UserInfo) error {
+	log := logger.GetLogger(ctx).WithField("funcName", "checkLimit")
 
 	for _, workNumber := range tasks {
 		dbTask, getTaskErr := ae.DB.GetTask(ctx, []string{ui.Username}, []string{ui.Username}, ui.Username, workNumber)
 		if getTaskErr != nil {
-			log.WithError(getTaskErr).Error("couldn't get task")
-
 			return getTaskErr
 		}
 
@@ -1296,15 +1312,9 @@ func (ae *Env) CheckLimitTasks(w http.ResponseWriter, r *http.Request) error {
 		}
 
 		if count >= dbTask.CurrentExecutor.ExecutionGroupLimit {
-
 			return fmt.Errorf("limit of active tasks exided")
 		}
-
 	}
-	if err = sendResponse(w, http.StatusOK, nil); err != nil {
-		errorHandler.handleError(UnknownError, err)
 
-		return nil
-	}
 	return nil
 }
