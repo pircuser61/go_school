@@ -42,9 +42,8 @@ func NewStore() *VariableStore {
 }
 
 type VariableExecutor struct {
-	sync.Mutex
 	People        []string `json:"people"`
-	GroupId       string   `json:"group_id"`
+	GroupID       string   `json:"group_id"`
 	GroupName     string   `json:"group_name"`
 	GroupLimit    int      `json:"group_limit"`
 	InitialPeople []string `json:"initial_people"`
@@ -53,11 +52,12 @@ type VariableExecutor struct {
 func NewExecutor() *VariableExecutor {
 	e := VariableExecutor{
 		People:        make([]string, 0),
-		GroupId:       "",
+		GroupID:       "",
 		GroupName:     "",
 		GroupLimit:    0,
 		InitialPeople: make([]string, 0),
 	}
+
 	return &e
 }
 

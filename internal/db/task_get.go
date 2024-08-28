@@ -2434,7 +2434,7 @@ func (db *PGCon) GetTaskSteps(ctx c.Context, id uuid.UUID) (entity.TaskSteps, er
 		s.Storage = storage.Values
 		s.InitialPeople = executor.InitialPeople
 		s.People = executor.People
-		s.GroupId = executor.GroupId
+		s.GroupID = executor.GroupID
 		s.GroupName = executor.GroupName
 		s.GroupLimit = executor.GroupLimit
 		res = append(res, &s)

@@ -30,7 +30,7 @@ type Step struct {
 	Attachments   int                        `json:"attachments"`
 	IsPaused      bool                       `json:"is_paused"`
 	People        []string                   `json:"people"`
-	GroupId       string                     `json:"group_id"`
+	GroupID       string                     `json:"group_id"`
 	GroupName     string                     `json:"group_name"`
 	GroupLimit    int                        `json:"group_limit"`
 	InitialPeople []string                   `json:"initial_people"`

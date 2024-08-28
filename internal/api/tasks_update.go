@@ -1311,10 +1311,11 @@ func (ae *Env) checkLimit(ctx context.Context, workNumber string, ui *sso.UserIn
 
 	limit := 0
 	id := ""
+
 	for _, s := range steps {
 		if s.Status == "running" && s.Type == "execution" {
 			limit = s.GroupLimit
-			id = s.GroupId
+			id = s.GroupID
 		}
 	}
 
