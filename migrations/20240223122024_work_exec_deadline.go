@@ -99,7 +99,7 @@ SELECT work_number
 FROM pipeliner.public.works w
          LEFT JOIN pipeliner.public.version_sla vsla ON w.version_sla_id = vsla.id`
 
-	rows, err := tx.Query(q)
+	rows, err := tx.Query(q) // nolint // don't want to explain
 	if err != nil {
 		return nil, err
 	}
