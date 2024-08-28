@@ -1225,7 +1225,7 @@ func (ae *Env) processSingleTask(ctx context.Context, task *stoppedTask) error {
 
 func (ae *Env) CheckLimitTasks(w http.ResponseWriter, r *http.Request) error {
 	start := time.Now()
-	ctx, s := trace.StartSpan(r.Context(), "stop_tasks")
+	ctx, s := trace.StartSpan(r.Context(), "check_limit_tasks")
 
 	requestInfo := metrics.NewPostRequestInfo(stopTasksPath)
 
