@@ -12,9 +12,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"golang.org/x/sync/errgroup"
-
 	"go.opencensus.io/trace"
+	"golang.org/x/sync/errgroup"
 
 	"gitlab.services.mts.ru/abp/mail/pkg/email"
 
@@ -1223,6 +1222,10 @@ func (ae *Env) processSingleTask(ctx context.Context, task *stoppedTask) error {
 	return nil
 }
 
+type CheckLimitTask struct {
+	WorkNumber string `json:"worknumber"`
+}
+
 func (ae *Env) CheckLimitTasks(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
 	ctx, s := trace.StartSpan(r.Context(), "check_limit_tasks")
@@ -1255,14 +1258,14 @@ func (ae *Env) CheckLimitTasks(w http.ResponseWriter, r *http.Request) {
 
 	defer r.Body.Close()
 
-	tasks := []string{}
-	if err = json.Unmarshal(b, &tasks); err != nil {
+	req := &CheckLimitTask{}
+	if err = json.Unmarshal(b, &req); err != nil {
 		errorHandler.handleError(StopTaskParsingError, err)
 
 		return
 	}
 
-	if len(tasks) == 0 {
+	if req.WorkNumber == "" {
 		errorHandler.handleError(ValidateTasksError, ValidateTasksError)
 		requestInfo.Status = ValidateTasksError.Status()
 
@@ -1276,7 +1279,7 @@ func (ae *Env) CheckLimitTasks(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = ae.checkLimit(ctx, tasks, ui)
+	err = ae.checkLimit(ctx, req.WorkNumber, ui)
 	if err != nil {
 		httpErr := getErr(err)
 
@@ -1293,27 +1296,25 @@ func (ae *Env) CheckLimitTasks(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (ae *Env) checkLimit(ctx context.Context, tasks []string, ui *sso.UserInfo) error {
+func (ae *Env) checkLimit(ctx context.Context, workNumber string, ui *sso.UserInfo) error {
 	log := logger.GetLogger(ctx).WithField("funcName", "checkLimit")
 
-	for _, workNumber := range tasks {
-		dbTask, getTaskErr := ae.DB.GetTask(ctx, []string{ui.Username}, []string{ui.Username}, ui.Username, workNumber)
-		if getTaskErr != nil {
-			return getTaskErr
-		}
+	dbTask, getTaskErr := ae.DB.GetTask(ctx, []string{ui.Username}, []string{ui.Username}, ui.Username, workNumber)
+	if getTaskErr != nil {
+		return getTaskErr
+	}
 
-		count, countErr := ae.DB.GetExecutorsNumbersOfCurrentTasks(ctx,
-			ui.Username,
-			dbTask.CurrentExecutor.ExecutionGroupID)
-		if countErr != nil {
-			log.WithError(countErr).Error("couldn't get count of task")
+	count, countErr := ae.DB.GetExecutorsNumbersOfCurrentTasks(ctx,
+		ui.Username,
+		dbTask.CurrentExecutor.ExecutionGroupID)
+	if countErr != nil {
+		log.WithError(countErr).Error("couldn't get count of task")
 
-			return countErr
-		}
+		return countErr
+	}
 
-		if count >= dbTask.CurrentExecutor.ExecutionGroupLimit {
-			return fmt.Errorf("limit of active tasks exided")
-		}
+	if count >= dbTask.CurrentExecutor.ExecutionGroupLimit {
+		return entity.ErrLimitExceeded
 	}
 
 	return nil

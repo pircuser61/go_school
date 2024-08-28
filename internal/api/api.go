@@ -2230,11 +2230,6 @@ type TaskUpdate struct {
 // TaskUpdateAction defines model for TaskUpdate.Action.
 type TaskUpdateAction string
 
-// TasksCheckLimit defines model for TasksCheckLimit.
-type TasksCheckLimit struct {
-	Tasks []TaskStatus `json:"tasks"`
-}
-
 // Tasks list meta
 type TasksMeta struct {
 	// Blueprints ids
@@ -2852,7 +2847,10 @@ type GetTasksParamsExecutorTypeAssigned string
 type GetTasksParamsSignatureCarrier string
 
 // CheckLimitTasksJSONBody defines parameters for CheckLimitTasks.
-type CheckLimitTasksJSONBody TasksCheckLimit
+type CheckLimitTasksJSONBody struct {
+	// worknumber of task
+	Worknumber string `json:"worknumber"`
+}
 
 // GetTasksSchemasParams defines parameters for GetTasksSchemas.
 type GetTasksSchemasParams struct {

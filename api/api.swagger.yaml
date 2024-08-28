@@ -2613,11 +2613,17 @@ paths:
       description: checkLimitTasks
       operationId: check-limit-tasks
       requestBody:
-        description: Task stop data
+        description: Task check limit
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/TasksCheckLimit'
+              type: object
+              required:
+                - worknumber
+              properties:
+                worknumber:
+                  type: string
+                  description: worknumber of task
         required: true
       responses:
         200:
@@ -2627,8 +2633,6 @@ paths:
               schema:
                 type: object
                 properties:
-                  data:
-                    $ref: '#/components/schemas/TasksCheckLimit'
                   status_code:
                     type: integer
         400:
@@ -4691,15 +4695,6 @@ components:
       required:
         - tasks
     TasksStopped:
-      type: object
-      properties:
-        tasks:
-          type: array
-          items:
-            $ref: '#/components/schemas/TaskStatus'
-      required:
-        - tasks
-    TasksCheckLimit:
       type: object
       properties:
         tasks:
