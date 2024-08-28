@@ -1222,3 +1222,89 @@ func (ae *Env) processSingleTask(ctx context.Context, task *stoppedTask) error {
 
 	return nil
 }
+
+func (ae *Env) CheckLimitTasks(w http.ResponseWriter, r *http.Request) error {
+	start := time.Now()
+	ctx, s := trace.StartSpan(r.Context(), "stop_tasks")
+
+	requestInfo := metrics.NewPostRequestInfo(stopTasksPath)
+
+	defer func() {
+		s.End()
+
+		requestInfo.Duration = time.Since(start)
+
+		ae.Metrics.RequestsIncrease(requestInfo)
+	}()
+
+	log := script.SetMainFuncLog(ctx,
+		"CheckLimitTasks",
+		script.MethodPost,
+		script.HTTP,
+		s.SpanContext().TraceID.String(),
+		"v1")
+	errorHandler := newHTTPErrorHandler(log, w)
+	errorHandler.setMetricsRequestInfo(requestInfo)
+
+	b, err := io.ReadAll(r.Body)
+	if err != nil {
+		errorHandler.handleError(RequestReadError, err)
+
+		return err
+	}
+
+	defer r.Body.Close()
+
+	log = log.WithField(script.Body, string(b))
+
+	tasks := []string{}
+	if err = json.Unmarshal(b, tasks); err != nil {
+		errorHandler.handleError(StopTaskParsingError, err)
+
+		return err
+	}
+
+	if len(tasks) == 0 {
+		errorHandler.handleError(ValidateTasksError, ValidateTasksError)
+		requestInfo.Status = ValidateTasksError.Status()
+
+		return err
+	}
+
+	ui, err := user.GetUserInfoFromCtx(ctx)
+	if err != nil {
+		errorHandler.handleError(NoUserInContextError, err)
+
+		return err
+	}
+
+	for _, workNumber := range tasks {
+		dbTask, getTaskErr := ae.DB.GetTask(ctx, []string{ui.Username}, []string{ui.Username}, ui.Username, workNumber)
+		if getTaskErr != nil {
+			log.WithError(getTaskErr).Error("couldn't get task")
+
+			return getTaskErr
+		}
+
+		count, countErr := ae.DB.GetExecutorsNumbersOfCurrentTasks(ctx,
+			ui.Username,
+			dbTask.CurrentExecutor.ExecutionGroupID)
+		if countErr != nil {
+			log.WithError(countErr).Error("couldn't get count of task")
+
+			return countErr
+		}
+
+		if count >= dbTask.CurrentExecutor.ExecutionGroupLimit {
+
+			return fmt.Errorf("limit of active tasks exided")
+		}
+
+	}
+	if err = sendResponse(w, http.StatusOK, nil); err != nil {
+		errorHandler.handleError(UnknownError, err)
+
+		return nil
+	}
+	return nil
+}

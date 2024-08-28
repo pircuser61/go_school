@@ -2605,6 +2605,50 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
+  /tasks/checkLimit:
+    post:
+      tags:
+        - tasks
+      summary: check task limit by work number
+      description: checkLimitTasks
+      operationId: check-limit-tasks
+      requestBody:
+        description: Task stop data
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TasksCheckLimit'
+        required: true
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/TasksCheckLimit'
+                  status_code:
+                    type: integer
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
   /forms/changelog:
     get:
       tags:
@@ -4647,6 +4691,15 @@ components:
       required:
         - tasks
     TasksStopped:
+      type: object
+      properties:
+        tasks:
+          type: array
+          items:
+            $ref: '#/components/schemas/TaskStatus'
+      required:
+        - tasks
+    TasksCheckLimit:
       type: object
       properties:
         tasks:
