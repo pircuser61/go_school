@@ -207,20 +207,17 @@ func (p *blockProcessor) ProcessBlock(ctx context.Context, its int) (string, err
 		return failedBlock, p.handleErrorWithRollback(ctx, log, err)
 	}
 
-	newRunContext := p.runCtx.Copy()
-	newRunContext.Services.Storage, err = p.runCtx.Services.StorageFactory.Acquire(ctx)
-	if err != nil {
-		log.WithError(err).Error("can't acquire new connection")
-
-		return "", nil
-	}
-
-	ctx = context.WithoutCancel(ctx)
-
 	go func() {
-		defer newRunContext.Services.Storage.Release(ctx)
+		newRunCtx, ctx, err := newRunContextWithoutDeadline(p.runCtx, ctx)
+		if err != nil {
+			log.WithError(err).Error("couldn't acquire new connection")
 
-		err = newRunContext.handleInitiatorNotify(ctx,
+			return
+		}
+
+		defer newRunCtx.Services.Storage.Release(ctx)
+
+		err = newRunCtx.handleInitiatorNotify(ctx,
 			handleInitiatorNotifyParams{
 				step:     p.name,
 				stepType: p.bl.TypeID,

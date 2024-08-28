@@ -9,7 +9,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/hashicorp/go-retryablehttp"
-
 	"github.com/pkg/errors"
 
 	"go.opencensus.io/trace"
@@ -523,6 +522,20 @@ func (runCtx *BlockRunContext) updateStepInDB(ctx c.Context, dto *updateStepDTO)
 	})
 }
 
+func newRunContextWithoutDeadline(runCtx *BlockRunContext, ctx c.Context) (*BlockRunContext, c.Context, error) {
+	var err error
+
+	ctx = c.WithoutCancel(ctx)
+
+	newRunCtx := runCtx.Copy()
+	newRunCtx.Services.Storage, err = runCtx.Services.StorageFactory.Acquire(ctx)
+	if err != nil {
+		return nil, ctx, err
+	}
+
+	return newRunCtx, ctx, nil
+}
+
 func ProcessBlockWithEndMapping(
 	ctx c.Context,
 	name string,
@@ -561,20 +574,17 @@ func ProcessBlockWithEndMapping(
 		return failedBlock, false, pErr
 	}
 
-	newRunCtx := runCtx.Copy()
-	newRunCtx.Services.Storage, err = runCtx.Services.StorageFactory.Acquire(ctx)
-	if err != nil {
-		log.WithError(err).Error("couldn't acquire new connection")
-
-		return "", true, nil
-	}
-
-	processor.runCtx = newRunCtx
-
-	ctx = c.WithoutCancel(ctx)
-
 	go func() {
+		newRunCtx, ctx, err := newRunContextWithoutDeadline(runCtx, ctx)
+		if err != nil {
+			log.WithError(err).Error("couldn't acquire new connection")
+
+			return
+		}
+
 		defer newRunCtx.Services.Storage.Release(ctx)
+
+		processor.runCtx = newRunCtx
 
 		updDeadlineErr := processor.updateTaskExecDeadline(ctx)
 		if updDeadlineErr != nil {
