@@ -105,6 +105,7 @@ func (db *PGCon) GetTasksForMonitoring(ctx c.Context, dto *e.TasksForMonitoringF
 	defer span.End()
 
 	q := getTasksForMonitoringQuery(dto)
+	fmt.Println("GET TASKS QUERY", *q)
 
 	rows, err := db.Connection.Query(ctx, *q)
 	if err != nil {
@@ -287,7 +288,7 @@ func (db *PGCon) GetTaskForMonitoring(ctx c.Context, workNumber string, fromEven
 }
 
 func (db *PGCon) getLastEventForMonitoringByWorkID(ctx c.Context, workID uuid.UUID) (eventType *string, eventTime *time.Time, err error) {
-	ctx, span := trace.StartSpan(ctx, "get_task_for_monitoring")
+	ctx, span := trace.StartSpan(ctx, "get_last_event_for_monitoring")
 	defer span.End()
 
 	// nolint:gocritic
