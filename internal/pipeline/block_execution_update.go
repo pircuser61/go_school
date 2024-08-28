@@ -925,7 +925,7 @@ func (gb *GoExecutionBlock) executorStartWork(ctx c.Context) (err error) {
 			return err
 		}
 
-		if gb.State.ExecutorsGroupLimit != 0 && limit == gb.State.ExecutorsGroupLimit {
+		if gb.State.ExecutorsGroupLimit != 0 && limit >= gb.State.ExecutorsGroupLimit {
 			return fmt.Errorf("the number of tasks exceeds the group limit")
 		}
 	}

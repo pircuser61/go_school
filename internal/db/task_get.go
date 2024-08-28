@@ -3044,8 +3044,8 @@ FROM variable_storage
 WHERE step_type = 'execution'
 AND status = 'running'
 AND current_executor->'people' ? $1
-AND jsonb_array_length(current_executor->'initial_people') > 1
-AND current_executor->>'group_id' = $2`
+AND current_executor->>'group_id' = $2
+AND jsonb_path_exists(content, '$.**.is_taken_in_work ? (@ == true)')`
 
 	if err = db.Connection.QueryRow(ctx, q, name, groupID).Scan(&limit); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {

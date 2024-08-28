@@ -657,7 +657,7 @@ func (ae *Env) GetTasks(w http.ResponseWriter, req *http.Request, params GetTask
 			}
 
 			resp.Tasks[i].GroupLimitExceeded = false
-			if cur == resp.Tasks[i].CurrentExecutor.ExecutionGroupLimit {
+			if cur >= resp.Tasks[i].CurrentExecutor.ExecutionGroupLimit {
 				resp.Tasks[i].GroupLimitExceeded = true
 			}
 		}
