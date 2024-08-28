@@ -1304,16 +1304,30 @@ func (ae *Env) checkLimit(ctx context.Context, workNumber string, ui *sso.UserIn
 		return getTaskErr
 	}
 
+	steps, err := ae.DB.GetTaskSteps(ctx, dbTask.ID)
+	if err != nil {
+		return err
+	}
+
+	limit := 0
+	id := ""
+	for _, s := range steps {
+		if s.Status == "running" && s.Type == "execution" {
+			limit = s.GroupLimit
+			id = s.GroupId
+		}
+	}
+
 	count, countErr := ae.DB.GetExecutorsNumbersOfCurrentTasks(ctx,
 		ui.Username,
-		dbTask.CurrentExecutor.ExecutionGroupID)
+		id)
 	if countErr != nil {
 		log.WithError(countErr).Error("couldn't get count of task")
 
 		return countErr
 	}
 
-	if count >= dbTask.CurrentExecutor.ExecutionGroupLimit {
+	if limit != 0 && count >= limit {
 		return entity.ErrLimitExceeded
 	}
 
