@@ -528,6 +528,7 @@ func newRunContextWithoutDeadline(runCtx *BlockRunContext, ctx c.Context) (*Bloc
 	ctx = c.WithoutCancel(ctx)
 
 	newRunCtx := runCtx.Copy()
+
 	newRunCtx.Services.Storage, err = runCtx.Services.StorageFactory.Acquire(ctx)
 	if err != nil {
 		return nil, ctx, err
@@ -575,23 +576,24 @@ func ProcessBlockWithEndMapping(
 	}
 
 	go func() {
-		newRunCtx, ctx, err := newRunContextWithoutDeadline(runCtx, ctx)
+		newRunCtx, newCtx, err := newRunContextWithoutDeadline(runCtx, ctx)
 		if err != nil {
 			log.WithError(err).Error("couldn't acquire new connection")
 
 			return
 		}
 
-		defer newRunCtx.Services.Storage.Release(ctx)
+		//nolint:errcheck //not necessary
+		defer newRunCtx.Services.Storage.Release(newCtx)
 
 		processor.runCtx = newRunCtx
 
-		updDeadlineErr := processor.updateTaskExecDeadline(ctx)
+		updDeadlineErr := processor.updateTaskExecDeadline(newCtx)
 		if updDeadlineErr != nil {
 			log.WithError(updDeadlineErr).Error("couldn't update task deadline")
 		}
 
-		intStatus, stringStatus, err := newRunCtx.Services.Storage.GetTaskStatusWithReadableString(ctx, newRunCtx.TaskID)
+		intStatus, stringStatus, err := newRunCtx.Services.Storage.GetTaskStatusWithReadableString(newCtx, newRunCtx.TaskID)
 		if err != nil {
 			log.WithError(err).Error("couldn't get task status after processing")
 		}
@@ -610,7 +612,7 @@ func ProcessBlockWithEndMapping(
 				log.Error(mrshErr)
 			}
 
-			_, err = newRunCtx.Services.Storage.CreateTaskEvent(ctx, &entity.CreateTaskEvent{
+			_, err = newRunCtx.Services.Storage.CreateTaskEvent(newCtx, &entity.CreateTaskEvent{
 				WorkID:    newRunCtx.TaskID.String(),
 				EventType: "pause",
 				Author:    db.SystemLogin,
@@ -621,7 +623,7 @@ func ProcessBlockWithEndMapping(
 			}
 		}
 
-		endErr := processBlockEnd(ctx, stringStatus, newRunCtx)
+		endErr := processBlockEnd(newCtx, stringStatus, newRunCtx)
 
 		if endErr != nil {
 			log.WithError(endErr).Error("couldn't send process end notification")

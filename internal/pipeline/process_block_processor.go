@@ -208,16 +208,17 @@ func (p *blockProcessor) ProcessBlock(ctx context.Context, its int) (string, err
 	}
 
 	go func() {
-		newRunCtx, ctx, err := newRunContextWithoutDeadline(p.runCtx, ctx)
+		newRunCtx, newCtx, err := newRunContextWithoutDeadline(p.runCtx, ctx)
 		if err != nil {
 			log.WithError(err).Error("couldn't acquire new connection")
 
 			return
 		}
 
-		defer newRunCtx.Services.Storage.Release(ctx)
+		//nolint:errcheck //not necessary
+		defer newRunCtx.Services.Storage.Release(newCtx)
 
-		err = newRunCtx.handleInitiatorNotify(ctx,
+		err = newRunCtx.handleInitiatorNotify(newCtx,
 			handleInitiatorNotifyParams{
 				step:     p.name,
 				stepType: p.bl.TypeID,
