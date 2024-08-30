@@ -7,10 +7,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/hashicorp/go-retryablehttp"
-
 	"github.com/google/uuid"
-
+	"github.com/hashicorp/go-retryablehttp"
 	"github.com/pkg/errors"
 
 	"go.opencensus.io/trace"
@@ -49,21 +47,22 @@ type TaskSubscriptionData struct {
 }
 
 type RunContextServices struct {
-	HTTPClient    *retryablehttp.Client
-	Storage       db.Database
-	Sender        *mail.Service
-	Kafka         *kafka.Service
-	People        people.Service
-	ServiceDesc   servicedesc.Service
-	FunctionStore functions.Service
-	HumanTasks    human_tasks.Service
-	Integrations  integrations.Service
-	FileRegistry  fileregistry.Service
-	FaaS          string
-	JocastaURL    string
-	HrGate        hrgate.Service
-	Scheduler     *scheduler.Service
-	SLAService    sla.Service
+	HTTPClient     *retryablehttp.Client
+	StorageFactory db.Database
+	Storage        db.Database
+	Sender         *mail.Service
+	Kafka          *kafka.Service
+	People         people.Service
+	ServiceDesc    servicedesc.Service
+	FunctionStore  functions.Service
+	HumanTasks     human_tasks.Service
+	Integrations   integrations.Service
+	FileRegistry   fileregistry.Service
+	FaaS           string
+	JocastaURL     string
+	HrGate         hrgate.Service
+	Scheduler      *scheduler.Service
+	SLAService     sla.Service
 }
 
 type BlockRunResults struct {
@@ -523,6 +522,21 @@ func (runCtx *BlockRunContext) updateStepInDB(ctx c.Context, dto *updateStepDTO)
 	})
 }
 
+func newRunContextWithoutDeadline(runCtx *BlockRunContext, ctx c.Context) (*BlockRunContext, c.Context, error) {
+	var err error
+
+	ctx = c.WithoutCancel(ctx)
+
+	newRunCtx := runCtx.Copy()
+
+	newRunCtx.Services.Storage, err = runCtx.Services.StorageFactory.Acquire(ctx)
+	if err != nil {
+		return nil, ctx, err
+	}
+
+	return newRunCtx, ctx, nil
+}
+
 func ProcessBlockWithEndMapping(
 	ctx c.Context,
 	name string,
@@ -561,51 +575,60 @@ func ProcessBlockWithEndMapping(
 		return failedBlock, false, pErr
 	}
 
-	updDeadlineErr := processor.updateTaskExecDeadline(ctx)
-	if updDeadlineErr != nil {
-		log.WithError(updDeadlineErr).Error("couldn't update task deadline")
-
-		return "", false, updDeadlineErr
-	}
-
-	intStatus, stringStatus, err := runCtx.Services.Storage.GetTaskStatusWithReadableString(ctx, runCtx.TaskID)
-	if err != nil {
-		log.WithError(err).Error("couldn't get task status after processing")
-
-		return "", false, nil
-	}
-
-	if intStatus != db.RunStatusFinished && intStatus != db.RunStatusStopped {
-		return "", false, nil
-	}
-
-	if intStatus == db.RunStatusFinished && statusBefore != db.RunStatusFinished {
-		params := struct {
-			Steps []string `json:"steps"`
-		}{Steps: []string{}}
-
-		jsonParams, mrshErr := json.Marshal(params)
-		if mrshErr != nil {
-			log.Error(mrshErr)
-		}
-
-		_, err = runCtx.Services.Storage.CreateTaskEvent(ctx, &entity.CreateTaskEvent{
-			WorkID:    runCtx.TaskID.String(),
-			EventType: "pause",
-			Author:    db.SystemLogin,
-			Params:    jsonParams,
-		})
+	go func() {
+		newRunCtx, newCtx, err := newRunContextWithoutDeadline(runCtx, ctx)
 		if err != nil {
-			log.WithError(updDeadlineErr).Error("couldn't create task event")
+			log.WithError(err).Error("couldn't acquire new connection")
 
-			return "", false, err
+			return
 		}
-	}
 
-	endErr := processBlockEnd(ctx, stringStatus, runCtx)
-	if endErr != nil {
-		log.WithError(endErr).Error("couldn't send process end notification")
-	}
+		//nolint:errcheck //not necessary
+		defer newRunCtx.Services.Storage.Release(newCtx)
+
+		processor.runCtx = newRunCtx
+
+		updDeadlineErr := processor.updateTaskExecDeadline(newCtx)
+		if updDeadlineErr != nil {
+			log.WithError(updDeadlineErr).Error("couldn't update task deadline")
+		}
+
+		intStatus, stringStatus, err := newRunCtx.Services.Storage.GetTaskStatusWithReadableString(newCtx, newRunCtx.TaskID)
+		if err != nil {
+			log.WithError(err).Error("couldn't get task status after processing")
+		}
+
+		if intStatus != db.RunStatusFinished && intStatus != db.RunStatusStopped {
+			return
+		}
+
+		if intStatus == db.RunStatusFinished && statusBefore != db.RunStatusFinished {
+			params := struct {
+				Steps []string `json:"steps"`
+			}{Steps: []string{}}
+
+			jsonParams, mrshErr := json.Marshal(params)
+			if mrshErr != nil {
+				log.Error(mrshErr)
+			}
+
+			_, err = newRunCtx.Services.Storage.CreateTaskEvent(newCtx, &entity.CreateTaskEvent{
+				WorkID:    newRunCtx.TaskID.String(),
+				EventType: "pause",
+				Author:    db.SystemLogin,
+				Params:    jsonParams,
+			})
+			if err != nil {
+				log.WithError(updDeadlineErr).Error("couldn't create task event")
+			}
+		}
+
+		endErr := processBlockEnd(newCtx, stringStatus, newRunCtx)
+
+		if endErr != nil {
+			log.WithError(endErr).Error("couldn't send process end notification")
+		}
+	}()
 
 	return "", true, nil
 }
