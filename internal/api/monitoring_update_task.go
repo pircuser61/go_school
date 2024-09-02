@@ -17,6 +17,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
@@ -28,14 +29,19 @@ func (ae *Env) MonitoringUpdateTaskBlockData(w http.ResponseWriter, r *http.Requ
 	ctx, span := trace.StartSpan(r.Context(), "monitoring_update_task_block_data")
 	defer span.End()
 
-	log := logger.GetLogger(ctx).
-		WithField("funcName", fn).
-		WithField("stepID", blockId)
+	log := script.SetMainFuncLog(ctx,
+		"MonitoringUpdateTaskBlockData",
+		script.MethodPut,
+		script.HTTP,
+		span.SpanContext().TraceID.String(),
+		"v1").WithField("stepID", blockId)
 	errorHandler := newHTTPErrorHandler(log, w)
 
 	b, err := io.ReadAll(r.Body)
 
 	defer r.Body.Close()
+
+	log = log.WithField(script.Body, string(b))
 
 	if err != nil {
 		errorHandler.handleError(RequestReadError, err)

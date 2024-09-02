@@ -7,9 +7,8 @@ import (
 
 	"go.opencensus.io/trace"
 
-	"gitlab.services.mts.ru/abp/myosotis/logger"
-
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
@@ -18,7 +17,12 @@ func (ae *Env) MonitoringGetBlockInputs(w http.ResponseWriter, req *http.Request
 	ctx, span := trace.StartSpan(req.Context(), "monitoring_get_block_inputs")
 	defer span.End()
 
-	log := logger.GetLogger(ctx)
+	log := script.SetMainFuncLog(ctx,
+		"MonitoringGetBlockInputs",
+		script.MethodGet,
+		script.HTTP,
+		span.SpanContext().TraceID.String(),
+		"v1").WithField("stepID", blockID)
 	errorHandler := newHTTPErrorHandler(log, w)
 
 	stepID, err := uuid.Parse(blockID)
@@ -95,7 +99,12 @@ func (ae *Env) MonitoringGetBlockOutputs(w http.ResponseWriter, req *http.Reques
 	ctx, span := trace.StartSpan(req.Context(), "monitoring_get_block_outputs")
 	defer span.End()
 
-	log := logger.GetLogger(ctx)
+	log := script.SetMainFuncLog(ctx,
+		"MonitoringGetBlockOutputs",
+		script.MethodGet,
+		script.HTTP,
+		span.SpanContext().TraceID.String(),
+		"v1").WithField("stepID", blockID)
 	errorHandler := newHTTPErrorHandler(log, w)
 
 	stepID, err := uuid.Parse(blockID)
@@ -217,7 +226,14 @@ func (ae *Env) MonitoringGetNotCreatedBlockInputs(w http.ResponseWriter, req *ht
 	ctx, span := trace.StartSpan(req.Context(), "monitoring_get_not_created_block_inputs")
 	defer span.End()
 
-	log := logger.GetLogger(ctx)
+	log := script.SetMainFuncLog(ctx,
+		"MonitoringGetNotCreatedBlockInputs",
+		script.MethodGet,
+		script.HTTP,
+		span.SpanContext().TraceID.String(),
+		"v1").
+		WithField(script.WorkNumber, workNumber).
+		WithField(script.StepName, stepName)
 	errorHandler := newHTTPErrorHandler(log, w)
 
 	dbInputs, err := ae.DB.GetEditedStepInputs(ctx, stepName, workNumber, nil)
