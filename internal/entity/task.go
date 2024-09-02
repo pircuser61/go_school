@@ -56,18 +56,26 @@ type AssignmentsV2 struct {
 	TabNum                   string `json:"tabNum"`
 	TypeId                   string `json:"typeId"`
 	UnitID                   string `json:"unitID"`
-	FTE                      int    `json:"FTE,omitempty"`
-	BalanceUnitID            string `json:"balanceUnitID,omitempty"`
-	CategoryID               string `json:"categoryID,omitempty"`
-	CostCenterId             string `json:"costCenterId,omitempty"`
-	DistrictCoefficient      string `json:"districtCoefficient,omitempty"`
-	ESignAllowedEnd          string `json:"eSignAllowedEnd,omitempty"`
-	LeavingReasonID          string `json:"leavingReasonID,omitempty"`
-	LocationId               string `json:"locationId,omitempty"`
-	PayTypeID                string `json:"payTypeID,omitempty"`
-	ProductID                string `json:"productID,omitempty"`
-	StaffCategory            string `json:"staffCategory,omitempty"`
-	StaffUnitId              string `json:"staffUnitId,omitempty"`
+	Employee                 struct {
+		CreatedAt time.Time `json:"createdAt"`
+		Id        string    `json:"id"`
+		UpdatedAt time.Time `json:"updatedAt"`
+		Activity  struct {
+			From string `json:"from"`
+			To   string `json:"to"`
+		} `json:"activity"`
+		CorpTaxiAgreement   bool          `json:"corpTaxiAgreement"`
+		Email               string        `json:"email"`
+		EmailAlias          []interface{} `json:"emailAlias"`
+		Login               string        `json:"login"`
+		OrganizationId      string        `json:"organizationId"`
+		PdProcessingAllowed bool          `json:"pdProcessingAllowed"`
+		PersonId            string        `json:"personId"`
+		Phone               string        `json:"phone"`
+		TabNum              string        `json:"tabNum"`
+		TypeID              string        `json:"typeID"`
+		Primary             bool          `json:"primary"`
+	} `json:"employee"`
 }
 
 type TaskSteps []*Step

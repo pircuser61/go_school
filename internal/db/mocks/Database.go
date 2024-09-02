@@ -7996,6 +7996,53 @@ func (_c *MockedDatabase_SetLastRunID_Call) RunAndReturn(run func(context.Contex
 	return _c
 }
 
+// SetStartMembers provides a mock function with given fields: ctx, stepID
+func (_m *MockedDatabase) SetStartMembers(ctx context.Context, stepID string) error {
+	ret := _m.Called(ctx, stepID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for SetStartMembers")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) error); ok {
+		r0 = rf(ctx, stepID)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// MockedDatabase_SetStartMembers_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SetStartMembers'
+type MockedDatabase_SetStartMembers_Call struct {
+	*mock.Call
+}
+
+// SetStartMembers is a helper method to define mock.On call
+//   - ctx context.Context
+//   - stepID string
+func (_e *MockedDatabase_Expecter) SetStartMembers(ctx interface{}, stepID interface{}) *MockedDatabase_SetStartMembers_Call {
+	return &MockedDatabase_SetStartMembers_Call{Call: _e.mock.On("SetStartMembers", ctx, stepID)}
+}
+
+func (_c *MockedDatabase_SetStartMembers_Call) Run(run func(ctx context.Context, stepID string)) *MockedDatabase_SetStartMembers_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string))
+	})
+	return _c
+}
+
+func (_c *MockedDatabase_SetStartMembers_Call) Return(_a0 error) *MockedDatabase_SetStartMembers_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *MockedDatabase_SetStartMembers_Call) RunAndReturn(run func(context.Context, string) error) *MockedDatabase_SetStartMembers_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // SetTaskPaused provides a mock function with given fields: ctx, workID, isPaused
 func (_m *MockedDatabase) SetTaskPaused(ctx context.Context, workID string, isPaused bool) error {
 	ret := _m.Called(ctx, workID, isPaused)

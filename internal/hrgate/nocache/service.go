@@ -343,7 +343,9 @@ func (s *Service) GetComplexAssignmentsV2(ctx c.Context, logins []string) ([]ent
 	ctx = script.MakeContextWithRetryCnt(ctx)
 
 	l := hrgate.LoginFilterParam(logins)
-	resp, err := s.cli.GetComplexAssignmentsV2(ctx, &hrgate.GetComplexAssignmentsV2Params{Logins: &l})
+	ent := hrgate.RequiredEntitiesComplexAssignmentV2{"employee"}
+
+	resp, err := s.cli.GetComplexAssignmentsV2(ctx, &hrgate.GetComplexAssignmentsV2Params{Logins: &l, RequiredEntities: &ent})
 	if err != nil {
 		return nil, err
 	}

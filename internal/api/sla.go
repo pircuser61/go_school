@@ -3,10 +3,9 @@ package api
 import (
 	c "context"
 	"encoding/json"
-	"fmt"
 	"net/http"
-	"sort"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -146,7 +145,7 @@ func (ae *Env) CheckFired(w http.ResponseWriter, r *http.Request) {
 
 	steps, err := ae.DB.GetRunningExecutionBlocks(ctx)
 	if err != nil {
-		err := errors.New("couldn't get steps")
+		err = errors.New("couldn't get steps")
 		log.WithError(err)
 		errorhandler.handleError(UpdateBlockError, err)
 
@@ -154,47 +153,47 @@ func (ae *Env) CheckFired(w http.ResponseWriter, r *http.Request) {
 	}
 
 	type fTask struct {
-		Id                  string
+		ID                  string
+		WorkID              string
+		StepName            string
 		Content             map[string]json.RawMessage
 		CurrentExecutorData map[string]json.RawMessage
 	}
 
 	firedTasks := make(map[string][]fTask)
 	for _, s := range steps {
-		if s.ID.String() == "aea6fbb2-216f-4282-b39a-8500b1b3609b" {
-			val := s.CurrentExecutorData["people"]
-			people := []string{}
+		val := s.CurrentExecutorData["people"]
+		people := []string{}
 
-			err = json.Unmarshal([]byte(val), &people)
-			if err != nil {
-				log.WithError(err).Error("failed to unmarshal people")
-				return
-			}
+		err = json.Unmarshal([]byte(val), &people)
+		if err != nil {
+			log.WithError(err).Error("failed to unmarshal people")
+			return
+		}
 
-			if len(people) != 1 {
-				continue
-			}
+		if len(people) != 1 {
+			continue
+		}
 
-			val = s.Content["State"]
-			state := make(map[string]interface{})
-			err = json.Unmarshal([]byte(val), &state)
+		val = s.Content["State"]
+		state := make(map[string]interface{})
+		err = json.Unmarshal([]byte(val), &state)
 
-			for k, v := range state {
-				if strings.Contains(k, "execution") {
-					vv := v.(map[string]interface{})
+		for k, v := range state {
+			if strings.Contains(k, "execution") {
+				vv := v.(map[string]interface{})
 
-					isTaken := vv["is_taken_in_work"]
+				isTaken := vv["is_taken_in_work"]
 
-					if isTaken.(bool) == true {
-						firedTasks[people[0]] = append(firedTasks[people[0]], fTask{
-							Id:                  s.ID.String(),
-							Content:             s.Content,
-							CurrentExecutorData: s.CurrentExecutorData,
-						})
-					}
-
+				if isTaken != nil && isTaken.(bool) == true {
+					firedTasks[people[0]] = append(firedTasks[people[0]], fTask{
+						ID:                  s.ID.String(),
+						WorkID:              s.WorkID.String(),
+						StepName:            s.Name,
+						Content:             s.Content,
+						CurrentExecutorData: s.CurrentExecutorData,
+					})
 				}
-
 			}
 		}
 	}
@@ -208,23 +207,29 @@ func (ae *Env) CheckFired(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sort.Strings(logins)
-
 	result, err := ae.HrGate.GetComplexAssignmentsV2(ctx, logins)
 	if err != nil {
 		log.WithError(err).Error("failed to unmarshal people")
 		return
 	}
 
-	//TODO remove
-	fmt.Println("\n\n\n\n\n")
-	for _, v := range result {
-		fmt.Println(v.Id, "\n\n")
-	}
-	// сопоставить логины с id и датой увольнения
-	// удалить все логины из мапы что не уволены (текущая дата больше даты терминации)
+	firedLog := make(map[string]struct{})
 
-	// для оставшихся пройтись по таскам в массиве в мапе[пользователь] и обновить контекст и тд
+	dateNow := time.Now()
+	formDate := dateNow.Format("2000-12-31")
+	for _, v := range result {
+		if v.ActualTerminationDate != "" && v.ActualTerminationDate < formDate {
+			smallLog := strings.ToLower(v.Employee.Login)
+			firedLog[smallLog] = struct{}{}
+		}
+	}
+
+	for login := range firedTasks {
+		if _, ok := firedLog[login]; !ok {
+			delete(firedTasks, login)
+		}
+	}
+
 	for _, v := range firedTasks {
 		for _, task := range v {
 			jsonData := task.Content["State"]
@@ -233,7 +238,7 @@ func (ae *Env) CheckFired(w http.ResponseWriter, r *http.Request) {
 			err = json.Unmarshal([]byte(jsonData), &data)
 			if err != nil {
 				log.WithError(err).Error("failed to unmarshal tasks content")
-				return
+				continue
 			}
 
 			for key, value := range data {
@@ -260,9 +265,26 @@ func (ae *Env) CheckFired(w http.ResponseWriter, r *http.Request) {
 			if initialPeople, ok := task.CurrentExecutorData["initial_people"]; ok {
 				task.CurrentExecutorData["people"] = initialPeople
 			}
+
+			state := make(map[string]interface{})
+			content := task.Content["State"]
+
+			if err = json.Unmarshal(content, &state); err != nil {
+				log.WithError(err).Error("failed to unmarshal tasks content")
+				continue
+			}
+
+			err = ae.DB.UpdateStepContent(ctx, task.ID, task.WorkID, task.StepName, state, map[string]interface{}{})
+			if err != nil {
+				log.WithError(err).Error("failed to update step content")
+				continue
+			}
+
+			err = ae.DB.SetStartMembers(ctx, task.ID)
+			if err != nil {
+				log.WithError(err).Error("failed to update step content")
+				continue
+			}
 		}
 	}
-
-	// обновить записи в бд
-
 }

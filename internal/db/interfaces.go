@@ -91,6 +91,7 @@ type TaskStorager interface {
 	CreateStepPreviousContent(ctx c.Context, stepID, eventID string) error
 	GetStepPreviousContent(ctx c.Context, stepID string, stepCreatedAt time.Time) (map[string]interface{}, error)
 	UpdateStepContent(ctx c.Context, stepID, workID, stepName string, state, output map[string]interface{}) error
+	SetStartMembers(ctx c.Context, stepID string) error
 
 	CheckIsOnEditing(ctx c.Context, workID string) (bool, error)
 	ClearTaskMembersActions(ctx c.Context, workID uuid.UUID) error

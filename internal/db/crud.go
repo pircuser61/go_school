@@ -3400,6 +3400,8 @@ func (db *PGCon) GetRunningExecutionBlocks(ctx context.Context) ([]entity.Step, 
 	// language=PostgreSQL
 	q := `SELECT 
     vs.id,
+    vs.work_id,
+    vs.step_name,
     vs.content,
     vs.current_executor
     
@@ -3420,7 +3422,7 @@ func (db *PGCon) GetRunningExecutionBlocks(ctx context.Context) ([]entity.Step, 
 	for rows.Next() {
 		var step entity.Step
 
-		if scanErr := rows.Scan(&step.ID, &step.Content, &step.CurrentExecutorData); scanErr != nil {
+		if scanErr := rows.Scan(&step.ID, &step.WorkID, &step.Name, &step.Content, &step.CurrentExecutorData); scanErr != nil {
 			return steps, scanErr
 		}
 
@@ -4035,6 +4037,23 @@ func (db *PGCon) UpdateStepContent(ctx context.Context, stepID, workID,
 	}
 
 	return nil
+}
+
+func (db *PGCon) SetStartMembers(ctx context.Context, stepID string) error {
+	ctx, span := trace.StartSpan(ctx, "pg_update_set_start_members")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	query := `
+		UPDATE members
+		SET is_acted = false,
+		    actions = '{executor_start_work:primary}'
+		WHERE block_id = $1
+    `
+	_, err := db.Connection.Exec(ctx, query, stepID)
+
+	return err
 }
 
 func wrapVal(data interface{}) interface{} {
