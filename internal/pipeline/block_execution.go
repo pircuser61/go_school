@@ -604,6 +604,11 @@ func (gb *GoExecutionBlock) GetTaskHumanStatus() (status TaskHumanStatus, commen
 		return StatusWait, "", ""
 	}
 
+	l := len(gb.State.ChangedExecutorsLogs)
+	if l > 0 && gb.State.ChangedExecutorsLogs[l-1].NewGroup != "" {
+		return StatusExecution, "", "возвращена в очередь"
+	}
+
 	return StatusExecution, "", ""
 }
 
