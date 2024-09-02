@@ -2849,7 +2849,7 @@ type GetTasksParamsSignatureCarrier string
 // CheckLimitTasksJSONBody defines parameters for CheckLimitTasks.
 type CheckLimitTasksJSONBody struct {
 	// worknumber of task
-	Worknumber string `json:"worknumber"`
+	WorkNumber string `json:"work_number"`
 }
 
 // GetTasksSchemasParams defines parameters for GetTasksSchemas.

@@ -428,6 +428,7 @@ var errorDescription = map[Err]string{
 	GetBlockInputsError:            "Не удалось получить инпуты блока",
 	GetUserError:                   "Не удалось найти пользователя по логину",
 	TypeAndValueNotCompatible:      "Type и Value не совместимы",
+	TaskLimitExceeded:              "Превышен лимит активных заявок",
 }
 
 /*

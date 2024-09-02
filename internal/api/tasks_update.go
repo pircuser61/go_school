@@ -1297,8 +1297,6 @@ func (ae *Env) CheckLimitTasks(w http.ResponseWriter, r *http.Request) {
 }
 
 func (ae *Env) checkLimit(ctx context.Context, workNumber string, ui *sso.UserInfo) error {
-	log := logger.GetLogger(ctx).WithField("funcName", "checkLimit")
-
 	dbTask, getTaskErr := ae.DB.GetTask(ctx, []string{ui.Username}, []string{ui.Username}, ui.Username, workNumber)
 	if getTaskErr != nil {
 		return getTaskErr
@@ -1323,8 +1321,6 @@ func (ae *Env) checkLimit(ctx context.Context, workNumber string, ui *sso.UserIn
 		ui.Username,
 		id)
 	if countErr != nil {
-		log.WithError(countErr).Error("couldn't get count of task")
-
 		return countErr
 	}
 

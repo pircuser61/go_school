@@ -2610,7 +2610,7 @@ paths:
       tags:
         - tasks
       summary: check task limit by work number
-      description: checkLimitTasks
+      description: Проверка лимита активных задач
       operationId: check-limit-tasks
       requestBody:
         description: Task check limit
@@ -2619,9 +2619,9 @@ paths:
             schema:
               type: object
               required:
-                - worknumber
+                - work_number
               properties:
-                worknumber:
+                work_number:
                   type: string
                   description: worknumber of task
         required: true
