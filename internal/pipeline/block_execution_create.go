@@ -136,6 +136,7 @@ func (gb *GoExecutionBlock) createState(ctx context.Context, ef *entity.EriusFun
 		UseActualExecutor:        params.UseActualExecutor,
 		HideExecutor:             params.HideExecutor,
 		ChildWorkBlueprintID:     params.ChildWorkBlueprintID,
+		BanRecall:                params.BanRecall,
 		Executors:                make(map[string]struct{}, 0),
 		InitialExecutors:         make(map[string]struct{}, 0),
 		DecisionAttachments:      make([]entity.Attachment, 0),

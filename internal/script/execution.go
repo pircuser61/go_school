@@ -39,6 +39,7 @@ type ExecutionParams struct {
 	UseActualExecutor    bool    `json:"use_actual_executor"`
 	HideExecutor         bool    `json:"hide_executor"`
 	ChildWorkBlueprintID *string `json:"child_work_blueprint_id"`
+	BanRecall            int     `json:"ban_recall"`
 }
 
 func (a *ExecutionParams) Validate() error {

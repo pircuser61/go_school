@@ -105,6 +105,7 @@ type ExecutionData struct {
 	WorkType                     string    `json:"work_type"`
 	HideExecutor                 bool      `json:"hide_executor"`
 	ChildWorkBlueprintID         *string   `json:"child_work_blueprint_id,omitempty"`
+	BanRecall                    int       `json:"ban_recall,omitempty"`
 }
 
 func NewExecutionState() *ExecutionData {
