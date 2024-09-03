@@ -41,6 +41,26 @@ func NewStore() *VariableStore {
 	return &s
 }
 
+type VariableExecutor struct {
+	People        []string `json:"people"`
+	GroupID       string   `json:"group_id"`
+	GroupName     string   `json:"group_name"`
+	GroupLimit    int      `json:"group_limit"`
+	InitialPeople []string `json:"initial_people"`
+}
+
+func NewExecutor() *VariableExecutor {
+	e := VariableExecutor{
+		People:        make([]string, 0),
+		GroupID:       "",
+		GroupName:     "",
+		GroupLimit:    0,
+		InitialPeople: make([]string, 0),
+	}
+
+	return &e
+}
+
 func NewFromStep(step *entity.Step) *VariableStore {
 	sp := NewStopPoints(step.Name)
 	sp.SetBreakPoints(step.BreakPoints...)

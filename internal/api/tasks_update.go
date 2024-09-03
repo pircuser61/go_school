@@ -12,9 +12,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"golang.org/x/sync/errgroup"
-
 	"go.opencensus.io/trace"
+	"golang.org/x/sync/errgroup"
 
 	"gitlab.services.mts.ru/abp/mail/pkg/email"
 
@@ -1219,6 +1218,117 @@ func (ae *Env) processSingleTask(ctx context.Context, task *stoppedTask) error {
 	runCtx.BlockRunResults.NodeEvents = nodeEvents
 	runCtx.BlockRunResults.NodeKafkaEvents = nodeKafkaEvents
 	runCtx.NotifyEvents(ctx)
+
+	return nil
+}
+
+type CheckLimitTask struct {
+	WorkNumber string `json:"worknumber"`
+}
+
+const checkLimitTasksPath = "/tasks/checkLimit"
+
+func (ae *Env) CheckLimitTasks(w http.ResponseWriter, r *http.Request) {
+	start := time.Now()
+	ctx, s := trace.StartSpan(r.Context(), "check_limit_tasks")
+
+	requestInfo := metrics.NewPostRequestInfo(checkLimitTasksPath)
+
+	defer func() {
+		s.End()
+
+		requestInfo.Duration = time.Since(start)
+
+		ae.Metrics.RequestsIncrease(requestInfo)
+	}()
+
+	log := script.SetMainFuncLog(ctx,
+		"CheckLimitTasks",
+		script.MethodPost,
+		script.HTTP,
+		s.SpanContext().TraceID.String(),
+		"v1")
+	errorHandler := newHTTPErrorHandler(log, w)
+	errorHandler.setMetricsRequestInfo(requestInfo)
+
+	b, err := io.ReadAll(r.Body)
+	if err != nil {
+		errorHandler.handleError(RequestReadError, err)
+
+		return
+	}
+
+	defer r.Body.Close()
+
+	req := &CheckLimitTask{}
+	if err = json.Unmarshal(b, &req); err != nil {
+		errorHandler.handleError(StopTaskParsingError, err)
+
+		return
+	}
+
+	if req.WorkNumber == "" {
+		errorHandler.handleError(ValidateTasksError, ValidateTasksError)
+		requestInfo.Status = ValidateTasksError.Status()
+
+		return
+	}
+
+	ui, err := user.GetUserInfoFromCtx(ctx)
+	if err != nil {
+		errorHandler.handleError(NoUserInContextError, err)
+
+		return
+	}
+
+	err = ae.checkLimit(ctx, req.WorkNumber, ui)
+	if err != nil {
+		httpErr := getErr(err)
+
+		errorHandler.handleError(httpErr, err)
+		requestInfo.Status = httpErr.Status()
+
+		return
+	}
+
+	if err = sendResponse(w, http.StatusOK, nil); err != nil {
+		errorHandler.handleError(UnknownError, err)
+
+		return
+	}
+}
+
+func (ae *Env) checkLimit(ctx context.Context, workNumber string, ui *sso.UserInfo) error {
+	dbTask, getTaskErr := ae.DB.GetTask(ctx, []string{ui.Username}, []string{ui.Username}, ui.Username, workNumber)
+	if getTaskErr != nil {
+		return getTaskErr
+	}
+
+	steps, err := ae.DB.GetTaskSteps(ctx, dbTask.ID)
+	if err != nil {
+		return err
+	}
+
+	limit := 0
+	id := ""
+
+	for _, s := range steps {
+		if s.Status == "running" && s.Type == "execution" {
+			limit = s.GroupLimit
+			id = s.GroupID
+		}
+	}
+
+	count, countErr := ae.DB.GetExecutorsNumbersOfCurrentTasks(ctx,
+		ui.Username,
+		id)
+	if countErr != nil {
+		return countErr
+	}
+
+	if limit != 0 && count >= limit {
+		return entity.ErrLimitExceeded
+	}
 
 	return nil
 }

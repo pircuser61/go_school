@@ -533,6 +533,8 @@ func getErr(err error) Err {
 	case errors.Is(err, entity.ErrUnknownAction),
 		errors.Is(err, entity.ErrEmptyStepTypes):
 		return UpdateTaskError
+	case errors.Is(err, entity.ErrLimitExceeded):
+		return TaskLimitExceeded
 	default:
 		var httpErr Err
 		if errors.As(err, &httpErr) {

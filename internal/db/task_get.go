@@ -2374,7 +2374,8 @@ func (db *PGCon) GetTaskSteps(ctx c.Context, id uuid.UUID) (entity.TaskSteps, er
 			vs.has_error,
 			vs.status,
 			vs.updated_at,
-			vs.attachments
+			vs.attachments,
+			vs.current_executor
 		FROM variable_storage vs 
 			WHERE work_id = $1 AND NOT vs.status IN ('skipped', 'ready') AND
 			(SELECT max(time)
@@ -2394,7 +2395,7 @@ func (db *PGCon) GetTaskSteps(ctx c.Context, id uuid.UUID) (entity.TaskSteps, er
 	for rows.Next() {
 		s := entity.Step{}
 
-		var content string
+		var content, curExecutor string
 
 		err = rows.Scan(
 			&s.ID,
@@ -2407,6 +2408,7 @@ func (db *PGCon) GetTaskSteps(ctx c.Context, id uuid.UUID) (entity.TaskSteps, er
 			&s.Status,
 			&s.UpdatedAt,
 			&s.Attachments,
+			&curExecutor,
 		)
 		if err != nil {
 			return nil, err
@@ -2419,10 +2421,22 @@ func (db *PGCon) GetTaskSteps(ctx c.Context, id uuid.UUID) (entity.TaskSteps, er
 			return nil, err
 		}
 
+		executor := store.NewExecutor()
+
+		err = json.Unmarshal([]byte(curExecutor), executor)
+		if err != nil {
+			return nil, err
+		}
+
 		s.State = storage.State
 		s.Steps = storage.Steps
 		s.Errors = storage.Errors
 		s.Storage = storage.Values
+		s.InitialPeople = executor.InitialPeople
+		s.People = executor.People
+		s.GroupID = executor.GroupID
+		s.GroupName = executor.GroupName
+		s.GroupLimit = executor.GroupLimit
 		res = append(res, &s)
 	}
 
