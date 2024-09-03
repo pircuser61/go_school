@@ -35,7 +35,7 @@ type Step struct {
 
 type AssignmentsV2 struct {
 	CreatedAt time.Time `json:"createdAt"`
-	Id        string    `json:"id"`
+	ID        string    `json:"id"`
 	UpdatedAt time.Time `json:"updatedAt"`
 	Activity  struct {
 		From string `json:"from"`
@@ -46,19 +46,19 @@ type AssignmentsV2 struct {
 	BudjetObjectVersion      string `json:"budjetObjectVersion"`
 	CombinationStatus        string `json:"combinationStatus"`
 	ESignAllowed             bool   `json:"eSignAllowed"`
-	EmployeeId               string `json:"employeeId"`
+	EmployeeID               string `json:"employeeId"`
 	HireDate                 string `json:"hireDate"`
 	IsTemporary              bool   `json:"isTemporary"`
-	ManagerId                string `json:"managerId"`
+	ManagerID                string `json:"managerId"`
 	Primary                  bool   `json:"primary"`
 	ProjectedTerminationDate string `json:"projectedTerminationDate"`
-	StatusId                 string `json:"statusId"`
+	StatusID                 string `json:"statusId"`
 	TabNum                   string `json:"tabNum"`
-	TypeId                   string `json:"typeId"`
+	TypeID                   string `json:"typeId"`
 	UnitID                   string `json:"unitID"`
 	Employee                 struct {
 		CreatedAt time.Time `json:"createdAt"`
-		Id        string    `json:"id"`
+		ID        string    `json:"id"`
 		UpdatedAt time.Time `json:"updatedAt"`
 		Activity  struct {
 			From string `json:"from"`
@@ -68,9 +68,9 @@ type AssignmentsV2 struct {
 		Email               string        `json:"email"`
 		EmailAlias          []interface{} `json:"emailAlias"`
 		Login               string        `json:"login"`
-		OrganizationId      string        `json:"organizationId"`
+		OrganizationID      string        `json:"organizationId"`
 		PdProcessingAllowed bool          `json:"pdProcessingAllowed"`
-		PersonId            string        `json:"personId"`
+		PersonID            string        `json:"personId"`
 		Phone               string        `json:"phone"`
 		TabNum              string        `json:"tabNum"`
 		TypeID              string        `json:"typeID"`
