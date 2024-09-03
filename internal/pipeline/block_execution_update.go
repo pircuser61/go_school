@@ -4,6 +4,7 @@ import (
 	c "context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/iancoleman/orderedmap"
@@ -258,7 +259,7 @@ func (a *ExecutionData) SetChangeExecutor(oldLogin, delegateFor, byLogin string,
 
 	a.ChangedExecutorsLogs = append(a.ChangedExecutorsLogs, ChangeExecutorLog{
 		OldLogin:    oldLogin,
-		NewLogin:    []string{in.NewExecutorLogin},
+		NewLogin:    in.NewExecutorLogin,
 		Comment:     in.Comment,
 		Attachments: in.Attachments,
 		CreatedAt:   time.Now(),
@@ -983,7 +984,7 @@ func (gb *GoExecutionBlock) executorBackToGroup() (err error) {
 		Attachments: updateParams.Attachments,
 		CreatedAt:   time.Now(),
 		ByLogin:     currentLogin,
-		NewLogin:    newLogin,
+		NewLogin:    strings.Join(newLogin, ","),
 		NewGroup:    gb.State.ExecutorsGroupName,
 	})
 

@@ -131,7 +131,7 @@ func (h *HideExecutorsExecutionBlockStepHandler) HandleStep(step *entity.Step) e
 
 	for i := range execBlock.ChangedExecutorsLogs {
 		execBlock.ChangedExecutorsLogs[i].OldLogin = hiddenUserLogin
-		execBlock.ChangedExecutorsLogs[i].NewLogin = []string{hiddenUserLogin}
+		execBlock.ChangedExecutorsLogs[i].NewLogin = hiddenUserLogin
 		execBlock.ChangedExecutorsLogs[i].Comment = ""
 		execBlock.ChangedExecutorsLogs[i].ByLogin = hiddenUserLogin
 		execBlock.ChangedExecutorsLogs[i].DelegateFor = hideDelegator(execBlock.ChangedExecutorsLogs[i].DelegateFor)

@@ -39,7 +39,7 @@ type RequestExecutionInfoLog struct {
 
 type ChangeExecutorLog struct {
 	OldLogin    string              `json:"old_login"`
-	NewLogin    []string            `json:"new_login"`
+	NewLogin    string              `json:"new_login"`
 	Comment     string              `json:"comment"`
 	Attachments []entity.Attachment `json:"attachments"`
 	CreatedAt   time.Time           `json:"created_at"`
