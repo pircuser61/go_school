@@ -357,6 +357,7 @@ func (s *Service) GetComplexAssignmentsV2(ctx c.Context, logins []string) ([]ent
 	}
 
 	var result []entity.AssignmentsV2
+
 	err = json.Unmarshal(data, &result)
 	if err != nil {
 		return nil, err

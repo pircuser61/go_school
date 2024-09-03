@@ -129,6 +129,7 @@ func (ae *Env) CheckBreachSLA(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+//nolint:gocognit,gocyclo //большая сложность
 func (ae *Env) CheckFired(w http.ResponseWriter, r *http.Request) {
 	ctx, span := trace.StartSpan(r.Context(), "check_fired")
 	defer span.End()
@@ -161,13 +162,17 @@ func (ae *Env) CheckFired(w http.ResponseWriter, r *http.Request) {
 	}
 
 	firedTasks := make(map[string][]fTask)
-	for _, s := range steps {
-		val := s.CurrentExecutorData["people"]
+
+	var val json.RawMessage
+
+	for i := range steps {
+		val = steps[i].CurrentExecutorData["people"]
 		people := []string{}
 
 		err = json.Unmarshal([]byte(val), &people)
 		if err != nil {
 			log.WithError(err).Error("failed to unmarshal people")
+
 			return
 		}
 
@@ -175,9 +180,15 @@ func (ae *Env) CheckFired(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
-		val = s.Content["State"]
+		val = steps[i].Content["State"]
 		state := make(map[string]interface{})
+
 		err = json.Unmarshal([]byte(val), &state)
+		if err != nil {
+			log.WithError(err).Error("failed to unmarshal people")
+
+			return
+		}
 
 		for k, v := range state {
 			if strings.Contains(k, "execution") {
@@ -185,13 +196,13 @@ func (ae *Env) CheckFired(w http.ResponseWriter, r *http.Request) {
 
 				isTaken := vv["is_taken_in_work"]
 
-				if isTaken != nil && isTaken.(bool) == true {
+				if isTaken != nil && isTaken.(bool) {
 					firedTasks[people[0]] = append(firedTasks[people[0]], fTask{
-						ID:                  s.ID.String(),
-						WorkID:              s.WorkID.String(),
-						StepName:            s.Name,
-						Content:             s.Content,
-						CurrentExecutorData: s.CurrentExecutorData,
+						ID:                  steps[i].ID.String(),
+						WorkID:              steps[i].WorkID.String(),
+						StepName:            steps[i].Name,
+						Content:             steps[i].Content,
+						CurrentExecutorData: steps[i].CurrentExecutorData,
 					})
 				}
 			}
@@ -210,6 +221,7 @@ func (ae *Env) CheckFired(w http.ResponseWriter, r *http.Request) {
 	result, err := ae.HrGate.GetComplexAssignmentsV2(ctx, logins)
 	if err != nil {
 		log.WithError(err).Error("failed to unmarshal people")
+
 		return
 	}
 
@@ -217,9 +229,10 @@ func (ae *Env) CheckFired(w http.ResponseWriter, r *http.Request) {
 
 	dateNow := time.Now()
 	formDate := dateNow.Format("2000-12-31")
-	for _, v := range result {
-		if v.ActualTerminationDate != "" && v.ActualTerminationDate < formDate {
-			smallLog := strings.ToLower(v.Employee.Login)
+
+	for i := range result {
+		if result[i].ActualTerminationDate != "" && result[i].ActualTerminationDate < formDate {
+			smallLog := strings.ToLower(result[i].Employee.Login)
 			firedLog[smallLog] = struct{}{}
 		}
 	}
@@ -233,14 +246,17 @@ func (ae *Env) CheckFired(w http.ResponseWriter, r *http.Request) {
 	for _, v := range firedTasks {
 		for _, task := range v {
 			jsonData := task.Content["State"]
+
 			var data map[string]interface{}
 
 			err = json.Unmarshal([]byte(jsonData), &data)
 			if err != nil {
 				log.WithError(err).Error("failed to unmarshal tasks content")
+
 				continue
 			}
 
+			//nolint:nestif //большая вложенность структуры хранения данных
 			for key, value := range data {
 				if strings.Contains(key, "execution") {
 					if execution, ok := value.(map[string]interface{}); ok {
@@ -255,12 +271,14 @@ func (ae *Env) CheckFired(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 
-			updatedJsonData, err := json.Marshal(data)
+			updatedJSONData, err := json.Marshal(data)
 			if err != nil {
 				log.WithError(err).Error("failed to update tasks content")
+
 				return
 			}
-			task.Content["State"] = updatedJsonData
+
+			task.Content["State"] = updatedJSONData
 
 			if initialPeople, ok := task.CurrentExecutorData["initial_people"]; ok {
 				task.CurrentExecutorData["people"] = initialPeople
@@ -271,18 +289,21 @@ func (ae *Env) CheckFired(w http.ResponseWriter, r *http.Request) {
 
 			if err = json.Unmarshal(content, &state); err != nil {
 				log.WithError(err).Error("failed to unmarshal tasks content")
+
 				continue
 			}
 
 			err = ae.DB.UpdateStepContent(ctx, task.ID, task.WorkID, task.StepName, state, map[string]interface{}{})
 			if err != nil {
 				log.WithError(err).Error("failed to update step content")
+
 				continue
 			}
 
 			err = ae.DB.SetStartMembers(ctx, task.ID)
 			if err != nil {
 				log.WithError(err).Error("failed to update step content")
+
 				continue
 			}
 		}

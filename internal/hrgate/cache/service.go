@@ -241,5 +241,6 @@ func (s *service) GetComplexAssignmentsV2(ctx c.Context, logins []string) ([]ent
 	if err != nil {
 		return nil, err
 	}
+
 	return result, nil
 }
