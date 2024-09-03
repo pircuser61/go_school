@@ -1,6 +1,6 @@
 include:
-  - project: 'abp/ci-templates'
-    ref: v5
+  - project: 'jocasta/ci-templates'
+    ref: master
     file: '/entrypoints/app/go_base_auto_push.yml'
 
 
