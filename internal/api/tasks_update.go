@@ -1226,11 +1226,13 @@ type CheckLimitTask struct {
 	WorkNumber string `json:"worknumber"`
 }
 
+const checkLimitTasksPath = "/tasks/checkLimit"
+
 func (ae *Env) CheckLimitTasks(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
 	ctx, s := trace.StartSpan(r.Context(), "check_limit_tasks")
 
-	requestInfo := metrics.NewPostRequestInfo(stopTasksPath)
+	requestInfo := metrics.NewPostRequestInfo(checkLimitTasksPath)
 
 	defer func() {
 		s.End()
