@@ -127,7 +127,7 @@ func (ae *Env) MonitoringGetTask(w http.ResponseWriter, req *http.Request, workN
 		return
 	}
 
-	log = log.WithField(script.WorkNumber, workNumber)
+	errorHandler.log = log.WithField(script.WorkNumber, workNumber)
 
 	taskIsHidden, err := ae.DB.CheckTaskForHiddenFlag(ctx, workNumber)
 	if err != nil {

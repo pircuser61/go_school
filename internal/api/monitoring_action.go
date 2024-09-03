@@ -589,7 +589,7 @@ func (ae *Env) GetMonitoringTaskEvents(w http.ResponseWriter, req *http.Request,
 		return
 	}
 
-	log = log.WithField(script.WorkNumber, workNumber)
+	errorHandler.log = log.WithField(script.WorkNumber, workNumber)
 
 	workID, err := ae.DB.GetWorkIDByWorkNumber(ctx, workNumber)
 	if err != nil {
