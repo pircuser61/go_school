@@ -289,7 +289,6 @@ func (gb *ExecutableFunctionBlock) Model() script.FunctionModel {
 		},
 		Sockets: []script.Socket{
 			script.FuncExecutedSocket,
-			script.FuncErrorSocket,
 		},
 	}
 }
