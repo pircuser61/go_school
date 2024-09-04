@@ -4,6 +4,7 @@ import (
 	c "context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/iancoleman/orderedmap"
@@ -82,6 +83,13 @@ func (gb *GoExecutionBlock) handleTaskUpdateAction(ctx c.Context) error {
 
 //nolint:gocognit,gocyclo // вся сложность функции состоит в switch case, под каждым вызывается одна-две функции
 func (gb *GoExecutionBlock) handleAction(ctx c.Context, action e.TaskUpdateAction) error {
+	if action == e.TaskUpdateActionReworkSLABreach {
+		errUpdate := gb.handleReworkSLABreached(ctx)
+		if errUpdate != nil {
+			return errUpdate
+		}
+	}
+
 	isWorkOnEditing, err := gb.RunContext.Services.Storage.CheckIsOnEditing(ctx, gb.RunContext.TaskID.String())
 	if err != nil {
 		return err
@@ -100,11 +108,6 @@ func (gb *GoExecutionBlock) handleAction(ctx c.Context, action e.TaskUpdateActio
 		}
 	case e.TaskUpdateActionHalfSLABreach:
 		gb.handleHalfSLABreached(ctx)
-	case e.TaskUpdateActionReworkSLABreach:
-		errUpdate := gb.handleReworkSLABreached(ctx)
-		if errUpdate != nil {
-			return errUpdate
-		}
 	case e.TaskUpdateActionExecution:
 		if !gb.State.IsTakenInWork {
 			return errors.New("is not taken in work")
@@ -915,6 +918,19 @@ func (gb *GoExecutionBlock) executorStartWork(ctx c.Context) (err error) {
 		return NewUserIsNotPartOfProcessErr()
 	}
 
+	if gb.State.ExecutorsGroupID != "" {
+		limit := 0
+
+		limit, err = gb.RunContext.Services.Storage.GetExecutorsNumbersOfCurrentTasks(ctx, currentLogin, gb.State.ExecutorsGroupID)
+		if err != nil {
+			return err
+		}
+
+		if gb.State.ExecutorsGroupLimit != 0 && limit >= gb.State.ExecutorsGroupLimit {
+			return fmt.Errorf("the number of tasks exceeds the group limit")
+		}
+	}
+
 	executorLogins := make(map[string]struct{}, 0)
 	for i := range gb.State.Executors {
 		executorLogins[i] = gb.State.Executors[i]
@@ -952,6 +968,11 @@ func (gb *GoExecutionBlock) executorBackToGroup() (err error) {
 	gb.State.Executors = gb.State.InitialExecutors
 	gb.State.IsTakenInWork = false
 
+	newLogin := []string{}
+	for login := range gb.State.InitialExecutors {
+		newLogin = append(newLogin, login)
+	}
+
 	var updateParams ExecutorChangeParams
 	if err = json.Unmarshal(gb.RunContext.UpdateData.Parameters, &updateParams); err != nil {
 		return errors.New("can't assert provided update data")
@@ -963,6 +984,8 @@ func (gb *GoExecutionBlock) executorBackToGroup() (err error) {
 		Attachments: updateParams.Attachments,
 		CreatedAt:   time.Now(),
 		ByLogin:     currentLogin,
+		NewLogin:    strings.Join(newLogin, ","),
+		NewGroup:    gb.State.ExecutorsGroupName,
 	})
 
 	gb.State.TakenInWorkLog = append(gb.State.TakenInWorkLog, StartWorkLog{
@@ -1125,10 +1148,6 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 	}
 
 	var buttons []mail.Button
-
-	if len(notifDescription) > 0 {
-		notifDescription = notifDescription[1:]
-	}
 
 	tpl, buttons = mail.NewAppPersonStatusNotificationTpl(
 		&mail.NewAppPersonStatusTpl{

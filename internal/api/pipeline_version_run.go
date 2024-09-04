@@ -533,6 +533,8 @@ func getErr(err error) Err {
 	case errors.Is(err, entity.ErrUnknownAction),
 		errors.Is(err, entity.ErrEmptyStepTypes):
 		return UpdateTaskError
+	case errors.Is(err, entity.ErrLimitExceeded):
+		return TaskLimitExceeded
 	default:
 		var httpErr Err
 		if errors.As(err, &httpErr) {
@@ -560,9 +562,11 @@ func handleLaunchTaskError(ctx c.Context, storage db.Database, taskID uuid.UUID,
 
 	switch {
 	case errorutils.IsRemoteCallError(err):
-		log.WithError(err).Warning("remote call error")
+		log.WithError(err).Error("remote call error")
 
-		return nil
+		_ = storage.UpdateTaskStatus(ctx, taskID, db.RunStatusError, err.Error(), "")
+
+		return err
 	case err != nil:
 		log.WithError(err).Error("process empty task error")
 

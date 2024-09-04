@@ -45,6 +45,7 @@ type ChangeExecutorLog struct {
 	CreatedAt   time.Time           `json:"created_at"`
 	DelegateFor string              `json:"delegate_for"`
 	ByLogin     string              `json:"by_login"`
+	NewGroup    string              `json:"new_group,omitempty"`
 }
 
 type StartWorkLog struct {
@@ -77,8 +78,9 @@ type ExecutionData struct {
 	RequestExecutionInfoLogs []RequestExecutionInfoLog  `json:"request_execution_info_logs,omitempty"`
 	FormsAccessibility       []script.FormAccessibility `json:"forms_accessibility,omitempty"`
 
-	ExecutorsGroupID   string `json:"executors_group_id"`
-	ExecutorsGroupName string `json:"executors_group_name"`
+	ExecutorsGroupID    string `json:"executors_group_id"`
+	ExecutorsGroupName  string `json:"executors_group_name"`
+	ExecutorsGroupLimit int    `json:"executors_group_limit"`
 
 	ExecutorsGroupIDPath *string `json:"executors_group_id_path,omitempty"`
 
@@ -103,6 +105,7 @@ type ExecutionData struct {
 	WorkType                     string    `json:"work_type"`
 	HideExecutor                 bool      `json:"hide_executor"`
 	ChildWorkBlueprintID         *string   `json:"child_work_blueprint_id,omitempty"`
+	BanRecall                    int       `json:"ban_recall,omitempty"`
 }
 
 func NewExecutionState() *ExecutionData {

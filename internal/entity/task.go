@@ -10,25 +10,30 @@ import (
 )
 
 type Step struct {
-	ID                  uuid.UUID                  `json:"-"`
-	WorkID              uuid.UUID                  `json:"work_id"`
-	WorkNumber          string                     `json:"work_number"`
-	Time                time.Time                  `json:"time"`
-	Type                string                     `json:"type"`
-	Name                string                     `json:"name"`
-	State               map[string]json.RawMessage `json:"state" swaggertype:"object"`
-	Storage             map[string]interface{}     `json:"storage"`
-	Errors              []string                   `json:"errors"`
-	Steps               []string                   `json:"steps"`
-	BreakPoints         []string                   `json:"-"`
-	HasError            bool                       `json:"has_error"`
-	Status              string                     `json:"status"`
-	Initiator           string                     `json:"initiator"`
-	UpdatedAt           *time.Time                 `json:"updated_at"`
-	IsTest              bool                       `json:"-"`
-	ShortTitle          *string                    `json:"short_title,omitempty"`
-	Attachments         int                        `json:"attachments"`
-	IsPaused            bool                       `json:"is_paused"`
+	ID            uuid.UUID                  `json:"-"`
+	WorkID        uuid.UUID                  `json:"work_id"`
+	WorkNumber    string                     `json:"work_number"`
+	Time          time.Time                  `json:"time"`
+	Type          string                     `json:"type"`
+	Name          string                     `json:"name"`
+	State         map[string]json.RawMessage `json:"state" swaggertype:"object"`
+	Storage       map[string]interface{}     `json:"storage"`
+	Errors        []string                   `json:"errors"`
+	Steps         []string                   `json:"steps"`
+	BreakPoints   []string                   `json:"-"`
+	HasError      bool                       `json:"has_error"`
+	Status        string                     `json:"status"`
+	Initiator     string                     `json:"initiator"`
+	UpdatedAt     *time.Time                 `json:"updated_at"`
+	IsTest        bool                       `json:"-"`
+	ShortTitle    *string                    `json:"short_title,omitempty"`
+	Attachments   int                        `json:"attachments"`
+	IsPaused      bool                       `json:"is_paused"`
+	People        []string                   `json:"people"`
+	GroupID       string                     `json:"group_id"`
+	GroupName     string                     `json:"group_name"`
+	GroupLimit    int                        `json:"group_limit"`
+	InitialPeople []string                   `json:"initial_people"`
 	Content             map[string]json.RawMessage `json:"content" swaggertype:"object"`
 	CurrentExecutorData map[string]json.RawMessage `json:"current_executor_data" swaggertype:"object"`
 }
@@ -181,16 +186,18 @@ type EriusTask struct {
 	CurrentExecutionStart   *time.Time          `json:"current_execution_start,omitempty"`
 	CurrentApprovementStart *time.Time          `json:"current_approvement_start,omitempty"`
 	IsPaused                bool                `json:"is_paused"`
+	GroupLimitExceeded      bool                `json:"group_limit_exceeded"`
 
 	ParentWorkNumber *string  `json:"parent_work_number,omitempty"`
 	ChildWorkNumbers []string `json:"child_work_numbers,omitempty"`
 }
 
 type CurrentExecutorData struct {
-	People             []string `json:"people"`
-	InitialPeople      []string `json:"initial_people"`
-	ExecutionGroupID   string   `json:"execution_group_id,omitempty"`
-	ExecutionGroupName string   `json:"execution_group_name,omitempty"`
+	People              []string `json:"people"`
+	InitialPeople       []string `json:"initial_people"`
+	ExecutionGroupID    string   `json:"execution_group_id,omitempty"`
+	ExecutionGroupName  string   `json:"execution_group_name,omitempty"`
+	ExecutionGroupLimit int      `json:"execution_group_limit,omitempty"`
 }
 
 func (et *EriusTask) IsRun() bool {
@@ -239,7 +246,7 @@ type GetTaskParams struct {
 	ProcessingLogins     *[]string `json:"processingLogins"`
 	ProcessingGroupIds   *[]string `json:"processingGroupIds"`
 	ExecutorLogins       *[]string `json:"executorLogins"`
-	ExecutorGroupIds     *[]string `json:"executorGroupIds"`
+	ExecutorGroupIDs     *[]string `json:"executorGroupIds"`
 	ExecutorTypeAssigned *string   `json:"executorTypeAssigned"`
 }
 

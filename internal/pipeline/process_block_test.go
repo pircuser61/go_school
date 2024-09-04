@@ -39,6 +39,10 @@ type TestUpdateData struct {
 func makeStorage() *mocks.MockedDatabase {
 	res := &mocks.MockedDatabase{}
 
+	res.On("Release",
+		mock.MatchedBy(func(ctx context.Context) bool { return true }),
+	).Return(nil)
+
 	res.On("GetTaskStatus",
 		mock.MatchedBy(func(ctx context.Context) bool { return true }),
 		uuid.UUID{},
@@ -257,6 +261,14 @@ func TestProcessBlock(t *testing.T) {
 
 							return slaMock
 						}(),
+						StorageFactory: func() db.Database {
+							res := makeStorage()
+							res.On("Acquire",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+							).Return(makeStorage(), nil).Times(4)
+
+							return res
+						}(),
 						Storage: func() db.Database {
 							res := makeStorage()
 							testUUID = new(uuid.UUID)
@@ -474,6 +486,14 @@ func TestProcessBlock(t *testing.T) {
 					Productive:        true,
 					VarStore:          store.NewStore(),
 					Services: RunContextServices{
+						StorageFactory: func() db.Database {
+							res := makeStorage()
+							res.On("Acquire",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+							).Return(makeStorage(), nil).Times(12)
+
+							return res
+						}(),
 						Storage: func() db.Database {
 							res := makeStorage()
 

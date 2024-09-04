@@ -8,4 +8,5 @@ type WorkGroup struct {
 	GroupID   string        `json:"groupID"`
 	GroupName string        `json:"groupName"`
 	People    []GroupMember `json:"people"`
+	Limit     int           `json:"applicationsLimit"`
 }

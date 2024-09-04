@@ -75,6 +75,7 @@ func (gb *GoExecutionBlock) CurrentExecutorData() CurrentExecutorData {
 		GroupName:     gb.State.ExecutorsGroupName,
 		People:        mapToSlice(gb.State.Executors),
 		InitialPeople: mapToSlice(gb.State.InitialExecutors),
+		GroupLimit:    gb.State.ExecutorsGroupLimit,
 	}
 }
 
@@ -321,7 +322,15 @@ func (gb *GoExecutionBlock) executionActions(login string) []MemberAction {
 		},
 	}
 
-	if _, ok := gb.State.InitialExecutors[login]; ok && gb.State.ExecutorsGroupID != "" {
+	isDelegated := false
+
+	l := len(gb.State.TakenInWorkLog)
+	if l > 0 {
+		delegate := gb.State.TakenInWorkLog[l-1].DelegateFor
+		_, isDelegated = gb.State.InitialExecutors[delegate]
+	}
+
+	if _, ok := gb.State.InitialExecutors[login]; ok && gb.State.ExecutorsGroupID != "" || isDelegated {
 		actions = append(actions, MemberAction{
 			ID:   executionBackToGroup,
 			Type: ActionTypeOther,
@@ -593,6 +602,11 @@ func (gb *GoExecutionBlock) GetTaskHumanStatus() (status TaskHumanStatus, commen
 	if len(gb.State.RequestExecutionInfoLogs) > 0 &&
 		gb.State.RequestExecutionInfoLogs[len(gb.State.RequestExecutionInfoLogs)-1].ReqType == RequestInfoQuestion {
 		return StatusWait, "", ""
+	}
+
+	l := len(gb.State.ChangedExecutorsLogs)
+	if l > 0 && gb.State.ChangedExecutorsLogs[l-1].NewGroup != "" {
+		return StatusExecution, "", "возвращена в очередь"
 	}
 
 	return StatusExecution, "", ""

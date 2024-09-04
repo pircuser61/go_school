@@ -528,7 +528,7 @@ const (
 	getTasksUsersPath = "/tasks/users"
 )
 
-//nolint:dupl,gocritic,gocognit //its not duplicate // params без поинтера нужен для интерфейса
+//nolint:dupl,gocritic,gocognit,gocyclo //its not duplicate // params без поинтера нужен для интерфейса
 func (ae *Env) GetTasks(w http.ResponseWriter, req *http.Request, params GetTasksParams) {
 	start := time.Now()
 	ctx, s := trace.StartSpan(req.Context(), "get_tasks")
@@ -640,6 +640,26 @@ func (ae *Env) GetTasks(w http.ResponseWriter, req *http.Request, params GetTask
 			}
 
 			resp.Tasks[i].CurrentExecutor.ExecutionGroupName = executionBaseGroupName
+		}
+
+		if resp.Tasks[i].CurrentExecutor.ExecutionGroupID != "" && resp.Tasks[i].CurrentExecutor.ExecutionGroupLimit != 0 {
+			cur := 0
+
+			cur, err = ae.DB.GetExecutorsNumbersOfCurrentTasks(
+				ctx,
+				filters.CurrentUser,
+				resp.Tasks[i].CurrentExecutor.ExecutionGroupID,
+			)
+			if err != nil {
+				errorHandler.handleError(GetTasksError, err)
+
+				return
+			}
+
+			resp.Tasks[i].GroupLimitExceeded = false
+			if cur >= resp.Tasks[i].CurrentExecutor.ExecutionGroupLimit {
+				resp.Tasks[i].GroupLimitExceeded = true
+			}
 		}
 	}
 
@@ -908,7 +928,7 @@ func (p *GetTasksParams) toEntity(req *http.Request) (e.TaskFilter, error) {
 		ProcessingLogins:     p.ProcessingLogins,
 		ProcessingGroupIds:   p.ProcessingGroupIds,
 		ExecutorLogins:       p.ExecutorLogins,
-		ExecutorGroupIds:     p.ExecutorGroupIds,
+		ExecutorGroupIDs:     p.ExecutorGroupIds,
 		ExecutorTypeAssigned: typeAssigned,
 		SignatureCarrier:     signatureCarrier,
 	}

@@ -150,6 +150,7 @@ const (
 	GetBlockInputsError
 	GetUserError
 	TypeAndValueNotCompatible
+	TaskLimitExceeded
 )
 
 /*
@@ -288,6 +289,7 @@ var errorText = map[Err]string{
 	GetBlockInputsError:                 "can`t get block inputs",
 	GetUserError:                        "can`t get user",
 	TypeAndValueNotCompatible:           "type and value are not compatible",
+	TaskLimitExceeded:                   "limit active tasks exceeded",
 }
 
 /*
@@ -426,6 +428,7 @@ var errorDescription = map[Err]string{
 	GetBlockInputsError:            "Не удалось получить инпуты блока",
 	GetUserError:                   "Не удалось найти пользователя по логину",
 	TypeAndValueNotCompatible:      "Type и Value не совместимы",
+	TaskLimitExceeded:              "Превышен лимит активных заявок",
 }
 
 /*

@@ -64,9 +64,7 @@ func (gb *ExecutableFunctionBlock) updateFunctionResult(ctx context.Context, log
 		return nil
 	}
 
-	err := gb.setStateByResponse(ctx, log, &updateData)
-
-	return err
+	return gb.setState(ctx, log, &updateData)
 }
 
 func (gb *ExecutableFunctionBlock) updateRetryTimeout() {

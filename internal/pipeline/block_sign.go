@@ -31,6 +31,7 @@ const (
 	keyOutputSignComment     = "comment"
 	keyOutputSignAttachments = "attachments"
 	keyOutputSignatures      = "signatures"
+	keyOutputReason          = "reason"
 
 	SignDecisionSigned              SignDecision = "signed"   // signed by signer
 	SignDecisionRejected            SignDecision = "rejected" // rejected by signer or by additional approver
@@ -52,6 +53,11 @@ const (
 	signatureFilesParamsKey = "files"
 
 	reentrySignComment = "Произошла ошибка подписания. Требуется повторное подписание"
+
+	reasonWrongElement   = "Ошибка в содержании документа (неправильная дата, сумма, должность и прочее, за исключением персональных данных)"
+	reasonCancelRequired = "Нужно отменить/аннулировать кадровое событие (я передумал)"
+	reasonSentByMistake  = "Документ отправлен мне по ошибке"
+	reasonDontAgree      = "Не согласен с документом"
 )
 
 type GoSignBlock struct {
@@ -179,6 +185,14 @@ func (gb *GoSignBlock) signActions(login string) []MemberAction {
 	rejectAction := MemberAction{
 		ID:   signActionReject,
 		Type: ActionTypeSecondary,
+		Params: map[string]interface{}{
+			"reason": []string{
+				reasonWrongElement,
+				reasonCancelRequired,
+				reasonSentByMistake,
+				reasonDontAgree,
+			},
+		},
 	}
 
 	addApproversAction := MemberAction{
@@ -557,10 +571,6 @@ func (gb *GoSignBlock) handleNotifications(ctx context.Context) error {
 			l.WithField("login", login).WithError(getUserEmailErr).Warning("couldn't get email")
 
 			continue
-		}
-
-		if len(notifDescription) > 0 {
-			notifDescription = notifDescription[1:]
 		}
 
 		emails[em] = mail.NewSignerNotificationTpl(

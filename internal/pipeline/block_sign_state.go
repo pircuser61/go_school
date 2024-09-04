@@ -46,6 +46,7 @@ type SignLogEntry struct {
 	Attachments    []entity.Attachment `json:"attachments,omitempty"`
 	AddedApprovers []string            `json:"added_approvers"`
 	LogType        SignerLogType       `json:"log_type"`
+	Reason         string              `json:"reason"`
 }
 
 type SigningParams struct {
@@ -89,7 +90,8 @@ type SignData struct {
 
 	AdditionalApprovers []AdditionalSignApprover `json:"additional_approvers,omitempty"`
 
-	Reentered bool `json:"reentered"`
+	Reentered bool    `json:"reentered"`
+	Reason    *string `json:"reason"`
 }
 
 func NewSignState() *SignData {
@@ -137,6 +139,7 @@ func (s *SignData) handleAnyOfDecision(login string, params *signSignatureParams
 	s.Decision = &params.Decision
 	s.Comment = &params.Comment
 	s.ActualSigner = &login
+	s.Reason = &params.Reason
 
 	signingLogEntry := SignLogEntry{
 		Login:       login,
@@ -145,6 +148,7 @@ func (s *SignData) handleAnyOfDecision(login string, params *signSignatureParams
 		CreatedAt:   time.Now(),
 		Attachments: params.Attachments,
 		LogType:     SignerLogDecision,
+		Reason:      params.Reason,
 	}
 
 	s.SignLog = append(s.SignLog, signingLogEntry)
@@ -169,6 +173,7 @@ func (s *SignData) handleAllOfDecision(login string, params *signSignatureParams
 		CreatedAt:   time.Now(),
 		Attachments: params.Attachments,
 		LogType:     SignerLogDecision,
+		Reason:      params.Reason,
 	}
 
 	s.SignLog = append(s.SignLog, signingLogEntry)
@@ -200,6 +205,7 @@ func (s *SignData) handleAllOfDecision(login string, params *signSignatureParams
 		s.Decision = &overallDecision
 		s.Comment = &params.Comment
 		s.ActualSigner = &login
+		s.Reason = &params.Reason
 	}
 
 	return nil

@@ -1123,6 +1123,9 @@ type ExecutionParams struct {
 	// Path to executors group id
 	ExecutorsGroupIdPath *string `json:"executors_group_id_path,omitempty"`
 
+	// Executors group limit in SD
+	ExecutorsGroupLimit *int `json:"executors_group_limit,omitempty"`
+
 	// Executors group name in SD
 	ExecutorsGroupName string `json:"executors_group_name"`
 
@@ -2107,6 +2110,9 @@ type SignUpdateParams struct {
 	//  * error - Произошла ошибка
 	Decision SignDecision `json:"decision"`
 
+	// Reason for rejection
+	Reason *string `json:"reason,omitempty"`
+
 	// files to sign
 	Signatures *[]struct {
 		// id file which was signed
@@ -2840,6 +2846,12 @@ type GetTasksParamsExecutorTypeAssigned string
 // GetTasksParamsSignatureCarrier defines parameters for GetTasks.
 type GetTasksParamsSignatureCarrier string
 
+// CheckLimitTasksJSONBody defines parameters for CheckLimitTasks.
+type CheckLimitTasksJSONBody struct {
+	// worknumber of task
+	WorkNumber string `json:"work_number"`
+}
+
 // GetTasksSchemasParams defines parameters for GetTasksSchemas.
 type GetTasksSchemasParams struct {
 	// Pipeline name
@@ -3034,6 +3046,9 @@ type RunNewVersionByPrevVersionJSONRequestBody RunNewVersionByPrevVersionJSONBod
 
 // RunVersionsByPipelineIdJSONRequestBody defines body for RunVersionsByPipelineId for application/json ContentType.
 type RunVersionsByPipelineIdJSONRequestBody RunVersionsByPipelineIdJSONBody
+
+// CheckLimitTasksJSONRequestBody defines body for CheckLimitTasks for application/json ContentType.
+type CheckLimitTasksJSONRequestBody CheckLimitTasksJSONBody
 
 // StopTasksJSONRequestBody defines body for StopTasks for application/json ContentType.
 type StopTasksJSONRequestBody StopTasksJSONBody
@@ -4491,6 +4506,9 @@ type ServerInterface interface {
 	// Update tasks by mails
 	// (GET /tasks/by-mails)
 	UpdateTasksByMails(w http.ResponseWriter, r *http.Request)
+	// check task limit by work number
+	// (POST /tasks/checkLimit)
+	CheckLimitTasks(w http.ResponseWriter, r *http.Request)
 	// Get amount of tasks
 	// (GET /tasks/count)
 	GetTasksCount(w http.ResponseWriter, r *http.Request)
@@ -6617,6 +6635,21 @@ func (siw *ServerInterfaceWrapper) UpdateTasksByMails(w http.ResponseWriter, r *
 	handler(w, r.WithContext(ctx))
 }
 
+// CheckLimitTasks operation middleware
+func (siw *ServerInterfaceWrapper) CheckLimitTasks(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CheckLimitTasks(w, r)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
 // GetTasksCount operation middleware
 func (siw *ServerInterfaceWrapper) GetTasksCount(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -7527,6 +7560,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/tasks/by-mails", wrapper.UpdateTasksByMails)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/tasks/checkLimit", wrapper.CheckLimitTasks)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/tasks/count", wrapper.GetTasksCount)

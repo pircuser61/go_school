@@ -671,7 +671,7 @@ func (cq *compileGetTaskQueryMaker) addIsExpiredFilter(isExpired *bool, selectAs
 }
 
 func (cq *compileGetTaskQueryMaker) addExecutorFilter() {
-	if cq.fl.ExecutorLogins != nil || cq.fl.ExecutorGroupIds != nil {
+	if cq.fl.ExecutorLogins != nil || cq.fl.ExecutorGroupIDs != nil {
 		cq.q = getExecutors(cq.q, cq.fl)
 	}
 }
@@ -879,7 +879,7 @@ func getExecutors(q string, fl *entity.TaskFilter) string {
 
 	varStorage = addAssignType(varStorage, fl.CurrentUser, fl.ExecutorTypeAssigned)
 	varStorage = addExecutorsLogins(varStorage, fl.SelectAs, fl.ExecutorLogins)
-	varStorage = addExecutorGroups(varStorage, fl.SelectAs, fl.ExecutorGroupIds)
+	varStorage = addExecutorGroups(varStorage, fl.SelectAs, fl.ExecutorGroupIDs)
 
 	varStorage += ")"
 
@@ -1988,6 +1988,7 @@ type executorData struct {
 	InitialPeople []string `json:"initial_people"`
 	GroupID       string   `json:"group_id"`
 	GroupName     string   `json:"group_name"`
+	GroupLimit    int      `json:"group_limit"`
 }
 
 //nolint:gocyclo,gocognit //its ok here
@@ -2115,6 +2116,7 @@ func (db *PGCon) getTasks(ctx c.Context, filters *entity.TaskFilter,
 		et.CurrentExecutor.InitialPeople = currExecutorData.InitialPeople
 		et.CurrentExecutor.ExecutionGroupID = currExecutorData.GroupID
 		et.CurrentExecutor.ExecutionGroupName = currExecutorData.GroupName
+		et.CurrentExecutor.ExecutionGroupLimit = currExecutorData.GroupLimit
 
 		var actions []TaskAction
 		if len(actionData) != 0 {
@@ -2372,7 +2374,8 @@ func (db *PGCon) GetTaskSteps(ctx c.Context, id uuid.UUID) (entity.TaskSteps, er
 			vs.has_error,
 			vs.status,
 			vs.updated_at,
-			vs.attachments
+			vs.attachments,
+			vs.current_executor
 		FROM variable_storage vs 
 			WHERE work_id = $1 AND NOT vs.status IN ('skipped', 'ready') AND
 			(SELECT max(time)
@@ -2392,7 +2395,7 @@ func (db *PGCon) GetTaskSteps(ctx c.Context, id uuid.UUID) (entity.TaskSteps, er
 	for rows.Next() {
 		s := entity.Step{}
 
-		var content string
+		var content, curExecutor string
 
 		err = rows.Scan(
 			&s.ID,
@@ -2405,6 +2408,7 @@ func (db *PGCon) GetTaskSteps(ctx c.Context, id uuid.UUID) (entity.TaskSteps, er
 			&s.Status,
 			&s.UpdatedAt,
 			&s.Attachments,
+			&curExecutor,
 		)
 		if err != nil {
 			return nil, err
@@ -2417,10 +2421,22 @@ func (db *PGCon) GetTaskSteps(ctx c.Context, id uuid.UUID) (entity.TaskSteps, er
 			return nil, err
 		}
 
+		executor := store.NewExecutor()
+
+		err = json.Unmarshal([]byte(curExecutor), executor)
+		if err != nil {
+			return nil, err
+		}
+
 		s.State = storage.State
 		s.Steps = storage.Steps
 		s.Errors = storage.Errors
 		s.Storage = storage.Values
+		s.InitialPeople = executor.InitialPeople
+		s.People = executor.People
+		s.GroupID = executor.GroupID
+		s.GroupName = executor.GroupName
+		s.GroupLimit = executor.GroupLimit
 		res = append(res, &s)
 	}
 
@@ -3029,6 +3045,31 @@ func (db *PGCon) GetExecutorsFromPrevWorkVersionExecutionBlockRun(ctx c.Context,
 	}
 
 	return executors, nil
+}
+
+func (db *PGCon) GetExecutorsNumbersOfCurrentTasks(ctx c.Context, name, groupID string) (
+	limit int, err error,
+) {
+	ctx, span := trace.StartSpan(ctx, "get_numbers_of_current_tasks")
+	defer span.End()
+
+	q := `SELECT COUNT(*)
+FROM variable_storage
+WHERE step_type = 'execution'
+AND status = 'running'
+AND current_executor->'people' ? $1
+AND current_executor->>'group_id' = $2
+AND jsonb_path_exists(content, '$.**.is_taken_in_work ? (@ == true)')`
+
+	if err = db.Connection.QueryRow(ctx, q, name, groupID).Scan(&limit); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return 0, nil
+		}
+
+		return 0, err
+	}
+
+	return limit, nil
 }
 
 func (db *PGCon) IsTaskPaused(ctx c.Context, workID uuid.UUID) (isPaused bool, err error) {

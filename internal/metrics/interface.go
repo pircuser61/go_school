@@ -10,7 +10,6 @@ type Metrics interface {
 	ServePrometheus() http.Handler
 	MustRegisterMetrics(registry *prometheus.Registry)
 
-	RequestsIncrease(label *RequestInfo)
 	KafkaAvailable()
 	KafkaUnavailable()
 
@@ -47,6 +46,8 @@ type Metrics interface {
 	SequenceAvailable()
 	SequenceUnavailable()
 
+	RequestsIncrease(label *RequestInfo)
 	Request2ExternalSystem(label *ExternalRequestInfo)
-	IncomingRequestMiddleware(next http.Handler) http.Handler
+
+	RequestMiddleware(next http.Handler) http.Handler
 }

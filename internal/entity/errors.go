@@ -9,4 +9,6 @@ var (
 	ErrMappingRequired = errors.New("required field in mapping is not filled")
 
 	ErrNoRecords = errors.New("got no records from database")
+
+	ErrLimitExceeded = errors.New("limit of active tasks exceeded")
 )

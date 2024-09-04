@@ -98,6 +98,7 @@ func (runCtx *BlockRunContext) handleInitiatorNotify(ctx c.Context, params handl
 
 	updateParams := struct {
 		Comment string `json:"comment"`
+		Reason  string `json:"reason"`
 	}{}
 
 	if runCtx.UpdateData != nil && runCtx.UpdateData.Parameters != nil {
@@ -119,6 +120,7 @@ func (runCtx *BlockRunContext) handleInitiatorNotify(ctx c.Context, params handl
 			Description: description,
 			Action:      params.action,
 			Comment:     updateParams.Comment,
+			Reason:      updateParams.Reason,
 		})
 
 	iconsName := []string{tmpl.Image}
@@ -223,7 +225,7 @@ func (runCtx *BlockRunContext) makeNotificationAttachment(ctx c.Context) ([]file
 					attachmentsList = append(attachmentsList, entity.Attachment{FileID: filesID.(string)})
 				}
 
-				if fileLink, isFileLink := fileMap.Get(fileLinkKey); isFileLink {
+				if fileLink, isFileLink := fileMap.Get(fileLinkKey); isFileLink && fileLink != "" {
 					attachmentsLinks = append(attachmentsLinks, fileregistry.AttachInfo{ExternalLink: fileLink.(string)})
 				}
 			}
@@ -232,7 +234,7 @@ func (runCtx *BlockRunContext) makeNotificationAttachment(ctx c.Context) ([]file
 				attachmentsList = append(attachmentsList, entity.Attachment{FileID: filesID.(string)})
 			}
 
-			if fileLink, isFileLink := item.Get(fileLinkKey); isFileLink {
+			if fileLink, isFileLink := item.Get(fileLinkKey); isFileLink && fileLink != "" {
 				attachmentsLinks = append(attachmentsLinks, fileregistry.AttachInfo{ExternalLink: fileLink.(string)})
 			}
 
@@ -247,7 +249,7 @@ func (runCtx *BlockRunContext) makeNotificationAttachment(ctx c.Context) ([]file
 						attachmentsList = append(attachmentsList, entity.Attachment{FileID: fieldsID.(string)})
 					}
 
-					if fileLink, isFileLink := field.Get(fileLinkKey); isFileLink {
+					if fileLink, isFileLink := field.Get(fileLinkKey); isFileLink && fileLink != "" {
 						attachmentsLinks = append(attachmentsLinks, fileregistry.AttachInfo{ExternalLink: fileLink.(string)})
 					}
 				case []interface{}:
@@ -261,7 +263,7 @@ func (runCtx *BlockRunContext) makeNotificationAttachment(ctx c.Context) ([]file
 							attachmentsList = append(attachmentsList, entity.Attachment{FileID: filesID.(string)})
 						}
 
-						if fileLink, isFileLink := fileMap.Get(fileLinkKey); isFileLink {
+						if fileLink, isFileLink := fileMap.Get(fileLinkKey); isFileLink && fileLink != "" {
 							attachmentsLinks = append(attachmentsLinks, fileregistry.AttachInfo{ExternalLink: fileLink.(string)})
 						}
 					}
@@ -272,7 +274,7 @@ func (runCtx *BlockRunContext) makeNotificationAttachment(ctx c.Context) ([]file
 				attachmentsList = append(attachmentsList, entity.Attachment{FileID: filesID.(string)})
 			}
 
-			if fileLink, isFileLink := task.InitialApplication.ApplicationBody.Get(fileLinkKey); isFileLink {
+			if fileLink, isFileLink := task.InitialApplication.ApplicationBody.Get(fileLinkKey); isFileLink && fileLink != "" {
 				attachmentsLinks = append(attachmentsLinks, fileregistry.AttachInfo{ExternalLink: fileLink.(string)})
 			}
 		}
