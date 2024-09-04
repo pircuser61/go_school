@@ -27,7 +27,6 @@ type FunctionDecision string
 
 const (
 	keyOutputFunctionDecision = "decision"
-	keyOutputFunctionError    = "std_error"
 
 	KeyDelimiter = "."
 
@@ -35,7 +34,6 @@ const (
 
 	TimeoutDecision            FunctionDecision = "timeout"
 	ExecutedDecision           FunctionDecision = "executed"
-	ErrorDecision              FunctionDecision = "error"
 	RetryCountExceededDecision FunctionDecision = "retry_count_exceeded"
 )
 
@@ -47,7 +45,6 @@ type ExecutableFunction struct {
 	Async          bool                        `json:"async"`
 	HasAck         bool                        `json:"has_ack"`
 	HasResponse    bool                        `json:"has_response"`
-	HasError       bool                        `json:"has_error"`
 	Contracts      string                      `json:"contracts"`
 	WaitCorrectRes int                         `json:"waitCorrectRes"`
 	Constants      map[string]interface{}      `json:"constants"`
@@ -80,7 +77,6 @@ func NewExecutableFunctionState() *ExecutableFunction {
 type FunctionUpdateParams struct {
 	Action        string                 `json:"action"`
 	Mapping       map[string]interface{} `json:"mapping"`
-	ErrMapping    map[string]interface{} `json:"error_mapping"`
 	Err           string                 `json:"err"`
 	DoRetry       bool                   `json:"do_retry"`
 	IsAsyncResult bool                   `json:"is_async_result"`
@@ -141,10 +137,6 @@ func (gb *ExecutableFunctionBlock) GetStatus() Status {
 		return StatusIdle
 	}
 
-	if gb.State.HasError {
-		return StatusError
-	}
-
 	if gb.State.HasResponse {
 		return StatusFinished
 	}
@@ -161,10 +153,6 @@ func (gb *ExecutableFunctionBlock) GetTaskHumanStatus() (status TaskHumanStatus,
 		return StatusWait, "", ""
 	}
 
-	if gb.State.HasError {
-		return StatusProcessingError, "", ""
-	}
-
 	if gb.State.HasResponse {
 		return StatusDone, "", ""
 	}
@@ -176,10 +164,6 @@ func (gb *ExecutableFunctionBlock) Next(_ *store.VariableStore) ([]string, bool)
 	key := DefaultSocketID
 	if gb.State.TimeExpired {
 		key = funcTimeExpired
-	}
-
-	if gb.State.HasError {
-		key = errorSocketID
 	}
 
 	if gb.State.RetryCountExceeded {
@@ -271,11 +255,6 @@ func (gb *ExecutableFunctionBlock) Model() script.FunctionModel {
 					Type:        "string",
 					Title:       "Решение",
 					Description: "function decision",
-				},
-				keyOutputFunctionError: {
-					Type:        "string",
-					Title:       "Ошибка",
-					Description: "function error",
 				},
 			},
 		},
@@ -452,33 +431,47 @@ func (gb *ExecutableFunctionBlock) createExpectedEvents(
 	return nil
 }
 
-var ErrUnexpectedErrMsgFromKafka = errors.New("unexpected error message from kafka")
+var ErrMessageFromKafkaHasError = errors.New("message from kafka has error")
 
 //nolint:gocognit,gocyclo //it's ok
-func (gb *ExecutableFunctionBlock) setState(ctx context.Context, log logger.Logger, updateData *FunctionUpdateParams) error {
+func (gb *ExecutableFunctionBlock) setStateByResponse(ctx context.Context, log logger.Logger, updateData *FunctionUpdateParams) error {
 	if gb.State.Async && gb.State.HasAck && !updateData.IsAsyncResult {
 		log.Warning("repeating ack message")
 
 		return nil
 	}
 
+	//nolint:nestif //it's ok
 	if updateData.DoRetry && gb.State.RetryCount > 0 {
-		return gb.setStateByRetry(ctx)
-	}
+		if gb.State.CurrRetryCount >= gb.State.RetryCount {
+			if valOutputFunctionDecision, ok := gb.Output[keyOutputFunctionDecision]; ok {
+				gb.RunContext.VarStore.SetValue(valOutputFunctionDecision, RetryCountExceededDecision)
+			}
 
-	var hasErrorSocket bool
+			gb.State.RetryCountExceeded = true
+		} else if !gb.RunContext.skipProduce { // for test
+			gb.State.Started = false
 
-	for _, soc := range gb.Sockets {
-		if soc.ID == script.FuncErrorSocket.ID {
-			hasErrorSocket = true
+			_, err := gb.RunContext.Services.Scheduler.CreateTask(ctx, &scheduler.CreateTask{
+				WorkNumber:  gb.RunContext.WorkNumber,
+				WorkID:      gb.RunContext.TaskID.String(),
+				ActionName:  string(entity.TaskUpdateActionRetry),
+				StepName:    gb.Name,
+				WaitSeconds: gb.State.CurrRetryTimeout,
+			})
+			if err != nil {
+				return err
+			}
 		}
+
+		return nil
 	}
 
-	if updateData.Err != "" && !hasErrorSocket {
+	if updateData.Err != "" {
 		log.WithField("message.Err", updateData.Err).
 			Error("message from kafka has error")
 
-		return ErrUnexpectedErrMsgFromKafka
+		return ErrMessageFromKafkaHasError
 	}
 
 	if gb.State.Async && !gb.State.HasAck && !updateData.IsAsyncResult {
@@ -488,120 +481,41 @@ func (gb *ExecutableFunctionBlock) setState(ctx context.Context, log logger.Logg
 		gb.State.HasResponse = true
 	}
 
-	if updateData.Err != "" {
-		return gb.setStateByErr(updateData)
-	}
-
+	//nolint:nestif //it's ok
 	if gb.State.HasResponse {
-		return gb.setStateByResponse(updateData)
-	}
+		var expectedOutput map[string]script.ParamMetadata
 
-	return nil
-}
+		outputUnmarshalErr := json.Unmarshal([]byte(gb.State.Function.Output), &expectedOutput)
+		if outputUnmarshalErr != nil {
+			return outputUnmarshalErr
+		}
 
-func (gb *ExecutableFunctionBlock) setStateByRetry(ctx context.Context) error {
-	if gb.State.CurrRetryCount >= gb.State.RetryCount {
+		resultOutput := make(map[string]interface{})
+
+		for k := range expectedOutput {
+			param, ok := updateData.Mapping[k]
+			if !ok {
+				continue
+			}
+			// We're using pointer because we sometimes need to change type inside interface
+			// from float to integer (func simpleTypeHandler)
+			if err := utils.CheckVariableType(&param, expectedOutput[k]); err != nil {
+				return err
+			}
+
+			resultOutput[k] = param
+		}
+
+		gb.RunContext.VarStore.ClearValues(gb.Name)
+
 		if valOutputFunctionDecision, ok := gb.Output[keyOutputFunctionDecision]; ok {
-			gb.RunContext.VarStore.SetValue(valOutputFunctionDecision, RetryCountExceededDecision)
+			gb.RunContext.VarStore.SetValue(valOutputFunctionDecision, ExecutedDecision)
 		}
 
-		gb.State.RetryCountExceeded = true
-	} else if !gb.RunContext.skipProduce { // for test
-		gb.State.Started = false
-
-		_, err := gb.RunContext.Services.Scheduler.CreateTask(ctx, &scheduler.CreateTask{
-			WorkNumber:  gb.RunContext.WorkNumber,
-			WorkID:      gb.RunContext.TaskID.String(),
-			ActionName:  string(entity.TaskUpdateActionRetry),
-			StepName:    gb.Name,
-			WaitSeconds: gb.State.CurrRetryTimeout,
-		})
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (gb *ExecutableFunctionBlock) setStateByErr(updateData *FunctionUpdateParams) error {
-	var expectedOutput map[string]script.ParamMetadata
-
-	outputUnmarshalErr := json.Unmarshal([]byte(gb.State.Function.ErrorOutput), &expectedOutput)
-	if outputUnmarshalErr != nil {
-		return outputUnmarshalErr
-	}
-
-	resultOutput := make(map[string]interface{})
-
-	for k := range expectedOutput {
-		param, ok := updateData.ErrMapping[k]
-		if !ok {
-			continue
-		}
-		// We're using pointer because we sometimes need to change type inside interface
-		// from float to integer (func simpleTypeHandler)
-		if err := utils.CheckVariableType(&param, expectedOutput[k]); err != nil {
-			return err
-		}
-
-		resultOutput[k] = param
-	}
-
-	gb.RunContext.VarStore.ClearValues(gb.Name)
-
-	if valOutputFunctionDecision, ok := gb.Output[keyOutputFunctionError]; ok {
-		gb.RunContext.VarStore.SetValue(valOutputFunctionDecision, updateData.Err)
-	}
-
-	if valOutputFunctionDecision, ok := gb.Output[keyOutputFunctionDecision]; ok {
-		gb.RunContext.VarStore.SetValue(valOutputFunctionDecision, ErrorDecision)
-	}
-
-	for k, v := range resultOutput {
-		if valFromOutput, ok := gb.Output[k]; ok {
-			gb.RunContext.VarStore.SetValue(valFromOutput, v)
-		}
-	}
-
-	gb.State.HasError = true
-
-	return nil
-}
-
-func (gb *ExecutableFunctionBlock) setStateByResponse(updateData *FunctionUpdateParams) error {
-	var expectedOutput map[string]script.ParamMetadata
-
-	outputUnmarshalErr := json.Unmarshal([]byte(gb.State.Function.Output), &expectedOutput)
-	if outputUnmarshalErr != nil {
-		return outputUnmarshalErr
-	}
-
-	resultOutput := make(map[string]interface{})
-
-	for k := range expectedOutput {
-		param, ok := updateData.Mapping[k]
-		if !ok {
-			continue
-		}
-		// We're using pointer because we sometimes need to change type inside interface
-		// from float to integer (func simpleTypeHandler)
-		if err := utils.CheckVariableType(&param, expectedOutput[k]); err != nil {
-			return err
-		}
-
-		resultOutput[k] = param
-	}
-
-	gb.RunContext.VarStore.ClearValues(gb.Name)
-
-	if valOutputFunctionDecision, ok := gb.Output[keyOutputFunctionDecision]; ok {
-		gb.RunContext.VarStore.SetValue(valOutputFunctionDecision, ExecutedDecision)
-	}
-
-	for k, v := range resultOutput {
-		if valFromOutput, ok := gb.Output[k]; ok {
-			gb.RunContext.VarStore.SetValue(valFromOutput, v)
+		for k, v := range resultOutput {
+			if valFromOutput, ok := gb.Output[k]; ok {
+				gb.RunContext.VarStore.SetValue(valFromOutput, v)
+			}
 		}
 	}
 
