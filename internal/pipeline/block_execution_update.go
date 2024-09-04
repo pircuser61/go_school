@@ -4,6 +4,7 @@ import (
 	c "context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/iancoleman/orderedmap"
@@ -967,6 +968,11 @@ func (gb *GoExecutionBlock) executorBackToGroup() (err error) {
 	gb.State.Executors = gb.State.InitialExecutors
 	gb.State.IsTakenInWork = false
 
+	newLogin := []string{}
+	for login := range gb.State.InitialExecutors {
+		newLogin = append(newLogin, login)
+	}
+
 	var updateParams ExecutorChangeParams
 	if err = json.Unmarshal(gb.RunContext.UpdateData.Parameters, &updateParams); err != nil {
 		return errors.New("can't assert provided update data")
@@ -978,6 +984,8 @@ func (gb *GoExecutionBlock) executorBackToGroup() (err error) {
 		Attachments: updateParams.Attachments,
 		CreatedAt:   time.Now(),
 		ByLogin:     currentLogin,
+		NewLogin:    strings.Join(newLogin, ","),
+		NewGroup:    gb.State.ExecutorsGroupName,
 	})
 
 	gb.State.TakenInWorkLog = append(gb.State.TakenInWorkLog, StartWorkLog{
