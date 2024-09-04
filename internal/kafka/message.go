@@ -28,12 +28,11 @@ type TimedRunnerInMessage struct {
 }
 
 type RunnerInMessage struct {
-	TaskID             uuid.UUID              `json:"task_id"`
-	IsAsyncResult      bool                   `json:"is_async_result"`
-	FunctionMapping    map[string]interface{} `json:"function_mapping"`
-	FunctionErrMapping map[string]interface{} `json:"function_err_mapping"`
-	Err                string                 `json:"err"`
-	DoRetry            bool                   `json:"do_retry"`
+	TaskID          uuid.UUID              `json:"task_id"`
+	IsAsyncResult   bool                   `json:"is_async_result"`
+	FunctionMapping map[string]interface{} `json:"function_mapping"`
+	Err             string                 `json:"err"`
+	DoRetry         bool                   `json:"do_retry"`
 }
 
 type TimedRunTaskMessage struct {

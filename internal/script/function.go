@@ -119,7 +119,6 @@ type FunctionParam struct {
 	Input         string       `json:"input"`
 	RequiredInput []string     `json:"requiredInput"`
 	Output        string       `json:"output"`
-	ErrorOutput   string       `json:"error_output"`
 	Options       string       `json:"options"`
 }
 

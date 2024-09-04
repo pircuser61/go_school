@@ -136,7 +136,6 @@ var (
 	ErrorSocket = Socket{ID: errorSocketID, Title: errorSocketTitle}
 
 	FuncExecutedSocket    = Socket{ID: DefaultSocketID, Title: funcExecutedSocketTitle}
-	FuncErrorSocket       = Socket{ID: errorSocketID, Title: errorSocketTitle}
 	FuncTimeExpiredSocket = Socket{ID: funcSLAExpiredSocketID, Title: funcSLAExpiredSocketTitle}
 
 	DelegationsCollection = "delegations_collection"
