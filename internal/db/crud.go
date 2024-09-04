@@ -3392,6 +3392,50 @@ func (db *PGCon) GetBlocksBreachedSLA(ctx context.Context) ([]StepBreachedSLA, e
 	return res, nil
 }
 
+func (db *PGCon) GetRunningExecutionBlocks(ctx context.Context) ([]entity.Step, error) {
+	c, span := trace.StartSpan(ctx, "get_running_execution_block")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	q := `SELECT 
+    vs.id,
+    vs.work_id,
+    vs.step_name,
+    vs.content,
+    vs.current_executor
+    
+			FROM variable_storage vs
+			WHERE 
+			    status IN ('running') 
+				AND step_type IN ('execution')`
+
+	steps := []entity.Step{}
+
+	rows, err := db.Connection.Query(c, q)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var step entity.Step
+
+		if scanErr := rows.Scan(&step.ID, &step.WorkID, &step.Name, &step.Content, &step.CurrentExecutorData); scanErr != nil {
+			return steps, scanErr
+		}
+
+		steps = append(steps, step)
+	}
+
+	if rowsErr := rows.Err(); rowsErr != nil {
+		return nil, rowsErr
+	}
+
+	return steps, nil
+}
+
 func (db *PGCon) GetTaskActiveBlock(c context.Context, taskID, stepName string) ([]string, error) {
 	c, span := trace.StartSpan(c, "pg_get_task_active_block")
 	defer span.End()
@@ -3993,6 +4037,23 @@ func (db *PGCon) UpdateStepContent(ctx context.Context, stepID, workID,
 	}
 
 	return nil
+}
+
+func (db *PGCon) SetStartMembers(ctx context.Context, stepID string) error {
+	ctx, span := trace.StartSpan(ctx, "pg_update_set_start_members")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	query := `
+		UPDATE members
+		SET is_acted = false,
+		    actions = '{executor_start_work:primary}'
+		WHERE block_id = $1
+    `
+	_, err := db.Connection.Exec(ctx, query, stepID)
+
+	return err
 }
 
 func wrapVal(data interface{}) interface{} {

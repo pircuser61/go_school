@@ -4139,6 +4139,64 @@ func (_c *MockedDatabase_GetRejectedVersions_Call) RunAndReturn(run func(context
 	return _c
 }
 
+// GetRunningExecutionBlocks provides a mock function with given fields: ctx
+func (_m *MockedDatabase) GetRunningExecutionBlocks(ctx context.Context) ([]entity.Step, error) {
+	ret := _m.Called(ctx)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetRunningExecutionBlocks")
+	}
+
+	var r0 []entity.Step
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context) ([]entity.Step, error)); ok {
+		return rf(ctx)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context) []entity.Step); ok {
+		r0 = rf(ctx)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]entity.Step)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
+		r1 = rf(ctx)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockedDatabase_GetRunningExecutionBlocks_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetRunningExecutionBlocks'
+type MockedDatabase_GetRunningExecutionBlocks_Call struct {
+	*mock.Call
+}
+
+// GetRunningExecutionBlocks is a helper method to define mock.On call
+//   - ctx context.Context
+func (_e *MockedDatabase_Expecter) GetRunningExecutionBlocks(ctx interface{}) *MockedDatabase_GetRunningExecutionBlocks_Call {
+	return &MockedDatabase_GetRunningExecutionBlocks_Call{Call: _e.mock.On("GetRunningExecutionBlocks", ctx)}
+}
+
+func (_c *MockedDatabase_GetRunningExecutionBlocks_Call) Run(run func(ctx context.Context)) *MockedDatabase_GetRunningExecutionBlocks_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context))
+	})
+	return _c
+}
+
+func (_c *MockedDatabase_GetRunningExecutionBlocks_Call) Return(_a0 []entity.Step, _a1 error) *MockedDatabase_GetRunningExecutionBlocks_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockedDatabase_GetRunningExecutionBlocks_Call) RunAndReturn(run func(context.Context) ([]entity.Step, error)) *MockedDatabase_GetRunningExecutionBlocks_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetSLAVersionSettings provides a mock function with given fields: ctx, versionID
 func (_m *MockedDatabase) GetSLAVersionSettings(ctx context.Context, versionID string) (entity.SLAVersionSettings, error) {
 	ret := _m.Called(ctx, versionID)
@@ -7992,6 +8050,53 @@ func (_c *MockedDatabase_SetLastRunID_Call) Return(_a0 error) *MockedDatabase_Se
 }
 
 func (_c *MockedDatabase_SetLastRunID_Call) RunAndReturn(run func(context.Context, uuid.UUID, uuid.UUID) error) *MockedDatabase_SetLastRunID_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// SetStartMembers provides a mock function with given fields: ctx, stepID
+func (_m *MockedDatabase) SetStartMembers(ctx context.Context, stepID string) error {
+	ret := _m.Called(ctx, stepID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for SetStartMembers")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) error); ok {
+		r0 = rf(ctx, stepID)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// MockedDatabase_SetStartMembers_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SetStartMembers'
+type MockedDatabase_SetStartMembers_Call struct {
+	*mock.Call
+}
+
+// SetStartMembers is a helper method to define mock.On call
+//   - ctx context.Context
+//   - stepID string
+func (_e *MockedDatabase_Expecter) SetStartMembers(ctx interface{}, stepID interface{}) *MockedDatabase_SetStartMembers_Call {
+	return &MockedDatabase_SetStartMembers_Call{Call: _e.mock.On("SetStartMembers", ctx, stepID)}
+}
+
+func (_c *MockedDatabase_SetStartMembers_Call) Run(run func(ctx context.Context, stepID string)) *MockedDatabase_SetStartMembers_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string))
+	})
+	return _c
+}
+
+func (_c *MockedDatabase_SetStartMembers_Call) Return(_a0 error) *MockedDatabase_SetStartMembers_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *MockedDatabase_SetStartMembers_Call) RunAndReturn(run func(context.Context, string) error) *MockedDatabase_SetStartMembers_Call {
 	_c.Call.Return(run)
 	return _c
 }

@@ -56,6 +56,7 @@ type TaskStorager interface {
 	GetVariableStorageForStepByID(ctx c.Context, stepID uuid.UUID) (*store.VariableStore, error)
 	GetVariableStorage(ctx c.Context, workNumber string) (*store.VariableStore, error)
 	GetBlocksBreachedSLA(ctx c.Context) ([]StepBreachedSLA, error)
+	GetRunningExecutionBlocks(ctx c.Context) ([]e.Step, error)
 	GetMeanTaskSolveTime(ctx c.Context, pipelineID string) ([]e.TaskCompletionInterval, error)
 	GetTaskInWorkTime(ctx c.Context, workNumber string) (*e.TaskCompletionInterval, error)
 	GetExecutorsFromPrevExecutionBlockRun(ctx c.Context, taskID uuid.UUID, name string) (exec map[string]struct{}, err error)
@@ -91,6 +92,7 @@ type TaskStorager interface {
 	CreateStepPreviousContent(ctx c.Context, stepID, eventID string) error
 	GetStepPreviousContent(ctx c.Context, stepID string, stepCreatedAt time.Time) (map[string]interface{}, error)
 	UpdateStepContent(ctx c.Context, stepID, workID, stepName string, state, output map[string]interface{}) error
+	SetStartMembers(ctx c.Context, stepID string) error
 
 	CheckIsOnEditing(ctx c.Context, workID string) (bool, error)
 	ClearTaskMembersActions(ctx c.Context, workID uuid.UUID) error

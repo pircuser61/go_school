@@ -10,30 +10,77 @@ import (
 )
 
 type Step struct {
-	ID            uuid.UUID                  `json:"-"`
-	WorkID        uuid.UUID                  `json:"work_id"`
-	WorkNumber    string                     `json:"work_number"`
-	Time          time.Time                  `json:"time"`
-	Type          string                     `json:"type"`
-	Name          string                     `json:"name"`
-	State         map[string]json.RawMessage `json:"state" swaggertype:"object"`
-	Storage       map[string]interface{}     `json:"storage"`
-	Errors        []string                   `json:"errors"`
-	Steps         []string                   `json:"steps"`
-	BreakPoints   []string                   `json:"-"`
-	HasError      bool                       `json:"has_error"`
-	Status        string                     `json:"status"`
-	Initiator     string                     `json:"initiator"`
-	UpdatedAt     *time.Time                 `json:"updated_at"`
-	IsTest        bool                       `json:"-"`
-	ShortTitle    *string                    `json:"short_title,omitempty"`
-	Attachments   int                        `json:"attachments"`
-	IsPaused      bool                       `json:"is_paused"`
-	People        []string                   `json:"people"`
-	GroupID       string                     `json:"group_id"`
-	GroupName     string                     `json:"group_name"`
-	GroupLimit    int                        `json:"group_limit"`
-	InitialPeople []string                   `json:"initial_people"`
+	ID                  uuid.UUID                  `json:"-"`
+	WorkID              uuid.UUID                  `json:"work_id"`
+	WorkNumber          string                     `json:"work_number"`
+	Time                time.Time                  `json:"time"`
+	Type                string                     `json:"type"`
+	Name                string                     `json:"name"`
+	State               map[string]json.RawMessage `json:"state" swaggertype:"object"`
+	Storage             map[string]interface{}     `json:"storage"`
+	Errors              []string                   `json:"errors"`
+	Steps               []string                   `json:"steps"`
+	BreakPoints         []string                   `json:"-"`
+	HasError            bool                       `json:"has_error"`
+	Status              string                     `json:"status"`
+	Initiator           string                     `json:"initiator"`
+	UpdatedAt           *time.Time                 `json:"updated_at"`
+	IsTest              bool                       `json:"-"`
+	ShortTitle          *string                    `json:"short_title,omitempty"`
+	Attachments         int                        `json:"attachments"`
+	IsPaused            bool                       `json:"is_paused"`
+	People              []string                   `json:"people"`
+	GroupID             string                     `json:"group_id"`
+	GroupName           string                     `json:"group_name"`
+	GroupLimit          int                        `json:"group_limit"`
+	InitialPeople       []string                   `json:"initial_people"`
+	Content             map[string]json.RawMessage `json:"content" swaggertype:"object"`
+	CurrentExecutorData map[string]json.RawMessage `json:"current_executor_data" swaggertype:"object"`
+}
+
+type AssignmentsV2 struct {
+	CreatedAt time.Time `json:"createdAt"`
+	ID        string    `json:"id"`
+	UpdatedAt time.Time `json:"updatedAt"`
+	Activity  struct {
+		From string `json:"from"`
+		To   string `json:"to"`
+	} `json:"activity"`
+	ActualTerminationDate    string `json:"actualTerminationDate"`
+	AssignmentObjectVersion  string `json:"assignmentObjectVersion"`
+	BudjetObjectVersion      string `json:"budjetObjectVersion"`
+	CombinationStatus        string `json:"combinationStatus"`
+	ESignAllowed             bool   `json:"eSignAllowed"`
+	EmployeeID               string `json:"employeeId"`
+	HireDate                 string `json:"hireDate"`
+	IsTemporary              bool   `json:"isTemporary"`
+	ManagerID                string `json:"managerId"`
+	Primary                  bool   `json:"primary"`
+	ProjectedTerminationDate string `json:"projectedTerminationDate"`
+	StatusID                 string `json:"statusId"`
+	TabNum                   string `json:"tabNum"`
+	TypeID                   string `json:"typeId"`
+	UnitID                   string `json:"unitID"`
+	Employee                 struct {
+		CreatedAt time.Time `json:"createdAt"`
+		ID        string    `json:"id"`
+		UpdatedAt time.Time `json:"updatedAt"`
+		Activity  struct {
+			From string `json:"from"`
+			To   string `json:"to"`
+		} `json:"activity"`
+		CorpTaxiAgreement   bool          `json:"corpTaxiAgreement"`
+		Email               string        `json:"email"`
+		EmailAlias          []interface{} `json:"emailAlias"`
+		Login               string        `json:"login"`
+		OrganizationID      string        `json:"organizationId"`
+		PdProcessingAllowed bool          `json:"pdProcessingAllowed"`
+		PersonID            string        `json:"personId"`
+		Phone               string        `json:"phone"`
+		TabNum              string        `json:"tabNum"`
+		TypeID              string        `json:"typeID"`
+		Primary             bool          `json:"primary"`
+	} `json:"employee"`
 }
 
 type TaskSteps []*Step

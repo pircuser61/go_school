@@ -12,6 +12,7 @@ type Service interface {
 	GetCalendarDays(ctx c.Context, params *GetCalendarDaysParams) (*CalendarDays, error)
 	FillDefaultUnitID(ctx c.Context) error
 	GetDefaultUnitID() string
+	GetComplexAssignmentsV2(ctx c.Context, logins []string) ([]entity.AssignmentsV2, error)
 	GetDefaultCalendarDaysForGivenTimeIntervals(ctx c.Context, intervals []entity.TaskCompletionInterval) (*CalendarDays, error)
 	Ping(ctx c.Context) error
 }
