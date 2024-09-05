@@ -106,7 +106,6 @@ func (runCtx *BlockRunContext) Copy() *BlockRunContext {
 	runCtxCopy := *runCtx
 	//nolint:govet // declare new mutex on next line
 	runCtxCopy.VarStore = runCtx.VarStore.Copy()
-	runCtxCopy.UpdateData = nil
 	runCtxCopy.BlockRunResults = &BlockRunResults{
 		NodeEvents:      make([]entity.NodeEvent, 0),
 		NodeKafkaEvents: make([]entity.NodeKafkaEvent, 0),
