@@ -623,7 +623,7 @@ func NewAppInitiatorStatusNotificationTpl(dto *SignerNotifTemplate) Template {
 			font-size: 17px;
 			line-height: 24px;
 			font-weight: 500;"
-			><strong>заявка № %s %s <b>%s</b></strong> по причине: %s , с комментарием: %q.</span>`,
+			><strong>заявка № %s %s <b>%s</b></strong> по причине: %s, с комментарием: %q.</span>`,
 			dto.WorkNumber, dto.Name, dto.Action, dto.Reason, comment)
 	case "ознакомлено":
 		subject = fmt.Sprintf("Ознакомление по заявке № %s %s", dto.WorkNumber, dto.Name)
