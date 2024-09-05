@@ -8,9 +8,8 @@ import (
 
 	"go.opencensus.io/trace"
 
-	"gitlab.services.mts.ru/abp/myosotis/logger"
-
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
@@ -18,7 +17,12 @@ func (ae *Env) MonitoringGetBlockContext(w http.ResponseWriter, r *http.Request,
 	ctx, span := trace.StartSpan(r.Context(), "monitoring_get_block_context")
 	defer span.End()
 
-	log := logger.GetLogger(ctx)
+	log := script.SetMainFuncLog(ctx,
+		"MonitoringGetBlockContext",
+		script.MethodGet,
+		script.HTTP,
+		span.SpanContext().TraceID.String(),
+		"v1")
 	errorHandler := newHTTPErrorHandler(log, w)
 
 	id, err := uuid.Parse(blockID)

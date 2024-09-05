@@ -4,14 +4,12 @@ import (
 	"net/http"
 	"strings"
 
+	"go.opencensus.io/trace"
+
 	"github.com/google/uuid"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
-
-	"go.opencensus.io/trace"
-
-	"gitlab.services.mts.ru/abp/myosotis/logger"
-
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
@@ -19,7 +17,13 @@ func (ae *Env) MonitoringGetBlockState(w http.ResponseWriter, r *http.Request, b
 	ctx, span := trace.StartSpan(r.Context(), "monitoring_get_block_state")
 	defer span.End()
 
-	log := logger.GetLogger(ctx)
+	log := script.SetMainFuncLog(ctx,
+		"MonitoringGetBlockState",
+		script.MethodGet,
+		script.HTTP,
+		span.SpanContext().TraceID.String(),
+		"v1").
+		WithField(script.StepID, blockID)
 	errorHandler := newHTTPErrorHandler(log, w)
 
 	id, err := uuid.Parse(blockID)

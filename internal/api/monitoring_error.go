@@ -4,18 +4,24 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/google/uuid"
 	"go.opencensus.io/trace"
 
-	"gitlab.services.mts.ru/abp/myosotis/logger"
+	"github.com/google/uuid"
+
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
 
 func (ae *Env) MonitoringGetBlockError(w http.ResponseWriter, r *http.Request, blockID string) {
 	ctx, span := trace.StartSpan(r.Context(), "monitoring_get_block_error")
 	defer span.End()
 
-	log := logger.GetLogger(ctx).
-		WithField("stepID", blockID)
+	log := script.SetMainFuncLog(ctx,
+		"MonitoringGetBlockError",
+		script.MethodGet,
+		script.HTTP,
+		span.SpanContext().TraceID.String(),
+		"v1").
+		WithField(script.StepID, blockID)
 	errorHandler := newHTTPErrorHandler(log, w)
 
 	blockIsHidden, err := ae.DB.CheckBlockForHiddenFlag(ctx, blockID)

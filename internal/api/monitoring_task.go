@@ -5,20 +5,24 @@ import (
 	"net/http"
 	"regexp"
 
+	"go.opencensus.io/trace"
+
 	"github.com/pkg/errors"
 
-	"gitlab.services.mts.ru/abp/myosotis/logger"
-
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
-
-	"go.opencensus.io/trace"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
 
 func (ae *Env) MonitoringGetTasks(w http.ResponseWriter, r *http.Request, params MonitoringGetTasksParams) {
 	ctx, span := trace.StartSpan(r.Context(), "monitoring_get_tasks")
 	defer span.End()
 
-	log := logger.GetLogger(ctx)
+	log := script.SetMainFuncLog(ctx,
+		"MonitoringGetTasks",
+		script.MethodGet,
+		script.HTTP,
+		span.SpanContext().TraceID.String(),
+		"v1")
 	errorHandler := newHTTPErrorHandler(log, w)
 
 	statusFilter := make([]string, 0)
@@ -108,7 +112,12 @@ func (ae *Env) MonitoringGetTask(w http.ResponseWriter, req *http.Request, workN
 	ctx, s := trace.StartSpan(req.Context(), "monitoring_get_task")
 	defer s.End()
 
-	log := logger.GetLogger(ctx)
+	log := script.SetMainFuncLog(ctx,
+		"MonitoringGetTask",
+		script.MethodGet,
+		script.HTTP,
+		s.SpanContext().TraceID.String(),
+		"v1")
 	errorHandler := newHTTPErrorHandler(log, w)
 
 	if workNumber == "" {
@@ -117,6 +126,8 @@ func (ae *Env) MonitoringGetTask(w http.ResponseWriter, req *http.Request, workN
 
 		return
 	}
+
+	errorHandler.log = log.WithField(script.WorkNumber, workNumber)
 
 	taskIsHidden, err := ae.DB.CheckTaskForHiddenFlag(ctx, workNumber)
 	if err != nil {

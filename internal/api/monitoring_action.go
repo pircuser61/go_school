@@ -56,9 +56,12 @@ func (ae *Env) MonitoringTaskAction(w http.ResponseWriter, r *http.Request, work
 	ctx, span := trace.StartSpan(r.Context(), "monitoring_task_action")
 	defer span.End()
 
-	log := logger.GetLogger(ctx).
-		WithField("funcName", "MonitoringTaskAction").
-		WithField("workNumber", workNumber)
+	log := script.SetMainFuncLog(ctx,
+		"MonitoringTaskAction",
+		script.MethodPut,
+		script.HTTP,
+		span.SpanContext().TraceID.String(),
+		"v1")
 	errorHandler := newHTTPErrorHandler(log, w)
 
 	if workNumber == "" {
@@ -68,9 +71,13 @@ func (ae *Env) MonitoringTaskAction(w http.ResponseWriter, r *http.Request, work
 		return
 	}
 
+	log = log.WithField(script.WorkNumber, workNumber)
+
 	b, err := io.ReadAll(r.Body)
 
 	defer r.Body.Close()
+
+	log = log.WithField(script.Body, string(b))
 
 	if err != nil {
 		errorHandler.handleError(RequestReadError, err)
@@ -567,7 +574,12 @@ func (ae *Env) GetMonitoringTaskEvents(w http.ResponseWriter, req *http.Request,
 	ctx, s := trace.StartSpan(req.Context(), "get_monitoring_task_events")
 	defer s.End()
 
-	log := logger.GetLogger(ctx)
+	log := script.SetMainFuncLog(ctx,
+		"GetMonitoringTaskEvents",
+		script.MethodGet,
+		script.HTTP,
+		s.SpanContext().TraceID.String(),
+		"v1")
 	errorHandler := newHTTPErrorHandler(log, w)
 
 	if workNumber == "" {
@@ -576,6 +588,8 @@ func (ae *Env) GetMonitoringTaskEvents(w http.ResponseWriter, req *http.Request,
 
 		return
 	}
+
+	errorHandler.log = log.WithField(script.WorkNumber, workNumber)
 
 	workID, err := ae.DB.GetWorkIDByWorkNumber(ctx, workNumber)
 	if err != nil {

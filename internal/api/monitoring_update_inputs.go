@@ -27,13 +27,19 @@ func (ae *Env) MonitoringUpdateBlockInputs(w http.ResponseWriter, r *http.Reques
 	ctx, span := trace.StartSpan(r.Context(), "monitoring_update_block_inputs")
 	defer span.End()
 
-	log := logger.GetLogger(ctx).
-		WithField("funcName", "MonitoringUpdateBlockInputs")
+	log := script.SetMainFuncLog(ctx,
+		"MonitoringUpdateTaskBlockData",
+		script.MethodPut,
+		script.HTTP,
+		span.SpanContext().TraceID.String(),
+		"v1")
 	errorHandler := newHTTPErrorHandler(log, w)
 
 	b, err := io.ReadAll(r.Body)
 
 	defer r.Body.Close()
+
+	log = log.WithField(script.Body, string(b))
 
 	if err != nil {
 		errorHandler.handleError(RequestReadError, err)
