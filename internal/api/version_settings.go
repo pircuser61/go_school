@@ -13,8 +13,6 @@ import (
 
 	"go.opencensus.io/trace"
 
-	"gitlab.services.mts.ru/abp/myosotis/logger"
-
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	e "gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	pip "gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
@@ -837,7 +835,12 @@ func (ae *Env) RemoveApprovalListSettings(w http.ResponseWriter, r *http.Request
 	ctx, s := trace.StartSpan(r.Context(), "remove_approval_list_settings")
 	defer s.End()
 
-	log := logger.GetLogger(ctx)
+	log := script.SetMainFuncLog(ctx,
+		"RemoveApprovalListSettings",
+		script.MethodDelete,
+		script.HTTP,
+		s.SpanContext().TraceID.String(),
+		"v1")
 	errorHandler := newHTTPErrorHandler(log, w)
 
 	if err := ae.DB.RemoveApprovalListSettings(ctx, listID); err != nil {
@@ -851,7 +854,12 @@ func (ae *Env) UpdateApprovalListSettings(w http.ResponseWriter, r *http.Request
 	ctx, s := trace.StartSpan(r.Context(), "update_approval_list_settings")
 	defer s.End()
 
-	log := logger.GetLogger(ctx)
+	log := script.SetMainFuncLog(ctx,
+		"UpdateApprovalListSettings",
+		script.MethodPut,
+		script.HTTP,
+		s.SpanContext().TraceID.String(),
+		"v1")
 	errorHandler := newHTTPErrorHandler(log, w)
 
 	b, err := io.ReadAll(r.Body)
@@ -862,6 +870,8 @@ func (ae *Env) UpdateApprovalListSettings(w http.ResponseWriter, r *http.Request
 	}
 
 	defer r.Body.Close()
+
+	errorHandler.log = log.WithField(script.Body, string(b))
 
 	var req e.UpdateApprovalListSettings
 	if err = json.Unmarshal(b, &req); err != nil {
@@ -889,7 +899,13 @@ func (ae *Env) SaveApprovalListSettings(w http.ResponseWriter, r *http.Request, 
 	ctx, s := trace.StartSpan(r.Context(), "save_approval_list_settings")
 	defer s.End()
 
-	log := logger.GetLogger(ctx)
+	log := script.SetMainFuncLog(ctx,
+		"SaveApprovalListSettings",
+		script.MethodPost,
+		script.HTTP,
+		s.SpanContext().TraceID.String(),
+		"v1").
+		WithField(script.VersionID, versionID)
 	errorHandler := newHTTPErrorHandler(log, w)
 
 	b, err := io.ReadAll(r.Body)
@@ -900,6 +916,8 @@ func (ae *Env) SaveApprovalListSettings(w http.ResponseWriter, r *http.Request, 
 	}
 
 	defer r.Body.Close()
+
+	errorHandler.log = log.WithField(script.Body, string(b))
 
 	var req e.SaveApprovalListSettings
 	if err = json.Unmarshal(b, &req); err != nil {
@@ -932,7 +950,13 @@ func (ae *Env) GetApprovalListSetting(w http.ResponseWriter, r *http.Request, wo
 	ctx, s := trace.StartSpan(r.Context(), "get_approval_list_settings")
 	defer s.End()
 
-	log := logger.GetLogger(ctx)
+	log := script.SetMainFuncLog(ctx,
+		"GetApprovalListSetting",
+		script.MethodGet,
+		script.HTTP,
+		s.SpanContext().TraceID.String(),
+		"v1").
+		WithField(script.WorkNumber, workNumber)
 	errorHandler := newHTTPErrorHandler(log, w)
 
 	approvalList, err := ae.DB.GetApprovalListSettings(ctx, listID)
@@ -1087,7 +1111,13 @@ func (ae *Env) GetApprovalListsSettings(w http.ResponseWriter, r *http.Request, 
 	ctx, s := trace.StartSpan(r.Context(), "get_approval_lists_settings")
 	defer s.End()
 
-	log := logger.GetLogger(ctx)
+	log := script.SetMainFuncLog(ctx,
+		"GetApprovalListsSettings",
+		script.MethodGet,
+		script.HTTP,
+		s.SpanContext().TraceID.String(),
+		"v1").
+		WithField(script.VersionID, versionID)
 	errorHandler := newHTTPErrorHandler(log, w)
 
 	approvalLists, err := ae.DB.GetApprovalListsSettings(ctx, versionID)
@@ -1109,7 +1139,12 @@ func (ae *Env) GetApprovalListSettingById(w http.ResponseWriter, r *http.Request
 	ctx, s := trace.StartSpan(r.Context(), "get_approval_list_setting_by_id")
 	defer s.End()
 
-	log := logger.GetLogger(ctx)
+	log := script.SetMainFuncLog(ctx,
+		"GetApprovalListSettingById",
+		script.MethodGet,
+		script.HTTP,
+		s.SpanContext().TraceID.String(),
+		"v1").WithField(script.VersionID, versionID)
 	errorHandler := newHTTPErrorHandler(log, w)
 
 	approvalList, err := ae.DB.GetApprovalListSettings(ctx, listID)
