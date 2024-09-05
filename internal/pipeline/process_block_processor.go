@@ -207,14 +207,14 @@ func (p *blockProcessor) ProcessBlock(ctx context.Context, its int) (string, err
 		return failedBlock, p.handleErrorWithRollback(ctx, log, err)
 	}
 
+	newRunCtx, newCtx, err := newRunContextWithoutDeadline(p.runCtx, ctx)
+	if err != nil {
+		log.WithError(err).Error("couldn't acquire new connection")
+
+		return "", nil
+	}
+
 	go func() {
-		newRunCtx, newCtx, err := newRunContextWithoutDeadline(p.runCtx, ctx)
-		if err != nil {
-			log.WithError(err).Error("couldn't acquire new connection")
-
-			return
-		}
-
 		//nolint:errcheck //not necessary
 		defer newRunCtx.Services.Storage.Release(newCtx)
 

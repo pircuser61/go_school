@@ -575,14 +575,14 @@ func ProcessBlockWithEndMapping(
 		return failedBlock, false, pErr
 	}
 
+	newRunCtx, newCtx, err := newRunContextWithoutDeadline(runCtx, ctx)
+	if err != nil {
+		log.WithError(err).Error("couldn't acquire new connection")
+
+		return "", true, nil
+	}
+
 	go func() {
-		newRunCtx, newCtx, err := newRunContextWithoutDeadline(runCtx, ctx)
-		if err != nil {
-			log.WithError(err).Error("couldn't acquire new connection")
-
-			return
-		}
-
 		//nolint:errcheck //not necessary
 		defer newRunCtx.Services.Storage.Release(newCtx)
 
