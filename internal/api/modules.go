@@ -5,8 +5,6 @@ import (
 
 	"go.opencensus.io/trace"
 
-	"gitlab.services.mts.ru/abp/myosotis/logger"
-
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
@@ -25,7 +23,12 @@ func (ae *Env) GetModules(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "list_modules")
 	defer s.End()
 
-	log := logger.GetLogger(ctx)
+	log := script.SetMainFuncLog(ctx,
+		"GetModules",
+		script.MethodGet,
+		script.HTTP,
+		s.SpanContext().TraceID.String(),
+		"v1")
 	errorHandler := newHTTPErrorHandler(log, w)
 
 	blocks := eriusFunctions()
