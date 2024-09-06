@@ -1696,9 +1696,7 @@ paths:
                 type: object
                 properties:
                   data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/RunResponse'
+                    $ref: '#/components/schemas/RunResponse'
                   status_code:
                     type: integer
         400:

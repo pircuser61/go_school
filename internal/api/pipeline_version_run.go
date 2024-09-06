@@ -372,7 +372,7 @@ func (ae *Env) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 		ParentWorkNumber: req.ParentWorkNumber,
 	}
 
-	if err = sendResponse(w, http.StatusOK, []*entity.RunResponse{resp}); err != nil {
+	if err = sendResponse(w, http.StatusOK, resp); err != nil {
 		errorHandler.handleError(UnknownError, err)
 		requestInfo.Status = UnknownError.Status()
 
