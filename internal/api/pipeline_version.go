@@ -101,8 +101,12 @@ func (ae *Env) CreatePipelineVersion(w http.ResponseWriter, req *http.Request, p
 	ctx, s := trace.StartSpan(req.Context(), "create_pipeline_version")
 	defer s.End()
 
-	log := logger.GetLogger(ctx)
-
+	log := script.SetMainFuncLog(ctx,
+		"CreatePipelineVersion",
+		script.MethodPost,
+		script.HTTP,
+		s.SpanContext().TraceID.String(),
+		"v1").WithField(script.PipelineID, pipelineID)
 	errorHandler := newHTTPErrorHandler(log, w)
 
 	b, err := io.ReadAll(req.Body)
@@ -297,7 +301,12 @@ func (ae *Env) DeleteVersion(w http.ResponseWriter, req *http.Request, versionID
 	ctx, s := trace.StartSpan(req.Context(), "delete_version")
 	defer s.End()
 
-	log := logger.GetLogger(ctx)
+	log := script.SetMainFuncLog(ctx,
+		"DeleteVersion",
+		script.MethodDelete,
+		script.HTTP,
+		s.SpanContext().TraceID.String(),
+		"v1").WithField(script.VersionID, versionID)
 	errorHandler := newHTTPErrorHandler(log, w)
 
 	vID, err := uuid.Parse(versionID)
@@ -355,7 +364,12 @@ func (ae *Env) GetPipelineVersion(w http.ResponseWriter, req *http.Request, vers
 		ae.Metrics.RequestsIncrease(requestInfo)
 	}()
 
-	log := logger.GetLogger(ctx)
+	log := script.SetMainFuncLog(ctx,
+		"GetPipelineVersion",
+		script.MethodGet,
+		script.HTTP,
+		s.SpanContext().TraceID.String(),
+		"v1").WithField(script.VersionID, versionID)
 	errorHandler := newHTTPErrorHandler(log, w)
 	errorHandler.setMetricsRequestInfo(requestInfo)
 
